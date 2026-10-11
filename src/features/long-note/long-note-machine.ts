@@ -99,9 +99,13 @@ const HANDLERS: { [T in LongNoteEvent['type']]: Handler<T> } = {
     state.phase === 'hold' ? { ...state, phase: 'listen' } : state,
   end: (state) =>
     state.phase === 'hold' ? { ...state, phase: 'result' } : state,
-  // The singer stopped listening before a note: back to the intro.
+  // The singer stopped listening before a note, or left while the note
+  // played or the mic opened: back to the intro. A late mic answer finds
+  // the room out of `starting` and is dropped.
   cancel: (state) =>
-    state.phase === 'listen' ? { ...state, phase: 'intro' } : state,
+    state.phase === 'listen' || state.phase === 'starting'
+      ? { ...state, phase: 'intro' }
+      : state,
   again: (state) =>
     state.phase === 'result'
       ? { ...state, phase: 'starting', run: state.run + 1 }

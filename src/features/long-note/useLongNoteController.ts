@@ -478,13 +478,16 @@ export function useLongNoteController(): LongNoteController {
   const openMic = (moment: LongNoteMoment | null): void => {
     const { run, targetMidi } = untrack(state)
     // Nothing to play: open the mic inside the tap itself. After a tone,
-    // only if the room is still there.
+    // only if this start still stands: the singer may have left the room,
+    // or the app (stopListening), while it played.
+    const stands = (): boolean =>
+      alive && untrack(state).phase === 'starting' && untrack(state).run === run
     const opened =
       targetMidi === null
         ? capture.acquire()
         : capture
             .playTone(targetMidi)
-            .then(() => (alive ? capture.acquire() : undefined))
+            .then(() => (stands() ? capture.acquire() : undefined))
     void opened.then(
       () => {
         if (!alive) return
@@ -525,13 +528,20 @@ export function useLongNoteController(): LongNoteController {
 
   /**
    * Nothing listens behind the singer's back: a hold ends where it is, and a
-   * take still waiting for a note goes back to the intro.
+   * take still waiting for a note goes back to the intro. So does a start
+   * whose note is playing or whose mic is opening: the mic stays shut.
    */
   function stopListening(): void {
     // The demo's takes listen to nothing; the demo stops itself.
     if (demoOn()) return
     if (untrack(state).phase === 'hold' && windowOpen) finish()
     if (untrack(state).phase === 'listen') cancel()
+    if (untrack(state).phase !== 'starting') return
+    // A mic still opening is handed straight back (useLongNoteCapture).
+    capture.release()
+    dispatch({ type: 'cancel' })
+    sayIntro()
+    merc.put('idle', 'beside')
   }
 
   const again = (): void => {

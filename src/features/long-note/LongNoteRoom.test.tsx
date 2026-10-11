@@ -22,6 +22,8 @@ const fake = vi.hoisted(() => {
   const state = {
     frames: [] as PitchFrame[],
     acquireError: null as Error | null,
+    /** When set, the mic takes this long to open: the permission prompt. */
+    acquireGate: null as Promise<void> | null,
     tones: [] as number[],
     windows: 0,
     released: 0,
@@ -41,6 +43,7 @@ vi.mock('./useLongNoteCapture', async () => {
     useLongNoteCapture: () => ({
       acquire: () => {
         fake.acquired += 1
+        if (fake.acquireGate !== null) return fake.acquireGate
         return fake.acquireError === null
           ? Promise.resolve()
           : Promise.reject(fake.acquireError)
@@ -295,6 +298,7 @@ describe('LongNoteRoom', () => {
     localStorage.clear()
     fake.frames = []
     fake.acquireError = null
+    fake.acquireGate = null
     fake.tones = []
     fake.windows = 0
     fake.released = 0
@@ -668,6 +672,57 @@ describe('LongNoteRoom', () => {
     endTone()
     await settle()
     expect(fake.acquired).toBe(0)
+  })
+
+  it('opens no mic in the background when the app goes there during the note', async () => {
+    // Review A of PR 973, m7: the start went on behind the singer's back,
+    // and the mic opened in the background once the note ended.
+    let endTone: () => void = () => undefined
+    fake.toneGate = new Promise<void>((resolve) => {
+      endTone = resolve
+    })
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    fireEvent.click(screen.getByTestId('long-note-mic'))
+    await settle()
+    expect(phase()).toBe('starting')
+
+    const hidden = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(phase()).toBe('intro')
+
+    endTone()
+    await settle()
+    hidden.mockRestore()
+    expect(fake.acquired).toBe(0)
+    expect(phase()).toBe('intro')
+  })
+
+  it('comes back to the intro, not a refusal, when the mic is refused in the background', async () => {
+    // No note yet, so the mic opens in the tap; the prompt is still up
+    // when the app goes to the background, and the platform says no.
+    target.pick = { midi: 52, source: 'preset' }
+    const { CaptureError } = await import('./useLongNoteCapture')
+    let refuse: (error: Error) => void = () => undefined
+    fake.acquireGate = new Promise<void>((_, reject) => {
+      refuse = reject
+    })
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    fireEvent.click(screen.getByTestId('long-note-mic'))
+    await settle()
+    expect(phase()).toBe('starting')
+
+    const hidden = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    refuse(new CaptureError('unavailable'))
+    await settle()
+    hidden.mockRestore()
+
+    expect(phase()).toBe('intro')
+    expect(fake.released).toBe(1)
   })
 
   it('runs one take loop however many false starts', async () => {

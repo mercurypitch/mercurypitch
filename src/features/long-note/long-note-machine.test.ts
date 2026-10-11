@@ -88,6 +88,16 @@ describe('long-note-machine', () => {
     expect(longNoteReducer(state, { type: 'start' }).run).toBe(2)
   })
 
+  it('gives up a start that the singer left, and drops its late answer', () => {
+    // The app went to the background during the note or the mic prompt.
+    const state = run([{ type: 'start' }, { type: 'cancel' }])
+    expect(state.phase).toBe('intro')
+    expect(longNoteReducer(state, { type: 'mic-ready', run: 1 })).toBe(state)
+    expect(
+      longNoteReducer(state, { type: 'mic-failed', run: 1, block: 'denied' }),
+    ).toBe(state)
+  })
+
   it('returns to the intro to pick another note', () => {
     const intro = run([
       { type: 'start' },
