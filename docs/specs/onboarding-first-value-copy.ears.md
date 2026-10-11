@@ -1,7 +1,7 @@
 # Onboarding First-Value Copy — EARS Requirements
 
 > **EARS** = Easy Approach to Requirements Syntax
-> Version: 1.1 | Date: 2026-10-11 | Scope: the sentence that names the note we
+> Version: 1.2 | Date: 2026-10-11 | Scope: the sentence that names the note we
 > just heard, and the "what this is" line on every First Light Map card
 
 ---
@@ -98,7 +98,7 @@ Verified by `FVC-6`.
 ### REQ-FVC-007 — Lines lead with the thing, not the verb
 
 **Ubiquitous:** Every room line shall open with a noun phrase ("A library of
-eighteen short drills…", "The live singing stage — …") rather than an
+eighteen short drills…", "The live singing stage: …") rather than an
 instruction, so the card answers "what is this?" before "what do I do?".
 Verified by `FVC-7`.
 
@@ -116,3 +116,12 @@ the suite. Verified by `FVC-8`.
 not met yet. The Ascent line no longer says "one orb at a time" — an orb is a
 themed week, and the Map is the screen where that is not yet known. Verified
 by review.
+
+### REQ-FVC-010 — A room line joins its halves without an em dash
+
+**Ubiquitous:** No room line shall contain an em dash. Where a line names
+the room and then says what happens there, a colon joins the two ("The live
+singing stage: every note you sing…"); where the second half is an
+instruction, it is its own sentence ("…in real time. Send someone the
+code."). This is the owner's standing product-voice rule for visible copy.
+Verified by `FVC-10`.

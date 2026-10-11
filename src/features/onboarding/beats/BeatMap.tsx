@@ -105,7 +105,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
       <h1 class={styles.headline}>Choose your next room</h1>
       <p class={`${styles.sub} ${styles.mapSub}`}>
         Everything here is free and runs on your own device. Start where we've
-        pointed you, or go anywhere you like — nothing is locked.
+        pointed you, or go anywhere you like: nothing is locked.
       </p>
 
       {/* No `data-tour` hook here on purpose. The Map is not spotlight-

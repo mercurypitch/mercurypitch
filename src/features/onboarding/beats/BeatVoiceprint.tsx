@@ -287,7 +287,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     await taskIntro(
       'glide-up',
       'Slide from low to high',
-      "Listen to the sweep, then do the same on an 'ooo' — from as low as you comfortably sing up to as high as you comfortably sing. Never strain: we want your easy range, not your limit.",
+      "Listen to the sweep, then do the same on an 'ooo', from as low as you comfortably sing up to as high as you comfortably sing. Never strain: we want your easy range, not your limit.",
     )
     if (!alive()) return
     await brief('Ready…', 'Take a breath.')
@@ -355,7 +355,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     await taskIntro(
       'hold',
       'Hold one note steady',
-      "Pick any note in the middle of your range and hold it on an 'ahh'. This measures control, not volume — quiet and steady beats loud and wobbly.",
+      "Pick any note in the middle of your range and hold it on an 'ahh'. This measures control, not volume: quiet and steady beats loud and wobbly.",
     )
     if (!alive()) return
     await brief('Ready…', 'Take a breath.', 2)

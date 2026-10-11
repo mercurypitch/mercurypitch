@@ -197,7 +197,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
       // wobble, not a fault. Sending it to the "no microphone" screen
       // was the bug: it blamed working hardware for a wandering note.
       setHint(
-        "Almost — that one wandered. Take a breath and hold a single 'ahh'.",
+        "Almost. That one wandered. Take a breath and hold a single 'ahh'.",
       )
       wait()
       return
@@ -293,7 +293,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
       probed = true
       if (result === 'silent' || result === 'no-session') {
         fail(
-          "That input is carrying no signal at all — not even room tone. It's likely muted at the system level, or your browser is listening to a different microphone.",
+          "That input is carrying no signal at all, not even room tone. It's likely muted at the system level, or your browser is listening to a different microphone.",
           true,
         )
         return

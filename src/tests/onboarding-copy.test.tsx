@@ -192,11 +192,20 @@ describe('the Map cards', () => {
   it('leads every room line with what the room is, not a bare verb', () => {
     // The lines are the Map's only explanation of a room, so each one has
     // to open with a noun phrase ("A library of…", "The live singing
-    // stage — …"), never straight into an instruction.
+    // stage: …"), never straight into an instruction.
     for (const room of ROOMS) {
       expect(room.line, `${room.id} should open with an article`).toMatch(
         /^(A|An|The|Your)\b/,
       )
+    }
+  })
+
+  // FVC-10
+  it('joins every room line without an em dash', () => {
+    // The owner's product voice: a colon or a full stop, never an em dash,
+    // in visible copy.
+    for (const room of ROOMS) {
+      expect(room.line, room.id).not.toContain('\u2014')
     }
   })
 

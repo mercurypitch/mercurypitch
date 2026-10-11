@@ -81,7 +81,7 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'practice',
     title: 'Practice',
-    line: 'The live singing stage — every note you sing, drawn and scored as it happens.',
+    line: 'The live singing stage: every note you sing, drawn and scored as it happens.',
     target: { kind: 'tab', tab: TAB_SINGING },
     tourTab: TAB_SINGING,
     cover: cover('practice', '26% 55%'),
@@ -101,7 +101,7 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'ascent',
     title: 'The Ascent',
-    line: 'A seven-week guided course — one themed week at a time.',
+    line: 'A seven-week guided course: one themed week at a time.',
     target: { kind: 'tab', tab: TAB_PATH },
     tourTab: TAB_PATH,
     cover: cover('ascent', '54% 45%'),
@@ -109,14 +109,14 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'karaoke',
     title: 'Karaoke',
-    line: 'Your own songs turned into karaoke — the vocal split out, with lyrics and scoring.',
+    line: 'Your own songs turned into karaoke: the vocal split out, with lyrics and scoring.',
     target: { kind: 'page', href: '/karaoke' },
     cover: cover('karaoke', '52% 50%'),
   },
   {
     id: 'jam',
     title: 'Jam',
-    line: 'A shared room for singing together in real time — send someone the code.',
+    line: 'A shared room for singing together in real time. Send someone the code.',
     target: { kind: 'tab', tab: TAB_JAM },
     tourTab: TAB_JAM,
     cover: cover('jam', '46% 52%'),
@@ -124,7 +124,7 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'analysis',
     title: 'Analysis',
-    line: 'A plain-language read of your voice — where your pitch went, how steady you held it, and what your tone is made of.',
+    line: 'A plain-language read of your voice: where your pitch went, how steady you held it, and what your tone is made of.',
     target: { kind: 'tab', tab: TAB_ANALYSIS },
     tourTab: TAB_ANALYSIS,
     cover: cover('analysis', '50% 45%'),
