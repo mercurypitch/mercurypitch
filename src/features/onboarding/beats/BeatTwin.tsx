@@ -51,8 +51,8 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
             <h1 class={styles.headline}>Here's what we heard</h1>
             <p class={styles.sub}>
               We couldn't get a clean read on your range this time, so there's
-              no twin to show yet. The map below still works, and you can
-              retake this whenever you like.
+              no twin to show yet. The map below still works, and you can retake
+              this whenever you like.
             </p>
           </>
         }

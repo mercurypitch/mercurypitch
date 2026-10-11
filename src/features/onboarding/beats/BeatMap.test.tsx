@@ -189,7 +189,9 @@ describe('the Map stylesheet', () => {
   it('sizes the desktop covers to the columns the grid actually runs', () => {
     // Arrange: the grid's own numbers, read from the stylesheet.
     const px = (selector: string, pattern: RegExp): number => {
-      const rule = RULES.find((r) => r.selector === selector && r.at.length === 0)
+      const rule = RULES.find(
+        (r) => r.selector === selector && r.at.length === 0,
+      )
       return Number(pattern.exec(rule?.body ?? '')?.[1])
     }
     const min = px('.mapGrid', /minmax\((\d+)px/)
@@ -226,11 +228,17 @@ describe('the Map stylesheet', () => {
   it('offers a 2x laptop a cover smaller than the master', () => {
     // Arrange
     render(() => (
-      <BeatMap voiceprint={null} onEnter={() => {}} onTour={() => {}} onDone={() => {}} />
+      <BeatMap
+        voiceprint={null}
+        onEnter={() => {}}
+        onTour={() => {}}
+        onDone={() => {}}
+      />
     ))
 
     // Act
-    const srcset = document.querySelector('[data-room] img')?.getAttribute('srcset') ?? ''
+    const srcset =
+      document.querySelector('[data-room] img')?.getAttribute('srcset') ?? ''
     const widths = [...srcset.matchAll(/\s(\d+)w/g)].map((m) => Number(m[1]))
 
     // Assert: the widest desktop card is under 400 px, so 800 covers it

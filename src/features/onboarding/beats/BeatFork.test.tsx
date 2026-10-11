@@ -54,7 +54,12 @@ describe('the first-run Fork', () => {
   it('no longer offers the second card or a skip of its own', () => {
     renderFork(0)
 
-    for (const gone of [/Take me in/, /Map my whole voice/, /^Skip$/, /another/i]) {
+    for (const gone of [
+      /Take me in/,
+      /Map my whole voice/,
+      /^Skip$/,
+      /another/i,
+    ]) {
       expect(screen.queryByRole('button', { name: gone })).toBeNull()
     }
   })
