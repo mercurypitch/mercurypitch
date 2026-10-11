@@ -228,6 +228,13 @@ export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
 
   const begin = (ctx: AudioContext | null): void => {
     halt()
+    // The sound answered while the app was in the background (a first
+    // visit's wait, or a Watch): no demo behind the singer's back. It
+    // offers itself again, unseen, as a hide mid-demo leaves it.
+    if (document.visibilityState === 'hidden') {
+      setMode('card')
+      return
+    }
     const note = script.note()
     if (!script.enter(DEMO_COPY.watch)) {
       setMode('idle')

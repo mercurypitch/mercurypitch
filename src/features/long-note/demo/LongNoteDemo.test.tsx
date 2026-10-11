@@ -23,6 +23,8 @@ const fake = vi.hoisted(() => ({
   tones: [] as number[],
   /** What asking for the audio clock answers: running, no, or never. */
   audio: 'running' as 'running' | 'none' | 'never',
+  /** When set, the clock answers only when this resolves. */
+  audioGate: null as Promise<AudioContext | null> | null,
 }))
 
 vi.mock('../useLongNoteCapture', async () => {
@@ -55,6 +57,7 @@ vi.mock('../useLongNoteCapture', async () => {
         return Promise.resolve()
       },
       audio: () => {
+        if (fake.audioGate !== null) return fake.audioGate
         if (fake.audio === 'never') return new Promise<never>(() => undefined)
         return Promise.resolve(
           fake.audio === 'running' ? ({} as AudioContext) : null,
@@ -280,6 +283,7 @@ describe('the Long note demo', () => {
       windows: 0,
       tones: [],
       audio: 'running',
+      audioGate: null,
     })
     Object.assign(sound, { made: 0, tones: [], sung: [], stops: 0 })
     Object.assign(kept, { results: [], bests: 0, haptics: 0, note: null })
@@ -477,6 +481,48 @@ describe('the Long note demo', () => {
     expect(sound.stops).toBe(1)
     expect(demoMode()).toBe('card')
     expect(seen.value).toBe(false)
+    expect(room().dataset.phase).toBe('intro')
+  })
+
+  it('never starts in the background while it waits for its sound', async () => {
+    // Review A of PR 973, m8: a hide in the sound wait was ignored, and
+    // the demo began behind the singer's back.
+    let answer: (ctx: AudioContext | null) => void = () => undefined
+    fake.audioGate = new Promise((resolve) => {
+      answer = resolve
+    })
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(1300)
+    expect(demoMode()).toBe('idle')
+
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    answer({} as AudioContext)
+    await run(50)
+
+    expect(demoMode()).toBe('card')
+    expect(sound.made).toBe(0)
+    expect(room().dataset.phase).toBe('intro')
+    expect(seen.value).toBe(false)
+  })
+
+  it('never starts in the background on a Watch that was still waiting', async () => {
+    seen.value = true
+    let answer: (ctx: AudioContext | null) => void = () => undefined
+    fake.audioGate = new Promise((resolve) => {
+      answer = resolve
+    })
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(50)
+    fireEvent.click(screen.getByTestId('long-note-ask'))
+
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    answer({} as AudioContext)
+    await run(50)
+
+    expect(demoMode()).toBe('card')
+    expect(sound.made).toBe(0)
     expect(room().dataset.phase).toBe('intro')
   })
 
