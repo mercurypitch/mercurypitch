@@ -102,7 +102,7 @@ test.describe('First Light with a microphone', () => {
     await expect(beat(page, 'first-light')).toContainText(/Hz/)
   })
 
-  test('the fork names the note back and the short track reaches the Map', async ({
+  test('the Fork asks one question, and "Not now" reaches the Map without a voiceprint', async ({
     page,
   }) => {
     await page.setViewportSize(DESKTOP)
@@ -116,13 +116,21 @@ test.describe('First Light with a microphone', () => {
     )
     await page.getByRole('button', { name: 'Keep going' }).click()
 
-    // Beat 3 carries what beat 2 heard, rather than repeating a headline.
+    // One screen, one button (owner decisions V2 and V8): the question,
+    // the voiceprint behind it, and the way out at the top right.
     const fork = beat(page, 'fork')
     await expect(fork).toBeVisible()
-    await expect(fork).toContainText(TONE_NOTE)
+    await expect(fork.locator('h1')).toHaveText(
+      'Which legend has a range like yours?',
+    )
+    await expect(fork.getByRole('button')).toHaveText(['Find my twin'])
+    await expect(page.getByRole('button', { name: /Take me in/ })).toHaveCount(
+      0,
+    )
 
-    await page.getByRole('button', { name: /Take me in/ }).click()
+    await page.getByRole('button', { name: 'Not now' }).click()
     await expect(beat(page, 'map')).toBeVisible({ timeout: 10000 })
+    await expect(beat(page, 'voiceprint')).toHaveCount(0)
     await expect(page.getByText('Your first stop')).toBeVisible()
 
     await page.getByRole('button', { name: /Start singing|Done/ }).click()
@@ -144,14 +152,14 @@ test.describe('First Light with a microphone', () => {
     )
     await page.getByRole('button', { name: 'Keep going' }).click()
 
-    // The whole point: no "map my whole voice" as the lead card to
+    // The whole point: no new measurement as the lead button for
     // someone who has already done exactly that, twice.
     const fork = beat(page, 'fork')
     await expect(fork).toBeVisible()
     await expect(fork).toContainText(/already mapped your voice/i)
     await expect(fork).toContainText('2 voiceprints')
     await expect(
-      page.getByRole('button', { name: /Map my whole voice/ }),
+      page.getByRole('button', { name: /Find my twin/ }),
     ).toHaveCount(0)
 
     // The gallery, then the Map — never a second measurement.
@@ -183,15 +191,18 @@ test.describe('First Light with a microphone', () => {
       { timeout: 20000 },
     )
     await page.getByRole('button', { name: 'Keep going' }).click()
-    await page.getByRole('button', { name: /Map my whole voice/ }).click()
+    await page.getByRole('button', { name: 'Find my twin' }).click()
 
     const voiceprint = beat(page, 'voiceprint')
     await expect(voiceprint).toBeVisible()
 
     // Each task waits behind an "I'm ready" gate. Clear them as they
     // appear rather than assuming a fixed count — the number of gates is
-    // a content decision that should be free to change.
+    // a content decision that should be free to change. What the one step
+    // counter said at each gate is kept (owner decision V7).
     const ready = page.getByRole('button', { name: "I'm ready" })
+    const counter = voiceprint.locator('[data-step-counter]')
+    const counters: string[] = []
     const deadline = Date.now() + 240000
     while (Date.now() < deadline) {
       if (
@@ -201,10 +212,19 @@ test.describe('First Light with a microphone', () => {
       )
         break
       if (await ready.isVisible().catch(() => false)) {
+        const said = (await counter.textContent().catch(() => null)) ?? ''
+        if (said !== '' && counters[counters.length - 1] !== said)
+          counters.push(said)
         await ready.click().catch(() => undefined)
       }
       await page.waitForTimeout(500)
     }
+    expect(counters).toEqual([
+      'Step 1 of 4 · about 90 seconds',
+      'Step 2 of 4 · Glide down',
+      'Step 3 of 4 · Hold',
+      'Step 4 of 4 · Match',
+    ])
 
     // The payoff: a twin, and the numbers a voiceprint record stores.
     const twin = beat(page, 'twin')
