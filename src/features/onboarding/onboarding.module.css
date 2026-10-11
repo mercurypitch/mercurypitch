@@ -279,8 +279,9 @@
 
   /* The welcome's words used to start right under Merc's legs on a phone
      (owner testing, iPhone, 11 Oct 2026), and over them on a 360 px or
-     667 px tall one. His glow ends at 30% of the tall cut's height (no
-     painted pixel is brighter than 12 of 255 below it), so max(53.3vw,
+     667 px tall one. His glow ends at 30% of the tall cut's height: below
+     it the picture is dark sky with a few painted stars, a handful of
+     pixels each up to 232 of 255 (measured 11 Oct 2026), so max(53.3vw,
      30dvh) down the screen. The padding carries the words past that plus
      28 px of clear sky, less the 62 px the rail and the frame's padding
      already give (78 px on a phone, so a phone gets 16 px more). The
@@ -1810,9 +1811,11 @@
    Merc's glow and the beat's spacing were sized for taller screens. Here
    the words sit 28 px under his glow, the measure eb200eb41 set out to
    keep (a phone's taller frame padding gave it 44), the gaps tighten, and
-   the bottom padding keeps only the home indicator's room. Taller phones
-   are untouched. */
-@media (max-aspect-ratio: 1/1) and (max-height: 600px) {
+   the bottom padding keeps only the home indicator's room. A 640 px tall
+   phone (320 or 360 wide) scrolled 39 px for the same reasons, so the
+   rule reaches it too; from 667 px up the welcome already fits and is
+   untouched. */
+@media (max-aspect-ratio: 1/1) and (max-height: 660px) {
   .frame:has(> .skyBeat) {
     padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
