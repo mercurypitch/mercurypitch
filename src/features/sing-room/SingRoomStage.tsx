@@ -660,7 +660,6 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
       audioRunning: props.audioRunning(),
       chip: micChipState(ctx(), props.micActive()),
       cardOpen: summary() !== null && ctx().state === 'ended',
-      exercisesOpen: exercisesOpen(),
     }))
     onCleanup(
       registerRunControls({
@@ -1131,7 +1130,11 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         onPerNoteBurnChange={setSingPerNoteBurn}
         onSessionSkip={props.onSessionSkip}
         onSessionEnd={props.onSessionEnd}
-        onOpenExercises={exercisesOffered() ? openExercises : undefined}
+        onOpenExercises={
+          // The constant first, so a store build folds the whole way in
+          // out of the room, the predicate and the opener with it.
+          PREMIUM_EXERCISES && exercisesOffered() ? openExercises : undefined
+        }
       />
 
       {PREMIUM_EXERCISES ? (

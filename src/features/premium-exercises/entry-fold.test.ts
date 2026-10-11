@@ -12,7 +12,8 @@
 //     static import runs its module even under a branch that folds away
 //     (MISTAKES.md), and would bring Long note's stored signals with it.
 //   - Every `lazy(` in the Sing room sits behind `PREMIUM_EXERCISES ?`, so
-//     the dynamic import inside it goes with the branch.
+//     the dynamic import inside it goes with the branch, and the options'
+//     opener is handed over behind the constant too.
 //   - The options' section is a ternary on the constant. `<Show
 //     when={PREMIUM_EXERCISES}>` keeps its children, words and all.
 
@@ -57,6 +58,16 @@ describe('the way in to the exercises, in the sources', () => {
       stage.match(/\bimport\(\s*'@\/features\/premium-exercises\//gu) ?? []
 
     expect([lazies.length, folded.length, imports.length]).toEqual([2, 2, 2])
+  })
+
+  it('hands the options their row only behind PREMIUM_EXERCISES', () => {
+    // The constant leads, so the predicate and the opener fold away with
+    // the row: without it both stayed in the store build, unreachable.
+    const stage = read(`${ROOM}/SingRoomStage.tsx`)
+
+    expect(stage).toMatch(
+      /onOpenExercises=\{[^}]*?PREMIUM_EXERCISES && exercisesOffered\(\)/u,
+    )
   })
 
   it("folds the options' section with a ternary, never a Show", () => {
