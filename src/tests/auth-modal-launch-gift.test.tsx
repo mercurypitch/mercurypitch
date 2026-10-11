@@ -81,7 +81,7 @@ afterEach(cleanup)
 describe('a password sign-up while the gift is on offer', () => {
   it('says the credits arrive when the email is confirmed', async () => {
     mocks.signUpGiftMessage.mockReturnValue(
-      'Confirm your email and your 5 credits arrive.',
+      'Confirm your email to get up to 5 free song separations.',
     )
     render(() => <AuthModal />)
     openAuthModal('register')
@@ -90,7 +90,7 @@ describe('a password sign-up while the gift is on offer', () => {
 
     await waitFor(() =>
       expect(mocks.showNotification).toHaveBeenCalledWith(
-        'Confirm your email and your 5 credits arrive.',
+        'Confirm your email to get up to 5 free song separations.',
         'info',
       ),
     )

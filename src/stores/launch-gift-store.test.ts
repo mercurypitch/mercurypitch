@@ -192,10 +192,18 @@ describe('saying the gift landed', () => {
 })
 
 describe('a sign-up made beside the gift', () => {
-  it('says the credits wait for the confirm link', async () => {
+  it('says the gift waits for the confirm link, in the words the ask used', async () => {
     const store = await freshStore()
     expect(store.signUpGiftMessage()).toBe(
-      'Confirm your email and your 5 credits arrive.',
+      'Confirm your email to get up to 5 free song separations.',
+    )
+  })
+
+  it('names a one-credit gift in the singular', async () => {
+    mocks.offer = { ...LAUNCH, credits: 1 }
+    const store = await freshStore()
+    expect(store.signUpGiftMessage()).toBe(
+      'Confirm your email to get 1 free song separation.',
     )
   })
 

@@ -44,6 +44,7 @@ import { HowItWorks } from './HowItWorks'
 import { IconAlert, IconCheck, IconCopy, IconLink, IconMore, IconRocket, IconShare, IconSpark, } from './icons'
 import { legendArt, LegendCaricature, legendTierSrc } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
+import { MirrorAccountAsk } from './MirrorAccountAsk'
 import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
 import { renderSummaryCard } from './shared-voiceprint-card'
@@ -2270,6 +2271,9 @@ const Results: Component<{
       <p class="mirror-foot">
         Saved on this device. Come back any time to see your delta.
       </p>
+      {/* Last, under the shares: the ask for a browser with no account
+          (owner rule, 11 Oct 2026). Never shown to an account holder. */}
+      <MirrorAccountAsk />
     </section>
   )
 }

@@ -48,9 +48,10 @@
     // layer (2026-07-19 prod incident: /api/uvr/* server separation returned
     // empty 405s and mirror.mercurypitch.com served the SPA shell).
     //   /api/*  — UVR bridge, share API, JSON 404 guard (src/worker.ts)
-    //   /       — mirror.mercurypitch.com root serves mirror.html via the
-    //             Worker's hostname check; the main site's / falls through
-    //             to env.ASSETS inside the Worker.
+    //   /       — mirror.mercurypitch.com/ redirects (301) to
+    //             mercurypitch.com/mirror via the Worker's hostname check;
+    //             the main site's / falls through to env.ASSETS inside the
+    //             Worker.
     //   glass aliases — served as glass.html content with the URL preserved
     //             (no byte-copied HTML files, unlike mirror/karaoke aliases;
     //             /glass itself maps via html_handling).
@@ -107,9 +108,10 @@
       "name": "mercurypitch",
       "routes": [
         { "pattern": "mercurypitch.com", "custom_domain": true },
-        // Voice Mirror standalone entry — the worker serves mirror.html at
-        // this hostname's root (src/worker.ts). custom_domain creates the
-        // DNS record automatically on deploy.
+        // The old Voice Mirror address. The worker redirects it (301) to
+        // mercurypitch.com/mirror (src/worker.ts), and this route is how
+        // those requests reach it. custom_domain creates the DNS record
+        // automatically on deploy.
         { "pattern": "mirror.mercurypitch.com", "custom_domain": true },
       ],
       "kv_namespaces": [

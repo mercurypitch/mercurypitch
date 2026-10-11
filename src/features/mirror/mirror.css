@@ -5,6 +5,12 @@
    ============================================================ */
 
 :root {
+  /* The page is always dark, so the browser's own paint is too: the
+     account dialog's autofill and native controls under its floating labels,
+     the mic picker's option list, the scrollbars. Without it they come up
+     light on a dark sheet (the app sets this per theme in app.css, which
+     this entry does not load). */
+  color-scheme: dark;
   --mirror-bg-top: #0b1026;
   --mirror-bg-mid: #141033;
   --mirror-bg-bottom: #090714;
@@ -1405,6 +1411,131 @@ body {
   font-size: 0.8rem;
   opacity: 0.62;
   margin-top: 20px;
+}
+
+/* ---- The account ask ("Keep your voiceprints") -----------------------
+   Last on the results, for a browser with no account (MirrorAccountAsk).
+   A card rather than another pill: the share row above stays the one hero,
+   and this reads as the next step after it. The button takes the brand
+   gradient, the account's colour, so it never competes with the gold
+   "Share voiceprint". */
+
+.mirror-keep {
+  width: min(100%, 460px);
+  margin: 26px auto 0;
+  padding: 20px 20px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(143, 163, 255, 0.3);
+  background: linear-gradient(
+    160deg,
+    rgba(88, 166, 255, 0.1),
+    rgba(188, 140, 255, 0.08)
+  );
+}
+
+.mirror-keep .mirror-keep-title {
+  font-size: 1.2rem;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.mirror-keep-line {
+  color: var(--mirror-dim);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 8px auto 0;
+  max-width: 40ch;
+}
+
+.mirror-keep-gift {
+  margin: 14px auto 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 196, 107, 0.35);
+  background: rgba(255, 196, 107, 0.08);
+}
+
+.mirror-keep-gift p {
+  margin: 0;
+}
+
+.mirror-keep-gift-tag {
+  color: #ffc46b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* The date moves as one piece: "UNTIL 1 / JANUARY" on a 320 px phone. */
+.mirror-keep-gift-until {
+  white-space: nowrap;
+}
+
+.mirror-keep-gift-line {
+  color: var(--mirror-gold);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-top: 4px;
+}
+
+.mirror-keep-gift .mirror-keep-gift-body {
+  color: var(--mirror-dim);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.mirror-keep-button {
+  width: min(100%, 320px);
+  margin-top: 16px;
+  padding: 13px 24px;
+  background: linear-gradient(
+    135deg,
+    var(--mirror-brand-a),
+    var(--mirror-brand-b)
+  );
+  color: #0b1026;
+  box-shadow: 0 8px 24px rgba(140, 130, 255, 0.22);
+}
+
+.mirror-keep-button[aria-disabled='true'] {
+  cursor: progress;
+  opacity: 0.75;
+  transform: none;
+}
+
+.mirror-keep-fine {
+  color: var(--mirror-dim);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  margin: 10px auto 0;
+  max-width: 44ch;
+}
+
+.mirror-keep-fine.mirror-error {
+  color: #ff9c9c;
+}
+
+/* Below about 340 px the card's padding wrapped "Create my free account"
+   onto two lines (a 72 px button) and the gift tag onto two. */
+@media (max-width: 340px) {
+  .mirror-keep {
+    padding: 18px 14px 16px;
+  }
+
+  .mirror-keep-gift {
+    padding: 10px 12px;
+  }
+
+  .mirror-keep-gift-tag {
+    letter-spacing: 0.08em;
+  }
+
+  .mirror-keep-button {
+    padding: 13px 14px;
+  }
 }
 
 /* ============================================================

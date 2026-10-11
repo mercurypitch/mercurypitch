@@ -17,7 +17,7 @@ and any other `#gauth_error=` put the link's own words in the failure toast.
 **Tests:** `src/lib/google-return-nonce.test.ts`,
 `src/tests/auth-service.test.ts`, `src/tests/device-secret.test.ts`,
 `src/lib/room-google-return.test.ts`, `src/features/guitar-night/main.test.tsx`,
-`src/features/drum-night/main.test.tsx`,
+`src/features/drum-night/main.test.tsx`, `src/features/mirror/main.test.tsx`,
 `workers/db-worker/node-tests/google-return-nonce-integration.test.ts`,
 `src/e2e-cloud/google-return-binding.spec.ts`,
 `src/e2e-cloud/google-signup-voiceprint-adoption.spec.ts`
@@ -79,8 +79,8 @@ the settings page maps its codes to fixed sentences.
 
 ### REQ-GRB-007 — One consumer for every page that takes a return
 
-The main app, Karaoke Night, Guitar Night and Drum Night shall each take a
-Google return through `consumeGoogleRedirect()`, and every Google sign-in shall
-start through `googleSignInUrl()`, so no page can take a return the binding
-has not checked. The native app is out of scope: its sheets return a session
-in a response body, never in a URL.
+The main app, Karaoke Night, Guitar Night, Drum Night and the Voice Mirror
+shall each take a Google return through `consumeGoogleRedirect()`, and every
+Google sign-in shall start through `googleSignInUrl()`, so no page can take a
+return the binding has not checked. The native app is out of scope: its
+sheets return a session in a response body, never in a URL.

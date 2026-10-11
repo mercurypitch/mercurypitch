@@ -13,7 +13,7 @@
 //     "5 credits added. Try one in Karaoke Night."
 //   - the confirm link: "Email confirmed. 5 credits added."
 //   - a password sign-up: the claim waits for the link, and the sign-up
-//     says so. "Confirm your email and your 5 credits arrive."
+//     says so. "Confirm your email to get up to 5 free song separations."
 //   - the code ran out between the offer and the claim:
 //     "The launch gift has run out. Your account is ready."
 //
@@ -29,6 +29,7 @@ import { currentAccountId, hasValidToken } from '@/db/services/auth-service'
 import type { BillingMe, FeaturedPromo, PromoClaim, } from '@/db/services/billing-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
+import { giftCount } from '@/lib/launch-gift-copy'
 import { refreshBalance } from './billing-store'
 import { showNotification } from './notifications-store'
 import { loadFeaturedPromo, offeredPromo } from './promo-store'
@@ -302,7 +303,9 @@ export function signUpGiftMessage(): string | null {
   const promo = offeredPromo()
   if (promo === null) return null
   rememberGiftOffered(promo)
-  return `Confirm your email and your ${promo.credits} credits arrive.`
+  // In the gift's own unit (launch-gift-copy): the ask beside the form named
+  // song separations, and one credit is one separation, singular.
+  return `Confirm your email to get ${giftCount(promo.credits)}.`
 }
 
 /** A claim made with the Claim button or a typed code: the caller has said

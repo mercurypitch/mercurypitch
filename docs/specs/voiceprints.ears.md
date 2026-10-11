@@ -9,13 +9,20 @@
 `src/features/mirror/voiceprint-share.ts`,
 `src/components/account/VoiceSection.tsx`,
 `src/features/onboarding/FirstLight.tsx`, `src/features/mirror/MirrorApp.tsx`,
+`src/features/mirror/account-ask.ts`, `src/features/mirror/MirrorAccountAsk.tsx`,
+`src/db/services/account-known.ts`,
 `src/features/voice-constellation/VoiceConstellationSurface.tsx`,
 `src/lib/mirror/legend-catalog.ts`,
 `src/lib/mirror/voice-constellation.ts`,
 `workers/db-worker/migrations/0010_voiceprints.sql`,
 `workers/db-worker/src/auth.ts` (`USER_OWNED_TABLES`)
-**Tests:** unit — `src/tests/` (service-level pending); end-to-end — the
-scenarios in §6 are the intended Playwright suite (not yet written).
+**Tests:** unit — `src/tests/` (service-level pending); the Mirror's account
+ask (REQ-VPR-023) — `src/features/mirror/account-ask.test.ts`,
+`MirrorAccountAsk.test.tsx`, `MirrorAccountHost.test.tsx`,
+`MirrorApp.account-ask.test.tsx`, `main.test.tsx`,
+`src/e2e/mirror-account-ask.spec.ts` and
+`src/e2e-cloud/mirror-account-ask.spec.ts`; end-to-end — the scenarios in §6
+are the intended Playwright suite (not yet written).
 
 ---
 
@@ -165,8 +172,9 @@ sign-up codes today; the dialog's code pane asks for sign-in codes, so its
 `isNew` stays false until it asks for the other kind. A second factor still
 owed adopts nothing, because an account that has one already existed. The
 Google redirect is adopted once, where it lands, never also by the surface
-that started it: the main app's page runs `adoptAfterGoogleSignup`, and
-Guitar Night and Drum Night run `adoptAfterRoomGoogleSignup` (below).
+that started it: the main app's page and the Voice Mirror run
+`adoptAfterGoogleSignup`, and Guitar Night and Drum Night run
+`adoptAfterRoomGoogleSignup` (below).
 
 **Not** covered: Karaoke Night's standalone account UI. It is a separate
 Vite entry that never imports the IndexedDB layer, and adoption would pull
@@ -189,6 +197,21 @@ carries a Google fragment, so an ordinary visit's first paint is unchanged. In
 both rooms the voiceprint layer loads only for a sign-up, and a returning
 sign-in adopts nothing.
 
+**When** a Google sign-in started from the Voice Mirror's account ask
+(REQ-VPR-023) lands back on the Mirror, the Mirror's entry adopts on
+`gauth_new=1` the same way (amended 2026-10-11). Its doors are four
+documents that load one entry (`src/features/mirror/main.tsx`): `mirror.html`
+(also served at `/free-sing`), `vocal-range-test.html`, `voice-type-test.html`
+and `which-singer-has-my-vocal-range.html`. The worker sends the return to the
+door that started it. The entry stores the session before the Mirror renders, so the
+results' `#take-N` is back in the address when the page reads it and the
+visitor lands on the results they left. The Mirror's first paint carries the
+auth and voiceprint layers already, so its entry makes the main app's own
+calls (`consumeGoogleRedirect`, `adoptAfterGoogleSignup`) rather than the
+rooms' lazy helper: a third importer would split that helper into a chunk of
+its own, which added 673 bytes to Drum Night's first paint and took it over
+its boundary.
+
 Records tagged with this **device's own id** are treated as unclaimed: an
 anonymous identity's id IS the device id (the worker keys
 `/api/auth/anonymous` on it), so they were made here before the device
@@ -207,27 +230,65 @@ account signing in on the same device is asked independently.
 
 **When** an account is created through a sign-up that adopts this device's
 unclaimed takes (REQ-VPR-014: password registration, the Google redirect from
-the main app, Guitar Night or Drum Night, the native Apple and Google sheets,
-and the mailed sign-up code), the sign-up request shall carry a hint
-describing the newest such take that has a twin and a measured range: the
-twin's catalogue name, the low and high MIDI notes, and the accuracy and
-steadiness scores where present (`buildVoiceprintHint`). Only registering
-always creates an account. The others both register and sign in, so their
-requests carry the hint every time, and the worker reads it only when the
-request creates the account. The worker uses it only to choose and fill the
-new account's welcome or confirm mail. It checks the hint against the legend
-catalogue and fixed bounds (`workers/db-worker/src/signup-hint.ts`) and stores
-it nowhere; a hint that fails the checks means a mail without a twin, never a
-failed sign-up.
+the main app, Guitar Night, Drum Night or the Voice Mirror, the native Apple
+and Google sheets, and the mailed sign-up code), the sign-up request shall
+carry a hint describing the newest such take that has a twin and a measured
+range: the twin's catalogue name, the low and high MIDI notes, and the
+accuracy and steadiness scores where present (`buildVoiceprintHint`). Only
+registering always creates an account. The others both register and sign in,
+so their requests carry the hint every time, and the worker reads it only
+when the request creates the account. The worker uses it only to choose and
+fill the new account's welcome or confirm mail. It checks the hint against the
+legend catalogue and fixed bounds (`workers/db-worker/src/signup-hint.ts`) and
+stores it nowhere; a hint that fails the checks means a mail without a twin,
+never a failed sign-up.
 
 Sign-ups that do not adopt send no hint, so the mail never claims a voiceprint
 the account does not get: Karaoke Night and the developer console's native
 sign-in screen. The shared account dialog sends it with a Google redirect only
 from a host marked `adoptsGoogleSignup`, which is every host that mounts the
-dialog today: the main app, Guitar Night and Drum Night. A confirm link sent
-again later reads the account's own newest twin instead of a hint. The numbers
-are the derived values adoption uploads seconds later (REQ-VPR-002): no audio,
-no pitch frames.
+dialog today: the main app, Guitar Night, Drum Night and the Voice Mirror. A
+confirm link sent again later reads the account's own newest twin instead of
+a hint. The numbers are the derived values adoption uploads seconds later
+(REQ-VPR-002): no audio, no pitch frames.
+
+### REQ-VPR-023 — The Voice Mirror asks visitors without an account (2026-10-11)
+
+The owner's rule, 11 Oct 2026: offer an account only to somebody who has
+none, and offer it again with each new voiceprint until they do.
+
+**While** this browser has never met a real account, the Voice Mirror's
+guided results shall end with an ask to keep the voiceprints in a free
+account ("Keep your voiceprints", "Create my free account"), under the share
+row, after the first voiceprint and after every later one. **While** a real
+account is signed in, the ask shall not show. **While** signed out, it shall
+not show either when this browser has met a real account: a note of how the
+last sign-in happened (`src/lib/last-sign-in.ts`, kept through a sign-out),
+the signed-out flag behind `needsSignIn`, or a stored token whose provider is
+a real account, valid or expired. `accountKnownHere`
+(`src/db/services/account-known.ts`) is that test. None of the three says
+who, so a shared browser that met somebody's account shows the next person
+no ask; they can still make one in the app.
+
+**When** the ask is tapped, the funnel shall record `cta_account_click` (not
+an Ads conversion). The ask's views are not counted separately: there is no
+view event for it, and `results_view` also fires where the ask is hidden, so
+it is not a count of them. The shared account dialog shall open on
+its sign-up pane. Creating the account adopts this browser's unclaimed takes,
+the one on screen included (REQ-VPR-014). Closing the dialog changes nothing:
+the voiceprint stays saved in this browser either way, and is never hidden
+or held back to make the case.
+
+**While** the server features a launch promo (`/api/billing/promo/featured`),
+the ask shall name it in onboarding's words ("Up to 5 free song
+separations", "1 free song separation" for one credit, from
+`src/lib/launch-gift-copy.ts`), with its end day when it has one, and say that
+the gift arrives when the email is confirmed.
+
+**Ubiquitous:** the Mirror's first paint shall carry the ask's words and
+none of the dialog. The promo store loads once the ask is on screen; the
+dialog, its stores and the toasts load when the ask is tapped or a Google
+return lands. Free Sing saves no voiceprint (REQ-VPR-001) and carries no ask.
 
 ## 5. Sharing and the settings card
 

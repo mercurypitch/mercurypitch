@@ -51,6 +51,13 @@ export const MIRROR_FUNNEL_EVENTS = [
    *  Kept apart from `card_shared`, which feeds a live Ads conversion and
    *  must go on meaning what it meant. */
   'link_copied',
+  /** "Create my free account" under the results, tapped. Counts taps, not
+   *  accounts: the tap opens the form, and the app's `signup` counts what
+   *  comes of it. Shown only to a browser that has never met an account
+   *  (MirrorAccountAsk). The ask's views are not counted separately: it has
+   *  no view event, and `results_view` also fires where the ask is hidden.
+   *  Not an Ads conversion. */
+  'cta_account_click',
 ] as const
 
 /** The app itself (src/lib/analytics.ts). */

@@ -159,6 +159,11 @@ export function accountHeld(): boolean {
   return hasUpgradedAccount()
 }
 
+/** The provider the stored token names, expired or not; null without one. */
+export function storedTokenProvider(): string | null {
+  return decodeToken(getAuthToken() ?? '')?.provider ?? null
+}
+
 /**
  * Which account this browser is currently signed into, or null.
  *
@@ -906,6 +911,12 @@ export function takeGoogleTwofaChallenge(): string | null {
   const ceremony = pendingGoogleTwofa
   pendingGoogleTwofa = null
   return ceremony
+}
+
+/** Whether a Google return owes a second factor, without taking it: a page
+ *  that mounts its dialog on demand opens it, so the code pane shows. */
+export function googleTwofaPending(): boolean {
+  return pendingGoogleTwofa !== null
 }
 
 let pendingNativeTwofa: string | null = null
