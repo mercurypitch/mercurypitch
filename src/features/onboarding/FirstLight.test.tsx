@@ -215,3 +215,59 @@ describe('one way out on every beat', () => {
     },
   )
 })
+
+describe('focus on a beat change', () => {
+  it('moves focus to the new beat\'s heading, out of the Tab order', async () => {
+    // Arrange
+    const fork = await at('fork')
+    const start = within(fork).getByRole('button', { name: 'Find my twin' })
+    start.focus()
+
+    // Act
+    fireEvent.click(start)
+
+    // Assert
+    await waitFor(() => expect(beat('voiceprint')).not.toBeNull())
+    const heading = beat('voiceprint')?.querySelector('h1')
+    expect(heading).not.toBeNull()
+    expect(document.activeElement).toBe(heading)
+    expect(heading).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('never hands an escaped Tab to the way out: Enter, Tab, Enter stays in the beat', async () => {
+    // Arrange: the Fork's button pressed from the keyboard. It unmounts
+    // with the beat, and the next Tab from the page lands outside the
+    // overlay, which the focus trap pulls back in.
+    const fork = await at('fork')
+    const start = within(fork).getByRole('button', { name: 'Find my twin' })
+    start.focus()
+    fireEvent.click(start)
+    await waitFor(() => expect(beat('voiceprint')).not.toBeNull())
+    const outside = document.createElement('button')
+    document.body.append(outside)
+
+    // Act
+    outside.focus()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // Assert
+    const [notNow] = railExits()
+    expect(document.activeElement).not.toBe(notNow)
+    expect(beat('voiceprint')?.contains(document.activeElement)).toBe(true)
+    outside.remove()
+  })
+
+  it('puts the way out after the beat in the DOM, so Tab reaches the beat first', async () => {
+    // Arrange
+    const shown = await at('first-light')
+
+    // Act
+    const [notNow] = railExits()
+
+    // Assert
+    expect(
+      shown.compareDocumentPosition(notNow) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})

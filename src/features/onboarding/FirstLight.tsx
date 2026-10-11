@@ -12,7 +12,7 @@
 // See docs/plans/onboarding-first-light.md.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
+import { createEffect, createSignal, Match, on, onMount, Show, Switch } from 'solid-js'
 import { X } from '@/components/icons'
 import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
@@ -402,6 +402,29 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     initialFocus: () => frameRef,
   })
 
+  // Every beat after the first opens on its heading, focused by script
+  // (tabindex -1, so never a Tab stop), and at the top of the frame. A
+  // screen reader announces where the visitor landed, and the next Tab
+  // starts inside the new beat. Without it the button that was just
+  // pressed unmounted with its beat, focus fell to the page, and the
+  // trap's fallback handed the next Tab to the first control in the
+  // overlay, which was the way out.
+  createEffect(
+    on(
+      currentBeat,
+      () => {
+        const frame = frameRef
+        if (frame === undefined) return
+        frame.scrollTop = 0
+        const heading = frame.querySelector<HTMLElement>('[data-beat] h1')
+        if (heading === null) return
+        heading.tabIndex = -1
+        heading.focus({ preventScroll: true })
+      },
+      { defer: true },
+    ),
+  )
+
   return (
     <div
       ref={overlayRef}
@@ -449,71 +472,6 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
           beads={onboardingBeads().count}
           beadIndex={onboardingBeads().index}
         />
-      </div>
-
-      <div class={styles.rail}>
-        <div class={styles.progress}>
-          {/* Floored at 10%: an empty bar on the first screen reads as
-              "nothing has happened yet", and endowed progress is the
-              cheapest honest encouragement we have. */}
-          <div
-            class={styles.progressFill}
-            style={{
-              width: `${Math.max(10, Math.round(onboardingProgress() * 100))}%`,
-            }}
-          />
-        </div>
-        {/* One way out, top right, and never two (owner decisions V1 and
-            V8). The welcome's is a close button: the beat itself carries
-            one action. Everywhere else it is "Not now", in words. On Keep
-            it declines the account and moves on to the Map, at full
-            contrast: declining is an answer to the question on screen. On
-            the Fork it is the old "Take me in" card, so it lands on the
-            Map without a voiceprint. On the other beats it leaves the
-            flow, as Skip did. The Map is the last beat; its rooms are the
-            way out. */}
-        <Switch>
-          <Match when={currentBeat() === 'sky'}>
-            <button
-              type="button"
-              class={styles.railClose}
-              aria-label="Skip the intro"
-              title="Skip the intro"
-              onClick={handleSkip}
-            >
-              <span aria-hidden="true">
-                <X />
-              </span>
-            </button>
-          </Match>
-          <Match when={currentBeat() === 'keep'}>
-            <button
-              type="button"
-              class={styles.railAction}
-              onClick={handleDismissAccount}
-            >
-              Not now
-            </button>
-          </Match>
-          <Match when={currentBeat() === 'fork'}>
-            <button
-              type="button"
-              class={styles.railNotNow}
-              onClick={handleForkNotNow}
-            >
-              Not now
-            </button>
-          </Match>
-          <Match when={currentBeat() !== 'map'}>
-            <button
-              type="button"
-              class={styles.railNotNow}
-              onClick={handleSkip}
-            >
-              Not now
-            </button>
-          </Match>
-        </Switch>
       </div>
 
       <div ref={frameRef} class={styles.frame} tabIndex={-1}>
@@ -586,6 +544,73 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               gift={gift()}
               onCreateAccount={handleCreateAccount}
             />
+          </Match>
+        </Switch>
+      </div>
+
+      {/* After the frame in the DOM, so Tab reaches the beat's own controls
+          before the way out; `order` keeps it at the top on screen. */}
+      <div class={styles.rail}>
+        <div class={styles.progress}>
+          {/* Floored at 10%: an empty bar on the first screen reads as
+              "nothing has happened yet", and endowed progress is the
+              cheapest honest encouragement we have. */}
+          <div
+            class={styles.progressFill}
+            style={{
+              width: `${Math.max(10, Math.round(onboardingProgress() * 100))}%`,
+            }}
+          />
+        </div>
+        {/* One way out, top right, and never two (owner decisions V1 and
+            V8). The welcome's is a close button: the beat itself carries
+            one action. Everywhere else it is "Not now", in words. On Keep
+            it declines the account and moves on to the Map, at full
+            contrast: declining is an answer to the question on screen. On
+            the Fork it is the old "Take me in" card, so it lands on the
+            Map without a voiceprint. On the other beats it leaves the
+            flow, as Skip did. The Map is the last beat; its rooms are the
+            way out. */}
+        <Switch>
+          <Match when={currentBeat() === 'sky'}>
+            <button
+              type="button"
+              class={styles.railClose}
+              aria-label="Skip the intro"
+              title="Skip the intro"
+              onClick={handleSkip}
+            >
+              <span aria-hidden="true">
+                <X />
+              </span>
+            </button>
+          </Match>
+          <Match when={currentBeat() === 'keep'}>
+            <button
+              type="button"
+              class={styles.railAction}
+              onClick={handleDismissAccount}
+            >
+              Not now
+            </button>
+          </Match>
+          <Match when={currentBeat() === 'fork'}>
+            <button
+              type="button"
+              class={styles.railNotNow}
+              onClick={handleForkNotNow}
+            >
+              Not now
+            </button>
+          </Match>
+          <Match when={currentBeat() !== 'map'}>
+            <button
+              type="button"
+              class={styles.railNotNow}
+              onClick={handleSkip}
+            >
+              Not now
+            </button>
           </Match>
         </Switch>
       </div>

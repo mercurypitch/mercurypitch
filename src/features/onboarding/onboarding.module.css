@@ -213,6 +213,9 @@
   gap: 16px;
   padding: 18px 22px 0;
   flex: 0 0 auto;
+  /* Last in the DOM, so the beat comes first in the Tab order (FirstLight);
+     first on screen. */
+  order: -1;
 }
 
 .progress {
@@ -368,6 +371,12 @@
 /* Focused by script when the flow opens (FirstLight), never by Tab
    (tabindex -1): no ring, the beat itself is the thing in focus. */
 .frame:focus {
+  outline: none;
+}
+
+/* The same for each beat's heading, focused by script on every beat change
+   so a screen reader announces it. Not a control, so no ring. */
+.frame h1[tabindex='-1']:focus {
   outline: none;
 }
 
