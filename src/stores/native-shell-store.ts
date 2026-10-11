@@ -34,6 +34,7 @@
 import { createSignal } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
+import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import type { LyricWindowScript } from '@/lib/lyric-window-script'
 import type { SettingsSection } from '@/stores/settings-section'
 
@@ -164,12 +165,12 @@ export interface NativeShellApi {
    */
   openKaraokeStudio?: () => void
   /**
-   * Push the Long note exercise over the room (premium exercises, decision
-   * L2): the Sing room's options open it. Optional, like `openKaraokeStudio`:
-   * a build without the premium exercises registers none, and the room draws
-   * no row for it.
+   * Push a premium exercise over the room (Long note first): the Sing
+   * room's exercise row, its picker and its options open one by id.
+   * Optional, like `openKaraokeStudio`: a build without the premium
+   * exercises registers none, and the room draws no way in.
    */
-  openLongNote?: () => void
+  openExercise?: (id: PremiumExerciseId) => void
   /**
    * The Karaoke subscription, bought and restored through the store (plan
    * S8 §6.7). The purchase port it wraps lives in the app, which the room

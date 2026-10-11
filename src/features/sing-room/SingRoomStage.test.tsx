@@ -545,16 +545,16 @@ describe('the Long note row in the options', () => {
   })
 
   it('opens Long note when the phone app offers it', async () => {
-    const openLongNote = vi.fn()
+    const openExercise = vi.fn()
     const unregister = registerShellApi({
-      openLongNote,
+      openExercise,
     } as unknown as NativeShellApi)
     try {
       mountRoom()
       openRoomOptions()
       await Promise.resolve()
       fireEvent.click(screen.getByTestId('sing-options-long-note'))
-      expect(openLongNote).toHaveBeenCalledTimes(1)
+      expect(openExercise.mock.calls).toEqual([['long-note-lantern']])
     } finally {
       unregister()
     }
@@ -562,7 +562,7 @@ describe('the Long note row in the options', () => {
 
   it('stays away while a run is going', async () => {
     const unregister = registerShellApi({
-      openLongNote: vi.fn(),
+      openExercise: vi.fn(),
     } as unknown as NativeShellApi)
     try {
       const room = mountRoom()

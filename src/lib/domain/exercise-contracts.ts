@@ -56,6 +56,13 @@ export type ExerciseType =
   | typeof EXERCISE_WARMUP
   | typeof EXERCISE_LONG_NOTE_LANTERN
 
+/**
+ * The premium exercises the phone app opens from the Sing screen (Long note
+ * first). A type here, below the features, so the shell bridge in
+ * `src/stores` can name one without importing a feature.
+ */
+export type PremiumExerciseId = typeof EXERCISE_LONG_NOTE_LANTERN
+
 // ── Config ──────────────────────────────────────────────────────
 
 /**

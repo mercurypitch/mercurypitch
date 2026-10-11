@@ -36,6 +36,7 @@ import type { PracticeFrameListener } from '@/features/practice/usePracticeContr
 import { roomName } from '@/features/rooms/room-names'
 import { TAB_HOME, TAB_SINGING } from '@/features/tabs/constants'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import { EXERCISE_LONG_NOTE_LANTERN } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
 import { micManager } from '@/lib/mic-manager'
 import { buildMultiOctaveScale, scaleDegreeSet } from '@/lib/scale-data'
@@ -471,7 +472,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const openLongNote = (): void => {
     if (state() === 'priming') dispatchSingRoom({ type: 'priming-cancel' })
     if (props.micActive()) props.stopMic()
-    nativeShellApi()?.openLongNote?.()
+    nativeShellApi()?.openExercise?.(EXERCISE_LONG_NOTE_LANTERN)
   }
 
   /**
@@ -1039,7 +1040,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         onSessionSkip={props.onSessionSkip}
         onSessionEnd={props.onSessionEnd}
         onOpenLongNote={
-          nativeShellApi()?.openLongNote === undefined ||
+          nativeShellApi()?.openExercise === undefined ||
           runIsLive(ctx()) ||
           runIsPaused(ctx())
             ? undefined

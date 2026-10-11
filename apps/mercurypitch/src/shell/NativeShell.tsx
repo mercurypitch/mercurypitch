@@ -37,6 +37,7 @@ import { installHistoryDepth } from './history-depth'
 import { installKaraokeImport } from './karaoke-import-wiring'
 import { KeepAlert } from './KeepAlert'
 import { MoreSheet } from './MoreSheet'
+import { installPremiumExercises } from './premium-exercise-wiring'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
 import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, pushSettingsSection, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
@@ -153,15 +154,10 @@ export const NativeShell: Component = () => {
         openKaraokeStudio: () => {
           pushScreen('karaoke-studio')
         },
-        // The Sing room's options open Long note (decision L2). Absent on a
-        // build without the premium exercises, so the row is never drawn.
-        ...(PREMIUM_EXERCISES
-          ? {
-              openLongNote: () => {
-                pushScreen('long-note')
-              },
-            }
-          : {}),
+        // The Sing room opens a premium exercise by id: from its row, its
+        // picker and its options. Absent on a build without them, so the
+        // room draws no way in (premium-exercise-wiring.ts).
+        ...installPremiumExercises(),
       }),
     )
 
