@@ -58,6 +58,10 @@ const HOLD_SEC = 6
 const RING_CIRCUMFERENCE = 194.8
 const MATCH_TAKE_SEC = 3
 const REFERENCE_SEC = 1.4
+/** How long a note cut short needs before its context can close: the
+ *  reference tone's 180 ms release and 60 ms of slack (reference-tone.ts),
+ *  with a margin. The demo cues' own stop is shorter. */
+const CLOSE_AFTER_RELEASE_MS = 300
 /** Hear the note, then a beat to prepare before singing it back. */
 const MATCH_PREPARE_SEC = 2
 const MATCH_COUNT = 5
@@ -245,9 +249,18 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     // Without this an unmount during an intro leaves run() parked on a
     // promise nobody will ever resolve, holding the session with it. It
     // also silences the lane, so no note outlives the beat.
+    //
+    // A note cut short ("Not now" mid-note) fades over its release, on
+    // the session's context. Closing that context at once cut the fade
+    // off where it stood: a pop. Close it once the tail is quiet, on a
+    // timer that does not depend on this component, so it always closes.
+    const sounding = lane.busy()
     releaseGate()
-    session?.close()
+    const leaving = session
     session = null
+    if (leaving === null) return
+    if (sounding) setTimeout(() => leaving.close(), CLOSE_AFTER_RELEASE_MS)
+    else leaving.close()
   })
 
   const countdown = async (seconds: number): Promise<void> => {

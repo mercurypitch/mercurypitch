@@ -43,6 +43,8 @@ const audio = vi.hoisted(() => {
     /** The most sounds playing at any moment a take was recording. */
     activeDuringTake: 0,
     recording: false,
+    /** Sounds still sounding each time the session was closed. */
+    closedOver: [] as number[],
     sound(kind: 'tone' | 'sweep' | 'hold', midi: number | null, sec: number) {
       state.log.push({ kind, midi })
       state.active += 1
@@ -71,6 +73,7 @@ const audio = vi.hoisted(() => {
       state.maxActive = 0
       state.activeDuringTake = 0
       state.recording = false
+      state.closedOver = []
     },
   }
   return state
@@ -122,7 +125,9 @@ vi.mock('@/lib/voice-session', () => ({
       devices: (): Promise<MediaDeviceInfo[]> => Promise.resolve([]),
       useDevice: (): Promise<ProbeResult> =>
         Promise.resolve('ok' as ProbeResult),
-      close: (): void => {},
+      close: (): void => {
+        audio.closedOver.push(audio.active)
+      },
     }) as unknown as VoiceSession,
 }))
 
@@ -441,5 +446,56 @@ describe('the voiceprint plays one sound at a time', () => {
     expect(audio.log[3]?.midi).toBe(57)
     expect(audio.maxActive).toBe(1)
     expect(audio.activeDuringTake).toBe(0)
+  })
+})
+
+// ── Leaving mid-note ("Not now", review of PR 977) ────────────────────
+//
+// Closing the session closes its AudioContext, which cuts a note's
+// 180 ms release off at whatever level it had reached: a pop. The beat
+// lets the release finish first, and still closes the context, so
+// nothing leaks.
+
+describe('leaving the voiceprint while a note sounds', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    takes.next = audibleSinger()
+    audio.reset()
+    audio.context = { state: 'running' }
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+    audio.reset()
+  })
+
+  it('lets the release finish before it closes the audio context', async () => {
+    // Arrange: the first intro's sweep is sounding.
+    render(() => <BeatVoiceprint onComplete={() => {}} onDenied={() => {}} />)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(audio.active).toBe(1)
+
+    // Act
+    cleanup()
+    const closedAtOnce = audio.closedOver.length
+    await vi.advanceTimersByTimeAsync(400)
+
+    // Assert
+    expect(closedAtOnce).toBe(0)
+    expect(audio.closedOver).toEqual([0])
+  })
+
+  it('closes at once when nothing is sounding', async () => {
+    // Arrange
+    render(() => <BeatVoiceprint onComplete={() => {}} onDenied={() => {}} />)
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(audio.active).toBe(0)
+
+    // Act
+    cleanup()
+
+    // Assert
+    expect(audio.closedOver).toEqual([0])
   })
 })
