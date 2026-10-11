@@ -105,4 +105,34 @@ describe('the sound lane', () => {
     // Assert
     expect(lane.busy()).toBe(false)
   })
+
+  it('stops a sound when its time runs out without its end, so a frozen clock cannot keep it armed', async () => {
+    // Arrange: a sound that never reports its end, on a context whose clock
+    // is frozen (iOS 'interrupted'). It has not played; it would on resume.
+    const lane = createSoundLane()
+    const frozen = { stop: vi.fn() }
+    void lane.play(() => frozen, 1)
+
+    // Act: past its length and the lane's tail allowance.
+    await vi.advanceTimersByTimeAsync(1200)
+
+    // Assert
+    expect(frozen.stop).toHaveBeenCalled()
+    expect(lane.busy()).toBe(false)
+  })
+
+  it('stops a sound that reported its end, in case the end came from a wall-clock fallback', async () => {
+    // Arrange: `done` resolves on a timer while the sound itself may still
+    // be scheduled on a clock that has not moved.
+    const lane = createSoundLane()
+    const early = fakeSound(1)
+    void lane.play(() => early, 3)
+
+    // Act
+    await vi.advanceTimersByTimeAsync(1000)
+
+    // Assert
+    expect(early.stopped()).toBe(true)
+    expect(lane.busy()).toBe(false)
+  })
 })

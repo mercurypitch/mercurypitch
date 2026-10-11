@@ -16,6 +16,14 @@
 // A sound may report its own end (`done`); the lane also clears itself on
 // a timer of the sound's length, because a demo cue's handle can only be
 // stopped, and a suspended context never ends anything.
+//
+// Whichever way the lane lets go of a sound, it stops it. On a frozen
+// clock (iOS 'interrupted' or 'suspended') a sound whose time has run out
+// on the wall clock has not played yet: it plays when the clock resumes.
+// Letting go without stopping it left two notes to start together on
+// resume, or a stale note ringing into a take that `stop` could no longer
+// reach (review of PR 977). Stopping a sound that has really ended is a
+// no-op.
 
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
@@ -57,24 +65,23 @@ export function createSoundLane(): SoundLane {
   const [busy, setBusy] = createSignal(false)
   let playing: Playing | null = null
 
-  /** Let go of the current sound; stop it too when it is cut short. */
-  const release = (current: Playing, cut: boolean): void => {
+  /** Let go of the current sound, and stop it: a sound the lane no longer
+   *  holds must not be able to sound later. */
+  const release = (current: Playing): void => {
     if (playing !== current) return
     playing = null
     clearTimeout(current.timer)
-    if (cut) {
-      try {
-        current.sound.stop()
-      } catch {
-        // A sound whose context has already closed is silent anyway.
-      }
+    try {
+      current.sound.stop()
+    } catch {
+      // A sound whose context has already closed is silent anyway.
     }
     setBusy(false)
     current.settle()
   }
 
   const stop = (): void => {
-    if (playing !== null) release(playing, true)
+    if (playing !== null) release(playing)
   }
 
   const play = (
@@ -88,14 +95,14 @@ export function createSoundLane(): SoundLane {
       const current: Playing = {
         sound,
         timer: setTimeout(
-          () => release(current, false),
+          () => release(current),
           Math.max(0, seconds) * 1000 + TAIL_MS,
         ),
         settle,
       }
       playing = current
       setBusy(true)
-      void sound.done?.then(() => release(current, false))
+      void sound.done?.then(() => release(current))
     })
   }
 

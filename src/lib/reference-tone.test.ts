@@ -8,7 +8,7 @@
 // gain, decay with setTargetAtTime, and stop the oscillator only after the
 // tail. A cut at full level is a pop on a PA.
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { startReferenceTone } from './reference-tone'
 
 interface FakeParam {
@@ -120,5 +120,70 @@ describe('startReferenceTone', () => {
 
     // Assert
     expect(ended).toHaveBeenCalledOnce()
+  })
+
+  describe('on a clock that never moves', () => {
+    // An iOS context left 'interrupted' or 'suspended' freezes currentTime.
+    // A note scheduled on it has not sounded yet; it will when the clock
+    // resumes. Its wall-clock fallback reports the end, and that must not
+    // leave the note armed: two notes would start together on resume, or a
+    // stale note would ring into a take (review of PR 977).
+    afterEach(() => vi.useRealTimers())
+
+    it('cancels the unplayed note when the wall-clock fallback runs out', async () => {
+      // Arrange
+      vi.useFakeTimers()
+      const { ctx, oscillators } = fakeContext()
+      ctx.state = 'interrupted'
+      const tone = startReferenceTone(ctx as unknown as AudioContext, 57, 1)
+      const ended = vi.fn()
+      void tone.done.then(ended)
+
+      // Act
+      await vi.advanceTimersByTimeAsync(1500)
+
+      // Assert: stopped at or before its own start, so it never plays.
+      expect(ended).toHaveBeenCalledOnce()
+      const stops = oscillators[0]!.stop.mock.calls.map(([at]) => at as number)
+      expect(stops).toHaveLength(2)
+      expect(stops.at(-1)).toBeLessThanOrEqual(10)
+    })
+
+    it('leaves a note cancelled by its fallback cancelled when stopped again', async () => {
+      // Arrange
+      vi.useFakeTimers()
+      const { ctx, oscillators } = fakeContext()
+      ctx.state = 'suspended'
+      const tone = startReferenceTone(ctx as unknown as AudioContext, 57, 1)
+      await vi.advanceTimersByTimeAsync(1500)
+      const stopsBefore = oscillators[0]!.stop.mock.calls.length
+
+      // Act
+      tone.stop()
+
+      // Assert: the fallback already cancelled it, and a later stop does
+      // not schedule the note again.
+      expect(stopsBefore).toBe(2)
+      expect(oscillators[0]!.stop).toHaveBeenCalledTimes(2)
+    })
+
+    it('never anchors the release on a level the frozen clock never rendered', () => {
+      // Arrange: an unrendered gain reads its default, louder than the
+      // note's peak. Anchoring there would be a click on resume.
+      const { ctx, gains } = fakeContext()
+      ctx.state = 'suspended'
+      const tone = startReferenceTone(ctx as unknown as AudioContext, 57, 3)
+      gains[0]!.gain.value = 1
+
+      // Act
+      tone.stop()
+
+      // Assert
+      const anchors = gains[0]!.gain.setValueAtTime.mock.calls
+        .slice(-1)
+        .map(([level]) => level as number)
+      expect(anchors[0]).toBe(0)
+      expect(gains[0]!.gain.setTargetAtTime).not.toHaveBeenCalled()
+    })
   })
 })

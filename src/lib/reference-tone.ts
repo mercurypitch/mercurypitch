@@ -106,7 +106,6 @@ export function startReferenceTone(
       resolve()
     }
   })
-  const fallback = setTimeout(() => settle(), (durationSec + 0.5) * 1000)
 
   const oscillator = audioContext.createOscillator()
   const filter = audioContext.createBiquadFilter()
@@ -131,7 +130,18 @@ export function startReferenceTone(
   oscillator.connect(filter)
   filter.connect(gain)
   gain.connect(destination ?? audioContext.destination)
+
+  // Ended is not the same as settled. Settled means "over for the caller";
+  // ended means the oscillator really stopped. A context iOS left
+  // 'interrupted' or 'suspended' freezes its clock, so the note is still
+  // armed after its wall-clock time has passed and would play on resume.
+  // Only an ended note is beyond stopping.
+  let ended = false
+  let stopped = false
+  let fallback: ReturnType<typeof setTimeout> | undefined
+
   oscillator.onended = () => {
+    ended = true
     clearTimeout(fallback)
     oscillator.disconnect()
     filter.disconnect()
@@ -141,24 +151,37 @@ export function startReferenceTone(
   oscillator.start(now)
   oscillator.stop(now + durationSec)
 
-  let stopped = false
   const stop = (): void => {
-    if (stopped || settled) return
+    if (stopped || ended) return
     stopped = true
+    clearTimeout(fallback)
     try {
-      // Anchor where the envelope is, decay over five time constants of
-      // the release, and stop only once the tail has gone quiet.
       const at = audioContext.currentTime
       gain.gain.cancelScheduledValues(at)
-      gain.gain.setValueAtTime(gain.gain.value, at)
-      gain.gain.setTargetAtTime(0, at, STOP_RELEASE_SEC / 5)
-      oscillator.stop(at + STOP_RELEASE_SEC + STOP_SLACK_SEC)
+      if (at <= now) {
+        // The clock has not moved since the note was scheduled, so none of
+        // it has sounded. Silence it and stop it at its own start: it never
+        // plays. Its unrendered gain would read the default level, louder
+        // than the note's peak, so there is nothing honest to anchor on.
+        gain.gain.setValueAtTime(0, at)
+        oscillator.stop(at)
+      } else {
+        // Anchor where the envelope is, decay over five time constants of
+        // the release, and stop only once the tail has gone quiet.
+        gain.gain.setValueAtTime(gain.gain.value, at)
+        gain.gain.setTargetAtTime(0, at, STOP_RELEASE_SEC / 5)
+        oscillator.stop(at + STOP_RELEASE_SEC + STOP_SLACK_SEC)
+      }
     } catch {
       // The context closed under us: nothing is sounding any more.
     }
     // Over for the caller now: what is left is the release tail.
     settle()
   }
+
+  // The fallback for a clock that never ends the note: stop it, so it
+  // cannot wait armed for a resume, and report the end.
+  fallback = setTimeout(stop, (durationSec + 0.5) * 1000)
 
   return { stop, done }
 }
