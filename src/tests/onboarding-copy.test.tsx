@@ -73,6 +73,7 @@ function forkText(firstNote: string | null, savedCount = 0): string {
       savedCount={savedCount}
       savedWhen={savedCount > 0 ? 'yesterday' : null}
       onChoose={noop}
+      onAnother={noop}
     />
   ))
   return container.textContent ?? ''

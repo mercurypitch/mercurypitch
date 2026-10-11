@@ -58,8 +58,10 @@ beforeEach(() => {
       disconnect(): void {}
     },
   )
+  // `getContext` is overloaded per context kind; the stub stands in for
+  // the 2D one, which is the only kind the field asks for.
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-    () => inert() as CanvasRenderingContext2D,
+    () => inert() as never,
   )
 })
 
