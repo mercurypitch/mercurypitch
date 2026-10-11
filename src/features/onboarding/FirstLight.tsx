@@ -184,8 +184,17 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
    * V3). It is the old "Take me in" card moved to the top right, so it
    * keeps that card's event, `onboarding_track_short`, and stays countable
    * apart from the welcome's skip (`onboarding_skipped`).
+   *
+   * Straight to the Map, never through the traversal: a replay that still
+   * holds this session's voiceprint has the account ask due, and the next
+   * beat after the Fork would be Keep (review of PR 977). The voiceprint
+   * stays where it is (V13).
    */
-  const handleForkNotNow = () => handleTrack('short')
+  const handleForkNotNow = () => {
+    chooseTrack('short')
+    trackOnboarding(TRACK_EVENT.short)
+    openBeat('map')
+  }
 
   /** Share the voiceprint that was just made. Resolves to a line worth
    *  saying afterwards, and only for the one outcome nothing else announces:

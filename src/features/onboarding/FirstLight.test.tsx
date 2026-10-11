@@ -161,6 +161,28 @@ describe('the Fork in the flow', () => {
     expect(tracked()).not.toContain('onboarding_skipped')
     expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
   })
+
+  it('"Not now" on a replayed Fork lands on the Map, not the account ask, and keeps the voiceprint', async () => {
+    // Arrange: the review's path. A voiceprint made earlier this session
+    // is still in memory, the account ask is still due, and the intro is
+    // replayed from Settings. The Map is where every "Not now" goes (V9);
+    // the voiceprint is never dropped (V13).
+    recordVoiceprint(VOICEPRINT)
+    render(() => <FirstLight replay />)
+    openBeat('fork')
+    await waitFor(() => expect(beat('fork')).not.toBeNull())
+    const [notNow] = railExits()
+
+    // Act
+    fireEvent.click(notNow)
+
+    // Assert
+    await waitFor(() => expect(beat('map')).not.toBeNull())
+    expect(currentBeat()).toBe('map')
+    expect(beat('keep')).toBeNull()
+    expect(voiceprint()).toEqual(VOICEPRINT)
+    expect(tracked()).toContain('onboarding_track_short')
+  })
 })
 
 describe('the pictures fetched ahead of the Fork', () => {
