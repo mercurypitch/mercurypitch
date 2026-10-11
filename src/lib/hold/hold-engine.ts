@@ -21,9 +21,16 @@
 //   may be the end of the note, and the release must not read as a break, so
 //   a silent gap counts as a break when the voice comes back (200-450 ms),
 //   while a voiced excursion out of the band breaks live at 200 ms.
+//
+// A preset may carry a stretch rule (the Long note lantern's): past the
+// goal, a second fill grows only with steady singing, judged by the same
+// steadiness the result scores (hold-steadiness.ts) over the last
+// seconds of the voice. Without one the engine stops at the goal.
 
 import { CONF_MIN, hzToCents } from '@/lib/mirror/metrics'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import type { PitchPoint } from './hold-steadiness'
+import { liveSteadiness } from './hold-steadiness'
 
 /** `glassBreak` (the onboarding glass beat) joins this union in S7b. */
 export type HoldMode = 'exercise'
@@ -44,12 +51,28 @@ export interface ExerciseHoldPreset {
   centreTauSec: number
   /** Readings are clamped to +-this before smoothing. */
   centreClampCents: number
+  /** After the goal, steady singing fills a second time; absent, nothing. */
+  stretch?: StretchRule
+}
+
+/**
+ * Past the goal, the top fills only with steady singing: on the line (in
+ * the band) while the last `windowSeconds` of the voice score at least
+ * `steadyScore` on the result's own steadiness (liveSteadiness), checked
+ * every `checkSeconds`. `seconds` of it fill the top. Like the goal's fill,
+ * it never drains.
+ */
+export interface StretchRule {
+  seconds: number
+  windowSeconds: number
+  steadyScore: number
+  checkSeconds: number
 }
 
 /** Open for `GlassBreakHoldPreset` when the onboarding beat lands. */
 export type HoldPreset = ExerciseHoldPreset
 
-export type HoldPresetId = 'exercise'
+export type HoldPresetId = 'exercise' | 'lantern'
 
 /** Every feel knob of the hold, one line each. */
 export const HOLD_PRESETS: Record<HoldPresetId, HoldPreset> = {
@@ -62,6 +85,25 @@ export const HOLD_PRESETS: Record<HoldPresetId, HoldPreset> = {
     goalSeconds: 12,
     centreTauSec: 0.1,
     centreClampCents: 100,
+  },
+  // The Long note lantern: the goal fills it halfway, steady singing the
+  // rest. A practised singer is steady nearly all the time and reaches the
+  // brim about 12 s after the goal; a wobbly one fills part of it.
+  lantern: {
+    mode: 'exercise',
+    tolCents: 30,
+    lockMs: 250,
+    breakMs: 200,
+    endMs: 450,
+    goalSeconds: 12,
+    centreTauSec: 0.1,
+    centreClampCents: 100,
+    stretch: {
+      seconds: 12,
+      windowSeconds: 2,
+      steadyScore: 90,
+      checkSeconds: 0.15,
+    },
   },
 }
 
@@ -76,7 +118,14 @@ export type HoldPhase =
   /** The note is over; further ticks change nothing. */
   | 'ended'
 
-export type HoldEventType = 'lock' | 'break' | 'relock' | 'goal' | 'end'
+export type HoldEventType =
+  | 'lock'
+  | 'break'
+  | 'relock'
+  | 'goal'
+  /** The stretch's top is full (a stretch rule only). */
+  | 'brim'
+  | 'end'
 
 export interface HoldState {
   phase: HoldPhase
@@ -110,6 +159,20 @@ export interface HoldState {
   lastVoicedAt: number | null
   /** The last voiced moment of a note that has ended. */
   noteEndedAt: number | null
+  /**
+   * The voice's last readings (clamped cents) that the live steadiness
+   * reads, `windowSeconds` of them; empty without a stretch rule.
+   */
+  recent: readonly PitchPoint[]
+  /** The last steadiness check found the voice steady. */
+  steady: boolean
+  /** When it last checked, clock seconds; null before the first lock. */
+  steadyCheckedAt: number | null
+  /** Seconds on the line and steady since the goal. */
+  steadySeconds: number
+  /** The top's fill past the goal, 0..1: steadySeconds / stretch seconds. */
+  topCharge: number
+  brimReached: boolean
   /** What happened on this tick, in order. Empty on most ticks. */
   events: HoldEventType[]
 }
@@ -147,6 +210,12 @@ export function createHoldState(): HoldState {
     lastInBandAt: null,
     lastVoicedAt: null,
     noteEndedAt: null,
+    recent: [],
+    steady: false,
+    steadyCheckedAt: null,
+    steadySeconds: 0,
+    topCharge: 0,
+    brimReached: false,
     events: [],
   }
 }
@@ -161,9 +230,87 @@ export function tickHold(
   }
   const dt = Number.isFinite(tick.dt) && tick.dt > 0 ? tick.dt : 0
   const offCents = tick.offCents
-  return offCents === null || !Number.isFinite(offCents)
-    ? tickUnvoiced(state, dt, preset)
-    : tickVoiced(state, offCents, dt, preset)
+  const voiced = offCents !== null && Number.isFinite(offCents)
+  const next = voiced
+    ? tickVoiced(state, offCents, dt, preset)
+    : tickUnvoiced(state, dt, preset)
+  if (preset.stretch === undefined) return next
+  const clamp = preset.centreClampCents
+  const reading = voiced ? Math.max(-clamp, Math.min(clamp, offCents)) : null
+  return tickStretch(state, next, reading, dt, preset.stretch)
+}
+
+/** The window's readings, the oldest past `windowSeconds` let go. */
+function withReading(
+  recent: readonly PitchPoint[],
+  t: number,
+  cents: number,
+  windowSeconds: number,
+): PitchPoint[] {
+  let first = 0
+  while (first < recent.length && recent[first].t < t - windowSeconds - EPS) {
+    first++
+  }
+  const kept = recent.slice(first)
+  kept.push({ t, cents })
+  return kept
+}
+
+/**
+ * The steadiness verdict after this tick: checked on a voiced tick once
+ * the note has been found, every `checkSeconds`, over a window at least
+ * half full; otherwise the last verdict stands.
+ */
+function checkSteady(
+  state: HoldState,
+  next: HoldState,
+  voiced: boolean,
+  recent: readonly PitchPoint[],
+  rule: StretchRule,
+): Pick<HoldState, 'steady' | 'steadyCheckedAt'> {
+  const last = state.steadyCheckedAt
+  const due =
+    voiced &&
+    next.firstLockAt !== null &&
+    (last === null || next.clock - last >= rule.checkSeconds - EPS)
+  if (!due) return { steady: state.steady, steadyCheckedAt: last }
+  const span = recent[recent.length - 1].t - recent[0].t
+  const score =
+    span >= rule.windowSeconds / 2 - EPS ? liveSteadiness(recent) : null
+  return {
+    steady: score !== null && score >= rule.steadyScore,
+    steadyCheckedAt: next.clock,
+  }
+}
+
+/** The stretch past the goal: steady seconds on the line fill the top. */
+function tickStretch(
+  state: HoldState,
+  next: HoldState,
+  reading: number | null,
+  dt: number,
+  rule: StretchRule,
+): HoldState {
+  const recent =
+    reading === null
+      ? state.recent
+      : withReading(state.recent, next.clock, reading, rule.windowSeconds)
+  const verdict = checkSteady(state, next, reading !== null, recent, rule)
+  const counts = state.goalReached && next.inBand && verdict.steady
+  const steadySeconds = state.steadySeconds + (counts ? dt : 0)
+  const brimReached = state.brimReached || steadySeconds >= rule.seconds - EPS
+  return {
+    ...next,
+    recent,
+    ...verdict,
+    steadySeconds,
+    topCharge: Math.min(1, steadySeconds / rule.seconds),
+    brimReached,
+    events:
+      brimReached && !state.brimReached
+        ? [...next.events, 'brim']
+        : next.events,
+  }
 }
 
 /** A tick with no voice: a gap in the note, or its end once long enough. */
@@ -319,6 +466,12 @@ function tickVoiced(
     lastInBandAt: draft.lastInBandAt,
     lastVoicedAt: clock,
     noteEndedAt: null,
+    recent: state.recent,
+    steady: state.steady,
+    steadyCheckedAt: state.steadyCheckedAt,
+    steadySeconds: state.steadySeconds,
+    topCharge: state.topCharge,
+    brimReached: state.brimReached,
     events: draft.events,
   }
 }

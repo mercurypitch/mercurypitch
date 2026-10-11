@@ -7,8 +7,12 @@
 // 1 - exp(-dt / 0.1) (worked by hand in the comment next to each case).
 
 import { describe, expect, it } from 'vitest'
+import { silence } from '@/lib/glass/test-frames'
 import type { HoldEventType, HoldPreset, HoldState } from './hold-engine'
-import { createHoldState, HOLD_PRESETS, tickHold } from './hold-engine'
+import { createHoldState, HOLD_PRESETS, runHold, tickHold } from './hold-engine'
+import { computeHoldResult } from './hold-metrics'
+import type { TakeShape } from './test-takes'
+import { realisticTake, takeCents } from './test-takes'
 
 const DT = 1 / 60
 const EXERCISE = HOLD_PRESETS.exercise
@@ -324,5 +328,175 @@ describe('tickHold, exercise preset', () => {
       [15, 'lock'],
       [120, 'goal'],
     ])
+  })
+})
+
+// ── The stretch: past the goal, only steady singing fills the top ──
+
+const LANTERN = HOLD_PRESETS.lantern
+
+/** A take's readings (cents off the note), one a tick, then a release. */
+const sung = (shape: TakeShape): Array<number | null> => [
+  ...takeCents(shape),
+  ...constant(40, null),
+]
+
+/** The share of in-band ticks past the goal the engine judged steady. */
+function steadyShare(readings: ReadonlyArray<number | null>): number {
+  let state = createHoldState()
+  let inBand = 0
+  let steady = 0
+  for (const offCents of readings) {
+    const before = state
+    state = tickHold(state, { offCents, level: 0.6, dt: DT }, LANTERN)
+    if (!before.goalReached || !state.inBand) continue
+    inBand += 1
+    if (state.steady) steady += 1
+  }
+  return inBand === 0 ? 0 : steady / inBand
+}
+
+const PRACTISED: TakeShape = {
+  seconds: 26,
+  wanderCents: 4,
+  wanderSeconds: 0.4,
+  jitterCents: 3,
+}
+
+describe('tickHold, the lantern preset past the goal', () => {
+  it('leaves a preset without a stretch rule as it was', () => {
+    const run = play(sung({ ...PRACTISED, seed: 11 }))
+    expect(run.events.map(([, event]) => event)).toEqual([
+      'lock',
+      'goal',
+      'end',
+    ])
+    expect(run.state).toMatchObject({
+      recent: [],
+      steady: false,
+      steadyCheckedAt: null,
+      steadySeconds: 0,
+      topCharge: 0,
+      brimReached: false,
+    })
+  })
+
+  it('fills the top with 12 steady seconds, a practised vibrato included', () => {
+    for (const shape of [
+      { ...PRACTISED, seed: 11 },
+      { ...PRACTISED, vibratoHz: 5.5, vibratoCents: 35, seed: 12 },
+      { ...PRACTISED, vibratoHz: 6, vibratoCents: 60, seed: 13 },
+    ]) {
+      // Act
+      const run = play(sung(shape), createHoldState(), LANTERN)
+
+      // Assert: the brim once, about 12 s after the goal, and no sooner.
+      const at = (event: HoldEventType): number =>
+        run.events.find(([, e]) => e === event)?.[0] ?? Number.NaN
+      expect(run.events.map(([, event]) => event)).toEqual([
+        'lock',
+        'goal',
+        'brim',
+        'end',
+      ])
+      const stretch = (at('brim') - at('goal')) * DT
+      expect(stretch).toBeGreaterThanOrEqual(12 - 1e-6)
+      expect(stretch).toBeLessThan(12.6)
+      expect(run.state.topCharge).toBe(1)
+    }
+  })
+
+  it('fills the top only partway for a voice that wobbles on the line', () => {
+    // On the line all along (the goal comes at 12 s), but wobbling.
+    const run = play(
+      sung({ seconds: 26, wanderCents: 15, wanderSeconds: 0.2, seed: 18 }),
+      createHoldState(),
+      LANTERN,
+    )
+    expect(run.state.goalReached).toBe(true)
+    expect(run.state.brimReached).toBe(false)
+    expect(run.state.topCharge).toBeGreaterThan(0.1)
+    expect(run.state.topCharge).toBeLessThan(0.9)
+  })
+
+  it('never drains the top: off the line and silent, it waits', () => {
+    // Arrange: steady to 18 s, a stretch sharp, a breath, steady again.
+    const readings = [
+      ...takeCents({ ...PRACTISED, seconds: 18, seed: 4 }),
+      ...constant(120, 70),
+      ...constant(15, null),
+      ...takeCents({ ...PRACTISED, seconds: 4, seed: 5 }),
+    ]
+
+    // Act
+    let state = createHoldState()
+    const tops: number[] = []
+    for (const offCents of readings) {
+      state = tickHold(state, { offCents, level: 0.6, dt: DT }, LANTERN)
+      tops.push(state.topCharge)
+    }
+
+    // Assert: it rose, held while off the line, and rose again.
+    for (let i = 1; i < tops.length; i++) {
+      expect(tops[i]).toBeGreaterThanOrEqual(tops[i - 1])
+    }
+    expect(tops[18 * 60 - 1]).toBeGreaterThan(0.3)
+    // (The centre takes a few ticks to leave the band.)
+    expect(tops[18 * 60 + 130]).toBe(tops[18 * 60 + 20])
+    expect(tops[tops.length - 1]).toBeGreaterThan(tops[18 * 60 + 130])
+  })
+
+  it("judges steady by the result's own steadiness score", () => {
+    // Takes the result scores high are steady past the goal nearly all of
+    // the time; takes it scores low nearly never; the middle in between.
+    const takes: TakeShape[] = [
+      { ...PRACTISED, vibratoHz: 5.5, vibratoCents: 35, seed: 21 },
+      { ...PRACTISED, seed: 22 },
+      {
+        seconds: 26,
+        wanderCents: 12,
+        wanderSeconds: 0.3,
+        jitterCents: 4,
+        seed: 24,
+      },
+      {
+        seconds: 26,
+        wanderCents: 15,
+        wanderSeconds: 0.2,
+        jitterCents: 4,
+        seed: 18,
+      },
+      {
+        seconds: 26,
+        wanderCents: 22,
+        wanderSeconds: 0.2,
+        jitterCents: 5,
+        seed: 19,
+      },
+    ]
+    const rows = takes.map((shape) => {
+      const frames = [
+        ...realisticTake(57, shape),
+        ...silence(0.6, shape.seconds),
+      ]
+      const score = computeHoldResult({
+        frames,
+        state: runHold(frames, 57, LANTERN),
+        targetMidi: 57,
+        durationMs: 1,
+      }).score
+      return { score, share: steadyShare(sung(shape)) }
+    })
+    for (const { score, share } of rows) {
+      if (score >= 93) expect(share).toBeGreaterThan(0.95)
+      if (score <= 70) expect(share).toBeLessThan(0.3)
+    }
+    // Steadier by the score, steadier live: the same order.
+    const byScore = [...rows].sort((a, b) => a.score - b.score)
+    for (let i = 1; i < byScore.length; i++) {
+      expect(byScore[i].share).toBeGreaterThanOrEqual(byScore[i - 1].share)
+    }
+    expect(byScore[0].score).toBeLessThanOrEqual(70)
+    expect(byScore[byScore.length - 1].score).toBeGreaterThanOrEqual(93)
   })
 })

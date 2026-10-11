@@ -31,6 +31,11 @@ export type HoldRunMetrics = {
    *  an instant lock. */
   timeToLockMs?: number
   breaks: number
+  /**
+   * How much of the lantern's top the steady singing past the goal filled,
+   * 0..1 (the lantern preset's stretch); 0 without one, or before the goal.
+   */
+  topFill: number
   targetMidi: number
   durationMs: number
 }
@@ -85,6 +90,7 @@ export function computeHoldResult(input: {
         : 0,
     longestLockSeconds: roundSeconds(state.longestLockSeconds),
     breaks: state.breaks,
+    topFill: Math.round(state.topCharge * 1000) / 1000,
     targetMidi,
     durationMs,
   }

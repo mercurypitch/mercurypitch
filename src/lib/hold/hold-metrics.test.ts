@@ -9,8 +9,10 @@ import { describe, expect, it } from 'vitest'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
 import { computeSteadiness } from '@/lib/mirror/metrics'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { runHold } from './hold-engine'
+import { HOLD_PRESETS, runHold } from './hold-engine'
 import { computeHoldResult } from './hold-metrics'
+import type { TakeShape } from './test-takes'
+import { realisticTake } from './test-takes'
 
 const TARGET = 57
 
@@ -57,6 +59,7 @@ describe('computeHoldResult', () => {
       longestLockSeconds: 4.983,
       timeToLockMs: 0,
       breaks: 0,
+      topFill: 0,
       targetMidi: 57,
       durationMs: 6200,
     })
@@ -185,6 +188,7 @@ describe('computeHoldResult', () => {
       holdSeconds: 0,
       longestLockSeconds: 0,
       breaks: 0,
+      topFill: 0,
       targetMidi: 57,
       durationMs: 2500,
     })
@@ -199,5 +203,26 @@ describe('computeHoldResult', () => {
 
     // Assert
     expect(Object.values(metrics).every(Number.isFinite)).toBe(true)
+  })
+  it("keeps how much of the lantern's top the steady stretch filled", () => {
+    const take = (shape: TakeShape): PitchFrame[] => {
+      const frames = realisticTake(TARGET, shape)
+      return [...frames, ...silence(0.6, shape.seconds)]
+    }
+    const fill = (frames: PitchFrame[], preset = HOLD_PRESETS.lantern) =>
+      computeHoldResult({
+        frames,
+        state: runHold(frames, TARGET, preset),
+        targetMidi: TARGET,
+        durationMs: 1,
+      }).metrics.topFill
+    const steady = take({ seconds: 26, wanderCents: 4, jitterCents: 3 })
+    const wobbly = take({ seconds: 26, wanderCents: 15, wanderSeconds: 0.2 })
+
+    expect(fill(steady)).toBe(1)
+    expect(fill(wobbly)).toBeGreaterThan(0)
+    expect(fill(wobbly)).toBeLessThan(1)
+    // No stretch rule, no top: the old preset's runs read 0.
+    expect(fill(steady, HOLD_PRESETS.exercise)).toBe(0)
   })
 })
