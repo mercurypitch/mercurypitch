@@ -26,7 +26,7 @@ mechanism. §3 says why.
 
 It promises nothing about how often. The first wording capped it at once a
 month; the owner dropped that on 2026-10-11, because nobody can say yet how
-much there will be to send.
+much there will be to send. Every wording so far is in §11.
 
 Unticked is not a style choice. Consent under GDPR has to be an affirmative
 act, so a pre-ticked box is not consent at all and would make the whole list
@@ -254,3 +254,23 @@ is a client — it posts copy and prints what came back.
 
 The privacy-notice line on the landing is the one piece still outstanding; it
 lives in the `disjoint-colliders` repo, not here.
+
+## 11. Consent wording history
+
+The `users` row keeps whether someone said yes (`newsletterOptIn`), when
+(`newsletterOptInAt`, `newsletterOptOutAt`) and where (`newsletterSource`),
+not the words they agreed to. This table is that record: read an opt-in's
+`newsletterOptInAt` and `newsletterSource` (`signup` or `settings`) against
+the dates below. Add a row before any wording change ships.
+
+| In use                                                                                       | Where             | Wording, verbatim                                                                                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| From v0.9.10 (tagged 2026-09-19, commit `acca007a3`, #824) until the release that ships #979 | Sign-up form      | "Send me product updates. Big new features and milestones only, never more than once a month, and you can stop any time."                                                                                                                            |
+| From v0.9.10 (tagged 2026-09-19, commit `acca007a3`, #824) until the release that ships #979 | Settings, Account | Box: "Send me product updates". Under it: "Off by default. Big new features and milestones only, never more than once a month, and never your practice data. Every email has an unsubscribe link, and turning this off here stops them immediately." |
+| From the release that ships PR #979                                                          | Sign-up form      | "Email me product updates. Unsubscribe anytime."                                                                                                                                                                                                     |
+| From the release that ships PR #979                                                          | Settings, Account | Box: "Email me product updates". Under it: "Off by default, and never your practice data. Unsubscribe anytime: every email has a link, and turning this off here stops them immediately."                                                            |
+
+The 2026-10-11 change drops the once-a-month cap (the owner's decision) and
+the "big new features and milestones only" scope with it, so the box is one
+sentence on a phone. Opt-ins recorded before that release agreed to the first
+wording.
