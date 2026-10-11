@@ -1624,6 +1624,8 @@ describe('LongNoteRoom', () => {
     }
   })
 
+  // Two 26 s takes through the rendered room, frame by frame: about 1 s here
+  // and 1.9 s on a CI runner, so this case gets 10 s (TESTING.md 3.7).
   it('fills the top past the goal only with steady singing, as the engine counts it', async () => {
     for (const [shape, brims] of [
       [PRACTISED, true],
@@ -1655,7 +1657,7 @@ describe('LongNoteRoom', () => {
       }
       cleanup()
     }
-  })
+  }, 10_000)
 
   it('shows the real fill at the result: halfway at the goal, half the halo', async () => {
     vi.useFakeTimers({ toFake: ['performance'] })
@@ -1746,6 +1748,8 @@ describe('LongNoteRoom', () => {
     ).toBe(true)
   })
 
+  // Two 26 s takes through the rendered room, as above: 1.7 s on a CI
+  // runner, so this case gets 10 s too.
   it('says the goal is halfway and the top takes steady singing, then whether it fills', async () => {
     for (const shape of [PRACTISED, WOBBLY]) {
       render(() => <LongNoteRoom onDone={() => undefined} />)
@@ -1773,5 +1777,5 @@ describe('LongNoteRoom', () => {
       )
       cleanup()
     }
-  })
+  }, 10_000)
 })
