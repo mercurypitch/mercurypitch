@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { LongNoteMoment } from './merc-lines'
-import { createMercLineSelector, fillNote, MERC_LINES } from './merc-lines'
+import { createMercLineSelector, fillNote, MERC_LINES, offMoment, } from './merc-lines'
+
+const texts = (moment: LongNoteMoment): string[] =>
+  MERC_LINES[moment].map((line) => line.text)
 
 describe('merc-lines', () => {
   it('fills the target note into every placeholder', () => {
@@ -49,5 +52,43 @@ describe('merc-lines', () => {
       lines.map((line) => line.id),
     )
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('says what the voice is doing and which way to move, in plain words', () => {
+    for (const text of texts('driftSharp')) {
+      expect(text).toMatch(/sharp/i)
+      expect(text).toMatch(/down/i)
+    }
+    for (const text of texts('driftFlat')) {
+      expect(text).toMatch(/flat/i)
+      expect(text).toMatch(/up|lift/i)
+    }
+    for (const text of [...texts('lock'), ...texts('break')]) {
+      expect(text).toContain('{note}')
+    }
+    expect(
+      texts('break').every((text) => text.startsWith('Off the note')),
+    ).toBe(true)
+    expect(texts('steady').every((text) => /steady/i.test(text))).toBe(true)
+  })
+
+  it('keeps Merc warm without the flourish', () => {
+    // Owner, 11 Oct: "That's the one" and "the light loves that" were too
+    // much, and so were the glass, the pouring and the glow.
+    const flourish =
+      /the one|loves|glass|pour|glow|well lit|lovely|keep it coming/i
+    for (const lines of Object.values(MERC_LINES)) {
+      for (const line of lines) expect(line.text).not.toMatch(flourish)
+    }
+  })
+
+  it('calls a voice off the band sharp, flat, or off the note', () => {
+    expect(offMoment(31)).toBe('driftSharp')
+    expect(offMoment(94)).toBe('driftSharp')
+    expect(offMoment(-31)).toBe('driftFlat')
+    expect(offMoment(-94)).toBe('driftFlat')
+    // The engine clamps readings to 100 cents: near it is another note.
+    expect(offMoment(95)).toBe('break')
+    expect(offMoment(-100)).toBe('break')
   })
 })

@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { sequence, silence, tone } from '@/lib/glass/test-frames'
+import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
+import type { HoldState } from '@/lib/hold/hold-engine'
+import { createHoldState, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import styles from './LongNoteRoom.module.css'
 import { recordingContext, ribbonColours } from './trace-test-context'
@@ -122,6 +124,78 @@ function phase(): string | null {
 async function startListening(): Promise<void> {
   fireEvent.click(screen.getByTestId('long-note-mic'))
   await settle()
+}
+
+/** A voiced take on A3 whose offset follows `cents(t)`, from `startT`. */
+function voice(
+  seconds: number,
+  cents: (t: number) => number,
+  startT: number,
+): PitchFrame[] {
+  return Array.from({ length: Math.round(seconds * FPS) }, (_, i) => ({
+    t: startT + i / FPS,
+    f0: midiToF0(57 + cents(startT + i / FPS) / 100),
+    conf: 0.9,
+    rms: 0.6,
+  }))
+}
+
+/** The chip after a frame, beside the engine's own state on that frame. */
+interface Heard {
+  chip: string | null
+  state: HoldState
+}
+
+/**
+ * Hand the room one frame per animation frame, as a phone delivers them,
+ * and replay the same frames through the engine alongside: the trace is
+ * amber exactly where `state.inBand` is false.
+ */
+function hear(frames: readonly PitchFrame[]): Heard[] {
+  let state = createHoldState()
+  let previous: PitchFrame | null = null
+  return frames.map((frame) => {
+    fake.frames.push(frame)
+    flushFrames()
+    state = tickHold(state, holdTickFromFrame(frame, previous, 57))
+    previous = frame
+    return {
+      chip: screen.queryByTestId('long-note-chip')?.textContent ?? null,
+      state,
+    }
+  })
+}
+
+/** Each change of the chip's words, with the frame it happened on. */
+function changes(heard: readonly Heard[]): Heard[] {
+  return heard.filter(
+    (now, i) => now.chip !== null && now.chip !== heard[i - 1]?.chip,
+  )
+}
+
+const SHARP = /sharp/i
+const FLAT = /flat/i
+const OFF_WORDS = /sharp|flat|off the note/i
+
+/**
+ * The longest stretch, engine seconds, where the chip's words and the
+ * trace's colour disagree: off-note words on a cyan frame, or on-note words
+ * on an amber one. Silent frames have no colour and do not count.
+ */
+function longestDisagreement(heard: readonly Heard[]): number {
+  let worst = 0
+  let since: number | null = null
+  for (const { chip, state } of heard) {
+    const voiced = state.silentSeconds === 0 && state.needleCents !== null
+    const disagree =
+      voiced && chip !== null && OFF_WORDS.test(chip) === state.inBand
+    if (!disagree) since = null
+    else {
+      since ??= state.clock
+      worst = Math.max(worst, state.clock - since)
+    }
+  }
+  return worst
 }
 
 describe('LongNoteRoom', () => {
@@ -532,16 +606,14 @@ describe('LongNoteRoom', () => {
     flushFrames()
     await settle()
     expect(phase()).toBe('hold')
-    expect(screen.getByText(/high|down/i, { selector: 'span' })).toBeTruthy()
+    expect(screen.getByText(/sharp/i, { selector: 'span' })).toBeTruthy()
 
     fake.frames = [...fake.frames, ...silence(0.8, 3)]
     flushFrames()
     await settle()
     expect(phase()).toBe('result')
     // The mic is closed: the line does not ask for more singing now.
-    expect(
-      screen.getByText(/hear it|still waiting/, { selector: 'p' }),
-    ).toBeTruthy()
+    expect(screen.getByText(/hear it/i, { selector: 'p' })).toBeTruthy()
   })
 
   it('stops listening on a second tap and gives the mic back', async () => {
@@ -550,5 +622,91 @@ describe('LongNoteRoom', () => {
     fireEvent.click(screen.getByTestId('long-note-mic'))
     expect(phase()).toBe('intro')
     expect(fake.released).toBe(1)
+  })
+
+  it('names the side the moment the engine stops the light, in one line while it lasts', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // Two seconds on A3, then 50 cents sharp, then 50 cents flat.
+    const heard = hear([
+      ...voice(2, () => 0, 0),
+      ...voice(1.5, () => 50, 2),
+      ...voice(1.5, () => -50, 3.5),
+    ])
+
+    const sharpAt = heard.findIndex((h) => SHARP.test(h.chip ?? ''))
+    const breakAt = heard.findIndex((h) => h.state.events.includes('break'))
+    expect(breakAt).toBeGreaterThan(0)
+    // Said on the engine's break itself: amber, and sharp of the band.
+    expect(sharpAt).toBe(breakAt)
+    expect(heard[sharpAt].state.inBand).toBe(false)
+    expect(heard[sharpAt].state.needleCents ?? 0).toBeGreaterThan(30)
+    // One sharp line for as long as the voice stays sharp.
+    const whileSharp = heard
+      .slice(sharpAt)
+      .filter((h) => h.state.clock < 3.5)
+      .map((h) => h.chip)
+    expect(new Set(whileSharp).size).toBe(1)
+
+    // Across to flat: named once the flat side has held, on an amber frame.
+    const flatAt = heard.findIndex((h) => FLAT.test(h.chip ?? ''))
+    expect(flatAt).toBeGreaterThan(sharpAt)
+    expect(heard[flatAt].state.inBand).toBe(false)
+    expect(heard[flatAt].state.needleCents ?? 0).toBeLessThan(-30)
+    const amberFlat = heard.findIndex(
+      (h) => h.state.clock > 3.5 && !h.state.inBand,
+    )
+    expect(
+      heard[flatAt].state.clock - heard[amberFlat].state.clock,
+    ).toBeLessThan(0.05)
+    expect(longestDisagreement(heard)).toBeLessThanOrEqual(0.7 + 1 / FPS)
+  })
+
+  it('catches up within 0.7 s when the voice leaves the note right after the lock', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // On the note just long enough to lock, then 45 cents flat, then back.
+    const heard = hear([
+      ...voice(0.4, () => 0, 0),
+      ...voice(1.2, () => -45, 0.4),
+      ...voice(2, () => 0, 1.6),
+    ])
+
+    const said = changes(heard).map((h) => h.chip)
+    expect(said).toEqual([
+      expect.stringContaining('A3'),
+      expect.stringMatching(FLAT),
+      expect.stringContaining('A3'),
+    ])
+    expect(longestDisagreement(heard)).toBeLessThanOrEqual(0.7 + 1 / FPS)
+  })
+
+  it('never flickers, and never says one thing while the line shows another', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // On the note, then six seconds hovering at the band's sharp edge: the
+    // engine breaks and locks again about every half second.
+    const heard = hear([
+      ...voice(1.5, () => 0, 0),
+      ...voice(6, (t) => 32 + 16 * Math.sin(2 * Math.PI * 1.2 * t), 1.5),
+    ])
+    const breaks = heard.filter((h) => h.state.events.includes('break'))
+    expect(breaks.length).toBeGreaterThan(4)
+
+    const said = changes(heard)
+    // On the note once, then a little sharp, and it stays said.
+    expect(said.map((h) => h.chip)).toEqual([
+      expect.stringContaining('A3'),
+      expect.stringMatching(SHARP),
+    ])
+    for (const h of said) {
+      // Words and colour agree on the frame the words change.
+      expect(h.state.inBand).toBe(!OFF_WORDS.test(h.chip ?? ''))
+    }
+    // In between, the colour flickers at the edge; the words wait it out.
+    expect(longestDisagreement(heard)).toBeLessThanOrEqual(0.7 + 1 / FPS)
   })
 })

@@ -6,9 +6,11 @@
 // Every moment has a few variants, and the selector never says the same
 // line twice in a row for a moment. `{note}` becomes the target ("A3").
 //
-// The voice follows Merc's character profile: short, warm, about the sound
-// and never about the singer. No "wrong", "failed" or "bad"; a drift is a
-// direction to move in, and a break is the light waiting.
+// Owner, 11 Oct 2026: plain words, one register. Each line says what the
+// voice is doing (on the note, a little sharp, flat, steady, off the note)
+// and what to do about it (come down a touch, lift a little). Merc stays
+// warm but never decorates: no glass, glow or pouring light. No "wrong",
+// "failed" or "bad" either; the lines are about the sound, never the singer.
 
 export type LongNoteMoment =
   | 'intro'
@@ -39,13 +41,10 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
   {
     intro: [
       { id: 'intro-breathe', text: 'Breathe in, then hold {note}.' },
+      { id: 'intro-easy', text: 'Hold {note} for as long as it feels easy.' },
       {
-        id: 'intro-easy',
-        text: 'One easy {note}. Hold it as long as it feels good.',
-      },
-      {
-        id: 'intro-fill',
-        text: 'Fill the lantern for me? {note}, nice and long.',
+        id: 'intro-fills',
+        text: 'Hold {note}. The light fills while you stay on it.',
       },
     ],
     // No note yet: the singer picks one by singing it.
@@ -58,56 +57,59 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
     ],
     listen: [
       { id: 'listen-ready', text: "Whenever you're ready. I'm listening." },
-      { id: 'listen-breath', text: 'Take a breath first. The note will wait.' },
+      { id: 'listen-breathe', text: 'Take a breath, then sing {note}.' },
     ],
+    // On the note: the first lock, and every lock after a break.
     lock: [
-      { id: 'lock-there', text: 'There it is. Right in the middle.' },
-      { id: 'lock-pour', text: 'Locked on. Let it pour in.' },
-      { id: 'lock-one', text: "That's the one. Keep it coming." },
+      { id: 'lock-hold', text: 'On {note}. Hold it there.' },
+      { id: 'lock-right', text: 'Right on {note}.' },
     ],
     // The singer's own note, named as Merc catches it.
     found: [
       { id: 'found-hold', text: 'Got it: {note}. Now hold it.' },
-      { id: 'found-yours', text: '{note} it is. Keep it coming.' },
+      { id: 'found-there', text: '{note} it is. Hold it there.' },
     ],
     steady: [
-      { id: 'steady-glass', text: 'Steady as glass.' },
-      { id: 'steady-light', text: 'Smooth. The light loves that.' },
-      { id: 'steady-just', text: 'Just like that.' },
+      { id: 'steady-keep', text: 'Steady. Keep it there.' },
+      { id: 'steady-nice', text: 'Nice and steady.' },
     ],
     driftSharp: [
-      { id: 'sharp-settle', text: 'A hair high. Let it settle.' },
-      { id: 'sharp-ease', text: 'Ease down a little.' },
+      { id: 'sharp-touch', text: 'A little sharp. Come down a touch.' },
+      { id: 'sharp-ease', text: 'Sharp. Ease down.' },
     ],
     driftFlat: [
-      { id: 'flat-float', text: 'Float up a touch.' },
-      { id: 'flat-lift', text: 'Just under it. Lift a little.' },
+      { id: 'flat-touch', text: 'A little flat. Come up a touch.' },
+      { id: 'flat-lift', text: 'Flat. Lift a little.' },
     ],
-    break: [
-      { id: 'break-waits', text: 'Find {note} again. The light waits.' },
-      { id: 'break-slide', text: 'No rush. Slide back to {note}.' },
-    ],
+    // A semitone or more away, or back from a gap off the note.
+    break: [{ id: 'break-off', text: 'Off the note. Find {note} again.' }],
     full: [
-      { id: 'full-more', text: "Full! Keep going if you've got more." },
-      { id: 'full-glow', text: "The lantern's full. Look at that glow." },
+      { id: 'full-twelve', text: '12 seconds. The lantern is full.' },
+      { id: 'full-more', text: 'Full. Keep going if you have more.' },
     ],
     newBest: [
       { id: 'best-note', text: 'New best on {note}!' },
       { id: 'best-longest', text: "That's your longest {note} yet." },
     ],
     result: [
-      { id: 'result-long', text: 'Lovely and long.' },
       { id: 'result-again', text: 'Nice hold. Another?' },
+      {
+        id: 'result-twelve',
+        text: 'Nice hold. 12 seconds on the note fills the lantern.',
+      },
     ],
     // The lantern reached the goal.
     resultFull: [
-      { id: 'result-lit', text: "That's a lantern well lit." },
-      { id: 'result-top', text: 'Full to the top. Lovely.' },
+      { id: 'result-full', text: 'Full. That was 12 seconds on {note}.' },
+      { id: 'result-held', text: 'You held {note} long enough to fill it.' },
     ],
     // The take ended without ever finding the note; the mic is closed.
     missed: [
       { id: 'missed-hear', text: 'Tap {note} to hear it, then go again.' },
-      { id: 'missed-wait', text: 'The light is still waiting for {note}.' },
+      {
+        id: 'missed-never',
+        text: 'Never quite on {note}. Hear it, then go again.',
+      },
     ],
     again: [
       { id: 'again-fresh', text: 'Same note, fresh breath.' },
@@ -116,6 +118,22 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
     sleep: [{ id: 'sleep-wake', text: 'Sing {note} to wake me.' }],
     sleepAny: [{ id: 'sleep-any', text: 'Sing any note to wake me.' }],
   }
+
+/** A centre this far off the note is on another one: off, not sharp. */
+const OFF_NOTE_CENTS = 95
+
+/**
+ * The line for a voice off the band, by the hold engine's smoothed centre
+ * (the same one the trace turns amber on): which way it is off, or off the
+ * note altogether when it sits a semitone or more away. The engine clamps
+ * readings to 100 cents, so a centre near that is another note.
+ */
+export function offMoment(
+  needleCents: number,
+): 'driftSharp' | 'driftFlat' | 'break' {
+  if (Math.abs(needleCents) >= OFF_NOTE_CENTS) return 'break'
+  return needleCents > 0 ? 'driftSharp' : 'driftFlat'
+}
 
 export interface MercLineSelector {
   /** The next line for a moment, with `{note}` filled in. */
