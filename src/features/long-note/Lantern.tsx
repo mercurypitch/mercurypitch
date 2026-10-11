@@ -22,7 +22,7 @@
 //          violet band, and the light the liquid throws up the empty glass
 //   front  the veil over Merc's feet and the surface's front lip, the glass
 //          plate above the surface, the frame plate with the lit frame fading
-//          in over it from below, the full lantern's sparkles
+//          in over it from below, the full lantern's sparkles and dust
 //
 // The room draws the target line and the voice (VoiceTrace.tsx): in the glass
 // behind Merc, over the frame in front.
@@ -103,24 +103,55 @@ const STARS: Plate = {
  */
 const LIGHT_REACH = 150
 
+/**
+ * How far the liquid's light rises in the empty glass above it, in view
+ * units: storyboard 2 lights the glass well above a half-full surface.
+ */
+const ABOVE_REACH = 110
+
 // The sparkles round the full lantern, in view-box units: place, size (1 is
-// 14 units across) and when each twinkles. Storyboard 3's, measured off the
+// a star 14 units across in a glow of 20), when each twinkles and its glow,
+// blue-violet or, for three of them, azure. Storyboard 3's, measured off the
 // painting and mirrored, since Merc lands on the other side here.
 const SPARKLES = [
-  { x: 6, y: 65, s: 1, d: 0 },
-  { x: -12, y: 156, s: 1, d: 1.1 },
-  { x: 194, y: 107, s: 1, d: 0.5 },
-  { x: 166, y: 33, s: 0.9, d: 1.6 },
-  { x: 205, y: 146, s: 0.9, d: 0.8 },
-  { x: 3, y: 130, s: 0.75, d: 2 },
-  { x: 190, y: 170, s: 0.65, d: 0.3 },
-  { x: -1, y: 206, s: 0.4, d: 1.3 },
-  { x: 17, y: 96, s: 0.4, d: 0.9 },
-  { x: 180, y: 133, s: 0.4, d: 1.8 },
-  { x: 20, y: 152, s: 0.4, d: 0.2 },
-  { x: 8, y: 174, s: 0.35, d: 1.5 },
-  { x: 34, y: 58, s: 0.3, d: 0.6 },
-  { x: 14, y: 120, s: 0.25, d: 2.2 },
+  { x: 6, y: 65, s: 1, d: 0, azure: false },
+  { x: -12, y: 156, s: 1, d: 1.1, azure: false },
+  { x: 194, y: 107, s: 1, d: 0.5, azure: false },
+  { x: 166, y: 33, s: 0.9, d: 1.6, azure: true },
+  { x: 205, y: 146, s: 0.9, d: 0.8, azure: true },
+  { x: 3, y: 130, s: 0.75, d: 2, azure: true },
+  { x: 190, y: 170, s: 0.65, d: 0.3, azure: false },
+  { x: -1, y: 206, s: 0.4, d: 1.3, azure: false },
+  { x: 17, y: 96, s: 0.4, d: 0.9, azure: false },
+  { x: 180, y: 133, s: 0.4, d: 1.8, azure: false },
+  { x: 20, y: 152, s: 0.4, d: 0.2, azure: false },
+  { x: 8, y: 174, s: 0.35, d: 1.5, azure: false },
+  { x: 34, y: 58, s: 0.3, d: 0.6, azure: false },
+  { x: 14, y: 120, s: 0.25, d: 2.2, azure: false },
+]
+
+/**
+ * A sparkle's spikes in a 24-unit box: two thin lenses through the core, the
+ * upright one reaching 1.6 times as far as the box's edge and the side one
+ * 1.25 times, as storyboard 3's do. The core itself is the bloom's.
+ */
+const STAR = 'M0 -19 Q2.4 0 0 19 Q-2.4 0 0 -19 Z M-15 0 Q0 2 15 0 Q0 -2 -15 0 Z'
+
+// Storyboard 3's fine dust between the sparkles, found the same way: dots of
+// one or two units, most of them blue, two of them white.
+const DUST = [
+  { x: 32, y: 23, s: 1, d: 0.4, white: false },
+  { x: 28, y: 47, s: 0.7, d: 1.9, white: false },
+  { x: 181, y: 60, s: 1, d: 1.2, white: false },
+  { x: 169, y: 64, s: 0.8, d: 0.1, white: false },
+  { x: 195, y: 68, s: 1, d: 2.1, white: false },
+  { x: 29, y: 74, s: 1.2, d: 0.7, white: true },
+  { x: 174, y: 77, s: 1.2, d: 1.6, white: true },
+  { x: 174, y: 96, s: 0.7, d: 0.9, white: false },
+  { x: -8, y: 104, s: 1, d: 1.4, white: false },
+  { x: 173, y: 106, s: 0.7, d: 2.3, white: false },
+  { x: 183, y: 153, s: 0.7, d: 0.5, white: false },
+  { x: 6, y: 190, s: 0.9, d: 1.7, white: false },
 ]
 
 const pct = (part: number, whole: number): string => `${(part / whole) * 100}%`
@@ -132,6 +163,13 @@ const smoothstep = (a: number, b: number, x: number): number => {
 
 /** The deep blue (and the stars over it) give way to the painting as it fills. */
 const depthShown = (level: number): number => 1 - smoothstep(0.7, 1, level)
+
+/**
+ * The haze round the glass: there from the first light (storyboard 2 has it
+ * half full), stronger as it fills.
+ */
+const haloShown = (level: number): number =>
+  smoothstep(0, 0.05, level) * (0.7 + 0.3 * level)
 
 /** The surface's band and lip fade at the very bottom and under the cap. */
 const surfaceShown = (level: number): number =>
@@ -206,11 +244,11 @@ export function LanternBack(props: LanternProps): JSX.Element {
     <div class={styles.layer} data-testid="lantern-back">
       <div
         class={styles.floor}
-        style={{ opacity: 0.7 + 0.3 * props.level() * brightness() }}
+        style={{ opacity: 0.75 + 0.25 * props.level() * brightness() }}
       />
       <div
         class={styles.haloSoft}
-        style={{ opacity: props.level() * brightness() }}
+        style={{ opacity: haloShown(props.level()) * brightness() }}
       />
       <div
         class={styles.halo}
@@ -234,20 +272,16 @@ export function LanternBack(props: LanternProps): JSX.Element {
               liquid's own box, so it holds at any height, and gone once the
               lantern is full (screen 3 is the painting as it is). */}
           <linearGradient id={`${id}-depth`} x1="0" y1="0" x2="0" y2="1">
-            <stop
-              offset="0"
-              stop-color="rgb(84, 76, 226)"
-              stop-opacity="0.58"
-            />
+            <stop offset="0" stop-color="rgb(64, 44, 206)" stop-opacity="0.8" />
             <stop
               offset="0.37"
-              stop-color="rgb(22, 33, 161)"
+              stop-color="rgb(44, 60, 196)"
               stop-opacity="0.66"
             />
             <stop
               offset="0.51"
-              stop-color="rgb(9, 62, 164)"
-              stop-opacity="0.51"
+              stop-color="rgb(30, 90, 190)"
+              stop-opacity="0.48"
             />
             <stop
               offset="0.65"
@@ -257,22 +291,50 @@ export function LanternBack(props: LanternProps): JSX.Element {
             <stop
               offset="0.79"
               stop-color="rgb(11, 179, 219)"
-              stop-opacity="0.6"
+              stop-opacity="0.62"
             />
             <stop
               offset="0.9"
-              stop-color="rgb(61, 231, 241)"
-              stop-opacity="0.55"
+              stop-color="rgb(70, 236, 238)"
+              stop-opacity="0.72"
             />
             <stop
               offset="1"
-              stop-color="rgb(120, 245, 250)"
-              stop-opacity="0.75"
+              stop-color="rgb(140, 250, 244)"
+              stop-opacity="0.9"
             />
           </linearGradient>
+          {/* Light gathered at the glass walls, half way down: storyboard 2
+              is lighter by the walls than in the middle there. */}
+          <radialGradient id={`${id}-wall-l`} cx="0.1" cy="0.55" r="0.6">
+            <stop
+              offset="0"
+              stop-color="rgb(150, 230, 255)"
+              stop-opacity="0.55"
+            />
+            <stop
+              offset="0.5"
+              stop-color="rgb(150, 230, 255)"
+              stop-opacity="0.28"
+            />
+            <stop offset="1" stop-color="rgb(150, 230, 255)" stop-opacity="0" />
+          </radialGradient>
+          <radialGradient id={`${id}-wall-r`} cx="0.9" cy="0.55" r="0.6">
+            <stop
+              offset="0"
+              stop-color="rgb(150, 230, 255)"
+              stop-opacity="0.55"
+            />
+            <stop
+              offset="0.5"
+              stop-color="rgb(150, 230, 255)"
+              stop-opacity="0.28"
+            />
+            <stop offset="1" stop-color="rgb(150, 230, 255)" stop-opacity="0" />
+          </radialGradient>
           {/* The light it throws up the empty glass above it. */}
           <linearGradient id={`${id}-above`} x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#a68cff" stop-opacity="0.3" />
+            <stop offset="0" stop-color="#a68cff" stop-opacity="0.75" />
             <stop offset="1" stop-color="#7f9cff" stop-opacity="0" />
           </linearGradient>
           {/* The surface, seen a little from above. */}
@@ -288,9 +350,9 @@ export function LanternBack(props: LanternProps): JSX.Element {
         >
           <rect
             x="40"
-            y={top() - 46}
+            y={top() - ABOVE_REACH}
             width="120"
-            height="46"
+            height={ABOVE_REACH}
             fill={`url(#${id}-above)`}
           />
           <rect
@@ -301,6 +363,18 @@ export function LanternBack(props: LanternProps): JSX.Element {
             fill={`url(#${id}-depth)`}
             opacity={depthShown(props.level())}
           />
+          <For each={['l', 'r'] as const}>
+            {(side) => (
+              <rect
+                x={side === 'l' ? 40 : 100}
+                y={top()}
+                width="60"
+                height={Math.max(1, CHIMNEY_BOTTOM - top())}
+                fill={`url(#${id}-wall-${side})`}
+                opacity={depthShown(props.level())}
+              />
+            )}
+          </For>
           <ellipse
             cx="100"
             cy={top()}
@@ -331,7 +405,7 @@ function surfaceTilt(y: number): number {
   return 0.07 + 0.07 * Math.min(1, Math.max(0, down))
 }
 
-/** The layer in front of Merc: veil, glass, frame, line and sparkles. */
+/** The layer in front of Merc: veil, glass, frame, sparkles and dust. */
 export function LanternFront(props: LanternProps): JSX.Element {
   const id = `lantern-front-${nextId++}`
   const top = (): number => surfaceY(props.level())
@@ -356,6 +430,14 @@ export function LanternFront(props: LanternProps): JSX.Element {
             <stop offset="0" stop-color="#a98cff" stop-opacity="0.5" />
             <stop offset="1" stop-color="#5f8cff" stop-opacity="0" />
           </linearGradient>
+          {/* A sparkle's spikes, white at the core and fading to their tips
+              (on each star's own box, so it reaches every tip). */}
+          <radialGradient id={`${id}-spike`} cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="1" />
+            <stop offset="0.3" stop-color="#eee8ff" stop-opacity="0.9" />
+            <stop offset="0.65" stop-color="#c4b6ff" stop-opacity="0.45" />
+            <stop offset="1" stop-color="#a898ff" stop-opacity="0" />
+          </radialGradient>
         </defs>
         <g
           clip-path={`url(#${id}-chimney)`}
@@ -409,18 +491,32 @@ export function LanternFront(props: LanternProps): JSX.Element {
           {(spark) => (
             <span
               class={styles.sparkle}
+              data-glow={spark.azure ? 'azure' : 'violet'}
               style={{
                 left: pct(spark.x, LANTERN_VIEW_W),
                 top: pct(spark.y, LANTERN_VIEW_H),
                 '--spark': spark.s,
-                'animation-delay': `${spark.d}s`,
+                '--delay': `${spark.d}s`,
               }}
             >
               <svg viewBox="-12 -12 24 24" aria-hidden="true">
-                <circle r="8" class={styles.sparkleGlow} />
-                <path d="M0 -12 C0.8 -2.4 2.4 -0.8 12 0 C2.4 0.8 0.8 2.4 0 12 C-0.8 2.4 -2.4 0.8 -12 0 C-2.4 -0.8 -0.8 -2.4 0 -12 Z" />
+                <path d={STAR} fill={`url(#${id}-spike)`} />
               </svg>
             </span>
+          )}
+        </For>
+        <For each={DUST}>
+          {(mote) => (
+            <span
+              class={styles.dust}
+              data-white={mote.white ? '' : undefined}
+              style={{
+                left: pct(mote.x, LANTERN_VIEW_W),
+                top: pct(mote.y, LANTERN_VIEW_H),
+                '--dust': mote.s,
+                'animation-delay': `${mote.d}s`,
+              }}
+            />
           )}
         </For>
       </Show>
