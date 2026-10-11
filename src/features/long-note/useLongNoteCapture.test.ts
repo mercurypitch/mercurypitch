@@ -131,4 +131,24 @@ describe('useLongNoteCapture', () => {
     await expect(capture.acquire()).rejects.toMatchObject({ failure: 'denied' })
     dispose()
   })
+
+  it("hands out the running clock for the room's own sound", async () => {
+    const { capture, dispose } = mount()
+    await expect(capture.audio()).resolves.toBe(context)
+    // Sound needs no microphone.
+    expect(mic.acquire).not.toHaveBeenCalled()
+    dispose()
+    await expect(capture.audio()).resolves.toBeNull()
+  })
+
+  it('hands out no clock that will not start', async () => {
+    device.lease = {
+      ensure: () => context,
+      unlock: () => Promise.resolve(false),
+      release: () => undefined,
+    }
+    const { capture, dispose } = mount()
+    await expect(capture.audio()).resolves.toBeNull()
+    dispose()
+  })
 })

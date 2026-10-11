@@ -133,4 +133,54 @@ describe('long-note-machine', () => {
       expect(longNoteReducer(intro, event)).toBe(intro)
     }
   })
+
+  it('lets the demo walk the room without the microphone', () => {
+    const phases = (
+      [
+        { type: 'demo', phase: 'intro' },
+        { type: 'demo', phase: 'listen' },
+        { type: 'demo', phase: 'hold' },
+        { type: 'end' },
+        { type: 'demo', phase: 'intro' },
+      ] as LongNoteEvent[]
+    ).reduce<LongNoteState[]>(
+      (seen, event) => [...seen, longNoteReducer(seen[seen.length - 1], event)],
+      [initialLongNoteState(57)],
+    )
+    expect(phases.map((s) => s.phase)).toEqual([
+      'intro',
+      'intro',
+      'listen',
+      'hold',
+      'result',
+      'intro',
+    ])
+    expect(phases[phases.length - 1].targetMidi).toBe(57)
+  })
+
+  it('keeps the demo out of a microphone prompt and a blocked room', () => {
+    const starting = run([{ type: 'start' }])
+    expect(longNoteReducer(starting, { type: 'demo', phase: 'listen' })).toBe(
+      starting,
+    )
+    const blocked = run([
+      { type: 'start' },
+      { type: 'mic-failed', run: 1, block: 'denied' },
+    ])
+    expect(longNoteReducer(blocked, { type: 'demo', phase: 'intro' })).toBe(
+      blocked,
+    )
+  })
+
+  it('keeps the room without a note while the demo sings', () => {
+    const state = run(
+      [
+        { type: 'demo', phase: 'listen' },
+        { type: 'demo', phase: 'hold' },
+      ],
+      initialLongNoteState(null),
+    )
+    expect(state.phase).toBe('hold')
+    expect(state.targetMidi).toBeNull()
+  })
 })

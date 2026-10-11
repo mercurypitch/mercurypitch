@@ -14,6 +14,11 @@
 // `targetMidi` is null when there is no note yet: no voiceprint and nothing
 // held before. The singer then sings any easy note, and the first one they
 // settle on (`settle`) becomes the note to hold.
+//
+// `demo` moves the room for the "how it works" demo (demo/), which sings
+// its takes through the room with no microphone: it never applies while a
+// microphone answer is pending or the room is blocked, and it bumps `run` so
+// no answer can land in it.
 
 export type LongNotePhase =
   | 'intro'
@@ -24,6 +29,9 @@ export type LongNotePhase =
   | 'blocked'
 
 export type LongNoteBlock = 'denied' | 'unavailable'
+
+/** The phases the demo puts the room in; its result comes from `end`. */
+export type LongNoteDemoPhase = 'intro' | 'listen' | 'hold'
 
 export interface LongNoteState {
   readonly phase: LongNotePhase
@@ -48,6 +56,7 @@ export type LongNoteEvent =
   | { readonly type: 'cancel' }
   | { readonly type: 'again' }
   | { readonly type: 'change-note' }
+  | { readonly type: 'demo'; readonly phase: LongNoteDemoPhase }
 
 export function initialLongNoteState(targetMidi: number | null): LongNoteState {
   return { phase: 'intro', targetMidi, run: 0, block: null }
@@ -99,6 +108,10 @@ const HANDLERS: { [T in LongNoteEvent['type']]: Handler<T> } = {
       : state,
   'change-note': (state) =>
     state.phase === 'result' ? { ...state, phase: 'intro' } : state,
+  demo: (state, event) =>
+    state.phase === 'starting' || state.phase === 'blocked'
+      ? state
+      : { ...state, phase: event.phase, run: state.run + 1 },
 }
 
 export function longNoteReducer(

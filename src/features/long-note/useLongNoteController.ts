@@ -17,10 +17,12 @@
 // they settle on (settle-note.ts) becomes the note, remembered for next
 // time. The microphone is open only while the room listens: it closes at
 // the result, and Again opens it again.
+//
+// The "how it works" demo sings its takes through this same room, by
+// `script` (scripted-take.ts): frames in place of the mic, nothing kept.
 
 import type { Accessor } from 'solid-js'
 import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
-import { EXERCISE_LONG_NOTE_LANTERN } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
 import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
@@ -32,16 +34,16 @@ import type { MercVoice } from '@/lib/merc/sim'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { HOLD_FILL_MAX } from './lantern-geometry'
-import { recordLongNoteBest } from './long-note-best'
 import type { LongNoteEvent, LongNoteState } from './long-note-machine'
 import { initialLongNoteState, longNoteReducer } from './long-note-machine'
+import { isFalseStart, keepRun, resultMoment } from './long-note-run'
 import type { LongNoteMoment } from './merc-lines'
 import { createMercLineSelector } from './merc-lines'
-import { rememberedLongNote, rememberLongNote } from './remembered-note'
+import { rememberedLongNote } from './remembered-note'
+import type { LongNoteScript, ScriptedTake } from './scripted-take'
 import { settleLiveNote } from './settle-note'
 import { CaptureError, useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
@@ -90,10 +92,9 @@ export interface LongNoteController {
   changeNote: () => void
   nudge: (step: 1 | -1) => void
   hearNote: () => void
+  script: LongNoteScript
 }
 
-/** A take that never found the note and lasted less is not a run. */
-const FALSE_START_SECONDS = 1.5
 /** The longest hold the room times; past it, the note is called ended. */
 const MAX_HOLD_SECONDS = 90
 /** Merc dozes off when nobody sings for this long. */
@@ -106,18 +107,6 @@ const DRIFT_SECONDS = 0.45
 const FIND_SECONDS = 0.9
 /** Locked this long before Merc says it is steady. */
 const STEADY_SECONDS = 3
-
-/** What Merc says over the result. */
-function resultMoment(
-  improved: boolean,
-  full: boolean,
-  locked: boolean,
-): LongNoteMoment {
-  if (improved) return 'newBest'
-  if (full) return 'resultFull'
-  // The mic is closed by now: never a line that asks for more singing.
-  return locked ? 'result' : 'missed'
-}
 
 /** RMS to Merc's 0..1 loudness: -50 dBFS is silent, -10 dBFS is full. */
 export function levelFromRms(rms: number): number {
@@ -151,10 +140,15 @@ export function useLongNoteController(): LongNoteController {
   const [mercPlace, setMercPlace] = createSignal<MercPlace>('beside')
   const [lanternLevel, setLanternLevel] = createSignal(0)
   const [shining, setShining] = createSignal(false)
+  // The demo: on, the note it sings, and the take it is singing.
+  const [scriptActive, setScriptActive] = createSignal(false)
+  const [scriptNote, setScriptNote] = createSignal<number | null>(null)
+  let scripted: ScriptedTake | null = null
+  const demoOn = (): boolean => untrack(scriptActive)
 
   const trace = new VoiceTraceBuffer()
   const noteName = (): string => {
-    const target = state().targetMidi
+    const target = scriptNote() ?? state().targetMidi
     return target === null ? '' : midiToNoteNameOctave(target)
   }
 
@@ -223,6 +217,11 @@ export function useLongNoteController(): LongNoteController {
       if (mercChange === hop) setMercState(then)
     })
   }
+  /** A hop, or straight there for a demo take under reduced motion. */
+  const move = (place: MercPlace, then: MercState): void => {
+    if (scripted?.still === true) mercFor(then, place)
+    else hopTo(place, then)
+  }
 
   // ── The take ───────────────────────────────────────────────
   let engine = createHoldState()
@@ -241,8 +240,12 @@ export function useLongNoteController(): LongNoteController {
 
   /** Where the clock stopped: the trace keeps the take it drew. */
   let closedAt = 0
-  const now = (): number =>
-    windowOpen ? (performance.now() - windowStartedAt) / 1000 : closedAt
+  const now = (): number => {
+    if (!windowOpen) return closedAt
+    return scripted === null
+      ? (performance.now() - windowStartedAt) / 1000
+      : scripted.now()
+  }
 
   const setChipLine = (moment: LongNoteMoment, force: boolean): void => {
     const t = engine.clock
@@ -252,7 +255,7 @@ export function useLongNoteController(): LongNoteController {
   }
 
   const openWindow = (): void => {
-    capture.startWindow()
+    if (scripted === null) capture.startWindow()
     windowStartedAt = performance.now()
     engine = createHoldState()
     processed = 0
@@ -276,14 +279,19 @@ export function useLongNoteController(): LongNoteController {
     closedAt = now()
     windowOpen = false
     setExerciseFocus(false)
-    return capture.takeFrames()
+    return scripted === null ? capture.takeFrames() : [...scripted.frames()]
+  }
+
+  /** Haptics answer a singer; the demo has none. */
+  const feel = (kind: 'tapLight' | 'success'): void => {
+    if (scripted === null) haptics[kind]()
   }
 
   const onEvents = (events: readonly HoldEventType[]): void => {
     for (const event of events) {
       switch (event) {
         case 'lock':
-          haptics.tapLight()
+          feel('tapLight')
           setMercState('lock')
           later(900, () => {
             if (untrack(mercState) === 'lock') setMercState('sing')
@@ -300,13 +308,14 @@ export function useLongNoteController(): LongNoteController {
           setChipLine('break', true)
           break
         case 'goal':
-          haptics.success()
+          feel('success')
           setShining(true)
           setChipLine('full', true)
           break
         case 'end':
           break
       }
+      scripted?.onEvent(event)
     }
   }
 
@@ -331,10 +340,17 @@ export function useLongNoteController(): LongNoteController {
   }
 
   const finish = (): void => {
+    const take = scripted
     // A hold always has its note; the guard is for the type.
-    const target = untrack(state).targetMidi
+    const target = take?.targetMidi ?? untrack(state).targetMidi
     if (target === null) return
     const frames = closeWindow()
+    if (take !== null && !take.toResult) {
+      // The demo's first take only shows how a note ends: no result.
+      setChip(null)
+      move('beside', take.after)
+      return
+    }
     const durationMs = Math.round(performance.now() - windowStartedAt)
     const result = computeHoldResult({
       frames,
@@ -342,34 +358,20 @@ export function useLongNoteController(): LongNoteController {
       targetMidi: target,
       durationMs,
     })
-    const voicedSeconds =
-      engine.firstVoicedAt === null || engine.lastVoicedAt === null
-        ? 0
-        : engine.lastVoicedAt - engine.firstVoicedAt
 
-    if (!result.locked && voicedSeconds < FALSE_START_SECONDS) {
+    if (take === null && isFalseStart(engine, result)) {
       dispatch({ type: 'false-start' })
       hopTo('beside', 'listen')
       openWindow()
       return
     }
 
-    // A result: nothing listens again until the singer asks.
-    capture.release()
+    // A result: nothing listens again until the singer asks. Only a
+    // singer's run is kept; the demo's never.
     let improved = false
-    if (result.locked) {
-      recordExerciseResult({
-        type: EXERCISE_LONG_NOTE_LANTERN,
-        score: result.score,
-        metrics: result.metrics,
-        completedAt: Date.now(),
-      })
-      improved = recordLongNoteBest(target, {
-        inBandSeconds: result.metrics.inBandSeconds,
-        steadiness: result.score,
-        at: Date.now(),
-      }).improved
-      rememberLongNote(target)
+    if (take === null) {
+      capture.release()
+      improved = keepRun(target, result)
     }
     const full = engine.goalReached
     batch(() => {
@@ -383,12 +385,25 @@ export function useLongNoteController(): LongNoteController {
       setChip(null)
       dispatch({ type: 'end' })
     })
-    say(resultMoment(improved, full, result.locked))
-    hopTo('beside', full || improved ? 'celebrate' : 'idle')
+    // The demo's result keeps Merc's bubble clear for its own tooltip.
+    if (take === null) say(resultMoment(improved, full, result.locked))
+    move('beside', full || improved ? 'celebrate' : 'idle')
     // Merc is out of the glass: the light may fill the chimney now, from
     // where it stood while he floated on it.
     setLanternLevel(engine.charge * HOLD_FILL_MAX)
     easeLevel(engine.charge, 800)
+  }
+
+  /** The take's first voice: the hold begins, Merc steps into the glass. */
+  const enterHold = (): void => {
+    if (scripted === null) {
+      dispatch({ type: 'voice' })
+      setExerciseFocus(true)
+    } else {
+      dispatch({ type: 'demo', phase: 'hold' })
+    }
+    setLine('')
+    move('inside', 'sing')
   }
 
   /** The take against its note: the engine, Merc, the chip, the end. */
@@ -427,10 +442,7 @@ export function useLongNoteController(): LongNoteController {
     setHold(engine)
 
     if (phase === 'listen' && engine.phase !== 'waiting') {
-      dispatch({ type: 'voice' })
-      setExerciseFocus(true)
-      setLine('')
-      hopTo('inside', 'sing')
+      enterHold()
     } else if (phase === 'listen' && !asleep && now() > SLEEP_AFTER_SECONDS) {
       asleep = true
       setMercState('sleep')
@@ -486,9 +498,13 @@ export function useLongNoteController(): LongNoteController {
     if (!alive) return
     const { phase, targetMidi } = untrack(state)
     if (windowOpen && (phase === 'listen' || phase === 'hold')) {
-      const frames = capture.peekFrames()
-      if (targetMidi === null) findNote(frames)
-      else follow(frames, targetMidi)
+      if (scripted !== null) {
+        follow(scripted.frames(), scripted.targetMidi)
+      } else {
+        const frames = capture.peekFrames()
+        if (targetMidi === null) findNote(frames)
+        else follow(frames, targetMidi)
+      }
     }
     // A false start inside this tick may already have scheduled the next.
     if (alive && windowOpen && loop === 0) loop = requestAnimationFrame(tick)
@@ -540,13 +556,13 @@ export function useLongNoteController(): LongNoteController {
 
   const start = (): void => {
     const phase = untrack(state).phase
-    if (phase !== 'intro' && phase !== 'blocked') return
+    if ((phase !== 'intro' && phase !== 'blocked') || demoOn()) return
     dispatch({ type: 'start' })
     openMic(untrack(state).targetMidi === null ? 'introAny' : 'listen')
   }
 
   const cancel = (): void => {
-    if (untrack(state).phase !== 'listen') return
+    if (untrack(state).phase !== 'listen' || demoOn()) return
     if (windowOpen) closeWindow()
     // Back in the intro nothing listens, so the mic goes back too.
     capture.release()
@@ -560,12 +576,14 @@ export function useLongNoteController(): LongNoteController {
    * take still waiting for a note goes back to the intro.
    */
   function stopListening(): void {
+    // The demo's takes listen to nothing; the demo stops itself.
+    if (demoOn()) return
     if (untrack(state).phase === 'hold' && windowOpen) finish()
     if (untrack(state).phase === 'listen') cancel()
   }
 
   const again = (): void => {
-    if (untrack(state).phase !== 'result') return
+    if (untrack(state).phase !== 'result' || demoOn()) return
     dispatch({ type: 'again' })
     batch(() => {
       setSummary(null)
@@ -579,7 +597,7 @@ export function useLongNoteController(): LongNoteController {
   }
 
   const changeNote = (): void => {
-    if (untrack(state).phase !== 'result') return
+    if (untrack(state).phase !== 'result' || demoOn()) return
     dispatch({ type: 'change-note' })
     batch(() => {
       setSummary(null)
@@ -591,7 +609,7 @@ export function useLongNoteController(): LongNoteController {
   }
 
   const nudge = (step: 1 | -1): void => {
-    if (untrack(state).phase !== 'intro') return
+    if (untrack(state).phase !== 'intro' || demoOn()) return
     const midi = nudgeTarget(untrack(state).targetMidi ?? picked.midi, step)
     dispatch({ type: 'target', midi })
     say('intro')
@@ -602,6 +620,7 @@ export function useLongNoteController(): LongNoteController {
     const { phase, targetMidi } = untrack(state)
     // Never while the take is open: the mic would hear the tone.
     if (phase === 'listen' || phase === 'hold' || phase === 'starting') return
+    if (demoOn()) return
     if (targetMidi !== null) void capture.playTone(targetMidi)
   }
 
@@ -626,10 +645,90 @@ export function useLongNoteController(): LongNoteController {
     'long-note-lantern',
     () => {
       const phase = untrack(state).phase
-      return phase === 'listen' || phase === 'hold'
+      return !demoOn() && (phase === 'listen' || phase === 'hold')
     },
     stopListening,
   )
+
+  // ── The demo's way in ──────────────────────────────────────
+  /** What the lantern shows right now, to ease on from. */
+  const shownLevel = (): number =>
+    untrack(state).phase === 'hold'
+      ? engine.charge * HOLD_FILL_MAX
+      : untrack(lanternLevel)
+
+  /** No take, no result, an empty trace: the light where it stands. */
+  const clearForScript = (): void => {
+    if (windowOpen) closeWindow()
+    const from = shownLevel()
+    scripted = null
+    engine = createHoldState()
+    closedAt = 0
+    trace.clear()
+    batch(() => {
+      setLanternLevel(from)
+      setHold(engine)
+      setSummary(null)
+      setShining(false)
+      setChip(null)
+    })
+  }
+
+  const script: LongNoteScript = {
+    active: scriptActive,
+    audio: () => capture.audio(),
+    note: () => untrack(state).targetMidi ?? picked.midi,
+    enter: (text) => {
+      const phase = untrack(state).phase
+      if (!demoOn() && phase !== 'intro' && phase !== 'result') return false
+      clearForScript()
+      batch(() => {
+        setScriptActive(true)
+        setScriptNote(script.note())
+        setLine(text)
+        dispatch({ type: 'demo', phase: 'intro' })
+      })
+      easeLevel(0, 450)
+      mercFor('idle', 'beside')
+      return true
+    },
+    play: (take) => {
+      if (!demoOn()) return
+      if (windowOpen) closeWindow()
+      scripted = take
+      batch(() => {
+        setSummary(null)
+        setShining(false)
+        dispatch({ type: 'demo', phase: 'listen' })
+      })
+      mercFor('listen', 'beside')
+      openWindow()
+    },
+    rest: () => {
+      if (!demoOn()) return
+      clearForScript()
+      dispatch({ type: 'demo', phase: 'listen' })
+      easeLevel(0, 600)
+    },
+    mood: (next) => {
+      if (demoOn()) setMercState(next)
+    },
+    leave: () => {
+      if (!demoOn()) return
+      const inside = untrack(mercPlace) === 'inside'
+      const still = scripted?.still === true
+      clearForScript()
+      batch(() => {
+        setScriptActive(false)
+        setScriptNote(null)
+        dispatch({ type: 'demo', phase: 'intro' })
+      })
+      easeLevel(0, 450)
+      sayIntro()
+      if (inside && !still) hopTo('beside', 'idle')
+      else mercFor('idle', 'beside')
+    },
+  }
 
   onCleanup(() => {
     alive = false
@@ -672,5 +771,6 @@ export function useLongNoteController(): LongNoteController {
     changeNote,
     nudge,
     hearNote,
+    script,
   }
 }

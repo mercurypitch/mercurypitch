@@ -47,6 +47,11 @@ export interface LongNoteCapture {
   takeFrames: () => PitchFrame[]
   /** Play the target note; resolves after its release tail. */
   playTone: (midi: number, seconds?: number) => Promise<void>
+  /**
+   * The audio clock, running, for sound of the room's own (the demo); null
+   * when it will not start. On iOS, call it inside a tap.
+   */
+  audio: () => Promise<AudioContext | null>
 }
 
 function isMicError(value: unknown): value is MicError {
@@ -139,5 +144,6 @@ export function useLongNoteCapture(): LongNoteCapture {
       if (ctx === null) return
       await playReferenceTone(ctx, midi, seconds)
     },
+    audio: () => (disposed ? Promise.resolve(null) : unlock()),
   }
 }
