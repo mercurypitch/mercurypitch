@@ -290,21 +290,22 @@ export function useLongNoteController(): LongNoteController {
   const onEvents = (events: readonly HoldEventType[]): void => {
     for (const event of events) {
       switch (event) {
+        // On the note, Merc keeps the lock's face (his eyes close happily,
+        // as in storyboard 2); off it, he sings after the voice again.
         case 'lock':
           feel('tapLight')
           setMercState('lock')
-          later(900, () => {
-            if (untrack(mercState) === 'lock') setMercState('sing')
-          })
           steadySaidForLock = false
           setChipLine(foundPending ? 'found' : 'lock', true)
           foundPending = false
           break
         case 'relock':
+          setMercState('lock')
           steadySaidForLock = false
           setChipLine('lock', true)
           break
         case 'break':
+          setMercState('sing')
           setChipLine('break', true)
           break
         case 'goal':

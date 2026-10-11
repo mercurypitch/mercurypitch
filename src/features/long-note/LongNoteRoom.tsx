@@ -60,10 +60,11 @@ const GROUND_Y = 370
 /** The width the lantern and Merc beside it need, from the lantern's left. */
 const LAYOUT_W = 372
 /**
- * How far his feet sink into the liquid: a quarter of his height, as in the
- * storyboard, which also keeps his crown under the cap at the fullest hold.
+ * How far his feet sink into the liquid: he stands on its surface, the
+ * bottoms of his feet 5 units under its middle line as in storyboard 2,
+ * and the front lip passes under them.
  */
-const FLOAT_SINK = 19
+const FLOAT_SINK = 3
 /** Where he stands while the liquid is too shallow to float him. */
 const BOWL_FLOOR = CHIMNEY_BOTTOM - 4
 /** The chimney's left edge where the target line crosses it. */

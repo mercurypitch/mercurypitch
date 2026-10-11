@@ -49,7 +49,7 @@ export function chimneyHalfWidth(y: number): number {
  * How full the liquid may get while Merc floats on it. The rest of the
  * chimney is his headroom; the result tops it up once he has hopped out.
  */
-export const HOLD_FILL_MAX = 0.62
+export const HOLD_FILL_MAX = 0.54
 
 /** The middle of the chimney, where the target line crosses it. */
 export const TARGET_LINE_Y = (CHIMNEY_TOP + CHIMNEY_BOTTOM) / 2

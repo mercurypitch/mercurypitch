@@ -383,6 +383,42 @@ describe('LongNoteRoom', () => {
     }
   })
 
+  it('keeps Merc content while the note holds, and singing off it', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      await startListening()
+      const mercState = (): string | null =>
+        screen.getByTestId('long-note-merc').getAttribute('data-merc-state')
+
+      // On the note: the hold locks, and he keeps the lock's closed eyes.
+      fake.frames = tone(57, 1.5)
+      flushFrames()
+      await settle()
+      expect(phase()).toBe('hold')
+      vi.advanceTimersByTime(2000)
+      await settle()
+      expect(mercState()).toBe('lock')
+
+      // Off it, the band breaks: he sings after the voice again.
+      fake.frames = [
+        ...fake.frames,
+        ...tone(57, 1, { startT: 1.5, detuneCents: 60 }),
+      ]
+      flushFrames()
+      await settle()
+      expect(mercState()).toBe('sing')
+
+      // Back on it: content again.
+      fake.frames = [...fake.frames, ...tone(57, 1, { startT: 2.5 })]
+      flushFrames()
+      await settle()
+      expect(mercState()).toBe('lock')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('tells a singer off the note which way to go', async () => {
     target.pick = { midi: 52, source: 'preset' }
     render(() => <LongNoteRoom onDone={() => undefined} />)
