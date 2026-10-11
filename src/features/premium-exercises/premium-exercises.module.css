@@ -204,6 +204,8 @@
   min-width: 0;
 }
 
+/* Tinted with the theme's own text colour, so a card keeps its edge on
+   Light's pale sheet as it does on Dark's (card-contrast.test.ts). */
 .card {
   display: flex;
   align-items: center;
@@ -212,9 +214,9 @@
   min-width: 0;
   min-height: 72px;
   padding: 12px;
-  border: 1px solid rgb(230 237 243 / 8%);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
   border-radius: 14px;
-  background: rgb(230 237 243 / 4%);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -234,7 +236,7 @@
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: rgb(230 237 243 / 8%);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
   color: var(--text-secondary, #a8b3bf);
 }
 
