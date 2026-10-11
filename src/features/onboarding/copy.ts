@@ -54,6 +54,14 @@ export const FIRST_LIGHT_HEARD =
 export const TWIN_NEXT =
   'Next, the Map: a room picked for your voice, from daily practice to Karaoke Night.'
 
+/** The gift's count in words. One credit is one separation, said plainly:
+ *  "up to 1 free song separations" read as a typo (review of PR 977). */
+function giftCount(credits: number): string {
+  return credits === 1
+    ? '1 free song separation'
+    : `up to ${credits} free song separations`
+}
+
 /**
  * The launch gift, named by what it buys. A credit splits one song of up to
  * 12 minutes into voice and band on the Cloud GPU; a longer song or a full
@@ -61,7 +69,8 @@ export const TWIN_NEXT =
  * to". The number is always the server's (promo-store).
  */
 export function giftTitle(credits: number): string {
-  return `Up to ${credits} free song separations`
+  const count = giftCount(credits)
+  return count.charAt(0).toUpperCase() + count.slice(1)
 }
 
 /** Why the gift is worth having: Karaoke Night scores every note sung. */
@@ -70,12 +79,12 @@ export const GIFT_BODY =
 
 /** The Map, for an account whose gift is waiting to be claimed. */
 export function mapGiftWaiting(credits: number): string {
-  return `Your launch gift is waiting: up to ${credits} free song separations.`
+  return `Your launch gift is waiting: ${giftCount(credits)}.`
 }
 
 /** The Map, for a visitor with nothing to keep and no account yet. */
 export function mapGiftJoin(credits: number): string {
-  return `Launch gift: up to ${credits} free song separations with a free account.`
+  return `Launch gift: ${giftCount(credits)} with a free account.`
 }
 
 /** The link after the Map's join line. */
