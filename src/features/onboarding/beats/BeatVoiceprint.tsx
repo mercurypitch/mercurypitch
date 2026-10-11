@@ -20,9 +20,15 @@
 // effect. Without it, a visitor who backs out mid-take leaves a
 // running script that dispatches into a torn-down session — the same
 // generation-guard the Mirror's runFlow uses, and for the same reason.
+//
+// One run, one counter (owner decision V7, 11 Oct 2026). The four steps
+// are counted in one place, the step track at the top, and nowhere else:
+// the briefs between steps used to say "That was 1 of 3" under an eyebrow
+// that said "Step 1 of 4". The first screen says how long the whole run
+// takes, and the five-note match counts its notes as it goes.
 
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import type { LiveVizMode } from '@/features/mirror/LiveViz'
 import { LiveViz } from '@/features/mirror/LiveViz'
 import { TaskDemo } from '@/features/mirror/TaskDemo'
@@ -46,6 +52,25 @@ const REFERENCE_SEC = 1.4
 const MATCH_PREPARE_SEC = 2
 const MATCH_COUNT = 5
 
+/**
+ * The four steps, in the order the script runs them. The step track and
+ * its counter are drawn from this list, so the count cannot drift from
+ * the script again.
+ */
+export const VOICEPRINT_STEPS = [
+  'Glide up',
+  'Glide down',
+  'Hold',
+  'Match',
+] as const
+
+/**
+ * How long the whole run takes, said on its first screen. The timed
+ * stages come to 66 seconds (37 of them singing); the four "I'm ready"
+ * gates are the singer's own pace. The Fork promises the same number.
+ */
+export const VOICEPRINT_TIME = 'about 90 seconds'
+
 type Stage =
   | { kind: 'intro'; demo: DemoKind; title: string; body: string }
   | { kind: 'brief'; title: string; body: string }
@@ -67,6 +92,11 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   })
   const [remaining, setRemaining] = createSignal(0)
   const [step, setStep] = createSignal(1)
+  /** Where the five-note match stands; null outside it. */
+  const [matchNote, setMatchNote] = createSignal<{
+    index: number
+    total: number
+  } | null>(null)
 
   /**
    * The countdown ring sweeps once, across the whole take, rather than
@@ -265,8 +295,9 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     if (!alive()) return
     // A beat of acknowledgement between tasks: without it the flow jumps
     // straight to the next instruction and singers can't tell whether the
-    // take even registered (owner testing).
-    await brief('Got it.', 'That was 1 of 3.', 1)
+    // take even registered (owner testing). It says what comes next, not
+    // a count: the step track at the top is the one counter.
+    await brief('Got it.', 'Next: the same slide, downwards.', 1)
     if (!alive()) return
 
     setStep(2)
@@ -285,7 +316,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       { mode: 'glide' },
     )
     if (!alive()) return
-    await brief('Both directions in.', 'That was 2 of 3.', 1)
+    await brief('Both directions in.', 'Next: hold one note.', 1)
     if (!alive()) return
 
     // ── Task B: hold. ──
@@ -303,6 +334,18 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         Math.round((glideRange.lowMidi + glideRange.highMidi) / 2),
       )
     }
+    // Picked now rather than at step 4, so the brief after the hold can say
+    // whether a match is coming at all. No usable range means both glides
+    // were silent: there is nothing to pitch the targets against, so the
+    // run finishes on what it has rather than firing arbitrary notes at
+    // someone we evidently cannot hear.
+    const targets =
+      glideRange === null
+        ? []
+        : pickMatchTargets(glideRange.lowMidi, glideRange.highMidi).slice(
+            0,
+            MATCH_COUNT,
+          )
     await taskIntro(
       'hold',
       'Hold one note steady',
@@ -315,42 +358,44 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       mode: 'hold',
     })
     if (!alive()) return
-    await brief('Nice and steady.', 'Last one: sing a note back to us.', 1)
+    await brief(
+      'Nice and steady.',
+      targets.length > 0
+        ? 'Last one: match five notes.'
+        : 'That is everything we need.',
+      1,
+    )
     if (!alive()) return
 
     // ── Task C: match five. Reference then record, never together. ──
-    setStep(4)
     setSuggestedMidi(null)
-    const range = glideRange
-    // No usable range means both glides were silent — there is nothing to
-    // pitch the targets against, so finish on what we have rather than
-    // firing arbitrary notes at someone we evidently cannot hear.
-    const targets =
-      range === null ? [] : pickMatchTargets(range.lowMidi, range.highMidi)
-
     const matches: MatchTake[] = []
 
     if (targets.length > 0) {
+      setStep(4)
       // One gate before the series, not one per note: rounds 2-5 keeping
       // their rhythm is what makes it feel like call-and-response rather
       // than five separate exercises.
       await taskIntro(
         'match',
-        'Last one — match five notes',
+        'Match five notes',
         "You'll hear a note, then sing it back. Listen first; we'll tell you when it's your turn.",
       )
       if (!alive()) return
       await brief('Ready…', 'Here comes the first note.', 2)
     }
 
-    for (let i = 0; i < Math.min(MATCH_COUNT, targets.length); i++) {
+    for (let i = 0; i < targets.length; i++) {
       if (!alive()) return
       const target = targets[i]
       const name = midiToNoteNameOctave(Math.round(target))
+      // Counted on screen through all three stages of the note: listen,
+      // your turn, sing.
+      setMatchNote({ index: i, total: targets.length })
 
       setStage({
         kind: 'listen',
-        title: `Listen — note ${i + 1} of ${targets.length}`,
+        title: 'Listen',
         body: `This is ${name}.`,
       })
       const context = session.context()
@@ -364,7 +409,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
 
       const frames = await record(
         `Sing ${name}`,
-        `Note ${i + 1} of ${targets.length}.`,
+        'Match the note you just heard.',
         MATCH_TAKE_SEC,
         { mode: 'match', target },
       )
@@ -373,6 +418,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     }
 
     if (!alive()) return
+    setMatchNote(null)
     session.close()
     session = null
     setStage({ kind: 'done' })
@@ -392,10 +438,62 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
 
   return (
     <div class={styles.beat} data-beat="voiceprint">
-      <p class={styles.eyebrow}>Step {step()} of 4 · mapping your voice</p>
+      {/* The one step counter: a track of four segments and the words
+          under it. The time goes on the first step only, the first
+          thing the singer reads after choosing to start. */}
+      <div class={styles.stepper}>
+        <ol class={styles.stepTrack} aria-hidden="true">
+          <For each={VOICEPRINT_STEPS}>
+            {(_name, index) => (
+              <li
+                class={styles.stepSegment}
+                data-state={
+                  index() + 1 < step()
+                    ? 'done'
+                    : index() + 1 === step()
+                      ? 'current'
+                      : 'ahead'
+                }
+              />
+            )}
+          </For>
+        </ol>
+        <p class={styles.stepCounter} data-step-counter>
+          Step {step()} of {VOICEPRINT_STEPS.length}
+          {step() === 1
+            ? ` · ${VOICEPRINT_TIME}`
+            : ` · ${VOICEPRINT_STEPS[step() - 1]}`}
+        </p>
+      </div>
 
       <Show when={current().kind !== 'done'}>
         <h1 class={styles.headlineSmall}>{titled().title}</h1>
+      </Show>
+
+      <Show when={matchNote()}>
+        {(note) => (
+          <div class={styles.matchProgress} data-match-progress>
+            <span class={styles.matchDots} aria-hidden="true">
+              <For each={Array.from({ length: note().total })}>
+                {(_dot, index) => (
+                  <span
+                    class={styles.matchDot}
+                    data-state={
+                      index() < note().index
+                        ? 'done'
+                        : index() === note().index
+                          ? 'current'
+                          : 'ahead'
+                    }
+                  />
+                )}
+              </For>
+            </span>
+            <span class={styles.matchLabel}>
+              Note {note().index + 1} of {note().total}
+            </span>
+          </div>
+        )}
       </Show>
 
       {/* Animation plus its audible siren/hold cue. Mounted only during

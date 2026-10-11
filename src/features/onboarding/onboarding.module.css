@@ -662,6 +662,87 @@
   max-width: 640px;
 }
 
+/* The voiceprint's one counter: four segments and the words under them.
+   The words are --ob-ink-2, not the eyebrow's --ob-ink-3: they are the
+   only place the run says how far along it is, so they must clear AA. */
+.stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+}
+
+.stepTrack {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepSegment {
+  width: 34px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ob-rule);
+  transition: background-color 0.4s var(--ob-ease);
+}
+
+.stepSegment[data-state='done'] {
+  background: var(--ob-teal);
+}
+
+.stepSegment[data-state='current'] {
+  background: linear-gradient(90deg, var(--ob-blue), var(--ob-violet));
+}
+
+.stepCounter {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ob-ink-2);
+}
+
+/* Where the five-note match stands, through each note's three stages
+   (listen, your turn, sing): the dots fill as the notes are sung. */
+.matchProgress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.matchDots {
+  display: flex;
+  gap: 6px;
+}
+
+.matchDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ob-ink-3);
+}
+
+.matchDot[data-state='done'] {
+  border-color: var(--ob-teal);
+  background: var(--ob-teal);
+}
+
+.matchDot[data-state='current'] {
+  border-color: var(--ob-violet);
+  background: var(--ob-violet);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--ob-violet) 60%, transparent);
+}
+
+.matchLabel {
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ob-ink);
+}
+
 /* Task titles are instructions, not the flow's headline — at display
    size they shout, and they change every few seconds. */
 .headlineSmall {
@@ -1503,6 +1584,11 @@
      read at a glance when motion is off. */
   .recordingTag::before {
     animation: none;
+  }
+
+  /* The step track fills without easing in. */
+  .stepSegment {
+    transition: none;
   }
 }
 
