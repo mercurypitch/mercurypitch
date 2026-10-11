@@ -26,7 +26,7 @@ import { singerForRange } from '@/lib/mirror/singer-match'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { startPageTour } from '@/stores/app-store'
 import { claimGiftNow, giftWaiting, rememberGiftOffered, } from '@/stores/launch-gift-store'
-import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
+import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, openBeat, onboardingProgress, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import { dismissNudge, shouldShowNudge } from './account-nudge'
@@ -331,6 +331,19 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     leave()
   }
 
+  /**
+   * "Not now" on First light, the voiceprint, the twin and the prints: the
+   * Map, as the Fork's does (owner decision V9, 11 Oct 2026), rather than
+   * out of the flow onto an app the visitor has not been shown. Nothing is
+   * measured on the way: a voiceprint run in progress is dropped with its
+   * beat. The event stays `onboarding_skipped`, so the skip rate reads
+   * straight across the change; the Map then counts its own arrival.
+   */
+  const handleNotNow = () => {
+    trackOnboarding('onboarding_skipped')
+    openBeat('map')
+  }
+
   /** The beats that are mostly words: the sky recedes behind them, so its
    *  lines do not run through the copy. */
   const textHeavy = (): boolean =>
@@ -572,9 +585,9 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             it declines the account and moves on to the Map, at full
             contrast: declining is an answer to the question on screen. On
             the Fork it is the old "Take me in" card, so it lands on the
-            Map without a voiceprint. On the other beats it leaves the
-            flow, as Skip did. The Map is the last beat; its rooms are the
-            way out. */}
+            Map without a voiceprint. On the other beats it lands on the
+            Map too (V9). The Map is the last beat; its rooms are the way
+            out. */}
         <Switch>
           <Match when={currentBeat() === 'sky'}>
             <button
@@ -611,7 +624,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             <button
               type="button"
               class={styles.railNotNow}
-              onClick={handleSkip}
+              onClick={handleNotNow}
             >
               Not now
             </button>

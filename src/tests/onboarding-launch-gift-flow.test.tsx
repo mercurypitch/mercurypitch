@@ -254,6 +254,31 @@ describe('First Light and the launch gift', () => {
     )
     expect(mocks.openAuthModal).toHaveBeenCalledWith('register')
   })
+
+  it('leaves the twin by "Not now" for a Map that offers to keep the voiceprint, with the gift', async () => {
+    // Owner decision V9: the twin's "Not now" lands on the Map, past the
+    // Keep beat. The voiceprint was saved on this device the moment it
+    // was made, so the Map's way back to the account offer carries it,
+    // and the gift rides on that line rather than on a second one.
+    render(() => <FirstLight />)
+    recordVoiceprint(VOICEPRINT)
+    openBeat('twin')
+    await waitFor(() => expect(beat('twin')).not.toBeNull())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
+
+    await waitFor(() => expect(beat('map')).not.toBeNull())
+    expect(beat('keep')).toBeNull()
+    expect(beat('map')).toHaveTextContent(
+      'Your voiceprint is saved in this browser only.',
+    )
+    expect(
+      screen.getByRole('button', { name: 'Save it and get 5 free credits' }),
+    ).toBeTruthy()
+    expect(beat('map')).not.toHaveTextContent('Launch gift:')
+    expect(mocks.trackOnboarding).toHaveBeenCalledWith('onboarding_skipped')
+    expect(mocks.trackOnboarding).not.toHaveBeenCalledWith('onboarding_keep')
+  })
 })
 
 describe('the welcome beat', () => {

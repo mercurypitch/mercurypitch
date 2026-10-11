@@ -69,7 +69,7 @@ vi.mock('@/stores/launch-gift-store', () => ({
   claimGiftNow: async () => {},
 }))
 
-import { currentBeat, openBeat, recordVoiceprint, resetOnboarding, savedVoiceprints, track, voiceprint, } from '@/stores/onboarding-store'
+import { currentBeat, flowOpen, openBeat, recordVoiceprint, resetOnboarding, savedVoiceprints, track, voiceprint, } from '@/stores/onboarding-store'
 import { FirstLight } from './FirstLight'
 import type { Beat } from './flow'
 import { plateSrc } from './plates'
@@ -239,6 +239,51 @@ describe('one way out on every beat', () => {
       expect(inside.filter((label) => EXIT_INSIDE.test(label))).toEqual([])
     },
   )
+})
+
+describe('"Not now" lands on the Map (owner decision V9)', () => {
+  it.each<Beat>(['first-light', 'voiceprint', 'prints', 'twin'])(
+    'takes the %s beat to the Map, counted as a skip, with the flow still open',
+    async (name) => {
+      // Arrange
+      if (name === 'twin') recordVoiceprint(VOICEPRINT)
+      if (name === 'prints') {
+        localStorage.setItem(
+          'mercurypitch.voiceprints.v1',
+          JSON.stringify([SAVED_PRINT]),
+        )
+        render(() => <FirstLight />)
+        await waitFor(() => expect(savedVoiceprints()).toHaveLength(1))
+        cleanup()
+      }
+      await at(name)
+      const [notNow] = railExits()
+      expect(notNow).toHaveTextContent('Not now')
+
+      // Act
+      fireEvent.click(notNow)
+
+      // Assert
+      await waitFor(() => expect(currentBeat()).toBe('map'))
+      expect(flowOpen()).toBe(true)
+      expect(beat('map')).not.toBeNull()
+      expect(tracked()).toContain('onboarding_skipped')
+      expect(tracked()).not.toContain('onboarding_track_short')
+      expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
+    },
+  )
+
+  it('makes no voiceprint on the way: leaving the voiceprint mid-run lands with none', async () => {
+    // Arrange
+    await at('voiceprint')
+
+    // Act
+    fireEvent.click(railExits()[0])
+
+    // Assert
+    await waitFor(() => expect(currentBeat()).toBe('map'))
+    expect(voiceprint()).toBeNull()
+  })
 })
 
 describe('focus on a beat change', () => {
