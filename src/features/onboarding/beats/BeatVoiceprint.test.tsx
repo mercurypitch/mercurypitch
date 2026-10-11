@@ -281,10 +281,10 @@ describe('the voiceprint counter', () => {
       'Step 3 of 4 · Hold',
     ])
     const brief = run.screens.find((t) =>
-      t.includes("We couldn't hear your slides"),
+      t.includes("Merc couldn't hear your slides"),
     )
     expect(brief).toContain(
-      "The five notes are pitched from your range, so we'll skip them this time.",
+      'The five notes are pitched from your range, so this run skips them.',
     )
     expect(brief).toContain('Step 4 of 4 · Match skipped')
     expect(run.screens.some((t) => t.includes('everything we need'))).toBe(
@@ -313,6 +313,17 @@ describe('the voiceprint counter', () => {
       run.screens.some((t) => t.includes('Last one: match five notes.')),
     ).toBe(true)
     expect(run.screens.some((t) => t.includes('skipped'))).toBe(false)
+  })
+
+  it('names Merc as the listener, never "we", on every screen of the run', async () => {
+    // Takes that last, so the recording screen and its hint show.
+    takes.realTime = true
+
+    const run = await runThrough()
+
+    expect(run.screens.some((t) => t.includes('Recording'))).toBe(true)
+    expect(run.screens.filter((t) => /\bwe\b|\bwe'/i.test(t))).toEqual([])
+    expect(run.screens.some((t) => t.includes('what Merc heard'))).toBe(true)
   })
 
   it('keeps the em dash off every screen of the run', async () => {

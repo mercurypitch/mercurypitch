@@ -498,7 +498,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
 
       <Show when={phase() === 'blocked'}>
         <p class={styles.eyebrow}>No microphone</p>
-        <h1 class={styles.headline}>We can carry on without it</h1>
+        <h1 class={styles.headline}>Merc can't hear you yet</h1>
         <p class={styles.sub}>{error()}</p>
 
         <div class={styles.micHelp}>

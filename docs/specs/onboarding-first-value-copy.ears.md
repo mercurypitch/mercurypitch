@@ -138,7 +138,7 @@ instruction, it is its own sentence ("…in real time. Send someone the
 code."). This is the owner's standing product-voice rule for visible copy.
 Verified by `FVC-10`.
 
-## The owner's phone test, 11 Oct 2026 — `FVC-11` to `FVC-16`
+## The owner's phone test, 11 Oct 2026 — `FVC-11` to `FVC-17`
 
 The lines below live once each in `src/features/onboarding/copy.ts`, and the
 tests import them from there, so the owner can swap any of them in one line.
@@ -205,3 +205,16 @@ with "Claim them", and its way back to Keep is "Save it and get the launch
 gift". The number is always the server's. Verified by
 `onboarding-launch-gift-beats.test.tsx` and
 `onboarding-launch-gift-flow.test.tsx`.
+
+### REQ-FVC-017 — Merc is the listener on every beat
+
+**Ubiquitous:** Whoever hears the singer shall be Merc, never "we", on every
+beat after the first note as well (owner, phone test, 11 Oct 2026): the
+welcome says "Sing one note and Merc tells you which note it was.", the
+voiceprint's briefs say Merc maps your easy range and that Merc could not
+hear the slides, the match tells you to sing when the screen says it is
+your turn, the recording hint says "what Merc heard still counts", the
+twin without a range says "Here's what Merc heard", and the blocked
+microphone says "Merc can't hear you yet". Where "we" meant the app keeping
+a take, the line has no speaker: "This is your only take so far." Verified
+by `FVC-17`, `BeatVoiceprint.test.tsx` and `BeatPrints.test.tsx`.

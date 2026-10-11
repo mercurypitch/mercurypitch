@@ -160,7 +160,7 @@ export const BeatPrints: Component<BeatPrintsProps> = (props) => {
       <p class={styles.sub}>
         <Show
           when={count() > 1}
-          fallback="This is the take we have on record. With a second one beside it, you can watch your voice change."
+          fallback="This is your only take so far. With a second one beside it, you can watch your voice change."
         >
           Newest first, then every take before it. Watching them change is the
           point of keeping more than one.
