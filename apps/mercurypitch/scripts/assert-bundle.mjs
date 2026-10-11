@@ -205,6 +205,14 @@ const KARAOKE_STAGE_2 = [
   // the native config folded the room's pictures (vite.config.ts,
   // PREMIUM_IMAGES).
   [/\/lantern-[a-z-]+-[\w-]{8}\.webp$/u, "the Long note lantern's plates"],
+  // The Sing room's way in to them: its exercise row, the picker, the
+  // options' row and the record of the last one opened. The row and the
+  // picker are lazy islands and the options' section a ternary, all on
+  // PREMIUM_EXERCISES (SingRoomStage.tsx, SingRoomOptions.tsx).
+  ['sing-exercise-row', "the Sing room's exercise row"],
+  ['sing-exercise-picker', 'the exercise picker'],
+  ['sing-options-exercises', "the Sing options' exercises row"],
+  ['mp_last_exercise', 'the last exercise opened'],
 ]
 
 /**

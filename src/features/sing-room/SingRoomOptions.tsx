@@ -258,7 +258,7 @@ export const SingRoomOptions: Component<SingRoomOptionsProps> = (props) => (
     </OptionSection>
 
     {/* Folded, not hidden: a store build drops the section and its words.
-        `<Show when={PREMIUM_EXERCISES}>` would keep both in the bundle. */}
+        A Show on the constant would draw nothing and still ship both. */}
     {PREMIUM_EXERCISES ? (
       <Show when={props.onOpenExercises}>
         {(open) => (
