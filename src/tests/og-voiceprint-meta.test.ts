@@ -99,10 +99,10 @@ describe('voiceprintMetaTags', () => {
 
   it('keeps the image on the origin that was asked for', () => {
     const meta = voiceprintMetaTags(
-      new URL(`https://mirror.mercurypitch.com/?v=${PAYLOAD}&og=aB3xY9zQ01`),
+      new URL(`https://mercurypitch.com/mirror?v=${PAYLOAD}&og=aB3xY9zQ01`),
     )
     expect(meta?.image).toBe(
-      'https://mirror.mercurypitch.com/api/og/card/aB3xY9zQ01.jpg',
+      'https://mercurypitch.com/api/og/card/aB3xY9zQ01.jpg',
     )
   })
 })

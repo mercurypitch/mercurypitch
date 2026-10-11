@@ -1,5 +1,6 @@
 import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace, R2Bucket } from '@cloudflare/workers-types'
+import { apexMirrorUrl } from './lib/mirror-subdomain'
 import { nativeAppOrigin, nativePreflight, withNativeCors, } from './lib/native-app-cors'
 import { getRunpodConfig, requestedRunpodTier } from './lib/runpod'
 import { handleRunpodRequest, rejectUnconfiguredRunpod, } from './lib/runpod-bridge'
@@ -372,20 +373,28 @@ export default {
       return json({ error: 'Not found' }, 404)
     }
 
+    // The mirror.* subdomain sends every visitor to the apex: `/` to
+    // /mirror, any other path as it is, the query kept (?v= share links,
+    // &og=, utm_*, gclid). One origin for the Mirror, the one the account
+    // worker accepts, so the account ask works for everybody. Paths the asset
+    // layer serves without this worker are sent on by the Mirror's entry
+    // (lib/mirror-subdomain.ts). Other methods go on as before.
+    if (method === 'GET' || method === 'HEAD') {
+      const apex = apexMirrorUrl(request.url)
+      if (apex !== null) return Response.redirect(apex, 301)
+    }
+
     // Voice Mirror — the standalone entry (mirror.html) is served for its
-    // path on the main domain, the SEO alias landings, and the root of the
-    // mirror.* subdomain. Hashed /assets/* requests fall through untouched.
+    // path on the main domain and the SEO alias landings. Hashed /assets/*
+    // requests fall through untouched.
     //
-    // All four rewrites below fetch the EXTENSIONLESS path and let the asset
+    // All the rewrites below fetch the EXTENSIONLESS path and let the asset
     // layer's html_handling resolve it to the .html file. Fetching the .html
     // path directly makes ASSETS.fetch answer with its own drop-`.html` 307
     // redirect instead of the content — which the worker would pass through,
     // so mirror.mercurypitch.com/ and every glass alias redirected instead of
     // serving (observed live 2026-08-08).
-    const isMirrorPath =
-      MIRROR_PATHS.has(url.pathname) ||
-      (url.hostname.startsWith('mirror.') && url.pathname === '/')
-    if (isMirrorPath && method === 'GET') {
+    if (MIRROR_PATHS.has(url.pathname) && method === 'GET') {
       const mirrorUrl = new URL(request.url)
       mirrorUrl.pathname = '/mirror'
       const mirrorResp = await env.ASSETS.fetch(

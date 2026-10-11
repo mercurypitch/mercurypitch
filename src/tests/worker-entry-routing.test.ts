@@ -53,14 +53,72 @@ describe('standalone entry routing', () => {
     await expect(response.text()).resolves.toBe('/mirror')
   })
 
-  it('serves the mirror document at the mirror subdomain root', async () => {
-    const { env } = entryEnv()
+  // The owner's call (11 Oct 2026): the old mirror.* address redirects to
+  // the apex, so every Mirror visitor gets the page the account ask works on.
+  it.each([
+    ['/', 'https://mercurypitch.test/mirror'],
+    ['/?v=abc&og=x', 'https://mercurypitch.test/mirror?v=abc&og=x'],
+    ['/free-sing', 'https://mercurypitch.test/free-sing'],
+    [
+      '/vocal-range-test?utm_source=ad&gclid=G1',
+      'https://mercurypitch.test/vocal-range-test?utm_source=ad&gclid=G1',
+    ],
+  ])('sends mirror.*%s to the apex with a 301', async (path, location) => {
+    const { env, fetch } = entryEnv()
+
     const response = await worker.fetch(
-      new Request('https://mirror.mercurypitch.test/'),
+      new Request(`https://mirror.mercurypitch.test${path}`),
       env,
     )
 
-    await expect(response.text()).resolves.toBe('/mirror')
+    expect(response.status).toBe(301)
+    expect(response.headers.get('Location')).toBe(location)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('redirects a HEAD on the subdomain the same way', async () => {
+    const { env } = entryEnv()
+
+    const response = await worker.fetch(
+      new Request('https://mirror.mercurypitch.test/', { method: 'HEAD' }),
+      env,
+    )
+
+    expect(response.status).toBe(301)
+    expect(response.headers.get('Location')).toBe(
+      'https://mercurypitch.test/mirror',
+    )
+  })
+
+  it('lets a POST on the subdomain go on as before', async () => {
+    const { env, fetch } = entryEnv()
+
+    const response = await worker.fetch(
+      new Request('https://mirror.mercurypitch.test/', { method: 'POST' }),
+      env,
+    )
+
+    expect(response.status).not.toBe(301)
+    expect(response.headers.get('Location')).toBeNull()
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('leaves the apex root and /mirror where they are', async () => {
+    const { env } = entryEnv()
+
+    const root = await worker.fetch(
+      new Request('https://mercurypitch.test/'),
+      env,
+    )
+    const mirror = await worker.fetch(
+      new Request('https://mercurypitch.test/mirror?v=abc'),
+      env,
+    )
+
+    expect(root.status).toBe(200)
+    await expect(root.text()).resolves.toBe('/')
+    expect(mirror.status).toBe(200)
+    await expect(mirror.text()).resolves.toBe('/mirror')
   })
 
   it('serves glass at its aliases with the URL preserved, not a redirect', async () => {

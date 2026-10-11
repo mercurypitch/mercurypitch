@@ -133,3 +133,23 @@ it('renders an ordinary visit at once, wanting no dialog', async () => {
   const ask = await import('./account-ask')
   expect(ask.hostWanted()).toBe(false)
 })
+
+it('boots nothing on the mirror subdomain, which leaves for the apex first', async () => {
+  // jsdom cannot be on mirror.*, so the seam is the leave: the entry hands
+  // it this page's location and, told it is leaving, starts nothing that
+  // could count a visit twice (the consent tag, the render).
+  const leave = vi.fn((_location: Pick<Location, 'href' | 'replace'>) => true)
+  vi.doMock('@/lib/mirror-subdomain', () => ({ leaveMirrorSubdomain: leave }))
+  window.history.replaceState(null, '', '/vocal-range-test?utm_source=x')
+  const { setupConsent } = await import('@/components/ConsentBanner')
+  vi.mocked(setupConsent).mockClear()
+  try {
+    await import('./main')
+
+    expect(leave).toHaveBeenCalledWith(window.location)
+    expect(setupConsent).not.toHaveBeenCalled()
+    expect(entry.renders).toHaveLength(0)
+  } finally {
+    vi.doUnmock('@/lib/mirror-subdomain')
+  }
+})
