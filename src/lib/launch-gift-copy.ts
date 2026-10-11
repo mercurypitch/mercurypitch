@@ -2,8 +2,16 @@
 // Launch gift copy — how every surface names the free credits
 // ============================================================
 //
-// Onboarding's Keep and Map and the Voice Mirror's account ask all name the
-// same gift, so its words live here once and a swap is a one-line change.
+// One gift, named in the same words wherever it is offered, so they live
+// here once and a swap is a one-line change. Read by:
+//   - onboarding's Keep card, Keep caption and Map lines (re-exported
+//     through src/features/onboarding/copy.ts);
+//   - the Voice Mirror's account ask (MirrorAccountAsk);
+//   - Karaoke Night's signed-out gift line (KaraokeGiftLine);
+//   - the promo card in Settings > Credits, for a reader who is signed out
+//     (PromoCodeCard; signed in, it counts credits instead);
+//   - the header's Promo pill title (HeaderAccount);
+//   - the password sign-up toast (launch-gift-store's signUpGiftMessage).
 // The owner rejected "free Karaoke Night credits": the gift is named by what
 // it buys, a song split into voice and band. The count is always the
 // server's (promo-store), never a number written into the copy.

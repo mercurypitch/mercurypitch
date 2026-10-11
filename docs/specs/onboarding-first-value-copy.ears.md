@@ -138,7 +138,7 @@ instruction, it is its own sentence ("…in real time. Send someone the
 code."). This is the owner's standing product-voice rule for visible copy.
 Verified by `FVC-10`.
 
-## The owner's phone test, 11 Oct 2026 — `FVC-11` to `FVC-16`
+## The owner's phone test, 11 Oct 2026 — `FVC-11` to `FVC-17`
 
 The lines below live once each in `src/features/onboarding/copy.ts`, and the
 tests import them from there, so the owner can swap any of them in one line.
@@ -164,16 +164,17 @@ measures are saved or shared. Verified by `FVC-12`.
 ### REQ-FVC-013 — No em dash on the first note
 
 **Ubiquitous:** No swappable line, and no screen of beat 2 from the ask to
-the heard note, shall contain an em dash. The shared microphone help panel
-is outside this beat's copy and is left out of the check. Verified by the two
-`FVC-13` tests.
+the heard note, shall contain an em dash, the shared microphone help panel
+included (its one em dash went in the follow-up to PR 977). Verified by the
+two `FVC-13` tests.
 
 ### REQ-FVC-014 — The twin says what comes next in one true line
 
 **Ubiquitous:** The twin shall say "Next, the Map: a room picked for your
-voice, from daily practice to Karaoke Night." "A room", not "rooms": the Map
-picks one first stop from the voiceprint (`first-stop.ts`). No em dash on the
-screen. Verified by `FVC-14`.
+voice." "A room", not "rooms": the Map picks one first stop from the
+voiceprint (`first-stop.ts`). The line takes at most two lines on a 320 px
+phone; the longer one it replaced ("…, from daily practice to Karaoke
+Night.") took three. No em dash on the screen. Verified by `FVC-14`.
 
 ### REQ-FVC-015 — The twin's numbers are one card, drawn from the take
 
@@ -204,3 +205,24 @@ with "Claim them", and its way back to Keep is "Save it and get the launch
 gift". The number is always the server's. Verified by
 `onboarding-launch-gift-beats.test.tsx` and
 `onboarding-launch-gift-flow.test.tsx`.
+
+The same words, from `src/lib/launch-gift-copy.ts`, name the gift wherever
+the reader has not met a credit yet: Karaoke Night's signed-out line ("For
+studio quality, get up to 5 free song separations with a free account.")
+and the signed-out promo card in Settings > Credits. Signed in, that card is
+about the balance, so it keeps "5 free credits" and says what they buy: "Up
+to 5 song separations on the Cloud GPU". Verified by
+`KaraokeGiftLine.test.tsx` and `PromoCodeCard.test.tsx`.
+
+### REQ-FVC-017 — Merc is the listener on every beat
+
+**Ubiquitous:** Whoever hears the singer shall be Merc, never "we", on every
+beat after the first note as well (owner, phone test, 11 Oct 2026): the
+welcome says "Sing one note and Merc tells you which note it was.", the
+voiceprint's briefs say Merc maps your easy range and that Merc could not
+hear the slides, the match tells you to sing when the screen says it is
+your turn, the recording hint says "what Merc heard still counts", the
+twin without a range says "Here's what Merc heard", and the blocked
+microphone says "Merc can't hear you yet". Where "we" meant the app keeping
+a take, the line has no speaker: "This is your only take so far." Verified
+by `FVC-17`, `BeatVoiceprint.test.tsx` and `BeatPrints.test.tsx`.

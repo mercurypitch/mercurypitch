@@ -281,10 +281,10 @@ describe('the voiceprint counter', () => {
       'Step 3 of 4 · Hold',
     ])
     const brief = run.screens.find((t) =>
-      t.includes("We couldn't hear your slides"),
+      t.includes("Merc couldn't hear your slides"),
     )
     expect(brief).toContain(
-      "The five notes are pitched from your range, so we'll skip them this time.",
+      'The five notes are pitched from your range, so this run skips them.',
     )
     expect(brief).toContain('Step 4 of 4 · Match skipped')
     expect(run.screens.some((t) => t.includes('everything we need'))).toBe(
@@ -313,6 +313,17 @@ describe('the voiceprint counter', () => {
       run.screens.some((t) => t.includes('Last one: match five notes.')),
     ).toBe(true)
     expect(run.screens.some((t) => t.includes('skipped'))).toBe(false)
+  })
+
+  it('names Merc as the listener, never "we", on every screen of the run', async () => {
+    // Takes that last, so the recording screen and its hint show.
+    takes.realTime = true
+
+    const run = await runThrough()
+
+    expect(run.screens.some((t) => t.includes('Recording'))).toBe(true)
+    expect(run.screens.filter((t) => /\bwe\b|\bwe'/i.test(t))).toEqual([])
+    expect(run.screens.some((t) => t.includes('what Merc heard'))).toBe(true)
   })
 
   it('keeps the em dash off every screen of the run', async () => {
@@ -379,31 +390,55 @@ describe('the voiceprint plays one sound at a time', () => {
     expect(audio.maxActive).toBe(1)
   })
 
-  it('keeps "Hear a note" disabled while the arrival note plays, and frees it once the note ends', async () => {
+  // aria-disabled, not `disabled`: a disabled button drops out of the Tab
+  // order and loses focus mid-press, so a keyboard user lands nowhere while
+  // the note plays. hearNote already ignores a tap while a sound plays.
+  const unavailable = (): string | null | undefined =>
+    hearButton()?.getAttribute('aria-disabled')
+
+  it('keeps "Hear a note" unavailable while the arrival note plays, and frees it once the note ends', async () => {
     // Arrange
     await untilHoldIntro()
-    const during = hearButton()?.disabled
+    const during = unavailable()
 
     // Act
     await vi.advanceTimersByTimeAsync(5000)
 
     // Assert
-    expect(during).toBe(true)
-    expect(hearButton()?.disabled).toBe(false)
+    expect(during).toBe('true')
+    expect(unavailable()).toBe('false')
     expect(hearButton()?.textContent).toBe('Hear a note (A3)')
   })
 
-  it('disables "Hear a note" again while its own note plays', async () => {
+  it('marks "Hear a note" unavailable again while its own note plays, and keeps it focusable', async () => {
     // Arrange
     await untilHoldIntro()
     await vi.advanceTimersByTimeAsync(5000)
+    const button = hearButton() as HTMLButtonElement
+    button.focus()
+
+    // Act
+    fireEvent.click(button)
+
+    // Assert
+    expect(unavailable()).toBe('true')
+    expect(hearButton()?.disabled).toBe(false)
+    expect(document.activeElement).toBe(hearButton())
+    expect(audio.active).toBe(1)
+  })
+
+  it('ignores a tap on "Hear a note" while a note plays', async () => {
+    // Arrange: the arrival note is still sounding.
+    await untilHoldIntro()
+    const played = audio.log.length
 
     // Act
     fireEvent.click(hearButton() as HTMLButtonElement)
 
     // Assert
-    expect(hearButton()?.disabled).toBe(true)
-    expect(audio.active).toBe(1)
+    expect(unavailable()).toBe('true')
+    expect(audio.log.length).toBe(played)
+    expect(audio.maxActive).toBe(1)
   })
 
   it('never plays two sounds at once, and none while a take records', async () => {
@@ -419,7 +454,7 @@ describe('the voiceprint plays one sound at a time', () => {
       tick++
     ) {
       const hear = hearButton()
-      if (hear !== null && !hear.disabled) {
+      if (hear !== null && hear.getAttribute('aria-disabled') !== 'true') {
         fireEvent.click(hear)
         fireEvent.click(readyButton() as HTMLElement)
       } else if (hear === null && readyButton() !== null) {

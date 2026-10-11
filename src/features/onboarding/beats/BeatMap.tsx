@@ -27,7 +27,7 @@ import { hasPageTour } from '@/stores/app-store'
 import { KARAOKE_GIFT_TAG, MAP_GIFT_JOIN_LINK, MAP_KEEP_GIFT_LINK, mapGiftJoin, mapGiftWaiting, } from '../copy'
 import { pickFirstStop } from '../first-stop'
 import styles from '../onboarding.module.css'
-import type { Room, RoomTarget, SideDoor } from '../rooms'
+import type { EnteredRoomId, Room, RoomTarget, SideDoor } from '../rooms'
 import { ROOMS, SIDE_DOORS } from '../rooms'
 
 /**
@@ -59,7 +59,7 @@ export interface BeatMapProps {
   voiceprint: MirrorResult | null
   /** Replays say "Done"; the first run says "Start singing". */
   replay?: boolean
-  onEnter: (target: RoomTarget, roomId: string) => void
+  onEnter: (target: RoomTarget, roomId: EnteredRoomId) => void
   /** Open a room AND start its spotlight tour. */
   onTour: (target: RoomTarget, tab: ActiveTab) => void
   onDone: () => void
@@ -218,7 +218,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
             <button
               type="button"
               class={styles.sideDoor}
-              onClick={() => props.onEnter(door.target, door.label)}
+              onClick={() => props.onEnter(door.target, door.id)}
             >
               {door.label}
             </button>

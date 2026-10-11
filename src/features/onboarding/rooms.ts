@@ -16,6 +16,7 @@
 
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_PATH, TAB_SINGING, } from '@/features/tabs/constants'
+import type { OnboardingFunnelEvent } from '@/lib/funnel-event-catalog'
 
 export type RoomId =
   | 'practice'
@@ -131,10 +132,29 @@ export const ROOMS: readonly Room[] = [
   },
 ]
 
+/**
+ * A door's id, never one of the RoomIds above: the Map hands either kind to
+ * the flow as the room entered, and the flow finds the door by it, so a door
+ * named like a room would count every tap on that room as a door tap.
+ * `Exclude` makes that a compile error rather than a convention: a door
+ * named like a room (or a room renamed like a door) drops out of this union,
+ * and its entry in SIDE_DOORS no longer type-checks.
+ */
+export type SideDoorId = Exclude<
+  'challenges' | 'guitar' | 'piano' | 'mirror',
+  RoomId
+>
+
+/** What the Map hands the flow when a room or a door is entered. */
+export type EnteredRoomId = RoomId | SideDoorId
+
 /** A few more rooms, as one quiet strip under the grid. */
 export interface SideDoor {
+  id: SideDoorId
   label: string
   target: RoomTarget
+  /** The tap's own funnel event, sent beside `onboarding_map_room`. */
+  event: OnboardingFunnelEvent
 }
 
 /**
@@ -142,15 +162,36 @@ export interface SideDoor {
  * wrapped to three rows). The Voice Mirror stays by the owner's call. The
  * other three are the rooms the welcome mail names under "Also waiting
  * for you" (Community Challenges, Piano, Guitar; Drums has no door here).
- * No tap on a door is counted per door (`onboarding_map_room` carries no
- * room), so there was no usage to rank them by. Leaderboard, Community,
- * Compose and Glass stay in the app's own navigation.
+ * Until the follow-up to PR 977 no tap on a door was counted per door
+ * (`onboarding_map_room` carries no room), so there was no usage to rank
+ * them by; each now sends its own event. Leaderboard, Community, Compose
+ * and Glass stay in the app's own navigation.
  */
 export const SIDE_DOORS: readonly SideDoor[] = [
-  { label: 'Challenges', target: { kind: 'tab', tab: 'challenges' } },
-  { label: 'Guitar', target: { kind: 'tab', tab: 'guitar' } },
-  { label: 'Piano', target: { kind: 'tab', tab: 'piano' } },
-  { label: 'Voice Mirror', target: { kind: 'page', href: '/mirror' } },
+  {
+    id: 'challenges',
+    label: 'Challenges',
+    target: { kind: 'tab', tab: 'challenges' },
+    event: 'onboarding_map_door_challenges',
+  },
+  {
+    id: 'guitar',
+    label: 'Guitar',
+    target: { kind: 'tab', tab: 'guitar' },
+    event: 'onboarding_map_door_guitar',
+  },
+  {
+    id: 'piano',
+    label: 'Piano',
+    target: { kind: 'tab', tab: 'piano' },
+    event: 'onboarding_map_door_piano',
+  },
+  {
+    id: 'mirror',
+    label: 'Voice Mirror',
+    target: { kind: 'page', href: '/mirror' },
+    event: 'onboarding_map_door_mirror',
+  },
 ]
 
 export function roomById(id: RoomId): Room {

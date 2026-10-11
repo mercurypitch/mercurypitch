@@ -50,11 +50,12 @@ export const FIRST_LIGHT_HEARD =
 
 /**
  * The twin's one line about what comes next. "A room", not "rooms": the
- * Map picks one first stop from the voiceprint (first-stop.ts), and its
- * picks run from a drill to Karaoke Night; Practice holds Daily Practice.
+ * Map picks one first stop from the voiceprint (first-stop.ts). Short
+ * enough for two lines on a 320 px phone (the owner asked for one or two;
+ * the longer line, which ended "from daily practice to Karaoke Night",
+ * took three).
  */
-export const TWIN_NEXT =
-  'Next, the Map: a room picked for your voice, from daily practice to Karaoke Night.'
+export const TWIN_NEXT = 'Next, the Map: a room picked for your voice.'
 
 // The gift's own words are shared with the Voice Mirror's account ask, so
 // they live in src/lib/launch-gift-copy.ts; re-exported here so the beats

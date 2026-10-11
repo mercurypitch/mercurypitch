@@ -363,7 +363,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     await taskIntro(
       'glide-up',
       'Slide from low to high',
-      "Listen to the sweep, then do the same on an 'ooo', from as low as you comfortably sing up to as high as you comfortably sing. Never strain: we want your easy range, not your limit.",
+      "Listen to the sweep, then do the same on an 'ooo', from as low as you comfortably sing up to as high as you comfortably sing. Never strain: Merc maps your easy range, not your limit.",
     )
     if (!alive()) return
     await brief('Ready…', 'Take a breath.')
@@ -449,8 +449,8 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       setStep(4)
       setMatchSkipped(true)
       await brief(
-        "We couldn't hear your slides",
-        "The five notes are pitched from your range, so we'll skip them this time.",
+        "Merc couldn't hear your slides",
+        'The five notes are pitched from your range, so this run skips them.',
       )
     }
     if (!alive()) return
@@ -467,7 +467,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       await taskIntro(
         'match',
         'Match five notes',
-        "You'll hear a note, then sing it back. Listen first; we'll tell you when it's your turn.",
+        "You'll hear a note, then sing it back. Listen first, then sing when the screen says it's your turn.",
       )
       if (!alive()) return
       await brief('Ready…', 'Here comes the first note.', 2)
@@ -612,12 +612,16 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
               once the glides have given us a range). Never during a take:
               a tone still sounding would be captured by the mic. It waits
               while any sound plays, the arrival note included. */}
+          {/* aria-disabled, not `disabled`, while a sound plays: a
+              disabled button leaves the Tab order and drops focus under a
+              keyboard user's press. It stays focusable, says it is
+              unavailable, and hearNote ignores the tap. */}
           <Show when={suggestedMidi() !== null}>
             <button
               type="button"
               class={styles.secondary}
               onClick={hearNote}
-              disabled={lane.busy()}
+              aria-disabled={lane.busy() ? 'true' : 'false'}
             >
               {lane.busy()
                 ? 'Playing…'
@@ -671,7 +675,8 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         </div>
         <p class={styles.recordingTag}>Recording</p>
         <p class={styles.recordHint}>
-          Done before the count ends? Just stop singing. We keep what we heard.
+          Done before the count ends? Just stop singing: what Merc heard still
+          counts.
         </p>
       </Show>
 

@@ -439,3 +439,27 @@ describe('focus on a beat change', () => {
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 })
+
+// Follow-up to PR 977: `onboarding_map_room` says a room was entered, never
+// which, so nothing ranked the four doors under the grid. Each door now
+// counts its own tap, beside the room event that keeps its history.
+describe('a tap on a Map door, counted per door', () => {
+  it.each([
+    ['Challenges', 'onboarding_map_door_challenges'],
+    ['Guitar', 'onboarding_map_door_guitar'],
+    ['Piano', 'onboarding_map_door_piano'],
+    ['Voice Mirror', 'onboarding_map_door_mirror'],
+  ])('counts a tap on %s as %s', async (label, event) => {
+    // Arrange: a page door navigates, which jsdom cannot do.
+    vi.stubGlobal('location', { href: '' })
+    const map = await at('map')
+    const door = within(map).getByRole('button', { name: label })
+
+    // Act
+    fireEvent.click(door)
+
+    // Assert
+    expect(tracked().slice(-2)).toEqual(['onboarding_map_room', event])
+    expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
+  })
+})

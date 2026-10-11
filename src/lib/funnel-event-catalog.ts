@@ -181,6 +181,14 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   'onboarding_mic_granted',
   'onboarding_mic_denied',
   'onboarding_map_room',
+  /** A tap on one of the Map's four doors under the room grid, one name a
+   *  door: the ingest stores a name and no properties, so the door has to
+   *  be in the name. Sent beside `onboarding_map_room`, which still counts
+   *  every way into a room. From the follow-up to PR 977. */
+  'onboarding_map_door_challenges',
+  'onboarding_map_door_guitar',
+  'onboarding_map_door_piano',
+  'onboarding_map_door_mirror',
   'onboarding_skipped',
   'onboarding_done',
   /** Counts taps on the Keep beat's button (and the Map's way back to it),

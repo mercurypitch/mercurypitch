@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   signedIn: true,
   accountId: 'user-1' as string | null,
   fetchBillingMe: vi.fn(),
+  redeemPromoCode: vi.fn(),
   trackEvent: vi.fn(),
   showNotification: vi.fn(),
   loadFeaturedPromo: vi.fn(async () => {}),
@@ -31,7 +32,9 @@ vi.mock('@/db/services/auth-service', () => ({
 }))
 vi.mock('@/db/services/billing-service', () => ({
   fetchBillingMe: mocks.fetchBillingMe,
+  redeemPromoCode: mocks.redeemPromoCode,
 }))
+vi.mock('./billing-store', () => ({ refreshBalance: () => {} }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: mocks.trackEvent }))
 vi.mock('./notifications-store', () => ({
   showNotification: mocks.showNotification,
@@ -51,10 +54,10 @@ function me(claims: { code: string; credits: number; claimedAt: string }[]) {
   }
 }
 
-function claimedAgo(ms: number) {
+function claimedAgo(ms: number, credits = 5) {
   return {
     code: 'LAUNCH',
-    credits: 5,
+    credits,
     claimedAt: new Date(NOW - ms).toISOString(),
   }
 }
@@ -180,6 +183,48 @@ describe('saying the gift landed', () => {
     expect(message).toBe('Email confirmed. 5 credits added.')
     expect(mocks.showNotification).not.toHaveBeenCalled()
     expect(mocks.trackEvent).toHaveBeenCalledTimes(1)
+  })
+
+  // Account holders see credits here, so the toasts say credits, and one
+  // credit is one credit: "1 credits added" read as a typo.
+  it.each([
+    [1, 'Email confirmed. 1 credit added.'],
+    [5, 'Email confirmed. 5 credits added.'],
+  ])('names a %i-credit claim in the confirm toast', async (credits, says) => {
+    mocks.offer = { ...LAUNCH, credits }
+    mocks.fetchBillingMe.mockResolvedValue(me([claimedAgo(MINUTE, credits)]))
+    const store = await freshStore()
+
+    expect(await store.confirmedGiftMessage()).toBe(says)
+  })
+
+  it.each([
+    [1, '1 credit added. Try one in Karaoke Night.'],
+    [5, '5 credits added. Try one in Karaoke Night.'],
+  ])('names a %i-credit claim in the sign-in toast', async (credits, says) => {
+    mocks.offer = { ...LAUNCH, credits }
+    mocks.fetchBillingMe.mockResolvedValue(me([claimedAgo(MINUTE, credits)]))
+    const store = await freshStore()
+
+    await store.syncPromoClaims(CONFIRMED)
+
+    expect(mocks.showNotification).toHaveBeenCalledWith(says, 'success')
+  })
+
+  it.each([
+    [1, '1 credit added. Try one in Karaoke Night.'],
+    [5, '5 credits added. Try one in Karaoke Night.'],
+  ])('names a %i-credit claim made with one tap', async (credits, says) => {
+    mocks.offer = { ...LAUNCH, credits }
+    mocks.redeemPromoCode.mockResolvedValue({
+      code: 'LAUNCH',
+      creditsGranted: credits,
+    })
+    const store = await freshStore()
+
+    await store.claimGiftNow()
+
+    expect(mocks.showNotification).toHaveBeenCalledWith(says, 'success')
   })
 
   it('leaves the plain confirm toast when the link opened signed out', async () => {

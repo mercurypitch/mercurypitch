@@ -10,6 +10,7 @@ import { EXERCISE_HELP } from '@/features/exercises/exercise-help'
 import { BeatFirstLight } from '@/features/onboarding/beats/BeatFirstLight'
 import { BeatFork } from '@/features/onboarding/beats/BeatFork'
 import { BeatMap } from '@/features/onboarding/beats/BeatMap'
+import { BeatSky } from '@/features/onboarding/beats/BeatSky'
 import { BeatTwin } from '@/features/onboarding/beats/BeatTwin'
 import * as COPY from '@/features/onboarding/copy'
 import { pickFirstStop } from '@/features/onboarding/first-stop'
@@ -167,14 +168,12 @@ async function waitingScreen(level: number): Promise<HTMLElement> {
 }
 
 /**
- * A screen's own words. The shared microphone help (MicTroubleshooting, a
- * closed <details> also used by Challenges) is left out: it is not this
- * beat's copy, and its one em dash sits in a panel that opens on request.
+ * Everything a screen says, the shared microphone help panel
+ * (MicTroubleshooting, a closed <details> also used by Challenges)
+ * included: its one em dash went in the follow-up to PR 977.
  */
 function ownText(container: HTMLElement): string {
-  const copy = container.cloneNode(true) as HTMLElement
-  for (const panel of copy.querySelectorAll('details')) panel.remove()
-  return copy.textContent ?? ''
+  return container.textContent ?? ''
 }
 
 /** Every string in the swappable copy, with the gift at five credits. */
@@ -298,6 +297,40 @@ describe('beat 2 — Merc is the one listening', () => {
   })
 })
 
+/** "We", "we'll", "we've" and friends: never the one who hears the singer. */
+const WE = /\bwe\b|\bwe'/i
+
+// Follow-up to PR 977 (owner, phone test 11 Oct 2026): whoever hears the
+// singer is Merc, on every beat, not only the first note.
+describe('Merc is the listener across the flow', () => {
+  // FVC-17
+  it('says Merc names the note on the welcome', () => {
+    const { container } = render(() => <BeatSky onContinue={noop} />)
+
+    const promises = container.querySelector('ul')?.textContent ?? ''
+
+    expect(promises).toContain('Merc tells you which note it was')
+    expect(promises).not.toMatch(WE)
+  })
+
+  // FVC-17
+  it('says Merc cannot hear you on the blocked-mic screen', async () => {
+    mic.permission = 'denied'
+    const { container } = render(() => (
+      <BeatFirstLight onHeard={noop} onContinue={noop} onDenied={noop} />
+    ))
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('site settings')
+    })
+
+    expect(container.querySelector('h1')?.textContent).toBe(
+      "Merc can't hear you yet",
+    )
+    expect(container.textContent).not.toMatch(WE)
+  })
+})
+
 /** A twin worth showing: two octaves, steady, with the match sung. */
 const TWIN_RESULT: MirrorResult = {
   range: {
@@ -322,6 +355,18 @@ const TWIN_RESULT: MirrorResult = {
 }
 
 describe('beat 5 — the twin', () => {
+  // FVC-17
+  it('says what Merc heard when there is no range to match a twin to', () => {
+    const { container } = render(() => (
+      <BeatTwin result={{ ...TWIN_RESULT, range: null }} onContinue={noop} />
+    ))
+
+    expect(container.querySelector('h1')?.textContent).toBe(
+      "Here's what Merc heard",
+    )
+    expect(container.textContent).not.toMatch(WE)
+  })
+
   // FVC-14
   it('says what comes next in its one line, with no em dash on the screen', () => {
     const { container } = render(() => (
@@ -349,6 +394,32 @@ describe('beat 5 — the twin', () => {
         (value) => value.textContent,
       ),
     ).toEqual(['24', '82', '74'])
+  })
+
+  // On a phone the buttons are pinned to the bottom of the frame, and the
+  // line a share says back lands under them: it has to be scrolled to.
+  it('brings the line a share says back into view', async () => {
+    const scrolled: Element[] = []
+    const scrollIntoView = vi.fn(function (this: Element) {
+      scrolled.push(this)
+    })
+    Element.prototype.scrollIntoView = scrollIntoView
+    const onShare = (): Promise<string> =>
+      Promise.resolve('Card saved. Link copied.')
+    try {
+      const { container, getByRole } = render(() => (
+        <BeatTwin result={TWIN_RESULT} onShare={onShare} onContinue={noop} />
+      ))
+
+      fireEvent.click(getByRole('button', { name: 'Share now' }))
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1))
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
+      expect(scrolled[0]?.textContent).toBe('Card saved. Link copied.')
+      expect(container.contains(scrolled[0] ?? null)).toBe(true)
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+    }
   })
 })
 

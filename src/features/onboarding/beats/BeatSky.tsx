@@ -59,7 +59,7 @@ const PROMISES: readonly { icon: () => JSX.Element; text: string }[] = [
         />
       </svg>
     ),
-    text: 'Sing one note and we will tell you which note it was.',
+    text: 'Sing one note and Merc tells you which note it was.',
   },
   {
     // Rising bars — the range and steadiness that get measured.

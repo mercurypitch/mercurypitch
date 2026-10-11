@@ -5,14 +5,17 @@
 // Signed out, the card used to say studio separation is "a paid option".
 // While the launch gift is on offer (promo-store), that is no longer true for
 // a new account's first songs, so the line says what is: splitting on this
-// device costs nothing, and a free account brings credits for the studio
-// split. The button opens the account chip's form on "Create your account";
-// a sign-up from this page already carries `signupSource: 'karaoke'`, which
-// gives its first mail the Karaoke Night picture.
+// device costs nothing, and a free account brings song separations for the
+// studio split: named by what they buy, since a visitor here has not met a
+// credit yet (as First Light's gift names them). The button opens the
+// account chip's form on "Create your account"; a sign-up from this page
+// already carries `signupSource: 'karaoke'`, which gives its first mail the
+// Karaoke Night picture.
 //
 // Its own file so KaraokeRailPanels stays under the size ratchet.
 
 import { onMount, Show } from 'solid-js'
+import { giftCount } from '@/lib/launch-gift-copy'
 import { rememberGiftOffered } from '@/stores/launch-gift-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { trackKaraoke } from './funnel'
@@ -29,7 +32,7 @@ export function KaraokeGiftLine() {
       fallback={
         <p class="kn-card-sub">
           All data stays on your device. Higher-quality separation is available
-          as a paid option — sign in to use it.
+          as a paid option. Sign in to use it.
         </p>
       }
     >
@@ -37,7 +40,7 @@ export function KaraokeGiftLine() {
         <div class="kn-gift" data-testid="kn-launch-gift">
           <p class="kn-card-sub">
             Splitting on this device is free. For studio quality, get{' '}
-            <span class="kn-gift-credits">{promo().credits} free credits</span>{' '}
+            <span class="kn-gift-credits">{giftCount(promo().credits)}</span>{' '}
             with a free account.
           </p>
           <button

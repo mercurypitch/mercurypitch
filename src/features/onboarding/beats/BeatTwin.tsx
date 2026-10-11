@@ -38,32 +38,40 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
   const twin = createMemo(() => singerForRange(props.result.range))
   const [shareNote, setShareNote] = createSignal<string | null>(null)
 
+  let noteRef: HTMLParagraphElement | undefined
+
   const share = async (): Promise<void> => {
     setShareNote((await props.onShare?.()) ?? null)
+    // On a phone the buttons are pinned to the bottom of the frame and the
+    // note lands under them, so a beat that fitted the screen now runs past
+    // it: bring the note into view. (jsdom has no scrollIntoView.)
+    noteRef?.scrollIntoView?.({ block: 'nearest' })
   }
 
   return (
-    <div class={styles.beat} data-beat="twin">
+    <div class={`${styles.beat} ${styles.twinBeat}`} data-beat="twin">
       <Show
         when={twin() !== null}
         fallback={
           <>
             <p class={styles.eyebrow}>Your voiceprint</p>
-            <h1 class={styles.headline}>Here's what we heard</h1>
+            <h1 class={styles.headline}>Here's what Merc heard</h1>
             <p class={styles.sub}>
-              We couldn't get a clean read on your range this time, so there's
-              no twin to show yet. The map below still works, and you can retake
-              this whenever you like.
+              Merc couldn't get a clean read on your range this time, so there's
+              no twin to show yet. The Map still works, and you can retake this
+              whenever you like.
             </p>
           </>
         }
       >
-        {/* 200-320px box: `mid` (360px) lands inside 4x either way, where
-            the master was already at 4.6x on the small end. */}
+        {/* An 88-320 px box that shrinks with the screen's height: `mid`
+            (360 px) stays within 4x of the device pixels either way, since
+            a phone short enough for 88 px draws at 2x or more. The master
+            (928 px) would be 5x at 180 px on a 1x screen. */}
         <span class={styles.twinArt} aria-hidden="true">
           <LegendCaricature legend={twin() ?? ''} tier="mid" />
         </span>
-        <p class={styles.eyebrow}>Your twin</p>
+        <p class={`${styles.eyebrow} ${styles.twinEyebrow}`}>Your twin</p>
         <h1 class={styles.headline}>
           Your range overlaps <span class={styles.lit}>{twin()}</span>
         </h1>
@@ -77,6 +85,18 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
 
       <p class={styles.mapExplainer}>{TWIN_NEXT}</p>
       <div class={styles.actions}>
+        {/* Share first: Continue sits on the right, under the thumb on a
+            phone (owner testing, 11 Oct 2026), and Tab meets the two in
+            the order the eye does. */}
+        <Show when={props.onShare !== undefined}>
+          <button
+            type="button"
+            class={styles.secondary}
+            onClick={() => void share()}
+          >
+            Share now
+          </button>
+        </Show>
         {/* Not "See my map": this advances to `keep`, and the Map is one
             screen further on. Promising the Map and then showing an
             account offer that repeats the portrait is what made the two
@@ -92,15 +112,6 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         >
           Continue
         </button>
-        <Show when={props.onShare !== undefined}>
-          <button
-            type="button"
-            class={styles.secondary}
-            onClick={() => void share()}
-          >
-            Share now
-          </button>
-        </Show>
       </div>
       {/* In the tree before there is anything to say, or the line is never
           announced -- and a link reaching the clipboard is silent. */}
@@ -108,7 +119,7 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         {shareNote() ?? ''}
       </span>
       <Show when={shareNote()}>
-        <p class={styles.shareNote} aria-hidden="true">
+        <p ref={noteRef} class={styles.shareNote} aria-hidden="true">
           <IconCheck size={17} />
           <span>{shareNote()}</span>
         </p>

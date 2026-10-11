@@ -59,9 +59,11 @@ describe('the prints for a returning singer', () => {
 
     // Assert
     expect(line).toBe(
-      'This is the take we have on record. With a second one beside it, you can watch your voice change.',
+      'This is your only take so far. With a second one beside it, you can watch your voice change.',
     )
     expect(line).not.toMatch(/another|Voice Mirror/i)
+    // The app keeping a take has no speaker: never "we" (owner, 11 Oct).
+    expect(line).not.toMatch(/\bwe\b/i)
   })
 
   it('offers "Make another voiceprint" once, second to the Map', () => {

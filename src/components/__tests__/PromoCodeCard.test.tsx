@@ -213,7 +213,7 @@ describe('PromoCodeCard', () => {
     render(() => <PromoCodeCard />)
 
     const claimBtn = await screen.findByTestId('claim-promo-btn')
-    expect(claimBtn).toHaveTextContent(/claim 5 credits/i)
+    expect(claimBtn).toHaveTextContent('Claim 5 free credits')
     expect(screen.queryByText('Claimed')).toBeNull()
     fireEvent.click(claimBtn)
     await waitFor(() => {
@@ -234,7 +234,7 @@ describe('PromoCodeCard', () => {
     render(() => <PromoCodeCard />)
 
     const claimBtn = await screen.findByTestId('claim-promo-btn')
-    expect(claimBtn).toHaveTextContent(/claim 8 credits/i)
+    expect(claimBtn).toHaveTextContent('Claim 8 free credits')
     expect(screen.getByText('WINTER')).toBeInTheDocument()
     fireEvent.click(claimBtn)
     await waitFor(() => {
@@ -258,7 +258,7 @@ describe('PromoCodeCard', () => {
 
     mocks.setOffer(LAUNCH)
     expect(await screen.findByTestId('claim-promo-btn')).toHaveTextContent(
-      /claim 5 credits/i,
+      'Claim 5 free credits',
     )
   })
 
@@ -352,7 +352,7 @@ describe('PromoCodeCard', () => {
     )
   })
 
-  it('tells a signed-out visitor how many credits an account would get', async () => {
+  it('tells a signed-out visitor how many song separations an account would get', async () => {
     mocks.fetchMe.mockResolvedValue(null)
     mocks.fetchBillingMe.mockResolvedValue({
       creditBalance: 0,
@@ -362,13 +362,98 @@ describe('PromoCodeCard', () => {
 
     render(() => <PromoCodeCard />)
 
+    // Someone without an account has not met a credit yet, so the gift is
+    // named by what it buys, as onboarding and Karaoke Night name it.
     expect(await screen.findByText('Account Required')).toBeInTheDocument()
     expect(
-      screen.getByText(/claim 5 free cloud separation credits/i),
+      screen.getByText(/verify your email to claim up to 5/i),
     ).toHaveTextContent(
-      'Create a free account and verify your email to claim 5 free cloud separation credits.',
+      'Create a free account and verify your email to claim up to 5 free song separations.',
+    )
+    expect(screen.getByText(/^Claim up to 5/)).toHaveTextContent(
+      'Claim up to 5 free song separations on the Cloud GPU, or redeem a code you were given.',
+    )
+    expect(screen.queryByText(/free credits/i)).toBeNull()
+  })
+
+  it('names the credits on offer, and what they buy, to a signed-in account', async () => {
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 0,
+      entitlements: [],
+      redeemedPromos: [],
+      stripeConfigured: true,
+    })
+
+    render(() => <PromoCodeCard />)
+
+    // Settings > Credits is about the balance, so the card keeps "credits".
+    expect(await screen.findByTestId('claim-promo-btn')).toBeInTheDocument()
+    expect(screen.getByText('5 free credits')).toBeInTheDocument()
+    expect(
+      screen.getByText('Up to 5 song separations on the Cloud GPU'),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/^Claim 5 free credits for/)).toHaveTextContent(
+      'Claim 5 free credits for separating songs on the Cloud GPU, or redeem a code you were given.',
     )
   })
+
+  it('says one credit, not "1 free credits", for a code worth one', async () => {
+    mocks.setOffer({ ...LAUNCH, credits: 1 })
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 0,
+      entitlements: [],
+      redeemedPromos: [],
+      stripeConfigured: true,
+    })
+
+    render(() => <PromoCodeCard />)
+
+    const title = await screen.findByText('1 free credit')
+    expect(title.parentElement).toHaveTextContent(
+      '1 free credit1 song separation on the Cloud GPU',
+    )
+    expect(screen.queryByText(/1 free credits/)).toBeNull()
+  })
+
+  // The button, the line under the form and the toast: every place the
+  // card counts credits says "1 credit", never "1 credits".
+  for (const [credits, words] of [
+    [1, '1 free credit'],
+    [5, '5 free credits'],
+  ] as const) {
+    it(`counts ${credits} on the claim button and in what the claim says back`, async () => {
+      mocks.setOffer({ ...LAUNCH, credits })
+      mocks.fetchMe.mockResolvedValue(VERIFIED)
+      mocks.fetchBillingMe.mockResolvedValue({
+        creditBalance: 0,
+        entitlements: [],
+        redeemedPromos: [],
+        stripeConfigured: true,
+      })
+      mocks.redeemPromoCode.mockResolvedValue({
+        success: true,
+        code: 'LAUNCH',
+        creditsGranted: credits,
+        newBalance: credits,
+      })
+
+      render(() => <PromoCodeCard />)
+
+      const claimBtn = await screen.findByTestId('claim-promo-btn')
+      expect(claimBtn.textContent).toBe(`Claim ${words}`)
+      fireEvent.click(claimBtn)
+
+      expect(
+        (await screen.findByText(/promo code LAUNCH redeemed/i)).textContent,
+      ).toBe(`Promo code LAUNCH redeemed! +${words} added.`)
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        `+${words} added to your account!`,
+        'info',
+      )
+    })
+  }
 
   it('tells a signed-out visitor about free credits only while some are on offer', async () => {
     mocks.setOffer(null)
@@ -382,7 +467,7 @@ describe('PromoCodeCard', () => {
     render(() => <PromoCodeCard />)
 
     expect(await screen.findByText('Account Required')).toBeInTheDocument()
-    expect(screen.queryByText(/free cloud separation credits/i)).toBeNull()
+    expect(screen.queryByText(/song separation/i)).toBeNull()
     expect(screen.getByText(/redeem promo codes/i)).toHaveTextContent(
       'Create a free account and verify your email to redeem promo codes.',
     )

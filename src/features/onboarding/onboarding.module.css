@@ -279,8 +279,9 @@
 
   /* The welcome's words used to start right under Merc's legs on a phone
      (owner testing, iPhone, 11 Oct 2026), and over them on a 360 px or
-     667 px tall one. His glow ends at 30% of the tall cut's height (no
-     painted pixel is brighter than 12 of 255 below it), so max(53.3vw,
+     667 px tall one. His glow ends at 30% of the tall cut's height: below
+     it the picture is dark sky with a few painted stars, a handful of
+     pixels each up to 232 of 255 (measured 11 Oct 2026), so max(53.3vw,
      30dvh) down the screen. The padding carries the words past that plus
      28 px of clear sky, less the 62 px the rail and the frame's padding
      already give (78 px on a phone, so a phone gets 16 px more). The
@@ -338,6 +339,11 @@
 
 .rail {
   position: relative;
+  /* Above the plates. The rail is first on screen through `order: -1`,
+     and flex `order` also sets the paint order, so without a layer of its
+     own the plates painted after it: the plain sky's screen blend lit
+     its lines straight through the "Not now" pill (3.9:1 on a phone). */
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -704,6 +710,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  /* A 44 px tap target (owner rule): the padding alone made 42. */
+  min-height: 44px;
   border: 1px solid var(--ob-rule);
   border-radius: 999px;
   padding: 12px 24px;
@@ -717,9 +725,15 @@
     color 0.2s var(--ob-ease);
 }
 
-.secondary:hover {
+.secondary:not([aria-disabled='true']):hover {
   border-color: var(--ob-ink-3);
   color: var(--ob-ink);
+}
+
+/* Unavailable for a moment ("Hear a note" while a sound plays): focusable,
+   but it neither lights on hover nor offers a pointer. */
+.secondary[aria-disabled='true'] {
+  cursor: default;
 }
 
 .secondary:focus-visible {
@@ -1018,7 +1032,20 @@
   /* Bounded by HEIGHT as well as width: a landscape tablet has width to
      spare and very little height, and a width-only clamp made the
      portrait taller than the whole frame. */
-  width: min(clamp(200px, 34vw, 320px), 42vh);
+  /* 30vh, not 42vh (follow-up to PR 977): at 42vh a 1440x900 laptop
+     put "Continue" 27 px under the fold, and the portrait was the one
+     thing tall enough to give the room back. A 1080 px screen still
+     gets the full 320 px. */
+  /* The third term gives a short laptop window the same deal: everything
+     else on the beat takes about 540 px of height, and the portrait (4:5,
+     so 0.78 of its height is its width) gets what is left. At 1366x768
+     "Continue" sat 24 px under the fold at the full 30vh; from 900 px up
+     this term is the larger one and changes nothing. */
+  width: min(
+    clamp(180px, 34vw, 320px),
+    30vh,
+    max(120px, calc((100vh - 540px) * 0.78))
+  );
   filter: drop-shadow(0 14px 40px rgba(188, 140, 255, 0.28));
 }
 
@@ -1026,6 +1053,13 @@
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* The twin's eyebrow sits right under the portrait's violet glow, which
+   lifts the ground behind it: the shared --ob-ink-3 measured 3.2:1 there,
+   so this one takes the second ink. */
+.twinEyebrow {
+  color: var(--ob-ink-2);
 }
 
 /* What the map screen after this one is for: quieter than .sub so the
@@ -1426,7 +1460,9 @@
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ob-blue);
+  /* The blue lifted toward the ink: the flow's own blue on its own tint
+     measured 4.35 to 4.9:1, at the AA line for type this small. */
+  color: color-mix(in srgb, var(--ob-blue) 62%, var(--ob-ink));
   white-space: nowrap;
 }
 
@@ -1709,6 +1745,78 @@
     justify-content: center;
   }
 
+  /* The twin on a phone: "Continue" was 51 px under the fold at 375x812
+     with the stat card still on screen, and 76-104 px under it on the
+     phones people actually hold with the browser's bars showing (390x664,
+     375x635, 360x640). Its two buttons share a row, the gaps tighten, and
+     the portrait takes only the height the rest of the beat leaves: about
+     485 px goes to the rail, the words, the card and the buttons, and a
+     4:5 portrait is 0.78 of its height wide. From about 720 px tall it is
+     back to the full 180 px. */
+  .frame:has(> .twinBeat) {
+    padding-top: 16px;
+    padding-bottom: 0;
+  }
+
+  .twinBeat {
+    gap: 10px;
+  }
+
+  .twinArt {
+    width: 180px;
+    width: clamp(96px, calc((100vh - 485px) * 0.78), 180px);
+    width: clamp(96px, calc((100dvh - 485px) * 0.78), 180px);
+  }
+
+  /* Pinned to the bottom of the frame: where the beat still runs taller
+     than the screen (a 320 px phone, large text), the words scroll under
+     the buttons and "Continue" never leaves the screen. Where it fits,
+     sticky does nothing and the row sits under the Map note as before.
+     The ground behind the row is the frame's own, so the words go under
+     it rather than through the outlined Share. In DOM order, Share then
+     Continue: Continue lands on the right, under the thumb, and Tab meets
+     them as the eye does. */
+  .twinBeat .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    margin-top: 0;
+    padding: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to bottom, transparent, var(--ob-ground) 8px);
+  }
+
+  /* Side by side, so one height. */
+  .twinBeat .actions .primary,
+  .twinBeat .actions .secondary {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 16px;
+  }
+
+  /* Below the pinned row, so it keeps the home indicator's room the frame's
+     padding gave up. */
+  .twinBeat .shareNote {
+    margin-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* A 320 px phone: the stat card goes to two rows and the sub to three
+     lines, so the beat cannot fit 640 px however small the portrait. The
+     pinned row keeps "Continue" on screen; this keeps the whole card above
+     it (the Map note is a short scroll away). */
+  @media (max-width: 340px) {
+    .twinBeat {
+      gap: 8px;
+    }
+
+    .twinArt {
+      width: clamp(88px, calc((100vh - 525px) * 0.78), 180px);
+      width: clamp(88px, calc((100dvh - 525px) * 0.78), 180px);
+    }
+  }
+
   .mapGrid {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -1772,9 +1880,15 @@
    Merc's glow and the beat's spacing were sized for taller screens. Here
    the words sit 28 px under his glow, the measure eb200eb41 set out to
    keep (a phone's taller frame padding gave it 44), the gaps tighten, and
-   the bottom padding keeps only the home indicator's room. Taller phones
-   are untouched. */
-@media (max-aspect-ratio: 1/1) and (max-height: 600px) {
+   the bottom padding keeps only the home indicator's room. A 640 px tall
+   phone (320 or 360 wide) scrolled 39 px for the same reasons, so the
+   rule reaches it too. Narrow phones need it further up: at 320-362 px
+   wide the welcome still scrolled 1-23 px from 662 to 694 px tall
+   (360x672 cut the terms line), so under 375 px wide the rule runs to
+   700 px tall. From 375 px wide it stops at 660, and above that the
+   welcome already fits and is untouched. */
+@media (max-aspect-ratio: 1/1) and (max-height: 660px),
+  (max-aspect-ratio: 1/1) and (max-width: 374px) and (max-height: 700px) {
   .frame:has(> .skyBeat) {
     padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }

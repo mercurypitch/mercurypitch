@@ -44,7 +44,8 @@ import { BEAT_EVENT, trackOnboarding } from './funnel'
 import styles from './onboarding.module.css'
 import type { Plate } from './plates'
 import { plateFor, platesAhead, plateSrc, TALL_QUERY } from './plates'
-import type { RoomTarget } from './rooms'
+import type { EnteredRoomId, RoomTarget } from './rooms'
+import { SIDE_DOORS } from './rooms'
 import type { SettledNote } from './settled-note'
 import { StarField } from './StarField'
 import { glideStrip } from './voice-strip'
@@ -408,8 +409,11 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     leave()
   }
 
-  const handleEnterRoom = (target: RoomTarget, roomId: string) => {
+  const handleEnterRoom = (target: RoomTarget, roomId: EnteredRoomId) => {
     trackOnboarding('onboarding_map_room')
+    // A door under the grid also counts which door it was.
+    const door = SIDE_DOORS.find((d) => d.id === roomId)
+    if (door !== undefined) trackOnboarding(door.event)
     console.info('[onboarding] entering room', roomId)
     if (target.kind === 'tab') {
       setActiveTab(target.tab as ActiveTab)

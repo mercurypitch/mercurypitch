@@ -209,6 +209,27 @@ describe('HeaderAccount', () => {
     expect(pill.getAttribute('title')).toMatch(/\b8 free\b/)
   })
 
+  // The pill is the gift's door for everyone, so it names the gift the way
+  // onboarding and Karaoke Night do: by what it buys, one and many.
+  for (const [credits, title] of [
+    [1, 'Claim 1 free song separation'],
+    [5, 'Claim up to 5 free song separations'],
+  ] as const) {
+    for (const authProvider of ['anonymous', 'password'] as const) {
+      it(`says "${title}" to a ${authProvider} account`, async () => {
+        mocks.setOffer({ ...LAUNCH, credits })
+        mocks.fetchMe.mockResolvedValue({
+          user: { authProvider, email: null },
+          profile: null,
+        })
+        render(() => <HeaderAccount />)
+
+        const pill = await screen.findByTestId('header-promo-pill')
+        expect(pill.getAttribute('title')).toBe(title)
+      })
+    }
+  }
+
   it('drops the promo pill when the offer goes away', async () => {
     mocks.fetchMe.mockResolvedValue({
       user: { authProvider: 'anonymous', email: null },

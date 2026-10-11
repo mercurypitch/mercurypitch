@@ -241,6 +241,8 @@
 }
 
 .keepBeat .giftCopy {
+  /* A container, so the title can size itself to the card's own width. */
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -259,7 +261,10 @@
 .keepBeat .giftTitle {
   margin: 0;
   font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-  font-size: 1.6rem;
+  /* "Up to 5 free song separations" is 13 times its font size wide, so
+     7.5cqi keeps it on one line in any card that can hold it at a
+     readable size; a longer count may still wrap. */
+  font-size: min(1.6rem, 7.5cqi);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.015em;
@@ -428,7 +433,7 @@
   }
 
   .keepWithGift .giftTitle {
-    font-size: clamp(1.8rem, 2.6vw, 2.5rem);
+    font-size: clamp(1.8rem, min(2.6vw, 7.5cqi), 2.5rem);
   }
 
   .keepWithGift .giftBody {
@@ -505,9 +510,10 @@
     width: 100%;
   }
 
-  /* One line in a phone's card: "Up to 5 free song separations". */
+  /* One line in a phone's card: "Up to 5 free song separations", down
+     to a 320 px screen, where 1.25rem broke it in two. */
   .keepBeat .giftTitle {
-    font-size: 1.25rem;
+    font-size: clamp(1.05rem, 7.5cqi, 1.25rem);
   }
 
   /* Without the gift the beat stays one block, centred in the frame like

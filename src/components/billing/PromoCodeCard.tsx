@@ -4,7 +4,10 @@
 //
 // Mounted inside Settings → Credits (and accessible via deep-link #/settings/credits).
 // Shows:
-// 1. For unauthenticated / anonymous users: CTA to sign up to claim promo credits.
+// 1. For unauthenticated / anonymous users: CTA to sign up to claim promo
+//    credits, named as song separations: they have not met a credit yet.
+//    Signed in, the card is about the balance, so it says credits and what
+//    they buy.
 // 2. For unverified accounts: alert to verify email before claiming.
 // 3. For verified accounts:
 //    - 1-click claim card while the server features an open code
@@ -16,6 +19,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createResource, createSignal, onMount, Show, } from 'solid-js'
 import { fetchMe, resendVerificationEmail } from '@/db/services/auth-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
+import { giftCount } from '@/lib/launch-gift-copy'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { recordPromoClaim } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -23,6 +27,24 @@ import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { theme } from '@/stores/theme-store'
 import { openAuthModal } from '@/stores/ui-store'
 import styles from './PromoCodeCard.module.css'
+
+/** A phrase opening a line: "Up to 5 song separations". */
+function upperFirst(words: string): string {
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+/** "1 free credit" or "5 free credits": this card is about the balance. */
+function freeCredits(credits: number): string {
+  return credits === 1 ? '1 free credit' : `${credits} free credits`
+}
+
+/** What those credits buy, without "free" (the title above already says
+ *  it): "1 song separation" or "up to 5 song separations". */
+function songSeparations(credits: number): string {
+  return credits === 1
+    ? '1 song separation'
+    : `up to ${credits} song separations`
+}
 
 export interface PromoCodeCardProps {
   initialCode?: string
@@ -109,11 +131,11 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
         claimedAt: new Date().toISOString(),
       })
       setMessage({
-        text: `Promo code ${res.code} redeemed! +${res.creditsGranted} credits added.`,
+        text: `Promo code ${res.code} redeemed! +${freeCredits(res.creditsGranted)} added.`,
         type: 'success',
       })
       showNotification(
-        `+${res.creditsGranted} credits added to your account!`,
+        `+${freeCredits(res.creditsGranted)} added to your account!`,
         'info',
       )
       setCode('')
@@ -181,9 +203,15 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
           when={offeredPromo()}
           fallback="Redeem a promotional code for cloud vocal separation credits."
         >
-          {(promo) =>
-            `Claim ${promo().credits} free credits for cloud vocal separation, or redeem a code you were given.`
-          }
+          {/* In JSX, not a returned string: Show calls its child untracked,
+              and the account answers after the first render. */}
+          {(promo) => (
+            <>
+              {isAuthenticated()
+                ? `Claim ${freeCredits(promo().credits)} for separating songs on the Cloud GPU, or redeem a code you were given.`
+                : `Claim ${giftCount(promo().credits)} on the Cloud GPU, or redeem a code you were given.`}
+            </>
+          )}
         </Show>
       </p>
 
@@ -197,7 +225,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
               fallback="Create a free account and verify your email to redeem promo codes."
             >
               {(promo) =>
-                `Create a free account and verify your email to claim ${promo().credits} free cloud separation credits.`
+                `Create a free account and verify your email to claim ${giftCount(promo().credits)}.`
               }
             </Show>{' '}
             <button
@@ -237,10 +265,10 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
           <div class={styles.claimCard}>
             <div class={styles.claimInfo}>
               <span class={styles.claimTitle}>
-                {promo().credits} free credits
+                {freeCredits(promo().credits)}
               </span>
               <span class={styles.claimSub}>
-                For separating songs on the Cloud GPU
+                {upperFirst(songSeparations(promo().credits))} on the Cloud GPU
               </span>
             </div>
 
@@ -261,7 +289,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
                 }}
                 data-testid="claim-promo-btn"
               >
-                {busy() ? 'Claiming…' : `Claim ${promo().credits} Credits`}
+                {busy() ? 'Claiming…' : `Claim ${freeCredits(promo().credits)}`}
               </button>
             </Show>
           </div>
