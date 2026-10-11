@@ -270,23 +270,24 @@ export function LanternBack(props: LanternProps): JSX.Element {
               light is a deep blue, violet just under the surface and teal
               in the bowl (screen 2). Laid over the painted light on the
               liquid's own box, so it holds at any height, and gone once the
-              lantern is full (screen 3 is the painting as it is). */}
+              lantern is full (screen 3 is the painting as it is). The middle
+              stops carry no red: any would turn the deep blue milky. */}
           <linearGradient id={`${id}-depth`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="rgb(64, 44, 206)" stop-opacity="0.8" />
             <stop
               offset="0.37"
-              stop-color="rgb(44, 60, 196)"
-              stop-opacity="0.66"
+              stop-color="rgb(0, 68, 197)"
+              stop-opacity="0.8"
             />
             <stop
               offset="0.51"
-              stop-color="rgb(30, 90, 190)"
-              stop-opacity="0.48"
+              stop-color="rgb(0, 72, 176)"
+              stop-opacity="0.58"
             />
             <stop
               offset="0.65"
-              stop-color="rgb(8, 98, 178)"
-              stop-opacity="0.55"
+              stop-color="rgb(0, 100, 180)"
+              stop-opacity="0.54"
             />
             <stop
               offset="0.79"
