@@ -68,6 +68,101 @@ export function closeGuideToneBus(
   }, closeDelayMs)
 }
 
+/** The house release for a note cut short (ENVELOPE_DEFAULTS in
+ *  preview-player.ts): a 180 ms exponential decay, then 60 ms of slack
+ *  before the oscillator stops. */
+const STOP_RELEASE_SEC = 0.18
+const STOP_SLACK_SEC = 0.06
+
+/** A reference tone that is sounding: stop it, or wait for its end. */
+export interface ReferenceTone {
+  /** Fade out now and stop after the tail. Safe to call more than once. */
+  stop: () => void
+  /** Resolves once the note has ended, by itself or by `stop`. */
+  done: Promise<void>
+}
+
+/**
+ * Start a soft, piano-like reference tone that can be stopped part-way.
+ * The onboarding's sound lane needs that: a new sound, or a take about to
+ * record, must never have a note still ringing under it.
+ */
+export function startReferenceTone(
+  audioContext: AudioContext,
+  midi: number,
+  durationSec = 1,
+  destination?: AudioNode,
+): ReferenceTone {
+  if (audioContext.state === 'suspended') {
+    void audioContext.resume().catch(() => undefined)
+  }
+
+  let settled = false
+  let settle: () => void = () => {}
+  const done = new Promise<void>((resolve) => {
+    settle = (): void => {
+      if (settled) return
+      settled = true
+      resolve()
+    }
+  })
+  const fallback = setTimeout(() => settle(), (durationSec + 0.5) * 1000)
+
+  const oscillator = audioContext.createOscillator()
+  const filter = audioContext.createBiquadFilter()
+  const gain = audioContext.createGain()
+  const now = audioContext.currentTime
+  const peak = 0.32
+
+  oscillator.setPeriodicWave(pianoWave(audioContext))
+  oscillator.frequency.value = midiToFrequency(midi)
+
+  filter.type = 'lowpass'
+  filter.frequency.value = 3200
+  filter.Q.value = 0.6
+
+  const sustainAt = Math.max(now + 0.17, now + durationSec - 0.14)
+  gain.gain.setValueAtTime(0.0001, now)
+  gain.gain.linearRampToValueAtTime(peak, now + 0.02)
+  gain.gain.exponentialRampToValueAtTime(peak * 0.8, now + 0.16)
+  gain.gain.setValueAtTime(peak * 0.8, sustainAt)
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec)
+
+  oscillator.connect(filter)
+  filter.connect(gain)
+  gain.connect(destination ?? audioContext.destination)
+  oscillator.onended = () => {
+    clearTimeout(fallback)
+    oscillator.disconnect()
+    filter.disconnect()
+    gain.disconnect()
+    settle()
+  }
+  oscillator.start(now)
+  oscillator.stop(now + durationSec)
+
+  let stopped = false
+  const stop = (): void => {
+    if (stopped || settled) return
+    stopped = true
+    try {
+      // Anchor where the envelope is, decay over five time constants of
+      // the release, and stop only once the tail has gone quiet.
+      const at = audioContext.currentTime
+      gain.gain.cancelScheduledValues(at)
+      gain.gain.setValueAtTime(gain.gain.value, at)
+      gain.gain.setTargetAtTime(0, at, STOP_RELEASE_SEC / 5)
+      oscillator.stop(at + STOP_RELEASE_SEC + STOP_SLACK_SEC)
+    } catch {
+      // The context closed under us: nothing is sounding any more.
+    }
+    // Over for the caller now: what is left is the release tail.
+    settle()
+  }
+
+  return { stop, done }
+}
+
 /** Play a soft, piano-like reference tone and resolve after its release. */
 export function playReferenceTone(
   audioContext: AudioContext,
@@ -75,50 +170,5 @@ export function playReferenceTone(
   durationSec = 1,
   destination?: AudioNode,
 ): Promise<void> {
-  if (audioContext.state === 'suspended') {
-    void audioContext.resume().catch(() => undefined)
-  }
-
-  return new Promise((resolve) => {
-    let settled = false
-    const settle = (): void => {
-      if (settled) return
-      settled = true
-      resolve()
-    }
-    const fallback = setTimeout(settle, (durationSec + 0.5) * 1000)
-
-    const oscillator = audioContext.createOscillator()
-    const filter = audioContext.createBiquadFilter()
-    const gain = audioContext.createGain()
-    const now = audioContext.currentTime
-    const peak = 0.32
-
-    oscillator.setPeriodicWave(pianoWave(audioContext))
-    oscillator.frequency.value = midiToFrequency(midi)
-
-    filter.type = 'lowpass'
-    filter.frequency.value = 3200
-    filter.Q.value = 0.6
-
-    const sustainAt = Math.max(now + 0.17, now + durationSec - 0.14)
-    gain.gain.setValueAtTime(0.0001, now)
-    gain.gain.linearRampToValueAtTime(peak, now + 0.02)
-    gain.gain.exponentialRampToValueAtTime(peak * 0.8, now + 0.16)
-    gain.gain.setValueAtTime(peak * 0.8, sustainAt)
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec)
-
-    oscillator.connect(filter)
-    filter.connect(gain)
-    gain.connect(destination ?? audioContext.destination)
-    oscillator.onended = () => {
-      clearTimeout(fallback)
-      oscillator.disconnect()
-      filter.disconnect()
-      gain.disconnect()
-      settle()
-    }
-    oscillator.start(now)
-    oscillator.stop(now + durationSec)
-  })
+  return startReferenceTone(audioContext, midi, durationSec, destination).done
 }

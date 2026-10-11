@@ -13,8 +13,15 @@
 // longer, and it is the right trade — someone who has never done a
 // vocal glide cannot be rushed into one. The demo is deliberately
 // audible as well as animated: an animation alone does not tell you
-// what your VOICE should do, so TaskDemo pairs the drawing with a
-// synthesized siren or held tone.
+// what your VOICE should do, so each intro pairs the drawing with a
+// synthesized siren, or for the hold, the singer's own note.
+//
+// One sound at a time (owner testing, iPhone, 11 Oct 2026). The hold
+// used to play the demo's fixed note on arrival while "Hear a note"
+// played a different one over it. Every sound in this beat now goes
+// through one lane (../sound-lane.ts): a new sound stops the one before,
+// "Hear a note" waits while anything plays, and "I'm ready" silences the
+// lane before a take can record. TaskDemo draws, and plays nothing.
 //
 // Every await is followed by an alive() check before the next side
 // effect. Without it, a visitor who backs out mid-take leaves a
@@ -29,18 +36,21 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { planDemoCue, playDemoCue } from '@/features/mirror/demo-cue'
 import type { LiveVizMode } from '@/features/mirror/LiveViz'
 import { LiveViz } from '@/features/mirror/LiveViz'
 import { TaskDemo } from '@/features/mirror/TaskDemo'
-import { playReferenceTone } from '@/features/mirror/tone-player'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { DemoKind } from '@/lib/mirror/demo-timeline'
+import { buildDemoTimeline } from '@/lib/mirror/demo-timeline'
 import type { F0Frame, MatchTake, MirrorResult } from '@/lib/mirror/metrics'
 import { computeMirrorResult, computeRange, pickMatchTargets, } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { startReferenceTone } from '@/lib/reference-tone'
 import type { VoiceSession } from '@/lib/voice-session'
 import { createVoiceSession } from '@/lib/voice-session'
 import styles from '../onboarding.module.css'
+import { createSoundLane } from '../sound-lane'
 
 const GLIDE_SEC = 8
 const HOLD_SEC = 6
@@ -135,34 +145,82 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   const [recordTotal, setRecordTotal] = createSignal(1)
 
   /**
-   * A note from the middle of the measured range, offered during the
-   * hold task's gate. Null outside that task — the tone must never be
-   * available while a take is recording, or the mic captures it.
+   * A note from the middle of the measured range: the hold task's intro
+   * plays it on arrival, and "Hear a note" plays it again. Null outside
+   * that task. The tone must never be available while a take is
+   * recording, or the mic captures it.
    */
   const [suggestedMidi, setSuggestedMidi] = createSignal<number | null>(null)
-  const [tonePlaying, setTonePlaying] = createSignal(false)
 
-  const playSuggested = async (): Promise<void> => {
-    const midi = suggestedMidi()
-    const context = session?.context() ?? null
-    if (midi === null || context === null || tonePlaying()) return
-    setTonePlaying(true)
-    try {
-      await playReferenceTone(context, midi, 1.6)
-    } finally {
-      setTonePlaying(false)
-    }
-  }
+  /** Every sound this beat makes, one at a time. */
+  const lane = createSoundLane()
+
+  /**
+   * The hold's note lasts as long as the hold demo's sing window (3.3 s),
+   * so the note on arrival sounds while the animation holds its line.
+   * "Hear a note" replays the same note for the same time.
+   */
+  const holdNoteSec =
+    planDemoCue('hold', buildDemoTimeline('hold'))?.seconds ?? 3.3
 
   let session: VoiceSession | null = null
+
+  const audioContext = (): AudioContext | null => {
+    const context = session?.context() ?? null
+    if (context === null || context.state === 'closed') return null
+    if (context.state === 'suspended') {
+      void context.resume().catch(() => undefined)
+    }
+    return context
+  }
+
+  /** The singer's own note for the hold, through the lane. */
+  const playHoldNote = (midi: number): Promise<void> => {
+    const context = audioContext()
+    if (context === null) return Promise.resolve()
+    return lane.play(
+      () => startReferenceTone(context, midi, holdNoteSec),
+      holdNoteSec,
+    )
+  }
+
+  /**
+   * The sound that goes with a task's demo, once, as its intro opens. The
+   * hold plays the singer's own note when the glides gave one; otherwise
+   * every task plays the demo's own cue (the match has none: it plays its
+   * notes one by one).
+   */
+  const playIntroCue = (demo: DemoKind): void => {
+    const midi = suggestedMidi()
+    if (demo === 'hold' && midi !== null) {
+      void playHoldNote(midi)
+      return
+    }
+    const plan = planDemoCue(demo, buildDemoTimeline(demo))
+    const context = audioContext()
+    if (plan === null || context === null) return
+    void lane.play(() => playDemoCue(context, plan), plan.seconds)
+  }
+
+  /** "Hear a note": the hold's note again, only when nothing is playing. */
+  const hearNote = (): void => {
+    const midi = suggestedMidi()
+    if (midi === null || lane.busy()) return
+    void playHoldNote(midi)
+  }
   let cancelled = false
   let timer = 0
   let readyResolve: (() => void) | null = null
 
   const alive = (): boolean => !cancelled
 
-  /** Let go of the "I'm ready" promise so `run()` can unwind and bail. */
+  /**
+   * Let go of the "I'm ready" promise so `run()` can unwind and bail. The
+   * lane goes quiet first: a take follows, and the mic must not hear a
+   * note still ringing.
+   */
   const releaseGate = (): void => {
+    lane.stop()
     readyResolve?.()
     readyResolve = null
   }
@@ -185,7 +243,8 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     clearInterval(timer)
     cancelAnimationFrame(ringFrame)
     // Without this an unmount during an intro leaves run() parked on a
-    // promise nobody will ever resolve, holding the session with it.
+    // promise nobody will ever resolve, holding the session with it. It
+    // also silences the lane, so no note outlives the beat.
     releaseGate()
     session?.close()
     session = null
@@ -213,6 +272,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   ): Promise<void> => {
     if (!alive()) return Promise.resolve()
     setStage({ kind: 'intro', demo, title, body })
+    playIntroCue(demo)
     return new Promise<void>((resolve) => {
       readyResolve = resolve
     })
@@ -233,6 +293,9 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     seconds: number,
     live: { mode: LiveVizMode; target?: number } | null = null,
   ): Promise<F0Frame[]> => {
+    // Never a sound under a take. "I'm ready" already silenced the lane;
+    // this is the guarantee for every other way into a take.
+    lane.stop()
     setStage({ kind: 'record', title, body })
     if (session === null) return []
     setViz(
@@ -410,9 +473,12 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         title: 'Listen',
         body: `This is ${name}.`,
       })
-      const context = session.context()
+      const context = audioContext()
       if (context !== null) {
-        await playReferenceTone(context, target, REFERENCE_SEC)
+        await lane.play(
+          () => startReferenceTone(context, target, REFERENCE_SEC),
+          REFERENCE_SEC,
+        )
       }
       if (!alive()) return
 
@@ -510,16 +576,15 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         )}
       </Show>
 
-      {/* Animation plus its audible siren/hold cue. Mounted only during
-          the intro, so every task gets a fresh instance and the cue
-          replays for the task it belongs to. */}
+      {/* The animation only. Its sound comes from taskIntro, through
+          the lane, so it can never overlap another note. Mounted only
+          during the intro, so every task gets a fresh instance. */}
       <Show when={current().kind === 'intro'}>
         <div class={styles.demoStage}>
           <TaskDemo
             kind={(current() as { demo: DemoKind }).demo}
             size="stage"
             label={titled().title}
-            getAudioContext={() => session?.context() ?? null}
           />
         </div>
       </Show>
@@ -532,15 +597,16 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         <div class={styles.actions}>
           {/* Offered only where a note has been suggested (the hold task,
               once the glides have given us a range). Never during a take:
-              a tone still sounding would be captured by the mic. */}
+              a tone still sounding would be captured by the mic. It waits
+              while any sound plays, the arrival note included. */}
           <Show when={suggestedMidi() !== null}>
             <button
               type="button"
               class={styles.secondary}
-              onClick={() => void playSuggested()}
-              disabled={tonePlaying()}
+              onClick={hearNote}
+              disabled={lane.busy()}
             >
-              {tonePlaying()
+              {lane.busy()
                 ? 'Playing…'
                 : `Hear a note (${midiToNoteNameOctave(suggestedMidi() ?? 0)})`}
             </button>
@@ -592,7 +658,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         </div>
         <p class={styles.recordingTag}>Recording</p>
         <p class={styles.recordHint}>
-          Done before the count ends? Just stop singing — we keep what we heard.
+          Done before the count ends? Just stop singing. We keep what we heard.
         </p>
       </Show>
 

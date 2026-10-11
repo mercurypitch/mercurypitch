@@ -20,6 +20,78 @@ import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
 const takes = vi.hoisted(() => ({
   /** Hands back the next take's frames; reset per test. */
   next: (): PitchFrame[] => [],
+  /**
+   * Off: a take hands back its frames at once, so the counter tests run
+   * fast. On: a take lasts as long as it asks for, so its screen shows
+   * and a sound started under it is caught.
+   */
+  realTime: false,
+}))
+
+/**
+ * Every sound the beat makes, faked at the synthesizers: each one logs
+ * what it is and when, counts itself while it sounds, and ends after its
+ * length unless it is stopped first. `context` is null by default, so the
+ * counter tests run silent as they always did.
+ */
+const audio = vi.hoisted(() => {
+  const state = {
+    context: null as unknown,
+    log: [] as { kind: 'tone' | 'sweep' | 'hold'; midi: number | null }[],
+    active: 0,
+    maxActive: 0,
+    /** The most sounds playing at any moment a take was recording. */
+    activeDuringTake: 0,
+    recording: false,
+    sound(kind: 'tone' | 'sweep' | 'hold', midi: number | null, sec: number) {
+      state.log.push({ kind, midi })
+      state.active += 1
+      state.maxActive = Math.max(state.maxActive, state.active)
+      if (state.recording) {
+        state.activeDuringTake = Math.max(state.activeDuringTake, state.active)
+      }
+      let over = false
+      let finish = (): void => {}
+      const done = new Promise<void>((resolve) => {
+        finish = resolve
+      })
+      const end = (): void => {
+        if (over) return
+        over = true
+        state.active -= 1
+        finish()
+      }
+      setTimeout(end, sec * 1000)
+      return { stop: end, done }
+    },
+    reset(): void {
+      state.context = null
+      state.log = []
+      state.active = 0
+      state.maxActive = 0
+      state.activeDuringTake = 0
+      state.recording = false
+    },
+  }
+  return state
+})
+
+vi.mock('@/lib/reference-tone', () => ({
+  startReferenceTone: (_ctx: unknown, midi: number, sec = 1) =>
+    audio.sound('tone', midi, sec),
+  playReferenceTone: (_ctx: unknown, midi: number, sec = 1) =>
+    audio.sound('tone', midi, sec).done,
+}))
+
+// The demo cues' synthesizers hand back a handle that can only be stopped,
+// as the real ones do.
+vi.mock('@/lib/demo-audio', () => ({
+  playSirenSweep: (_ctx: unknown, opts: { seconds?: number } = {}) => ({
+    stop: audio.sound('sweep', null, opts.seconds ?? 2.2).stop,
+  }),
+  playHoldTone: (_ctx: unknown, _hz: number, sec = 1.6) => ({
+    stop: audio.sound('hold', null, sec).stop,
+  }),
 }))
 
 vi.mock('@/lib/voice-session', () => ({
@@ -29,12 +101,23 @@ vi.mock('@/lib/voice-session', () => ({
         Promise.resolve({ ok: true } as OpenResult),
       probe: (): Promise<ProbeResult> => Promise.resolve('ok' as ProbeResult),
       arm: (): void => {},
-      record: (): Promise<PitchFrame[]> => Promise.resolve(takes.next()),
+      record: (seconds: number): Promise<PitchFrame[]> => {
+        audio.activeDuringTake = Math.max(audio.activeDuringTake, audio.active)
+        const frames = takes.next()
+        if (!takes.realTime) return Promise.resolve(frames)
+        audio.recording = true
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            audio.recording = false
+            resolve(frames)
+          }, seconds * 1000)
+        })
+      },
       latest: () => null,
       latestSmoothed: () => null,
       level: (): number => 0,
-      // No audio context: the reference tones are skipped, not played.
-      context: () => null,
+      // Null unless a test hands one over: then the beat's sounds play.
+      context: () => audio.context as AudioContext | null,
       isOpen: (): boolean => true,
       devices: (): Promise<MediaDeviceInfo[]> => Promise.resolve([]),
       useDevice: (): Promise<ProbeResult> =>
@@ -119,11 +202,13 @@ describe('the voiceprint counter', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     takes.next = audibleSinger()
+    audio.reset()
   })
 
   afterEach(() => {
     cleanup()
     vi.useRealTimers()
+    takes.realTime = false
   })
 
   it('says the step and the whole run time on its first screen', async () => {
@@ -223,5 +308,138 @@ describe('the voiceprint counter', () => {
       run.screens.some((t) => t.includes('Last one: match five notes.')),
     ).toBe(true)
     expect(run.screens.some((t) => t.includes('skipped'))).toBe(false)
+  })
+
+  it('keeps the em dash off every screen of the run', async () => {
+    // Takes that last, so the recording screen and its hint show.
+    takes.realTime = true
+
+    const run = await runThrough()
+
+    expect(run.screens.some((t) => t.includes('Recording'))).toBe(true)
+    expect(run.screens.filter((t) => t.includes('—'))).toEqual([])
+  })
+})
+
+// ── One sound at a time (owner testing, iPhone, 11 Oct 2026) ──────────
+//
+// A note played on arrival at the hold, and "Hear a note" played a
+// different note over it. Now both are the singer's own mid-range note,
+// the button waits for any sound to finish, and no two sounds overlap
+// anywhere in the run.
+
+const hearButton = (): HTMLButtonElement | null =>
+  screen.queryByRole('button', { name: /^(Hear a note|Playing)/ })
+
+/** Answer every gate until the hold task's intro is on screen. */
+async function untilHoldIntro(): Promise<void> {
+  render(() => <BeatVoiceprint onComplete={() => {}} onDenied={() => {}} />)
+  for (let tick = 0; tick < 400; tick++) {
+    if (counter().startsWith('Step 3 of 4') && readyButton() !== null) return
+    const ready = readyButton()
+    if (ready !== null) fireEvent.click(ready)
+    await vi.advanceTimersByTimeAsync(250)
+  }
+  throw new Error('the run never reached the hold')
+}
+
+describe('the voiceprint plays one sound at a time', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    takes.next = audibleSinger()
+    takes.realTime = true
+    audio.reset()
+    audio.context = { state: 'running' }
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+    takes.realTime = false
+    audio.reset()
+  })
+
+  it('plays the middle of the singer\'s glides on arrival at the hold, and "Hear a note" plays that same note', async () => {
+    // Arrange: glides from A2 to A4, so the middle of the range is A3.
+    await untilHoldIntro()
+    const arrival = audio.log.at(-1)
+    await vi.advanceTimersByTimeAsync(5000)
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: 'Hear a note (A3)' }))
+
+    // Assert
+    expect(arrival).toEqual({ kind: 'tone', midi: 57 })
+    expect(audio.log.at(-1)).toEqual({ kind: 'tone', midi: 57 })
+    expect(audio.maxActive).toBe(1)
+  })
+
+  it('keeps "Hear a note" disabled while the arrival note plays, and frees it once the note ends', async () => {
+    // Arrange
+    await untilHoldIntro()
+    const during = hearButton()?.disabled
+
+    // Act
+    await vi.advanceTimersByTimeAsync(5000)
+
+    // Assert
+    expect(during).toBe(true)
+    expect(hearButton()?.disabled).toBe(false)
+    expect(hearButton()?.textContent).toBe('Hear a note (A3)')
+  })
+
+  it('disables "Hear a note" again while its own note plays', async () => {
+    // Arrange
+    await untilHoldIntro()
+    await vi.advanceTimersByTimeAsync(5000)
+
+    // Act
+    fireEvent.click(hearButton() as HTMLButtonElement)
+
+    // Assert
+    expect(hearButton()?.disabled).toBe(true)
+    expect(audio.active).toBe(1)
+  })
+
+  it('never plays two sounds at once, and none while a take records', async () => {
+    // Arrange: tap "Hear a note" whenever it is free, and say "I'm ready"
+    // while its note is still sounding, the hardest case for the take.
+    const onComplete = vi.fn()
+    render(() => <BeatVoiceprint onComplete={onComplete} onDenied={() => {}} />)
+
+    // Act
+    for (
+      let tick = 0;
+      tick < 1200 && onComplete.mock.calls.length === 0;
+      tick++
+    ) {
+      const hear = hearButton()
+      if (hear !== null && !hear.disabled) {
+        fireEvent.click(hear)
+        fireEvent.click(readyButton() as HTMLElement)
+      } else if (hear === null && readyButton() !== null) {
+        fireEvent.click(readyButton() as HTMLElement)
+      }
+      await vi.advanceTimersByTimeAsync(250)
+    }
+
+    // Assert: a sweep up, a sweep down, the hold's note on arrival and
+    // again from the button, then the five notes of the match.
+    expect(onComplete).toHaveBeenCalledOnce()
+    expect(audio.log.map((s) => s.kind)).toEqual([
+      'sweep',
+      'sweep',
+      'tone',
+      'tone',
+      'tone',
+      'tone',
+      'tone',
+      'tone',
+      'tone',
+    ])
+    expect(audio.log[2]?.midi).toBe(57)
+    expect(audio.log[3]?.midi).toBe(57)
+    expect(audio.maxActive).toBe(1)
+    expect(audio.activeDuringTake).toBe(0)
   })
 })
