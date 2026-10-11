@@ -34,6 +34,7 @@ import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
 import styles from './LongNoteRoom.module.css'
 import { MercView } from './MercView'
+import { BESIDE_X, createLayoutGlide, layoutStage, MERC_UNITS, } from './stage-layout'
 import { useLongNoteController } from './useLongNoteController'
 import { TRACE_PX_PER_CENT, VoiceTrace } from './VoiceTrace'
 
@@ -44,8 +45,6 @@ export interface LongNoteRoomProps {
 
 // ── Where things go, in lantern view-box units ─────────────────
 
-/** Merc's canvas, square, at full size (standing beside the lantern). */
-const MERC_UNITS = 210
 /** How small he gets to float inside the glass. */
 const MERC_INSIDE_SCALE = 0.7
 /**
@@ -56,23 +55,8 @@ const MERC_INSIDE_SCALE = 0.7
  * walk, so that is the point that meets the ground line.
  */
 const MERC_FEET = 0.81
-/** Beside the lantern: his centre, and the ground under the lantern's foot. */
-const BESIDE_X = 230
+/** The ground under the lantern's foot, where he stands beside it. */
 const GROUND_Y = 370
-/**
- * How far left of the stage's middle the lantern stands, so that it and Merc
- * beside it share the width.
- */
-const LANTERN_SHIFT = 20
-/** The gap Merc's canvas keeps from the stage's right edge, px. */
-const EDGE_PX = 2
-/**
- * Where Merc's canvas beside the lantern ends, right of the stage's middle.
- * All of it stays on screen: a celebration's sparkles, a hop's landing and
- * the drop's splash reach its edge.
- */
-const MERC_REACH =
-  BESIDE_X + MERC_UNITS / 2 - (LANTERN_VIEW_W / 2 + LANTERN_SHIFT)
 /**
  * How far his feet sink into the liquid: he stands on its surface, the
  * bottoms of his feet 5 units under its middle line as in storyboard 2,
@@ -86,32 +70,6 @@ const BOWL_FLOOR = CHIMNEY_BOTTOM - 4
  * 2's ribbon ends, short of the note's name.
  */
 const TRACE_HEAD_X = 240
-
-interface StageLayout {
-  /** px per view-box unit. */
-  k: number
-  /** The lantern box's offset in the stage, px. */
-  left: number
-  top: number
-  /** The stage's size, px. */
-  width: number
-  height: number
-}
-
-function layoutStage(width: number, height: number): StageLayout {
-  const k = Math.max(
-    0.2,
-    Math.min(
-      (height * 0.96) / LANTERN_VIEW_H,
-      (width / 2 - EDGE_PX) / MERC_REACH,
-    ),
-  )
-  // The lantern stands a little left of the middle; Merc beside it uses the
-  // room to its right.
-  const left = width / 2 - (LANTERN_VIEW_W / 2 + LANTERN_SHIFT) * k
-  const top = height - LANTERN_VIEW_H * k
-  return { k, left, top, width, height }
-}
 
 function formatSeconds(seconds: number): string {
   return `${(Math.floor(seconds * 10) / 10).toFixed(1)} s`
@@ -128,18 +86,21 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
    */
   const demoTake = (): boolean => demo.take() !== null
   let stageEl: HTMLDivElement | undefined
-  const [layout, setLayout] = createSignal<StageLayout>({
-    k: 1,
-    left: 0,
-    top: 0,
-    width: 0,
-    height: 0,
+  const [stageSize, setStageSize] = createSignal({ width: 0, height: 0 })
+  // Centred while Merc floats in the glass, moved over for him beside it;
+  // gliding between the two.
+  const layout = createLayoutGlide(() => {
+    const { width, height } = stageSize()
+    return layoutStage(width, height, room.mercPlace() === 'beside' ? 1 : 0)
   })
 
   onMount(() => {
     const measure = (): void => {
       if (stageEl === undefined) return
-      setLayout(layoutStage(stageEl.clientWidth, stageEl.clientHeight))
+      setStageSize({
+        width: stageEl.clientWidth,
+        height: stageEl.clientHeight,
+      })
     }
     measure()
     const observer = new ResizeObserver(measure)

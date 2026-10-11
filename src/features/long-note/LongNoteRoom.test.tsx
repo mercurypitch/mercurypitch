@@ -566,6 +566,41 @@ describe('LongNoteRoom', () => {
     expect(merc.options[0]).toMatchObject({ sparkles: 'right' })
   })
 
+  it('centres the lantern while Merc is in the glass, gliding there', async () => {
+    // Review of pass 3: in the hold the lantern sat 14 to 22 px left of
+    // the middle with nothing beside it. A 430 x 932 phone's stage.
+    vi.useFakeTimers({ toFake: ['performance'] })
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(430)
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(461)
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const lantern = screen.getByTestId('long-note-lantern')
+    const middle = (): number =>
+      parseFloat(lantern.style.left) + parseFloat(lantern.style.width) / 2
+    const run = (seconds: number): number[] => {
+      const seen: number[] = []
+      for (let i = 0; i < seconds * 60; i++) {
+        vi.advanceTimersByTime(1000 / 60)
+        flushFrames()
+        seen.push(middle())
+      }
+      return seen
+    }
+    // Merc beside it: moved over to make room for him.
+    expect(middle()).toBeLessThan(215 - 40)
+    await startListening()
+
+    // Act: the voice starts and he hops into the glass.
+    fake.frames = tone(57, 1.5)
+    const glide = [middle(), ...run(1)]
+
+    // Assert: it eases to the middle, a few px a frame at most.
+    expect(phase()).toBe('hold')
+    expect(glide[glide.length - 1]).toBeCloseTo(215, 6)
+    for (let i = 1; i < glide.length; i++) {
+      expect(Math.abs(glide[i] - glide[i - 1])).toBeLessThan(3)
+    }
+  })
+
   it("turns the voice amber where the light stops filling, by the engine's centre", async () => {
     vi.useFakeTimers({ toFake: ['performance'] })
     try {
