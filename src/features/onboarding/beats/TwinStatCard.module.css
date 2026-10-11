@@ -210,6 +210,12 @@
   .row[data-cells='2'] .cell:nth-child(2) {
     border-left: 1px solid var(--ob-rule, #30363d);
   }
+
+  /* A lone stat (only the range was heard) spans the row rather than
+     sitting in its left half. */
+  .row[data-cells='1'] .cell {
+    grid-column: 1 / -1;
+  }
 }
 
 @keyframes card-ridge {
