@@ -311,6 +311,10 @@ export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
     autoTimer = setTimeout(autoPlay, AUTO_PLAY_MS)
   })
 
+  // The room keeps the screen on while the demo plays, and only then: not
+  // on its card or its end, and not once it is skipped, left or hidden.
+  createEffect(() => script.playing(mode() === 'playing'))
+
   // The singer got there first (a tap on the mic, a new note): no demo.
   createEffect(
     on(

@@ -50,4 +50,9 @@ export interface LongNoteScript {
   mood: (state: MercState) => void
   /** Back to the room's start, as it was before the demo. */
   leave: () => void
+  /**
+   * Whether the demo is playing. The screen stays on while it does: it
+   * plays about 20 s, and Android's shortest screen timeout is 15 s.
+   */
+  playing: (on: boolean) => void
 }

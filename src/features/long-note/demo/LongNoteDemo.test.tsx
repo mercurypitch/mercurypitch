@@ -253,6 +253,18 @@ async function run(ms: number, log: Seen = watched()): Promise<Seen> {
 const room = (): HTMLElement => screen.getByTestId('long-note-room')
 const demoMode = (): string | undefined => room().dataset.demo
 
+/** A phone's keep-awake switch, and each flip of it in order. */
+function phoneScreen(): { calls: () => boolean[]; unregister: () => void } {
+  const keepAwake = vi.fn()
+  const unregister = registerNativeDevice({
+    keepAwake,
+  } as unknown as NativeDeviceApi)
+  return {
+    calls: () => keepAwake.mock.calls.map(([on]) => on as boolean),
+    unregister,
+  }
+}
+
 /** A singer's own take: three seconds on A3, then a breath. */
 async function liveTake(): Promise<void> {
   fireEvent.click(screen.getByTestId('long-note-mic'))
@@ -364,30 +376,75 @@ describe('the Long note demo', () => {
     expect(fake.windows).toBe(0)
   })
 
-  it('leaves the screen to its own sleep rules, then keeps it on for the singer', async () => {
-    // About 22 s from the tap or the arrival that starts it, the demo ends
-    // inside the shortest auto-lock (30 s), so it never holds the screen.
-    const keepAwake = vi.fn()
-    const unregister = registerNativeDevice({
-      keepAwake,
-    } as unknown as NativeDeviceApi)
+  // Review A2 of PR 973, minor 4: Android's shortest screen timeout is
+  // 15 s, and the demo plays for about 20 s.
+  it('keeps the screen on while it plays, lets go at its end, then keeps it on for the singer', async () => {
+    const screenOn = phoneScreen()
     try {
       render(() => <LongNoteRoom onDone={() => undefined} />)
-      await run(22_500)
-      expect(demoMode()).toBe('end')
-      expect(keepAwake).not.toHaveBeenCalled()
+      await run(4000)
+      expect(demoMode()).toBe('playing')
+      expect(screenOn.calls()).toEqual([true])
 
-      // The singer's own take is another matter.
+      await run(18_500)
+      expect(demoMode()).toBe('end')
+      expect(screenOn.calls()).toEqual([true, false])
+
+      // The singer's own take holds it again, and only while it listens.
       fireEvent.click(screen.getByTestId('long-note-demo-try'))
       await run(50)
       await liveTake()
       expect(room().dataset.phase).toBe('result')
-      expect(keepAwake.mock.calls.map(([on]) => on as boolean)).toEqual([
-        true,
-        false,
-      ])
+      expect(screenOn.calls()).toEqual([true, false, true, false])
     } finally {
-      unregister()
+      screenOn.unregister()
+    }
+  })
+
+  it('lets the screen go on Skip', async () => {
+    const screenOn = phoneScreen()
+    try {
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      await run(4000)
+      expect(screenOn.calls()).toEqual([true])
+
+      fireEvent.click(screen.getByTestId('long-note-demo-skip'))
+      await run(50)
+      expect(demoMode()).toBe('end')
+      expect(screenOn.calls()).toEqual([true, false])
+    } finally {
+      screenOn.unregister()
+    }
+  })
+
+  it('lets the screen go when the singer leaves mid-demo', async () => {
+    const screenOn = phoneScreen()
+    try {
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      await run(4000)
+      expect(screenOn.calls()).toEqual([true])
+
+      cleanup()
+      expect(screenOn.calls()).toEqual([true, false])
+    } finally {
+      screenOn.unregister()
+    }
+  })
+
+  it('lets the screen go when the app goes to the background mid-demo', async () => {
+    const screenOn = phoneScreen()
+    try {
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      await run(4000)
+      expect(screenOn.calls()).toEqual([true])
+
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await run(50)
+      expect(demoMode()).toBe('card')
+      expect(screenOn.calls()).toEqual([true, false])
+    } finally {
+      screenOn.unregister()
     }
   })
 

@@ -104,6 +104,7 @@ export function useLongNoteController(): LongNoteController {
   // The demo: on, the note it sings, and the take it is singing.
   const [scriptActive, setScriptActive] = createSignal(false)
   const [scriptNote, setScriptNote] = createSignal<number | null>(null)
+  const [demoPlaying, setDemoPlaying] = createSignal(false)
   let scripted: ScriptedTake | null = null
   const demoOn = (): boolean => untrack(scriptActive)
 
@@ -619,12 +620,14 @@ export function useLongNoteController(): LongNoteController {
   }
   document.addEventListener('visibilitychange', onVisibility)
 
-  // The screen stays on while the singer's take listens, and only then:
-  // the demo ends inside the shortest auto-lock, so it never holds it.
+  // The screen stays on while the singer's take listens, and while the
+  // demo plays (its own say: not on its end card).
   const awake = createScreenAwake()
   createEffect(() => {
     const { phase } = state()
-    awake.set(!scriptActive() && (phase === 'listen' || phase === 'hold'))
+    awake.set(
+      scriptActive() ? demoPlaying() : phase === 'listen' || phase === 'hold',
+    )
   })
 
   // The app's mic watchdog: the icon is on while the room listens, and a
@@ -709,6 +712,7 @@ export function useLongNoteController(): LongNoteController {
       batch(() => {
         setScriptActive(false)
         setScriptNote(null)
+        setDemoPlaying(false)
         dispatch({ type: 'demo', phase: 'intro' })
       })
       easeLevel(0, 450)
@@ -716,6 +720,7 @@ export function useLongNoteController(): LongNoteController {
       if (inside && !still) merc.hopTo('beside', 'idle')
       else merc.put('idle', 'beside')
     },
+    playing: setDemoPlaying,
   }
 
   onCleanup(() => {
