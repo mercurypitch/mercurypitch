@@ -79,8 +79,10 @@ describe('the signed-out line under Add a song', () => {
 
     const gift = screen.getByTestId('kn-launch-gift')
     expect(gift).toHaveTextContent(
-      'Splitting on this device is free. For studio quality, get 5 free credits with a free account.',
+      'Splitting on this device is free. For studio quality, get up to 5 free song separations with a free account.',
     )
+    // A visitor here has not met a credit yet: the gift says what it buys.
+    expect(gift).not.toHaveTextContent('credits')
     expect(gift).not.toHaveTextContent('paid option')
     expect(mocks.loadFeaturedPromo).toHaveBeenCalled()
   })

@@ -206,6 +206,14 @@ gift". The number is always the server's. Verified by
 `onboarding-launch-gift-beats.test.tsx` and
 `onboarding-launch-gift-flow.test.tsx`.
 
+The same words, from `src/lib/song-separations.ts`, name the gift wherever
+the reader has not met a credit yet: Karaoke Night's signed-out line ("For
+studio quality, get up to 5 free song separations with a free account.")
+and the signed-out promo card in Settings > Credits. Signed in, that card is
+about the balance, so it keeps "5 free credits" and says what they buy: "Up
+to 5 song separations on the Cloud GPU". Verified by
+`KaraokeGiftLine.test.tsx` and `PromoCodeCard.test.tsx`.
+
 ### REQ-FVC-017 — Merc is the listener on every beat
 
 **Ubiquitous:** Whoever hears the singer shall be Merc, never "we", on every
