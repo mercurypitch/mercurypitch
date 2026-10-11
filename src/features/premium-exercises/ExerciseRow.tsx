@@ -17,9 +17,11 @@
 // then says what a tap does (WCAG 2.5.3): the app ships voice control, and
 // a name that paraphrased the pill would leave it unspeakable.
 //
-// Until the room has arrived the row is drawn but takes no tap, as the
-// capsule does. `aria-disabled` rather than `disabled`, so it keeps its
-// place in the focus order and says why it is quiet.
+// Until the room has arrived (Sing is the tab on screen) the row is drawn
+// but takes no tap, as the capsule does, and it shows: it dims to half (the
+// module's [aria-disabled] rule). `aria-disabled` rather than `disabled`, so
+// it keeps its place in the focus order; a screen reader announces it as
+// unavailable.
 
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
@@ -33,7 +35,10 @@ import { lastExercise } from './last-exercise'
 import styles from './premium-exercises.module.css'
 
 export interface ExerciseRowProps {
-  /** The room has not arrived: the row is drawn, and no tap does anything. */
+  /**
+   * The room has not arrived: the row is drawn dimmed, and no tap does
+   * anything.
+   */
   disabled: boolean
   /** The pill: open this exercise. */
   onOpen: (id: PremiumExerciseId) => void

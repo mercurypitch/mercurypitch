@@ -56,6 +56,15 @@
   padding: 0;
 }
 
+/* Until the room has arrived the row takes no tap (ExerciseRow.tsx), and
+   it looks it: a control that refuses with no sign reads as broken. */
+.pill[aria-disabled='true'],
+.browse[aria-disabled='true'],
+.door[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .glyph {
   display: grid;
   flex: 0 0 auto;
