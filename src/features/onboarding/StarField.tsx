@@ -46,6 +46,13 @@ export interface StarFieldProps {
   beadIndex?: number
   /** Dim the whole field — used behind text-heavy beats like the Map. */
   recede?: boolean
+  /**
+   * Hidden behind one of Merc's plates. The field stays mounted, so its
+   * sweep and lit beads are where they were when it comes back, but it
+   * asks for no frames: the current bead's breathing kept the loop
+   * running at 60 fps behind every plate.
+   */
+  paused?: boolean
 }
 
 const STAR_COUNT = 150
@@ -339,12 +346,16 @@ export const StarField: Component<StarFieldProps> = (props) => {
 
     /** True while anything on screen still has to change. */
     const restless = (): boolean => {
-      if (reduce.matches) return false
+      if (reduce.matches || props.paused === true) return false
       const index = props.beadIndex ?? -1
       return index >= 0
     }
 
     const loop = (now: number) => {
+      if (props.paused === true) {
+        running = false
+        return
+      }
       const a = tweenStep(sweep, now)
       const b = tweenStep(lit, now)
       draw(now)
@@ -356,7 +367,7 @@ export const StarField: Component<StarFieldProps> = (props) => {
     }
 
     const kick = () => {
-      if (running) return
+      if (running || props.paused === true) return
       running = true
       frame = requestAnimationFrame(loop)
     }
@@ -395,6 +406,18 @@ export const StarField: Component<StarFieldProps> = (props) => {
       if (target === lit.to) return
       tweenTo(lit, target, STEP_MS)
       kick()
+    })
+
+    // Asleep while a plate covers the field; awake, it catches up on any
+    // beat it missed in one tween.
+    createEffect(() => {
+      if (props.paused === true) {
+        cancelAnimationFrame(frame)
+        running = false
+        return
+      }
+      if (reduce.matches) draw(0)
+      else kick()
     })
 
     // Redraw when the beat asks the field to recede.

@@ -461,7 +461,8 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       {/* Merc's plates paint their own sky, and on a phone the arc's
           beads would sit on Merc himself, so the field steps out while
           one is up. It stays mounted, so its sweep and lit beads are
-          where they were when it comes back. */}
+          where they were when it comes back, and paused, so it draws
+          nothing while it is away. */}
       <div
         class={styles.field}
         classList={{ [styles.fieldAway]: plate() !== 'plain' }}
@@ -469,6 +470,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       >
         <StarField
           recede={textHeavy()}
+          paused={plate() !== 'plain'}
           beads={onboardingBeads().count}
           beadIndex={onboardingBeads().index}
         />
