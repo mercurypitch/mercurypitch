@@ -139,8 +139,9 @@ export function demoCueText(id: DemoCueId, note: string, own: boolean): string {
         : `This line is the note: ${note}.`
     case 'stops':
       return 'Off the line, it stops filling.'
+    // One line: under the timer it clears the lantern's handle at 360 px.
     case 'breath':
-      return 'Stop for a breath and the note is over.'
+      return 'A breath ends the note.'
     case 'fills':
       return 'Stay on the line and it keeps filling.'
     case 'twelve':

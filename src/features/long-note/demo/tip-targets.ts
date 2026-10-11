@@ -5,8 +5,8 @@
 // The scene is measured off the screen when a tooltip shows (the note tag,
 // the lantern's box, the timer, the mic, Merc), so every anchor follows
 // the room's real layout. Inside the lantern's box, the chimney's outline
-// (lantern-geometry.ts) says where the light is: the one part of the
-// lantern a tooltip may never cover.
+// (lantern-geometry.ts) says where the light is, and the painted handle
+// sits on top: the two parts of the lantern a tooltip may never cover.
 
 import { CHIMNEY_BOTTOM, CHIMNEY_TOP, chimneyHalfWidth, HOLD_FILL_MAX, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, } from '../lantern-geometry'
 import type { DemoTarget } from './demo-cues'
@@ -55,6 +55,14 @@ const WIDEST = Math.max(
 const BRIM_BELOW_TOP = 30
 /** The mic's pulse ring reaches this far past the disc. */
 const MIC_RING = 14
+/** A tooltip keeps this far from the demo's own controls (Skip, the pill). */
+const CONTROL_GAP = 8
+/**
+ * The lantern's painted handle (its bail), view-box units: the ring from
+ * its top at y 4 down to the cap at 60, x 47 to 152 where it is widest,
+ * as measured off the frame plate.
+ */
+const BAIL = { x: 47, y: 4, w: 105, h: 56 } as const
 
 /** Where the light can be: the chimney's bounding box, px. */
 export function lightRect(lantern: Rect): Rect {
@@ -65,6 +73,18 @@ export function lightRect(lantern: Rect): Rect {
     y: lantern.y + CHIMNEY_TOP * sy,
     w: 2 * WIDEST * sx,
     h: (CHIMNEY_BOTTOM - CHIMNEY_TOP) * sy,
+  }
+}
+
+/** The lantern's handle, px. */
+export function bailRect(lantern: Rect): Rect {
+  const sx = lantern.w / LANTERN_VIEW_W
+  const sy = lantern.h / LANTERN_VIEW_H
+  return {
+    x: lantern.x + BAIL.x * sx,
+    y: lantern.y + BAIL.y * sy,
+    w: BAIL.w * sx,
+    h: BAIL.h * sy,
   }
 }
 
@@ -92,12 +112,16 @@ function lineY(scene: DemoScene): number | null {
 const present = (rects: readonly (Rect | null)[]): Rect[] =>
   rects.filter((rect): rect is Rect => rect !== null)
 
-/** What no tooltip covers: the room's controls and the demo's own. */
+/**
+ * What no tooltip covers: the room's controls, the demo's own (with a
+ * gap), and the lantern's handle.
+ */
 function controls(scene: DemoScene): Rect[] {
   return present([
-    ...scene.controls,
+    ...scene.controls.map((rect) => inflate(rect, CONTROL_GAP)),
     scene.mic === null ? null : inflate(scene.mic, MIC_RING),
     scene.note,
+    scene.lantern === null ? null : bailRect(scene.lantern),
   ])
 }
 
@@ -169,6 +193,7 @@ function textTarget(
   scene: DemoScene,
   text: Rect | null,
   keep: readonly (Rect | null)[],
+  sides: readonly Side[],
 ): TipTarget | null {
   if (text === null) return null
   const midY = text.y + text.h / 2
@@ -178,7 +203,7 @@ function textTarget(
       right: { x: text.x + text.w, y: midY },
       left: { x: text.x, y: midY },
     },
-    sides: ['below', 'right', 'left'],
+    sides,
     avoid: present([text, ...keep, ...controls(scene)]),
     prefer: softly(scene),
     glow: { kind: 'text', rect: inflate(text, 8) },
@@ -217,9 +242,21 @@ export function tipTarget(
     case 'brim':
       return lanternTarget(scene, target)
     case 'timer':
-      return textTarget(scene, scene.timer, [scene.chip])
+      return textTarget(
+        scene,
+        scene.timer,
+        [scene.chip],
+        ['below', 'right', 'left'],
+      )
+    // Under the score when the handle leaves room; else beside it, on the
+    // side away from Skip.
     case 'score':
-      return textTarget(scene, scene.score, [scene.result])
+      return textTarget(
+        scene,
+        scene.score,
+        [scene.result],
+        ['below', 'left', 'right'],
+      )
     case 'mic':
       return micTarget(scene)
   }
