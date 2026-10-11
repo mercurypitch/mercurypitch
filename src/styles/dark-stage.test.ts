@@ -113,6 +113,7 @@ const DARK_SURFACE_ROOTS = [
   ['Progress', 'src/features/progress/ProgressPage.tsx'],
   ['Progress share studio', 'src/features/progress/ProgressShareStudio.tsx'],
   ['Path', 'src/pages/PathPage.tsx'],
+  ['Long note', 'src/features/long-note/LongNoteRoom.tsx'],
 ] as const
 
 describe('dark stage theme contract', () => {

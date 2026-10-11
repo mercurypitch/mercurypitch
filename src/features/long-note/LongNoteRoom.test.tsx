@@ -326,6 +326,15 @@ describe('LongNoteRoom', () => {
     expect(screen.getByText(/A3/, { selector: 'p' })).toBeTruthy()
   })
 
+  it('owns the dark stage, whatever the app theme', () => {
+    // Review B of PR 973, M1: on the Light theme the room painted the
+    // light --bg-primary behind its near-white timer, chips and note tag.
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    expect(screen.getByTestId('long-note-room').classList).toContain(
+      'mp-dark-stage',
+    )
+  })
+
   it('plays the note, then listens', async () => {
     render(() => <LongNoteRoom onDone={() => undefined} />)
     await startListening()

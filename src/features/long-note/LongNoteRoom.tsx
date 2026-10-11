@@ -179,7 +179,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
 
   return (
     <div
-      class={styles.room}
+      class={`${styles.room} mp-dark-stage`}
       data-phase={phase()}
       data-demo={demo.mode()}
       data-testid="long-note-room"
