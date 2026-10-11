@@ -103,9 +103,23 @@ describe('the account ask', () => {
     expect(trackFunnelMock).toHaveBeenCalledTimes(1)
     expect(trackFunnelMock).toHaveBeenCalledWith('cta_account_click')
     expect(hostWanted()).toBe(true)
-    // Until the dialog opens, the button says it is on its way.
+    // Until the dialog opens, the button says it is on its way. It keeps
+    // focus (aria-disabled, not disabled), so closing the dialog returns it.
     const button = screen.getByRole('button', { name: 'Opening…' })
-    expect(button).toHaveProperty('disabled', true)
+    expect(button).toHaveAttribute('aria-disabled', 'true')
+    expect(button).toHaveProperty('disabled', false)
+  })
+
+  it('counts a double tap once', () => {
+    render(() => <MirrorAccountAsk />)
+    const button = screen.getByRole('button', {
+      name: 'Create my free account',
+    })
+
+    fireEvent.click(button)
+    fireEvent.click(button)
+
+    expect(trackFunnelMock).toHaveBeenCalledTimes(1)
   })
 
   it('names the launch gift while one is featured', async () => {

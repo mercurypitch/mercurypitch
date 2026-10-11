@@ -64,10 +64,14 @@ afterEach(() => {
   resetAccountAskForTests()
 })
 
+/** The host opens the dialog a microtask after it mounts (focus trap). */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
 describe('a tap on the ask', () => {
-  it('opens the dialog on its sign-up pane, as a host that adopts', () => {
+  it('opens the dialog on its sign-up pane, as a host that adopts', async () => {
     askForAccount()
     render(() => <MirrorAccountHost />)
+    await settle()
 
     expect(vi.mocked(openAuthModal).mock.calls).toEqual([['register']])
     expect(signUpAsked()).toBe(false)
@@ -76,11 +80,13 @@ describe('a tap on the ask', () => {
     expect(rememberGiftOffered).toHaveBeenCalledTimes(1)
   })
 
-  it('opens it again on the next tap, with the host already loaded', () => {
+  it('opens it again on the next tap, with the host already loaded', async () => {
     askForAccount()
     render(() => <MirrorAccountHost />)
+    await settle()
 
     askForAccount()
+    await settle()
 
     expect(vi.mocked(openAuthModal).mock.calls).toEqual([
       ['register'],
@@ -118,10 +124,11 @@ describe('a Google return landing here', () => {
     expect(syncPromoClaims).not.toHaveBeenCalled()
   })
 
-  it('opens the code pane when a second factor is still owed', () => {
+  it('opens the code pane when a second factor is still owed', async () => {
     harness.twofa = true
     takeGoogleLanding()
     render(() => <MirrorAccountHost />)
+    await settle()
 
     expect(vi.mocked(openAuthModal).mock.calls).toEqual([['login']])
     expect(showNotification).not.toHaveBeenCalled()

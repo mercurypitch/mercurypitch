@@ -77,11 +77,15 @@ const AccountAsk: Component = () => {
         device you sign in on.
       </p>
       <Show when={gift()}>{(promo) => <GiftLine promo={promo()} />}</Show>
+      {/* aria-disabled, not disabled: a disabled button drops focus to the
+          page, and the dialog hands focus back to whatever held it as it
+          opened. The guard keeps a double tap to one count. */}
       <button
         type="button"
         class="mirror-cta mirror-keep-button"
-        disabled={signUpAsked()}
+        aria-disabled={signUpAsked() ? 'true' : undefined}
         onClick={() => {
+          if (signUpAsked()) return
           trackFunnel('cta_account_click')
           askForAccount()
         }}

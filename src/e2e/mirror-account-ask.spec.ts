@@ -118,6 +118,39 @@ test('a tap opens the sign-up form and is counted once', async ({ page }) => {
   expect(events).not.toContain('results_view')
 })
 
+// The first open is the only one most visitors see, so the dialog has to take
+// the keyboard on it: focus on its first field, Escape closes it, and closing
+// hands focus back to the button that opened it.
+test('the first open takes focus, and Escape gives it back to the ask', async ({
+  page,
+}) => {
+  await seedTakes(page)
+  await page.goto('/vocal-range-test#take-1')
+  const askButton = page.getByRole('button', { name: 'Create my free account' })
+
+  await askButton.click()
+
+  const dialog = page.getByRole('dialog', { name: 'Create your account' })
+  await expect(dialog.locator('input').first()).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  await expect(askButton).toBeFocused()
+})
+
+test('closing with the X gives focus back to the ask', async ({ page }) => {
+  await seedTakes(page)
+  await page.goto('/vocal-range-test#take-1')
+  const askButton = page.getByRole('button', { name: 'Create my free account' })
+  await askButton.click()
+  const dialog = page.getByRole('dialog', { name: 'Create your account' })
+  await expect(dialog.locator('input').first()).toBeFocused()
+
+  await page.getByTestId('auth-modal-close').click()
+
+  await expect(dialog).toHaveCount(0)
+  await expect(askButton).toBeFocused()
+})
+
 test('never asks a signed-in account', async ({ page }) => {
   await seedTakes(page)
   await page.addInitScript(

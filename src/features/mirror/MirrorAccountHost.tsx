@@ -28,7 +28,8 @@ export default function MirrorAccountHost() {
     if (landing === null) return
     if (landing.kind === 'second-factor') {
       // The dialog takes the ceremony as it opens and starts on its code pane.
-      openAuthModal('login')
+      // A microtask later, like the tap's open below.
+      queueMicrotask(() => openAuthModal('login'))
       return
     }
     if (!landing.result.ok) {
@@ -51,7 +52,11 @@ export default function MirrorAccountHost() {
     // code that runs out before the email is confirmed is said rather than
     // swallowed. Nothing on offer, nothing remembered.
     rememberGiftOffered()
-    openAuthModal('register')
+    // Not in this pass: the host mounts AuthModal in it, and the dialog's
+    // focus trap installs only if its element is there as the dialog opens.
+    // Opened in the same pass, focus stays on the page behind it, Tab walks
+    // out and Escape does nothing.
+    queueMicrotask(() => openAuthModal('register'))
   })
 
   return (
