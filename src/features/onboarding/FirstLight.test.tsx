@@ -414,6 +414,6 @@ describe('focus on a beat change', () => {
     // Assert
     expect(
       shown.compareDocumentPosition(notNow) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy()
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 })
