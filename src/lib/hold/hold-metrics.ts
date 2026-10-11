@@ -4,15 +4,17 @@
 //
 // The counts come from the engine's final state, so the result always agrees
 // with what the room showed during the run. Steadiness comes from the frames
-// of the held part only (first lock to the end of the note), scored by the
-// Voice Mirror's `computeSteadiness`: drift and wobble around the singer's
-// own median, vibrato excluded. The scoop before the lock is the time-to-lock
-// number's business, not steadiness's.
+// of the held part only (first lock to the end of the note), scored by
+// `holdSteadiness`: the wobble around the singer's own line, a vibrato
+// taken out second by second, on the Voice Mirror's scale. Drift along
+// the line is reported, not scored; the band and its seconds answer for
+// it. The scoop before the lock is the time-to-lock number's business,
+// not steadiness's.
 
 import type { SteadinessResult } from '@/lib/mirror/metrics'
-import { computeSteadiness } from '@/lib/mirror/metrics'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { HoldState } from './hold-engine'
+import { holdSteadiness } from './hold-steadiness'
 
 /**
  * The `metrics` of `recordExerciseResult({ type: 'long-note-lantern', ... })`.
@@ -72,7 +74,7 @@ export function computeHoldResult(input: {
       const at = frame.t - base
       return at >= firstLockAt - ALIGN_EPS && at <= noteEnd + ALIGN_EPS
     })
-    steadiness = computeSteadiness(held)
+    steadiness = holdSteadiness(held)
   }
 
   const metrics: HoldRunMetrics = {

@@ -92,8 +92,9 @@ describe('computeHoldResult', () => {
     // Assert
     expect(run.metrics.breaks).toBe(0)
     expect(run.metrics.longestLockSeconds).toBe(5.983)
-    // The Mirror's 5-frame median filter trims the measured extent to 35 c.
-    expect(run.steadiness?.vibrato).toEqual({ rateHz: 5.5, extentCents: 35 })
+    // The 5-frame median filter trims the measured depth to about 35 c;
+    // the median of the second-by-second fits reads 34.
+    expect(run.steadiness?.vibrato).toEqual({ rateHz: 5.5, extentCents: 34 })
     // What survives the sinusoid fit is about 3 c of wobble: 98, not 100.
     expect(run.score).toBe(98)
   })
