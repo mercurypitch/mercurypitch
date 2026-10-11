@@ -22,8 +22,11 @@ mechanism. §3 says why.
 
 **At sign-up.** One unticked checkbox on the register form:
 
-> Send me product updates. Big new features and milestones only, and never
-> more than once a month. You can stop any time.
+> Email me product updates. Unsubscribe anytime.
+
+It promises nothing about how often. The first wording capped it at once a
+month; the owner dropped that on 2026-10-11, because nobody can say yet how
+much there will be to send.
 
 Unticked is not a style choice. Consent under GDPR has to be an affirmative
 act, so a pre-ticked box is not consent at all and would make the whole list
