@@ -65,7 +65,7 @@ const HELD_TONE_PULSE_EXPLANATION: TraitExplanation = {
 
 const LOCAL_PITCH_SPREAD_EXPLANATION: TraitExplanation = {
   meaning:
-    'How tightly detected pitch gathered around its local centre during held notes. A smaller number means less movement in those moments, not automatically better singing.',
+    'How tightly detected pitch gathered around its local center during held notes. A smaller number means less movement in those moments, not automatically better singing.',
   calculation:
     'We measure pitch variation in overlapping half-second windows with at least five confident frames and no large note change. The median window spread is reported in cents; 100 cents equals one semitone.',
   limits:
@@ -92,7 +92,7 @@ const HARMONIC_PEAKS_EXPLANATION: TraitExplanation = {
 
 const SPECTRAL_CENTRE_EXPLANATION: TraitExplanation = {
   meaning:
-    'The frequency balance point of the recorded sound. A higher or lower centre describes where this take carried more spectral energy; it does not identify register or resonance placement.',
+    'The frequency balance point of the recorded sound. A higher or lower center describes where this take carried more spectral energy; it does not identify register or resonance placement.',
   calculation:
     'Each frequency is weighted by its power in the average stronger-frame spectrum. The percentages are shares of total recorded spectral power around 200–800 Hz, 800–2500 Hz, and above 2500 Hz; the muted remainder is energy outside those bands.',
   limits:
@@ -279,7 +279,7 @@ function ToneRows(props: { state: ToneState }): JSX.Element {
             }
           />
           <TraitRow
-            label="Spectral centre"
+            label="Spectral center"
             value={`${reading.resonance.spectralCentroid} Hz`}
             explanation={SPECTRAL_CENTRE_EXPLANATION}
             detail={`${Math.round(reading.resonance.chestRatio * 100)}% low · ${Math.round(reading.resonance.maskRatio * 100)}% mid · ${Math.round(reading.resonance.headRatio * 100)}% high recorded energy`}

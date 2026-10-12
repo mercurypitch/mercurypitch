@@ -96,7 +96,7 @@ export function runnerMovementCueCopy(cue: RunnerMovementCue): {
   switch (cue.stage) {
     case 'slide-align':
       return {
-        label: `Move ${cue.direction ?? 'to centre'}`,
+        label: `Move ${cue.direction ?? 'to center'}`,
         instruction: 'Line up with the arch opening',
       }
     case 'slide':

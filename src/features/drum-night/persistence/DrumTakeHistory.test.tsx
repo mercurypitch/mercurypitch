@@ -299,7 +299,7 @@ describe('DrumTakeHistory', () => {
     expect(within(rows[1]!).getByText('−18 ms · Early')).toBeVisible()
     expect(within(rows[1]!).getByText('Not measured')).toBeVisible()
     expect(
-      within(rows[0]!).getByText('3 early · 9 centred · 2 late'),
+      within(rows[0]!).getByText('3 early · 9 centered · 2 late'),
     ).toBeVisible()
     expect(
       screen.getByText(/authored audio.*raw MIDI.*device identity stay out/i),

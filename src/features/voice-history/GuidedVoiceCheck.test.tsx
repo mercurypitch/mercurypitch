@@ -101,7 +101,7 @@ describe('GuidedVoiceCheck', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Yes, continue' }))
     expect(
       screen.getByRole('heading', {
-        name: 'Three notes, centred where you are comfortable.',
+        name: 'Three notes, centered where you are comfortable.',
       }),
     ).toBeInTheDocument()
     expect(
@@ -150,7 +150,7 @@ describe('GuidedVoiceCheck', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Yes, continue' }))
     expect(
       screen.getByRole('heading', {
-        name: 'Three notes, centred where you are comfortable.',
+        name: 'Three notes, centered where you are comfortable.',
       }),
     ).toBeInTheDocument()
     await waitFor(() => expect(guidance).toHaveFocus())
@@ -342,12 +342,12 @@ describe('GuidedVoiceCheck', () => {
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', {
-        name: 'Move the Pitch Centre route one semitone lower',
+        name: 'Move the Pitch Center route one semitone lower',
       }),
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', {
-        name: 'Move the Pitch Centre route one semitone higher',
+        name: 'Move the Pitch Center route one semitone higher',
       }),
     ).not.toBeInTheDocument()
     expect(initialProtocol.comparisonFingerprint).toContain('pitch-centre')

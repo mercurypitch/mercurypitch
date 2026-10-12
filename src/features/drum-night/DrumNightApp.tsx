@@ -1325,7 +1325,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       case 'score':
         return { kicker: 'Authored percussion', title: 'Follow every attack.' }
       default:
-        return { kicker: 'Live take', title: 'Find the centre.\nLet it move.' }
+        return { kicker: 'Live take', title: 'Find the center.\nLet it move.' }
     }
   })
   const midiHeadline = createMemo(() => {

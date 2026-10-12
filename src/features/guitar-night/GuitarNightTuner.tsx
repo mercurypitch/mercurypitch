@@ -107,9 +107,9 @@ const PITCH_STATE_DETAILS: Readonly<
 > = {
   idle: 'Nothing starts until you choose Start listening.',
   searching: 'Play one string and let it ring without touching the others.',
-  low: 'Raise the pitch until the needle reaches the centre.',
+  low: 'Raise the pitch until the needle reaches the center.',
   'in-tune': 'Hold there. This string is ready.',
-  high: 'Lower the pitch until the needle reaches the centre.',
+  high: 'Lower the pitch until the needle reaches the center.',
   unsteady: 'Let one string ring clearly, then try it again.',
   error: 'Check the selected input, then start listening again.',
 }
@@ -276,10 +276,10 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
   const meterValueText = createMemo(() => {
     if (!hasReading()) return pitchStatus()
     if (overflowDirection() === 'low') {
-      return `${centsLabel(props.cents())}. Beyond the displayed low range. Raise the pitch toward centre.`
+      return `${centsLabel(props.cents())}. Beyond the displayed low range. Raise the pitch toward center.`
     }
     if (overflowDirection() === 'high') {
-      return `${centsLabel(props.cents())}. Beyond the displayed high range. Lower the pitch toward centre.`
+      return `${centsLabel(props.cents())}. Beyond the displayed high range. Lower the pitch toward center.`
     }
     return `${centsLabel(props.cents())}. ${pitchStatus()}.`
   })

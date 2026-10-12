@@ -380,7 +380,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     keywords:
       'online drums, virtual drum kit, play drums in your browser, drum practice, e-kit MIDI drums, Guitar Pro drum tab, drum notation, drum timing practice',
     og: {
-      title: 'Drum Night — find the centre',
+      title: 'Drum Night — find the center',
       description:
         'Play synth and sampled kits from touch, keys or an e-kit, then follow imported percussion from the Pocket, Drummer Seat or written Score.',
       image: ogImage('drum-night-og.png'),
@@ -388,12 +388,12 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'MercuryPitch Drum Night — an oxblood drum kit in a quiet late-night tracking room, framed by a circular pocket guide.',
     },
     twitter: {
-      title: 'Drum Night — find the centre',
+      title: 'Drum Night — find the center',
       description:
         'Play synth and sampled kits from touch, keys or an e-kit, then follow imported percussion from the Pocket, Drummer Seat or written Score.',
     },
-    h1: 'Drum Night — play the kit, then find the centre of the beat',
-    lede: 'A drum room for touch, keys and electronic kits. Import MIDI or Guitar Pro percussion, read the part as a pocket guide, from the drummer’s seat or as notation, and find the centre of the beat with timing evidence rather than a grade.',
+    h1: 'Drum Night — play the kit, then find the center of the beat',
+    lede: 'A drum room for touch, keys and electronic kits. Import MIDI or Guitar Pro percussion, read the part as a pocket guide, from the drummer’s seat or as notation, and find the center of the beat with timing evidence rather than a grade.',
     app: {
       name: 'Drum Night',
       category: 'MusicApplication',

@@ -38,7 +38,7 @@ const GLASSWORKS_PROFILES: readonly ReplayProfile[] = [
     tier: 3,
     title: 'Three-star challenge',
     description:
-      'Centre each note more carefully. Short holds lead to one seven-second portrait.',
+      'Center each note more carefully. Short holds lead to one seven-second portrait.',
     encounters: {
       'vestibule-goblet': { holdSeconds: 3, toleranceCents: 80 },
       'garden-decanter': { holdSeconds: 3, toleranceCents: 80 },
@@ -83,7 +83,7 @@ const TWIN_PROFILES: readonly ReplayProfile[] = [
     tier: 3,
     title: 'Three-star challenge',
     description:
-      'Land closer to the centre of each note and hold the finale pair for three seconds each.',
+      'Land closer to the center of each note and hold the finale pair for three seconds each.',
     encounters: {
       'lower-urn': { holdSeconds: 2, toleranceCents: 65 },
       'upper-decanter': { holdSeconds: 2, toleranceCents: 65 },
@@ -100,7 +100,7 @@ const CONSERVATORY_PROFILES: readonly ReplayProfile[] = [
     tier: 1,
     title: 'First visit',
     description:
-      'Settle on your note, make two gentle waves, then come home to the centre.',
+      'Settle on your note, make two gentle waves, then come home to the center.',
     encounters: {
       'entrance-goblet': {},
       'fern-wave': {},
@@ -114,7 +114,7 @@ const CONSERVATORY_PROFILES: readonly ReplayProfile[] = [
     tier: 2,
     title: 'Two-star challenge',
     description:
-      'Find a steady centre, then make three unhurried waves and return to it.',
+      'Find a steady center, then make three unhurried waves and return to it.',
     encounters: {
       'entrance-goblet': { holdSeconds: 2 },
       'fern-wave': { waveCycles: 3, waveSeconds: 1.8 },

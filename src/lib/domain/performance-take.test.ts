@@ -197,7 +197,7 @@ describe('performance take score summaries', () => {
       stats: [
         { label: 'Mean timing', value: '-8 ms' },
         { label: 'Early', value: '3' },
-        { label: 'Centred', value: '10' },
+        { label: 'Centered', value: '10' },
         { label: 'Late', value: '1' },
         { label: 'Mean velocity', value: '+5' },
       ],

@@ -178,7 +178,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
           <p>
             {guidedPractice === undefined
               ? 'Keep your pitch locked inside the target zone as it shrinks over time.'
-              : `Meet ${targetNote()} gently, then keep it centred for each short hold.`}
+              : `Meet ${targetNote()} gently, then keep it centered for each short hold.`}
           </p>
         </div>
       }

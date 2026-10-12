@@ -100,7 +100,7 @@ export function DrumSessionCoach(props: DrumSessionCoachProps): JSX.Element {
               <dd>{signedMeasurement(coaching.meanTimingOffsetMs, 'ms')}</dd>
             </div>
             <div>
-              <dt>Centred attacks</dt>
+              <dt>Centered attacks</dt>
               <dd>
                 {coaching.centredCount}
                 {coaching.uncertainTimingCount > 0
