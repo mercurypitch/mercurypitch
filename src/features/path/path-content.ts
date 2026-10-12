@@ -235,7 +235,7 @@ export const ASCENT_WEEKS: PathWeek[] = [
       'Slow and clean beats fast and blurry every time. Earn each step up in tempo, and the speed will feel like it arrived on its own.',
     goals: [
       'Run a five-note scale cleanly at speed',
-      'Keep staccato notes short and centred',
+      'Keep staccato notes short and centered',
       'String two patterns together without smearing',
     ],
     exercises: [

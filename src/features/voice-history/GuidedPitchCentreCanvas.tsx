@@ -304,10 +304,10 @@ export const GuidedPitchCentreCanvas: Component<
   }
 
   return (
-    <section class={styles.surface} aria-label="Pitch Centre voice map">
+    <section class={styles.surface} aria-label="Pitch Center voice map">
       <div class={styles.canvasHeader}>
         <div>
-          <span>Pitch Centre</span>
+          <span>Pitch Center</span>
           <strong>{props.phaseLabel}</strong>
         </div>
         <div class={styles.targetLabel}>
@@ -366,7 +366,7 @@ export const GuidedPitchCentreCanvas: Component<
         </Show>
       </div>
       <div class={styles.legend} aria-hidden="true">
-        <span class={styles.targetKey}>Target centre</span>
+        <span class={styles.targetKey}>Target center</span>
         <span class={styles.pitchKey}>Your pitch</span>
         <span class={styles.energyKey}>Input energy</span>
       </div>

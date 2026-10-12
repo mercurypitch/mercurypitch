@@ -451,7 +451,7 @@ function parseDrumScore(
             value: `${timing > 0 ? '+' : ''}${Math.round(timing)} ms`,
           },
       { label: 'Early', value: String(early) },
-      { label: 'Centred', value: String(centred) },
+      { label: 'Centered', value: String(centred) },
       { label: 'Late', value: String(late) },
       velocity === null
         ? null

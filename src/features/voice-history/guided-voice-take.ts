@@ -16,7 +16,26 @@ import { isPersistedPitchCentrePilotFocus } from '@/lib/guided-voice/pitch-centr
 import type { VoiceAtlasContourPayloadV1 } from '@/lib/voice-contour'
 
 export const GUIDED_VOICE_TAKE_CONTEXT_VERSION = 1 as const
+/**
+ * The title every kept guided take is saved under. parseGuidedVoiceTakeContext
+ * matches it, so it stays as stored; shownTakeTitle spells it for the page.
+ */
 export const GUIDED_VOICE_TAKE_TITLE = 'Pitch Centre'
+/** The thread title a guided take kept without a reading is saved under. */
+export const GUIDED_UNANALYSED_THREAD_TITLE = `${GUIDED_VOICE_TAKE_TITLE} — unanalysed`
+
+const SHOWN_GUIDED_NAME = 'Pitch Center'
+
+/**
+ * A take or thread title as the page shows it: the two stored guided titles
+ * with the name in American spelling, and every other title as saved.
+ */
+export function shownTakeTitle(title: string): string {
+  return title === GUIDED_VOICE_TAKE_TITLE ||
+    title === GUIDED_UNANALYSED_THREAD_TITLE
+    ? `${SHOWN_GUIDED_NAME}${title.slice(GUIDED_VOICE_TAKE_TITLE.length)}`
+    : title
+}
 
 const GUIDED_VOICE_TAKE_KIND = 'guided-focus-take'
 

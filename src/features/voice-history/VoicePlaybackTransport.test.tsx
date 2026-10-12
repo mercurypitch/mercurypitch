@@ -5,6 +5,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { VoiceTakeRecord } from '@/db/entities'
+import { GUIDED_VOICE_TAKE_TITLE } from './guided-voice-take'
 import { VoicePlaybackTransport } from './VoicePlaybackTransport'
 
 const TAKE: VoiceTakeRecord = {
@@ -85,5 +86,28 @@ describe('VoicePlaybackTransport', () => {
     expect(
       screen.getByRole('slider', { name: 'Seek selected take' }),
     ).toBeDisabled()
+  })
+
+  it('names a guided take Pitch Center, whatever spelling it is stored under', () => {
+    render(() => (
+      <VoicePlaybackTransport
+        take={{ ...TAKE, source: 'guided', title: GUIDED_VOICE_TAKE_TITLE }}
+        activeId={null}
+        progress={0}
+        playing={false}
+        eyebrow="Selected take"
+        onPlay={vi.fn()}
+        onSeek={vi.fn()}
+      />
+    ))
+
+    expect(screen.getByText('Pitch Center').tagName).toBe('STRONG')
+    expect(
+      screen.getByRole('button', { name: 'Play Pitch Center' }),
+    ).toBeEnabled()
+    expect(
+      screen.getByRole('slider', { name: 'Seek Pitch Center' }),
+    ).toBeEnabled()
+    expect(screen.queryByText(GUIDED_VOICE_TAKE_TITLE)).toBeNull()
   })
 })

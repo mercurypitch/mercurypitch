@@ -103,7 +103,7 @@ export function RunnerSteeringControls(props: RunnerSteeringControlsProps) {
         aria-valuenow={Math.round(state().axis * 100)}
         aria-valuetext={
           state().axis === 0
-            ? 'Centred'
+            ? 'Centered'
             : `${state().axis < 0 ? 'Left' : 'Right'} ${Math.round(Math.abs(state().axis) * 100)}%`
         }
         aria-disabled={props.disabled}

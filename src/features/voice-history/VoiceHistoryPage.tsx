@@ -50,7 +50,7 @@ import { FreeformVoiceRecorder } from './FreeformVoiceRecorder'
 import type { GuidedPracticeHandoff } from './guided-practice-handoff'
 import { armGuidedPracticeHandoff, consumeGuidedPracticeReturn, guidedPracticeLaunchFromRecommendation, } from './guided-practice-handoff'
 import type { GuidedVoiceTakeContextV1 } from './guided-voice-take'
-import { isVoiceTakeComparisonEligible, parseGuidedVoiceTakeContext, } from './guided-voice-take'
+import { isVoiceTakeComparisonEligible, parseGuidedVoiceTakeContext, shownTakeTitle, } from './guided-voice-take'
 import type { GuidedCloseRequester } from './GuidedVoiceCheck'
 import { GuidedVoiceCheck } from './GuidedVoiceCheck'
 import { GuitarRecordedTakeLink } from './GuitarRecordedTakeLink'
@@ -169,7 +169,7 @@ function threadTitle(take: VoiceTakeRecord): string {
       threadTitle?: unknown
     }
     if (typeof context.threadTitle === 'string' && context.threadTitle !== '') {
-      return context.threadTitle
+      return shownTakeTitle(context.threadTitle)
     }
     if (typeof context.targetLabel === 'string' && context.targetLabel !== '') {
       return `Glass at ${context.targetLabel}`
@@ -177,7 +177,7 @@ function threadTitle(take: VoiceTakeRecord): string {
   } catch {
     // The saved title remains a complete fallback for old/corrupt context.
   }
-  return take.title
+  return shownTakeTitle(take.title)
 }
 
 function threadSourceLabel(source: VoiceTakeRecord['source']): string {
@@ -272,9 +272,9 @@ function savedFocusCopy(focus: SavedGuidedFocus): {
     'pitch-centre.finding.reinforce-centre'
   ) {
     return {
-      title: 'Make the centred pathway familiar.',
+      title: 'Make the centered pathway familiar.',
       detail:
-        'Your guided landings repeatedly found the centre. Pitch Hold keeps that pathway familiar without raising the demand.',
+        'Your guided landings repeatedly found the center. Pitch Hold keeps that pathway familiar without raising the demand.',
     }
   }
 
@@ -290,9 +290,9 @@ function savedFocusCopy(focus: SavedGuidedFocus): {
     settledMeasurement?.kind === 'fraction' &&
     settledMeasurement.numerator === settledMeasurement.denominator
   return {
-    title: 'Meet one clear centre without pushing.',
+    title: 'Meet one clear center without pushing.',
     detail: allLandingsSettled
-      ? 'All three notes stayed near the target long enough, but they usually settled a little away from its centre. Pitch Hold keeps the next step narrow and repeatable.'
+      ? 'All three notes stayed near the target long enough, but they usually settled a little away from its center. Pitch Hold keeps the next step narrow and repeatable.'
       : 'Some notes did not stay near the target long enough. Pitch Hold keeps the next step narrow and repeatable.',
   }
 }
@@ -2098,7 +2098,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                       <div>
                         <h2>Start with one moment you can hear.</h2>
                         <p>
-                          Take a short guided Pitch Centre check to find one
+                          Take a short guided Pitch Center check to find one
                           evidence-linked practice focus, or name something of
                           your own and record it freely. Audio stays on this
                           device.
@@ -2411,7 +2411,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                               <dt>What it means</dt>
                                               <dd>
                                                 A reading of the three-note
-                                                Pitch Centre task, not a general
+                                                Pitch Center task, not a general
                                                 rating of your voice.
                                               </dd>
                                             </div>
@@ -2421,7 +2421,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                                 Each landing must hold confident
                                                 detected pitch within 35 cents
                                                 of its target for 300 ms. The
-                                                centred pathway also requires
+                                                centered pathway also requires
                                                 all three landings and a typical
                                                 settled error within 25 cents.
                                               </dd>

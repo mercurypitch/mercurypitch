@@ -421,7 +421,7 @@ export function DrumTakeHistory(props: DrumTakeHistoryProps): JSX.Element {
                           <dt>Timing shape</dt>
                           <dd>
                             {take.earlyCount} early · {take.centredCount}{' '}
-                            centred · {take.lateCount} late
+                            centered · {take.lateCount} late
                           </dd>
                         </div>
                         <div>

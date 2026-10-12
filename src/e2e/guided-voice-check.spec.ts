@@ -59,7 +59,7 @@ test('guides a safe check and keeps pointer seeking silent @smoke', async ({
 
   await expect(
     page.getByRole('heading', {
-      name: 'Three notes, centred where you are comfortable.',
+      name: 'Three notes, centered where you are comfortable.',
     }),
   ).toBeVisible()
   const startCheck = page.getByRole('button', {

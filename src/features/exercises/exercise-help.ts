@@ -47,7 +47,7 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
     summary:
       'Sustain a note with a gentle, even vibrato. Trains controlled pitch oscillation.',
     body: [
-      'Vibrato is a small, regular "wave" in your pitch — the note rises and falls a little, many times per second, centred on the target note shown as a line.',
+      'Vibrato is a small, regular "wave" in your pitch — the note rises and falls a little, many times per second, centered on the target note shown as a line.',
       'New to it? Start with the "Slow & Wide" style and turn on "Show the wave" — trace the moving guide above and below the note. As it feels natural, speed up: teachers build vibrato by oscillating about a semitone slowly, then quickening until the swing narrows on its own.',
       'A healthy natural vibrato is about 5-7 pulses per second with a swing of roughly half a semitone. You are scored on rate, depth and how even it stays, judged against the style you pick.',
     ],

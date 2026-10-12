@@ -26,7 +26,7 @@ import { vocalRangePreset } from '@/stores/settings-store'
 import { startExercise } from '@/stores/ui-store'
 import { createFreeformThreadTarget, keepFreeformVoiceTake, } from './freeform-voice-take'
 import { armGuidedPracticeHandoff, guidedPracticeLaunchFromRecommendation, } from './guided-practice-handoff'
-import { keepGuidedVoiceTake } from './guided-voice-take'
+import { GUIDED_UNANALYSED_THREAD_TITLE, keepGuidedVoiceTake, } from './guided-voice-take'
 import type { GuidedCanvasEvidence, GuidedCanvasSegment, } from './GuidedPitchCentreCanvas'
 import { GuidedPitchCentreCanvas } from './GuidedPitchCentreCanvas'
 import styles from './GuidedVoiceCheck.module.css'
@@ -708,7 +708,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     try {
       const saved = await keepFreeformVoiceTake({
         target,
-        threadTitle: 'Pitch Centre — unanalysed',
+        threadTitle: GUIDED_UNANALYSED_THREAD_TITLE,
         take: {
           blob: capture.blob,
           durationMs: analysisDurationMs(),
@@ -895,12 +895,12 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
             <span>Current focus</span>
             <p>
               {reinforce
-                ? 'These notes repeatedly found the centre. Give that pathway a little more familiar time.'
+                ? 'These notes repeatedly found the center. Give that pathway a little more familiar time.'
                 : fraction.numerator === 0
-                  ? 'None of the three notes stayed near the target long enough. Practice meeting one clear centre without pushing.'
+                  ? 'None of the three notes stayed near the target long enough. Practice meeting one clear center without pushing.'
                   : fraction.numerator === fraction.denominator
-                    ? 'All three notes stayed near the target long enough, but they usually settled a little away from its centre. Practice one clear centre without pushing.'
-                    : 'Some notes did not stay near the target long enough. Practice meeting one clear centre without pushing.'}
+                    ? 'All three notes stayed near the target long enough, but they usually settled a little away from its center. Practice one clear center without pushing.'
+                    : 'Some notes did not stay near the target long enough. Practice meeting one clear center without pushing.'}
             </p>
           </div>
           <div class={styles.practiceRoute}>
@@ -1033,7 +1033,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
             You sang three short notes. For each one, we looked for a clear
             pitch that stayed within 35 cents—about one-third of a semitone—of
             the target for 0.3 seconds. A result saying you repeatedly found the
-            centre requires all three to settle, with their typical pitch within
+            center requires all three to settle, with their typical pitch within
             25 cents of the target. This describes this one task; it is not a
             score for your overall voice or vocal health.
           </p>
@@ -1125,14 +1125,14 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
         <Show when={stage() === 'setup'}>
           <div class={styles.inspectorHeading}>
             <span>Fit the task</span>
-            <h3>Three notes, centred where you are comfortable.</h3>
+            <h3>Three notes, centered where you are comfortable.</h3>
             <p>Your route stays inside the vocal range saved in Settings.</p>
           </div>
           <Show when={!matchedProtocol}>
             <div class={styles.targetControl}>
               <button
                 type="button"
-                aria-label="Move the Pitch Centre route one semitone lower"
+                aria-label="Move the Pitch Center route one semitone lower"
                 disabled={
                   protocol().task.targetMidiCents[0]! <= range.min * 100 ||
                   referenceBusy()
@@ -1147,7 +1147,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
               </div>
               <button
                 type="button"
-                aria-label="Move the Pitch Centre route one semitone higher"
+                aria-label="Move the Pitch Center route one semitone higher"
                 disabled={
                   protocol().task.targetMidiCents.at(-1)! >= range.max * 100 ||
                   referenceBusy()
@@ -1365,7 +1365,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
       <div class={styles.header}>
         <div>
           <span class={styles.eyebrow}>Guided voice check</span>
-          <h2 id="guided-voice-check-title">Pitch Centre</h2>
+          <h2 id="guided-voice-check-title">Pitch Center</h2>
         </div>
         <button
           type="button"
@@ -1383,7 +1383,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
           ref={mainCanvas}
           class={styles.mainCanvas}
           tabIndex={-1}
-          aria-label="Pitch Centre listening canvas"
+          aria-label="Pitch Center listening canvas"
         >
           <GuidedPitchCentreCanvas
             active={
@@ -1529,8 +1529,8 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
               close={() => setDrawerOpen(false)}
               ariaLabel={
                 stage() === 'result'
-                  ? 'Pitch Centre Focus reading'
-                  : 'Pitch Centre guide'
+                  ? 'Pitch Center Focus reading'
+                  : 'Pitch Center guide'
               }
               snap="content"
               class={styles.mobileSheet}
@@ -1541,7 +1541,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
         </div>
 
         <Show when={!isNarrow()}>
-          <aside class={styles.inspector} aria-label="Pitch Centre guide">
+          <aside class={styles.inspector} aria-label="Pitch Center guide">
             {inspectorContent()}
           </aside>
         </Show>

@@ -59,7 +59,7 @@ function timingLabel(summary: DrumTakeSummary): string {
   if (summary.meanTimingOffsetMs === null) return 'Timing not measured'
   const offset = Math.round(summary.meanTimingOffsetMs)
   if (Math.abs(offset) <= summary.evidencePolicy.centredWindowMs) {
-    return 'Centred'
+    return 'Centered'
   }
   return offset < 0 ? 'Early' : 'Late'
 }
