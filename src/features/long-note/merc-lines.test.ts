@@ -91,7 +91,7 @@ describe('merc-lines', () => {
       expect(text).toMatch(/top/i)
     }
     for (const text of [...texts('topSteady'), ...texts('topFilling')]) {
-      expect(text).toMatch(/top is filling|light is rising/i)
+      expect(text).toMatch(/top is filling/i)
     }
     for (const text of texts('topStalled')) {
       expect(text).toMatch(/steadier|stiller/i)

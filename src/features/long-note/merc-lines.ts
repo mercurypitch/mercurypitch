@@ -124,11 +124,11 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
     // (STEADY_CLAIMS), and any other voice's.
     topSteady: [
       { id: 'top-steady', text: 'Steady. The top is filling.' },
-      { id: 'top-rising', text: 'Nice and steady. The light is rising.' },
+      { id: 'top-rising', text: 'Nice and steady. The top is filling.' },
     ],
     topFilling: [
       { id: 'top-filling', text: 'On the note. The top is filling.' },
-      { id: 'top-stay', text: 'The light is rising. Stay on it.' },
+      { id: 'top-stay', text: 'Still on the note. The top is filling.' },
     ],
     // The top has filled as far as this steadiness lets it at the level.
     topStalled: [
