@@ -8,7 +8,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ExerciseLevel } from '@/lib/exercise-level'
+import type { ExerciseLevel } from '@/stores/exercise-level'
 
 interface Seed {
   last?: string
@@ -55,7 +55,7 @@ async function openPicker(seed: Seed = {}) {
     )
   }
   if (seed.level !== undefined) {
-    const { setExerciseLevel } = await import('@/lib/exercise-level')
+    const { setExerciseLevel } = await import('@/stores/exercise-level')
     setExerciseLevel(seed.level)
   }
   const { ExercisePicker } = await import('./ExercisePicker')
@@ -88,7 +88,7 @@ describe('the cards', () => {
     await openPicker({ demoSeen: true })
 
     expect(cards()[0]?.textContent).toBe(
-      'Long noteBeginnerHold one note and fill the lantern with light.',
+      'Long noteSingerHold one note and fill the lantern with light.',
     )
   })
 
@@ -131,16 +131,16 @@ describe("a card's third line", () => {
 })
 
 describe("a card's level", () => {
-  it('names the level the exercises are at: Beginner, to start', async () => {
+  it('names the level the exercises are at: Singer, the accuracy tier it starts at', async () => {
     await openPicker()
 
-    expect(level()).toBe('Beginner')
+    expect(level()).toBe('Singer')
   })
 
   it('names the level the singer picked', async () => {
-    await openPicker({ level: 'pro' })
+    await openPicker({ level: 'professional' })
 
-    expect(level()).toBe('Pro')
+    expect(level()).toBe('Professional')
   })
 })
 

@@ -42,7 +42,6 @@
 // it was ever steady for long (review of the levels, 12 Oct 2026: time
 // alone must never brim a shaky voice).
 
-import type { ExerciseLevel } from '@/lib/exercise-level'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { PitchPoint } from './hold-reading'
 import { heldCents, offTarget } from './hold-reading'
@@ -140,25 +139,30 @@ function lantern(tolCents: number, steadyScore: number): HoldPreset {
 }
 
 /**
- * The lantern at each exercise level (src/lib/exercise-level.ts). The
- * owner's call (11 Oct 2026): a beginner fills it without a perfect
- * 12 seconds, and Pro makes the brim harder to reach. Calibrated on 26 s
- * takes (a 5.5 Hz vibrato's swing is its depth over root 2 in spread):
+ * The lantern at each level, which is the Settings accuracy tier
+ * (src/stores/exercise-level.ts; owner, 12 Oct 2026). The owner's call
+ * (11 Oct 2026): at the easiest level the lantern fills without a perfect
+ * 12 seconds, and the hardest makes the brim harder to reach. Calibrated
+ * on 26 s takes (a 5.5 Hz vibrato's swing is its depth over root 2 in
+ * spread):
  *
- * - Beginner: a natural vibrato (+-40 cents, steadiness about 44) and small
+ * - Learning: a natural vibrato (+-40 cents, steadiness about 44) and small
  *   wobbles reach the brim; any voice that reaches the goal fills some of
  *   the top.
  * - Singer: a light vibrato (+-15 to 20 cents, about 72 to 79) reaches the
  *   brim, a natural one fills about 40 % of the top, and a shake wider
  *   than a light vibrato does not reach it, however long it is held.
- * - Pro: only a near-straight tone (a spread under 6 cents) reaches the
- *   brim; a natural vibrato fills none of the top.
+ * - Professional: only a near-straight tone (a spread under 6 cents)
+ *   reaches the brim; a natural vibrato fills none of the top.
+ *
+ * Keyed by the tier ids, so a tier with no lantern fails to compile where
+ * the level is looked up.
  */
-export const LANTERN_LEVELS: Record<ExerciseLevel, HoldPreset> = {
-  beginner: lantern(40, 35),
+export const LANTERN_LEVELS = {
+  learning: lantern(40, 35),
   singer: lantern(30, 70),
-  pro: lantern(20, 88),
-}
+  professional: lantern(20, 88),
+} satisfies Record<string, HoldPreset>
 
 export type HoldPhase =
   /** Nothing voiced yet. */

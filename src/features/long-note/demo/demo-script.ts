@@ -25,12 +25,12 @@
 // each wall second; the voice keeps sounding at its own speed through
 // them, and so do Merc's hop and cheers.
 
-import type { ExerciseLevel } from '@/lib/exercise-level'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import type { HoldEventType, HoldPreset } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import { seeded } from '@/lib/mirror/demo-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import type { ExerciseLevel } from '@/stores/exercise-level'
 
 export type DemoTakeId = 'off' | 'on'
 

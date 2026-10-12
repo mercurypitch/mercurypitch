@@ -56,9 +56,9 @@ const STRAIGHT: TakeShape = {
 
 describe('the chip follower', () => {
   it("never calls a voice steady under STEADY_WORDS, however low the level's bar", () => {
-    // Act: a natural vibrato at Beginner, whose bar (35) it clears: the
+    // Act: a natural vibrato at Learning, whose bar (35) it clears: the
     // top fills to the brim.
-    const said = follow(NATURAL, LANTERN_LEVELS.beginner)
+    const said = follow(NATURAL, LANTERN_LEVELS.learning)
 
     // Assert: the light rose all the way, and the chip never called it
     // steady.
@@ -72,7 +72,7 @@ describe('the chip follower', () => {
   })
 
   it('calls a steady voice steady at every level, before the goal and while the top fills', () => {
-    for (const level of ['beginner', 'singer', 'pro'] as const) {
+    for (const level of ['learning', 'singer', 'professional'] as const) {
       const said = follow(STRAIGHT, LANTERN_LEVELS[level])
       const moments = said.map(({ moment }) => moment)
       expect(moments).toContain('steady')

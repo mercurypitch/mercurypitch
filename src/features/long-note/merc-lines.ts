@@ -13,8 +13,8 @@
 // "failed" or "bad" either; the lines are about the sound, never the singer.
 //
 // Review of the levels, 12 Oct 2026: a level sets how steady the lantern's
-// top asks a voice to be, and a beginner's natural vibrato (a steadiness of
-// about 44) fills it. So the light is no sign of a steady voice, and only
+// top asks a voice to be, and at Learning a natural vibrato (a steadiness
+// of about 44) fills it. So the light is no sign of a steady voice, and only
 // the STEADY_CLAIMS lines call a voice steady: the chip says them by the
 // steadiness itself (STEADY_WORDS, chip-follower.ts), the same at every
 // level. Past the goal the lines say what the top did and the one fix.

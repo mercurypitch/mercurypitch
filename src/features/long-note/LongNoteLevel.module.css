@@ -1,17 +1,19 @@
 /* Long note's level: the pill on the stage, and the sheet it opens. */
 
+/* Sized for the longest tier name, Professional: at 320 and 390 px wide
+   the stage's top-left corner meets the lantern's top. */
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   min-width: 44px;
   height: 44px;
-  padding: 0 12px 0 14px;
+  padding: 0 10px 0 12px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
-  font: 600 14px/1 var(--font-body, sans-serif);
+  font: 600 13px/1 var(--font-body, sans-serif);
   white-space: nowrap;
 }
 

@@ -1,14 +1,15 @@
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { exerciseLevel, setExerciseLevel } from '@/lib/exercise-level'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { HoldState } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import type { TakeShape } from '@/lib/hold/test-takes'
 import { realisticTake } from '@/lib/hold/test-takes'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import { setExerciseLevel } from '@/stores/exercise-level'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { registerNativeDevice } from '@/stores/native-shell-store'
+import { accuracyTier, applyAccuracyTier, scoreMode, SENSITIVITY_PRESETS, sensitivityPreset, settings, } from '@/stores/settings-store'
 import { STEADY_WORDS } from './chip-follower'
 import lanternStyles from './Lantern.module.css'
 import { CHIMNEY_BOTTOM, CHIMNEY_TOP, fillLevel, HOLD_FILL_MAX, LANTERN_VIEW_H, } from './lantern-geometry'
@@ -947,35 +948,52 @@ describe('LongNoteRoom', () => {
     expect(recorded.calls).toHaveLength(1)
   })
 
-  it('picks the level in the corner across from "?": the band follows it, and the next take is heard at it', async () => {
-    setExerciseLevel('beginner')
+  it('picks the level in the corner across from "?": the accuracy tier, set as Settings sets it, and the next take is heard at it', async () => {
+    setExerciseLevel('learning')
     render(() => <LongNoteRoom onDone={() => undefined} />)
     const pill = (): HTMLElement => screen.getByTestId('long-note-level')
     const band = (): number =>
       parseFloat(screen.getByTestId('long-note-band').style.height) / 2
-    expect(pill().textContent).toBe('Beginner')
-    expect(pill().getAttribute('aria-label')).toBe('Level: Beginner')
+    expect(pill().textContent).toBe('Learning')
+    expect(pill().getAttribute('aria-label')).toBe('Level: Learning')
     expect(band()).toBeCloseTo(40 * TRACE_PX_PER_CENT, 6)
 
-    // Three levels, the one in use pressed; a tap picks one and closes.
+    // The three tiers, the one in use pressed, and where they live; a tap
+    // picks one and closes.
     fireEvent.click(pill())
     const sheet = screen.getByRole('dialog', { name: 'Level' })
+    expect(sheet.textContent).toContain('Accuracy Tier')
     const levels = within(
       within(sheet).getByRole('group', { name: 'Levels' }),
     ).getAllByRole('button')
+    expect(levels.map((row) => row.getAttribute('data-level'))).toEqual([
+      'learning',
+      'singer',
+      'professional',
+    ])
     expect(levels.map((row) => row.getAttribute('aria-pressed'))).toEqual([
       'true',
       'false',
       'false',
     ])
-    fireEvent.click(within(sheet).getByRole('button', { name: /^Pro\b/ }))
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: /^Professional\b/ }),
+    )
     expect(screen.queryByRole('dialog', { name: 'Level' })).toBeNull()
-    expect(pill().textContent).toBe('Pro')
+    expect(pill().textContent).toBe('Professional')
     expect(band()).toBeCloseTo(20 * TRACE_PX_PER_CENT, 6)
-    expect(exerciseLevel()).toBe('pro')
+    // Set through applyAccuracyTier, as Settings sets it: the tier, its mic
+    // preset and its score mode.
+    expect(accuracyTier()).toBe('professional')
+    expect(sensitivityPreset()).toBe('noisy')
+    expect(scoreMode()).toBe('full')
+    expect(settings().minConfidence).toBe(
+      SENSITIVITY_PRESETS.noisy.minConfidence,
+    )
 
-    // Out of reach while the take listens, and the take is heard at Pro:
-    // 30 cents sharp is off its line, so the note is never found.
+    // Out of reach while the take listens, and the take is heard at
+    // Professional: 30 cents sharp is off its line, so the note is never
+    // found.
     await startListening()
     expect(screen.queryByTestId('long-note-level')).toBeNull()
     fake.frames = sequence(
@@ -986,7 +1004,47 @@ describe('LongNoteRoom', () => {
     await settle()
     expect(phase()).toBe('result')
     expect(recorded.calls).toHaveLength(0)
-    expect(pill().textContent).toBe('Pro')
+    expect(pill().textContent).toBe('Professional')
+  })
+
+  it('takes a tier picked in Settings as its level, and keeps a take at the level it opened at', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const pill = (): HTMLElement => screen.getByTestId('long-note-level')
+    const band = (): number =>
+      parseFloat(screen.getByTestId('long-note-band').style.height) / 2
+    expect(band()).toBeCloseTo(30 * TRACE_PX_PER_CENT, 6)
+
+    // Settings' own control picks Professional: between takes, the room
+    // follows.
+    applyAccuracyTier('professional')
+    expect(pill().textContent).toBe('Professional')
+    expect(band()).toBeCloseTo(20 * TRACE_PX_PER_CENT, 6)
+
+    // A take opens at Singer, and the tier moves to Professional 0.15 s in,
+    // before the lock (Settings, or another device through the account).
+    applyAccuracyTier('singer')
+    await startListening()
+    const take = sequence(
+      (t) => tone(57.25, 3, { startT: t }),
+      (t) => silence(0.8, t),
+    )
+    fake.frames = take.filter((frame) => frame.t < 0.15)
+    flushFrames()
+    applyAccuracyTier('professional')
+    fake.frames = take
+    flushFrames()
+    await settle()
+
+    // 25 cents sharp is inside Singer's band and outside Professional's:
+    // the take kept Singer's, found the note and was kept.
+    expect(phase()).toBe('result')
+    expect(recorded.calls).toHaveLength(1)
+
+    // The next take is heard at Professional.
+    fireEvent.click(screen.getByTestId('long-note-again'))
+    await settle()
+    expect(phase()).toBe('listen')
+    expect(band()).toBeCloseTo(20 * TRACE_PX_PER_CENT, 6)
   })
 
   it('keeps the screen on while it listens and holds, and only then', async () => {
@@ -1806,11 +1864,11 @@ describe('LongNoteRoom', () => {
     ).toBe(true)
   })
 
-  it('calls a voice steady only when its steadiness says so: a beginner brims with a vibrato, and nothing calls it steady', async () => {
+  it('calls a voice steady only when its steadiness says so: a natural vibrato brims at Learning, and nothing calls it steady', async () => {
     // A natural vibrato (+-40 cents, a steadiness of about 44) clears
-    // Beginner's bar and fills the top. The light says how far the level
+    // Learning's bar and fills the top. The light says how far the level
     // lets it fill; the words say how steady the voice was.
-    setExerciseLevel('beginner')
+    setExerciseLevel('learning')
     render(() => <LongNoteRoom onDone={() => undefined} />)
     await startListening()
 

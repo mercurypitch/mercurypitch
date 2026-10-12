@@ -8,10 +8,10 @@
 //
 // The last exercise opened is marked, not moved: catalogue order stays put,
 // so a card is where it was the last time. Beside its name a card names the
-// level the exercises are at (exercise-level.ts), picked in the exercise. A
-// card's third line says one thing a singer cannot see from its name: that
-// Merc sings it first (only when its demo will play by itself), or the best
-// on the note it opens on.
+// level the exercises are at (the accuracy tier, exercise-level.ts), picked
+// in the exercise or in Settings. A card's third line says one thing a
+// singer cannot see from its name: that Merc sings it first (only when its
+// demo will play by itself), or the best on the note it opens on.
 //
 // A tap closes the sheet and hands the id to the room, which winds down
 // whatever is running before the exercise opens over it.
@@ -22,7 +22,7 @@ import { Dynamic } from 'solid-js/web'
 import { Volume2 } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { exerciseLevel, exerciseLevelName } from '@/lib/exercise-level'
+import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
 import type { PremiumExercise } from './catalogue'
 import { EXERCISE_CATALOGUE } from './catalogue'
 import { lastExercise } from './last-exercise'

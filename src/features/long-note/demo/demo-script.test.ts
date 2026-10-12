@@ -282,7 +282,7 @@ describe('Long note demo, the plan', () => {
 
   it('says what fills the top in words that hold at every level', () => {
     // Review of the levels, 12 Oct 2026: a level sets how steady the top
-    // asks a voice to be, and a beginner's natural vibrato fills it. So
+    // asks a voice to be, and at Learning a natural vibrato fills it. So
     // the tooltip says the top fills by steadiness, and never that only a
     // steady voice fills it.
     for (const cue of DEMO_CUES) {

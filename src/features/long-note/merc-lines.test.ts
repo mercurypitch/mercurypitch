@@ -106,7 +106,7 @@ describe('merc-lines', () => {
   })
 
   it('calls a voice steady only in the lines the chip keeps for a steady one', () => {
-    // A level sets how steady the top asks a voice to be: a beginner's
+    // A level sets how steady the top asks a voice to be: at Learning a
     // natural vibrato (steadiness about 44) fills it. So no line may call
     // the voice steady because the light rose; only the chip's own steady
     // lines may, and the chip says them by the steadiness itself

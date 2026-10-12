@@ -676,11 +676,23 @@ const straightTake = (seed: number): number[] =>
   takeCents({ seconds: 26, wanderCents: 1, jitterCents: 1.5, seed })
 
 describe("the lantern's levels", () => {
-  it('lets a beginner fill the top with a natural vibrato and small wobbles', () => {
+  it('maps the accuracy tiers onto the lantern: the band, and the steadiness that brims the top', () => {
+    // Owner, 12 Oct 2026: the level is the Settings accuracy tier.
+    expect(
+      Object.fromEntries(
+        Object.entries(LANTERN_LEVELS).map(([tier, preset]) => [
+          tier,
+          [preset.tolCents, preset.stretch?.steadyScore],
+        ]),
+      ),
+    ).toEqual({ learning: [40, 35], singer: [30, 70], professional: [20, 88] })
+  })
+
+  it('lets a Learning voice fill the top with a natural vibrato and small wobbles', () => {
     for (const seed of [1, 2, 3]) {
-      expect(lanternAt('beginner', vibratoTake(40, seed)).brim).toBe(true)
-      expect(lanternAt('beginner', wobbleTake(5, seed)).brim).toBe(true)
-      expect(lanternAt('beginner', wobbleTake(8, seed)).brim).toBe(true)
+      expect(lanternAt('learning', vibratoTake(40, seed)).brim).toBe(true)
+      expect(lanternAt('learning', wobbleTake(5, seed)).brim).toBe(true)
+      expect(lanternAt('learning', wobbleTake(8, seed)).brim).toBe(true)
     }
   })
 
@@ -712,17 +724,21 @@ describe("the lantern's levels", () => {
     }
   })
 
-  it('brims only a near-straight tone at Pro', () => {
+  it('brims only a near-straight tone at Professional', () => {
     for (const seed of [1, 2, 3]) {
-      expect(lanternAt('pro', straightTake(seed)).brim).toBe(true)
-      expect(lanternAt('pro', vibratoTake(15, seed)).brim).toBe(false)
-      expect(lanternAt('pro', shakeCents(26, 10, 8, 12, seed)).brim).toBe(false)
+      expect(lanternAt('professional', straightTake(seed)).brim).toBe(true)
+      expect(lanternAt('professional', vibratoTake(15, seed)).brim).toBe(false)
+      expect(
+        lanternAt('professional', shakeCents(26, 10, 8, 12, seed)).brim,
+      ).toBe(false)
       // A natural vibrato fills next to none of the top.
-      expect(lanternAt('pro', vibratoTake(40, seed)).top).toBeLessThan(0.2)
+      expect(lanternAt('professional', vibratoTake(40, seed)).top).toBeLessThan(
+        0.2,
+      )
     }
   })
 
-  it('keeps the goal at 12 s at every level, and the band widest for a beginner', () => {
+  it('keeps the goal at 12 s at every level, and the band widest at Learning', () => {
     expect(
       Object.values(LANTERN_LEVELS).map((preset) => [
         preset.goalSeconds,
@@ -733,11 +749,11 @@ describe("the lantern's levels", () => {
       [12, 12],
       [12, 12],
     ])
-    expect(LANTERN_LEVELS.beginner.tolCents).toBeGreaterThan(
+    expect(LANTERN_LEVELS.learning.tolCents).toBeGreaterThan(
       LANTERN_LEVELS.singer.tolCents,
     )
     expect(LANTERN_LEVELS.singer.tolCents).toBeGreaterThan(
-      LANTERN_LEVELS.pro.tolCents,
+      LANTERN_LEVELS.professional.tolCents,
     )
   })
 })

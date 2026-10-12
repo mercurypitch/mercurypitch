@@ -14,7 +14,7 @@
 // once it has held SETTLE_SECONDS, so a voice at an edge keeps one line
 // instead of trading two. Whether the voice is steady is its steadiness
 // itself (STEADY_WORDS), the same at every level: a level sets how steady
-// the lantern's top asks a voice to be, and a beginner's natural vibrato
+// the lantern's top asks a voice to be, and at Learning a natural vibrato
 // fills it, so the light is no sign of a steady voice. Whether the top is
 // filling is the engine's own reach against the top's fill, the numbers
 // the lantern draws.

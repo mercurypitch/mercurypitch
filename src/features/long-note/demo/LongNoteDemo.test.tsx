@@ -1,9 +1,9 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { setExerciseLevel } from '@/lib/exercise-level'
 import { sequence, silence, tone } from '@/lib/glass/test-frames'
 import { LANTERN_LEVELS } from '@/lib/hold/hold-engine'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import { setExerciseLevel } from '@/stores/exercise-level'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { registerNativeDevice } from '@/stores/native-shell-store'
 import type * as BestModule from '../long-note-best'
@@ -307,7 +307,7 @@ describe('the Long note demo', () => {
     seen.value = false
     merc.states = []
     localStorage.clear()
-    setExerciseLevel('beginner')
+    setExerciseLevel('learning')
   })
 
   afterEach(() => {
@@ -318,12 +318,12 @@ describe('the Long note demo', () => {
   })
 
   it('plays by itself on a first visit, every tooltip on its event, and keeps nothing', async () => {
-    // A Pro singer's room: the demo sings at its own level (Singer), so its
-    // story is the same at every level.
-    setExerciseLevel('pro')
+    // A Professional singer's room: the demo sings at its own level
+    // (Singer), so its story is the same at every level.
+    setExerciseLevel('professional')
     render(() => <LongNoteRoom onDone={() => undefined} />)
     expect(demoMode()).toBe('idle')
-    const bandAtPro = parseFloat(
+    const bandAtProfessional = parseFloat(
       screen.getByTestId('long-note-band').style.height,
     )
 
@@ -358,10 +358,11 @@ describe('the Long note demo', () => {
     expect(log.at.breath.chip).toBeNull()
     expect(log.at.fills.take).toBe('Like this')
     expect(log.at.fills.fast).toBe(false)
-    // He sings in Singer's band, half again the Pro band the room showed.
+    // He sings in Singer's band, half again the Professional band the room
+    // showed.
     expect(log.at.fills.band * 2).toBeCloseTo(
-      (bandAtPro * LANTERN_LEVELS.singer.tolCents) /
-        LANTERN_LEVELS.pro.tolCents,
+      (bandAtProfessional * LANTERN_LEVELS.singer.tolCents) /
+        LANTERN_LEVELS.professional.tolCents,
       6,
     )
     expect(log.at.twelve.fast).toBe(true)

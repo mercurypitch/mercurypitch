@@ -22,7 +22,6 @@
 // `script` (scripted-take.ts): frames in place of the mic, nothing kept.
 
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
-import { exerciseLevel } from '@/lib/exercise-level'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldPreset, HoldState, HoldTick, } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
@@ -33,6 +32,7 @@ import type { MercVoice } from '@/lib/merc/sim'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import { exerciseLevel } from '@/stores/exercise-level'
 import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { createChipFollower } from './chip-follower'
