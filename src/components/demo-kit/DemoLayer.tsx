@@ -1,5 +1,5 @@
 // ============================================================
-// DemoLayer — a demo's tooltips, cards and progress, over its room
+// DemoLayer: a demo's tooltips, cards and progress, over its room
 // ============================================================
 //
 // One layer over the whole room. It never takes a tap except on its cards:

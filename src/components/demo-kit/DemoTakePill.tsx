@@ -1,5 +1,5 @@
 // ============================================================
-// DemoTakePill — "Not like this" and "Like this", under the demo's takes
+// DemoTakePill: "Not like this" and "Like this", under the demo's takes
 // ============================================================
 //
 // While a demo sings, its pill says which take this is: take 1 the way not
