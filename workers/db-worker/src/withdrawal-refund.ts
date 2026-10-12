@@ -113,6 +113,8 @@ function priceOf(intent: Record<string, unknown>): Price | null {
   const amount = intent.amount_received
   const currency = intent.currency
   if (typeof amount !== 'number' || typeof currency !== 'string') return null
+  // Nothing received is no price on record, not a price of nothing.
+  if (amount <= 0) return null
   return currency === '' ? null : { amountMinor: amount, currency }
 }
 
