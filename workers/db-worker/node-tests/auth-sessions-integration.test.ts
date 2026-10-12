@@ -383,7 +383,8 @@ describe('the expiry sweep', () => {
     // expire anyway, for no reason beyond two clocks disagreeing.
     sqlite
       .prepare(
-        `UPDATE authSessions SET createdAt = datetime('now', '-30 days')
+        `UPDATE authSessions SET createdAt = datetime('now', '-30 days'),
+                                 lastSeenAt = datetime('now', '-30 days')
           WHERE userId = ?`,
       )
       .run(account.userId)
@@ -393,6 +394,34 @@ describe('the expiry sweep', () => {
       30 * 24 * 60 * 60,
     )
     expect(sessionRowCount(account.userId)).toBe(1)
+  })
+
+  it('keeps a session still in use, however long ago it signed in', async () => {
+    const account = await register('renewed@example.com')
+    // Signed in forty days ago and used yesterday. `/refresh` carries the
+    // same `sid` forward, so a session in daily use keeps its sign-in date
+    // while every token it holds is new.
+    sqlite
+      .prepare(
+        `UPDATE authSessions SET createdAt = datetime('now', '-40 days'),
+                                 lastSeenAt = datetime('now', '-1 days')
+          WHERE userId = ?`,
+      )
+      .run(account.userId)
+    const refreshed = await authed(account.token, '/api/auth/refresh', {
+      method: 'POST',
+      body: '{}',
+    })
+    expect(refreshed.status).toBe(200)
+    const { token } = (await refreshed.json()) as { token: string }
+
+    await sweepExpiredSessions(
+      env.DB as unknown as D1Database,
+      30 * 24 * 60 * 60,
+    )
+
+    expect(sessionRowCount(account.userId)).toBe(1)
+    expect(await meStatus(token)).toBe(200)
   })
 })
 

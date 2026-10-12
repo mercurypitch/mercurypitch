@@ -206,13 +206,22 @@ export async function listSessions(
  * browser signed into once a month appears a dozen times, each entry
  * indistinguishable from the live one, and "sign out this device" on any of
  * them revokes nothing, because there is nothing left to revoke.
+ *
+ * Aged by `lastSeenAt`, never `createdAt`. `/refresh` keeps the same `sid`, so
+ * a session in daily use keeps its sign-in date for up to SESSION_MAX_AGE_DAYS,
+ * and sweeping on that date signed people out a month after they signed in,
+ * however fresh their token. A token is minted only at sign-in, which writes
+ * the row, or by `/refresh`, which passes `getAuth` and so `touchSession`
+ * first. `lastSeenAt` therefore trails the newest token by at most
+ * SESSION_TOUCH_SECONDS, far inside SWEEP_GRACE_SECONDS: a row unseen for
+ * longer than a token lives holds none that still verifies.
  */
 export async function sweepExpiredSessions(
   db: D1Database,
   tokenTtlSeconds: number,
 ): Promise<void> {
   await db
-    .prepare(`DELETE FROM authSessions WHERE createdAt <= datetime('now', ?)`)
+    .prepare(`DELETE FROM authSessions WHERE lastSeenAt <= datetime('now', ?)`)
     .bind(`-${tokenTtlSeconds + SWEEP_GRACE_SECONDS} seconds`)
     .run()
 }
