@@ -1,10 +1,10 @@
 // ============================================================
-// Merc's moves — what he does in the Long note room, and where
+// Merc's moves: what he does in a premium room, and where
 // ============================================================
 //
-// Out of useLongNoteController: Merc's state, his place (beside the lantern
-// or floating in its glass), his hops between the two, and his cheer at the
-// goal and the brim. Every change of state bumps a counter, so a landing
+// Out of the room's controller: Merc's state, his place (in Long note,
+// beside the lantern or floating in its glass), his hops between the two,
+// and his cheer (Long note's goal and brim). Every change of state bumps a counter, so a landing
 // scheduled before it cannot overwrite what came after. While he cheers,
 // the lock's ups and downs leave him be; after it he follows the voice
 // again, from beside the lantern.

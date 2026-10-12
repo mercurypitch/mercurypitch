@@ -6,12 +6,16 @@
 // the lantern's box, the timer, the mic, Merc), so every anchor follows
 // the room's real layout. Inside the lantern's box, the chimney's outline
 // (lantern-geometry.ts) says where the light is, and the painted handle
-// sits on top: the two parts of the lantern a tooltip may never cover.
+// sits on top: the two parts of the lantern a tooltip may never cover. The
+// demo kit's layer (demo-kit/DemoLayer.tsx) asks `aimLongNoteTip` where
+// each tooltip goes.
 
+import type { Rect, Side } from '@/components/demo-kit/tip-place'
+import { inflate } from '@/components/demo-kit/tip-place'
+import type { TipAim, TipTarget } from '@/components/demo-kit/tip-target'
+import { roomRects } from '@/components/demo-kit/tip-target'
 import { CHIMNEY_BOTTOM, CHIMNEY_TOP, chimneyHalfWidth, HOLD_FILL_MAX, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, } from '../lantern-geometry'
 import type { DemoTarget } from './demo-cues'
-import type { Point, Rect, Side } from './tip-place'
-import { inflate } from './tip-place'
 
 /** The room's parts, px from the room's top left; null when not shown. */
 export interface DemoScene {
@@ -32,17 +36,6 @@ export interface DemoScene {
   readonly controls: readonly Rect[]
   /** The light's fill as the lantern shows it now, 0..1. */
   readonly level: number
-}
-
-export type GlowKind = 'line' | 'light' | 'text'
-
-export interface TipTarget {
-  readonly anchors: Partial<Record<Side, Point>>
-  readonly sides: readonly Side[]
-  readonly avoid: readonly Rect[]
-  readonly prefer: readonly Rect[]
-  /** The soft glow on what the tooltip explains; null for none. */
-  readonly glow: { readonly kind: GlowKind; readonly rect: Rect } | null
 }
 
 /** The chimney at its widest, view-box units either side of the middle. */
@@ -260,4 +253,49 @@ export function tipTarget(
     case 'mic':
       return micTarget(scene)
   }
+}
+
+/** The room's parts, measured from the layer (which covers the room). */
+export function measureLongNoteScene(
+  layer: HTMLElement,
+  level: number,
+): DemoScene | null {
+  const rects = roomRects(layer)
+  if (rects === null) return null
+  const id = rects.byTestId
+  return {
+    room: rects.room,
+    stage: id('long-note-stage'),
+    lantern: id('long-note-lantern'),
+    note: id('long-note-note'),
+    timer: id('long-note-timer'),
+    chip: id('long-note-chip'),
+    result: id('long-note-result'),
+    score: id('long-note-steadiness'),
+    mic: id('long-note-mic'),
+    picker: id('long-note-picker'),
+    merc: id('long-note-merc'),
+    controls: [
+      id('long-note-demo-skip'),
+      id('long-note-ask'),
+      id('long-note-demo-take'),
+      id('long-note-demo-fast'),
+    ].filter((rect) => rect !== null),
+    level,
+  }
+}
+
+/**
+ * Where a tooltip points in the room as it is drawn now, with the light at
+ * `level`; null hides it.
+ */
+export function aimLongNoteTip(
+  target: DemoTarget,
+  layer: HTMLElement,
+  level: number,
+): TipAim | null {
+  const scene = measureLongNoteScene(layer, level)
+  const aim = scene === null ? null : tipTarget(target, scene)
+  if (scene === null || aim === null) return null
+  return { target: aim, bounds: scene.room }
 }

@@ -4,14 +4,16 @@
 //
 // Every tooltip waits for the engine event it explains: "it stops filling"
 // for take 1's break, "the note is over" for its end, "the top fills by how
-// steady you sing" for take 2's goal, and so on. The driver
-// (useLongNoteDemo.ts) keys them to the events the room's engine really
-// fires, each on the first time its event or mark comes; `planLongNoteDemo`
-// lays the same table out on the script's own replay, which is what the
-// tests check and what the progress bar runs on.
+// steady you sing" for take 2's goal, and so on. The demo kit's driver
+// (useExerciseDemo.ts, through useLongNoteDemo.ts) keys them to the events
+// the room's engine really fires, each on the first time its event or mark
+// comes; `planLongNoteDemo` lays the same table out on the script's own
+// replay, which is what the tests check and what the progress bar runs on.
 
+import type { DemoCue as KitDemoCue, DemoMark as KitDemoMark, DemoTimeline, } from '@/components/demo-kit/demo-plan'
+import { demoMarkAt, planDemo } from '@/components/demo-kit/demo-plan'
 import type { HoldEventType } from '@/lib/hold/hold-engine'
-import type { DemoTake, DemoTakeId } from './demo-script'
+import type { DemoTake } from './demo-script'
 import { demoTake } from './demo-script'
 
 /**
@@ -41,19 +43,9 @@ export type DemoCueId =
  * A take's engine event, or `fast` and `slow`: one of take 2's
  * fast-forwards beginning and ending.
  */
-export type DemoMark = HoldEventType | 'fast' | 'slow'
+export type DemoMark = KitDemoMark<HoldEventType>
 
-export type DemoTrigger =
-  | { readonly take: 'intro' }
-  | { readonly take: DemoTakeId; readonly mark: DemoMark }
-
-export interface DemoCue {
-  readonly id: DemoCueId
-  readonly trigger: DemoTrigger
-  /** Wall seconds after the trigger. */
-  readonly delay: number
-  readonly target: DemoTarget
-}
+export type DemoCue = KitDemoCue<DemoCueId, HoldEventType, DemoTarget>
 
 /** One tooltip at a time; each stays until the next beat clears it. */
 export const DEMO_CUES: readonly DemoCue[] = [
@@ -153,70 +145,26 @@ export function demoCueText(id: DemoCueId, note: string, own: boolean): string {
   }
 }
 
-/**
- * When a take's mark first happens, engine seconds; null if it never does.
- */
-export function demoMarkAt(take: DemoTake, mark: DemoMark): number | null {
-  if (mark === 'fast') return take.fast[0]?.from ?? null
-  if (mark === 'slow') return take.fast[0]?.to ?? null
-  return take.events.find((event) => event.type === mark)?.at ?? null
-}
-
-export interface PlannedCue {
-  readonly id: DemoCueId
-  /** When its trigger happens, wall seconds from the demo's start. */
-  readonly trigger: number
-  /** When it shows. */
-  readonly at: number
-}
-
-export interface LongNoteDemoPlan {
+export interface LongNoteDemoPlan extends DemoTimeline<DemoCueId, DemoTake> {
   readonly note: number
-  readonly takes: Readonly<Record<DemoTakeId, DemoTake>>
-  /** When each take's clock reads zero, wall seconds from the start. */
-  readonly takeStart: Readonly<Record<DemoTakeId, number>>
   /** When take 2's lantern is half full, at the goal. */
   readonly goal: number
   /** When take 2's lantern is full to the brim. */
   readonly brim: number
-  readonly cues: readonly PlannedCue[]
-  /** When the end card shows. */
-  readonly total: number
 }
 
 /** The whole demo on one wall clock, as the script plays it. */
 export function planLongNoteDemo(note: number): LongNoteDemoPlan {
   const off = demoTake('off', note)
   const on = demoTake('on', note)
-  const offStart = DEMO_BEATS.intro + DEMO_BEATS.lead
-  const offEnd = offStart + off.length
-  const onStart =
-    offEnd + DEMO_BEATS.afterOff + DEMO_BEATS.reset + DEMO_BEATS.lead
-  const onEnd = onStart + on.length
-  const takes = { off, on }
-  const takeStart = { off: offStart, on: onStart }
-
-  const cues = DEMO_CUES.map((cue): PlannedCue => {
-    let trigger = 0
-    if (cue.trigger.take !== 'intro') {
-      const take = takes[cue.trigger.take]
-      const engine = demoMarkAt(take, cue.trigger.mark)
-      if (engine === null) {
-        throw new Error(`Long note demo: no '${cue.trigger.mark}' in a take`)
-      }
-      trigger = takeStart[cue.trigger.take] + take.wallAt(engine)
-    }
-    return { id: cue.id, trigger, at: trigger + cue.delay }
-  })
+  const timeline = planDemo('Long note', { off, on }, DEMO_CUES, DEMO_BEATS)
+  const onStart = timeline.takeStart.on
   const goal = demoMarkAt(on, 'goal') ?? on.length
   const brim = demoMarkAt(on, 'brim') ?? on.length
   return {
     note,
-    takes,
-    takeStart,
+    ...timeline,
     goal: onStart + on.wallAt(goal),
     brim: onStart + on.wallAt(brim),
-    cues,
-    total: onEnd + DEMO_BEATS.afterOn,
   }
 }

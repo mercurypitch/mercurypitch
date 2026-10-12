@@ -1,28 +1,47 @@
 // ============================================================
-// LongNoteDemoLayer — the demo's tooltips, cards and progress, over the room
+// DemoLayer: a demo's tooltips, cards and progress, over its room
 // ============================================================
 //
 // One layer over the whole room. It never takes a tap except on its cards:
-// the room underneath goes on drawing the demo's takes (useLongNoteDemo.ts).
+// the room underneath goes on drawing the demo's takes (useExerciseDemo.ts).
 // Each tooltip is placed when it shows, from rects measured off the screen
-// (tip-targets.ts, tip-place.ts), and a soft glow marks what it explains.
-// A polite live region says every tooltip, take and card out loud.
+// (the room's `aim`, tip-place.ts), and a soft glow marks what it explains.
+// The play card offers the demo when a first visit has no sound yet; the
+// end card hands the room over ("Your turn", Watch again, Try it). A polite
+// live region says every tooltip, take and card out loud.
+//
+// Every part's test id starts with the layer's own (`testId`), so a room's
+// tests and markers keep its own names.
 
 import type { JSX } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { Play } from '@/components/icons'
-import type { LongNoteController } from '../useLongNoteController'
-import { DEMO_COPY } from './demo-cues'
-import styles from './LongNoteDemo.module.css'
+import styles from './DemoLayer.module.css'
 import type { TipPlace } from './tip-place'
 import { placeTip } from './tip-place'
-import type { DemoScene, TipTarget } from './tip-targets'
-import { tipTarget } from './tip-targets'
-import type { DemoTip, LongNoteDemo } from './useLongNoteDemo'
+import type { TipAim, TipTarget } from './tip-target'
+import type { DemoTip, ExerciseDemo } from './useExerciseDemo'
 
-export interface LongNoteDemoLayerProps {
-  demo: LongNoteDemo
-  room: LongNoteController
+/** The cards' words. */
+export interface DemoLayerCopy {
+  readonly cardTitle: string
+  readonly cardLine: string
+  readonly notNow: string
+  readonly watchButton: string
+  readonly endTitle: string
+  readonly again: string
+  readonly tryIt: string
+}
+
+export interface DemoLayerProps<C extends string, T extends string> {
+  demo: ExerciseDemo<C, T>
+  /**
+   * Where a tooltip points and the room it stays inside, measured from the
+   * layer as the room is drawn now; null leaves it unplaced.
+   */
+  aim: (tip: DemoTip<C, T>, layer: HTMLElement) => TipAim | null
+  copy: DemoLayerCopy
+  testId: string
 }
 
 /** A tooltip is never wider than this. */
@@ -45,56 +64,16 @@ function tallestTip(card: HTMLElement): number {
   return MAX_TIP_LINES * line + frame + 1
 }
 
-/** The room's parts, measured from the layer (which covers the room). */
-function measureScene(layer: HTMLElement, level: number): DemoScene | null {
-  const root = layer.parentElement
-  if (root === null) return null
-  const origin = layer.getBoundingClientRect()
-  const rectOf = (selector: string): DemoScene['stage'] => {
-    const el = root.querySelector(selector)
-    if (el === null) return null
-    const r = el.getBoundingClientRect()
-    if (r.width === 0 && r.height === 0) return null
-    return {
-      x: r.left - origin.left,
-      y: r.top - origin.top,
-      w: r.width,
-      h: r.height,
-    }
-  }
-  const id = (testId: string): DemoScene['stage'] =>
-    rectOf(`[data-testid="${testId}"]`)
-  return {
-    room: { x: 0, y: 0, w: origin.width, h: origin.height },
-    stage: id('long-note-stage'),
-    lantern: id('long-note-lantern'),
-    note: id('long-note-note'),
-    timer: id('long-note-timer'),
-    chip: id('long-note-chip'),
-    result: id('long-note-result'),
-    score: id('long-note-steadiness'),
-    mic: id('long-note-mic'),
-    picker: id('long-note-picker'),
-    merc: id('long-note-merc'),
-    controls: [
-      id('long-note-demo-skip'),
-      id('long-note-ask'),
-      id('long-note-demo-take'),
-      id('long-note-demo-fast'),
-    ].filter((rect) => rect !== null),
-    level,
-  }
-}
-
 interface Placed {
   place: TipPlace
   glow: TipTarget['glow']
 }
 
-function TipCard(props: {
-  tip: DemoTip
+function TipCard<C extends string, T extends string>(props: {
+  tip: DemoTip<C, T>
   layer: () => HTMLDivElement | undefined
-  level: () => number
+  aim: DemoLayerProps<C, T>['aim']
+  testId: string
 }): JSX.Element {
   let measurer: HTMLDivElement | undefined
   const [placed, setPlaced] = createSignal<Placed | null>(null)
@@ -102,13 +81,12 @@ function TipCard(props: {
   const layout = (): void => {
     const layer = props.layer()
     if (layer === undefined || measurer === undefined) return
-    const scene = measureScene(layer, props.level())
-    const target = scene === null ? null : tipTarget(props.tip.target, scene)
-    if (scene === null || target === null) return
+    const aim = props.aim(props.tip, layer)
+    if (aim === null) return
     const box = measurer
     const place = placeTip({
-      ...target,
-      bounds: scene.room,
+      ...aim.target,
+      bounds: aim.bounds,
       maxWidth: MAX_TIP_WIDTH,
       maxHeight: tallestTip(box),
       size: (maxWidth) => {
@@ -116,7 +94,7 @@ function TipCard(props: {
         return { w: box.offsetWidth, h: box.offsetHeight }
       },
     })
-    setPlaced(place === null ? null : { place, glow: target.glow })
+    setPlaced(place === null ? null : { place, glow: aim.target.glow })
   }
 
   onMount(() => {
@@ -143,7 +121,7 @@ function TipCard(props: {
           <div
             class={styles.glow}
             data-kind={glow().kind}
-            data-testid="long-note-demo-glow"
+            data-testid={`${props.testId}-glow`}
             style={{
               left: `${glow().rect.x}px`,
               top: `${glow().rect.y}px`,
@@ -158,7 +136,7 @@ function TipCard(props: {
         classList={{ [styles.tipWaiting]: placed() === null }}
         data-side={placed()?.place.side}
         data-tip={props.tip.id}
-        data-testid="long-note-demo-tip"
+        data-testid={`${props.testId}-tip`}
         aria-hidden="true"
         style={(() => {
           const place = placed()?.place
@@ -182,16 +160,19 @@ function focusOnMount(el: HTMLButtonElement): void {
   onMount(() => el.focus({ preventScroll: true }))
 }
 
-export function LongNoteDemoLayer(props: LongNoteDemoLayerProps): JSX.Element {
+export function DemoLayer<C extends string, T extends string>(
+  props: DemoLayerProps<C, T>,
+): JSX.Element {
   let layer: HTMLDivElement | undefined
   const busy = (): boolean => props.demo.mode() !== 'idle'
+  const id = (part: string): string => `${props.testId}-${part}`
 
   return (
     <div
       ref={layer}
       class={styles.layer}
       data-mode={props.demo.mode()}
-      data-testid="long-note-demo"
+      data-testid={props.testId}
     >
       <div class={styles.vignette} classList={{ [styles.on]: busy() }} />
       <Show when={busy() ? props.demo.run() : null} keyed>
@@ -201,7 +182,7 @@ export function LongNoteDemoLayer(props: LongNoteDemoLayerProps): JSX.Element {
               class={styles.progressFill}
               classList={{ [styles.progressDone]: props.demo.mode() === 'end' }}
               style={{ 'animation-duration': `${run.seconds}s` }}
-              data-testid="long-note-demo-progress"
+              data-testid={id('progress')}
             />
           </div>
         )}
@@ -211,38 +192,39 @@ export function LongNoteDemoLayer(props: LongNoteDemoLayerProps): JSX.Element {
           <TipCard
             tip={tip}
             layer={() => layer}
-            level={() => props.room.lanternLevel()}
+            aim={props.aim}
+            testId={props.testId}
           />
         )}
       </Show>
       <Show when={props.demo.mode() === 'card'}>
         <section
           class={styles.card}
-          aria-labelledby="long-note-demo-card-title"
-          data-testid="long-note-demo-card"
+          aria-labelledby={id('card-title')}
+          data-testid={id('card')}
         >
-          <h2 id="long-note-demo-card-title" class={styles.cardTitle}>
-            {DEMO_COPY.cardTitle}
+          <h2 id={id('card-title')} class={styles.cardTitle}>
+            {props.copy.cardTitle}
           </h2>
-          <p class={styles.cardLine}>{DEMO_COPY.cardLine}</p>
+          <p class={styles.cardLine}>{props.copy.cardLine}</p>
           <div class={styles.cardActions}>
             <button
               type="button"
               class={styles.secondary}
               onClick={() => props.demo.dismiss()}
-              data-testid="long-note-demo-not-now"
+              data-testid={id('not-now')}
             >
-              {DEMO_COPY.notNow}
+              {props.copy.notNow}
             </button>
             <button
               type="button"
               ref={focusOnMount}
               class={styles.primary}
               onClick={() => props.demo.ask()}
-              data-testid="long-note-demo-watch"
+              data-testid={id('watch')}
             >
               <Play />
-              {DEMO_COPY.watchButton}
+              {props.copy.watchButton}
             </button>
           </div>
         </section>
@@ -250,38 +232,34 @@ export function LongNoteDemoLayer(props: LongNoteDemoLayerProps): JSX.Element {
       <Show when={props.demo.mode() === 'end'}>
         <section
           class={styles.card}
-          aria-labelledby="long-note-demo-end-title"
-          data-testid="long-note-demo-end"
+          aria-labelledby={id('end-title')}
+          data-testid={id('end')}
         >
-          <h2 id="long-note-demo-end-title" class={styles.cardTitle}>
-            {DEMO_COPY.endTitle}
+          <h2 id={id('end-title')} class={styles.cardTitle}>
+            {props.copy.endTitle}
           </h2>
           <div class={styles.cardActions}>
             <button
               type="button"
               class={styles.secondary}
               onClick={() => props.demo.ask()}
-              data-testid="long-note-demo-again"
+              data-testid={id('again')}
             >
-              {DEMO_COPY.again}
+              {props.copy.again}
             </button>
             <button
               type="button"
               ref={focusOnMount}
               class={styles.primary}
               onClick={() => props.demo.tryIt()}
-              data-testid="long-note-demo-try"
+              data-testid={id('try')}
             >
-              {DEMO_COPY.tryIt}
+              {props.copy.tryIt}
             </button>
           </div>
         </section>
       </Show>
-      <p
-        class={styles.said}
-        aria-live="polite"
-        data-testid="long-note-demo-said"
-      >
+      <p class={styles.said} aria-live="polite" data-testid={id('said')}>
         {props.demo.said()}
       </p>
     </div>

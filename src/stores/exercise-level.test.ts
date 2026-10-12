@@ -104,14 +104,16 @@ describe('the exercise level', () => {
   })
 
   it('is the one way the premium exercises reach the tier', () => {
-    // Long note, the picker and the hold engine read and set the level
-    // through exerciseLevel and setExerciseLevel, never the tier itself:
-    // one module maps the tier to the premium exercises. And the level's
-    // own key, which never shipped, is gone.
+    // Long note, the room and demo kits, the picker and the hold engine
+    // read and set the level through exerciseLevel and setExerciseLevel,
+    // never the tier itself: one module maps the tier to the premium
+    // exercises. And the level's own key, which never shipped, is gone.
     const tier =
       /\b(accuracyTier|applyAccuracyTier|_setAccuracyTier|getAccuracyTierInfo|AccuracyTier)\b|pitchperfect_accuracy_tier/
     const reaching = [
       'features/long-note',
+      'components/room-kit',
+      'components/demo-kit',
       'features/premium-exercises',
       'lib/hold',
     ]

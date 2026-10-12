@@ -1,0 +1,84 @@
+/* The room's head: the timer, the chip, the result and Merc's line. */
+.top {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 132px;
+  padding: 14px 16px 0;
+}
+
+.timer {
+  position: relative;
+  font: 700 56px/1 var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #f4efff;
+  text-shadow: 0 0 24px rgba(160, 120, 255, 0.45);
+}
+
+.chipRow {
+  min-height: 36px;
+  margin-top: 10px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 7px 15px;
+  border-radius: 999px;
+  border: 1px solid rgba(190, 160, 255, 0.35);
+  background: rgba(155, 120, 255, 0.16);
+  color: #ece4ff;
+  font: 600 14px/1.2 var(--font-body, sans-serif);
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.detail {
+  font: 600 18px/1.2 var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.bubble {
+  margin: 12px auto 0;
+  max-width: 320px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  font: 500 16px/1.35 var(--font-body, sans-serif);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* A short phone (360 x 640, 375 x 667): a smaller timer and tighter gaps,
+   so the stage under the head keeps a third of the height. */
+@media (max-height: 700px) {
+  .top {
+    min-height: 88px;
+    padding-top: 6px;
+  }
+
+  .timer {
+    font-size: 44px;
+  }
+
+  .chipRow {
+    min-height: 34px;
+    margin-top: 4px;
+  }
+
+  .result {
+    gap: 4px;
+  }
+
+  .bubble {
+    margin-top: 6px;
+    padding: 7px 14px;
+  }
+}

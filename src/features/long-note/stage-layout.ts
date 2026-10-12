@@ -12,8 +12,8 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, untrack } from 'solid-js'
+import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { LANTERN_VIEW_H, LANTERN_VIEW_W } from './lantern-geometry'
-import { prefersReducedMotion } from './reduced-motion'
 
 /** Merc's canvas, square, at full size (standing beside the lantern). */
 export const MERC_UNITS = 210
