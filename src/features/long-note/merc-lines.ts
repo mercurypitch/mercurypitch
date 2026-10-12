@@ -3,8 +3,9 @@
 // ============================================================
 //
 // Owner, 9 Oct 2026: Merc's lines live in one place and change in one file.
-// Every moment has a few variants, and the selector never says the same
-// line twice in a row for a moment. `{note}` becomes the target ("A3").
+// Every moment has a few variants, and the selector (the room kit's,
+// line-selector.ts) never says the same line twice in a row for a moment.
+// `{note}` becomes the target ("A3").
 //
 // Owner, 11 Oct 2026: plain words, one register. Each line says what the
 // voice is doing (on the note, a little sharp, flat, steady, off the note)
@@ -18,6 +19,12 @@
 // the STEADY_CLAIMS lines call a voice steady: the chip says them by the
 // steadiness itself (STEADY_WORDS, chip-follower.ts), the same at every
 // level. Past the goal the lines say what the top did and the one fix.
+
+import type { LineSelector, MercLine, } from '@/components/room-kit/line-selector'
+import { createLineSelector } from '@/components/room-kit/line-selector'
+
+export type { MercLine } from '@/components/room-kit/line-selector'
+export { fillNote } from '@/components/room-kit/line-selector'
 
 export type LongNoteMoment =
   | 'intro'
@@ -53,12 +60,6 @@ export type LongNoteMoment =
  */
 export const STEADY_CLAIMS: ReadonlySet<LongNoteMoment> =
   new Set<LongNoteMoment>(['steady', 'topSteady'])
-
-export interface MercLine {
-  /** Stable id, for a recorded voice line later. */
-  readonly id: string
-  readonly text: string
-}
 
 export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
   {
@@ -229,36 +230,12 @@ export function offMoment(
   return needleCents > 0 ? 'driftSharp' : 'driftFlat'
 }
 
-export interface MercLineSelector {
-  /** The next line for a moment, with `{note}` filled in. */
-  next(moment: LongNoteMoment, note: string): string
-}
+export type MercLineSelector = LineSelector<LongNoteMoment>
 
-export function fillNote(text: string, note: string): string {
-  return text.replaceAll('{note}', note)
-}
-
+/** Merc's lines for Long note, from this table unless a test brings its own. */
 export function createMercLineSelector(
   random: () => number = Math.random,
   lines: Readonly<Record<LongNoteMoment, readonly MercLine[]>> = MERC_LINES,
 ): MercLineSelector {
-  const last = new Map<LongNoteMoment, string>()
-  return {
-    next(moment, note) {
-      const all = lines[moment]
-      const previous = last.get(moment)
-      const pool =
-        all.length > 1 ? all.filter((line) => line.id !== previous) : all
-      const sample = random()
-      const index = Number.isFinite(sample)
-        ? Math.min(
-            pool.length - 1,
-            Math.max(0, Math.floor(sample * pool.length)),
-          )
-        : 0
-      const line = pool[index]
-      last.set(moment, line.id)
-      return fillNote(line.text, note)
-    },
-  }
+  return createLineSelector(lines, random)
 }

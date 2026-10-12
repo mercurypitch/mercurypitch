@@ -20,6 +20,10 @@
 // The level in the corner across from it (LongNoteLevel.tsx) sets how much
 // room the note has and how steady the top asks the voice to be.
 //
+// The head, the mic, the result's buttons and the level control are the
+// room kit's (src/components/room-kit/). This room brings its world (the
+// lantern, Merc in it, the line), its words and its test ids.
+//
 // Merc's canvas sits BETWEEN the lantern's two layers (Lantern.tsx), so in
 // the glass he is behind its highlights and frame, and his feet are in the
 // liquid. The target line and the voice are drawn on both sides of him
@@ -29,12 +33,13 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { CheckSmall, HelpCircle, Mic, Minus, Plus, Volume2, X, } from '@/components/icons'
-import { nativeShellApi } from '@/stores/native-shell-store'
+import { CheckSmall, HelpCircle, Minus, Plus, Volume2, X, } from '@/components/icons'
+import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
+import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
+import { ResultCard, RoomBubble, RoomChip, RoomHeader, RoomTimer, } from '@/components/room-kit/RoomHeader'
 import { DEMO_COPY } from './demo/demo-cues'
 import { LongNoteDemoLayer } from './demo/LongNoteDemoLayer'
 import { useLongNoteDemo } from './demo/useLongNoteDemo'
-import { createFocusHandoff } from './focus-handoff'
 import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
 import { formatHoldSeconds } from './long-note-entry'
@@ -242,6 +247,15 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
     on([phase, demo.mode], () => focus.handOff(mainControl), { defer: true }),
   )
 
+  /**
+   * The result's line under the seconds. None without a steadiness, and
+   * none at 0 or NaN, which the card has always hidden.
+   */
+  const steadinessLine = (steadiness: number | null): string | null =>
+    steadiness === null || steadiness === 0 || Number.isNaN(steadiness)
+      ? null
+      : `Steadiness ${Math.round(steadiness)}`
+
   const micLabel = (): string => {
     switch (phase()) {
       case 'starting':
@@ -266,10 +280,10 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
       data-testid="long-note-room"
       onFocusIn={(event) => focus.noteFocus(event)}
     >
-      <div class={styles.top} inert={demoBusy()}>
+      <RoomHeader inert={demoBusy()}>
         <Switch>
           <Match when={phase() === 'hold'}>
-            <div class={styles.timer} data-testid="long-note-timer">
+            <RoomTimer testId="long-note-timer">
               {formatHoldSeconds(room.hold().inBandSeconds)}
               <Show when={demo.fast()}>
                 <span
@@ -280,43 +294,27 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                   {DEMO_COPY.fast}
                 </span>
               </Show>
-            </div>
-            <div class={styles.chipRow}>
-              <Show when={demoTake() ? null : room.chip()}>
-                {(text) => (
-                  <span class={styles.chip} data-testid="long-note-chip">
-                    {text()}
-                  </span>
-                )}
-              </Show>
-            </div>
+            </RoomTimer>
+            <RoomChip
+              text={demoTake() ? null : room.chip()}
+              testId="long-note-chip"
+            />
           </Match>
           <Match when={phase() === 'result' ? room.summary() : null}>
             {(summary) => (
-              <div class={styles.result} data-testid="long-note-result">
-                <div class={styles.timer}>
-                  {formatHoldSeconds(summary().inBandSeconds)}
-                </div>
-                <Show when={summary().steadiness}>
-                  {(steadiness) => (
-                    <div
-                      class={styles.steadiness}
-                      data-testid="long-note-steadiness"
-                    >
-                      Steadiness {Math.round(steadiness())}
-                    </div>
-                  )}
-                </Show>
-              </div>
+              <ResultCard
+                value={formatHoldSeconds(summary().inBandSeconds)}
+                detail={steadinessLine(summary().steadiness)}
+                testId="long-note-result"
+                detailTestId="long-note-steadiness"
+              />
             )}
           </Match>
         </Switch>
         <Show when={room.line() !== '' && phase() !== 'hold' && !demoTake()}>
-          <p class={styles.bubble} data-testid="long-note-line">
-            {room.line()}
-          </p>
+          <RoomBubble testId="long-note-line">{room.line()}</RoomBubble>
         </Show>
-      </div>
+      </RoomHeader>
 
       <div ref={stageEl} class={styles.stage} data-testid="long-note-stage">
         <div
@@ -443,24 +441,12 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
       >
         <Switch>
           <Match when={phase() === 'result' && !room.script.active()}>
-            <div class={styles.actions}>
-              <button
-                type="button"
-                class={styles.again}
-                onClick={() => room.again()}
-                data-testid="long-note-again"
-              >
-                Again
-              </button>
-              <button
-                type="button"
-                class={styles.done}
-                onClick={() => props.onDone()}
-                data-testid="long-note-done"
-              >
-                Done
-              </button>
-            </div>
+            <ResultActions
+              onAgain={() => room.again()}
+              onDone={() => props.onDone()}
+              againTestId="long-note-again"
+              doneTestId="long-note-done"
+            />
             <button
               type="button"
               class={styles.textButton}
@@ -470,37 +456,11 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             </button>
           </Match>
           <Match when={phase() === 'blocked'}>
-            <p class={styles.blocked} role="alert">
-              {room.state().block === 'denied'
-                ? 'Merc needs the microphone to hear your note. Allow it in Settings, then try again.'
-                : 'The microphone did not open. Check that no other app is using it, then try again.'}
-            </p>
-            <div class={styles.actions}>
-              <Show
-                when={
-                  room.state().block === 'denied' &&
-                  nativeShellApi()?.openAppSettings
-                }
-              >
-                {(open) => (
-                  <button
-                    type="button"
-                    class={styles.again}
-                    onClick={() => void open()()}
-                  >
-                    Open Settings
-                  </button>
-                )}
-              </Show>
-              <button
-                type="button"
-                class={styles.done}
-                onClick={() => room.start()}
-                data-testid="long-note-retry"
-              >
-                Try again
-              </button>
-            </div>
+            <MicBlocked
+              block={room.state().block}
+              onRetry={() => room.start()}
+              retryTestId="long-note-retry"
+            />
           </Match>
           <Match when={phase() !== 'result' || room.script.active()}>
             {/* The picker keeps its place once the take starts, so the mic
@@ -573,26 +533,21 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                 <Plus size={18} />
               </button>
             </div>
-            <button
-              type="button"
-              class={styles.mic}
-              classList={{
-                [styles.micListening]:
-                  (phase() === 'listen' || phase() === 'hold') &&
-                  !room.script.active(),
-                [styles.micDemo]: room.script.active(),
-                [styles.micPulse]: demo.micPulse(),
-              }}
+            <MicButton
+              listening={
+                (phase() === 'listen' || phase() === 'hold') &&
+                !room.script.active()
+              }
+              demo={room.script.active()}
+              pulse={demo.micPulse()}
               disabled={phase() === 'starting'}
-              aria-label={micLabel()}
+              label={micLabel()}
               onClick={() => {
                 if (phase() === 'listen' || phase() === 'hold') room.stop()
                 else room.start()
               }}
-              data-testid="long-note-mic"
-            >
-              <Mic />
-            </button>
+              testId="long-note-mic"
+            />
           </Match>
         </Switch>
       </div>

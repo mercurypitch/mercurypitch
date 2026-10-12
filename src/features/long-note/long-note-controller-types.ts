@@ -7,11 +7,11 @@
 // long enough on its own.
 
 import type { Accessor } from 'solid-js'
+import type { MercPlace } from '@/components/room-kit/merc-moves'
 import type { HoldState } from '@/lib/hold/hold-engine'
 import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice } from '@/lib/merc/sim'
 import type { LongNoteState } from './long-note-machine'
-import type { MercPlace } from './merc-moves'
 import type { LongNoteScript } from './scripted-take'
 import type { VoiceTraceBuffer } from './voice-trace-buffer'
 

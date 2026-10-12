@@ -16,8 +16,8 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
+import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { prefersReducedMotion } from '../reduced-motion'
 import type { ScriptedTake } from '../scripted-take'
 import type { LongNoteController } from '../useLongNoteController'
 import { longNoteDemoAutoPlays } from './demo-auto-play'

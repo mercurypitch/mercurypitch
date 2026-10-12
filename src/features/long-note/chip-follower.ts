@@ -8,7 +8,7 @@
 // the band), and the on-note line while it is locked. Nothing is certain
 // for a moment off the band the engine has not called yet, a gap, or a
 // lock only just won back; then the line on screen stays. The pacer
-// (chip-pacer.ts) keeps each line up long enough to read.
+// (the room kit's chip-pacer.ts) keeps each line up long enough to read.
 //
 // Two more things choose the line on the note, and the line follows each
 // once it has held SETTLE_SECONDS, so a voice at an edge keeps one line
@@ -19,8 +19,8 @@
 // filling is the engine's own reach against the top's fill, the numbers
 // the lantern draws.
 
+import { createChipPacer } from '@/components/room-kit/chip-pacer'
 import type { HoldEventType, HoldState } from '@/lib/hold/hold-engine'
-import { createChipPacer } from './chip-pacer'
 import type { LongNoteMoment } from './merc-lines'
 import { offMoment } from './merc-lines'
 
@@ -112,7 +112,7 @@ function createSettledFlag(): SettledFlag {
 }
 
 export function createChipFollower(): ChipFollower {
-  const pacer = createChipPacer(CHIP_HOLD_SECONDS)
+  const pacer = createChipPacer<LongNoteMoment>(CHIP_HOLD_SECONDS)
   let outOfBandFor = 0
   /** The first lock named the singer's own note. */
   let found = false

@@ -1,0 +1,148 @@
+/* The room's controls: the mic button, Again and Done, the mic's notice. */
+.mic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #49f0e0 0%,
+    #2a86e8 45%,
+    #7b4cf5 100%
+  );
+  box-shadow: 0 8px 28px rgba(123, 76, 245, 0.45);
+  color: #fff;
+}
+
+.mic svg {
+  width: 32px;
+  height: 32px;
+}
+
+.mic::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(160, 130, 255, 0.55);
+  animation: mic-pulse 2s ease-out infinite;
+  pointer-events: none;
+}
+
+.micListening::after {
+  border-color: rgba(4, 236, 216, 0.7);
+  animation-duration: 1.2s;
+}
+
+.mic:disabled {
+  opacity: 0.6;
+}
+
+/* While a demo sings, the mic is not listening and looks it. */
+.micDemo {
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+.micDemo::after {
+  animation: none;
+  opacity: 0;
+}
+
+/* After Try it: one nudge to say "this one". */
+.micPulse {
+  animation: mic-nudge 900ms ease-out 1;
+}
+
+@keyframes mic-nudge {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 28px rgba(123, 76, 245, 0.45);
+  }
+  40% {
+    transform: scale(1.1);
+    box-shadow:
+      0 8px 28px rgba(123, 76, 245, 0.45),
+      0 0 0 10px rgba(160, 130, 255, 0.28);
+  }
+}
+
+@keyframes mic-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.again,
+.done {
+  flex: 1;
+  height: 52px;
+  border-radius: 26px;
+  font: 600 17px/1 var(--font-body, sans-serif);
+}
+
+.again {
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.done {
+  border: 0;
+  background: #7c4dff;
+  box-shadow: 0 6px 20px rgba(124, 77, 255, 0.4);
+  color: #fff;
+}
+
+.blocked {
+  max-width: 320px;
+  margin: 0;
+  color: var(--text-secondary);
+  font: 400 15px/1.4 var(--font-body, sans-serif);
+  text-align: center;
+}
+
+/* A short phone (360 x 640, 375 x 667): a smaller mic. Its ring's travel
+   is (64 + 2 x 6) x 1.35 / 2 - 32 = 19.3 px past the disc, inside the
+   room's gap and bottom padding there. */
+@media (max-height: 700px) {
+  .mic {
+    width: 64px;
+    height: 64px;
+  }
+
+  .mic svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .mic::after {
+    inset: -6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic::after {
+    animation: none;
+  }
+
+  .micPulse {
+    animation: none;
+  }
+}

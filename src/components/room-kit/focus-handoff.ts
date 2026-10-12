@@ -1,14 +1,15 @@
 // ============================================================
-// Focus hand-off — focus never falls to the page when a control goes
+// Focus hand-off: focus never falls to the page when a control goes
 // ============================================================
 //
-// The room swaps its controls as a take moves on: the mic button goes at
-// the result, Again when the next take starts, the demo's cards when they
-// close. A focused control that leaves the page drops focus to <body>, and
-// a keyboard or screen-reader user has to find their way back (review B of
-// PR 973, minor 12). The room notes the last control focused in it, and
-// when a change of screen has taken that control away and left focus on
-// nothing, hands focus to the control that took its place.
+// A premium room swaps its controls as a take moves on (in Long note: the
+// mic button goes at the result, Again when the next take starts, the
+// demo's cards when they close). A focused control that leaves the page
+// drops focus to <body>, and a keyboard or screen-reader user has to find
+// their way back (review B of PR 973, minor 12). The room notes the last
+// control focused in it, and when a change of screen has taken that
+// control away and left focus on nothing, hands focus to the control that
+// took its place.
 
 export interface FocusHandoff {
   /** The room's focusin: the control that has focus now. */

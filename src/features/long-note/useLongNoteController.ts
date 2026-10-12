@@ -22,8 +22,12 @@
 // `script` (scripted-take.ts): frames in place of the mic, nothing kept.
 
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createLevelPreset } from '@/components/room-kit/level-preset'
+import { createMercMoves } from '@/components/room-kit/merc-moves'
+import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
+import { createScreenAwake } from '@/components/room-kit/screen-awake'
 import { haptics } from '@/lib/haptics'
-import type { HoldEventType, HoldPreset, HoldState, HoldTick, } from '@/lib/hold/hold-engine'
+import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import { computeHoldResult } from '@/lib/hold/hold-metrics'
 import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, nudgeTarget, } from '@/lib/hold/hold-target'
@@ -32,7 +36,6 @@ import type { MercVoice } from '@/lib/merc/sim'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { exerciseLevel } from '@/stores/exercise-level'
 import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { createChipFollower } from './chip-follower'
@@ -44,16 +47,13 @@ import { initialLongNoteState, longNoteReducer } from './long-note-machine'
 import { isFalseStart, keepRun, resultMoment } from './long-note-run'
 import type { LongNoteMoment } from './merc-lines'
 import { createMercLineSelector } from './merc-lines'
-import { createMercMoves } from './merc-moves'
-import { prefersReducedMotion } from './reduced-motion'
 import { rememberedLongNote } from './remembered-note'
-import { createScreenAwake } from './screen-awake'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
 import { settledRunStart, settleLiveNote } from './settle-note'
 import { CaptureError, useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
 
-export type { MercPlace } from './merc-moves'
+export type { MercPlace } from '@/components/room-kit/merc-moves'
 export type {
   LongNoteController,
   LongNoteRunSummary,
@@ -107,11 +107,6 @@ export function useLongNoteController(): LongNoteController {
   const [demoPlaying, setDemoPlaying] = createSignal(false)
   let scripted: ScriptedTake | null = null
   const demoOn = (): boolean => untrack(scriptActive)
-  // The take's rules (the goal fills the lantern halfway; past it, steady
-  // singing fills the top): the singer's level as the take opens, or the
-  // demo's own. Between takes the band follows the level as it is picked.
-  const levelPreset = (): HoldPreset => LANTERN_LEVELS[exerciseLevel()]
-  const [preset, setPreset] = createSignal(untrack(levelPreset))
 
   const trace = new VoiceTraceBuffer()
   const noteName = (): string => {
@@ -158,10 +153,13 @@ export function useLongNoteController(): LongNoteController {
   let lastTick: HoldTick | null = null
   let windowOpen = false
   let windowStartedAt = 0
-  createEffect(() => {
-    const next = levelPreset()
-    if (!windowOpen && !untrack(scriptActive)) setPreset(next)
-  })
+  // The take's rules (the goal fills the lantern halfway; past it, steady
+  // singing fills the top): the singer's level as the take opens, or the
+  // demo's own. Between takes the band follows the level as it is picked.
+  const level = createLevelPreset(
+    LANTERN_LEVELS,
+    () => windowOpen || scriptActive(),
+  )
   /** The last voice the listen heard, on now()'s clock. */
   let heardAt = 0
   let loop = 0
@@ -202,7 +200,7 @@ export function useLongNoteController(): LongNoteController {
 
   const openWindow = (): void => {
     if (scripted === null) capture.startWindow()
-    setPreset(scripted?.preset ?? untrack(levelPreset))
+    level.take(scripted?.preset)
     windowStartedAt = performance.now()
     heardAt = 0
     engine = createHoldState()
@@ -349,7 +347,7 @@ export function useLongNoteController(): LongNoteController {
   /** The take against its note: the engine, Merc, the chip, the end. */
   const follow = (frames: readonly PitchFrame[], target: number): void => {
     const phase = untrack(state).phase
-    const rules = untrack(preset)
+    const rules = untrack(level.preset)
     const events: HoldEventType[] = []
     const before = engine.clock
     for (let i = processed; i < frames.length; i++) {
@@ -733,7 +731,7 @@ export function useLongNoteController(): LongNoteController {
         setScriptActive(false)
         setScriptNote(null)
         setDemoPlaying(false)
-        setPreset(levelPreset())
+        level.follow()
         dispatch({ type: 'demo', phase: 'intro' })
       })
       lantern.ease(0, 450)
@@ -782,7 +780,7 @@ export function useLongNoteController(): LongNoteController {
     shine,
     trace,
     now,
-    toleranceCents: () => preset().tolCents,
+    toleranceCents: () => level.preset().tolCents,
     start,
     cancel,
     stop: stopListening,

@@ -1,7 +1,7 @@
-/* Long note's level: the pill on the stage, and the sheet it opens. */
+/* The level control: the pill on a room's stage, and the sheet it opens. */
 
-/* Sized for the longest tier name, Professional: at 320 and 390 px wide
-   the stage's top-left corner meets the lantern's top. */
+/* Sized for the longest tier name, Professional: in Long note, at 320 and
+   390 px wide the stage's top-left corner meets the lantern's top. */
 .pill {
   display: inline-flex;
   align-items: center;

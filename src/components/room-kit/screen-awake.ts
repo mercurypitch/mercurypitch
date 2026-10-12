@@ -1,11 +1,12 @@
 // ============================================================
-// The screen stays on while the Long note listens
+// The screen stays on while a premium room listens
 // ============================================================
 //
-// A hidden page ends the hold (useLongNoteController's visibility rule),
-// and the singer's last touch is the mic button: a phone that locks 30 s
-// after a touch (Low Power Mode on an iPhone, a common Android timeout)
-// hid the page mid-note and ended the hold there (review B of PR 973, M2).
+// A hidden page ends the take (in Long note, useLongNoteController's
+// visibility rule ends the hold), and the singer's last touch is the mic
+// button: a phone that locks 30 s after a touch (Low Power Mode on an
+// iPhone, a common Android timeout) hid the page mid-note and ended the
+// hold there (review B of PR 973, M2).
 // Karaoke's rule: the native device's keep-awake switch, on while it is
 // needed and only then (KaraokeRoomStage.tsx). Without a native device
 // (the web, a test) the platform's wake lock does it.
