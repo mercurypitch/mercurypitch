@@ -521,10 +521,17 @@ async function grantSupporterEntitlement(
     const { results: tiers } = await env.DB.prepare(
       "SELECT id, amount FROM pricingPlans WHERE kind = 'donation' AND customAmount = 0 AND active = 1",
     ).all<{ id: string; amount: number | null }>()
+    // A grant that has run out is history, not a high-water mark: its days
+    // are not stacked (extendSupporterExpiry), so its level must not carry
+    // over either. No end date counts as running, as supporter access reads it.
+    const running =
+      existing != null &&
+      (existing.expiresAt == null ||
+        Date.parse(existing.expiresAt) > Date.parse(now))
     const level =
       bestSupporterLevel(
         tiers,
-        sourcePlanId(existing?.source),
+        running ? sourcePlanId(existing?.source) : null,
         supporterLevel(tiers, amountTotal),
       ) ?? planId
 
