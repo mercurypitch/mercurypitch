@@ -68,6 +68,10 @@ account after your results, and the sign-in sheet fits on a phone.
 - **The app's fonts load from MercuryPitch itself**, not from Google.
 - **Old tracking data is deleted on a schedule.** Ad click ids go after 90
   days, and visit records after 13 months.
+- **The intro's free-account screen draws what you keep.** Each line opens
+  with a small animation that plays once: your own glides as a voiceprint,
+  your progress moving from phone to laptop, and a podium for the
+  leaderboard.
 
 ### Fixed
 
@@ -84,6 +88,12 @@ account after your results, and the sign-in sheet fits on a phone.
 - **The tour offer waits for the welcome to close.** It no longer pops up over
   the first screen, and Home still offers its tour afterwards.
 - **The Promo button leaves the header once you've claimed the code.**
+- **The sign-in sheet's labels stay clear of what you type.** A password
+  manager's icon or an autofilled address no longer drops a label over the
+  text, and the raised label is a size larger, so "Email" reads cleanly.
+- **Center is spelled the American way** in Drum Night, the Guitar Night
+  tuner, the exercises, the Pitch Center check and Voice History. Takes you
+  already kept from the Pitch Center check show the new spelling too.
 
 ## [0.9.16] - 2026-10-09
 
