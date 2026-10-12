@@ -1,12 +1,12 @@
 // ============================================================
-// Sequence engine — a wrong note skipped: one note ahead, and its guard
+// Sequence engine — a wrong note skipped: one note ahead
 // ============================================================
 //
 // In free mode the engine also listens one note ahead. While note k is
 // pending, the voice landing note k+1 misses k (skipped) and lands k+1 on
-// the same frame, so the stars lit are the notes sung right. The voice that
-// landed k-1 never counts toward k+1 while it stays on k-1: until a gap
-// starts a new run, or its smoothed centre leaves k-1's band.
+// the same frame, so the stars lit are the notes sung right. The run that
+// landed k-1 never counts toward k+1 while it stays on k-1
+// (sequence-engine.guard.test.ts).
 //
 // Frame counts as in sequence-engine.test.ts. A note sung straight on from
 // a wrong note at least a semitone away starts 100 cents out, as any
@@ -16,14 +16,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { sequence } from '@/lib/glass/test-frames'
-import type { EchoLevelId, NoteOutcome } from './sequence-engine'
+import type { EchoLevelId } from './sequence-engine'
 import { ECHO_LEVELS } from './sequence-engine'
 import type { SteadyNote } from './steady-note'
-import { A4, asMissed, C4, C5, D4, E4, F4, FS4, G3, G4, landings, micro, onsets, phraseOf, play, rest, sing, slide, vibrato, } from './test-echo'
-
-/** Each note as it came out: landed, or the cause it missed by. */
-const causes = (outcomes: readonly NoteOutcome[]) =>
-  outcomes.map((o) => (o.landed ? 'landed' : o.cause))
+import { A4, asMissed, C4, C5, causes, D4, E4, F4, FS4, G3, G4, landings, micro, onsets, phraseOf, play, rest, sing, slide, } from './test-echo'
 
 /** The frame a note lands on, from its first frame, at each level. */
 const FROM_SILENCE: Record<EchoLevelId, number> = {
@@ -198,110 +194,6 @@ describe('tickSequence, a wrong note skipped', () => {
     ])
     expect(micro(e?.missedAt ?? 0)).toBe(micro(0.3 + 14 / 60 + 3))
   })
-})
-
-describe('tickSequence, the held-over guard', () => {
-  it('never lands the note after next from a note still held', () => {
-    // Arrange: 1-3-5-3 at Singer. The singer holds E (the second note)
-    // 0.65 s past G's turn, then sings G and E. Unguarded, the held E
-    // would land the fourth note 15 frames after the second landed.
-    const frames = sequence(
-      rest(0.3),
-      sing(C4, 0.65),
-      sing(E4, 1.3),
-      sing(G4, 0.65),
-      sing(E4, 0.65),
-      rest(2),
-    )
-
-    // Act
-    const { state } = play(
-      frames,
-      phraseOf([C4, E4, G4, E4], 0.65),
-      ECHO_LEVELS.singer,
-    )
-
-    // Assert: each note lands in turn, on its own pitch.
-    expect(landings(state.outcomes)).toEqual([
-      micro(0.3 + 14 / 60),
-      micro(0.95 + 20 / 60),
-      micro(2.25 + 20 / 60),
-      micro(2.9 + 20 / 60),
-    ])
-  })
-
-  it('keeps hold of a held note through vibrato wider than the band', () => {
-    // Arrange: as above, but the held E swings 50 cents either side at
-    // 5.5 Hz, past Singer's 35. The band is judged on the smoothed centre,
-    // which the swing barely moves, so the guard never lets go of it.
-    const frames = sequence(
-      rest(0.3),
-      sing(C4, 0.65),
-      vibrato(E4, 1.3, 50, 5.5),
-      sing(G4, 0.65),
-      sing(E4, 0.65),
-      rest(2),
-    )
-
-    // Act
-    const { state } = play(
-      frames,
-      phraseOf([C4, E4, G4, E4], 0.65),
-      ECHO_LEVELS.singer,
-    )
-
-    // Assert: G lands on its own pitch, and the last E only once sung.
-    expect(causes(state.outcomes)).toEqual([
-      'landed',
-      'landed',
-      'landed',
-      'landed',
-    ])
-    expect(landings(state.outcomes)[2]).toBe(micro(2.25 + 20 / 60))
-    expect(landings(state.outcomes)[3]).toBe(micro(2.9 + 20 / 60))
-  })
-
-  it.each([
-    // A gap starts a new run: the E after it counts, sung out of silence.
-    ['a gap', [sing(E4, 0.65), rest(0.2), sing(E4, 0.65)], 1.8 + 14 / 60, null],
-    // F leaves E's band; the E after it, on the same run, counts.
-    [
-      'a move off the note',
-      [sing(E4, 0.65), sing(F4, 0.65), sing(E4, 0.65)],
-      2.25 + 20 / 60,
-      { midi: F4, cents: -200 },
-    ],
-  ] as const)(
-    'lets go of the held note after %s',
-    (_name, parts, fourthLandsAt, closest) => {
-      // Arrange: 1-3-5-3 at Singer: C, then E (the second note lands),
-      // then the parts; G is never sung.
-      const frames = sequence(rest(0.3), sing(C4, 0.65), ...parts, rest(2))
-
-      // Act
-      const { state } = play(
-        frames,
-        phraseOf([C4, E4, G4, E4], 0.65),
-        ECHO_LEVELS.singer,
-      )
-
-      // Assert: G is skipped when the fourth note lands. After the gap
-      // nothing steady was sung for G but the held-over E.
-      const g = asMissed(state.outcomes[2])
-      expect(causes(state.outcomes)).toEqual([
-        'landed',
-        'landed',
-        'skipped',
-        'landed',
-      ])
-      expect(landings(state.outcomes)[3]).toBe(micro(fourthLandsAt))
-      expect(
-        g?.closest === null || g?.closest === undefined
-          ? null
-          : { midi: g.closest.midi, cents: Math.round(g.closest.cents) },
-      ).toEqual(closest)
-    },
-  )
 })
 
 describe('tickSequence, slides between notes', () => {

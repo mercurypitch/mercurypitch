@@ -33,11 +33,17 @@
 //   the next on the same frame, so the stars lit are the notes sung right:
 //   a wrong note neither holds up the notes after it nor gets lit by a
 //   later note of its pitch (1-3-5-3 with a wrong 3: the last 3 would
-//   light the first). The run that landed the note before never counts
-//   toward the note ahead while it stays on that note: until a gap starts
-//   a new run, or its smoothed centre leaves that note's band, so vibrato
-//   on a held note never lets go. Otherwise a 3 held into the 5's turn
-//   would land the last 3.
+//   light the first).
+// - One voiced run lands one note. The run that landed a note never counts
+//   toward a later one while it stays on that note: until a gap starts a
+//   new run, or its smoothed centre leaves that note's band, so vibrato on
+//   a held note never lets go. The note ahead hears it as silence, or a 3
+//   held into the 5's turn in 1-3-5-3 would land the last 3; so does the
+//   current note once a note between has missed by its deadline, or a 5
+//   held through the #4's deadline in 5-#4-5 would land the last 5. The
+//   note straight after the one it landed is never that note's pitch
+//   (phrase-bank.ts) and hears the run as it hears any voice, so a legato
+//   landing keeps its timing.
 // - Timed mode gives each note a window on the response's clock instead,
 //   so a miss never holds up the notes after it. A rest in a timed line
 //   may be longer than 1.4 s, so silence ends nothing there.
@@ -234,14 +240,16 @@ export interface MissedNote {
   readonly missedAt: number
   readonly cause: MissCause
   /**
-   * Any voice heard while it was the one to sing; for a skipped note,
-   * before the note after it began.
+   * Any voice heard while it was the one to sing, a held run
+   * (SequenceState.heldRun) included; for a skipped note, before the note
+   * after it began.
    */
   readonly voiced: boolean
   /**
    * The steady note sung meanwhile nearest it (steady-note.ts), for Merc
    * to name; null when the voice never sat still. For a skipped note,
-   * only what was sung before the note after it began.
+   * only what was sung before the note after it began. A held run is no
+   * try at it and never counts.
    */
   readonly closest: SteadyNote | null
 }
@@ -263,14 +271,17 @@ export interface NoteListener {
   readonly bandRun: readonly number[]
   /** The frame the current in-band run began on; null out of band. */
   readonly bandFrom: number | null
+  /** Its first voiced frame, counted or not; null until the voice sounds. */
+  readonly voicedFrom: number | null
 }
 
 /**
- * The voiced run that landed the last note, while it may still be that
- * note held over: the note, the run's smoothed centre against it (as the
- * hold smooths one), and the run's last voiced frame.
+ * The voiced run that landed a note, while it may still be that note held
+ * over: the note's index and MIDI, the run's smoothed centre against it
+ * (as the hold smooths one), and the run's last voiced frame.
  */
 export interface HeldRun {
+  readonly index: number
   readonly midi: number
   readonly centre: number
   readonly lastVoicedAt: number
@@ -292,9 +303,9 @@ export interface SequenceState {
    */
   readonly ahead: NoteListener | null
   /**
-   * Free mode: the run that landed the last note, while it stays on that
-   * note; it never counts toward the note ahead. Null once a gap or a move
-   * off the note lets go of it, and after a miss.
+   * Free mode: the run that landed the last note to land, while it stays
+   * on that note. It counts toward no later note but the one straight
+   * after. Null once a gap or a move off the note lets go of it.
    */
   readonly heldRun: HeldRun | null
   /**
@@ -320,6 +331,7 @@ const UNHEARD: NoteListener = {
   heard: [],
   bandRun: [],
   bandFrom: null,
+  voicedFrom: null,
 }
 
 export function createSequenceState(responseStart: number): SequenceState {
@@ -404,7 +416,8 @@ function silenceEndsAt(state: SequenceState, preset: SequencePreset): number {
 
 /**
  * The current note is out; the next one is the one to sing from `at`.
- * `heldRun` is the run that landed it (free mode), null after a miss.
+ * `heldRun` is the run that landed it (free mode); after a miss, the run
+ * held before.
  */
 function advance(
   state: SequenceState,
@@ -429,33 +442,41 @@ function advance(
   }
 }
 
-/** The current note as missed at `at`, judged on the readings `heard`. */
+/**
+ * The current note as missed at `at`, judged on what its listener heard
+ * before `until`: all of it, but for a skipped note.
+ */
 function missedNote(
   state: SequenceState,
   at: number,
   cause: MissCause,
-  heard: readonly PitchPoint[],
+  until: number,
   phrase: Phrase,
   preset: SequencePreset,
 ): MissedNote {
   const note = phrase.notes[state.current]
+  const { heard, voicedFrom } = state.listener
   return {
     index: state.current,
     landed: false,
     missedAt: at,
     cause,
-    voiced: heard.length > 0,
-    closest: closestSteadyNote(heard, {
-      targetMidi: note.midi,
-      tolCents: preset.tolCents,
-      landMs: preset.landMs,
-      octaveFold: preset.octaveFold,
-      heldOver: state.heldOver,
-      centreTauSec: holdPresetFor(preset).centreTauSec,
-    }),
+    voiced: voicedFrom !== null && voicedFrom < until - EPS,
+    closest: closestSteadyNote(
+      heard.filter((point) => point.t < until - EPS),
+      {
+        targetMidi: note.midi,
+        tolCents: preset.tolCents,
+        landMs: preset.landMs,
+        octaveFold: preset.octaveFold,
+        heldOver: state.heldOver,
+        centreTauSec: holdPresetFor(preset).centreTauSec,
+      },
+    ),
   }
 }
 
+/** The current note misses; the run held before stays held. */
 function miss(
   state: SequenceState,
   at: number,
@@ -463,15 +484,9 @@ function miss(
   phrase: Phrase,
   preset: SequencePreset,
 ): SequenceState {
-  const missed = missedNote(
-    state,
-    at,
-    cause,
-    state.listener.heard,
-    phrase,
-    preset,
-  )
-  return advance(state, missed, at, null)
+  const until = Number.POSITIVE_INFINITY
+  const missed = missedNote(state, at, cause, until, phrase, preset)
+  return advance(state, missed, at, state.heldRun)
 }
 
 /**
@@ -522,13 +537,23 @@ function inBand(cents: number, preset: SequencePreset): boolean {
   return Math.abs(heldCents(judged(cents, preset))) <= preset.tolCents + EPS
 }
 
-/** Whether the voice was already sounding when this note's hold state began. */
-function heldOverFrom(
-  state: SequenceState,
-  fresh: boolean,
-  frame: PitchFrame,
-): boolean {
-  if (!fresh) return state.heldOver
+/**
+ * The held run is heard as silence by the current note too: a note after
+ * the one it landed has missed, so the current note may be that note's
+ * pitch again (5-#4-5). The note straight after never is.
+ */
+function holdsBack(run: HeldRun | null, current: number): boolean {
+  return run !== null && run.index < current - 1
+}
+
+/**
+ * Whether the voice was already sounding when the current note's hold
+ * state began, from the state before its first frame. Never when a held
+ * run was held back from it: what it heard came after the run let go.
+ */
+function heldOverFrom(state: SequenceState, frame: PitchFrame): boolean {
+  if (state.listener.hold !== null) return state.heldOver
+  if (holdsBack(state.heldRun, state.current)) return false
   return isVoiced(frame) && state.previous !== null && isVoiced(state.previous)
 }
 
@@ -569,15 +594,20 @@ function landedNote(
   }
 }
 
-/** Free mode: the run that landed `midi` on `t`, as its listener left it. */
+/**
+ * Free mode: the run that landed note `index` (`midi`) on `t`, as its
+ * listener left it.
+ */
 function heldRunOf(
   listener: NoteListener,
+  index: number,
   midi: number,
   t: number,
   preset: SequencePreset,
 ): HeldRun | null {
   if (preset.timing.mode !== 'free') return null
-  return { midi, centre: listener.hold?.needleCents ?? 0, lastVoicedAt: t }
+  const centre = listener.hold?.needleCents ?? 0
+  return { index, midi, centre, lastVoicedAt: t }
 }
 
 function land(
@@ -598,7 +628,7 @@ function land(
     state,
     outcome,
     t,
-    heldRunOf(state.listener, note.midi, t, preset),
+    heldRunOf(state.listener, state.current, note.midi, t, preset),
   )
 }
 
@@ -615,18 +645,16 @@ function skip(
   phrase: Phrase,
   preset: SequencePreset,
 ): SequenceState {
-  const next = phrase.notes[state.current + 1]
-  const landed = landedNote(state.current + 1, ahead, t, state.since, preset)
-  const before = state.listener.heard.filter(
-    (point) => point.t < landed.onset - EPS,
-  )
+  const index = state.current + 1
+  const landed = landedNote(index, ahead, t, state.since, preset)
   const skipped = advance(
     state,
-    missedNote(state, t, 'skipped', before, phrase, preset),
+    missedNote(state, t, 'skipped', landed.onset, phrase, preset),
     t,
     null,
   )
-  return advance(skipped, landed, t, heldRunOf(ahead, next.midi, t, preset))
+  const midi = phrase.notes[index].midi
+  return advance(skipped, landed, t, heldRunOf(ahead, index, midi, t, preset))
 }
 
 /**
@@ -663,6 +691,8 @@ function hear(
         : [...listener.heard, { t: frame.t, cents: sung }],
     bandRun: banded ? [...listener.bandRun, heldCents(reading)] : [],
     bandFrom: banded ? (listener.bandFrom ?? frame.t) : null,
+    voicedFrom:
+      listener.voicedFrom ?? (tick.offCents === null ? null : frame.t),
   }
 }
 
@@ -698,7 +728,7 @@ function followHeldRun(
 /**
  * Free mode: the frame for the note after the current one, which lands
  * first when the current note was sung wrong. Never further ahead; and
- * the run that landed the last note, while it is held over, is heard
+ * the run that landed the last note to land, while it is held, is heard
  * there as silence.
  */
 function lookAhead(
@@ -709,27 +739,24 @@ function lookAhead(
 ): SequenceState {
   const next = phrase.notes[state.current + 1]
   if (preset.timing.mode !== 'free' || next === undefined) return state
-  const heldRun =
-    state.heldRun === null
-      ? null
-      : followHeldRun(state.heldRun, frame, state.previous, preset)
   const ahead = hear(
     state.ahead ?? UNHEARD,
     frame,
     state.previous,
     next.midi,
     preset,
-    heldRun === null,
+    state.heldRun === null,
   )
-  const listened: SequenceState = { ...state, ahead, heldRun }
+  const listened: SequenceState = { ...state, ahead }
   return locked(ahead)
     ? skip(listened, ahead, frame.t, phrase, preset)
     : listened
 }
 
 /**
- * The frame, heard by the current note's hold state once it listens, and
- * then by the note ahead's.
+ * The frame, once the current note listens: the held run followed with
+ * it, then heard by the current note's hold state (as silence while the
+ * held run is held back from it), then by the note ahead's.
  */
 function listen(
   state: SequenceState,
@@ -740,19 +767,23 @@ function listen(
   const note = phrase.notes[state.current]
   if (note === undefined) return state
   if (frame.t < opensAt(state, phrase, preset) - EPS) return state
-  const fresh = state.listener.hold === null
+  const heldRun =
+    state.heldRun === null
+      ? null
+      : followHeldRun(state.heldRun, frame, state.previous, preset)
   const listener = hear(
     state.listener,
     frame,
     state.previous,
     note.midi,
     preset,
-    true,
+    !holdsBack(heldRun, state.current),
   )
   const next: SequenceState = {
     ...state,
     listener,
-    heldOver: heldOverFrom(state, fresh, frame),
+    heldRun,
+    heldOver: heldOverFrom(state, frame),
   }
   return locked(listener)
     ? land(next, frame.t, phrase, preset)

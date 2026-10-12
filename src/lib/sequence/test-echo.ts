@@ -95,6 +95,9 @@ export function play(
 /** Seconds to whole microseconds, so frame-clock sums compare exactly. */
 export const micro = (seconds: number): number => Math.round(seconds * 1e6)
 
+/** Each note as it came out: landed, or the cause it missed by. */
+export const causes = (outcomes: readonly NoteOutcome[]) =>
+  outcomes.map((o) => (o.landed ? 'landed' : o.cause))
 export const onsets = (outcomes: readonly NoteOutcome[]) =>
   outcomes.map((o) => (o.landed ? micro(o.onset) : null))
 export const landings = (outcomes: readonly NoteOutcome[]) =>
