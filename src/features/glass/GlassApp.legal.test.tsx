@@ -21,8 +21,8 @@ describe('Break Glass page foot', () => {
         .getAllByRole('link')
         .map((a) => a.getAttribute('href')),
     ).toEqual([
-      'https://about.mercurypitch.com/privacy',
-      'https://about.mercurypitch.com/terms',
+      'https://about.mercurypitch.com/privacy/',
+      'https://about.mercurypitch.com/terms/',
       'https://about.mercurypitch.com/imprint/',
     ])
     // At the foot: the last thing in the page shell.

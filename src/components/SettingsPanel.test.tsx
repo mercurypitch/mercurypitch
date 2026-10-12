@@ -26,8 +26,8 @@ describe('Settings › About', () => {
         .getAllByRole('link')
         .map((a) => a.getAttribute('href')),
     ).toEqual([
-      'https://about.mercurypitch.com/privacy',
-      'https://about.mercurypitch.com/terms',
+      'https://about.mercurypitch.com/privacy/',
+      'https://about.mercurypitch.com/terms/',
       'https://about.mercurypitch.com/imprint/',
     ])
   })

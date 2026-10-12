@@ -198,12 +198,12 @@ describe('the Import button', () => {
       within(paywall)
         .getByRole('link', { name: 'Terms of Use' })
         .getAttribute('href'),
-    ).toBe('https://about.mercurypitch.com/terms')
+    ).toBe('https://about.mercurypitch.com/terms/')
     expect(
       within(paywall)
         .getByRole('link', { name: 'Privacy Policy' })
         .getAttribute('href'),
-    ).toBe('https://about.mercurypitch.com/privacy')
+    ).toBe('https://about.mercurypitch.com/privacy/')
     expect(within(paywall).getByRole('button', { name: 'Later' })).toBeTruthy()
   })
 

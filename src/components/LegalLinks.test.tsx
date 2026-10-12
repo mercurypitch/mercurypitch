@@ -41,8 +41,8 @@ describe('LegalLinks', () => {
     expect(
       Array.from(links).map((a) => [a.textContent, a.getAttribute('href')]),
     ).toEqual([
-      ['Privacy', 'https://about.mercurypitch.com/privacy'],
-      ['Terms', 'https://about.mercurypitch.com/terms'],
+      ['Privacy', 'https://about.mercurypitch.com/privacy/'],
+      ['Terms', 'https://about.mercurypitch.com/terms/'],
       ['Imprint', 'https://about.mercurypitch.com/imprint/'],
     ])
   })
@@ -94,11 +94,11 @@ describe('SignUpLegalLine', () => {
     )
     expect(
       screen.getByRole('link', { name: 'Terms' }).getAttribute('href'),
-    ).toBe('https://about.mercurypitch.com/terms')
+    ).toBe('https://about.mercurypitch.com/terms/')
     expect(
       screen
         .getByRole('link', { name: /^Privacy\sNotice$/ })
         .getAttribute('href'),
-    ).toBe('https://about.mercurypitch.com/privacy')
+    ).toBe('https://about.mercurypitch.com/privacy/')
   })
 })

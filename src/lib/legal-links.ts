@@ -9,9 +9,13 @@
 // box, and Settings > About.
 //
 // The landing site is hosted on the `about.` subdomain
-// (about.mercurypitch.com) and serves /terms and /privacy. Absolute URLs
+// (about.mercurypitch.com) and serves /terms/ and /privacy/. Absolute URLs
 // are used deliberately so the links resolve to the real documents
 // regardless of where the app itself is running (localhost, dev, prod).
+//
+// Every landing link carries its trailing slash. The landing answers the bare
+// /terms and /privacy with a 307 to the slashed address, so a link without it
+// costs a redirect on every click and every crawl.
 
 const LANDING_ORIGIN = 'https://about.mercurypitch.com'
 
@@ -19,17 +23,17 @@ const LANDING_ORIGIN = 'https://about.mercurypitch.com'
 export const WEBSITE_URL = LANDING_ORIGIN
 
 /** Terms of Use (hosted on the landing site). */
-export const TERMS_URL = `${LANDING_ORIGIN}/terms`
+export const TERMS_URL = `${LANDING_ORIGIN}/terms/`
 
 /** Privacy Notice (hosted on the landing site). */
-export const PRIVACY_URL = `${LANDING_ORIGIN}/privacy`
+export const PRIVACY_URL = `${LANDING_ORIGIN}/privacy/`
 
 /**
  * Deep link to the content / copyright + acceptable-use section of the
  * Terms — used by the audio-upload box, where "only upload audio you have
  * the rights to" is the message that matters most.
  */
-export const CONTENT_POLICY_URL = `${LANDING_ORIGIN}/terms#your-content`
+export const CONTENT_POLICY_URL = `${LANDING_ORIGIN}/terms/#your-content`
 
 // The footnote under the credit packs links the Terms' withdrawal section,
 // WITHDRAWAL_TERMS_URL in workers/db-worker/src/withdrawal-wording.ts, which
