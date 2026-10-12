@@ -53,9 +53,13 @@ export function nearestNaturalMidi(value: number): number {
   return value - down <= up - value ? down : up
 }
 
-function voiceprintRange(
-  record: VoiceprintRecord,
-): { low: number; high: number } | null {
+/** A voiceprint's measured range, MIDI. */
+export interface VoiceprintRange {
+  low: number
+  high: number
+}
+
+function voiceprintRange(record: VoiceprintRecord): VoiceprintRange | null {
   const { lowMidi, highMidi } = record.summary
   if (
     typeof lowMidi !== 'number' ||
@@ -70,23 +74,36 @@ function voiceprintRange(
 }
 
 /**
- * The newest voiceprint with a measured range decides; older takes and takes
- * whose range failed to measure are ignored. The result is always a natural
- * note inside both the voiceprint's range (when it holds one) and
+ * The range of the newest voiceprint that measured one; older takes and
+ * takes whose range failed to measure are ignored. Null when none did.
+ * The one rule pickHoldTarget and Echo's phrase window (phrase-fit.ts)
+ * read the singer's range by, so they never read different takes.
+ */
+export function latestVoiceprintRange(
+  voiceprints: readonly VoiceprintRecord[],
+): VoiceprintRange | null {
+  let latest: { range: VoiceprintRange; takenAt: string } | null = null
+  for (const record of voiceprints) {
+    const range = voiceprintRange(record)
+    if (range === null) continue
+    if (latest === null || record.takenAt > latest.takenAt) {
+      latest = { range, takenAt: record.takenAt }
+    }
+  }
+  return latest === null ? null : latest.range
+}
+
+/**
+ * The newest voiceprint with a measured range decides
+ * (latestVoiceprintRange). The result is always a natural note inside both
+ * the voiceprint's range (when it holds one) and
  * HOLD_TARGET_MIN_MIDI..HOLD_TARGET_MAX_MIDI.
  */
 export function pickHoldTarget(
   voiceprints: readonly VoiceprintRecord[],
   preset: HoldVoicePreset,
 ): HoldTarget {
-  let latest: { low: number; high: number; takenAt: string } | null = null
-  for (const record of voiceprints) {
-    const range = voiceprintRange(record)
-    if (range === null) continue
-    if (latest === null || record.takenAt > latest.takenAt) {
-      latest = { ...range, takenAt: record.takenAt }
-    }
-  }
+  const latest = latestVoiceprintRange(voiceprints)
 
   if (latest === null) {
     return { midi: getComfortableMidiRange(preset).default, source: 'preset' }
