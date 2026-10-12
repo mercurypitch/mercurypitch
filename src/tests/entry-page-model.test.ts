@@ -256,3 +256,38 @@ describe('the legal nav in every entry document', () => {
   )
 })
 
+// The generated documents take their cross-links from the model, but nothing
+// generates the rooms nav in index.html and 404.html: a page added to the model
+// has to be added there by hand. The four search-intent pages reached the 404
+// page's nav that way and never reached the home page's. Glassworks is checked
+// too: the source lists it, and the production build strips the link
+// (tools/glassworks-listing.ts).
+describe('the rooms nav in the hand-written documents', () => {
+  function roomLinks(file: string): Map<string, string> {
+    const document = new DOMParser().parseFromString(
+      repoFile(file),
+      'text/html',
+    )
+    const nav = document.querySelector(
+      'nav[aria-label="More from MercuryPitch"]',
+    )
+    return new Map(
+      Array.from(nav?.querySelectorAll('a') ?? []).map((a) => [
+        a.getAttribute('href') ?? '',
+        a.textContent?.trim() ?? '',
+      ]),
+    )
+  }
+
+  it.each(['index.html', '404.html'])(
+    'links every entry from the hand-written %s, by its nav label',
+    (file) => {
+      const links = roomLinks(file)
+      for (const page of ENTRY_PAGES) {
+        expect(links.get(canonicalPath(page)), `${file}: ${page.slug}`).toBe(
+          page.navLabel,
+        )
+      }
+    },
+  )
+})
