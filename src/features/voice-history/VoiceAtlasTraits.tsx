@@ -18,6 +18,7 @@ import { TakeAnalysisClient } from '@/lib/take-analysis-client'
 import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
 import type { VoicePitchTraits } from '@/lib/voice-trait-analysis'
 import { analyzeVoicePitchTraits, voiceContourFundamentalHz, } from '@/lib/voice-trait-analysis'
+import { shownTakeTitle } from './guided-voice-take'
 import styles from './VoiceAtlasTraits.module.css'
 
 type TimbreReading = NonNullable<TakeAnalysisResult['timbre']>
@@ -309,7 +310,7 @@ function TakeTraitColumn(props: {
     >
       <div class={styles.takeHeading}>
         <span>{props.selected.label}</span>
-        <strong>{props.selected.take.title}</strong>
+        <strong>{shownTakeTitle(props.selected.take.title)}</strong>
         <div class={styles.takeCoverage}>
           <small>
             {pitch() === null

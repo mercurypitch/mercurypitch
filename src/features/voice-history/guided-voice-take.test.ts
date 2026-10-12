@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VoiceTakeRecord } from '@/db/entities'
-import { GUIDED_VOICE_TAKE_CONTEXT_VERSION, GUIDED_VOICE_TAKE_TITLE, isVoiceTakeComparisonEligible, keepGuidedVoiceTake, parseGuidedVoiceTakeContext, } from '@/features/voice-history/guided-voice-take'
+import { GUIDED_UNANALYSED_THREAD_TITLE, GUIDED_VOICE_TAKE_CONTEXT_VERSION, GUIDED_VOICE_TAKE_TITLE, isVoiceTakeComparisonEligible, keepGuidedVoiceTake, parseGuidedVoiceTakeContext, shownTakeTitle, } from '@/features/voice-history/guided-voice-take'
 import type { GuidedFocusReading, GuidedPersistedAssessmentContext, GuidedQualityObservation, } from '@/lib/guided-voice'
 import { buildGuidedComparisonFingerprint, evaluateGuidedQualityGate, PITCH_CENTRE_PILOT_DEFINITION_V1, } from '@/lib/guided-voice'
 import { assessPitchCentrePilot, createPitchCentrePilotProtocol, PITCH_CENTRE_PILOT_THRESHOLDS_V1, } from '@/lib/guided-voice/pitch-centre-assessment'
@@ -546,5 +546,31 @@ describe('guided voice-take persistence', () => {
     expect(
       parseGuidedVoiceTakeContext(recordFor(context, overrides)),
     ).toBeNull()
+  })
+})
+
+// A kept take keeps the title it was saved under, because the parser matches
+// it, and the page spells the name the American way.
+describe('the title a guided take shows', () => {
+  it('shows the stored name as Pitch Center, and stores it unchanged', () => {
+    expect(GUIDED_VOICE_TAKE_TITLE).toBe('Pitch Centre')
+    expect(GUIDED_UNANALYSED_THREAD_TITLE).toBe('Pitch Centre — unanalysed')
+
+    expect(shownTakeTitle(GUIDED_VOICE_TAKE_TITLE)).toBe('Pitch Center')
+    expect(shownTakeTitle(GUIDED_UNANALYSED_THREAD_TITLE)).toBe(
+      'Pitch Center — unanalysed',
+    )
+  })
+
+  it('shows every other title exactly as it was saved', () => {
+    for (const title of [
+      'Morning vowels',
+      'Pitch Centre practice',
+      'pitch centre',
+      'Glass at A4',
+      '',
+    ]) {
+      expect(shownTakeTitle(title)).toBe(title)
+    }
   })
 })

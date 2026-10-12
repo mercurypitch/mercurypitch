@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VoiceTakeRecord } from '@/db/entities'
-import { GUIDED_VOICE_TAKE_CONTEXT_VERSION, GUIDED_VOICE_TAKE_TITLE, } from '@/features/voice-history/guided-voice-take'
+import { GUIDED_UNANALYSED_THREAD_TITLE, GUIDED_VOICE_TAKE_CONTEXT_VERSION, GUIDED_VOICE_TAKE_TITLE, } from '@/features/voice-history/guided-voice-take'
 import { buildVoiceThreads, createPlaybackRequestGate, createTakeMutationQueue, findSavedGuidedFocus, } from '@/features/voice-history/VoiceHistoryPage'
 import { assessPitchCentrePilot, createPitchCentrePilotProtocol, PITCH_CENTRE_PILOT_THRESHOLDS_V1, } from '@/lib/guided-voice/pitch-centre-assessment'
 
@@ -237,6 +237,33 @@ describe('voice history guided comparison groups', () => {
     expect(
       findSavedGuidedFocus(buildVoiceThreads([corrupt])[0]!, corrupt.id),
     ).toBeNull()
+  })
+
+  // Kept takes keep the title they were saved under, which the parser
+  // matches; the page shows the name the American way.
+  it('shows a guided thread as Pitch Center while its takes keep the stored title', () => {
+    const take = validGuidedTake('take-guided', '2026-08-12T12:00:00.000Z')
+    const [thread] = buildVoiceThreads([take])
+
+    expect(thread?.title).toBe('Pitch Center')
+    expect(thread?.takes[0]?.title).toBe(GUIDED_VOICE_TAKE_TITLE)
+    expect(findSavedGuidedFocus(thread!, take.id)?.take.id).toBe(take.id)
+  })
+
+  it('shows a take kept without a reading under Pitch Center too', () => {
+    const take: VoiceTakeRecord = {
+      ...corruptGuidedTake('take-unanalysed'),
+      source: 'freeform',
+      comparisonKey: 'freeform:unanalysed',
+      title: 'Untitled take',
+      contextJson: JSON.stringify({
+        threadTitle: GUIDED_UNANALYSED_THREAD_TITLE,
+      }),
+    }
+
+    expect(buildVoiceThreads([take])[0]?.title).toBe(
+      'Pitch Center — unanalysed',
+    )
   })
 })
 

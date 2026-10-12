@@ -50,7 +50,7 @@ import { FreeformVoiceRecorder } from './FreeformVoiceRecorder'
 import type { GuidedPracticeHandoff } from './guided-practice-handoff'
 import { armGuidedPracticeHandoff, consumeGuidedPracticeReturn, guidedPracticeLaunchFromRecommendation, } from './guided-practice-handoff'
 import type { GuidedVoiceTakeContextV1 } from './guided-voice-take'
-import { isVoiceTakeComparisonEligible, parseGuidedVoiceTakeContext, } from './guided-voice-take'
+import { isVoiceTakeComparisonEligible, parseGuidedVoiceTakeContext, shownTakeTitle, } from './guided-voice-take'
 import type { GuidedCloseRequester } from './GuidedVoiceCheck'
 import { GuidedVoiceCheck } from './GuidedVoiceCheck'
 import { GuitarRecordedTakeLink } from './GuitarRecordedTakeLink'
@@ -169,7 +169,7 @@ function threadTitle(take: VoiceTakeRecord): string {
       threadTitle?: unknown
     }
     if (typeof context.threadTitle === 'string' && context.threadTitle !== '') {
-      return context.threadTitle
+      return shownTakeTitle(context.threadTitle)
     }
     if (typeof context.targetLabel === 'string' && context.targetLabel !== '') {
       return `Glass at ${context.targetLabel}`
@@ -177,7 +177,7 @@ function threadTitle(take: VoiceTakeRecord): string {
   } catch {
     // The saved title remains a complete fallback for old/corrupt context.
   }
-  return take.title
+  return shownTakeTitle(take.title)
 }
 
 function threadSourceLabel(source: VoiceTakeRecord['source']): string {

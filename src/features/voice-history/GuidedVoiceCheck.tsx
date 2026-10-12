@@ -26,7 +26,7 @@ import { vocalRangePreset } from '@/stores/settings-store'
 import { startExercise } from '@/stores/ui-store'
 import { createFreeformThreadTarget, keepFreeformVoiceTake, } from './freeform-voice-take'
 import { armGuidedPracticeHandoff, guidedPracticeLaunchFromRecommendation, } from './guided-practice-handoff'
-import { keepGuidedVoiceTake } from './guided-voice-take'
+import { GUIDED_UNANALYSED_THREAD_TITLE, keepGuidedVoiceTake, } from './guided-voice-take'
 import type { GuidedCanvasEvidence, GuidedCanvasSegment, } from './GuidedPitchCentreCanvas'
 import { GuidedPitchCentreCanvas } from './GuidedPitchCentreCanvas'
 import styles from './GuidedVoiceCheck.module.css'
@@ -708,7 +708,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     try {
       const saved = await keepFreeformVoiceTake({
         target,
-        threadTitle: 'Pitch Centre — unanalysed',
+        threadTitle: GUIDED_UNANALYSED_THREAD_TITLE,
         take: {
           blob: capture.blob,
           durationMs: analysisDurationMs(),

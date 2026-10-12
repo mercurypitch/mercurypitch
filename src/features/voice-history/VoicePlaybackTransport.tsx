@@ -5,6 +5,7 @@
 import type { JSX } from 'solid-js'
 import { Pause, Play } from '@/components/icons'
 import type { VoiceTakeRecord } from '@/db/entities'
+import { shownTakeTitle } from './guided-voice-take'
 import styles from './VoicePlaybackTransport.module.css'
 
 export interface VoicePlaybackTransportProps {
@@ -52,7 +53,7 @@ export function VoicePlaybackTransport(
         type="button"
         class={styles.playButton}
         disabled={props.take === null}
-        aria-label={`${active() && props.playing ? 'Pause' : 'Play'} ${props.take?.title ?? 'selected take'}`}
+        aria-label={`${active() && props.playing ? 'Pause' : 'Play'} ${props.take ? shownTakeTitle(props.take.title) : 'selected take'}`}
         aria-pressed={active() && props.playing}
         aria-keyshortcuts={props.take === null ? undefined : 'Space'}
         data-voice-playback-toggle
@@ -66,7 +67,9 @@ export function VoicePlaybackTransport(
 
       <div class={styles.identity}>
         <span>{props.eyebrow}</span>
-        <strong>{props.take?.title ?? 'Choose a take'}</strong>
+        <strong>
+          {props.take ? shownTakeTitle(props.take.title) : 'Choose a take'}
+        </strong>
       </div>
 
       <time class={styles.elapsed}>{formatClock(currentSeconds())}</time>
@@ -79,7 +82,7 @@ export function VoicePlaybackTransport(
         value={Math.round(currentProgress() * 1000)}
         disabled={props.take === null}
         data-voice-playback-scrubber
-        aria-label={`Seek ${props.take?.title ?? 'selected take'}`}
+        aria-label={`Seek ${props.take ? shownTakeTitle(props.take.title) : 'selected take'}`}
         aria-valuetext={`${formatClock(currentSeconds())} of ${formatClock(durationSeconds())}`}
         style={{ '--transport-progress': `${currentProgress() * 100}%` }}
         onInput={(event) => {
