@@ -84,7 +84,7 @@ These are the rules that break things when ignored.
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 7.3k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.3k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
-| `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 6.2k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
+| `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 6.4k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
@@ -117,7 +117,7 @@ These are the rules that break things when ignored.
 | `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 600 | What's New — the 0.9 line, in the visitor's terms One page for the whole release LINE, not one per version, because that is the granulari... |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 550 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 550 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
-| `premium-exercises` | [ExerciseRow.tsx](../../src/features/premium-exercises/ExerciseRow.tsx) | 500 | The Sing screen's way into the exercises: the last one, and all of them One line in the Sing room's own column: at rest above the capsule... |
+| `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 500 | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 400 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 350 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
@@ -146,7 +146,7 @@ These are the rules that break things when ignored.
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 2.4k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 2.0k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
-| `hold` | [hold-engine.ts](../../src/lib/hold/hold-engine.ts) | 1.4k | Hold engine — one held note: lock, breaks, the lantern's fill and the end A pure tick on a state object, the shape of `tickPhysics` in `s... |
+| `hold` | [hold-engine.ts](../../src/lib/hold/hold-engine.ts) | 1.6k | Hold engine — one held note: lock, breaks, the lantern's fill and the end A pure tick on a state object, the shape of `tickPhysics` in `s... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 1.1k | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
@@ -235,6 +235,7 @@ These are the rules that break things when ignored.
 | [background-store.ts](../../src/stores/background-store.ts) | 50 | Premium background store compatibility facade The account-safe catalog store is route-neutral so standalone surfaces can use it without i... |
 | [billing-store.ts](../../src/stores/billing-store.ts) | 50 | Billing store — credit-balance refresh signal The balance is displayed by PricingPanel (Settings → Account) via /api/billing/me. |
 | [developer-console-store.ts](../../src/stores/developer-console-store.ts) | 50 | Developer console store — whether the floating console is switched on The switch, kept apart from the log it shows (console-store.ts). |
+| [exercise-level.ts](../../src/stores/exercise-level.ts) | 50 | Exercise level — how strictly the premium exercises hear a voice The level is the accuracy tier Settings already has: Learning, Singer or... |
 | [karaoke-settings-store.ts](../../src/stores/karaoke-settings-store.ts) | 50 | Karaoke Settings Store — the preferences the Karaoke tab actually honours These used to live behind the cogwheel in the Karaoke tab heade... |
 | [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 50 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
 | [playback-store.ts](../../src/stores/playback-store.ts) | 50 | Playback Store — Transport and playback state |

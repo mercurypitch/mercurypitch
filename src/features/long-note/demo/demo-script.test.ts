@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import type { HoldState } from '@/lib/hold/hold-engine'
-import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
+import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import { computeHoldResult } from '@/lib/hold/hold-metrics'
 import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, } from '@/lib/hold/hold-target'
 import { hzToCents } from '@/lib/mirror/metrics'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { levelFromRms } from '../useLongNoteController'
 import { DEMO_BEATS, DEMO_COPY, DEMO_CUES, demoCueText, planLongNoteDemo, } from './demo-cues'
-import { DEMO_FAST_RATE, demoTake, rmsForLevel } from './demo-script'
+import { DEMO_FAST_RATE, DEMO_LEVEL, demoTake, rmsForLevel, } from './demo-script'
 
-// The room's own preset: the goal fills it halfway, steady singing the top.
-const PRESET = HOLD_PRESETS.lantern
+// The demo's own level: the goal fills it halfway, steady singing the top.
+const PRESET = LANTERN_LEVELS[DEMO_LEVEL]
 const A3 = 57
 
 interface Tick {
@@ -118,7 +118,7 @@ describe('Long note demo, take 2 (like this)', () => {
     expect(at('brim') - at('goal')).toBeLessThan(12.3)
   })
 
-  it('scores as a steady hold', () => {
+  it('scores steady enough for the brim at its level, his light vibrato counted', () => {
     const result = computeHoldResult({
       frames: take.frames,
       state: final,
@@ -126,7 +126,12 @@ describe('Long note demo, take 2 (like this)', () => {
       durationMs: 0,
     })
     expect(result.locked).toBe(true)
-    expect(result.score).toBeGreaterThanOrEqual(90)
+    // His +-14 cent vibrato is a spread of about 10 cents: 80, over the
+    // Singer bar of 70, short of a straight tone's 90s.
+    expect(result.score).toBeGreaterThanOrEqual(
+      PRESET.stretch?.steadyScore ?? 0,
+    )
+    expect(result.score).toBeLessThan(90)
   })
 
   it('lets go of the note 0.3 to 0.4 s after the brim', () => {
@@ -170,6 +175,12 @@ describe('Long note demo, take 2 (like this)', () => {
 })
 
 describe('Long note demo, the script', () => {
+  it('sings both takes at Singer, whatever level the singer picked', () => {
+    expect(DEMO_LEVEL).toBe('singer')
+    expect(demoTake('off', A3).preset).toBe(LANTERN_LEVELS.singer)
+    expect(demoTake('on', A3).preset).toBe(LANTERN_LEVELS.singer)
+  })
+
   it('gives the same frames for the same note', () => {
     expect(demoTake('on', A3).frames).toEqual(demoTake('on', A3).frames)
     expect(demoTake('off', 50).frames).toEqual(demoTake('off', 50).frames)
@@ -229,8 +240,8 @@ describe('Long note demo, the plan', () => {
     // "It stops filling" while the voice is still off the line.
     expect(at('stops')).toBeLessThan(offEnd)
     expect(at('breath')).toBeGreaterThan(offEnd)
-    // "12 seconds fill it halfway" before the goal; "only steady singing
-    // fills the top" after it, while the top is still filling.
+    // "12 seconds fill it halfway" before the goal; "the top fills by how
+    // steady you sing" after it, while the top is still filling.
     expect(at('twelve')).toBeLessThan(plan.goal)
     expect(at('steady')).toBeGreaterThan(plan.goal)
     expect(at('steady')).toBeLessThan(plan.brim - 1.5)
@@ -267,5 +278,18 @@ describe('Long note demo, the plan', () => {
     for (const text of words) {
       expect(text).not.toMatch(/—|calm|practise/i)
     }
+  })
+
+  it('says what fills the top in words that hold at every level', () => {
+    // Review of the levels, 12 Oct 2026: a level sets how steady the top
+    // asks a voice to be, and at Learning a natural vibrato fills it. So
+    // the tooltip says the top fills by steadiness, and never that only a
+    // steady voice fills it.
+    for (const cue of DEMO_CUES) {
+      expect(demoCueText(cue.id, 'A3', true)).not.toMatch(
+        /\bonly\b.*\bsteady\b|\bsteady singing\b/i,
+      )
+    }
+    expect(demoCueText('steady', 'A3', true)).toMatch(/\btop\b/)
   })
 })

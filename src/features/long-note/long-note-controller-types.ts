@@ -25,7 +25,7 @@ export interface LongNoteRunSummary {
   readonly improved: boolean
   /** The lantern filled to the goal, halfway. */
   readonly full: boolean
-  /** Steady singing past the goal filled it to the brim. */
+  /** Past the goal the top filled too: the brim. */
   readonly brim: boolean
 }
 
@@ -48,7 +48,8 @@ export interface LongNoteController {
   trace: VoiceTraceBuffer
   /** The trace's clock: seconds since the take started. */
   now: () => number
-  readonly toleranceCents: number
+  /** The band either side of the line: the take's level, or the demo's. */
+  toleranceCents: Accessor<number>
   start: () => void
   /** Stop listening before a note and go back to the intro. */
   cancel: () => void

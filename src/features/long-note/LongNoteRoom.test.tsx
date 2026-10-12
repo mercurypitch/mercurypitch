@@ -1,13 +1,16 @@
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { HoldState } from '@/lib/hold/hold-engine'
-import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
+import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import type { TakeShape } from '@/lib/hold/test-takes'
 import { realisticTake } from '@/lib/hold/test-takes'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import { setExerciseLevel } from '@/stores/exercise-level'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { registerNativeDevice } from '@/stores/native-shell-store'
+import { accuracyTier, applyAccuracyTier, scoreMode, SENSITIVITY_PRESETS, sensitivityPreset, settings, } from '@/stores/settings-store'
+import { STEADY_WORDS } from './chip-follower'
 import lanternStyles from './Lantern.module.css'
 import { CHIMNEY_BOTTOM, CHIMNEY_TOP, fillLevel, HOLD_FILL_MAX, LANTERN_VIEW_H, } from './lantern-geometry'
 import styles from './LongNoteRoom.module.css'
@@ -15,6 +18,7 @@ import type { LongNoteMoment } from './merc-lines'
 import { fillNote, MERC_LINES } from './merc-lines'
 import { recordingContext, ribbonColours } from './trace-test-context'
 import type * as CaptureModule from './useLongNoteCapture'
+import { TRACE_PX_PER_CENT } from './VoiceTrace'
 
 // ── A capture the test feeds by hand ────────────────────────────
 
@@ -287,7 +291,7 @@ function hear(frames: readonly PitchFrame[]): Heard[] {
     state = tickHold(
       state,
       holdTickFromFrame(frame, previous, 57),
-      HOLD_PRESETS.lantern,
+      LANTERN_LEVELS.singer,
     )
     previous = frame
     return {
@@ -317,24 +321,21 @@ const says = (
 ): boolean =>
   MERC_LINES[moment].some((line) => fillNote(line.text, note) === text)
 
-/** A practised singer: a slow wander, the tracker's grain, a vibrato. */
+/** A practised singer: a slow wander, the tracker's grain, a light vibrato. */
 const PRACTISED: TakeShape = {
   seconds: 26,
   wanderCents: 4,
   wanderSeconds: 0.4,
   jitterCents: 3,
   vibratoHz: 5.5,
-  vibratoCents: 35,
+  vibratoCents: 12,
   seed: 12,
 }
-/** On the line all along, but wobbling on it. */
-const WOBBLY: TakeShape = {
-  seconds: 26,
-  wanderCents: 15,
-  wanderSeconds: 0.2,
-  jitterCents: 4,
-  seed: 18,
-}
+/**
+ * On the line all along, with a wide vibrato: +-30 cents, a spread of 21,
+ * a steadiness under Singer's bar.
+ */
+const WIDE: TakeShape = { ...PRACTISED, vibratoCents: 30, seed: 18 }
 
 /** The lantern's level, read off the liquid's window in its back layer. */
 function shownLevel(): number {
@@ -354,21 +355,21 @@ const sparkles = (): number =>
     .querySelectorAll(`.${lanternStyles.sparkle}`).length
 
 /**
- * The longest stretch, engine seconds, where the chip calls the voice
- * steady (or the top not filling) while the engine's own steady flag, the
- * one that fills the top, says otherwise.
+ * The longest stretch, engine seconds, where the chip says something the
+ * engine does not: the voice steady (its steadiness under STEADY_WORDS),
+ * the top filling when it has stopped, or stopped when it fills.
  */
-function longestSteadyDisagreement(heard: readonly Heard[]): number {
+function longestClaimDisagreement(heard: readonly Heard[]): number {
   let worst = 0
   let since: number | null = null
   for (const { chip, state } of heard) {
-    const claim =
-      says('steady', chip) || says('topSteady', chip)
-        ? true
-        : says('topShaky', chip)
-          ? false
-          : null
-    if (claim === null || claim === state.steady) since = null
+    const filling = state.reach > state.topCharge + 1e-6
+    const steady = (state.steadiness ?? 0) >= STEADY_WORDS
+    const wrong =
+      ((says('steady', chip) || says('topSteady', chip)) && !steady) ||
+      ((says('topSteady', chip) || says('topFilling', chip)) && !filling) ||
+      (says('topStalled', chip) && filling)
+    if (!wrong) since = null
     else {
       since ??= state.clock
       worst = Math.max(worst, state.clock - since)
@@ -401,6 +402,9 @@ function longestDisagreement(heard: readonly Heard[]): number {
 describe('LongNoteRoom', () => {
   beforeEach(() => {
     localStorage.clear()
+    // The room's tests sing at Singer, the +-30 cent band the room had
+    // before levels; the level's own tests pick theirs.
+    setExerciseLevel('singer')
     fake.frames = []
     fake.acquireError = null
     fake.acquireGate = null
@@ -894,6 +898,153 @@ describe('LongNoteRoom', () => {
     document.dispatchEvent(new Event('visibilitychange'))
     expect(phase()).toBe('intro')
     expect(fake.released).toBe(1)
+  })
+
+  // Owner, 11 Oct 2026: "its a exercise which gets done or not, so we
+  // don't even have to keep it if user left". Back drops a hold (the room
+  // goes away with it); the app going to the background drops it the same.
+  it('drops a hold when the app goes to the background: nothing kept, the mic closed, the intro back', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+    // Three seconds on the note, still singing.
+    fake.frames = tone(57, 3)
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('hold')
+    expect(shownLevel()).toBeGreaterThan(0.1)
+
+    const hidden = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await settle()
+    hidden.mockRestore()
+
+    // No run, no best, no note remembered, so no practice time either.
+    expect(phase()).toBe('intro')
+    expect(recorded.calls).toHaveLength(0)
+    expect(
+      localStorage.getItem('pitchperfect_long_note_lantern_bests'),
+    ).toBeNull()
+    expect(memory.note).toBeNull()
+    expect(screen.queryByTestId('long-note-result')).toBeNull()
+    // The mic closed, the lantern empty, and one plain line.
+    expect(fake.released).toBe(1)
+    expect(shownLevel()).toBeCloseTo(0, 6)
+    expect(says('left', screen.getByTestId('long-note-line').textContent)).toBe(
+      true,
+    )
+
+    // Back in the app, a new take starts from nothing.
+    await startListening()
+    expect(phase()).toBe('listen')
+    fake.frames = sequence(
+      (t) => tone(57, 2, { startT: t }),
+      (t) => silence(0.8, t),
+    )
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('result')
+    expect(recorded.calls).toHaveLength(1)
+  })
+
+  it('picks the level in the corner across from "?": the accuracy tier, set as Settings sets it, and the next take is heard at it', async () => {
+    setExerciseLevel('learning')
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const pill = (): HTMLElement => screen.getByTestId('long-note-level')
+    const band = (): number =>
+      parseFloat(screen.getByTestId('long-note-band').style.height) / 2
+    expect(pill().textContent).toBe('Learning')
+    expect(pill().getAttribute('aria-label')).toBe('Level: Learning')
+    expect(band()).toBeCloseTo(40 * TRACE_PX_PER_CENT, 6)
+
+    // The three tiers, the one in use pressed, and where they live; a tap
+    // picks one and closes.
+    fireEvent.click(pill())
+    const sheet = screen.getByRole('dialog', { name: 'Level' })
+    expect(sheet.textContent).toContain('Accuracy Tier')
+    const levels = within(
+      within(sheet).getByRole('group', { name: 'Levels' }),
+    ).getAllByRole('button')
+    expect(levels.map((row) => row.getAttribute('data-level'))).toEqual([
+      'learning',
+      'singer',
+      'professional',
+    ])
+    expect(levels.map((row) => row.getAttribute('aria-pressed'))).toEqual([
+      'true',
+      'false',
+      'false',
+    ])
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: /^Professional\b/ }),
+    )
+    expect(screen.queryByRole('dialog', { name: 'Level' })).toBeNull()
+    expect(pill().textContent).toBe('Professional')
+    expect(band()).toBeCloseTo(20 * TRACE_PX_PER_CENT, 6)
+    // Set through applyAccuracyTier, as Settings sets it: the tier, its mic
+    // preset and its score mode.
+    expect(accuracyTier()).toBe('professional')
+    expect(sensitivityPreset()).toBe('noisy')
+    expect(scoreMode()).toBe('full')
+    expect(settings().minConfidence).toBe(
+      SENSITIVITY_PRESETS.noisy.minConfidence,
+    )
+
+    // Out of reach while the take listens, and the take is heard at
+    // Professional: 30 cents sharp is off its line, so the note is never
+    // found.
+    await startListening()
+    expect(screen.queryByTestId('long-note-level')).toBeNull()
+    fake.frames = sequence(
+      (t) => tone(57.3, 3, { startT: t }),
+      (t) => silence(0.8, t),
+    )
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('result')
+    expect(recorded.calls).toHaveLength(0)
+    expect(pill().textContent).toBe('Professional')
+  })
+
+  it('takes a tier picked in Settings as its level, and keeps a take at the level it opened at', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const pill = (): HTMLElement => screen.getByTestId('long-note-level')
+    const band = (): number =>
+      parseFloat(screen.getByTestId('long-note-band').style.height) / 2
+    expect(band()).toBeCloseTo(30 * TRACE_PX_PER_CENT, 6)
+
+    // Settings' own control picks Professional: between takes, the room
+    // follows.
+    applyAccuracyTier('professional')
+    expect(pill().textContent).toBe('Professional')
+    expect(band()).toBeCloseTo(20 * TRACE_PX_PER_CENT, 6)
+
+    // A take opens at Singer, and the tier moves to Professional 0.15 s in,
+    // before the lock (Settings, or another device through the account).
+    applyAccuracyTier('singer')
+    await startListening()
+    const take = sequence(
+      (t) => tone(57.25, 3, { startT: t }),
+      (t) => silence(0.8, t),
+    )
+    fake.frames = take.filter((frame) => frame.t < 0.15)
+    flushFrames()
+    applyAccuracyTier('professional')
+    fake.frames = take
+    flushFrames()
+    await settle()
+
+    // 25 cents sharp is inside Singer's band and outside Professional's:
+    // the take kept Singer's, found the note and was kept.
+    expect(phase()).toBe('result')
+    expect(recorded.calls).toHaveLength(1)
+
+    // The next take is heard at Professional.
+    fireEvent.click(screen.getByTestId('long-note-again'))
+    await settle()
+    expect(phase()).toBe('listen')
+    expect(band()).toBeCloseTo(20 * TRACE_PX_PER_CENT, 6)
   })
 
   it('keeps the screen on while it listens and holds, and only then', async () => {
@@ -1629,7 +1780,7 @@ describe('LongNoteRoom', () => {
   it('fills the top past the goal only with steady singing, as the engine counts it', async () => {
     for (const [shape, brims] of [
       [PRACTISED, true],
-      [WOBBLY, false],
+      [WIDE, false],
     ] as const) {
       // Arrange
       render(() => <LongNoteRoom onDone={() => undefined} />)
@@ -1686,9 +1837,10 @@ describe('LongNoteRoom', () => {
     expect(atResult).toBeLessThan(0.7)
     expect(haloShine()).toBe(GOAL_SHINE)
     expect(sparkles()).toBe(0)
+    // The note ended while the top was still filling: hold on longer.
     expect(
       says(
-        'resultFull',
+        'resultLonger',
         screen.getByTestId('long-note-line').textContent,
         'G3',
       ),
@@ -1710,6 +1862,58 @@ describe('LongNoteRoom', () => {
     expect(
       says('resultBrim', screen.getByTestId('long-note-line').textContent),
     ).toBe(true)
+  })
+
+  it('calls a voice steady only when its steadiness says so: a natural vibrato brims at Learning, and nothing calls it steady', async () => {
+    // A natural vibrato (+-40 cents, a steadiness of about 44) clears
+    // Learning's bar and fills the top. The light says how far the level
+    // lets it fill; the words say how steady the voice was.
+    setExerciseLevel('learning')
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // Act: four frames an animation frame (the room takes whatever the
+    // mic delivered since the last one). A chip line stands at least
+    // 0.7 s, so reading the chip every 4 frames misses none.
+    const take = [
+      ...realisticTake(57, {
+        seconds: 25.5,
+        vibratoHz: 5.5,
+        vibratoCents: 40,
+        jitterCents: 2,
+        seed: 5,
+      }),
+      ...silence(0.8, 25.5),
+    ]
+    const chips = new Set<string>()
+    for (let i = 0; i < take.length; i += 4) {
+      fake.frames.push(...take.slice(i, i + 4))
+      flushFrames()
+      const chip = screen.queryByTestId('long-note-chip')?.textContent
+      if (chip !== undefined) chips.add(chip)
+    }
+    await settle()
+
+    // Assert: to the brim, a steadiness under STEADY_WORDS, and not one
+    // chip, result line or spoken result that calls the voice steady.
+    expect(phase()).toBe('result')
+    expect(shownLevel()).toBeCloseTo(1, 6)
+    const steadiness = Number(
+      /\d+/.exec(
+        screen.getByTestId('long-note-steadiness').textContent ?? '',
+      )?.[0],
+    )
+    expect(steadiness).toBeLessThan(STEADY_WORDS)
+    const line = screen.getByTestId('long-note-line').textContent
+    expect(says('resultBrim', line)).toBe(true)
+    const words = [
+      ...chips,
+      line,
+      screen.getByTestId('long-note-said').textContent,
+    ]
+    for (const text of words) expect(text ?? '').not.toMatch(/\bsteady\b/i)
+    expect([...chips].some((chip) => says('topFilling', chip))).toBe(true)
+    expect([...chips].some((chip) => says('brim', chip))).toBe(true)
   })
 
   it('celebrates nothing it would not keep: a vibrato at the band edge never finds the note', async () => {
@@ -1750,8 +1954,8 @@ describe('LongNoteRoom', () => {
 
   // Two 26 s takes through the rendered room, as above: 1.7 s on a CI
   // runner, so this case gets 10 s too.
-  it('says the goal is halfway and the top takes steady singing, then whether it fills', async () => {
-    for (const shape of [PRACTISED, WOBBLY]) {
+  it('says the goal is halfway, then whether the top fills', async () => {
+    for (const shape of [PRACTISED, WIDE]) {
       render(() => <LongNoteRoom onDone={() => undefined} />)
       await startListening()
 
@@ -1762,17 +1966,21 @@ describe('LongNoteRoom', () => {
       const goal = heard.find((h) => h.state.events.includes('goal'))
       expect(says('full', said[0].chip)).toBe(true)
       expect(said[0].state.clock).toBe(goal?.state.clock)
-      // Then whether the top fills, never against the engine's own steady
-      // flag for longer than the line takes to settle and be read.
+      // Then whether the top fills, never against the engine for longer
+      // than the line takes to settle and be read.
       const top = said.slice(1).map((h) => h.chip)
       if (shape === PRACTISED) {
-        expect(top.some((chip) => says('topSteady', chip))).toBe(true)
+        expect(
+          top.some(
+            (chip) => says('topSteady', chip) || says('topFilling', chip),
+          ),
+        ).toBe(true)
         expect(says('brim', top[top.length - 1])).toBe(true)
       } else {
-        expect(top.some((chip) => says('topShaky', chip))).toBe(true)
+        expect(top.some((chip) => says('topStalled', chip))).toBe(true)
         expect(top.some((chip) => says('brim', chip))).toBe(false)
       }
-      expect(longestSteadyDisagreement(heard)).toBeLessThanOrEqual(
+      expect(longestClaimDisagreement(heard)).toBeLessThanOrEqual(
         1 + 0.7 + 1 / FPS,
       )
       cleanup()

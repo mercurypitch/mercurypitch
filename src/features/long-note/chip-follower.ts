@@ -10,11 +10,14 @@
 // lock only just won back; then the line on screen stays. The pacer
 // (chip-pacer.ts) keeps each line up long enough to read.
 //
-// "Steady" is the engine's own steady flag, the one that fills the top
-// past the goal (the hold engine's stretch), so the chip never calls a
-// voice steady that the lantern does not count as steady. The line follows
-// the flag once it has held SETTLE_SECONDS: a voice at the edge of steady
-// keeps one line instead of trading two.
+// Two more things choose the line on the note, and the line follows each
+// once it has held SETTLE_SECONDS, so a voice at an edge keeps one line
+// instead of trading two. Whether the voice is steady is its steadiness
+// itself (STEADY_WORDS), the same at every level: a level sets how steady
+// the lantern's top asks a voice to be, and at Learning a natural vibrato
+// fills it, so the light is no sign of a steady voice. Whether the top is
+// filling is the engine's own reach against the top's fill, the numbers
+// the lantern draws.
 
 import type { HoldEventType, HoldState } from '@/lib/hold/hold-engine'
 import { createChipPacer } from './chip-pacer'
@@ -38,15 +41,23 @@ const FIND_SECONDS = 0.9
  * at the band's edge keeps its one off line instead of trading it.
  */
 const RETURN_SECONDS = 0.45
+/**
+ * A voice this steady (the web's steadiness out of 100: a spread of 10
+ * cents) is called steady, at every level. Review of the levels, 12 Oct
+ * 2026: a level only sets how steady the lantern's top asks a voice to be.
+ */
+export const STEADY_WORDS = 80
 /** Locked this long, and steady, before Merc says it is steady. */
 const STEADY_SECONDS = 3
-/** The engine's steady flag holds this long before the line follows it. */
+/** A flag holds this long before the line follows it. */
 const SETTLE_SECONDS = 1
+/** The top is filling while its reach is above its fill by more than this. */
+const FILL_EPS = 1e-6
 /** The goal's own line stands this long before the top's lines. */
 const FULL_SECONDS = 2.5
 /**
- * Back on the note past the goal, the stretch's steadiness window (the
- * last 2 s of the voice) still holds the way back: until the lock is this
+ * Back on the note past the goal, the way back is in the window the top
+ * is judged on too (everything since the goal): until the lock is this
  * long, the line only says the voice is on the note.
  */
 const TOP_AFTER_LOCK = 2
@@ -71,6 +82,35 @@ export interface ChipFollower {
   reset: () => void
 }
 
+interface SettledFlag {
+  /** The flag now, `dt` seconds after the last: the flag the line follows. */
+  follow: (now: boolean, dt: number) => boolean
+  reset: () => void
+}
+
+/** A flag the line follows once it has held SETTLE_SECONDS. */
+function createSettledFlag(): SettledFlag {
+  let settled = false
+  let flag = false
+  let flagFor = 0
+  return {
+    follow(now, dt) {
+      if (now === flag) flagFor += dt
+      else {
+        flag = now
+        flagFor = 0
+      }
+      if (flagFor >= SETTLE_SECONDS) settled = flag
+      return settled
+    },
+    reset() {
+      settled = false
+      flag = false
+      flagFor = 0
+    },
+  }
+}
+
 export function createChipFollower(): ChipFollower {
   const pacer = createChipPacer(CHIP_HOLD_SECONDS)
   let outOfBandFor = 0
@@ -78,26 +118,20 @@ export function createChipFollower(): ChipFollower {
   let found = false
   /** When the goal was reached, clock seconds. */
   let goalAt: number | null = null
-  /** The engine's steady flag, as the line follows it. */
+  /** The voice's steadiness is STEADY_WORDS or more. */
+  const steadyFlag = createSettledFlag()
+  /** Past the goal: the top has room to fill at this steadiness. */
+  const fillingFlag = createSettledFlag()
   let steady = false
-  let flag = false
-  let flagFor = 0
-
-  const settle = (now: boolean, dt: number): void => {
-    if (now === flag) flagFor += dt
-    else {
-      flag = now
-      flagFor = 0
-    }
-    if (flagFor >= SETTLE_SECONDS) steady = flag
-  }
+  let filling = false
 
   /** Past the goal: the goal's line, then whether the top is filling. */
   const stretchLine = (state: HoldState, since: number): LongNoteMoment => {
     if (state.brimReached) return 'brim'
     if (state.clock - since < FULL_SECONDS) return 'full'
     if (state.lockSeconds < TOP_AFTER_LOCK) return 'lock'
-    return steady ? 'topSteady' : 'topShaky'
+    if (!filling) return 'topStalled'
+    return steady ? 'topSteady' : 'topFilling'
   }
 
   /** The line while the voice is locked on the note. */
@@ -133,7 +167,8 @@ export function createChipFollower(): ChipFollower {
     follow(state, voiced, dt) {
       if (voiced && !state.inBand) outOfBandFor += dt
       else outOfBandFor = 0
-      settle(state.steady, dt)
+      steady = steadyFlag.follow((state.steadiness ?? 0) >= STEADY_WORDS, dt)
+      filling = fillingFlag.follow(state.reach > state.topCharge + FILL_EPS, dt)
       if (state.goalReached) goalAt ??= state.clock
       pacer.want(situation(state, voiced))
       return pacer.take(state.clock)
@@ -143,9 +178,10 @@ export function createChipFollower(): ChipFollower {
       outOfBandFor = 0
       found = false
       goalAt = null
+      steadyFlag.reset()
+      fillingFlag.reset()
       steady = false
-      flag = false
-      flagFor = 0
+      filling = false
     },
   }
 }

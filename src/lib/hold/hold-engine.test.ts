@@ -9,10 +9,12 @@
 import { describe, expect, it } from 'vitest'
 import { silence } from '@/lib/glass/test-frames'
 import type { HoldEventType, HoldPreset, HoldState } from './hold-engine'
-import { createHoldState, HOLD_PRESETS, runHold, tickHold } from './hold-engine'
+import { createHoldState, HOLD_PRESETS, LANTERN_LEVELS, runHold, tickHold, } from './hold-engine'
 import { computeHoldResult } from './hold-metrics'
+import type { PitchPoint } from './hold-reading'
+import { liveSteadiness } from './hold-steadiness'
 import type { TakeShape } from './test-takes'
-import { realisticTake, takeCents } from './test-takes'
+import { realisticTake, shakeCents, takeCents } from './test-takes'
 
 const DT = 1 / 60
 const EXERCISE = HOLD_PRESETS.exercise
@@ -333,7 +335,8 @@ describe('tickHold, exercise preset', () => {
 
 // ── The stretch: past the goal, only steady singing fills the top ──
 
-const LANTERN = HOLD_PRESETS.lantern
+/** The demo's level, between the other two. */
+const LANTERN = LANTERN_LEVELS.singer
 
 /** A take's readings (cents off the note), one a tick, then a release. */
 const sung = (shape: TakeShape): Array<number | null> => [
@@ -432,11 +435,11 @@ describe('tickHold, the lantern preset past the goal', () => {
     })
   })
 
-  it('fills the top with 12 steady seconds, a practised vibrato included', () => {
+  it('fills the top with 12 steady seconds, a light vibrato included', () => {
     for (const shape of [
       { ...PRACTISED, seed: 11 },
-      { ...PRACTISED, vibratoHz: 5.5, vibratoCents: 35, seed: 12 },
-      { ...PRACTISED, vibratoHz: 6, vibratoCents: 60, seed: 13 },
+      { ...PRACTISED, vibratoHz: 5.5, vibratoCents: 12, seed: 12 },
+      { ...PRACTISED, vibratoHz: 6, vibratoCents: 12, seed: 13 },
     ]) {
       // Act
       const run = play(sung(shape), createHoldState(), LANTERN)
@@ -458,9 +461,16 @@ describe('tickHold, the lantern preset past the goal', () => {
   })
 
   it('fills the top only partway for a voice that wobbles on the line', () => {
-    // On the line all along (the goal comes at 12 s), but wobbling.
+    // On the line all along (the goal comes at 12 s), but wobbling: a
+    // spread of 28 cents, a steadiness of about 44.
     const run = play(
-      sung({ seconds: 26, wanderCents: 15, wanderSeconds: 0.2, seed: 18 }),
+      sung({
+        seconds: 26,
+        wanderCents: 28,
+        wanderSeconds: 0.2,
+        jitterCents: 4,
+        seed: 18,
+      }),
       createHoldState(),
       LANTERN,
     )
@@ -468,6 +478,78 @@ describe('tickHold, the lantern preset past the goal', () => {
     expect(run.state.brimReached).toBe(false)
     expect(run.state.topCharge).toBeGreaterThan(0.1)
     expect(run.state.topCharge).toBeLessThan(0.9)
+  })
+
+  it('fills part of the top for a voice between the two bars, in proportion, and the rest once the take since the goal is steady', () => {
+    // Arrange: a preset whose top fills to the brim at 80 and not at all
+    // at 40. A 5.5 Hz swing of 28.3 c either side is a spread of 20 c, a
+    // score of 60: halfway between the two, so half the top. The swing
+    // starts a second in, well before the goal, and runs about 10 s past
+    // it; then a straight tone. The top is judged on everything since the
+    // goal (from 2 s before it), so the straight tone has to outweigh the
+    // swing: about 12 s of it at a spread of 20 c take 36 s at none to
+    // bring the spread to 10 c, a score of 80.
+    const preset: HoldPreset = {
+      ...LANTERN,
+      stretch: {
+        seconds: 12,
+        windowSeconds: 2,
+        checkSeconds: 0.15,
+        steadyScore: 80,
+        partScore: 40,
+      },
+    }
+    const swing = vibrato(21, 5.5, 20 * Math.SQRT2)
+    const readings = [...constant(60, 0), ...swing, ...constant(45 * 60, 0)]
+
+    // Act
+    let state = createHoldState()
+    const tops: number[] = []
+    let steadyWhileSwinging = false
+    readings.forEach((offCents, i) => {
+      state = tickHold(state, { offCents, level: 0.6, dt: DT }, preset)
+      tops.push(state.topCharge)
+      if (i > 120 && i < 60 + swing.length) {
+        steadyWhileSwinging ||= state.steady
+      }
+    })
+
+    // Assert: half the top while it swings, never steady, no brim; then
+    // the straight tone fills the rest.
+    const swungTo = tops[60 + swing.length - 1]
+    expect(swungTo).toBeGreaterThan(0.45)
+    expect(swungTo).toBeLessThan(0.55)
+    expect(steadyWhileSwinging).toBe(false)
+    for (let i = 1; i < tops.length; i++) {
+      expect(tops[i]).toBeGreaterThanOrEqual(tops[i - 1])
+    }
+    expect(state.brimReached).toBe(true)
+  })
+
+  it('judges the top on everything since the goal, from two seconds before it', () => {
+    // Arrange: a shake under the bar, its readings kept as the engine
+    // ticked them.
+    let state = createHoldState()
+    const ticked: PitchPoint[] = []
+    let goalAt = Number.NaN
+    for (const offCents of shakeCents(30, 20, 8, 12, 2)) {
+      state = tickHold(state, { offCents, level: 0.6, dt: DT }, LANTERN)
+      ticked.push({ t: state.clock, cents: offCents })
+      if (Number.isNaN(goalAt) && state.goalReached) goalAt = state.clock
+    }
+
+    // Act: the whole window, read at once, as of the last check.
+    const checkedAt = state.steadyCheckedAt ?? Number.NaN
+    const window = ticked.filter(
+      (point) => point.t >= goalAt - 2 - 1e-6 && point.t <= checkedAt,
+    )
+
+    // Assert: the score the top was judged on is that window's, and the
+    // top filled only as far as it reaches.
+    expect(window[window.length - 1].t - window[0].t).toBeGreaterThan(19)
+    expect(state.steadiness).toBe(liveSteadiness(window))
+    expect(state.steady).toBe(false)
+    expect(state.topCharge).toBeCloseTo(state.reach, 2)
   })
 
   it('never drains the top: off the line and silent, it waits', () => {
@@ -498,10 +580,14 @@ describe('tickHold, the lantern preset past the goal', () => {
   })
 
   it("judges steady by the result's own steadiness score", () => {
-    // Takes the result scores high are steady past the goal nearly all of
-    // the time; takes it scores low nearly never; the middle in between.
+    // Takes the result scores well over the bar are steady past the goal
+    // nearly all of the time; takes well under it nearly never; the middle
+    // in between.
+    const bar = LANTERN.stretch?.steadyScore ?? 0
     const takes: TakeShape[] = [
       { ...PRACTISED, vibratoHz: 5.5, vibratoCents: 35, seed: 21 },
+      { ...PRACTISED, vibratoHz: 5.5, vibratoCents: 15, seed: 23 },
+      { ...PRACTISED, wanderCents: 8, seed: 25 },
       { ...PRACTISED, seed: 22 },
       {
         seconds: 26,
@@ -539,15 +625,135 @@ describe('tickHold, the lantern preset past the goal', () => {
       return { score, share: steadyShare(sung(shape)) }
     })
     for (const { score, share } of rows) {
-      if (score >= 93) expect(share).toBeGreaterThan(0.95)
-      if (score <= 70) expect(share).toBeLessThan(0.3)
+      if (score >= bar + 5) expect(share).toBeGreaterThan(0.95)
+      if (score <= bar - 10) expect(share).toBeLessThan(0.1)
     }
     // Steadier by the score, steadier live: the same order.
     const byScore = [...rows].sort((a, b) => a.score - b.score)
     for (let i = 1; i < byScore.length; i++) {
       expect(byScore[i].share).toBeGreaterThanOrEqual(byScore[i - 1].share)
     }
-    expect(byScore[0].score).toBeLessThanOrEqual(70)
-    expect(byScore[byScore.length - 1].score).toBeGreaterThanOrEqual(93)
+    expect(byScore[0].score).toBeLessThanOrEqual(bar - 10)
+    expect(byScore[byScore.length - 1].score).toBeGreaterThanOrEqual(bar + 5)
+  })
+})
+
+// ── The levels: how much the top asks of the voice ────────────────
+
+/** A take at a level: whether it reached the brim, and the top's fill. */
+function lanternAt(
+  level: keyof typeof LANTERN_LEVELS,
+  cents: readonly number[],
+): { brim: boolean; top: number } {
+  const run = play([...cents, ...constant(40, null)], createHoldState(), {
+    ...LANTERN_LEVELS[level],
+  })
+  expect(run.state.goalReached).toBe(true)
+  return { brim: run.state.brimReached, top: run.state.topCharge }
+}
+
+/** A 26 s vibrato at 5.5 Hz, `cents` either side, on a tracker's grain. */
+const vibratoTake = (cents: number, seed: number): number[] =>
+  takeCents({
+    seconds: 26,
+    vibratoHz: 5.5,
+    vibratoCents: cents,
+    jitterCents: 2,
+    seed,
+  })
+
+/** A 26 s wobble: a spread of `cents`, a fifth of a second slow. */
+const wobbleTake = (cents: number, seed: number): number[] =>
+  takeCents({
+    seconds: 26,
+    wanderCents: cents,
+    wanderSeconds: 0.2,
+    jitterCents: 2,
+    seed,
+  })
+
+const straightTake = (seed: number): number[] =>
+  takeCents({ seconds: 26, wanderCents: 1, jitterCents: 1.5, seed })
+
+describe("the lantern's levels", () => {
+  it('maps the accuracy tiers onto the lantern: the band, and the steadiness that brims the top', () => {
+    // Owner, 12 Oct 2026: the level is the Settings accuracy tier.
+    expect(
+      Object.fromEntries(
+        Object.entries(LANTERN_LEVELS).map(([tier, preset]) => [
+          tier,
+          [preset.tolCents, preset.stretch?.steadyScore],
+        ]),
+      ),
+    ).toEqual({ learning: [40, 35], singer: [30, 70], professional: [20, 88] })
+  })
+
+  it('lets a Learning voice fill the top with a natural vibrato and small wobbles', () => {
+    for (const seed of [1, 2, 3]) {
+      expect(lanternAt('learning', vibratoTake(40, seed)).brim).toBe(true)
+      expect(lanternAt('learning', wobbleTake(5, seed)).brim).toBe(true)
+      expect(lanternAt('learning', wobbleTake(8, seed)).brim).toBe(true)
+    }
+  })
+
+  it('brims a light vibrato at Singer, fills part of the top for a natural one, and no fast shake wider than a light vibrato', () => {
+    for (const seed of [1, 2, 3]) {
+      expect(lanternAt('singer', vibratoTake(15, seed)).brim).toBe(true)
+      expect(lanternAt('singer', vibratoTake(20, seed)).brim).toBe(true)
+      const natural = lanternAt('singer', vibratoTake(40, seed))
+      expect(natural.brim).toBe(false)
+      expect(natural.top).toBeGreaterThan(0.2)
+      expect(natural.top).toBeLessThan(0.7)
+      for (const spread of [20, 25]) {
+        expect(
+          lanternAt('singer', shakeCents(26, spread, 8, 12, seed)).brim,
+        ).toBe(false)
+      }
+    }
+  })
+
+  it('never brims a fast shake at Singer, however long it is held', () => {
+    // A shake of 8 to 12 Hz with a spread of 20 cents scores about 60,
+    // under Singer's 70, so it fills part of the top. Judged on its last
+    // two seconds alone, its steadier moments added up to the brim on a
+    // long hold (the top never drains): time alone brimmed a shaky voice.
+    for (const seed of [1, 2, 3]) {
+      const long = lanternAt('singer', shakeCents(88, 20, 8, 12, seed))
+      expect(long.brim).toBe(false)
+      expect(long.top).toBeGreaterThan(0.5)
+    }
+  })
+
+  it('brims only a near-straight tone at Professional', () => {
+    for (const seed of [1, 2, 3]) {
+      expect(lanternAt('professional', straightTake(seed)).brim).toBe(true)
+      expect(lanternAt('professional', vibratoTake(15, seed)).brim).toBe(false)
+      expect(
+        lanternAt('professional', shakeCents(26, 10, 8, 12, seed)).brim,
+      ).toBe(false)
+      // A natural vibrato fills next to none of the top.
+      expect(lanternAt('professional', vibratoTake(40, seed)).top).toBeLessThan(
+        0.2,
+      )
+    }
+  })
+
+  it('keeps the goal at 12 s at every level, and the band widest at Learning', () => {
+    expect(
+      Object.values(LANTERN_LEVELS).map((preset) => [
+        preset.goalSeconds,
+        preset.stretch?.seconds,
+      ]),
+    ).toEqual([
+      [12, 12],
+      [12, 12],
+      [12, 12],
+    ])
+    expect(LANTERN_LEVELS.learning.tolCents).toBeGreaterThan(
+      LANTERN_LEVELS.singer.tolCents,
+    )
+    expect(LANTERN_LEVELS.singer.tolCents).toBeGreaterThan(
+      LANTERN_LEVELS.professional.tolCents,
+    )
   })
 })

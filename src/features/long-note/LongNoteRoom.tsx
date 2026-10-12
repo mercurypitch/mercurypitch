@@ -9,14 +9,16 @@
 //            breathing in, the note to hold and one big microphone button
 //   hold     the voice line flowing along the target, the light rising,
 //            Merc floating on it inside the glass, a big timer and one chip;
-//            at the goal (half full) he steps out to cheer, and only steady
-//            singing fills the top
+//            at the goal (half full) he steps out to cheer, and steady
+//            singing fills the top (a less steady voice, part of it)
 //   result   the lantern as full as the take filled it, the seconds and the
 //            steadiness, Merc out of the glass, Again and Done
 //
 // "How it works" (demo/) plays over the same room: Merc sings two takes
 // through it while tooltips explain them. A first visit opens on it, and
 // the "?" in the stage's corner plays it again at the start or a result.
+// The level in the corner across from it (LongNoteLevel.tsx) sets how much
+// room the note has and how steady the top asks the voice to be.
 //
 // Merc's canvas sits BETWEEN the lantern's two layers (Lantern.tsx), so in
 // the glass he is behind its highlights and frame, and his feet are in the
@@ -36,6 +38,7 @@ import { createFocusHandoff } from './focus-handoff'
 import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
 import { formatHoldSeconds } from './long-note-entry'
+import { LongNoteLevel } from './LongNoteLevel'
 import styles from './LongNoteRoom.module.css'
 import { MercView } from './MercView'
 import { BESIDE_X, createLayoutGlide, layoutStage, MERC_UNITS, } from './stage-layout'
@@ -184,7 +187,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
     return left + TRACE_HEAD_X * k
   }
   /** The tolerance band's half-height either side of the line, px. */
-  const band = (): number => room.toleranceCents * TRACE_PX_PER_CENT
+  const band = (): number => room.toleranceCents() * TRACE_PX_PER_CENT
   const tracing = (): boolean => phase() === 'listen' || phase() === 'hold'
   /** The result shows the full lantern, as storyboard 3 does: no line. */
   const lineClass = (base: string): string =>
@@ -319,6 +322,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
         <div
           class={lineClass(styles.band)}
           style={{ top: `${lineY() - band()}px`, height: `${2 * band()}px` }}
+          data-testid="long-note-band"
         />
         <Show when={room.noteName() !== ''}>
           {/* The line's note, which plays on a tap. While the take listens
@@ -407,6 +411,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           muted={() => phase() === 'result'}
         />
         <Show when={demo.canAsk()}>
+          <LongNoteLevel class={styles.level} />
           <button
             type="button"
             class={styles.ask}

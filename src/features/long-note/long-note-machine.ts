@@ -9,7 +9,8 @@
 // every start, so an answer that arrives for a start the singer already
 // abandoned is dropped instead of opening a room they left. A refused or
 // missing microphone is `blocked`, with the reason, until the singer tries
-// again.
+// again. Leaving the app mid-take (`leave`) drops the take: back to the
+// intro with no result.
 //
 // `targetMidi` is null when there is no note yet: no voiceprint and nothing
 // held before. The singer then sings any easy note, and the first one they
@@ -54,6 +55,7 @@ export type LongNoteEvent =
   | { readonly type: 'false-start' }
   | { readonly type: 'end' }
   | { readonly type: 'cancel' }
+  | { readonly type: 'leave' }
   | { readonly type: 'again' }
   | { readonly type: 'change-note' }
   | { readonly type: 'demo'; readonly phase: LongNoteDemoPhase }
@@ -104,6 +106,15 @@ const HANDLERS: { [T in LongNoteEvent['type']]: Handler<T> } = {
   // the room out of `starting` and is dropped.
   cancel: (state) =>
     state.phase === 'listen' || state.phase === 'starting'
+      ? { ...state, phase: 'intro' }
+      : state,
+  // The singer left the app mid-take (owner, 11 Oct 2026: an exercise gets
+  // done or not): a hold is dropped like a take still waiting, back to the
+  // intro with no result.
+  leave: (state) =>
+    state.phase === 'listen' ||
+    state.phase === 'starting' ||
+    state.phase === 'hold'
       ? { ...state, phase: 'intro' }
       : state,
   again: (state) =>

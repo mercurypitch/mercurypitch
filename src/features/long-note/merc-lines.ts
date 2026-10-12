@@ -11,6 +11,13 @@
 // and what to do about it (come down a touch, lift a little). Merc stays
 // warm but never decorates: no glass, glow or pouring light. No "wrong",
 // "failed" or "bad" either; the lines are about the sound, never the singer.
+//
+// Review of the levels, 12 Oct 2026: a level sets how steady the lantern's
+// top asks a voice to be, and at Learning a natural vibrato (a steadiness
+// of about 44) fills it. So the light is no sign of a steady voice, and only
+// the STEADY_CLAIMS lines call a voice steady: the chip says them by the
+// steadiness itself (STEADY_WORDS, chip-follower.ts), the same at every
+// level. Past the goal the lines say what the top did and the one fix.
 
 export type LongNoteMoment =
   | 'intro'
@@ -24,17 +31,28 @@ export type LongNoteMoment =
   | 'break'
   | 'full'
   | 'topSteady'
-  | 'topShaky'
+  | 'topFilling'
+  | 'topStalled'
   | 'brim'
   | 'newBest'
   | 'result'
-  | 'resultFull'
+  | 'resultLonger'
+  | 'resultSteadier'
   | 'resultBrim'
   | 'missed'
   | 'again'
   | 'sleep'
   | 'sleepAny'
   | 'rest'
+  | 'left'
+
+/**
+ * The moments whose lines call the voice steady. The chip says them only
+ * while the voice's steadiness is STEADY_WORDS or more (chip-follower.ts),
+ * whatever the level; no other line uses the word.
+ */
+export const STEADY_CLAIMS: ReadonlySet<LongNoteMoment> =
+  new Set<LongNoteMoment>(['steady', 'topSteady'])
 
 export interface MercLine {
   /** Stable id, for a recorded voice line later. */
@@ -74,6 +92,7 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
       { id: 'found-hold', text: 'Got it: {note}. Now hold it.' },
       { id: 'found-there', text: '{note} it is. Hold it there.' },
     ],
+    // On the note a while, and steady by the steadiness itself.
     steady: [
       { id: 'steady-keep', text: 'Steady. Keep it there.' },
       { id: 'steady-nice', text: 'Nice and steady.' },
@@ -89,32 +108,36 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
     // A semitone or more away, or back from a gap off the note.
     break: [{ id: 'break-off', text: 'Off the note. Find {note} again.' }],
     // The goal: 12 seconds on the note fill the lantern halfway. Past it
-    // only steady singing fills the top (the hold engine's stretch).
+    // the top fills as far as the voice's steadiness since the goal lets
+    // it at the singer's level (the hold engine's stretch).
     full: [
       {
-        id: 'full-twelve',
-        text: '12 seconds, half full. Steady singing fills the top.',
+        id: 'full-keep-going',
+        text: '12 seconds, half full. Keep going for the top.',
       },
       {
-        id: 'full-half',
-        text: 'Halfway. Hold it steady to fill the top.',
+        id: 'full-halfway',
+        text: 'Halfway there. Stay on it to fill the top.',
       },
     ],
-    // Past the goal, on the note: whether the top is filling.
+    // Past the goal, on the note, the top filling: a steady voice's lines
+    // (STEADY_CLAIMS), and any other voice's.
     topSteady: [
       { id: 'top-steady', text: 'Steady. The top is filling.' },
-      { id: 'top-rising', text: 'Nice and steady. The light is rising.' },
+      { id: 'top-rising', text: 'Nice and steady. The top is filling.' },
     ],
-    topShaky: [
-      {
-        id: 'top-wobbly',
-        text: 'A little wobbly. Hold it still to fill the top.',
-      },
+    topFilling: [
+      { id: 'top-filling', text: 'On the note. The top is filling.' },
+      { id: 'top-stay', text: 'Still on the note. The top is filling.' },
+    ],
+    // The top has filled as far as this steadiness lets it at the level.
+    topStalled: [
+      { id: 'top-steadier', text: 'The top needs a steadier note.' },
       { id: 'top-still', text: 'On the note. Hold it stiller for the top.' },
     ],
     // The top is full too.
     brim: [
-      { id: 'brim-top', text: 'Full to the top. That was steady.' },
+      { id: 'brim-let-go', text: 'Full to the top. You can let go now.' },
       { id: 'brim-go', text: 'Full to the brim. Let go when you like.' },
     ],
     newBest: [
@@ -128,17 +151,32 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
         text: 'Nice hold. 12 seconds on the note fill it halfway.',
       },
     ],
-    // The lantern reached the goal, halfway, and not the brim.
-    resultFull: [
-      { id: 'result-full', text: '12 seconds on {note}: half full.' },
+    // Past the goal and short of the brim, the take says why. Steady
+    // enough for the brim at this level, but the note ended first:
+    resultLonger: [
       {
-        id: 'result-held',
-        text: 'Halfway on {note}. The top takes steady singing.',
+        id: 'result-longer',
+        text: 'Past 12 seconds on {note}. Hold on longer for the top.',
+      },
+      {
+        id: 'result-hold-longer',
+        text: 'Hold {note} longer and the top fills too.',
       },
     ],
-    // Steady singing filled the top as well.
+    // or not steady enough for it, however long the note went on.
+    resultSteadier: [
+      {
+        id: 'result-steadier',
+        text: 'Past 12 seconds on {note}. A steadier note fills the top.',
+      },
+      {
+        id: 'result-stiller',
+        text: 'Hold {note} stiller to fill more of the top.',
+      },
+    ],
+    // The top filled as well.
     resultBrim: [
-      { id: 'result-brim', text: 'Full to the brim: a steady {note}.' },
+      { id: 'result-brim-on', text: 'Full to the brim on {note}.' },
       { id: 'result-top', text: 'You filled it to the top on {note}.' },
     ],
     // The take ended without ever finding the note; the mic is closed.
@@ -164,6 +202,13 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
       {
         id: 'rest-again',
         text: 'Mic off after a quiet minute. Tap it to go again.',
+      },
+    ],
+    // The singer left the app mid-hold: the take was dropped, nothing kept.
+    left: [
+      {
+        id: 'left-stopped',
+        text: 'The note stopped when you left. Tap the mic to go again.',
       },
     ],
   }

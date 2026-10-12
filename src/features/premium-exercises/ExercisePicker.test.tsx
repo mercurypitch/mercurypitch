@@ -8,6 +8,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ExerciseLevel } from '@/stores/exercise-level'
 
 interface Seed {
   last?: string
@@ -16,6 +17,8 @@ interface Seed {
   /** The best on that note, in seconds held in the band. */
   best?: number
   demoSeen?: boolean
+  /** The level every premium exercise is at. */
+  level?: ExerciseLevel
 }
 
 beforeEach(() => {
@@ -51,6 +54,10 @@ async function openPicker(seed: Seed = {}) {
       JSON.stringify(seed.demoSeen),
     )
   }
+  if (seed.level !== undefined) {
+    const { setExerciseLevel } = await import('@/stores/exercise-level')
+    setExerciseLevel(seed.level)
+  }
   const { ExercisePicker } = await import('./ExercisePicker')
   const { EXERCISE_CATALOGUE } = await import('./catalogue')
   const calls: string[] = []
@@ -65,6 +72,9 @@ const cards = (): HTMLElement[] => screen.getAllByTestId('sing-exercise-card')
 const meta = (): string | null =>
   screen.queryByTestId('sing-exercise-meta')?.textContent ?? null
 
+const level = (): string | null =>
+  screen.queryByTestId('sing-exercise-level')?.textContent ?? null
+
 describe('the cards', () => {
   it('lists one card per catalogue entry, in catalogue order', async () => {
     const { catalogue } = await openPicker()
@@ -78,7 +88,7 @@ describe('the cards', () => {
     await openPicker({ demoSeen: true })
 
     expect(cards()[0]?.textContent).toBe(
-      'Long noteHold one note and fill the lantern with light.',
+      'Long noteSingerHold one note and fill the lantern with light.',
     )
   })
 
@@ -117,6 +127,20 @@ describe("a card's third line", () => {
     await openPicker({ demoSeen: true, note: 57 })
 
     expect(meta()).toBeNull()
+  })
+})
+
+describe("a card's level", () => {
+  it('names the level the exercises are at: Singer, the accuracy tier it starts at', async () => {
+    await openPicker()
+
+    expect(level()).toBe('Singer')
+  })
+
+  it('names the level the singer picked', async () => {
+    await openPicker({ level: 'professional' })
+
+    expect(level()).toBe('Professional')
   })
 })
 

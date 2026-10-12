@@ -118,3 +118,32 @@ export function realisticTake(
     rms: 0.6,
   }))
 }
+
+/**
+ * A shake: irregular, with no one rate, as a voice shakes when it tires.
+ * A sum of 24 sines at seeded rates between `loHz` and `hiHz`, scaled to a
+ * spread of `sdCents` (RMS), with 1.4 cents of tracker grain, frame by
+ * frame. The PR 973 review's fast shake is 8-12 Hz.
+ */
+export function shakeCents(
+  seconds: number,
+  sdCents: number,
+  loHz: number,
+  hiHz: number,
+  seed = 1,
+): number[] {
+  const next = random(seed)
+  const parts = Array.from({ length: 24 }, () => ({
+    hz: loHz + next() * (hiHz - loHz),
+    phase: next() * 2 * Math.PI,
+  }))
+  const amp = sdCents * Math.sqrt(2 / parts.length)
+  return Array.from({ length: Math.round(seconds * FPS) }, (_, i) => {
+    const t = i / FPS
+    let cents = (next() - 0.5) * 4.8
+    for (const part of parts) {
+      cents += amp * Math.sin(2 * Math.PI * part.hz * t + part.phase)
+    }
+    return cents
+  })
+}

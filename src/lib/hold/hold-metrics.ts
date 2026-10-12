@@ -5,12 +5,11 @@
 // The counts come from the engine's final state, so the result always agrees
 // with what the room showed during the run. Steadiness comes from the frames
 // of the held part only (first lock to the end of the note), scored by
-// `holdSteadiness` on the reading the live check uses (hold-reading.ts):
-// the wobble around the singer's own line, a vibrato taken out second by
-// second, on the Voice Mirror's scale. Drift along
-// the line is reported, not scored; the band and its seconds answer for
-// it. The scoop before the lock is the time-to-lock number's business,
-// not steadiness's.
+// `holdSteadiness` on the reading the live check uses (hold-reading.ts), as
+// the web Long note scores it: 100 less twice the spread of the voice around
+// its own mean, a vibrato, a wobble and a drift along the line all counted.
+// The scoop before the lock is the time-to-lock number's business, not
+// steadiness's.
 
 import type { SteadinessResult } from '@/lib/mirror/metrics'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
@@ -44,7 +43,7 @@ export type HoldRunMetrics = {
 export interface HoldResult {
   /** The run's score: steadiness 0-100, 0 when too little was held. */
   score: number
-  /** Drift, wobble and vibrato for the results card; null as above. */
+  /** Drift and spread for the results card (no vibrato); null as above. */
   steadiness: SteadinessResult | null
   /** The run reached at least one lock. */
   locked: boolean

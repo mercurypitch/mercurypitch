@@ -23,8 +23,8 @@
 
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { haptics } from '@/lib/haptics'
-import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
-import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
+import type { HoldEventType, HoldPreset, HoldState, HoldTick, } from '@/lib/hold/hold-engine'
+import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import { computeHoldResult } from '@/lib/hold/hold-metrics'
 import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, nudgeTarget, } from '@/lib/hold/hold-target'
 import { loadHoldTarget } from '@/lib/hold/load-hold-target'
@@ -32,9 +32,11 @@ import type { MercVoice } from '@/lib/merc/sim'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import { exerciseLevel } from '@/stores/exercise-level'
 import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { createChipFollower } from './chip-follower'
+import { createLanternEase } from './lantern-ease'
 import { fillLevel } from './lantern-geometry'
 import type { LongNoteController, LongNoteRunSummary, } from './long-note-controller-types'
 import type { LongNoteEvent, LongNoteState } from './long-note-machine'
@@ -50,9 +52,6 @@ import type { LongNoteScript, ScriptedTake } from './scripted-take'
 import { settledRunStart, settleLiveNote } from './settle-note'
 import { CaptureError, useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
-
-// The goal fills the lantern halfway; past it, steady singing fills the top.
-const PRESET = HOLD_PRESETS.lantern
 
 export type { MercPlace } from './merc-moves'
 export type {
@@ -99,7 +98,8 @@ export function useLongNoteController(): LongNoteController {
   const [summary, setSummary] = createSignal<LongNoteRunSummary | null>(null)
   const [line, setLine] = createSignal('')
   const [chip, setChip] = createSignal<string | null>(null)
-  const [lanternLevel, setLanternLevel] = createSignal(0)
+  // The level a take left, between takes (in the hold, the engine's fills).
+  const lantern = createLanternEase()
   const [shine, setShine] = createSignal(0)
   // The demo: on, the note it sings, and the take it is singing.
   const [scriptActive, setScriptActive] = createSignal(false)
@@ -107,6 +107,11 @@ export function useLongNoteController(): LongNoteController {
   const [demoPlaying, setDemoPlaying] = createSignal(false)
   let scripted: ScriptedTake | null = null
   const demoOn = (): boolean => untrack(scriptActive)
+  // The take's rules (the goal fills the lantern halfway; past it, steady
+  // singing fills the top): the singer's level as the take opens, or the
+  // demo's own. Between takes the band follows the level as it is picked.
+  const levelPreset = (): HoldPreset => LANTERN_LEVELS[exerciseLevel()]
+  const [preset, setPreset] = createSignal(untrack(levelPreset))
 
   const trace = new VoiceTraceBuffer()
   const noteName = (): string => {
@@ -135,21 +140,6 @@ export function useLongNoteController(): LongNoteController {
     timers.add(id)
   }
 
-  // ── The lantern's level, eased between runs ────────────────
-  let tween = 0
-  const easeLevel = (to: number, ms: number): void => {
-    if (tween !== 0) cancelAnimationFrame(tween)
-    const from = untrack(lanternLevel)
-    const t0 = performance.now()
-    const step = (): void => {
-      const k = Math.min(1, (performance.now() - t0) / ms)
-      const eased = 1 - (1 - k) * (1 - k)
-      setLanternLevel(from + (to - from) * eased)
-      tween = k < 1 ? requestAnimationFrame(step) : 0
-    }
-    tween = requestAnimationFrame(step)
-  }
-
   // ── Merc ───────────────────────────────────────────────────
   let voice: MercVoice = {
     voiced: false,
@@ -168,6 +158,10 @@ export function useLongNoteController(): LongNoteController {
   let lastTick: HoldTick | null = null
   let windowOpen = false
   let windowStartedAt = 0
+  createEffect(() => {
+    const next = levelPreset()
+    if (!windowOpen && !untrack(scriptActive)) setPreset(next)
+  })
   /** The last voice the listen heard, on now()'s clock. */
   let heardAt = 0
   let loop = 0
@@ -208,6 +202,7 @@ export function useLongNoteController(): LongNoteController {
 
   const openWindow = (): void => {
     if (scripted === null) capture.startWindow()
+    setPreset(scripted?.preset ?? untrack(levelPreset))
     windowStartedAt = performance.now()
     heardAt = 0
     engine = createHoldState()
@@ -254,8 +249,8 @@ export function useLongNoteController(): LongNoteController {
         case 'break':
           merc.mood('sing')
           break
-        // Halfway: he steps out of the glass to cheer, and the top is the
-        // steady singing's to fill. Full: he cheers again.
+        // Halfway: he steps out of the glass to cheer, and the top fills by
+        // the voice's steadiness. Full: he cheers again.
         case 'goal':
           feel('success')
           setShine(GOAL_SHINE)
@@ -331,11 +326,11 @@ export function useLongNoteController(): LongNoteController {
       clearChip()
       dispatch({ type: 'end' })
       // The light stays as high as the take filled it: halfway at the
-      // goal, the brim only when steady singing filled the top.
-      setLanternLevel(fillLevel(engine.charge, engine.topCharge))
+      // goal, the brim only when the top filled too.
+      lantern.set(fillLevel(engine.charge, engine.topCharge))
     })
     // The demo's result keeps Merc's bubble clear for its own tooltip.
-    if (take === null) say(resultMoment(improved, full, brim, result.locked))
+    if (take === null) say(resultMoment(improved, engine, result.locked))
     merc.move('beside', full || improved ? 'celebrate' : 'idle')
   }
 
@@ -354,6 +349,7 @@ export function useLongNoteController(): LongNoteController {
   /** The take against its note: the engine, Merc, the chip, the end. */
   const follow = (frames: readonly PitchFrame[], target: number): void => {
     const phase = untrack(state).phase
+    const rules = untrack(preset)
     const events: HoldEventType[] = []
     const before = engine.clock
     for (let i = processed; i < frames.length; i++) {
@@ -361,7 +357,7 @@ export function useLongNoteController(): LongNoteController {
       const heard = holdTickFromFrame(frame, previous, target)
       const step =
         i < heardFrom ? { ...heard, offCents: null, level: 0 } : heard
-      engine = tickHold(engine, step, PRESET)
+      engine = tickHold(engine, step, rules)
       events.push(...engine.events)
       trace.push(
         frame.t,
@@ -383,7 +379,7 @@ export function useLongNoteController(): LongNoteController {
       level: levelFromRms(step?.level ?? 0),
       steady:
         step?.offCents !== null && step !== null
-          ? 1 - Math.min(1, Math.abs(cents) / PRESET.tolCents)
+          ? 1 - Math.min(1, Math.abs(cents) / rules.tolCents)
           : 0,
       midi: target + cents / 100,
     }
@@ -540,9 +536,9 @@ export function useLongNoteController(): LongNoteController {
   }
 
   /**
-   * Nothing listens behind the singer's back: a hold ends where it is, and a
-   * take still waiting for a note goes back to the intro. So does a start
-   * whose note is playing or whose mic is opening: the mic stays shut.
+   * The mic stops listening: a hold ends where it is, and a take still
+   * waiting for a note goes back to the intro. So does a start whose note
+   * is playing or whose mic is opening: the mic stays shut.
    */
   function stopListening(): void {
     // The demo's takes listen to nothing; the demo stops itself.
@@ -565,7 +561,7 @@ export function useLongNoteController(): LongNoteController {
       setShine(0)
       setHold(createHoldState())
     })
-    easeLevel(0, 450)
+    lantern.ease(0, 450)
     say('again')
     merc.put('listen', 'beside')
     openMic(null)
@@ -578,7 +574,7 @@ export function useLongNoteController(): LongNoteController {
       setSummary(null)
       setShine(0)
     })
-    easeLevel(0, 450)
+    lantern.ease(0, 450)
     sayIntro()
     merc.put('idle', 'beside')
   }
@@ -613,10 +609,45 @@ export function useLongNoteController(): LongNoteController {
     })
   })
 
-  // Leaving the app mid-hold ends the note there: the clock stops with the
-  // page, and frames that resume later would count the gap as held.
+  /** No take, no result, an empty trace, and the light at `level`. */
+  const clearTake = (level: number): void => {
+    if (windowOpen) closeWindow()
+    engine = createHoldState()
+    closedAt = 0
+    trace.clear()
+    batch(() => {
+      lantern.set(level)
+      setHold(engine)
+      setSummary(null)
+      setShine(0)
+      clearChip()
+    })
+  }
+
+  /**
+   * The singer left the app. Nothing listens behind their back, and a hold
+   * is dropped, as Back drops it (owner, 11 Oct 2026: an exercise gets done
+   * or not): no run, no best, no practice time. The mic closes and the room
+   * is back at its start, with Merc saying why the note stopped. A take
+   * still waiting for its note, or for the mic, goes back as before.
+   */
+  function leave(): void {
+    if (demoOn() || untrack(state).phase !== 'hold') {
+      stopListening()
+      return
+    }
+    clearTake(0)
+    capture.release()
+    merc.stopCheering()
+    dispatch({ type: 'leave' })
+    say('left')
+    merc.put('idle', 'beside')
+  }
+
+  // The clock stops with the page, so frames that resumed later would also
+  // count the gap as held.
   const onVisibility = (): void => {
-    if (document.visibilityState === 'hidden') stopListening()
+    if (document.visibilityState === 'hidden') leave()
   }
   document.addEventListener('visibilitychange', onVisibility)
 
@@ -646,23 +677,12 @@ export function useLongNoteController(): LongNoteController {
   const shownLevel = (): number =>
     untrack(state).phase === 'hold'
       ? fillLevel(engine.charge, engine.topCharge)
-      : untrack(lanternLevel)
+      : untrack(lantern.level)
 
   /** No take, no result, an empty trace: the light where it stands. */
   const clearForScript = (): void => {
-    if (windowOpen) closeWindow()
-    const from = shownLevel()
+    clearTake(shownLevel())
     scripted = null
-    engine = createHoldState()
-    closedAt = 0
-    trace.clear()
-    batch(() => {
-      setLanternLevel(from)
-      setHold(engine)
-      setSummary(null)
-      setShine(0)
-      clearChip()
-    })
   }
 
   const script: LongNoteScript = {
@@ -679,7 +699,7 @@ export function useLongNoteController(): LongNoteController {
         setLine(text)
         dispatch({ type: 'demo', phase: 'intro' })
       })
-      easeLevel(0, 450)
+      lantern.ease(0, 450)
       merc.put('idle', 'beside')
       return true
     },
@@ -699,7 +719,7 @@ export function useLongNoteController(): LongNoteController {
       if (!demoOn()) return
       clearForScript()
       dispatch({ type: 'demo', phase: 'listen' })
-      easeLevel(0, 600)
+      lantern.ease(0, 600)
     },
     mood: (next) => {
       if (demoOn()) merc.set(next)
@@ -713,9 +733,10 @@ export function useLongNoteController(): LongNoteController {
         setScriptActive(false)
         setScriptNote(null)
         setDemoPlaying(false)
+        setPreset(levelPreset())
         dispatch({ type: 'demo', phase: 'intro' })
       })
-      easeLevel(0, 450)
+      lantern.ease(0, 450)
       sayIntro()
       if (inside && !still) merc.hopTo('beside', 'idle')
       else merc.put('idle', 'beside')
@@ -728,7 +749,7 @@ export function useLongNoteController(): LongNoteController {
     document.removeEventListener('visibilitychange', onVisibility)
     unregisterIndicator()
     if (loop !== 0) cancelAnimationFrame(loop)
-    if (tween !== 0) cancelAnimationFrame(tween)
+    lantern.stop()
     for (const id of timers) clearTimeout(id)
     timers.clear()
     windowOpen = false
@@ -752,7 +773,7 @@ export function useLongNoteController(): LongNoteController {
       const current = hold()
       return state().phase === 'hold'
         ? fillLevel(current.charge, current.topCharge)
-        : lanternLevel()
+        : lantern.level()
     },
     lanternGlow: () => {
       const current = hold()
@@ -761,7 +782,7 @@ export function useLongNoteController(): LongNoteController {
     shine,
     trace,
     now,
-    toleranceCents: PRESET.tolCents,
+    toleranceCents: () => preset().tolCents,
     start,
     cancel,
     stop: stopListening,

@@ -8,6 +8,10 @@
 // and Merc steps out of the glass, then holds it steady to the brim (like
 // this).
 //
+// Merc sings at one level, Singer, whatever level the singer picked: the
+// band he sings in is the room's +-30 cents, and his light vibrato (+-14
+// cents) fills the top to the brim there.
+//
 // Pure and seeded: the same note always gives the same frames, events and
 // timings. The room plays these frames through its hold engine
 // (useLongNoteController's scripted take), so every tooltip is cued by an
@@ -22,10 +26,11 @@
 // them, and so do Merc's hop and cheers.
 
 import { midiToFrequency } from '@/lib/frequency-to-note'
-import type { HoldEventType } from '@/lib/hold/hold-engine'
-import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
+import type { HoldEventType, HoldPreset } from '@/lib/hold/hold-engine'
+import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import { seeded } from '@/lib/mirror/demo-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import type { ExerciseLevel } from '@/stores/exercise-level'
 
 export type DemoTakeId = 'off' | 'on'
 
@@ -53,6 +58,8 @@ export interface FastStretch {
 
 export interface DemoTake {
   readonly id: DemoTakeId
+  /** The rules it was sung under: DEMO_LEVEL's lantern. */
+  readonly preset: HoldPreset
   readonly frames: readonly PitchFrame[]
   /** The engine's events for these frames, in order. */
   readonly events: readonly DemoEvent[]
@@ -67,6 +74,11 @@ export interface DemoTake {
   /** Wall seconds from the take's start to the end of its note. */
   readonly length: number
 }
+
+/** The level Merc sings at, whatever the singer's own. */
+export const DEMO_LEVEL: ExerciseLevel = 'singer'
+
+const DEMO_PRESET = LANTERN_LEVELS[DEMO_LEVEL]
 
 /** The vibrato both the frames and the synth carry. */
 export const DEMO_VIBRATO = {
@@ -263,7 +275,7 @@ function singTake(
     state = tickHold(
       state,
       holdTickFromFrame(frame, previous, note),
-      HOLD_PRESETS.lantern,
+      DEMO_PRESET,
     )
     previous = frame
     for (const type of state.events) {
@@ -351,6 +363,7 @@ function buildTake(
   const length = clock.wallAt(eventAt(sung.events, 'end'))
   return {
     id,
+    preset: DEMO_PRESET,
     frames: sung.frames,
     events: sung.events,
     fast,
