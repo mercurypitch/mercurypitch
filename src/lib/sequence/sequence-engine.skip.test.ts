@@ -19,7 +19,7 @@ import { sequence } from '@/lib/glass/test-frames'
 import type { EchoLevelId, NoteOutcome } from './sequence-engine'
 import { ECHO_LEVELS } from './sequence-engine'
 import type { SteadyNote } from './steady-note'
-import { asMissed, C4, C5, D4, E4, F4, FS4, G3, G4, landings, micro, onsets, phraseOf, play, rest, sing, slide, vibrato, } from './test-echo'
+import { A4, asMissed, C4, C5, D4, E4, F4, FS4, G3, G4, landings, micro, onsets, phraseOf, play, rest, sing, slide, vibrato, } from './test-echo'
 
 /** Each note as it came out: landed, or the cause it missed by. */
 const causes = (outcomes: readonly NoteOutcome[]) =>
@@ -39,15 +39,15 @@ const LEGATO: Record<EchoLevelId, number> = {
 
 describe('tickSequence, a wrong note skipped', () => {
   // level, Merc's notes, what the singer sings for the second instead, and
-  // the steady note the skipped second names. At Professional the leap is
-  // undershot: a wrong note held only Merc's 0.45 s after a leap of more
-  // than about six semitones settles too late to count as steady.
+  // the steady note the skipped second names. At Professional the wrong
+  // note comes after a leap of nine semitones from C4, held only Merc's
+  // 0.45 s, and is named all the same.
   const WRONG_SECOND: ReadonlyArray<
     [EchoLevelId, number[], number, SteadyNote]
   > = [
     ['learning', [C4, D4, E4], F4, { midi: F4, cents: 300 }],
     ['singer', [C4, E4, G4, E4], D4, { midi: D4, cents: -200 }],
-    ['professional', [C4, G4, C5, G4, E4], D4, { midi: D4, cents: -500 }],
+    ['professional', [C4, G4, C5, G4, E4], A4, { midi: A4, cents: 200 }],
   ]
 
   it.each(WRONG_SECOND)(

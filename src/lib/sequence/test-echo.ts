@@ -21,6 +21,7 @@ export const E4 = 64
 export const F4 = 65
 export const FS4 = 66
 export const G4 = 67
+export const A4 = 69
 export const C5 = 72
 
 export type Part = (startT: number) => PitchFrame[]

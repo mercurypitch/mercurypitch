@@ -15,6 +15,15 @@
 // land on its own note is one. The tracker's slips go first, as the hold
 // reading drops them (keptReading, hold-reading.ts).
 //
+// A reading a semitone or more from the centre starts it again from that
+// reading. The hold's own centre never has far to go, since its readings
+// are held to a semitone either side of the note; this centre follows the
+// voice as sung, so after a leap of nine semitones it would take some 18
+// frames to settle, and a wrong note held only Merc's 0.45 s at
+// Professional would never count. A vibrato never swings that far from
+// the centre, and a slide that starts it again is still moving too fast
+// to be steady.
+//
 // The readings are the voice as sung: not held to a semitone, so a wrong
 // note keeps its name, and not folded, so it keeps its octave. Only its
 // distance from the note asked for is folded, at the levels that fold.
@@ -54,6 +63,9 @@ export interface SteadyOptions {
 /** Float sums of frame times drift; thresholds compare with this slack. */
 const EPS = 1e-6
 
+/** A reading this far from the smoothed centre starts it again, cents. */
+export const RESEED_CENTS = 100
+
 /** Voiced readings split where a gap starts a new run (startsRun). */
 function voicedRuns(points: readonly PitchPoint[]): PitchPoint[][] {
   const runs: PitchPoint[][] = []
@@ -64,12 +76,15 @@ function voicedRuns(points: readonly PitchPoint[]): PitchPoint[][] {
   return runs
 }
 
-/** The hold engine's one-pole centre over one run, fresh at its start. */
+/**
+ * The hold engine's one-pole centre over one run, fresh at its start and
+ * again on any reading RESEED_CENTS or more from it.
+ */
 function smoothedCentre(run: readonly PitchPoint[], tauSec: number): number[] {
   const out: number[] = []
   let centre = 0
   for (const [i, point] of run.entries()) {
-    if (i === 0) {
+    if (i === 0 || Math.abs(point.cents - centre) >= RESEED_CENTS - EPS) {
       centre = point.cents
     } else {
       const dt = point.t - run[i - 1].t

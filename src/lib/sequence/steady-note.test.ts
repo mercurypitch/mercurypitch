@@ -116,6 +116,71 @@ describe('closestSteadyNote', () => {
     expect(note?.cents).toBeCloseTo(-170, 6)
   })
 
+  it("names a wrong note held only Merc's 0.45 s after a big leap, at Professional", () => {
+    // Arrange: G4 asked for. The last note, C4, held over (700 under),
+    // then A4 (200 over) for 27 frames. Smoothed from C4, the centre would
+    // take 18 frames to settle within Professional's 50, leaving 9.
+    const points = [
+      ...readings(held(-700, 0.25), 0.5),
+      ...readings(held(200, 0.45), 0.75),
+    ]
+
+    // Act
+    const note = closestSteadyNote(points, {
+      ...SINGER,
+      targetMidi: 67,
+      tolCents: 25,
+      landMs: 200,
+      heldOver: true,
+    })
+
+    // Assert
+    expect(note).toEqual({ midi: 69, cents: 200 })
+  })
+
+  it('never starts the centre again on a vibrato swing, so a wide vibrato stays one note', () => {
+    // Arrange: 1 s at -170 with a 6 Hz, +-60 cent vibrato: each reading
+    // stays well within a semitone of the smoothed centre.
+    const vibrato = Array.from(
+      { length: 60 },
+      (_, i) => -170 + 60 * Math.sin((2 * Math.PI * 6 * i) / 60),
+    )
+
+    // Act
+    const note = closestSteadyNote(readings(vibrato), {
+      ...SINGER,
+      tolCents: 25,
+      landMs: 200,
+    })
+
+    // Assert: whole cycles, so the median is the centre.
+    expect(note?.midi).toBe(C4 - 2)
+    expect(note?.cents).toBeCloseTo(-170, 6)
+  })
+
+  it.each([600, 1000, 2000, 4000])(
+    'finds no steady note in a slide of %i cents a second, at Professional',
+    (centsPerSecond) => {
+      // Arrange: 0.5 s through the note at that speed; the faster ones
+      // start the centre again on the way.
+      const half = centsPerSecond / 4
+      const slide = Array.from(
+        { length: 30 },
+        (_, i) => -half + (2 * half * i) / 29,
+      )
+
+      // Act
+      const note = closestSteadyNote(readings(slide), {
+        ...SINGER,
+        tolCents: 25,
+        landMs: 200,
+      })
+
+      // Assert
+      expect(note).toBeNull()
+    },
+  )
+
   it('drops a tracker octave slip inside a steady note', () => {
     // Arrange: 0.4 s at -200 with a two-frame slip an octave up halfway.
     // Smoothed, the slip alone would split it into two short stretches.
