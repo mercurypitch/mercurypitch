@@ -36,8 +36,8 @@ describe('AuthModal sign-up line', () => {
     expect(
       submit.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
-    expect(line.querySelector('a[href$="/terms"]')).not.toBeNull()
-    expect(line.querySelector('a[href$="/privacy"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/terms/"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/privacy/"]')).not.toBeNull()
   })
 
   it('keeps the line off the sign-in form', async () => {
@@ -69,8 +69,8 @@ describe('AuthModal "by continuing" line', () => {
     expect(
       google.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
-    expect(line.querySelector('a[href$="/terms"]')).not.toBeNull()
-    expect(line.querySelector('a[href$="/privacy"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/terms/"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/privacy/"]')).not.toBeNull()
   })
 
   it('leaves it to the create-account line on the register pane', async () => {

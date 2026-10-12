@@ -226,9 +226,11 @@ describe('what a page without JavaScript says about the voice', () => {
 // JavaScript, a crawler or an ad reviewer ever sees. So every document a visitor
 // can land on carries the same legal nav, as plain links in the first byte.
 describe('the legal nav in every entry document', () => {
+  // Each with its trailing slash: the landing answers /privacy and /terms with
+  // a 307 to these, a hop on every legal link a crawler follows.
   const LEGAL_HREFS = [
-    'https://about.mercurypitch.com/privacy',
-    'https://about.mercurypitch.com/terms',
+    'https://about.mercurypitch.com/privacy/',
+    'https://about.mercurypitch.com/terms/',
     'https://about.mercurypitch.com/imprint/',
   ]
 
@@ -253,3 +255,4 @@ describe('the legal nav in every entry document', () => {
     },
   )
 })
+

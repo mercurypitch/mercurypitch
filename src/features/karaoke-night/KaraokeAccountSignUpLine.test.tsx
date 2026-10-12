@@ -36,8 +36,8 @@ describe('Karaoke Night sign-up line', () => {
     fireEvent.click(screen.getByText('New here? Create an account'))
 
     const line = screen.getByTestId('signup-legal-line')
-    expect(line.querySelector('a[href$="/terms"]')).not.toBeNull()
-    expect(line.querySelector('a[href$="/privacy"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/terms/"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/privacy/"]')).not.toBeNull()
   })
 })
 
@@ -52,7 +52,7 @@ describe('Karaoke Night "by continuing" line', () => {
     expect(
       google.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
-    expect(line.querySelector('a[href$="/terms"]')).not.toBeNull()
-    expect(line.querySelector('a[href$="/privacy"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/terms/"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/privacy/"]')).not.toBeNull()
   })
 })
