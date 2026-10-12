@@ -88,12 +88,14 @@ describe('tickSequence, a clean echo', () => {
 describe('tickSequence, notes that miss', () => {
   it('misses a note sung 60 cents flat at Singer and names where it sat', () => {
     // Arrange: C lands 14 frames in (0.5333 s). D is sung 60 cents flat,
-    // outside Singer's 35. The voice stops at 2.9 s (last frame 2.8833).
+    // outside Singer's 35, then F and G: no E, so the note ahead never
+    // lands and D waits for its deadline (sequence-engine.skip.test.ts has
+    // the E that skips it). The voice stops at 2.9 s (last frame 2.8833).
     const frames = sequence(
       rest(0.3),
       sing(C4, 0.65),
       sing(D4, 0.65, -60),
-      sing(E4, 0.65),
+      sing(F4, 0.65),
       sing(G4, 0.65),
       rest(3),
     )

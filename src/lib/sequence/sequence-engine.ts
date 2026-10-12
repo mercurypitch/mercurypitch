@@ -28,6 +28,16 @@
 //   note's landing or miss. Once the voice has started, 1.4 s of silence
 //   ends the echo and the notes left miss; a response that never starts
 //   ends by its deadlines, one after another.
+// - Free mode also listens one note ahead, never more. While a note is
+//   pending, the voice landing the next one misses it (skipped) and lands
+//   the next on the same frame, so the stars lit are the notes sung right:
+//   a wrong note neither holds up the notes after it nor gets lit by a
+//   later note of its pitch (1-3-5-3 with a wrong 3: the last 3 would
+//   light the first). The run that landed the note before never counts
+//   toward the note ahead while it stays on that note: until a gap starts
+//   a new run, or its smoothed centre leaves that note's band, so vibrato
+//   on a held note never lets go. Otherwise a 3 held into the 5's turn
+//   would land the last 3.
 // - Timed mode gives each note a window on the response's clock instead,
 //   so a miss never holds up the notes after it. A rest in a timed line
 //   may be longer than 1.4 s, so silence ends nothing there.
@@ -215,17 +225,23 @@ export type MissCause =
   | 'window'
   /** Free mode: the voice stopped, and the echo ended with it. */
   | 'silence'
+  /** Free mode: the voice landed the note after it first. */
+  | 'skipped'
 
 export interface MissedNote {
   readonly index: number
   readonly landed: false
   readonly missedAt: number
   readonly cause: MissCause
-  /** Any voice heard while it was the one to sing. */
+  /**
+   * Any voice heard while it was the one to sing; for a skipped note,
+   * before the note after it began.
+   */
   readonly voiced: boolean
   /**
    * The steady note sung meanwhile nearest it (steady-note.ts), for Merc
-   * to name; null when the voice never sat still.
+   * to name; null when the voice never sat still. For a skipped note,
+   * only what was sung before the note after it began.
    */
   readonly closest: SteadyNote | null
 }
@@ -237,6 +253,29 @@ export type SequenceEvent =
   | { readonly type: 'miss'; readonly index: number }
   | { readonly type: 'phraseEnd' }
 
+/** What one note's hold state has heard of the voice. */
+export interface NoteListener {
+  /** Its hold state; null until it hears its first frame. */
+  readonly hold: HoldState | null
+  /** The voiced readings that counted toward it, cents off it as sung. */
+  readonly heard: readonly PitchPoint[]
+  /** The current in-band run's readings, as the hold reads them. */
+  readonly bandRun: readonly number[]
+  /** The frame the current in-band run began on; null out of band. */
+  readonly bandFrom: number | null
+}
+
+/**
+ * The voiced run that landed the last note, while it may still be that
+ * note held over: the note, the run's smoothed centre against it (as the
+ * hold smooths one), and the run's last voiced frame.
+ */
+export interface HeldRun {
+  readonly midi: number
+  readonly centre: number
+  readonly lastVoicedAt: number
+}
+
 export interface SequenceState {
   /** Frames before this, frame clock, never count. */
   readonly responseStart: number
@@ -244,8 +283,20 @@ export interface SequenceState {
   readonly current: number
   /** Every note out so far, in order: index i is note i. */
   readonly outcomes: readonly NoteOutcome[]
-  /** The current note's hold state; null until it hears its first frame. */
-  readonly hold: HoldState | null
+  /** What the current note has heard. */
+  readonly listener: NoteListener
+  /**
+   * Free mode: what the note after the current one has heard, one note
+   * ahead. Null until it hears its first frame, in timed mode, and on the
+   * last note.
+   */
+  readonly ahead: NoteListener | null
+  /**
+   * Free mode: the run that landed the last note, while it stays on that
+   * note; it never counts toward the note ahead. Null once a gap or a move
+   * off the note lets go of it, and after a miss.
+   */
+  readonly heldRun: HeldRun | null
   /**
    * When the current note became the one to sing: the response start,
    * then the last note's landing or miss.
@@ -253,12 +304,6 @@ export interface SequenceState {
   readonly since: number
   /** The current note's first frame came on a voice already sounding. */
   readonly heldOver: boolean
-  /** The current note's voiced readings, cents off it as sung. */
-  readonly heard: readonly PitchPoint[]
-  /** The current in-band run's readings, as the hold reads them. */
-  readonly bandRun: readonly number[]
-  /** The frame the current in-band run began on; null out of band. */
-  readonly bandFrom: number | null
   /** The response's last voiced frame; null until the voice starts. */
   readonly lastVoicedAt: number | null
   /** The last frame taken, at or after `responseStart`. */
@@ -269,17 +314,24 @@ export interface SequenceState {
   readonly events: readonly SequenceEvent[]
 }
 
+/** A listener that has heard nothing yet. */
+const UNHEARD: NoteListener = {
+  hold: null,
+  heard: [],
+  bandRun: [],
+  bandFrom: null,
+}
+
 export function createSequenceState(responseStart: number): SequenceState {
   return {
     responseStart,
     current: 0,
     outcomes: [],
-    hold: null,
+    listener: UNHEARD,
+    ahead: null,
+    heldRun: null,
     since: responseStart,
     heldOver: false,
-    heard: [],
-    bandRun: [],
-    bandFrom: null,
     lastVoicedAt: null,
     previous: null,
     ended: false,
@@ -350,11 +402,15 @@ function silenceEndsAt(state: SequenceState, preset: SequencePreset): number {
   return state.lastVoicedAt + timing.endSilenceMs / 1000
 }
 
-/** The current note is out; the next one is the one to sing from `at`. */
+/**
+ * The current note is out; the next one is the one to sing from `at`.
+ * `heldRun` is the run that landed it (free mode), null after a miss.
+ */
 function advance(
   state: SequenceState,
   outcome: NoteOutcome,
   at: number,
+  heldRun: HeldRun | null,
 ): SequenceState {
   const event: SequenceEvent = {
     type: outcome.landed ? 'land' : 'miss',
@@ -364,13 +420,39 @@ function advance(
     ...state,
     current: state.current + 1,
     outcomes: [...state.outcomes, outcome],
-    hold: null,
+    listener: UNHEARD,
+    ahead: null,
+    heldRun,
     since: at,
     heldOver: false,
-    heard: [],
-    bandRun: [],
-    bandFrom: null,
     events: [...state.events, event],
+  }
+}
+
+/** The current note as missed at `at`, judged on the readings `heard`. */
+function missedNote(
+  state: SequenceState,
+  at: number,
+  cause: MissCause,
+  heard: readonly PitchPoint[],
+  phrase: Phrase,
+  preset: SequencePreset,
+): MissedNote {
+  const note = phrase.notes[state.current]
+  return {
+    index: state.current,
+    landed: false,
+    missedAt: at,
+    cause,
+    voiced: heard.length > 0,
+    closest: closestSteadyNote(heard, {
+      targetMidi: note.midi,
+      tolCents: preset.tolCents,
+      landMs: preset.landMs,
+      octaveFold: preset.octaveFold,
+      heldOver: state.heldOver,
+      centreTauSec: holdPresetFor(preset).centreTauSec,
+    }),
   }
 }
 
@@ -381,27 +463,15 @@ function miss(
   phrase: Phrase,
   preset: SequencePreset,
 ): SequenceState {
-  const note = phrase.notes[state.current]
-  const closest = closestSteadyNote(state.heard, {
-    targetMidi: note.midi,
-    tolCents: preset.tolCents,
-    landMs: preset.landMs,
-    octaveFold: preset.octaveFold,
-    heldOver: state.heldOver,
-    centreTauSec: holdPresetFor(preset).centreTauSec,
-  })
-  return advance(
+  const missed = missedNote(
     state,
-    {
-      index: state.current,
-      landed: false,
-      missedAt: at,
-      cause,
-      voiced: state.heard.length > 0,
-      closest,
-    },
     at,
+    cause,
+    state.listener.heard,
+    phrase,
+    preset,
   )
+  return advance(state, missed, at, null)
 }
 
 /**
@@ -456,10 +526,10 @@ function inBand(cents: number, preset: SequencePreset): boolean {
 function heldOverFrom(
   state: SequenceState,
   fresh: boolean,
-  sung: number | null,
+  frame: PitchFrame,
 ): boolean {
   if (!fresh) return state.heldOver
-  return sung !== null && state.previous !== null && isVoiced(state.previous)
+  return isVoiced(frame) && state.previous !== null && isVoiced(state.previous)
 }
 
 /**
@@ -467,10 +537,10 @@ function heldOverFrom(
  * frame the smoothed centre entered it, back over the readings that were
  * already inside it, on the same voiced run.
  */
-function onsetOf(state: SequenceState, preset: SequencePreset): number {
-  const heard = state.heard
+function onsetOf(listener: NoteListener, preset: SequencePreset): number {
+  const heard = listener.heard
   let k = heard.length - 1
-  while (k > 0 && heard[k].t > (state.bandFrom ?? heard[k].t) + EPS) k -= 1
+  while (k > 0 && heard[k].t > (listener.bandFrom ?? heard[k].t) + EPS) k -= 1
   while (
     k > 0 &&
     inBand(heard[k - 1].cents, preset) &&
@@ -481,24 +551,186 @@ function onsetOf(state: SequenceState, preset: SequencePreset): number {
   return heard[k].t
 }
 
+/** A listener's landing on `t`, as note `index`, timed from `from`. */
+function landedNote(
+  index: number,
+  listener: NoteListener,
+  t: number,
+  from: number,
+  preset: SequencePreset,
+): LandedNote {
+  return {
+    index,
+    landed: true,
+    cents: median(listener.bandRun),
+    onset: onsetOf(listener, preset),
+    landedAt: t,
+    timeToLandMs: Math.round((t - from) * 1000),
+  }
+}
+
+/** Free mode: the run that landed `midi` on `t`, as its listener left it. */
+function heldRunOf(
+  listener: NoteListener,
+  midi: number,
+  t: number,
+  preset: SequencePreset,
+): HeldRun | null {
+  if (preset.timing.mode !== 'free') return null
+  return { midi, centre: listener.hold?.needleCents ?? 0, lastVoicedAt: t }
+}
+
 function land(
   state: SequenceState,
   t: number,
   phrase: Phrase,
   preset: SequencePreset,
 ): SequenceState {
-  const outcome: LandedNote = {
-    index: state.current,
-    landed: true,
-    cents: median(state.bandRun),
-    onset: onsetOf(state, preset),
-    landedAt: t,
-    timeToLandMs: Math.round((t - opensAt(state, phrase, preset)) * 1000),
-  }
-  return advance(state, outcome, t)
+  const note = phrase.notes[state.current]
+  const outcome = landedNote(
+    state.current,
+    state.listener,
+    t,
+    opensAt(state, phrase, preset),
+    preset,
+  )
+  return advance(
+    state,
+    outcome,
+    t,
+    heldRunOf(state.listener, note.midi, t, preset),
+  )
 }
 
-/** The frame, heard by the current note's hold state, once it listens. */
+/**
+ * The note ahead landed first: the current note misses, skipped, judged
+ * on what was sung before the note ahead began; then the note ahead
+ * lands, on the same frame. Its time to land runs from when the current
+ * note became the one to sing, which is when it began to listen.
+ */
+function skip(
+  state: SequenceState,
+  ahead: NoteListener,
+  t: number,
+  phrase: Phrase,
+  preset: SequencePreset,
+): SequenceState {
+  const next = phrase.notes[state.current + 1]
+  const landed = landedNote(state.current + 1, ahead, t, state.since, preset)
+  const before = state.listener.heard.filter(
+    (point) => point.t < landed.onset - EPS,
+  )
+  const skipped = advance(
+    state,
+    missedNote(state, t, 'skipped', before, phrase, preset),
+    t,
+    null,
+  )
+  return advance(skipped, landed, t, heldRunOf(ahead, next.midi, t, preset))
+}
+
+/**
+ * One frame for a note's listener: its hold state ticked against `midi`,
+ * with the reading kept when voiced. A frame that does not count is heard
+ * as silence.
+ */
+function hear(
+  listener: NoteListener,
+  frame: PitchFrame,
+  previous: PitchFrame | null,
+  midi: number,
+  preset: SequencePreset,
+  counts: boolean,
+): NoteListener {
+  const tick = holdTickFromFrame(
+    frame,
+    listener.hold === null ? null : previous,
+    midi,
+  )
+  const sung = counts ? tick.offCents : null
+  const reading = sung === null ? null : judged(sung, preset)
+  const hold = tickHold(
+    listener.hold ?? createHoldState(),
+    { ...tick, offCents: reading },
+    holdPresetFor(preset),
+  )
+  const banded = hold.inBand && reading !== null
+  return {
+    hold,
+    heard:
+      sung === null
+        ? listener.heard
+        : [...listener.heard, { t: frame.t, cents: sung }],
+    bandRun: banded ? [...listener.bandRun, heldCents(reading)] : [],
+    bandFrom: banded ? (listener.bandFrom ?? frame.t) : null,
+  }
+}
+
+/** The listener's hold state locked on this frame: its note lands. */
+const locked = (listener: NoteListener): boolean =>
+  listener.hold?.events.includes('lock') ?? false
+
+/**
+ * The held run after this frame. It lets go (null) once a gap starts a
+ * new voiced run, or once its smoothed centre, smoothed as the hold
+ * smooths one, leaves the band of the note it landed. An unvoiced frame
+ * inside the run keeps it, and so does vibrato around the note.
+ */
+function followHeldRun(
+  run: HeldRun,
+  frame: PitchFrame,
+  previous: PitchFrame | null,
+  preset: SequencePreset,
+): HeldRun | null {
+  const sung = offTarget(frame, run.midi)
+  if (sung === null) return run
+  const point = { t: frame.t, cents: sung }
+  if (startsRun({ t: run.lastVoicedAt, cents: run.centre }, point)) return null
+  const dt = previous === null ? 0 : frame.t - previous.t
+  const tau = holdPresetFor(preset).centreTauSec
+  const alpha = tau > 0 ? 1 - Math.exp(-dt / tau) : 1
+  const centre =
+    run.centre + alpha * (heldCents(judged(sung, preset)) - run.centre)
+  if (Math.abs(centre) > preset.tolCents + EPS) return null
+  return { ...run, centre, lastVoicedAt: frame.t }
+}
+
+/**
+ * Free mode: the frame for the note after the current one, which lands
+ * first when the current note was sung wrong. Never further ahead; and
+ * the run that landed the last note, while it is held over, is heard
+ * there as silence.
+ */
+function lookAhead(
+  state: SequenceState,
+  frame: PitchFrame,
+  phrase: Phrase,
+  preset: SequencePreset,
+): SequenceState {
+  const next = phrase.notes[state.current + 1]
+  if (preset.timing.mode !== 'free' || next === undefined) return state
+  const heldRun =
+    state.heldRun === null
+      ? null
+      : followHeldRun(state.heldRun, frame, state.previous, preset)
+  const ahead = hear(
+    state.ahead ?? UNHEARD,
+    frame,
+    state.previous,
+    next.midi,
+    preset,
+    heldRun === null,
+  )
+  const listened: SequenceState = { ...state, ahead, heldRun }
+  return locked(ahead)
+    ? skip(listened, ahead, frame.t, phrase, preset)
+    : listened
+}
+
+/**
+ * The frame, heard by the current note's hold state once it listens, and
+ * then by the note ahead's.
+ */
 function listen(
   state: SequenceState,
   frame: PitchFrame,
@@ -508,34 +740,23 @@ function listen(
   const note = phrase.notes[state.current]
   if (note === undefined) return state
   if (frame.t < opensAt(state, phrase, preset) - EPS) return state
-  const fresh = state.hold === null
-  const tick = holdTickFromFrame(
+  const fresh = state.listener.hold === null
+  const listener = hear(
+    state.listener,
     frame,
-    fresh ? null : state.previous,
+    state.previous,
     note.midi,
+    preset,
+    true,
   )
-  const sung = tick.offCents
-  const reading = sung === null ? null : judged(sung, preset)
-  const hold = tickHold(
-    state.hold ?? createHoldState(),
-    { ...tick, offCents: reading },
-    holdPresetFor(preset),
-  )
-  const banded = hold.inBand && reading !== null
   const next: SequenceState = {
     ...state,
-    hold,
-    heldOver: heldOverFrom(state, fresh, sung),
-    heard:
-      sung === null
-        ? state.heard
-        : [...state.heard, { t: frame.t, cents: sung }],
-    bandRun: banded ? [...state.bandRun, heldCents(reading)] : [],
-    bandFrom: banded ? (state.bandFrom ?? frame.t) : null,
+    listener,
+    heldOver: heldOverFrom(state, fresh, frame),
   }
-  return hold.events.includes('lock')
+  return locked(listener)
     ? land(next, frame.t, phrase, preset)
-    : next
+    : lookAhead(next, frame, phrase, preset)
 }
 
 /**

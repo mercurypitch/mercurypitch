@@ -110,6 +110,28 @@ describe('tickSequence, timed mode', () => {
       micro(1 + 15 / 60),
     ])
   })
+
+  it('never skips ahead: a note sung early waits for its own window', () => {
+    // Arrange: C E G; the singer leaves E out and sings G from 1.0 s,
+    // inside E's window (1.0 to 1.85), and holds it to 2.3 s.
+    const frames = sequence(rest(0.5), sing(C4, 0.5), sing(G4, 1.3), rest(1))
+
+    // Act
+    const { state } = play(frames, timedPhrase([C4, E4, G4]), TIMED)
+
+    // Assert: E misses when its window closes, not when G is sung; G
+    // listens from then and lands 15 frames on.
+    expect(state.outcomes.map((o) => (o.landed ? 'landed' : o.cause))).toEqual([
+      'landed',
+      'window',
+      'landed',
+    ])
+    expect(landings(state.outcomes)).toEqual([
+      micro(0.5 + 14 / 60),
+      null,
+      micro(1.85 + 15 / 60),
+    ])
+  })
 })
 
 describe('tickSequence, events', () => {
@@ -124,6 +146,32 @@ describe('tickSequence, events', () => {
       'a flat note and a stop',
       sequence(rest(0.3), sing(C4, 0.65), sing(D4, 0.65, -60), rest(5)),
       phraseOf([C4, D4, E4, G4], 0.65),
+      ECHO_LEVELS.singer,
+    ],
+    [
+      'a wrong note skipped',
+      sequence(
+        rest(0.3),
+        sing(C4, 0.65),
+        sing(D4, 0.65),
+        sing(G4, 0.65),
+        sing(E4, 0.65),
+        rest(2),
+      ),
+      phraseOf([C4, E4, G4, E4], 0.65),
+      ECHO_LEVELS.singer,
+    ],
+    [
+      'a note held past the next one',
+      sequence(
+        rest(0.3),
+        sing(C4, 0.65),
+        sing(E4, 1.3),
+        sing(G4, 0.65),
+        sing(E4, 0.65),
+        rest(2),
+      ),
+      phraseOf([C4, E4, G4, E4], 0.65),
       ECHO_LEVELS.singer,
     ],
     [

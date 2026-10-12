@@ -14,10 +14,12 @@ import type { MissedNote, NoteOutcome, Phrase, SequenceEvent, SequencePreset, Se
 import { createSequenceState, tickSequence } from './sequence-engine'
 
 export const C3 = 48
+export const G3 = 55
 export const C4 = 60
 export const D4 = 62
 export const E4 = 64
 export const F4 = 65
+export const FS4 = 66
 export const G4 = 67
 export const C5 = 72
 
@@ -41,6 +43,21 @@ export const slide =
     return Array.from({ length: n }, (_, i) => ({
       t: startT + i / FPS,
       f0: midiToF0(from + ((to - from) * i) / (n - 1)),
+      conf: 0.9,
+      rms: 0.6,
+    }))
+  }
+
+/** A held note with a vibrato of `depthCents` either side, at `hz`. */
+export const vibrato =
+  (midi: number, seconds: number, depthCents: number, hz: number): Part =>
+  (startT) => {
+    const n = Math.round(seconds * FPS)
+    return Array.from({ length: n }, (_, i) => ({
+      t: startT + i / FPS,
+      f0: midiToF0(
+        midi + (depthCents / 100) * Math.sin((2 * Math.PI * hz * i) / FPS),
+      ),
       conf: 0.9,
       rms: 0.6,
     }))
