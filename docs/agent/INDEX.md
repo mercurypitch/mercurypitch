@@ -147,6 +147,7 @@ These are the rules that break things when ignored.
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 2.0k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
 | `hold` | [hold-engine.ts](../../src/lib/hold/hold-engine.ts) | 1.6k | Hold engine — one held note: lock, breaks, the lantern's fill and the end A pure tick on a state object, the shape of `tickPhysics` in `s... |
+| `sequence` | [sequence-engine.ts](../../src/lib/sequence/sequence-engine.ts) | 1.4k | Sequence engine — a phrase sung back note by note: each lands or misses Echo's engine, and later Note runner's and the onboarding's sung... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 1.1k | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
