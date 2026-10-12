@@ -60,6 +60,31 @@ const TITLES: Record<Pane, string> = {
   'email-code-sent': 'Check your inbox',
 }
 
+type FieldEvent = Event & { currentTarget: HTMLInputElement }
+
+/**
+ * Handlers that keep a field's signal equal to what its box holds. A password
+ * manager or the browser can write a value without an `input` event, and the
+ * label floats off that signal (`data-filled`), so the value is read back on
+ * change, focus, blur and the autofill animation as well as on input. The
+ * form submits the same signal, so it also sends what the box shows.
+ */
+function readsValueInto(set: (value: string) => void) {
+  const read = (e: FieldEvent) => set(e.currentTarget.value)
+  return {
+    onInput: read,
+    onChange: read,
+    onFocus: read,
+    onBlur: read,
+    onAnimationStart: read,
+  }
+}
+
+/** The field's `data-filled`, from its value. */
+function filled(value: string): 'true' | undefined {
+  return value === '' ? undefined : 'true'
+}
+
 export interface AuthModalProps {
   /** The host surface may tint the shared dialog without owning auth logic. */
   tone?: 'default' | 'guitar-night' | 'drum-night'
@@ -714,12 +739,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     {error()}
                   </p>
                 </Show>
-                <label class={styles.field}>
+                <label class={styles.field} data-filled={filled(mailedCode())}>
                   <input
                     class={styles.input}
                     type="text"
                     value={mailedCode()}
-                    onInput={(e) => setMailedCode(e.currentTarget.value)}
+                    {...readsValueInto(setMailedCode)}
                     autocomplete="one-time-code"
                     inputmode="numeric"
                     autofocus
@@ -779,12 +804,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     {error()}
                   </p>
                 </Show>
-                <label class={styles.field}>
+                <label class={styles.field} data-filled={filled(twofaCode())}>
                   <input
                     class={styles.input}
                     type="text"
                     value={twofaCode()}
-                    onInput={(e) => setTwofaCode(e.currentTarget.value)}
+                    {...readsValueInto(setTwofaCode)}
                     // One-time-code autofill so iOS and Android offer the
                     // code from the notification rather than making somebody
                     // switch apps and retype it.
@@ -918,12 +943,15 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
 
               {/* Every field is one row: its label sits inside the box and
                   floats to the top edge once the field has focus or a value
-                  (AuthModal.module.css). The label element still names the
-                  field; the words follow the input only so the stylesheet can
-                  float them. */}
+                  (AuthModal.module.css, `data-filled`). The label element
+                  still names the field; the words follow the input only so
+                  the stylesheet can float them. */}
               <form class={styles.form} onSubmit={handleSubmit}>
                 <Show when={pane() === 'register'}>
-                  <label class={styles.field}>
+                  <label
+                    class={styles.field}
+                    data-filled={filled(displayName())}
+                  >
                     <input
                       class={styles.input}
                       type="text"
@@ -931,7 +959,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                       autocomplete="nickname"
                       maxLength={40}
                       value={displayName()}
-                      onInput={(e) => setDisplayName(e.currentTarget.value)}
+                      {...readsValueInto(setDisplayName)}
                       data-testid="auth-display-name"
                     />
                     <span class={styles.floatLabel}>
@@ -941,7 +969,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   </label>
                 </Show>
 
-                <label class={styles.field}>
+                <label class={styles.field} data-filled={filled(email())}>
                   <input
                     class={styles.input}
                     type="email"
@@ -954,7 +982,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     autocomplete="username webauthn"
                     required
                     value={email()}
-                    onInput={(e) => setEmail(e.currentTarget.value)}
+                    {...readsValueInto(setEmail)}
                     aria-invalid={error() !== '' ? 'true' : undefined}
                     aria-describedby={error() !== '' ? 'auth-error' : undefined}
                     data-testid="auth-email"
@@ -967,7 +995,10 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                       inside, "Show password" became part of the field's
                       name. */}
                   <div class={styles.passwordField}>
-                    <label class={styles.field}>
+                    <label
+                      class={styles.field}
+                      data-filled={filled(password())}
+                    >
                       <input
                         ref={passwordRef}
                         class={styles.input}
@@ -985,7 +1016,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                         }
                         required
                         value={password()}
-                        onInput={(e) => setPassword(e.currentTarget.value)}
+                        {...readsValueInto(setPassword)}
                         aria-invalid={
                           pwdInvalid() || error() !== '' ? 'true' : undefined
                         }

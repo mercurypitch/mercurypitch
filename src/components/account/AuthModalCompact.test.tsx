@@ -9,7 +9,7 @@
 // the product-updates box is one unticked sentence. The layout itself is
 // measured in src/e2e/auth-sheet.spec.ts.
 
-import { cleanup, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const passkeyMocks = vi.hoisted(() => ({
@@ -93,6 +93,42 @@ describe('the fields', () => {
     expect(screen.getByTestId('auth-password-toggle').closest('label')).toBe(
       null,
     )
+  })
+})
+
+describe('a value written without an input event', () => {
+  // Proton Pass and the browser's own autofill can set a field's value
+  // without an `input` event. The label has to float off what the box holds,
+  // or it drops back over the filled text once focus moves to the password
+  // manager's menu (owner, 2026-10-11).
+  for (const id of ['auth-display-name', 'auth-email', 'auth-password']) {
+    it(`floats the ${id} label once the field loses focus`, async () => {
+      // Arrange
+      render(() => <AuthModal />)
+      openAuthModal('register')
+      const input = (await screen.findByTestId(id)) as HTMLInputElement
+      input.focus()
+
+      // Act
+      input.value = 'singer@example.com'
+      fireEvent.blur(input)
+
+      // Assert
+      expect(labelOf(input)).toHaveAttribute('data-filled', 'true')
+    })
+  }
+
+  it('drops the label again once the value is cleared the same way', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('login')
+    const input = (await screen.findByTestId('auth-email')) as HTMLInputElement
+    input.value = 'singer@example.com'
+    fireEvent.change(input)
+
+    input.value = ''
+    fireEvent.blur(input)
+
+    expect(labelOf(input)).not.toHaveAttribute('data-filled')
   })
 })
 

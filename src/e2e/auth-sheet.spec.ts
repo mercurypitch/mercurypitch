@@ -202,7 +202,7 @@ test.describe('the compact sheet on a phone', () => {
     expect((await labelInset(email)).top).toBeGreaterThan(0)
     await expect(email.locator('xpath=following-sibling::span[1]')).toHaveCSS(
       'font-size',
-      '11px',
+      '13px',
     )
   })
 
@@ -290,6 +290,110 @@ test.describe('a 320x568 phone', () => {
       ])
       expect(form).toBeGreaterThanOrEqual(300)
       expect(overflowX).toBeLessThanOrEqual(0)
+    })
+  }
+})
+
+interface Band {
+  top: number
+  bottom: number
+}
+
+/**
+ * Where a field's label words and its typed text sit, top to bottom, as em
+ * boxes measured from the top of the input. The text is centered in the
+ * input's content box; the words in their own line box. Read in one frame.
+ */
+function wordsAndText(
+  field: Locator,
+): Promise<{ words: Band; text: Band; inputTop: number; height: number }> {
+  return field.evaluate((el) => {
+    const input = el as HTMLInputElement
+    const words = input.closest('label')?.querySelector(':scope > span')
+    if (words == null) throw new Error('field has no words')
+    const box = input.getBoundingClientRect()
+    const cs = getComputedStyle(input)
+    const contentTop =
+      box.top + parseFloat(cs.borderTopWidth) + parseFloat(cs.paddingTop)
+    const contentBottom =
+      box.bottom -
+      parseFloat(cs.borderBottomWidth) -
+      parseFloat(cs.paddingBottom)
+    const textSize = parseFloat(cs.fontSize)
+    const textTop = (contentTop + contentBottom - textSize) / 2 - box.top
+    const line = words.getBoundingClientRect()
+    const wordsSize = parseFloat(getComputedStyle(words).fontSize)
+    const wordsTop = (line.top + line.bottom - wordsSize) / 2 - box.top
+    return {
+      words: { top: wordsTop, bottom: wordsTop + wordsSize },
+      text: { top: textTop, bottom: textTop + textSize },
+      inputTop: box.top,
+      height: box.height,
+    }
+  })
+}
+
+/** Pixels the two bands share. Zero or less is clear of each other. */
+function overlap(a: Band, b: Band): number {
+  return Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)
+}
+
+// Owner test on a desktop, 2026-10-11: as Proton Pass opened its menu beside
+// the email field, the word "Email" dropped down over the address already in
+// it. Proton Pass puts its icon element straight after the input (it steps
+// past the next sibling only when that is a <label>) and pins the input's
+// padding-right. The sheet's `.input + .floatLabel` rules stopped matching
+// once anything sat between the two, focused or not. This does what Proton
+// Pass does, with a value written the way an extension can write it, without
+// an input event, and then moves on to the next field.
+test.describe('a password manager filling the sheet on a desktop', () => {
+  test.use({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 })
+
+  for (const [id, next] of [
+    ['auth-email', 'auth-password'],
+    ['auth-password', 'auth-email'],
+  ] as const) {
+    test(`keeps the ${id} label off the filled text once its icon arrives`, async ({
+      page,
+    }) => {
+      const dialog = await openSheet(page, 'login')
+      // Settled first: the sheet scales up as it opens.
+      await dialog.evaluate((el) =>
+        Promise.all(el.getAnimations().map((a) => a.finished)),
+      )
+      const field = page.getByTestId(id)
+      await field.focus()
+      await field.evaluate((el) => {
+        ;(el as HTMLInputElement).value = 'singer@example.com'
+      })
+      const before = await wordsAndText(field)
+
+      await field.evaluate((el) => {
+        const icon = document.createElement('protonpass-control-e2e')
+        icon.style.setProperty('position', 'absolute', 'important')
+        icon.style.setProperty('top', '12px')
+        icon.style.setProperty('right', '10px')
+        icon.style.setProperty('width', '24px')
+        icon.style.setProperty('height', '24px')
+        el.after(icon)
+        el.style.setProperty('padding-right', '44px', 'important')
+      })
+      await page.getByTestId(next).focus()
+      await expect(field).not.toBeFocused()
+
+      // The label eases between its two places: measure where it comes to
+      // rest, not where it set off from.
+      await field.evaluate(async (el) => {
+        await new Promise((done) => requestAnimationFrame(done))
+        const words = el.closest('label')?.querySelector(':scope > span')
+        await Promise.all(words?.getAnimations().map((a) => a.finished) ?? [])
+      })
+      const after = await wordsAndText(field)
+      expect(overlap(after.words, after.text)).toBeLessThanOrEqual(0)
+      expect(after.words.top).toBeGreaterThan(0)
+      // The field holds still: nothing the icon brings moves or grows it.
+      expect(after.inputTop).toBe(before.inputTop)
+      expect(after.height).toBe(before.height)
     })
   }
 })
