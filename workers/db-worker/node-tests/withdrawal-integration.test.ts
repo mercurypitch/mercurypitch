@@ -1772,6 +1772,36 @@ describe('a pack with no consent on record', () => {
       "We'll refund what you paid, less any earlier refund, to the card or account you paid with within 14 days.",
     )
   })
+
+  it('is refunded by hand when its PaymentIntent received nothing', async () => {
+    const sam = await buyer('sam@example.test')
+    // From before the consent record, and Stripe reports nothing received.
+    // That leaves no price to work a refund out from. It is not a price of
+    // nothing.
+    insertRow(
+      sam.userId,
+      140,
+      'purchase',
+      'pack-plus',
+      'evt:evt_nothing',
+      'pi_nothing',
+    )
+    paymentIntents.set('pi_nothing', { amount_received: 0, currency: 'eur' })
+    const purchase = purchaseOf('evt_nothing')
+
+    const res = await withdraw(sam, purchase)
+
+    expect(res.status).toBe(200)
+    expect(statementOf(purchase)).toMatchObject({
+      refundStatus: 'manual',
+      refundError: 'The price paid is not on record',
+      priceSource: 'none',
+    })
+    expect(refundRequests()).toEqual([])
+    expect(subjects(alerts())).toEqual([
+      '[MercuryPitch billing] Withdrawal: refund by hand, the price paid is not on record',
+    ])
+  })
 })
 
 describe('a pack that cost nothing', () => {
