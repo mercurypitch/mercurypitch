@@ -11,9 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-12
 
-301 commits since `v0.9.16` (24 on `main`'s first-parent line, every one a PR
+335 commits since `v0.9.16` (30 on `main`'s first-parent line, every one a PR
 merge) before this release PR, #974: PRs #957 to #962, #964 to #973, #975 to
-#979 and #981 to #983.
+#979 and #981 to #989.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
 compliance work that has to ship with it: the 14-day withdrawal for credit
@@ -501,13 +501,141 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
   their em dashes. Fake-mic runs give the same funnel sequence as `main`
   on every door.
 
+### Web: the sign-in sheet's floating labels (#984)
+
+- **A label over filled text.** Every floated rule reached the label as the
+  input's next sibling (`.input:focus + .floatLabel`). Proton Pass inserts
+  its icon right after the input, so no rule matched and the label went back
+  to rest over the text, 7 px of overlap. The floated state now comes from
+  the field (`.field:focus-within`, `.field[data-filled='true']`) or from a
+  later sibling (`~`, for `:not(:placeholder-shown)`, `:autofill` and
+  `:-webkit-autofill`). `data-filled` comes from each field's signal, read
+  back from the box on input, change, focus, blur and an autofill
+  `animationstart`, so a value written without an input event floats the
+  label and is the value the form submits. It covers display name, email,
+  password and both code fields.
+- **"Email" read as "Emall".** At 11 px, weight 600 and 0.3 px tracking, the
+  dot of the "i" all but touched its stem at DPR 1. The floated label is now
+  13 px at weight 500 with no tracking, at `top: 6px`, and the gap is clean
+  at DPR 1, 1.25 and 1.5. Contrast is 8.89:1 on dark and 6.45:1 on light.
+  The sheet keeps its height, and fields stay 16 px under `pointer: coarse`.
+- **Where.** `AuthModal` only: the web's sheet and the Voice Mirror's
+  account dialog. The native app signs in through the shell's `SignInSheet`.
+  A real Proton Pass was not run; `auth-sheet.spec.ts` copies its injection.
+
+### Web: the Keep screen's motion chips (#986)
+
+- **Chips.** Each Keep row leads with a chip (`KeepChips.tsx`) in the twin
+  stat card's look instead of a static icon: dark fill, the row's tone for
+  outline and tint, the ridge in gold.
+  - Voiceprint (teal): the singer's glides from `voiceStrip()` through
+    `ridgeShape`, then a check at the ridge's end. Without glides it draws
+    `idealStrip(range)`, and without a range a plain low glide.
+  - Devices (blue): the ridge lights on a phone, a point of light arcs to
+    the laptop, and the laptop's screen lights with the same ridge.
+  - Leaderboard (violet, only without the gift): three podium bars rise and
+    a gold star lands on the tallest.
+- **Motion.** Each chip plays once on mount, from 0.2, 0.65 and 1.2 s, all
+  settled by about 2.4 s. No loops and no library: only `stroke-dashoffset`,
+  `transform` and `opacity` move. Every element rests in its settled frame,
+  so `prefers-reduced-motion` shows the end state from the first frame. The
+  chips are `aria-hidden` and the row text is unchanged.
+- **Size.** 48x34 (56x40 from 900 px with the gift), and 34x30 at 640 px and
+  down, where chip and gap take the 42 px the icon took. Rows sit 8 px apart
+  (6 with the gift). From 320 to 1440 px wide no row wraps differently and
+  no beat starts to scroll; at 320 to 344 px "Create my free account" moves
+  2 to 8 px up. Drum Night's first paint stays 519,863 B.
+
+### Web: legal links with their slash, and the intent pages on home (#987)
+
+- **Slashes.** `TERMS_URL`, `PRIVACY_URL` and `CONTENT_POLICY_URL` (now
+  `/terms/#your-content`) in `src/lib/legal-links.ts`, and the raw-HTML legal
+  navs in `index.html`, `404.html` and `delete-account.html`, end in a
+  slash. The landing answers the bare `/terms` and `/privacy` with a 307.
+- **Home.** The prelude nav in `index.html` links Pitch Training, Voice Type
+  Test, Vocal Remover and Singer Match after Jam Rooms. The prelude is what
+  crawlers and no-JS readers get; the app hides it once it mounts.
+- **Tests.** `launch-entry-seo.test.ts` reads its page lists off
+  `ENTRY_PAGES`, and `entry-page-model.test.ts` checks that `index.html` and
+  `404.html` link every entry by its nav label. That puts the intent pages
+  under the 65-character title check: /pitch-training (76), /voice-type-test
+  (69) and /vocal-remover (77) sit in `LONG_TITLES` until their new titles
+  land (SEO audit P1 item 4).
+- **Found, not changed.** `about.mercurypitch.com/imprint/` answers 404 until
+  the landing with disjoint-colliders #100 deploys (step 5). With JavaScript
+  off the home page cannot scroll, so part of the prelude's nav sits below
+  the fold on a 390x664 phone.
+
+### Copy: "center", the American way (#989)
+
+- **Visible copy.** "centre" and "centred" became "center" and "centered" in
+  Drum Night (the live-take headline "Find the center.", take history, the
+  timing label, "Centered attacks" and the coach's observation), the Guitar
+  Night tuner's four lines with their screen-reader text, the Pitch Hold
+  intro, the vibrato help, a Path tip, the guided check (the Pitch Center
+  heading, canvas, aria-labels, results and notes), Voice History and its
+  traits ("Spectral center"), the take card's "Centered" stat, the Drum Night
+  entry page (share titles, h1 and lede) and Glassworks (replay coaching,
+  "Move to center" and the steering slider's value text).
+- **Stored values keep their spelling:** the `'centred'` timing class,
+  `centredCount`, `centredWindowMs`, `'tom-centre'`,
+  `'pitch-hold.guided-pitch-centre'`, and the guided take title
+  `'Pitch Centre'` that `parseGuidedVoiceTakeContext` matches. `shownTakeTitle`
+  (`guided-voice-take.ts`) shows the two stored guided titles as "Pitch
+  Center" in thread titles, the playback rail and the Atlas traits. A
+  freeform take recorded into the thread of unanalyzed takes now saves the
+  title it is shown; nothing matches on that field.
+- Other British spellings remain ("analysed", "analyse", "theatre").
+
+### Premium exercises, native test builds only: Long note's levels and Echo's engine (#985, #988)
+
+Neither reaches the web. `PREMIUM_EXERCISES` is `KARAOKE_IMPORT`, which is
+true only in a native test build (`src/lib/native-build.ts`), and the web's
+Long note is the older `src/features/exercises/long-note`.
+
+- **Long note (#985).**
+  - Going to the background drops the take, as Back already did: no run, no
+    best, no history and no practice minutes. The mic closes and the intro
+    says "The note stopped when you left. Tap the mic to go again."
+  - Steadiness is 100 minus 2 x the standard deviation in cents, as the web
+    Long note scores it. Vibrato and shakes cost steadiness, octave slips are
+    still dropped, and one measure serves the live check and the result.
+  - The level is the Accuracy Tier from Settings
+    (`pitchperfect_accuracy_tier`, default Singer), read through
+    `src/stores/exercise-level.ts`. A pill at the top left, shown only
+    between takes, opens the three levels and calls `applyAccuracyTier`, so
+    the mic sensitivity preset, the pitch bands and the score mode change for
+    every exercise, as a pick in Settings does. A take keeps the level it
+    started at, and the demo plays at Singer.
+  - Learning is ±40 c and brims at a steadiness of 35, Singer ±30 c and 70,
+    Professional ±20 c and 88. The goal stays 12 s, and the top is judged on
+    everything sung since the goal.
+  - Merc calls a voice steady only at 80 or more. A take past the goal
+    without the brim says to hold longer or hold steadier. The help text says
+    a vibrato counts as a wobble and that the Accuracy Tier sets the brim.
+  - `assert-bundle.mjs` gains the marker `long-note-level`, so the level
+    control must fold out of the store build with the room.
+- **Echo (#988)**, the logic only, in `src/lib/sequence/`. `sequence-engine.ts`
+  follows a phrase sung back note by note: a note lands at the hold engine's
+  lock, misses at its deadline (4, 3 or 2.5 s by level) naming the closest
+  steady note, or is skipped when the voice lands the next one first.
+  `ECHO_LEVELS` is keyed by the accuracy tier ids. `phrase-bank.ts`,
+  `phrase-fit.ts` (`planEchoRun`), `sequence-metrics.ts` (accuracy 100 minus
+  1.5 x the mean absolute cents), `phrase-voice.ts` and `steady-note.ts`
+  complete it, with 123 tests in nine files. `hold-target.ts` gains
+  `latestVoiceprintRange`, split out of `pickHoldTarget` with no change in
+  behavior. The room comes in a later PR.
+
 ### native-mercurypitch
 
 Found by building the native bundle at this release's head, as a test build
 (`KARAOKE_IMPORT` on) and as a store build, and matching each PR's changed
 lines against the source lines Rollup kept. `mp-v0.8.18` (82bb04d32, the
-merge of #973) is the first tag whose bundle carries the code changes below,
-all but #974's.
+merge of #973) is the first tag whose bundle carries the changes marked with
+it, and `mp-v0.8.19` (85b78e48b, the merge of #985, TestFlight build 706) the
+ones marked with that. Nothing merged after #985 has a native tag yet, so
+the changes from #987, #988 and #989 arrive from the next native tag, as
+#974's does.
 
 **In the native code**
 
@@ -521,6 +649,9 @@ all but #974's.
   exercises, resolves the lantern plates to an empty module
   (`PREMIUM_IMAGES`). `assert-bundle.mjs` (OFFER, STAGE 2) holds both
   builds to it; both pass at this head.
+- **Long note's level control (#985, `mp-v0.8.19`).** `assert-bundle.mjs`
+  STAGE 2 gains the marker `long-note-level`: the test build carries the
+  control, and the store build must not. Both builds pass at this head.
 - #962 changed only comments under `apps/mercurypitch`.
 
 **Shared code the native app runs**
@@ -533,6 +664,37 @@ all but #974's.
   and signals that stay false. Look at the row, the picker, a full run,
   Back and Done. L3, the one free run before the paywall, lands with the V1
   flip.
+- **Long note's levels (#985, `mp-v0.8.19`), test builds only.** The level
+  pill and sheet (`LongNoteLevel.tsx`), `exercise-level.ts`, the hold
+  engine's steadiness and reading, the lantern's ease, Merc's lines, and the
+  take dropped on leaving (`useLongNoteController.ts`). The store build keeps
+  only the new help text, which no screen there shows. Look at the pill
+  between takes, a take at each level (a straight tone brims at all three, a
+  wide vibrato only at Learning), leaving the app mid-hold, and Settings'
+  Accuracy Tier and mic sensitivity after a pick in the room.
+- **Echo's groundwork (#988, from the next native tag), test builds only.**
+  Only `hold-target.ts` reaches the bundle: `latestVoiceprintRange`, split
+  out of `pickHoldTarget` with no change in behavior. `src/lib/sequence` is
+  in neither build, so there is nothing to look at.
+- **"Center" (#989, from the next native tag), every build.** Both builds
+  keep the changed strings of the guided voice check (the Pitch Center
+  heading, results and notes), Voice History (its guidance, "Spectral
+  center", and `shownTakeTitle` in thread titles, the playback rail and the
+  Atlas traits), the take card's "Centered" stat (`performance-take.ts`), the
+  Pitch Hold intro, the vibrato help and a Path tip. The Drum Night, Guitar
+  Night tuner and Glassworks files #989 changed are in neither build. Look at
+  a guided take kept on an earlier build: Voice History should title it
+  "Pitch Center".
+- **Legal links (#987, from the next native tag), every build.**
+  `TERMS_URL`, `PRIVACY_URL` and `CONTENT_POLICY_URL` end in a slash. The
+  shell's About screen (`AboutScreen.tsx`) and `SignInSheet` link the first
+  two, and so does Karaoke's import box in a test build. Look at Terms and
+  Privacy under Settings › About MercuryPitch and in the sign-in sheet: each
+  should open its page with no redirect.
+- **Not in the native app (#984, #986).** None of the lines #984 changed in
+  `AuthModal.tsx` survive in either build, and its floating-label classes are
+  not in the CSS: the app signs in through `SignInSheet`. The onboarding,
+  Keep and its chips included, is in neither build.
 - **The sign-in sheet's security check (#979, `mp-v0.8.18`).**
   `SignInSheet` already passed `appearance="interaction-only"`. The shared
   `Turnstile` now takes no height or margin until Cloudflare asks for a
@@ -577,13 +739,25 @@ native build)
   disputed share of that payment's credits.
 - **Retention (#969).** `mirrorEvents` rows, the `app_open` beacons
   included, are deleted after 13 months.
+- **The finish-five reward counts web separations only (#961).**
+  `creditsUsed` (`offer-rules.ts`) adds up `uvr-job` rows, less their
+  `uvr-refund`, and `readFinisherOffer` (`launch-finisher.ts`) reads only
+  those two reasons. A separation in the app writes `uvr-job-app`
+  (`app-songs.ts`) and spends the subscription's songs, never credits, so it
+  never counts toward the five.
 
 ### native-besidecue
 
-Nothing in this release reaches Beside Cue. Its games-on build at this head
-takes only `src/components/icons.tsx` from the changed files, and none of the
-lines #973 changed there survive; no PR touched `apps/beside-cue` or
-`packages/`.
+Only #989 reaches Beside Cue, and only a games-on build
+(`VITE_BESIDE_CUE_GAMES=1`). At this head that build keeps every line #989
+changed under `packages/glass-game`: four replay coaching lines
+(`replay-profiles.ts`), the steering slider's "Centered" value text
+(`RunnerSteeringControls.tsx`) and the runner's "Move to center" cue
+(`runner-hud.ts`). They arrive from the next Beside Cue tag; look at
+Glassworks' replay coaching and the runner's cues. The store build (games
+off) keeps none of them. No other file changed since `v0.9.16`, #973's
+`src/components/icons.tsx` included, has a line in either bundle, and no PR
+touched `apps/beside-cue`.
 
 ### Tests: the Jam lyric-row spec (#982)
 
