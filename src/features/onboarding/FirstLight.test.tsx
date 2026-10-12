@@ -70,9 +70,11 @@ vi.mock('@/stores/launch-gift-store', () => ({
 }))
 
 import { currentBeat, flowOpen, openBeat, recordFirstNote, recordVoiceprint, resetOnboarding, savedVoiceprints, track, voiceprint, } from '@/stores/onboarding-store'
+import { VOICE_RIDGE } from './beats/KeepChips'
 import { FirstLight } from './FirstLight'
 import type { Beat } from './flow'
 import { plateSrc } from './plates'
+import { ridgeShape } from './voice-strip'
 
 const VOICEPRINT: MirrorResult = {
   range: {
@@ -461,5 +463,27 @@ describe('a tap on a Map door, counted per door', () => {
     // Assert
     expect(tracked().slice(-2)).toEqual(['onboarding_map_room', event])
     expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
+  })
+})
+
+// Owner decision, 12 Oct 2026: Keep's rows lead with motion chips, and the
+// first one draws the singer's own glides, the line the twin's card drew.
+describe("Keep's chips", () => {
+  it("draw the glides the voiceprint recorded, not the range's ideal", async () => {
+    // Arrange
+    const strip = [41, 44.5, 49, 53, 57.2, 61, 64.8, 66.5, 63, 58.4, 52, 45]
+    recordVoiceprint(VOICEPRINT, strip)
+    const range = VOICEPRINT.range
+    if (range === null) throw new Error('the fixture has a range')
+
+    // Act
+    const keep = await at('keep')
+
+    // Assert
+    expect(
+      keep
+        .querySelector('[data-chip="voiceprint"] [data-ridge-line]')
+        ?.getAttribute('d'),
+    ).toBe(ridgeShape(strip, range, VOICE_RIDGE.box).line)
   })
 })

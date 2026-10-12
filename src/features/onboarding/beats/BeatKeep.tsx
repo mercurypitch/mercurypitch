@@ -20,21 +20,23 @@
 // the ask, as the right-hand column on a desktop and under the rows on a
 // phone; without one, a third row and a plain fact take its place.
 
-import type { Component, JSX } from 'solid-js'
+import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { DeviceSync, Trophy, WaveformBars } from '@/components/icons'
 import type { FeaturedPromo } from '@/db/services/billing-service'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { KEEP_GIFT_CAPTION } from '../copy'
 import keep from '../keep.module.css'
 import styles from '../onboarding.module.css'
+import type { KeepChipKind, KeepChipTone } from './KeepChips'
+import { KeepChip } from './KeepChips'
 import { KeepGiftCard } from './KeepGiftCard'
 import { KeepRange } from './KeepRange'
 
 interface KeepRow {
-  icon: () => JSX.Element
-  tone: 'cyan' | 'blue' | 'violet'
+  /** The motion chip that leads the row (KeepChips.tsx). */
+  chip: KeepChipKind
+  tone: KeepChipTone
   text: string
 }
 
@@ -43,19 +45,19 @@ interface KeepRow {
  *  is none: it is the one thing here nobody can have without an account. */
 const ROWS: KeepRow[] = [
   {
-    icon: () => <WaveformBars />,
-    tone: 'cyan',
+    chip: 'voiceprint',
+    tone: 'teal',
     text: 'Your voiceprint and range, saved',
   },
   {
-    icon: () => <DeviceSync />,
+    chip: 'devices',
     tone: 'blue',
     text: 'Your progress on every device',
   },
 ]
 
 const LEADERBOARD_ROW: KeepRow = {
-  icon: () => <Trophy />,
+  chip: 'podium',
   tone: 'violet',
   text: 'Your place on the leaderboard',
 }
@@ -65,6 +67,9 @@ export interface BeatKeepProps {
   twin: string | null
   /** The voiceprint just measured: its range is the card at the top. */
   voiceprint: MirrorResult | null
+  /** The singer's glides as one line (voice-strip.ts), drawn as the gold
+   *  ridge in the rows' chips. Null draws the range's own rise and fall. */
+  strip?: readonly number[] | null
   /** The launch gift on offer, or null when there is none. */
   gift: FeaturedPromo | null
   onCreateAccount: () => void
@@ -131,13 +136,12 @@ export const BeatKeep: Component<BeatKeepProps> = (props) => {
             <For each={rows()}>
               {(row) => (
                 <li class={keep.keepRow}>
-                  <span
-                    class={keep.keepRowIcon}
-                    data-tone={row.tone}
-                    aria-hidden="true"
-                  >
-                    {row.icon()}
-                  </span>
+                  <KeepChip
+                    kind={row.chip}
+                    tone={row.tone}
+                    strip={props.strip ?? null}
+                    range={props.voiceprint?.range ?? null}
+                  />
                   {row.text}
                 </li>
               )}
