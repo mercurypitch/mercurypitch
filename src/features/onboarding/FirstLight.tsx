@@ -609,6 +609,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             <BeatKeep
               twin={twin()}
               voiceprint={voiceprint()}
+              strip={voiceStrip()}
               gift={gift()}
               onCreateAccount={handleCreateAccount}
             />

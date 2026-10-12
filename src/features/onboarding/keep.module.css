@@ -56,41 +56,32 @@
 /* ── The rows ────────────────────────────────────────────────── */
 
 .keepBeat .keepRows {
+  /* Each row leads with a motion chip (beats/KeepChips.tsx), sized here.
+     A chip is 4 px taller than the 30 px icon it replaced, so the rows sit
+     8 px apart rather than 14: three rows keep the height they had, and
+     nothing below them moves toward the fold. */
+  --chip-w: 48px;
+  --chip-h: 34px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   margin: 6px 0 0;
   padding: 0;
   list-style: none;
 }
 
+/* Two rows with the gift: 6 px holds them at their old height too. */
+.keepWithGift .keepRows {
+  gap: 6px;
+}
+
 .keepBeat .keepRow {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   font-size: 1.04rem;
   line-height: 1.35;
   color: var(--ob-ink);
-}
-
-/* Bare line icons, no tinted square behind them. */
-.keepBeat .keepRowIcon {
-  display: inline-flex;
-  flex: none;
-  color: var(--ob-teal);
-}
-
-.keepBeat .keepRowIcon svg {
-  width: 30px;
-  height: 30px;
-}
-
-.keepBeat .keepRowIcon[data-tone='blue'] {
-  color: var(--ob-blue);
-}
-
-.keepBeat .keepRowIcon[data-tone='violet'] {
-  color: var(--ob-violet);
 }
 
 /* ── The voiceprint card ─────────────────────────────────────── */
@@ -354,9 +345,9 @@
     font-size: 1.15rem;
   }
 
-  .keepWithGift .keepRowIcon svg {
-    width: 36px;
-    height: 36px;
+  .keepWithGift .keepRows {
+    --chip-w: 56px;
+    --chip-h: 40px;
   }
 
   .keepWithGift .rangeCard {
@@ -488,9 +479,18 @@
     font-size: 1.05rem;
   }
 
-  .keepBeat .keepRowIcon svg {
-    width: 26px;
-    height: 26px;
+  /* Chip and gap take the 42 px the 26 px icon and its 16 px gap took, so
+     the words keep exactly the room they had. A 42 px chip left "Your
+     voiceprint and range, saved" no pixel to spare at 360 to 390 px, and
+     from 324 to 356 px it wrapped rows that had fitted on one line. 4 px
+     taller than the icon, as everywhere. */
+  .keepBeat .keepRows {
+    --chip-w: 34px;
+    --chip-h: 30px;
+  }
+
+  .keepBeat .keepRow {
+    gap: 8px;
   }
 
   .keepBeat .giftCoin {
