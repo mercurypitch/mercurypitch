@@ -21,8 +21,9 @@
 // room the note has and how steady the top asks the voice to be.
 //
 // The head, the mic, the result's buttons and the level control are the
-// room kit's (src/components/room-kit/). This room brings its world (the
-// lantern, Merc in it, the line), its words and its test ids.
+// room kit's (src/components/room-kit/); the demo's layer, cards and take
+// pill are the demo kit's (src/components/demo-kit/). This room brings its
+// world (the lantern, Merc in it, the line), its words and its test ids.
 //
 // Merc's canvas sits BETWEEN the lantern's two layers (Lantern.tsx), so in
 // the glass he is behind its highlights and frame, and his feet are in the
@@ -33,12 +34,14 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { CheckSmall, HelpCircle, Minus, Plus, Volume2, X, } from '@/components/icons'
+import { DemoLayer } from '@/components/demo-kit/DemoLayer'
+import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
+import { HelpCircle, Minus, Plus, Volume2 } from '@/components/icons'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, RoomHeader, RoomTimer, } from '@/components/room-kit/RoomHeader'
 import { DEMO_COPY } from './demo/demo-cues'
-import { LongNoteDemoLayer } from './demo/LongNoteDemoLayer'
+import { aimLongNoteTip } from './demo/tip-targets'
 import { useLongNoteDemo } from './demo/useLongNoteDemo'
 import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
@@ -467,20 +470,11 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                 button stays under the finger that pressed it. The demo's
                 take pill stands in it while the demo sings. */}
             <Show when={room.script.active()}>
-              <div class={styles.takeSlot}>
-                <Show when={demo.take()}>
-                  {(take) => (
-                    <span
-                      class={styles.take}
-                      data-take={take()}
-                      data-testid="long-note-demo-take"
-                    >
-                      {take() === 'off' ? <X /> : <CheckSmall size={16} />}
-                      {take() === 'off' ? DEMO_COPY.off : DEMO_COPY.on}
-                    </span>
-                  )}
-                </Show>
-              </div>
+              <DemoTakePill
+                take={demo.take()}
+                copy={DEMO_COPY}
+                testId="long-note-demo-take"
+              />
             </Show>
             <div
               class={styles.picker}
@@ -554,7 +548,14 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
       <div class={styles.said} aria-live="polite" data-testid="long-note-said">
         {said()}
       </div>
-      <LongNoteDemoLayer demo={demo} room={room} />
+      <DemoLayer
+        demo={demo}
+        aim={(tip, layer) =>
+          aimLongNoteTip(tip.target, layer, room.lanternLevel())
+        }
+        copy={DEMO_COPY}
+        testId="long-note-demo"
+      />
     </div>
   )
 }

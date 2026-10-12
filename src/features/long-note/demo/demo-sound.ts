@@ -1,87 +1,20 @@
 // ============================================================
-// The Long note demo's sound — the note, then Merc singing it
+// The Long note demo's sound: the note, then Merc singing it
 // ============================================================
 //
-// On the room's own audio clock (the one the Hear button and the mic use),
-// through one bus of the demo's own, so Skip, the way out and the app going
-// to the background can close all of it at once, pop-free. The note plays
-// exactly as the Hear button plays it (reference-tone.ts).
-//
-// A take's clock starts `lead` seconds after it is sung: the voice is
-// scheduled that far ahead, less the speaker's own latency, so it is heard
-// when the screen shows it.
+// The demo kit's sound (demo-kit/demo-sound.ts) with the vibrato Long note's
+// frames carry, so the voice heard is the voice the engine was fed.
 
-import type { DemoSound } from '@/lib/demo-audio'
-import { playVoiceContour } from '@/lib/demo-audio'
-import { midiToFrequency } from '@/lib/frequency-to-note'
-import { playReferenceTone } from '@/lib/reference-tone'
+import type { DemoSoundtrack } from '@/components/demo-kit/demo-sound'
+import { createDemoSoundtrack } from '@/components/demo-kit/demo-sound'
 import type { DemoTake } from './demo-script'
 import { DEMO_VIBRATO } from './demo-script'
 
-/** The house close (src/lib/preview-player.ts), seconds. */
-const RELEASE = 0.18
-/** The Hear button's note length (useLongNoteCapture.playTone). */
-const TONE_SECONDS = 1.1
-
-export interface LongNoteDemoSound {
-  /** Seconds from `sing` to the take's clock reading zero. */
-  readonly lead: number
-  /** The note, as the Hear button plays it. */
-  tone: (midi: number) => void
-  /** One of Merc's takes on the note. */
-  sing: (take: DemoTake, midi: number) => void
-  /** Everything off, pop-free; safe to call more than once. */
-  stop: () => void
-}
-
-/** What the speakers add, seconds, where the browser says. */
-function outputLatency(ctx: AudioContext): number {
-  const reported = Number.isFinite(ctx.outputLatency)
-    ? ctx.outputLatency
-    : ctx.baseLatency
-  return Number.isFinite(reported) && reported > 0 ? reported : 0
-}
+export type LongNoteDemoSound = DemoSoundtrack<DemoTake>
 
 export function createDemoSound(
   ctx: AudioContext,
   minLead: number,
 ): LongNoteDemoSound {
-  const bus = ctx.createGain()
-  bus.connect(ctx.destination)
-  const voices: DemoSound[] = []
-  const latency = outputLatency(ctx)
-  const lead = Math.max(minLead, latency + 0.03)
-  let stopped = false
-  return {
-    lead,
-    tone: (midi) => {
-      if (!stopped) void playReferenceTone(ctx, midi, TONE_SECONDS, bus)
-    },
-    sing: (take, midi) => {
-      if (stopped) return
-      voices.push(
-        playVoiceContour(ctx, take.voice, {
-          hz: midiToFrequency(midi),
-          startAt: ctx.currentTime + lead - latency,
-          destination: bus,
-          vibrato: DEMO_VIBRATO,
-        }),
-      )
-    },
-    stop: () => {
-      if (stopped) return
-      stopped = true
-      for (const voice of voices) voice.stop()
-      try {
-        const t = ctx.currentTime
-        bus.gain.cancelScheduledValues(t)
-        bus.gain.setValueAtTime(bus.gain.value, t)
-        bus.gain.setTargetAtTime(0, t, RELEASE / 5)
-      } catch {
-        // The context closed under us: nothing is sounding.
-      }
-      // Nothing of the demo stays in the graph once its tail has died.
-      setTimeout(() => bus.disconnect(), (RELEASE + 0.12) * 1000)
-    },
-  }
+  return createDemoSoundtrack(ctx, minLead, DEMO_VIBRATO)
 }

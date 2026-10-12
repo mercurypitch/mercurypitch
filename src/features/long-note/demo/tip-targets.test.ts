@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import type { Rect } from '@/components/demo-kit/tip-place'
+import { inflate, overlapArea, placeTip } from '@/components/demo-kit/tip-place'
 import { HOLD_FILL_MAX, LANTERN_VIEW_H, surfaceY } from '../lantern-geometry'
-import type { Rect } from './tip-place'
-import { inflate, overlapArea, placeTip } from './tip-place'
 import type { DemoScene } from './tip-targets'
 import { bailRect, tipTarget } from './tip-targets'
 

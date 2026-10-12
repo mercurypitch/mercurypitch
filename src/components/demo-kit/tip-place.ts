@@ -1,11 +1,11 @@
 // ============================================================
-// Where a demo tooltip goes — beside what it explains, covering nothing
+// Where a demo tooltip goes: beside what it explains, covering nothing
 // ============================================================
 //
 // Everything here is in px, measured off the screen at the moment a tooltip
-// shows (LongNoteDemoLayer.tsx): the element it explains, the room's
-// controls, the lantern. Nothing is derived from the room's layout
-// constants, so the tooltips follow the lantern wherever it is drawn.
+// shows (DemoLayer.tsx): the element it explains, the room's controls, the
+// room's picture (Long note's lantern). Nothing is derived from the room's
+// layout constants, so the tooltips follow the picture wherever it is drawn.
 //
 // A tooltip sits on one side of its anchor, with its arrow touching the
 // anchor. It may slide along that side while the arrow still reaches; of

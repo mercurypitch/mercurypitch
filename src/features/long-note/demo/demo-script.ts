@@ -25,6 +25,7 @@
 // each wall second; the voice keeps sounding at its own speed through
 // them, and so do Merc's hop and cheers.
 
+import type { DemoEvent as KitDemoEvent, DemoTakeId, DemoTakeShape, DemoVoicePoint, FastStretch, } from '@/components/demo-kit/demo-plan'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import type { HoldEventType, HoldPreset } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
@@ -32,47 +33,17 @@ import { seeded } from '@/lib/mirror/demo-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 
-export type DemoTakeId = 'off' | 'on'
+export type { DemoTakeId, DemoVoicePoint, FastStretch }
 
-/** One moment of the sung line, for the voice synth (wall clock). */
-export interface DemoVoicePoint {
-  /** Seconds since the take started. */
-  readonly t: number
-  /** Off the note, cents; vibrato comes on top (DEMO_VIBRATO). */
-  readonly cents: number
-  /** Loudness 0..1; 0 is silence. */
-  readonly level: number
-}
+export type DemoEvent = KitDemoEvent<HoldEventType>
 
-export interface DemoEvent {
-  readonly type: HoldEventType
-  /** Engine seconds. */
-  readonly at: number
-}
-
-/** A stretch of a take played at DEMO_FAST_RATE, engine seconds. */
-export interface FastStretch {
-  readonly from: number
-  readonly to: number
-}
-
-export interface DemoTake {
-  readonly id: DemoTakeId
+/**
+ * One of Merc's takes (the demo kit's shape, demo-plan.ts): take 2's
+ * fast-forwards play at DEMO_FAST_RATE, take 1 has none.
+ */
+export interface DemoTake extends DemoTakeShape<HoldEventType> {
   /** The rules it was sung under: DEMO_LEVEL's lantern. */
   readonly preset: HoldPreset
-  readonly frames: readonly PitchFrame[]
-  /** The engine's events for these frames, in order. */
-  readonly events: readonly DemoEvent[]
-  /** Take 2's fast-forwards, in order; none for take 1. */
-  readonly fast: readonly FastStretch[]
-  /** Engine seconds at a wall time since the take started. */
-  engineAt: (wall: number) => number
-  /** Wall seconds since the take started at an engine time. */
-  wallAt: (engine: number) => number
-  /** The voice to synthesise, wall clock, every VOICE_STEP seconds. */
-  readonly voice: readonly DemoVoicePoint[]
-  /** Wall seconds from the take's start to the end of its note. */
-  readonly length: number
 }
 
 /** The level Merc sings at, whatever the singer's own. */
