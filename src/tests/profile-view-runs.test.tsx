@@ -41,7 +41,7 @@ function base(): {
   runs: readonly ProgressRun[]
   streak: number
   sharedMelodies: number
-  sharedSetlists: number
+  sharedResults: number
 } {
   return {
     displayName: 'Maff',
@@ -50,7 +50,7 @@ function base(): {
     runs: [],
     streak: 0,
     sharedMelodies: 0,
-    sharedSetlists: 0,
+    sharedResults: 0,
   }
 }
 
@@ -161,13 +161,13 @@ describe('ProfileView run counts', () => {
 })
 
 describe('ProfileView published shelf', () => {
-  it('calls published work published, and setlists setlists', () => {
+  it('calls published work published, and results results', () => {
     render(() => (
-      <ProfileView {...base()} sharedMelodies={2} sharedSetlists={4} />
+      <ProfileView {...base()} sharedMelodies={2} sharedResults={4} />
     ))
 
     expect(screen.getByText('Published')).toBeInTheDocument()
-    expect(screen.getByText('setlists')).toBeInTheDocument()
+    expect(screen.getByText('results')).toBeInTheDocument()
     expect(screen.getByText('melodies')).toBeInTheDocument()
     // The old wording put "4 sessions" directly beneath a run count that
     // meant something else entirely.
@@ -177,11 +177,11 @@ describe('ProfileView published shelf', () => {
 
   it('uses the singular for one of each', () => {
     render(() => (
-      <ProfileView {...base()} sharedMelodies={1} sharedSetlists={1} />
+      <ProfileView {...base()} sharedMelodies={1} sharedResults={1} />
     ))
 
     expect(screen.getByText('melody')).toBeInTheDocument()
-    expect(screen.getByText('setlist')).toBeInTheDocument()
+    expect(screen.getByText('result')).toBeInTheDocument()
   })
 
   it('hides the shelf entirely when nothing has been published', () => {

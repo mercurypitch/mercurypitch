@@ -9,6 +9,7 @@ import type { SharedMelody, SharedSession, UserProfile } from '@/db/entities'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
 import { authVersion, findOwnProfile, getUserId, } from '@/db/services/user-service'
 import { midiToNote } from '@/lib/scale-data'
+import { parseSharedRunResult } from '@/lib/shared-run-result'
 import type { MelodyItem } from '@/types'
 
 export interface SharedMelodyView {
@@ -27,6 +28,7 @@ export interface SharedSessionView {
   id: string
   /** Who published it. See SharedMelodyView.userId. */
   userId: string
+  sourceSessionId?: string
   name: string
   items: unknown[]
   author: string
@@ -204,26 +206,53 @@ export async function loadSharedSessions(): Promise<SharedSessionView[]> {
       orderBy: 'createdAt',
       orderDir: 'desc',
     })
-    return items.map((s) => ({
-      id: s.id,
-      userId: s.userId,
-      name: s.sessionName,
-      items: [],
-      author: s.author ?? 'Unknown',
-      results: z.array(z.number()).parse(safeJsonParse(s.resultsJson)),
-      date: new Date(s.createdAt).getTime(),
-    }))
+    return items.flatMap((row) => {
+      const result = sharedSessionView(row)
+      return result ? [result] : []
+    })
   } catch {
     return []
   }
 }
 
-function safeJsonParse(raw: string): unknown[] {
+function sharedSessionView(row: SharedSession): SharedSessionView | null {
   try {
-    return JSON.parse(raw)
+    // Apply the same bounded summary contract to cloud and URL content.
+    if (row.resultsJson.length > 8192) return null
+    const summary = parseSharedRunResult({
+      name: row.sessionName,
+      author: row.author ?? 'Unknown',
+      results: JSON.parse(row.resultsJson),
+      date: new Date(row.createdAt).getTime(),
+    })
+    return summary
+      ? {
+          ...summary,
+          id: row.id,
+          userId: row.userId,
+          sourceSessionId: row.sessionId || undefined,
+          items: [],
+        }
+      : null
   } catch {
-    return []
+    return null
   }
+}
+
+/** Public links never reveal an owner's private row, even while signed in.
+ * Let transport failures reject so the result page can offer a retry. */
+export async function loadPublicSharedSession(
+  id: string,
+): Promise<SharedSessionView | null> {
+  if (id.length === 0 || id.length > 128) return null
+  const db = await getDb()
+  const rows = await db.getRepository<SharedSession>('sharedSessions').findAll({
+    where: { id, isPublic: true },
+    limit: 1,
+    throwOnError: true,
+  })
+  const row = rows[0]
+  return row?.id === id && row.isPublic === true ? sharedSessionView(row) : null
 }
 
 /**
@@ -283,38 +312,36 @@ export async function saveSharedSession(data: {
   items: unknown[]
   author: string
   results: number[]
+  sourceSessionId?: string
 }): Promise<SharedSessionView | null> {
   if (!canPostToCommunity()) return null
   const userId = getUserId()
   const version = authVersion()
   try {
+    const summary = parseSharedRunResult({ ...data, date: Date.now() })
+    if (
+      !summary ||
+      (data.sourceSessionId !== undefined &&
+        (data.sourceSessionId.length === 0 ||
+          data.sourceSessionId.length > 128))
+    )
+      return null
     const db = await getDb()
     if (getUserId() !== userId || authVersion() !== version) return null
     const repo = db.getRepository<SharedSession>('sharedSessions')
     const created = await repo.create({
       userId,
-      sessionId: '',
-      sessionName: data.name,
-      author: data.author,
-      score:
-        data.results.length > 0
-          ? Math.round(
-              data.results.reduce((a, b) => a + b, 0) / data.results.length,
-            )
-          : 0,
+      sessionId: data.sourceSessionId ?? '',
+      sessionName: summary.name,
+      author: summary.author,
+      score: Math.round(
+        summary.results.reduce((a, b) => a + b, 0) / summary.results.length,
+      ),
       accuracy: 0,
-      resultsJson: JSON.stringify(data.results),
+      resultsJson: JSON.stringify(summary.results),
       isPublic: true,
     })
-    return {
-      id: created.id,
-      userId: created.userId,
-      name: created.sessionName,
-      items: [],
-      author: created.author ?? 'Unknown',
-      results: safeJsonParse(created.resultsJson) as number[],
-      date: new Date(created.createdAt).getTime(),
-    }
+    return sharedSessionView(created)
   } catch {
     return null
   }

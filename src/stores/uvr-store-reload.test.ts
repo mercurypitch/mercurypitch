@@ -7,7 +7,7 @@
 // a run of them, over one database, can.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
+import type { SessionGroupRecord, UvrSessionRecord, UvrStemBlob, } from '@/db/entities'
 // Type-only, so it is erased and cannot fight vi.mock's hoisting.
 import type * as DemoSongModule from '@/features/karaoke-night/demo-song'
 import { InMemoryAdapter } from '@/tests/utils/in-memory-db'
@@ -59,14 +59,39 @@ async function settle(): Promise<void> {
 }
 
 /** One page load, booted the way App.tsx boots: fresh modules, same disk. */
-async function loadPage() {
+async function loadPage(first?: 'sessions' | 'groups') {
   vi.resetModules()
   const store = await import('./uvr-store')
   const { seedExamplesLibrary } =
     await import('@/features/karaoke-night/seed-examples')
-  void store.initSessionStore()
-  void store.initGroupStore()
-  await Promise.all([store.initSessionStore(), store.initGroupStore()])
+  if (first === undefined) {
+    void store.initSessionStore()
+    void store.initGroupStore()
+    await Promise.all([store.initSessionStore(), store.initGroupStore()])
+  } else {
+    // Start both reads as boot does, but hold the second cache until the
+    // first has hydrated. Exercise both reconciliation entry points.
+    const repo = adapter.getRepository(
+      first === 'sessions' ? 'sessionGroups' : 'uvrSessions',
+    )
+    const read = repo.findAll.bind(repo)
+    let release!: () => void
+    const pending = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const delayed = vi
+      .spyOn(repo, 'findAll')
+      .mockImplementation(async (options) => {
+        await pending
+        return read(options)
+      })
+    const sessions = store.initSessionStore()
+    const groups = store.initGroupStore()
+    await (first === 'sessions' ? sessions : groups)
+    release()
+    await Promise.all([sessions, groups])
+    delayed.mockRestore()
+  }
   await seedExamplesLibrary()
   await settle()
   return store
@@ -85,6 +110,114 @@ beforeEach(async () => {
   manifests.current = null
   localStorage.clear()
 })
+
+describe.each(['sessions', 'groups'] as const)(
+  'example group choices when %s hydrate first',
+  (first) => {
+    const sessions = () =>
+      adapter.getRepository<UvrSessionRecord>('uvrSessions')
+    const groups = () =>
+      adapter.getRepository<SessionGroupRecord>('sessionGroups')
+
+    async function assertAssignment(groupId: string | undefined) {
+      for (let load = 0; load < 4; load++) {
+        const store = await loadPage(first)
+        const song = store.getUvrSession(EXAMPLE_ID)
+        expect(song?.groupId).toBe(groupId)
+        expect(song?.outputs).toEqual(corpus.example.stems)
+        expect(
+          store
+            .getGroups()
+            .filter((group) => group.sessionIds.includes(EXAMPLE_ID))
+            .map((group) => group.id),
+        ).toEqual(groupId === undefined ? [] : [groupId])
+        const saved = await sessions().findAll({
+          where: { appSessionId: EXAMPLE_ID },
+        })
+        expect(saved).toHaveLength(1)
+        expect(saved[0].groupId).toBe(groupId)
+        expect(
+          (await groups().findAll())
+            .filter((group) => group.sessionIds.includes(EXAMPLE_ID))
+            .map((group) => group.id),
+        ).toEqual(groupId === undefined ? [] : [groupId])
+      }
+    }
+
+    it('keeps a reassigned example and repairs stale group indexes across reloads', async () => {
+      const store = await loadPage(first)
+      const examples = store
+        .getGroups()
+        .find((group) => group.name === 'Examples')!
+      expect(examples.sessionIds).toEqual([EXAMPLE_ID])
+      const mine = await store.createGroup('My set')
+      await store.addSessionToGroup(EXAMPLE_ID, mine.id)
+      // An interrupted index write must not overrule the saved session.
+      await groups().update(mine.id, { sessionIds: [] })
+      await groups().update(examples.id, { sessionIds: [EXAMPLE_ID] })
+
+      await assertAssignment(mine.id)
+    })
+
+    it.each(['ungroup', 'delete group', 'missing group'] as const)(
+      'keeps an existing example ungrouped after %s',
+      async (action) => {
+        const store = await loadPage(first)
+        const examples = store
+          .getGroups()
+          .find((group) => group.name === 'Examples')!
+        if (action === 'ungroup') await store.removeSessionFromGroup(EXAMPLE_ID)
+        else if (action === 'delete group') await store.deleteGroup(examples.id)
+        else await groups().delete(examples.id)
+
+        await assertAssignment(undefined)
+        const storedGroups = await groups().findAll()
+        expect(storedGroups.map((group) => group.id)).toEqual(
+          action === 'ungroup' ? [examples.id] : [],
+        )
+      },
+    )
+
+    it('preserves a legacy assignment recorded only in the group index', async () => {
+      const store = await loadPage(first)
+      const examples = store
+        .getGroups()
+        .find((group) => group.name === 'Examples')!
+      const mine = await store.createGroup('My old set')
+      const [saved] = await sessions().findAll({
+        where: { appSessionId: EXAMPLE_ID },
+      })
+      await sessions().update(saved.id, { groupId: undefined })
+      await groups().update(examples.id, { sessionIds: [] })
+      await groups().update(mine.id, { sessionIds: [EXAMPLE_ID] })
+
+      await assertAssignment(mine.id)
+    })
+
+    it('defaults only a newly published example into Examples', async () => {
+      const store = await loadPage(first)
+      const examples = store
+        .getGroups()
+        .find((group) => group.name === 'Examples')!
+      expect(store.getUvrSession(EXAMPLE_ID)?.groupId).toBe(examples.id)
+      await store.removeSessionFromGroup(EXAMPLE_ID)
+      const nextId = 'karaoke-night-demo:new-song'
+      manifests.current = [
+        corpus.example,
+        { ...corpus.example, slug: 'new-song' },
+      ]
+
+      await assertAssignment(undefined)
+      const [savedNew] = await sessions().findAll({
+        where: { appSessionId: nextId },
+      })
+      expect(savedNew.groupId).toBe(examples.id)
+      expect((await groups().findById(examples.id))?.sessionIds).toEqual([
+        nextId,
+      ])
+    })
+  },
+)
 
 describe('restoring a retained web example', () => {
   it('refreshes legacy URLs while preserving edited lyrics, titles, and MIDI metadata', async () => {

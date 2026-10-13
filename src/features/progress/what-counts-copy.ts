@@ -46,12 +46,12 @@ export const WHAT_COUNTS_SECTIONS: readonly WhatCountsSection[] = [
       'is what joins them up.',
   },
   {
-    heading: 'Setlists and melodies are not runs',
+    heading: 'Publishing does not add a run',
     body:
-      'A setlist is a practice programme you saved and published, and a ' +
-      'melody is a tune you shared. Both are things you made for other ' +
-      'people to load — nobody sang them by publishing them, so they are ' +
-      'counted separately and never appear in your run totals.',
+      'Community results are copies of completed runs, and melodies are tunes ' +
+      'you shared. Publishing or viewing a result does not add a run to ' +
+      'anyone’s practice history. Published results and melodies are counted ' +
+      'separately from your run totals.',
   },
   {
     heading: 'When the score trend stays empty',

@@ -16,3 +16,7 @@ overrides:
   # tinyest 0.3.2 dropped FORMAT_VERSION; unplugin-typegpu needs 0.3.1
   # (same override as chaos-master).
   tinyest: 0.3.1
+  # serve pins the vulnerable patch; keep its API-compatible security fix.
+  'compression@<1.8.2': 1.8.2
+  # Sass accepts this patch but its existing resolution retained the vulnerable one.
+  'immutable@>=5.0.0 <5.1.8': 5.1.9

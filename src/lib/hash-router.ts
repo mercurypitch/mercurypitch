@@ -38,6 +38,7 @@ export type HashRoute =
   | { type: 'uvr-session'; sessionId: string }
   | { type: 'uvr-session-mixer'; sessionId: string }
   | { type: 'share-short'; shortId: string }
+  | { type: 'shared-result'; payload: string }
   | {
       type: 'share-load'
       shareType: 'melody' | 'exercise' | 'routine'
@@ -221,6 +222,12 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'uvr-upload' }
   }
 
+  // Keep invalid result links on their read-only page, which explains the
+  // unavailable result instead of silently sending the recipient elsewhere.
+  if (hash.startsWith('/result/')) {
+    return { type: 'shared-result', payload: hash.slice('/result/'.length) }
+  }
+
   // Match: /s/:shortId — shortened share URL
   const shareShortMatch = hash.match(/^\/s\/([A-Za-z0-9]+)$/)
   if (shareShortMatch) {
@@ -387,6 +394,8 @@ export function buildHash(route: HashRoute): string {
       return `/karaoke/session/${route.sessionId}/mixer`
     case 'share-short':
       return `/s/${route.shortId}`
+    case 'shared-result':
+      return `/result/${route.payload}`
     case 'share-load':
       return `/share/${route.payload}`
     case 'share-fallback':

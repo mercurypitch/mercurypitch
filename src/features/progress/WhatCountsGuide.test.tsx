@@ -36,10 +36,10 @@ describe('WhatCountsGuide', () => {
     ).toBeInTheDocument()
   })
 
-  it('separates setlists and melodies from runs', () => {
+  it('explains that publishing or viewing a result does not record another run', () => {
     render(() => <WhatCountsGuide />)
     expect(
-      screen.getByText(/never appear in your run totals/i),
+      screen.getByText(/Publishing or viewing a result does not add a run/i),
     ).toBeInTheDocument()
   })
 

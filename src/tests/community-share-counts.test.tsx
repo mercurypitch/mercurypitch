@@ -2,7 +2,7 @@
 // Community — three counters that used to say "sessions"
 // ============================================================
 //
-// The Sessions tab counts published setlists, the profile counts runs, and
+// The Sessions tab counts published results, the profile counts runs, and
 // the share picker lists runs of every kind. All three said "session" and
 // meant something different. These tests hold the distinction in place.
 //
@@ -13,7 +13,9 @@ import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-l
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionRecord } from '@/db/entities'
+import { sessionFingerprint } from '@/features/community/share-identity'
 import { decodeSharePayload } from '@/lib/share-codec'
+import { decodeSharedRunResult } from '@/lib/shared-run-result'
 
 const mocks = vi.hoisted(() => ({
   accountHeld: vi.fn(() => true),
@@ -87,6 +89,10 @@ vi.mock('@/lib/storage', async (importOriginal) => ({
 }))
 
 const [version, setVersion] = createSignal(0)
+const originalClipboard = Object.getOwnPropertyDescriptor(
+  navigator,
+  'clipboard',
+)
 const { CommunityShare } = await import('@/components/CommunityShare')
 
 function switchAccount(userId: string): void {
@@ -140,8 +146,8 @@ function boardMelody(id: string, userId: string, name: string) {
   }
 }
 
-/** A setlist on the public board, published by `userId`. */
-function boardSetlist(id: string, userId: string, name: string) {
+/** A result on the public board, published by `userId`. */
+function boardResult(id: string, userId: string, name: string) {
   return {
     id,
     userId,
@@ -165,7 +171,7 @@ beforeEach(() => {
     .mockResolvedValue({ melodies: 0, sessions: 0 })
   mocks.saveSharedSession
     .mockReset()
-    .mockResolvedValue(boardSetlist('s-new', 'user-0001', 'Run a'))
+    .mockResolvedValue(boardResult('s-new', 'user-0001', 'Run a'))
   mocks.saveSharedMelody
     .mockReset()
     .mockResolvedValue(boardMelody('m-new', 'user-0001', 'New melody'))
@@ -176,33 +182,38 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  if (originalClipboard !== undefined)
+    Object.defineProperty(navigator, 'clipboard', originalClipboard)
+  else Reflect.deleteProperty(navigator, 'clipboard')
   vi.clearAllMocks()
   vi.restoreAllMocks()
 })
 
 describe('Community > Sessions', () => {
-  it('says the tab counts published setlists, not runs', async () => {
+  it('explains that sharing a result does not record another run', async () => {
     render(() => <CommunityShare />)
     openTab(/Sessions/)
 
     expect(
       await screen.findByText(
-        /setlists the community has published for anyone to sing/i,
+        /results the community has shared from completed runs/i,
       ),
     ).toBeInTheDocument()
-    expect(screen.getByText(/They are\s+not runs/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Publishing or viewing a result does not add a run/i),
+    ).toBeInTheDocument()
   })
 
-  it("does not call the community's setlists yours", async () => {
-    // The tab is the public board, everyone's setlists side by side. The
-    // note above it used to say "setlists you published".
+  it("does not call the community's results yours", async () => {
+    // The tab is the public board, everyone's results side by side. The
+    // note above it used to say "results you published".
     mocks.loadSharedSessions.mockResolvedValue([
-      boardSetlist('s-theirs', 'user-0002', 'Their setlist'),
+      boardResult('s-theirs', 'user-0002', 'Their result'),
     ])
 
     render(() => <CommunityShare />)
     openTab(/Sessions/)
-    await screen.findByRole('button', { name: 'Open Their setlist' })
+    await screen.findByRole('button', { name: 'Open Their result' })
 
     expect(screen.queryByText(/you published/i)).toBeNull()
   })
@@ -271,7 +282,7 @@ describe('Community > Profile', () => {
       boardMelody('m-also', 'user-0003', 'Also theirs'),
     ])
     mocks.loadSharedSessions.mockResolvedValue([
-      boardSetlist('s-theirs', 'user-0002', 'Their setlist'),
+      boardResult('s-theirs', 'user-0002', 'Their result'),
     ])
     // This browser's own copy of the same share, under its local id. It is
     // the board row above, not a second publication.
@@ -289,11 +300,70 @@ describe('Community > Profile', () => {
     expect(screen.getByText('melody').previousElementSibling).toHaveTextContent(
       '1',
     )
-    expect(screen.queryByText(/^setlists?$/)).toBeNull()
+    expect(screen.queryByText(/^results?$/)).toBeNull()
   })
 })
 
 describe('Community > board cards', () => {
+  it('copies and opens canonical public result links', async () => {
+    const writeText = vi.fn(async (_text: string) => {})
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    mocks.loadSharedSessions.mockResolvedValue([
+      boardResult('canonical-id', 'user-0001', 'Published run'),
+    ])
+    render(() => <CommunityShare />)
+    openTab(/Sessions/)
+    const open = await screen.findByRole('button', {
+      name: 'Open Published run',
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledOnce())
+    const url = new URL(writeText.mock.calls[0][0])
+    expect(url.hash).toBe('#/share?type=session&id=canonical-id')
+    fireEvent.click(open)
+    expect(window.location.hash).toBe(url.hash)
+  })
+
+  it('copies and opens a self-contained local result without source or owner identifiers', async () => {
+    const writeText = vi.fn(async (_text: string) => {})
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    const local = {
+      id: 'local-only',
+      sourceSessionId: 'private-run-id',
+      name: 'Guest result',
+      items: [],
+      author: 'Guest',
+      results: [87],
+      date: 12345,
+    }
+    mocks.storageGet.mockImplementation((key, fallback) =>
+      key === 'pp_shared_sessions' ? [local] : fallback,
+    )
+    render(() => <CommunityShare />)
+    openTab(/Sessions/)
+    const open = await screen.findByRole('button', {
+      name: 'Open Guest result',
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledOnce())
+    const url = new URL(writeText.mock.calls[0][0])
+    expect(url.hash.startsWith('#/result/')).toBe(true)
+    expect(decodeSharedRunResult(url.hash.slice('#/result/'.length))).toEqual({
+      name: local.name,
+      author: local.author,
+      results: local.results,
+      date: local.date,
+    })
+    fireEvent.click(open)
+    expect(window.location.hash).toBe(url.hash)
+  })
+
   it('keeps local playback settings when its canonical server card is loaded', async () => {
     const server = {
       ...boardMelody('canonical', 'user-0001', 'Server title'),
@@ -380,21 +450,21 @@ describe('Community > board cards', () => {
     ).toBeNull()
   })
 
-  it("offers Unpublish on the singer's own setlist and not on anyone else's", async () => {
+  it("offers Unpublish on the singer's own result and not on anyone else's", async () => {
     mocks.loadSharedSessions.mockResolvedValue([
-      boardSetlist('s-mine', 'user-0001', 'My setlist'),
-      boardSetlist('s-theirs', 'user-0002', 'Their setlist'),
+      boardResult('s-mine', 'user-0001', 'My result'),
+      boardResult('s-theirs', 'user-0002', 'Their result'),
     ])
 
     render(() => <CommunityShare />)
     openTab(/Sessions/)
-    await screen.findByRole('button', { name: 'Open Their setlist' })
+    await screen.findByRole('button', { name: 'Open Their result' })
 
     expect(
-      screen.getByRole('button', { name: 'Unpublish My setlist' }),
+      screen.getByRole('button', { name: 'Unpublish My result' }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Unpublish Their setlist' }),
+      screen.queryByRole('button', { name: 'Unpublish Their result' }),
     ).toBeNull()
   })
 
@@ -408,13 +478,13 @@ describe('Community > board cards', () => {
     )
 
     render(() => <CommunityShare />)
-    await screen.findByRole('button', { name: 'Unpublish Kept here' })
+    await screen.findByRole('button', { name: 'Remove from shelf: Kept here' })
 
     expect(
       screen
-        .getAllByRole('button', { name: /^Unpublish / })
+        .getAllByRole('button', { name: /^(Unpublish |Remove from shelf: )/ })
         .map((button) => button.getAttribute('aria-label')),
-    ).toEqual(['Unpublish Kept here'])
+    ).toEqual(['Remove from shelf: Kept here'])
   })
 })
 
@@ -432,7 +502,7 @@ describe('Community > share picker', () => {
     )
 
     // The map this replaced called a practice run a "session" — the exact
-    // word the tab beneath it used for a published setlist.
+    // word the tab beneath it used for a published result.
     expect(await screen.findByText('Practice')).toBeInTheDocument()
     expect(screen.getByText('Weekly')).toBeInTheDocument()
     expect(screen.queryByText('session')).toBeNull()
@@ -462,6 +532,69 @@ describe('Community publication lifecycle', () => {
     )
   }
 
+  it('persists the selected source run identity', async () => {
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'practice')])
+    render(() => <CommunityShare />)
+    await publishRun()
+    await waitFor(() =>
+      expect(mocks.saveSharedSession).toHaveBeenCalledWith(
+        expect.objectContaining({ sourceSessionId: 'a', results: [64] }),
+      ),
+    )
+  })
+
+  it('allows distinct run IDs with identical names, scores, and completion times', async () => {
+    const run = cloudRun('a', 'practice')
+    const completedAt = Date.parse(run.endedAt!)
+    const previous = {
+      ...boardResult('old-share', 'user-0001', 'Run a'),
+      sourceSessionId: 'different-run',
+      results: [64],
+      date: completedAt,
+      shareFingerprint: sessionFingerprint({
+        name: 'Run a',
+        score: 64,
+        completedAt,
+      }),
+    }
+    mocks.storageGet.mockImplementation((key, fallback) =>
+      key === 'pp_shared_sessions' ? [previous] : fallback,
+    )
+    mocks.loadSessionRecords.mockResolvedValue([run])
+    render(() => <CommunityShare />)
+    openTab(/Sessions/)
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Share a session/i }),
+    )
+    fireEvent.click(await screen.findByRole('button', { name: /^Share$/ }))
+    await waitFor(() =>
+      expect(mocks.saveSharedSession).toHaveBeenCalledWith(
+        expect.objectContaining({ sourceSessionId: 'a' }),
+      ),
+    )
+  })
+
+  it('blocks the same source run even after its metadata changes or from another device', async () => {
+    mocks.loadSharedSessions.mockResolvedValue([
+      {
+        ...boardResult('already-public', 'user-0001', 'Older title'),
+        sourceSessionId: 'a',
+      },
+    ])
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'practice')])
+    render(() => <CommunityShare />)
+    openTab(/Sessions/)
+    await screen.findByRole('button', { name: 'Open Older title' })
+    await publishRun()
+    await waitFor(() =>
+      expect(mocks.notify).toHaveBeenCalledWith(
+        expect.stringContaining('already shared this run'),
+        'info',
+      ),
+    )
+    expect(mocks.saveSharedSession).not.toHaveBeenCalled()
+  })
+
   it('counts older own publications even when the board page has only foreign rows', async () => {
     mocks.loadSharedMelodies.mockResolvedValue(
       Array.from({ length: 100 }, (_, i) =>
@@ -477,7 +610,7 @@ describe('Community publication lifecycle', () => {
     openTab(/Profile/)
     await waitFor(() => {
       published(/^melodies$/, 7)
-      published(/^setlists$/, 3)
+      published(/^results$/, 3)
     })
     expect(mocks.loadPublishedShareCounts).toHaveBeenCalledWith('user-0001')
   })
@@ -490,11 +623,11 @@ describe('Community publication lifecycle', () => {
       .mockResolvedValueOnce({ melodies: 0, sessions: 1 })
     render(() => <CommunityShare />)
     openTab(/Profile/)
-    await waitFor(() => published(/^setlist$/, 1))
+    await waitFor(() => published(/^result$/, 1))
     await publishRun()
     await screen.findByRole('button', { name: 'Open Run a' })
     openTab(/Profile/)
-    await waitFor(() => published(/^setlists$/, 2))
+    await waitFor(() => published(/^results$/, 2))
     openTab(/Sessions/)
     await unpublish('Run a')
     await waitFor(() =>
@@ -502,7 +635,7 @@ describe('Community publication lifecycle', () => {
     )
     expect(mocks.unpublishShared).toHaveBeenCalledWith('session', 's-new')
     openTab(/Profile/)
-    await waitFor(() => published(/^setlist$/, 1))
+    await waitFor(() => published(/^result$/, 1))
   })
 
   it('publishes a melody only after confirmation and refreshes its authoritative total', async () => {
@@ -574,7 +707,10 @@ describe('Community publication lifecycle', () => {
     await publishRun()
     await screen.findByRole('button', { name: 'Open Run a' })
     expect(mocks.saveSharedSession).not.toHaveBeenCalled()
-    await unpublish('Run a')
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove from shelf: Run a' }),
+    )
+    fireEvent.click(screen.getByTestId('confirm-delete'))
     expect(screen.queryByRole('button', { name: 'Open Run a' })).toBeNull()
     expect(mocks.unpublishShared).not.toHaveBeenCalled()
     expect(mocks.loadPublishedShareCounts).toHaveBeenCalledTimes(1)
@@ -594,13 +730,13 @@ describe('Community publication lifecycle', () => {
       await publishRun()
       await screen.findByRole('button', { name: 'Open Run a' })
       openTab(/Profile/)
-      await waitFor(() => published(/^setlists$/, 2))
+      await waitFor(() => published(/^results$/, 2))
       mocks.notify.mockClear()
       if (settle === 'resolve')
         beforePublish.resolve({ melodies: 0, sessions: 1 })
       else beforePublish.reject(new Error('old read offline'))
       await beforePublish.promise.catch(() => {})
-      published(/^setlists$/, 2)
+      published(/^results$/, 2)
       expect(mocks.notify).not.toHaveBeenCalled()
     },
   )
@@ -672,7 +808,7 @@ describe('Community publication lifecycle', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Share$/ }))
     await screen.findByRole('button', { name: 'Open Run a' })
     openTab(/Profile/)
-    await waitFor(() => published(/^setlists$/, 2))
+    await waitFor(() => published(/^results$/, 2))
   })
 
   it('keeps a failed unpublish visible and retryable without lowering its total', async () => {
@@ -728,7 +864,7 @@ describe('Community publication lifecycle', () => {
       ),
     )
     published(/^melodies$/, 5)
-    published(/^setlists$/, 2)
+    published(/^results$/, 2)
   })
 
   it.each(['resolve', 'reject'] as const)(
@@ -746,7 +882,7 @@ describe('Community publication lifecycle', () => {
       else old.reject(new Error('old account offline'))
       await old.promise.catch(() => {})
       published(/^melodies$/, 2)
-      expect(screen.queryByText(/^setlists?$/)).toBeNull()
+      expect(screen.queryByText(/^results?$/)).toBeNull()
       expect(mocks.notify).not.toHaveBeenCalled()
     },
   )
@@ -767,7 +903,7 @@ describe('Community publication lifecycle', () => {
   })
 
   it('ignores an in-flight publication after account switching', async () => {
-    const save = deferred<ReturnType<typeof boardSetlist>>()
+    const save = deferred<ReturnType<typeof boardResult>>()
     mocks.saveSharedSession.mockReturnValueOnce(save.promise)
     mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'practice')])
     mocks.loadPublishedShareCounts
@@ -776,10 +912,10 @@ describe('Community publication lifecycle', () => {
     render(() => <CommunityShare />)
     await publishRun()
     switchAccount('user-0002')
-    save.resolve(boardSetlist('s-new', 'user-0001', 'Run a'))
+    save.resolve(boardResult('s-new', 'user-0001', 'Run a'))
     await save.promise
     openTab(/Profile/)
-    await waitFor(() => published(/^setlists$/, 8))
+    await waitFor(() => published(/^results$/, 8))
     openTab(/Sessions/)
     expect(screen.queryByRole('button', { name: 'Open Run a' })).toBeNull()
     expect(mocks.notify).not.toHaveBeenCalled()

@@ -82,11 +82,13 @@ async function seedWebExamples(): Promise<void> {
     if (manifests.length === 0) return
 
     const existing = new Set(getAllUvrSessions().map((s) => s.sessionId))
+    const newlySeeded = new Set<string>()
     const missing = examplesToSeed(manifests, existing)
     for (const [index, manifest] of missing.entries()) {
       const session = exampleSessionFrom(manifest, index)
       if (await importUvrSessionDurable(session)) {
         existing.add(session.sessionId)
+        newlySeeded.add(session.sessionId)
       }
     }
 
@@ -105,6 +107,7 @@ async function seedWebExamples(): Promise<void> {
     await ensureExamplesGroup(
       manifests,
       new Set(getAllUvrSessions().map((s) => s.sessionId)),
+      newlySeeded,
     )
   } catch (err) {
     if (IS_DEV) console.warn('[Examples] seeding failed:', err)
@@ -228,6 +231,7 @@ async function seedManifests(
   setExampleManifests(manifests)
 
   const existing = new Set(getAllUvrSessions().map((s) => s.sessionId))
+  const newlySeeded = new Set<string>()
   for (const song of bundled) {
     const row = getAllUvrSessions().find(
       (s) => s.sessionId === demoSessionId(song.slug),
@@ -253,27 +257,40 @@ async function seedManifests(
   // ones: a song the server adds later sorts after the bundle's three.
   for (const manifest of examplesToSeed(manifests, existing)) {
     const session = exampleSessionFrom(manifest, manifests.indexOf(manifest))
-    if (await importUvrSessionDurable(session)) existing.add(session.sessionId)
+    if (await importUvrSessionDurable(session)) {
+      existing.add(session.sessionId)
+      newlySeeded.add(session.sessionId)
+    }
   }
   for (const manifest of manifests) await seedDemoLyrics(manifest)
-  await ensureExamplesGroup(manifests, existing)
+  await ensureExamplesGroup(manifests, existing, newlySeeded)
 }
 
 async function ensureExamplesGroup(
   manifests: readonly DemoSongManifest[],
   existing: ReadonlySet<string>,
+  newlySeeded: ReadonlySet<string>,
 ): Promise<void> {
-  const group =
-    getGroups().find((g) => g.name === EXAMPLES_GROUP_NAME) ??
-    (await createGroup(EXAMPLES_GROUP_NAME))
-
-  const wanted = reconcileExampleGroup(manifests, existing, group.sessionIds)
-  // Only additions are written. Membership is removed by deleting the session
-  // or by the visitor moving it out, and re-asserting the whole list here
-  // would undo exactly that.
-  for (const sessionId of wanted) {
-    if (group.sessionIds.includes(sessionId)) continue
-    await addSessionToGroup(sessionId, group.id)
+  const group = getGroups().find((g) => g.name === EXAMPLES_GROUP_NAME)
+  const wanted = reconcileExampleGroup(
+    manifests,
+    existing,
+    group?.sessionIds ?? [],
+    newlySeeded,
+  )
+  const additions = wanted.filter(
+    (id) =>
+      group?.sessionIds.includes(id) !== true &&
+      getUvrSession(id)?.groupId === undefined,
+  )
+  // No new songs means no default group to recreate after its deletion.
+  if (additions.length === 0) return
+  const destination = group ?? (await createGroup(EXAMPLES_GROUP_NAME))
+  for (const sessionId of additions) {
+    const session = getUvrSession(sessionId)
+    // A visitor may have moved or deleted it while a previous write awaited.
+    if (session === undefined || session.groupId !== undefined) continue
+    await addSessionToGroup(sessionId, destination.id)
   }
 }
 

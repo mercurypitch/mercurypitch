@@ -48,8 +48,8 @@ export interface ProfileViewProps {
   onExplainRuns?: () => void
   streak: number
   sharedMelodies: number
-  /** Published setlists — things made for others to sing, never runs. */
-  sharedSetlists: number
+  /** Published result summaries, counted separately from the source runs. */
+  sharedResults: number
   /** The legend this singer's range overlaps with, once measured. The
    *  portrait is resolved from it here rather than passed in, so art
    *  lookup stays in one place. */
@@ -332,18 +332,18 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
         </>
       </Show>
 
-      {/* "Published", not "Shared", and setlists rather than sessions.
+      {/* Published copies are counted separately from recorded runs.
           Nobody sang anything by publishing it, so these are counted apart
           from runs — and the old wording put "4 sessions" directly under a
           run count that said something else. */}
-      <Show when={props.sharedMelodies + props.sharedSetlists > 0}>
+      <Show when={props.sharedMelodies + props.sharedResults > 0}>
         <section class={styles.sharedSection}>
           <h3 class={styles.sectionTitle}>Published</h3>
           <ul class={styles.sharedList}>
             <For
               each={[
                 { n: props.sharedMelodies, one: 'melody', many: 'melodies' },
-                { n: props.sharedSetlists, one: 'setlist', many: 'setlists' },
+                { n: props.sharedResults, one: 'result', many: 'results' },
               ].filter((row) => row.n > 0)}
             >
               {(row) => (

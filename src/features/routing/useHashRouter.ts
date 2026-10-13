@@ -14,8 +14,9 @@
 import type { Accessor, Setter } from 'solid-js'
 import { batch, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { UvrView } from '@/components/UvrPanel'
+import { setSharedRunRequest, sharedRunRequest, } from '@/features/community/shared-run-link'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_SETTINGS, } from '@/features/tabs/constants'
+import { TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_SETTINGS, } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, pushHash, replaceHash } from '@/lib/hash-router'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
@@ -144,6 +145,11 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   const routeDestinationTab = (route: HashRoute): ActiveTab | null => {
     if (route.type === 'tab') return route.tab
+    if (
+      route.type === 'shared-result' ||
+      (route.type === 'share-fallback' && route.shareType === 'session')
+    )
+      return TAB_COMMUNITY
     if (route.type === 'share-load') {
       return route.shareType === 'melody' ? TAB_COMPOSE : TAB_EXERCISES
     }
@@ -196,8 +202,18 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     // unsaved owner work forever.
     deps.setVoiceConstellationOpen(route.type === 'voice-constellation')
     deps.setWhatsNewOpen(route.type === 'whats-new')
+    const resultRequest =
+      route.type === 'shared-result'
+        ? { kind: 'payload' as const, payload: route.payload }
+        : route.type === 'share-fallback' && route.shareType === 'session'
+          ? { kind: 'public' as const, id: route.shareId }
+          : null
+    setSharedRunRequest(resultRequest)
     if (route.type !== 'reset-password') deps.closeResetPassword()
-    if (route.type === 'tab') {
+    if (resultRequest) {
+      deps.dismissWelcome()
+      deps.setActiveTab(TAB_COMMUNITY)
+    } else if (route.type === 'tab') {
       deps.setActiveTab(route.tab)
       deps.setActiveUvrSessionId(null)
     } else if (route.type === 'uvr-upload') {
@@ -448,6 +464,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
   onCleanup(() => {
     window.removeEventListener('hashchange', onHashChange)
     window.removeEventListener('popstate', onPopState)
+    setSharedRunRequest(null)
   })
 
   /**
@@ -492,6 +509,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const view = deps.activeUvrView()
     const sessionId = deps.activeUvrSessionId()
     const settingsSection = deps.settingsSection()
+    const resultRequest = sharedRunRequest()
     const surfaceOpen =
       deps.showSelection() ||
       deps.walkthroughModalOpen() ||
@@ -501,6 +519,13 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.voiceConstellationOpen() ||
       deps.whatsNewOpen()
     if (!initialized() || hashSyncing || restoring) return
+    if (resultRequest) {
+      if (tab === TAB_COMMUNITY) {
+        lastSyncedTab = tab
+        return
+      }
+      setSharedRunRequest(null)
+    }
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {
       // Settings carries its sub-tab in the URL (#/settings/<slug>) so each
