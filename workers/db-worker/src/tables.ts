@@ -91,6 +91,20 @@ export interface TableDef {
    * every client already installed as well as the next one.
    */
   naturalKey?: string[]
+  /**
+   * How that upsert merges a column into the row it meets: the SQL after
+   * `"column" =`, where `"column"` is the stored value, `excluded."column"`
+   * the incoming one, and every expression reads the row as it was before
+   * the write. A column with no rule takes the incoming value, so the last
+   * write wins, as it does for a PATCH.
+   *
+   * A table whose row accumulates needs rules, because a create is what a
+   * client sends when its read found NO row: the body is a fresh start, and
+   * taken whole it would talk the stored row down. Keep every rule
+   * idempotent (MAX, MIN, never a sum): a create that upserted leaves no
+   * receipt, so the same create can arrive twice.
+   */
+  upsertMerge?: Readonly<Record<string, string>>
 }
 
 /**
@@ -195,11 +209,24 @@ export const TABLES: Record<string, TableDef> = {
   },
   sessionRecords: { access: 'user', jsonCols: ['results'] },
   challengeDefinitions: { access: 'admin', boolCols: ['isActive'] },
-  // One row per challenge (0070_natural_keys.sql).
+  // One row per challenge (0070_natural_keys.sql). A create that meets it
+  // merges the way 0070 merged duplicates: a completion never goes back and
+  // keeps its first date, and the best score, progress and attempt count
+  // never drop. The run's own score and status come from the create, except
+  // that a completed row stays 'completed'.
   challengeProgress: {
     access: 'user',
     boolCols: ['completed'],
     naturalKey: ['challengeId'],
+    upsertMerge: {
+      completed: 'MAX("completed", excluded."completed")',
+      completedAt:
+        'COALESCE(MIN("completedAt", excluded."completedAt"), "completedAt", excluded."completedAt")',
+      bestScore: 'MAX("bestScore", excluded."bestScore")',
+      progress: 'MAX("progress", excluded."progress")',
+      attempts: 'MAX("attempts", excluded."attempts")',
+      status: `CASE WHEN MAX("completed", excluded."completed") = 1 THEN 'completed' ELSE excluded."status" END`,
+    },
   },
   badgeDefinitions: { access: 'admin' },
   userBadges: { access: 'user' },

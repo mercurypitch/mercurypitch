@@ -669,6 +669,17 @@ function naturalKeyOf(
   return { columns, values: values.map(toSql) }
 }
 
+/**
+ * What a natural-key upsert sets `col` to on the row it meets: the table's
+ * merge rule (`TableDef.upsertMerge`), or else the incoming value.
+ */
+function upsertValue(def: TableDef, col: string): string {
+  const merge = def.upsertMerge
+  return merge !== undefined && Object.hasOwn(merge, col)
+    ? merge[col]
+    : `excluded."${col}"`
+}
+
 async function handleCreate(
   entity: string,
   def: TableDef,
@@ -745,7 +756,7 @@ async function handleCreate(
         ` DO UPDATE SET ${cols
           .filter((c) => c !== 'id' && c !== 'createdAt')
           .filter((c) => !key.columns.includes(c))
-          .map((c) => `"${c}" = excluded."${c}"`)
+          .map((c) => `"${c}" = ${upsertValue(def, c)}`)
           .join(', ')}`
   // Check the caller's UUID in the write itself. A read before the INSERT
   // races another create; letting the natural-key UPSERT win first instead
