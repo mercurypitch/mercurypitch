@@ -39,6 +39,48 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('a create the client retries', () => {
+  // A create that committed but lost its response is retried. The worker
+  // recognises the retry only by the row's id, so the id has to be named by
+  // the client, once, and carried unchanged by every attempt — or the retry
+  // saves a second practice session and pays its league points twice.
+  it('names its row once and sends the same name on every attempt', async () => {
+    const sent: Array<{ id?: unknown; score?: unknown }> = []
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      sent.push(JSON.parse(String(init?.body)) as { id?: unknown })
+      return sent.length === 1 ? fail(503) : ok({ id: 'a', score: 1 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const p = repo().create({ score: 1 })
+    await vi.advanceTimersByTimeAsync(2000)
+    await p
+
+    expect(sent).toHaveLength(2)
+    expect(sent[0]?.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    )
+    expect(sent[1]).toEqual(sent[0])
+    expect(sent[0]?.score).toBe(1)
+  })
+
+  it('names a different row for a different create', async () => {
+    const sent: Array<{ id?: unknown }> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        sent.push(JSON.parse(String(init?.body)) as { id?: unknown })
+        return ok({ id: 'a', score: 1 })
+      }),
+    )
+
+    await repo().create({ score: 1 })
+    await repo().create({ score: 1 })
+
+    expect(sent[0]?.id).not.toBe(sent[1]?.id)
+  })
+})
+
 describe('ServerAdapter retry semantics', () => {
   it('retries once on 500 then resolves', async () => {
     const fetchMock = vi

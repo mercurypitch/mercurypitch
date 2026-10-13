@@ -78,6 +78,19 @@ export interface TableDef {
    * columns and keeps the named ones out, which matches how these tables grow.
    */
   privateCols?: string[]
+  /**
+   * The columns that, with `userId`, name one row: a UNIQUE index in the
+   * schema says so, and a create that meets an existing row UPDATES it.
+   *
+   * Every client of these tables writes read-then-create: look for the row,
+   * create it when the read found none. Two tabs, two devices, a retried POST
+   * or a read that silently came back short all create a second row for the
+   * same thing, and from then on the account disagrees with itself about its
+   * own setting or progress. With the key in the schema the create is an
+   * upsert, so the race and the short read both land on the one row, for
+   * every client already installed as well as the next one.
+   */
+  naturalKey?: string[]
 }
 
 /**
@@ -182,7 +195,12 @@ export const TABLES: Record<string, TableDef> = {
   },
   sessionRecords: { access: 'user', jsonCols: ['results'] },
   challengeDefinitions: { access: 'admin', boolCols: ['isActive'] },
-  challengeProgress: { access: 'user', boolCols: ['completed'] },
+  // One row per challenge (0070_natural_keys.sql).
+  challengeProgress: {
+    access: 'user',
+    boolCols: ['completed'],
+    naturalKey: ['challengeId'],
+  },
   badgeDefinitions: { access: 'admin' },
   userBadges: { access: 'user' },
   achievements: { access: 'admin' },
@@ -202,7 +220,8 @@ export const TABLES: Record<string, TableDef> = {
     requiresAccount: true,
   },
   featureFlags: { access: 'admin', boolCols: ['value'] },
-  userSettings: { access: 'user' },
+  // One row per key (0070_natural_keys.sql).
+  userSettings: { access: 'user', naturalKey: ['key'] },
   // Reads stay generic — your own follow list is an ordinary private list.
   // Writes belong to /api/friends/* (see friends.ts): a follow is half of a
   // mutual agreement, and the generic create could only ever write the half.
@@ -216,7 +235,12 @@ export const TABLES: Record<string, TableDef> = {
   // The library WITHOUT the audio — see migrations/0025_song_manifests.sql.
   // Titles and sizes so a second device can list what its owner has; the
   // stems themselves never come near this worker.
-  songManifests: { access: 'user', boolCols: ['hasLyrics'] },
+  // One row per song: the UNIQUE (userId, fileHash) index is 0025's own.
+  songManifests: {
+    access: 'user',
+    boolCols: ['hasLyrics'],
+    naturalKey: ['fileHash'],
+  },
   // Pricing config: public reads (the pricing page), writes require the
   // X-Admin-Key — so prices/tiers are editable without a deploy. The credit
   // ledger, entitlements, and billing events are deliberately NOT here: only

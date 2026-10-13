@@ -631,6 +631,44 @@ function clampStreakHighWater(body: Row, stored: Row | null): void {
   )
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * The row id a client chose for its own create, or null to mint one.
+ *
+ * What makes a retried POST safe. The client retries a create on a 5xx, a
+ * 429 or a network error, and a create whose response was lost after it
+ * committed came back as a SECOND row: a duplicated practice session, and
+ * league points awarded twice, because the award is keyed to a row id the
+ * server minted afresh each time. A client-minted id is the same on every
+ * retry, so the second attempt meets the first one's row instead.
+ *
+ * Only for rows that are the caller's own. Admin rows are minted here, and
+ * a profile's id is its user's.
+ */
+function clientRowId(
+  def: TableDef,
+  auth: AuthUser | null,
+  value: unknown,
+): string | null {
+  if (auth === null || def.access === 'admin' || def.access === 'owner') {
+    return null
+  }
+  return typeof value === 'string' && UUID.test(value) ? value : null
+}
+
+/** The natural key a create must upsert on, with its values, or null. */
+function naturalKeyOf(
+  def: TableDef,
+  body: Row,
+): { columns: string[]; values: SqlValue[] } | null {
+  if (def.naturalKey === undefined || def.access !== 'user') return null
+  const columns = ['userId', ...def.naturalKey]
+  const values = columns.map((c) => body[c])
+  if (values.some((v) => v === undefined || v === null)) return null
+  return { columns, values: values.map(toSql) }
+}
+
 async function handleCreate(
   entity: string,
   def: TableDef,
@@ -665,6 +703,7 @@ async function handleCreate(
   if (createErr) return respond({ error: createErr }, { status: 400 })
 
   const now = new Date().toISOString()
+  const clientId = clientRowId(def, auth, body.id)
   delete body.id
   delete body.createdAt
   delete body.updatedAt
@@ -679,7 +718,9 @@ async function handleCreate(
 
   // userProfiles: the row id IS the user id
   const id =
-    def.access === 'owner' ? (auth as AuthUser).userId : crypto.randomUUID()
+    def.access === 'owner'
+      ? (auth as AuthUser).userId
+      : (clientId ?? crypto.randomUUID())
   if (def.access === 'owner' && (await fetchRow(entity, id, env))) {
     return respond({ error: 'Profile already exists' }, { status: 409 })
   }
@@ -696,22 +737,53 @@ async function handleCreate(
 
   const placeholders = cols.map(() => '?').join(', ')
   const quoted = cols.map((c) => `"${c}"`).join(', ')
+  const key = naturalKeyOf(def, body)
+  const upsert =
+    key === null
+      ? ''
+      : ` ON CONFLICT(${key.columns.map((c) => `"${c}"`).join(', ')})` +
+        ` DO UPDATE SET ${cols
+          .filter((c) => c !== 'id' && c !== 'createdAt')
+          .filter((c) => !key.columns.includes(c))
+          .map((c) => `"${c}" = excluded."${c}"`)
+          .join(', ')}`
   try {
     await env.DB.prepare(
-      `INSERT INTO "${entity}" (${quoted}) VALUES (${placeholders})`,
+      `INSERT INTO "${entity}" (${quoted}) VALUES (${placeholders})${upsert}`,
     )
       .bind(...binds)
       .run()
   } catch (err) {
-    console.error('[create] insert failed', entity, err)
-    return respond({ error: 'Could not create record' }, { status: 400 })
+    if (!String(err).includes('UNIQUE constraint failed')) {
+      console.error('[create] insert failed', entity, err)
+      return respond({ error: 'Could not create record' }, { status: 400 })
+    }
+    // A retry of a create that already landed: the client named the row,
+    // and it is the caller's. Answer with it, and award nothing twice.
+    const landed = clientId === null ? null : await fetchRow(entity, id, env)
+    if (landed !== null && auth !== null && landed.userId === auth.userId) {
+      return respond(fromSql(def, landed), { status: 200 })
+    }
+    return respond({ error: 'Already exists' }, { status: 409 })
   }
 
-  const row = (await fetchRow(entity, id, env)) as Row
+  // An upsert may have landed on a row that was already there.
+  const row = (
+    key === null
+      ? await fetchRow(entity, id, env)
+      : await env.DB.prepare(
+          `SELECT * FROM "${entity}" WHERE ${key.columns
+            .map((c) => `"${c}" = ?`)
+            .join(' AND ')}`,
+        )
+          .bind(...key.values)
+          .first<Row>()
+  ) as Row
+  const created = row.id === id
 
   // A saved practice attempt is the league's points source (server-side, so
   // the award can't be called directly by a client). Never blocks the save.
-  if (entity === 'sessionRecords' && auth) {
+  if (entity === 'sessionRecords' && auth && created) {
     await awardForSessionRecord(env, auth.userId, {
       id,
       source: row.source as string | null,
@@ -720,7 +792,7 @@ async function handleCreate(
     })
   }
 
-  return respond(fromSql(def, row), { status: 201 })
+  return respond(fromSql(def, row), { status: created ? 201 : 200 })
 }
 
 async function handleUpdate(

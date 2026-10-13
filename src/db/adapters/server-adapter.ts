@@ -282,7 +282,10 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
       '',
       {
         method: 'POST',
-        body: JSON.stringify(entity),
+        // The row's id, minted once, outside the retry loop: a create that
+        // committed but lost its response is retried under the same id, and
+        // the worker answers with that row instead of saving a second one.
+        body: JSON.stringify({ id: globalThis.crypto.randomUUID(), ...entity }),
       },
       2,
       prepared.headers,
