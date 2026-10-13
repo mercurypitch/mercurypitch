@@ -20,12 +20,19 @@ vi.mock('@/db', () => ({
 
 const manifests = vi.hoisted(() => ({ current: [] as unknown[] }))
 const seededLyrics = vi.hoisted(() => ({ slugs: [] as (string | undefined)[] }))
+// Holds the manifest fetch open, so a test can call the seed while it runs.
+const manifestGate = vi.hoisted(() => ({
+  current: Promise.resolve() as Promise<void>,
+}))
 
 vi.mock('@/features/karaoke-night/demo-song', async (importOriginal) => {
   const actual = await importOriginal<typeof DemoSongModule>()
   return {
     ...actual,
-    loadDemoSongs: async () => manifests.current,
+    loadDemoSongs: async () => {
+      await manifestGate.current
+      return manifests.current
+    },
     seedDemoLyrics: async (m: { slug?: string }) => {
       seededLyrics.slugs.push(m.slug)
     },
@@ -112,6 +119,35 @@ describe('seedExamplesLibrary', () => {
     expect(
       getGroups().find((g) => g.name === EXAMPLES_GROUP_NAME)?.sessionIds,
     ).toHaveLength(2)
+  })
+
+  it('makes a second caller wait for the seed already running', async () => {
+    // A song link stages the example's row, so it must not look before the
+    // seed that creates the row has finished. The early-return this replaced
+    // resolved the second call at once, with the row not yet written.
+    manifests.current = [manifest('late-song')]
+    let open!: () => void
+    manifestGate.current = new Promise<void>((resolve) => {
+      open = resolve
+    })
+    try {
+      const first = seedExamplesLibrary()
+      let secondDone = false
+      const second = seedExamplesLibrary().then(() => {
+        secondDone = true
+      })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(secondDone).toBe(false)
+
+      expect(exampleIds()).not.toContain(demoSessionId('late-song'))
+
+      open()
+      await second
+      expect(exampleIds()).toContain(demoSessionId('late-song'))
+      await first
+    } finally {
+      manifestGate.current = Promise.resolve()
+    }
   })
 
   it('leaves sessions the visitor made themselves where they are', async () => {

@@ -24,7 +24,12 @@ import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, loadDemoSongs, loadDemoSongsFromApi, seedDemoLyrics, } from './demo-song'
 import { exampleAttribution, EXAMPLES_GROUP_NAME, exampleSessionFrom, examplesToSeed, isExampleSession, mergeExampleManifests, reconcileExampleGroup, } from './examples-library'
 
-let seeded = false
+/**
+ * The web seed, once per page. A promise rather than a flag so a second
+ * caller waits for the first instead of returning before the rows exist: a
+ * song link stages the example's row right after asking for the seed.
+ */
+let webSeed: Promise<void> | null = null
 
 /**
  * The manifests this device has seen, for the surfaces that have to show a
@@ -59,14 +64,18 @@ export function exampleCreditFor(
  * Idempotent, and safe to call before the stores have anything in them —
  * every decision is taken against the caches as they are at call time, and
  * existing rows keep their metadata and regain their runtime stem URLs.
+ * Every caller resolves when the one seed per page has finished.
  */
 export async function seedExamplesLibrary(): Promise<void> {
   if (IS_NATIVE_BUILD) {
     startNativeSeed()
     return nativeSeed ?? undefined
   }
-  if (seeded) return
-  seeded = true
+  webSeed ??= seedWebExamples()
+  return webSeed
+}
+
+async function seedWebExamples(): Promise<void> {
   try {
     const manifests = await loadDemoSongs()
     setExampleManifests(manifests)
@@ -270,7 +279,7 @@ async function ensureExamplesGroup(
 
 /** Test seam: forget that seeding has run. */
 export function resetExamplesSeedForTests(): void {
-  seeded = false
+  webSeed = null
   nativeBundleSeed = null
   nativeSeed = null
   setExampleManifests([])
