@@ -11,12 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-12
 
-380 commits since `v0.9.16` before this release PR, #974: PRs #858, #898,
-#947, #957 to #973, #975 to #979, #981 to #991 and #993 to #996. Every commit
-came through a PR; none reached `main` without one. Of the 63 on `main`'s
-first-parent line, 33 are PR merge commits, 28 are the commits #947 (5), #898
-(15), #991 (5), #993 (2) and #858 (1) rebased onto `main` instead of merging,
-and 2 are the squash commits of #963 and #995.
+415 commits since `v0.9.16` before this release PR, #974: PRs #858, #898,
+#947, #957 to #973, #975 to #991 and #993 to #1000. Every commit came through
+a PR; none reached `main` without one. Of the 92 on `main`'s first-parent
+line, 34 are PR merge commits, 55 are the commits #947 (5), #898 (15), #991
+(5), #993 (2), #858 (1), #997 (7), #998 (6) and #999 (14) rebased onto `main`
+instead of merging, and 3 are the squash commits of #963, #980 and #995.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
 compliance work that has to ship with it: the 14-day withdrawal for credit
@@ -28,12 +28,19 @@ so the launch traffic meets all of them. Fixes merged on 13 October ride
 along: sessions that stay signed in past their first month (#991), the
 Community and Karaoke fixes from the UI audit (#898), time labels that no
 longer read 2:60 (#947), a guided exercise that keeps its clip and Zen
-steadiness that leaves out a few tracker slips (#994), and an unpublish that
-works after another device took the share down (#995). Two small features
-came the same day: coming-soon store chips on the voiceprint results and the
-Map (#963), and Karaoke Night links that name their song (#993). The native apps keep their own versions and tags;
-what reaches them is listed under `native-mercurypitch` and
-`native-besidecue`.
+steadiness that leaves out a few tracker slips (#994), an unpublish that
+works after another device took the share down (#995), and Drum Night's
+sign-in sheet with its own type and links (#980). The same day brought three
+follow-ups from the database audit: exact column names in the generic API,
+weekly leagues that advance past their first cut and hidden league members
+kept anonymous (#997); reads that return every row, creates that land once,
+and one row per setting and per challenge, enforced by migration 0070
+(#998); and sign-in, sign-up, 2FA and weekly races closed, with each singer's
+progress kept apart on a shared device (#999). It also brought two small
+features: coming-soon store chips on the voiceprint results and the Map
+(#963), and Karaoke Night links that name their song (#993). The native apps
+keep their own versions and tags; what reaches them is listed under
+`native-mercurypitch` and `native-besidecue`.
 
 ### Release steps (prod)
 
@@ -109,7 +116,7 @@ bounded per account only.
 
 ### Migrations
 
-Prod ran `0055` with `v0.9.16`, so this release brings fourteen. `wrangler d1
+Prod ran `0055` with `v0.9.16`, so this release brings fifteen. `wrangler d1
 migrations apply` runs the files it has not recorded in file-name order:
 
 | Migration                                | PR   | What it does                                                                                                                |
@@ -128,12 +135,23 @@ migrations apply` runs the files it has not recorded in file-name order:
 | `0067_chargeback_alerts`                 | #970 | `chargebackAlerts`: one row per dispute once its chargeback alert is raised, so a later event does not raise it again       |
 | `0068_withdrawal_refund_failure_claims`  | #970 | `withdrawals.refundFailureClaimedAt` and `refundFailureClaimedBy`: the delivery that claims a failed refund tells the owner |
 | `0069_chargeback_alert_claims`           | #975 | `chargebackAlertClaims`: the delivery that claims a dispute mails its chargeback alert; deleted once told or refused        |
+| `0070_natural_keys`                      | #998 | unique `(userId, key)` on `userSettings` and `(userId, challengeId)` on `challengeProgress`, after merging duplicates       |
 
 Dev applied them in merge order instead (0056; 0057 to 0059; 0063; 0060 to
-0062 and 0066; then #970's 0064, 0065, 0067 and 0068; then #975's 0069).
-#968 checked that 0066 applies cleanly in every order a D1 can see. The
-deploy applies the migrations before it deploys the worker, so 0065 has run
-when the old worker gets its last events.
+0062 and 0066; then #970's 0064, 0065, 0067 and 0068; then #975's 0069;
+then #998's 0070). #968 checked that 0066 applies cleanly in every order a
+D1 can see. The deploy applies the migrations before it deploys the worker,
+so 0065 has run when the old worker gets its last events.
+
+0070 sets the rollback order (#998). This release's worker upserts on 0070's
+unique indexes and does not run without them: against a database restored to
+before 0070, every `userSettings` and `challengeProgress` create answers 400
+until the worker goes back. The v0.9.16 worker runs on either schema; with
+0070 kept, only a create that meets an existing setting or challenge row
+answers 400, and the stored row stays as it was. So roll the worker back
+first (Deploy DB Worker on `v0.9.16`, environment prod), then restore the
+database if it has to go back. The "Rollback story" comment in
+`deploy-db.yml` names only the restore command.
 
 ### Web and API: the launch gift and the finish-five reward (#961, #966)
 
@@ -762,6 +780,127 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
 - `community-services.test.ts`: a 404 returns true; a 403, a 500 and a
   network error return false.
 
+### Web: Drum Night's sign-in sheet keeps its own type and links (#980)
+
+- The shared sign-in sheet renders inside the Drum Night shell, whose control
+  resets (`.shell button, .shell input { font: inherit }` and
+  `.shell button { color: inherit }`, specificity (0,1,1)) beat the sheet's
+  own rules. At 375x812 its email field was 14 px, so iOS zoomed on focus, and
+  "Create account" and "Forgot password" lost their accent.
+- The sheet now sits in a `display: contents` layer (`.authSheet`), and the
+  resets skip it with `:not(:where(.authSheet *))`, which adds no
+  specificity: the field is 16 px and both links take the accent. Drum
+  Night's own controls (50 at 375x812, 44 at 1440x900) are unchanged.
+- `src/e2e/drum-night-auth-sheet.spec.ts` fails on the base (14 px) and
+  passes with the fix.
+
+### API and web: exact column names, weekly league cuts and refused sessions (#997)
+
+- **Exact column names.** The generic CRUD API accepted differently cased
+  SQL column names, and those bypassed the ownership, validation and
+  private-column checks. POST and PATCH bodies and list or count filters and
+  ordering now need the schema's exact column names. `PRAGMA table_info` is
+  cached per isolate and refreshed before a newly added column is refused,
+  and a JSON body that is not an object answers 400.
+- **Weekly leagues advance again.** They stopped after their first cut; the
+  next cut now includes the previous running week, and a second run in the
+  same week changes nothing. Weeks older than a stored watermark are not
+  replayed.
+- **Hidden members stay anonymous.** Standings showed hidden members' account
+  ids; their rows and pseudonyms now use the weekly membership UUID. Owners
+  and members who opted in keep their names.
+- **A refused session asks for sign-in** (the client follow-up to #991),
+  an expired account token included, instead of falling back without a word.
+  Verification and refresh results are bound to the credential and session
+  version that started them.
+- No migration. Case variants, ownership attacks, hidden-column queries, the
+  schema-cache refresh, the weekly rollover and the session races stay as
+  permanent tests; 14 of the new race tests failed before the fix. An
+  independent review found it compatible with cached v0.9.16 PWAs and the
+  native builds.
+- A Beside Cue smoke test's overall budget goes from 90 s to 150 s (two
+  software-rendered course loads of 41 s each); each load keeps its 60 s
+  limit.
+
+### API and web: reads that return every row, creates that land once (#998)
+
+- **Every row.** A read of the caller's own rows with no limit pages through
+  all of them. A failed page fails the read instead of returning part of it,
+  and an account change cancels it, so a read-then-create caller cannot
+  mistake another account for an empty one. Private tables default to 1,000
+  rows a page (public and admin reads stay at 100), and every list orders by
+  `rowid` last.
+- **Once.** The client mints one UUID per create and keeps it across
+  retries; the worker checks it before the insert, returns only the caller's
+  own row, and awards a session once.
+- **One row per setting and per challenge (0070).** `userSettings` is unique
+  on `(userId, key)` and `challengeProgress` on `(userId, challengeId)`.
+  0070 keeps the newest setting of each duplicate group and merges a
+  challenge's duplicates first: completion, best score, progress and
+  attempts take the highest, and the earliest completion date stays. The
+  generic create then upserts on the indexes (`naturalKey` in
+  `workers/db-worker/src/tables.ts`), so installed clients stop making
+  duplicates with no client change. Song manifests gain the upsert on 0025's
+  index.
+- **A create never undoes a completion.** The review found that the first
+  version of the upsert wrote a first attempt over a completed challenge: an
+  anonymous web token lapses after 30 days, the next read comes back empty,
+  and the attempt creates. `challengeProgress` now merges through
+  `upsertMerge` the way 0070 does. Every rule is idempotent, so a replayed
+  create cannot inflate `attempts`; the price is that the attempt on that
+  lapsed-token path is not counted. Settings and song manifests stay last
+  write wins.
+- PATCH and DELETE check ownership inside the SQL, the longest streak's
+  high-water mark is held in SQL, and a first consent or display name saved
+  after anonymous provisioning already made the profile is recovered.
+- Tests: three merge cases and a replay case in
+  `api-contract-integration.test.ts`, and
+  `challenge-progress-client-integration.test.ts`, which drives the real
+  challenges service and adapters through a lapsed anonymous token; 4 of
+  them failed before the fix. Left for later: a PATCH of challenge progress
+  is still last write wins.
+- The rollback order changes; see Migrations.
+
+### API and web: sign-in, sign-up, 2FA and weekly races, and shared-device progress (#999)
+
+- **2FA.** A TOTP step is claimed with one guarded `UPDATE` against the exact
+  confirmed credential: a code that arrives twice at once is spent once, and
+  a proof against a removed or replaced authenticator fails.
+- **Sign-in and sign-up.** Two first sign-ins for one device resolve to one
+  anonymous account, rechecked for provider, suspension and device proof; a
+  row erased in between is refused instead of crashing. A double-submitted
+  sign-up answers 409, never 500, and the guarded upgrade cannot bump
+  `tokenVersion` twice and sign the winner out. Two concurrent upgrades with
+  different emails now make two accounts; before, the second email
+  overwrote the first.
+- **Weekly challenges.** Encore insertion and queued activation compete for
+  one active row, and the rollover first closes every ended active row (up to
+  four a request), so a week the old race left with two active rows serves
+  the new week on its first load.
+- **Progress on a shared device.** Each progress key (the Ascent, Long note
+  bests and Echo bests) keeps one copy per owner on the device
+  (`mp_sync_progress:<key>`): one per signed-in account and one guest copy.
+  Pull, backfill and write-through upload only the current owner's copy, so
+  one singer's practice cannot reach another's account. An upload merges the
+  owner's copy with the account's row read just before the write and
+  replaces the pending snapshot with the merged value, which also closes an
+  older race where a flush resent the pre-merge copy. Practice done signed
+  out is still adopted once by the account that signs in.
+- **Visible change:** signed out, those keys show the guest copy, which is
+  empty unless the singer practiced signed out; the account's copy returns on
+  sign-in. Other accounts' copies stay on the device until they sign in
+  again.
+- **Exports and the upgrade notice.** A received song whose original file has
+  no bare MIME type exports again (the stored original is untouched), and the
+  "waiting on another tab" notice clears once the database upgrade runs.
+- Review: the first version lost a best set on another device when a second
+  singer's row appeared after their first pull on a shared device. Fixed
+  before merge: `settings-shared-device.test.ts` keeps both sequences (its 5
+  tests fail on `main`'s settings code before the merge and pass now), and
+  `weekly-encore-integration.test.ts` keeps the duplicate active rows. No
+  migration. Drum Night's first paint stays under its 520,000-byte budget, at
+  519,988 bytes, by null-guarding the new storage hooks.
+
 ### Tests: the jam-two-peer skill reaches a room again (#858)
 
 - `.claude/skills/jam-two-peer/two-peer.mjs` seeds
@@ -785,7 +924,7 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
 - It needs the next `mp-v` tag: the plugin is registered in the Android and
   iOS projects.
 
-### Premium exercises, native test builds only: Long note's levels, Echo's engine and the room kits (#985, #988, #990)
+### Premium exercises, native test builds only: Long note's levels, Echo and the room kits (#985, #988, #990, #1000)
 
 None of them reaches the web. `PREMIUM_EXERCISES` is `KARAOKE_IMPORT`, which is
 true only in a native test build (`src/lib/native-build.ts`), and the web's
@@ -822,7 +961,7 @@ Long note is the older `src/features/exercises/long-note`.
   1.5 x the mean absolute cents), `phrase-voice.ts` and `steady-note.ts`
   complete it, with 123 tests in nine files. `hold-target.ts` gains
   `latestVoiceprintRange`, split out of `pickHoldTarget` with no change in
-  behavior. The room comes in a later PR.
+  behavior. The room is #1000, below.
 - **The room kits (#990)**, a refactor with no change in behavior, so the
   next exercise room can share Long note's parts. `src/components/room-kit/`
   takes the mic capture (`useExerciseCapture`, given its owner and room name),
@@ -835,22 +974,39 @@ Long note is the older `src/features/exercises/long-note`.
   and every timing are unchanged; the keyframes are renamed `mic-pulse` and
   `mic-nudge` inside their CSS modules. `exercise-level.test.ts` now walks
   both kits as well.
+- **The Echo room (#1000).** Merc sings a short phrase, the singer sings it
+  back note for note, and each note landed on pitch lights a star over the
+  town; a run is five phrases, then the result's constellations. It opens
+  from the Sing room's exercise picker (`echo-stars`). The Settings accuracy
+  tier sets the notes per phrase, the room each note gets, Merc's tempo and
+  whether another octave counts, and the room kit's level pill changes it.
+  Merc's calls go through `merc-call.ts`, shaped for a sampler later; Long
+  note's voice ribbon moved into `room-kit/ribbon.ts`, so both rooms draw
+  with it; `room-kit/plate-loader.ts` starts the sky plate loading on the tap
+  and decodes it during the push. `scripts/sync-echo-art.mjs` copies art
+  round 3 and writes `echo-geometry.ts`. In headless Chromium at 4x CPU
+  slowdown, no frame took over 20 ms.
 
 ### native-mercurypitch
 
-Found by building the native bundle at this release's head, as a test build
-(`KARAOKE_IMPORT` on) and as a store build, and matching each PR's changed
-lines against the source lines Rollup kept. `mp-v0.8.18` (82bb04d32, the
-merge of #973) is the first tag whose bundle carries the changes marked with
-it, and `mp-v0.8.19` (85b78e48b, the merge of #985, TestFlight build 706) the
-ones marked with that. Nothing merged after #985 has a native tag yet, so
-the changes from #987 to #990, #898 and #947 arrive from the next native
-tag, as #974's does. #991 changed only the worker; the app sees it with
-this release's worker deploy, under the server changes below. The 13 October
-merges after it (#963 and #993 to #996) have no native tag yet either, and
-their lines were not matched against the bundle here: #963's chips render
-nothing in the native build, #994's clip fix is in the worker, and #996
-needs the next tag for its plugin.
+Found by building the native bundle at this release's head as it stood when
+#991 merged, as a test build (`KARAOKE_IMPORT` on) and as a store build, and
+matching each PR's changed lines against the source lines Rollup kept.
+`mp-v0.8.18` (82bb04d32, the merge of #973) is the first tag whose bundle
+carries the changes marked with it, and `mp-v0.8.19` (85b78e48b, the merge
+of #985, TestFlight build 706) the ones marked with that. Two more followed
+on 13 October, and Mercury Pitch Mobile built both: `mp-v0.8.20`
+(ab8ce55ce, the merge of #996) carries #987 to #990, #898, #947, #963 and
+#993 to #996, and `mp-v0.8.21` (69051cfc0, the merge of #1000) adds #980 and
+#1000. #997 to #999 merged after it, so their client code arrives from the
+next native tag, as #974's does. #991 changed only the worker, and the worker
+halves of #997 to #999 reach every installed build the same way: with this
+release's worker deploy, under the server changes below. The merges after
+#991 were not matched against the bundle line by line: #963's chips render
+nothing in the native build, #980's app code is all in
+`src/features/drum-night`, which was in neither build when #989 was checked,
+#994's clip fix is in the worker, #996 has its own section, and #1000 is
+listed below.
 
 **In the native code**
 
@@ -867,6 +1023,15 @@ needs the next tag for its plugin.
 - **Long note's level control (#985, `mp-v0.8.19`).** `assert-bundle.mjs`
   STAGE 2 gains the marker `long-note-level`: the test build carries the
   control, and the store build must not. Both builds pass at this head.
+- **Echo's screen (#1000, `mp-v0.8.21`), test builds only.** `EchoScreen` on
+  the shell's stack, opened by id from the Sing room's exercise picker
+  (`premium-exercise-wiring.ts`), with Echo's art behind `vite.config.ts`'s
+  premium switch. By the PR's own bundle checks, the dev target's
+  `assert-bundle.mjs` STAGE 2 finds Echo's room, its picker card and its
+  level control, and the store bundle has no Echo image and none of the
+  room's markers; it keeps the id `echo-stars` and Echo's help text, as it
+  keeps Long note's. Look at the Echo card in the picker, a run at each
+  level, and the result.
 - #962 changed only comments under `apps/mercurypitch`.
 
 **Shared code the native app runs**
@@ -887,17 +1052,17 @@ needs the next tag for its plugin.
   between takes, a take at each level (a straight tone brims at all three, a
   wide vibrato only at Learning), leaving the app mid-hold, and Settings'
   Accuracy Tier and mic sensitivity after a pick in the room.
-- **Echo's groundwork (#988, from the next native tag), test builds only.**
+- **Echo's groundwork (#988, `mp-v0.8.20`), test builds only.**
   Only `hold-target.ts` reaches the bundle: `latestVoiceprintRange`, split
   out of `pickHoldTarget` with no change in behavior. `src/lib/sequence` is
   in neither build, so there is nothing to look at.
-- **The room kits (#990, from the next native tag), test builds only.** Long
+- **The room kits (#990, `mp-v0.8.20`), test builds only.** Long
   note runs on `src/components/room-kit` and `src/components/demo-kit`, with
   no change in behavior, and the kits' CSS lands in the `LongNoteScreen`
   chunk. The store build keeps none of it. Run Long note once end to end:
   the demo, the level pill between takes, a take, leaving mid-hold, Back and
   Done.
-- **"Center" (#989, from the next native tag), every build.** Both builds
+- **"Center" (#989, `mp-v0.8.20`), every build.** Both builds
   keep the changed strings of the guided voice check (the Pitch Center
   heading, results and notes), Voice History (its guidance, "Spectral
   center", and `shownTakeTitle` in thread titles, the playback rail and the
@@ -906,13 +1071,13 @@ needs the next tag for its plugin.
   Night tuner and Glassworks files #989 changed are in neither build. Look at
   a guided take kept on an earlier build: Voice History should title it
   "Pitch Center".
-- **Legal links (#987, from the next native tag), every build.**
+- **Legal links (#987, `mp-v0.8.20`), every build.**
   `TERMS_URL`, `PRIVACY_URL` and `CONTENT_POLICY_URL` end in a slash. The
   shell's About screen (`AboutScreen.tsx`) and `SignInSheet` link the first
   two, and so does Karaoke's import box in a test build. Look at Terms and
   Privacy under Settings › About MercuryPitch and in the sign-in sheet: each
   should open its page with no redirect.
-- **The UI audit's fixes (#898, from the next native tag), every build.**
+- **The UI audit's fixes (#898, `mp-v0.8.20`), every build.**
   Both builds keep the changed lines of `CommunityShare`, `share-service.ts`
   and `usePublishedShareCounts`, but neither the rail nor the More sheet
   opens Community, so a tester can't reach them. The rest can be reached.
@@ -927,7 +1092,7 @@ needs the next tag for its plugin.
   from the bundle and then the server, and the web branch folds out. Look at
   the leaderboard on a phone, the studio in both themes, and the example
   songs after a few relaunches.
-- **Time labels (#947, from the next native tag), every build.**
+- **Time labels (#947, `mp-v0.8.20`), every build.**
   `format-time.ts` and its callers are in both builds: song lengths in the
   Karaoke studio's list of songs on your other devices
   (`UvrLibraryElsewhere`) and in `jam-catalog.ts`, Analysis's take span
@@ -995,6 +1160,15 @@ native build)
   those two reasons. A separation in the app writes `uvr-job-app`
   (`app-songs.ts`) and spends the subscription's songs, never credits, so it
   never counts toward the five.
+- **The database audit's follow-ups (#997, #998, #999).** The generic API
+  takes exact column names only, which #997's review found compatible with
+  the native builds, and hidden league members stay anonymous. A create that meets
+  the singer's setting or challenge row updates it instead of adding a second
+  (#998, with 0070 merging the duplicates already stored), and a challenge's
+  completion and best score never go back. A read of a singer's own rows with
+  no limit returns up to 1,000 instead of 100. Two first sign-ins on one
+  device get one account, a double-submitted sign-up gets 409, a TOTP code is
+  spent once, and one Encore runs per week (#999).
 
 ### native-besidecue
 
