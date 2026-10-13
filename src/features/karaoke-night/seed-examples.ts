@@ -14,13 +14,14 @@
 // Plan: docs/plans/lrc-mapper-studio-plan.md (Phase 7).
 
 import { createSignal } from 'solid-js'
+import { hydrateStemUrls, listStemTypesStrict } from '@/db/services/uvr-service'
 import { IS_DEV } from '@/lib/defaults'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
-import { addSessionToGroup, createGroup, getAllUvrSessions, getGroups, importUvrSessionDurable, updateUvrSessionOutputs, } from '@/stores/uvr-store'
+import { addSessionToGroup, createGroup, getAllUvrSessions, getGroups, getUvrSession, importUvrSessionDurable, restoreUvrSessionOutputs, updateUvrSessionOutputs, } from '@/stores/uvr-store'
 import type { BundledExample } from './bundled-examples'
 import { loadBundledExamples } from './bundled-examples'
 import type { DemoSongManifest } from './demo-song'
-import { demoSessionId, loadDemoSongs, loadDemoSongsFromApi, seedDemoLyrics, } from './demo-song'
+import { demoIsPlayable, demoSessionId, loadDemoSongs, loadDemoSongsFromApi, seedDemoLyrics, } from './demo-song'
 import { exampleAttribution, EXAMPLES_GROUP_NAME, exampleSessionFrom, examplesToSeed, isExampleSession, mergeExampleManifests, reconcileExampleGroup, } from './examples-library'
 
 let seeded = false
@@ -56,8 +57,8 @@ export function exampleCreditFor(
  * Put the demo corpus in the session list, as ordinary rows.
  *
  * Idempotent, and safe to call before the stores have anything in them —
- * every decision is taken against the caches as they are at call time, and a
- * row that already exists is left exactly alone.
+ * every decision is taken against the caches as they are at call time, and
+ * existing rows keep their metadata and regain their runtime stem URLs.
  */
 export async function seedExamplesLibrary(): Promise<void> {
   if (IS_NATIVE_BUILD) {
@@ -80,16 +81,63 @@ export async function seedExamplesLibrary(): Promise<void> {
       }
     }
 
+    // Session records deliberately omit runtime outputs. Keeping the row
+    // through the boot prune must also restore the URLs that make it sing.
+    for (const manifest of manifests) await restoreWebExampleOutputs(manifest)
+
     // Lyrics come second and per song: `seedDemoLyrics` already knows never to
     // clobber a visitor's edit, and a song whose lyrics fail to fetch is still
     // a playable row.
     for (const manifest of manifests) {
+      if (getUvrSession(demoSessionId(manifest.slug)) === undefined) continue
       await seedDemoLyrics(manifest)
     }
 
-    await ensureExamplesGroup(manifests, existing)
+    await ensureExamplesGroup(
+      manifests,
+      new Set(getAllUvrSessions().map((s) => s.sessionId)),
+    )
   } catch (err) {
     if (IS_DEV) console.warn('[Examples] seeding failed:', err)
+  }
+}
+
+async function restoreWebExampleOutputs(
+  manifest: DemoSongManifest,
+): Promise<void> {
+  const row = getUvrSession(demoSessionId(manifest.slug))
+  if (
+    row === undefined ||
+    row.status !== 'completed' ||
+    !isExampleSession(row) ||
+    !demoIsPlayable(manifest) ||
+    (row.outputs?.vocal === manifest.stems.vocal &&
+      row.outputs?.instrumental === manifest.stems.instrumental)
+  )
+    return
+
+  try {
+    // A visitor can replace either example stem. Those local files win over
+    // the manifest; a failed inventory must not masquerade as their absence.
+    const stored = await listStemTypesStrict(row.sessionId)
+    const hasLocalAudio =
+      stored.includes('vocal') || stored.includes('instrumental')
+    const local = hasLocalAudio ? await hydrateStemUrls(row.sessionId) : null
+    const localUrls = Object.values(local ?? {})
+    if (
+      (stored.includes('vocal') && (local?.vocal ?? '') === '') ||
+      (stored.includes('instrumental') && (local?.instrumental ?? '') === '') ||
+      !restoreUvrSessionOutputs(row, {
+        vocal: local?.vocal ?? manifest.stems.vocal,
+        instrumental: local?.instrumental ?? manifest.stems.instrumental,
+      })
+    ) {
+      // These fresh URLs never reached the cache (a delete or edit may have
+      // won the await), so no player owns them.
+      for (const url of localUrls) URL.revokeObjectURL(url)
+    }
+  } catch (err) {
+    if (IS_DEV) console.warn('[Examples] restoring stem URLs failed:', err)
   }
 }
 

@@ -1666,3 +1666,27 @@ export function updateUvrSessionOutputs(
     setCurrentUvrSession(updated)
   }
 }
+
+/** Restore runtime URLs without rewriting durable metadata. A pending read
+ * must not resurrect a deleted row or replace stems edited while it waited. */
+export function restoreUvrSessionOutputs(
+  snapshot: UvrSession,
+  outputs: NonNullable<UvrSession['outputs']>,
+): boolean {
+  const current = getUvrSession(snapshot.sessionId)
+  if (
+    current === undefined ||
+    deletedSessionIds.has(snapshot.sessionId) ||
+    current.status !== snapshot.status ||
+    current.outputs !== snapshot.outputs
+  )
+    return false
+
+  const restored = {
+    ...current,
+    outputs: { ...current.outputs, ...outputs },
+  }
+  updateSessionCache(restored)
+  setCurrentSessionIfActive(restored)
+  return true
+}

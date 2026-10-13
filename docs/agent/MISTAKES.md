@@ -2018,3 +2018,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** the probe advanced distance while retaining the initial unresolved target list. An expired singing pane crossed the camera; the real session would already have settled and retired it.
 **Rule:** preserve target lifecycle and resident scenery when comparing matched camera positions. Confirm optical candidates during real gameplay with the actual clock and inputs; keep synthetic fixture artifacts separate from product defects.
 **See:** `packages/glass-game/src/render/runner-renderer.ts`, `apps/beside-cue/e2e/helpers/runner-voice-fixture.ts`.
+
+### Check playback after retaining an example across reloads
+
+**Symptom:** shipped examples stayed listed after the boot prune fix but would not play after a reload.
+**Cause:** session persistence omits runtime `outputs`; retaining a row makes the seeder skip its creation, and a local-blob hydrator cannot restore its remote URLs. Presence-only reload tests passed.
+**Rule:** restore external audio from its manifest, preserve local replacements and edited metadata, and test playable stems across fresh module loads sharing one database. A failed storage read or a delete/edit during hydration must not overwrite user work or resurrect a removed row.
+**See:** `src/features/karaoke-night/seed-examples.ts`, `src/stores/uvr-store-reload.test.ts`.
