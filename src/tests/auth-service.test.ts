@@ -17,7 +17,7 @@ vi.mock('@/stores/notifications-store', () => ({
 
 import { accountKnownHere } from '@/db/services/account-known'
 import type { AuthResponse } from '@/db/services/auth-service'
-import { consumeGoogleRedirect, deleteAccount, fetchMe, googleSignInUrl, googleTwofaPending, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, googleSignInUrl, googleTwofaPending, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, refreshSession, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { beginGoogleReturn } from '@/lib/google-return-nonce'
@@ -422,6 +422,124 @@ describe('requireAuth', () => {
       '[auth] suspended account cannot sync personal data',
     )
     infoSpy.mockRestore()
+  })
+})
+
+// The server can end a session while this device still holds its token: the
+// expiry sweep, "sign out everywhere", a password reset on another device.
+// The token has to go. Dropping it QUIETLY let getUserId() fall back to the
+// device id, and the next write minted a brand-new anonymous identity for it:
+// a signed-in singer's practice was saved to a throwaway account with nothing
+// on screen to say so. An account's refused token asks for a sign-in instead.
+describe('a session the server refused', () => {
+  beforeEach(() => {
+    // Forget any session an earlier test verified, so /me is really asked.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}')),
+    )
+    logout()
+    localStorage.clear()
+    showNotificationMock.mockClear()
+  })
+
+  it('asks an account to sign in rather than minting a new identity', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    setAuthToken(makeToken(3600, 'password'))
+    const fetchMock = mockFetchOnce(401, { error: 'Unauthorized' })
+
+    expect(await requireAuth()).toBe(false)
+    expect(getAuthToken()).toBeNull()
+    expect(needsSignIn()).toBe(true)
+    expect(showNotificationMock).toHaveBeenCalledWith(
+      expect.stringContaining('session has expired'),
+      'warning',
+      expect.anything(),
+    )
+    // One /me, and never an /anonymous handshake for the device.
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      'http://api.test/api/auth/anonymous',
+      expect.anything(),
+    )
+    infoSpy.mockRestore()
+  })
+
+  it('re-provisions the same device when an anonymous token is refused', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    setAuthToken(makeToken(3600, 'anonymous'))
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 401 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            token: makeToken(3600),
+            userId: 'device',
+            isNew: false,
+            user: { authProvider: 'anonymous' },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await requireAuth()).toBe(true)
+    expect(needsSignIn()).toBe(false)
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(
+      'http://api.test/api/auth/anonymous',
+    )
+    expect(showNotificationMock).not.toHaveBeenCalled()
+    infoSpy.mockRestore()
+  })
+
+  it('asks an account to sign in when its refresh is refused, expired or not', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    // A refresh is attempted exactly when the token is old.
+    setAuthToken(makeToken(-100, 'password'))
+    mockFetchOnce(401, { error: 'Unauthorized' })
+
+    expect(await refreshSession()).toBeNull()
+    expect(getAuthToken()).toBeNull()
+    expect(needsSignIn()).toBe(true)
+    infoSpy.mockRestore()
+  })
+
+  it('ignores a refusal for a token a sign-in replaced while it was out', async () => {
+    setAuthToken(makeToken(3600, 'password'))
+    const fresh = makeToken(7200, 'password')
+    let answerMe: ((response: Response) => void) | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.endsWith('/api/auth/me')
+          ? new Promise<Response>((resolve) => {
+              answerMe = resolve
+            })
+          : Promise.resolve(
+              new Response(
+                JSON.stringify({
+                  token: fresh,
+                  userId: 'user-1',
+                  isNew: false,
+                  user: { authProvider: 'password' },
+                }),
+                {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' },
+                },
+              ),
+            ),
+      ),
+    )
+
+    const restoring = restoreAuth()
+    await loginWithPassword('a@b.com', 'secret123')
+    answerMe?.(new Response('{}', { status: 401 }))
+
+    expect(await restoring).toBe(true)
+    expect(getAuthToken()).toBe(fresh)
+    expect(needsSignIn()).toBe(false)
   })
 })
 
@@ -1216,5 +1334,15 @@ describe('handleCloudSessionRejected', () => {
     expect(handleCloudSessionRejected(false)).toBe(true)
     expect(needsSignIn()).toBe(true)
     expect(showNotificationMock).not.toHaveBeenCalled()
+  })
+
+  it('signs out an account whose token already ran out', () => {
+    // The commonest lost session of all. Treated as nobody's, it left the
+    // library empty with no word about signing in.
+    setAuthToken(makeToken(-100, 'password'))
+
+    expect(handleCloudSessionRejected()).toBe(true)
+    expect(getAuthToken()).toBeNull()
+    expect(needsSignIn()).toBe(true)
   })
 })
