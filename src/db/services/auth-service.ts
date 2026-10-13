@@ -307,26 +307,26 @@ const SESSION_REJECTED_MESSAGE =
 const SESSION_REJECTED_NOTIFICATION_CHANNEL = 'session-rejected'
 
 /**
- * A cloud DATA request was rejected as unauthenticated.
+ * A cloud data request, `/me` or `/refresh` refused this session.
  *
  * Deliberately not folded into `handleAuthErrorResponse`: on the auth
  * endpoints a 401 means "wrong password", and signing someone out for
  * mistyping one would be worse than the bug this fixes.
  *
- * Only an upgraded account can have a session to lose. A visitor with no
+ * Only an account has a session to lose, expired or not. A visitor with no
  * token, or with a lazily provisioned anonymous one, is in the ordinary
  * case — identities mint on the first write, so a 401 there means "you
  * have not written anything yet", which is not a failure and must stay
  * silent. Returns whether it acted.
  *
- * Why it matters: reads degrade to empty results so the app still loads,
- * and `getUserId()` mints an anonymous id unconditionally, so nothing
- * downstream could tell an expired session from a new visitor. On a real
- * device on 2026-09-09 that showed up as a Karaoke library that was simply
- * empty, with no suggestion that signing in would bring it back.
+ * Why it matters: reads degrade to empty results and `getUserId()` mints an
+ * anonymous id, so nothing downstream tells an expired session from a new
+ * visitor. On 2026-09-09 a real device showed an empty Karaoke library with
+ * no hint that signing in would help, and a token dropped quietly let the
+ * next write mint a NEW identity that then kept the singer's practice.
  */
 export function handleCloudSessionRejected(notifyUser = true): boolean {
-  if (!hasUpgradedAccount()) return false
+  if (!isRegisteredProvider(storedTokenProvider())) return false
   setAuthToken(null)
   setRequiresLogin(true)
   tokenServerVerified = false
@@ -493,9 +493,9 @@ async function verifyTokenWithServer(): Promise<boolean> {
       return true
     }
     if (res.status === 401 || res.status === 404) {
-      // Stale or foreign-signed token — discard and re-auth below.
+      if (tokenServerVerified) return true // a sign-in replaced it meanwhile
       console.info('[auth] stored token rejected by server — re-authenticating')
-      setAuthToken(null)
+      if (!handleCloudSessionRejected()) setAuthToken(null)
       return false
     }
     if (res.status === 403) {
@@ -734,10 +734,11 @@ export async function refreshSession(): Promise<RefreshedSession | null> {
     })
     if (res.status === 401) {
       // The session behind the token is gone — revoked elsewhere, or the
-      // account was deleted. Dropping it here is what turns the next write
-      // into "please sign in" rather than a silent 401 on every request.
+      // account was deleted. An account's token asks for a sign-in rather
+      // than a new identity; any other is dropped. Unless a newer one won.
+      if (getAuthToken() !== token) return null
       console.info('[auth] session refresh refused — the session is gone')
-      setAuthToken(null)
+      if (!handleCloudSessionRejected()) setAuthToken(null)
       return null
     }
     if (!res.ok) return null
