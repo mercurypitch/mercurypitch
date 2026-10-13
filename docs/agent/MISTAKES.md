@@ -1111,6 +1111,24 @@ columns added by the legacy `scripts/migrate-*.sql` scripts are NOT in
 `schema.sql`, so a database's real shape is the schema plus whatever legacy
 scripts were hand-run on it.
 
+### Name a SQL column exactly before any rule checks it by name
+
+**Symptom:** a write body with `"UserId"` moved a session record into another
+singer's account, `"Score": 5000` got past the score validator, `"FriendCode"`
+picked a vanity friend code, and an unauthenticated `where[Code]=...` confirmed
+promo-code guesses on a route BUGS.md listed as fixed.
+**Cause:** SQLite resolves identifiers without regard to case, so `"UserId"` in
+an INSERT writes `userId`. Every per-column rule in the generic CRUD handlers
+matched the exact JavaScript key instead: `delete body.userId`, the
+`serverCols` strip, `validateWrite`, the streak clamp, `hiddenReadColumn`. A
+key spelled in another case passed all of them and still reached the column.
+**Rule:** check that a caller-named column is EXACTLY one of the table's
+columns before any rule looks for it by name (`unknownColumn` reads them from
+the schema). A denylist keyed on a column name is only as strict as its
+spelling.
+**See:** `unknownColumn` in `workers/db-worker/src/index.ts`,
+`workers/db-worker/node-tests/column-names-integration.test.ts`
+
 ### Never transpose a weekly challenge to the singer's range
 
 **Symptom:** looks like a bug — a Bass is handed a B4 they cannot reach, and

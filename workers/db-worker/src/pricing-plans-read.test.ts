@@ -32,7 +32,8 @@ const PLAN = {
   perks: '["Supporter badge on your profile"]',
 }
 
-/** Enough of D1 to answer the two CRUD read shapes. */
+/** Enough of D1 to answer the CRUD read shapes, and the column list the
+ *  reader checks a filter or sort against. */
 function envWithPlan(): Env {
   const statement = {
     bind: () => statement,
@@ -40,9 +41,18 @@ function envWithPlan(): Env {
     first: async () => ({ ...PLAN }),
     run: async () => ({}),
   }
+  const columns = {
+    bind: () => columns,
+    all: async () => ({
+      results: Object.keys(PLAN).map((name) => ({ name })),
+    }),
+  }
   return {
     ADMIN_KEY: 'test-admin-key',
-    DB: { prepare: () => statement },
+    DB: {
+      prepare: (sql: string) =>
+        sql.startsWith('PRAGMA table_info') ? columns : statement,
+    },
   } as unknown as Env
 }
 
