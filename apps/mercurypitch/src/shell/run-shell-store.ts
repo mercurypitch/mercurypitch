@@ -62,6 +62,7 @@ import { exerciseHoldsFocus, markRunParked, nativeRunControls, roomArrivalHeld, 
 import { playbackState } from '@/stores/playback-state-store'
 import type { SettingsSection } from '@/stores/settings-section'
 import { activeTab } from '@/stores/ui-store'
+import { isFullBleed } from './premium-rooms'
 
 export type RunState = 'browsing' | 'active' | 'paused' | 'ended'
 
@@ -300,13 +301,21 @@ export const transportVisible = createMemo<boolean>(
 )
 
 /**
+ * A premium room drawn full-bleed is on top of the stack (premium-rooms.ts,
+ * decision D1): its art fills the screen, and the dock steps aside for the
+ * whole of it.
+ */
+export const fullBleedOnTop = createMemo<boolean>(() => isFullBleed(pushed()))
+
+/**
  * The full rail is gone exactly while a run is on screen: the shell's
  * transport has its slot, or the room is its own transport. And while an
  * exercise pushed over the tab holds a note (`exerciseHoldsFocus`): nothing
  * takes the rail's place then, it only steps aside until the note ends.
+ * And for as long as a full-bleed room is on top.
  */
 export const railVisible = createMemo<boolean>(
-  () => !runOnScreen() && !exerciseHoldsFocus(),
+  () => !runOnScreen() && !exerciseHoldsFocus() && !fullBleedOnTop(),
 )
 
 /** R2's corner chip: present whenever the transport took the rail's place. */

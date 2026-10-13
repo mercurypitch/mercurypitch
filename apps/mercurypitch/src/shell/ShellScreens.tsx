@@ -17,6 +17,7 @@ import type { Component, JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { thisDevice } from '@/lib/device-noun'
 import { KaraokeStudioScreen } from './KaraokeStudioScreen'
+import { isFullBleed } from './premium-rooms'
 import { PushedScreen } from './PushedScreen'
 import type { PushedScreen as PushedScreenId } from './run-shell-store'
 import { popScreen, pushed, pushScreen } from './run-shell-store'
@@ -113,7 +114,11 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
   return (
     <Show when={pushed()} keyed>
       {(screen) => (
-        <PushedScreen title={titleOf(screen)} onBack={popScreen}>
+        <PushedScreen
+          title={titleOf(screen)}
+          onBack={popScreen}
+          bleed={isFullBleed(screen)}
+        >
           {body(screen)}
         </PushedScreen>
       )}

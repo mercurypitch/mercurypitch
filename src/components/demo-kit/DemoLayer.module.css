@@ -23,9 +23,11 @@
   opacity: 1;
 }
 
+/* At the room's top, or under the shell's floating bar in a full-bleed
+   room (--pushed-top). */
 .progress {
   position: absolute;
-  top: 0;
+  top: var(--pushed-top, 0px);
   left: 0;
   right: 0;
   height: 3px;

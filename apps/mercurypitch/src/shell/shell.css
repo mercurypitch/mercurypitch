@@ -765,6 +765,62 @@
   padding-bottom: calc(var(--tabbar-total) + 16px + var(--touch-target) + 8px);
 }
 
+/* ---------- a premium room, full-bleed (premium-rooms.ts, D1) ---------- */
+
+/* The room's art fills the screen, under the status bar, the bar and the
+   home indicator, and the dock is gone for the whole room (railVisible,
+   data-shell-bleed). The room keeps its content clear of the floating bar
+   with --pushed-top and of the bottom edge with --pushed-bottom. */
+.mp-pushed--bleed {
+  /* The bar's own height: its padding round the 44 px back button. */
+  --pushed-top: calc(var(--safe-top) + 56px);
+  --pushed-bottom: var(--safe-bottom);
+}
+
+.mp-pushed--bleed .mp-pushed__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  border-bottom: 0;
+  background: none;
+  /* Only its controls take taps: the rest of the bar is the room's art. */
+  pointer-events: none;
+}
+
+.mp-pushed--bleed .mp-pushed__bar > * {
+  pointer-events: auto;
+}
+
+/* Over the art, the back button keeps its own glass and the title gets a
+   soft scrim behind the word alone, so the sky stays open everywhere
+   else. The bar takes the room's dark stage (PushedScreen.tsx), so the
+   scrim and the halo are the stage's ground in either app theme. */
+.mp-pushed--bleed .mp-pushed__title {
+  margin-left: -6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--bg-primary) 60%, transparent),
+    transparent
+  );
+  text-shadow: 0 1px 6px color-mix(in srgb, var(--bg-primary) 70%, transparent);
+}
+
+.mp-pushed--bleed .mp-pushed__body,
+:root[data-shell-pill='on'] .mp-pushed--bleed .mp-pushed__body {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+/* The parked run's pill waits off screen while a full-bleed room is open;
+   Back brings it back with the tab. */
+:root[data-shell-bleed='on'] .mp-dock__accessory {
+  display: none;
+}
+
 /* ---------- the developer screen ---------- */
 
 .mp-dev {

@@ -1,11 +1,17 @@
-/* The room fills the pushed screen's body; the body's own bottom padding
-   keeps the dock clear (shell.css .mp-pushed__body). */
+/* The room fills the pushed screen's body. Drawn full-bleed (the shell's
+   premium-rooms.ts, decision D1), the body is the whole screen: the
+   backdrop runs under the status bar and the floating bar, and the room's
+   content keeps clear of them by the shell's --pushed-top and
+   --pushed-bottom. Under the opaque bar both are unset, and the body's own
+   bottom padding keeps the dock clear (shell.css .mp-pushed__body). */
 .room {
   position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 520px;
+  padding-top: var(--pushed-top, 0px);
+  padding-bottom: var(--pushed-bottom, 0px);
   overflow: hidden;
   background:
     radial-gradient(

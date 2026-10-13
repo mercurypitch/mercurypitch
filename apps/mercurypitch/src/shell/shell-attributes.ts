@@ -20,15 +20,19 @@
 // compact view is all it should hold, so while a room says it is in there
 // (`roomInPictureInPicture`, native-shell-store.ts) the shell's stylesheet
 // takes every piece of its chrome off the screen (`data-picture-in-picture`).
+//
+// And a premium room drawn full-bleed (premium-rooms.ts, decision D1): the
+// rail is out by `railVisible`, and the dock's session pill steps aside with
+// it (`data-shell-bleed`).
 
 import { createEffect, onCleanup } from 'solid-js'
 import { roomInPictureInPicture } from '@/stores/native-shell-store'
-import { parked, railVisible } from './run-shell-store'
+import { fullBleedOnTop, parked, railVisible } from './run-shell-store'
 
 /**
- * Mirror the rail onto `data-shell-rail`, the pill onto `data-shell-pill` and
- * the small window onto `data-picture-in-picture`, for as long as the caller
- * lives.
+ * Mirror the rail onto `data-shell-rail`, the pill onto `data-shell-pill`,
+ * the small window onto `data-picture-in-picture` and a full-bleed room onto
+ * `data-shell-bleed`, for as long as the caller lives.
  */
 export function mirrorShellChrome(
   root: HTMLElement = document.documentElement,
@@ -46,9 +50,14 @@ export function mirrorShellChrome(
       root.setAttribute('data-picture-in-picture', 'on')
     } else root.removeAttribute('data-picture-in-picture')
   })
+  createEffect(() => {
+    if (fullBleedOnTop()) root.setAttribute('data-shell-bleed', 'on')
+    else root.removeAttribute('data-shell-bleed')
+  })
   onCleanup(() => {
     root.removeAttribute('data-shell-rail')
     root.removeAttribute('data-shell-pill')
     root.removeAttribute('data-picture-in-picture')
+    root.removeAttribute('data-shell-bleed')
   })
 }
