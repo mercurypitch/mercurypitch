@@ -704,12 +704,13 @@ async function createUser(
     passwordHash?: string
     deviceSecretHash?: string
   },
-): Promise<void> {
+  ifAbsent = false,
+): Promise<boolean> {
   const now = nowIso()
-  await db
+  const result = await db
     .prepare(
       `INSERT INTO users (id, createdAt, updatedAt, authProvider, providerId, email, emailVerified, passwordHash, lastLoginAt, tokenVersion, deviceSecretHash)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)${ifAbsent ? ' ON CONFLICT(id) DO NOTHING' : ''}`,
     )
     .bind(
       fields.id,
@@ -724,6 +725,7 @@ async function createUser(
       fields.deviceSecretHash ?? null,
     )
     .run()
+  return (result.meta?.changes ?? 0) > 0
 }
 
 /** Create the default profile row (id == userId) if it doesn't exist. */
@@ -1728,31 +1730,40 @@ async function handleAnonymous(
   if (!id || !UUID_RE.test(id)) {
     return respond({ error: 'A deviceId (UUID) is required' }, { status: 400 })
   }
-  const existing = await findUserById(env.DB, id)
-  if (existing) {
-    assertAccountActive(existing)
-    // Upgraded accounts must log in with their real method instead.
-    if (existing.authProvider !== 'anonymous') {
-      return respond({ error: 'Account requires login' }, { status: 403 })
+  let existing = await findUserById(env.DB, id)
+  if (!existing) {
+    const created = await createUser(
+      env.DB,
+      {
+        id,
+        authProvider: 'anonymous',
+        // A new account always binds one, which is what makes a NULL hash mean
+        // "predates this change" rather than "chose not to".
+        deviceSecretHash: DEVICE_SECRET_RE.test(body.deviceSecret ?? '')
+          ? await hashDeviceSecret(body.deviceSecret as string)
+          : undefined,
+      },
+      true,
+    )
+    if (created) await ensureProfile(env.DB, id, defaultDisplayName(id))
+    const row = (await findUserById(env.DB, id)) as UserRow
+    if (created) {
+      return issueSession(env, row, respond, true, sessionOrigin(request))
     }
-    // The id alone is not a credential — it is printed on the leaderboard.
-    if (!(await authorizeDeviceSecret(env.DB, existing, body.deviceSecret))) {
-      return respond({ error: 'Account requires login' }, { status: 403 })
-    }
-    return issueSession(env, existing, respond, false, sessionOrigin(request))
+    // A concurrent first sign-in for this device created the row between our
+    // read and our insert: resolve to that account like any returning call.
+    existing = row
   }
-  await createUser(env.DB, {
-    id,
-    authProvider: 'anonymous',
-    // A new account always binds one, which is what makes a NULL hash mean
-    // "predates this change" rather than "chose not to".
-    deviceSecretHash: DEVICE_SECRET_RE.test(body.deviceSecret ?? '')
-      ? await hashDeviceSecret(body.deviceSecret as string)
-      : undefined,
-  })
-  await ensureProfile(env.DB, id, defaultDisplayName(id))
-  const row = (await findUserById(env.DB, id)) as UserRow
-  return issueSession(env, row, respond, true, sessionOrigin(request))
+  assertAccountActive(existing)
+  // Upgraded accounts must log in with their real method instead.
+  if (existing.authProvider !== 'anonymous') {
+    return respond({ error: 'Account requires login' }, { status: 403 })
+  }
+  // The id alone is not a credential — it is printed on the leaderboard.
+  if (!(await authorizeDeviceSecret(env.DB, existing, body.deviceSecret))) {
+    return respond({ error: 'Account requires login' }, { status: 403 })
+  }
+  return issueSession(env, existing, respond, false, sessionOrigin(request))
 }
 
 /**
