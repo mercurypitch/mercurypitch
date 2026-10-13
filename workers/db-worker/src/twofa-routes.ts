@@ -91,8 +91,7 @@ export async function verifySecondFactor(
       credential.lastUsedStep === null ? undefined : credential.lastUsedStep + 1
     const matched = await verifyTotp(credential.secret, code, { minStep })
     if (matched === null) return false
-    await markTotpStepUsed(env, userId, matched)
-    return true
+    return markTotpStepUsed(env, userId, matched)
   }
   return consumeRecoveryCode(env, userId, code)
 }
