@@ -1798,11 +1798,24 @@ async function upgradeAnonymousToPassword(
     )
   }
 
-  await env.DB.prepare(
-    `UPDATE users SET authProvider = 'password', email = ?, passwordHash = ?, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?`,
-  )
-    .bind(email, passwordHash, nowIso(), anon.id)
-    .run()
+  // Guarded like accountForSignUpCode: a concurrent sign-up (a double tap)
+  // may have upgraded this row since the read above.
+  let changes: number
+  try {
+    const upgraded = await env.DB.prepare(
+      `UPDATE users SET authProvider = 'password', email = ?, passwordHash = ?, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ? AND authProvider = 'anonymous'`,
+    )
+      .bind(email, passwordHash, nowIso(), anon.id)
+      .run()
+    changes = upgraded.meta.changes ?? 0
+  } catch (err) {
+    // users.email is UNIQUE; another sign-up took the address since the check.
+    if ((await findUserByEmail(env.DB, email)) !== null) {
+      return respond({ error: 'Email already registered' }, { status: 409 })
+    }
+    throw err
+  }
+  if (changes !== 1) return null
   // The anonymous user's profile already exists with a default "Singer-XXXX"
   // name, so ensureProfile's INSERT OR IGNORE won't apply the chosen name —
   // update it explicitly when one was provided.
@@ -1867,12 +1880,21 @@ async function handleRegister(
   if (upgraded) return upgraded
 
   const id = crypto.randomUUID()
-  await createUser(env.DB, {
-    id,
-    authProvider: 'password',
-    email,
-    passwordHash,
-  })
+  try {
+    await createUser(env.DB, {
+      id,
+      authProvider: 'password',
+      email,
+      passwordHash,
+    })
+  } catch (err) {
+    // users.email is UNIQUE: a sign-up that took the address between the
+    // check above and the write (a double tap) lands here.
+    if ((await findUserByEmail(env.DB, email)) !== null) {
+      return respond({ error: 'Email already registered' }, { status: 409 })
+    }
+    throw err
+  }
   await ensureProfile(
     env.DB,
     id,

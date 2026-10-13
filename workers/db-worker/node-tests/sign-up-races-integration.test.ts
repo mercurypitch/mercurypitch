@@ -114,3 +114,52 @@ describe('two first sign-ins for one device', () => {
     expect(stranger.status).toBe(403)
   })
 })
+
+describe('a double-submitted sign-up', () => {
+  const password = 'Correct-Horse-Battery-9'
+
+  it('answers the second with 409, never 500', async () => {
+    const body = { email: 'double@example.com', password }
+    let second: { status: number; body: any } | undefined
+    justBefore(d1, /INSERT INTO users \(/, async () => {
+      second = await call('POST', '/api/auth/register', body)
+    })
+    const first = await call('POST', '/api/auth/register', body)
+
+    expect([first.status, second?.status].sort()).toEqual([200, 409])
+    expect(
+      sqlite
+        .prepare(
+          "SELECT COUNT(*) AS n FROM users WHERE email = 'double@example.com'",
+        )
+        .get(),
+    ).toEqual({ n: 1 })
+  })
+
+  it('upgrades one device once, and the session it hands out works', async () => {
+    const deviceId = '00000000-0000-4000-8000-0000000000d2'
+    const deviceSecret = 'device-secret-for-the-race-test-0003'
+    expect(
+      (await call('POST', '/api/auth/anonymous', { deviceId, deviceSecret }))
+        .status,
+    ).toBe(200)
+    const body = { email: 'tap@example.com', password, deviceId, deviceSecret }
+
+    // Both requests read the device while it is still anonymous; the second
+    // upgrades it before the first's UPDATE runs.
+    let second: { status: number; body: any } | undefined
+    justBefore(d1, /UPDATE users SET authProvider = 'password'/, async () => {
+      second = await call('POST', '/api/auth/register', body)
+    })
+    const first = await call('POST', '/api/auth/register', body)
+
+    const won = [first, second].filter((r) => r?.status === 200)
+    expect(won).toHaveLength(1)
+    expect([first.status, second?.status]).toContain(409)
+    // Before, both upgraded, and the second bump of tokenVersion revoked the
+    // session the first winner had just been handed.
+    expect(
+      (await call('GET', '/api/auth/me', undefined, won[0]?.body.token)).status,
+    ).toBe(200)
+  })
+})
