@@ -28,11 +28,18 @@ account after your results, and the sign-in sheet fits on a phone.
   you can still cancel under **Withdraw from contract here**, and you get back
   the price of the credits you haven't used. Free and bonus credits are not
   refunded.
-- **Checkout spells out the 14 days.** The box you tick says what cancelling
+- **Checkout spells out the 14 days.** The box you tick says what canceling
   gets back once your credits are in, and the purchase mail gives the date to
   cancel by.
 - **Privacy, Terms and Imprint links** on the website's pages, the Voice
   Mirror, Break Glass and Settings › About.
+- **Link straight to an example song.**
+  mercurypitch.com/karaoke-night?song=josephine opens Karaoke Night with
+  Josephine loaded, and Goodbye to Spring and Nothing in the Dark work the
+  same way. Add &zen=1 to open it in Zen.
+- **The iPhone and Android apps are on their way.** App Store and Google Play
+  chips, marked coming soon, sit under your Voice Mirror and Free Sing
+  results and on the Map.
 - **Cookie settings shows your choice.** Reopen the banner from Settings ›
   About to see what you chose and when, and change it. Declining deletes the
   Google cookies already set.
