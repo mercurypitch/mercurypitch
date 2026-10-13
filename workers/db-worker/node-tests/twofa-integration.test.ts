@@ -18,7 +18,7 @@ import type { Env } from '../src/auth'
 import { signJwt } from '../src/auth'
 import worker from '../src/index'
 import { totpCode } from '../src/totp'
-import { applyMigrations, SqliteD1Database } from './sqlite-d1'
+import { applyMigrations, justBefore, SqliteD1Database } from './sqlite-d1'
 
 const ADMIN_KEY = 'twofa-test-admin'
 const PASSWORD = 'Twofa123pass'
@@ -250,6 +250,38 @@ describe('signing in with a second factor', () => {
       (await post('/api/auth/2fa/verify', { ceremony: second.ceremony, code }))
         .status,
     ).toBe(401)
+  })
+
+  it('will not let one code win twice when it arrives twice at once', async () => {
+    const account = await register('race@example.com')
+    const { secret } = await enroll(account)
+    const code = await freshCode(secret)
+    const ceremonyOf = async (): Promise<string> =>
+      ((await (await login('race@example.com')).json()) as { ceremony: string })
+        .ceremony
+    const first = await ceremonyOf()
+    const second = await ceremonyOf()
+    const sessionsBefore = sessionRowCount(account.userId)
+
+    // The second request checks the code and marks it spent between the
+    // first request's check and its mark: the race a double submit, or an
+    // attacker racing the owner with a code read off their screen, runs.
+    let secondStatus = 0
+    justBefore(
+      env.DB as unknown as SqliteD1Database,
+      /UPDATE totpCredentials/,
+      async () => {
+        secondStatus = (
+          await post('/api/auth/2fa/verify', { ceremony: second, code })
+        ).status
+      },
+    )
+    const firstStatus = (
+      await post('/api/auth/2fa/verify', { ceremony: first, code })
+    ).status
+
+    expect([firstStatus, secondStatus].sort()).toEqual([200, 401])
+    expect(sessionRowCount(account.userId)).toBe(sessionsBefore + 1)
   })
 
   it('refuses a code with no ceremony to spend it against', async () => {

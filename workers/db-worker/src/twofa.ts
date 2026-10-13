@@ -280,18 +280,20 @@ export async function getTotpForLogin(
   return { secret, lastUsedStep: row.lastUsedStep }
 }
 
-/** Move the anti-replay high-water mark. MAX so an out-of-order write cannot
- *  lower it and re-admit a spent code. */
+/** Move the anti-replay high-water mark, atomically. Only raises it, so an
+ *  out-of-order write cannot lower it and re-admit a spent code. Returns false
+ *  when the step was already spent (a concurrent request claimed it first). */
 export async function markTotpStepUsed(
   env: TwofaEnv,
   userId: string,
   step: number,
-): Promise<void> {
-  await env.DB.prepare(
+): Promise<boolean> {
+  const res = await env.DB.prepare(
     `UPDATE totpCredentials
-        SET lastUsedStep = MAX(COALESCE(lastUsedStep, -1), ?)
-      WHERE userId = ?`,
+        SET lastUsedStep = ?
+      WHERE userId = ? AND (lastUsedStep IS NULL OR lastUsedStep < ?)`,
   )
-    .bind(step, userId)
+    .bind(step, userId, step)
     .run()
+  return (res.meta.changes ?? 0) > 0
 }
