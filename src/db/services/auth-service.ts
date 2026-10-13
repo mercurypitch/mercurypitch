@@ -425,9 +425,7 @@ async function postSignIn(
     return outcome
   }
   const auth = outcome
-  setAuthToken(auth.token)
-  setRequiresLogin(false)
-  serverVerifiedToken = auth.token // freshly issued by this server
+  storeIssuedSession(auth.token)
   // Anonymous device provisioning is not a signup — only count real
   // account creation (register / first Google sign-in).
   if (auth.isNew && route !== 'anonymous') trackEvent('signup')
@@ -478,6 +476,12 @@ function setRequiresLogin(value: boolean): void {
 
 // Verification belongs to one exact credential, not just the current user.
 let serverVerifiedToken: string | null = null
+
+function storeIssuedSession(token: string): void {
+  setAuthToken(token)
+  setRequiresLogin(false)
+  serverVerifiedToken = token
+}
 
 function sessionIsCurrent(token: string, version: number): boolean {
   return getAuthToken() === token && untrack(authVersion) === version
@@ -629,9 +633,7 @@ export async function loginWithPassword(
  * this module's private token state — so it hands the response back here.
  */
 export function adoptSession(auth: AuthResponse): void {
-  setAuthToken(auth.token)
-  setRequiresLogin(false)
-  serverVerifiedToken = auth.token
+  storeIssuedSession(auth.token)
   authChanged()
 }
 
@@ -869,9 +871,7 @@ export function consumeGoogleRedirect(): void {
   if (landed.drive !== null) driveConnectResult = landed.drive
 
   if (landed.token !== null) {
-    setAuthToken(landed.token)
-    setRequiresLogin(false)
-    serverVerifiedToken = landed.token // freshly issued by the worker
+    storeIssuedSession(landed.token)
     googleRedirectResult = { ok: true }
     rememberSignInMethod('google')
     authChanged()
@@ -1185,9 +1185,7 @@ export async function pollDeviceLink(
   if (!res.ok) return { status: 'expired' }
   const data = (await res.json()) as { status?: string; token?: string }
   if (data.status === 'linked' && data.token != null && data.token !== '') {
-    setAuthToken(data.token)
-    setRequiresLogin(false)
-    serverVerifiedToken = data.token // freshly issued by the worker
+    storeIssuedSession(data.token)
     authChanged()
     return { status: 'linked' }
   }

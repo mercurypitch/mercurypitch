@@ -418,23 +418,14 @@ async function unknownColumn(
   return names.find((name) => !columns.has(name)) ?? null
 }
 
-// ── CRUD handlers ────────────────────────────────────────────────────
-
-async function handleList(
+/** Reject schema and privacy query oracles before building any read SQL. */
+async function validateReadColumns(
   entity: string,
   def: TableDef,
-  url: URL,
-  auth: AuthUser | null,
+  q: ListQuery,
   env: Env,
-  countOnly: boolean,
-  admin = false,
-): Promise<Response> {
-  const q = parseListQuery(url)
-  if (!q) return respond({ error: 'Invalid query' }, { status: 400 })
-
-  const scope = scopeRead(def, q, auth)
-  if (scope instanceof Response) return scope
-
+  admin: boolean,
+): Promise<Response | null> {
   // Before the hidden-column check, which matches exact names: `where[Code]`
   // would otherwise reach SQL as a filter on `code`. A column that does not
   // exist at all used to reach SQL too, and answered 500.
@@ -476,6 +467,29 @@ async function handleList(
   if (hiddenSort !== null) {
     return respond({ error: `Cannot sort by "${hiddenSort}"` }, { status: 400 })
   }
+
+  return null
+}
+
+// ── CRUD handlers ────────────────────────────────────────────────────
+
+async function handleList(
+  entity: string,
+  def: TableDef,
+  url: URL,
+  auth: AuthUser | null,
+  env: Env,
+  countOnly: boolean,
+  admin = false,
+): Promise<Response> {
+  const q = parseListQuery(url)
+  if (!q) return respond({ error: 'Invalid query' }, { status: 400 })
+
+  const scope = scopeRead(def, q, auth)
+  if (scope instanceof Response) return scope
+
+  const columnError = await validateReadColumns(entity, def, q, env, admin)
+  if (columnError !== null) return columnError
 
   const clauses: string[] = []
   const binds: SqlValue[] = []
