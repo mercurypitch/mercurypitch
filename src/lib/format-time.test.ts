@@ -89,14 +89,22 @@ describe('formatRestDuration', () => {
   it.each([
     [500, '0.5s'],
     [200, '0.2s'],
+    [949, '0.9s'],
+    [950, '1s'],
     [undefined, '2s'],
     [2000, '2s'],
     [59400, '59s'],
+    [59499, '59s'],
+    [59500, '1m'],
     [59600, '1m'],
+    [60000, '1m'],
     [119600, '2m'],
     [125000, '2m 5s'],
     [0, '0s'],
     [-100, '0s'],
+    [Number.NaN, '0s'],
+    [Number.POSITIVE_INFINITY, '0s'],
+    [Number.NEGATIVE_INFINITY, '0s'],
   ])('formats %s ms as "%s"', (ms, label) => {
     expect(formatRestDuration(ms)).toBe(label)
   })

@@ -99,8 +99,9 @@ export function createStemMixerVoiceCommands(
 
   const seekAbsolute = (seconds: number): VoiceCommandResult => {
     if (deps.duration() <= 0) return voiceFailure('Nothing loaded')
-    deps.seekToTime(clampSeconds(seconds))
-    return `Go to ${formatSeekTarget(seconds)}`
+    const targetSeconds = clampSeconds(seconds)
+    deps.seekToTime(targetSeconds)
+    return `Go to ${formatSeekTarget(targetSeconds)}`
   }
 
   // ── Stem mixing ────────────────────────────────────────────

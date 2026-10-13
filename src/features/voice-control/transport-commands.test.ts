@@ -24,7 +24,11 @@ interface Fixture {
   mode: () => PlaybackMode
 }
 
-function makeFixture(tab: ActiveTab, currentBeat = 40): Fixture {
+function makeFixture(
+  tab: ActiveTab,
+  currentBeat = 40,
+  totalBeats = 200,
+): Fixture {
   const calls: string[] = []
   const [playing, setPlaying] = createSignal(false)
   const [paused, setPaused] = createSignal(false)
@@ -71,7 +75,7 @@ function makeFixture(tab: ActiveTab, currentBeat = 40): Fixture {
     handlers,
     transport: () => ({
       beat: () => currentBeat,
-      total: () => 200,
+      total: () => totalBeats,
       seekTo: (beat) => {
         seekedTo = beat
         calls.push('seekTo')
@@ -217,14 +221,44 @@ describe('transport voice commands — singing tab', () => {
   // The reply rounds the whole time before it splits off the minutes.
   // Rounding afterwards answered "go to 119.6 seconds" with "Go to 1:60".
   it.each([
-    ['go to 179.5 seconds', 'Go to 3:00'],
-    ['go to 119.6 seconds', 'Go to 2:00'],
-    ['go to 59.6 seconds', 'Go to 1:00'],
-    ['go to 59.4 seconds', 'Go to 59s'],
-  ])('answers "%s" with "%s"', (said, reply) => {
-    const fixture = makeFixture(TAB_SINGING)
+    ['go to 179.5 seconds', 'Go to 3:00', 359],
+    ['go to 119.6 seconds', 'Go to 2:00', 239.2],
+    ['go to 59.6 seconds', 'Go to 1:00', 119.2],
+    ['go to 59.4 seconds', 'Go to 59s', 118.8],
+    ['go to zero seconds', 'Go to 0s', 0],
+  ])('answers "%s" with "%s"', (said, reply, beat) => {
+    // 400 beats at 120 bpm leaves room for every requested position.
+    const fixture = makeFixture(TAB_SINGING, 40, 400)
 
     expect(fire(fixture, said)).toBe(reply)
+    expect(fixture.seekedTo()).toBeCloseTo(beat, 10)
+  })
+
+  it.each(['go to 179.5 seconds', 'go to three minutes'])(
+    'reports the actual end position when "%s" is beyond the song',
+    (said) => {
+      // 200 beats at 120 bpm is 100 seconds, not 200 seconds.
+      const fixture = makeFixture(TAB_SINGING)
+
+      expect(fire(fixture, said)).toBe('Go to 1:40')
+      expect(fixture.seekedTo()).toBe(200)
+    },
+  )
+
+  it('rounds the clamped end after converting beats back to seconds', () => {
+    // 119.2 beats at 120 bpm is 59.6 seconds: the reply carries to 1:00.
+    const fixture = makeFixture(TAB_SINGING, 40, 119.2)
+
+    expect(fire(fixture, 'go to two minutes')).toBe('Go to 1:00')
+    expect(fixture.seekedTo()).toBe(119.2)
+  })
+
+  it('keeps exact half-second rounding at a non-integer beat position', () => {
+    const fixture = makeFixture(TAB_SINGING)
+    fixture.deps.bpm = () => 137
+
+    expect(fire(fixture, 'go to 59.5 seconds')).toBe('Go to 1:00')
+    expect(fixture.seekedTo()).toBeCloseTo(135.85833333333332, 10)
   })
 
   it('reports absolute seeks with nothing loaded as failures', () => {

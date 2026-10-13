@@ -12,7 +12,7 @@ interface Fixture {
   setPlaylistActive: (v: boolean) => void
 }
 
-function makeFixture(): Fixture {
+function makeFixture(duration = 200): Fixture {
   const calls: string[] = []
   let playing = false
   let playlistActive = false
@@ -37,7 +37,7 @@ function makeFixture(): Fixture {
   const deps: StemMixerVoiceDeps = {
     playing: () => playing,
     elapsed: () => 30,
-    duration: () => 200,
+    duration: () => duration,
     play: () => {
       calls.push('play')
       playing = true
@@ -165,13 +165,32 @@ describe('stem mixer voice commands — transport', () => {
   })
 
   it.each([
-    ['go to 179.5 seconds', 'Go to 3:00'],
-    ['go to 119.6 seconds', 'Go to 2:00'],
-    ['go to 59.6 seconds', 'Go to 1:00'],
-    ['go to 59.4 seconds', 'Go to 59s'],
-  ])('answers "%s" with "%s"', (said, reply) => {
+    ['go to 179.5 seconds', 'Go to 3:00', 179.5],
+    ['go to 119.6 seconds', 'Go to 2:00', 119.6],
+    ['go to 59.6 seconds', 'Go to 1:00', 59.6],
+    ['go to 59.4 seconds', 'Go to 59s', 59.4],
+    ['go to zero seconds', 'Go to 0s', 0],
+  ])('answers "%s" with "%s"', (said, reply, seconds) => {
     const fixture = makeFixture()
     expect(fire(fixture, said)).toBe(reply)
+    expect(fixture.seekedTo()).toBe(seconds)
+  })
+
+  it.each(['go to 300 seconds', 'go to five minutes'])(
+    'reports the actual end position when "%s" is beyond the song',
+    (said) => {
+      const fixture = makeFixture()
+
+      expect(fire(fixture, said)).toBe('Go to 3:20')
+      expect(fixture.seekedTo()).toBe(200)
+    },
+  )
+
+  it('rounds the clamped end before formatting the reply', () => {
+    const fixture = makeFixture(59.6)
+
+    expect(fire(fixture, 'go to two minutes')).toBe('Go to 1:00')
+    expect(fixture.seekedTo()).toBe(59.6)
   })
 })
 
