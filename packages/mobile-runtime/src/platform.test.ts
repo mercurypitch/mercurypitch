@@ -25,6 +25,7 @@ const keepAwakePlugin = vi.hoisted(() => ({
   allowSleep: vi.fn(),
 }))
 const statusBar = vi.hoisted(() => ({ setStyle: vi.fn() }))
+const orientation = vi.hoisted(() => ({ lock: vi.fn(), unlock: vi.fn() }))
 const keyboard = vi.hoisted(() => ({ hide: vi.fn() }))
 const share = vi.hoisted(() => ({ share: vi.fn() }))
 const nativeSettings = vi.hoisted(() => ({ open: vi.fn() }))
@@ -72,6 +73,11 @@ vi.mock('@capacitor/haptics', () => {
 vi.mock('@capacitor-community/keep-awake', () => {
   loaded.push('@capacitor-community/keep-awake')
   return { KeepAwake: keepAwakePlugin }
+})
+
+vi.mock('@capacitor/screen-orientation', () => {
+  loaded.push('@capacitor/screen-orientation')
+  return { ScreenOrientation: orientation }
 })
 
 vi.mock('@capacitor/status-bar', () => {
@@ -166,6 +172,7 @@ describe('on the web', () => {
     ['hapticSuccess', (p: Platform) => p.hapticSuccess()],
     ['hapticWarning', (p: Platform) => p.hapticWarning()],
     ['keepAwake', (p: Platform) => p.keepAwake(true)],
+    ['holdPortrait', (p: Platform) => p.holdPortrait(true)],
     ['setStatusBar', (p: Platform) => p.setStatusBar('dark')],
     ['hideKeyboardOnNativeOnly', (p: Platform) => p.hideKeyboardOnNativeOnly()],
     ['sharePayload', (p: Platform) => p.sharePayload({ text: 'hi' })],
@@ -256,6 +263,17 @@ describe('on a phone', () => {
 
     await platform.keepAwake(false)
     expect(keepAwakePlugin.allowSleep).toHaveBeenCalledTimes(1)
+  })
+
+  it('holds the screen upright and lets it turn again', async () => {
+    const platform = await loadPlatform(true)
+
+    await platform.holdPortrait(true)
+    expect(orientation.lock).toHaveBeenCalledWith({ orientation: 'portrait' })
+    expect(orientation.unlock).not.toHaveBeenCalled()
+
+    await platform.holdPortrait(false)
+    expect(orientation.unlock).toHaveBeenCalledTimes(1)
   })
 
   it.each([
