@@ -67,7 +67,10 @@ let refundPageSize: number
 /** The refunds Stripe made, newest first, as Stripe lists them. */
 let refundsMade: Array<Record<string, unknown>>
 /** What Stripe says each PaymentIntent received. */
-let paymentIntents: Map<string, { amount_received: number; currency: string }>
+let paymentIntents: Map<
+  string,
+  { amount_received: number; currency: string; latest_charge?: string | null }
+>
 /** Which mails Resend refuses: true answers 500, which says nothing of
  *  whether it will take the mail later; a number answers that status, a
  *  422 being a refusal for good. */
@@ -254,7 +257,10 @@ function stripeGetAnswer(url: string): Response | null {
           id,
           object: 'payment_intent',
           ...intent,
-          latest_charge: latestCharge(id),
+          latest_charge:
+            intent.latest_charge === undefined
+              ? latestCharge(id)
+              : intent.latest_charge,
         })
   }
   // The cron's reconciliation asks for recent events: none here.
@@ -1775,9 +1781,8 @@ describe('a pack with no consent on record', () => {
 
   it('is refunded by hand when its PaymentIntent received nothing', async () => {
     const sam = await buyer('sam@example.test')
-    // From before the consent record, and Stripe reports nothing received.
-    // That leaves no price to work a refund out from. It is not a price of
-    // nothing.
+    // The intent still names a charge. This covers the former zero-price
+    // path separately from an intent that names no charge at all.
     insertRow(
       sam.userId,
       140,
@@ -1802,6 +1807,50 @@ describe('a pack with no consent on record', () => {
       '[MercuryPitch billing] Withdrawal: refund by hand, the price paid is not on record',
     ])
   })
+
+  it.each([-500, 0])(
+    'is refunded by hand when its PaymentIntent received %s and has no charge',
+    async (amount) => {
+      const sam = await buyer('sam@example.test')
+      // From before the consent record. Zero, or a malformed negative amount,
+      // leaves no price to work a refund out from; neither proves it was free.
+      insertRow(
+        sam.userId,
+        140,
+        'purchase',
+        'pack-plus',
+        'evt:evt_nothing',
+        'pi_nothing',
+      )
+      paymentIntents.set('pi_nothing', {
+        amount_received: amount,
+        currency: 'eur',
+        latest_charge: null,
+      })
+      const purchase = purchaseOf('evt_nothing')
+
+      const res = await withdraw(sam, purchase)
+
+      expect(res.status).toBe(200)
+      expect(res.body.statement).toMatchObject({
+        refundStatus: 'manual',
+        refundMinor: null,
+      })
+      expect(statementOf(purchase)).toMatchObject({
+        refundStatus: 'manual',
+        refundError: 'The price paid is not on record',
+        priceSource: 'none',
+      })
+      expect(refundRequests()).toEqual([])
+      expect(
+        sent.filter((request) => request.url.startsWith(`${STRIPE}/charges/`)),
+      ).toEqual([])
+      expect(balance(sam.userId)).toBe(0)
+      expect(subjects(alerts())).toEqual([
+        '[MercuryPitch billing] Withdrawal: refund by hand, the price paid is not on record',
+      ])
+    },
+  )
 })
 
 describe('a pack that cost nothing', () => {
@@ -1821,6 +1870,43 @@ describe('a pack that cost nothing', () => {
       refundMinor: 0,
     })
     expect(refundRequests()).toEqual([])
+    expect(subjects(alerts())).toEqual([
+      '[MercuryPitch billing] Withdrawal: nothing to refund',
+    ])
+  })
+
+  it('has nothing to refund when its PaymentIntent received zero and has no charge', async () => {
+    const sam = await buyer('sam@example.test')
+    const starter = await buy(sam, 'pack-starter', 'pi_starter')
+    sqlite
+      .prepare(
+        'UPDATE checkoutConsents SET amountMinor = 0 WHERE sessionId = ?',
+      )
+      .run('cs_evt_pi_starter')
+    paymentIntents.set('pi_starter', {
+      amount_received: 0,
+      currency: 'eur',
+      latest_charge: null,
+    })
+
+    const res = await withdraw(sam, starter)
+
+    expect(res.status).toBe(200)
+    expect(res.body.statement).toMatchObject({
+      refundStatus: 'none',
+      refundMinor: 0,
+    })
+    expect(statementOf(starter)).toMatchObject({
+      amountMinor: 0,
+      priceSource: 'checkout',
+      refundStatus: 'none',
+      refundMinor: 0,
+    })
+    expect(refundRequests()).toEqual([])
+    expect(
+      sent.filter((request) => request.url.startsWith(`${STRIPE}/charges/`)),
+    ).toEqual([])
+    expect(balance(sam.userId)).toBe(0)
     expect(subjects(alerts())).toEqual([
       '[MercuryPitch billing] Withdrawal: nothing to refund',
     ])
@@ -2808,6 +2894,68 @@ describe('a price lookup Stripe does not answer', () => {
       )
     },
   )
+
+  it('hands the pending refund to the owner when the retry receives zero with no charge', async () => {
+    const sam = await buyer('sam@example.test')
+    insertRow(
+      sam.userId,
+      140,
+      'purchase',
+      'pack-plus',
+      'evt:evt_pending_zero',
+      'pi_pending_zero',
+    )
+    paymentIntents.set('pi_pending_zero', {
+      amount_received: 0,
+      currency: 'eur',
+      latest_charge: null,
+    })
+    const inner = globalThis.fetch
+    let failures = 1
+    vi.stubGlobal(
+      'fetch',
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : String(input)
+        if (url.startsWith(`${STRIPE}/payment_intents/`) && failures > 0) {
+          failures -= 1
+          return Response.json({ error: { message: 'Busy.' } }, { status: 503 })
+        }
+        return inner(input, init)
+      },
+    )
+    const purchase = purchaseOf('evt_pending_zero')
+
+    const res = await withdraw(sam, purchase)
+
+    expect(res.status).toBe(200)
+    expect(res.body.statement).toMatchObject({
+      refundStatus: 'pending',
+      refundMinor: null,
+    })
+    expect(statementOf(purchase)).toMatchObject({
+      refundStatus: 'pending',
+      priceSource: 'pending',
+    })
+    expect(refundRequests()).toEqual([])
+
+    at('2026-10-20T16:17:00.000Z')
+    await cron()
+
+    expect(statementOf(purchase)).toMatchObject({
+      refundStatus: 'manual',
+      refundError: 'The price paid is not on record',
+      priceSource: 'none',
+    })
+    expect(refundRequests()).toEqual([])
+    expect(
+      sent.filter((request) => request.url.startsWith(`${STRIPE}/charges/`)),
+    ).toEqual([])
+    expect(balance(sam.userId)).toBe(0)
+    expect(subjects(alerts())).toEqual([
+      '[MercuryPitch billing] Withdrawal: refund waits for the price paid',
+      '[MercuryPitch billing] Withdrawal: refund by hand, the price paid is not on record',
+    ])
+  })
 })
 
 describe('deleting the account while a withdrawal refund is open', () => {
