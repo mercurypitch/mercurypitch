@@ -133,18 +133,22 @@ function isLaunchOffer(id: string): boolean {
 }
 
 /**
- * The Long note room's pictures (src/features/long-note/*.webp, the painted
- * lantern), which only a build with the premium exercises shows
- * (PREMIUM_EXERCISES, src/lib/native-build.ts). The room folds away in the
- * store build, but its pictures would not: Vite emits an image the moment
- * Rollup loads the module that imports it, and Rollup loads a folded dynamic
- * import's modules before it tree-shakes them. Measured 2026-10-11, the store
- * build carried all five lantern plates (497 KB) with nothing naming them.
- * So in a build without the premium exercises they resolve to an empty
- * module and are never emitted. `assert-bundle.mjs` STAGE 2 checks the
- * bundle; src/premium-images-build.test.ts checks this switch on every PR.
+ * The premium exercises' pictures (the Long note lantern's plates in
+ * src/features/long-note/, Echo's sky and stars in src/features/echo/art/,
+ * and the folders Ng slides and Lip roll will paint in), which only a build
+ * with the premium exercises shows (PREMIUM_EXERCISES,
+ * src/lib/native-build.ts). The rooms fold away in the store build, but
+ * their pictures would not: Vite emits an image the moment Rollup loads the
+ * module that imports it, and Rollup loads a folded dynamic import's
+ * modules before it tree-shakes them. Measured 2026-10-11, the store build
+ * carried all five lantern plates (497 KB) with nothing naming them. So in
+ * a build without the premium exercises they resolve to an empty module and
+ * are never emitted, at any depth inside those folders. `assert-bundle.mjs`
+ * STAGE 2 checks the bundle; src/premium-images-build.test.ts checks this
+ * switch on every PR.
  */
-const PREMIUM_IMAGES = /\/src\/features\/long-note\/[^/]+\.webp$/u
+const PREMIUM_IMAGES =
+  /\/src\/features\/(?:long-note|echo|ng-slides|lip-roll)\/(?:[^/]+\/)*[^/]+\.webp$/u
 
 /** What every premium picture is in a build without the premium exercises. */
 const FOLDED_IMAGE = '\0mercurypitch:folded-premium-image'
