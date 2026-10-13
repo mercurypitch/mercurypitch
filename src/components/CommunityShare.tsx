@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createResource, createSignal, For, Show, } from 'solid-js'
+import { createEffect, createMemo, createResource, createSignal, For, onCleanup, Show, } from 'solid-js'
 import tabStyles from '@/components/AppNavTabs.module.css'
 import profileStyles from '@/components/CommunityShare.module.css'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -18,6 +18,7 @@ import { authVersion, getUserId } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { ProfileView } from '@/features/community/ProfileView'
 import { alreadyShared, melodyFingerprint, sessionFingerprint, } from '@/features/community/share-identity'
+import { usePublishedShareCounts } from '@/features/community/usePublishedShareCounts'
 import { isProgressRun, runFromRecord, runKindOf, } from '@/features/progress/run-kinds'
 import { RunKindChip } from '@/features/progress/RunKindPills'
 import { WhatCountsModal } from '@/features/progress/WhatCountsModal'
@@ -259,6 +260,20 @@ export const CommunityShare: Component = () => {
   } | null>(null)
 
   const [streak, setStreak] = createSignal(0)
+  const publications = usePublishedShareCounts()
+  const [publishing, setPublishing] = createSignal(false)
+  const [removing, setRemoving] = createSignal(false)
+  let disposed = false
+  const removedBoardIds = new Set<string>()
+  onCleanup(() => {
+    disposed = true
+  })
+  const captureIdentity = () => {
+    const userId = getUserId()
+    const version = authVersion()
+    return () =>
+      !disposed && getUserId() === userId && authVersion() === version
+  }
 
   // Locally-shared items, kept reactive (localStorage reads are not), so a
   // newly shared melody/session shows up in the list immediately.
@@ -286,6 +301,16 @@ export const CommunityShare: Component = () => {
   // Load on mount and whenever the signed-in identity changes
   createEffect(() => {
     authVersion()
+    const isCurrent = captureIdentity()
+    removedBoardIds.clear()
+    setDbProfile(null)
+    setDbMelodies([])
+    setDbSessions([])
+    setStreak(0)
+    setPickerType(null)
+    setUnpublishing(null)
+    setPublishing(false)
+    setRemoving(false)
     void (async () => {
       const [profile, melodies, sessions, currentStreak] = await Promise.all([
         loadUserProfile(),
@@ -293,9 +318,18 @@ export const CommunityShare: Component = () => {
         loadSharedSessions(),
         getCurrentStreak(),
       ])
+      if (!isCurrent()) return
       setDbProfile(profile)
-      if (melodies.length > 0) setDbMelodies(melodies as SharedMelody[])
-      if (sessions.length > 0) setDbSessions(sessions as SharedSession[])
+      setDbMelodies(
+        (melodies as SharedMelody[]).filter(
+          (row) => !removedBoardIds.has(row.id),
+        ),
+      )
+      setDbSessions(
+        (sessions as SharedSession[]).filter(
+          (row) => !removedBoardIds.has(row.id),
+        ),
+      )
       setStreak(currentStreak)
     })()
   })
@@ -303,9 +337,23 @@ export const CommunityShare: Component = () => {
   // Load shared data from localStorage + DB
   const sharedMelodies = createMemo(() => {
     const db = dbMelodies()
-    // DB data takes priority; merge local items not in DB
+    const local = new Map(localMelodies().map((melody) => [melody.id, melody]))
+    // The server owns the card and notes, but does not store playback settings.
+    // Keep those settings only from a local copy with the same canonical owner.
+    const board = db.map((melody) => {
+      const saved = local.get(melody.id)
+      if (saved?.userId === undefined || saved.userId !== melody.userId)
+        return melody
+      return {
+        ...melody,
+        bpm: melody.bpm ?? saved.bpm,
+        key: melody.key ?? saved.key,
+        scale: melody.scale ?? saved.scale,
+        shareFingerprint: saved.shareFingerprint,
+      }
+    })
     const dbIds = new Set(db.map((m) => m.id))
-    return [...db, ...localMelodies().filter((m) => !dbIds.has(m.id))]
+    return [...board, ...localMelodies().filter((m) => !dbIds.has(m.id))]
   })
 
   const sharedSessions = createMemo(() => {
@@ -326,6 +374,7 @@ export const CommunityShare: Component = () => {
   }
 
   const currentProfile = createMemo(() => {
+    authVersion()
     const userId = getUserId()
 
     const sessions = getSessionHistory()
@@ -404,13 +453,16 @@ export const CommunityShare: Component = () => {
   })
 
   // Share a specific melody (from the library or the current one).
-  const shareMelody = (m: {
+  const shareMelody = async (m: {
     name: string
     items: MelodyItem[]
     bpm?: number
     key?: string
     scale?: string
   }) => {
+    if (publishing()) return
+    const isCurrent = captureIdentity()
+    const publishToBoard = canPostToCommunity()
     if (m.items.length === 0) {
       showNotification('That melody is empty', 'warning')
       return
@@ -429,7 +481,12 @@ export const CommunityShare: Component = () => {
       key: keyVal,
       scale: scaleVal,
     })
-    if (alreadyShared(fingerprint, localMelodies())) {
+    if (
+      alreadyShared(
+        fingerprint,
+        localMelodies().filter((share) => isOwnShare(share, localMelodies())),
+      )
+    ) {
       showNotification(
         `You have already shared this melody — it is on your Melodies shelf.`,
         'info',
@@ -461,37 +518,46 @@ export const CommunityShare: Component = () => {
       shareFingerprint: fingerprint,
     }
 
-    const updated = [...localMelodies(), shareable]
-    setLocalMelodies(updated)
-    storageSet('pp_shared_melodies', updated)
-    // Dual-write to DB (fire-and-forget). Without an account it is the
-    // shelf and the link only — see the notification below.
-    saveSharedMelodyToDb({
-      name: shareable.name,
-      items: shareable.items,
-      author: shareable.author,
-      tags: shareable.tags,
-    })
-    setPickerType(null)
-    setActiveTab('melodies')
-    void copyShareUrl(encoded).then((ok) => {
-      if (canPostToCommunity()) {
-        showNotification(
-          ok
-            ? `Shared "${shareable.name}" — link copied!`
-            : `Shared "${shareable.name}"`,
-          'info',
-        )
-        return
+    setPublishing(true)
+    try {
+      if (publishToBoard) {
+        const saved = await saveSharedMelodyToDb({
+          name: shareable.name,
+          items: shareable.items,
+          author: shareable.author,
+          tags: shareable.tags,
+        })
+        if (!isCurrent()) return
+        if (!saved) {
+          showNotification(
+            'Could not publish this melody. Try sharing it again.',
+            'error',
+          )
+          return
+        }
+        shareable.id = saved.id
+        shareable.userId = saved.userId
       }
+      setLocalMelodies((previous) => {
+        const updated = [...previous, shareable]
+        storageSet('pp_shared_melodies', updated)
+        return updated
+      })
+      if (publishToBoard) void publications.refresh()
+      setPickerType(null)
+      setActiveTab('melodies')
+      const copied = await copyShareUrl(encoded)
+      if (!isCurrent()) return
       showNotification(
-        ok
-          ? `Saved "${shareable.name}" to your shelf and copied the link — anyone you send it to can sing it. Create an account to list it on the Community board.`
-          : `Saved "${shareable.name}" to your shelf. Create an account to list it on the Community board.`,
+        publishToBoard
+          ? `Shared "${shareable.name}"${copied ? '. Link copied.' : '.'}`
+          : `Saved "${shareable.name}" to your shelf.${copied ? ' Link copied.' : ''} Create an account to list it on the Community board.`,
         'info',
       )
-    })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } finally {
+      if (isCurrent()) setPublishing(false)
+    }
   }
 
   // Share a specific practice session.
@@ -541,21 +607,9 @@ export const CommunityShare: Component = () => {
     local: readonly { id: string }[],
   ): boolean => {
     authVersion() // signing in changes whose shares these are
-    return (
-      share.userId === getUserId() || local.some((own) => own.id === share.id)
-    )
-  }
-
-  /**
-   * How many of the board's rows this singer published: the profile's
-   * "Published" figure. Counted per owner, as the worker counts its own
-   * (grants.ts, sharesPosted). The board lists everyone's shares, and
-   * counting the list credited each singer with the whole community's.
-   */
-  const publishedByMe = (rows: readonly { userId?: string }[]): number => {
-    authVersion() // signing in changes whose shares these are
-    const me = getUserId()
-    return rows.filter((row) => row.userId === me).length
+    return share.userId !== undefined
+      ? share.userId === getUserId()
+      : local.some((own) => own.id === share.id)
   }
 
   /** The share awaiting "yes, take it down". */
@@ -565,35 +619,60 @@ export const CommunityShare: Component = () => {
     name: string
   } | null>(null)
 
-  /**
-   * Take a share off the shelf.
-   *
-   * The shelf is the MERGE of the DB list and the local one, with the DB
-   * copy winning — so dropping only the local entry took nothing off
-   * screen for anyone signed in, which is everyone who can publish. The
-   * card stayed put and the button looked broken even though the row was
-   * being deleted server-side. Both lists have to lose it.
-   *
-   * A share that never reached the DB still disappears, which is the
-   * point: the singer asked for it gone.
-   */
-  const doUnpublish = (): void => {
+  /** Remove a published card only after the server confirms the delete. */
+  const doUnpublish = async (): Promise<void> => {
     const target = unpublishing()
-    if (target === null) return
-    if (target.kind === 'melody') {
-      const next = localMelodies().filter((m) => m.id !== target.id)
-      setLocalMelodies(next)
-      storageSet('pp_shared_melodies', next)
-      setDbMelodies((prev) => prev.filter((m) => m.id !== target.id))
-    } else {
-      const next = localSessions().filter((x) => x.id !== target.id)
-      setLocalSessions(next)
-      storageSet('pp_shared_sessions', next)
-      setDbSessions((prev) => prev.filter((s) => s.id !== target.id))
+    if (target === null || removing()) return
+    const isCurrent = captureIdentity()
+    const local = target.kind === 'melody' ? localMelodies() : localSessions()
+    const board = target.kind === 'melody' ? dbMelodies() : dbSessions()
+    const share =
+      board.find((row) => row.id === target.id) ??
+      local.find((row) => row.id === target.id)
+    if (!share || !isOwnShare(share, local)) return
+    const published =
+      share.userId !== undefined || board.some((row) => row.id === target.id)
+    setRemoving(true)
+    try {
+      if (published) {
+        const removed = await unpublishShared(target.kind, target.id)
+        if (!isCurrent()) return
+        if (!removed) {
+          showNotification(
+            'Could not unpublish this share. Try again.',
+            'error',
+          )
+          return
+        }
+      }
+      if (target.kind === 'melody') {
+        setLocalMelodies((previous) => {
+          const next = previous.filter((row) => row.id !== target.id)
+          storageSet('pp_shared_melodies', next)
+          return next
+        })
+        setDbMelodies((previous) =>
+          previous.filter((row) => row.id !== target.id),
+        )
+      } else {
+        setLocalSessions((previous) => {
+          const next = previous.filter((row) => row.id !== target.id)
+          storageSet('pp_shared_sessions', next)
+          return next
+        })
+        setDbSessions((previous) =>
+          previous.filter((row) => row.id !== target.id),
+        )
+      }
+      if (published) {
+        removedBoardIds.add(target.id)
+        void publications.refresh()
+      }
+      showNotification(`"${target.name}" is no longer shared.`, 'info')
+      setUnpublishing(null)
+    } finally {
+      if (isCurrent()) setRemoving(false)
     }
-    void unpublishShared(target.kind, target.id)
-    showNotification(`"${target.name}" is no longer shared.`, 'info')
-    setUnpublishing(null)
   }
 
   /**
@@ -635,7 +714,10 @@ export const CommunityShare: Component = () => {
   )
   const [explainingRuns, setExplainingRuns] = createSignal(false)
 
-  const shareSession = (s: SessionResult) => {
+  const shareSession = async (s: SessionResult) => {
+    if (publishing()) return
+    const isCurrent = captureIdentity()
+    const publishToBoard = canPostToCommunity()
     const name = s.sessionName || s.name || 'Practice Session'
     const completedAt = s.completedAt || Date.now()
     // The run, not the routine: two runs of the same drill on different
@@ -646,7 +728,12 @@ export const CommunityShare: Component = () => {
       score: Math.round(s.score || 0),
       completedAt,
     })
-    if (alreadyShared(fingerprint, localSessions())) {
+    if (
+      alreadyShared(
+        fingerprint,
+        localSessions().filter((share) => isOwnShare(share, localSessions())),
+      )
+    ) {
       showNotification(
         'You have already shared this run — it is on your Sessions shelf.',
         'info',
@@ -666,25 +753,44 @@ export const CommunityShare: Component = () => {
       shareFingerprint: fingerprint,
     }
 
-    const updated = [...localSessions(), shareable]
-    setLocalSessions(updated)
-    storageSet('pp_shared_sessions', updated)
-    // Dual-write to DB (fire-and-forget)
-    saveSharedSessionToDb({
-      name: shareable.name,
-      items: shareable.items,
-      author: shareable.author,
-      results: shareable.results,
-    })
-    setPickerType(null)
-    setActiveTab('sessions')
-    showNotification(
-      canPostToCommunity()
-        ? `Shared "${shareable.name}"`
-        : `Saved "${shareable.name}" to your shelf. Create an account to list it on the Community board.`,
-      'info',
-    )
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setPublishing(true)
+    try {
+      if (publishToBoard) {
+        const saved = await saveSharedSessionToDb({
+          name: shareable.name,
+          items: shareable.items,
+          author: shareable.author,
+          results: shareable.results,
+        })
+        if (!isCurrent()) return
+        if (!saved) {
+          showNotification(
+            'Could not publish this run. Try sharing it again.',
+            'error',
+          )
+          return
+        }
+        shareable.id = saved.id
+        shareable.userId = saved.userId
+      }
+      setLocalSessions((previous) => {
+        const updated = [...previous, shareable]
+        storageSet('pp_shared_sessions', updated)
+        return updated
+      })
+      if (publishToBoard) void publications.refresh()
+      setPickerType(null)
+      setActiveTab('sessions')
+      showNotification(
+        publishToBoard
+          ? `Shared "${shareable.name}"`
+          : `Saved "${shareable.name}" to your shelf. Create an account to list it on the Community board.`,
+        'info',
+      )
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } finally {
+      if (isCurrent()) setPublishing(false)
+    }
   }
 
   // Copy shareable link to clipboard
@@ -1127,8 +1233,8 @@ export const CommunityShare: Component = () => {
             runScope={runScope()}
             onExplainRuns={() => setExplainingRuns(true)}
             streak={currentProfile().streak}
-            sharedMelodies={publishedByMe(dbMelodies())}
-            sharedSetlists={publishedByMe(dbSessions())}
+            sharedMelodies={publications.counts().melodies}
+            sharedSetlists={publications.counts().sessions}
             twinName={latestTwin()}
             badges={earnedBadges()}
             onExploreVoiceConstellation={openVoiceConstellation}
@@ -1143,9 +1249,12 @@ export const CommunityShare: Component = () => {
       <ConfirmDialog
         open={unpublishing() !== null}
         title="Unpublish this?"
-        message={`"${unpublishing()?.name ?? ''}" comes off your shelf and anyone holding its link stops being able to open it. You can share it again later.`}
+        message={`Remove "${unpublishing()?.name ?? ''}" from your shelf and, if published, the Community board. ${unpublishing()?.kind === 'melody' ? 'Existing melody links still work.' : 'You can share it again later.'}`}
         confirmLabel="Unpublish"
-        onConfirm={doUnpublish}
+        busy={removing()}
+        onConfirm={() => {
+          void doUnpublish()
+        }}
         onCancel={() => setUnpublishing(null)}
       />
 
@@ -1195,6 +1304,7 @@ export const CommunityShare: Component = () => {
                     </div>
                     <button
                       class="primary-btn share-picker-action"
+                      disabled={publishing()}
                       onClick={() => {
                         const c = melodyStore.currentMelody()
                         if (c)
@@ -1220,15 +1330,16 @@ export const CommunityShare: Component = () => {
                       </div>
                       <button
                         class="primary-btn share-picker-action"
-                        onClick={() =>
-                          shareMelody({
+                        disabled={publishing()}
+                        onClick={() => {
+                          void shareMelody({
                             name: m.name,
                             items: m.items,
                             bpm: m.bpm,
                             key: m.key,
                             scale: m.scaleType,
                           })
-                        }
+                        }}
                       >
                         Share
                       </button>
@@ -1266,14 +1377,15 @@ export const CommunityShare: Component = () => {
                       </div>
                       <button
                         class="primary-btn share-picker-action"
-                        onClick={() =>
-                          shareSession({
+                        disabled={publishing()}
+                        onClick={() => {
+                          void shareSession({
                             name: s.name,
                             sessionName: s.name,
                             score: s.score,
                             completedAt: s.completedAt,
                           } as SessionResult)
-                        }
+                        }}
                       >
                         Share
                       </button>
