@@ -38,6 +38,41 @@ afterEach(() => {
   resetRunShell()
 })
 
+describe('a premium room, full-bleed (D1)', () => {
+  it('draws Long note under a see-through bar, and Settings under the opaque one', () => {
+    view?.unmount()
+    view = renderShell(() => (
+      <ShellScreens longNote={() => <div data-testid="room-stub" />} />
+    ))
+
+    pushScreen('long-note')
+    const room = screens()[0]
+    expect(room?.classList.contains('mp-pushed--bleed')).toBe(true)
+    expect(room?.dataset.bleed).toBe('on')
+    expect(room?.querySelector('[data-testid="room-stub"]')).not.toBeNull()
+    // Back stays where it was: the bar floats over the art, it is not gone.
+    expect(
+      room?.querySelector('[data-testid="shell-pushed-back"]'),
+    ).not.toBeNull()
+    // The art is a dark stage in either theme, and so is the bar over it:
+    // a light theme's dark title would otherwise sit on the dark art.
+    expect(
+      room
+        ?.querySelector('.mp-pushed__bar')
+        ?.classList.contains('mp-dark-stage'),
+    ).toBe(true)
+
+    pushScreen('settings')
+    expect(screens()[0]?.classList.contains('mp-pushed--bleed')).toBe(false)
+    expect(screens()[0]?.hasAttribute('data-bleed')).toBe(false)
+    expect(
+      screens()[0]
+        ?.querySelector('.mp-pushed__bar')
+        ?.classList.contains('mp-dark-stage'),
+    ).toBe(false)
+  })
+})
+
 describe('the pushed screens', () => {
   it('draws only the screen on top of the stack', () => {
     // Two copies of the same Back would also be two matches for every probe

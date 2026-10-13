@@ -15,7 +15,7 @@ import { TAB_KARAOKE, TAB_PROGRESS } from '@/features/tabs/constants'
 import type { NativeRunControls } from '@/stores/native-shell-store'
 import { consumeRunParked, registerRunControls, setRoomInPictureInPicture, } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
-import { parkRun, resetRunShell } from './run-shell-store'
+import { parkRun, popScreen, pushScreen, resetRunShell, } from './run-shell-store'
 import { mirrorShellChrome } from './shell-attributes'
 
 let dispose: (() => void) | null = null
@@ -72,6 +72,27 @@ describe('the rail, as an attribute', () => {
     dispose?.()
     dispose = null
     expect(document.documentElement.hasAttribute('data-shell-rail')).toBe(false)
+  })
+})
+
+describe('a full-bleed room, as an attribute', () => {
+  // The dock's session pill steps aside with the rail while a premium room
+  // fills the screen (shell.css, data-shell-bleed).
+  it('is on while a full-bleed room is on top, and gone when it closes', () => {
+    createRoot((done) => {
+      dispose = done
+      mirrorShellChrome()
+    })
+    const root = document.documentElement
+    expect(root.hasAttribute('data-shell-bleed')).toBe(false)
+
+    pushScreen('long-note')
+    expect(root.getAttribute('data-shell-bleed')).toBe('on')
+    expect(root.hasAttribute('data-shell-rail')).toBe(false)
+
+    popScreen()
+    expect(root.hasAttribute('data-shell-bleed')).toBe(false)
+    expect(root.getAttribute('data-shell-rail')).toBe('on')
   })
 })
 

@@ -132,6 +132,24 @@ export async function keepAwake(on: boolean): Promise<void> {
 }
 
 /**
+ * Hold the screen upright, or let it turn with the device again.
+ *
+ * For a room painted as a portrait picture (the premium exercises, the
+ * owner's decision D2): the app's caller decides which devices it holds (a
+ * phone, not an iPad), and holds it only while that room is open. One
+ * switch, no counting, as with keepAwake. On iOS the lock covers the app's
+ * own view; an iPad that allows split screens cannot be locked at all.
+ */
+export async function holdPortrait(on: boolean): Promise<void> {
+  await attempt(async () => {
+    const { ScreenOrientation } = await import('@capacitor/screen-orientation')
+    await (on
+      ? ScreenOrientation.lock({ orientation: 'portrait' })
+      : ScreenOrientation.unlock())
+  })
+}
+
+/**
  * Point the status bar's text at the page behind it.
  *
  * Only the style. The splash and the bar's initial appearance are native
