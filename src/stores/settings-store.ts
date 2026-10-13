@@ -496,7 +496,7 @@ export const [showAccuracyPercent, setShowAccuracyPercent] =
 //
 // Choose between YIN (classic, well-tested) and McLeod Pitch Method
 // (MPM — better harmonic handling, fewer octave errors on complex
-// timbres). Default: YIN for stability.
+// timbres). Default: MPM.
 export const [pitchAlgorithm, setPitchAlgorithm] =
   createPersistedSignal<PitchAlgorithm>('pitchperfect_pitch_algorithm', 'mpm')
 

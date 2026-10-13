@@ -242,9 +242,11 @@ async function parseDraftInput(
       }
     }
     candidate.exampleAudio = mediaAudio(media)
-  } else {
-    delete candidate.exampleAudio
   }
+  // With no managed media the exercise keeps the clip written into its own
+  // spec, a static file under /exercises/examples say, until an admin
+  // replaces or removes it by hand (owner, 13 Oct 2026). The editor's Remove
+  // takes the clip out of the spec itself, so nothing has to drop it here.
 
   const parsed = parseZenExerciseStructure(candidate)
   return {
@@ -1100,8 +1102,7 @@ async function uploadMedia(
   if (!isAllowedGuidedPlaybackType(mimeType)) {
     return respond(
       {
-        error:
-          'Playback must be MP3, MP4/M4A, AAC, WebM, Ogg, or WAV audio',
+        error: 'Playback must be MP3, MP4/M4A, AAC, WebM, Ogg, or WAV audio',
       },
       { status: 415 },
     )

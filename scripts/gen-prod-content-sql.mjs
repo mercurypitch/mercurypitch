@@ -15,12 +15,12 @@
 // `restoreSeedZenExercises()` when the API returns nothing. Dev's eight
 // published rows carry byte-identical ids and specs to those seeds, so
 // seeding them buys nothing — and `installPublishedZenExercises()`
-// REPLACES the catalogue wholesale, so a DB spec is strictly poorer than
-// the seed it displaces: the static `exampleAudio` on
-// `mah-meh-mee-moh-moo` cannot survive the round trip (the publish path
-// derives that field from `exampleMediaId`, which points into the dev
-// media bucket). Pass `--with-exercises` only when prod genuinely needs
-// an exercise the build does not carry.
+// REPLACES the catalogue wholesale, so a DB spec can be poorer than the
+// seed it displaces: until 13 Oct 2026 the admin path derived
+// `exampleAudio` from `exampleMediaId` alone, which points into the dev
+// media bucket, so a row saved through it before then has lost the seed's
+// static clip on `mah-meh-mee-moh-moo`. Pass `--with-exercises` only when
+// prod genuinely needs an exercise the build does not carry.
 //
 // So this reads dev and emits SQL. It never writes anything: the output is
 // a file you inspect and then apply with one `wrangler d1 execute`, which
@@ -72,7 +72,11 @@ function query(sql) {
       '--command',
       sql,
     ],
-    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] },
+    {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'inherit'],
+    },
   )
   return JSON.parse(out)[0].results
 }
@@ -144,7 +148,9 @@ if (WITH_EXERCISES) {
   )
   sections.push([
     'guided exercises',
-    upserts('guidedExercises', exercises, ['id'], { skipUpdate: ['createdAt'] }),
+    upserts('guidedExercises', exercises, ['id'], {
+      skipUpdate: ['createdAt'],
+    }),
   ])
   counts.exercises = exercises.length
 
@@ -209,7 +215,9 @@ const header = [
 
 const body = sections
   .filter(([, statements]) => statements.length > 0)
-  .map(([label, statements]) => `-- ── ${label} ──\n\n${statements.join('\n\n')}`)
+  .map(
+    ([label, statements]) => `-- ── ${label} ──\n\n${statements.join('\n\n')}`,
+  )
   .join('\n\n')
 
 process.stdout.write(`${header.join('\n')}\n${body}\n`)
