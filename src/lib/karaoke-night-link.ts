@@ -43,11 +43,54 @@ export function karaokeNightSessionUrl(
   return url
 }
 
+/**
+ * A song slug as the studio stores one, or null.
+ *
+ * The same rule the db worker applies when an author saves a slug
+ * (`normalizeDemoSlug`): lowercase letters and digits in hyphen-joined runs,
+ * at most 64 characters. Case and padding are forgiven because people type
+ * these links by hand; anything else is not a slug and names no song.
+ */
+export function normalizeSongSlug(
+  raw: string | null | undefined,
+): string | null {
+  const slug = (raw ?? '').trim().toLowerCase()
+  if (slug === '' || slug.length > 64) return null
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? slug : null
+}
+
+export interface KaraokeNightSongLinkOptions {
+  /** Open the zen stage on a desktop (phones always get it). */
+  zen?: boolean
+}
+
+/**
+ * The readable link to one of the example songs:
+ * `/karaoke-night?song=nothing-in-the-dark`, plus `&zen=1` when asked.
+ *
+ * The slug is the example's link slug (`exampleLinkSlug`), not a session id.
+ * A query parameter rather than a path segment because `/karaoke-night` is
+ * matched exactly by the Worker, the service worker and the SEO entry list,
+ * and a query needs none of them to change.
+ */
+export function karaokeNightSongUrl(
+  slug: string,
+  options?: KaraokeNightSongLinkOptions,
+): string {
+  const url = `${KARAOKE_NIGHT_PATH}?song=${encodeURIComponent(slug)}`
+  return options?.zen === true ? `${url}&zen=1` : url
+}
+
 export interface KaraokeNightLaunchParams {
   sessionId: string | null
   /** Parsed `t` in seconds; null when absent or malformed. */
   startAtSec: number | null
   autoplay: boolean
+  /** An example's link slug from `?song=`, normalized; null when absent or
+   *  not a slug. `session` wins when a link carries both. */
+  song: string | null
+  /** `zen=1`, `zen=true` or a bare `zen`: open the zen stage. */
+  zen: boolean
 }
 
 /** Parse the boot side of the launch contract from a query string. */
@@ -59,10 +102,13 @@ export function parseKaraokeNightLaunch(
   const rawT = params.get('t')
   const t = rawT === null || rawT === '' ? Number.NaN : Number(rawT)
   const autoplayRaw = params.get('autoplay')
+  const zenRaw = params.get('zen')
   return {
     sessionId: params.get('session'),
     startAtSec: Number.isFinite(t) && t >= 0 ? t : null,
     autoplay: autoplayRaw === '1' || autoplayRaw === 'true',
+    song: normalizeSongSlug(params.get('song')),
+    zen: zenRaw === '' || zenRaw === '1' || zenRaw === 'true',
   }
 }
 
