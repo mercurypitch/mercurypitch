@@ -671,7 +671,8 @@ describe('Promo codes integration', () => {
 
     it('features a second code only after the first stops being featured', async () => {
       const clash = await patch('promo-test', { featured: true })
-      expect(clash.status).toBe(400)
+      expect(clash.status).toBe(409)
+      expect(await clash.json()).toEqual({ error: 'Already exists' })
       expect(launchRow().featured).toBe(1)
 
       expect((await patch('promo-2026-q4', { featured: false })).status).toBe(

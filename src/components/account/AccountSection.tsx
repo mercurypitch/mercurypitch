@@ -83,6 +83,14 @@ export const AccountSection: Component = () => {
     setNameDraft(name)
   })
 
+  function assertProfileIdentity(userId: string): void {
+    if (getUserId() !== userId) {
+      throw new Error(
+        'Your account changed. Check the current profile before saving a name.',
+      )
+    }
+  }
+
   /**
    * Persist the display name to the cloud profile. The leaderboard reads
    * names from the profile, so no separate update is needed. Google sign-in
@@ -94,11 +102,14 @@ export const AccountSection: Component = () => {
     setError('')
     setBusy(true)
     try {
-      const db = await getDb()
-      const profiles = db.getRepository<UserProfile>('userProfiles')
       const userId = getUserId()
+      const db = await getDb()
+      assertProfileIdentity(userId)
+      const profiles = db.getRepository<UserProfile>('userProfiles')
       // Cloud row id == userId (the JWT identity)
-      if ((await profiles.findById(userId)) != null) {
+      const profile = await profiles.findById(userId)
+      assertProfileIdentity(userId)
+      if (profile != null) {
         await profiles.update(userId, { displayName: name })
       } else {
         try {
@@ -113,13 +124,16 @@ export const AccountSection: Component = () => {
           if (!(err instanceof CloudRequestError && err.status === 409)) {
             throw err
           }
+          assertProfileIdentity(userId)
           await profiles.update(userId, { displayName: name })
         }
       }
       // The leaderboard is server-derived from sessionRecords and pulls the
       // display name from userProfiles, so updating the profile above is
       // enough — there is no client-writable leaderboardEntries table.
+      assertProfileIdentity(userId)
       await refreshMe()
+      assertProfileIdentity(userId)
       showNotification('Display name updated', 'info')
       return true
     } catch (err) {

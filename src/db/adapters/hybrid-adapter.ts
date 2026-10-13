@@ -99,12 +99,14 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
    * ever the caller's own, so reading them all is bounded by what one person
    * keeps — unlike the public boards, which stay one page on purpose.
    *
-   * A page that fails fails the read, as one failed request always has:
-   * a partial list would read as "the account has nothing else".
+   * A failed page discards the whole list: default reads fall back to [],
+   * while throwOnError rejects. Identity cancellation always rejects so a
+   * read-then-create caller cannot mistake another account for an empty one.
    */
   async findAll(opts?: QueryOptions<T>): Promise<T[]> {
     if (!this.isAuthed()) return []
     if (opts?.limit !== undefined) return this.inner.findAll(opts)
+    const expectedIdentity = this.currentIdentity()
     const rows: T[] = []
     try {
       for (let offset = opts?.offset ?? 0; ; offset += PAGE_SIZE) {
@@ -114,11 +116,24 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
           offset,
           throwOnError: true,
         })
+        // Each page is a new request with current credentials. Discard the
+        // entire read if its owner changed, including a short final page;
+        // otherwise a list can mix two accounts or outlive a sign-out.
+        if (!this.isAuthed() || this.currentIdentity() !== expectedIdentity) {
+          throw new Error('HybridAdapter: read identity changed while paging')
+        }
         rows.push(...page)
         if (page.length < PAGE_SIZE) return rows
       }
     } catch (err) {
-      if (opts?.throwOnError === true) throw err
+      // Cancellation must stop read-then-create callers. Returning [] here
+      // would tell them the newly selected account has nothing to update.
+      if (
+        opts?.throwOnError === true ||
+        !this.isAuthed() ||
+        this.currentIdentity() !== expectedIdentity
+      )
+        throw err
       return []
     }
   }

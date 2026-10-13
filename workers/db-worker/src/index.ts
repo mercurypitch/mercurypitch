@@ -747,12 +747,26 @@ async function handleCreate(
           .filter((c) => !key.columns.includes(c))
           .map((c) => `"${c}" = excluded."${c}"`)
           .join(', ')}`
+  // Check the caller's UUID in the write itself. A read before the INSERT
+  // races another create; letting the natural-key UPSERT win first instead
+  // replays old values over a later PATCH, even for the same UUID.
+  const values =
+    clientId === null
+      ? `VALUES (${placeholders})`
+      : `SELECT ${placeholders} WHERE NOT EXISTS (SELECT 1 FROM "${entity}" WHERE id = ?)`
   try {
-    await env.DB.prepare(
-      `INSERT INTO "${entity}" (${quoted}) VALUES (${placeholders})${upsert}`,
+    const result = await env.DB.prepare(
+      `INSERT INTO "${entity}" (${quoted}) ${values}${upsert}`,
     )
-      .bind(...binds)
+      .bind(...binds, ...(clientId === null ? [] : [id]))
       .run()
+    if (clientId !== null && result.meta.changes === 0) {
+      const landed = await fetchRow(entity, id, env)
+      if (landed !== null && landed.userId === auth?.userId) {
+        return respond(fromSql(def, landed), { status: 200 })
+      }
+      return respond({ error: 'Already exists' }, { status: 409 })
+    }
   } catch (err) {
     if (!String(err).includes('UNIQUE constraint failed')) {
       console.error('[create] insert failed', entity, err)
@@ -768,7 +782,7 @@ async function handleCreate(
   }
 
   // An upsert may have landed on a row that was already there.
-  const row = (
+  const row =
     key === null
       ? await fetchRow(entity, id, env)
       : await env.DB.prepare(
@@ -778,7 +792,14 @@ async function handleCreate(
         )
           .bind(...key.values)
           .first<Row>()
-  ) as Row
+  if (
+    row === null ||
+    (def.access !== 'admin' &&
+      def.access !== 'owner' &&
+      row.userId !== auth?.userId)
+  ) {
+    return respond({ error: 'Not found' }, { status: 404 })
+  }
   const created = row.id === id
 
   // A saved practice attempt is the league's points source (server-side, so
@@ -856,19 +877,32 @@ async function handleUpdate(
     binds.push(toSql(val))
   }
   binds.push(id)
+  // A client can now recreate a deleted UUID. Keep ownership in the write
+  // predicate as well as the earlier authorization read.
+  const ownerScope = def.access !== 'admin' && def.access !== 'owner'
+  if (ownerScope) binds.push((auth as AuthUser).userId)
 
   try {
-    await env.DB.prepare(
-      `UPDATE "${entity}" SET ${sets.join(', ')} WHERE id = ?`,
+    const result = await env.DB.prepare(
+      `UPDATE "${entity}" SET ${sets.join(', ')} WHERE id = ?${ownerScope ? ' AND userId = ?' : ''}`,
     )
       .bind(...binds)
       .run()
+    if (result.meta.changes === 0) {
+      return respond({ error: 'Not found' }, { status: 404 })
+    }
   } catch (err) {
+    if (String(err).includes('UNIQUE constraint failed')) {
+      return respond({ error: 'Already exists' }, { status: 409 })
+    }
     console.error('[update] update failed', entity, err)
     return respond({ error: 'Could not update record' }, { status: 400 })
   }
 
-  const updated = (await fetchRow(entity, id, env)) as Row
+  const updated = await fetchRow(entity, id, env)
+  if (updated === null || (ownerScope && updated.userId !== auth?.userId)) {
+    return respond({ error: 'Not found' }, { status: 404 })
+  }
 
   // The streak lives on the profile; a raise is the league's "showed up
   // today" signal. Both bonuses are deduped server-side to once per UTC day
@@ -895,7 +929,15 @@ async function handleDelete(
   if (!canWriteRow(def, row, auth, await isAdmin(request, env))) {
     return respond({ error: 'Forbidden' }, { status: 403 })
   }
-  await env.DB.prepare(`DELETE FROM "${entity}" WHERE id = ?`).bind(id).run()
+  const ownerScope = def.access !== 'admin' && def.access !== 'owner'
+  const result = await env.DB.prepare(
+    `DELETE FROM "${entity}" WHERE id = ?${ownerScope ? ' AND userId = ?' : ''}`,
+  )
+    .bind(id, ...(ownerScope ? [(auth as AuthUser).userId] : []))
+    .run()
+  if (result.meta.changes === 0) {
+    return respond({ error: 'Not found' }, { status: 404 })
+  }
   return respond(null, { status: 204 })
 }
 

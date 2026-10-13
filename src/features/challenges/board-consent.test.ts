@@ -1,70 +1,203 @@
-// A brand-new visitor's first consent. Their identity is minted by the very
-// write that saves it: `create` provisions the anonymous account, and the
-// server writes a default profile while doing so, so the create that follows
-// finds the row already there and answers 409. That 409 is the consent's row
-// existing, not a failure, and the consent belongs on it.
+// Board consent persists on the profile created by lazy provisioning and fails closed.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { CloudRequestError } from '@/db/adapters/server-adapter'
+import type { UserProfile } from '@/db/entities'
 
+type NewProfile = Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>
 const mocks = vi.hoisted(() => ({
-  profile: null as Record<string, unknown> | null,
-  createError: null as Error | null,
-  updates: [] as Array<[string, Record<string, unknown>]>,
+  userId: 'singer-1',
+  profile: null as UserProfile | null,
+  findById: vi.fn<(id: string) => Promise<UserProfile | null>>(),
+  create: vi.fn<(row: NewProfile) => Promise<UserProfile>>(),
+  update:
+    vi.fn<(id: string, patch: Partial<UserProfile>) => Promise<UserProfile>>(),
 }))
 
 vi.mock('@/db', () => ({
   getDb: async () => ({
     getRepository: () => ({
-      findById: async () => mocks.profile,
-      create: async (row: Record<string, unknown>) => {
-        if (mocks.createError !== null) throw mocks.createError
-        return { id: 'singer-1', ...row }
-      },
-      update: async (id: string, patch: Record<string, unknown>) => {
-        mocks.updates.push([id, patch])
-        return { id, ...patch }
-      },
+      findById: mocks.findById,
+      create: mocks.create,
+      update: mocks.update,
     }),
   }),
 }))
-vi.mock('@/db/seed', () => ({ getUserId: () => 'singer-1' }))
+vi.mock('@/db/seed', () => ({ getUserId: () => mocks.userId }))
 
-import { CloudRequestError } from '@/db/adapters/server-adapter'
-import { grantBoardConsent } from './board-consent'
+import { grantBoardConsent, hasBoardConsent } from './board-consent'
+
+const existingProfile: UserProfile = {
+  id: 'singer-1',
+  displayName: 'Chosen name',
+  joinDate: '2026-01-02T00:00:00.000Z',
+  lastPracticeDate: null,
+  currentStreak: 4,
+  longestStreak: 12,
+  leaderboardOptIn: false,
+  createdAt: '2026-01-02T00:00:00.000Z',
+  updatedAt: '2026-01-02T00:00:00.000Z',
+}
 
 beforeEach(() => {
+  vi.resetAllMocks()
+  mocks.userId = 'singer-1'
   mocks.profile = null
-  mocks.createError = null
-  mocks.updates = []
+  mocks.findById.mockImplementation(async () => mocks.profile)
+  mocks.create.mockImplementation(async (row) => {
+    mocks.profile = {
+      ...row,
+      id: mocks.userId,
+      createdAt: existingProfile.createdAt,
+      updatedAt: existingProfile.updatedAt,
+    }
+    return mocks.profile
+  })
+  mocks.update.mockImplementation(async (id, patch) => {
+    if (mocks.profile === null || mocks.profile.id !== id)
+      throw new Error('Missing profile')
+    mocks.profile = { ...mocks.profile, ...patch }
+    return mocks.profile
+  })
 })
 
 describe('grantBoardConsent', () => {
-  it('saves a first-time visitor’s consent on the profile provisioning made', async () => {
-    mocks.createError = new CloudRequestError(409, 'Profile already exists')
+  it('saves first-time consent on the profile provisioning made, preserving its other fields', async () => {
+    mocks.create.mockImplementationOnce(async () => {
+      mocks.profile = { ...existingProfile }
+      throw new CloudRequestError(409, 'Profile already exists')
+    })
 
     expect(await grantBoardConsent()).toBe(true)
-    expect(mocks.updates).toEqual([
-      [
-        'singer-1',
-        expect.objectContaining({
-          leaderboardOptIn: true,
-          leaderboardOptInAt: expect.any(String),
-        }),
-      ],
-    ])
+    expect(mocks.create).toHaveBeenCalledOnce()
+    expect(mocks.update).toHaveBeenCalledExactlyOnceWith('singer-1', {
+      leaderboardOptIn: true,
+      leaderboardOptInAt: expect.any(String),
+    })
+    expect(mocks.profile).toEqual({
+      ...existingProfile,
+      leaderboardOptIn: true,
+      leaderboardOptInAt: expect.any(String),
+    })
+    expect(
+      Number.isFinite(Date.parse(mocks.profile?.leaderboardOptInAt ?? '')),
+    ).toBe(true)
+    expect(await hasBoardConsent()).toBe(true)
   })
 
-  it('still reports a create that failed for any other reason', async () => {
-    mocks.createError = new CloudRequestError(500, 'boom')
+  it('creates consent when the local adapter has no provisioned profile', async () => {
+    expect(await grantBoardConsent()).toBe(true)
+    expect(mocks.profile).toMatchObject({
+      id: 'singer-1',
+      displayName: 'Singer-singer',
+      leaderboardOptIn: true,
+    })
+    expect(mocks.create).toHaveBeenCalledOnce()
+    expect(mocks.update).not.toHaveBeenCalled()
+    expect(await hasBoardConsent()).toBe(true)
+  })
+
+  it('updates existing consent without creating or resetting a profile', async () => {
+    mocks.profile = { ...existingProfile }
+
+    expect(await grantBoardConsent()).toBe(true)
+    expect(mocks.profile).toEqual({
+      ...existingProfile,
+      leaderboardOptIn: true,
+      leaderboardOptInAt: expect.any(String),
+    })
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(mocks.update).toHaveBeenCalledOnce()
+  })
+
+  it.each([403, 500])(
+    'reports create failure %s without attempting an update',
+    async (status) => {
+      mocks.create.mockRejectedValueOnce(
+        new CloudRequestError(status, 'Create failed'),
+      )
+
+      expect(await grantBoardConsent()).toBe(false)
+      expect(mocks.update).not.toHaveBeenCalled()
+      expect(mocks.profile).toBeNull()
+    },
+  )
+
+  it('does not report consent when the recovery update fails', async () => {
+    mocks.create.mockImplementationOnce(async () => {
+      mocks.profile = { ...existingProfile }
+      throw new CloudRequestError(409, 'Profile already exists')
+    })
+    mocks.update.mockRejectedValueOnce(
+      new CloudRequestError(503, 'Update failed'),
+    )
 
     expect(await grantBoardConsent()).toBe(false)
-    expect(mocks.updates).toEqual([])
+    expect(mocks.profile?.leaderboardOptIn).toBe(false)
+    expect(await hasBoardConsent()).toBe(false)
   })
 
-  it('updates an existing profile without creating one', async () => {
-    mocks.profile = { id: 'singer-1', leaderboardOptIn: false }
+  it('does not retry the consent under an account selected during the conflicting create', async () => {
+    mocks.create.mockImplementationOnce(async () => {
+      mocks.userId = 'singer-2'
+      mocks.profile = { ...existingProfile }
+      throw new CloudRequestError(409, 'Profile already exists')
+    })
 
-    expect(await grantBoardConsent()).toBe(true)
-    expect(mocks.updates).toHaveLength(1)
+    expect(await grantBoardConsent()).toBe(false)
+    expect(mocks.update).not.toHaveBeenCalled()
+    expect(mocks.profile?.leaderboardOptIn).toBe(false)
+  })
+
+  it('does not dispatch consent after an account switch during the profile read', async () => {
+    mocks.findById.mockImplementationOnce(async () => {
+      mocks.userId = 'singer-2'
+      return null
+    })
+
+    expect(await grantBoardConsent()).toBe(false)
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(mocks.update).not.toHaveBeenCalled()
+  })
+
+  it('does not authorize a new account when the previous account finishes saving', async () => {
+    mocks.profile = { ...existingProfile }
+    mocks.update.mockImplementationOnce(async (id, patch) => {
+      const saved = { ...existingProfile, ...patch, id }
+      mocks.userId = 'singer-2'
+      return saved
+    })
+
+    expect(await grantBoardConsent()).toBe(false)
+    expect(mocks.update).toHaveBeenCalledExactlyOnceWith(
+      'singer-1',
+      expect.objectContaining({ leaderboardOptIn: true }),
+    )
+  })
+})
+
+describe('hasBoardConsent', () => {
+  it('does not authorize an account selected while the previous consent read is pending', async () => {
+    let finishRead!: (profile: UserProfile) => void
+    mocks.findById.mockImplementationOnce(
+      () => new Promise((resolve) => (finishRead = resolve)),
+    )
+
+    const pending = hasBoardConsent()
+    await vi.waitFor(() =>
+      expect(mocks.findById).toHaveBeenCalledExactlyOnceWith('singer-1'),
+    )
+    mocks.userId = 'singer-2'
+    finishRead({ ...existingProfile, leaderboardOptIn: true })
+
+    expect(await pending).toBe(false)
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(mocks.update).not.toHaveBeenCalled()
+  })
+
+  it('fails closed for missing profiles and failed reads', async () => {
+    expect(await hasBoardConsent()).toBe(false)
+    mocks.findById.mockRejectedValueOnce(new Error('Offline'))
+    expect(await hasBoardConsent()).toBe(false)
   })
 })

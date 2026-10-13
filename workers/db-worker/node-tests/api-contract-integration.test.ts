@@ -20,7 +20,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Env } from '../src/auth'
 import worker from '../src/index'
-import { applyMigrations, justBefore, SqliteD1Database } from './sqlite-d1'
+import { applyMigrations, heldUntil, interleaved, justBefore, SqliteD1Database, } from './sqlite-d1'
 
 const NOW = '2026-10-13T12:00:00.000Z'
 
@@ -237,6 +237,104 @@ describe('a create the client retries', () => {
     ).toBe(0)
   })
 
+  it('preserves a later setting edit when a landed UUID create is retried', async () => {
+    const id = '11111111-1111-4111-8111-111111111111'
+    const original = { id, key: 'theme', value: '"dark"' }
+    expect(
+      (await call('POST', '/api/userSettings', original, singer.token)).status,
+    ).toBe(201)
+    const changed = await call(
+      'PATCH',
+      `/api/userSettings/${id}`,
+      { value: '"light"' },
+      singer.token,
+    )
+    expect(changed.status).toBe(200)
+
+    const retried = await call(
+      'POST',
+      '/api/userSettings',
+      original,
+      singer.token,
+    )
+
+    expect(retried.status).toBe(200)
+    expect(retried.body).toEqual(changed.body)
+    expect(
+      sqlite.prepare('SELECT value FROM userSettings WHERE id = ?').get(id),
+    ).toEqual({ value: '"light"' })
+  })
+
+  it('rejects a foreign UUID before updating an existing owned natural key', async () => {
+    const other = await anonymous('00000000-0000-4000-8000-00000000c004')
+    const id = '22222222-2222-4222-8222-222222222222'
+    const foreign = await call(
+      'POST',
+      '/api/userSettings',
+      { id, key: 'private', value: '"private value"' },
+      other.token,
+    )
+    const owned = await call(
+      'POST',
+      '/api/userSettings',
+      { key: 'theme', value: '"dark"' },
+      singer.token,
+    )
+    expect(foreign.status).toBe(201)
+    expect(owned.status).toBe(201)
+
+    const collision = await call(
+      'POST',
+      '/api/userSettings',
+      { id, key: 'theme', value: '"light"' },
+      singer.token,
+    )
+
+    expect(collision).toEqual({
+      status: 409,
+      body: { error: 'Already exists' },
+    })
+    expect(
+      (
+        await call(
+          'GET',
+          `/api/userSettings/${owned.body.id}`,
+          undefined,
+          singer.token,
+        )
+      ).body,
+    ).toEqual(owned.body)
+    expect(
+      (await call('GET', `/api/userSettings/${id}`, undefined, other.token))
+        .body,
+    ).toEqual(foreign.body)
+  })
+
+  it('acknowledges concurrent identical UUID creates as one insert and one retry', async () => {
+    env.DB = interleaved(d1)
+    const original = {
+      id: '33333333-3333-4333-8333-333333333333',
+      key: 'theme',
+      value: '"dark"',
+    }
+
+    const responses = await Promise.all([
+      call('POST', '/api/userSettings', original, singer.token),
+      call('POST', '/api/userSettings', original, singer.token),
+    ])
+
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      200, 201,
+    ])
+    expect(responses[0].body).toEqual(responses[1].body)
+    expect(
+      count(
+        'SELECT COUNT(*) AS n FROM userSettings WHERE userId = ?',
+        singer.userId,
+      ),
+    ).toBe(1)
+  })
+
   it('still mints the id when the client names none', async () => {
     const created = await call(
       'POST',
@@ -272,6 +370,55 @@ describe('a row with a natural key', () => {
         .prepare('SELECT value FROM userSettings WHERE userId = ?')
         .all(singer.userId),
     ).toEqual([{ value: '"light"' }])
+  })
+
+  it('refuses a PATCH that collides with another natural key without changing either row', async () => {
+    const first = await call(
+      'POST',
+      '/api/userSettings',
+      { key: 'theme', value: '"dark"' },
+      singer.token,
+    )
+    const second = await call(
+      'POST',
+      '/api/userSettings',
+      { key: 'font', value: '"outfit"' },
+      singer.token,
+    )
+    expect(first.status).toBe(201)
+    expect(second.status).toBe(201)
+
+    const collision = await call(
+      'PATCH',
+      `/api/userSettings/${first.body.id}`,
+      { key: 'font', value: '"overwrite"' },
+      singer.token,
+    )
+
+    expect(collision).toEqual({
+      status: 409,
+      body: { error: 'Already exists' },
+    })
+    expect(
+      (
+        await call(
+          'GET',
+          `/api/userSettings/${first.body.id}`,
+          undefined,
+          singer.token,
+        )
+      ).body,
+    ).toEqual(first.body)
+    expect(
+      (
+        await call(
+          'GET',
+          `/api/userSettings/${second.body.id}`,
+          undefined,
+          singer.token,
+        )
+      ).body,
+    ).toEqual(second.body)
   })
 
   it('keeps one progress row per challenge', async () => {
@@ -333,6 +480,123 @@ describe('a row with a natural key', () => {
         'SELECT COUNT(*) AS n FROM userSettings WHERE "key" = \'pitchperfect_theme\'',
       ),
     ).toBe(2)
+  })
+})
+
+describe('ownership while a client-chosen UUID is replaced', () => {
+  it.each(['PATCH', 'DELETE'])(
+    'does not %s a row recreated by another owner after authorization',
+    async (method) => {
+      const other = await anonymous('00000000-0000-4000-8000-00000000c005')
+      const id = '44444444-4444-4444-8444-444444444444'
+      expect(
+        (
+          await call(
+            'POST',
+            '/api/userSettings',
+            { id, key: 'theme', value: '"mine"' },
+            singer.token,
+          )
+        ).status,
+      ).toBe(201)
+      let replacement: unknown
+      justBefore(
+        d1,
+        method === 'PATCH'
+          ? /UPDATE "userSettings"/
+          : /DELETE FROM "userSettings"/,
+        async () => {
+          expect(
+            (
+              await call(
+                'DELETE',
+                `/api/userSettings/${id}`,
+                undefined,
+                singer.token,
+              )
+            ).status,
+          ).toBe(204)
+          const created = await call(
+            'POST',
+            '/api/userSettings',
+            { id, key: 'theme', value: '"other private setting"' },
+            other.token,
+          )
+          expect(created.status).toBe(201)
+          replacement = created.body
+        },
+      )
+
+      const late = await call(
+        method,
+        `/api/userSettings/${id}`,
+        method === 'PATCH' ? { value: '"late write"' } : undefined,
+        singer.token,
+      )
+
+      expect(late.status).toBe(404)
+      expect(late.body).toEqual({ error: 'Not found' })
+      expect(
+        (await call('GET', `/api/userSettings/${id}`, undefined, other.token))
+          .body,
+      ).toEqual(replacement)
+    },
+  )
+})
+
+describe('the row returned after an authorized write', () => {
+  it('does not disclose a replacement owner after PATCH finishes writing', async () => {
+    const other = await anonymous('00000000-0000-4000-8000-00000000c006')
+    const id = '55555555-5555-4555-8555-555555555555'
+    expect(
+      (
+        await call(
+          'POST',
+          '/api/userSettings',
+          { id, key: 'theme', value: '"mine"' },
+          singer.token,
+        )
+      ).status,
+    ).toBe(201)
+    let reachedRead = (): void => {}
+    const reading = new Promise<void>((resolve) => {
+      reachedRead = resolve
+    })
+    justBefore(d1, /UPDATE "userSettings"/, async () => {
+      const held = heldUntil(
+        d1,
+        /SELECT \* FROM "userSettings" WHERE id = \?/,
+        /INSERT INTO "userSettings"/,
+      )
+      env.DB = held.d1
+      void held.arrived.then(reachedRead)
+    })
+
+    const pending = call(
+      'PATCH',
+      `/api/userSettings/${id}`,
+      { value: '"edited"' },
+      singer.token,
+    )
+    await reading
+    expect(
+      (await call('DELETE', `/api/userSettings/${id}`, undefined, singer.token))
+        .status,
+    ).toBe(204)
+    const replacement = await call(
+      'POST',
+      '/api/userSettings',
+      { id, key: 'theme', value: '"other private setting"' },
+      other.token,
+    )
+    expect(replacement.status).toBe(201)
+    const response = await pending
+
+    expect(response).toEqual({ status: 404, body: { error: 'Not found' } })
+    expect(
+      (await call('GET', `/api/userSettings/${id}`, undefined, other.token))
+        .body,
+    ).toEqual(replacement.body)
   })
 })
 
