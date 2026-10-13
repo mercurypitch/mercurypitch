@@ -11,11 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-12
 
-366 commits since `v0.9.16` before this release PR, #974: PRs #898, #947, #957
-to #962, #964 to #973, #975 to #979 and #981 to #991. Every commit came through
-a PR; none reached `main` without one. Of the 56 on `main`'s first-parent line,
-31 are PR merge commits and 25 are the commits #947 (5), #898 (15) and #991 (5)
-rebased onto `main` instead of merging.
+380 commits since `v0.9.16` before this release PR, #974: PRs #858, #898,
+#947, #957 to #973, #975 to #979, #981 to #991 and #993 to #996. Every commit
+came through a PR; none reached `main` without one. Of the 63 on `main`'s
+first-parent line, 33 are PR merge commits, 28 are the commits #947 (5), #898
+(15), #991 (5), #993 (2) and #858 (1) rebased onto `main` instead of merging,
+and 2 are the squash commits of #963 and #995.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
 compliance work that has to ship with it: the 14-day withdrawal for credit
@@ -25,8 +26,12 @@ voiceprint-first intro (#977, polished in #981), the compact sign-in sheet
 (#979) and the Voice Mirror's account offer and start screen (#978, #983),
 so the launch traffic meets all of them. Fixes merged on 13 October ride
 along: sessions that stay signed in past their first month (#991), the
-Community and Karaoke fixes from the UI audit (#898) and time labels that no
-longer read 2:60 (#947). The native apps keep their own versions and tags;
+Community and Karaoke fixes from the UI audit (#898), time labels that no
+longer read 2:60 (#947), a guided exercise that keeps its clip and Zen
+steadiness that leaves out a few tracker slips (#994), and an unpublish that
+works after another device took the share down (#995). Two small features
+came the same day: coming-soon store chips on the voiceprint results and the
+Map (#963), and Karaoke Night links that name their song (#993). The native apps keep their own versions and tags;
 what reaches them is listed under `native-mercurypitch` and
 `native-besidecue`.
 
@@ -59,13 +64,19 @@ The order matters. Each step names the PR that asks for it.
    nonce before the worker echoes it refuses every Google sign-in until the
    worker lands. A worker deployed first breaks nothing: the old app sends
    no nonce and gets the old redirects. It also lets in the new funnel
-   events, `cta_account_click` (#978) and the four `onboarding_map_door_*`
-   (#981); a site that lands first loses only those beacons (a 400 each).
-5. **Deploy the landing straight after the worker (disjoint-colliders #99
-   and #100).** It brings the Terms section `#withdrawal` that the checkbox,
-   the footnote and both mails link, and the privacy notice whose deletion
-   periods the retention sweep (#969) enforces from this deploy on. Keep the
-   gap between the two deploys to minutes.
+   events: `cta_account_click` (#978), the four `onboarding_map_door_*`
+   (#981) and #963's six store-chip clicks (`results_app_store_click`,
+   `results_google_play_click`, `free_sing_app_store_click`,
+   `free_sing_google_play_click`, `onboarding_map_app_store_tap` and
+   `onboarding_map_google_play_tap`); a site that lands first loses only
+   those beacons (a 400 each).
+5. **The landing is already live: `mp-v0.1.32` (disjoint-colliders #99,
+   #100 and #104) went out on 13 October, before the worker.** Its Terms
+   section `#withdrawal`, which the checkbox, the footnote and both mails
+   link, and its privacy notice, whose deletion periods the retention sweep
+   (#969) enforces, describe this release until the tag goes out. Its
+   example-song links (`?song=`, #993) load their song from this release on;
+   the old app opens Karaoke Night without it.
 6. **Stripe webhook events (#970), after the worker deploy.** The live
    endpoint must send eight types. Add `charge.dispute.closed`,
    `charge.dispute.funds_withdrawn`, `refund.failed` and `refund.updated`.
@@ -673,12 +684,12 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
 - **The leaderboard on a phone.** Under 480 px the table (`data-category`)
   keeps rank, player, score and the column the board is ranked by (streak,
   sessions or best), drops the fixed column widths, and lets long names wrap.
-- **Found, not changed.** A melody or setlist published from this browser
-  stays on its shelf after its board row is gone (unpublished on another
-  device, say), and cannot be removed there: the worker answers the delete
-  with 404, `unpublishShared` returns false, and every try says "Could not
-  unpublish this share. Try again." Before #898 the card left the shelf
-  whatever the server said.
+- **Found here, fixed in #995.** A melody or setlist published from this
+  browser stayed on its shelf after its board row was gone (unpublished on
+  another device, say), and could not be removed there: the worker answers
+  the delete with 404, `unpublishShared` returned false, and every try said
+  "Could not unpublish this share. Try again." Before #898 the card left the
+  shelf whatever the server said.
 
 ### Web: time labels that round before they split (#947)
 
@@ -694,6 +705,85 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
   for running clocks, still truncates.
 - `format-time.test.ts` and `jam-catalog.test.ts` moved beside their modules,
   and the format test sweeps 0 to 7,200 s in tenths of a second.
+
+### Web: coming-soon store chips on the voiceprint results and the Map (#963)
+
+- `StoreChips` (`src/components/shared/StoreChips.tsx`) puts App Store and
+  Google Play chips under the Voice Mirror's and Free Sing's results and on
+  the Map, first run or a `#/map` replay. They say coming soon until a store
+  listing is live, and no store artwork shows before then. The native build
+  renders nothing (`() => null`).
+- Six funnel events count the clicks, one per screen and store (release step
+  4). `mirrorEvents` keeps a name and a client id only, so they count clicks,
+  not people.
+
+### Web: Karaoke Night links that name their song (#993)
+
+- `/karaoke-night?song=goodbye-to-spring`, `josephine` or
+  `nothing-in-the-dark` opens Karaoke Night with that example loaded
+  (`src/lib/karaoke-night-link.ts`: `normalizeSongSlug`,
+  `karaokeNightSongUrl`). The old slug `karaoke-night` reads as
+  `goodbye-to-spring`, and `?session=` still wins over `?song=`.
+- `&zen=1` (or `true`, or the bare key) opens it in Zen on a computer; a
+  phone always opens Karaoke Night in Zen. A link that loads an example
+  fires the existing `karaoke_example_staged`, which stays first-party and is
+  not an Ads conversion.
+- `d39d9a930` fixes a race the links exposed: a second caller of the
+  examples seed now waits for the first (`webSeed ??= seedWebExamples()` in
+  `seed-examples.ts`).
+- Spec REQ-SKL-012 and REQ-SKL-013; end to end in
+  `src/e2e/karaoke-example-links.spec.ts`. about.mercurypitch.com links its
+  example songs this way from `mp-v0.1.32`.
+
+### Web and API: a guided exercise keeps its clip, and Zen scoring (#994)
+
+- **The example clip (worker).** `parseDraftInput`
+  (`workers/db-worker/src/guided-exercises.ts`) dropped an exercise's
+  `exampleAudio` whenever a publish came without a managed media id. A spec
+  with no media id now keeps the clip it was written with; managed media
+  still wins, and the editor's Remove takes it out. A clip a row already
+  lost is not restored. `node-tests/guided-exercise-example-clip-integration.test.ts`
+  runs the real worker and SQL; 2 of its 3 tests failed before the fix.
+- **Steadiness.** `scoreZenRun` leaves out frames more than 600 cents from
+  the take's median while they are at most 5% of the take; pitch accuracy
+  still counts every frame. A held A3 with two octave slips scored 63
+  (steadiness 0) and now scores 92 (steadiness 96). Six pinned A3 takes
+  score as before.
+- **"Gee" on every note of Three-Note Run.** `cueEveryNote` is gone from
+  `src/features/zen/exercise-catalog.ts`, and a test pins the cue.
+- The settings comment now says the pitch detector defaults to MPM, as it
+  has since 2 May.
+
+### Web: unpublishing a share another device took down (#995)
+
+- `unpublishShared` (`src/db/services/share-service.ts`) counts the worker's
+  404 as unpublished, so the card leaves this browser's shelf. A refusal
+  (403) or a failure is still a failure.
+- `community-services.test.ts`: a 404 returns true; a 403, a 500 and a
+  network error return false.
+
+### Tests: the jam-two-peer skill reaches a room again (#858)
+
+- `.claude/skills/jam-two-peer/two-peer.mjs` seeds
+  `pitchperfect_whats_new_seen_v2` from `package.json`, so the script is not
+  sent to `#/whats-new`; selects by role, name or an attribute the app owns
+  (`JamPickerList`'s `[data-variant="popup"]`) instead of CSS-module class
+  substrings; and passes `waitForFunction` its options where they apply.
+  Tooling only.
+
+### Native shell, test builds only: premium rooms full-bleed and held upright (#996)
+
+- A premium room opens as its own pushed screen: the art fills the screen
+  under the status bar, the bar and the home indicator, the bar floats over
+  it on the room's dark stage (`mp-dark-stage`) with a scrim behind the title
+  alone, and the tab rail and a parked run's pill hide until Back. Long note
+  adopts it: `PREMIUM_ROOM_SCREENS` in
+  `apps/mercurypitch/src/shell/premium-rooms.ts`.
+- A phone holds a premium room in portrait with
+  `@capacitor/screen-orientation` 8.0.2, locked on enter and unlocked on
+  leave. An iPad keeps turning, and the web does nothing.
+- It needs the next `mp-v` tag: the plugin is registered in the Android and
+  iOS projects.
 
 ### Premium exercises, native test builds only: Long note's levels, Echo's engine and the room kits (#985, #988, #990)
 
@@ -756,7 +846,11 @@ it, and `mp-v0.8.19` (85b78e48b, the merge of #985, TestFlight build 706) the
 ones marked with that. Nothing merged after #985 has a native tag yet, so
 the changes from #987 to #990, #898 and #947 arrive from the next native
 tag, as #974's does. #991 changed only the worker; the app sees it with
-this release's worker deploy, under the server changes below.
+this release's worker deploy, under the server changes below. The 13 October
+merges after it (#963 and #993 to #996) have no native tag yet either, and
+their lines were not matched against the bundle here: #963's chips render
+nothing in the native build, #994's clip fix is in the worker, and #996
+needs the next tag for its plugin.
 
 **In the native code**
 
