@@ -611,11 +611,30 @@ function projectHarness(
   const captures: DrumProjectCapture[] = []
   const appliedProjects: HydratedDrumProject[] = []
 
-  const initialize = vi.fn<DrumProjectController['initialize']>(async () => {
-    setLibraryState('loading')
-    await Promise.resolve()
-    setLibraryState('ready')
-    return { ok: true, value: projects() }
+  const initializeWork = vi.fn<DrumProjectController['initialize']>(
+    async () => {
+      setLibraryState('loading')
+      await Promise.resolve()
+      setLibraryState('ready')
+      return { ok: true, value: projects() }
+    },
+  )
+  let initializePromise: ReturnType<
+    DrumProjectController['initialize']
+  > | null = null
+  // The workspace intent and lazy library mount can both request initialization.
+  // Match the real controller: those requests share one load and ready cache.
+  const initialize = vi.fn<DrumProjectController['initialize']>(() => {
+    if (libraryState() === 'ready') {
+      return Promise.resolve({ ok: true, value: projects() })
+    }
+    if (initializePromise !== null) return initializePromise
+    const running = initializeWork()
+    initializePromise = running
+    void running.finally(() => {
+      if (initializePromise === running) initializePromise = null
+    })
+    return running
   })
   const listProjects = vi.fn<DrumProjectController['listProjects']>(
     async () => {
@@ -815,6 +834,7 @@ function projectHarness(
     detach,
     flush,
     initialize,
+    initializeWork,
     markDirty,
     openProject,
     options: () => controllerOptions,
@@ -1177,7 +1197,8 @@ describe('DrumNightApp', () => {
 
     fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
     const library = await screen.findByTestId('drum-project-library')
-    await waitFor(() => expect(project.initialize).toHaveBeenCalledOnce())
+    await waitFor(() => expect(project.initializeWork).toHaveBeenCalledOnce())
+    expect(project.initialize).toHaveBeenCalled()
     expect(project.createProjectController).toHaveBeenCalledOnce()
     expect(window.location.search).toBe('?drawer=projects')
     expect(
@@ -1204,7 +1225,8 @@ describe('DrumNightApp', () => {
     let drawer = await openGrooveDrawer()
     fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
     await screen.findByTestId('drum-project-library')
-    await waitFor(() => expect(project.initialize).toHaveBeenCalledOnce())
+    await waitFor(() => expect(project.initializeWork).toHaveBeenCalledOnce())
+    expect(project.initialize).toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
     drawer = screen.getByRole('region', { name: 'Shape the groove' })
@@ -1411,7 +1433,7 @@ describe('DrumNightApp', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
     const drawer = screen.getByRole('region', { name: 'Shape the groove' })
-    const editor = within(drawer).getByTestId('drum-groove-editor')
+    const editor = await within(drawer).findByTestId('drum-groove-editor')
     fireEvent.click(
       within(editor).getByRole('button', {
         name: 'Add Hi-Mid Tom at bar 1, beat 1 e',
@@ -1718,7 +1740,7 @@ describe('DrumNightApp', () => {
     const room = renderRoom({ clock, project })
     await saveCurrentGroove('Original Classic')
     fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
-    let editor = screen.getByTestId('drum-groove-editor')
+    let editor = await screen.findByTestId('drum-groove-editor')
     fireEvent.click(within(editor).getByRole('button', { name: 'Soft' }))
     fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
     await recordOnePreparedHit(clock)
@@ -2289,7 +2311,7 @@ describe('DrumNightApp', () => {
     takeCapture.dismiss.mockClear()
     takeCapture.startPlayback.mockClear()
     fireEvent.click(within(drawer).getByRole('tab', { name: 'Mix' }))
-    const mixer = within(drawer).getByTestId('drum-play-along-mixer')
+    const mixer = await within(drawer).findByTestId('drum-play-along-mixer')
     fireEvent.input(within(mixer).getByRole('slider', { name: 'You level' }), {
       target: { value: '64' },
     })
@@ -2663,13 +2685,15 @@ describe('DrumNightApp', () => {
 
   it.each(['muldjord', 'crocell'] as const)(
     'selects %s without activating audio and exposes its sample credits',
-    (kitId) => {
+    async (kitId) => {
       const room = renderRoom()
       fireEvent.click(screen.getAllByRole('button', { name: 'Kit' })[0])
       const drawer = screen.getByRole('region', { name: 'Choose the kit' })
 
       fireEvent.click(
-        within(drawer).getByRole('radio', { name: new RegExp(kitId, 'i') }),
+        await within(drawer).findByRole('radio', {
+          name: new RegExp(kitId, 'i'),
+        }),
       )
 
       expect(localStorage.getItem('mp.drumNight.kit.v1')).toBe(kitId)
@@ -2689,7 +2713,7 @@ describe('DrumNightApp', () => {
     const room = renderRoom()
     fireEvent.click(screen.getAllByRole('button', { name: 'Kit' })[0])
     const drawer = screen.getByRole('region', { name: 'Choose the kit' })
-    const kitGroup = within(drawer).getByRole('radiogroup', {
+    const kitGroup = await within(drawer).findByRole('radiogroup', {
       name: 'Drum sound',
     })
 
@@ -2765,10 +2789,9 @@ describe('DrumNightApp', () => {
     room.unmount()
     const restored = renderRoom()
     expect(
-      within(screen.getByRole('region', { name: 'Choose the kit' })).getByRole(
-        'radio',
-        { name: /Live/i },
-      ),
+      await within(
+        screen.getByRole('region', { name: 'Choose the kit' }),
+      ).findByRole('radio', { name: /Live/i }),
     ).toHaveAttribute('aria-checked', 'true')
     expect(restored.player.createPlayer).toHaveBeenCalledWith(
       expect.objectContaining({ initialKitId: 'live' }),
@@ -2824,7 +2847,7 @@ describe('DrumNightApp', () => {
     )
 
     const drawer = screen.getByRole('region', { name: 'Choose the kit' })
-    const snareLabel = within(drawer).getByText('Acoustic snare')
+    const snareLabel = await within(drawer).findByText('Acoustic snare')
     const snareRow = snareLabel.parentElement
     expect(snareRow).not.toBeNull()
     expect(
@@ -3085,7 +3108,7 @@ describe('DrumNightApp', () => {
     expect(within(sourceVariation).getByText('Editing')).toBeVisible()
 
     fireEvent.click(within(drawer).getByRole('tab', { name: 'Kit' }))
-    const selectedKit = within(drawer).getByRole('radio', {
+    const selectedKit = await within(drawer).findByRole('radio', {
       name: /Mercury Synth/i,
     })
     expect(selectedKit).toHaveAttribute('aria-checked', 'true')
@@ -3190,7 +3213,7 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
     const drawer = screen.getByRole('region', { name: 'Bring a song' })
     await waitFor(() => expect(catalog.loadSongPort).toHaveBeenCalledOnce())
-    expect(catalog.initialize).toHaveBeenCalledOnce()
+    await waitFor(() => expect(catalog.initialize).toHaveBeenCalledOnce())
 
     const song = await within(drawer).findByRole('button', {
       name: /Night Drive.*Two stems.*Load backing/i,
@@ -3731,7 +3754,7 @@ describe('DrumNightApp', () => {
       item: () => file,
     } as unknown as FileList
     fireEvent.change(
-      within(drawer).getByTestId('drum-play-along-file-drop-input'),
+      await within(drawer).findByTestId('drum-play-along-file-drop-input'),
       { target: { files } },
     )
 
@@ -3791,7 +3814,7 @@ describe('DrumNightApp', () => {
       item: () => file,
     } as unknown as FileList
     fireEvent.change(
-      within(drawer).getByTestId('drum-play-along-file-drop-input'),
+      await within(drawer).findByTestId('drum-play-along-file-drop-input'),
       { target: { files } },
     )
     await within(drawer).findByText('Reading authored-a.mid…')
@@ -3909,7 +3932,7 @@ describe('DrumNightApp', () => {
     ).toHaveAttribute('aria-current', 'true')
   })
 
-  it('supports complete arrow-key behavior for workbench tabs and kit radios', () => {
+  it('supports complete arrow-key behavior for workbench tabs and kit radios', async () => {
     const room = renderRoom()
     fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
     const drawer = screen.getByRole('region', { name: 'Shape the groove' })
@@ -3920,7 +3943,9 @@ describe('DrumNightApp', () => {
     const kitTab = within(drawer).getByRole('tab', { name: 'Kit' })
     expect(kitTab).toHaveFocus()
     expect(kitTab).toHaveAttribute('aria-selected', 'true')
-    expect(within(drawer).getByRole('tabpanel', { name: 'Kit' })).toBeVisible()
+    expect(
+      await within(drawer).findByRole('tabpanel', { name: 'Kit' }),
+    ).toBeVisible()
 
     const synth = within(drawer).getByRole('radio', {
       name: /Mercury Synth/i,
@@ -4122,7 +4147,7 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
     const drawer = screen.getByRole('region', { name: 'Shape the groove' })
     fireEvent.click(within(drawer).getByRole('tab', { name: 'Mix' }))
-    const mixer = within(drawer).getByTestId('drum-play-along-mixer')
+    const mixer = await within(drawer).findByTestId('drum-play-along-mixer')
     const sourceDrumsLevel = within(mixer).getByRole('slider', {
       name: 'Source Drums level',
     })
@@ -4136,7 +4161,7 @@ describe('DrumNightApp', () => {
     const clickLevel = within(drawer).getByRole('slider', {
       name: 'Click level',
     })
-    const authoredKickLevel = within(drawer).getByRole('slider', {
+    const authoredKickLevel = await within(drawer).findByRole('slider', {
       name: 'Kick authored level',
     })
     const authoredKickMute = within(drawer).getByRole('button', {
@@ -4190,7 +4215,9 @@ describe('DrumNightApp', () => {
     let drawer = screen.getByRole('region', { name: 'Shape the groove' })
     fireEvent.click(within(drawer).getByRole('tab', { name: 'Mix' }))
     fireEvent.input(
-      within(drawer).getByRole('slider', { name: 'Kick authored level' }),
+      await within(drawer).findByRole('slider', {
+        name: 'Kick authored level',
+      }),
       { target: { value: '55' } },
     )
     fireEvent.click(
@@ -4217,7 +4244,9 @@ describe('DrumNightApp', () => {
     room.player.setAuthoredFamilyVolume.mockClear()
     fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
     drawer = screen.getByRole('region', { name: 'Bring a song' })
-    fireEvent.click(within(drawer).getByRole('button', { name: /^Unload / }))
+    fireEvent.click(
+      await within(drawer).findByRole('button', { name: /^Unload / }),
+    )
 
     await waitFor(() =>
       expect(room.player.setAuthoredFamilyVolume).toHaveBeenCalledWith(
@@ -4227,14 +4256,19 @@ describe('DrumNightApp', () => {
     )
   })
 
-  it('keeps the playable groove active through honest import states and promotes a ready part', () => {
+  it('keeps the playable groove active through honest import states and promotes a ready part', async () => {
     const importSession = importSessionHarness()
     renderRoom({ importSession })
     fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
 
-    expect(screen.getByRole('heading', { name: 'First Pocket' })).toBeVisible()
+    expect(
+      await screen.findByRole('heading', { name: 'First Pocket' }),
+    ).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
     const drawer = screen.getByRole('region', { name: 'Bring a song' })
+    await within(drawer).findByRole('button', {
+      name: 'Choose MIDI or Guitar Pro',
+    })
 
     const states: readonly [DrumSessionImportState, string][] = [
       [{ status: 'loading', fileName: 'take.mid' }, 'Reading take.mid…'],
@@ -4306,7 +4340,7 @@ describe('DrumNightApp', () => {
     )
   })
 
-  it('serializes authored-file replacement and keeps cancellation available while importing', () => {
+  it('serializes authored-file replacement and keeps cancellation available while importing', async () => {
     const importSession = importSessionHarness({
       status: 'loading',
       fileName: 'long-take.mid',
@@ -4316,7 +4350,7 @@ describe('DrumNightApp', () => {
     const drawer = screen.getByRole('region', { name: 'Bring a song' })
 
     expect(
-      within(drawer).getByRole('button', {
+      await within(drawer).findByRole('button', {
         name: 'Choose MIDI or Guitar Pro',
       }),
     ).toBeDisabled()
@@ -4362,7 +4396,7 @@ describe('DrumNightApp', () => {
       item: () => file,
     } as unknown as FileList
     fireEvent.change(
-      within(drawer).getByTestId('drum-play-along-file-drop-input'),
+      await within(drawer).findByTestId('drum-play-along-file-drop-input'),
       { target: { files: fileList } },
     )
 
@@ -4378,7 +4412,7 @@ describe('DrumNightApp', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
     drawer = screen.getByRole('region', { name: 'Bring a song' })
-    expect(within(drawer).getByText('Pocket From File')).toBeVisible()
+    expect(await within(drawer).findByText('Pocket From File')).toBeVisible()
     expect(
       within(drawer).getByText('4 authored drum hits · 0 backing tracks'),
     ).toBeVisible()
@@ -4429,7 +4463,7 @@ describe('DrumNightApp', () => {
     ).toBeEnabled()
   })
 
-  it('reuses one score index across Seat, Score, and Coach and restores the view from the URL', () => {
+  it('reuses one score index across Seat, Score, and Coach and restores the view from the URL', async () => {
     window.history.replaceState({}, '', '/drum-night?view=seat')
     const ready = readySessionFixture({ title: 'Seat Map Study' })
     const importSession = importSessionHarness(ready)
@@ -4442,7 +4476,7 @@ describe('DrumNightApp', () => {
       'data-view',
       'seat',
     )
-    const backdrop = screen.getByTestId('drummer-seat-backdrop')
+    const backdrop = await screen.findByTestId('drummer-seat-backdrop')
     expect(backdrop.querySelector('img')).toHaveAttribute(
       'src',
       '/drum-night/drummer-seat-landscape.webp',
@@ -4457,7 +4491,7 @@ describe('DrumNightApp', () => {
     expect(createScoreIndex).toHaveBeenCalledOnce()
 
     fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
-    expect(screen.getByText('Percussion score')).toBeVisible()
+    expect(await screen.findByText('Percussion score')).toBeVisible()
     expect(window.location.search).toBe('?view=score')
     expect(createScoreIndex).toHaveBeenCalledOnce()
 
@@ -4850,7 +4884,7 @@ describe('DrumNightApp', () => {
     )
   })
 
-  it('moves the shared timeline from full song through A waiting, active, and clear', () => {
+  it('moves the shared timeline from full song through A waiting, active, and clear', async () => {
     renderRoom()
     const timeline = screen.getByTestId('drum-night-timeline')
     const timelineControls = within(timeline)
@@ -4876,7 +4910,7 @@ describe('DrumNightApp', () => {
     ).toHaveAttribute('aria-valuenow', '0')
     fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
     expect(
-      screen.getByRole('status', { name: 'Practice loop in score' }),
+      await screen.findByRole('status', { name: 'Practice loop in score' }),
     ).toHaveTextContent('A · Beat 1')
 
     const seek = timelineControls.getByRole('slider', {
