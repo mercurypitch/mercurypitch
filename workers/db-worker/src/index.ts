@@ -2046,12 +2046,16 @@ async function encoreWeekly(
   const now = new Date(nowMs).toISOString()
   const id = crypto.randomUUID()
   const slug = `${ev.slug}-encore-${Math.floor(nowMs / 86_400_000)}`
-  await env.DB.prepare(
+  // One statement: the "nothing active" check and the insert commit together,
+  // so two first loads after a rollover cannot both create an Encore.
+  const inserted = await env.DB.prepare(
     `INSERT INTO weeklyChallenges
       (id, createdAt, updatedAt, slug, title, description, featType, voiceTypeSplit,
        difficulty, targetItems, targetScore, hearItUrl, startsAt, endsAt,
        rewardBadgeId, founderScore, founderTrace, evergreen, status, resultsJson)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'active',NULL)`,
+     SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'active',NULL
+     WHERE NOT EXISTS (SELECT 1 FROM weeklyChallenges WHERE status = 'active')
+     ON CONFLICT(slug) DO NOTHING`,
   )
     .bind(
       id,
@@ -2074,6 +2078,12 @@ async function encoreWeekly(
       ev.evergreen,
     )
     .run()
+  if ((inserted.meta?.changes ?? 0) === 0) {
+    // Another request won the race: serve the row it created.
+    return env.DB.prepare(
+      `SELECT * FROM weeklyChallenges WHERE status = 'active' ORDER BY startsAt DESC LIMIT 1`,
+    ).first<WeeklyRow>()
+  }
   return {
     ...ev,
     id,
