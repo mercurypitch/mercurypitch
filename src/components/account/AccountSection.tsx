@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CheckSmall, Pencil, X } from '@/components/icons'
 import { MercuryCheckbox } from '@/components/MercuryCheckbox'
 import { getDb } from '@/db'
+import { CloudRequestError } from '@/db/adapters/server-adapter'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, isRegisteredProvider, logout, restoreAuth, } from '@/db/services/auth-service'
@@ -100,12 +101,20 @@ export const AccountSection: Component = () => {
       if ((await profiles.findById(userId)) != null) {
         await profiles.update(userId, { displayName: name })
       } else {
-        await profiles.create({
-          displayName: name,
-          joinDate: new Date().toISOString(),
-          lastPracticeDate: null,
-          currentStreak: 0,
-        })
+        try {
+          await profiles.create({
+            displayName: name,
+            joinDate: new Date().toISOString(),
+            lastPracticeDate: null,
+            currentStreak: 0,
+          })
+        } catch (err) {
+          // Provisioning inside create() already made the profile row.
+          if (!(err instanceof CloudRequestError && err.status === 409)) {
+            throw err
+          }
+          await profiles.update(userId, { displayName: name })
+        }
       }
       // The leaderboard is server-derived from sessionRecords and pulls the
       // display name from userProfiles, so updating the profile above is
