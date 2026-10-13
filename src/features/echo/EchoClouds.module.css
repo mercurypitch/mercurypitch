@@ -1,0 +1,7 @@
+/* The take's cloud layer (EchoClouds.tsx): the whole sky's box, the layer
+   itself in the plate's box inside it. */
+.clouds {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}

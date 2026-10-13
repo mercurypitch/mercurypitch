@@ -24,6 +24,7 @@ import { mergePathProgress, PATH_PROGRESS_KEY, } from '@/features/path/path-prog
 import { API_BASE_URL } from '@/lib/defaults'
 import { LONG_NOTE_BESTS_KEY, mergeBestsOnPull } from '@/lib/hold/hold-bests'
 import { IS_NATIVE_BUILD, PREMIUM_EXERCISES } from '@/lib/native-build'
+import { ECHO_BESTS_KEY, mergeEchoBestsOnPull } from '@/lib/sequence/echo-bests'
 import { applyPersistedValue, onPersistedWrite } from '@/lib/storage'
 
 /** Preference keys all share this prefix (see src/stores/*.ts). */
@@ -103,10 +104,15 @@ const MERGE_ON_PULL: Record<
   },
 }
 
-// The Long note's bests are a record too: a pull keeps the better best on
-// each note, not the newest device's table (hold-bests.ts). Named only in a
-// build with the Long note; a store build folds the key and the merge away.
-if (PREMIUM_EXERCISES) MERGE_ON_PULL[LONG_NOTE_BESTS_KEY] = mergeBestsOnPull
+// The premium exercises' bests are records too: a pull keeps the better
+// best on each note (Long note, hold-bests.ts) and at each level (Echo,
+// echo-bests.ts), not the newest device's table. Named only in a build
+// with the premium exercises; a store build folds the keys and the merges
+// away.
+if (PREMIUM_EXERCISES) {
+  MERGE_ON_PULL[LONG_NOTE_BESTS_KEY] = mergeBestsOnPull
+  MERGE_ON_PULL[ECHO_BESTS_KEY] = mergeEchoBestsOnPull
+}
 
 /**
  * Which ACCOUNT the device's merge-key values belong to.

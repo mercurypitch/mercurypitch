@@ -1,0 +1,13 @@
+/* Merc on the ridge (EchoMerc.tsx): his box, his canvas filling it. */
+.merc {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.merc > * {
+  position: absolute;
+  inset: 0;
+}

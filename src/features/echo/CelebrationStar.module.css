@@ -1,0 +1,36 @@
+/* The result's celebration star (CelebrationStar.tsx): every part placed
+   in px on the sky's box. Each part's resting style is its end state, so a
+   room with reduced motion, or a fixture, shows the finished star. */
+.celebration {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* A glow: light added to the plate. Screen never darkens and adds less
+   where the plate is already bright, as light does; the gradient's colours
+   are fitted to the plate under it. */
+.light {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+}
+
+/* A soft disc: a dot, the starburst's core. */
+.disc {
+  position: absolute;
+  border-radius: 50%;
+}
+
+/* A ray: its width across, its taper along it to nothing at the tip. */
+.ray {
+  position: absolute;
+  transform-origin: 0 50%;
+  mask-image: linear-gradient(to right, #000, transparent);
+  -webkit-mask-image: linear-gradient(to right, #000, transparent);
+}
+
+.star {
+  position: absolute;
+  overflow: visible;
+}
