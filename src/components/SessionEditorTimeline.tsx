@@ -6,6 +6,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { IconMusicNote, IconPause, IconPiano, } from '@/components/hidden-features-icons'
+import { formatRestDuration } from '@/lib/format-time'
 import { bpm, melodyStore, setActiveUserSession, userSession } from '@/stores'
 import type { MelodyData, SessionItem } from '@/types'
 import styles from './SessionEditorTimeline.module.css'
@@ -193,14 +194,6 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     setDragSourceIndex(-1)
   }
 
-  const getRestDuration = (restMs: number) => {
-    if (restMs < 1000) return `${Math.round(restMs / 100)}s`
-    if (restMs < 60000) return `${Math.round(restMs / 1000)}s`
-    const m = Math.floor(restMs / 60000)
-    const s = Math.round((restMs % 60000) / 1000)
-    return `${m}m ${s}s`
-  }
-
   return (
     <div class={styles.root}>
       <div class={styles.track}>
@@ -312,7 +305,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                         }
                       >
                         <span class={styles.itemDuration}>
-                          Duration: {getRestDuration(item.restMs!)}
+                          Duration: {formatRestDuration(item.restMs)}
                         </span>
                       </Show>
 

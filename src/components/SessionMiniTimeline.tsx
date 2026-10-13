@@ -20,6 +20,7 @@
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { IconMusicNote, IconPause } from '@/components/hidden-features-icons'
+import { formatRestDuration } from '@/lib/format-time'
 import { melodyStore } from '@/stores'
 import type { PlaybackSession, SessionItem } from '@/types'
 import styles from './SessionMiniTimeline.module.css'
@@ -28,16 +29,6 @@ interface SessionMiniTimelineProps {
   session: PlaybackSession
   /** When true, hide the leading session header chip. */
   compact?: boolean
-}
-
-/** Format a rest duration in milliseconds as a short, human-readable string. */
-function formatRestDuration(restMs: number | undefined): string {
-  const ms = restMs ?? 2000
-  if (ms < 1000) return `${Math.round(ms / 100) / 10}s`
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`
-  const m = Math.floor(ms / 60_000)
-  const s = Math.round((ms % 60_000) / 1000)
-  return s > 0 ? `${m}m ${s}s` : `${m}m`
 }
 
 /** Resolve a display label for a single session item. */

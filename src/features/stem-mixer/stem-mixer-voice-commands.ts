@@ -15,6 +15,7 @@ import type { Accessor } from 'solid-js'
 import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, keyMatchesStemLabel, KNOWN_STEM_KEYS, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, stemDisplayName, stemSpokenNames, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
 import type { VoiceCommand, VoiceCommandResult, } from '@/features/voice-control/types'
 import { voiceFailure } from '@/features/voice-control/types'
+import { formatSeekTarget } from '@/lib/format-time'
 
 export interface StemMixerVoiceTrack {
   label: string
@@ -90,14 +91,6 @@ export function createStemMixerVoiceCommands(
   const clampSeconds = (seconds: number): number =>
     Math.min(Math.max(seconds, 0), Math.max(0, deps.duration()))
 
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60)
-    const rest = Math.round(seconds % 60)
-    return minutes > 0
-      ? `${String(minutes)}:${String(rest).padStart(2, '0')}`
-      : `${String(rest)}s`
-  }
-
   const seekRelative = (deltaSeconds: number): string => {
     deps.seekToTime(clampSeconds(deps.elapsed() + deltaSeconds))
     const magnitude = Math.abs(deltaSeconds)
@@ -107,7 +100,7 @@ export function createStemMixerVoiceCommands(
   const seekAbsolute = (seconds: number): VoiceCommandResult => {
     if (deps.duration() <= 0) return voiceFailure('Nothing loaded')
     deps.seekToTime(clampSeconds(seconds))
-    return `Go to ${formatTime(seconds)}`
+    return `Go to ${formatSeekTarget(seconds)}`
   }
 
   // ── Stem mixing ────────────────────────────────────────────
