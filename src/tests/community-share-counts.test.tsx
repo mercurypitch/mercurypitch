@@ -10,14 +10,27 @@
 // everyone's, and what a card offers depends on whether it is yours.
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionRecord } from '@/db/entities'
+import { decodeSharePayload } from '@/lib/share-codec'
 
 const mocks = vi.hoisted(() => ({
   accountHeld: vi.fn(() => true),
   loadSessionRecords: vi.fn(async (_limit?: number) => [] as SessionRecord[]),
   loadSharedSessions: vi.fn(async () => [] as unknown[]),
   loadSharedMelodies: vi.fn(async () => [] as unknown[]),
+  loadPublishedShareCounts: vi.fn(async (_userId: string) => ({
+    melodies: 0,
+    sessions: 0,
+  })),
+  saveSharedMelody: vi.fn(),
+  saveSharedSession: vi.fn(),
+  unpublishShared: vi.fn(),
+  notify: vi.fn(),
+  libraryMelodies: vi.fn(() => [] as unknown[]),
+  copyShareUrl: vi.fn(async (_encoded: string) => true),
+  userId: 'user-0001',
   storageGet: vi.fn((_key: string, fallback: unknown) => fallback),
 }))
 
@@ -30,13 +43,14 @@ vi.mock('@/db/services/session-service', () => ({
   sessionRecordVersion: () => 0,
 }))
 vi.mock('@/db/services/share-service', () => ({
-  canPostToCommunity: async () => true,
+  canPostToCommunity: () => mocks.accountHeld(),
+  loadPublishedShareCounts: mocks.loadPublishedShareCounts,
   loadSharedMelodies: mocks.loadSharedMelodies,
   loadSharedSessions: mocks.loadSharedSessions,
   loadUserProfile: async () => null,
-  saveSharedMelody: async () => {},
-  saveSharedSession: async () => {},
-  unpublishShared: async () => {},
+  saveSharedMelody: mocks.saveSharedMelody,
+  saveSharedSession: mocks.saveSharedSession,
+  unpublishShared: mocks.unpublishShared,
 }))
 vi.mock('@/db/services/challenges-service', () => ({
   loadBadgeDefinitions: async () => [],
@@ -45,9 +59,21 @@ vi.mock('@/db/services/challenges-service', () => ({
 vi.mock('@/db/services/streak-service', () => ({
   getCurrentStreak: async () => 0,
 }))
-vi.mock('@/db/services/user-service', () => ({
-  authVersion: () => 0,
-  getUserId: () => 'user-0001',
+vi.mock('@/db/services/user-service', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  authVersion: () => version(),
+  getUserId: () => mocks.userId,
+}))
+vi.mock('@/stores/notifications-store', () => ({
+  showNotification: mocks.notify,
+}))
+vi.mock('@/stores/melody-store', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getAllMelodies: mocks.libraryMelodies,
+}))
+vi.mock('@/lib/share-codec', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  copyShareUrl: mocks.copyShareUrl,
 }))
 vi.mock('@/db/services/voiceprint-service', () => ({
   listVoiceprints: async () => [],
@@ -60,7 +86,23 @@ vi.mock('@/lib/storage', async (importOriginal) => ({
   storageSet: () => {},
 }))
 
+const [version, setVersion] = createSignal(0)
 const { CommunityShare } = await import('@/components/CommunityShare')
+
+function switchAccount(userId: string): void {
+  mocks.userId = userId
+  setVersion((value) => value + 1)
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (error: Error) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
 
 function cloudRun(id: string, source: SessionRecord['source']): SessionRecord {
   return {
@@ -112,16 +154,30 @@ function boardSetlist(id: string, userId: string, name: string) {
 }
 
 beforeEach(() => {
+  mocks.userId = 'user-0001'
+  mocks.libraryMelodies.mockReturnValue([])
   mocks.accountHeld.mockReturnValue(true)
   mocks.loadSessionRecords.mockResolvedValue([])
   mocks.loadSharedSessions.mockResolvedValue([])
   mocks.loadSharedMelodies.mockResolvedValue([])
+  mocks.loadPublishedShareCounts
+    .mockReset()
+    .mockResolvedValue({ melodies: 0, sessions: 0 })
+  mocks.saveSharedSession
+    .mockReset()
+    .mockResolvedValue(boardSetlist('s-new', 'user-0001', 'Run a'))
+  mocks.saveSharedMelody
+    .mockReset()
+    .mockResolvedValue(boardMelody('m-new', 'user-0001', 'New melody'))
+  mocks.unpublishShared.mockReset().mockResolvedValue(true)
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   mocks.storageGet.mockImplementation((_key, fallback) => fallback)
 })
 
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+  vi.restoreAllMocks()
 })
 
 describe('Community > Sessions', () => {
@@ -201,6 +257,10 @@ describe('Community > Profile', () => {
   })
 
   it("counts only the singer's own shares under Published", async () => {
+    mocks.loadPublishedShareCounts.mockResolvedValue({
+      melodies: 1,
+      sessions: 0,
+    })
     // The board is everyone's. Counted whole, it credited each singer with
     // the whole community's shares. The achievement count made the same
     // mistake once; the worker now counts per owner (grants.ts,
@@ -234,6 +294,75 @@ describe('Community > Profile', () => {
 })
 
 describe('Community > board cards', () => {
+  it('keeps local playback settings when its canonical server card is loaded', async () => {
+    const server = {
+      ...boardMelody('canonical', 'user-0001', 'Server title'),
+      items: [
+        {
+          id: 1,
+          note: { midi: 64, name: 'E', octave: 4, freq: 329.63 },
+          duration: 2,
+          startBeat: 0,
+        },
+      ],
+    }
+    const local = {
+      ...server,
+      name: 'Old local title',
+      bpm: 87,
+      key: 'E',
+      scale: 'minor',
+    }
+    mocks.storageGet.mockImplementation((key, fallback) =>
+      key === 'pp_shared_melodies' ? [local] : fallback,
+    )
+    mocks.loadSharedMelodies.mockResolvedValue([server])
+    render(() => <CommunityShare />)
+    await screen.findByRole('button', { name: 'Open Server title' })
+    expect(
+      screen.queryByRole('button', { name: 'Open Old local title' }),
+    ).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
+    expect(mocks.copyShareUrl).toHaveBeenCalledTimes(1)
+    expect(
+      decodeSharePayload(mocks.copyShareUrl.mock.calls[0][0]),
+    ).toMatchObject({
+      t: 'melody',
+      d: { n: 'Server title', b: 87, k: 'E', s: 'minor', i: [[64, 0, 2]] },
+    })
+  })
+
+  it('explains that unpublishing a melody cannot revoke its self-contained links', async () => {
+    mocks.loadSharedMelodies.mockResolvedValue([
+      boardMelody('mine', 'user-0001', 'My melody'),
+    ])
+    render(() => <CommunityShare />)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Unpublish My melody' }),
+    )
+    const dialog = screen.getByRole('alertdialog')
+    expect(dialog).toHaveTextContent('Existing melody links still work.')
+    expect(dialog).not.toHaveTextContent('stops being able to open it')
+    expect(mocks.unpublishShared).not.toHaveBeenCalled()
+  })
+
+  it('does not treat a saved local copy from another account as permission to unpublish', async () => {
+    const share = boardMelody('m-mine', 'user-0001', 'Saved publication')
+    mocks.storageGet.mockImplementation((key, fallback) =>
+      key === 'pp_shared_melodies' ? [share] : fallback,
+    )
+    render(() => <CommunityShare />)
+    await screen.findByRole('button', { name: 'Unpublish Saved publication' })
+    switchAccount('user-0002')
+    expect(
+      screen.queryByRole('button', { name: 'Unpublish Saved publication' }),
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Open Saved publication' }),
+    ).toBeInTheDocument()
+    expect(mocks.unpublishShared).not.toHaveBeenCalled()
+  })
+
   it("offers Unpublish on the singer's own melody and not on anyone else's", async () => {
     mocks.loadSharedMelodies.mockResolvedValue([
       boardMelody('m-mine', 'user-0001', 'My warm-up'),
@@ -307,5 +436,353 @@ describe('Community > share picker', () => {
     expect(await screen.findByText('Practice')).toBeInTheDocument()
     expect(screen.getByText('Weekly')).toBeInTheDocument()
     expect(screen.queryByText('session')).toBeNull()
+  })
+})
+
+describe('Community publication lifecycle', () => {
+  async function publishRun() {
+    openTab(/Sessions/)
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Share a session/i }),
+    )
+    await screen.findByText('Run a')
+    fireEvent.click(screen.getByRole('button', { name: /^Share$/ }))
+  }
+
+  async function unpublish(name: string) {
+    fireEvent.click(
+      await screen.findByRole('button', { name: `Unpublish ${name}` }),
+    )
+    fireEvent.click(screen.getByTestId('confirm-delete'))
+  }
+
+  function published(label: RegExp, count: number) {
+    expect(screen.getByText(label).previousElementSibling).toHaveTextContent(
+      String(count),
+    )
+  }
+
+  it('counts older own publications even when the board page has only foreign rows', async () => {
+    mocks.loadSharedMelodies.mockResolvedValue(
+      Array.from({ length: 100 }, (_, i) =>
+        boardMelody(`other-${i}`, 'other', `Foreign ${i}`),
+      ),
+    )
+    mocks.loadPublishedShareCounts.mockResolvedValue({
+      melodies: 7,
+      sessions: 3,
+    })
+    render(() => <CommunityShare />)
+    await screen.findByRole('button', { name: 'Open Foreign 99' })
+    openTab(/Profile/)
+    await waitFor(() => {
+      published(/^melodies$/, 7)
+      published(/^setlists$/, 3)
+    })
+    expect(mocks.loadPublishedShareCounts).toHaveBeenCalledWith('user-0001')
+  })
+
+  it('refreshes after publishing and removes the canonical row after unpublishing', async () => {
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'practice')])
+    mocks.loadPublishedShareCounts
+      .mockResolvedValueOnce({ melodies: 0, sessions: 1 })
+      .mockResolvedValueOnce({ melodies: 0, sessions: 2 })
+      .mockResolvedValueOnce({ melodies: 0, sessions: 1 })
+    render(() => <CommunityShare />)
+    openTab(/Profile/)
+    await waitFor(() => published(/^setlist$/, 1))
+    await publishRun()
+    await screen.findByRole('button', { name: 'Open Run a' })
+    openTab(/Profile/)
+    await waitFor(() => published(/^setlists$/, 2))
+    openTab(/Sessions/)
+    await unpublish('Run a')
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Open Run a' })).toBeNull(),
+    )
+    expect(mocks.unpublishShared).toHaveBeenCalledWith('session', 's-new')
+    openTab(/Profile/)
+    await waitFor(() => published(/^setlist$/, 1))
+  })
+
+  it('publishes a melody only after confirmation and refreshes its authoritative total', async () => {
+    const save = deferred<ReturnType<typeof boardMelody>>()
+    mocks.libraryMelodies.mockReturnValue([
+      {
+        ...boardMelody('library', '', 'New melody'),
+        bpm: 120,
+        items: [
+          {
+            id: 1,
+            note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+            startBeat: 0,
+            duration: 1,
+          },
+        ],
+      },
+    ])
+    mocks.loadPublishedShareCounts
+      .mockResolvedValueOnce({ melodies: 1, sessions: 0 })
+      .mockResolvedValueOnce({ melodies: 2, sessions: 0 })
+    mocks.saveSharedMelody.mockReturnValueOnce(save.promise)
+    render(() => <CommunityShare />)
+    fireEvent.click(screen.getByRole('button', { name: /Share a melody/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Share$/ }))
+    expect(screen.getByRole('button', { name: /^Share$/ })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Open New melody' })).toBeNull()
+    save.resolve(boardMelody('m-new', 'user-0001', 'New melody'))
+    await screen.findByRole('button', { name: 'Open New melody' })
+    expect(mocks.saveSharedMelody).toHaveBeenCalledTimes(1)
+    openTab(/Profile/)
+    await waitFor(() => published(/^melodies$/, 2))
+  })
+
+  it('does not claim or count a melody whose publication failed', async () => {
+    mocks.libraryMelodies.mockReturnValue([
+      {
+        ...boardMelody('library', '', 'New melody'),
+        bpm: 120,
+        items: [
+          {
+            id: 1,
+            note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+            startBeat: 0,
+            duration: 1,
+          },
+        ],
+      },
+    ])
+    mocks.saveSharedMelody.mockResolvedValueOnce(null)
+    render(() => <CommunityShare />)
+    fireEvent.click(screen.getByRole('button', { name: /Share a melody/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Share$/ }))
+    await waitFor(() =>
+      expect(mocks.notify).toHaveBeenCalledWith(
+        expect.stringMatching(/could not publish/i),
+        'error',
+      ),
+    )
+    expect(screen.getByRole('button', { name: /^Share$/ })).not.toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Open New melody' })).toBeNull()
+    expect(mocks.loadPublishedShareCounts).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a guest share local and removes it without a server write or count refresh', async () => {
+    mocks.accountHeld.mockReturnValue(false)
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'practice')])
+    render(() => <CommunityShare />)
+    await publishRun()
+    await screen.findByRole('button', { name: 'Open Run a' })
+    expect(mocks.saveSharedSession).not.toHaveBeenCalled()
+    await unpublish('Run a')
+    expect(screen.queryByRole('button', { name: 'Open Run a' })).toBeNull()
+    expect(mocks.unpublishShared).not.toHaveBeenCalled()
+    expect(mocks.loadPublishedShareCounts).toHaveBeenCalledTimes(1)
+    openTab(/Profile/)
+    expect(screen.queryByText('Published')).toBeNull()
+  })
+
+  it.each(['resolve', 'reject'] as const)(
+    'ignores an older count read that %s after a publication refresh',
+    async (settle) => {
+      const beforePublish = deferred<{ melodies: number; sessions: number }>()
+      mocks.loadPublishedShareCounts
+        .mockReturnValueOnce(beforePublish.promise)
+        .mockResolvedValueOnce({ melodies: 0, sessions: 2 })
+      mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'practice')])
+      render(() => <CommunityShare />)
+      await publishRun()
+      await screen.findByRole('button', { name: 'Open Run a' })
+      openTab(/Profile/)
+      await waitFor(() => published(/^setlists$/, 2))
+      mocks.notify.mockClear()
+      if (settle === 'resolve')
+        beforePublish.resolve({ melodies: 0, sessions: 1 })
+      else beforePublish.reject(new Error('old read offline'))
+      await beforePublish.promise.catch(() => {})
+      published(/^setlists$/, 2)
+      expect(mocks.notify).not.toHaveBeenCalled()
+    },
+  )
+
+  it('does not restore a deleted card from an earlier board read', async () => {
+    const board = deferred<unknown[]>()
+    const share = boardMelody('m-mine', 'user-0001', 'My melody')
+    mocks.storageGet.mockImplementation((key, fallback) =>
+      key === 'pp_shared_melodies' ? [share] : fallback,
+    )
+    mocks.loadSharedMelodies.mockReturnValueOnce(board.promise)
+    render(() => <CommunityShare />)
+    await unpublish('My melody')
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Open My melody' }),
+      ).toBeNull(),
+    )
+    board.resolve([share, boardMelody('other', 'other', 'Other melody')])
+    await screen.findByRole('button', { name: 'Open Other melody' })
+    expect(screen.queryByRole('button', { name: 'Open My melody' })).toBeNull()
+  })
+
+  it('does not remove a new account card after an old account deletion finishes', async () => {
+    const deletion = deferred<boolean>()
+    mocks.loadSharedMelodies
+      .mockResolvedValueOnce([boardMelody('mine', 'user-0001', 'Old melody')])
+      .mockResolvedValueOnce([boardMelody('new', 'user-0002', 'New melody')])
+    mocks.loadPublishedShareCounts
+      .mockResolvedValueOnce({ melodies: 1, sessions: 0 })
+      .mockResolvedValueOnce({ melodies: 2, sessions: 0 })
+    mocks.unpublishShared.mockReturnValueOnce(deletion.promise)
+    render(() => <CommunityShare />)
+    await unpublish('Old melody')
+    switchAccount('user-0002')
+    await screen.findByRole('button', { name: 'Open New melody' })
+    deletion.resolve(true)
+    await deletion.promise
+    expect(
+      screen.getByRole('button', { name: 'Open New melody' }),
+    ).toBeInTheDocument()
+    expect(mocks.notify).not.toHaveBeenCalled()
+    expect(mocks.loadPublishedShareCounts).toHaveBeenCalledTimes(2)
+    openTab(/Profile/)
+    published(/^melodies$/, 2)
+  })
+
+  it('keeps failed publication retryable without inflating totals or claiming success', async () => {
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'practice')])
+    mocks.loadPublishedShareCounts.mockResolvedValue({
+      melodies: 0,
+      sessions: 1,
+    })
+    mocks.saveSharedSession.mockResolvedValueOnce(null)
+    render(() => <CommunityShare />)
+    await publishRun()
+    await waitFor(() =>
+      expect(mocks.notify).toHaveBeenCalledWith(
+        expect.stringMatching(/could not publish/i),
+        'error',
+      ),
+    )
+    expect(screen.queryByRole('button', { name: 'Open Run a' })).toBeNull()
+    expect(mocks.loadPublishedShareCounts).toHaveBeenCalledTimes(1)
+    mocks.loadPublishedShareCounts.mockResolvedValue({
+      melodies: 0,
+      sessions: 2,
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^Share$/ }))
+    await screen.findByRole('button', { name: 'Open Run a' })
+    openTab(/Profile/)
+    await waitFor(() => published(/^setlists$/, 2))
+  })
+
+  it('keeps a failed unpublish visible and retryable without lowering its total', async () => {
+    mocks.loadSharedMelodies.mockResolvedValue([
+      boardMelody('m-mine', 'user-0001', 'My melody'),
+    ])
+    mocks.loadPublishedShareCounts.mockResolvedValue({
+      melodies: 1,
+      sessions: 0,
+    })
+    mocks.unpublishShared.mockResolvedValueOnce(false)
+    render(() => <CommunityShare />)
+    await unpublish('My melody')
+    await waitFor(() =>
+      expect(mocks.notify).toHaveBeenCalledWith(
+        expect.stringMatching(/could not unpublish/i),
+        'error',
+      ),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Open My melody' }),
+    ).toBeInTheDocument()
+    expect(mocks.loadPublishedShareCounts).toHaveBeenCalledTimes(1)
+    mocks.loadPublishedShareCounts.mockResolvedValue({
+      melodies: 0,
+      sessions: 0,
+    })
+    fireEvent.click(screen.getByTestId('confirm-delete'))
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Open My melody' }),
+      ).toBeNull(),
+    )
+    openTab(/Profile/)
+    await waitFor(() => expect(screen.queryByText('Published')).toBeNull())
+  })
+
+  it('retains known totals when a later refresh fails', async () => {
+    mocks.loadPublishedShareCounts
+      .mockResolvedValueOnce({ melodies: 5, sessions: 2 })
+      .mockRejectedValueOnce(new Error('offline'))
+    render(() => <CommunityShare />)
+    openTab(/Profile/)
+    await waitFor(() => published(/^melodies$/, 5))
+    switchAccount('user-0001')
+    await waitFor(() =>
+      expect(mocks.loadPublishedShareCounts).toHaveBeenCalledTimes(2),
+    )
+    await waitFor(() =>
+      expect(mocks.notify).toHaveBeenCalledWith(
+        expect.stringMatching(/could not update/i),
+        'error',
+      ),
+    )
+    published(/^melodies$/, 5)
+    published(/^setlists$/, 2)
+  })
+
+  it.each(['resolve', 'reject'] as const)(
+    'ignores stale account count responses that %s after switching',
+    async (settle) => {
+      const old = deferred<{ melodies: number; sessions: number }>()
+      mocks.loadPublishedShareCounts
+        .mockReturnValueOnce(old.promise)
+        .mockResolvedValueOnce({ melodies: 2, sessions: 0 })
+      render(() => <CommunityShare />)
+      openTab(/Profile/)
+      switchAccount('user-0002')
+      await waitFor(() => published(/^melodies$/, 2))
+      if (settle === 'resolve') old.resolve({ melodies: 91, sessions: 88 })
+      else old.reject(new Error('old account offline'))
+      await old.promise.catch(() => {})
+      published(/^melodies$/, 2)
+      expect(screen.queryByText(/^setlists?$/)).toBeNull()
+      expect(mocks.notify).not.toHaveBeenCalled()
+    },
+  )
+
+  it('clears previous-owner totals while the next account is loading or fails', async () => {
+    const next = deferred<{ melodies: number; sessions: number }>()
+    mocks.loadPublishedShareCounts
+      .mockResolvedValueOnce({ melodies: 5, sessions: 2 })
+      .mockReturnValueOnce(next.promise)
+    render(() => <CommunityShare />)
+    openTab(/Profile/)
+    await waitFor(() => published(/^melodies$/, 5))
+    switchAccount('user-0002')
+    expect(screen.queryByText('Published')).toBeNull()
+    next.reject(new Error('offline'))
+    await waitFor(() => expect(mocks.notify).toHaveBeenCalled())
+    expect(screen.queryByText('Published')).toBeNull()
+  })
+
+  it('ignores an in-flight publication after account switching', async () => {
+    const save = deferred<ReturnType<typeof boardSetlist>>()
+    mocks.saveSharedSession.mockReturnValueOnce(save.promise)
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'practice')])
+    mocks.loadPublishedShareCounts
+      .mockResolvedValueOnce({ melodies: 0, sessions: 1 })
+      .mockResolvedValueOnce({ melodies: 0, sessions: 8 })
+    render(() => <CommunityShare />)
+    await publishRun()
+    switchAccount('user-0002')
+    save.resolve(boardSetlist('s-new', 'user-0001', 'Run a'))
+    await save.promise
+    openTab(/Profile/)
+    await waitFor(() => published(/^setlists$/, 8))
+    openTab(/Sessions/)
+    expect(screen.queryByRole('button', { name: 'Open Run a' })).toBeNull()
+    expect(mocks.notify).not.toHaveBeenCalled()
+    expect(mocks.loadPublishedShareCounts).toHaveBeenCalledTimes(2)
   })
 })

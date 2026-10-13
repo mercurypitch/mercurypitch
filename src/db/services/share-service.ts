@@ -5,9 +5,10 @@
 import { z } from 'zod/v4'
 import { getDb } from '@/db'
 import type { SharedMelody, SharedSession, UserProfile } from '@/db/entities'
-import { getUserId } from '@/db/seed'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
-import { findOwnProfile } from '@/db/services/user-service'
+import { authVersion, findOwnProfile, getUserId, } from '@/db/services/user-service'
+import { midiToNote } from '@/lib/scale-data'
+import type { MelodyItem } from '@/types'
 
 export interface SharedMelodyView {
   id: string
@@ -15,7 +16,7 @@ export interface SharedMelodyView {
    *  singer's own card (the one they may take down) from anyone else's. */
   userId: string
   name: string
-  items: unknown[]
+  items: MelodyItem[]
   author: string
   tags?: string[]
   date: number
@@ -39,12 +40,108 @@ export interface UserProfileView {
   joinDate: number
 }
 
-const MelodyItemSchema = z.object({
-  midi: z.number().min(21).max(108),
+export interface PublishedShareCounts {
+  melodies: number
+  sessions: number
+}
+
+/** Count the owner's complete public collection, independently of the board page.
+ * Failed reads must reject so a temporary outage cannot erase known totals. */
+export async function loadPublishedShareCounts(
+  userId: string,
+): Promise<PublishedShareCounts> {
+  const db = await getDb()
+  const options = { where: { userId, isPublic: true }, throwOnError: true }
+  const [melodies, sessions] = await Promise.all([
+    db.getRepository<SharedMelody>('sharedMelodies').count(options),
+    db.getRepository<SharedSession>('sharedSessions').count(options),
+  ])
+  return { melodies, sessions }
+}
+
+const LegacyMelodyItemSchema = z.object({
+  midi: z.number().int().min(0).max(127),
   startBeat: z.number().min(0),
   duration: z.number().positive(),
   freq: z.number().positive(),
 })
+
+const MelodyItemSchema: z.ZodType<MelodyItem> = z
+  .object({
+    id: z.number().int(),
+    note: z.object({
+      midi: z.number().int().min(0).max(127),
+      name: z.enum([
+        'C',
+        'C#',
+        'D',
+        'D#',
+        'E',
+        'F',
+        'F#',
+        'G',
+        'G#',
+        'A',
+        'A#',
+        'B',
+      ]),
+      octave: z.number().int(),
+      freq: z.number().nonnegative(),
+    }),
+    startBeat: z.number().nonnegative(),
+    duration: z.number().positive(),
+    velocity: z.number().min(0).max(127).optional(),
+    effectType: z
+      .enum([
+        'slide-up',
+        'slide-down',
+        'ease-in',
+        'ease-out',
+        'vibrato',
+        'tremolo',
+        'trill',
+        'staccato',
+        'chord',
+      ])
+      .optional(),
+    slideInterval: z.number().optional(),
+    vibratoAmplitude: z.number().optional(),
+    tremoloRate: z.number().optional(),
+    tremoloDepth: z.number().optional(),
+    trillInterval: z.number().optional(),
+    trillRate: z.number().optional(),
+    staccatoRatio: z.number().optional(),
+    chordType: z
+      .enum([
+        'power',
+        'major',
+        'minor',
+        'diminished',
+        'augmented',
+        'sus2',
+        'sus4',
+        'octave',
+      ])
+      .optional(),
+    isRest: z.boolean().optional(),
+    lyricText: z.string().optional(),
+  })
+  .refine((item) => item.isRest === true || item.note.freq > 0)
+
+function parseMelodyItems(value: unknown): MelodyItem[] {
+  return z
+    .array(z.union([MelodyItemSchema, LegacyMelodyItemSchema]))
+    .parse(value)
+    .map((item, index) => {
+      if ('note' in item) return item
+      return {
+        id: index + 1,
+        note: { midi: item.midi, ...midiToNote(item.midi), freq: item.freq },
+        startBeat: item.startBeat,
+        duration: item.duration,
+      }
+    })
+}
 
 export async function loadUserProfile(): Promise<UserProfileView | null> {
   try {
@@ -74,15 +171,24 @@ export async function loadSharedMelodies(): Promise<SharedMelodyView[]> {
       orderBy: 'createdAt',
       orderDir: 'desc',
     })
-    return items.map((m) => ({
-      id: m.id,
-      userId: m.userId,
-      name: m.melodyName,
-      items: z.array(MelodyItemSchema).parse(safeJsonParse(m.itemsJson)),
-      author: m.author ?? 'Unknown',
-      tags: m.tags ?? [],
-      date: new Date(m.createdAt).getTime(),
-    }))
+    return items.flatMap((m) => {
+      try {
+        return [
+          {
+            id: m.id,
+            userId: m.userId,
+            name: m.melodyName,
+            items: parseMelodyItems(JSON.parse(m.itemsJson)),
+            author: m.author ?? 'Unknown',
+            tags: m.tags ?? [],
+            date: new Date(m.createdAt).getTime(),
+          },
+        ]
+      } catch {
+        // A malformed public row must not hide everyone else's melodies.
+        return []
+      }
+    })
   } catch {
     return []
   }
@@ -141,15 +247,19 @@ export async function saveSharedMelody(data: {
   tags?: string[]
 }): Promise<SharedMelodyView | null> {
   if (!canPostToCommunity()) return null
+  const userId = getUserId()
+  const version = authVersion()
   try {
+    const items = parseMelodyItems(data.items)
     const db = await getDb()
+    if (getUserId() !== userId || authVersion() !== version) return null
     const repo = db.getRepository<SharedMelody>('sharedMelodies')
     const created = await repo.create({
-      userId: getUserId(),
+      userId,
       melodyId: '',
       melodyName: data.name,
       author: data.author,
-      itemsJson: JSON.stringify(data.items),
+      itemsJson: JSON.stringify(items),
       tags: data.tags ?? [],
       isPublic: true,
     })
@@ -157,7 +267,7 @@ export async function saveSharedMelody(data: {
       id: created.id,
       userId: created.userId,
       name: created.melodyName,
-      items: safeJsonParse(created.itemsJson),
+      items: parseMelodyItems(JSON.parse(created.itemsJson)),
       author: created.author ?? 'Unknown',
       tags: created.tags ?? [],
       date: new Date(created.createdAt).getTime(),
@@ -174,11 +284,14 @@ export async function saveSharedSession(data: {
   results: number[]
 }): Promise<SharedSessionView | null> {
   if (!canPostToCommunity()) return null
+  const userId = getUserId()
+  const version = authVersion()
   try {
     const db = await getDb()
+    if (getUserId() !== userId || authVersion() !== version) return null
     const repo = db.getRepository<SharedSession>('sharedSessions')
     const created = await repo.create({
-      userId: getUserId(),
+      userId,
       sessionId: '',
       sessionName: data.name,
       author: data.author,
@@ -220,14 +333,15 @@ export async function unpublishShared(
   kind: 'melody' | 'session',
   id: string,
 ): Promise<boolean> {
+  const userId = getUserId()
+  const version = authVersion()
   try {
     const db = await getDb()
+    if (getUserId() !== userId || authVersion() !== version) return false
     const table = kind === 'melody' ? 'sharedMelodies' : 'sharedSessions'
     await db.getRepository(table).delete(id)
     return true
   } catch {
-    // Local-only shares (never reached the DB) still disappear from the
-    // shelf — the caller drops them from its local list either way.
     return false
   }
 }

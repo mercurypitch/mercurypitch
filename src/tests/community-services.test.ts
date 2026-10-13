@@ -5,7 +5,7 @@
 // Exercises the user-facing flows behind the Leaderboard,
 // Challenges and Community tabs against an in-memory database.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InMemoryAdapter } from './utils/in-memory-db'
 
 const adapter = new InMemoryAdapter()
@@ -26,12 +26,18 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => ({
 import type { ChallengeDefinition, SessionSource, UserProfile, } from '@/db/entities'
 import { loadChallengeDefinitions, loadChallengeProgress, saveChallengeProgress, } from '@/db/services/challenges-service'
 import { loadCurrentUserEntry, loadLeaderboard, } from '@/db/services/leaderboard-service'
-import { canPostToCommunity, loadSharedMelodies, loadSharedSessions, saveSharedMelody, saveSharedSession, } from '@/db/services/share-service'
-import { getUserId } from '@/db/services/user-service'
+import { canPostToCommunity, loadPublishedShareCounts, loadSharedMelodies, loadSharedSessions, saveSharedMelody, saveSharedSession, unpublishShared, } from '@/db/services/share-service'
+import { getUserId, setAuthToken } from '@/db/services/user-service'
 
 beforeEach(async () => {
   await adapter.destroy()
   account.upgraded = true
+  setAuthToken(null)
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  setAuthToken(null)
 })
 
 const nowIso = (): string => new Date().toISOString()
@@ -232,6 +238,75 @@ describe('share flows', () => {
     { midi: 64, startBeat: 1, duration: 1, freq: 329.63 },
   ]
 
+  it('counts every public row owned by the requested singer, excluding foreign and private rows', async () => {
+    const melodyRepo = adapter.getRepository('sharedMelodies')
+    const sessionRepo = adapter.getRepository('sharedSessions')
+    for (const repo of [melodyRepo, sessionRepo]) {
+      await repo.create({ userId: 'owner', isPublic: true } as never)
+      await repo.create({ userId: 'owner', isPublic: true } as never)
+      await repo.create({ userId: 'owner', isPublic: false } as never)
+      for (let i = 0; i < 101; i++)
+        await repo.create({ userId: 'other', isPublic: true } as never)
+    }
+    expect(await loadPublishedShareCounts('owner')).toEqual({
+      melodies: 2,
+      sessions: 2,
+    })
+    expect(await loadPublishedShareCounts('other')).toEqual({
+      melodies: 101,
+      sessions: 101,
+    })
+    expect(await loadPublishedShareCounts('empty')).toEqual({
+      melodies: 0,
+      sessions: 0,
+    })
+  })
+
+  it('propagates count failures so the UI can retain its last successful totals', async () => {
+    const repo = adapter.getRepository('sharedSessions')
+    const count = vi
+      .spyOn(repo, 'count')
+      .mockImplementation(async (options) => {
+        // Matches the server adapter: reads otherwise fall back to zero.
+        if (options?.throwOnError === true) throw new Error('offline')
+        return 0
+      })
+    await expect(loadPublishedShareCounts('owner')).rejects.toThrow('offline')
+    expect(count).toHaveBeenCalledWith({
+      where: { userId: 'owner', isPublic: true },
+      throwOnError: true,
+    })
+  })
+
+  it('does not dispatch writes under an identity that changed while the DB initialized', async () => {
+    const existing = await adapter
+      .getRepository('sharedMelodies')
+      .create({ userId: getUserId(), isPublic: true } as never)
+    const melody = saveSharedMelody({
+      name: 'Do not publish',
+      items: melodyItems,
+      author: 'Me',
+    })
+    const session = saveSharedSession({
+      name: 'Do not publish',
+      items: [],
+      author: 'Me',
+      results: [80],
+    })
+    const deletion = unpublishShared('melody', existing.id)
+    setAuthToken(
+      `header.${btoa(JSON.stringify({ sub: 'new-owner' }))}.signature`,
+    )
+    expect(await melody).toBeNull()
+    expect(await session).toBeNull()
+    expect(await deletion).toBe(false)
+    expect(
+      await adapter.getRepository('sharedMelodies').findById(existing.id),
+    ).not.toBeNull()
+    expect(await adapter.getRepository('sharedMelodies').count()).toBe(1)
+    expect(await adapter.getRepository('sharedSessions').count()).toBe(0)
+  })
+
   it('round-trips a shared melody', async () => {
     const saved = await saveSharedMelody({
       name: 'My Tune',
@@ -246,6 +321,102 @@ describe('share flows', () => {
     expect(loaded[0].name).toBe('My Tune')
     expect(loaded[0].items).toHaveLength(2)
     expect(loaded[0].tags).toEqual(['practice'])
+    expect(await loadPublishedShareCounts(getUserId())).toEqual({
+      melodies: 1,
+      sessions: 0,
+    })
+    expect(await unpublishShared('melody', saved!.id)).toBe(true)
+    expect(await loadPublishedShareCounts(getUserId())).toEqual({
+      melodies: 0,
+      sessions: 0,
+    })
+  })
+
+  it('round-trips the actual nested melody shape including rests and playback expression', async () => {
+    const items = [
+      {
+        id: 7,
+        note: { midi: 64, name: 'E', octave: 4, freq: 329.63 },
+        startBeat: 0,
+        duration: 2,
+        velocity: 84,
+        effectType: 'vibrato',
+        slideInterval: -2,
+        vibratoAmplitude: 0.5,
+        tremoloRate: 8,
+        tremoloDepth: 0.4,
+        trillInterval: 2,
+        trillRate: 10,
+        staccatoRatio: 0.4,
+        chordType: 'minor',
+        lyricText: 'Hello',
+      },
+      {
+        id: 8,
+        note: { midi: 60, name: 'C', octave: 4, freq: 0 },
+        startBeat: 2,
+        duration: 1,
+        isRest: true,
+      },
+    ]
+    const saved = await saveSharedMelody({
+      name: 'Expressive tune',
+      items,
+      author: 'Me',
+    })
+    expect(saved?.items).toEqual(items)
+    const loaded = await loadSharedMelodies()
+    expect(loaded.map((row) => row.name)).toEqual(['Expressive tune'])
+    expect(loaded[0].items).toEqual(items)
+  })
+
+  it('normalizes old flat notes and does not hide valid shares behind one malformed row', async () => {
+    const repo = adapter.getRepository('sharedMelodies')
+    await repo.create({
+      userId: getUserId(),
+      melodyName: 'Legacy',
+      itemsJson: JSON.stringify(melodyItems),
+      isPublic: true,
+    } as never)
+    await repo.create({
+      userId: 'other',
+      melodyName: 'Malformed',
+      itemsJson: '{bad json',
+      isPublic: true,
+    } as never)
+    await repo.create({
+      userId: 'other',
+      melodyName: 'Invalid',
+      itemsJson: JSON.stringify([{ note: null }]),
+      isPublic: true,
+    } as never)
+    const loaded = await loadSharedMelodies()
+    expect(loaded.map((row) => row.name)).toEqual(['Legacy'])
+    expect(loaded[0].items).toEqual([
+      {
+        id: 1,
+        note: { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+        startBeat: 0,
+        duration: 1,
+      },
+      {
+        id: 2,
+        note: { midi: 64, name: 'E', octave: 4, freq: 329.63 },
+        startBeat: 1,
+        duration: 1,
+      },
+    ])
+  })
+
+  it('does not publish malformed melody items that cannot be read back', async () => {
+    expect(
+      await saveSharedMelody({
+        name: 'Invalid',
+        items: [{ note: null }],
+        author: 'Me',
+      }),
+    ).toBeNull()
+    expect(await adapter.getRepository('sharedMelodies').count()).toBe(0)
   })
 
   it('round-trips a shared session with computed score', async () => {
@@ -260,6 +431,15 @@ describe('share flows', () => {
     const loaded = await loadSharedSessions()
     expect(loaded).toHaveLength(1)
     expect(loaded[0].results).toEqual([80, 90, 100])
+    expect(await loadPublishedShareCounts(getUserId())).toEqual({
+      melodies: 0,
+      sessions: 1,
+    })
+    expect(await unpublishShared('session', saved!.id)).toBe(true)
+    expect(await loadPublishedShareCounts(getUserId())).toEqual({
+      melodies: 0,
+      sessions: 0,
+    })
   })
 
   it('keeps a post off the public board without an account', async () => {
