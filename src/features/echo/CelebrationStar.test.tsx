@@ -5,7 +5,7 @@
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CelebrationStar } from './CelebrationStar'
-import { CELEBRATION } from './echo-geometry'
+import { CELEBRATION } from './echo-celebration'
 import { layoutSky } from './sky-layout'
 
 const motion = vi.hoisted(() => ({ reduced: false }))

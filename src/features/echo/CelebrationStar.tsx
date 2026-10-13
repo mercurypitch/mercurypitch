@@ -3,7 +3,7 @@
 // ============================================================
 //
 // Storyboard screen 4, as art round 4 draws it (CELEBRATION in
-// echo-geometry.ts; spec: echo-a0/geometry/echo-celebration-star.json r3).
+// echo-celebration.ts; spec: echo-a0/geometry/echo-celebration-star.json r3).
 // Bottom to top, in A0's paint order (tools/celebration_r3.py draw):
 //
 //   star glow  light added round the star
@@ -39,7 +39,7 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import type { RibbonField, RibbonFrame } from './celebration-paint'
 import { alphaStops, BOTTOM_TIPS, catmullRom, dotTimings, gauss, GAUSS_REACH, keyframeOffsets, MIST_REACH, mistAngleStops, paintRibbons, ribbonField, ribbonFrames, ribbonPlan, screenStops, sigmaOf, starPath, } from './celebration-paint'
 import styles from './CelebrationStar.module.css'
-import { CELEBRATION } from './echo-geometry'
+import { CELEBRATION } from './echo-celebration'
 import type { ScreenPoint, SkyLayout } from './sky-layout'
 import { onPlate } from './sky-layout'
 

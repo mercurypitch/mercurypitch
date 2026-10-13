@@ -2,7 +2,7 @@
 // The celebration star's paint: paths, gradients and timings, from its spec
 // ============================================================
 //
-// Art round 4 (CELEBRATION in echo-geometry.ts, from the A0 spec's r3
+// Art round 4 (CELEBRATION in echo-celebration.ts, from the A0 spec's r3
 // block) draws the result's star as four things: a hollow star (two
 // outlines over a translucent fill, in a glow, the inner outline lumpy),
 // 33 sparkle dots, three thin wispy ribbons along the dots' chains, and a
@@ -26,7 +26,8 @@
 //
 // Pure: sizes in px come in, CSS and SVG strings go out.
 
-import { CELEBRATION, PLATE_BASE } from './echo-geometry'
+import { CELEBRATION } from './echo-celebration'
+import { PLATE_BASE } from './echo-geometry'
 
 /** A Gaussian's sigma from its full width at half maximum. */
 export const sigmaOf = (fwhm: number): number => fwhm / 2.3548
@@ -250,43 +251,44 @@ export interface RibbonField {
 /** Out to 4 sigma across a ribbon (A0's patch): past it, under 0.04 %. */
 const RIBBON_REACH = 4
 
-/**
- * A ribbon's field: for each device pixel within reach of `curve` (px in
- * the canvas's CSS box), its nearest point on the sampled curve (A0's
- * draw_ribbons takes the nearest sample),
- * the Gaussian across at that distance (`fwhm` px), the tapers over
- * `taper` px at both ends, and where along the curve it is.
- */
-export function ribbonField(
-  curve: readonly Pt[],
-  o: { fwhm: number; taper: number; alpha: number; fromStart: boolean },
-  canvas: { width: number; height: number; dpr: number },
-): RibbonField {
-  const { width, height, dpr } = canvas
+/** Each sample's distance along the curve from its first, px. */
+function lengthsAlong(curve: readonly Pt[]): number[] {
   const along = [0]
   for (let k = 1; k < curve.length; k++) {
-    along.push(
-      along[k - 1] +
-        Math.hypot(
-          curve[k][0] - curve[k - 1][0],
-          curve[k][1] - curve[k - 1][1],
-        ),
-    )
+    const [x0, y0] = curve[k - 1]
+    const [x1, y1] = curve[k]
+    along.push(along[k - 1] + Math.hypot(x1 - x0, y1 - y0))
   }
-  const length = along[along.length - 1]
-  const sigma = sigmaOf(o.fwhm) * dpr
-  const reach = Math.ceil(RIBBON_REACH * sigma) + 1
-  const best = new Float32Array(width * height).fill(Infinity)
+  return along
+}
+
+/** A canvas's pixels: each one's squared distance to the curve, and where along it. */
+interface Nearest {
+  readonly d2: Float32Array
+  /** px along the curve, or -1 out of reach. */
+  readonly place: Float32Array
+}
+
+/**
+ * Each piece of the curve between two samples, to the device pixels within
+ * `reach` of it: the distance to the piece itself, so a sparse sampling
+ * does not ripple the Gaussian.
+ */
+function nearestOnCurve(
+  curve: readonly Pt[],
+  along: readonly number[],
+  reach: number,
+  canvas: { width: number; height: number; dpr: number },
+): Nearest {
+  const { width, height, dpr } = canvas
+  const d2 = new Float32Array(width * height).fill(Infinity)
   const place = new Float32Array(width * height).fill(-1)
-  // Each piece of the curve between two samples, to the pixels within
-  // reach of it: the distance to the piece itself, so a sparse sampling
-  // does not ripple the Gaussian.
   for (let k = 1; k < curve.length; k++) {
     const ax = curve[k - 1][0] * dpr
     const ay = curve[k - 1][1] * dpr
     const vx = curve[k][0] * dpr - ax
     const vy = curve[k][1] * dpr - ay
-    const v2 = vx * vx + vy * vy
+    const v2 = Math.max(vx * vx + vy * vy, 1e-12)
     const x0 = Math.max(0, Math.floor(Math.min(ax, ax + vx) - reach))
     const x1 = Math.min(width - 1, Math.ceil(Math.max(ax, ax + vx) + reach))
     const y0 = Math.max(0, Math.floor(Math.min(ay, ay + vy) - reach))
@@ -295,44 +297,69 @@ export function ribbonField(
       for (let px = x0; px <= x1; px++) {
         const wx = px + 0.5 - ax
         const wy = py + 0.5 - ay
-        const t =
-          v2 > 0 ? Math.min(1, Math.max(0, (wx * vx + wy * vy) / v2)) : 0
+        const t = Math.min(1, Math.max(0, (wx * vx + wy * vy) / v2))
         const dx = wx - t * vx
         const dy = wy - t * vy
-        const d2 = dx * dx + dy * dy
         const i = py * width + px
-        if (d2 < best[i]) {
-          best[i] = d2
+        if (dx * dx + dy * dy < d2[i]) {
+          d2[i] = dx * dx + dy * dy
           place[i] = along[k - 1] + t * (along[k] - along[k - 1])
         }
       }
     }
   }
+  return { d2, place }
+}
+
+/** A ribbon's tapers at `s` px along a curve `length` px long. */
+const taperAt = (s: number, length: number, taper: number): number =>
+  taper > 0
+    ? Math.min(1, Math.max(0, s / taper)) *
+      Math.min(1, Math.max(0, (length - s) / taper))
+    : 1
+
+/**
+ * A ribbon's field: for each device pixel within reach of `curve` (px in
+ * the canvas's CSS box), its nearest point on the sampled curve (A0's
+ * draw_ribbons takes the nearest sample), the Gaussian across at that
+ * distance (`fwhm` px), the tapers over `taper` px at both ends, and where
+ * along the curve it is.
+ */
+export function ribbonField(
+  curve: readonly Pt[],
+  o: { fwhm: number; taper: number; alpha: number; fromStart: boolean },
+  canvas: { width: number; height: number; dpr: number },
+): RibbonField {
+  const along = lengthsAlong(curve)
+  const length = along[along.length - 1]
+  const sigma = sigmaOf(o.fwhm) * canvas.dpr
+  const { d2, place } = nearestOnCurve(
+    curve,
+    along,
+    Math.ceil(RIBBON_REACH * sigma) + 1,
+    canvas,
+  )
+  const limit = (RIBBON_REACH * sigma) ** 2
   const pixels: number[] = []
   const alpha: number[] = []
   const at: number[] = []
-  const from: number[] = []
-  const limit = (RIBBON_REACH * sigma) ** 2
   for (let i = 0; i < place.length; i++) {
-    if (place[i] < 0 || best[i] > limit) continue
     const s = place[i]
-    const taper =
-      o.taper > 0
-        ? Math.min(1, Math.max(0, s / o.taper)) *
-          Math.min(1, Math.max(0, (length - s) / o.taper))
-        : 1
-    const a = o.alpha * Math.exp(-best[i] / (2 * sigma * sigma)) * taper
+    if (s < 0 || d2[i] > limit) continue
+    const a =
+      o.alpha *
+      Math.exp(-d2[i] / (2 * sigma * sigma)) *
+      taperAt(s, length, o.taper)
     if (a <= 0) continue
     pixels.push(i)
     alpha.push(a)
     at.push(s)
-    from.push(o.fromStart ? s : length - s)
   }
   return {
     pixels: Int32Array.from(pixels),
     alpha: Float32Array.from(alpha),
     along: Float32Array.from(at),
-    fromBurst: Float32Array.from(from),
+    fromBurst: Float32Array.from(at, (s) => (o.fromStart ? s : length - s)),
     length,
   }
 }

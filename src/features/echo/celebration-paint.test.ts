@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { catmullRom, dotTimings, easeOut, keyframeOffsets, mistAngle, paintRibbons, ribbonField, ribbonFrames, ribbonPlan, screenStops, seeded, starPath, } from './celebration-paint'
-import { CELEBRATION } from './echo-geometry'
+import { CELEBRATION } from './echo-celebration'
 
 /** A path's corners, [x, y]. */
 const corners = (path: string): number[][] =>

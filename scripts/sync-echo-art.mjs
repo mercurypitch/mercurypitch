@@ -12,9 +12,9 @@
 //                                              seat, the sky's floor, the
 //                                              twinkles, the top light, the
 //                                              strokes, the sprites, the
-//                                              result slots, the
-//                                              celebration star, the
-//                                              cloud layer's fades
+//                                              result slots, the cloud
+//                                              layer's fades
+//   src/features/echo/echo-celebration.ts      the celebration star
 //   src/features/echo/fixture/fixture-scenes.ts  the storyboard's frames,
 //                                              pinned, for the dev-only
 //                                              fixtures the fidelity
@@ -41,6 +41,7 @@ if (SOURCE === undefined || !existsSync(join(SOURCE, 'final'))) {
 const A0 = resolve(SOURCE)
 const ART = join(ROOT, 'src/features/echo/art')
 const GEOMETRY_OUT = join(ROOT, 'src/features/echo/echo-geometry.ts')
+const CELEBRATION_OUT = join(ROOT, 'src/features/echo/echo-celebration.ts')
 const FIXTURE_OUT = join(ROOT, 'src/features/echo/fixture/fixture-scenes.ts')
 
 const json = (path) => JSON.parse(readFileSync(join(A0, path), 'utf8'))
@@ -730,8 +731,8 @@ const geometry = `// ===========================================================
 // frame with ${MASTER.extension_rows} rows of sky painted above it. Sizes
 // ending in W are fractions of the room's width. Merc's seat, the ridge
 // and the sky's floor come from echo-geometry.json, the strokes from
-// echo-strokes.json, the result slots from storyboard screen 4's pins and
-// the celebration star from echo-celebration-star.json.
+// echo-strokes.json and the result slots from storyboard screen 4's pins.
+// The celebration star is in echo-celebration.ts.
 //
 // The files this was written against:
 ${provenance}
@@ -849,6 +850,25 @@ export const RESULT_SLOTS: readonly {
 }[] = ${JSON.stringify(resultSlots())}
 
 /**
+ * The cloud layer (echo-cloud-layer.json): its opacity per state, and its
+ * fades in, between two states' layers, and out, ms.
+ */
+export const CLOUD_LAYER = ${JSON.stringify(cloudLayer())} as const
+`
+
+const celebrationFile = `// ============================================================
+// Echo's celebration star, in numbers (generated)
+// ============================================================
+//
+// Written by scripts/sync-echo-art.mjs from the Echo A0 art's
+// echo-celebration-star.json (its r3 block, which art round 4 carries);
+// do not edit by hand, re-run the script when the art changes. Places are
+// fractions of the plate's base frame (echo-geometry.ts PLATE_BASE), u
+// across and v down; sizes ending in W are fractions of the room's width.
+// The glows' screen colours are fitted to the result plate
+// (echo-world-result-1290.webp ${files.find((f) => f.name === 'echo-world-result-1290.webp').sha}).
+
+/**
  * The result's celebration star, art round 4 (echo-celebration-star.json,
  * its r3 block): the star (a hollow double outline in its glow, the inner
  * one lumpy: its corners' radius factors counter-clockwise on screen from
@@ -860,12 +880,6 @@ export const RESULT_SLOTS: readonly {
  * fitted to the result plate (scripts/sync-echo-art.mjs fitLights).
  */
 export const CELEBRATION = ${JSON.stringify(celebrationSpec)} as const
-
-/**
- * The cloud layer (echo-cloud-layer.json): its opacity per state, and its
- * fades in, between two states' layers, and out, ms.
- */
-export const CLOUD_LAYER = ${JSON.stringify(cloudLayer())} as const
 `
 
 const scenes = `// ============================================================
@@ -922,10 +936,11 @@ export const FIXTURE_SCENES: Readonly<Record<'intro' | 'mid-take' | 'result', Fi
 
 mkdirSync(join(ROOT, 'src/features/echo/fixture'), { recursive: true })
 writeFileSync(GEOMETRY_OUT, geometry)
+writeFileSync(CELEBRATION_OUT, celebrationFile)
 writeFileSync(FIXTURE_OUT, scenes)
 execFileSync(
   join(ROOT, 'node_modules/.bin/prettier'),
-  ['--write', GEOMETRY_OUT, FIXTURE_OUT],
+  ['--write', GEOMETRY_OUT, CELEBRATION_OUT, FIXTURE_OUT],
   {
     stdio: 'ignore',
   },
@@ -939,4 +954,5 @@ for (const f of files) {
 const total = files.reduce((sum, f) => sum + f.bytes, 0)
 console.info(`${files.length} files, ${(total / 1024).toFixed(1)} KB -> ${ART}`)
 console.info(`wrote ${GEOMETRY_OUT}`)
+console.info(`wrote ${CELEBRATION_OUT}`)
 console.info(`wrote ${FIXTURE_OUT}`)
