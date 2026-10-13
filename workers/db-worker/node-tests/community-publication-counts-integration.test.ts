@@ -8,7 +8,8 @@
 
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { type Env, signJwt } from '../src/auth'
+import type { Env } from '../src/auth'
+import { signJwt } from '../src/auth'
 import { createAuthSession } from '../src/auth-sessions'
 import worker from '../src/index'
 import { applyMigrations, SqliteD1Database } from './sqlite-d1'
@@ -124,4 +125,86 @@ describe('Community owner counts', () => {
       expect(await publishedOwned.json()).toEqual({ count: 1 })
     },
   )
+})
+
+async function tokenFor(userId: string): Promise<string> {
+  const now = Math.floor(Date.now() / 1000)
+  return signJwt(
+    {
+      sub: userId,
+      provider: 'anonymous',
+      iat: now,
+      exp: now + 3600,
+      v: 1,
+      sid: await createAuthSession(env.DB, userId, 'anonymous'),
+    },
+    JWT_SECRET,
+  )
+}
+
+function deleteResult(id: string, token: string): Promise<Response> {
+  return worker.fetch(
+    new Request(`http://localhost/api/sharedSessions/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}`, Origin: 'http://localhost' },
+    }),
+    env,
+    {} as ExecutionContext,
+  )
+}
+
+describe('Community public result links', () => {
+  it('reads exact public rows signed out, excludes even the owner’s private result and stops resolving after unpublish', async () => {
+    const insert = sqlite.prepare(
+      `INSERT INTO sharedSessions
+       (id, createdAt, updatedAt, userId, sessionId, sessionName, author, score, accuracy, resultsJson, isPublic)
+       VALUES (?, ?, ?, ?, 'source-run', ?, 'Singer', 72, 72, '[72]', ?)`,
+    )
+    insert.run('public-result', OLDEST, OLDEST, MINE, 'Shared result', 1)
+    insert.run('private-result', OLDEST, OLDEST, MINE, 'Private result', 0)
+    const ownerToken = await tokenFor(MINE)
+    const otherToken = await tokenFor(OTHER)
+    const lookup = (id: string) =>
+      `/api/sharedSessions?where[id]=${id}&where[isPublic]=true&limit=1`
+
+    for (const token of [undefined, ownerToken, otherToken]) {
+      const publicResponse = await get(lookup('public-result'), token)
+      expect(publicResponse.status).toBe(200)
+      expect(await publicResponse.json()).toEqual([
+        expect.objectContaining({
+          id: 'public-result',
+          userId: MINE,
+          sessionId: 'source-run',
+          isPublic: true,
+          resultsJson: '[72]',
+        }),
+      ])
+      const privateResponse = await get(lookup('private-result'), token)
+      expect(privateResponse.status).toBe(200)
+      expect(await privateResponse.json()).toEqual([])
+    }
+
+    // Prove that the explicit public filter is doing work: the authenticated
+    // owner can read the private row through their ordinary owner route.
+    const ownPrivate = await get(
+      '/api/sharedSessions/private-result',
+      ownerToken,
+    )
+    expect(ownPrivate.status).toBe(200)
+    expect(await ownPrivate.json()).toMatchObject({
+      id: 'private-result',
+      isPublic: false,
+    })
+
+    expect((await deleteResult('public-result', otherToken)).status).toBe(403)
+    expect((await deleteResult('public-result', ownerToken)).status).toBe(204)
+    for (const token of [undefined, ownerToken, otherToken]) {
+      const deletedResponse = await get(lookup('public-result'), token)
+      expect(deletedResponse.status).toBe(200)
+      expect(await deletedResponse.json()).toEqual([])
+    }
+    expect(sqlite.prepare('SELECT id FROM sharedSessions').all()).toEqual([
+      { id: 'private-result' },
+    ])
+  })
 })

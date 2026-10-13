@@ -11,12 +11,12 @@ let package = Package(
             targets: ["CapApp-SPM"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.0"),
-        .package(name: "CapacitorApp", path: "../../../../../node_modules/.pnpm/@capacitor+app@8.1.1_@capacitor+core@8.5.0/node_modules/@capacitor/app"),
-        .package(name: "CapacitorHaptics", path: "../../../../../node_modules/.pnpm/@capacitor+haptics@8.0.2_@capacitor+core@8.5.0/node_modules/@capacitor/haptics"),
-        .package(name: "CapacitorLocalNotifications", path: "../../../../../node_modules/.pnpm/@capacitor+local-notifications@8.2.1_@capacitor+core@8.5.0/node_modules/@capacitor/local-notifications"),
-        .package(name: "RevenuecatPurchasesCapacitor", path: "../../../../../node_modules/.pnpm/@revenuecat+purchases-capacitor@13.4.0_@capacitor+core@8.5.0/node_modules/@revenuecat/purchases-capacitor"),
-        .package(name: "RevenuecatPurchasesCapacitorUi", path: "../../../../../node_modules/.pnpm/@revenuecat+purchases-capacitor-ui@13.4.0_@capacitor+core@8.5.0_@revenuecat+purchases-c_52656dc8f7054b6a8a9be9cf6f9a3d98/node_modules/@revenuecat/purchases-capacitor-ui")
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.3"),
+        .package(name: "CapacitorApp", path: "../../../../../node_modules/.pnpm/@capacitor+app@8.1.1_@capacitor+core@8.5.3/node_modules/@capacitor/app"),
+        .package(name: "CapacitorHaptics", path: "../../../../../node_modules/.pnpm/@capacitor+haptics@8.0.2_@capacitor+core@8.5.3/node_modules/@capacitor/haptics"),
+        .package(name: "CapacitorLocalNotifications", path: "../../../../../node_modules/.pnpm/@capacitor+local-notifications@8.2.1_@capacitor+core@8.5.3/node_modules/@capacitor/local-notifications"),
+        .package(name: "RevenuecatPurchasesCapacitor", path: "../../../../../node_modules/.pnpm/@revenuecat+purchases-capacitor@13.4.0_@capacitor+core@8.5.3/node_modules/@revenuecat/purchases-capacitor"),
+        .package(name: "RevenuecatPurchasesCapacitorUi", path: "../../../../../node_modules/.pnpm/@revenuecat+purchases-capacitor-ui@13.4.0_@capacitor+core@8.5.3_@revenuecat+purchases-c_7195e09e1db168cb93c6904e90dede1f/node_modules/@revenuecat/purchases-capacitor-ui")
     ],
     targets: [
         .target(

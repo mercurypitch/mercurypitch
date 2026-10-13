@@ -1,0 +1,47 @@
+/* Shared result summaries keep long names and score lists within the Community page. */
+.result {
+  width: min(100%, 42rem);
+  margin: 0 auto;
+  padding: var(--space-4, 1rem);
+  overflow-wrap: anywhere;
+}
+
+.result h1 {
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  line-height: 1.2;
+}
+
+.label {
+  margin-top: var(--space-6, 1.5rem);
+  font-weight: 600;
+}
+
+.scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3, 0.75rem);
+  padding: 0;
+  list-style: none;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.button {
+  min-height: 44px;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--border-color, #555);
+  border-radius: 0.5rem;
+  background: var(--bg-secondary, #242424);
+  color: var(--text-primary, #fff);
+  font: inherit;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--accent-primary, #a78bfa);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--accent-primary, #a78bfa);
+  outline-offset: 3px;
+}

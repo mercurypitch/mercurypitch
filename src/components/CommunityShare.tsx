@@ -25,11 +25,14 @@ import { openVoiceConstellation } from '@/features/voice-constellation/navigatio
 import { fuzzyMatch } from '@/lib/fuzzy-match'
 import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare, generateShareFullUrl, } from '@/lib/share-codec'
+import { encodeSharedRunResult, parseSharedRunResult, } from '@/lib/shared-run-result'
 import { storageGet, storageSet } from '@/lib/storage'
 import { bpm, getSessionHistory, keyName, melodyStore, scaleType, } from '@/stores'
 import { getAllMelodies } from '@/stores/melody-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyItem, PlaybackSession, SessionResult } from '@/types'
+import type { ShareRemoval } from './community-share-merge'
+import { mergeMelodyCards, mergeSessionCards, removalAriaLabel, removalDialog, removalLabel, } from './community-share-merge'
 import { usePublishedShareCounts } from './usePublishedShareCounts'
 
 // ============================================================
@@ -204,6 +207,8 @@ export interface SharedSession {
   id: string
   /** Who published it. See SharedMelody.userId. */
   userId?: string
+  /** Stable source run identity, retained internally for exact matching. */
+  sourceSessionId?: string
   name: string
   items: PlaybackSession['items']
   author: string
@@ -336,30 +341,13 @@ export const CommunityShare: Component = () => {
 
   // Load shared data from localStorage + DB
   const sharedMelodies = createMemo(() => {
-    const db = dbMelodies()
-    const local = new Map(localMelodies().map((melody) => [melody.id, melody]))
-    // The server owns the card and notes, but does not store playback settings.
-    // Keep those settings only from a local copy with the same canonical owner.
-    const board = db.map((melody) => {
-      const saved = local.get(melody.id)
-      if (saved?.userId === undefined || saved.userId !== melody.userId)
-        return melody
-      return {
-        ...melody,
-        bpm: melody.bpm ?? saved.bpm,
-        key: melody.key ?? saved.key,
-        scale: melody.scale ?? saved.scale,
-        shareFingerprint: saved.shareFingerprint,
-      }
-    })
-    const dbIds = new Set(db.map((m) => m.id))
-    return [...board, ...localMelodies().filter((m) => !dbIds.has(m.id))]
+    authVersion()
+    return mergeMelodyCards(dbMelodies(), localMelodies(), getUserId())
   })
 
   const sharedSessions = createMemo(() => {
-    const db = dbSessions()
-    const dbIds = new Set(db.map((s) => s.id))
-    return [...db, ...localSessions().filter((s) => !dbIds.has(s.id))]
+    authVersion()
+    return mergeSessionCards(dbSessions(), localSessions(), getUserId())
   })
 
   // Current user profile (DB-backed, canonical persisted user id)
@@ -614,11 +602,17 @@ export const CommunityShare: Component = () => {
   }
 
   /** The share awaiting "yes, take it down". */
-  const [unpublishing, setUnpublishing] = createSignal<{
-    kind: 'melody' | 'session'
-    id: string
-    name: string
-  } | null>(null)
+  const [unpublishing, setUnpublishing] = createSignal<
+    (ShareRemoval & { id: string }) | null
+  >(null)
+
+  const removal = createMemo(() => removalDialog(unpublishing()))
+
+  function removeBoardShare(kind: 'melody' | 'session', id: string): void {
+    if (kind === 'melody')
+      setDbMelodies((rows) => rows.filter((row) => row.id !== id))
+    else setDbSessions((rows) => rows.filter((row) => row.id !== id))
+  }
 
   /** Remove a published card only after the server confirms the delete. */
   const doUnpublish = async (): Promise<void> => {
@@ -627,12 +621,12 @@ export const CommunityShare: Component = () => {
     const isCurrent = captureIdentity()
     const local = target.kind === 'melody' ? localMelodies() : localSessions()
     const board = target.kind === 'melody' ? dbMelodies() : dbSessions()
-    const share =
-      board.find((row) => row.id === target.id) ??
-      local.find((row) => row.id === target.id)
+    // A board response must never turn an already-open local-only removal
+    // into a server delete. Only search the records that action can affect.
+    const candidates = target.published ? [...board, ...local] : local
+    const share = candidates.find((row) => row.id === target.id)
     if (!share || !isOwnShare(share, local)) return
-    const published =
-      share.userId !== undefined || board.some((row) => row.id === target.id)
+    const published = target.published
     setRemoving(true)
     try {
       if (published) {
@@ -652,24 +646,24 @@ export const CommunityShare: Component = () => {
           storageSet('pp_shared_melodies', next)
           return next
         })
-        setDbMelodies((previous) =>
-          previous.filter((row) => row.id !== target.id),
-        )
       } else {
         setLocalSessions((previous) => {
           const next = previous.filter((row) => row.id !== target.id)
           storageSet('pp_shared_sessions', next)
           return next
         })
-        setDbSessions((previous) =>
-          previous.filter((row) => row.id !== target.id),
-        )
       }
       if (published) {
+        removeBoardShare(target.kind, target.id)
         removedBoardIds.add(target.id)
         void publications.refresh()
       }
-      showNotification(`"${target.name}" is no longer shared.`, 'info')
+      showNotification(
+        published
+          ? `"${target.name}" was removed from the Community board.`
+          : `"${target.name}" was removed from this shelf.`,
+        'info',
+      )
       setUnpublishing(null)
     } finally {
       if (isCurrent()) setRemoving(false)
@@ -715,7 +709,7 @@ export const CommunityShare: Component = () => {
   )
   const [explainingRuns, setExplainingRuns] = createSignal(false)
 
-  const shareSession = async (s: SessionResult) => {
+  const shareSession = async (s: SessionResult, sourceSessionId: string) => {
     if (publishing()) return
     const isCurrent = captureIdentity()
     const publishToBoard = canPostToCommunity()
@@ -730,9 +724,12 @@ export const CommunityShare: Component = () => {
       completedAt,
     })
     if (
-      alreadyShared(
-        fingerprint,
-        localSessions().filter((share) => isOwnShare(share, localSessions())),
+      sharedSessions().some(
+        (share) =>
+          isOwnShare(share, localSessions()) &&
+          (share.sourceSessionId === sourceSessionId ||
+            (share.sourceSessionId === undefined &&
+              share.shareFingerprint === fingerprint)),
       )
     ) {
       showNotification(
@@ -746,12 +743,18 @@ export const CommunityShare: Component = () => {
 
     const shareable: SharedSession = {
       id: generateId(),
+      sourceSessionId,
       name,
       items: [],
       author: currentProfile().displayName,
       results: [Math.round(s.score || 0)],
       date: completedAt,
       shareFingerprint: fingerprint,
+    }
+
+    if (!parseSharedRunResult(shareable)) {
+      showNotification('This run has no shareable result.', 'error')
+      return
     }
 
     setPublishing(true)
@@ -762,6 +765,7 @@ export const CommunityShare: Component = () => {
           items: shareable.items,
           author: shareable.author,
           results: shareable.results,
+          sourceSessionId,
         })
         if (!isCurrent()) return
         if (!saved) {
@@ -794,6 +798,16 @@ export const CommunityShare: Component = () => {
     }
   }
 
+  const sessionShareLink = (id: string): string | null => {
+    const session = sharedSessions().find((item) => item.id === id)
+    if (!session) return null
+    const base = `${window.location.origin}${window.location.pathname}`
+    if (session.userId !== undefined && session.userId !== '')
+      return `${base}#/share?type=session&id=${encodeURIComponent(session.id)}`
+    const payload = encodeSharedRunResult(session)
+    return payload !== null ? `${base}#/result/${payload}` : null
+  }
+
   // Copy shareable link to clipboard
   const copyShareLink = (type: 'melody' | 'session', id: string) => {
     if (type === 'melody') {
@@ -814,11 +828,14 @@ export const CommunityShare: Component = () => {
         return
       }
     }
-    // Session shares use the legacy fallback format
-    const link = `${window.location.origin}${window.location.pathname}#/share?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`
+    const link = type === 'session' ? sessionShareLink(id) : null
+    if (link === null) {
+      showNotification('This result is unavailable.', 'error')
+      return
+    }
     void navigator.clipboard.writeText(link).then(
       () => showNotification('Share link copied to clipboard!', 'info'),
-      () => showNotification(`Failed to copy link: ${link}`, 'error'),
+      () => showNotification('Failed to copy link', 'error'),
     )
   }
 
@@ -849,8 +866,9 @@ export const CommunityShare: Component = () => {
       showNotification('That melody has no notes to open.', 'error')
       return
     }
-    // Sessions use the legacy share route, same as their copy link.
-    window.location.href = `${window.location.origin}${window.location.pathname}#/share?type=session&id=${encodeURIComponent(id)}`
+    const link = sessionShareLink(id)
+    if (link !== null) window.location.href = link
+    else showNotification('This result is unavailable.', 'error')
   }
 
   // Tabs
@@ -999,10 +1017,12 @@ export const CommunityShare: Component = () => {
                             kind: 'melody',
                             id: melody.id,
                             name: melody.name,
+                            published: melody.userId !== undefined,
+                            retainedLocalCopy: melody.retainedLocalCopy,
                           })
                         }
-                        aria-label={`Unpublish ${melody.name}`}
-                        title="Unpublish"
+                        aria-label={removalAriaLabel(melody)}
+                        title={removalLabel(melody)}
                       >
                         <span>
                           <IconCloseSmall />
@@ -1074,14 +1094,11 @@ export const CommunityShare: Component = () => {
         </Show>
 
         <Show when={activeTab() === 'sessions'}>
-          {/* Says what this number is before anyone counts it against the
-              run total on their profile. These are setlists somebody can
-              load and sing — publishing one is not a run, and never was.
-              The board is everyone's, so the note does not call them yours. */}
+          {/* Publishing a copy of a result does not record another run. */}
           <p class={profileStyles.countsNote}>
-            These are setlists the community has published for anyone to sing.
-            They are not runs, so they are counted apart from your practice,
-            exercises and challenges.{' '}
+            These are results the community has shared from completed runs.
+            Publishing or viewing a result does not add a run to your practice
+            history.{' '}
             <button
               type="button"
               class={profileStyles.countsNoteLink}
@@ -1156,10 +1173,12 @@ export const CommunityShare: Component = () => {
                             kind: 'session',
                             id: session.id,
                             name: session.name,
+                            published: session.userId !== undefined,
+                            retainedLocalCopy: session.retainedLocalCopy,
                           })
                         }
-                        aria-label={`Unpublish ${session.name}`}
-                        title="Unpublish"
+                        aria-label={removalAriaLabel(session)}
+                        title={removalLabel(session)}
                       >
                         <span>
                           <IconCloseSmall />
@@ -1170,7 +1189,7 @@ export const CommunityShare: Component = () => {
                       class={`${modalStyles.actionBtn} view-btn`}
                       onClick={() => openShared('session', session.id)}
                       aria-label={`Open ${session.name}`}
-                      title="Open this session"
+                      title="Open this result"
                     >
                       <span>
                         <IconEye />
@@ -1207,10 +1226,7 @@ export const CommunityShare: Component = () => {
                   }
                 >
                   <h3>No sessions shared yet</h3>
-                  <p>
-                    Share a session to keep a record of how it went, and to let
-                    others sing along with it.
-                  </p>
+                  <p>Share a completed run so others can see your result.</p>
                   <button
                     class="primary-btn"
                     onClick={() => setPickerType('session')}
@@ -1235,7 +1251,7 @@ export const CommunityShare: Component = () => {
             onExplainRuns={() => setExplainingRuns(true)}
             streak={currentProfile().streak}
             sharedMelodies={publications.counts().melodies}
-            sharedSetlists={publications.counts().sessions}
+            sharedResults={publications.counts().sessions}
             twinName={latestTwin()}
             badges={earnedBadges()}
             onExploreVoiceConstellation={openVoiceConstellation}
@@ -1249,9 +1265,9 @@ export const CommunityShare: Component = () => {
 
       <ConfirmDialog
         open={unpublishing() !== null}
-        title="Unpublish this?"
-        message={`Remove "${unpublishing()?.name ?? ''}" from your shelf and, if published, the Community board. ${unpublishing()?.kind === 'melody' ? 'Existing melody links still work.' : 'You can share it again later.'}`}
-        confirmLabel="Unpublish"
+        title={removal().title}
+        message={removal().message}
+        confirmLabel={removal().label}
         busy={removing()}
         onConfirm={() => {
           void doUnpublish()
@@ -1380,12 +1396,15 @@ export const CommunityShare: Component = () => {
                         class="primary-btn share-picker-action"
                         disabled={publishing()}
                         onClick={() => {
-                          void shareSession({
-                            name: s.name,
-                            sessionName: s.name,
-                            score: s.score,
-                            completedAt: s.completedAt,
-                          } as SessionResult)
+                          void shareSession(
+                            {
+                              name: s.name,
+                              sessionName: s.name,
+                              score: s.score,
+                              completedAt: s.completedAt,
+                            } as SessionResult,
+                            s.id,
+                          )
                         }}
                       >
                         Share

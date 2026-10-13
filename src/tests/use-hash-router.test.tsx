@@ -1,12 +1,14 @@
-import { cleanup, render, waitFor } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { UvrView } from '@/components/UvrPanel'
+import { sharedRunRequest } from '@/features/community/shared-run-link'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_COMPOSE, TAB_HOME, TAB_KARAOKE, TAB_PROGRESS, TAB_SETTINGS, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { TAB_COMMUNITY, TAB_COMPOSE, TAB_HOME, TAB_KARAOKE, TAB_PROGRESS, TAB_SETTINGS, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type * as NativeBuild from '@/lib/native-build'
+import { CommunityPage } from '@/pages/CommunityPage'
 import type { AdminSection } from '@/stores/ui-store'
 import { adminContentSection, creditCostGuideRequested, registerAdminContentCloseGuard, requestAdminContentSection, requestCloseAdminContentStudio, setAdminContentSection, setCreditCostGuideRequested, setShowAdminContentStudio, showAdminContentStudio, } from '@/stores/ui-store'
 
@@ -19,6 +21,9 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
     return build.native
   },
 }))
+vi.mock('@/components/CommunityShare', () => ({
+  CommunityShare: () => <p>Community board</p>,
+}))
 
 function mountRouter(options: {
   closeAdminContent: () => boolean
@@ -28,6 +33,8 @@ function mountRouter(options: {
   showSelection?: boolean
   selectedWalkthrough?: string | null
   activeTab?: ActiveTab
+  reactiveActiveTab?: boolean
+  renderCommunityPage?: boolean
   activeUvrView?: UvrView
   activeUvrSessionId?: string | null
   requestActiveTabChange?: (
@@ -35,7 +42,12 @@ function mountRouter(options: {
     onResolved: (accepted: boolean) => void,
   ) => void
 }) {
-  const setActiveTab = vi.fn()
+  const [activeTab, updateActiveTab] = createSignal(
+    options.activeTab ?? 'singing',
+  )
+  const setActiveTab = vi.fn((tab: ActiveTab) => {
+    if (options.reactiveActiveTab === true) updateActiveTab(tab)
+  })
   const requestActiveTabChange = vi.fn(
     options.requestActiveTabChange ??
       ((_tab: ActiveTab, onResolved: (accepted: boolean) => void) =>
@@ -90,7 +102,7 @@ function mountRouter(options: {
       setWhatsNewOpen,
       whatsNewOpen,
       adminContentSection: () => options.adminContentSection ?? 'exercises',
-      activeTab: () => options.activeTab ?? 'singing',
+      activeTab,
       activeUvrView: () => options.activeUvrView ?? 'upload',
       activeUvrSessionId: () => options.activeUvrSessionId ?? null,
       showSelection: () => options.showSelection ?? false,
@@ -98,7 +110,7 @@ function mountRouter(options: {
       showGuideSelection: () => false,
       selectedWalkthrough: () => options.selectedWalkthrough ?? null,
     })
-    return null
+    return options.renderCommunityPage === true ? <CommunityPage /> : null
   }
 
   render(() => <Fixture />)
@@ -117,6 +129,87 @@ function mountRouter(options: {
     setActiveUvrSessionId,
   }
 }
+
+describe('shared practice-result links', () => {
+  it('returns from the actual result button through a browser hash navigation', async () => {
+    history.replaceState(null, '', '#/result/invalid-payload')
+    mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      reactiveActiveTab: true,
+      renderCommunityPage: true,
+      activeTab: TAB_COMMUNITY,
+    })
+    await screen.findByText(/This shared result is unavailable/)
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Community' }))
+    await screen.findByText('Community board')
+    expect(window.location.hash).toBe('#/community')
+    expect(sharedRunRequest()).toBeNull()
+    expect(
+      screen.queryByRole('region', { name: 'Shared practice result' }),
+    ).toBeNull()
+  })
+
+  it('opens a legacy public result in Community and preserves its address', async () => {
+    history.replaceState(null, '', '#/share?type=session&id=public-run')
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      reactiveActiveTab: true,
+      activeTab: TAB_PROGRESS,
+    })
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_COMMUNITY),
+    )
+    expect(router.requestActiveTabChange).toHaveBeenCalledWith(
+      TAB_COMMUNITY,
+      expect.any(Function),
+    )
+    expect(window.location.hash).toBe('#/share?type=session&id=public-run')
+    expect(sharedRunRequest()).toEqual({ kind: 'public', id: 'public-run' })
+    router.setActiveTab(TAB_PROGRESS)
+    await waitFor(() => expect(window.location.hash).toBe('#/progress'))
+    expect(sharedRunRequest()).toBeNull()
+  })
+
+  it('preserves a payload result route and clears it when navigating back to the board', async () => {
+    history.replaceState(null, '', '#/result/invalid-payload')
+    mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      reactiveActiveTab: true,
+      activeTab: TAB_PROGRESS,
+    })
+    await waitFor(() =>
+      expect(sharedRunRequest()).toEqual({
+        kind: 'payload',
+        payload: 'invalid-payload',
+      }),
+    )
+    expect(window.location.hash).toBe('#/result/invalid-payload')
+    history.pushState(null, '', '#/community')
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    await waitFor(() => expect(sharedRunRequest()).toBeNull())
+    expect(window.location.hash).toBe('#/community')
+  })
+
+  it('does not open a result when the current surface rejects navigation', () => {
+    history.replaceState(null, '', '#/share?type=session&id=public-run')
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      reactiveActiveTab: true,
+      activeTab: TAB_PROGRESS,
+      requestActiveTabChange: (_tab, done) => done(false),
+    })
+    expect(router.requestActiveTabChange).toHaveBeenCalledWith(
+      TAB_COMMUNITY,
+      expect.any(Function),
+    )
+    expect(router.setActiveTab).not.toHaveBeenCalled()
+    expect(sharedRunRequest()).toBeNull()
+  })
+})
 
 describe('the Settings section route', () => {
   afterEach(() => {

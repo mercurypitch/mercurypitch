@@ -304,6 +304,42 @@ describe('going online later', () => {
     )
     expect(examples()[0].outputs?.vocal).toBe(bundle.songs[0].stems.vocal)
   })
+
+  it('keeps group choices made between the bundle and server seed', async () => {
+    net.online = true
+    net.songs = serverList()
+    const { seed, store } = await freshApp()
+    const mine = await store.createGroup('My set')
+    let moved = false
+    net.duringNotesRead = async () => {
+      if (moved) return
+      moved = true
+      await store.addSessionToGroup(IDS[0], mine.id)
+      await store.removeSessionFromGroup(IDS[1])
+    }
+
+    await seed.seedExamplesLibrary()
+
+    expect(moved).toBe(true)
+    expect(store.getUvrSession(IDS[0])?.groupId).toBe(mine.id)
+    expect(store.getUvrSession(IDS[1])?.groupId).toBeUndefined()
+    expect(
+      store.getGroups().find((group) => group.id === mine.id)?.sessionIds,
+    ).toEqual([IDS[0]])
+    const examples = store
+      .getGroups()
+      .find((group) => group.name === 'Examples')!
+    expect(examples.sessionIds).toEqual([
+      IDS[2],
+      'karaoke-night-demo:brand-new',
+    ])
+    expect(store.getUvrSession('karaoke-night-demo:brand-new')?.groupId).toBe(
+      examples.id,
+    )
+    expect(store.getUvrSession(IDS[0])?.outputs?.vocal).toBe(
+      bundle.songs[0].stems.vocal,
+    )
+  })
 })
 
 describe('the notes the examples ship with (audit K1)', () => {

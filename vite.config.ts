@@ -709,6 +709,10 @@ export default defineConfig(({ command, mode }) => {
               // solid-js gets its own chunk so the standalone mirror entry
               // (which uses nothing else from node_modules) doesn't drag the
               // whole app vendor bundle onto mobile 4G.
+              // Only the lazy StemMixerLyricsPanelBody currently imports
+              // solid-js/store. Keep that optional runtime out of every
+              // standalone room's core Solid payload.
+              if (id.includes('/solid-js/store/')) return 'vendor-solid-store'
               if (id.includes('solid-js')) return 'vendor-solid'
               return 'vendor'
             }

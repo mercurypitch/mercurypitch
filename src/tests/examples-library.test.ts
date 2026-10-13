@@ -126,27 +126,29 @@ describe('reconcileExampleGroup', () => {
   const ids = [demoSessionId('josephine'), demoSessionId('karaoke-night')]
   const present = new Set(ids)
 
-  it('fills an empty group with the live examples', () => {
+  it('fills an empty group with newly seeded live examples', () => {
     expect(
-      reconcileExampleGroup([JOSEPHINE, SPRING], present, []).sort(),
+      reconcileExampleGroup([JOSEPHINE, SPRING], present, [], present).sort(),
     ).toEqual([...ids].sort())
   })
 
   it('drops a song the studio has parked', () => {
-    expect(reconcileExampleGroup([JOSEPHINE], present, ids)).toEqual([ids[0]])
+    expect(reconcileExampleGroup([JOSEPHINE], present, ids, new Set())).toEqual(
+      [ids[0]],
+    )
   })
 
   it('drops a member whose session was deleted', () => {
     const only = new Set([ids[0]])
-    expect(reconcileExampleGroup([JOSEPHINE, SPRING], only, ids)).toEqual([
-      ids[0],
-    ])
+    expect(
+      reconcileExampleGroup([JOSEPHINE, SPRING], only, ids, new Set()),
+    ).toEqual([ids[0]])
   })
 
   it('keeps the order the group already had', () => {
     const reversed = [ids[1], ids[0]]
     expect(
-      reconcileExampleGroup([JOSEPHINE, SPRING], present, reversed),
+      reconcileExampleGroup([JOSEPHINE, SPRING], present, reversed, new Set()),
     ).toEqual(reversed)
   })
 
@@ -154,14 +156,33 @@ describe('reconcileExampleGroup', () => {
     const extra = manifest('third')
     const withThird = new Set([...ids, demoSessionId('third')])
     expect(
-      reconcileExampleGroup([JOSEPHINE, SPRING, extra], withThird, ids),
+      reconcileExampleGroup(
+        [JOSEPHINE, SPRING, extra],
+        withThird,
+        ids,
+        new Set([demoSessionId('third')]),
+      ),
     ).toEqual([...ids, demoSessionId('third')])
   })
 
   it('never lists a session twice', () => {
     const doubled = [ids[0], ids[0]]
-    const result = reconcileExampleGroup([JOSEPHINE], present, doubled)
+    const result = reconcileExampleGroup(
+      [JOSEPHINE],
+      present,
+      doubled,
+      new Set(),
+    )
     expect(new Set(result).size).toBe(result.length)
+  })
+
+  it('does not add preexisting examples absent from the group', () => {
+    expect(
+      reconcileExampleGroup([JOSEPHINE, SPRING], present, [ids[1]], new Set()),
+    ).toEqual([ids[1]])
+    expect(
+      reconcileExampleGroup([JOSEPHINE, SPRING], present, [], new Set()),
+    ).toEqual([])
   })
 })
 

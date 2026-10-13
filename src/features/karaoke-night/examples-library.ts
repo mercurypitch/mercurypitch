@@ -103,15 +103,15 @@ export function examplesToSeed(
 /**
  * The membership an Examples group should have.
  *
- * Two things have to be true at once: a song parked in the studio must stop
- * being listed, and a session the visitor moved out of the group by hand must
- * stay out. So the answer is the intersection of "still a live example" and
- * "still a session that exists", never a rebuild from the manifest alone.
+ * Keep live members in their current order and default only newly seeded
+ * rows into this group. Existing rows may have been moved or explicitly
+ * ungrouped; absence from the index is not permission to move them back.
  */
 export function reconcileExampleGroup(
   manifests: readonly DemoSongManifest[],
   existingSessionIds: ReadonlySet<string>,
   currentMembers: readonly string[],
+  newlySeededIds: ReadonlySet<string>,
 ): string[] {
   const live = new Set(
     manifests
@@ -128,7 +128,8 @@ export function reconcileExampleGroup(
     kept.push(id)
   }
   const added = [...live].filter(
-    (id) => !seen.has(id) && existingSessionIds.has(id),
+    (id) =>
+      !seen.has(id) && existingSessionIds.has(id) && newlySeededIds.has(id),
   )
   return [...kept, ...added]
 }

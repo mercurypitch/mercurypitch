@@ -1274,6 +1274,20 @@ advanced together; a request between renewal and sweeping can hide the bug.
 **Rule:** keep progress copies and pending writes with their owner, reconcile live state before evaluating a write, and test real practice calls after switches, failures and delayed responses. Read-only A → B → A tests do not establish write isolation.
 **See:** `src/db/services/settings-service.test.ts`, `src/db/services/settings-shared-device.test.ts`, `src/lib/storage.test.ts`.
 
+### Assign the Examples default only when creating a song
+
+**Symptom:** moving an example song to another group, or leaving it ungrouped, was undone on reload.
+**Cause:** both seed paths reapplied the Examples group to existing rows after boot repaired the group indexes.
+**Rule:** track the rows each seed call actually creates and apply the default only to those. Preserve preexisting `groupId` and ungrouped states; `group.sessionIds` is a repairable index, not proof of the user's intent.
+**See:** `src/features/karaoke-night/examples-library.ts`, `src/features/karaoke-night/seed-examples.ts`, and `src/stores/uvr-store-reload.test.ts`.
+
+### Treat shared sessions as result summaries
+
+**Symptom:** Community promised playable setlists, but session links led nowhere.
+**Cause:** its picker shares completed runs, and `sharedSessions` stores scores rather than playable items.
+**Rule:** display bounded result summaries without importing practice history. Retain the source run ID in `sessionId` for identity, and require `isPublic: true` when resolving a public link even for its signed-in owner.
+**See:** `src/db/services/share-service.ts` and `src/features/community/SharedRunResult.tsx`.
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents
