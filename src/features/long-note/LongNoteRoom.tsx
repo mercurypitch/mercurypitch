@@ -38,6 +38,7 @@ import { DemoLayer } from '@/components/demo-kit/DemoLayer'
 import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
 import { HelpCircle, Minus, Plus, Volume2 } from '@/components/icons'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
+import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, RoomHeader, RoomTimer, } from '@/components/room-kit/RoomHeader'
 import { DEMO_COPY } from './demo/demo-cues'
@@ -48,7 +49,6 @@ import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y
 import { formatHoldSeconds } from './long-note-entry'
 import { LongNoteLevel } from './LongNoteLevel'
 import styles from './LongNoteRoom.module.css'
-import { MercView } from './MercView'
 import { BESIDE_X, createLayoutGlide, layoutStage, MERC_UNITS, } from './stage-layout'
 import { useLongNoteController } from './useLongNoteController'
 import { TRACE_PX_PER_CENT, VoiceTrace } from './VoiceTrace'
@@ -62,14 +62,6 @@ export interface LongNoteRoomProps {
 
 /** How small he gets to float inside the glass. */
 const MERC_INSIDE_SCALE = 0.7
-/**
- * Where his feet touch the floor, as a share of the canvas height from its
- * top. The renderer's front view puts the floor point under his centre at
- * 0.789 (target 0.67 up, pitch 0.13, distance 4.2, fov 30); the fronts of
- * his feet are nearer the camera and sit lower, at about 0.81 on the phone
- * walk, so that is the point that meets the ground line.
- */
-const MERC_FEET = 0.81
 /** The ground under the lantern's foot, where he stands beside it. */
 const GROUND_Y = 370
 /**
@@ -384,6 +376,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             state={room.mercState}
             voice={room.mercVoice}
             sparkles="right"
+            testId="long-note-merc"
             style={{
               width: `${mercBox().size}px`,
               height: `${mercBox().size}px`,

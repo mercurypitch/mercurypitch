@@ -6,7 +6,8 @@
 // about the exercise, its glyph, and three live reads (the note it opens
 // on, its best there, and whether its demo plays by itself). This is the
 // one file that reaches into an exercise's own feature, so a new exercise
-// is one entry here and nothing in the row or the picker.
+// is one entry here and nothing in the row or the picker. Echo's reads sit
+// beside it (echo-entry.ts): they need its stores, not its room.
 //
 // Catalogue order is the order the picker lists them. At four or more the
 // picker gains group headings (Pitch, Warm-ups) in the Karaoke library's
@@ -17,8 +18,9 @@
 import type { Component } from 'solid-js'
 import { longNoteEntry } from '@/features/long-note/long-note-entry'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_LONG_NOTE_LANTERN } from '@/lib/domain/exercise-contracts'
-import { LanternGlyph } from './glyphs'
+import { EXERCISE_ECHO_STARS, EXERCISE_LONG_NOTE_LANTERN, } from '@/lib/domain/exercise-contracts'
+import { echoEntry } from './echo-entry'
+import { EchoGlyph, LanternGlyph } from './glyphs'
 
 export interface PremiumExercise {
   readonly id: PremiumExerciseId
@@ -28,8 +30,13 @@ export interface PremiumExercise {
   readonly Glyph: Component
   /** The note it opens on ("A3"), or null. */
   note: () => string | null
-  /** Its best there, as its result card prints it ("Best 9.4 s"), or null. */
+  /** Its best, as its result card prints it ("Best 9.4 s"), or null. */
   progress: () => string | null
+  /**
+   * Its best belongs to the note it opens on (Long note: "Best 9.4 s on
+   * A3"), not to the level (Echo: "Best 18 of 20", at the card's level).
+   */
+  readonly bestOnNote: boolean
   /** Its demo plays by itself on the way in. */
   demoAutoPlays: () => boolean
 }
@@ -40,7 +47,16 @@ export const EXERCISE_CATALOGUE: readonly PremiumExercise[] = [
     name: 'Long note',
     line: 'Hold one note and fill the lantern with light.',
     Glyph: LanternGlyph,
+    bestOnNote: true,
     ...longNoteEntry(),
+  },
+  {
+    id: EXERCISE_ECHO_STARS,
+    name: 'Echo',
+    line: 'Merc sings a phrase. Sing it back and light the stars.',
+    Glyph: EchoGlyph,
+    bestOnNote: false,
+    ...echoEntry(),
   },
 ]
 

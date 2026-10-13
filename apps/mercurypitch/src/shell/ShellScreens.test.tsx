@@ -73,6 +73,30 @@ describe('a premium room, full-bleed (D1)', () => {
   })
 })
 
+describe('the Echo room', () => {
+  it('draws the room passed in, titled Echo, full-bleed', () => {
+    view?.unmount()
+    view = renderShell(() => (
+      <ShellScreens echo={() => <div data-testid="echo-stub" />} />
+    ))
+
+    pushScreen('echo')
+    const room = screens()[0]
+    expect(room?.querySelector('[data-testid="echo-stub"]')).not.toBeNull()
+    expect(room?.classList.contains('mp-pushed--bleed')).toBe(true)
+    expect(room?.querySelector('.mp-pushed__title')?.textContent).toBe('Echo')
+  })
+
+  it('draws nothing in the body on a build without it', () => {
+    pushScreen('echo')
+
+    expect(screens()[0]?.querySelector('[data-testid="echo-stub"]')).toBeNull()
+    expect(screens()[0]?.querySelector('.mp-pushed__title')?.textContent).toBe(
+      'Echo',
+    )
+  })
+})
+
 describe('the pushed screens', () => {
   it('draws only the screen on top of the stack', () => {
     // Two copies of the same Back would also be two matches for every probe

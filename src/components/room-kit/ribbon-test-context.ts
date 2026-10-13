@@ -1,10 +1,12 @@
 // ============================================================
-// A 2D context that records the voice ribbon, for the trace's tests
+// A 2D context that records the voice ribbon, for the ribbon's tests
 // ============================================================
 //
-// jsdom has no canvas. This stands in for one: every call is a no-op except
-// the ones the ribbon is made of, which it keeps, so a test can read which
-// colours each stroke's gradient carried and where along the ribbon.
+// Long note's trace and Echo's ribbon both draw with ribbon.ts; their tests
+// read the strokes through this. jsdom has no canvas. This stands in for
+// one: every call is a no-op except the ones the ribbon is made of, which
+// it keeps, so a test can read which colours each stroke's gradient carried
+// and where along the ribbon.
 
 export interface RecordedStroke {
   /** The stroke's gradient stops in order; empty for a plain colour. */

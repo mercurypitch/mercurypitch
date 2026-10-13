@@ -1,0 +1,5 @@
+/* The voice's two canvases (EchoRibbon.tsx), over the sky's phrase band. */
+.canvas {
+  position: absolute;
+  pointer-events: none;
+}

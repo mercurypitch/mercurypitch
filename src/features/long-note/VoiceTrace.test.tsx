@@ -1,10 +1,11 @@
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { recordingContext, ribbonColours } from './trace-test-context'
+import type { RibbonLayer, RibbonTint, TraceMark, } from '@/components/room-kit/ribbon'
+import { CORE, GLOW, GLOW_BLUR_PX, ribbonTint, } from '@/components/room-kit/ribbon'
+import { recordingContext, ribbonColours, } from '@/components/room-kit/ribbon-test-context'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
-import type { RibbonLayer, RibbonTint, TraceMark } from './VoiceTrace'
-import { CORE, GLOW, GLOW_BLUR_PX, ribbonTint, VoiceTrace } from './VoiceTrace'
+import { VoiceTrace } from './VoiceTrace'
 
 // The voice's ribbon is cyan where the light fills and a soft amber where it
 // does not, by the band state the engine judged on each frame.

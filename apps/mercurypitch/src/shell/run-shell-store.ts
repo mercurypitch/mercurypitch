@@ -98,6 +98,7 @@ export type PushedScreen =
   | 'karaoke'
   | 'karaoke-studio'
   | 'long-note'
+  | 'echo'
   | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
@@ -449,7 +450,7 @@ export function pushScreen(screen: PushedScreen): void {
 /** A screen that is only ever reached through Settings. */
 export type SettingsChild = Exclude<
   PushedScreen,
-  'settings' | 'developer' | 'karaoke-studio' | 'long-note'
+  'settings' | 'developer' | 'karaoke-studio' | 'long-note' | 'echo'
 >
 
 /**

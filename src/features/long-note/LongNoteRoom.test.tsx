@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { recordingContext, ribbonColours, } from '@/components/room-kit/ribbon-test-context'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { HoldState } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
@@ -16,7 +17,6 @@ import { CHIMNEY_BOTTOM, CHIMNEY_TOP, fillLevel, HOLD_FILL_MAX, LANTERN_VIEW_H, 
 import styles from './LongNoteRoom.module.css'
 import type { LongNoteMoment } from './merc-lines'
 import { fillNote, MERC_LINES } from './merc-lines'
-import { recordingContext, ribbonColours } from './trace-test-context'
 import type * as CaptureModule from './useLongNoteCapture'
 import { TRACE_PX_PER_CENT } from './VoiceTrace'
 

@@ -1,27 +1,43 @@
 // ============================================================
-// The store build leaves the Long note room's pictures out
+// The store build leaves the premium exercises' pictures out
 // ============================================================
 //
-// The room folds away in a build without the premium exercises
-// (PREMIUM_EXERCISES, src/lib/native-build.ts), and its pictures did not:
+// The rooms fold away in a build without the premium exercises
+// (PREMIUM_EXERCISES, src/lib/native-build.ts), and their pictures did not:
 // Vite emits an image as Rollup loads the module that imports it, which is
 // before tree-shaking drops the room. The native config resolves them to an
 // empty module in that build (vite.config.ts, PREMIUM_IMAGES), and
 // `scripts/assert-bundle.mjs` STAGE 2 checks a store binary. A store binary
 // is made only from a release tag, so this reads the switch on every pull
-// request instead.
+// request instead, for every picture in every premium room's folder, at
+// any depth (Echo's are in an art/ folder of their own).
 
 import { readdirSync } from 'node:fs'
+import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Plugin } from 'vite'
 import { loadConfigFromFile } from 'vite'
 import { describe, expect, it } from 'vitest'
 
-const ROOM = fileURLToPath(
-  new URL('../../../src/features/long-note/', import.meta.url),
+const FEATURES = fileURLToPath(
+  new URL('../../../src/features/', import.meta.url),
 )
-const LANTERN = `${ROOM}Lantern.tsx`
-const PICTURES = readdirSync(ROOM).filter((name) => name.endsWith('.webp'))
+/** The premium rooms that paint pictures today, by folder. */
+const ROOMS = ['long-note', 'echo'] as const
+
+/** Every .webp under `dir`, as paths relative to it. */
+function picturesIn(dir: string): string[] {
+  return readdirSync(dir, { recursive: true, encoding: 'utf8' })
+    .filter((name) => name.endsWith('.webp'))
+    .map((name) => relative(dir, join(dir, name)))
+}
+
+/** Each room's pictures, with the room file that would import them. */
+const PICTURES = ROOMS.flatMap((room) => {
+  const dir = join(FEATURES, room)
+  const importer = join(dir, 'Room.tsx')
+  return picturesIn(dir).map((name) => ({ room, name, importer }))
+})
 
 type Resolve = (source: string, importer: string) => unknown
 
@@ -68,25 +84,30 @@ const foldFor = async (target: 'dev' | 'production'): Promise<Resolve> => {
   }
 }
 
-describe('the Long note room pictures in a native build', () => {
-  it('has pictures to fold, so the checks below are not vacuous', () => {
-    expect(PICTURES.length).toBeGreaterThan(0)
+describe("the premium rooms' pictures in a native build", () => {
+  it('has pictures to fold in every room, so the checks below are not vacuous', () => {
+    for (const room of ROOMS) {
+      expect(
+        PICTURES.filter((picture) => picture.room === room).length,
+        room,
+      ).toBeGreaterThan(0)
+    }
   })
 
   it('resolves every one of them to nothing in the store build', async () => {
     const fold = await foldFor('production')
-    for (const name of PICTURES) {
-      const id = fold(`./${name}`, LANTERN)
+    for (const { name, importer } of PICTURES) {
+      const id = fold(`./${name}`, importer)
       expect(typeof id === 'string' && id.startsWith('\0'), name).toBe(true)
     }
-    // Only the room's: a picture anywhere else is left to Vite.
-    expect(fold('./backdrop.webp', `${ROOM}../path/Path.tsx`)).toBeNull()
+    // Only the rooms': a picture anywhere else is left to Vite.
+    expect(fold('./backdrop.webp', join(FEATURES, 'path/Path.tsx'))).toBeNull()
   }, 60000)
 
   it('leaves them to Vite in a build with the premium exercises', async () => {
     const fold = await foldFor('dev')
-    for (const name of PICTURES) {
-      expect(fold(`./${name}`, LANTERN), name).toBeNull()
+    for (const { name, importer } of PICTURES) {
+      expect(fold(`./${name}`, importer), name).toBeNull()
     }
   }, 60000)
 })

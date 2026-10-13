@@ -1,0 +1,8 @@
+/* The fixture page: the room's sky on the whole screen, as the storyboard
+   frames it. */
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #071025;
+}

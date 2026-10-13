@@ -1,0 +1,185 @@
+/* Echo's sky (EchoSky.tsx): every layer is placed in px from the room's
+   box by the layout, so each one sits at the box's top left. */
+.sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* A tablet's room is wider than the composition: the plate's own band
+   colours carry the world to either side. */
+.sides {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.plate {
+  /* PlateImage sets position: absolute; the layout sets the box. */
+  contain: strict;
+}
+
+/* The column's edges fade into the band colours beside it. */
+.feathered {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 6%,
+    #000 94%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 6%,
+    #000 94%,
+    transparent 100%
+  );
+}
+
+/* The town wakes at the result: the lit plate fades in over the world. */
+.resultPlate {
+  animation: echo-result-in 600ms ease-out both;
+}
+
+@keyframes echo-result-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.topLight {
+  position: absolute;
+  inset: 0;
+}
+
+/* A faint painted star breathing: never brighter than the painted one. */
+.twinkle {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(236, 242, 255, 0.9) 0,
+    rgba(214, 226, 255, 0.35) 45%,
+    rgba(214, 226, 255, 0) 100%
+  );
+  opacity: 0;
+  animation-name: echo-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes echo-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: var(--twinkle-peak, 0.4);
+  }
+}
+
+.strokes {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+}
+
+/* A ring appears as Merc sings its note: in, and settling to its size. */
+.ring {
+  transform-box: view-box;
+}
+
+.appear {
+  animation: echo-ring-in 180ms ease-out both;
+}
+
+@keyframes echo-ring-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.stars {
+  position: absolute;
+  inset: 0;
+}
+
+.star {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+
+/* A landing: the star pops in over its ring, its halo with it. */
+.pop {
+  animation: echo-star-pop 260ms cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+
+@keyframes echo-star-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.sprite {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  max-width: none;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .twinkle {
+    display: none;
+  }
+
+  .appear,
+  .pop,
+  .resultPlate {
+    animation-name: echo-fade-in;
+    animation-duration: 150ms;
+  }
+}
+
+@keyframes echo-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

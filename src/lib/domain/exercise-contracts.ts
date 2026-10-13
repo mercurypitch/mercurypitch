@@ -34,6 +34,12 @@ export const EXERCISE_WARMUP = 'warmup' as const
  * web drill's, so their bests must never be compared.
  */
 export const EXERCISE_LONG_NOTE_LANTERN = 'long-note-lantern' as const
+/**
+ * The premium Echo (Merc sings a phrase, the singer sings it back and the
+ * stars light). Its own id, named as Long note's is: the exercise and what
+ * it draws. The web Call & response is a different exercise and ruler.
+ */
+export const EXERCISE_ECHO_STARS = 'echo-stars' as const
 
 export type ExerciseType =
   | typeof EXERCISE_VIBRATO
@@ -55,13 +61,16 @@ export type ExerciseType =
   | typeof EXERCISE_SIGHT_SINGING
   | typeof EXERCISE_WARMUP
   | typeof EXERCISE_LONG_NOTE_LANTERN
+  | typeof EXERCISE_ECHO_STARS
 
 /**
- * The premium exercises the phone app opens from the Sing screen (Long note
- * first). A type here, below the features, so the shell bridge in
+ * The premium exercises the phone app opens from the Sing screen (Long note,
+ * then Echo). A type here, below the features, so the shell bridge in
  * `src/stores` can name one without importing a feature.
  */
-export type PremiumExerciseId = typeof EXERCISE_LONG_NOTE_LANTERN
+export type PremiumExerciseId =
+  | typeof EXERCISE_LONG_NOTE_LANTERN
+  | typeof EXERCISE_ECHO_STARS
 
 // ── Config ──────────────────────────────────────────────────────
 

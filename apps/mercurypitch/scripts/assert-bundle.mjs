@@ -205,6 +205,13 @@ const KARAOKE_STAGE_2 = [
   // the native config folded the room's pictures (vite.config.ts,
   // PREMIUM_IMAGES).
   [/\/lantern-[a-z-]+-[\w-]{8}\.webp$/u, "the Long note lantern's plates"],
+  // The same for every premium exercise painted after it: each plate and
+  // sprite is named for its room (echo-, bridge-, bay-), and the folders
+  // they sit in fold with Long note's (vite.config.ts, PREMIUM_IMAGES).
+  [
+    /\/(?:echo|bridge|bay)-[a-z0-9-]+-[\w-]{8}\.webp$/u,
+    "the premium exercises' plates",
+  ],
   // The Sing room's way in to them: its exercise row, the picker, the
   // options' row and the record of the last one opened. The row and the
   // picker are lazy islands and the options' section a ternary, all on
@@ -228,6 +235,14 @@ const KARAOKE_STAGE_2 = [
   // accuracy tier from Settings (src/stores/exercise-level.ts), which every
   // build carries, so its key is no marker; this control is.
   ['long-note-level', "Long note's level control"],
+  // Echo, the second premium exercise: its room, its card in the picker
+  // and its level control, built and folded exactly as Long note's.
+  ['echo-room', 'the premium Echo exercise'],
+  [
+    'Merc sings a phrase. Sing it back and light the stars',
+    "the exercise picker's Echo card",
+  ],
+  ['echo-level', "Echo's level control"],
 ]
 
 /**

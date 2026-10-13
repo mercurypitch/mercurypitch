@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -41,6 +41,15 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       'You start on the note you held last time, or one from your saved range. With neither, sing any note that sits easy and Merc takes it as yours. Tap the note to hear it again, and nudge it up or down before you start.',
       'Twelve seconds on the note fill the lantern halfway. Past that, the top fills by how steady you sing, and your Accuracy Tier sets how steady the brim asks you to be. Drift off and the light waits for you: it never drains, so find the note again and carry on.',
       'The big number is how long you held it. Steadiness, out of 100, is how little the pitch wobbled; a vibrato counts as a wobble, so a straight tone scores highest.',
+    ],
+  },
+  [EXERCISE_ECHO_STARS]: {
+    summary:
+      'Merc sings a short phrase. Sing it back note for note, and each note you land lights a star.',
+    body: [
+      'Merc sings three to five notes. When his last note ends, sing them back in the same order. Each note you hold on pitch lights a star, and the stars of a phrase join into a constellation.',
+      'A run is five phrases. Your Accuracy Tier sets how many notes a phrase has, how close each one must be and how fast Merc sings. At Learning, a note sung an octave lower or higher counts too.',
+      "The big number is how many notes you landed. Accuracy, out of 100, is how near the middle of each note you sang. At Professional, In time counts the notes you sang at Merc's pace.",
     ],
   },
   [EXERCISE_VIBRATO]: {
