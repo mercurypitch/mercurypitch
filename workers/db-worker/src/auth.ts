@@ -26,7 +26,7 @@
 import { revokeAndForgetAppleGrant } from './apple-auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
-import { createAuthSession, endSession, listSessions, sessionAlive, sessionRenewable, touchSession, } from './auth-sessions'
+import { createAuthSession, endSession, listSessions, renewSession, sessionAlive, touchSession, } from './auth-sessions'
 import { maskAddresses, sendLoginCode, sendPasswordReset } from './email'
 import type { MailOrigins } from './email-layout'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
@@ -525,7 +525,7 @@ export async function getAuth(
   // closed, exactly like a revoked tokenVersion.
   if (payload.sid !== undefined) {
     if (!(await sessionAlive(env.DB, payload.sid, payload.sub))) return null
-    // Fire-and-forget, and conditional in SQL: an idle-ish session costs one
+    // Best-effort, and conditional in SQL: an idle-ish session costs one
     // write per SESSION_TOUCH_SECONDS rather than one per request, and a
     // failed touch must never fail the request that carried it.
     try {
@@ -3776,7 +3776,10 @@ async function handleRefresh(
   }
   const row = await findUserById(env.DB, auth.userId)
   if (row === null) return respond({ error: 'Unauthorized' }, { status: 401 })
-  if (!(await sessionRenewable(env.DB, auth.sessionId, auth.userId))) {
+  // Renewal must be durable even when getAuth's activity touch failed. A
+  // failed write reaches the worker's 500 boundary without issuing a token;
+  // the client keeps its old token and can retry.
+  if (!(await renewSession(env.DB, auth.sessionId, auth.userId))) {
     // Ended, not merely refused: leaving the row would keep the token it was
     // called with working for the rest of its thirty days, which turns a
     // six-month cap into a seven-month one.
