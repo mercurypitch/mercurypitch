@@ -1142,6 +1142,25 @@ at least two runs: one run cannot show this.
 **See:** `runWeeklyLeagueCut` in `workers/db-worker/src/league.ts`,
 `workers/db-worker/node-tests/league-integration.test.ts`
 
+### A list without a limit is one page, and a natural key belongs in the schema
+
+**Symptom:** with more than 100 songs the library publish stopped for good,
+and a second device listed only 100 songs. Settings and challenge progress
+grew duplicate rows, after which devices disagreed about which value held.
+**Cause:** the worker answers a list read one page at a time (100 rows, in no
+defined order), and the client took the first page as every row. The sync
+code then re-created a row it already had, and the UNIQUE index refused it.
+Where no index existed, the same read-then-create race simply made a second
+row.
+**Rule:** read "all my rows" through the user-scoped repository, which pages
+until a short page. Give a table whose rows are keyed by something other than
+`id` a UNIQUE index and a `naturalKey` in `TABLES`, so the create upserts.
+Never rely on read-then-create to keep one row per key.
+**See:** `SignedOutAwareRepository.findAll` in
+`src/db/adapters/hybrid-adapter.ts`, `naturalKey` in
+`workers/db-worker/src/tables.ts`,
+`workers/db-worker/migrations/0070_natural_keys.sql`
+
 ### Never transpose a weekly challenge to the singer's range
 
 **Symptom:** looks like a bug — a Bass is handed a B4 they cannot reach, and

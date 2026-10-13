@@ -8,6 +8,11 @@
 //   client's sync code reads "all my rows" that way, so a library past 100
 //   songs re-created one it already had (the UNIQUE index refused, and the
 //   whole publish stopped) and settings past row 100 never arrived.
+// - A create retried after its response was lost made a second row, and
+//   paid the league award twice: the server minted a fresh id each attempt.
+// - Settings and challenge progress are one row per key, but nothing said
+//   so; a read-then-create race made two, and the account disagreed with
+//   itself from then on.
 
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -58,6 +63,38 @@ async function anonymous(deviceId: string): Promise<Account> {
   })
   expect(response.status).toBe(200)
   return response.body as Account
+}
+
+async function register(name: string): Promise<Account> {
+  const response = await call('POST', '/api/auth/register', {
+    email: `${name}@example.com`,
+    password: 'secret123',
+    displayName: name,
+  })
+  expect(response.status).toBe(200)
+  return response.body as Account
+}
+
+function practice(
+  extra: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    melodyName: 'Scale',
+    source: 'exercise',
+    startedAt: NOW,
+    endedAt: NOW,
+    score: 80,
+    accuracy: 80,
+    notesHit: 8,
+    notesTotal: 10,
+    streak: 1,
+    results: [],
+    ...extra,
+  }
+}
+
+function count(sql: string, ...params: string[]): number {
+  return (sqlite.prepare(sql).get(...params) as { n: number }).n
 }
 
 let singer: Account
@@ -130,5 +167,169 @@ describe('a list read', () => {
     }
     expect(seen).toHaveLength(95)
     expect(new Set(seen).size).toBe(95)
+  })
+})
+
+describe('a create the client retries', () => {
+  it('lands once, and is awarded once', async () => {
+    const ada = await register('ada')
+    const id = '6f1c2a8e-4b1d-4c7a-9e0f-2d3b4c5d6e7f'
+
+    const first = await call(
+      'POST',
+      '/api/sessionRecords',
+      practice({ id }),
+      ada.token,
+    )
+    expect(first.status).toBe(201)
+    expect(first.body.id).toBe(id)
+
+    // The same body again: what the client sends after a lost response.
+    const retry = await call(
+      'POST',
+      '/api/sessionRecords',
+      practice({ id }),
+      ada.token,
+    )
+    expect(retry.status).toBe(200)
+    expect(retry.body.id).toBe(id)
+
+    expect(
+      count(
+        'SELECT COUNT(*) AS n FROM sessionRecords WHERE userId = ?',
+        ada.userId,
+      ),
+    ).toBe(1)
+    expect(
+      count(
+        'SELECT COUNT(*) AS n FROM leaguePointEvents WHERE userId = ?',
+        ada.userId,
+      ),
+    ).toBe(1)
+  })
+
+  it('cannot take or reveal a row somebody else created under that id', async () => {
+    const id = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'
+    const mine = await call(
+      'POST',
+      '/api/sessionRecords',
+      practice({ id, melodyName: 'Private tune' }),
+      singer.token,
+    )
+    expect(mine.status).toBe(201)
+
+    const stranger = await anonymous('00000000-0000-4000-8000-00000000c002')
+    const theirs = await call(
+      'POST',
+      '/api/sessionRecords',
+      practice({ id }),
+      stranger.token,
+    )
+    expect(theirs.status).toBe(409)
+    expect(JSON.stringify(theirs.body)).not.toContain('Private tune')
+    expect(
+      count(
+        'SELECT COUNT(*) AS n FROM sessionRecords WHERE userId = ?',
+        stranger.userId,
+      ),
+    ).toBe(0)
+  })
+
+  it('still mints the id when the client names none', async () => {
+    const created = await call(
+      'POST',
+      '/api/sessionRecords',
+      practice(),
+      singer.token,
+    )
+    expect(created.status).toBe(201)
+    expect(created.body.id).toMatch(/^[0-9a-f-]{36}$/)
+  })
+})
+
+describe('a row with a natural key', () => {
+  it('keeps one setting per key, holding the latest value', async () => {
+    const first = await call(
+      'POST',
+      '/api/userSettings',
+      { key: 'pitchperfect_theme', value: '"dark"' },
+      singer.token,
+    )
+    expect(first.status).toBe(201)
+    // A second device that also read "no row yet".
+    const second = await call(
+      'POST',
+      '/api/userSettings',
+      { key: 'pitchperfect_theme', value: '"light"' },
+      singer.token,
+    )
+    expect(second.status).toBe(200)
+    expect(second.body.id).toBe(first.body.id)
+    expect(
+      sqlite
+        .prepare('SELECT value FROM userSettings WHERE userId = ?')
+        .all(singer.userId),
+    ).toEqual([{ value: '"light"' }])
+  })
+
+  it('keeps one progress row per challenge', async () => {
+    const progress = {
+      challengeId: 'c1',
+      progress: 100,
+      currentScore: 95,
+      bestScore: 95,
+      status: 'completed',
+      completed: true,
+      completedAt: NOW,
+      attempts: 3,
+    }
+    expect(
+      (await call('POST', '/api/challengeProgress', progress, singer.token))
+        .status,
+    ).toBe(201)
+    expect(
+      (await call('POST', '/api/challengeProgress', progress, singer.token))
+        .status,
+    ).toBe(200)
+    expect(
+      count(
+        'SELECT COUNT(*) AS n FROM challengeProgress WHERE userId = ?',
+        singer.userId,
+      ),
+    ).toBe(1)
+  })
+
+  it('updates a song the library already lists instead of refusing it', async () => {
+    const song = { fileHash: 'abc123', title: 'Old title', quality: 'lossless' }
+    expect(
+      (await call('POST', '/api/songManifests', song, singer.token)).status,
+    ).toBe(201)
+    // What a publish does when its read missed the row: create it again.
+    const again = await call(
+      'POST',
+      '/api/songManifests',
+      { ...song, title: 'New title' },
+      singer.token,
+    )
+    expect(again.status).toBe(200)
+    expect(again.body.title).toBe('New title')
+  })
+
+  it('is per user: two singers keep their own row for one key', async () => {
+    const other = await anonymous('00000000-0000-4000-8000-00000000c003')
+    for (const account of [singer, other]) {
+      const response = await call(
+        'POST',
+        '/api/userSettings',
+        { key: 'pitchperfect_theme', value: `"${account.userId}"` },
+        account.token,
+      )
+      expect(response.status).toBe(201)
+    }
+    expect(
+      count(
+        'SELECT COUNT(*) AS n FROM userSettings WHERE "key" = \'pitchperfect_theme\'',
+      ),
+    ).toBe(2)
   })
 })

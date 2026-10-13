@@ -438,6 +438,7 @@
   "workers/db-worker/node-tests/league-integration.test.ts",
   "workers/db-worker/node-tests/login-codes-integration.test.ts",
   "workers/db-worker/node-tests/login-codes-sign-up-integration.test.ts",
+  "workers/db-worker/node-tests/natural-keys-migration.test.ts",
   "workers/db-worker/node-tests/passkey-integration.test.ts",
   "workers/db-worker/node-tests/premium-background-migration.test.ts",
   "workers/db-worker/node-tests/promo-codes-read-integration.test.ts",
