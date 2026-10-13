@@ -1129,6 +1129,19 @@ spelling.
 **See:** `unknownColumn` in `workers/db-worker/src/index.ts`,
 `workers/db-worker/node-tests/column-names-integration.test.ts`
 
+### A watermark that names the running week must include it next time
+
+**Symptom:** the weekly league moved players exactly once, at the first cut,
+and never again. Nothing was logged.
+**Cause:** each cut stored the current, still-running week as its watermark,
+and the next cut asked for weeks strictly after it. The stored week finished
+later and was never cut; neither was any week after.
+**Rule:** when a job stores where it got to, store what it finished, or make
+the next run's bound inclusive of what it stored. Test a scheduled job across
+at least two runs: one run cannot show this.
+**See:** `runWeeklyLeagueCut` in `workers/db-worker/src/league.ts`,
+`workers/db-worker/node-tests/league-integration.test.ts`
+
 ### Never transpose a weekly challenge to the singer's range
 
 **Symptom:** looks like a bug — a Bass is handed a B4 they cannot reach, and

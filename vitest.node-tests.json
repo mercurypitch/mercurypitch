@@ -434,6 +434,7 @@
   "workers/db-worker/node-tests/column-names-integration.test.ts",
   "workers/db-worker/node-tests/google-return-nonce-integration.test.ts",
   "workers/db-worker/node-tests/guided-exercise-example-clip-integration.test.ts",
+  "workers/db-worker/node-tests/league-integration.test.ts",
   "workers/db-worker/node-tests/login-codes-integration.test.ts",
   "workers/db-worker/node-tests/login-codes-sign-up-integration.test.ts",
   "workers/db-worker/node-tests/passkey-integration.test.ts",

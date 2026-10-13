@@ -309,9 +309,16 @@ export async function runWeeklyLeagueCut(env: Env): Promise<void> {
     }
 
     // Every finished week not yet cut (realistically just last week).
+    //
+    // `>=`, not `>`. The watermark written below is `cur`, the week that was
+    // still RUNNING when the last cut happened, so that week has not been cut
+    // yet: it finished afterwards. A strict `>` skipped it, and with it every
+    // week after the very first cut, because each later run moves the
+    // watermark to its own running week the same way. Re-running inside one
+    // week cannot repeat a cut either way: `lastCut === cur` returns above.
     const { results: weeks } = await env.DB.prepare(
       `SELECT DISTINCT weekStart FROM leagueMembership
-       WHERE weekStart < ? ${lastCut != null ? 'AND weekStart > ?' : ''}
+       WHERE weekStart < ? ${lastCut != null ? 'AND weekStart >= ?' : ''}
        ORDER BY weekStart`,
     )
       .bind(...(lastCut != null ? [cur, lastCut] : [cur]))
