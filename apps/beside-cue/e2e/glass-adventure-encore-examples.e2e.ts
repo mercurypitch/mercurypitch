@@ -11,6 +11,7 @@ declare global {
     encoreIntegration: {
       audioEvents: string[]
       streams: MediaStream[]
+      oneShotReleases: { context: AudioContext; stopAtSeconds: number }[]
     }
   }
 }
@@ -87,6 +88,10 @@ async function installCompletedVisit(
 
       const audioEvents: string[] = []
       const streams: MediaStream[] = []
+      const oneShotReleases: {
+        context: AudioContext
+        stopAtSeconds: number
+      }[] = []
       const activeOneShots = new Set<AudioBufferSourceNode>()
       const createBufferSource = AudioContext.prototype.createBufferSource
       AudioContext.prototype.createBufferSource = function () {
@@ -104,6 +109,8 @@ async function installCompletedVisit(
         source.stop = (when = 0) => {
           if (activeOneShots.has(source)) {
             const delayMs = Math.max(0, (when - context.currentTime) * 1000)
+            if (delayMs > 0)
+              oneShotReleases.push({ context, stopAtSeconds: when })
             setTimeout(() => {
               if (!activeOneShots.delete(source)) return
               audioEvents.push('one-shot-stopped')
@@ -170,7 +177,7 @@ async function installCompletedVisit(
         streams.push(output.stream)
         return output.stream
       }
-      window.encoreIntegration = { audioEvents, streams }
+      window.encoreIntegration = { audioEvents, streams, oneShotReleases }
     },
     { complete: completeProgress, rejectDefault },
   )
@@ -498,22 +505,88 @@ test('keeps a reopened microphone lease over the old dialog fade @smoke', async 
     .toBe(true)
   const requestsBeforeRace = museumAudioRequests.length
 
-  // These three clicks intentionally share one browser task. A normal
-  // Playwright action wait can outlast the 120 ms fade and miss the ownership
-  // race this regression is meant to exercise.
-  await page.evaluate(async () => {
-    const button = (label: string) =>
-      [...document.querySelectorAll('button')].find(
-        (candidate) =>
-          candidate.getAttribute('aria-label') === label ||
-          candidate.textContent?.trim() === label,
-      )
-    button('Back to completion card')?.click()
-    await Promise.resolve()
-    button('Encore')?.click()
-    await Promise.resolve()
-    button('Sing the melody')?.click()
-  })
+  // Observe the actual lazy remount inside this browser task. A Playwright
+  // action wait can outlast the old playback's 120 ms fade, while one fixed
+  // microtask can run before the new dialog's controls exist.
+  const race = await dialog.evaluate(
+    (oldDialog) =>
+      new Promise<{ mode: string | null; fadeRemainingMs: number }>(
+        (resolve, reject) => {
+          const matchingButtons = (scope: Element, label: string) =>
+            [...scope.querySelectorAll('button')].filter(
+              (candidate) =>
+                candidate.getAttribute('aria-label') === label ||
+                candidate.textContent?.trim() === label,
+            )
+          const clickExactlyOne = (scope: Element, label: string) => {
+            const buttons = matchingButtons(scope, label)
+            if (buttons.length !== 1 || buttons[0]!.disabled)
+              throw new Error(`Expected one enabled ${label} button`)
+            buttons[0]!.click()
+          }
+          const releaseIndex = window.encoreIntegration.oneShotReleases.length
+          const observer = new MutationObserver(startReopenedCapture)
+          const deadline = setTimeout(
+            () => fail(new Error('The reopened Encore controls did not mount')),
+            5000,
+          )
+          function stopObserving() {
+            observer.disconnect()
+            clearTimeout(deadline)
+          }
+          function fail(cause: unknown) {
+            stopObserving()
+            reject(cause)
+          }
+          function startReopenedCapture() {
+            try {
+              const dialogs = document.querySelectorAll(
+                '[role="dialog"][aria-labelledby="encore-title"]',
+              )
+              if (dialogs.length === 0) return
+              if (dialogs.length !== 1 || dialogs[0] === oldDialog)
+                throw new Error('Expected a distinct reopened Encore dialog')
+              const reopened = dialogs[0]!
+              const buttons = matchingButtons(reopened, 'Sing the melody')
+              if (buttons.length === 0) return
+              stopObserving()
+              if (oldDialog.isConnected)
+                throw new Error('The old Encore dialog is still mounted')
+              const release =
+                window.encoreIntegration.oneShotReleases[releaseIndex]
+              if (release === undefined)
+                throw new Error('The old example did not enter its audio fade')
+              clickExactlyOne(reopened, 'Sing the melody')
+              resolve({
+                mode:
+                  reopened
+                    .querySelector('section[data-mode]')
+                    ?.getAttribute('data-mode') ?? null,
+                fadeRemainingMs:
+                  (release.stopAtSeconds - release.context.currentTime) * 1000,
+              })
+            } catch (cause) {
+              fail(cause)
+            }
+          }
+          observer.observe(document.body, { childList: true, subtree: true })
+          try {
+            clickExactlyOne(oldDialog, 'Back to completion card')
+            const completion = document.querySelector(
+              '[role="dialog"][aria-labelledby="glass-complete-title"]',
+            )
+            if (completion === null)
+              throw new Error('The completion card did not return')
+            clickExactlyOne(completion, 'Encore')
+            startReopenedCapture()
+          } catch (cause) {
+            fail(cause)
+          }
+        },
+      ),
+  )
+  expect(race.mode).toBe('permission')
+  expect(race.fadeRemainingMs).toBeGreaterThan(0)
 
   const reopened = page.getByRole('dialog', { name: 'Leave a little light.' })
   const practice = reopened.locator('section[data-mode]')
@@ -532,11 +605,21 @@ test('keeps a reopened microphone lease over the old dialog fade @smoke', async 
     )
     .toBe(true)
   await page.waitForTimeout(300)
+  await expect(practice).toHaveAttribute('data-mode', /reference|singing/)
+  expect(
+    await page.evaluate(() =>
+      window.encoreIntegration.streams
+        .at(-1)
+        ?.getAudioTracks()
+        .map((track) => track.readyState),
+    ),
+  ).toEqual(['live'])
   expect(museumAudioRequests).toHaveLength(requestsBeforeRace)
   await page.screenshot({
     path: testInfo.outputPath('encore-reopened-microphone-phone.png'),
   })
   await attachJson(testInfo, 'reopen-audio-ownership', {
+    race,
     museumAudioRequests,
     audioEvents: await page.evaluate(
       () => window.encoreIntegration.audioEvents,
