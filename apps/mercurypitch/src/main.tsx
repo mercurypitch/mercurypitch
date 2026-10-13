@@ -234,6 +234,13 @@ if (!root) {
 // error anywhere (TestFlight build 29, 11 Sep 2026 — a plugin proxy handed
 // to a promise). Past the deadline, or on any failure, the port is abandoned
 // for this launch and identity comes from localStorage, as on the web.
+// Echo's art fixtures (ART-FIDELITY.md 3.6): `?echoFixture=<name>` shows a
+// pinned frame of the room for the art measure in place of the app. The
+// dev server only: every build folds this to null and drops the import.
+const echoFixture = import.meta.env.DEV
+  ? new URLSearchParams(window.location.search).get('echoFixture')
+  : null
+
 const HYDRATION_DEADLINE_MS = 5000
 const hydrationDeadline = new Promise<never>((_, reject) => {
   setTimeout(() => {
@@ -253,6 +260,12 @@ void Promise.race([hydrateStoragePort(), hydrationDeadline])
     abandonStoragePort(error)
   })
   .then(() => {
+    if (import.meta.env.DEV && echoFixture !== null) {
+      void import('@/features/echo/fixture/mount-echo-fixture').then((m) =>
+        m.mountEchoFixture(root, echoFixture),
+      )
+      return
+    }
     installForegroundSessionRefresh()
     render(
       () => (
