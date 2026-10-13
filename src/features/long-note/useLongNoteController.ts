@@ -26,12 +26,14 @@ import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { createScreenAwake } from '@/components/room-kit/screen-awake'
+import { levelFromRms } from '@/components/room-kit/voice-level'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import { computeHoldResult } from '@/lib/hold/hold-metrics'
 import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, nudgeTarget, } from '@/lib/hold/hold-target'
 import { loadHoldTarget } from '@/lib/hold/load-hold-target'
+import { settledRunStart, settleLiveNote } from '@/lib/hold/settle-note'
 import type { MercVoice } from '@/lib/merc/sim'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -49,11 +51,11 @@ import type { LongNoteMoment } from './merc-lines'
 import { createMercLineSelector } from './merc-lines'
 import { rememberedLongNote } from './remembered-note'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
-import { settledRunStart, settleLiveNote } from './settle-note'
 import { CaptureError, useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
 
 export type { MercPlace } from '@/components/room-kit/merc-moves'
+export { levelFromRms } from '@/components/room-kit/voice-level'
 export type {
   LongNoteController,
   LongNoteRunSummary,
@@ -70,12 +72,6 @@ const SLEEP_AFTER_SECONDS = 25
 const QUIET_LIMIT_SECONDS = 60
 /** The halo at the goal, of the brim's full shine. */
 export const GOAL_SHINE = 0.5
-/** RMS to Merc's 0..1 loudness: -50 dBFS is silent, -10 dBFS is full. */
-export function levelFromRms(rms: number): number {
-  if (!(rms > 0)) return 0
-  const db = 20 * Math.log10(rms)
-  return Math.min(1, Math.max(0, (db + 50) / 40))
-}
 
 /** The singer's own note, when the room can offer it. */
 function offerable(midi: number): boolean {

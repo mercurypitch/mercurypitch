@@ -3,7 +3,8 @@
 // ============================================================
 //
 // With no voiceprint and no note held before, Merc asks for any easy note
-// and takes the one the singer settles on. The same reading as First
+// and takes the one the singer settles on: Long note holds it, and Echo
+// starts its phrases there. The same reading as First
 // Light's naming of a note (Mirror preprocessing, the attack ignored, the
 // median), but live: it answers as soon as the end of the current run has
 // sat still long enough, and only when every frame of that stretch agrees
