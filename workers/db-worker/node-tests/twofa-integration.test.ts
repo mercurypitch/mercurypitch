@@ -558,3 +558,72 @@ describe('deleting the account', () => {
     expect(codes.n).toBe(0)
   })
 })
+
+describe('second-factor credential changes during verification', () => {
+  beforeEach(() => freshDatabase())
+
+  it.each(['disabled', 'replaced'] as const)(
+    'refuses a code if its credential is %s before the atomic claim',
+    async (transition) => {
+      const account = await register('credential-race@example.com')
+      const { secret, recoveryCodes } = await enroll(account)
+      const { ceremony } = (await (
+        await login('credential-race@example.com')
+      ).json()) as { ceremony: string }
+      // The future step is inside the accepted drift window. A replacement
+      // authenticator confirmed in the current step must not inherit this proof.
+      const step = Math.floor(Date.now() / 1000 / 30)
+      const code = await totpCode(secret, step + 1)
+      let replacementSecret: string | undefined
+      const sessionsBefore = sessionRowCount(account.userId)
+      justBefore(
+        env.DB as unknown as SqliteD1Database,
+        /UPDATE totpCredentials/,
+        async () => {
+          const disabled = await authedPost(
+            account.token,
+            '/api/auth/2fa/disable',
+            { code: recoveryCodes[0] },
+          )
+          expect(disabled.status).toBe(200)
+          if (transition === 'replaced') {
+            const setup = await authedPost(
+              account.token,
+              '/api/auth/2fa/setup',
+              {},
+            )
+            expect(setup.status).toBe(200)
+            replacementSecret = ((await setup.json()) as { secret: string })
+              .secret
+            const enabled = await authedPost(
+              account.token,
+              '/api/auth/2fa/enable',
+              {
+                code: await totpCode(replacementSecret, step),
+              },
+            )
+            expect(enabled.status).toBe(200)
+          }
+        },
+      )
+      const verified = await post('/api/auth/2fa/verify', { ceremony, code })
+      expect(verified.status).toBe(401)
+      expect((await verified.json()) as object).not.toHaveProperty('token')
+      expect(sessionRowCount(account.userId)).toBe(sessionsBefore)
+      expect(await meStatus(account.token)).toBe(200)
+      if (replacementSecret !== undefined) {
+        const next = (await (
+          await login('credential-race@example.com')
+        ).json()) as { ceremony: string }
+        const valid = await post('/api/auth/2fa/verify', {
+          ceremony: next.ceremony,
+          code: await totpCode(replacementSecret, step + 1),
+        })
+        expect(valid.status).toBe(200)
+        expect(
+          await meStatus(((await valid.json()) as { token: string }).token),
+        ).toBe(200)
+      }
+    },
+  )
+})

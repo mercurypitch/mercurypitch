@@ -109,7 +109,7 @@ function publish(state: DatabaseLifecycleState, newVersion?: number | null) {
 }
 
 /**
- * Register the two handlers on a database connection.
+ * Register the lifecycle handlers on a database connection.
  *
  * Called once, from the adapter's constructor. Registering our own subscriber
  * does not remove Dexie's default — both run — so the close below must be the

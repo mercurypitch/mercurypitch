@@ -251,6 +251,8 @@ export async function getPendingTotpSecret(
 export interface TotpLoginCredential {
   /** Decrypted base32 secret, or null when it could not be decrypted. */
   secret: string | null
+  /** Exact stored credential, so an in-flight proof cannot claim a replacement. */
+  secretEnc: string
   lastUsedStep: number | null
 }
 
@@ -277,10 +279,27 @@ export async function getTotpForLogin(
   const secret = twofaConfigured(env)
     ? await decryptTotpSecret(row.secretEnc, env.TOTP_KEK as string)
     : null
-  return { secret, lastUsedStep: row.lastUsedStep }
+  return { secret, secretEnc: row.secretEnc, lastUsedStep: row.lastUsedStep }
 }
 
-/** Move the anti-replay high-water mark, atomically. Only raises it, so an
+/** Claim a login proof only while the same confirmed credential still exists. */
+export async function claimTotpStep(
+  env: TwofaEnv,
+  userId: string,
+  credential: TotpLoginCredential,
+  step: number,
+): Promise<boolean> {
+  const res = await env.DB.prepare(
+    `UPDATE totpCredentials SET lastUsedStep = ?
+      WHERE userId = ? AND secretEnc = ? AND confirmedAt IS NOT NULL
+        AND (lastUsedStep IS NULL OR lastUsedStep < ?)`,
+  )
+    .bind(step, userId, credential.secretEnc, step)
+    .run()
+  return (res.meta.changes ?? 0) > 0
+}
+
+/** Record the enrollment proof's anti-replay high-water mark. Only raises it, so an
  *  out-of-order write cannot lower it and re-admit a spent code. Returns false
  *  when the step was already spent (a concurrent request claimed it first). */
 export async function markTotpStepUsed(

@@ -2118,12 +2118,19 @@ async function handleWeeklyActive(env: Env): Promise<Response> {
       .bind(nowIso, nowIso)
       .first<WeeklyRow>()
     if (queued) {
+      // An Encore may have landed after the active read, or an admin may
+      // have withdrawn/rescheduled this row. Recheck both claims in the
+      // activation itself, then serve whichever challenge actually won.
       await env.DB.prepare(
-        `UPDATE weeklyChallenges SET status = 'active', updatedAt = ? WHERE id = ?`,
+        `UPDATE weeklyChallenges SET status = 'active', updatedAt = ?
+         WHERE id = ? AND status = 'queued' AND startsAt <= ? AND endsAt > ?
+           AND NOT EXISTS (SELECT 1 FROM weeklyChallenges WHERE status = 'active')`,
       )
-        .bind(nowIso, queued.id)
+        .bind(nowIso, queued.id, nowIso, nowIso)
         .run()
-      active = { ...queued, status: 'active' }
+      active = await env.DB.prepare(
+        `SELECT * FROM weeklyChallenges WHERE status = 'active' ORDER BY startsAt DESC LIMIT 1`,
+      ).first<WeeklyRow>()
     }
   }
 

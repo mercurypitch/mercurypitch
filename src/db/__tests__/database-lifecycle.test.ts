@@ -5,7 +5,9 @@
 // yielding to another tab's upgrade is not enough, the connection has to stay
 // closed. See database-lifecycle.ts for the measurement.
 
+import DexieDB from 'dexie'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import 'fake-indexeddb/auto'
 import type { LifecycleDatabase } from '../database-lifecycle'
 import { databaseLifecycleState, databaseLifecycleVersion, installDatabaseLifecycle, onDatabaseLifecycle, resetDatabaseLifecycleForTests, } from '../database-lifecycle'
 
@@ -191,4 +193,67 @@ describe('installDatabaseLifecycle', () => {
     expect(databaseLifecycleState()).toBe('superseded')
     expect(databaseLifecycleVersion()).toBeNull()
   })
+})
+
+// A real Dexie subscriber consumes non-sticky ready handlers after its first
+// open. Keep this integration separate from the fake event-order tests above.
+it('clears real blocked opens on both the first upgrade and a later reopen', async () => {
+  const name = `lifecycle-ready-${window.crypto.randomUUID()}`
+  const db = new DexieDB(name)
+  db.version(2).stores({ entries: 'id' })
+  installDatabaseLifecycle(db)
+  const seen: string[] = []
+  const unsubscribe = onDatabaseLifecycle((event) => seen.push(event.state))
+  let blocker: IDBDatabase | undefined
+  const openBlocker = (version: number): Promise<IDBDatabase> =>
+    new Promise((resolve, reject) => {
+      const request = window.indexedDB.open(name, version)
+      request.onupgradeneeded = () => {
+        request.result.createObjectStore('entries', { keyPath: 'id' }).add({
+          id: 'kept',
+          title: 'Recorded before the upgrade',
+        })
+      }
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+  try {
+    blocker = await openBlocker(10)
+    for (const version of [2, 3]) {
+      if (version === 3) {
+        db.close()
+        blocker = await openBlocker(20)
+        db.version(3).stores({ entries: 'id' })
+      }
+      const blocked = new Promise<void>((resolve) => {
+        const handler = () => {
+          db.on('blocked').unsubscribe(handler)
+          resolve()
+        }
+        db.on('blocked', handler)
+      })
+      const opening = db.open()
+      await blocked
+      expect(databaseLifecycleState()).toBe('blocked')
+      expect(databaseLifecycleVersion()).toBe(version * 10)
+      if (blocker === undefined)
+        throw new Error('Expected a blocking connection')
+      blocker.close()
+      blocker = undefined
+      await opening
+
+      expect(databaseLifecycleState()).toBe('ok')
+      expect(databaseLifecycleVersion()).toBeNull()
+      expect(await db.table('entries').get('kept')).toEqual({
+        id: 'kept',
+        title: 'Recorded before the upgrade',
+      })
+    }
+    expect(seen).toEqual(['blocked', 'ok', 'blocked', 'ok'])
+  } finally {
+    unsubscribe()
+    blocker?.close()
+    db.close()
+    await DexieDB.delete(name)
+  }
 })

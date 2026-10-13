@@ -11,7 +11,7 @@
 // split between two weeks' boards.
 
 import { DatabaseSync } from 'node:sqlite'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from '../src/auth'
 import worker from '../src/index'
 import { applyMigrations, justBefore, SqliteD1Database } from './sqlite-d1'
@@ -20,13 +20,24 @@ let sqlite: DatabaseSync
 let d1: SqliteD1Database
 let env: Env
 
-async function active(): Promise<{ status: number; body: any }> {
+interface ActiveResponse {
+  status: number
+  body: { challenge: { id: string; title: string } | null }
+}
+
+const NOW = '2026-10-13T12:00:00.000Z'
+const NEXT_WEEK = '2026-10-19T00:00:00.000Z'
+
+async function active(): Promise<ActiveResponse> {
   const response = await worker.fetch(
     new Request('https://api.test/api/weekly/active'),
     env,
     {} as ExecutionContext,
   )
-  return { status: response.status, body: await response.json() }
+  return {
+    status: response.status,
+    body: (await response.json()) as ActiveResponse['body'],
+  }
 }
 
 function seedClosedEvergreens(n: number): void {
@@ -48,7 +59,28 @@ function activeRows(): unknown[] {
     .all()
 }
 
+function seedQueued(startsAt = NEXT_WEEK): void {
+  sqlite
+    .prepare(
+      `INSERT INTO weeklyChallenges (id, createdAt, updatedAt, slug, title,
+       description, featType, difficulty, targetItems, startsAt, endsAt, status)
+     VALUES ('scheduled', ?, ?, 'scheduled', 'Scheduled challenge',
+       'd', 'sustain', 'beginner', '[]', ?, '2026-10-26T00:00:00.000Z', 'queued')`,
+    )
+    .run(NOW, NOW, startsAt)
+}
+
+function latch(): { promise: Promise<void>; release: () => void } {
+  let release = (): void => {}
+  const promise = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  return { promise, release }
+}
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(NOW))
   sqlite = new DatabaseSync(':memory:')
   sqlite.exec('PRAGMA foreign_keys = ON')
   applyMigrations(sqlite)
@@ -61,6 +93,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   sqlite.close()
 })
 
@@ -68,7 +101,11 @@ describe('two first loads of a week with nothing active', () => {
   for (const evergreens of [1, 2]) {
     it(`agree on one Encore (${evergreens} to pick from)`, async () => {
       seedClosedEvergreens(evergreens)
-      let second: { status: number; body: any } | undefined
+      // Keep real SQL selection, replacing only its random numbers. With two
+      // templates the first request chooses ev-0 and the second chooses ev-1.
+      const randomValues = [0, 1, 1, 0]
+      sqlite.function('random', () => randomValues.shift() ?? 0)
+      let second: ActiveResponse | undefined
       justBefore(d1, /INSERT INTO weeklyChallenges/, async () => {
         second = await active()
       })
@@ -77,7 +114,163 @@ describe('two first loads of a week with nothing active', () => {
       expect([first.status, second?.status]).toEqual([200, 200])
       expect(first.body.challenge?.id).toBeDefined()
       expect(first.body.challenge?.id).toBe(second?.body.challenge?.id)
+      expect(first.body).toEqual(second?.body)
+      expect(first.body.challenge?.title).toBe(`Legend ${evergreens - 1}`)
       expect(activeRows()).toHaveLength(1)
     })
   }
+})
+
+describe('a queued challenge becomes due while an Encore request is pending', () => {
+  for (const winner of ['encore', 'queued'] as const) {
+    it(`returns one active winner when ${winner} writes first`, async () => {
+      seedClosedEvergreens(1)
+      seedQueued()
+      vi.setSystemTime(new Date(Date.parse(NEXT_WEEK) - 1))
+      const encoreReady = latch()
+      const writeEncore = latch()
+      justBefore(d1, /INSERT INTO weeklyChallenges/, async () => {
+        encoreReady.release()
+        await writeEncore.promise
+      })
+      const encore = active()
+      await encoreReady.promise
+
+      // The second request starts after the scheduled window opens. Both
+      // requests have read no active row before either activation commits.
+      vi.setSystemTime(new Date(NEXT_WEEK))
+      const queuedReady = latch()
+      const writeQueued = latch()
+      justBefore(
+        d1,
+        /UPDATE weeklyChallenges SET status = 'active'/,
+        async () => {
+          queuedReady.release()
+          await writeQueued.promise
+        },
+      )
+      const queued = active()
+      await queuedReady.promise
+      let first: ActiveResponse
+      let second: ActiveResponse
+      try {
+        if (winner === 'encore') {
+          writeEncore.release()
+          first = await encore
+          writeQueued.release()
+          second = await queued
+        } else {
+          writeQueued.release()
+          first = await queued
+          writeEncore.release()
+          second = await encore
+        }
+      } finally {
+        writeEncore.release()
+        writeQueued.release()
+      }
+
+      expect([first.status, second.status]).toEqual([200, 200])
+      expect(first.body.challenge?.title).toBe(
+        winner === 'encore' ? 'Legend 0' : 'Scheduled challenge',
+      )
+      expect(second.body).toEqual(first.body)
+      expect(activeRows()).toEqual([{ id: first.body.challenge?.id }])
+      expect(
+        sqlite
+          .prepare("SELECT status FROM weeklyChallenges WHERE id = 'scheduled'")
+          .get(),
+      ).toEqual({ status: winner === 'encore' ? 'queued' : 'active' })
+    })
+  }
+
+  it.each(['closed', 'rescheduled'] as const)(
+    'does not activate a queued challenge %s after its eligibility read',
+    async (change) => {
+      seedClosedEvergreens(1)
+      seedQueued(NOW)
+      justBefore(
+        d1,
+        /UPDATE weeklyChallenges SET status = 'active'/,
+        async () => {
+          sqlite
+            .prepare(
+              change === 'closed'
+                ? "UPDATE weeklyChallenges SET status = 'closed' WHERE id = 'scheduled'"
+                : "UPDATE weeklyChallenges SET startsAt = ? WHERE id = 'scheduled'",
+            )
+            .run(...(change === 'closed' ? [] : [NEXT_WEEK]))
+        },
+      )
+
+      const response = await active()
+
+      expect(response.status).toBe(200)
+      expect(response.body.challenge?.title).toBe('Legend 0')
+      expect(activeRows()).toEqual([{ id: response.body.challenge?.id }])
+      expect(
+        sqlite
+          .prepare("SELECT status FROM weeklyChallenges WHERE id = 'scheduled'")
+          .get(),
+      ).toEqual({ status: change === 'closed' ? 'closed' : 'queued' })
+    },
+  )
+})
+
+describe('Encore fallback boundaries', () => {
+  it('returns no challenge when there is no closed evergreen', async () => {
+    seedQueued()
+
+    expect(await active()).toEqual({ status: 200, body: { challenge: null } })
+    expect(activeRows()).toEqual([])
+  })
+
+  it('reuses an existing active challenge without inserting or changing it', async () => {
+    seedQueued(NOW)
+    sqlite.exec("UPDATE weeklyChallenges SET status = 'active'")
+    seedClosedEvergreens(1)
+    const before = sqlite
+      .prepare('SELECT * FROM weeklyChallenges ORDER BY id')
+      .all()
+
+    const response = await active()
+
+    expect(response.status).toBe(200)
+    expect(response.body.challenge?.id).toBe('scheduled')
+    expect(
+      sqlite.prepare('SELECT * FROM weeklyChallenges ORDER BY id').all(),
+    ).toEqual(before)
+  })
+
+  it('activates a due queued row before falling back to an evergreen', async () => {
+    seedClosedEvergreens(1)
+    seedQueued(NOW)
+
+    const response = await active()
+
+    expect(response.status).toBe(200)
+    expect(response.body.challenge?.id).toBe('scheduled')
+    expect(activeRows()).toEqual([{ id: 'scheduled' }])
+    expect(
+      sqlite.prepare('SELECT COUNT(*) AS count FROM weeklyChallenges').get(),
+    ).toEqual({ count: 2 })
+  })
+
+  it('does not reopen or overwrite a closed row with the generated slug', async () => {
+    seedClosedEvergreens(1)
+    seedQueued()
+    sqlite
+      .prepare(
+        "UPDATE weeklyChallenges SET slug = ?, status = 'closed' WHERE id = 'scheduled'",
+      )
+      .run(`legend-0-encore-${Math.floor(Date.parse(NOW) / 86_400_000)}`)
+    const before = sqlite
+      .prepare('SELECT * FROM weeklyChallenges ORDER BY id')
+      .all()
+
+    expect(await active()).toEqual({ status: 200, body: { challenge: null } })
+    expect(
+      sqlite.prepare('SELECT * FROM weeklyChallenges ORDER BY id').all(),
+    ).toEqual(before)
+  })
 })

@@ -17,9 +17,12 @@ const state = vi.hoisted(() => ({
   authed: true,
   upgraded: true,
   userId: 'singer-a',
+  authVersion: 0,
   deviceId: 'device-1',
   failReads: false,
   failWrites: false,
+  beforeDb: undefined as (() => Promise<void>) | undefined,
+  beforeRead: undefined as (() => Promise<void>) | undefined,
   rows: [] as Array<{ id: string; userId: string; key: string; value: string }>,
   updates: [] as Array<{ id: string; value: string }>,
   creates: [] as Array<{ key: string; value: string }>,
@@ -30,6 +33,10 @@ vi.mock('@/lib/defaults', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   API_BASE_URL: 'https://api.test',
 }))
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  PREMIUM_EXERCISES: true,
+}))
 vi.mock('@/db/services/auth-service', () => ({
   hasValidToken: () => state.authed,
   // A lazily provisioned anonymous identity holds a valid token too, so
@@ -37,40 +44,53 @@ vi.mock('@/db/services/auth-service', () => ({
   hasUpgradedAccount: () => state.authed && state.upgraded,
 }))
 vi.mock('@/db/services/user-service', () => ({
-  authVersion: () => 0,
+  authVersion: () => state.authVersion,
   getUserId: () => state.userId,
   getDeviceId: () => state.deviceId,
 }))
 vi.mock('@/db', () => ({
-  getDb: async () => ({
-    getRepository: () => ({
-      findAll: async (opts?: { where?: { key?: string } }) => {
-        if (state.failReads) throw new Error('offline')
-        return state.rows.filter(
-          (r) => opts?.where?.key === undefined || r.key === opts.where.key,
-        )
-      },
-      update: async (id: string, patch: { value: string }) => {
-        if (state.failWrites) throw new Error('offline')
-        state.updates.push({ id, value: patch.value })
-        const row = state.rows.find((r) => r.id === id)
-        if (row !== undefined) row.value = patch.value
-      },
-      create: async (row: { key: string; value: string }) => {
-        if (state.failWrites) throw new Error('offline')
-        state.creates.push({ key: row.key, value: row.value })
-        const created = { ...row, userId: '', id: `srv-${state.rows.length}` }
-        state.rows.push(created)
-        return created
-      },
-    }),
-  }),
+  getDb: async () => {
+    await state.beforeDb?.()
+    return {
+      getRepository: () => ({
+        findAll: async (opts?: {
+          where?: { key?: string }
+          throwOnError?: boolean
+        }) => {
+          if (state.failReads) {
+            if (opts?.throwOnError === true) throw new Error('offline')
+            return []
+          }
+          const rows = state.rows.filter(
+            (r) => opts?.where?.key === undefined || r.key === opts.where.key,
+          )
+          await state.beforeRead?.()
+          return rows
+        },
+        update: async (id: string, patch: { value: string }) => {
+          if (state.failWrites) throw new Error('offline')
+          state.updates.push({ id, value: patch.value })
+          const row = state.rows.find((r) => r.id === id)
+          if (row !== undefined) row.value = patch.value
+        },
+        create: async (row: { key: string; value: string }) => {
+          if (state.failWrites) throw new Error('offline')
+          state.creates.push({ key: row.key, value: row.value })
+          const created = { ...row, userId: '', id: `srv-${state.rows.length}` }
+          state.rows.push(created)
+          return created
+        },
+      }),
+    }
+  },
 }))
 
 import { pullCloudSettings } from '@/db/services/settings-service'
 import { PATH_PROGRESS_KEY } from '@/features/path/path-progress'
+import { LONG_NOTE_BESTS_KEY } from '@/lib/hold/hold-bests'
 
 const KEY = PATH_PROGRESS_KEY
+const OWNER_KEY = 'mp_sync_owner'
 
 const climb = (days: string[], over: Record<string, unknown> = {}): string =>
   JSON.stringify({
@@ -91,12 +111,15 @@ beforeEach(() => {
   state.authed = true
   state.upgraded = true
   state.userId = 'singer-a'
+  state.authVersion = 0
   state.deviceId = 'device-1'
   state.rows = []
   state.updates = []
   state.creates = []
   state.failReads = false
   state.failWrites = false
+  state.beforeDb = undefined
+  state.beforeRead = undefined
 })
 
 describe('pulling the Ascent from an account', () => {
@@ -195,8 +218,6 @@ describe('pulling the Ascent from an account', () => {
 // when the next one signs in — and a union cannot be undone.
 
 describe('a second account on the same device', () => {
-  const OWNER_KEY = 'mp_sync_owner'
-
   it('does not give one singer the other singer practice days', async () => {
     // Singer A practiced here and the device now belongs to them.
     localStorage.setItem(KEY, climb(['2026-08-01', '2026-08-02']))
@@ -252,6 +273,66 @@ describe('a second account on the same device', () => {
     expect(state.updates).toHaveLength(0)
   })
 
+  it.each([KEY, LONG_NOTE_BESTS_KEY] as const)(
+    'keeps mixed progress ownership across A → B → A when B has only %s',
+    async (cloudKey) => {
+      const own = {
+        [KEY]: climb(['2026-08-01']),
+        [LONG_NOTE_BESTS_KEY]: JSON.stringify({
+          60: { inBandSeconds: 3, steadiness: 90, at: 1 },
+        }),
+      }
+      const other = {
+        [KEY]: climb(['2026-08-02']),
+        [LONG_NOTE_BESTS_KEY]: JSON.stringify({
+          64: { inBandSeconds: 7, steadiness: 95, at: 2 },
+        }),
+      }
+      for (const [key, value] of Object.entries(own))
+        localStorage.setItem(key, value)
+      localStorage.setItem(OWNER_KEY, 'singer-a')
+      state.userId = 'singer-b'
+      state.rows = [
+        {
+          id: 'b-progress',
+          userId: 'singer-b',
+          key: cloudKey,
+          value: other[cloudKey],
+        },
+      ]
+
+      await pullCloudSettings()
+      await settle()
+      await pullCloudSettings()
+      await settle()
+
+      const absentKey = cloudKey === KEY ? LONG_NOTE_BESTS_KEY : KEY
+      expect(localStorage.getItem(cloudKey)).toBe(other[cloudKey])
+      expect(localStorage.getItem(absentKey)).toBe(own[absentKey])
+      expect(state.creates).toEqual([])
+      expect(state.updates).toEqual([])
+
+      state.userId = 'singer-a'
+      state.rows = Object.entries(own).map(([key, value], i) => ({
+        id: `a-progress-${i}`,
+        userId: 'singer-a',
+        key,
+        value,
+      }))
+      await pullCloudSettings()
+      await settle()
+
+      expect(localStorage.getItem(KEY)).toBe(own[KEY])
+      expect(localStorage.getItem(LONG_NOTE_BESTS_KEY)).toBe(
+        own[LONG_NOTE_BESTS_KEY],
+      )
+      expect(state.rows.map(({ key, value }) => ({ key, value }))).toEqual(
+        Object.entries(own).map(([key, value]) => ({ key, value })),
+      )
+      expect(state.updates).toEqual([])
+    },
+  )
+
   it('still merges the signed-out climb of the person signing in', async () => {
     // No owner recorded: this device has only ever been used signed out,
     // so the local climb belongs to whoever is signing in now.
@@ -290,7 +371,6 @@ describe('a second account on the same device', () => {
 // device's copy; an anonymous identity IS the unowned state.
 
 describe('practicing before there is an account', () => {
-  const OWNER_KEY = 'mp_sync_owner'
   const DEVICE = 'device-1'
 
   /** No account yet: the anonymous identity's id IS the device id. */
@@ -363,6 +443,58 @@ describe('practicing before there is an account', () => {
 // hope that the happy path generalises.
 
 describe('when the network or the data misbehaves', () => {
+  it.each([
+    { boundary: 'beforeDb', returnsToA: false },
+    { boundary: 'beforeRead', returnsToA: false },
+    { boundary: 'beforeDb', returnsToA: true },
+    { boundary: 'beforeRead', returnsToA: true },
+  ] as const)(
+    'does not apply or claim a stale pull at $boundary (A returns: $returnsToA)',
+    async ({ boundary, returnsToA }) => {
+      let release!: () => void
+      let started!: () => void
+      const waiting = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const entered = new Promise<void>((resolve) => {
+        started = resolve
+      })
+      state[boundary] = async () => {
+        started()
+        await waiting
+      }
+      state.rows = [
+        {
+          id: 'a-row',
+          userId: 'singer-a',
+          key: KEY,
+          value: climb(['2026-08-01']),
+        },
+      ]
+      const pulling = pullCloudSettings()
+      await entered
+      state.userId = 'singer-b'
+      state.authVersion += 1
+      if (returnsToA) {
+        state.userId = 'singer-a'
+        state.authVersion += 1
+      }
+      const currentOwner = state.userId
+      const currentProgress = climb(['2026-08-02'])
+      localStorage.setItem(KEY, currentProgress)
+      localStorage.setItem(OWNER_KEY, currentOwner)
+      release()
+      await pulling
+      await settle()
+
+      expect(localStorage.getItem(KEY)).toBe(currentProgress)
+      expect(localStorage.getItem(OWNER_KEY)).toBe(currentOwner)
+      expect(localStorage.getItem(`${OWNER_KEY}:${KEY}`)).toBeNull()
+      expect(state.updates).toEqual([])
+      expect(state.creates).toEqual([])
+    },
+  )
+
   it('leaves the device untouched when the pull cannot reach the account', async () => {
     localStorage.setItem(KEY, climb(['2026-08-01']))
     state.failReads = true
@@ -375,6 +507,10 @@ describe('when the network or the data misbehaves', () => {
       weekDays: Record<number, string[]>
     }
     expect(local.weekDays[1]).toEqual(['2026-08-01'])
+    expect(localStorage.getItem(OWNER_KEY)).toBeNull()
+    expect(localStorage.getItem(`${OWNER_KEY}:${KEY}`)).toBeNull()
+    expect(state.creates).toEqual([])
+    expect(state.updates).toEqual([])
   })
 
   it('keeps the local copy when the push back fails', async () => {

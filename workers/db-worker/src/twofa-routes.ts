@@ -15,7 +15,7 @@ import { checkRateLimit, clearRateLimit, getAuth, issueSessionFor, reissueLegacy
 import { readCeremony } from './auth-ceremony'
 import { endOtherSessions } from './auth-sessions'
 import { generateTotpSecret, otpauthUri, verifyTotp } from './totp'
-import { confirmTotp, consumeRecoveryCode, disableTotp, enrollTotp, generateRecoveryCodes, getPendingTotpSecret, getTotpForLogin, markTotpStepUsed, storeRecoveryCodes, totpStatus, twofaConfigured, } from './twofa'
+import { claimTotpStep, confirmTotp, consumeRecoveryCode, disableTotp, enrollTotp, generateRecoveryCodes, getPendingTotpSecret, getTotpForLogin, markTotpStepUsed, storeRecoveryCodes, totpStatus, twofaConfigured, } from './twofa'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -91,7 +91,7 @@ export async function verifySecondFactor(
       credential.lastUsedStep === null ? undefined : credential.lastUsedStep + 1
     const matched = await verifyTotp(credential.secret, code, { minStep })
     if (matched === null) return false
-    return markTotpStepUsed(env, userId, matched)
+    return claimTotpStep(env, userId, credential, matched)
   }
   return consumeRecoveryCode(env, userId, code)
 }
