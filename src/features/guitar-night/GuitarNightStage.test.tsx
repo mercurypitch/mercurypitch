@@ -239,7 +239,7 @@ describe('GuitarNightStage views', () => {
     ).toBeVisible()
   })
 
-  it('announces a heard note without live-reading changing clarity', () => {
+  it('announces a heard note without live-reading changing clarity', async () => {
     render(() => (
       <GuitarNightStage
         source={SOURCE}
@@ -250,6 +250,7 @@ describe('GuitarNightStage views', () => {
       />
     ))
 
+    await screen.findByTestId('shared-3d-stage')
     expect(screen.getByRole('status')).toHaveTextContent('Heard C3')
     expect(screen.getByRole('status')).not.toHaveTextContent('51')
   })

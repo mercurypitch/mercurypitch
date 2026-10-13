@@ -1357,6 +1357,13 @@ warnings while the same commit passed on CI.
 do not trust the caller's shell environment.
 **See:** `vitest.config.ts`
 
+### Await a lazy control after every remount
+
+**Symptom:** upgrading Solid made room tests miss lazy controls or count a loading status alongside the final status.
+**Cause:** Solid 1.9.17 clears its lazy component resource on owner cleanup. A later mount can suspend again even when an earlier test or interaction loaded the module.
+**Rule:** await the actual lazy control before interacting with it or asserting settled content. Do not depend on another test having warmed the module, add arbitrary delays, or remove the original behavior assertions.
+**See:** `src/features/drum-night/DrumNightApp.test.tsx`, `src/features/guitar-night/GuitarNightStage.test.tsx`, and `src/features/sing-room/SingRoomStage.exercises.test.tsx`.
+
 ### Give preview credentials their own Worker identity
 
 **Symptom:** Turnstile showed a green check on dev, but every login failed CAPTCHA after a PR preview and the next dev deploy.

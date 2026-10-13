@@ -192,6 +192,11 @@ describe.each(['sessions', 'groups'] as const)(
       await groups().update(mine.id, { sessionIds: [EXAMPLE_ID] })
 
       await assertAssignment(mine.id)
+      // Reconciliation repairs the original row instead of replacing it.
+      expect(await sessions().findById(saved.id)).toMatchObject({
+        appSessionId: EXAMPLE_ID,
+        groupId: mine.id,
+      })
     })
 
     it('defaults only a newly published example into Examples', async () => {

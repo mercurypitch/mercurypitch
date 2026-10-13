@@ -286,7 +286,7 @@ describe('in a free run', () => {
     for (let at = 0; at <= 4000; at += 16) room.frame(at, 220)
     expect(singRoomContext().state).toBe('live')
 
-    fireEvent.click(screen.getByTestId('sing-exercise-pill'))
+    fireEvent.click(await screen.findByTestId('sing-exercise-pill'))
 
     expect(room.log).toEqual([
       'mic off: state ended, takes +0',
@@ -303,7 +303,7 @@ describe('in a free run', () => {
     await screen.findByTestId('sing-exercise-row')
     startFreeRun()
     controls().stop()
-    const resting = screen.getByTestId('sing-exercise-row')
+    const resting = await screen.findByTestId('sing-exercise-row')
 
     dispatchSingRoom({ type: 'sing-a-note' })
 
