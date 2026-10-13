@@ -6,6 +6,7 @@
 // Challenges and Community tabs against an in-memory database.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CloudRequestError } from '@/db/adapters/server-adapter'
 import { InMemoryAdapter } from './utils/in-memory-db'
 
 const adapter = new InMemoryAdapter()
@@ -305,6 +306,37 @@ describe('share flows', () => {
     ).not.toBeNull()
     expect(await adapter.getRepository('sharedMelodies').count()).toBe(1)
     expect(await adapter.getRepository('sharedSessions').count()).toBe(0)
+  })
+
+  /** The repository's delete, refused the way ServerAdapter refuses one. */
+  const refuseDelete = (status: number) =>
+    vi.spyOn(adapter, 'getRepository').mockReturnValue({
+      delete: () =>
+        Promise.reject(
+          new CloudRequestError(
+            status,
+            `ServerAdapter: ${status} on /api/sharedMelodies/m1`,
+          ),
+        ),
+    } as never)
+
+  it('counts a share another device already took down as unpublished', async () => {
+    // Published from this browser, then unpublished from a phone: the board
+    // row is gone, and the worker answers a delete of it with 404. Before,
+    // that read as a failure, so the card could never leave this shelf.
+    refuseDelete(404)
+    expect(await unpublishShared('melody', 'm1')).toBe(true)
+  })
+
+  it('still reports a delete the worker refused, or never answered', async () => {
+    refuseDelete(403)
+    expect(await unpublishShared('melody', 'm1')).toBe(false)
+    refuseDelete(500)
+    expect(await unpublishShared('session', 'm1')).toBe(false)
+    vi.spyOn(adapter, 'getRepository').mockReturnValue({
+      delete: () => Promise.reject(new TypeError('Failed to fetch')),
+    } as never)
+    expect(await unpublishShared('melody', 'm1')).toBe(false)
   })
 
   it('round-trips a shared melody', async () => {
