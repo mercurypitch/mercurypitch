@@ -845,7 +845,14 @@ async function handleUpdate(
     if (val === undefined) continue
     if (!IDENT.test(col))
       return respond({ error: `Invalid column: ${col}` }, { status: 400 })
-    sets.push(`"${col}" = ?`)
+    // The high-water mark is held in SQL as well. clampStreakHighWater works
+    // from the row read above, and a second device's write landing between
+    // that read and this UPDATE could otherwise talk the mark back down.
+    sets.push(
+      entity === 'userProfiles' && col === 'longestStreak'
+        ? `"longestStreak" = MAX(COALESCE("longestStreak", 0), ?)`
+        : `"${col}" = ?`,
+    )
     binds.push(toSql(val))
   }
   binds.push(id)
