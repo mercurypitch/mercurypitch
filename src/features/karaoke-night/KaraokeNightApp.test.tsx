@@ -2,11 +2,19 @@
 // Karaoke Night shell background integration tests
 // ============================================================
 
-import { cleanup, render, screen } from '@solidjs/testing-library'
+import { cleanup, render, screen, waitFor } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { matchVoiceCommand } from '@/features/voice-control/command-grammar'
 import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
+import type * as ViewportModule from '@/lib/use-viewport'
+import { karaokeZen, setKaraokeZen } from '@/stores/ui-store'
 import { KaraokeNightApp } from './KaraokeNightApp'
+
+const viewport = vi.hoisted(() => ({ narrow: false }))
+vi.mock('@/lib/use-viewport', async (importOriginal) => ({
+  ...(await importOriginal<typeof ViewportModule>()),
+  isNarrow: () => viewport.narrow,
+}))
 
 vi.mock('./demo-song', () => ({
   demoIsPlayable: () => false,
@@ -26,6 +34,8 @@ afterEach(() => {
   cleanup()
   localStorage.clear()
   window.history.replaceState({}, '', '/')
+  setKaraokeZen(false)
+  viewport.narrow = false
 })
 
 describe('KaraokeNightApp background integration', () => {
@@ -73,5 +83,50 @@ describe('KaraokeNightApp voice navigation', () => {
         matchVoiceCommand(utterance, activeVoiceCommands()),
         utterance,
       ).not.toBeNull()
+  })
+})
+
+// ============================================================
+// Link parameters: zen=1 and an unknown song (REQ-SKL-012, REQ-SKL-013)
+// ============================================================
+
+describe('KaraokeNightApp link parameters', () => {
+  it('opens the zen stage on a desktop for zen=1', () => {
+    window.history.replaceState({}, '', '/karaoke-night?zen=1')
+    render(() => <KaraokeNightApp />)
+    expect(karaokeZen()).toBe(true)
+  })
+
+  it('changes nothing on a phone, which is always zen', () => {
+    viewport.narrow = true
+    window.history.replaceState({}, '', '/karaoke-night?zen=1')
+    render(() => <KaraokeNightApp />)
+    expect(karaokeZen()).toBe(false)
+  })
+
+  it('leaves zen off without the parameter', () => {
+    window.history.replaceState({}, '', '/karaoke-night')
+    render(() => <KaraokeNightApp />)
+    expect(karaokeZen()).toBe(false)
+  })
+
+  it('takes zen=1 out of the address when the visitor leaves zen', () => {
+    window.history.replaceState({}, '', '/karaoke-night?song=josephine&zen=1')
+    render(() => <KaraokeNightApp />)
+    expect(window.location.search).toContain('zen=1')
+
+    setKaraokeZen(false)
+
+    expect(window.location.search).not.toContain('zen')
+  })
+
+  it('drops a song nobody published and opens the page as usual', async () => {
+    window.history.replaceState({}, '', '/karaoke-night?song=not-a-song&zen=1')
+    render(() => <KaraokeNightApp />)
+
+    await waitFor(() => expect(window.location.search).toBe('?zen=1'))
+    expect(
+      screen.getByRole('heading', { name: 'Your stage is set' }),
+    ).toBeInTheDocument()
   })
 })

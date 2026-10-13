@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KARAOKE_NIGHT_PATH, karaokeNightPlaylistUrl, karaokeNightSessionUrl, parseKaraokeNightLaunch, studioSessionUrl, takeScannedSyncLink, } from '@/lib/karaoke-night-link'
+import { KARAOKE_NIGHT_PATH, karaokeNightPlaylistUrl, karaokeNightSessionUrl, karaokeNightSongUrl, parseKaraokeNightLaunch, studioSessionUrl, takeScannedSyncLink, } from '@/lib/karaoke-night-link'
 
 describe('karaoke-night-link', () => {
   // REQ-SKL-001 & REQ-SKL-006: karaokeNightSessionUrl
@@ -59,6 +59,8 @@ describe('karaoke-night-link', () => {
       sessionId: 's-1',
       startAtSec: 101.5,
       autoplay: true,
+      song: null,
+      zen: false,
     })
   })
 
@@ -72,6 +74,8 @@ describe('karaoke-night-link', () => {
       sessionId: 'demo/test 1',
       startAtSec: 62.3,
       autoplay: true,
+      song: null,
+      zen: false,
     })
   })
 
@@ -80,19 +84,93 @@ describe('karaoke-night-link', () => {
       sessionId: 's-1',
       startAtSec: null,
       autoplay: false,
+      song: null,
+      zen: false,
     })
     expect(parseKaraokeNightLaunch('?session=s-1&t=-5')).toEqual({
       sessionId: 's-1',
       startAtSec: null,
       autoplay: false,
+      song: null,
+      zen: false,
     })
     expect(parseKaraokeNightLaunch('')).toEqual({
       sessionId: null,
       startAtSec: null,
       autoplay: false,
+      song: null,
+      zen: false,
     })
     // `autoplay=true` from a hand-typed link still counts.
     expect(parseKaraokeNightLaunch('?autoplay=true').autoplay).toBe(true)
+  })
+
+  // REQ-SKL-012: a song link names an example by its slug.
+  describe('song links', () => {
+    it('builds the readable link, with and without zen', () => {
+      expect(karaokeNightSongUrl('nothing-in-the-dark')).toBe(
+        `${KARAOKE_NIGHT_PATH}?song=nothing-in-the-dark`,
+      )
+      expect(karaokeNightSongUrl('goodbye-to-spring', { zen: true })).toBe(
+        `${KARAOKE_NIGHT_PATH}?song=goodbye-to-spring&zen=1`,
+      )
+      expect(karaokeNightSongUrl('josephine', { zen: false })).toBe(
+        `${KARAOKE_NIGHT_PATH}?song=josephine`,
+      )
+    })
+
+    it('parses the slug the way the studio stores one', () => {
+      expect(parseKaraokeNightLaunch('?song=nothing-in-the-dark').song).toBe(
+        'nothing-in-the-dark',
+      )
+      // Typed by hand or mangled by a chat app: case and padding forgiven.
+      expect(parseKaraokeNightLaunch('?song=%20Josephine%20').song).toBe(
+        'josephine',
+      )
+    })
+
+    it('reads a malformed or missing slug as no song', () => {
+      for (const query of [
+        '',
+        '?song=',
+        '?song=%20%20',
+        '?song=no%20spaces',
+        '?song=karaoke-night-demo%3Ajosephine',
+        '?song=--',
+        `?song=${'a'.repeat(65)}`,
+      ])
+        expect(parseKaraokeNightLaunch(query).song, query).toBeNull()
+    })
+
+    it('round-trips what it builds', () => {
+      const url = karaokeNightSongUrl('nothing-in-the-dark', { zen: true })
+      expect(parseKaraokeNightLaunch(url.split('?')[1])).toEqual({
+        sessionId: null,
+        startAtSec: null,
+        autoplay: false,
+        song: 'nothing-in-the-dark',
+        zen: true,
+      })
+    })
+
+    it('keeps session and song apart when a link carries both', () => {
+      const launch = parseKaraokeNightLaunch('?session=s-1&song=josephine')
+      expect(launch.sessionId).toBe('s-1')
+      expect(launch.song).toBe('josephine')
+    })
+  })
+
+  // REQ-SKL-013: zen=1 asks for the zen stage.
+  describe('zen', () => {
+    it('is on for 1, true and a bare flag', () => {
+      for (const query of ['?zen=1', '?zen=true', '?zen', '?zen='])
+        expect(parseKaraokeNightLaunch(query).zen, query).toBe(true)
+    })
+
+    it('is off when absent or anything else', () => {
+      for (const query of ['', '?zen=0', '?zen=false', '?zen=no', '?zenith=1'])
+        expect(parseKaraokeNightLaunch(query).zen, query).toBe(false)
+    })
   })
 
   // REQ-SKL-011: the page catches its own scanned link — and CONSUMES it,

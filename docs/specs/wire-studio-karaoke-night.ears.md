@@ -3,7 +3,7 @@
 Requirements for bidirectional linking and session URL state synchronization between the main MercuryPitch studio app and the standalone Karaoke Night stage (`/karaoke-night`).
 
 **Source:** `src/lib/karaoke-night-link.ts` — deep link helpers (`karaokeNightSessionUrl`, `studioSessionUrl`); `src/features/karaoke-night/KaraokeNightApp.tsx` — Karaoke Night URL state sync & restoration; `src/components/UvrPanel.tsx` — studio topbar link and the phone signpost; `src/features/karaoke-night/KaraokeRailPanels.tsx` — the rail's sync door
-**Tests:** `src/tests/karaoke-night-link.test.ts` (`SK-LINK-*`); `src/components/__tests__/UvrPanel.test.tsx` and `src/features/karaoke-night/KaraokeRailPanels.test.tsx` (`REQ-SKL-007..009`)
+**Tests:** `src/tests/karaoke-night-link.test.ts` (`SK-LINK-*`); `src/components/__tests__/UvrPanel.test.tsx` and `src/features/karaoke-night/KaraokeRailPanels.test.tsx` (`REQ-SKL-007..009`); `src/features/karaoke-night/example-links.test.ts`, `stage-example-link.test.ts`, `KaraokeNightApp.test.tsx` and `src/e2e/karaoke-example-links.spec.ts` (`REQ-SKL-012..013`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
@@ -85,3 +85,36 @@ reload, tab restore, or rail collapse/expand would silently re-join the
 scanned session. Verified by `takeScannedSyncLink` tests in
 `karaoke-night-link.test.ts` and `REQ-SKL-011` in
 `KaraokeRailPanels.test.tsx`.
+
+### REQ-SKL-012 — A song link stages an example by name
+
+**WHEN** Karaoke Night opens with `?song=<slug>` and no `session`, and the
+slug names a playable example, the system shall stage that example's
+library row, waiting for the examples seed to write it on a first visit,
+and shall count it as `karaoke_example_staged`. The link slug is the
+manifest slug, except the original demo (manifest slug `karaoke-night`),
+whose link slug is `goodbye-to-spring`; both spellings resolve, and the URL
+is rewritten to the link slug. The row keeps the visitor's own changes: a
+replaced stem plays instead of the published one, and edited lyrics and an
+edited title stay. **IF** no row can be written, **THEN** the published
+stems shall be staged instead. **IF** the slug names nothing playable,
+**THEN** the page shall open as it does with no song, show no error, and
+drop `song` from the URL. **WHILE** the linked song stays on stage, `song`
+shall stay in the URL; staging anything else replaces it with `session`
+(REQ-SKL-001), and closing the stage removes it (REQ-SKL-002). **IF** a
+link carries both `session` and `song`, **THEN** `session` shall decide and
+`song` shall be dropped. A visitor's pick while the seed runs shall never
+be replaced by the linked song. Verified by `example-links.test.ts`,
+`stage-example-link.test.ts`, `karaoke-night-link.test.ts` and
+`karaoke-example-links.spec.ts`.
+
+### REQ-SKL-013 — zen=1 opens the zen stage on a desktop
+
+**WHEN** Karaoke Night opens with `zen=1` (also `zen=true` or a bare
+`zen`) on a wide viewport, the system shall turn on the zen stage, so any
+song staged there opens in it. **WHILE** the viewport is narrow, the
+parameter shall change nothing: a phone always gets the zen stage. Without
+the parameter nothing shall change. `zen` shall stay in the URL while zen is
+on and shall be removed when the visitor leaves zen. It combines with
+`song` and with `session`. Verified by `KaraokeNightApp.test.tsx`,
+`karaoke-night-link.test.ts` and `karaoke-example-links.spec.ts`.

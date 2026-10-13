@@ -10,7 +10,7 @@
 // Carries its own funnel instrumentation (./funnel) -- this is a top-of-funnel
 // landing surface, not just another tab.
 
-import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, lazy, on, onCleanup, onMount, Show, Suspense, untrack, } from 'solid-js'
 import { ChunkErrorBoundary } from '@/components/ChunkErrorBoundary'
 import { ChevronDown, Info } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
@@ -32,11 +32,12 @@ import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { eventBus } from '@/lib/event-bus'
 import type { KaraokeNightLaunchParams } from '@/lib/karaoke-night-link'
-import { parseKaraokeNightLaunch, studioSessionUrl, takeScannedSyncLink, } from '@/lib/karaoke-night-link'
+import { normalizeSongSlug, parseKaraokeNightLaunch, studioSessionUrl, takeScannedSyncLink, } from '@/lib/karaoke-night-link'
 import { isNarrow } from '@/lib/use-viewport'
-import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
+import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, isDemoSessionId, loadDemoSongs, seedDemoLyrics, } from './demo-song'
+import { exampleLinkSlug, findExampleBySongSlug } from './example-links'
 import { trackKaraoke } from './funnel'
 import type { KaraokeSong } from './KaraokeRailPanels'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from './stage-transparency'
@@ -201,12 +202,43 @@ export function KaraokeNightApp() {
     }
   }
 
+  /** The example a `?song=` in these params names, as a session id.
+   *  Untracked: it answers a question about the URL at one moment, and
+   *  runs from history and promise callbacks, never from a tracked scope. */
+  const songParamSessionId = (params: URLSearchParams): string | null => {
+    const example = findExampleBySongSlug(
+      normalizeSongSlug(params.get('song')),
+      untrack(demos),
+    )
+    return example === null ? null : demoSessionId(example.slug)
+  }
+
+  /** Rewrite the query in place: no history entry, hash and state kept. */
+  const replaceSearch = (edit: (params: URLSearchParams) => void) => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      edit(params)
+      const searchStr = params.toString()
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${window.location.pathname}${searchStr !== '' ? `?${searchStr}` : ''}${window.location.hash}`,
+      )
+    } catch {
+      /* history state unavailable */
+    }
+  }
+
   const updateSessionUrl = (sessionId: string | null, push = true) => {
     try {
       const currentParams = new URLSearchParams(window.location.search)
-      const currentSession = currentParams.get('session')
+      // A song link stands for its example's session: while that song is on
+      // stage the readable `?song=` stays, and anything else replaces it.
+      const currentSession =
+        currentParams.get('session') ?? songParamSessionId(currentParams)
       const targetSession = sessionId ?? null
       if (currentSession !== targetSession) {
+        currentParams.delete('song')
         if (targetSession !== null) {
           currentParams.set('session', targetSession)
         } else {
@@ -225,7 +257,13 @@ export function KaraokeNightApp() {
     }
   }
 
+  // True from boot until a `?song=` link has staged its song. Any other
+  // staging clears it, so a slow seed never yanks a song the visitor picked
+  // while it ran.
+  let songLinkPending = false
+
   const setSongWithUrl = (song: KaraokeSong | null, push = true) => {
+    songLinkPending = false
     setActiveSong(song)
     updateSessionUrl(song?.sessionId ?? null, push)
   }
@@ -308,6 +346,57 @@ export function KaraokeNightApp() {
     }
   }
 
+  /**
+   * Stage the example a `?song=<slug>` link names (REQ-SKL-012).
+   *
+   * An unknown or parked slug opens the page as if the link had no song:
+   * no toast, and the param leaves the URL so a refresh does not retry it.
+   * A known one stages the example's library row once the seed has written
+   * it (`exampleSongFromLink`), and counts as an example staging, like a
+   * pick of that row from the song sheet.
+   */
+  const stageSongLink = async (
+    slug: string,
+    list: DemoSongManifest[],
+    launch: KaraokeNightLaunchParams,
+  ) => {
+    const example = findExampleBySongSlug(slug, list)
+    if (example === null) {
+      songLinkPending = false
+      replaceSearch((params) => params.delete('song'))
+      return
+    }
+    // One spelling per song: `karaoke-night` and `Josephine` become the
+    // link slug the song is shared under.
+    const canonical = exampleLinkSlug(example)
+    replaceSearch((params) => params.set('song', canonical))
+    try {
+      const { exampleSongFromLink } = await import('./stage-example-link')
+      const song = await exampleSongFromLink(example, launch)
+      if (!songLinkPending) return
+      songLinkPending = false
+      trackKaraoke('karaoke_example_staged')
+      setActiveSong(song)
+    } catch {
+      // A chunk that failed to load leaves the page as it would be with no
+      // link; the rail still offers the song.
+      songLinkPending = false
+    }
+  }
+
+  // Leaving zen takes `zen=1` out of the URL, so the address shared after
+  // that is the view on screen.
+  createEffect(
+    on(
+      karaokeZen,
+      (zen, wasZen) => {
+        if (wasZen === true && !zen)
+          replaceSearch((params) => params.delete('zen'))
+      },
+      { defer: true },
+    ),
+  )
+
   onMount(() => {
     // A QR scanned off a receive screen lands here as #/sync:CODE. Catch
     // and consume it first, and make sure the door it needs is on screen.
@@ -322,28 +411,36 @@ export function KaraokeNightApp() {
     const searchParams = new URLSearchParams(window.location.search)
     const launch = parseKaraokeNightLaunch(searchParams)
     const initialSession = launch.sessionId
+    const hasSession = initialSession !== null && initialSession !== ''
+    // `session` wins over `song`: an old link keeps meaning what it meant.
+    const songLink = hasSession ? null : launch.song
+    songLinkPending = songLink !== null
+
+    // `zen=1` opens the zen stage on a desktop. A phone gets it anyway, so
+    // there it changes nothing. The param stays in the URL while zen is on
+    // (a refresh, or a copy of the address, keeps it) and goes when the
+    // visitor leaves zen (the `karaokeZen` effect above).
+    if (launch.zen && !isNarrow()) setKaraokeZen(true)
 
     // `t` and `autoplay` are consumed by THIS boot — strip them so a
     // refresh or a share of the resulting page does not replay the launch.
-    if (searchParams.has('t') || searchParams.has('autoplay')) {
-      try {
-        searchParams.delete('t')
-        searchParams.delete('autoplay')
-        const searchStr = searchParams.toString()
-        window.history.replaceState(
-          window.history.state,
-          '',
-          `${window.location.pathname}${searchStr !== '' ? `?${searchStr}` : ''}${window.location.hash}`,
-        )
-      } catch {
-        /* history state unavailable */
-      }
+    // A `song` that a `session` overrides, or that is not a slug at all,
+    // goes too: it names nothing on this page.
+    const deadSong = searchParams.has('song') && songLink === null
+    if (searchParams.has('t') || searchParams.has('autoplay') || deadSong) {
+      replaceSearch((params) => {
+        params.delete('t')
+        params.delete('autoplay')
+        if (deadSong) params.delete('song')
+      })
     }
 
     void loadDemoSongs().then((list) => {
       setDemos(list)
       if (initialSession !== null && isDemoSessionId(initialSession)) {
         void restoreFromUrl(initialSession, list, launch)
+      } else if (songLink !== null) {
+        void stageSongLink(songLink, list, launch)
       }
     })
 
@@ -356,8 +453,9 @@ export function KaraokeNightApp() {
     }
 
     const handlePopState = () => {
+      songLinkPending = false
       const params = new URLSearchParams(window.location.search)
-      const sessionInUrl = params.get('session')
+      const sessionInUrl = params.get('session') ?? songParamSessionId(params)
       if (sessionInUrl !== (activeSong()?.sessionId ?? null)) {
         void restoreFromUrl(sessionInUrl, demos())
       }
