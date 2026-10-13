@@ -233,6 +233,25 @@ describe('a second account on the same device', () => {
     expect(state.creates).toHaveLength(0)
   })
 
+  it('does not claim the other singer progress, so a reload does not upload it', async () => {
+    // B has no row to replace A's climb with, so the device still holds
+    // A's copy after B's first pull. Claiming it for B there made it "B's"
+    // and the next pull (a reload, an auth change) backfilled it upstream.
+    localStorage.setItem(KEY, climb(['2026-08-01', '2026-08-02']))
+    localStorage.setItem(OWNER_KEY, 'singer-a')
+    state.userId = 'singer-b'
+    state.rows = []
+
+    await pullCloudSettings()
+    await settle()
+    expect(localStorage.getItem(OWNER_KEY)).not.toBe('singer-b')
+
+    await pullCloudSettings()
+    await settle()
+    expect(state.creates).toHaveLength(0)
+    expect(state.updates).toHaveLength(0)
+  })
+
   it('still merges the signed-out climb of the person signing in', async () => {
     // No owner recorded: this device has only ever been used signed out,
     // so the local climb belongs to whoever is signing in now.
