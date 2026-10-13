@@ -22,7 +22,7 @@ let env: Env
 
 interface ActiveResponse {
   status: number
-  body: { challenge: { id: string; title: string } | null }
+  body: { challenge: { id: string; title: string; endsAt: string } | null }
 }
 
 const NOW = '2026-10-13T12:00:00.000Z'
@@ -215,6 +215,69 @@ describe('a queued challenge becomes due while an Encore request is pending', ()
       ).toEqual({ status: change === 'closed' ? 'closed' : 'queued' })
     },
   )
+})
+
+describe('a week the old race left with two active rows', () => {
+  // Wednesday, past last week's end and its 48 h grace.
+  const AFTER_GRACE = '2026-10-14T12:00:00.000Z'
+
+  function seedTwoActiveFromLastWeek(): void {
+    const insert = sqlite.prepare(
+      `INSERT INTO weeklyChallenges (id, createdAt, updatedAt, slug, title,
+         description, featType, difficulty, targetItems, startsAt, endsAt,
+         evergreen, status, resultsJson)
+       VALUES (?, ?, ?, ?, ?, 'd', 'sustain', 'beginner', '[]',
+         '2026-10-05T00:00:00.000Z', '2026-10-12T00:00:00.000Z', 1, 'active', NULL)`,
+    )
+    insert.run('dup-a', NOW, NOW, 'legend-0-encore-20366', 'Legend 0')
+    insert.run('dup-b', NOW, NOW, 'legend-1-encore-20366', 'Legend 1')
+    vi.setSystemTime(new Date(AFTER_GRACE))
+  }
+
+  function statusOf(id: string): unknown {
+    return sqlite
+      .prepare('SELECT status FROM weeklyChallenges WHERE id = ?')
+      .get(id)
+  }
+
+  it("serves this week's queued challenge on the first load, closing both", async () => {
+    seedTwoActiveFromLastWeek()
+    sqlite
+      .prepare(
+        `INSERT INTO weeklyChallenges (id, createdAt, updatedAt, slug, title,
+           description, featType, difficulty, targetItems, startsAt, endsAt, status)
+         VALUES ('this-week', ?, ?, 'this-week', 'This week', 'd', 'sustain',
+           'beginner', '[]', '2026-10-12T00:00:00.000Z',
+           '2026-10-19T00:00:00.000Z', 'queued')`,
+      )
+      .run(NOW, NOW)
+
+    const response = await active()
+
+    expect(response.body.challenge?.id).toBe('this-week')
+    expect(activeRows()).toEqual([{ id: 'this-week' }])
+    expect([statusOf('dup-a'), statusOf('dup-b')]).toEqual([
+      { status: 'closed' },
+      { status: 'closed' },
+    ])
+  })
+
+  it("serves this week's Encore on the first load, closing both", async () => {
+    seedTwoActiveFromLastWeek()
+    seedClosedEvergreens(1)
+
+    const response = await active()
+
+    const challenge = response.body.challenge
+    expect(Date.parse(challenge?.endsAt ?? '')).toBeGreaterThan(
+      Date.parse(AFTER_GRACE),
+    )
+    expect(activeRows()).toEqual([{ id: challenge?.id }])
+    expect([statusOf('dup-a'), statusOf('dup-b')]).toEqual([
+      { status: 'closed' },
+      { status: 'closed' },
+    ])
+  })
 })
 
 describe('Encore fallback boundaries', () => {

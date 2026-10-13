@@ -1431,6 +1431,8 @@ async function handleMirrorEvent(
 // gated. The board derives from sessionRecords tagged with weeklyChallengeId.
 
 const WEEKLY_GRACE_MS = 48 * 60 * 60 * 1000 // late attempts still count 48h
+/** Ended active rows one request closes; only an old race left more than one. */
+const MAX_ENDED_WEEKLY_CLOSES = 4
 
 interface WeeklyRow {
   id: string
@@ -2104,10 +2106,23 @@ async function handleWeeklyActive(env: Env): Promise<Response> {
     `SELECT * FROM weeklyChallenges WHERE status = 'active' ORDER BY startsAt DESC LIMIT 1`,
   ).first<WeeklyRow>()
 
-  // Past its window (+grace)? Close it and look for the next.
-  if (active && Date.parse(active.endsAt) + WEEKLY_GRACE_MS < nowMs) {
+  // Past its window (+grace)? Close it and look for the next. Builds without
+  // the guards below let two first loads leave one week with two active rows.
+  // Those guards refuse while any row is active, so close every ended one
+  // here, or this request serves the older duplicate as the current week.
+  // Bounded, because each close also computes a board and grants a podium.
+  for (
+    let closed = 0;
+    active && Date.parse(active.endsAt) + WEEKLY_GRACE_MS < nowMs;
+    closed++
+  ) {
     await closeWeekly(active, env)
-    active = null
+    active =
+      closed + 1 < MAX_ENDED_WEEKLY_CLOSES
+        ? await env.DB.prepare(
+            `SELECT * FROM weeklyChallenges WHERE status = 'active' ORDER BY startsAt DESC LIMIT 1`,
+          ).first<WeeklyRow>()
+        : null
   }
 
   // Promote a queued row whose window contains now.
