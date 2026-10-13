@@ -1653,6 +1653,17 @@
   color: #7fd3ff;
 }
 
+/* The store chips (StoreChips.tsx), last on the Map: the about site's
+   dark chips, which read as neither a room nor the Map's blue button.
+   The component reads the margin; see StoreChips.module.css. */
+.mapStores {
+  --store-chips-margin: 18px auto 0;
+
+  /* The store names in the onboarding's display face, as the about site
+     sets them in its own. "Coming soon" keeps its mono. */
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
 /* ── Motion ──────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {

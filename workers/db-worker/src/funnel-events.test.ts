@@ -36,6 +36,22 @@ describe('ingest allowlist covers every client surface', () => {
     expect([...FUNNEL_EVENTS].sort()).toEqual([...FUNNEL_EVENT_NAMES].sort())
   })
 
+  it('accepts the six store chip events, one per surface and store', () => {
+    // Named rather than trusting the arrays: a name missing from the
+    // allowlist is answered 400 and dropped, and beacon() never reads the
+    // response, so a lost store chip count would look like no clicks.
+    for (const event of [
+      'results_app_store_click',
+      'results_google_play_click',
+      'free_sing_app_store_click',
+      'free_sing_google_play_click',
+      'onboarding_map_app_store_tap',
+      'onboarding_map_google_play_tap',
+    ]) {
+      expect(FUNNEL_EVENTS.has(event)).toBe(true)
+    }
+  })
+
   it('does not accept an unregistered lookalike event', () => {
     expect(FUNNEL_EVENTS.has('karaoke_scorecard_viewed')).toBe(false)
     expect(FUNNEL_EVENTS.has('donate_completed')).toBe(false)

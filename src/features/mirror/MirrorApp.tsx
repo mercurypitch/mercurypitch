@@ -13,6 +13,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { LegalLinks } from '@/components/LegalLinks'
+import { StoreChips } from '@/components/shared/StoreChips'
 import { saveVoiceprint } from '@/db/services/voiceprint-service'
 import type { MicError } from '@/lib/mic-manager'
 import { listAudioInputs, micManager } from '@/lib/mic-manager'
@@ -39,7 +40,7 @@ import { cardToPngBlob, cardToUnfurlBlob, copyCardToClipboard, copyOutcomeStatus
 import { CardOptionsSheet } from './CardOptionsSheet'
 import { CosmicMode } from './CosmicMode'
 import type { MirrorEntryIntent } from './entry-intent'
-import { trackFunnel } from './funnel'
+import { STORE_CHIP_EVENTS, trackFunnel } from './funnel'
 import { HowItWorks } from './HowItWorks'
 import { IconAlert, IconCheck, IconCopy, IconLink, IconMore, IconRocket, IconShare, IconSpark, } from './icons'
 import { legendArt, LegendCaricature, legendTierSrc } from './LegendCaricature'
@@ -1853,7 +1854,8 @@ const ShareStatusNote: Component<{ status: ShareStatus | null }> = (props) => (
   </>
 )
 
-const FreeResults: Component<{
+/** The Free Sing result. Exported for its store-chip test. */
+export const FreeResults: Component<{
   result: FreeSingResult | null
   shareStatus: ShareStatus | null
   onShare: () => void
@@ -1958,6 +1960,11 @@ const FreeResults: Component<{
           </button>
         </div>
         <ShareStatusNote status={props.shareStatus} />
+        <StoreChips
+          onChipClick={(store) =>
+            trackFunnel(STORE_CHIP_EVENTS.freeSing[store])
+          }
+        />
       </Show>
     </section>
   )
@@ -1971,7 +1978,8 @@ const BAND_LABEL: Record<NoteTakeResult['band'], string> = {
   'no-voice': 'no note heard',
 }
 
-const Results: Component<{
+/** The Voice Mirror result. Exported for its store-chip test. */
+export const Results: Component<{
   entryIntent: MirrorEntryIntent
   result: MirrorResult
   deltaLine: string | null
@@ -2197,6 +2205,9 @@ const Results: Component<{
         onCosmic={() => props.onCosmic()}
       />
       <ShareStatusNote status={props.shareStatus} />
+      <StoreChips
+        onChipClick={(store) => trackFunnel(STORE_CHIP_EVENTS.results[store])}
+      />
       <p class="mirror-foot">
         Saved on this device. Come back any time to see your delta.
       </p>

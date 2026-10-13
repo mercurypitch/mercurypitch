@@ -40,7 +40,7 @@ import { BeatSky } from './beats/BeatSky'
 import { BeatTwin } from './beats/BeatTwin'
 import { BeatVoiceprint } from './beats/BeatVoiceprint'
 import type { Beat, OnboardingTrack } from './flow'
-import { BEAT_EVENT, trackOnboarding } from './funnel'
+import { BEAT_EVENT, MAP_STORE_EVENT, trackOnboarding } from './funnel'
 import styles from './onboarding.module.css'
 import type { Plate } from './plates'
 import { plateFor, platesAhead, plateSrc, TALL_QUERY } from './plates'
@@ -603,6 +603,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               }
               gift={mapGift()}
               onGift={handleMapGift}
+              onStoreClick={(store) => trackOnboarding(MAP_STORE_EVENT[store])}
             />
           </Match>
           <Match when={currentBeat() === 'keep'}>

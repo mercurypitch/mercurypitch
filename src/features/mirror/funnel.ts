@@ -12,6 +12,7 @@
 // the vocabulary.
 // ============================================================
 
+import type { StoreId } from '@/components/shared/StoreChips'
 import { AD_CONVERSIONS } from '@/lib/consent'
 import { createFunnel } from '@/lib/funnel'
 import type { MirrorFunnelEvent } from '@/lib/funnel-event-catalog'
@@ -31,3 +32,20 @@ export const trackFunnel = createFunnel<FunnelEvent>({
   // The worker stores metrics for results_view only.
   metricEvents: ['results_view'],
 })
+
+/**
+ * The store chips' click events, per result screen. Both screens mount the
+ * same StoreChips; the name is the only place the screen survives, since the
+ * worker keeps an event name and a client id and nothing else. None of these
+ * is an Ads conversion: keep them out of `adConversions` above.
+ */
+export const STORE_CHIP_EVENTS = {
+  results: {
+    'app-store': 'results_app_store_click',
+    'google-play': 'results_google_play_click',
+  },
+  freeSing: {
+    'app-store': 'free_sing_app_store_click',
+    'google-play': 'free_sing_google_play_click',
+  },
+} as const satisfies Record<string, Record<StoreId, FunnelEvent>>

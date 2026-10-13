@@ -58,6 +58,17 @@ export const MIRROR_FUNNEL_EVENTS = [
    *  no view event, and `results_view` also fires where the ask is hidden.
    *  Not an Ads conversion. */
   'cta_account_click',
+  // The store chips (src/components/shared/StoreChips.tsx), one name per
+  // result screen and store: mirrorEvents keeps a name and a client id only.
+  // A click, coming soon or live, so a count of clicks, not of people.
+  /** The Voice Mirror result's App Store chip or badge was clicked. */
+  'results_app_store_click',
+  /** The Voice Mirror result's Google Play chip or badge was clicked. */
+  'results_google_play_click',
+  /** The Free Sing result's App Store chip or badge was clicked. */
+  'free_sing_app_store_click',
+  /** The Free Sing result's Google Play chip or badge was clicked. */
+  'free_sing_google_play_click',
 ] as const
 
 /** The app itself (src/lib/analytics.ts). */
@@ -202,6 +213,11 @@ export const ONBOARDING_FUNNEL_EVENTS = [
    *  gift" under a voiceprint). Before 11 Oct 2026 the links read "Get my
    *  5 credits" and "Save it and get 5 free credits". */
   'onboarding_map_gift_tap',
+  /** The Map's App Store chip or badge (StoreChips), first run or a #/map
+   *  replay alike. */
+  'onboarding_map_app_store_tap',
+  /** The Map's Google Play chip or badge, the same way. */
+  'onboarding_map_google_play_tap',
 ] as const
 
 /**

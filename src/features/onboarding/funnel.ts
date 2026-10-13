@@ -14,6 +14,7 @@
 // Event names live in src/lib/funnel-event-catalog.ts, which the db-worker
 // builds its ingest allowlist from — so a name cannot exist on one side only.
 
+import type { StoreId } from '@/components/shared/StoreChips'
 import { AD_CONVERSIONS } from '@/lib/consent'
 import { createFunnel } from '@/lib/funnel'
 import type { OnboardingFunnelEvent } from '@/lib/funnel-event-catalog'
@@ -50,4 +51,13 @@ export const BEAT_EVENT: Record<string, OnboardingEvent> = {
   map: 'onboarding_map',
   keep: 'onboarding_keep',
   prints: 'onboarding_prints',
+}
+
+/**
+ * The Map's store chips, one event per store. Not an Ads conversion: keep
+ * them out of `adConversions` above.
+ */
+export const MAP_STORE_EVENT: Record<StoreId, OnboardingEvent> = {
+  'app-store': 'onboarding_map_app_store_tap',
+  'google-play': 'onboarding_map_google_play_tap',
 }
