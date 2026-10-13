@@ -29,10 +29,14 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
 vi.mock('@/db/services/auth-service', () => ({
   hasValidToken: () => true,
   hasUpgradedAccount: () => true,
+  storedTokenProvider: () => 'password',
+  isRegisteredProvider: () => true,
+  currentAccountId: () => state.userId,
 }))
 vi.mock('@/db/services/user-service', () => ({
   authVersion: () => 0,
   getUserId: () => state.userId,
+  getAuthToken: () => state.userId,
   getDeviceId: () => 'device-1',
 }))
 vi.mock('@/db', () => ({

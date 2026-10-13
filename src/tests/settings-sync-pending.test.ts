@@ -34,11 +34,17 @@ vi.mock('@/lib/defaults', async (importOriginal) => ({
 }))
 vi.mock('@/db/services/auth-service', () => ({
   hasValidToken: () => state.authed,
+  storedTokenProvider: () =>
+    state.upgraded ? 'password' : state.authed ? 'anonymous' : null,
+  isRegisteredProvider: (provider: string | null) =>
+    provider !== null && provider !== 'anonymous',
+  currentAccountId: () => (state.upgraded ? state.userId : null),
   hasUpgradedAccount: () => state.authed && state.upgraded,
 }))
 vi.mock('@/db/services/user-service', () => ({
   authVersion: () => 0,
   getUserId: () => state.userId,
+  getAuthToken: () => (state.authed ? state.userId : null),
   getDeviceId: () => 'device-1',
 }))
 vi.mock('@/db', () => ({

@@ -8,8 +8,17 @@ import { createSignal, untrack } from 'solid-js'
 // push cloud values back into live signals on sign-in.
 
 type PersistedWriteListener = (key: string, serialized: string) => void
+type BeforePersistedWriteListener = (key: string) => boolean
 
 let persistedWriteListener: PersistedWriteListener | null = null
+let beforePersistedWriteListener: BeforePersistedWriteListener | null = null
+
+/** Reconcile account state before a local update; false rejects a stale action. */
+export function onBeforePersistedWrite(
+  listener: BeforePersistedWriteListener | null,
+): void {
+  beforePersistedWriteListener = listener
+}
 
 /** Observe every persisted-signal write (key + serialized value). */
 export function onPersistedWrite(
@@ -24,13 +33,20 @@ const persistedSetters = new Map<string, (serialized: string) => void>()
 /**
  * Apply an externally-sourced (cloud) value: updates localStorage and,
  * when the signal is alive, the signal itself. Does NOT notify the
- * write listener (no echo back to the cloud).
+ * write listener (no echo back to the cloud). A view-only update can hide
+ * another account's value when its durable ownership transition fails.
  */
-export function applyPersistedValue(key: string, serialized: string): void {
-  try {
-    localStorage.setItem(key, serialized)
-  } catch (e) {
-    console.warn(`[storage] Failed to apply key "${key}":`, e)
+export function applyPersistedValue(
+  key: string,
+  serialized: string,
+  options?: { persist?: boolean },
+): void {
+  if (options?.persist !== false) {
+    try {
+      localStorage.setItem(key, serialized)
+    } catch (e) {
+      console.warn(`[storage] Failed to apply key "${key}":`, e)
+    }
   }
   persistedSetters.get(key)?.(serialized)
 }
@@ -88,6 +104,15 @@ export function createPersistedSignal<T>(
   })
 
   const setValuePersisted = ((newValue: Parameters<Setter<T>>[0]) => {
+    // Another tab may have switched accounts since this action read its
+    // inputs. Reconcile first, before even evaluating a functional update.
+    // A rejected absolute value cannot safely be reassigned to the new owner.
+    // Both hooks are tested against null before untrack: a build without the
+    // settings sync then drops the calls whole, and with them the bytes that
+    // Drum Night's first-paint budget counts (assert-drum-night-bundle.mjs).
+    const before = beforePersistedWriteListener
+    if (before !== null && untrack(() => before(key)) === false)
+      return untrack(value)
     // Match native setter semantics: the previous value is read untracked.
     // Without this, a functional update called inside an effect subscribes
     // that effect to its own write — an unbounded reactive loop.
@@ -104,7 +129,8 @@ export function createPersistedSignal<T>(
     } catch (e) {
       console.warn(`[createPersistedSignal] Failed to save key "${key}":`, e)
     }
-    persistedWriteListener?.(key, serialized)
+    const after = persistedWriteListener
+    if (after !== null) untrack(() => after(key, serialized))
 
     return nextValue
   }) as Setter<T>
