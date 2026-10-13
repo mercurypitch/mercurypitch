@@ -12,6 +12,12 @@ describe('premium rooms', () => {
     expect(isPremiumRoom('long-note')).toBe(true)
   })
 
+  it('draws Echo full-bleed too, held upright on a phone', () => {
+    expect(PREMIUM_ROOM_SCREENS.echo).toEqual({ fullBleed: true })
+    expect(isFullBleed('echo')).toBe(true)
+    expect(isPremiumRoom('echo')).toBe(true)
+  })
+
   it('leaves every other screen under the opaque bar, free to turn', () => {
     for (const screen of ['settings', 'karaoke', 'developer'] as const) {
       expect(isFullBleed(screen)).toBe(false)

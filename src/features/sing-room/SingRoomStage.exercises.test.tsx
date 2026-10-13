@@ -222,7 +222,12 @@ describe('at rest', () => {
   it('opens the picker from the lone "Exercises" pill, and a pick opens the exercise once', async () => {
     const room = mountRoom()
     fireEvent.click(await screen.findByTestId('sing-exercise-browse'))
-    fireEvent.click(await screen.findByTestId('sing-exercise-card'))
+    const cards = await screen.findAllByTestId('sing-exercise-card')
+    expect(cards.map((card) => card.getAttribute('data-exercise'))).toEqual([
+      'long-note-lantern',
+      'echo-stars',
+    ])
+    fireEvent.click(cards[0])
 
     expect(room.openExercise.mock.calls).toEqual([['long-note-lantern']])
     expect(pickerOpen()).toBe(false)

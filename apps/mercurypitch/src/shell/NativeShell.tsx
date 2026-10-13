@@ -91,6 +91,15 @@ const LongNoteScreen: Component = PREMIUM_EXERCISES
     )
   : () => null
 
+/** The Echo exercise: the same ternary as Long note's, for the same reason. */
+const EchoScreen: Component = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('./EchoScreen').then((module) => ({
+        default: module.EchoScreen,
+      })),
+    )
+  : () => null
+
 export const NativeShell: Component = () => {
   const [minimised, setMinimised] = createSignal(false)
 
@@ -350,6 +359,7 @@ export const NativeShell: Component = () => {
           <ShellScreens
             developer={DEVELOPER_AVAILABLE ? DeveloperScreen : undefined}
             longNote={PREMIUM_EXERCISES ? LongNoteScreen : undefined}
+            echo={PREMIUM_EXERCISES ? EchoScreen : undefined}
           />
 
           {/* Inside the root, not beside it: the sheet copies the custom

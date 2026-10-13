@@ -48,11 +48,15 @@ const CloseGlyph: Component = () => (
   </svg>
 )
 
-/** "Best 9.4 s on A3", or null with no best on a remembered note. */
+/**
+ * "Best 9.4 s on A3" for a best on a note, "Best 18 of 20" for a best at
+ * the card's level; null with no best (or no note to have it on).
+ */
 function bestLine(exercise: PremiumExercise): string | null {
   const best = exercise.progress()
+  if (best === null || !exercise.bestOnNote) return best
   const note = exercise.note()
-  return best === null || note === null ? null : `${best} on ${note}`
+  return note === null ? null : `${best} on ${note}`
 }
 
 const Card: Component<{

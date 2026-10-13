@@ -3,10 +3,10 @@
 // ============================================================
 //
 // A card's third line reads stored signals (the demo flag, the note Long
-// note opens on, its best there), each read once per module graph. Every
-// case seeds storage and loads the picker fresh.
+// note opens on, its best there, Echo's best at the level), each read once
+// per module graph. Every case seeds storage and loads the picker fresh.
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 
@@ -19,6 +19,8 @@ interface Seed {
   demoSeen?: boolean
   /** The level every premium exercise is at. */
   level?: ExerciseLevel
+  /** Echo's best at the Singer level: notes landed of notes asked. */
+  echoBest?: readonly [number, number]
 }
 
 beforeEach(() => {
@@ -54,6 +56,13 @@ async function openPicker(seed: Seed = {}) {
       JSON.stringify(seed.demoSeen),
     )
   }
+  if (seed.echoBest !== undefined) {
+    const [landed, notes] = seed.echoBest
+    localStorage.setItem(
+      'pitchperfect_echo_stars_bests',
+      JSON.stringify({ singer: { landed, notes, accuracy: 80, at: 1 } }),
+    )
+  }
   if (seed.level !== undefined) {
     const { setExerciseLevel } = await import('@/stores/exercise-level')
     setExerciseLevel(seed.level)
@@ -69,11 +78,20 @@ async function openPicker(seed: Seed = {}) {
 
 const cards = (): HTMLElement[] => screen.getAllByTestId('sing-exercise-card')
 
-const meta = (): string | null =>
-  screen.queryByTestId('sing-exercise-meta')?.textContent ?? null
+const card = (id: string): HTMLElement => {
+  const found = cards().find((one) => one.dataset.exercise === id)
+  if (found === undefined) throw new Error(`no card for ${id}`)
+  return found
+}
 
-const level = (): string | null =>
-  screen.queryByTestId('sing-exercise-level')?.textContent ?? null
+const meta = (id = 'long-note-lantern'): string | null =>
+  within(card(id)).queryByTestId('sing-exercise-meta')?.textContent ?? null
+
+const levels = (): (string | null)[] =>
+  cards().map(
+    (one) =>
+      within(one).queryByTestId('sing-exercise-level')?.textContent ?? null,
+  )
 
 describe('the cards', () => {
   it('lists one card per catalogue entry, in catalogue order', async () => {
@@ -87,8 +105,11 @@ describe('the cards', () => {
   it('names the exercise and says what it is', async () => {
     await openPicker({ demoSeen: true })
 
-    expect(cards()[0]?.textContent).toBe(
+    expect(card('long-note-lantern').textContent).toBe(
       'Long noteSingerHold one note and fill the lantern with light.',
+    )
+    expect(card('echo-stars').textContent).toBe(
+      'EchoSingerMerc sings a phrase. Sing it back and light the stars.',
     )
   })
 
@@ -128,19 +149,31 @@ describe("a card's third line", () => {
 
     expect(meta()).toBeNull()
   })
+
+  it("gives Echo's best at the card's level, with no note: it belongs to the level", async () => {
+    await openPicker({ echoBest: [18, 20] })
+
+    expect(meta('echo-stars')).toBe('Best 18 of 20')
+  })
+
+  it('is left out for Echo before its first best: its demo does not play by itself yet', async () => {
+    await openPicker()
+
+    expect(meta('echo-stars')).toBeNull()
+  })
 })
 
 describe("a card's level", () => {
   it('names the level the exercises are at: Singer, the accuracy tier it starts at', async () => {
     await openPicker()
 
-    expect(level()).toBe('Singer')
+    expect(levels()).toEqual(['Singer', 'Singer'])
   })
 
   it('names the level the singer picked', async () => {
     await openPicker({ level: 'professional' })
 
-    expect(level()).toBe('Professional')
+    expect(levels()).toEqual(['Professional', 'Professional'])
   })
 })
 
@@ -148,7 +181,17 @@ describe('the last exercise opened', () => {
   it('is marked current, where it already was', async () => {
     await openPicker({ last: 'long-note-lantern' })
 
-    expect(cards().map((card) => card.getAttribute('aria-current'))).toEqual([
+    expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      'true',
+      null,
+    ])
+  })
+
+  it('marks Echo when it was the last one opened', async () => {
+    await openPicker({ last: 'echo-stars' })
+
+    expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
       'true',
     ])
   })
@@ -156,7 +199,8 @@ describe('the last exercise opened', () => {
   it('marks nothing before the first open', async () => {
     await openPicker()
 
-    expect(cards().map((card) => card.getAttribute('aria-current'))).toEqual([
+    expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
       null,
     ])
   })
@@ -169,6 +213,14 @@ describe('taps', () => {
     fireEvent.click(cards()[0] as HTMLElement)
 
     expect(calls).toEqual(['close', 'pick long-note-lantern'])
+  })
+
+  it("hands the room Echo's id for its card", async () => {
+    const { calls } = await openPicker()
+
+    fireEvent.click(card('echo-stars'))
+
+    expect(calls).toEqual(['close', 'pick echo-stars'])
   })
 
   it('closes on the X and opens nothing', async () => {

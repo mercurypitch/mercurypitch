@@ -47,6 +47,8 @@ export interface ShellScreensProps {
    * behind `PREMIUM_EXERCISES`, so a store build carries no chunk for it.
    */
   longNote?: Component
+  /** The Echo exercise, passed in as Long note is, for the same reason. */
+  echo?: Component
 }
 
 const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
@@ -63,6 +65,7 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   karaoke: 'Karaoke',
   'karaoke-studio': 'Karaoke studio',
   'long-note': 'Long note',
+  echo: 'Echo',
   developer: 'Developer',
 }
 
@@ -103,6 +106,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
       case 'long-note': {
         const LongNote = props.longNote
         return LongNote === undefined ? null : <LongNote />
+      }
+      case 'echo': {
+        const Echo = props.echo
+        return Echo === undefined ? null : <Echo />
       }
       case 'developer': {
         const Developer = props.developer
