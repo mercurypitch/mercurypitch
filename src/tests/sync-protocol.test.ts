@@ -25,22 +25,25 @@ import { getDb } from '@/db'
 import type { UvrStemBlob } from '@/db/entities'
 import { saveLyricsToDbStrict } from '@/db/services/lyrics-db-service'
 import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
-import { saveStemBlobDurable, sessionStemPresence, } from '@/db/services/uvr-service'
+import { buildSessionZip, importSessionsFromZip, } from '@/db/services/session-export-service'
+import { getStemBlob, saveStemBlobDurable, sessionStemPresence, } from '@/db/services/uvr-service'
 import type { SendChannel } from '@/lib/jam/jam-song-transfer'
 import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { SyncWireMessage } from '@/lib/sync/sync-protocol'
 import { isSyncWireMessage, PART_STALL_MS, receiveBundleOverWire, sendBundleOverWire, SENDER_SILENCE_MS, } from '@/lib/sync/sync-protocol'
 import type { UvrSession } from '@/stores/uvr-store'
-import { deleteAllUvrSessions, getUvrSessionByHash, saveAllUvrSessions, } from '@/stores/uvr-store'
+import { deleteAllUvrSessions, getAllUvrSessions, getUvrSession, getUvrSessionByHash, saveAllUvrSessions, } from '@/stores/uvr-store'
 
 vi.mock('@/lib/portable/portable-audio', async (importOriginal) => {
   const actual = await importOriginal<typeof PortableAudio>()
   return {
     ...actual,
     encodeStemToAac: vi.fn(
-      (_wav: ArrayBuffer, opts?: { tier?: string }): Promise<Uint8Array> =>
+      (wav: ArrayBuffer, opts?: { tier?: string }): Promise<Uint8Array> =>
         Promise.resolve(
-          new TextEncoder().encode(`aac:${opts?.tier ?? 'default'}`),
+          new TextEncoder().encode(
+            `aac:${opts?.tier ?? 'default'}:${new TextDecoder().decode(wav)}`,
+          ),
         ),
     ),
   }
@@ -217,6 +220,49 @@ describe('sync protocol over a wire', () => {
     } finally {
       URL.createObjectURL = realCreate
     }
+  })
+
+  it('exports a received song and restores both stems from its ZIP', async () => {
+    const { sender, receiver } = await crossTheWire(makeWire())
+    expect(await sender.result).toEqual({ outcome: 'sent' })
+    expect((await receiver.result).outcome).toBe('imported')
+
+    const arrived = getUvrSessionByHash(HASH)!
+    // The real receive path omits the original audio and its MIME metadata.
+    expect(arrived.originalFile).toEqual({
+      name: 'Wires.mp3',
+      size: 0,
+      mimeType: '',
+    })
+    const before = new Set(getAllUvrSessions().map((song) => song.sessionId))
+    const archive = await buildSessionZip(arrived.sessionId, undefined, [
+      'vocal',
+      'instrumental',
+    ])
+    expect(await importSessionsFromZip(archive)).toBe(1)
+    const imported = getAllUvrSessions().filter(
+      (song) => !before.has(song.sessionId),
+    )
+    expect(imported).toHaveLength(1)
+    expect(imported[0].originalFile).toEqual({
+      ...arrived.originalFile,
+      mimeType: 'application/octet-stream',
+    })
+    const receivedBytes: Uint8Array[] = []
+    for (const stem of ['vocal', 'instrumental'] as const) {
+      const received = await getStemBlob(arrived.sessionId, stem)
+      const restored = await getStemBlob(imported[0].sessionId, stem)
+      expect(received).not.toBeNull()
+      expect(restored).not.toBeNull()
+      expect(restored!.size).toBeGreaterThan(0)
+      expect(restored!.type).toBe(received!.type)
+      receivedBytes.push(new Uint8Array(await received!.arrayBuffer()))
+      expect(new Uint8Array(await restored!.arrayBuffer())).toEqual(
+        receivedBytes.at(-1),
+      )
+    }
+    expect(receivedBytes[0]).not.toEqual(receivedBytes[1])
+    expect(getUvrSession(arrived.sessionId)?.originalFile?.mimeType).toBe('')
   })
 
   it('declines a song the receiving device already has, moving no audio', async () => {
