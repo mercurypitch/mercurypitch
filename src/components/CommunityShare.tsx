@@ -527,12 +527,6 @@ export const CommunityShare: Component = () => {
   })
 
   /**
-   * Runs a singer could share: every finished attempt, whatever produced
-   * it. The picker used to read the local session-mode history, so
-   * exercises and challenges were unshareable and a singer who only did
-   * those saw an empty picker forever.
-   */
-  /**
    * Whether a card is this singer's own: the only card that may offer
    * Unpublish. The board lists everyone's shares, and every card used to
    * offer it. Pressed on somebody else's, it took the card off this screen
@@ -602,6 +596,12 @@ export const CommunityShare: Component = () => {
     setUnpublishing(null)
   }
 
+  /**
+   * Runs a singer could share: every finished attempt, whatever produced
+   * it. The picker used to read the local session-mode history, so
+   * exercises and challenges were unshareable and a singer who only did
+   * those saw an empty picker forever.
+   */
   const [runRecords] = createResource(
     () => [authVersion(), sessionRecordVersion()] as const,
     async () => await loadSessionRecords(50),
