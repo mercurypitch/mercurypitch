@@ -69,9 +69,9 @@ export const ZEN_EXERCISES: readonly ZenExerciseDefinition[] = [
     countInBeats: 2,
     loopBeats: 8,
     defaultRootMidi: 60,
+    // A fresh "gee" on every note (owner, 13 Oct 2026), so every note shows it.
     targets: noteTargets([0, 2, 4, 2, 0, 2, 4, 2, 0], ['Gee'], {
       beatsPerNote: 0.5,
-      cueEveryNote: false,
     }),
     defaultTargetVisibility: 'on',
     defaultProgressCue: 'playhead',

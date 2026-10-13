@@ -411,3 +411,15 @@ describe('scoreZenRun steadiness with stray frames', () => {
     expect(scoreZenRun(take(cents), targets, exercise.scoring)).toEqual(score)
   })
 })
+
+describe('the catalogue cues', () => {
+  // Owner, 13 Oct 2026: Three-Note Run is sung with a fresh "gee" on every
+  // note, so every note shows it.
+  it('shows "Gee" on every note of Three-Note Run', () => {
+    const targets = getZenExercise('three-note-run')!.targets
+    expect(targets).toHaveLength(9)
+    expect(targets.map((target) => [target.cue, target.showCue])).toEqual(
+      targets.map(() => ['Gee', true]),
+    )
+  })
+})
