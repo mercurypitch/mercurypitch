@@ -300,19 +300,19 @@ export async function claimTotpStep(
 }
 
 /** Record the enrollment proof's anti-replay high-water mark. Only raises it, so an
- *  out-of-order write cannot lower it and re-admit a spent code. Returns false
- *  when the step was already spent (a concurrent request claimed it first). */
+ *  out-of-order write cannot lower it and re-admit a spent code. Says nothing
+ *  about who spent the step: a double-submitted enrollment is not refused here
+ *  (login proofs go through claimTotpStep, which is). */
 export async function markTotpStepUsed(
   env: TwofaEnv,
   userId: string,
   step: number,
-): Promise<boolean> {
-  const res = await env.DB.prepare(
+): Promise<void> {
+  await env.DB.prepare(
     `UPDATE totpCredentials
         SET lastUsedStep = ?
       WHERE userId = ? AND (lastUsedStep IS NULL OR lastUsedStep < ?)`,
   )
     .bind(step, userId, step)
     .run()
-  return (res.meta.changes ?? 0) > 0
 }
