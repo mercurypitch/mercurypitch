@@ -94,6 +94,29 @@ account after your results, and the sign-in sheet fits on a phone.
 - **Center is spelled the American way** in Drum Night, the Guitar Night
   tuner, the exercises, the Pitch Center check and Voice History. Takes you
   already kept from the Pitch Center check show the new spelling too.
+- **Staying signed in lasts past the first month.** A device you keep using
+  no longer signs you out about a month after you signed in.
+- **Your supporter badge matches a new donation** once your earlier one has
+  run out.
+- **Unpublish appears only on your own shares.** The Community board lists
+  everyone's melodies and setlists, and its Sessions note no longer calls
+  them yours.
+- **Sharing and unpublishing wait for the Community board.** If the board
+  can't take a share or remove one, Community says so and you can try again.
+  Your profile counts everything you've published, and nothing anyone else
+  has.
+- **Karaoke's example songs stay in your library.** They no longer vanish on
+  every other reload, and their cards no longer show a 2020 creation date.
+- **The leaderboard fits on a phone.** It shows rank, singer and score, plus
+  streak, sessions or best when the board is ranked by it. A singer's card
+  has the rest.
+- **Light theme fixes.** Empty checkboxes no longer look ticked, the Karaoke
+  view tabs have outlines, a playlist's singer credit is readable, and the
+  Community header drops its dark backdrop.
+- **Times no longer read 2:60.** Song lengths, take lengths in Analysis,
+  rests in a session and voice "go to" replies round to the nearest second
+  before counting minutes. A "go to" past the end of a song says where it
+  went.
 
 ## [0.9.16] - 2026-10-09
 

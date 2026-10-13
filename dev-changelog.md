@@ -11,9 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-12
 
-335 commits since `v0.9.16` (30 on `main`'s first-parent line, every one a PR
-merge) before this release PR, #974: PRs #957 to #962, #964 to #973, #975 to
-#979 and #981 to #989.
+366 commits since `v0.9.16` before this release PR, #974: PRs #898, #947, #957
+to #962, #964 to #973, #975 to #979 and #981 to #991. Every commit came through
+a PR; none reached `main` without one. Of the 56 on `main`'s first-parent line,
+31 are PR merge commits and 25 are the commits #947 (5), #898 (15) and #991 (5)
+rebased onto `main` instead of merging.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
 compliance work that has to ship with it: the 14-day withdrawal for credit
@@ -21,9 +23,12 @@ packs, refunds and disputes applied exactly once, consent that waits for a yes
 in the EEA, retention sweeps, and the legal links. It also brings the
 voiceprint-first intro (#977, polished in #981), the compact sign-in sheet
 (#979) and the Voice Mirror's account offer and start screen (#978, #983),
-so the launch traffic meets all of them. The native apps keep their own
-versions and tags; what reaches them is listed under `native-mercurypitch`
-and `native-besidecue`.
+so the launch traffic meets all of them. Fixes merged on 13 October ride
+along: sessions that stay signed in past their first month (#991), the
+Community and Karaoke fixes from the UI audit (#898) and time labels that no
+longer read 2:60 (#947). The native apps keep their own versions and tags;
+what reaches them is listed under `native-mercurypitch` and
+`native-besidecue`.
 
 ### Release steps (prod)
 
@@ -587,9 +592,112 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
   title it is shown; nothing matches on that field.
 - Other British spellings remain ("analysed", "analyse", "theatre").
 
-### Premium exercises, native test builds only: Long note's levels and Echo's engine (#985, #988)
+### API: sessions past their first month, supporter levels and a refund of nothing (#991)
 
-Neither reaches the web. `PREMIUM_EXERCISES` is `KARAOKE_IMPORT`, which is
+- **Sessions.** The six-hourly cron's `sweepExpiredSessions` deleted
+  `authSessions` rows by `createdAt`, and `/refresh` carries the same `sid`
+  forward without touching it, so every session was swept about 31 days after
+  its sign-in (the 30-day token plus a day of grace), however fresh its token,
+  and `getAuth` refused the next request. The sweep has done this since
+  `v0.9.2` (275f44a98). It now ages rows by `lastSeenAt`, indexed since 0038.
+  `sessionRenewable`, a read, became `renewSession`, an `UPDATE` of
+  `lastSeenAt` guarded by the owner and the 180-day cap
+  (`SESSION_MAX_AGE_DAYS`), and `/refresh` mints a token only once it has
+  changed a row. A failed write answers 500 with no token and the old token
+  keeps working; a session signed out between the check and the write is not
+  recreated. `getAuth`'s throttled `touchSession` stays best effort. The
+  integration tests run the real SQL with the SQL and JWT clocks moved
+  together.
+- **Supporter levels.** `grantSupporterEntitlement` passed the old grant's
+  level to `bestSupporterLevel` even after that grant had run out, so EUR 5
+  given months after a lapsed EUR 59 grant still wore Anthem. The old level
+  now counts only while its grant runs (`expiresAt` null or in the future), as
+  `extendSupporterExpiry` already treats its days.
+- **A PaymentIntent that received nothing.** `priceOf`
+  (`withdrawal-refund.ts`) read `amount_received: 0` as a price of EUR 0, so a
+  withdrawal priced from Stripe refunded nothing and the owner was never told.
+  Zero or less is now no price on record, and the owner refunds by hand, as
+  the file's header already said.
+- No migration, secret or config change. It ships with the worker in step 4.
+
+### Web: Community, Karaoke's examples, the leaderboard and the light theme (#898)
+
+- **Unpublish on your own shares only.** Board rows carry `userId`
+  (`SharedMelodyView`, `SharedSessionView`), and a card offers Unpublish only
+  when `isOwnShare` holds: the board says `getUserId()` published it, or it is
+  in this browser's own list (`pp_shared_melodies`, `pp_shared_sessions`).
+  Every card used to offer it. On someone else's, the card left the screen
+  while the worker refused the delete (`canWriteRow`), and it came back on the
+  next load.
+- **Publishing and unpublishing are awaited.** `saveSharedMelody` and
+  `saveSharedSession` finish before the local list changes, and the local
+  copy keeps the board's id and owner. A failed publish says "Could not
+  publish this melody. Try sharing it again." (or "this run"). Unpublish
+  deletes on the server first and says "Could not unpublish this share. Try
+  again." when it cannot. Each write re-checks the identity (`getUserId`,
+  `authVersion`) it captured before its await, and the buttons disable while
+  one is in flight. The confirm dialog reads "Remove "…" from your shelf and,
+  if published, the Community board.", then "Existing melody links still
+  work." for a melody.
+- **Published counts.** `loadPublishedShareCounts` counts the owner's public
+  rows (`GET /api/sharedMelodies/count?where[userId]=…&where[isPublic]=true`,
+  and the same for `sharedSessions`) instead of the merged board, which held
+  everyone's shares and stopped at its newest 100. `usePublishedShareCounts`
+  keeps an account's last good totals and says "Could not update your
+  published totals. Reopen Community to retry." when a read fails. The
+  `/count` route predates `v0.9.16`, so there is no deploy order;
+  `community-publication-counts-integration.test.ts` holds it past the
+  100-row page.
+- **Board rows.** `parseMelodyItems` validates current `MelodyItem`s and
+  converts the legacy `{ midi, startBeat, duration, freq }` shape. A malformed
+  row is skipped instead of emptying the board, and a melody is validated
+  before it is published.
+- **Copy.** The Sessions note reads "These are setlists the community has
+  published for anyone to sing."
+- **Karaoke's examples.** `src/lib/example-session.ts` is the one definition
+  of an example (`DEMO_SESSION_ID`, `demoSessionId`, `isDemoSessionId`,
+  `EXAMPLE_PROVIDER`, `isExampleSession`), re-exported where the old ones
+  lived. `pruneOrphanedCompletedSessions` skips examples: their stems stream
+  from R2 and never sit in `uvrStemBlobs`, so the boot prune deleted the row
+  on one load and the seed put it back on the next. Rows load without their
+  runtime URLs, so `seedExamplesLibrary` gives a kept web example its stems
+  again (`restoreWebExampleOutputs`, `restoreUvrSessionOutputs`). A stem the
+  visitor replaced wins, and a row that a delete or an edit changed during
+  the await is left alone. The card drops "Created", which printed the
+  seeder's 1 Jan 2020 sort key.
+- **Light theme.** `.community-share-tab::before` is hidden (the header's
+  subtitle measured 1.3:1 on it). `MercuryCheckbox`'s empty `.box` takes
+  `--bg-primary` and `--border-strong`, since it read as ticked. A playlist's
+  `.singers` credit takes `--status-warning-fg` (1.3:1 before), and the
+  `.view-tab` outlines take `--border-strong`, `--purple` and `--green`.
+- **The leaderboard on a phone.** Under 480 px the table (`data-category`)
+  keeps rank, player, score and the column the board is ranked by (streak,
+  sessions or best), drops the fixed column widths, and lets long names wrap.
+- **Found, not changed.** A melody or setlist published from this browser
+  stays on its shelf after its board row is gone (unpublished on another
+  device, say), and cannot be removed there: the worker answers the delete
+  with 404, `unpublishShared` returns false, and every try says "Could not
+  unpublish this share. Try again." Before #898 the card left the shelf
+  whatever the server said.
+
+### Web: time labels that round before they split (#947)
+
+- `src/lib/format-time.ts` gains `roundedMinutesSeconds` (round the whole
+  seconds, then split off the minutes), `formatSeekTarget` and
+  `formatRestDuration`. Rounding after the split is how 179.5 s read "2:60".
+  They serve song lengths (`UvrLibraryElsewhere`, `jam-catalog.ts`),
+  Analysis's take span (`TakeTrace`), session rests (`SessionEditorTimeline`,
+  `SessionMiniTimeline`; the editor showed 500 ms as "5s" and could show "1m
+  60s") and the voice "go to" replies (`transport-commands.ts`,
+  `stem-mixer-voice-commands.ts`). Those now name the clamped target, so a "go
+  to" past the end of a 3-minute song answers "Go to 3:00". `formatClock`,
+  for running clocks, still truncates.
+- `format-time.test.ts` and `jam-catalog.test.ts` moved beside their modules,
+  and the format test sweeps 0 to 7,200 s in tenths of a second.
+
+### Premium exercises, native test builds only: Long note's levels, Echo's engine and the room kits (#985, #988, #990)
+
+None of them reaches the web. `PREMIUM_EXERCISES` is `KARAOKE_IMPORT`, which is
 true only in a native test build (`src/lib/native-build.ts`), and the web's
 Long note is the older `src/features/exercises/long-note`.
 
@@ -625,6 +733,18 @@ Long note is the older `src/features/exercises/long-note`.
   complete it, with 123 tests in nine files. `hold-target.ts` gains
   `latestVoiceprintRange`, split out of `pickHoldTarget` with no change in
   behavior. The room comes in a later PR.
+- **The room kits (#990)**, a refactor with no change in behavior, so the
+  next exercise room can share Long note's parts. `src/components/room-kit/`
+  takes the mic capture (`useExerciseCapture`, given its owner and room name),
+  the level pill (`LevelControl`, `createLevelPreset`), `RoomHeader`,
+  `RoomControls` and the small helpers: Merc's moves and his line selector,
+  the chip pacer, the screen kept awake, the focus hand-off and reduced
+  motion. `src/components/demo-kit/` takes the demo (`useExerciseDemo`,
+  `DemoLayer`, `DemoTakePill`, the plan, the sound, the seen flag and the
+  tip placement). Test ids, the `mp_long_note_demo_seen` key, the mic owner
+  and every timing are unchanged; the keyframes are renamed `mic-pulse` and
+  `mic-nudge` inside their CSS modules. `exercise-level.test.ts` now walks
+  both kits as well.
 
 ### native-mercurypitch
 
@@ -634,8 +754,9 @@ lines against the source lines Rollup kept. `mp-v0.8.18` (82bb04d32, the
 merge of #973) is the first tag whose bundle carries the changes marked with
 it, and `mp-v0.8.19` (85b78e48b, the merge of #985, TestFlight build 706) the
 ones marked with that. Nothing merged after #985 has a native tag yet, so
-the changes from #987, #988 and #989 arrive from the next native tag, as
-#974's does.
+the changes from #987 to #990, #898 and #947 arrive from the next native
+tag, as #974's does. #991 changed only the worker; the app sees it with
+this release's worker deploy, under the server changes below.
 
 **In the native code**
 
@@ -676,6 +797,12 @@ the changes from #987, #988 and #989 arrive from the next native tag, as
   Only `hold-target.ts` reaches the bundle: `latestVoiceprintRange`, split
   out of `pickHoldTarget` with no change in behavior. `src/lib/sequence` is
   in neither build, so there is nothing to look at.
+- **The room kits (#990, from the next native tag), test builds only.** Long
+  note runs on `src/components/room-kit` and `src/components/demo-kit`, with
+  no change in behavior, and the kits' CSS lands in the `LongNoteScreen`
+  chunk. The store build keeps none of it. Run Long note once end to end:
+  the demo, the level pill between takes, a take, leaving mid-hold, Back and
+  Done.
 - **"Center" (#989, from the next native tag), every build.** Both builds
   keep the changed strings of the guided voice check (the Pitch Center
   heading, results and notes), Voice History (its guidance, "Spectral
@@ -691,6 +818,29 @@ the changes from #987, #988 and #989 arrive from the next native tag, as
   two, and so does Karaoke's import box in a test build. Look at Terms and
   Privacy under Settings › About MercuryPitch and in the sign-in sheet: each
   should open its page with no redirect.
+- **The UI audit's fixes (#898, from the next native tag), every build.**
+  Both builds keep the changed lines of `CommunityShare`, `share-service.ts`
+  and `usePublishedShareCounts`, but neither the rail nor the More sheet
+  opens Community, so a tester can't reach them. The rest can be reached.
+  The leaderboard (Progress, then the league card's Open Leaderboard) keeps
+  rank, player, score and the ranked column under 480 px. In the Karaoke
+  studio (Karaoke, then Manage songs) an example's card has no "Created"
+  date, and the view tabs' outlines and a playlist's singer credit follow
+  the light theme. Both builds also carry the empty checkbox's light-theme
+  surface, and the boot prune (`pruneOrphanedCompletedSessions`) skips
+  examples in both. `restoreUvrSessionOutputs` is compiled in with no
+  caller: the app takes `seedExamplesLibrary`'s native branch, which seeds
+  from the bundle and then the server, and the web branch folds out. Look at
+  the leaderboard on a phone, the studio in both themes, and the example
+  songs after a few relaunches.
+- **Time labels (#947, from the next native tag), every build.**
+  `format-time.ts` and its callers are in both builds: song lengths in the
+  Karaoke studio's list of songs on your other devices
+  (`UvrLibraryElsewhere`) and in `jam-catalog.ts`, Analysis's take span
+  (`TakeTrace`), rests in the session editor and the voice "go to" replies.
+  Voice control has no place in the native chrome yet, so the replies are
+  compiled in but never heard. Look at the song lengths in the studio's list
+  of songs on your other devices: none should end in ":60".
 - **Not in the native app (#984, #986).** None of the lines #984 changed in
   `AuthModal.tsx` survive in either build, and its floating-label classes are
   not in the CSS: the app signs in through `SignInSheet`. The onboarding,
@@ -725,6 +875,12 @@ the changes from #987, #988 and #989 arrive from the next native tag, as
 **Server changes it sees** (with this release's worker deploy, whatever the
 native build)
 
+- **Sessions past their first month (#991).** The app renews its token
+  through the shared `/api/auth/refresh` (`auth-service.ts`), and the
+  six-hourly sweep now ages a session by its last use, not its sign-in. A
+  phone that keeps opening the app stays signed in past day 31. A session
+  unused for 31 days still ends, as does one at its 180-day cap. Every
+  installed build gets this with the worker.
 - **LAUNCH on confirmation (#961, #966).** `claimLaunchGift` has no platform
   check: a native sign-up that confirms its email, or a new Apple or Google
   account with a verified address, gets the featured code's credits
@@ -755,9 +911,9 @@ changed under `packages/glass-game`: four replay coaching lines
 (`RunnerSteeringControls.tsx`) and the runner's "Move to center" cue
 (`runner-hud.ts`). They arrive from the next Beside Cue tag; look at
 Glassworks' replay coaching and the runner's cues. The store build (games
-off) keeps none of them. No other file changed since `v0.9.16`, #973's
-`src/components/icons.tsx` included, has a line in either bundle, and no PR
-touched `apps/beside-cue`.
+off) keeps none of them. No other file changed since `v0.9.16` has a line
+in either bundle, #973's `src/components/icons.tsx` and every file of #898,
+#947, #990 and #991 included, and no PR touched `apps/beside-cue`.
 
 ### Tests: the Jam lyric-row spec (#982)
 
