@@ -1,94 +1,93 @@
 /* ---- Store chips (StoreChips.tsx) -----------------------------------
-   The native app, named under a result. The chip is a tinted text pill,
-   not a look-alike of the black store badges: no logo, no store icon, the
-   words only. A live store swaps its chip for the official badge, sized to
-   one visible height.
+   The about site's chip (about.mercurypitch.com, StoreBadges.astro), so
+   the app and the site name the stores the same way: our own handset
+   glyph and two lines, "Coming soon" over the store's name, on a dark
+   glass pill. No store logo and no store icon. A live store swaps its
+   chip for the official badge, drawn at the chip's height.
 
-   The component is mounted on more than one surface (the Voice Mirror and
-   First Light's Map), so its look is set through custom properties rather
-   than overridden by selector. The fallbacks are the Mirror's own tokens;
-   a surface sets the properties on the class it passes in, and no rule
-   here competes with it on specificity or load order. */
+   Mounted on the Voice Mirror's results and on First Light's Map. Both
+   are dark surfaces, so the look is the same on each; a surface sets only
+   its margin, through the custom property on the class it passes in. The
+   store name takes the surface's own face. */
 
 .root {
+  --chip-height: 50px;
   margin: var(--store-chips-margin, 26px auto 0);
-  max-width: var(--store-chips-width, 44ch);
 }
 
-.caption {
-  margin: 0 0 12px;
-  color: var(--store-chips-dim, var(--mirror-dim));
-  font-size: var(--store-chips-caption-size, 0.86rem);
-  line-height: 1.5;
-}
-
-/* 10px between pills and badges: Apple's minimum clear space round its
-   badge is a quarter of the badge's height, and the badge is 40px tall. */
+/* 14px between chips and badges: Apple's minimum clear space round its
+   badge is a quarter of the badge's height, 12.5px at 50px. */
 .row {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .chip {
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-width: 9.5rem;
-  min-height: 42px;
-  padding: 4px 18px;
-  border-radius: 999px;
-  border: 1px solid
-    color-mix(in srgb, var(--store-chips-accent, #8fa3ff) 55%, transparent);
-  background: color-mix(
-    in srgb,
-    var(--store-chips-accent, #8fa3ff) 14%,
-    transparent
-  );
-  color: var(--store-chips-ink, var(--mirror-text));
+  gap: 11px;
+  height: var(--chip-height);
+  padding: 0 18px 0 14px;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  background: rgba(22, 27, 34, 0.72);
+  color: #e6edf3;
   text-decoration: none;
-  line-height: 1.2;
   transition:
-    transform 0.15s ease,
-    border-color 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.chipSoon {
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--store-chips-dim, var(--mirror-dim));
-}
-
-.chipName {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--store-chips-ink, var(--mirror-text));
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .chip:hover {
+  border-color: rgba(88, 166, 255, 0.45);
+  background: #21262d;
+  color: #e6edf3;
   transform: translateY(-1px);
-  border-color: var(--store-chips-accent, #8fa3ff);
-  background: color-mix(
-    in srgb,
-    var(--store-chips-accent, #8fa3ff) 22%,
-    transparent
-  );
 }
 
 .chip:focus-visible,
 .badge:focus-visible {
-  outline: 2px solid var(--store-chips-focus, var(--mirror-gold));
+  outline: 2px solid #58a6ff;
   outline-offset: 3px;
 }
 
+.chipIcon {
+  display: inline-flex;
+  flex: none;
+  color: #75cfc4;
+}
+
+.chipText {
+  display: grid;
+  gap: 3px;
+  line-height: 1.1;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.chipSoon {
+  color: #75cfc4;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.chipName {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 .badge {
-  --badge-height: 40px;
   display: inline-flex;
   border-radius: 8px;
 }
@@ -96,14 +95,22 @@
 .badge img {
   display: block;
   width: auto;
-  height: var(--badge-height);
+  max-width: none;
+  height: var(--chip-height);
 }
 
 /* Google's PNG carries its own clear space: scale it up and pull the margin
-   in, so the visible badge matches Apple's height. */
+   in, so the visible badge matches the chip's height. */
 .badge[data-store='google-play'] img {
-  height: calc(var(--badge-height) * 250 / 168);
-  margin: calc(var(--badge-height) * -41 / 168);
+  height: calc(var(--chip-height) * 250 / 168);
+  margin: calc(var(--chip-height) * -41 / 168);
+}
+
+@media (max-width: 400px) {
+  .chip {
+    gap: 9px;
+    padding: 0 14px 0 11px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

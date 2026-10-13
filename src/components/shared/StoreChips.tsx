@@ -2,19 +2,21 @@
 // Store chips — the native app, named on the voiceprint result
 // ============================================================
 //
-// Two links under the result, one per store. While a store's listing is not
-// live (src/lib/store-listings.ts) its link is the Mirror's own text chip,
-// "Coming soon" over the store's name, and it opens the preview video, with a
-// caption that says what the video shows. Once the listing is live, the chip
+// Two links, one per store. While a store's listing is not live
+// (src/lib/store-listings.ts) its link is the about site's chip: our own
+// handset glyph and "Coming soon" over the store's name. It opens the
+// preview video, and its accessible name says so. No caption: the chips
+// carry the words (owner, 13 Oct 2026). Once the listing is live, the chip
 // is replaced by that store's official badge, unaltered, linked to the
 // listing.
 //
-// TEXT ONLY UNTIL LIVE, on purpose. Apple: "Don't use the standalone Apple
-// logo", "Use only the badge artwork provided", and its badge licence covers
-// apps "available for download on the App Store". Google: the Play icon
-// "should only be used within the context of the Google Play lockup", and
-// "Don't use the icon in marketing materials". So no logo, no icon, and
-// nothing that looks like the black official badges.
+// NO STORE ARTWORK UNTIL LIVE, on purpose. Apple: "Don't use the standalone
+// Apple logo", "Use only the badge artwork provided", and its badge licence
+// covers apps "available for download on the App Store". Google: the Play
+// icon "should only be used within the context of the Google Play lockup",
+// and "Don't use the icon in marketing materials". So no logo, no store
+// icon, and nothing that looks like the black official badges. The handset
+// is ours (Smartphone in icons.tsx), the same glyph the about site uses.
 //
 // WEB ONLY. Inside the native app the chips are pointless, and App Review
 // Guideline 2.3.10 bars names of other mobile platforms in an iOS app. The
@@ -27,11 +29,13 @@
 // Map, which is why it lives here and not in either feature. It names no
 // surface and counts nothing itself: the mount site passes `onChipClick` and
 // counts the click under its own event name, because the funnel stores an
-// event name and a client id and nothing else. Its look is set through custom
-// properties on the `class` a surface passes in (StoreChips.module.css).
+// event name and a client id and nothing else. A surface sets its margin
+// through a custom property on the `class` it passes in
+// (StoreChips.module.css); the look is the same everywhere.
 
 import type { Component } from 'solid-js'
-import { createUniqueId, For, Show } from 'solid-js'
+import { For, Show } from 'solid-js'
+import { Smartphone } from '@/components/icons'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { StoreListings } from '@/lib/store-listings'
 import { STORE_LISTINGS, STORE_PREVIEW_VIDEO_URL, storeLinks, } from '@/lib/store-listings'
@@ -57,33 +61,9 @@ export interface StoreChipsProps {
    * it under its own event name; the link opens either way.
    */
   onChipClick?: (store: StoreId) => void
-  /** The surface's class on the root, where it sets the custom properties
-   *  StoreChips.module.css reads (colours, margin, caption size). */
+  /** The surface's class on the root, where it sets the margin
+   *  StoreChips.module.css reads (`--store-chips-margin`). */
   class?: string
-}
-
-/** What people hold, for the caption: an iPhone, not an App Store. */
-const DEVICE: Record<StoreId, string> = {
-  'app-store': 'iPhone',
-  'google-play': 'Android',
-}
-
-/**
- * The caption over the coming-soon chips: the devices still waiting, the way
- * launches say it ("coming soon to iPhone and Android"), then what the chips
- * open meanwhile, which is the Android tablet video.
- */
-function comingSoonCaption(waiting: readonly Store[]): string {
-  const devices = waiting.map((s) => DEVICE[s.id]).join(' and ')
-  const buttons =
-    waiting.length > 1
-      ? 'both buttons play'
-      : `the ${waiting[0].name} button plays`
-  return (
-    `Coming soon to ${devices}. For now, ${buttons} a first look, filmed ` +
-    'on an Android tablet: leave the app mid-song and the karaoke keeps ' +
-    'playing, with the lyrics floating on top.'
-  )
 }
 
 const WebStoreChips: Component<StoreChipsProps> = (props) => {
@@ -114,59 +94,58 @@ const WebStoreChips: Component<StoreChipsProps> = (props) => {
       },
     ]
   }
-  const comingSoon = (): Store[] => stores().filter((s) => s.href === undefined)
-  const captionId = createUniqueId()
 
   return (
     <div class={`${styles.root} ${props.class ?? ''}`}>
-      <Show when={comingSoon().length > 0}>
-        <p class={styles.caption} id={captionId}>
-          {comingSoonCaption(comingSoon())}
-        </p>
-      </Show>
-      <div class={styles.row}>
+      <ul class={styles.row} aria-label="MercuryPitch phone apps">
         <For each={stores()}>
           {(store) => (
-            <Show
-              when={store.href}
-              fallback={
-                <a
-                  class={styles.chip}
-                  data-store={store.id}
-                  href={STORE_PREVIEW_VIDEO_URL}
-                  target="_blank"
-                  rel="noopener"
-                  aria-label={`Coming soon: ${store.name}. Opens a video of the app on YouTube, in a new tab.`}
-                  aria-describedby={captionId}
-                  onClick={() => props.onChipClick?.(store.id)}
-                >
-                  <span class={styles.chipSoon}>Coming soon</span>
-                  <span class={styles.chipName}>{store.name}</span>
-                </a>
-              }
-            >
-              {(href) => (
-                <a
-                  class={styles.badge}
-                  data-store={store.id}
-                  href={href()}
-                  target="_blank"
-                  rel="noopener"
-                  onClick={() => props.onChipClick?.(store.id)}
-                >
-                  <img
-                    src={store.badge.src}
-                    width={store.badge.width}
-                    height={store.badge.height}
-                    alt={store.badge.label}
-                    decoding="async"
-                  />
-                </a>
-              )}
-            </Show>
+            <li>
+              <Show
+                when={store.href}
+                fallback={
+                  <a
+                    class={styles.chip}
+                    data-store={store.id}
+                    href={STORE_PREVIEW_VIDEO_URL}
+                    target="_blank"
+                    rel="noopener"
+                    aria-label={`Coming soon: ${store.name}. Opens a video of the app on YouTube, in a new tab.`}
+                    onClick={() => props.onChipClick?.(store.id)}
+                  >
+                    <span class={styles.chipIcon}>
+                      <Smartphone size={22} />
+                    </span>
+                    <span class={styles.chipText}>
+                      <span class={styles.chipSoon}>Coming soon</span>
+                      <span class={styles.chipName}>{store.name}</span>
+                    </span>
+                  </a>
+                }
+              >
+                {(href) => (
+                  <a
+                    class={styles.badge}
+                    data-store={store.id}
+                    href={href()}
+                    target="_blank"
+                    rel="noopener"
+                    onClick={() => props.onChipClick?.(store.id)}
+                  >
+                    <img
+                      src={store.badge.src}
+                      width={store.badge.width}
+                      height={store.badge.height}
+                      alt={store.badge.label}
+                      decoding="async"
+                    />
+                  </a>
+                )}
+              </Show>
+            </li>
           )}
         </For>
-      </div>
+      </ul>
     </div>
   )
 }

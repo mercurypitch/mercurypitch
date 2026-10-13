@@ -47,19 +47,24 @@ describe('store chips on the voiceprint result', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
-  it('names the devices, then says the chips play the video meanwhile', () => {
+  it('lets the chips carry the words, as a named list with no caption', () => {
     render(() => <StoreChips listings={NOT_LIVE} />)
+    const list = screen.getByRole('list', { name: 'MercuryPitch phone apps' })
+    expect(list.querySelectorAll('li')).toHaveLength(2)
+    // The about site's chip: "Coming soon" over the store's name, and no
+    // sentence about devices or videos beside it (owner, 13 Oct 2026).
+    expect(screen.getAllByText('Coming soon')).toHaveLength(2)
     expect(
-      screen.getByText(/^Coming soon to iPhone and Android\./),
-    ).toHaveTextContent(
-      'Coming soon to iPhone and Android. For now, both buttons play a first look, filmed on an Android tablet: leave the app mid-song and the karaoke keeps playing, with the lyrics floating on top.',
-    )
+      screen.queryByText(/iPhone|Android|first look/),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('paragraph')).not.toBeInTheDocument()
   })
 
   it('renders nothing inside the native app', () => {
     build.native = true
     const { container } = render(() => <StoreChips listings={NOT_LIVE} />)
-    expect(container).toBeEmptyDOMElement()
+    // Not one node: the component is `() => null` in the native build.
+    expect(container.innerHTML).toBe('')
     expect(screen.queryByText(/google play/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/app store/i)).not.toBeInTheDocument()
   })
@@ -93,11 +98,7 @@ describe('store chips on the voiceprint result', () => {
     // The other store is still a chip pointing at the video.
     const chip = screen.getByRole('link', { name: /^Coming soon: Google Play/ })
     expect(chip).toHaveAttribute('href', STORE_PREVIEW_VIDEO_URL)
-    // And the caption names only what is still to come.
-    expect(screen.getByText(/^Coming soon to Android\./)).toHaveTextContent(
-      /^Coming soon to Android\. For now, the Google Play button plays a first look/,
-    )
-    expect(screen.queryByText(/iPhone/)).not.toBeInTheDocument()
+    expect(screen.getAllByText('Coming soon')).toHaveLength(1)
   })
 
   it('shows both badges, and no video caption, once both stores are live', () => {
