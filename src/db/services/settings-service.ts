@@ -362,8 +362,16 @@ export async function pullCloudSettings(): Promise<void> {
     // From here the device's copy belongs to this account, so the next
     // signer-in gets the account's own data instead of inheriting ours.
     // Only a real account may say that; see MERGE_OWNER_KEY.
+    // Not while a merge key still holds someone else's copy that the
+    // account had no row to replace: claiming it would make it "ours" and
+    // the backfill above would upload it on the very next pull.
+    const strangersLeft =
+      !mayMerge &&
+      Object.keys(MERGE_ON_PULL).some(
+        (key) => !cloudRowIds.has(key) && localStorage.getItem(key) !== null,
+      )
     if (hasUpgradedAccount()) {
-      if (me !== '') claimMergeOwner(me)
+      if (me !== '' && !strangersLeft) claimMergeOwner(me)
     } else if (owner !== null && owner === getDeviceId()) {
       // An older build claimed on every pull, so devices are out there
       // carrying their own id here — which would block the merge above
