@@ -17,6 +17,23 @@ const COVERAGE_BIN_SECONDS = 0.1
  */
 const LEVEL_STABILITY_RANGE_DB = 12
 
+/**
+ * How far a frame may sit from the rest of a take before steadiness may
+ * leave it out: half an octave from the take's median, in cents.
+ *
+ * A pitch tracker slips now and then, a frame an octave or a fifth from where
+ * the voice was. Two such frames in a held A3 used to set the spread on their
+ * own and take steadiness to nothing. No sung wobble, scoop or vibrato on a
+ * steady exercise comes near half an octave, so this leaves only the slips.
+ */
+const STRAY_FRAME_CENTS = 600
+
+/**
+ * The most of a take steadiness may leave out as slips. More frames than this
+ * that far off are the take itself, and every frame counts.
+ */
+const STRAY_FRAME_SHARE = 0.05
+
 /** What a block asks for. Absent means pitch, which is every v1 exercise. */
 export function targetKind(target: { kind?: ZenTargetKind }): ZenTargetKind {
   return target.kind ?? 'pitch'
@@ -126,6 +143,31 @@ function standardDeviation(values: readonly number[]): number {
   const variance =
     values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length
   return Math.sqrt(variance)
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  const middle = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 1
+    ? sorted[middle]!
+    : (sorted[middle - 1]! + sorted[middle]!) / 2
+}
+
+/**
+ * A take's residuals with a few tracker slips left out (STRAY_FRAME_CENTS),
+ * for measuring its spread. A take with more than STRAY_FRAME_SHARE of them
+ * comes back whole.
+ */
+function withoutStrayFrames(residuals: readonly number[]): readonly number[] {
+  if (residuals.length === 0) return residuals
+  const centre = median(residuals)
+  const kept = residuals.filter(
+    (cents) => Math.abs(cents - centre) <= STRAY_FRAME_CENTS,
+  )
+  const strays = residuals.length - kept.length
+  return strays > 0 && strays <= residuals.length * STRAY_FRAME_SHARE
+    ? kept
+    : residuals
 }
 
 /**
@@ -289,7 +331,12 @@ export function scoreZenRun(
         matched.length
   const pitch = clamp(1 - averageAbsoluteCents / config.toleranceCents, 0, 1)
   const residuals = matched.map((sample) => sample.cents)
-  const steadiness = clamp(1 - standardDeviation(residuals) / 70, 0, 1)
+  // Accuracy counts every frame; the spread leaves a few tracker slips out.
+  const steadiness = clamp(
+    1 - standardDeviation(withoutStrayFrames(residuals)) / 70,
+    0,
+    1,
+  )
   const weightTotal =
     config.pitchWeight + config.coverageWeight + config.steadinessWeight
   const pitchTotal =
