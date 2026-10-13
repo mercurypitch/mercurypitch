@@ -6,13 +6,14 @@ import type { Component } from 'solid-js'
 import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
+import { isExampleSession } from '@/lib/example-session'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { sessionSize, sessionSizeLabel } from '@/lib/session-size'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { deleteUvrSessionWithWarning } from '@/lib/uvr-delete'
 import type { RecoveryAvailability } from '@/lib/uvr-session-recovery'
 import { canRetryUvrSession, getRecoveryCopy, loadRetainedOriginalSong, } from '@/lib/uvr-session-recovery'
-import { addSessionToGroup, createGroup, getAllUvrSessionsReactive, getGroupsReactive, isShippedExample, removeSessionFromGroup, } from '@/stores/app-store'
+import { addSessionToGroup, createGroup, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
 import { ExampleCredit } from './ExampleCredit'
@@ -524,9 +525,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       {/* Info Grid. A shipped example has no creation date: the seeder
           files it on 1 Jan 2020 so it sorts below the visitor's own songs,
           and this card used to print that sort key as "Created 1/1/2020". */}
-      <Show when={!isShippedExample(session()) || sizeLabel()}>
+      <Show when={!isExampleSession(session()) || sizeLabel()}>
         <div class="info-grid">
-          <Show when={!isShippedExample(session())}>
+          <Show when={!isExampleSession(session())}>
             <div class="info-item">
               <span class="info-icon">
                 <Calendar />

@@ -132,4 +132,26 @@ describe('the boot prune, with the example kept', () => {
     expect(listed).not.toContain('lost-stems')
     expect(await onDisk('lost-stems')).toBe(false)
   })
+
+  it('keeps an example an older build seeded without the provider stamp', async () => {
+    // Recognised by its demo session id alone, as the Karaoke features
+    // recognise it. Pruned, it would vanish until the next seed.
+    const legacyId = 'karaoke-night-demo:older-song'
+    await adapter.getRepository<UvrSessionRecord>('uvrSessions').create({
+      appSessionId: legacyId,
+      userId: 'u1',
+      status: 'completed',
+      progress: 100,
+      originalFileName: 'Someone — Older song',
+      originalFileSize: 0,
+      originalFileType: 'audio/mpeg',
+      processingMode: 'server',
+      appCreatedAt: Date.UTC(2020, 0, 1),
+    } as never)
+
+    const listed = await loadPage()
+
+    expect(listed).toContain(legacyId)
+    expect(await onDisk(legacyId)).toBe(true)
+  })
 })

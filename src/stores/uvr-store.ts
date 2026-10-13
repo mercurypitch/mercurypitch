@@ -23,6 +23,7 @@ import { recordActivity } from '@/db/services/user-activity-service'
 import { deleteAllUvrSessionsFromDb, deleteImportedUvrSessionDataStrict, deleteSessionGroupFromDb, sessionHasPlayableStems, sessionStemPresence, } from '@/db/services/uvr-service'
 import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcription-db-service'
 import { IS_DEV } from '@/lib/defaults'
+import { isExampleSession } from '@/lib/example-session'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 
 // ── UVR (Vocal Separation) ─────────────────────────────────────
@@ -1003,26 +1004,6 @@ export async function resumableServerSessions(): Promise<UvrSession[]> {
 }
 
 /**
- * `provider` on every row the Examples seeder writes: EXAMPLE_PROVIDER in
- * features/karaoke-night/examples-library, spelled here because a store may
- * not import a feature. uvr-store-reload.test.ts seeds through the real
- * seeder, so the two cannot drift apart without that test going red.
- */
-const EXAMPLE_PROVIDER = 'examples'
-
-/**
- * Whether a row is one of the shipped example songs rather than a song this
- * device separated or the visitor brought. Its stems stream from R2 instead of
- * living in uvrStemBlobs, and its `createdAt` is a sort key that files the
- * examples below the visitor's own songs, not a date anything happened on.
- */
-export function isShippedExample(
-  session: Pick<UvrSession, 'provider'> | undefined,
-): boolean {
-  return session?.provider === EXAMPLE_PROVIDER
-}
-
-/**
  * Remove 'completed' sessions whose playable stems are missing — the pre-fix
  * data loss. They can never open, so pruning them clears the confusing
  * "processed but can't open / retry" entries. Returns how many were pruned.
@@ -1034,7 +1015,7 @@ export function isShippedExample(
  */
 export async function pruneOrphanedCompletedSessions(): Promise<number> {
   const completed = getAllUvrSessions().filter(
-    (s) => s.status === 'completed' && !isShippedExample(s),
+    (s) => s.status === 'completed' && !isExampleSession(s),
   )
   let pruned = 0
   let skipped = 0

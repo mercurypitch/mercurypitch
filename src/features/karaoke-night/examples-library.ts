@@ -23,48 +23,18 @@
 //
 // Plan: docs/plans/lrc-mapper-studio-plan.md (Phase 7).
 
+import { demoSessionId, EXAMPLE_PROVIDER } from '@/lib/example-session'
 import type { UvrSession } from '@/stores/uvr-store'
 import type { BundledExample } from './bundled-examples'
 import type { DemoSongManifest } from './demo-song'
-import { demoIsPlayable, demoSessionId, isDemoSessionId } from './demo-song'
+import { demoIsPlayable } from './demo-song'
 
 /** The group every example lands in. Matched by name — ids are db-generated. */
 export const EXAMPLES_GROUP_NAME = 'Examples'
 
-/**
- * The `provider` stamped on every seeded example, and the only reliable way
- * to tell one from a visitor's own upload once both are ordinary rows in the
- * session store.
- *
- * Group membership would be the intuitive test and is the wrong one: a
- * visitor can drag an example out of the Examples group, and the row is
- * still not their song.
- */
-export const EXAMPLE_PROVIDER = 'examples'
-
-/**
- * True for a seeded example rather than something the visitor brought.
- *
- * The funnel needs this to keep `karaoke_song_staged` meaning "brought
- * their own song" — it is Campaign E's bid target, and an event a visitor
- * can fire by tapping a built-in track would optimise the campaign toward
- * exactly the behaviour it is supposed to measure the absence of.
- *
- * Two independent signals, either sufficient. `provider` is what the
- * current seeder stamps; the session-id format covers rows a device
- * seeded under an older build that may predate the stamp. Every example
- * id comes from `demoSessionId()` by construction, and a visitor's own
- * separation can never be given one — so the id check adds legacy safety
- * without any way to misclassify a real upload.
- */
-export function isExampleSession(
-  session: Pick<UvrSession, 'provider' | 'sessionId'> | undefined,
-): boolean {
-  if (session === undefined) return false
-  return (
-    session.provider === EXAMPLE_PROVIDER || isDemoSessionId(session.sessionId)
-  )
-}
+// What makes a row an example lives in lib, so the session store's boot
+// prune can ask the same question without importing this feature.
+export { EXAMPLE_PROVIDER, isExampleSession } from '@/lib/example-session'
 
 /**
  * A stable creation timestamp per example, so the list orders them the way the

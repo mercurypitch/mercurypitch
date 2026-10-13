@@ -7,6 +7,7 @@
 // depends on device-sync landing first (docs/plans/jam-karaoke-songs.md).
 
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
+import { DEMO_SESSION_ID, demoSessionId, isDemoSessionId, } from '@/lib/example-session'
 import type { JamSong } from '@/lib/jam/jam-song'
 import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcTimingMetadata } from '@/lib/lrc-timing-metadata'
@@ -16,34 +17,25 @@ import { parseLrcFile, parseLrcWordTimings } from '@/lib/lyrics-service'
 /**
  * Song id of the ORIGINAL example song, which is also its session id: an
  * example stores lyrics, pitch analysis and scores in the local db exactly
- * like a separation does (features/karaoke-night/demo-song's
- * DEMO_SESSION_ID, spelled here so this module stays in its own layer).
+ * like a separation does. One definition, in lib/example-session.
  */
-export const DEMO_SONG_ID = 'karaoke-night-demo'
-
-/** The slug the original example carries -- demo-song's LEGACY_SLUG. */
-const ORIGINAL_EXAMPLE_SLUG = 'karaoke-night'
+export const DEMO_SONG_ID = DEMO_SESSION_ID
 
 /**
  * Song id of one example, which is also its session id.
  *
  * The original keeps the bare id it has always had; every example added
- * since is namespaced under it. That is `demoSessionId()` in
- * features/karaoke-night/demo-song, spelled here for the reason
- * DEMO_SONG_ID is. A test pins the two together, because drifting apart
- * would not throw -- it would quietly file a song's pitch guide under a
- * session nothing else reads.
+ * since is namespaced under it. The same function as `demoSessionId()`,
+ * because drifting apart would not throw -- it would quietly file a song's
+ * pitch guide under a session nothing else reads.
  */
 export function exampleSongId(slug: string | undefined): string {
-  const s = (slug ?? '').trim()
-  return s === '' || s === ORIGINAL_EXAMPLE_SLUG
-    ? DEMO_SONG_ID
-    : `${DEMO_SONG_ID}:${s}`
+  return demoSessionId(slug)
 }
 
 /** Whether a room song is one of the examples, original or not. */
 export function isExampleSongId(songId: string): boolean {
-  return songId === DEMO_SONG_ID || songId.startsWith(`${DEMO_SONG_ID}:`)
+  return isDemoSessionId(songId)
 }
 
 /** What a separated session's song id is prefixed with. */
