@@ -291,10 +291,14 @@ class AuthStatement {
       return { success: true, meta: { changes: 1 } }
     }
 
-    if (this.sql.startsWith('UPDATE authSessions SET lastSeenAt')) {
+    if (
+      this.sql.startsWith('UPDATE authSessions SET lastSeenAt') &&
+      this.sql.includes('AND lastSeenAt <=')
+    ) {
       // The real statement only writes once the row is already stale. The
       // fake reports the write truthfully but does not model the clock: no
-      // test here turns on how often the column moves.
+      // test here turns on how often the column moves. Renewal's guarded
+      // write belongs to the real-SQLite suite, not this activity-only fake.
       const row = this.db.sessions.get(String(this.values[0]))
       if (!row) return { success: true, meta: { changes: 0 } }
       row.lastSeenAt = new Date().toISOString()

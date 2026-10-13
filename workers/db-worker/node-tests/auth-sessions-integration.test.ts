@@ -17,11 +17,11 @@
 // exercised as written.
 
 import { DatabaseSync } from 'node:sqlite'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from '../src/auth'
-import { endOtherSessions, SESSION_MAX_AGE_DAYS, sweepExpiredSessions, } from '../src/auth-sessions'
+import { endOtherSessions, endSession, SESSION_MAX_AGE_DAYS, sweepExpiredSessions, } from '../src/auth-sessions'
 import worker from '../src/index'
-import { applyMigrations, SqliteD1Database } from './sqlite-d1'
+import { applyMigrations, justBefore, SqliteD1Database } from './sqlite-d1'
 
 const ADMIN_KEY = 'auth-sessions-test-admin'
 const PASSWORD = 'Sessions123pass'
@@ -158,7 +158,20 @@ function freshDatabase(): void {
   }
 }
 
+/** Keep SQL's clock with the JWT clock while executing the real queries. */
+function freezeSessionClock(now: number): SqliteD1Database {
+  vi.setSystemTime(now)
+  const db = env.DB as unknown as SqliteD1Database
+  const prepare = db.prepare.bind(db)
+  vi.spyOn(db, 'prepare').mockImplementation((sql) =>
+    prepare(sql.replaceAll("'now'", `'${new Date().toISOString()}'`)),
+  )
+  return db
+}
+
 afterEach(() => {
+  vi.restoreAllMocks()
+  vi.useRealTimers()
   sqlite.close()
 })
 
@@ -425,6 +438,108 @@ describe('the expiry sweep', () => {
   })
 })
 
+describe('renewal is recorded before a new token is returned', () => {
+  const DAY_MS = 86_400_000
+  let signedInAt: number
+  let db: SqliteD1Database
+
+  beforeEach(() => {
+    freshDatabase()
+    signedInAt = Date.now()
+    // The session's column defaults are written at sign-in, before time moves.
+    db = freezeSessionClock(signedInAt)
+  })
+
+  function refresh(token: string): Promise<Response> {
+    return authed(token, '/api/auth/refresh', { method: 'POST' })
+  }
+
+  it.each([false, true])(
+    'keeps a near-expiry renewal past the old sweep cutoff (activity write fails: %s)',
+    async (failActivityWrite) => {
+      const account = await register('near-expiry@example.com')
+      vi.setSystemTime(signedInAt + 29 * DAY_MS)
+      if (failActivityWrite) {
+        justBefore(db, /WHERE id = \? AND lastSeenAt <=/, async () => {
+          throw new Error('Activity timestamp write failed')
+        })
+      }
+      const response = await refresh(account.token)
+      expect(response.status).toBe(200)
+      const body = (await response.json()) as {
+        token: string
+        expiresAt: string
+      }
+
+      // No authenticated request in between: it would itself repair lastSeenAt.
+      vi.setSystemTime(signedInAt + 33 * DAY_MS)
+      await sweepExpiredSessions(env.DB, 30 * 24 * 60 * 60)
+      expect(sessionRowCount(account.userId)).toBe(1)
+      expect(Date.parse(body.expiresAt) - Date.now()).toBeGreaterThan(
+        25 * DAY_MS,
+      )
+      expect(await meStatus(body.token)).toBe(200)
+      expect(await meStatus(account.token)).toBe(401)
+    },
+  )
+
+  it.each([0, 29])(
+    'withholds renewal on a failed write after %i days and permits a retry',
+    async (days) => {
+      const account = await register('write-failed@example.com')
+      vi.setSystemTime(signedInAt + days * DAY_MS)
+      const before = sqlite.prepare('SELECT * FROM authSessions').all()
+      sqlite.exec(`CREATE TRIGGER reject_session_touch
+        BEFORE UPDATE OF lastSeenAt ON authSessions
+        BEGIN SELECT RAISE(FAIL, 'Session timestamp write failed'); END`)
+      // Ordinary authenticated requests still tolerate an activity-write failure.
+      expect(await meStatus(account.token)).toBe(200)
+
+      const response = await refresh(account.token)
+      expect(response.status).toBe(500)
+      const body = (await response.json()) as Record<string, unknown>
+      expect(body).not.toHaveProperty('token')
+      expect(body).not.toHaveProperty('expiresAt')
+      expect(sqlite.prepare('SELECT * FROM authSessions').all()).toEqual(before)
+      expect(await meStatus(account.token)).toBe(200)
+
+      sqlite.exec('DROP TRIGGER reject_session_touch')
+      const retry = await refresh(account.token)
+      expect(retry.status).toBe(200)
+      const renewed = (await retry.json()) as { token: string }
+      expect(await meStatus(renewed.token)).toBe(200)
+    },
+  )
+
+  it('renews the same session twice inside the activity-touch window', async () => {
+    const account = await register('recent@example.com')
+    let token = account.token
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await refresh(token)
+      expect(response.status).toBe(200)
+      token = ((await response.json()) as { token: string }).token
+    }
+    expect(sessionRowCount(account.userId)).toBe(1)
+    expect(await meStatus(token)).toBe(200)
+  })
+
+  it('does not recreate a session signed out just before renewal is written', async () => {
+    const account = await register('signed-out@example.com')
+    const { id } = sqlite.prepare('SELECT id FROM authSessions').get() as {
+      id: string
+    }
+    justBefore(db, /UPDATE authSessions SET lastSeenAt[\s\S]*userId/, () =>
+      endSession(env.DB, id, account.userId),
+    )
+
+    const response = await refresh(account.token)
+    expect(response.status).toBe(401)
+    expect(await response.json()).not.toHaveProperty('token')
+    expect(sessionRowCount(account.userId)).toBe(0)
+    expect(await meStatus(account.token)).toBe(401)
+  })
+})
+
 describe('a correct password does not spend the guessing budget', () => {
   beforeEach(() => {
     freshDatabase()
@@ -487,15 +602,14 @@ describe('deleting the account takes its sessions with it', () => {
 describe('a session cannot be renewed forever', () => {
   beforeEach(() => {
     freshDatabase()
+    freezeSessionClock(Date.now())
   })
 
   /** Move the sign-in itself back, leaving the token and the row otherwise as they are. */
   function ageSession(userId: string, days: number): void {
     sqlite
-      .prepare(
-        `UPDATE authSessions SET createdAt = datetime('now', ?) WHERE userId = ?`,
-      )
-      .run(`-${days} days`, userId)
+      .prepare('UPDATE authSessions SET createdAt = ? WHERE userId = ?')
+      .run(new Date(Date.now() - days * 86_400_000).toISOString(), userId)
   }
 
   it('renews a session that is inside the cap', async () => {
@@ -515,20 +629,23 @@ describe('a session cannot be renewed forever', () => {
     expect(await meStatus(body.token)).toBe(200)
   })
 
-  it('ends a session that has reached the cap instead of extending it', async () => {
-    const account = await register('expire@example.com')
-    ageSession(account.userId, SESSION_MAX_AGE_DAYS + 1)
+  it.each([SESSION_MAX_AGE_DAYS, SESSION_MAX_AGE_DAYS + 1])(
+    'ends a session aged %i days instead of extending it',
+    async (days) => {
+      const account = await register('expire@example.com')
+      ageSession(account.userId, days)
 
-    const response = await authed(account.token, '/api/auth/refresh', {
-      method: 'POST',
-      body: '{}',
-    })
-    expect(response.status).toBe(401)
-    // Refusing alone would leave the token it was called with working for the
-    // rest of its thirty days. The row goes, so the token stops verifying now.
-    expect(sessionRowCount(account.userId)).toBe(0)
-    expect(await meStatus(account.token)).toBe(401)
-  })
+      const response = await authed(account.token, '/api/auth/refresh', {
+        method: 'POST',
+        body: '{}',
+      })
+      expect(response.status).toBe(401)
+      // Refusing alone would leave the token it was called with working for the
+      // rest of its thirty days. The row goes, so the token stops verifying now.
+      expect(sessionRowCount(account.userId)).toBe(0)
+      expect(await meStatus(account.token)).toBe(401)
+    },
+  )
 
   it("ends only the session that asked, not the account's other devices", async () => {
     const account = await register('one-device@example.com')

@@ -1200,6 +1200,19 @@ or one test's toast turns up as a second alert in the next.
 **See:** `src/features/drum-night/DrumNightApp.tsx`,
 `src/features/drum-night/DrumNightApp.test.tsx`
 
+### Persist renewal before issuing a token that depends on it
+
+**Symptom:** a successful session refresh returned a token with weeks left, but
+the expiry sweep deleted its session after a failed activity-timestamp write.
+**Cause:** cleanup used `lastSeenAt`, while authentication deliberately swallowed
+failures updating it. The new token could outlive the row keeping it valid.
+**Rule:** keep ordinary activity tracking best effort, but require a durable,
+ownership- and age-guarded update before minting a renewed token. Test failed
+writes, retry, and sweeping beyond the old cutoff with both SQL and JWT clocks
+advanced together; a request between renewal and sweeping can hide the bug.
+**See:** `workers/db-worker/src/auth-sessions.ts` (`renewSession`) and
+`workers/db-worker/node-tests/auth-sessions-integration.test.ts`.
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents

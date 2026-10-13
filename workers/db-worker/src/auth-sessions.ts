@@ -84,9 +84,9 @@ export async function sessionAlive(
  *
  * Conditional in SQL rather than in a read-then-write, so an idle-ish session
  * costs one write per SESSION_TOUCH_SECONDS instead of one per request and
- * concurrent calls cannot both decide to write. Best-effort by contract: the
- * caller must not await this on the critical path, and a failure must never
- * fail the request it rode in on.
+ * concurrent calls cannot both decide to write. Best-effort by contract: a
+ * failure must never fail the request it rode in on. Token renewal uses the
+ * separate, mandatory write in `renewSession`.
  */
 export async function touchSession(
   db: D1Database,
@@ -116,26 +116,31 @@ export async function touchSession(
 export const SESSION_MAX_AGE_DAYS = 180
 
 /**
- * Whether this session may still be renewed.
+ * Record renewal only while this user's session is still renewable.
+ *
+ * Unlike an activity touch, this write must succeed before a fresh token is
+ * issued: the expiry sweep relies on it. Do not throttle it, since a no-op
+ * would be indistinguishable from a revoked or over-age session. Updating
+ * the existing row with both guards also cannot recreate a signed-out device.
  *
  * `julianday` rather than comparing the strings: rows written by the column
  * default read `YYYY-MM-DD HH:MM:SS`, and one written as ISO would sort wrong
  * against them because `T` is above a space.
  */
-export async function sessionRenewable(
+export async function renewSession(
   db: D1Database,
   sessionId: string,
   userId: string,
 ): Promise<boolean> {
-  const row = await db
+  const res = await db
     .prepare(
-      `SELECT id FROM authSessions
+      `UPDATE authSessions SET lastSeenAt = datetime('now')
         WHERE id = ? AND userId = ?
           AND julianday(createdAt) > julianday('now', ?)`,
     )
     .bind(sessionId, userId, `-${SESSION_MAX_AGE_DAYS} days`)
-    .first<{ id: string }>()
-  return row !== null
+    .run()
+  return (res.meta.changes ?? 0) > 0
 }
 
 /** End one device. False when the row was not this user's, or already gone. */
@@ -210,11 +215,10 @@ export async function listSessions(
  * Aged by `lastSeenAt`, never `createdAt`. `/refresh` keeps the same `sid`, so
  * a session in daily use keeps its sign-in date for up to SESSION_MAX_AGE_DAYS,
  * and sweeping on that date signed people out a month after they signed in,
- * however fresh their token. A token is minted only at sign-in, which writes
- * the row, or by `/refresh`, which passes `getAuth` and so `touchSession`
- * first. `lastSeenAt` therefore trails the newest token by at most
- * SESSION_TOUCH_SECONDS, far inside SWEEP_GRACE_SECONDS: a row unseen for
- * longer than a token lives holds none that still verifies.
+ * however fresh their token. Sign-in writes the row before minting its token;
+ * `/refresh` must persist `renewSession` before minting another. The ordinary
+ * best-effort activity touch is not relied on for renewal. The grace covers
+ * the interval between that write and issuance, as well as clock skew.
  */
 export async function sweepExpiredSessions(
   db: D1Database,
