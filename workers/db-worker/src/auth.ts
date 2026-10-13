@@ -1731,8 +1731,9 @@ async function handleAnonymous(
     return respond({ error: 'A deviceId (UUID) is required' }, { status: 400 })
   }
   let existing = await findUserById(env.DB, id)
+  let created = false
   if (!existing) {
-    const created = await createUser(
+    created = await createUser(
       env.DB,
       {
         id,
@@ -1746,13 +1747,12 @@ async function handleAnonymous(
       true,
     )
     if (created) await ensureProfile(env.DB, id, defaultDisplayName(id))
-    const row = (await findUserById(env.DB, id)) as UserRow
-    if (created) {
-      return issueSession(env, row, respond, true, sessionOrigin(request))
-    }
-    // A concurrent first sign-in for this device created the row between our
-    // read and our insert: resolve to that account like any returning call.
-    existing = row
+    // Either creator can race an upgrade or erasure before this reread, so
+    // both must pass the same current-account checks as a returning call.
+    existing = await findUserById(env.DB, id)
+  }
+  if (existing === null) {
+    return respond({ error: 'Account requires login' }, { status: 403 })
   }
   assertAccountActive(existing)
   // Upgraded accounts must log in with their real method instead.
@@ -1763,7 +1763,7 @@ async function handleAnonymous(
   if (!(await authorizeDeviceSecret(env.DB, existing, body.deviceSecret))) {
     return respond({ error: 'Account requires login' }, { status: 403 })
   }
-  return issueSession(env, existing, respond, false, sessionOrigin(request))
+  return issueSession(env, existing, respond, created, sessionOrigin(request))
 }
 
 /**

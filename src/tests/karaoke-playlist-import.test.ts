@@ -597,22 +597,25 @@ describe('session archive stem selection', () => {
     expect(sanitizeArchiveEntryName('..\\private/../song.wav')).toBe('song.wav')
   })
 
-  it('exports a session whose original file has no bare MIME type', async () => {
-    // A song received as a portable bundle is stored with mimeType '', an
-    // upload whose File.type was empty is too, older records have none, and
-    // a recording can carry parameters. The archive codec accepts only a
-    // bare type/subtype, so these sessions could not be exported and one
-    // aborted Export All.
-    for (const [sessionId, mimeType, archived] of [
-      ['received-no-mime', '', 'application/octet-stream'],
-      ['legacy-no-mime', undefined, 'application/octet-stream'],
-      ['recorded-with-codec', 'audio/webm;codecs=opus', 'audio/webm'],
-    ] as const) {
+  it.each([
+    ['received-no-mime', '', 'application/octet-stream'],
+    ['legacy-no-mime', undefined, 'application/octet-stream'],
+    ['invalid-mime', 'audio file', 'application/octet-stream'],
+    ['recorded-with-codec', 'audio/webm;codecs=opus', 'audio/webm'],
+    ['mime-whitespace', ' audio/ogg ; codecs=opus ', 'audio/ogg'],
+    ['valid-mime', 'audio/mpeg', 'audio/mpeg'],
+  ] as const)(
+    'round-trips %s with a usable archive MIME type',
+    async (sessionId, mimeType, archived) => {
+      const originalFile = { name: 'Received Song', size: 0, mimeType }
       importUvrSession({
         ...makeSession(sessionId, 'Received Song'),
-        originalFile: { name: 'Received Song', size: 0, mimeType },
+        originalFile,
       } as unknown as UvrSession)
       await seedCoreStem(sessionId)
+      const before = new Set(
+        getAllUvrSessions().map((session) => session.sessionId),
+      )
 
       const archive = await buildSessionZip(sessionId, undefined, ['vocal'])
       const entries = unzipSync(new Uint8Array(await archive.arrayBuffer()))
@@ -620,8 +623,27 @@ describe('session archive stem selection', () => {
         session: { originalFile: { mimeType: string } }
       }
       expect(payload.session.originalFile.mimeType).toBe(archived)
-    }
-  })
+      expect(await importSessionsFromZip(archive)).toBe(1)
+      const imported = getAllUvrSessions().filter(
+        (session) => !before.has(session.sessionId),
+      )
+      expect(imported).toHaveLength(1)
+      expect(imported[0].originalFile).toEqual({
+        ...originalFile,
+        mimeType: archived,
+      })
+      const vocal = await getStemBlob(imported[0].sessionId, 'vocal')
+      expect(vocal).not.toBeNull()
+      expect(strFromU8(new Uint8Array(await vocal!.arrayBuffer()))).toBe(
+        `audio-vocal-${sessionId}`,
+      )
+      // Archive normalization must not rewrite the original local record.
+      expect(
+        getAllUvrSessions().find((session) => session.sessionId === sessionId)
+          ?.originalFile,
+      ).toEqual(originalFile)
+    },
+  )
 
   it('preserves non-WAV stem MIME types across export and import', async () => {
     const sessionId = 'flac-stem-round-trip'

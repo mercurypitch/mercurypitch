@@ -19,12 +19,23 @@ let sqlite: DatabaseSync
 let d1: SqliteD1Database
 let env: Env
 
+interface AuthResponseBody {
+  token?: string
+  userId?: string
+  user?: { id: string; email: string }
+}
+
+interface AuthResponse {
+  status: number
+  body: AuthResponseBody
+}
+
 async function call(
   method: string,
   path: string,
   body?: unknown,
   token?: string,
-): Promise<{ status: number; body: any }> {
+): Promise<AuthResponse> {
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (token !== undefined) headers.Authorization = `Bearer ${token}`
@@ -37,10 +48,9 @@ async function call(
     env,
     {} as ExecutionContext,
   )
-  const text = await response.text()
   return {
     status: response.status,
-    body: text === '' ? null : JSON.parse(text),
+    body: (await response.json()) as AuthResponseBody,
   }
 }
 
@@ -73,7 +83,7 @@ describe('two first sign-ins for one device', () => {
   const deviceSecret = 'device-secret-for-the-race-test-0001'
 
   it('gives both a session for that device', async () => {
-    let second: { status: number; body: any } | undefined
+    let second: AuthResponse | undefined
     justBefore(d1, /INSERT INTO users/, async () => {
       second = await call('POST', '/api/auth/anonymous', {
         deviceId,
@@ -86,8 +96,8 @@ describe('two first sign-ins for one device', () => {
     })
 
     expect([first.status, second?.status]).toEqual([200, 200])
-    expect(first.body.user.id).toBe(deviceId)
-    expect(second?.body.user.id).toBe(deviceId)
+    expect(first.body.user?.id).toBe(deviceId)
+    expect(second?.body.user?.id).toBe(deviceId)
     expect(usersWithId(deviceId)).toBe(1)
     // Both tokens work.
     for (const token of [first.body.token, second?.body.token]) {
@@ -120,7 +130,7 @@ describe('a double-submitted sign-up', () => {
 
   it('answers the second with 409, never 500', async () => {
     const body = { email: 'double@example.com', password }
-    let second: { status: number; body: any } | undefined
+    let second: AuthResponse | undefined
     justBefore(d1, /INSERT INTO users \(/, async () => {
       second = await call('POST', '/api/auth/register', body)
     })
@@ -147,7 +157,7 @@ describe('a double-submitted sign-up', () => {
 
     // Both requests read the device while it is still anonymous; the second
     // upgrades it before the first's UPDATE runs.
-    let second: { status: number; body: any } | undefined
+    let second: AuthResponse | undefined
     justBefore(d1, /UPDATE users SET authProvider = 'password'/, async () => {
       second = await call('POST', '/api/auth/register', body)
     })
@@ -161,5 +171,124 @@ describe('a double-submitted sign-up', () => {
     expect(
       (await call('GET', '/api/auth/me', undefined, won[0]?.body.token)).status,
     ).toBe(200)
+  })
+})
+
+describe('account transitions during sign-up', () => {
+  const deviceId = '00000000-0000-4000-8000-0000000000d3'
+  const deviceSecret = 'device-secret-for-the-race-test-0004'
+  const password = 'Correct-Horse-Battery-9'
+  const device = { deviceId, deviceSecret }
+
+  it.each(['upgraded', 'suspended'] as const)(
+    'refuses an anonymous loser when the winning account is %s',
+    async (transition) => {
+      justBefore(d1, /INSERT INTO users/, async () => {
+        expect((await call('POST', '/api/auth/anonymous', device)).status).toBe(
+          200,
+        )
+        if (transition === 'upgraded') {
+          expect(
+            (
+              await call('POST', '/api/auth/register', {
+                ...device,
+                email: 'owner@example.com',
+                password,
+              })
+            ).status,
+          ).toBe(200)
+        } else {
+          sqlite
+            .prepare(
+              "UPDATE users SET suspendedAt = datetime('now') WHERE id = ?",
+            )
+            .run(deviceId)
+        }
+      })
+      const response = await call('POST', '/api/auth/anonymous', device)
+      expect(response.status).toBe(403)
+      expect(response.body.token).toBeUndefined()
+      expect(usersWithId(deviceId)).toBe(1)
+    },
+  )
+
+  it('does not issue a password session if the newly created device was upgraded', async () => {
+    let registered: AuthResponse | undefined
+    justBefore(d1, /INSERT OR IGNORE INTO userProfiles/, async () => {
+      registered = await call('POST', '/api/auth/register', {
+        ...device,
+        email: 'new-owner@example.com',
+        password,
+      })
+    })
+    const response = await call('POST', '/api/auth/anonymous', device)
+    expect(registered?.status).toBe(200)
+    expect(response.status).toBe(403)
+    expect(response.body.token).toBeUndefined()
+    expect(
+      (await call('GET', '/api/auth/me', undefined, registered?.body.token))
+        .status,
+    ).toBe(200)
+  })
+
+  it('refuses a lost insert when the winning account is erased before rereading it', async () => {
+    justBefore(d1, /INSERT INTO users/, async () => {
+      expect((await call('POST', '/api/auth/anonymous', device)).status).toBe(
+        200,
+      )
+      const prepare = d1.prepare.bind(d1)
+      d1.prepare = (sql) => {
+        if (sql === 'SELECT * FROM users WHERE id = ?') {
+          d1.prepare = prepare
+          sqlite.prepare('DELETE FROM users WHERE id = ?').run(deviceId)
+        }
+        return prepare(sql)
+      }
+    })
+    const response = await call('POST', '/api/auth/anonymous', device)
+    expect(response.status).toBe(403)
+    expect(response.body.token).toBeUndefined()
+    expect(usersWithId(deviceId)).toBe(0)
+  })
+
+  it('keeps different-email concurrent upgrades on distinct accounts', async () => {
+    expect((await call('POST', '/api/auth/anonymous', device)).status).toBe(200)
+    let winner: AuthResponse | undefined
+    justBefore(d1, /UPDATE users SET authProvider = 'password'/, async () => {
+      winner = await call('POST', '/api/auth/register', {
+        ...device,
+        email: 'winner@example.com',
+        password,
+      })
+    })
+    const loser = await call('POST', '/api/auth/register', {
+      ...device,
+      email: 'other@example.com',
+      password: 'Other-Account-Password-9',
+    })
+    expect([winner?.status, loser.status]).toEqual([200, 200])
+    expect(winner?.body.userId).toBe(deviceId)
+    expect(loser.body.userId).not.toBe(deviceId)
+    for (const [account, email] of [
+      [winner, 'winner@example.com'],
+      [loser, 'other@example.com'],
+    ] as const) {
+      const me = await call(
+        'GET',
+        '/api/auth/me',
+        undefined,
+        account?.body.token,
+      )
+      expect(me.status).toBe(200)
+      expect(me.body.user?.email).toBe(email)
+    }
+    expect(
+      sqlite
+        .prepare('SELECT email, tokenVersion FROM users WHERE id = ?')
+        .get(deviceId),
+    ).toEqual({
+      email: 'winner@example.com',
+      tokenVersion: 2,
+    })
   })
 })

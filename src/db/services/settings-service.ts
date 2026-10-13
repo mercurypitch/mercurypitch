@@ -137,20 +137,33 @@ if (PREMIUM_EXERCISES) {
  */
 const MERGE_OWNER_KEY = 'mp_sync_owner'
 
-function localMergeOwner(): string | null {
+// A partial pull can leave Ascent owned by B and Long note still owned by A.
+// Individual stamps override the old whole-device stamp without reassigning
+// keys absent from the response. Old installs continue to use the fallback.
+function localMergeOwner(key?: string): string | null {
   try {
-    return localStorage.getItem(MERGE_OWNER_KEY)
+    const ownKey =
+      key === undefined ? MERGE_OWNER_KEY : `${MERGE_OWNER_KEY}:${key}`
+    return localStorage.getItem(ownKey) ?? localStorage.getItem(MERGE_OWNER_KEY)
   } catch {
     return null
   }
 }
 
-function claimMergeOwner(userId: string): void {
+function claimMergeOwner(userId: string, key?: string): void {
   try {
-    localStorage.setItem(MERGE_OWNER_KEY, userId)
+    localStorage.setItem(
+      key === undefined ? MERGE_OWNER_KEY : `${MERGE_OWNER_KEY}:${key}`,
+      userId,
+    )
   } catch {
     /* private mode — merging simply stays conservative next time */
   }
+}
+
+function mayMergeKey(key: string, userId: string): boolean {
+  const owner = localMergeOwner(key)
+  return owner === null || owner === userId
 }
 
 function forgetMergeOwner(): void {
@@ -305,27 +318,35 @@ function flushPendingPushes(): void {
   }
 }
 
+function isCurrentPull(userId: string, version: number): boolean {
+  return cloudActive() && getUserId() === userId && authVersion() === version
+}
+
 /**
  * Apply all cloud settings to localStorage and live signals. Cloud
  * wins at sign-in time; afterwards local writes win (write-through).
  */
 export async function pullCloudSettings(): Promise<void> {
   if (!cloudActive()) return
+  const me = getUserId()
+  const version = authVersion()
   try {
     const db = await getDb()
+    if (!isCurrentPull(me, version)) return
     const repo = db.getRepository<UserSetting>('userSettings')
-    const rows = await repo.findAll()
+    const rows = await repo.findAll({ throwOnError: true })
+    if (!isCurrentPull(me, version)) return
     cloudRowIds.clear()
     // Whose progress is sitting on this device? Only merge with our own.
-    const me = getUserId()
     const owner = localMergeOwner()
-    const mayMerge = owner === null || owner === me
     const pending = readPending()
     for (const row of rows) {
       if (!isSyncedKey(row.key)) continue
       cloudRowIds.set(row.key, row.id)
       const local = localStorage.getItem(row.key)
-      const merge = mayMerge ? MERGE_ON_PULL[row.key] : undefined
+      const merge = mayMergeKey(row.key, me)
+        ? MERGE_ON_PULL[row.key]
+        : undefined
       // A write this device made that never reached the account. The row in
       // hand is the OLDER value, so applying it would undo a choice the
       // visitor already made and watched take effect. Send ours up instead.
@@ -340,6 +361,12 @@ export async function pullCloudSettings(): Promise<void> {
       }
       const next = merge === undefined ? row.value : merge(local, row.value)
       if (local !== next) applyPersistedValue(row.key, next)
+      if (
+        MERGE_ON_PULL[row.key] !== undefined &&
+        hasUpgradedAccount() &&
+        me !== ''
+      )
+        claimMergeOwner(me, row.key)
       // A merge can leave the account behind the device (local-only days).
       // applyPersistedValue deliberately doesn't echo, so push it back.
       if (next !== row.value) void pushSetting(row.key, next)
@@ -349,13 +376,11 @@ export async function pullCloudSettings(): Promise<void> {
     // no cloud row at all, and nothing would upload it until the next
     // practice day. Seed it now so the account owns it immediately — but
     // only when the device's copy is ours to give (see MERGE_OWNER_KEY).
-    if (mayMerge) {
-      for (const key of Object.keys(MERGE_ON_PULL)) {
-        if (cloudRowIds.has(key)) continue
-        const local = localStorage.getItem(key)
-        if (local !== null && local.length <= MAX_VALUE_BYTES) {
-          void pushSetting(key, local)
-        }
+    for (const key of Object.keys(MERGE_ON_PULL)) {
+      if (cloudRowIds.has(key) || !mayMergeKey(key, me)) continue
+      const local = localStorage.getItem(key)
+      if (local !== null && local.length <= MAX_VALUE_BYTES) {
+        void pushSetting(key, local)
       }
     }
 
@@ -365,11 +390,9 @@ export async function pullCloudSettings(): Promise<void> {
     // Not while a merge key still holds someone else's copy that the
     // account had no row to replace: claiming it would make it "ours" and
     // the backfill above would upload it on the very next pull.
-    const strangersLeft =
-      !mayMerge &&
-      Object.keys(MERGE_ON_PULL).some(
-        (key) => !cloudRowIds.has(key) && localStorage.getItem(key) !== null,
-      )
+    const strangersLeft = Object.keys(MERGE_ON_PULL).some(
+      (key) => !mayMergeKey(key, me) && localStorage.getItem(key) !== null,
+    )
     if (hasUpgradedAccount()) {
       if (me !== '' && !strangersLeft) claimMergeOwner(me)
     } else if (owner !== null && owner === getDeviceId()) {
