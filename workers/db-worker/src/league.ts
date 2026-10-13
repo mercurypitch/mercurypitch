@@ -254,7 +254,10 @@ export async function awardStreakBonuses(
     }
 
     const milestone = streakMilestoneBonus(nextStreak, config)
-    if (milestone > 0 && !(await awardedToday(env, userId, 'streak-milestone'))) {
+    if (
+      milestone > 0 &&
+      !(await awardedToday(env, userId, 'streak-milestone'))
+    ) {
       await credit(env, userId, 'streak-milestone', milestone, day)
     }
   } catch (err) {

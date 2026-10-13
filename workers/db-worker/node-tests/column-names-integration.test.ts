@@ -217,6 +217,124 @@ describe('a write that names a column in another case', () => {
       expect(response.status).toBe(400)
     }
   })
+
+  it.each(['userid', 'UserId', 'userID', 'USERID'])(
+    'rejects %s alone and beside the canonical ownership column',
+    async (column) => {
+      const created = await call(
+        'POST',
+        '/api/sessionRecords',
+        practice(),
+        attacker.token,
+      )
+      expect(created.status).toBe(201)
+      const { id } = (await created.json()) as { id: string }
+      for (const body of [
+        { [column]: victim.userId },
+        { userId: attacker.userId, [column]: victim.userId },
+      ]) {
+        expect(
+          (
+            await call(
+              'POST',
+              '/api/sessionRecords',
+              practice(body),
+              attacker.token,
+            )
+          ).status,
+        ).toBe(400)
+        expect(
+          (
+            await call(
+              'PATCH',
+              `/api/sessionRecords/${id}`,
+              body,
+              attacker.token,
+            )
+          ).status,
+        ).toBe(400)
+      }
+      expect(rowsOwnedBy(victim.userId)).toEqual([])
+      expect(rowsOwnedBy(attacker.userId)).toHaveLength(1)
+    },
+  )
+
+  it.each(['CurrentLeagueId', 'FRIENDCODE', 'currentstreak', 'longestStreakX'])(
+    'rejects the individual invalid profile column %s',
+    async (column) => {
+      const response = await call(
+        'PATCH',
+        `/api/userProfiles/${attacker.userId}`,
+        { [column]: 999 },
+        attacker.token,
+      )
+      expect(response.status).toBe(400)
+      expect(
+        sqlite
+          .prepare(
+            'SELECT currentLeagueId, friendCode, currentStreak, longestStreak FROM userProfiles WHERE id = ?',
+          )
+          .get(attacker.userId),
+      ).toEqual({
+        currentLeagueId: 'l1',
+        friendCode: null,
+        currentStreak: 0,
+        longestStreak: 0,
+      })
+    },
+  )
+
+  it('rejects non-object PATCH bodies without changing the profile', async () => {
+    for (const raw of ['null', '[]', 'false', '5', '"text"']) {
+      expect(
+        (
+          await call(
+            'PATCH',
+            `/api/userProfiles/${attacker.userId}`,
+            undefined,
+            attacker.token,
+            raw,
+          )
+        ).status,
+      ).toBe(400)
+    }
+    expect(
+      sqlite
+        .prepare('SELECT longestStreak FROM userProfiles WHERE id = ?')
+        .get(attacker.userId),
+    ).toEqual({ longestStreak: 0 })
+  })
+
+  it('refreshes a warmed schema cache after an additive migration', async () => {
+    const created = await call(
+      'POST',
+      '/api/sessionRecords',
+      practice(),
+      attacker.token,
+    )
+    expect(created.status).toBe(201)
+    const { id } = (await created.json()) as { id: string }
+    sqlite.exec('ALTER TABLE sessionRecords ADD COLUMN boundaryProbe TEXT')
+    const updated = await call(
+      'PATCH',
+      `/api/sessionRecords/${id}`,
+      { boundaryProbe: 'migrated' },
+      attacker.token,
+    )
+    expect(updated.status).toBe(200)
+    expect(await updated.json()).toMatchObject({
+      id,
+      boundaryProbe: 'migrated',
+    })
+    const read = await call(
+      'GET',
+      '/api/sessionRecords?where[boundaryProbe]=migrated',
+      undefined,
+      attacker.token,
+    )
+    expect(read.status).toBe(200)
+    expect(await read.json()).toMatchObject([{ id, boundaryProbe: 'migrated' }])
+  })
 })
 
 describe('a read that names a column in another case', () => {
@@ -253,6 +371,14 @@ describe('a read that names a column in another case', () => {
   })
 
   it('still filters on a readable column spelled exactly', async () => {
+    const created = await call(
+      'POST',
+      '/api/sessionRecords',
+      practice(),
+      attacker.token,
+    )
+    expect(created.status).toBe(201)
+    const { id } = (await created.json()) as { id: string }
     const response = await call(
       'GET',
       '/api/sessionRecords?where[melodyName]=Scale&orderBy=createdAt',
@@ -260,5 +386,25 @@ describe('a read that names a column in another case', () => {
       attacker.token,
     )
     expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject([{ id, melodyName: 'Scale' }])
   })
+
+  it.each(['code', 'Code', 'CODE', 'cOdE'])(
+    'refuses hidden promo column %s in list, count and sorting',
+    async (column) => {
+      for (const query of [
+        `where[${column}]=SECRETVIP2026`,
+        `orderBy=${column}`,
+      ]) {
+        for (const suffix of ['', '/count']) {
+          const response = await call(
+            'GET',
+            `/api/promoCodes${suffix}?${query}`,
+          )
+          expect(response.status).toBe(400)
+          expect(await response.text()).not.toContain('promo-secret')
+        }
+      }
+    },
+  )
 })

@@ -15,7 +15,7 @@
 // buried the real signal and wrote personal data before the consent
 // banner was answered.
 
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
 import { beginGoogleReturn, EXPIRED_STATE_CODE, readGoogleReturn, UNSTARTED_RETURN_CODE, } from '@/lib/google-return-nonce'
@@ -290,7 +290,7 @@ export function handleAuthErrorResponse(
   // carrying their bearer token immediately.
   if (!anonymous) setAuthToken(null)
   setRequiresLogin(!anonymous)
-  tokenServerVerified = false
+  serverVerifiedToken = null
   authChanged()
   if (notifyUser) {
     showNotification(ACCOUNT_SUSPENDED_MESSAGE, 'error', {
@@ -329,7 +329,7 @@ export function handleCloudSessionRejected(notifyUser = true): boolean {
   if (!isRegisteredProvider(storedTokenProvider())) return false
   setAuthToken(null)
   setRequiresLogin(true)
-  tokenServerVerified = false
+  serverVerifiedToken = null
   authChanged()
   if (notifyUser) {
     showNotification(SESSION_REJECTED_MESSAGE, 'warning', {
@@ -427,7 +427,7 @@ async function postSignIn(
   const auth = outcome
   setAuthToken(auth.token)
   setRequiresLogin(false)
-  tokenServerVerified = true // freshly issued by this server
+  serverVerifiedToken = auth.token // freshly issued by this server
   // Anonymous device provisioning is not a signup — only count real
   // account creation (register / first Google sign-in).
   if (auth.isNew && route !== 'anonymous') trackEvent('signup')
@@ -476,24 +476,32 @@ function setRequiresLogin(value: boolean): void {
 
 // ── Public API ──────────────────────────────────────────────────
 
-// The client-side check only sees expiry — a token signed by a
-// different worker (localhost vs deployed, or a rotated JWT_SECRET)
-// looks "valid" locally but 401s on every request. Verify it against
-// the server once per session and drop it if the server rejects it.
-let tokenServerVerified = false
+// Verification belongs to one exact credential, not just the current user.
+let serverVerifiedToken: string | null = null
+
+function sessionIsCurrent(token: string, version: number): boolean {
+  return getAuthToken() === token && untrack(authVersion) === version
+}
+
+function currentSessionVerified(): boolean {
+  return hasValidToken() && getAuthToken() === serverVerifiedToken
+}
 
 async function verifyTokenWithServer(): Promise<boolean> {
-  if (tokenServerVerified) return true
+  const token = getAuthToken()
+  if (token === null || token === '') return false
+  if (currentSessionVerified()) return true
+  const version = untrack(authVersion)
   try {
     const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${getAuthToken() ?? ''}` },
+      headers: { Authorization: `Bearer ${token}` },
     })
+    if (!sessionIsCurrent(token, version)) return currentSessionVerified()
     if (res.ok) {
-      tokenServerVerified = true
+      serverVerifiedToken = token
       return true
     }
     if (res.status === 401 || res.status === 404) {
-      if (tokenServerVerified) return true // a sign-in replaced it meanwhile
       console.info('[auth] stored token rejected by server — re-authenticating')
       if (!handleCloudSessionRejected()) setAuthToken(null)
       return false
@@ -503,13 +511,13 @@ async function verifyTokenWithServer(): Promise<boolean> {
         .clone()
         .text()
         .catch(() => '')
+      if (!sessionIsCurrent(token, version)) return currentSessionVerified()
       if (handleAuthErrorResponse(res.status, body)) return false
     }
-    // 5xx etc. — keep the token, assume a server hiccup.
+    // A server hiccup does not discard the session that sent this request.
     return true
   } catch {
-    // Network down — keep the token, stay offline-tolerant.
-    return true
+    return sessionIsCurrent(token, version) || currentSessionVerified()
   }
 }
 
@@ -623,7 +631,7 @@ export async function loginWithPassword(
 export function adoptSession(auth: AuthResponse): void {
   setAuthToken(auth.token)
   setRequiresLogin(false)
-  tokenServerVerified = true
+  serverVerifiedToken = auth.token
   authChanged()
 }
 
@@ -706,23 +714,15 @@ export interface RefreshedSession {
   expiresAt: string
 }
 
-/**
- * Trade a live session for a fresh JWT.
- *
- * The token lasts thirty days and, until this existed, had no renewal path at
- * all: it simply expired, and the singer was handed a sign-in screen with no
- * anonymous fallback — on a phone, with no passkey, that is a churn event on
- * exactly the people a native app is for. The worker keeps the session row
- * (`sid`), so this asks it to reissue rather than re-authenticating anything.
- *
- * Returns null when the session is gone, and never throws: the caller is a
- * foreground handler, not a user action, and a rejected promise there has
- * nowhere to be reported.
+/** Renew the worker's existing session (`sid`) for another thirty-day JWT.
+ * Foreground callers receive null for a refused, replaced or offline session;
+ * an old response must never reverse logout or overwrite a newer sign-in.
  */
 export async function refreshSession(): Promise<RefreshedSession | null> {
   const token = getAuthToken()
   if (API_BASE_URL == null || API_BASE_URL === '') return null
   if (token == null || token === '') return null
+  const version = untrack(authVersion)
   try {
     const res = await fetch(`${requireBaseUrl()}/api/auth/refresh`, {
       method: 'POST',
@@ -732,20 +732,21 @@ export async function refreshSession(): Promise<RefreshedSession | null> {
       },
       body: '{}',
     })
+    if (!sessionIsCurrent(token, version)) return null
     if (res.status === 401) {
       // The session behind the token is gone — revoked elsewhere, or the
       // account was deleted. An account's token asks for a sign-in rather
       // than a new identity; any other is dropped. Unless a newer one won.
-      if (getAuthToken() !== token) return null
       console.info('[auth] session refresh refused — the session is gone')
       if (!handleCloudSessionRejected()) setAuthToken(null)
       return null
     }
     if (!res.ok) return null
     const body = (await res.json()) as Partial<RefreshedSession>
+    if (!sessionIsCurrent(token, version)) return null
     if (typeof body.token !== 'string' || body.token === '') return null
     setAuthToken(body.token)
-    tokenServerVerified = true
+    serverVerifiedToken = body.token
     authChanged()
     return { token: body.token, expiresAt: body.expiresAt ?? '' }
   } catch {
@@ -870,7 +871,7 @@ export function consumeGoogleRedirect(): void {
   if (landed.token !== null) {
     setAuthToken(landed.token)
     setRequiresLogin(false)
-    tokenServerVerified = true // freshly issued by the worker
+    serverVerifiedToken = landed.token // freshly issued by the worker
     googleRedirectResult = { ok: true }
     rememberSignInMethod('google')
     authChanged()
@@ -1186,7 +1187,7 @@ export async function pollDeviceLink(
   if (data.status === 'linked' && data.token != null && data.token !== '') {
     setAuthToken(data.token)
     setRequiresLogin(false)
-    tokenServerVerified = true // freshly issued by the worker
+    serverVerifiedToken = data.token // freshly issued by the worker
     authChanged()
     return { status: 'linked' }
   }
@@ -1410,7 +1411,7 @@ export function logout(): void {
     setRequiresLogin(true)
   }
   setAuthToken(null)
-  tokenServerVerified = false
+  serverVerifiedToken = null
   authChanged()
 
   // Tell the server this DEVICE is done. It deletes the session row named by
@@ -1474,7 +1475,7 @@ export async function deleteAccount(): Promise<void> {
   // one place it goes.
   forgetSignInMethod()
   resetUserId()
-  tokenServerVerified = false
+  serverVerifiedToken = null
   authChanged()
 }
 
