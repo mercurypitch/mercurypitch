@@ -410,8 +410,7 @@ async function celebration() {
       Math.exp(-(dx * dx + dy * dy) / (2 * mist.sigma_W ** 2)) *
       (1 - mist.right_cut * Math.max(Math.cos(t), 0) ** 2) *
       (1 -
-        mist.streaks.depth *
-          (0.5 + 0.5 * Math.cos(mist.streaks.n * t + 0.6)))
+        mist.streaks.depth * (0.5 + 0.5 * Math.cos(mist.streaks.n * t + 0.6)))
     )
   }
   // Out to 4 sigma: the mist is strong (alpha 0.95), and at 3 its edge
@@ -451,8 +450,7 @@ async function celebration() {
     bottom: hexRgb(o.bottom_hex),
   })
   const twinkle = timing.idle.dots_twinkle
-  const wobble =
-    star.inner_outline.wobble?.radius_factors ?? Array(10).fill(1)
+  const wobble = star.inner_outline.wobble?.radius_factors ?? Array(10).fill(1)
   if (wobble.length !== 10) {
     throw new Error('the inner outline wants 10 radius factors')
   }
