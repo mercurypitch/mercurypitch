@@ -32,10 +32,10 @@
 //   echo-star-result-bright.webp  218x218  8024 bytes  sha256 cbacf36fd4bda060
 //   echo-star-result-cyan.webp  218x218  8034 bytes  sha256 9d1c9a455d56dca1
 //   echo-star-result-violet.webp  218x218  8032 bytes  sha256 48f6c00e74c5a0bd
-//   echo-world-1290.webp  1290x3096  231800 bytes  sha256 4612a90678b6fd4d
-//   echo-world-860.webp  860x2064  131634 bytes  sha256 6d2606ebef7eaa56
-//   echo-world-result-1290.webp  1290x3096  263632 bytes  sha256 67705f4a82706d3c
-//   echo-world-result-860.webp  860x2064  148742 bytes  sha256 4b7368e5eb12650f
+//   echo-world-1290.webp  1290x3096  197930 bytes  sha256 09b323ae511192f7
+//   echo-world-860.webp  860x2064  116556 bytes  sha256 51b57ec0a5482712
+//   echo-world-result-1290.webp  1290x3096  271634 bytes  sha256 a24a96cc80c10e76
+//   echo-world-result-860.webp  860x2064  157884 bytes  sha256 fd8f306b2c3b549e
 
 export interface PlatePoint {
   readonly u: number
@@ -52,10 +52,10 @@ export const SKY_TOP_RGB = [7, 15, 37] as const
 
 /** The world plate's colours band by band, for its fallback. */
 export const WORLD_FALLBACK =
-  'linear-gradient(to bottom, rgb(7, 16, 36) 4.2%, rgb(8, 17, 36) 12.5%, rgb(9, 18, 37) 20.8%, rgb(9, 19, 39) 29.2%, rgb(9, 19, 41) 37.5%, rgb(10, 23, 48) 45.8%, rgb(16, 31, 63) 54.2%, rgb(42, 54, 108) 62.5%, rgb(42, 48, 76) 70.8%, rgb(30, 47, 82) 79.2%, rgb(17, 31, 63) 87.5%, rgb(17, 28, 55) 95.8%)'
+  'linear-gradient(to bottom, rgb(7, 16, 36) 4.2%, rgb(8, 17, 36) 12.5%, rgb(9, 18, 37) 20.8%, rgb(8, 18, 39) 29.2%, rgb(9, 19, 41) 37.5%, rgb(10, 23, 48) 45.8%, rgb(16, 31, 63) 54.2%, rgb(42, 54, 107) 62.5%, rgb(45, 47, 75) 70.8%, rgb(37, 46, 79) 79.2%, rgb(24, 32, 63) 87.5%, rgb(22, 29, 56) 95.8%)'
 /** The result plate's, the same way. */
 export const RESULT_FALLBACK =
-  'linear-gradient(to bottom, rgb(7, 16, 36) 4.2%, rgb(8, 17, 36) 12.5%, rgb(9, 18, 37) 20.8%, rgb(9, 19, 39) 29.2%, rgb(8, 21, 47) 37.5%, rgb(16, 34, 74) 45.8%, rgb(15, 33, 72) 54.2%, rgb(63, 69, 126) 62.5%, rgb(63, 66, 106) 70.8%, rgb(75, 75, 113) 79.2%, rgb(37, 45, 84) 87.5%, rgb(22, 34, 68) 95.8%)'
+  'linear-gradient(to bottom, rgb(6, 15, 33) 4.2%, rgb(7, 15, 33) 12.5%, rgb(8, 16, 33) 20.8%, rgb(8, 19, 41) 29.2%, rgb(8, 22, 52) 37.5%, rgb(16, 35, 77) 45.8%, rgb(15, 33, 72) 54.2%, rgb(66, 71, 129) 62.5%, rgb(71, 69, 112) 70.8%, rgb(82, 82, 121) 79.2%, rgb(39, 49, 91) 87.5%, rgb(24, 36, 74) 95.8%)'
 
 /** The foreground roof's ridge: left edge, finial, right edge. */
 export const RIDGE: readonly (readonly [number, number])[] = [
@@ -306,9 +306,12 @@ export const RESULT_SLOTS: readonly {
 ]
 
 /**
- * The result's celebration star, round 3 (echo-celebration-star.json r3):
- * the star (a hollow double outline in its glow), the 33 sparkle dots in
- * reveal order and the starburst, places in plate fractions and sizes in
+ * The result's celebration star, art round 4 (echo-celebration-star.json,
+ * its r3 block): the star (a hollow double outline in its glow, the inner
+ * one lumpy: its corners' radius factors counter-clockwise on screen from
+ * the top tip), the 33 sparkle dots in reveal order, the three ribbons
+ * (Catmull-Rom curves through their dots) and the starburst (a mist laid
+ * over, a glow, rays and a core), places in plate fractions and sizes in
  * W, colours sRGB; and the timings, ms from the result's stars landing.
  * A glow is its reach (W) and its rings' screen colours, centre to edge,
  * fitted to the result plate (scripts/sync-echo-art.mjs fitLights).
@@ -319,40 +322,43 @@ export const CELEBRATION = {
     v: 0.57463,
     tipW: 0.01581,
     outer: {
-      valleyOverTip: 0.58,
+      valleyOverTip: 0.5,
       strokeW: 0.00412,
-      top: [214, 244, 255],
-      bottom: [126, 255, 255],
+      top: [203, 232, 255],
+      bottom: [113, 250, 255],
     },
     inner: {
-      scale: 0.4,
-      valleyOverTip: 0.58,
-      strokeW: 0.00241,
-      top: [180, 217, 255],
-      bottom: [80, 234, 255],
+      scale: 0.6,
+      valleyOverTip: 0.5,
+      strokeW: 0.00275,
+      top: [226, 248, 255],
+      bottom: [142, 255, 255],
+      wobbleCcw: [
+        1.162, 0.892, 1.054, 0.82, 1.126, 0.964, 1.18, 0.856, 1.072, 0.91,
+      ],
     },
-    fill: { rgb: [78, 178, 255], alpha: 0.7 },
+    fill: { rgb: [0, 149, 237], alpha: 0.78 },
     glow: {
       reachW: 0.11546,
       screen: [
-        [6, 33, 118],
-        [6, 33, 118],
-        [6, 33, 118],
-        [6, 33, 118],
-        [6, 29, 106],
-        [5, 25, 92],
-        [5, 23, 84],
-        [5, 22, 81],
-        [5, 23, 81],
-        [4, 20, 71],
-        [3, 16, 57],
-        [3, 14, 49],
-        [2, 11, 41],
-        [2, 10, 36],
-        [2, 9, 31],
-        [2, 8, 27],
-        [2, 6, 22],
-        [1, 5, 17],
+        [7, 34, 123],
+        [7, 34, 123],
+        [7, 34, 124],
+        [7, 34, 123],
+        [6, 31, 111],
+        [6, 28, 96],
+        [5, 25, 88],
+        [5, 25, 86],
+        [6, 25, 87],
+        [5, 22, 76],
+        [4, 18, 62],
+        [3, 15, 52],
+        [3, 13, 44],
+        [2, 11, 38],
+        [2, 10, 34],
+        [2, 8, 29],
+        [2, 7, 24],
+        [1, 5, 18],
         [1, 3, 12],
         [1, 2, 8],
         [0, 2, 6],
@@ -401,7 +407,7 @@ export const CELEBRATION = {
       rank: 3,
     },
     {
-      u: 0.81388,
+      u: 0.82763,
       v: 0.59757,
       rgb: [100, 243, 255],
       coreFwhmW: 0.00344,
@@ -410,7 +416,7 @@ export const CELEBRATION = {
       rank: 4,
     },
     {
-      u: 0.82399,
+      u: 0.83773,
       v: 0.60213,
       rgb: [132, 255, 255],
       coreFwhmW: 0.00344,
@@ -455,7 +461,7 @@ export const CELEBRATION = {
       rank: 9,
     },
     {
-      u: 0.82471,
+      u: 0.83845,
       v: 0.59362,
       rgb: [116, 241, 255],
       coreFwhmW: 0.00344,
@@ -662,44 +668,101 @@ export const CELEBRATION = {
       rank: 32,
     },
   ],
+  ribbons: [
+    {
+      points: [
+        [0.6264, 0.5948],
+        [0.6415, 0.5947],
+        [0.6519, 0.5928],
+        [0.6614, 0.5848],
+        [0.6718, 0.5862],
+        [0.6888, 0.5906],
+        [0.6973, 0.5945],
+      ],
+      fwhmW: 0.00378,
+      rgb: [0, 225, 255],
+      alpha: 0.15,
+      wisp: { depth: 0.2, periodW: 0.02405, phase: 0 },
+      taperW: 0.01031,
+    },
+    {
+      points: [
+        [0.6614, 0.5848],
+        [0.6733, 0.572],
+        [0.694, 0.5716],
+      ],
+      fwhmW: 0.00378,
+      rgb: [0, 225, 255],
+      alpha: 0.3,
+      wisp: { depth: 0.2, periodW: 0.02405, phase: 1.3 },
+      taperW: 0.01031,
+    },
+    {
+      points: [
+        [0.8008, 0.5659],
+        [0.7896, 0.5663],
+        [0.7934, 0.5698],
+        [0.7861, 0.5824],
+        [0.7817, 0.5897],
+        [0.7827, 0.5944],
+        [0.7633, 0.6053],
+        [0.7558, 0.6068],
+        [0.7491, 0.6092],
+      ],
+      fwhmW: 0.00378,
+      rgb: [0, 225, 255],
+      alpha: 0.3,
+      wisp: { depth: 0.2, periodW: 0.02405, phase: 2.6 },
+      taperW: 0.01031,
+    },
+  ],
   burst: {
     u: 0.78838,
     v: 0.60733,
-    core: { fwhmW: 0.01718, rgb: [243, 254, 255] },
+    core: { fwhmW: 0.01203, rgb: [243, 254, 255] },
+    mist: {
+      offsetW: [0, -0.01031],
+      sigmaW: 0.02405,
+      alpha: 0.95,
+      rgb: [0, 190, 203],
+      rightCut: 0.3,
+      streaks: { n: 7, depth: 0 },
+    },
     glow: {
-      reachW: 0.12258,
+      reachW: 0.04377,
       screen: [
-        [24, 185, 255],
-        [24, 179, 186],
-        [26, 161, 166],
-        [24, 134, 140],
-        [19, 107, 112],
-        [15, 82, 84],
-        [11, 61, 61],
-        [8, 47, 45],
-        [5, 34, 34],
-        [4, 27, 26],
-        [3, 22, 21],
-        [2, 19, 18],
-        [2, 16, 15],
-        [1, 13, 12],
-        [1, 11, 10],
-        [1, 8, 8],
-        [1, 7, 6],
+        [45, 232, 255],
+        [45, 229, 255],
+        [43, 222, 255],
+        [40, 210, 255],
+        [37, 192, 245],
+        [33, 172, 232],
+        [30, 153, 216],
+        [27, 132, 184],
+        [24, 112, 154],
+        [21, 95, 125],
+        [17, 78, 97],
+        [14, 63, 77],
+        [11, 50, 61],
+        [9, 39, 46],
+        [6, 30, 34],
+        [5, 23, 26],
+        [4, 18, 19],
+        [2, 13, 14],
+        [2, 10, 10],
+        [1, 7, 7],
         [1, 5, 5],
-        [0, 4, 4],
         [0, 3, 3],
         [0, 2, 2],
         [0, 2, 2],
-        [0, 2, 1],
-        [0, 1, 1],
         [0, 0, 0],
       ],
     },
     rays: {
-      lengthW: { up: 0.01031, down: 0.04811, left: 0.02405, right: 0.03093 },
-      widthFwhmW: 0.00447,
+      lengthW: { up: 0.01031, down: 0.04124, left: 0.02405, right: 0.00859 },
+      widthFwhmW: 0.00344,
       rgb: [195, 255, 255],
+      diagonal: { lengthW: 0.01375, alpha: 0.7 },
     },
   },
   timing: {
@@ -718,7 +781,18 @@ export const CELEBRATION = {
         [260, 1],
       ],
     },
+    mist: {
+      opacity: [
+        [0, 0],
+        [380, 1],
+      ],
+      scale: [
+        [0, 0.7],
+        [380, 1],
+      ],
+    },
     dots: { firstMs: 200, staggerMs: 28, durationMs: 160, fromScale: 1.8 },
+    ribbons: { fromMs: 420, durationMs: 700, staggerMs: 120 },
     star: {
       outer: [900, 1340],
       inner: [1100, 1420],
@@ -734,6 +808,7 @@ export const CELEBRATION = {
       glowPeriodMs: 3200,
       raysScale: [0.88, 1],
       raysPeriodMs: 2400,
+      wispRadPerS: 0.8,
     },
   },
 } as const
