@@ -479,12 +479,24 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
     // stable pseudonym; only your own row always carries your name back to
     // you. This is a projection of the standings payload — points and
     // ranking are untouched.
+    //
+    // A pseudonymous row must carry nothing that leads back to the account.
+    // Profiles are publicly readable by id, and the public profile list hands
+    // out every id beside its display name, so either the userId or a pseudonym
+    // cut from it names the person. Such a row is keyed by its membership id
+    // instead: a random UUID nothing else exposes, new each week. The client
+    // only compares this field with its own id, to mark the "you" row.
     const { results } = await env.DB.prepare(
-      `SELECT m.userId AS userId, m.points AS points,
+      `SELECT m.points AS points,
+              CASE
+                WHEN m.userId = ?2 OR COALESCE(p.leaderboardOptIn, 0) = 1
+                  THEN m.userId
+                ELSE m.id
+              END AS userId,
               CASE
                 WHEN m.userId = ?2 OR COALESCE(p.leaderboardOptIn, 0) = 1
                   THEN COALESCE(p.displayName, 'Singer-' || substr(m.userId, 1, 6))
-                ELSE 'Singer-' || substr(m.userId, 1, 6)
+                ELSE 'Singer-' || substr(m.id, 1, 6)
               END AS displayName
        FROM leagueMembership m
        JOIN users u ON u.id = m.userId AND u.suspendedAt IS NULL
