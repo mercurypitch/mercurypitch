@@ -12,7 +12,9 @@ for (const viewport of [
     test('opens the same latest course from both real Games entries @smoke', async ({
       page,
     }, info) => {
-      test.setTimeout(90_000)
+      // Allow both 60s course loads plus 30s for settings and navigation.
+      // Software rendering can consume most of each load's existing budget.
+      test.setTimeout(150_000)
       const obstacleLoads = new Map<string, number>()
       page.on('response', (response) => {
         const path = new URL(response.url()).pathname

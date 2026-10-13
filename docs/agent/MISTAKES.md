@@ -2069,3 +2069,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** session persistence omits runtime `outputs`; retaining a row makes the seeder skip its creation, and a local-blob hydrator cannot restore its remote URLs. Presence-only reload tests passed.
 **Rule:** restore external audio from its manifest, preserve local replacements and edited metadata, and test playable stems across fresh module loads sharing one database. A failed storage read or a delete/edit during hydration must not overwrite user work or resurrect a removed row.
 **See:** `src/features/karaoke-night/seed-examples.ts`, `src/stores/uvr-store-reload.test.ts`.
+
+### Budget the complete browser journey across bounded scene loads
+
+**Symptom:** a Settings locator appeared to time out even though its button was present.
+**Cause:** two successful 41-second software-rendered course loads exhausted the test's 90-second total; the final click received only 35 milliseconds before teardown.
+**Rule:** inspect the trace's global deadline before diagnosing a missing control. When real scene loading is part of the journey, budget the test for its aggregate bounded loads and interactions; keep each load limit and every assertion intact.
+**See:** `apps/beside-cue/e2e/glass-adventure-native-current.e2e.ts`.
