@@ -15,48 +15,21 @@
 
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { DEMO_SESSION_ID, demoSessionId, isDemoSessionId, } from '@/lib/example-session'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { loadBundledExamples } from './bundled-examples'
 import type { DemoSongManifest } from './demo-song-manifest'
 
 export type { DemoSongManifest }
 
-/**
- * Session id of the ORIGINAL demo — lyrics, pitch analysis and scores
- * persist under it in the local db exactly like a normal separation
- * session.
- *
- * It is a bare string with no slug in it because it shipped that way, and
- * every visitor who has ever sung the demo has local rows keyed by it.
- * `demoSessionId` therefore keeps returning exactly this for the original
- * slug rather than migrating anybody.
- */
-export const DEMO_SESSION_ID = 'karaoke-night-demo'
-
-/** The slug the shipped manifest and every pre-list row carry. */
-export const LEGACY_SLUG = 'karaoke-night'
-
-/**
- * Local-db session id for a demo.
- *
- * The original keeps its historic id; anything added later is namespaced
- * under it. Getting this wrong does not throw — it silently orphans a
- * visitor's lyrics and takes, which is why the legacy case is spelled out
- * rather than derived.
- */
-export function demoSessionId(slug: string | undefined): string {
-  const s = (slug ?? '').trim()
-  return s === '' || s === LEGACY_SLUG
-    ? DEMO_SESSION_ID
-    : `${DEMO_SESSION_ID}:${s}`
-}
-
-/** Whether a local session belongs to any demo song. */
-export function isDemoSessionId(sessionId: string): boolean {
-  return (
-    sessionId === DEMO_SESSION_ID || sessionId.startsWith(`${DEMO_SESSION_ID}:`)
-  )
-}
+// The demo session ids live in lib so the session store can recognise an
+// example without importing this feature. Re-exported for existing callers.
+export {
+  DEMO_SESSION_ID,
+  demoSessionId,
+  isDemoSessionId,
+  LEGACY_SLUG,
+} from '@/lib/example-session'
 
 const MANIFEST_URL = '/karaoke-demo-song.json'
 
