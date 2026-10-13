@@ -4,7 +4,7 @@
 // a second.
 
 import { describe, expect, it } from 'vitest'
-import { formatClock, roundedMinutesSeconds } from '@/lib/format-time'
+import { formatClock, formatRestDuration, formatSeekTarget, roundedMinutesSeconds, } from '@/lib/format-time'
 
 describe('formatClock', () => {
   it('formats the common case', () => {
@@ -70,5 +70,34 @@ describe('roundedMinutesSeconds', () => {
     }
 
     expect(wrong).toEqual([])
+  })
+})
+
+describe('formatSeekTarget', () => {
+  it.each([
+    [179.5, '3:00'],
+    [119.6, '2:00'],
+    [59.6, '1:00'],
+    [59.4, '59s'],
+    [0, '0s'],
+  ])('formats %s seconds as "%s"', (seconds, label) => {
+    expect(formatSeekTarget(seconds)).toBe(label)
+  })
+})
+
+describe('formatRestDuration', () => {
+  it.each([
+    [500, '0.5s'],
+    [200, '0.2s'],
+    [undefined, '2s'],
+    [2000, '2s'],
+    [59400, '59s'],
+    [59600, '1m'],
+    [119600, '2m'],
+    [125000, '2m 5s'],
+    [0, '0s'],
+    [-100, '0s'],
+  ])('formats %s ms as "%s"', (ms, label) => {
+    expect(formatRestDuration(ms)).toBe(label)
   })
 })

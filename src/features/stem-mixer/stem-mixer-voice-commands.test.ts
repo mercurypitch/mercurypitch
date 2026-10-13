@@ -163,6 +163,16 @@ describe('stem mixer voice commands — transport', () => {
     expect(fixture.seekedTo()).toBe(0)
     expect(fixture.calls).toContain('play')
   })
+
+  it.each([
+    ['go to 179.5 seconds', 'Go to 3:00'],
+    ['go to 119.6 seconds', 'Go to 2:00'],
+    ['go to 59.6 seconds', 'Go to 1:00'],
+    ['go to 59.4 seconds', 'Go to 59s'],
+  ])('answers "%s" with "%s"', (said, reply) => {
+    const fixture = makeFixture()
+    expect(fire(fixture, said)).toBe(reply)
+  })
 })
 
 describe('stem mixer voice commands — stems', () => {
