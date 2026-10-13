@@ -31,11 +31,12 @@ import { getUserId } from '@/db/seed'
  */
 export async function hasBoardConsent(): Promise<boolean> {
   try {
+    const userId = getUserId()
     const db = await getDb()
     const profile = await db
       .getRepository<UserProfile>('userProfiles')
-      .findById(getUserId())
-    return profile?.leaderboardOptIn === true
+      .findById(userId)
+    return getUserId() === userId && profile?.leaderboardOptIn === true
   } catch {
     return false
   }
@@ -51,9 +52,9 @@ export async function hasBoardConsent(): Promise<boolean> {
  */
 export async function grantBoardConsent(): Promise<boolean> {
   try {
+    const userId = getUserId()
     const db = await getDb()
     const profiles = db.getRepository<UserProfile>('userProfiles')
-    const userId = getUserId()
     const patch = {
       leaderboardOptIn: true,
       leaderboardOptInAt: new Date().toISOString(),
@@ -69,7 +70,9 @@ export async function grantBoardConsent(): Promise<boolean> {
     // `displayName: ''` would put a blank entry on a public podium. The same
     // handle the fallback would have produced is written instead, matching
     // leaderboard-service so both paths mint the identical name.
-    if ((await profiles.findById(userId)) != null) {
+    const profile = await profiles.findById(userId)
+    if (getUserId() !== userId) return false
+    if (profile != null) {
       await profiles.update(userId, patch)
     } else {
       try {
@@ -84,10 +87,13 @@ export async function grantBoardConsent(): Promise<boolean> {
         // create() provisions a first-time visitor's identity, and the server
         // creates the profile row while provisioning — so the POST finds it.
         if (!(err instanceof CloudRequestError && err.status === 409)) throw err
+        if (getUserId() !== userId) return false
         await profiles.update(userId, patch)
       }
     }
-    return true
+    // A saved consent belongs to its initiator, not an account selected while
+    // the write was pending. The caller must ask that account independently.
+    return getUserId() === userId
   } catch {
     return false
   }

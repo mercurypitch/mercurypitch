@@ -432,6 +432,7 @@
   "workers/db-worker/node-tests/apple-signin-integration.test.ts",
   "workers/db-worker/node-tests/auth-sessions-integration.test.ts",
   "workers/db-worker/node-tests/authorize-device-secret.test.ts",
+  "workers/db-worker/node-tests/client-api-integration.test.ts",
   "workers/db-worker/node-tests/column-names-integration.test.ts",
   "workers/db-worker/node-tests/google-return-nonce-integration.test.ts",
   "workers/db-worker/node-tests/guided-exercise-example-clip-integration.test.ts",

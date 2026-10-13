@@ -4,9 +4,12 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CLOUD_ENTITIES, HybridAdapter } from '@/db/adapters/hybrid-adapter'
+import { ServerAdapter } from '@/db/adapters/server-adapter'
 import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
+
+afterEach(() => vi.unstubAllGlobals())
 
 function stubAdapter(): DatabaseAdapter & { seen: string[] } {
   const seen: string[] = []
@@ -338,6 +341,37 @@ describe('a user-scoped read with no limit', () => {
       [1000, 1000],
       [1000, 2000],
     ])
+    expect(cloud.asked.every((opts) => opts?.where?.userId === 'me')).toBe(true)
+  })
+
+  it('continues from the requested offset and preserves sorting on each page', async () => {
+    const cloud = pagedCloud(2020)
+    const repo = new HybridAdapter(
+      cloud,
+      stubAdapter(),
+      () => true,
+    ).getRepository('songManifests')
+
+    const rows = await repo.findAll({
+      offset: 20,
+      orderBy: 'createdAt',
+      orderDir: 'desc',
+    })
+
+    expect(rows.map((row) => row.id)).toEqual(
+      Array.from({ length: 2000 }, (_, index) => `r${index + 20}`),
+    )
+    // An exact multiple needs an empty terminal page; otherwise rows beyond
+    // a full second page would silently disappear.
+    expect(cloud.asked).toEqual(
+      [20, 1020, 2020].map((offset) => ({
+        offset,
+        orderBy: 'createdAt',
+        orderDir: 'desc',
+        limit: 1000,
+        throwOnError: true,
+      })),
+    )
   })
 
   it('asks once when the caller gave a limit', async () => {
@@ -348,8 +382,8 @@ describe('a user-scoped read with no limit', () => {
       () => true,
     ).getRepository('sessionRecords')
 
-    expect(await repo.findAll({ limit: 20 })).toHaveLength(20)
-    expect(cloud.asked).toHaveLength(1)
+    expect(await repo.findAll({ limit: 20, offset: 5 })).toHaveLength(20)
+    expect(cloud.asked).toEqual([{ limit: 20, offset: 5 }])
   })
 
   it('answers nothing rather than part when a later page fails', async () => {
@@ -367,17 +401,109 @@ describe('a user-scoped read with no limit', () => {
     )
   })
 
-  it('keeps a public board to one page', async () => {
-    const cloud = pagedCloud(2005)
-    const repo = new HybridAdapter(
-      cloud,
-      stubAdapter(),
-      () => true,
-    ).getRepository('sharedMelodies')
+  it.each(['sharedMelodies', 'sharedSessions'])(
+    'keeps public %s queries to one page while signed out',
+    async (entity) => {
+      const cloud = pagedCloud(2005)
+      const repo = new HybridAdapter(
+        cloud,
+        stubAdapter(),
+        () => false,
+      ).getRepository(entity)
 
-    expect(await repo.findAll()).toHaveLength(100)
-    expect(cloud.asked).toHaveLength(1)
-  })
+      expect(await repo.findAll({ where: { isPublic: true } })).toHaveLength(
+        100,
+      )
+      expect(cloud.asked).toEqual([{ where: { isPublic: true } }])
+    },
+  )
+
+  it.each([false, true])(
+    'fails the whole HTTP read after a later page fails (strict=%s)',
+    async (strict) => {
+      const firstPage = Array.from({ length: 1000 }, (_, index) => ({
+        id: `r${index}`,
+      }))
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(new Response(JSON.stringify(firstPage)))
+        .mockResolvedValueOnce(
+          new Response('page unavailable', { status: 403 }),
+        )
+      vi.stubGlobal('fetch', fetchMock)
+      const cloud = new ServerAdapter({ baseUrl: 'http://api.test' })
+      const repo = new HybridAdapter(
+        cloud,
+        stubAdapter(),
+        () => true,
+      ).getRepository('songManifests')
+
+      const reading = repo.findAll({ throwOnError: strict })
+      if (strict) await expect(reading).rejects.toThrow(/403/)
+      else expect(await reading).toEqual([])
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(
+        new URL(String(fetchMock.mock.calls[1]?.[0])).searchParams.get(
+          'offset',
+        ),
+      ).toBe('1000')
+    },
+  )
+
+  it.each([
+    { change: 'switch', pageSize: 1000, strict: false },
+    { change: 'sign out', pageSize: 1000, strict: false },
+    { change: 'switch', pageSize: 1, strict: true },
+    { change: 'sign out', pageSize: 1, strict: true },
+  ])(
+    'discards pending rows after $change (pageSize=$pageSize, strict=$strict)',
+    async ({ change, pageSize, strict }) => {
+      let identity = 'singer-a'
+      let authed = true
+      let releaseResponse: (response: Response) => void = () => undefined
+      const fetchMock = vi
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise<Response>((resolve) => {
+              releaseResponse = resolve
+            }),
+        )
+        .mockResolvedValue(
+          new Response(JSON.stringify([{ id: 'singer-b-row' }])),
+        )
+      vi.stubGlobal('fetch', fetchMock)
+      const cloud = new ServerAdapter({
+        baseUrl: 'http://api.test',
+        headers: () => ({ Authorization: `Bearer ${identity}` }),
+        writeIdentity: () => identity,
+      })
+      const repo = new HybridAdapter(
+        cloud,
+        stubAdapter(),
+        () => authed,
+        async () => false,
+        () => identity,
+      ).getRepository('songManifests')
+
+      const reading = repo.findAll({ throwOnError: strict })
+      if (change === 'switch') identity = 'singer-b'
+      else authed = false
+      releaseResponse(
+        new Response(
+          JSON.stringify(
+            Array.from({ length: pageSize }, (_, index) => ({
+              id: `singer-a-${index}`,
+            })),
+          ),
+        ),
+      )
+
+      await expect(reading).rejects.toThrow(/read identity changed/)
+      // A new page must not dispatch with the next account's credentials.
+      expect(fetchMock).toHaveBeenCalledOnce()
+    },
+  )
 })
 
 // ── Allowlist drift ──────────────────────────────────────────────

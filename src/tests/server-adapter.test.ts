@@ -79,6 +79,35 @@ describe('a create the client retries', () => {
 
     expect(sent[0]?.id).not.toBe(sent[1]?.id)
   })
+
+  it('mints a new id even when the input was copied from a stored record', async () => {
+    const sent: Array<{ id: string; score: number }> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const row = JSON.parse(String(init?.body)) as {
+          id: string
+          score: number
+        }
+        sent.push(row)
+        return ok(row)
+      }),
+    )
+    // Structural typing permits a full record where create accepts its
+    // editable fields. Reusing this id would turn a new save into a replay.
+    const previous: Rec = {
+      id: 'df6f0c51-a947-4a86-a4ba-888b83f32d17',
+      score: 1,
+      createdAt: '',
+      updatedAt: '',
+    }
+
+    const created = await repo().create(previous)
+
+    expect(created.id).not.toBe(previous.id)
+    expect(created.id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(sent[0]).toMatchObject({ id: created.id, score: 1 })
+  })
 })
 
 describe('ServerAdapter retry semantics', () => {
@@ -152,6 +181,109 @@ describe('ServerAdapter retry semantics', () => {
 })
 
 describe('ServerAdapter lazy identity provisioning', () => {
+  it.each([
+    { status: 401, initialToken: 'anonymous-session' },
+    { status: 403, initialToken: 'anonymous-session' },
+    { status: 401, initialToken: null },
+    { status: 403, initialToken: null },
+  ])(
+    'does not apply an old $status to a newer token for the same user (initial=$initialToken)',
+    async ({ status, initialToken }) => {
+      let token: string | null = initialToken
+      let releaseResponse: (response: Response) => void = () => undefined
+      const onUnauthorized = vi.fn()
+      const onErrorResponse = vi.fn()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          () =>
+            new Promise<Response>((resolve) => {
+              releaseResponse = resolve
+            }),
+        ),
+      )
+      const r = new ServerAdapter({
+        baseUrl: 'http://api.test',
+        headers: (): Record<string, string> =>
+          token === null ? {} : { Authorization: `Bearer ${token}` },
+        writeIdentity: () => 'same-singer',
+        onUnauthorized,
+        onErrorResponse,
+      }).getRepository('sessionRecords')
+
+      const reading = r.findAll()
+      token = 'registered-session'
+      releaseResponse(new Response('{"error":"account_suspended"}', { status }))
+
+      expect(await reading).toEqual([])
+      expect(onUnauthorized).not.toHaveBeenCalled()
+      expect(onErrorResponse).not.toHaveBeenCalled()
+    },
+  )
+
+  it('checks the credential again after reading a delayed error body', async () => {
+    let token = 'anonymous-session'
+    let releaseBody: (body: string) => void = () => undefined
+    const onErrorResponse = vi.fn()
+    const text = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          releaseBody = resolve
+        }),
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        text,
+      })),
+    )
+    const r = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      headers: () => ({ authorization: `Bearer ${token}` }),
+      writeIdentity: () => 'same-singer',
+      onErrorResponse,
+    }).getRepository('sessionRecords')
+
+    const reading = r.findAll()
+    await vi.waitFor(() => expect(text).toHaveBeenCalledOnce())
+    token = 'registered-session'
+    releaseBody('{"error":"account_suspended"}')
+
+    expect(await reading).toEqual([])
+    expect(onErrorResponse).not.toHaveBeenCalled()
+  })
+
+  it.each([401, 403])(
+    'still applies %s to the unchanged current credential',
+    async (status) => {
+      const onUnauthorized = vi.fn()
+      const onErrorResponse = vi.fn()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response('current rejection', { status })),
+      )
+      const r = new ServerAdapter({
+        baseUrl: 'http://api.test',
+        headers: () => ({ Authorization: 'Bearer current-session' }),
+        writeIdentity: () => 'same-singer',
+        onUnauthorized,
+        onErrorResponse,
+      }).getRepository('sessionRecords')
+
+      expect(await r.findAll()).toEqual([])
+      if (status === 401) {
+        expect(onUnauthorized).toHaveBeenCalledOnce()
+        expect(onErrorResponse).not.toHaveBeenCalled()
+      } else {
+        expect(onErrorResponse).toHaveBeenCalledWith(403, 'current rejection')
+        expect(onUnauthorized).not.toHaveBeenCalled()
+      }
+    },
+  )
+
   function hookedRepo(beforeWrite: () => Promise<unknown>) {
     return new ServerAdapter({
       baseUrl: 'http://api.test',

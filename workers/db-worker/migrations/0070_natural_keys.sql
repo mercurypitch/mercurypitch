@@ -50,6 +50,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_userSettings_user_key
 
 -- ── challengeProgress ───────────────────────────────────────────────
 --
+-- The existing single-column indexes make the correlated lookups below scan
+-- every user with a popular challenge. Index the full key before those reads;
+-- the permanent UNIQUE index replaces this temporary lookup index afterward.
+CREATE INDEX IF NOT EXISTS idx_challengeProgress_natural_key_merge
+  ON challengeProgress(userId, challengeId);
+
 -- Merge first: take the best of the group onto every member, so it does not
 -- matter which one survives. `completed` is 0/1, so MAX is "completed if any
 -- of them was", and then the status says so too. The earliest non-null
@@ -113,3 +119,5 @@ DELETE FROM challengeProgress
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_challengeProgress_user_challenge
   ON challengeProgress(userId, challengeId);
+
+DROP INDEX IF EXISTS idx_challengeProgress_natural_key_merge;

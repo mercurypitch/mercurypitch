@@ -9,6 +9,7 @@
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { CloudRequestError } from '@/db/adapters/server-adapter'
 import type * as AuthService from '@/db/services/auth-service'
 import type * as BillingService from '@/db/services/billing-service'
 import type * as BackgroundAccess from '@/lib/backgrounds/background-access'
@@ -39,7 +40,9 @@ const mocks = vi.hoisted(() => ({
 
 const dbMocks = vi.hoisted(() => {
   const profileRepo = {
-    findById: vi.fn(async () => ({ id: 'existing-profile' })),
+    findById: vi.fn(
+      async (): Promise<{ id: string } | null> => ({ id: 'existing-profile' }),
+    ),
     update: vi.fn(async () => ({})),
     create: vi.fn(async () => ({})),
   }
@@ -81,7 +84,7 @@ vi.mock('@/stores/ui-store', () => ({
 }))
 vi.mock('@/db', () => ({ getDb: dbMocks.getDb }))
 
-import { setAuthToken } from '@/db/services/user-service'
+import { getUserId, setAuthToken } from '@/db/services/user-service'
 import { AccountSection } from '../account/AccountSection'
 
 const anonymousMe = {
@@ -317,6 +320,144 @@ describe('the display name editor', () => {
       ),
     )
   })
+
+  it('saves the first name on the profile created during provisioning', async () => {
+    let storedName = 'Maff'
+    mocks.fetchMe.mockImplementation(async () => ({
+      ...passwordMe,
+      profile: { displayName: storedName },
+    }))
+    dbMocks.profileRepo.findById.mockResolvedValueOnce(null)
+    dbMocks.profileRepo.create.mockRejectedValueOnce(
+      new CloudRequestError(409, 'Profile already exists'),
+    )
+    dbMocks.profileRepo.update.mockImplementationOnce(async () => {
+      storedName = 'First chosen name'
+      return {}
+    })
+    const userId = getUserId()
+    render(() => <AccountSection />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Edit display name' }),
+    )
+    fireEvent.input(screen.getByRole('textbox', { name: 'Display name' }), {
+      target: { value: '  First chosen name  ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save display name' }))
+
+    expect(
+      await screen.findByText('First chosen name', { selector: 'span' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('textbox', { name: 'Display name' }),
+    ).not.toBeInTheDocument()
+    expect(dbMocks.profileRepo.create).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ displayName: 'First chosen name' }),
+    )
+    expect(dbMocks.profileRepo.update).toHaveBeenCalledExactlyOnceWith(userId, {
+      displayName: 'First chosen name',
+    })
+    expect(dbMocks.leaderboardRepo.update).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { createStatus: 500, updateFails: false },
+    { createStatus: 409, updateFails: true },
+  ])(
+    'retains the draft when first name save fails (create=$createStatus, updateFails=$updateFails)',
+    async ({ createStatus, updateFails }) => {
+      mocks.fetchMe.mockResolvedValue(passwordMe)
+      dbMocks.profileRepo.findById.mockResolvedValueOnce(null)
+      dbMocks.profileRepo.create.mockRejectedValueOnce(
+        new CloudRequestError(createStatus, 'Profile create failed'),
+      )
+      if (updateFails)
+        dbMocks.profileRepo.update.mockRejectedValueOnce(
+          new Error('Profile update failed'),
+        )
+      render(() => <AccountSection />)
+
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Edit display name' }),
+      )
+      fireEvent.input(screen.getByRole('textbox', { name: 'Display name' }), {
+        target: { value: 'Keep this draft' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save display name' }))
+
+      expect(
+        await screen.findByText(
+          updateFails ? 'Profile update failed' : 'Profile create failed',
+        ),
+      ).toBeInTheDocument()
+      expect(screen.getByRole('textbox', { name: 'Display name' })).toHaveValue(
+        'Keep this draft',
+      )
+      expect(
+        screen.getByRole('button', { name: 'Save display name' }),
+      ).toBeEnabled()
+      expect(dbMocks.profileRepo.update).toHaveBeenCalledTimes(
+        updateFails ? 1 : 0,
+      )
+      expect(mocks.fetchMe).toHaveBeenCalledOnce()
+    },
+  )
+
+  it.each(['profile read', 'conflicting create', 'successful update'])(
+    'does not finish a name save for an account selected during %s',
+    async (boundary) => {
+      setAuthToken(
+        `header.${btoa(JSON.stringify({ sub: 'initial-account' }))}.signature`,
+      )
+      mocks.fetchMe.mockResolvedValue(passwordMe)
+      const switchAccount = () =>
+        setAuthToken(
+          `header.${btoa(JSON.stringify({ sub: 'different-account' }))}.signature`,
+        )
+      if (boundary === 'profile read') {
+        dbMocks.profileRepo.findById.mockImplementationOnce(async () => {
+          switchAccount()
+          return null
+        })
+      } else if (boundary === 'conflicting create') {
+        dbMocks.profileRepo.findById.mockResolvedValueOnce(null)
+        dbMocks.profileRepo.create.mockImplementationOnce(async () => {
+          switchAccount()
+          throw new CloudRequestError(409, 'Profile already exists')
+        })
+      } else {
+        dbMocks.profileRepo.update.mockImplementationOnce(async () => {
+          switchAccount()
+          return {}
+        })
+      }
+      render(() => <AccountSection />)
+
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Edit display name' }),
+      )
+      fireEvent.input(screen.getByRole('textbox', { name: 'Display name' }), {
+        target: { value: 'Previous account draft' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save display name' }))
+
+      expect(
+        await screen.findByText(
+          'Your account changed. Check the current profile before saving a name.',
+        ),
+      ).toBeInTheDocument()
+      expect(screen.getByRole('textbox', { name: 'Display name' })).toHaveValue(
+        'Previous account draft',
+      )
+      expect(dbMocks.profileRepo.update).toHaveBeenCalledTimes(
+        boundary === 'successful update' ? 1 : 0,
+      )
+      expect(dbMocks.profileRepo.create).toHaveBeenCalledTimes(
+        boundary === 'conflicting create' ? 1 : 0,
+      )
+    },
+  )
 
   it('throws away the edit on cancel, and on Escape', async () => {
     mocks.fetchMe.mockResolvedValue(passwordMe)

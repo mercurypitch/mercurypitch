@@ -168,6 +168,13 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     const url = `${this.url}${path}`
     const expectedIdentity = fixedIdentity ?? this.config.writeIdentity?.()
     const headers = { ...(fixedHeaders ?? this.headers()), ...init?.headers }
+    // An anonymous account can upgrade without changing its user id. Only
+    // the exact credential that failed may invalidate the current session.
+    const requestCredential = new Headers(headers).get('authorization')
+    const ownsCurrentSession = (): boolean =>
+      (expectedIdentity === undefined ||
+        this.config.writeIdentity?.() === expectedIdentity) &&
+      new Headers(this.headers()).get('authorization') === requestCredential
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -184,10 +191,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
           // Tell auth before swallowing this. The same identity guard as
           // below: an account switch mid-flight must not sign the NEW
           // account out on the old one's rejection.
-          if (
-            expectedIdentity === undefined ||
-            this.config.writeIdentity?.() === expectedIdentity
-          ) {
+          if (ownsCurrentSession()) {
             await this.config.onUnauthorized?.()
           }
           throw new NoIdentityError()
@@ -195,10 +199,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
 
         if (!res.ok) {
           const body = await res.text().catch(() => '')
-          if (
-            expectedIdentity === undefined ||
-            this.config.writeIdentity?.() === expectedIdentity
-          ) {
+          if (ownsCurrentSession()) {
             await this.config.onErrorResponse?.(res.status, body)
           }
           throw new CloudRequestError(
@@ -285,7 +286,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
         // The row's id, minted once, outside the retry loop: a create that
         // committed but lost its response is retried under the same id, and
         // the worker answers with that row instead of saving a second one.
-        body: JSON.stringify({ id: globalThis.crypto.randomUUID(), ...entity }),
+        body: JSON.stringify({ ...entity, id: globalThis.crypto.randomUUID() }),
       },
       2,
       prepared.headers,
