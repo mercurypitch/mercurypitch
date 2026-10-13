@@ -1,5 +1,5 @@
 // ============================================================
-// SessionEditorTimeline Tests — total duration calculation
+// SessionEditorTimeline Tests — total duration and visible rest labels
 // ============================================================
 
 import { render, screen } from '@solidjs/testing-library'
@@ -9,6 +9,26 @@ import type { SessionItem } from '@/types'
 import { SessionEditorTimeline } from '../SessionEditorTimeline'
 
 const noop = () => {}
+
+describe('SessionEditorTimeline — rest labels', () => {
+  it.each([
+    [500, 'Duration: 0.5s'],
+    [59600, 'Duration: 1m'],
+  ])('displays a %s ms rest as "%s"', (restMs, label) => {
+    render(() => (
+      <SessionEditorTimeline
+        sessionItems={[
+          { id: 'rest', type: 'rest', label: 'Rest', startBeat: 0, restMs },
+        ]}
+        onDeleteItem={noop}
+        onAddRest={noop}
+        onDragOver={noop}
+      />
+    ))
+
+    expect(screen.getByText(label)).toBeVisible()
+  })
+})
 
 describe('SessionEditorTimeline — total duration', () => {
   it('computes seconds correctly for beats-based items (not off by 1000x)', () => {

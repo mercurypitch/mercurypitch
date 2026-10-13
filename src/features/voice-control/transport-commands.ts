@@ -234,8 +234,12 @@ export function createTransportVoiceCommands(
     const t = deps.transport()
     const total = t.total()
     if (total <= 0) return voiceFailure('Nothing loaded')
-    t.seekTo(Math.min(Math.max(secondsToBeats(seconds), 0), total))
-    return `Go to ${formatSeekTarget(seconds)}`
+    const tempo = deps.bpm()
+    t.seekTo(Math.min(Math.max((seconds * tempo) / 60, 0), total))
+    // Clamp the reply in seconds: a beats round trip can move an exact
+    // half-second below the rounding boundary (59.5s at 137 bpm, for example).
+    const targetSeconds = Math.min(Math.max(seconds, 0), (total * 60) / tempo)
+    return `Go to ${formatSeekTarget(targetSeconds)}`
   }
 
   const seekFraction = (
