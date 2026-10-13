@@ -181,7 +181,18 @@ async function readWriteBody(
     return { error: respond({ error: 'Payload too large' }, { status: 413 }) }
   }
   try {
-    return { body: JSON.parse(raw) as Row }
+    const body: unknown = JSON.parse(raw)
+    // A row is an object. `null`, a string or an array reached the handlers
+    // as a `Row` and threw a TypeError there, which answered 500.
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+      return {
+        error: respond(
+          { error: 'Body must be a JSON object' },
+          { status: 400 },
+        ),
+      }
+    }
+    return { body: body as Row }
   } catch {
     return { error: respond({ error: 'Invalid JSON body' }, { status: 400 }) }
   }
@@ -359,6 +370,54 @@ function hiddenReadColumn(
   return null
 }
 
+/** Columns per table, exactly as the schema spells them. Per isolate. */
+const columnCache = new Map<string, ReadonlySet<string>>()
+
+async function tableColumns(
+  entity: string,
+  env: Env,
+  fresh = false,
+): Promise<ReadonlySet<string>> {
+  const cached = fresh ? undefined : columnCache.get(entity)
+  if (cached !== undefined) return cached
+  const { results } = await env.DB.prepare(
+    `PRAGMA table_info("${entity}")`,
+  ).all<{ name: string }>()
+  const columns = new Set((results ?? []).map((r) => r.name))
+  if (columns.size > 0) columnCache.set(entity, columns)
+  return columns
+}
+
+/**
+ * The first of `names` that is not EXACTLY a column of `entity`, or null.
+ *
+ * SQLite resolves identifiers without regard to case, so `"UserId"` in an
+ * INSERT writes `userId` and `where[Code]` filters on `code`. Every per-column
+ * rule in this file matches the exact spelling instead: `delete body.userId`,
+ * the `serverCols` strip, `validateWrite`, `clampStreakHighWater` and
+ * `hiddenReadColumn`. A key that differs only in case slipped past all of
+ * them, which let any signed-in caller write rows into another user's account,
+ * forge scores, pick their own league and friend code, and confirm guesses of
+ * a promo code. Requiring the exact name is what makes those rules mean what
+ * they say. It refuses nothing a real client sends: a key that names no
+ * column at all already failed in SQL.
+ *
+ * Read from the schema, so a migration that adds a column needs no change
+ * here; the cache is re-read once before a name is refused, for an isolate
+ * that outlived such a migration.
+ */
+async function unknownColumn(
+  entity: string,
+  env: Env,
+  names: readonly string[],
+): Promise<string | null> {
+  if (names.length === 0) return null
+  let columns = await tableColumns(entity, env)
+  if (names.every((name) => columns.has(name))) return null
+  columns = await tableColumns(entity, env, true)
+  return names.find((name) => !columns.has(name)) ?? null
+}
+
 // ── CRUD handlers ────────────────────────────────────────────────────
 
 async function handleList(
@@ -375,6 +434,17 @@ async function handleList(
 
   const scope = scopeRead(def, q, auth)
   if (scope instanceof Response) return scope
+
+  // Before the hidden-column check, which matches exact names: `where[Code]`
+  // would otherwise reach SQL as a filter on `code`. A column that does not
+  // exist at all used to reach SQL too, and answered 500.
+  const unknown = await unknownColumn(entity, env, [
+    ...q.filters.map(([col]) => col),
+    ...(q.orderBy === undefined ? [] : [q.orderBy]),
+  ])
+  if (unknown !== null) {
+    return respond({ error: `Unknown column "${unknown}"` }, { status: 400 })
+  }
 
   // A filter is a read, and so is a sort. `maskPublicRow` keeps hidden columns
   // out of the response, but nothing stopped a caller filtering or ordering ON
@@ -550,6 +620,15 @@ async function handleCreate(
   if ('error' in parsed) return parsed.error
   const body = parsed.body
 
+  // First, so every rule below sees the spelling it checks for.
+  const unknownCreate = await unknownColumn(entity, env, Object.keys(body))
+  if (unknownCreate !== null) {
+    return respond(
+      { error: `Invalid column: ${unknownCreate}` },
+      { status: 400 },
+    )
+  }
+
   const createErr = validateWrite(entity, body)
   if (createErr) return respond({ error: createErr }, { status: 400 })
 
@@ -635,6 +714,16 @@ async function handleUpdate(
   const parsed = await readWriteBody(request)
   if ('error' in parsed) return parsed.error
   const body = parsed.body
+
+  // First, so every rule below sees the spelling it checks for: a `UserId`
+  // key would otherwise survive `delete body.userId` and move the row.
+  const unknownUpdate = await unknownColumn(entity, env, Object.keys(body))
+  if (unknownUpdate !== null) {
+    return respond(
+      { error: `Invalid column: ${unknownUpdate}` },
+      { status: 400 },
+    )
+  }
 
   const updateErr = validateWrite(entity, body)
   if (updateErr) return respond({ error: updateErr }, { status: 400 })
