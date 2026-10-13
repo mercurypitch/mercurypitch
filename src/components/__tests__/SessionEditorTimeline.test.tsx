@@ -3,6 +3,7 @@
 // ============================================================
 
 import { render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { describe, expect, it } from 'vitest'
 import { setBpm } from '@/stores'
 import type { SessionItem } from '@/types'
@@ -15,10 +16,17 @@ describe('SessionEditorTimeline — rest labels', () => {
     [500, 'Duration: 0.5s'],
     [59600, 'Duration: 1m'],
   ])('displays a %s ms rest as "%s"', (restMs, label) => {
+    const [duration, setDuration] = createSignal(restMs)
     render(() => (
       <SessionEditorTimeline
         sessionItems={[
-          { id: 'rest', type: 'rest', label: 'Rest', startBeat: 0, restMs },
+          {
+            id: 'rest',
+            type: 'rest',
+            label: 'Rest',
+            startBeat: 0,
+            restMs: duration(),
+          },
         ]}
         onDeleteItem={noop}
         onAddRest={noop}
@@ -26,7 +34,12 @@ describe('SessionEditorTimeline — rest labels', () => {
       />
     ))
 
-    expect(screen.getByText(label)).toBeVisible()
+    const restCard = () =>
+      screen.getByText('Rest').closest('[draggable="true"]')
+    expect(restCard()).toHaveTextContent(label)
+
+    setDuration(125000)
+    expect(restCard()).toHaveTextContent('Duration: 2m 5s')
   })
 })
 
