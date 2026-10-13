@@ -5194,14 +5194,20 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       </main>
 
       <Show when={authRequested()}>
-        <Suspense>
-          <AuthModal
-            tone="drum-night"
-            onAuthenticated={handleAuthenticated}
-            prepareGoogleRedirect={googleSeparationReturn.prepareGoogleRedirect}
-            adoptsGoogleSignup
-          />
-        </Suspense>
+        {/* The sheet's own type and link colours stay out of the room's
+            control resets: see `.authSheet` in the module CSS. */}
+        <div class={styles.authSheet}>
+          <Suspense>
+            <AuthModal
+              tone="drum-night"
+              onAuthenticated={handleAuthenticated}
+              prepareGoogleRedirect={
+                googleSeparationReturn.prepareGoogleRedirect
+              }
+              adoptsGoogleSignup
+            />
+          </Suspense>
+        </div>
       </Show>
       <Suspense>
         <Notifications />
