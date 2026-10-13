@@ -18,7 +18,6 @@ import { authVersion, getUserId } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { ProfileView } from '@/features/community/ProfileView'
 import { alreadyShared, melodyFingerprint, sessionFingerprint, } from '@/features/community/share-identity'
-import { usePublishedShareCounts } from '@/features/community/usePublishedShareCounts'
 import { isProgressRun, runFromRecord, runKindOf, } from '@/features/progress/run-kinds'
 import { RunKindChip } from '@/features/progress/RunKindPills'
 import { WhatCountsModal } from '@/features/progress/WhatCountsModal'
@@ -31,6 +30,7 @@ import { bpm, getSessionHistory, keyName, melodyStore, scaleType, } from '@/stor
 import { getAllMelodies } from '@/stores/melody-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyItem, PlaybackSession, SessionResult } from '@/types'
+import { usePublishedShareCounts } from './usePublishedShareCounts'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -548,10 +548,11 @@ export const CommunityShare: Component = () => {
       setActiveTab('melodies')
       const copied = await copyShareUrl(encoded)
       if (!isCurrent()) return
+      const clipboardMessage = copied ? ' Link copied.' : ''
       showNotification(
         publishToBoard
-          ? `Shared "${shareable.name}"${copied ? '. Link copied.' : '.'}`
-          : `Saved "${shareable.name}" to your shelf.${copied ? ' Link copied.' : ''} Create an account to list it on the Community board.`,
+          ? `Shared "${shareable.name}".${clipboardMessage}`
+          : `Saved "${shareable.name}" to your shelf.${clipboardMessage} Create an account to list it on the Community board.`,
         'info',
       )
       window.scrollTo({ top: 0, behavior: 'smooth' })

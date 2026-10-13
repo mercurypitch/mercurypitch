@@ -113,7 +113,7 @@ These are the rules that break things when ignored.
 | `account` | [native-sign-in.ts](../../src/features/account/native-sign-in.ts) | 900 | Native sign-in — the phone's own Apple and Google ceremonies On the web, Google sign-in is a full-page redirect (the app's `COOP: same-or... |
 | `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 750 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
 | `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 750 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
-| `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 650 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
+| `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 600 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
 | `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 600 | What's New — the 0.9 line, in the visitor's terms One page for the whole release LINE, not one per version, because that is the granulari... |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 550 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 550 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
@@ -137,7 +137,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
-| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.5k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
+| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.4k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 4.1k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
