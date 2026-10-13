@@ -534,6 +534,13 @@ async function writeSessionFilesToZip(
     if (metadata !== undefined) portableStemMeta[stemType] = { ...metadata }
   }
   const portableOriginal = portableSession.originalFile
+  // Received bundles and some uploads carry '' (or "type/sub;params"), and
+  // older records none at all; the archive codec only accepts a bare
+  // type/subtype.
+  const bareMime = (portableOriginal?.mimeType ?? '').split(';', 1)[0].trim()
+  const archiveMime = /^[a-z0-9.+-]+\/[a-z0-9.+-]+$/i.test(bareMime)
+    ? bareMime
+    : 'application/octet-stream'
   const sessionForArchive: ExportPayload['session'] = {
     ...portableSession,
     ...(Object.keys(portableStemMeta).length > 0
@@ -544,6 +551,7 @@ async function writeSessionFilesToZip(
           originalFile: {
             ...portableOriginal,
             name: sanitizeArchiveEntryName(portableOriginal.name),
+            mimeType: archiveMime,
           },
         }
       : {}),

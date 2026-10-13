@@ -597,6 +597,32 @@ describe('session archive stem selection', () => {
     expect(sanitizeArchiveEntryName('..\\private/../song.wav')).toBe('song.wav')
   })
 
+  it('exports a session whose original file has no bare MIME type', async () => {
+    // A song received as a portable bundle is stored with mimeType '', an
+    // upload whose File.type was empty is too, older records have none, and
+    // a recording can carry parameters. The archive codec accepts only a
+    // bare type/subtype, so these sessions could not be exported and one
+    // aborted Export All.
+    for (const [sessionId, mimeType, archived] of [
+      ['received-no-mime', '', 'application/octet-stream'],
+      ['legacy-no-mime', undefined, 'application/octet-stream'],
+      ['recorded-with-codec', 'audio/webm;codecs=opus', 'audio/webm'],
+    ] as const) {
+      importUvrSession({
+        ...makeSession(sessionId, 'Received Song'),
+        originalFile: { name: 'Received Song', size: 0, mimeType },
+      } as unknown as UvrSession)
+      await seedCoreStem(sessionId)
+
+      const archive = await buildSessionZip(sessionId, undefined, ['vocal'])
+      const entries = unzipSync(new Uint8Array(await archive.arrayBuffer()))
+      const payload = JSON.parse(strFromU8(entries['session.json'])) as {
+        session: { originalFile: { mimeType: string } }
+      }
+      expect(payload.session.originalFile.mimeType).toBe(archived)
+    }
+  })
+
   it('preserves non-WAV stem MIME types across export and import', async () => {
     const sessionId = 'flac-stem-round-trip'
     importUvrSession(makeSession(sessionId, 'FLAC Session.wav'))
