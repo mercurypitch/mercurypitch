@@ -4,6 +4,7 @@
 
 import { z } from 'zod/v4'
 import { getDb } from '@/db'
+import { CloudRequestError } from '@/db/adapters/server-adapter'
 import type { SharedMelody, SharedSession, UserProfile } from '@/db/entities'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
 import { authVersion, findOwnProfile, getUserId, } from '@/db/services/user-service'
@@ -328,6 +329,11 @@ export async function saveSharedSession(data: {
  *
  * Deletes the row rather than flipping isPublic, because the shelf IS
  * the row — a hidden one is only a leak waiting to happen.
+ *
+ * A row that is already gone counts as unpublished: the worker answers 404
+ * when another device took the share down first, and this browser's copy
+ * must still be able to leave its shelf. A refusal (403) or a failure is
+ * still a failure.
  */
 export async function unpublishShared(
   kind: 'melody' | 'session',
@@ -341,7 +347,7 @@ export async function unpublishShared(
     const table = kind === 'melody' ? 'sharedMelodies' : 'sharedSessions'
     await db.getRepository(table).delete(id)
     return true
-  } catch {
-    return false
+  } catch (err) {
+    return err instanceof CloudRequestError && err.status === 404
   }
 }
