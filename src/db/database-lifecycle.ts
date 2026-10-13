@@ -55,8 +55,9 @@ export interface DatabaseLifecycleEvent {
 /** The bit of Dexie this module needs, narrowed so a fake can stand in. */
 export interface LifecycleDatabase {
   on: (
-    event: 'versionchange' | 'blocked',
+    event: 'versionchange' | 'blocked' | 'ready',
     handler: (ev: { newVersion?: number | null; oldVersion?: number }) => void,
+    bSticky?: boolean,
   ) => unknown
   close: (options?: { disableAutoOpen: boolean }) => void
 }
@@ -134,6 +135,10 @@ export function installDatabaseLifecycle(db: LifecycleDatabase): void {
     // this site installed as an app — is holding the old version open.
     publish('blocked', ev.newVersion ?? null)
   })
+
+  // The blocked open finished (the other tabs went): clear the banner. Sticky
+  // so it also covers any later reopen; `publish` keeps superseded terminal.
+  db.on('ready', () => publish('ok'), true)
 }
 
 /** Test seam: forget every subscriber and return to `ok`. */

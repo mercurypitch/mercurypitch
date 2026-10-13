@@ -15,11 +15,13 @@ type Handler = (ev: { newVersion?: number | null; oldVersion?: number }) => void
 function fakeDb() {
   const handlers = new Map<string, Handler[]>()
   const closes: { disableAutoOpen: boolean }[] = []
+  const sticky: string[] = []
   const db: LifecycleDatabase = {
-    on: (event, handler) => {
+    on: (event, handler, bSticky) => {
       const list = handlers.get(event) ?? []
       list.push(handler)
       handlers.set(event, list)
+      if (bSticky === true) sticky.push(event)
       return undefined
     },
     close: (options) => {
@@ -29,7 +31,11 @@ function fakeDb() {
   return {
     db,
     closes,
-    fire(event: 'versionchange' | 'blocked', ev: Parameters<Handler>[0] = {}) {
+    sticky,
+    fire(
+      event: 'versionchange' | 'blocked' | 'ready',
+      ev: Parameters<Handler>[0] = {},
+    ) {
       for (const handler of handlers.get(event) ?? []) handler(ev)
     },
   }
@@ -70,6 +76,34 @@ describe('installDatabaseLifecycle', () => {
     // Being blocked is the other tabs' fault; closing our own connection would
     // throw away the upgrade we are waiting to perform.
     expect(closes).toEqual([])
+  })
+
+  it('clears blocked once the upgrade it was waiting for goes through', () => {
+    const { db, fire, sticky } = fakeDb()
+    installDatabaseLifecycle(db)
+    const seen: string[] = []
+    onDatabaseLifecycle((e) => seen.push(e.state))
+
+    fire('blocked', { newVersion: 120, oldVersion: 80 })
+    // The other tab went, the upgrade ran and the open finished: Dexie says
+    // so with 'ready'. Without this the "waiting on another tab" banner
+    // stayed up on a working database until a reload.
+    fire('ready')
+
+    expect(databaseLifecycleState()).toBe('ok')
+    expect(seen).toEqual(['blocked', 'ok'])
+    // Sticky, so a later reopen that blocks again can clear again.
+    expect(sticky).toEqual(['ready'])
+  })
+
+  it('stays superseded when an open finishes after another tab took over', () => {
+    const { db, fire } = fakeDb()
+    installDatabaseLifecycle(db)
+
+    fire('versionchange', { newVersion: 120 })
+    fire('ready')
+
+    expect(databaseLifecycleState()).toBe('superseded')
   })
 
   it('notifies subscribers, and stops once they unsubscribe', () => {
