@@ -1155,9 +1155,13 @@ row.
 **Rule:** read "all my rows" through the user-scoped repository, which pages
 until a short page. Give a table whose rows are keyed by something other than
 `id` a UNIQUE index and a `naturalKey` in `TABLES`, so the create upserts.
-Never rely on read-then-create to keep one row per key.
+Never rely on read-then-create to keep one row per key. A create means the
+read found nothing (a lapsed anonymous token reads `[]`), so where the row
+accumulates, give `upsertMerge` an idempotent rule (MAX, earliest date) for
+every column that must not go back; a whole-body upsert reset a completed
+challenge to a first attempt.
 **See:** `SignedOutAwareRepository.findAll` in
-`src/db/adapters/hybrid-adapter.ts`, `naturalKey` in
+`src/db/adapters/hybrid-adapter.ts`, `naturalKey` and `upsertMerge` in
 `workers/db-worker/src/tables.ts`,
 `workers/db-worker/migrations/0070_natural_keys.sql`
 

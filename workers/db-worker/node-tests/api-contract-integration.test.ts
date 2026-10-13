@@ -448,6 +448,194 @@ describe('a row with a natural key', () => {
     ).toBe(1)
   })
 
+  // A client creates instead of PATCHing only when its read found no row, so
+  // what a create carries is a FIRST attempt: one attempt, this run's score as
+  // the best, completed only when this run completed. The read comes back
+  // empty for an anonymous web singer whose token lapsed (nothing renews it
+  // on the web) and for a read that failed. The create then meets the row the
+  // account already has, and must merge into it the way 0070 merged
+  // duplicates, never overwrite it.
+  describe('a challenge create that meets the row the singer already has', () => {
+    const completedWeeksAgo = {
+      challengeId: 'hold-a5',
+      progress: 95,
+      currentScore: 95,
+      bestScore: 95,
+      status: 'completed',
+      completed: true,
+      completedAt: '2026-09-01T10:00:00.000Z',
+      attempts: 4,
+    }
+
+    function storedProgress(): unknown[] {
+      return sqlite
+        .prepare(
+          `SELECT challengeId, progress, currentScore, bestScore, status,
+                  completed, completedAt, attempts
+             FROM challengeProgress WHERE userId = ?`,
+        )
+        .all(singer.userId)
+    }
+
+    it('keeps its completion, best score and attempts, and records the new run as the current score', async () => {
+      const first = await call(
+        'POST',
+        '/api/challengeProgress',
+        completedWeeksAgo,
+        singer.token,
+      )
+      expect(first.status).toBe(201)
+
+      const fromNothing = await call(
+        'POST',
+        '/api/challengeProgress',
+        {
+          challengeId: 'hold-a5',
+          progress: 40,
+          currentScore: 40,
+          bestScore: 40,
+          status: 'active',
+          completed: false,
+          attempts: 1,
+        },
+        singer.token,
+      )
+
+      const merged = {
+        challengeId: 'hold-a5',
+        progress: 95,
+        currentScore: 40,
+        bestScore: 95,
+        status: 'completed',
+        completedAt: '2026-09-01T10:00:00.000Z',
+        attempts: 4,
+      }
+      expect(fromNothing.status).toBe(200)
+      expect(fromNothing.body).toMatchObject({
+        ...merged,
+        id: first.body.id,
+        completed: true,
+      })
+      expect(storedProgress()).toEqual([{ ...merged, completed: 1 }])
+    })
+
+    it('lands on the same values when that create is replayed', async () => {
+      await call(
+        'POST',
+        '/api/challengeProgress',
+        completedWeeksAgo,
+        singer.token,
+      )
+      const fromNothing = {
+        challengeId: 'hold-a5',
+        progress: 40,
+        currentScore: 40,
+        bestScore: 40,
+        status: 'active',
+        completed: false,
+        attempts: 1,
+      }
+      await call('POST', '/api/challengeProgress', fromNothing, singer.token)
+      const once = storedProgress()
+
+      const replayed = await call(
+        'POST',
+        '/api/challengeProgress',
+        fromNothing,
+        singer.token,
+      )
+
+      expect(replayed.status).toBe(200)
+      expect(storedProgress()).toEqual(once)
+    })
+
+    it('takes a completion the stored row lacked, dated by the run that earned it', async () => {
+      // Two earlier misses, saved from another device.
+      await call(
+        'POST',
+        '/api/challengeProgress',
+        {
+          challengeId: 'hold-a5',
+          progress: 60,
+          currentScore: 55,
+          bestScore: 60,
+          status: 'active',
+          completed: false,
+          attempts: 2,
+        },
+        singer.token,
+      )
+
+      const completes = await call(
+        'POST',
+        '/api/challengeProgress',
+        {
+          challengeId: 'hold-a5',
+          progress: 85,
+          currentScore: 85,
+          bestScore: 85,
+          status: 'completed',
+          completed: true,
+          completedAt: NOW,
+          attempts: 1,
+        },
+        singer.token,
+      )
+
+      expect(completes.status).toBe(200)
+      expect(storedProgress()).toEqual([
+        {
+          challengeId: 'hold-a5',
+          progress: 85,
+          currentScore: 85,
+          bestScore: 85,
+          status: 'completed',
+          completed: 1,
+          completedAt: NOW,
+          attempts: 2,
+        },
+      ])
+    })
+
+    it('keeps the first completion date when a later run completes it again', async () => {
+      await call(
+        'POST',
+        '/api/challengeProgress',
+        completedWeeksAgo,
+        singer.token,
+      )
+
+      await call(
+        'POST',
+        '/api/challengeProgress',
+        {
+          challengeId: 'hold-a5',
+          progress: 90,
+          currentScore: 90,
+          bestScore: 90,
+          status: 'completed',
+          completed: true,
+          completedAt: NOW,
+          attempts: 1,
+        },
+        singer.token,
+      )
+
+      expect(storedProgress()).toEqual([
+        {
+          challengeId: 'hold-a5',
+          progress: 95,
+          currentScore: 90,
+          bestScore: 95,
+          status: 'completed',
+          completed: 1,
+          completedAt: '2026-09-01T10:00:00.000Z',
+          attempts: 4,
+        },
+      ])
+    })
+  })
+
   it('updates a song the library already lists instead of refusing it', async () => {
     const song = { fileHash: 'abc123', title: 'Old title', quality: 'lossless' }
     expect(
