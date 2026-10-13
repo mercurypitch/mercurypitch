@@ -37,6 +37,7 @@ import { installHistoryDepth } from './history-depth'
 import { installKaraokeImport } from './karaoke-import-wiring'
 import { KeepAlert } from './KeepAlert'
 import { MoreSheet } from './MoreSheet'
+import { installPortraitLock } from './portrait-lock'
 import { installPremiumExercises } from './premium-exercise-wiring'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
@@ -251,6 +252,8 @@ export const NativeShell: Component = () => {
 
   // Whether the rail is on screen, for a room whose own bar rests on it.
   mirrorShellChrome()
+  // A phone holds a premium room upright (portrait-lock.ts, decision D2).
+  installPortraitLock()
 
   onCleanup(() => {
     setShellOwnsTransport(false)
