@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { dotTimings, keyframeOffsets, screenStops, seeded, starPath, } from './celebration-paint'
+import { catmullRom, dotTimings, easeOut, keyframeOffsets, mistAngle, paintRibbons, ribbonField, ribbonFrames, ribbonPlan, screenStops, seeded, starPath, } from './celebration-paint'
 import { CELEBRATION } from './echo-geometry'
 
 /** A path's corners, [x, y]. */
@@ -35,6 +35,202 @@ describe("the star's outline", () => {
     expect(
       radii.filter((_, i) => i % 2 === 1).every((r) => Math.abs(r - 5) < 0.01),
     ).toBe(true)
+  })
+})
+
+describe("the inner outline's lumps (round 4)", () => {
+  it('scales each corner by its factor, the factors counter-clockwise from the top tip', () => {
+    // Factor k belongs to the corner k steps counter-clockwise on screen;
+    // the path runs clockwise, so its corner i takes factor (10 - i) % 10.
+    const factors = [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 0.5]
+    const points = corners(starPath(10, 0.5, factors))
+    const radii = points.map(([x, y]) => Math.hypot(x, y))
+
+    expect(radii[0]).toBeCloseTo(15, 2)
+    // The first valley clockwise, right of the top tip, is factor 9's.
+    expect(points[1][0]).toBeGreaterThan(0)
+    expect(radii[1]).toBeCloseTo(2.5, 2)
+    expect(radii[9]).toBeCloseTo(5, 2)
+  })
+
+  it("keeps the spec's ten factors, and draws a plain star without them", () => {
+    expect(CELEBRATION.star.inner.wobbleCcw).toHaveLength(10)
+    expect(starPath(10, 0.5, Array(10).fill(1))).toBe(starPath(10, 0.5))
+  })
+})
+
+describe('the ribbons (round 4)', () => {
+  it('runs a Catmull-Rom curve through every point it is given', () => {
+    const points = [
+      [0, 0],
+      [10, 5],
+      [20, 0],
+      [30, 8],
+    ] as const
+    const curve = catmullRom(points, 10)
+
+    expect(curve[0]).toEqual([0, 0])
+    expect(curve[curve.length - 1]).toEqual([30, 8])
+    for (const [x, y] of points) {
+      expect(
+        Math.min(...curve.map(([cx, cy]) => Math.hypot(cx - x, cy - y))),
+      ).toBeLessThan(1e-9)
+    }
+  })
+
+  it('draws the ribbon nearest the starburst first, each from its burst end', () => {
+    const { fromMs, staggerMs } = CELEBRATION.timing.ribbons
+    const plan = ribbonPlan()
+
+    // Spec order: 12 to 31, 3 to 15, 11 to 2. Their ends nearest the
+    // starburst are 31, 15 and 2, the last ribbon's the nearest of them.
+    expect(plan.map((p) => p.revealAt)).toEqual([
+      fromMs + staggerMs,
+      fromMs + 2 * staggerMs,
+      fromMs,
+    ])
+    expect(plan.map((p) => p.fromStart)).toEqual([false, false, false])
+  })
+
+  const LINE = [
+    [10, 10],
+    [70, 10],
+  ] as const
+  const field = (fromStart: boolean) =>
+    ribbonField(
+      catmullRom(LINE, 40),
+      { fwhm: 2, taper: 6, alpha: 0.3, fromStart },
+      { width: 80, height: 20, dpr: 1 },
+    )
+  const at = (f: ReturnType<typeof field>, x: number, y: number) => {
+    const i = f.pixels.indexOf(y * 80 + x)
+    return i < 0 ? 0 : f.alpha[i]
+  }
+
+  it('is a Gaussian across, at its alpha on the line, tapered to nothing at the ends', () => {
+    const f = field(true)
+
+    // Pixel (40, 9) has its centre at (40.5, 9.5): 0.5 px off the line.
+    const sigma = 2 / 2.3548
+    expect(at(f, 40, 9)).toBeCloseTo(
+      0.3 * Math.exp(-(0.5 ** 2) / (2 * sigma ** 2)),
+      3,
+    )
+    // One row further out, 1.5 px from the line, as the Gaussian falls.
+    expect(at(f, 40, 8) / at(f, 40, 9)).toBeCloseTo(
+      Math.exp(-(1.5 ** 2 - 0.5 ** 2) / (2 * sigma ** 2)),
+      3,
+    )
+    expect(at(f, 10, 9)).toBeLessThan(0.3 * 0.1)
+    expect(at(f, 69, 9)).toBeLessThan(0.3 * 0.1)
+    expect(f.length).toBeCloseTo(60, 1)
+  })
+
+  it('measures the draw from the end nearest the starburst', () => {
+    const start = field(true)
+    const end = field(false)
+    const i = start.pixels.indexOf(9 * 80 + 20)
+
+    const j = end.pixels.indexOf(9 * 80 + 20)
+
+    expect(start.fromBurst[i]).toBeCloseTo(start.along[i], 6)
+    expect(start.along[i]).toBeCloseTo(10.5, 4)
+    expect(end.fromBurst[j]).toBeCloseTo(end.length - end.along[j], 4)
+  })
+
+  it('paints nothing undrawn, half from the burst end at half, all of it drawn', () => {
+    const f = field(false)
+    const rgba = new Uint8ClampedArray(80 * 20 * 4)
+    const wisp = { depth: 0, periodPx: 10 }
+    const alphaAt = (x: number) => rgba[(9 * 80 + x) * 4 + 3]
+
+    paintRibbons(rgba, [f], [{ drawn: 0, phase: 0 }], [wisp], [[0, 225, 255]])
+    expect(Math.max(...rgba)).toBe(0)
+
+    paintRibbons(rgba, [f], [{ drawn: 0.5, phase: 0 }], [wisp], [[0, 225, 255]])
+    expect(alphaAt(25)).toBe(0)
+    expect(alphaAt(55)).toBeGreaterThan(0)
+
+    paintRibbons(rgba, [f], [{ drawn: 1, phase: 0 }], [wisp], [[0, 225, 255]])
+    expect(alphaAt(25)).toBeGreaterThan(0)
+    expect(alphaAt(40)).toBe(Math.round(255 * at(f, 40, 9)))
+    expect([...rgba.slice((9 * 80 + 40) * 4, (9 * 80 + 40) * 4 + 3)]).toEqual([
+      0, 225, 255,
+    ])
+  })
+
+  it('dips by the wisp along the curve, moving with its phase', () => {
+    const f = field(true)
+    const rgba = new Uint8ClampedArray(80 * 20 * 4)
+    const wisp = { depth: 0.5, periodPx: 20 }
+    const row = () =>
+      Array.from({ length: 40 }, (_, k) => rgba[(9 * 80 + 20 + k) * 4 + 3])
+
+    paintRibbons(rgba, [f], [{ drawn: 1, phase: 0 }], [wisp], [[0, 225, 255]])
+    const still = row()
+    paintRibbons(
+      rgba,
+      [f],
+      [{ drawn: 1, phase: Math.PI }],
+      [wisp],
+      [[0, 225, 255]],
+    )
+    const moved = row()
+
+    expect(Math.min(...still)).toBeLessThan(Math.max(...still) * 0.6)
+    expect(moved).not.toEqual(still)
+  })
+
+  it('stands complete at its end state, each wisp at its own phase', () => {
+    const frames = ribbonFrames(null)
+
+    expect(frames.map((f) => f.drawn)).toEqual([1, 1, 1])
+    expect(frames.map((f) => f.phase)).toEqual(
+      CELEBRATION.ribbons.map((r) => r.wisp.phase),
+    )
+  })
+
+  it('draws on over its span, eased, then drifts its wisp from the idle', () => {
+    const { durationMs } = CELEBRATION.timing.ribbons
+    const { idleFromMs, idle } = CELEBRATION.timing
+    const plan = ribbonPlan()
+
+    expect(ribbonFrames(0).map((f) => f.drawn)).toEqual([0, 0, 0])
+    const mid = ribbonFrames(plan[2].revealAt + durationMs / 2)[2].drawn
+    expect(mid).toBeCloseTo(easeOut(0.5), 6)
+    expect(mid).toBeGreaterThan(0.5)
+    expect(ribbonFrames(idleFromMs).map((f) => f.drawn)).toEqual([1, 1, 1])
+    expect(ribbonFrames(idleFromMs + 1000)[0].phase).toBeCloseTo(
+      CELEBRATION.ribbons[0].wisp.phase + idle.wispRadPerS,
+      6,
+    )
+  })
+})
+
+describe("the starburst's mist (round 4)", () => {
+  it('thins toward the right by its cut, full up, left and down', () => {
+    const { rightCut } = CELEBRATION.burst.mist
+
+    expect(mistAngle(0)).toBeCloseTo(1, 6)
+    expect(mistAngle(90)).toBeCloseTo(1 - rightCut, 6)
+    expect(mistAngle(180)).toBeCloseTo(1, 6)
+    expect(mistAngle(270)).toBeCloseTo(1, 6)
+  })
+
+  it("keeps the starburst's right ray off the lit spire: 2.5 screen 4 px at most", () => {
+    expect(CELEBRATION.burst.rays.lengthW.right).toBeLessThanOrEqual(
+      2.5 * 0.003436 + 1e-5,
+    )
+  })
+})
+
+describe('ease-out', () => {
+  it("is CSS's cubic-bezier(0, 0, 0.58, 1)", () => {
+    expect(easeOut(0)).toBe(0)
+    expect(easeOut(1)).toBe(1)
+    // x(t) = 1.74 t^2 (1 - t) + t^3 is 0.5 at t 0.62575, where
+    // y(t) = 3 t^2 (1 - t) + t^3 is 0.68464.
+    expect(easeOut(0.5)).toBeCloseTo(0.68464, 4)
   })
 })
 

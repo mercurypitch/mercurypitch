@@ -34,3 +34,8 @@
   position: absolute;
   overflow: visible;
 }
+
+/* The ribbons' canvas, its backing store at the screen's DPR. */
+.ribbons {
+  position: absolute;
+}
