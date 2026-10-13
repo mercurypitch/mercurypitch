@@ -18,6 +18,7 @@
 // the same consent can be given.
 
 import { getDb } from '@/db'
+import { CloudRequestError } from '@/db/adapters/server-adapter'
 import type { UserProfile } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 
@@ -71,13 +72,20 @@ export async function grantBoardConsent(): Promise<boolean> {
     if ((await profiles.findById(userId)) != null) {
       await profiles.update(userId, patch)
     } else {
-      await profiles.create({
-        displayName: `Singer-${userId.slice(0, 6)}`,
-        joinDate: new Date().toISOString(),
-        lastPracticeDate: null,
-        currentStreak: 0,
-        ...patch,
-      })
+      try {
+        await profiles.create({
+          displayName: `Singer-${userId.slice(0, 6)}`,
+          joinDate: new Date().toISOString(),
+          lastPracticeDate: null,
+          currentStreak: 0,
+          ...patch,
+        })
+      } catch (err) {
+        // create() provisions a first-time visitor's identity, and the server
+        // creates the profile row while provisioning — so the POST finds it.
+        if (!(err instanceof CloudRequestError && err.status === 409)) throw err
+        await profiles.update(userId, patch)
+      }
     }
     return true
   } catch {
