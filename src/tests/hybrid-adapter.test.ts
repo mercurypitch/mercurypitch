@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { CLOUD_ENTITIES, HybridAdapter } from '@/db/adapters/hybrid-adapter'
-import type { DatabaseAdapter, DbEntity, Repository } from '@/db/types'
+import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
 
 function stubAdapter(): DatabaseAdapter & { seen: string[] } {
   const seen: string[] = []
@@ -281,6 +281,102 @@ describe('HybridAdapter', () => {
       expect(await repo.findAll()).toHaveLength(1)
       expect(cloud.calls).toEqual(['findAll'])
     })
+  })
+})
+
+// ── Reading all of a singer's own rows ───────────────────────────
+// The worker answers a list one page at a time. A read with no limit means
+// every row (the Dexie half's answer), and the sync code depends on it: a
+// library past one page re-created a song the account already had, the
+// UNIQUE index refused, and the whole publish stopped.
+
+describe('a user-scoped read with no limit', () => {
+  function pagedCloud(
+    total: number,
+    failAtOffset?: number,
+  ): DatabaseAdapter & { asked: Array<QueryOptions<DbEntity> | undefined> } {
+    const asked: Array<QueryOptions<DbEntity> | undefined> = []
+    const repo = {
+      findAll: async (opts?: QueryOptions<DbEntity>) => {
+        asked.push(opts)
+        const offset = opts?.offset ?? 0
+        if (offset === failAtOffset) throw new Error('page failed')
+        const size = Math.max(0, Math.min(opts?.limit ?? 100, total - offset))
+        return Array.from({ length: size }, (_, i) => ({
+          id: `r${offset + i}`,
+          createdAt: '',
+          updatedAt: '',
+        }))
+      },
+    } as unknown as Repository<DbEntity>
+    const adapter: DatabaseAdapter & {
+      asked: Array<QueryOptions<DbEntity> | undefined>
+    } = {
+      asked,
+      schemaVersion: 1,
+      getRepository: <T extends DbEntity>() => repo as Repository<T>,
+      transaction: vi.fn(async (fn) => fn(adapter)),
+      destroy: vi.fn(async () => undefined),
+    }
+    return adapter
+  }
+
+  it('reads every page until a short one', async () => {
+    const cloud = pagedCloud(2005)
+    const repo = new HybridAdapter(
+      cloud,
+      stubAdapter(),
+      () => true,
+    ).getRepository('songManifests')
+
+    const rows = await repo.findAll({ where: { userId: 'me' } })
+
+    expect(rows).toHaveLength(2005)
+    expect(new Set(rows.map((r) => r.id)).size).toBe(2005)
+    expect(cloud.asked.map((o) => [o?.limit, o?.offset])).toEqual([
+      [1000, 0],
+      [1000, 1000],
+      [1000, 2000],
+    ])
+  })
+
+  it('asks once when the caller gave a limit', async () => {
+    const cloud = pagedCloud(2005)
+    const repo = new HybridAdapter(
+      cloud,
+      stubAdapter(),
+      () => true,
+    ).getRepository('sessionRecords')
+
+    expect(await repo.findAll({ limit: 20 })).toHaveLength(20)
+    expect(cloud.asked).toHaveLength(1)
+  })
+
+  it('answers nothing rather than part when a later page fails', async () => {
+    const cloud = pagedCloud(2005, 1000)
+    const repo = new HybridAdapter(
+      cloud,
+      stubAdapter(),
+      () => true,
+    ).getRepository('userSettings')
+
+    // A partial list would read as "the account has nothing else".
+    expect(await repo.findAll()).toEqual([])
+    await expect(repo.findAll({ throwOnError: true })).rejects.toThrow(
+      'page failed',
+    )
+  })
+
+  it('keeps a public board to one page', async () => {
+    const cloud = pagedCloud(2005)
+    const repo = new HybridAdapter(
+      cloud,
+      stubAdapter(),
+      () => true,
+    ).getRepository('sharedMelodies')
+
+    expect(await repo.findAll()).toHaveLength(100)
+    expect(cloud.asked).toHaveLength(1)
   })
 })
 

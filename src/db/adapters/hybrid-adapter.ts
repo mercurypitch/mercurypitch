@@ -73,6 +73,9 @@ const USER_SCOPED_ENTITIES: ReadonlySet<string> = new Set([
   'songManifests',
 ])
 
+/** One page of a read for "all my rows": the worker's MAX_LIST_LIMIT. */
+const PAGE_SIZE = 1000
+
 class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
   constructor(
     private inner: Repository<T>,
@@ -85,8 +88,39 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
     return this.isAuthed() ? this.inner.findById(id) : null
   }
 
+  /**
+   * Every matching row when no `limit` is given, as `Repository.findAll`
+   * promises and the Dexie half delivers.
+   *
+   * The worker answers one page at a time. Taken as the whole answer, the
+   * first page cut a library past 100 songs short, so publishing re-created
+   * a song the account already had and the whole publish stopped; settings
+   * and voiceprints past the page were never seen at all. Rows here are only
+   * ever the caller's own, so reading them all is bounded by what one person
+   * keeps — unlike the public boards, which stay one page on purpose.
+   *
+   * A page that fails fails the read, as one failed request always has:
+   * a partial list would read as "the account has nothing else".
+   */
   async findAll(opts?: QueryOptions<T>): Promise<T[]> {
-    return this.isAuthed() ? this.inner.findAll(opts) : []
+    if (!this.isAuthed()) return []
+    if (opts?.limit !== undefined) return this.inner.findAll(opts)
+    const rows: T[] = []
+    try {
+      for (let offset = opts?.offset ?? 0; ; offset += PAGE_SIZE) {
+        const page = await this.inner.findAll({
+          ...opts,
+          limit: PAGE_SIZE,
+          offset,
+          throwOnError: true,
+        })
+        rows.push(...page)
+        if (page.length < PAGE_SIZE) return rows
+      }
+    } catch (err) {
+      if (opts?.throwOnError === true) throw err
+      return []
+    }
   }
 
   async count(opts?: QueryOptions<T>): Promise<number> {

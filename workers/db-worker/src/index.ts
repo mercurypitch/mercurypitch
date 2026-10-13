@@ -236,10 +236,25 @@ interface ListQuery {
 /** Rows returned when no explicit limit is given — a missing `limit`
  *  must never mean "the whole table" (public tables, anonymous reads). */
 const DEFAULT_LIST_LIMIT = 100
-/** Hard ceiling for explicit limits. */
+/** Hard ceiling for explicit limits, and the default for a read of the
+ *  caller's own rows: see `listLimitDefault`. */
 const MAX_LIST_LIMIT = 1000
 
-function parseListQuery(url: URL): ListQuery | null {
+/**
+ * How many rows a read with no `limit` gets.
+ *
+ * A private table's rows are only ever the caller's own, so "the whole
+ * table" is not on the table there, and a short page is the bug instead:
+ * the client's sync code reads "all my rows" with no limit, and at 100 it
+ * re-created a song it already had (the UNIQUE index refused, and the whole
+ * library publish stopped) and applied only 100 settings. The client now
+ * pages; this keeps every build already installed whole up to the ceiling.
+ */
+function listLimitDefault(def: TableDef): number {
+  return def.access === 'user' ? MAX_LIST_LIMIT : DEFAULT_LIST_LIMIT
+}
+
+function parseListQuery(url: URL, defaultLimit: number): ListQuery | null {
   const filters: Array<[string, SqlValue]> = []
   for (const [k, v] of url.searchParams) {
     const m = k.match(/^where\[(\w+)\]$/)
@@ -256,7 +271,7 @@ function parseListQuery(url: URL): ListQuery | null {
   const limit =
     Number.isFinite(requested) && requested > 0
       ? Math.min(requested, MAX_LIST_LIMIT)
-      : DEFAULT_LIST_LIMIT
+      : defaultLimit
   return {
     filters,
     orderBy,
@@ -482,7 +497,7 @@ async function handleList(
   countOnly: boolean,
   admin = false,
 ): Promise<Response> {
-  const q = parseListQuery(url)
+  const q = parseListQuery(url, listLimitDefault(def))
   if (!q) return respond({ error: 'Invalid query' }, { status: 400 })
 
   const scope = scopeRead(def, q, auth)
@@ -516,8 +531,11 @@ async function handleList(
     return respond({ count: result?.count ?? 0 })
   }
 
-  let sql = `SELECT * FROM "${entity}"${where}`
-  if (q.orderBy) sql += ` ORDER BY "${q.orderBy}" ${q.orderDir}`
+  // `rowid` last, always. Paging by offset needs an order that is total, or
+  // a row can repeat on one page and vanish from the next; rowid is the
+  // order an unsorted read already came back in, so nothing reorders.
+  let sql = `SELECT * FROM "${entity}"${where} ORDER BY `
+  sql += q.orderBy ? `"${q.orderBy}" ${q.orderDir}, rowid` : 'rowid'
   sql += ' LIMIT ?'
   binds.push(q.limit)
   if (q.offset !== undefined) {
