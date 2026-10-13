@@ -13,12 +13,14 @@
 // - Settings and challenge progress are one row per key, but nothing said
 //   so; a read-then-create race made two, and the account disagreed with
 //   itself from then on.
+// - `longestStreak` "only ever raises", but was written as an absolute value
+//   computed from an earlier read, so a second device could lower it.
 
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Env } from '../src/auth'
 import worker from '../src/index'
-import { applyMigrations, SqliteD1Database } from './sqlite-d1'
+import { applyMigrations, justBefore, SqliteD1Database } from './sqlite-d1'
 
 const NOW = '2026-10-13T12:00:00.000Z'
 
@@ -331,5 +333,28 @@ describe('a row with a natural key', () => {
         'SELECT COUNT(*) AS n FROM userSettings WHERE "key" = \'pitchperfect_theme\'',
       ),
     ).toBe(2)
+  })
+})
+
+describe('the longest streak', () => {
+  it('is not lowered by a write that read the profile before a higher one landed', async () => {
+    const path = `/api/userProfiles/${singer.userId}`
+    expect(
+      (await call('PATCH', path, { currentStreak: 5 }, singer.token)).status,
+    ).toBe(200)
+
+    // Device A reaches 10 between device B's read and B's write of 6.
+    justBefore(d1, /UPDATE "userProfiles"/, () =>
+      call('PATCH', path, { currentStreak: 10 }, singer.token),
+    )
+    expect(
+      (await call('PATCH', path, { currentStreak: 6 }, singer.token)).status,
+    ).toBe(200)
+
+    expect(
+      sqlite
+        .prepare('SELECT longestStreak FROM userProfiles WHERE id = ?')
+        .get(singer.userId),
+    ).toEqual({ longestStreak: 10 })
   })
 })
