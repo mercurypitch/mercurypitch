@@ -188,9 +188,11 @@ describe('the standings a cohort-mate sees', () => {
     expect(row!.displayName).toMatch(/^Singer-/)
     expect(row!.displayName).not.toContain('Eve')
     expect(row!.userId).not.toBe(hidden.userId)
-    expect(
-      hidden.userId.startsWith(row!.displayName.slice('Singer-'.length)),
-    ).toBe(false)
+    const membership = sqlite
+      .prepare('SELECT id FROM leagueMembership WHERE userId = ?')
+      .get(hidden.userId) as { id: string }
+    expect(row!.userId).toBe(membership.id)
+    expect(row!.displayName).toBe(`Singer-${membership.id.slice(0, 6)}`)
 
     // Neither the row's id nor its pseudonym finds the person through the
     // public profile reads.
@@ -200,8 +202,7 @@ describe('the standings a cohort-mate sees', () => {
     const profiles = (await (
       await call('GET', '/api/userProfiles?limit=1000')
     ).json()) as Array<{ id: string }>
-    const prefix = row!.displayName.slice('Singer-'.length)
-    expect(profiles.filter((p) => p.id.startsWith(prefix))).toEqual([])
+    expect(profiles.some((p) => p.id === row!.userId)).toBe(false)
   })
 
   it('still names the caller, and anyone who opted in', async () => {
