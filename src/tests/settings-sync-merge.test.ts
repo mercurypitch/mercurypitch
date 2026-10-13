@@ -39,6 +39,11 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
 }))
 vi.mock('@/db/services/auth-service', () => ({
   hasValidToken: () => state.authed,
+  storedTokenProvider: () =>
+    state.upgraded ? 'password' : state.authed ? 'anonymous' : null,
+  isRegisteredProvider: (provider: string | null) =>
+    provider !== null && provider !== 'anonymous',
+  currentAccountId: () => (state.upgraded ? state.userId : null),
   // A lazily provisioned anonymous identity holds a valid token too, so
   // these two are not the same question — see the last describe block.
   hasUpgradedAccount: () => state.authed && state.upgraded,
@@ -46,6 +51,7 @@ vi.mock('@/db/services/auth-service', () => ({
 vi.mock('@/db/services/user-service', () => ({
   authVersion: () => state.authVersion,
   getUserId: () => state.userId,
+  getAuthToken: () => (state.authed ? state.userId : null),
   getDeviceId: () => state.deviceId,
 }))
 vi.mock('@/db', () => ({
@@ -255,9 +261,8 @@ describe('a second account on the same device', () => {
   })
 
   it('does not claim the other singer progress, so a reload does not upload it', async () => {
-    // B has no row to replace A's climb with, so the device still holds
-    // A's copy after B's first pull. Claiming it for B there made it "B's"
-    // and the next pull (a reload, an auth change) backfilled it upstream.
+    // B has no cloud row. Preserve A's local copy separately, and show B
+    // an empty climb on both the first pull and a later reload.
     localStorage.setItem(KEY, climb(['2026-08-01', '2026-08-02']))
     localStorage.setItem(OWNER_KEY, 'singer-a')
     state.userId = 'singer-b'
@@ -265,7 +270,7 @@ describe('a second account on the same device', () => {
 
     await pullCloudSettings()
     await settle()
-    expect(localStorage.getItem(OWNER_KEY)).not.toBe('singer-b')
+    expect(localStorage.getItem(KEY)).toBe('null')
 
     await pullCloudSettings()
     await settle()
@@ -308,7 +313,9 @@ describe('a second account on the same device', () => {
 
       const absentKey = cloudKey === KEY ? LONG_NOTE_BESTS_KEY : KEY
       expect(localStorage.getItem(cloudKey)).toBe(other[cloudKey])
-      expect(localStorage.getItem(absentKey)).toBe(own[absentKey])
+      expect(localStorage.getItem(absentKey)).toBe(
+        absentKey === KEY ? 'null' : '{}',
+      )
       expect(state.creates).toEqual([])
       expect(state.updates).toEqual([])
 
@@ -358,7 +365,9 @@ describe('a second account on the same device', () => {
     await pullCloudSettings()
     await settle()
 
-    expect(localStorage.getItem(OWNER_KEY)).toBe('singer-a')
+    expect(
+      JSON.parse(localStorage.getItem(`mp_sync_progress:${KEY}`)!).owner,
+    ).toBe('singer-a')
   })
 })
 
@@ -386,7 +395,9 @@ describe('practicing before there is an account', () => {
     await pullCloudSettings()
     await settle()
 
-    expect(localStorage.getItem(OWNER_KEY)).toBeNull()
+    expect(
+      JSON.parse(localStorage.getItem(`mp_sync_progress:${KEY}`)!).owner,
+    ).toBeNull()
   })
 
   it('merges the signed-out climb into the account signed in afterwards', async () => {
@@ -411,7 +422,9 @@ describe('practicing before there is an account', () => {
       weekDays: Record<number, string[]>
     }
     expect(local.weekDays[1]).toEqual(['2026-08-01', '2026-08-05'])
-    expect(localStorage.getItem(OWNER_KEY)).toBe('singer-a')
+    expect(
+      JSON.parse(localStorage.getItem(`mp_sync_progress:${KEY}`)!).owner,
+    ).toBe('singer-a')
   })
 
   it('forgets a stamp its own anonymous identity left behind', async () => {
@@ -423,17 +436,24 @@ describe('practicing before there is an account', () => {
     await pullCloudSettings()
     await settle()
 
-    expect(localStorage.getItem(OWNER_KEY)).toBeNull()
+    expect(
+      JSON.parse(localStorage.getItem(`mp_sync_progress:${KEY}`)!).owner,
+    ).toBeNull()
   })
 
-  it('leaves a real account claim alone while signed out', async () => {
+  it('preserves a real account copy separately while signed out', async () => {
+    const own = climb(['2026-08-01'])
+    localStorage.setItem(KEY, own)
     localStorage.setItem(OWNER_KEY, 'singer-a')
     signedOut()
 
     await pullCloudSettings()
     await settle()
 
-    expect(localStorage.getItem(OWNER_KEY)).toBe('singer-a')
+    const copies = JSON.parse(localStorage.getItem(`mp_sync_progress:${KEY}`)!)
+    expect(copies.owner).toBeNull()
+    expect(copies.values['account:singer-a']).toBe(own)
+    expect(localStorage.getItem(KEY)).toBe('null')
   })
 })
 

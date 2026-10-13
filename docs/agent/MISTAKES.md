@@ -1267,6 +1267,13 @@ advanced together; a request between renewal and sweeping can hide the bug.
 **See:** `workers/db-worker/src/auth-sessions.ts` (`renewSession`) and
 `workers/db-worker/node-tests/auth-sessions-integration.test.ts`.
 
+### Test progress writes after an account switch, not only its pulls
+
+**Symptom:** account-switch pull tests passed, but later offline practice overwrote the new account's cloud-only progress.
+**Cause:** a retained owner stamp kept the merge off after the new account's row appeared, whether this device or another one wrote it; the pending queue then uploaded an older snapshot over it. Live signals could also retain the previous account while another tab changed credentials.
+**Rule:** keep progress copies and pending writes with their owner, reconcile live state before evaluating a write, and test real practice calls after switches, failures and delayed responses. Read-only A → B → A tests do not establish write isolation.
+**See:** `src/db/services/settings-service.test.ts`, `src/db/services/settings-shared-device.test.ts`, `src/lib/storage.test.ts`.
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents

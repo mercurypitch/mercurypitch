@@ -11,21 +11,20 @@
 //   push:  every persisted-signal write (onPersistedWrite hook) is
 //          debounced and upserted to the cloud.
 //
-// Signed out (or no API configured) the hooks are inert — settings
-// stay local, exactly as before.
+// Signed out, practice stays in a separate guest copy on this device.
+// With no API configured the sync hooks are inert.
 
-import { createEffect } from 'solid-js'
+import { createEffect, onCleanup } from 'solid-js'
 import { getDb } from '@/db'
 import type { UserSetting } from '@/db/entities'
-import { hasUpgradedAccount, hasValidToken } from '@/db/services/auth-service'
-import { authVersion, getDeviceId, getUserId } from '@/db/services/user-service'
-import type { PathProgress } from '@/features/path/path-progress'
-import { mergePathProgress, PATH_PROGRESS_KEY, } from '@/features/path/path-progress'
+import { hasValidToken } from '@/db/services/auth-service'
+import { authVersion, getAuthToken, getUserId, } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
-import { LONG_NOTE_BESTS_KEY, mergeBestsOnPull } from '@/lib/hold/hold-bests'
-import { IS_NATIVE_BUILD, PREMIUM_EXERCISES } from '@/lib/native-build'
-import { ECHO_BESTS_KEY, mergeEchoBestsOnPull } from '@/lib/sequence/echo-bests'
-import { applyPersistedValue, onPersistedWrite } from '@/lib/storage'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { applyPersistedValue, onBeforePersistedWrite, onPersistedWrite, } from '@/lib/storage'
+import { AUTH_TOKEN_KEY } from '@/lib/storage-port'
+import { clearPendingIfUnchanged, markPending, readPending, } from './settings-pending'
+import { acknowledgeProgressReset, activateProgress, activateProgressKey, beforeProgressWrite, MERGE_DEFAULTS, MERGE_ON_PULL, progressReset, progressResetRevision, progressValue, saveLocalProgress, saveProgress, } from './settings-progress'
 
 /** Preference keys all share this prefix (see src/stores/*.ts). */
 const SYNCED_PREFIX = 'pitchperfect_'
@@ -68,196 +67,13 @@ if (!IS_NATIVE_BUILD || import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
   EXCLUDED_KEYS.add('pitchperfect_developer_console')
 }
 
-/**
- * Unprefixed keys that ARE account state and must follow the user across
- * devices. The Ascent's progress predates the prefix convention; renaming
- * it would strand every climb already in progress, so it opts in by name.
- */
-const INCLUDED_KEYS = new Set<string>([PATH_PROGRESS_KEY])
-
-/**
- * Keys whose two sides must be reconciled, not overwritten, when a
- * sign-in finds a value on both the device and the account.
- *
- * Everything else is a preference — last one wins is right, and the newest
- * device is the best guess. Progress is not a preference: overwriting it
- * destroys practice days someone actually did. Each resolver takes the raw
- * strings and returns the value both sides should end up holding.
- */
-const MERGE_ON_PULL: Record<
-  string,
-  (local: string | null, cloud: string) => string
-> = {
-  [PATH_PROGRESS_KEY]: (local, cloud) => {
-    if (local === null) return cloud
-    try {
-      const merged = mergePathProgress(
-        JSON.parse(local) as PathProgress | null,
-        JSON.parse(cloud) as PathProgress | null,
-      )
-      return JSON.stringify(merged)
-    } catch {
-      // Unparseable on either side — prefer the account's copy over a
-      // corrupt local one rather than dropping the pull entirely.
-      return cloud
-    }
-  },
-}
-
-// The premium exercises' bests are records too: a pull keeps the better
-// best on each note (Long note, hold-bests.ts) and at each level (Echo,
-// echo-bests.ts), not the newest device's table. Named only in a build
-// with the premium exercises; a store build folds the keys and the merges
-// away.
-if (PREMIUM_EXERCISES) {
-  MERGE_ON_PULL[LONG_NOTE_BESTS_KEY] = mergeBestsOnPull
-  MERGE_ON_PULL[ECHO_BESTS_KEY] = mergeEchoBestsOnPull
-}
-
-/**
- * Which ACCOUNT the device's merge-key values belong to.
- *
- * Merging is only safe when the local side is the SAME person. Logout does
- * not clear localStorage (auth-service.ts `logout`), so on a shared computer
- * one singer's progress is still sitting there when the next one signs in —
- * and a union is irreversible, so their Ascent would permanently absorb
- * practice days they never did. Unset means the local copy was made
- * signed-out: that IS the person now signing in, and merging is exactly
- * what they want (this is the "I practiced before making an account" path).
- *
- * Account, emphatically — an anonymous identity is not one. It is lazily
- * provisioned on the first write and holds a real token, so the sync runs
- * long before anyone signs in; stamping its id here made the unowned state
- * indistinguishable from a stranger's, and the commonest path in the app
- * lost its climb to the account's copy on sign-in.
- *
- * Same rule the voiceprints take from decision D2, kept deliberately
- * conservative: when the owner does not match, the account's copy wins and
- * the device's is left alone rather than uploaded.
- */
-const MERGE_OWNER_KEY = 'mp_sync_owner'
-
-// A partial pull can leave Ascent owned by B and Long note still owned by A.
-// Individual stamps override the old whole-device stamp without reassigning
-// keys absent from the response. Old installs continue to use the fallback.
-function localMergeOwner(key?: string): string | null {
-  try {
-    const ownKey =
-      key === undefined ? MERGE_OWNER_KEY : `${MERGE_OWNER_KEY}:${key}`
-    return localStorage.getItem(ownKey) ?? localStorage.getItem(MERGE_OWNER_KEY)
-  } catch {
-    return null
-  }
-}
-
-function claimMergeOwner(userId: string, key?: string): void {
-  try {
-    localStorage.setItem(
-      key === undefined ? MERGE_OWNER_KEY : `${MERGE_OWNER_KEY}:${key}`,
-      userId,
-    )
-  } catch {
-    /* private mode — merging simply stays conservative next time */
-  }
-}
-
-function mayMergeKey(key: string, userId: string): boolean {
-  const owner = localMergeOwner(key)
-  return owner === null || owner === userId
-}
-
-function forgetMergeOwner(): void {
-  try {
-    localStorage.removeItem(MERGE_OWNER_KEY)
-  } catch {
-    /* private mode — there was nothing stored to forget */
-  }
-}
-
 /** Safety valve: skip anything suspiciously large for a preference. */
 const MAX_VALUE_BYTES = 8 * 1024
 
 const PUSH_DEBOUNCE_MS = 1500
 
-/**
- * Local writes whose push has not landed on the account yet.
- *
- * In localStorage rather than memory, because the whole failure is a page
- * that goes away before its own debounced push fires: an in-memory ledger
- * dies with the tab that was about to upload it, which is precisely the
- * moment the record is needed.
- *
- * What it fixes: change the theme and reload inside PUSH_DEBOUNCE_MS and the
- * upload never happened, so the next pull found the account still holding the
- * OLD theme and `applyPersistedValue` wrote it back over the new one. The
- * visitor saw their choice revert for no stated reason. Reported 2026-09-10.
- *
- * Speed was never the fix. A shorter debounce only narrows the window, and
- * the same loss happens on a crash, a closed laptop, or an offline push —
- * so the pull has to know a local value is newer, not merely be raced to it.
- */
-const PENDING_KEY = 'mp_sync_pending'
-
-/**
- * Stamped with the identity that made the writes, and ignored under any
- * other. Logout does not clear localStorage (auth-service `logout`), so on a
- * shared computer one singer's unsent theme would otherwise be waiting when
- * the next one signs in — and the guard below would then defend it against
- * THEIR account and upload it there. Same hazard MERGE_OWNER_KEY guards for
- * progress, and answered the same conservative way.
- */
-interface PendingLedger {
-  owner: string
-  values: Record<string, string>
-}
-
-function readPending(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(PENDING_KEY)
-    if (raw === null) return {}
-    const parsed = JSON.parse(raw) as PendingLedger | null
-    if (parsed === null || typeof parsed !== 'object') return {}
-    if (parsed.owner !== getUserId()) return {}
-    return parsed.values ?? {}
-  } catch {
-    return {}
-  }
-}
-
-function writePending(values: Record<string, string>): void {
-  try {
-    if (Object.keys(values).length === 0) localStorage.removeItem(PENDING_KEY)
-    else {
-      const ledger: PendingLedger = { owner: getUserId(), values }
-      localStorage.setItem(PENDING_KEY, JSON.stringify(ledger))
-    }
-  } catch {
-    /* private mode — the push still runs, it just cannot survive a reload */
-  }
-}
-
-function markPending(key: string, value: string): void {
-  const values = readPending()
-  values[key] = value
-  writePending(values)
-}
-
-/**
- * Forget a pending write, but only if it is still the one that was pushed.
- *
- * A second change while the first is in flight leaves a NEWER value in the
- * ledger; clearing on the older push's success would strand it exactly the
- * way the original bug stranded the first.
- */
-function clearPendingIfUnchanged(key: string, pushed: string): void {
-  const map = readPending()
-  if (map[key] !== pushed) return
-  delete map[key]
-  writePending(map)
-}
-
 function isSyncedKey(key: string): boolean {
-  if (INCLUDED_KEYS.has(key)) return true
+  if (MERGE_ON_PULL[key] !== undefined) return true
   return key.startsWith(SYNCED_PREFIX) && !EXCLUDED_KEYS.has(key)
 }
 
@@ -265,148 +81,148 @@ function cloudActive(): boolean {
   return API_BASE_URL != null && API_BASE_URL !== '' && hasValidToken()
 }
 
-// key → cloud row id, learned from the pull so pushes can update
-// instead of create without an extra lookup per write.
-const cloudRowIds = new Map<string, string>()
-const pushTimers = new Map<string, ReturnType<typeof setTimeout>>()
+interface SyncIdentity {
+  userId: string
+  version: number
+  token: string | null
+}
 
-async function pushSetting(key: string, value: string): Promise<void> {
-  if (!cloudActive()) return
+function syncIdentity(): SyncIdentity {
+  return { userId: getUserId(), version: authVersion(), token: getAuthToken() }
+}
+
+function isCurrent(identity: SyncIdentity): boolean {
+  return (
+    cloudActive() &&
+    getUserId() === identity.userId &&
+    authVersion() === identity.version &&
+    getAuthToken() === identity.token
+  )
+}
+
+const pushTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const pushQueues = new Map<string, Promise<void>>()
+let pullRevision = 0
+
+async function uploadPending(
+  key: string,
+  identity: SyncIdentity,
+): Promise<void> {
+  if (!isCurrent(identity)) return
   try {
     const db = await getDb()
+    if (!isCurrent(identity)) return
     const repo = db.getRepository<UserSetting>('userSettings')
-    const existingId = cloudRowIds.get(key)
-    if (existingId != null) {
-      await repo.update(existingId, { value })
-      clearPendingIfUnchanged(key, value)
-      return
+    // Reads must fail closed. A swallowed network failure is not evidence
+    // that the row is absent, and must never turn an update into a create.
+    const rows = await repo.findAll({ where: { key }, throwOnError: true })
+    if (!isCurrent(identity)) return
+    let value = readPending(identity.userId)[key]
+    if (value === undefined) return
+    const existing = rows[0]
+    const merge = MERGE_ON_PULL[key]
+    let reset: string | undefined
+    if (merge !== undefined) {
+      activateProgressKey(key)
+      reset = progressReset(key)
+      value = progressValue(key) ?? value
+      if (reset === undefined)
+        value = merge(value, existing?.value ?? MERGE_DEFAULTS[key])
+      saveProgress(key, value)
+      // The merged value replaces the pending snapshot before one upload.
+      // Flushing the old snapshot after a separate merge upload loses days.
+      markPending(key, value, identity.userId)
     }
-    // First write for this key this session — resolve or create the row.
-    const rows = await repo.findAll({ where: { key } })
-    if (rows.length > 0) {
-      cloudRowIds.set(key, rows[0].id)
-      await repo.update(rows[0].id, { value })
+    if (!isCurrent(identity) || value.length > MAX_VALUE_BYTES) return
+    if (existing !== undefined) {
+      if (existing.value !== value) await repo.update(existing.id, { value })
     } else {
-      const created = await repo.create({ userId: '', key, value })
-      cloudRowIds.set(key, created.id)
+      await repo.create({ userId: '', key, value })
     }
-    clearPendingIfUnchanged(key, value)
+    // An old completion must not clear the new account/generation's ledger.
+    if (isCurrent(identity) && progressReset(key) === reset) {
+      acknowledgeProgressReset(key, reset)
+      clearPendingIfUnchanged(key, value, identity.userId)
+    }
   } catch (err) {
-    // Deliberately leaves the ledger entry in place: a failed push is the
-    // case the ledger exists for, and the next pull uploads it instead of
-    // overwriting it.
     console.warn(`[settings-sync] push failed for "${key}":`, err)
   }
 }
 
-/**
- * Send every outstanding local write now, without waiting out its debounce.
- *
- * Called when the page is going away, and again after each pull. On the way
- * out the request usually will NOT finish — that is fine and not what this
- * is for. Correctness lives in the ledger, which survives the reload; this
- * only means the account is usually current before the tab closes, so a
- * second device does not have to wait for the next visit.
- */
+function pushPending(key: string, identity = syncIdentity()): void {
+  const queueKey = JSON.stringify([identity.userId, key])
+  const previous = pushQueues.get(queueKey) ?? Promise.resolve()
+  const pushing = previous.then(() => uploadPending(key, identity))
+  pushQueues.set(queueKey, pushing)
+  void pushing.finally(() => {
+    if (pushQueues.get(queueKey) === pushing) pushQueues.delete(queueKey)
+  })
+}
+
 function flushPendingPushes(): void {
   for (const timer of pushTimers.values()) clearTimeout(timer)
   pushTimers.clear()
   if (!cloudActive()) return
-  for (const [key, value] of Object.entries(readPending())) {
-    if (!isSyncedKey(key)) continue
-    void pushSetting(key, value)
+  const identity = syncIdentity()
+  for (const key of Object.keys(readPending(identity.userId))) {
+    if (isSyncedKey(key)) pushPending(key, identity)
   }
 }
 
-function isCurrentPull(userId: string, version: number): boolean {
-  return cloudActive() && getUserId() === userId && authVersion() === version
-}
-
-/**
- * Apply all cloud settings to localStorage and live signals. Cloud
- * wins at sign-in time; afterwards local writes win (write-through).
- */
+/** Restore this account's local progress first, then reconcile its cloud copy. */
 export async function pullCloudSettings(): Promise<void> {
-  if (!cloudActive()) return
-  const me = getUserId()
-  const version = authVersion()
+  if (API_BASE_URL == null || API_BASE_URL === '') return
+  const revision = ++pullRevision
+  // This happens even on sign-out or an expired token: A's work stays in A's
+  // saved copy, while the newly active guest/account receives its own signals.
+  if (!activateProgress() || !cloudActive()) return
+  const identity = syncIdentity()
   try {
+    const resetRevision = progressResetRevision()
     const db = await getDb()
-    if (!isCurrentPull(me, version)) return
+    if (!isCurrent(identity) || revision !== pullRevision) return
     const repo = db.getRepository<UserSetting>('userSettings')
     const rows = await repo.findAll({ throwOnError: true })
-    if (!isCurrentPull(me, version)) return
-    cloudRowIds.clear()
-    // Whose progress is sitting on this device? Only merge with our own.
-    const owner = localMergeOwner()
-    const pending = readPending()
+    if (!isCurrent(identity) || revision !== pullRevision) return
+    if (!activateProgress() || progressResetRevision() !== resetRevision) return
+    const seen = new Set<string>()
+    const pending = readPending(identity.userId)
     for (const row of rows) {
       if (!isSyncedKey(row.key)) continue
-      cloudRowIds.set(row.key, row.id)
-      const local = localStorage.getItem(row.key)
-      const merge = mayMergeKey(row.key, me)
-        ? MERGE_ON_PULL[row.key]
-        : undefined
-      // A write this device made that never reached the account. The row in
-      // hand is the OLDER value, so applying it would undo a choice the
-      // visitor already made and watched take effect. Send ours up instead.
-      // Merge keys are exempt: reconciling already keeps the local side.
-      if (merge === undefined && pending[row.key] !== undefined) {
-        // The account already caught up; stop defending the key.
-        if (pending[row.key] === row.value)
-          clearPendingIfUnchanged(row.key, row.value)
-        // Otherwise leave it in the ledger — the flush after this pull
-        // uploads it, so there is no second push racing the loop.
-        continue
+      seen.add(row.key)
+      const merge = MERGE_ON_PULL[row.key]
+      if (merge !== undefined) {
+        // Reset survives a restart and an absent pending ledger (for example
+        // after token expiry). Upload this owned copy before merging again.
+        if (progressReset(row.key) !== undefined) {
+          const local = progressValue(row.key)
+          if (local !== undefined && local.length <= MAX_VALUE_BYTES)
+            markPending(row.key, local, identity.userId)
+          continue
+        }
+        const next = merge(progressValue(row.key) ?? null, row.value)
+        saveProgress(row.key, next)
+        if (next !== row.value) {
+          if (next.length <= MAX_VALUE_BYTES)
+            markPending(row.key, next, identity.userId)
+        } else if (pending[row.key] !== undefined) {
+          clearPendingIfUnchanged(row.key, pending[row.key], identity.userId)
+        }
+      } else if (pending[row.key] !== undefined) {
+        if (pending[row.key] === row.value) {
+          clearPendingIfUnchanged(row.key, row.value, identity.userId)
+        }
+      } else if (localStorage.getItem(row.key) !== row.value) {
+        applyPersistedValue(row.key, row.value)
       }
-      const next = merge === undefined ? row.value : merge(local, row.value)
-      if (local !== next) applyPersistedValue(row.key, next)
-      if (
-        MERGE_ON_PULL[row.key] !== undefined &&
-        hasUpgradedAccount() &&
-        me !== ''
-      )
-        claimMergeOwner(me, row.key)
-      // A merge can leave the account behind the device (local-only days).
-      // applyPersistedValue deliberately doesn't echo, so push it back.
-      if (next !== row.value) void pushSetting(row.key, next)
     }
-
-    // Backfill: a climb that started before this device ever signed in has
-    // no cloud row at all, and nothing would upload it until the next
-    // practice day. Seed it now so the account owns it immediately — but
-    // only when the device's copy is ours to give (see MERGE_OWNER_KEY).
     for (const key of Object.keys(MERGE_ON_PULL)) {
-      if (cloudRowIds.has(key) || !mayMergeKey(key, me)) continue
-      const local = localStorage.getItem(key)
-      if (local !== null && local.length <= MAX_VALUE_BYTES) {
-        void pushSetting(key, local)
+      if (seen.has(key)) continue
+      const local = progressValue(key)
+      if (local !== undefined && local.length <= MAX_VALUE_BYTES) {
+        markPending(key, local, identity.userId)
       }
     }
-
-    // From here the device's copy belongs to this account, so the next
-    // signer-in gets the account's own data instead of inheriting ours.
-    // Only a real account may say that; see MERGE_OWNER_KEY.
-    // Not while a merge key still holds someone else's copy that the
-    // account had no row to replace: claiming it would make it "ours" and
-    // the backfill above would upload it on the very next pull.
-    const strangersLeft = Object.keys(MERGE_ON_PULL).some(
-      (key) => !mayMergeKey(key, me) && localStorage.getItem(key) !== null,
-    )
-    if (hasUpgradedAccount()) {
-      if (me !== '' && !strangersLeft) claimMergeOwner(me)
-    } else if (owner !== null && owner === getDeviceId()) {
-      // An older build claimed on every pull, so devices are out there
-      // carrying their own id here — which would block the merge above
-      // for the rest of that device's life. It is safe to read as unset
-      // only from inside an anonymous session, which is the one place
-      // the stamp is unambiguous: an upgraded device cannot reach this
-      // line, because the server refuses it anonymous re-auth (403) and
-      // the pull returns early with no token at all.
-      forgetMergeOwner()
-    }
-    // Anything still unsent goes up now: the loop above deliberately did not
-    // push, and a key the account has no row for at all was never in it.
     flushPendingPushes()
   } catch (err) {
     console.warn('[settings-sync] pull failed:', err)
@@ -420,21 +236,40 @@ export async function pullCloudSettings(): Promise<void> {
 export function initSettingsSync(): void {
   if (API_BASE_URL == null || API_BASE_URL === '') return
 
+  activateProgress()
+  onBeforePersistedWrite((key) => {
+    if (MERGE_ON_PULL[key] === undefined) return true
+    try {
+      // A token changed in another tab before its storage event reached us.
+      // Reconcile the live store, but reject this already-computed write:
+      // an absolute caller may have calculated it from the previous singer.
+      return beforeProgressWrite(key)
+    } catch (err) {
+      console.warn('[settings-sync] refused a write with unknown owner:', err)
+      return false
+    }
+  })
   onPersistedWrite((key, serialized) => {
     if (!isSyncedKey(key)) return
-    if (serialized.length > MAX_VALUE_BYTES) return
-    if (!cloudActive()) return
-    // Recorded BEFORE the debounce, synchronously, so the value is already
-    // durable if the page never survives to run the timer.
-    markPending(key, serialized)
-    clearTimeout(pushTimers.get(key))
-    pushTimers.set(
-      key,
-      setTimeout(() => {
-        pushTimers.delete(key)
-        void pushSetting(key, serialized)
-      }, PUSH_DEBOUNCE_MS),
-    )
+    try {
+      const value =
+        MERGE_ON_PULL[key] === undefined
+          ? serialized
+          : saveLocalProgress(key, serialized)
+      if (!cloudActive() || value.length > MAX_VALUE_BYTES) return
+      const identity = syncIdentity()
+      markPending(key, value, identity.userId)
+      clearTimeout(pushTimers.get(key))
+      pushTimers.set(
+        key,
+        setTimeout(() => {
+          pushTimers.delete(key)
+          pushPending(key, identity)
+        }, PUSH_DEBOUNCE_MS),
+      )
+    } catch (err) {
+      console.warn('[settings-sync] could not retain a local write:', err)
+    }
   })
 
   // pagehide fires on a reload, a close and a bfcache suspend alike, which is
@@ -442,9 +277,24 @@ export function initSettingsSync(): void {
   // the companion iOS actually delivers when an app is backgrounded and then
   // killed without ever firing pagehide.
   if (typeof window !== 'undefined') {
-    window.addEventListener('pagehide', flushPendingPushes)
-    document.addEventListener('visibilitychange', () => {
+    const onStorage = (event: StorageEvent): void => {
+      if (event.key === AUTH_TOKEN_KEY || event.key === null)
+        void pullCloudSettings()
+    }
+    const onVisibility = (): void => {
       if (document.visibilityState === 'hidden') flushPendingPushes()
+    }
+    window.addEventListener('pagehide', flushPendingPushes)
+    window.addEventListener('storage', onStorage)
+    document.addEventListener('visibilitychange', onVisibility)
+    onCleanup(() => {
+      window.removeEventListener('pagehide', flushPendingPushes)
+      window.removeEventListener('storage', onStorage)
+      document.removeEventListener('visibilitychange', onVisibility)
+      onBeforePersistedWrite(null)
+      onPersistedWrite(null)
+      for (const timer of pushTimers.values()) clearTimeout(timer)
+      pushTimers.clear()
     })
   }
 
