@@ -3,8 +3,8 @@
 // ============================================================
 
 import { createEffect, createSignal, onCleanup } from 'solid-js'
-import type {PublishedShareCounts} from '@/db/services/share-service';
-import { loadPublishedShareCounts  } from '@/db/services/share-service'
+import type { PublishedShareCounts } from '@/db/services/share-service'
+import { loadPublishedShareCounts } from '@/db/services/share-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { showNotification } from '@/stores/notifications-store'
 
