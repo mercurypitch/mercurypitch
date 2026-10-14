@@ -493,7 +493,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     og: {
       title: 'Vocal Pitch Practice — Free Pitch Training with Live Feedback',
       description:
-        'See the note you are making against the note you meant, and how far apart they are in cents. Free, in your browser.',
+        'See the note you are making against the note you meant, then where you drifted furthest after each run, in cents. Free, in your browser.',
       image: ogImage('pitch-training-og.png'),
       imageAlt:
         'A pitch readout: the note being sung tracked against its target line, the gap between them lit where they meet.',
@@ -501,15 +501,15 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Vocal Pitch Practice — Free Pitch Training with Live Feedback',
       description:
-        'Practice on pitch with live feedback measured in cents. Free, in your browser, audio stays on your device.',
+        'Practice on pitch with live feedback, then see where you drifted furthest after each run, in cents. Free, in your browser, audio stays on your device.',
     },
     h1: 'Practice singing on pitch, and see the proof',
-    lede: 'Most pitch practice ends with a feeling. This ends with a number. Hold a note, run a scale or chase a moving target, and MercuryPitch draws what you actually sang against what you meant, measuring the gap in cents rather than telling you it was close.',
+    lede: 'Most pitch practice ends with a feeling. This ends with a number. Hold a note, run a scale or chase a moving target, and MercuryPitch draws what you actually sang against what you meant. After each run you get a score out of 100 and the spot where you drifted furthest, in cents, rather than being told it was close.',
     app: {
       name: 'MercuryPitch Pitch Training',
       category: 'MusicApplication',
       description:
-        'Browser pitch-training exercises with live feedback: sustained notes, sirens, slides, intervals, scales, staccato and vibrato, each scored against a target in cents.',
+        'Browser pitch-training exercises with live feedback: sustained notes, sirens, slides, intervals, scales, staccato and vibrato, each finished run scored out of 100, with the furthest drift from the target shown in cents.',
     },
     faq: [
       {
@@ -518,7 +518,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
       {
         q: 'What counts as good pitch accuracy?',
-        a: 'It is measured in cents — hundredths of a semitone. Most listeners stop hearing a note as out of tune somewhere under about 20 cents on a sustained tone, and trained singers hold much tighter than that. MercuryPitch reports the real figure instead of a percentage, so progress is visible even when it is small.',
+        a: 'Pitch distance is measured in cents, hundredths of a semitone. Most listeners stop hearing a note as out of tune somewhere under about 20 cents on a sustained tone, and trained singers hold much tighter than that. After each run MercuryPitch shows where you drifted furthest from the target, in cents, next to a score out of 100, so you can see a small gain.',
       },
       {
         q: 'Do I need an instrument or a teacher?',
