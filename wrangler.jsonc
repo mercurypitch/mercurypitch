@@ -87,6 +87,12 @@
       // `/admin` it does not cover, and wrangler accepts both.
       "/admin",
       "/admin/*",
+      // Pictures in sent mail. The asset layer answers a missing one with
+      // a 404 that still carries public/_headers' year of immutable caching;
+      // the Worker passes a found file through and makes an error no-store
+      // (src/worker.ts), so a picture fetched before its deploy lands is not
+      // cached as missing for a year.
+      "/email/*",
     ],
   },
   "compatibility_flags": ["nodejs_compat"],
