@@ -311,6 +311,14 @@ async function routeUvr(
   }
 }
 
+/** The asset layer's answer, with `no-store` when it is an error. */
+function uncachedIfError(response: Response): Response {
+  if (response.status < 400) return response
+  const uncached = new Response(response.body, response)
+  uncached.headers.set('Cache-Control', 'no-store')
+  return uncached
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -450,6 +458,16 @@ export default {
       const glassUrl = new URL(request.url)
       glassUrl.pathname = '/glass'
       return env.ASSETS.fetch(new Request(glassUrl.toString(), request))
+    }
+
+    // Pictures in sent mail. public/_headers caches /email/* for a year,
+    // immutable, and the asset layer puts that header on a 404 as well. A
+    // picture asked for before its deploy lands (the DB Worker goes live
+    // about 30 s ahead of the static files on a release tag) would then stay
+    // missing for a year in an image proxy or a mail app that cached the
+    // miss. An existing file keeps its year; an error is never stored.
+    if (url.pathname.startsWith('/email/')) {
+      return uncachedIfError(await env.ASSETS.fetch(request))
     }
 
     // All other requests (static assets, SPA routes) are served by the assets
