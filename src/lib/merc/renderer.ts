@@ -54,6 +54,8 @@ export interface MercMountOptions {
   voiceAt?: MercVoiceSource | null
   /** Where a celebration's sparkles land. Default 'around'. */
   sparkles?: SparkleSide
+  /** Reduced motion for the glide states (`hum`, `ride`). Default false. */
+  still?: boolean
   /** Called once if Merc stops drawing for good after mount. */
   onFailure?: (error: Error) => void
 }
@@ -83,6 +85,8 @@ export interface MercRenderer {
   setQuality(name: MercQuality): void
   setView(view: MercViewName | MercView): void
   setPaused(paused: boolean): void
+  /** Reduced motion: `ride` stands upright, `hum`'s rings only fade. */
+  setStill(still: boolean): void
   /** Capture mode: render exactly t seconds after the last setState. */
   renderAt(t: number): void
   destroy(): void
@@ -143,6 +147,7 @@ export function mount(
   const sim = new Sim(opts.state ?? 'idle')
   sim.voiceAt = opts.voiceAt ?? null
   sim.sparkleSide = opts.sparkles ?? 'around'
+  sim.still = opts.still ?? false
 
   // ---------------------------------------------------------- GL resources
 
@@ -645,6 +650,9 @@ export function mount(
     setPaused(p) {
       paused = p
       syncLoop()
+    },
+    setStill(still) {
+      sim.still = still
     },
     renderAt(t) {
       if (seg) stepSeg(seg, t)

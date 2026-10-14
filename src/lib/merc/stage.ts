@@ -32,6 +32,11 @@ export interface MercStageOptions {
   pixelRatio?: number
   /** Where a celebration's sparkles land. Default 'around'. */
   sparkles?: SparkleSide
+  /**
+   * Reduced motion, for the glide states: `ride` stands upright and `hum`'s
+   * rings hold still and only fade. Default false.
+   */
+  still?: boolean
   /** Called once, when Merc stops drawing for good (also during mount). */
   onFailure?: (reason: string) => void
 }
@@ -43,6 +48,8 @@ export interface MercStage {
   setVoice(voice: MercVoice): void
   /** Stops the frame loop (Merc holds his pose) until unpaused. */
   setPaused(paused: boolean): void
+  /** Reduced motion turned on or off after mount (see `still`). */
+  setStill(still: boolean): void
   /** Releases the loop, listeners, GL objects, the context and the canvas. */
   destroy(): void
 }
@@ -52,6 +59,7 @@ const failedStage = (): MercStage => ({
   setState() {},
   setVoice() {},
   setPaused() {},
+  setStill() {},
   destroy() {},
 })
 
@@ -82,6 +90,7 @@ export function mountMercStage(
       state: opts.state ?? 'idle',
       pixelRatio: opts.pixelRatio,
       sparkles: opts.sparkles,
+      still: opts.still,
       onFailure: report,
     })
   } catch (err) {
@@ -120,6 +129,9 @@ export function mountMercStage(
     },
     setPaused(paused) {
       guard((r) => r.setPaused(paused))
+    },
+    setStill(still) {
+      guard((r) => r.setStill(still))
     },
     destroy() {
       if (destroyed) return

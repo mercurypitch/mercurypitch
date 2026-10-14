@@ -14,6 +14,7 @@
 
 import type { MercState } from './constants'
 import { SHAPE } from './constants'
+import { rideLean } from './sim-glide'
 import type { Q3, Q4 } from './sim-math'
 import { clamp, lerp, smooth, TAU } from './sim-math'
 import type { Springs, Targets } from './sim-springs'
@@ -40,6 +41,8 @@ export interface Fx {
   rootX: number | null
   rootY: number | null
   arcSpeed?: number
+  /** Pins the arcs' phase (they hold still) instead of advancing it. */
+  arcPhase?: number
   rippleSpeed?: number
   rippleFreq?: number
   rippleSrc?: number
@@ -64,8 +67,14 @@ export interface ChoreoHost {
     cents: number
     steady: number
     rate: number
+    /** How fast the sung pitch moves, semitones/s (sim-glide.ts). */
+    slope: number
+    /** The hum's presence, 0..1, eased in and out. */
+    env: number
   }>
   readonly lock: Readonly<{ on: boolean; t0: number }>
+  /** Reduced motion, for the glide states. */
+  readonly still: boolean
   splash(edge?: number, k?: number, n?: number, kx?: number): void
   sparkle(): void
   ring(strength: number, speed: number): void
@@ -522,6 +531,62 @@ function hopGhosts(a: HopArc): Q4[] {
   ]
 }
 
+// Hums with his mouth closed, turned a little toward where the bridge goes,
+// soft rings leaving the front of his face while the voice sounds. The room
+// plays nothing meanwhile: the rings are the only sound he shows.
+function hum(c: Cue): void {
+  const { tau, T, X, sim } = c
+  const e = sim.vs.env
+  const level = sim.vs.level
+  T.smile = 0.55
+  T.sq = 1 + breathe(c, 0.012)
+  T.sqL = 0.1 * e
+  T.sqR = 0.1 * e
+  T.glow = 0.18 * level
+  T.yaw = -0.14
+  T.lookX = 0.35
+  T.lookY = 0.08
+  X.blink = blinkMul(tau, [1.9, 5.3], 7)
+  if (!sim.still) {
+    T.lx = 0.015 * Math.sin((TAU * tau) / 5.6)
+    // The hum's buzz, faint in the resin.
+    T.ripple = e * (0.0005 + 0.0008 * level)
+    X.rippleSpeed = 6
+  }
+  X.arcs = humRings(sim, e, level)
+  // Under reduced motion the rings stand where they are and only fade.
+  if (sim.still) {
+    X.arcSpeed = 0
+    X.arcPhase = 0.5
+  } else X.arcSpeed = 0.55 + 0.85 * level
+}
+
+// One fan of rings from the front of his face, tilted with his lean: the
+// louder the hum, the brighter and wider they start.
+function humRings(sim: ChoreoHost, e: number, level: number): Arcs {
+  const at = sim.restToWorld([0.46, 0.6, 0])
+  return {
+    c: [at[0], at[1]],
+    intensity: e * Math.min(0.75, 0.3 + 0.5 * level),
+    angle: 0.1 + sim.s.lx.x,
+    spread: 0.7,
+    both: 0,
+    base: 0.1 + 0.07 * level,
+  }
+}
+
+// Rides the voice: the hum, leaning with the sung pitch's slope (forward up
+// a rise, back down a fall, upright on a held note), his eyes going with
+// it. Under reduced motion he hums upright.
+function ride(c: Cue): void {
+  hum(c)
+  const { T, sim } = c
+  if (sim.still) return
+  const lean = rideLean(sim.vs.slope)
+  T.lx = lean
+  T.lookY = 0.08 + 1.6 * lean
+}
+
 const MOVES: Record<MercState, (c: Cue) => void> = {
   drop,
   idle,
@@ -533,6 +598,8 @@ const MOVES: Record<MercState, (c: Cue) => void> = {
   point,
   sleep,
   hop,
+  hum,
+  ride,
 }
 
 /** This step's spring targets and effects for the sim's current state. */
