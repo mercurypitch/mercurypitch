@@ -15,16 +15,26 @@
 // flow instead (Settings is a tab in that same flow, so it is covered too).
 // The studio app mounts one of each and CSS shows the one that fits the
 // viewport; the answer and the dismissal are shared between mounts.
+//
+// Where the pill is pinned (Karaoke Night at every width, the studio app on
+// a desktop), it stands on the cookie banner rather than under it, and
+// publishes its own room so the toasts stand on it in turn.
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onMount, Show } from 'solid-js'
 import { authStamp, fetchMe, hasValidToken, resendVerificationEmail, takeEmailVerifyResult, } from '@/db/services/auth-service'
+import { publishFootSpace } from '@/lib/foot-space'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { confirmedGiftMessage } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './VerifyEmailBanner.module.css'
 
 const DISMISS_KEY = 'mp:verifyBannerDismissed'
+
+/** The room the pill takes at the foot of the window, on <html>: the toasts
+ *  stand on it (lib/foot-space.ts). The inline strip is in the page flow
+ *  and takes none. */
+export const VERIFY_SPACE_VAR = '--verify-banner-space'
 
 function loadDismissed(): boolean {
   try {
@@ -161,6 +171,10 @@ export const VerifyEmailBanner: Component<VerifyEmailBannerProps> = (props) => {
   return (
     <Show when={email() !== null && !dismissed()}>
       <div
+        ref={(el) => {
+          if (props.placement !== 'inline')
+            publishFootSpace(el, VERIFY_SPACE_VAR)
+        }}
         classList={{
           [styles.inline]: props.placement === 'inline',
           [styles.banner]: props.placement !== 'inline',

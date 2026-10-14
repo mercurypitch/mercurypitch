@@ -34,11 +34,19 @@
   top: 14px;
   right: 14px;
 }
+/* The bottom corners stand on the cookie banner while it is open, and on
+   the confirm-email pill, never under them (lib/foot-space.ts). */
+.bl,
+.br {
+  bottom: max(
+    22px,
+    calc(var(--consent-banner-space, 0px) + 8px),
+    calc(var(--verify-banner-space, 0px) + 8px)
+  );
+}
 .bl {
-  bottom: 22px;
   left: 14px;
 }
 .br {
-  bottom: 22px;
   right: 16px;
 }

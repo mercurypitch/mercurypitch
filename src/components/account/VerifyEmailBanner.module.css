@@ -3,8 +3,16 @@
    below the focus-mode stage (z 400) so an immersive performance stays clean. */
 
 .banner {
+  /* On the cookie banner while it is open, never under it: the banner sits
+     at the very top of the page's z-order, so a pill drawn in its strip had
+     neither its words nor its buttons. Measured 14 Oct 2026 at 1440x900: the
+     banner covered 61 px of the pill, Resend and Dismiss included. The
+     banner publishes its room as --consent-banner-space (lib/foot-space.ts),
+     and the pill publishes its own for the toasts. */
+  --verify-floor: max(18px, calc(var(--consent-banner-space, 0px) + 8px));
+
   position: fixed;
-  bottom: 18px;
+  bottom: var(--verify-floor);
   left: 50%;
   transform: translateX(-50%);
   z-index: 300;
@@ -130,8 +138,15 @@
   .banner {
     /* Sit above the mobile tab bar so buttons (Resend / Close) stay
        reachable. --tabbar-total includes the safe-area inset; +12px
-       gives breathing room above the bar's float gap. */
-    bottom: calc(var(--tabbar-total, 54px) + 12px);
+       gives breathing room above the bar's float gap. And above the cookie
+       banner while it is open: on Karaoke Night at 390x844 it covered
+       108 px of the pill, both buttons with it (14 Oct 2026). */
+    --verify-floor: max(
+      calc(var(--tabbar-total, 54px) + 12px),
+      calc(var(--consent-banner-space, 0px) + 8px)
+    );
+
+    bottom: var(--verify-floor);
     left: 10px;
     right: 10px;
     transform: none;
@@ -142,7 +157,7 @@
 
     /* Cap height so long email addresses don't push the close button
        past the top of the viewport. */
-    max-height: calc(100dvh - var(--tabbar-total, 54px) - 24px);
+    max-height: calc(100dvh - var(--verify-floor) - 12px);
     overflow-y: auto;
     overscroll-behavior: contain;
   }

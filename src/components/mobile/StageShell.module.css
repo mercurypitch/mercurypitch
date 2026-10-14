@@ -5,9 +5,16 @@
   top: 0;
   left: 0;
   right: 0;
-  /* dvh tracks the collapsing mobile URL bar; vh is the fallback. */
-  height: 100vh;
-  height: 100dvh;
+  /* dvh tracks the collapsing mobile URL bar; vh is the fallback.
+
+     Ends on the cookie banner while it is open. The banner is drawn over
+     everything, so a full-height stage put its foot under it: in Karaoke
+     Night at 390x844 that was the guide-vocals pill, the music level and
+     the transport row (14 Oct 2026). The banner publishes the room it
+     takes, tab bar included (lib/foot-space.ts), and the stage stops
+     there, so every control in it stands clear. */
+  height: calc(100vh - var(--consent-banner-space, 0px));
+  height: calc(100dvh - var(--consent-banner-space, 0px));
   z-index: var(--z-stage);
   display: flex;
   flex-direction: column;

@@ -1,6 +1,12 @@
 .bar {
   position: fixed;
-  bottom: 18px;
+  /* On the cookie banner while it is open, and on the confirm-email pill,
+     never under them: both are pinned bottom-centre too (lib/foot-space.ts). */
+  bottom: max(
+    18px,
+    calc(var(--consent-banner-space, 0px) + 8px),
+    calc(var(--verify-banner-space, 0px) + 8px)
+  );
   left: 50%;
   transform: translateX(-50%);
   z-index: 40;

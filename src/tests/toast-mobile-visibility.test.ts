@@ -60,6 +60,15 @@ describe('REQ-TMV-001 — Mobile toast container respects tab bar clearance', ()
     )
   })
 
+  // The confirm-email pill is the layer under the toasts, and publishes its
+  // room while it is pinned (lib/foot-space.ts). A toast drew over 56 px of
+  // it on Karaoke Night at 390x844 before the floor counted it.
+  it('stands on the confirm-email pill too', () => {
+    expect(block).toMatch(
+      /--toast-floor\s*:\s*max\([\s\S]*?--verify-banner-space[\s\S]*?\)/,
+    )
+  })
+
   it('sets max-height using the toast floor', () => {
     expect(block).toMatch(/max-height\s*:[\s\S]*?--toast-floor/)
   })
@@ -122,16 +131,35 @@ describe('REQ-TMV-003 — Banner sits above the tab bar on mobile', () => {
     expect(block).toBeTruthy()
   })
 
-  it('offsets bottom by --tabbar-total', () => {
-    expect(block).toMatch(/bottom\s*:.*--tabbar-total/)
+  // The floor is the tab bar's room, or the cookie banner's while it is
+  // open and taller: the banner sits at the top of the page's z-order and
+  // covered the pill's Resend and Dismiss (src/e2e/toast-above-confirm-bar).
+  it('stands on the tab bar or the consent banner, whichever is taller', () => {
+    expect(block).toMatch(
+      /--verify-floor\s*:\s*max\([\s\S]*?--tabbar-total[\s\S]*?--consent-banner-space[\s\S]*?\)/,
+    )
+    expect(block).toMatch(/bottom\s*:\s*var\(--verify-floor\)/)
   })
 
   it('caps height so buttons remain visible', () => {
-    expect(block).toMatch(/max-height\s*:[\s\S]*?--tabbar-total/)
+    expect(block).toMatch(/max-height\s*:[\s\S]*?--verify-floor/)
   })
 
   it('enables vertical scrolling for long content', () => {
     expect(block).toMatch(/overflow-y\s*:\s*auto/)
+  })
+})
+
+describe('The desktop confirm-email pill stands on the consent banner', () => {
+  // Outside the phone block: the pill is pinned bottom-centre at every width
+  // on Karaoke Night and on a desktop studio, where the banner sits too.
+  const base = BANNER_CSS.slice(BANNER_CSS.indexOf('.banner {')).slice(0, 1200)
+
+  it('floors at the banner while it is open', () => {
+    expect(base).toMatch(
+      /--verify-floor\s*:\s*max\(\s*18px\s*,\s*calc\(var\(--consent-banner-space, 0px\) \+ 8px\)\s*\)/,
+    )
+    expect(base).toMatch(/bottom\s*:\s*var\(--verify-floor\)/)
   })
 })
 

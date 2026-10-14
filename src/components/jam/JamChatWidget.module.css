@@ -1,6 +1,7 @@
 .widgetContainer {
   position: fixed;
-  bottom: 20px;
+  /* On the cookie banner while it is open (lib/foot-space.ts). */
+  bottom: max(20px, calc(var(--consent-banner-space, 0px) + 8px));
   right: 20px;
   z-index: 1000;
   display: flex;
@@ -221,7 +222,12 @@
    keep the open window within the viewport. */
 @media (max-width: 768px) {
   .widgetContainer {
-    bottom: calc(var(--tabbar-total, 62px) + 16px);
+    /* And on the cookie banner while it is open, which now stands on the
+       tab bar itself (lib/foot-space.ts). JamPanel's guide dock keeps the
+       same floor, so the two stay one row. */
+    bottom: calc(
+      max(var(--tabbar-total, 62px), var(--consent-banner-space, 0px)) + 16px
+    );
     right: max(12px, var(--safe-right, 0px));
   }
 
