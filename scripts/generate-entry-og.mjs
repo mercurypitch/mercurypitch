@@ -42,7 +42,8 @@ const H = 630
  *  directly above them on the card: Pitch Training's already says "Free" and
  *  the range test's already says "span in semitones", so a pill repeating it
  *  spends a slot saying nothing. Every pill must be true of the app as it
- *  ships: the six bands are VOICE_TYPE_BANDS, the 31 singers VOICE_LEGENDS.
+ *  ships: the 31 singers are VOICE_LEGENDS. The voice-type art draws four bars
+ *  for six bands (VOICE_TYPE_BANDS), so its pill names the span, not a count.
  *
  *  `art` nudges the backdrop when a generated subject sits badly. `size` is a
  *  CSS background-size, `pos` a background-position. Mind the direction: a
@@ -60,7 +61,7 @@ const CARDS = {
   'voice-type-test': {
     backdrop: 'voice-type-test.png',
     headline: 'Soprano, alto, tenor or bass?',
-    pills: ['Six voice bands', 'A minute on the clock', 'Free'],
+    pills: ['Bass to soprano', 'A minute on the clock', 'Free'],
     accent: '#58a6ff',
   },
   'which-singer-has-my-vocal-range': {
