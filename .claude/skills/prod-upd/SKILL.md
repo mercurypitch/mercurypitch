@@ -73,11 +73,28 @@ already understands it, or the link lands on a page that ignores it.
      release is already cut. Bump the version + changelog first.
 
 4. **Walk the guided tours** (release gate — per CLAUDE.md this full walk
-   runs at release time, not per PR):
-   - Run the `/tour-check` skill (`pnpm run build`, serve `dist` on :3005,
-     then `pnpm run test:tours` and `MOBILE=1 pnpm run test:tours`).
-   - Compare misses against the known pre-existing list; any NEW `MISS`
-     is a release blocker — **stop and report** instead of tagging.
+   runs at release time, not per PR). CI walks them in the **Release Tours**
+   workflow (`.github/workflows/release-tours.yml`), desktop and phone in
+   parallel:
+   - **Before the tag**, dispatch it on `main` and wait for it:
+     `gh workflow run release-tours.yml --ref main`, then
+     `gh run list --workflow release-tours.yml -L 1` and
+     `gh run watch <id> --exit-status`. Confirm the run's commit is the
+     `main` you are about to tag. Each viewport's job summary prints the
+     `TOTAL steps` line and every `MISS` under its tour; the full log is the
+     `guided-tours-desktop` / `guided-tours-mobile` artifact.
+   - The known misses are **none**: v0.9.15, v0.9.16 and v0.9.17 walked 144
+     desktop and 127 phone steps with 0 misses, locally and in CI. The walker
+     skips the four steps that need a cloud board and exits non-zero on
+     anything else, so a red run is a release blocker — **stop and report**
+     instead of tagging. Each job takes about 7 minutes.
+   - The tag push runs the same workflow again on the tagged commit,
+     **beside** the deploy, not in front of it. A red run there does not hold
+     the deploy; it is an alert to check in step 7.
+   - **Fallback**, when Actions is down or a `MISS` needs debugging: walk
+     locally with the `/tour-check` skill (`pnpm run build:tours`, never plain
+     `build`; serve `dist` on :3005; `pnpm run test:tours` and
+     `MOBILE=1 pnpm run test:tours`).
 
 5. **Create the annotated tag** on `main`'s latest commit:
    - `git tag -a vX.Y.Z -m "Release vX.Y.Z"`
@@ -88,8 +105,10 @@ already understands it, or the link lands on a page that ignores it.
    - `git push origin vX.Y.Z`
 
 7. **Report.**
-   - State the tag, the commit SHA it points at, and the deploy run that started
-     (`gh run list -L 3` or the Actions URL) so the user can watch it.
+   - State the tag, the commit SHA it points at, and the runs it started
+     (`gh run list --branch vX.Y.Z`: Build & Deploy and Release Tours) so the
+     user can watch them. PR Gate does not run on tags. If the tag's Release
+     Tours run is red, say so and name the missed steps.
    - If a DB migration is pending for this release (check project memory, e.g.
      the prod-db-migration note), surface it now — a tag deploy ships code, not
      schema.
