@@ -102,8 +102,8 @@ export function SharedVoiceprintWelcome(
           notes, the metrics need a longer take. */}
       <ol class="shared-vp-steps">
         <li>
-          Sing a few notes and we map your range, then name the voice yours
-          lines up with, like the one above.
+          Sing a few notes and we map your range, then name a famous voice from
+          your band, like the one above.
         </li>
         <li>
           Keep going for about a minute and we measure your accuracy and
