@@ -1,0 +1,170 @@
+name: Release Tours
+
+# Walks every guided spotlight tour, desktop and phone, on the tree a web
+# release ships. This is the /tour-check skill's walk (scripts/walk-tours.mjs)
+# run by CI, so the release no longer depends on someone remembering it.
+#
+# It runs BESIDE the prod deploy (build.yml), not in front of it, and alerts
+# by failing: the tag's commit shows a red check, GitHub notifies whoever
+# pushed the tag, and every missed step is an error annotation on the run.
+# A missed spotlight is an onboarding defect, not a broken app, and by the
+# time a tag exists the release is already named. Measured on 14 Oct 2026,
+# each viewport's job takes about 7 minutes and the v0.9.17 deploy took 4:
+# blocking would nearly triple the time to prod, and a miss would leave a
+# tag that never deployed, which prod-upd forbids moving.
+# The walk that BLOCKS a release is the dispatch on main before the tag is
+# cut (prod-upd step 4): the same workflow, run by hand.
+#
+# Nothing here deploys, and the bundle it walks is never published:
+# build:tours empties VITE_API_BASE_URL so the app runs on the local Dexie
+# adapter, and the walker blocks every request that leaves localhost.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-tours-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  walk:
+    name: Guided tours (${{ matrix.viewport }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      # Both viewports always finish: a miss on one says nothing about the
+      # other, and the release wants both answers.
+      fail-fast: false
+      matrix:
+        viewport: [desktop, mobile]
+    steps:
+      - uses: actions/checkout@v7
+
+      # build:tours stages the Glassworks assets from these LFS paths and
+      # refuses a pointer file, the same as the production build in build.yml.
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
+
+      - uses: ./.github/actions/setup
+
+      - name: Build the local-mode bundle
+        run: pnpm run build:tours
+
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # The same key as PR Gate's browser shards, so a release reuses their
+      # cached Chromium instead of downloading its own.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Walk every tour
+        shell: bash
+        env:
+          MOBILE: ${{ matrix.viewport == 'mobile' && '1' || '0' }}
+          BASE_URL: http://localhost:3005
+        run: |
+          set -euo pipefail
+
+          # Plain `serve`, as the e2e suite uses: the app ships a document per
+          # room, so an SPA rewrite to index.html would break every entry but
+          # the first.
+          pnpm exec serve dist -l 3005 > serve.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl --silent --fail --output /dev/null "$BASE_URL/" && break
+            sleep 1
+          done
+          curl --silent --fail --output /dev/null "$BASE_URL/"
+
+          start=$SECONDS
+          status=0
+          pnpm run test:tours 2>&1 | tee tours.log || status=$?
+          echo "Walk took $((SECONDS - start)) s" | tee walk-time.txt
+          exit "$status"
+
+      - name: Report the walk
+        if: always()
+        shell: bash
+        env:
+          VIEWPORT: ${{ matrix.viewport }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! -f tours.log ]]; then
+            echo "### Guided tours ($VIEWPORT): the walk never ran" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # One annotation per failed step, so the run page names the tour and
+          # the step without opening the log.
+          current=""
+          while IFS= read -r line; do
+            case "$line" in
+              '### '*)
+                current="${line#\#\#\# }"
+                case "$current" in
+                  *': TOUR DID NOT START'|*': COULD NOT OPEN A ROOM')
+                    echo "::error title=Guided tour ($VIEWPORT)::$current"
+                    ;;
+                esac
+                ;;
+              *'MISS  step '*)
+                step="${line#*MISS  }"
+                echo "::error title=Guided tour ($VIEWPORT)::$current, $step"
+                ;;
+              'FATAL:'*)
+                echo "::error title=Guided tour ($VIEWPORT)::$line"
+                ;;
+            esac
+          done < tours.log
+
+          {
+            echo "### Guided tours ($VIEWPORT)"
+            echo ""
+            grep -E '^TOTAL steps:' tours.log || echo "The walk ended before its total line."
+            echo ""
+            cat walk-time.txt 2>/dev/null || true
+            echo ""
+            if grep -qE 'MISS  step|TOUR DID NOT START|COULD NOT OPEN A ROOM|^FATAL:' tours.log; then
+              echo '```'
+              # Each failed step under its tour's heading, and nothing else.
+              awk '
+                /^### / {
+                  heading = $0
+                  if ($0 ~ /TOUR DID NOT START|COULD NOT OPEN A ROOM/) { print; heading = "" }
+                  next
+                }
+                /MISS  step|^FATAL:/ {
+                  if (heading != "") { print heading; heading = "" }
+                  print
+                }
+              ' tours.log
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the walk log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guided-tours-${{ matrix.viewport }}
+          path: |
+            tours.log
+            serve.log
+          if-no-files-found: ignore
+          retention-days: 30
