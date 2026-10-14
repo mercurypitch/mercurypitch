@@ -105,7 +105,7 @@ export const GUITAR_NIGHT_AMP_PRESETS: readonly GuitarNightAmpPreset[] =
       id: 'edge',
       label: 'Edge',
       description:
-        'Lite: the familiar Guitar Night colour with a responsive edge.',
+        'Lite: the familiar Guitar Night color with a responsive edge.',
       settings: ampParameters({
         ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS,
         engine: 'lite',

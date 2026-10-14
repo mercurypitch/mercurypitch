@@ -141,7 +141,7 @@ function descriptionFor(background: BackgroundDefinition): string {
     case 'golden-hour':
       return 'Warm spotlight and gilded atmosphere'
     case 'aurora':
-      return 'Northern light colour and open air'
+      return 'Northern light color and open air'
     case 'neon-velvet':
       return 'Deep velvet, electric edge lighting'
     case 'midnight-rain':

@@ -114,7 +114,7 @@ export async function buildPortableBundle(
   const fileHash = session.fileHash
   if (fileHash === undefined || fileHash === '') {
     throw new BundleSourceError(
-      'That song has no content hash, so other devices cannot recognise it.',
+      'That song has no content hash, so other devices cannot recognize it.',
     )
   }
 

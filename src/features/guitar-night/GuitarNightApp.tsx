@@ -2183,7 +2183,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                                           Night. You can still hear them as
                                           backing and follow their notation in
                                           the track mixer. Open this file in
-                                          Drum Night to practise and score
+                                          Drum Night to practice and score
                                           drums.
                                         </InfoPopover>
                                       </span>

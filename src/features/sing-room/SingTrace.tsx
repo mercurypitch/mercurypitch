@@ -81,7 +81,7 @@ export const SingPrimingArt: Component = () => (
     class={styles.primingArt}
     viewBox="0 0 353 250"
     role="img"
-    aria-label="Illustration: a dotted grey line wakes into a coloured pitch line that rises to the right"
+    aria-label="Illustration: a dotted grey line wakes into a colored pitch line that rises to the right"
   >
     <defs>
       <linearGradient id="sing-priming-spectrum" x1="0" x2="1" y1="0" y2="0">
