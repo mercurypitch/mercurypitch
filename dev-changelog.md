@@ -11,9 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-12
 
-419 commits since `v0.9.16` before this release PR, #974: PRs #858, #898,
-#947, #957 to #973 and #975 to #1000. Every commit came through a PR; none
-reached `main` without one. Of the 96 on `main`'s first-parent line, 34 are
+424 commits since `v0.9.16` before this release PR, #974: PRs #858, #898,
+#947, #957 to #973 and #975 to #1001. Every commit came through a PR; none
+reached `main` without one. Of the 97 on `main`'s first-parent line, 35 are
 PR merge commits, 59 are the commits #947 (5), #898 (15), #991 (5), #993 (2),
 #858 (1), #997 (7), #998 (6), #999 (14) and #992 (4) rebased onto `main`
 instead of merging, and 3 are the squash commits of #963, #980 and #995.
@@ -450,7 +450,7 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
   before the token is held ("Checking…", `aria-busy`) and sent when the token
   arrives; a failed check drops it. Karaoke and the reset-password page keep
   the default appearance. The native sign-in sheet also passes
-  `interaction-only`: look at it in the next native build.
+  `interaction-only`: look at it in a native build from `mp-v0.8.18` on.
 - **Newsletter.** The sheet's box reads "Email me product updates.
   Unsubscribe anytime." and Settings reads "Email me product updates"; the
   monthly cap is gone from both. `docs/plans/newsletter-registered-users.md`
@@ -968,7 +968,7 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
 - It needs the next `mp-v` tag: the plugin is registered in the Android and
   iOS projects.
 
-### Premium exercises, native test builds only: Long note's levels, Echo and the room kits (#985, #988, #990, #1000)
+### Premium exercises, native test builds only: Long note's levels, Echo and the room kits (#985, #988, #990, #1000, #1001)
 
 None of them reaches the web. `PREMIUM_EXERCISES` is `KARAOKE_IMPORT`, which is
 true only in a native test build (`src/lib/native-build.ts`), and the web's
@@ -1030,6 +1030,13 @@ Long note is the older `src/features/exercises/long-note`.
   and decodes it during the push. `scripts/sync-echo-art.mjs` copies art
   round 3 and writes `echo-geometry.ts`. In headless Chromium at 4x CPU
   slowdown, no frame took over 20 ms.
+- **Echo's art round 4 (#1001).** Round 4's world and result plates replace
+  round 3's, copied in by `scripts/sync-echo-art.mjs`, and the result plate
+  paints a spire under the star. Three thin cyan ribbons follow the dots'
+  chains, painted pixel by pixel into one small canvas between the star's
+  glow and the star; the starburst gains a cyan mist and four faint diagonal
+  rays; dots 16, 17 and 28 move 4 px right, off the lit spire. Nothing else in
+  the room changes.
 
 ### native-mercurypitch
 
@@ -1042,16 +1049,17 @@ of #985, TestFlight build 706) the ones marked with that. Two more followed
 on 13 October, and Mercury Pitch Mobile built both: `mp-v0.8.20`
 (ab8ce55ce, the merge of #996) carries #987 to #990, #898, #947, #963 and
 #993 to #996, and `mp-v0.8.21` (69051cfc0, the merge of #1000) adds #980 and
-#1000. #997 to #999 and #992 merged after it, so their client code arrives
-from the next native tag, as #974's does, and with it #992's Capacitor 8.5.3
-(regenerated native references) and Solid 1.9.17. #991 changed only the worker, and the worker
+#1000. `mp-v0.8.22` (0c5f028b6, the merge of #1001) followed on 14 October
+and adds #997 to #999, #992 and #1001, and with them #992's Capacitor 8.5.3
+(regenerated native references) and Solid 1.9.17. #974's own changes arrive
+with the next native tag. #991 changed only the worker, and the worker
 halves of #997 to #999 reach every installed build the same way: with this
 release's worker deploy, under the server changes below. The merges after
 #991 were not matched against the bundle line by line: #963's chips render
 nothing in the native build, #980's app code is all in
 `src/features/drum-night`, which was in neither build when #989 was checked,
-#994's clip fix is in the worker, #996 has its own section, and #1000 is
-listed below.
+#994's clip fix is in the worker, #996 has its own section, and #1000 and
+#1001 are listed below.
 
 **In the native code**
 
@@ -1077,6 +1085,9 @@ listed below.
   room's markers; it keeps the id `echo-stars` and Echo's help text, as it
   keeps Long note's. Look at the Echo card in the picker, a run at each
   level, and the result.
+- **Echo's art round 4 (#1001, `mp-v0.8.22`), test builds only.** Round 4's
+  plates, ribbons and starburst, as in the Echo room's entry above. Look at
+  the result's star and the spire under it.
 - #962 changed only comments under `apps/mercurypitch`.
 
 **Shared code the native app runs**
