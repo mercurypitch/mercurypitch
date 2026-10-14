@@ -9,7 +9,7 @@
 // tools/generate-entry-pages.ts, before the alias exists.
 import { LEGAL_DOCUMENT_LINKS } from '../lib/legal-links'
 import type { EntryPage } from './entry-pages'
-import { ABOUT_URL, canonicalPath, DEFAULT_THEME_COLOR, navLinksFor, OG_IMAGE, SITE_ORIGIN, } from './entry-pages'
+import { ABOUT_URL, canonicalPath, DEFAULT_THEME_COLOR, navLinksFor, OG_IMAGE, OG_IMAGE_SIZE, SITE_ORIGIN, } from './entry-pages'
 
 /** Escape for an attribute value or text node. */
 function esc(value: string): string {
@@ -70,6 +70,7 @@ export function renderEntryPage(
   const unlisted = options.unlisted ?? []
   const canonical = `${SITE_ORIGIN}${canonicalPath(page)}`
   const image = page.og.image ?? OG_IMAGE
+  const imageSize = page.og.imageSize ?? OG_IMAGE_SIZE
   const ld = structuredData(page)
   const robots = unlisted.includes(page.slug)
     ? 'noindex, follow'
@@ -103,12 +104,7 @@ ${page.faq
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <title>${esc(page.title)}</title>
-    <meta name="description" content="${esc(page.description)}" />${
-      page.keywords !== undefined && page.keywords !== ''
-        ? `
-    <meta name="keywords" content="${esc(page.keywords)}" />`
-        : ''
-    }
+    <meta name="description" content="${esc(page.description)}" />
     <meta name="author" content="MercuryPitch" />
     <meta name="robots" content="${robots}" />
     <link rel="canonical" href="${canonical}" />
@@ -119,13 +115,9 @@ ${page.faq
     <meta property="og:type" content="website" />
     <meta property="og:url" content="${canonical}" />
     <meta property="og:image" content="${image}" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />${
-      page.og.imageAlt !== undefined && page.og.imageAlt !== ''
-        ? `
-    <meta property="og:image:alt" content="${esc(page.og.imageAlt)}" />`
-        : ''
-    }
+    <meta property="og:image:width" content="${imageSize.width}" />
+    <meta property="og:image:height" content="${imageSize.height}" />
+    <meta property="og:image:alt" content="${esc(page.og.imageAlt)}" />
     <meta property="og:site_name" content="MercuryPitch" />
 
     <!-- Twitter Card -->
@@ -136,6 +128,7 @@ ${page.faq
       content="${esc(page.twitter.description)}"
     />
     <meta name="twitter:image" content="${image}" />
+    <meta name="twitter:image:alt" content="${esc(page.og.imageAlt)}" />
 
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -179,7 +172,7 @@ ${JSON.stringify(node, null, 2)
           src="/brand-mark.svg"
           width="68"
           height="68"
-          alt=""
+          alt="MercuryPitch"
         />
         <span class="entry-prelude__wordmark">Mercury<span>Pitch</span></span>
       </div>

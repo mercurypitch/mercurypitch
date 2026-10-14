@@ -200,6 +200,11 @@ describe('decorateVoiceprintMeta', () => {
     )
     expect(written.get('meta[name="twitter:card"]')).toBe('summary')
     expect(written.get('meta[property="og:image:width"]')).toBe('1080')
+    // mirror.html carries twitter:image:alt since 0.9.18. Left alone, X would
+    // describe the stock Mirror card under the sender's voiceprint.
+    expect(written.get('meta[name="twitter:image:alt"]')).toBe(
+      written.get('meta[property="og:image:alt"]'),
+    )
   })
 
   it('keeps the stock picture for a card that expired or has not landed', async () => {

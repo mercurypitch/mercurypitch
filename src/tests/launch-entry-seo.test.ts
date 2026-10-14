@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CONTACT_FORM_URL } from '@/lib/contact-links'
@@ -138,7 +138,9 @@ describe('launch entry documents', () => {
           .querySelector('meta[name="description"]')
           ?.getAttribute('content')?.length ?? 0,
       ).toBeGreaterThan(120)
-      expect(document.querySelector('meta[name="keywords"]')).not.toBeNull()
+      // Keywords were removed in 0.9.18: no engine reads them, and Bing
+      // treats a stuffed list as a spam signal.
+      expect(document.querySelector('meta[name="keywords"]')).toBeNull()
       expect(
         document
           .querySelector('meta[property="og:url"]')
@@ -310,8 +312,9 @@ describe('entry document prelude', () => {
       // The shipped asset, never an inlined copy: this app once shipped a
       // superseded mark in the opening because that copy was hand-written.
       expect(mark?.getAttribute('src')).toBe('/brand-mark.svg')
-      // Decorative — the h1 below already names the page.
-      expect(mark?.getAttribute('alt')).toBe('')
+      // The mark is the brand's logo, so it is named. Checkers flagged the
+      // empty alt on all 14 pages (SEO recheck, 14 Oct 2026).
+      expect(mark?.getAttribute('alt')).toBe('MercuryPitch')
       // The lockup must not become the claim a crawler reads first.
       expect(lockup?.tagName).toBe('DIV')
 
@@ -420,6 +423,70 @@ describe('entry document prelude', () => {
       'https://github.com/mercurypitch/mercurypitch',
     )
     expect(blocks.some((data) => data['@type'] === 'WebApplication')).toBe(true)
+  })
+
+  // The landing (disjoint-colliders, packages/mercurypitch Base.astro) emits
+  // its MercuryPitch node under this @id. Both hosts have to use the same one,
+  // or a search engine reads two organizations with the same name.
+  it('names the same organization the landing does', () => {
+    const organization = Array.from(
+      repoHtml('index.html').querySelectorAll(
+        'script[type="application/ld+json"]',
+      ),
+    )
+      .map((node) => JSON.parse(node.textContent ?? '{}'))
+      .find((data) => data['@type'] === 'Organization')
+
+    expect(organization['@id']).toBe('https://mercurypitch.com/#organization')
+    // A PNG that ships in public/, like the landing's own node uses: the
+    // owner's call (14 Oct 2026) was a raster file that answers 200.
+    expect(organization.logo).toMatch(
+      /^https:\/\/mercurypitch\.com\/[\w-]+\.png$/,
+    )
+    expect(
+      existsSync(
+        resolve(
+          process.cwd(),
+          'public',
+          new URL(organization.logo as string).pathname.slice(1),
+        ),
+      ),
+    ).toBe(true)
+    // Every account the landing's footer lists (brand.ts SOCIAL_LINKS).
+    for (const account of [
+      'https://x.com/mercurypitch7',
+      'https://www.instagram.com/mercurypitch/',
+      'https://www.tiktok.com/@mercurypitch',
+      'https://www.youtube.com/@mercurypitch',
+      'https://github.com/mercurypitch/mercurypitch',
+    ]) {
+      expect(organization.sameAs).toContain(account)
+    }
+  })
+
+  // The audience reads American English. Main fixed "colour" and
+  // "recognisable"; these are the ones that were still live on 14 Oct 2026.
+  it.each(ENTRY_FILES)('writes %s in American spelling', (file) => {
+    const document = repoHtml(file)
+    const visible = [
+      document.title,
+      document.querySelector('.entry-prelude')?.textContent ?? '',
+      document.querySelector('noscript')?.textContent ?? '',
+      ...Array.from(document.querySelectorAll('meta[content]')).map(
+        (node) => node.getAttribute('content') ?? '',
+      ),
+      ...Array.from(
+        document.querySelectorAll('script[type="application/ld+json"]'),
+      ).map((node) => node.textContent ?? ''),
+    ].join('\n')
+
+    expect(visible).not.toMatch(
+      /\b(?:analys(?:e|ed|es|ing)|theatre|catalogue|colour|recognisable|practis(?:e|ed|es|ing)|centre)\b/iu,
+    )
+  })
+
+  it.each(ENTRY_FILES)('carries no meta keywords in %s', (file) => {
+    expect(repoHtml(file).querySelector('meta[name="keywords"]')).toBeNull()
   })
 
   it('lists every indexable entry document in the sitemap', () => {

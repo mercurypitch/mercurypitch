@@ -39,13 +39,18 @@ export interface EntryPage {
   boot: string
   title: string
   description: string
-  keywords?: string
-  /** `image` defaults to the shared OG card; most rooms ship their own. */
+  /**
+   * `image` defaults to the shared OG card; most rooms ship their own.
+   * `imageAlt` is required: it is emitted as both og:image:alt and
+   * twitter:image:alt. `imageSize` defaults to OG_IMAGE_SIZE and must be the
+   * file's real size (entry-page-og.test.ts reads the file to check).
+   */
   og: {
     title: string
     description: string
     image?: string
-    imageAlt?: string
+    imageAlt: string
+    imageSize?: { width: number; height: number }
   }
   /**
    * Studio-tab entries only. The tab is a URL fragment, which never reaches
@@ -92,6 +97,8 @@ export function ogImage(file: string): string {
 }
 
 export const OG_IMAGE = ogImage('og-image.png')
+/** What every generated card measures, unless its entry says otherwise. */
+export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const
 export const ABOUT_URL = 'https://about.mercurypitch.com/'
 
 export const ENTRY_PAGES: readonly EntryPage[] = [
@@ -104,8 +111,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Voice Mirror — See Your Voice in 60 Seconds | MercuryPitch',
     description:
       'See your voice in 60 seconds: your vocal range, pitch accuracy and steadiness as a shareable voiceprint. Free, and your audio never leaves your device.',
-    keywords:
-      'vocal range test, tone deaf test, pitch accuracy test, voice type, singing test, free vocal test',
     og: {
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
       description:
@@ -147,8 +152,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Free Vocal Range Test — Lowest & Highest Note | MercuryPitch',
     description:
       'Glide from your lowest note to your highest and get both notes, your span in semitones and a voice-type guide. Free, and your audio stays on your device.',
-    keywords:
-      'vocal range test, singing range test, lowest note, highest note, voice type, free vocal test',
     og: {
       title: 'Free Vocal Range Test — Find Your Lowest & Highest Note',
       description:
@@ -189,15 +192,13 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Karaoke Night — Turn Your Songs Into Karaoke | MercuryPitch',
     description:
       'Upload any song, the vocals lift away, and you sing with synced lyrics and live pitch scoring — right in your browser. Try the example song free.',
-    keywords:
-      'karaoke maker, remove vocals from song, vocal remover, karaoke with scoring, sing along with lyrics, karaoke night at home',
     og: {
       title: 'Karaoke Night — Turn Any Song You Own Into Karaoke',
       description:
         'The vocals lift away and you sing with synced lyrics and live pitch scoring. In your browser — try the example song free.',
       image: ogImage('karaoke-og.png'),
       imageAlt:
-        'MercuryPitch Karaoke Night — turn any song into karaoke on a theatre stage, with the demo song Goodbye to Spring ready to sing.',
+        'MercuryPitch Karaoke Night — turn any song into karaoke on a theater stage, with the demo song Goodbye to Spring ready to sing.',
     },
     twitter: {
       title: 'Karaoke Night — Turn Any Song You Own Into Karaoke',
@@ -231,8 +232,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Glassworks — Explore a Museum With Your Voice | MercuryPitch',
     description:
       'Explore a floating glass museum, discover your comfortable notes, and open each gallery by singing. Free, with microphone audio processed on your device.',
-    keywords:
-      'singing game, voice controlled game, pitch game, vocal training game, browser adventure game, singing practice',
     og: {
       title: 'Glassworks — A Museum That Opens to Your Voice',
       description:
@@ -269,13 +268,12 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Break Glass With Your Voice — Free Challenge | MercuryPitch',
     description:
       'Sing up to the note the glass rings at, hold it, and shatter it. A free in-browser challenge tuned to your own range, with your audio never leaving your device.',
-    keywords:
-      'break glass with your voice, shatter glass by singing, high note test, how high can I sing, resonant frequency voice, vocal challenge',
     og: {
       title: 'Break Glass With Your Voice — Free 60-Second Challenge',
       description:
         'The glass is tuned to YOUR range. Land the note, hold it, and watch it shatter — with real physics, in your browser.',
       image: ogImage('glass/og.jpg'),
+      imageSize: { width: 1200, height: 670 },
       imageAlt:
         'A wine glass ringing at its resonant note, one held voice note away from shattering.',
     },
@@ -311,8 +309,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Piano Night — Practice Piano Phrase by Phrase | MercuryPitch',
     description:
       'Slow a phrase down, loop the bar that will not sit, and play it back up to tempo — in your browser, with your own MIDI keyboard or the keys on screen.',
-    keywords:
-      'piano practice app, practise piano online, piano practice room, midi keyboard practice, loop a bar piano, play piano in browser',
     og: {
       title: 'Piano Night — shape every phrase',
       description:
@@ -344,8 +340,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Guitar Night — A Room That Reads Your Playing | MercuryPitch',
     description:
       'A guitar rehearsal room in your browser. Begin on one open string or bring a song of your own — the room listens and reads the bar back to you as tab.',
-    keywords:
-      'guitar practice room, practise guitar online, guitar tab reader, learn guitar in browser, guitar rehearsal room, play guitar along to a song',
     og: {
       title: 'Guitar Night — your room is ready',
       description:
@@ -377,8 +371,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Drum Night — A Room for Touch, Keys and E-Kits | MercuryPitch',
     description:
       'A drum room for touch, keys and e-kits, with synth and sampled kits, MIDI and Guitar Pro percussion, and Pocket, Drummer Seat and Score views.',
-    keywords:
-      'online drums, virtual drum kit, play drums in your browser, drum practice, e-kit MIDI drums, Guitar Pro drum tab, drum notation, drum timing practice',
     og: {
       title: 'Drum Night — find the center',
       description:
@@ -411,8 +403,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Ear Lab — Ear Training Measured in Real Units | MercuryPitch',
     description:
       'An ear-training bench that reads in cents, milliseconds and notes — real units, not a grade. Calibrate once, then practice whichever faculty is neediest.',
-    keywords:
-      'ear training online, ear training app, relative pitch practice, interval ear training, pitch discrimination test, rhythm ear training, ear training in browser',
     og: {
       title: 'Ear Lab — an ear you can measure',
       description:
@@ -446,8 +436,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Jam Rooms — Sing Together From Anywhere | MercuryPitch',
     description:
       'Open a room, share the link, and sing a song together. Lyrics down the left, a live pitch lane for every singer in their own color, and one shared transport.',
-    keywords:
-      'sing together online, online jam room, group karaoke online, harmony practice, sing with friends remotely',
     og: {
       title: 'Jam Rooms — sing it together, from anywhere',
       description:
@@ -488,8 +476,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       'Vocal Pitch Practice — Free Pitch Training with Live Feedback | MercuryPitch',
     description:
       'Practice singing on pitch and watch the note you are making against the note you meant. Free, runs in your browser, and scores every finished run out of 100.',
-    keywords:
-      'vocal pitch practice, pitch training, pitch trainer, sing on pitch, pitch accuracy, vocal pitch monitor, pitch matching',
     og: {
       title: 'Vocal Pitch Practice — Free Pitch Training with Live Feedback',
       description:
@@ -538,8 +524,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       'Voice Type Test — Am I a Soprano, Alto, Tenor or Bass? | MercuryPitch',
     description:
       'Find your range with a low-to-high glide and see which voice type it overlaps most: soprano, mezzo, alto, tenor, baritone or bass. Free, in your browser.',
-    keywords:
-      'voice type test, what is my voice type, am i a soprano or alto, tenor or baritone, singing voice type, voice classification',
     og: {
       title: 'Voice Type Test — Soprano, Alto, Tenor or Bass?',
       description:
@@ -587,8 +571,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       'Free Vocal Remover — Split a Song into Vocals and Instrumental | MercuryPitch',
     description:
       'Take out the vocal and keep the backing track, or keep the vocal alone. Separate a song you already own in your own browser, then sing over the result.',
-    keywords:
-      'vocal remover, remove vocals from song, karaoke maker, instrumental maker, voice isolator, stem separation, acapella extractor',
     og: {
       title: 'Free Vocal Remover — Vocals and Instrumental, Split Apart',
       description:
@@ -621,7 +603,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
       {
         q: 'What can I use it on?',
-        a: 'Music you already own. MercuryPitch does not host, supply or download music, and there is no catalogue to search — you bring the file. What you do with the result is subject to the rights on the original recording.',
+        a: 'Music you already own. MercuryPitch does not host, supply or download music, and there is no catalog to search — you bring the file. What you do with the result is subject to the rights on the original recording.',
       },
     ],
     noscript:
@@ -636,8 +618,6 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title: 'Which Singer Has My Vocal Range? Match Your Voice | MercuryPitch',
     description:
       'Find your range in 60 seconds, see which voice type it overlaps most, and meet a famous singer of that type. Free, and your audio stays on your device.',
-    keywords:
-      'which singer has my vocal range, singer with my voice, vocal range match, famous singer vocal ranges, what singer do i sound like',
     og: {
       title: 'Which Singer Has My Vocal Range?',
       description:

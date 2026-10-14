@@ -197,6 +197,9 @@ export async function decorateVoiceprintMeta(
       .on('meta[property="og:image:alt"]', {
         element: set(`${meta.title} — a voiceprint card`),
       })
+      .on('meta[name="twitter:image:alt"]', {
+        element: set(`${meta.title} — a voiceprint card`),
+      })
   }
 
   // The validators belong to the file on disk. What goes out is that file
