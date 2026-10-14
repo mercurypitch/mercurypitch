@@ -228,6 +228,7 @@ interface Moment {
   clouds: string
   /** The town's city light: its state's layer, or none. */
   light: string
+  topLight: string
 }
 
 interface Seen {
@@ -270,6 +271,16 @@ function cloudsUp(): string {
   return 'none'
 }
 
+/** Whose top light is up: the one at full opacity. */
+function topLightUp(): string {
+  const lit = [
+    'echo-top-light',
+    'echo-top-light-demo-off',
+    'echo-top-light-result',
+  ].filter((id) => screen.getByTestId(id).style.opacity === '1')
+  return lit.join(',')
+}
+
 /** Advance the fake clock a frame at a time, noting what showed. */
 async function run(ms: number, log: Seen = watched()): Promise<Seen> {
   const step = 16
@@ -287,6 +298,7 @@ async function run(ms: number, log: Seen = watched()): Promise<Seen> {
         result: screen.queryByTestId('echo-result')?.textContent ?? null,
         clouds: cloudsUp(),
         light: screen.getByTestId('echo-citylight').dataset.state ?? '',
+        topLight: topLightUp(),
       }
     }
     push(log.tips, tip)
@@ -458,6 +470,10 @@ describe('the Echo demo', () => {
     expect(log.at.slid.light).toBe('demo-off')
     expect(log.at.lands.light).toBe('mid-take')
     expect(log.at.score.light).toBe('none')
+    // So does the top light: screen 3's soft band, the room's, the result's.
+    expect(log.at.flat.topLight).toBe('echo-top-light-demo-off')
+    expect(log.at.lands.topLight).toBe('echo-top-light')
+    expect(log.at.score.topLight).toBe('echo-top-light-result')
 
     // Merc speaks once, before the takes; the takes' chip and bubble keep quiet.
     expect(log.bubbleAlone).toEqual([DEMO_COPY.watch])

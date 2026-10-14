@@ -356,48 +356,72 @@ interface Nearest {
   readonly sample: Int32Array
 }
 
+/** Pieces of the curve, or pixels of the canvas, between two yields. */
+const STEP_PIECES = 16
+const STEP_PIXELS = 1 << 16
+
 /**
- * Each piece of the curve between two samples, to the device pixels within
- * `reach` of it: the distance to the piece itself, so a sparse sampling
- * does not ripple the Gaussian.
+ * The piece of `curve` from sample k - 1 to sample k, to the device pixels
+ * within `reach` of it: each keeps the piece if it is the nearest yet.
  */
-function nearestOnCurve(
+function nearPiece(
+  near: Nearest,
+  k: number,
   curve: readonly Pt[],
   along: readonly number[],
   reach: number,
   canvas: { width: number; height: number; dpr: number },
-): Nearest {
+): void {
   const { width, height, dpr } = canvas
-  const d2 = new Float32Array(width * height).fill(Infinity)
-  const place = new Float32Array(width * height).fill(-1)
-  const sample = new Int32Array(width * height)
-  for (let k = 1; k < curve.length; k++) {
-    const ax = curve[k - 1][0] * dpr
-    const ay = curve[k - 1][1] * dpr
-    const vx = curve[k][0] * dpr - ax
-    const vy = curve[k][1] * dpr - ay
-    const v2 = Math.max(vx * vx + vy * vy, 1e-12)
-    const x0 = Math.max(0, Math.floor(Math.min(ax, ax + vx) - reach))
-    const x1 = Math.min(width - 1, Math.ceil(Math.max(ax, ax + vx) + reach))
-    const y0 = Math.max(0, Math.floor(Math.min(ay, ay + vy) - reach))
-    const y1 = Math.min(height - 1, Math.ceil(Math.max(ay, ay + vy) + reach))
-    for (let py = y0; py <= y1; py++) {
-      for (let px = x0; px <= x1; px++) {
-        const wx = px + 0.5 - ax
-        const wy = py + 0.5 - ay
-        const t = Math.min(1, Math.max(0, (wx * vx + wy * vy) / v2))
-        const dx = wx - t * vx
-        const dy = wy - t * vy
-        const i = py * width + px
-        if (dx * dx + dy * dy < d2[i]) {
-          d2[i] = dx * dx + dy * dy
-          place[i] = along[k - 1] + t * (along[k] - along[k - 1])
-          sample[i] = t < 0.5 ? k - 1 : k
-        }
+  const { d2, place, sample } = near
+  const ax = curve[k - 1][0] * dpr
+  const ay = curve[k - 1][1] * dpr
+  const vx = curve[k][0] * dpr - ax
+  const vy = curve[k][1] * dpr - ay
+  const v2 = Math.max(vx * vx + vy * vy, 1e-12)
+  const x0 = Math.max(0, Math.floor(Math.min(ax, ax + vx) - reach))
+  const x1 = Math.min(width - 1, Math.ceil(Math.max(ax, ax + vx) + reach))
+  const y0 = Math.max(0, Math.floor(Math.min(ay, ay + vy) - reach))
+  const y1 = Math.min(height - 1, Math.ceil(Math.max(ay, ay + vy) + reach))
+  for (let py = y0; py <= y1; py++) {
+    for (let px = x0; px <= x1; px++) {
+      const wx = px + 0.5 - ax
+      const wy = py + 0.5 - ay
+      const t = Math.min(1, Math.max(0, (wx * vx + wy * vy) / v2))
+      const dx = wx - t * vx
+      const dy = wy - t * vy
+      const i = py * width + px
+      if (dx * dx + dy * dy < d2[i]) {
+        d2[i] = dx * dx + dy * dy
+        place[i] = along[k - 1] + t * (along[k] - along[k - 1])
+        sample[i] = t < 0.5 ? k - 1 : k
       }
     }
   }
-  return { d2, place, sample }
+}
+
+/**
+ * Each piece of the curve between two samples, to the device pixels within
+ * `reach` of it: the distance to the piece itself, so a sparse sampling
+ * does not ripple the Gaussian. Yields every STEP_PIECES pieces.
+ */
+function* nearestOnCurve(
+  curve: readonly Pt[],
+  along: readonly number[],
+  reach: number,
+  canvas: { width: number; height: number; dpr: number },
+): Generator<void, Nearest> {
+  const n = canvas.width * canvas.height
+  const near: Nearest = {
+    d2: new Float32Array(n).fill(Infinity),
+    place: new Float32Array(n).fill(-1),
+    sample: new Int32Array(n),
+  }
+  for (let k = 1; k < curve.length; k++) {
+    if (k % STEP_PIECES === 0) yield
+    nearPiece(near, k, curve, along, reach, canvas)
+  }
+  return near
 }
 
 /** A ribbon's tapers at `s` px along a curve `length` px long. */
@@ -406,6 +430,15 @@ const taperAt = (s: number, length: number, taper: number): number =>
     ? Math.min(1, Math.max(0, s / taper)) *
       Math.min(1, Math.max(0, (length - s) / taper))
     : 1
+
+/** How a ribbon is drawn, in the canvas's CSS px. */
+export interface RibbonLook {
+  fwhm: number
+  taper: number
+  alpha: number
+  fromStart: boolean
+  segmentGain?: readonly number[]
+}
 
 /**
  * A ribbon's field: for each device pixel within reach of `curve` (px in
@@ -418,22 +451,29 @@ const taperAt = (s: number, length: number, taper: number): number =>
  */
 export function ribbonField(
   curve: readonly Pt[],
-  o: {
-    fwhm: number
-    taper: number
-    alpha: number
-    fromStart: boolean
-    segmentGain?: readonly number[]
-  },
+  o: RibbonLook,
   canvas: { width: number; height: number; dpr: number },
 ): RibbonField {
+  return finish(ribbonFieldSteps(curve, o, canvas))
+}
+
+/**
+ * ribbonField, in steps: it yields every few pieces of the curve and every
+ * STEP_PIXELS pixels, so the work can be spread over several tasks. Run to
+ * its end, it returns the same field, to the bit.
+ */
+export function* ribbonFieldSteps(
+  curve: readonly Pt[],
+  o: RibbonLook,
+  canvas: { width: number; height: number; dpr: number },
+): Generator<void, RibbonField> {
   const along = lengthsAlong(curve)
   const length = along[along.length - 1]
   const sigma = sigmaOf(o.fwhm) * canvas.dpr
   const gains = o.segmentGain ?? [1]
   const gainOf = (sample: number): number =>
     gains[Math.min(Math.floor(sample / RIBBON_SAMPLES), gains.length - 1)]
-  const { d2, place, sample } = nearestOnCurve(
+  const { d2, place, sample } = yield* nearestOnCurve(
     curve,
     along,
     Math.ceil(RIBBON_REACH * sigma) + 1,
@@ -444,6 +484,7 @@ export function ribbonField(
   const alpha: number[] = []
   const at: number[] = []
   for (let i = 0; i < place.length; i++) {
+    if (i % STEP_PIXELS === STEP_PIXELS - 1) yield
     const s = place[i]
     if (s < 0 || d2[i] > limit) continue
     const a = Math.min(
@@ -464,6 +505,14 @@ export function ribbonField(
     along: Float32Array.from(at),
     fromBurst: Float32Array.from(at, (s) => (o.fromStart ? s : length - s)),
     length,
+  }
+}
+
+/** Run a generator of steps to its end, at once. */
+export function finish<T>(steps: Generator<void, T>): T {
+  for (;;) {
+    const next = steps.next()
+    if (next.done === true) return next.value
   }
 }
 
@@ -497,8 +546,42 @@ export function ribbonFrames(elapsed: number | null): RibbonFrame[] {
 }
 
 /**
- * Paint the ribbons into a canvas's RGBA pixels (every pixel rewritten),
- * each laid over the ones before it in its own colour, at its frame.
+ * Every pixel any of `fields` lights, once each, in order: the only ones
+ * paintRibbons writes when it is given them.
+ */
+export function ribbonPixels(
+  fields: readonly RibbonField[],
+  pixelCount: number,
+): Int32Array {
+  const lit = new Uint8Array(pixelCount)
+  let count = 0
+  for (const f of fields) {
+    for (let m = 0; m < f.pixels.length; m++) {
+      if (lit[f.pixels[m]] === 0) count++
+      lit[f.pixels[m]] = 1
+    }
+  }
+  const out = new Int32Array(count)
+  let k = 0
+  for (let i = 0; i < pixelCount; i++) if (lit[i] === 1) out[k++] = i
+  return out
+}
+
+/**
+ * Buffers a canvas's paints can share: the pixels the ribbons can light
+ * (ribbonPixels) and the premultiplied colour and alpha, 4 per pixel.
+ */
+export interface RibbonScratch {
+  readonly lit: Int32Array
+  readonly acc: Float32Array
+}
+
+/**
+ * Paint the ribbons into a canvas's RGBA pixels, each laid over the ones
+ * before it in its own colour, at its frame. Without `scratch` every pixel
+ * is rewritten; with it only the pixels it lists are, so `rgba` must be
+ * clear everywhere else (a new buffer, or one only ever painted with the
+ * same scratch). Both ways paint the same picture.
  */
 export function paintRibbons(
   rgba: Uint8ClampedArray,
@@ -506,11 +589,21 @@ export function paintRibbons(
   frames: readonly RibbonFrame[],
   wisps: readonly { depth: number; periodPx: number }[],
   colours: readonly (readonly number[])[],
+  scratch?: RibbonScratch,
 ): void {
-  rgba.fill(0)
   const n = rgba.length / 4
   // Premultiplied colour and alpha, laid over ribbon by ribbon.
-  const acc = new Float32Array(n * 4)
+  const acc = scratch?.acc ?? new Float32Array(n * 4)
+  if (scratch === undefined) rgba.fill(0)
+  else {
+    for (let m = 0; m < scratch.lit.length; m++) {
+      const p = scratch.lit[m] * 4
+      acc[p] = 0
+      acc[p + 1] = 0
+      acc[p + 2] = 0
+      acc[p + 3] = 0
+    }
+  }
   fields.forEach((f, j) => {
     const { drawn, phase } = frames[j]
     if (drawn <= 0) return
@@ -531,13 +624,22 @@ export function paintRibbons(
       acc[p + 3] = a + acc[p + 3] * keep
     }
   })
-  for (let p = 0; p < acc.length; p += 4) {
+  const unpremultiply = (p: number): void => {
     const a = acc[p + 3]
-    if (a <= 0) continue
+    if (a <= 0) {
+      if (scratch !== undefined) rgba.fill(0, p, p + 4)
+      return
+    }
     rgba[p] = acc[p] / a
     rgba[p + 1] = acc[p + 1] / a
     rgba[p + 2] = acc[p + 2] / a
     rgba[p + 3] = Math.round(255 * a)
+  }
+  if (scratch === undefined) {
+    for (let p = 0; p < acc.length; p += 4) unpremultiply(p)
+  } else {
+    for (let m = 0; m < scratch.lit.length; m++)
+      unpremultiply(scratch.lit[m] * 4)
   }
 }
 

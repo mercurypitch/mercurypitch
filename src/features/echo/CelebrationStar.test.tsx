@@ -22,6 +22,8 @@ interface Played {
 
 let played: Played[] = []
 let frames: number[] = []
+/** The animation-frame callbacks the star asked for, in order. */
+let callbacks: FrameRequestCallback[] = []
 let painted: ImageData[] = []
 /** The most alpha in the ribbons' last paint, 0 to 255. */
 const ribbonPeak = (): number => {
@@ -37,21 +39,26 @@ beforeEach(() => {
   frames = []
   vi.stubGlobal(
     'requestAnimationFrame',
-    vi.fn((_: FrameRequestCallback) => {
+    vi.fn((callback: FrameRequestCallback) => {
+      callbacks.push(callback)
       frames.push(frames.length + 1)
       return frames.length
     }),
   )
   vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  callbacks = []
   painted = []
-  // The overloads end on WebGPU's context; this stands in for 2D.
+  // The overloads end on WebGPU's context; this stands in for 2D. Each
+  // paint is kept as a copy: the star reuses its buffer between paints.
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
     createImageData: (w: number, h: number) => ({
       width: w,
       height: h,
       data: new Uint8ClampedArray(w * h * 4),
     }),
-    putImageData: (image: ImageData) => painted.push(image),
+    putImageData: (image: ImageData) =>
+      painted.push({ ...image, data: image.data.slice() } as ImageData),
+    clearRect: () => undefined,
   } as never)
   Element.prototype.animate = vi.fn(function animate(
     this: Element,
@@ -87,6 +94,18 @@ const parts = (part: string): Element[] => [
     .querySelectorAll(`[data-part="${part}"]`),
 ]
 const playedFor = (part: string) => played.filter((p) => p.part === part)
+/**
+ * Run the animation frames asked for so far, `rounds` times over: the
+ * star's parts come up a frame apart (the ribbons' clock asks every frame
+ * too, at elapsed 0: nothing drawn).
+ */
+const runFrames = (rounds = 12): void => {
+  for (let r = 0; r < rounds; r++) {
+    const due = callbacks
+    callbacks = []
+    for (const callback of due) callback(performance.now())
+  }
+}
 /** A path's corner i, [x, y] px about the star's centre. */
 const cornerOf = (part: string, i: number): number[] => {
   const d = parts(part)[0].getAttribute('d') ?? ''
@@ -320,6 +339,7 @@ describe('the celebration star', () => {
 
   it('pops the starburst, then the dots nearest it first, then draws the star', () => {
     render(() => <CelebrationStar layout={LAYOUT} still={false} />)
+    runFrames()
     const { star, dots } = CELEBRATION.timing
 
     expect(playedFor('burst-core')[0].frames.map((f) => f.transform)).toEqual([
@@ -350,6 +370,7 @@ describe('the celebration star', () => {
 
   it('reveals each sparkle a beat after the dot it follows', () => {
     render(() => <CelebrationStar layout={LAYOUT} still={false} />)
+    runFrames()
     const { dots, sparkles } = CELEBRATION.timing
     const reveals = playedFor('sparkle').filter(
       (p) => p.options.iterations === undefined,
@@ -380,13 +401,96 @@ describe('the celebration star', () => {
       { offset: 1, opacity: 1, transform: 'scale(1)' },
     ])
     expect(mist[0].options.duration).toBe(380)
-    // The ribbons start undrawn and are repainted on animation frames.
-    expect(ribbonPeak()).toBe(0)
+    // The ribbons start undrawn (nothing painted, nothing built for them
+    // yet) and are repainted on animation frames.
+    expect(painted).toEqual([])
     expect(frames.length).toBeGreaterThan(0)
+  })
+
+  it('brings its parts up a frame apart, every one before the first dot shows (round 6)', () => {
+    render(() => <CelebrationStar layout={LAYOUT} still={false} />)
+    const count = (part: string) => parts(part).length
+
+    // t 0: the starburst alone, already playing.
+    expect(count('burst-core')).toBe(1)
+    expect(count('mist')).toBe(1)
+    expect(count('dot')).toBe(0)
+    expect(count('outer')).toBe(0)
+    expect(playedFor('burst-core')).toHaveLength(1)
+
+    let steps = 0
+    const seen: number[] = []
+    while (count('star-glow') === 0 && steps < 20) {
+      runFrames(1)
+      steps++
+      seen.push(count('dot') + count('sparkle'))
+    }
+    // A third of the dots, then of the sparkles, at a time: no frame
+    // brings up more than a dozen lights.
+    const added = seen.map((n, i) => n - (i === 0 ? 0 : seen[i - 1]))
+    expect(Math.max(...added)).toBeLessThanOrEqual(12)
+    expect(count('dot')).toBe(CELEBRATION.dots.length)
+    expect(count('sparkle')).toBe(CELEBRATION_SPARKLES.length)
+    expect(count('outer')).toBe(1)
+    expect(count('ribbons')).toBe(1)
+    // Every part is up well before the first dot is due, at 60 frames a second.
+    expect(steps * (1000 / 60)).toBeLessThan(CELEBRATION.timing.dots.firstMs)
+    // Each part's animations came with it, one reveal per light.
+    expect(
+      playedFor('dot').filter((p) => p.options.iterations === undefined),
+    ).toHaveLength(CELEBRATION.dots.length)
+  })
+
+  it('builds the ribbons after the first frame, in slices, and draws them as they would be at once (round 6)', () => {
+    // Just drawn whole, before the wisps drift.
+    const { durationMs, fromMs, staggerMs } = CELEBRATION.timing.ribbons
+    const at = fromMs + 2 * staggerMs + durationMs + 25
+    // A clock that stands still, except while the slices run (4 ms each).
+    const T0 = 1000
+    let clock = T0
+    let running = false
+    vi.spyOn(performance, 'now').mockImplementation(() =>
+      running ? (clock += 1) : clock,
+    )
+    /** Run the ribbons' frame loop at `elapsed` ms from t 0. */
+    const drawTo = (elapsed: number): ImageData => {
+      callbacks[callbacks.length - 1](T0 + elapsed)
+      return painted[painted.length - 1]
+    }
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
+    // At once: the slices never run, the first paint builds them.
+    render(() => <CelebrationStar layout={LAYOUT} still={false} />)
+    runFrames()
+    const atOnce = drawTo(at)
+    cleanup()
+
+    // In slices: nothing is built in the mount; each slice is its own task.
+    callbacks = []
+    painted = []
+    clock = T0
+    render(() => <CelebrationStar layout={LAYOUT} still={false} />)
+    expect(painted).toEqual([])
+    let slices = 0
+    running = true
+    while (vi.getTimerCount() > 0) {
+      vi.advanceTimersToNextTimer()
+      slices++
+    }
+    running = false
+    clock = T0
+    runFrames()
+    const sliced = drawTo(at)
+    vi.useRealTimers()
+
+    expect(slices).toBeGreaterThan(3)
+    expect(atOnce.data.some((v) => v > 0)).toBe(true)
+    expect(sliced.data.findIndex((v, i) => v !== atOnce.data[i])).toBe(-1)
   })
 
   it('keeps twinkling, breathing and shimmering once it is drawn', () => {
     render(() => <CelebrationStar layout={LAYOUT} still={false} />)
+    runFrames()
     const idle = played.filter((p) => p.options.iterations === Infinity)
 
     expect(idle.filter((p) => p.part === 'dot')).toHaveLength(
