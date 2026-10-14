@@ -172,7 +172,7 @@ export function DeskView(props: DeskViewProps): JSX.Element {
         console={() => (
           <ConsoleStack>
             <PlayPad
-              label="Colour"
+              label="Color"
               sub={`which band was boosted · ${dbWord('desk-colour')}`}
               keycap="1"
               icon={<IconLoupe size={20} />}

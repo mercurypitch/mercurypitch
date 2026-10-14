@@ -141,7 +141,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     drillId: 'stack',
     name: 'Stack',
     faculty: 'colour',
-    measures: 'Colour · chord quality',
+    measures: 'Color · chord quality',
     answer: 'One chord, roved root — name its quality',
   },
   {
@@ -149,7 +149,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     drillId: 'desk-colour',
     name: 'The desk',
     faculty: 'colour',
-    measures: 'Colour · the mixing desk',
+    measures: 'Color · the mixing desk',
     answer: 'A boosted band, the heavier render, a named fault',
   },
   {

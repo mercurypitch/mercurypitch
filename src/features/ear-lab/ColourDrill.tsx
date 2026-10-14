@@ -100,9 +100,9 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
 
   return (
     <ThresholdDrillView
-      title="Colour"
+      title="Color"
       drillId="desk-colour"
-      measures="Colour · the desk"
+      measures="Color · the desk"
       description="A slice of the mix plays with one octave band boosted — 125 Hz to 4 kHz, six bands. Name the band. The boost shrinks while you are right and widens when you slip; the reading is the smallest boost you still place. Practice only: the desk reads on its own plate and the Column never moves for it."
       prompt="One band is boosted — which?"
       listenHint="Listen to the mix…"

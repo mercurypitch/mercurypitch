@@ -32,7 +32,7 @@ describe('the desk', () => {
     expect(faultOf('critique:nothing')).toBeUndefined()
   })
 
-  it('runs Colour on the catalogue settings under the desk id, Weight and Critique on its own', () => {
+  it('runs Color on the catalogue settings under the desk id, Weight and Critique on its own', () => {
     const colour = findThresholdDrill('colour')
     expect(DESK_DRILLS.colour.id).toBe('desk-colour')
     expect(DESK_DRILLS.colour.staircase).toEqual(colour?.staircase)

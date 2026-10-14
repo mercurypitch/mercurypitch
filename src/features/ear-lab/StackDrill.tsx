@@ -80,8 +80,8 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
     <IdentificationDrillView
       title="Stack"
       drillId="stack"
-      measures="Colour · chord quality"
-      description="One chord, roved root — name its quality. Colour hearing starts here: major and minor first, then the qualities that take years by accident and weeks on purpose."
+      measures="Color · chord quality"
+      description="One chord, roved root — name its quality. Color hearing starts here: major and minor first, then the qualities that take years by accident and weeks on purpose."
       prompt="One chord — name its quality."
       listenHint="Listen to the stack…"
       answerHint="Which quality was that?"
