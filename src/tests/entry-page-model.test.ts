@@ -182,6 +182,30 @@ describe('entry page model', () => {
   })
 })
 
+// A search snippet or a card is no place for an absolute promise about where
+// audio goes: it has no room for the exceptions elsewhere in the app, such as
+// Jam's peer-to-peer audio and the vocal remover's optional server pass. The
+// snippets say what the page does and that it runs in the browser. The vocal remover FAQ keeps "the file never leaves your machine",
+// which is true of its default path (uvr-store.ts) and is said next to the
+// server option it does not cover.
+describe('what a snippet promises about audio', () => {
+  const ABSOLUTE = /\b(?:never leav\w*|stays? on) your (?:own )?device\b/iu
+
+  it.each(ENTRY_PAGES.map((page) => [page.slug, page] as const))(
+    '%s makes no absolute device claim in its snippets',
+    (_slug, page) => {
+      for (const text of [
+        page.description,
+        page.og.description,
+        page.twitter.description,
+        ...(page.faq ?? []).map((item) => item.a),
+      ]) {
+        expect(text).not.toMatch(ABSOLUTE)
+      }
+    },
+  )
+})
+
 describe('what a page without JavaScript says about the voice', () => {
   // The six pages that listen to a voice say WHERE it is analyzed. They used
   // to say what does not happen to it, which the owner struck: a denial puts
