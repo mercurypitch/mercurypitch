@@ -146,7 +146,8 @@ export const HowItWorks: Component<HowItWorksProps> = (props) => {
       <p class="mirror-progress">How it works</p>
       <h2 class="mirror-howto-title">Three little tasks, one voiceprint</h2>
       <p class="mirror-howto-sub">
-        Watch what to do — it all takes about 60 seconds.
+        Watch what to do. The timed part takes about a minute, and each task
+        starts when you say you're ready.
       </p>
       {/* Pinning is a pointer-only garnish — the auto-cycle already shows
           every step, so cards stay plain (non-focusable) divs. */}
