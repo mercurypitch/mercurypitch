@@ -52,6 +52,7 @@ import { featuredPromoView } from './promo-rules'
 import { handlePromoRedeem, readPromoClaims } from './promo-claim'
 import { PURCHASE_RECORD } from './purchase-record'
 import { finisherCheckoutParams, grantFinisherBonus, readFinisherOffer, } from './launch-finisher'
+import { finisherConfig, finisherTerms } from './offer-rules'
 import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
@@ -1270,6 +1271,11 @@ export async function reconcileBilling(env: Env): Promise<void> {
  * pill shows before anyone signs in; it says the code, its credits and its
  * end, never the cap or how many have claimed it. Cached for a minute, so a
  * code switched off in the table leaves the app within one.
+ *
+ * `offer` is the launch offer's terms for a claim of this code made now
+ * (offer-rules.ts `finisherTerms`), or null when claiming it starts none:
+ * the gift's surfaces say what using the credits earns, in the numbers /me
+ * will report once the code is claimed.
  */
 async function handleFeaturedPromo(
   env: Env,
@@ -1277,10 +1283,20 @@ async function handleFeaturedPromo(
 ): Promise<Response> {
   const row = await env.DB.prepare(
     // idx_promoCodes_featured allows one featured row; LIMIT says so here too.
-    'SELECT code, credits, maxRedemptions, redemptionCount, startsAt, expiresAt, active FROM promoCodes WHERE featured = 1 LIMIT 1',
-  ).first<FeaturedPromoRow>()
+    'SELECT id, code, credits, maxRedemptions, redemptionCount, startsAt, expiresAt, active FROM promoCodes WHERE featured = 1 LIMIT 1',
+  ).first<FeaturedPromoRow & { id: string }>()
+  const now = new Date()
+  const view = featuredPromoView(row, now)
   return respond(
-    { promo: featuredPromoView(row, new Date()) },
+    {
+      promo:
+        view === null || row === null
+          ? null
+          : {
+              ...view,
+              offer: finisherTerms(finisherConfig(env), row, now.getTime()),
+            },
+    },
     { headers: { 'Cache-Control': 'public, max-age=60' } },
   )
 }

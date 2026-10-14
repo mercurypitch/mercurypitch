@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { FinisherConfig, FinisherFacts } from './offer-rules'
-import { creditsUsed, finisherConfig, finisherState, finisherWindow, } from './offer-rules'
+import { creditsUsed, finisherConfig, finisherState, finisherTerms, finisherWindow, } from './offer-rules'
 import type { LedgerRow } from './songs-allowance'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -292,5 +292,45 @@ describe('finisherState', () => {
   it('makes a window of no extra days the claim day alone', () => {
     const window = finisherWindow(CLAIM, { ...CONFIG, windowDays: 0 })
     expect(window.end - window.start).toBe(DAY - 1)
+  })
+})
+
+describe('finisherTerms', () => {
+  const PROMO = { id: 'promo-2026-q4', credits: 5 }
+
+  it("promises the window a claim made now would get, in /me's numbers", () => {
+    const terms = finisherTerms(CONFIG, PROMO, CLAIM)
+    expect(terms).toEqual({
+      goal: 5,
+      deadline: '2026-11-03T23:59:59.999Z',
+      bonusCredits: 30,
+    })
+    // The same deadline finisherState reports once that claim is made.
+    expect(terms?.deadline).toBe(
+      finisherState(facts([]), CONFIG, CLAIM).deadline,
+    )
+  })
+
+  it('counts the goal from the code and the bonus from the config', () => {
+    expect(
+      finisherTerms(
+        { ...CONFIG, bonusCredits: 50 },
+        { ...PROMO, credits: 3 },
+        CLAIM,
+      ),
+    ).toMatchObject({ goal: 3, bonusCredits: 50 })
+  })
+
+  it('promises nothing while the offer is off or before its first day', () => {
+    expect(finisherTerms(null, PROMO, CLAIM)).toBeNull()
+    expect(finisherTerms(CONFIG, PROMO, SHIP_DAY - 1)).toBeNull()
+    expect(finisherTerms(CONFIG, PROMO, SHIP_DAY)).not.toBeNull()
+  })
+
+  it('promises nothing for a code whose claim starts no window', () => {
+    expect(
+      finisherTerms(CONFIG, { id: 'promo-other', credits: 5 }, CLAIM),
+    ).toBeNull()
+    expect(finisherTerms(CONFIG, { ...PROMO, credits: 0 }, CLAIM)).toBeNull()
   })
 })

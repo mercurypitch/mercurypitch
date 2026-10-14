@@ -19,7 +19,9 @@
 //     reward does not expire (D4): only the window for earning it closes.
 //
 // launch-finisher.ts reads the facts from D1 and writes the unlock and the
-// bonus; this file decides.
+// bonus; this file decides. Before a claim, `finisherTerms` states the same
+// terms beside the featured code (GET /api/billing/promo/featured), so the
+// gift's offer line and /me's progress line come from one rule.
 
 import type { Env } from './auth'
 import type { LedgerRow } from './songs-allowance'
@@ -135,6 +137,35 @@ export interface FinisherOffer {
   deadline: string
   /** Extra credits on the next pack. */
   bonusCredits: number
+}
+
+/** The offer's terms for an account that has not claimed yet: what
+ *  GET /api/billing/promo/featured says beside the code, in /me's words. */
+export type FinisherTerms = Pick<
+  FinisherOffer,
+  'goal' | 'deadline' | 'bonusCredits'
+>
+
+/**
+ * What the offer promises an account that claims `promo` at `now`, or null
+ * when a claim now would start no window: the offer is off or not yet
+ * started, or the code is not the one whose claim starts it. The deadline
+ * is the one /me will report for a claim made today; a claim made on a
+ * later day (an email confirmed tomorrow) gets a later one, never an
+ * earlier one.
+ */
+export function finisherTerms(
+  config: FinisherConfig | null,
+  promo: { id: string; credits: number },
+  now: number,
+): FinisherTerms | null {
+  if (config === null || now < config.startsAt) return null
+  if (promo.id !== config.promoId || !(promo.credits > 0)) return null
+  return {
+    goal: promo.credits,
+    deadline: new Date(finisherWindow(now, config).end).toISOString(),
+    bonusCredits: config.bonusCredits,
+  }
 }
 
 export interface FinisherFacts {
