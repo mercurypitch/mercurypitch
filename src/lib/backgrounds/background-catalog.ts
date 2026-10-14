@@ -555,7 +555,7 @@ export const BACKGROUND_CATALOG = [
     id: 'piano-ambient-led-studio',
     surface: 'piano',
     label: 'Ambient LED Studio',
-    description: 'A dark studio washed in slow colour',
+    description: 'A dark studio washed in slow color',
     edition: 'core',
     delivery: 'shipped',
     access: { kind: 'free' },

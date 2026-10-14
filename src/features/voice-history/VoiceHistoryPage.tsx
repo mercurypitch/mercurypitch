@@ -2740,7 +2740,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                         All takes
                                       </h3>
                                       <p>
-                                        Replay, export, favourite, or remove a
+                                        Replay, export, favorite, or remove a
                                         saved take.
                                       </p>
                                     </div>

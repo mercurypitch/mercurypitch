@@ -268,7 +268,7 @@ export const ASCENT_WEEKS: PathWeek[] = [
     title: 'Tone & Vibrato',
     subtitle: 'Expression',
     focus:
-      'Colour, earned last for a reason — vibrato and dynamics only bloom on top of steady breath. Shape notes you can already hold.',
+      'Color, earned last for a reason — vibrato and dynamics only bloom on top of steady breath. Shape notes you can already hold.',
     coachNote:
       'Vibrato is the sign of a relaxed, well-supported note — never something to force. Set the note up, then let it shimmer.',
     goals: [
@@ -307,7 +307,7 @@ export const ASCENT_WEEKS: PathWeek[] = [
       'Rest is where the gains settle in. Sing for joy this week, look back at how far you have come, and arrive at the summit fresh.',
     goals: [
       'Keep every session light and easy',
-      'Sing one favourite phrase from earlier weeks',
+      'Sing one favorite phrase from earlier weeks',
       "Arrive at week's end rested, not spent",
     ],
     exercises: [

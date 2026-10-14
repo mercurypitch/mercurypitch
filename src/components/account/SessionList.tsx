@@ -119,7 +119,7 @@ export const SessionList: Component = () => {
       </Show>
 
       <p class={styles.hint}>
-        Signing out here ends that device only. Anything you don't recognise
+        Signing out here ends that device only. Anything you don't recognize
         should be signed out, and your password changed.
       </p>
     </div>

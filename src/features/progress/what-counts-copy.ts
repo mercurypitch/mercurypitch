@@ -18,7 +18,7 @@ export const WHAT_COUNTS_TITLE = 'What counts where'
 
 export const WHAT_COUNTS_LEDE =
   'Everything you sing that gets scored is a run. There are four kinds, ' +
-  'they are counted together, and the colour tells you which is which ' +
+  'they are counted together, and the color tells you which is which ' +
   'wherever you see it.'
 
 export interface WhatCountsSection {

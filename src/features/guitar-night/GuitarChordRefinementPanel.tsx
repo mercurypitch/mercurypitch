@@ -182,7 +182,7 @@ export function GuitarChordRefinementPanel(props: {
       <Show when={!props.hasAudio}>
         <p class={styles.inlineState}>
           Audio is unavailable. Existing notes can still be edited and
-          practised.
+          practiced.
         </p>
       </Show>
       <Show

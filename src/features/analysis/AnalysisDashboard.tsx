@@ -232,7 +232,7 @@ export const AnalysisDashboard: Component = () => {
             <PracticeOverview metrics={metrics()} />
             <CollapsibleCard
               title="Pitch"
-              note="note sequence, coloured by accuracy"
+              note="note sequence, colored by accuracy"
               storageKey="analysis_open_trace"
               tour="analysis.trace"
             >

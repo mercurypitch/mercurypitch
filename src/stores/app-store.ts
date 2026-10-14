@@ -872,7 +872,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Theme',
     targetSelector: '[data-tour="settings.theme"]',
     description:
-      'Pick from nine colour themes with live preview swatches — the whole app, canvases included, follows instantly. Or let it switch itself: System follows your device’s light/dark mode, Time of day swaps at 07:00 and 19:00, and you choose which preset each one uses. Picking a theme by hand always wins.',
+      'Pick from nine color themes with live preview swatches — the whole app, canvases included, follows instantly. Or let it switch itself: System follows your device’s light/dark mode, Time of day swaps at 07:00 and 19:00, and you choose which preset each one uses. Picking a theme by hand always wins.',
     placement: 'left',
     section: 'settings-display',
     requiredTab: TAB_SETTINGS,
@@ -892,7 +892,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Visual effects',
     targetSelector: '[data-tour="settings.visualization"]',
     description:
-      'Add flair to playback: colour-code each note by accuracy, print a numeric accuracy %, set the active note on fire, and give every guide character its own instrument timbre.',
+      'Add flair to playback: color-code each note by accuracy, print a numeric accuracy %, set the active note on fire, and give every guide character its own instrument timbre.',
     placement: 'left',
     section: 'settings-display',
     requiredTab: TAB_SETTINGS,
@@ -1467,7 +1467,7 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Your pitch, plotted',
     description:
-      'Every take gets a pitch plot — your live contour here, the detected notes of a separated song, or a practice run coloured by how close each note landed. On a phone the deeper sections start folded; tap a heading to open one.',
+      'Every take gets a pitch plot — your live contour here, the detected notes of a separated song, or a practice run colored by how close each note landed. On a phone the deeper sections start folded; tap a heading to open one.',
     targetSelector: '[data-tour="analysis.trace"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,

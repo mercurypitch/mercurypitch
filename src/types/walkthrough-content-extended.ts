@@ -197,7 +197,7 @@ Enable the mic to overlay your live pitch on the vocal contour and get a sung-ac
 
 The Exercises tab is a gallery of focused drills — each one trains a specific skill, shown by its tags (e.g. Stability, Vibrato, Ear Training, Range). Browse the cards and tap one to begin.
 
-## A few favourites
+## A few favorites
 
 - **Long Note** — hold a steady pitch to build breath support and stability.
 - **Vibrato** — develop controlled, even vibrato with live rate/depth feedback.
@@ -305,8 +305,8 @@ Switch between **session history** (analyse past practice) and **live mic** mode
         {
           title: 'Read the pills',
           description:
-            'The same four colours mean the same four things on your profile and in the share picker.',
-          action: 'Check the colours',
+            'The same four colors mean the same four things on your profile and in the share picker.',
+          action: 'Check the colors',
         },
         {
           title: 'Sign in to join your devices up',
