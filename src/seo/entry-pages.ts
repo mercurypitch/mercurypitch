@@ -163,7 +163,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'Get your measured notes, semitone span and a broad voice-type guide. Audio stays on your device.',
     },
     h1: 'Free vocal range test',
-    lede: 'Glide from your lowest comfortable note to your highest and get both notes, your span in semitones and a broad voice-type guide. It runs in your browser, takes about ninety seconds, and needs no piano and no teacher.',
+    lede: 'Glide from your lowest comfortable note to your highest and get both notes, your span in semitones and a broad voice-type guide. It runs in your browser and needs no piano and no teacher. The timed part takes about a minute, and each step waits until you are ready.',
     faq: [
       {
         q: 'How do I test my vocal range?',
@@ -564,7 +564,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     faq: [
       {
         q: 'How do I find out my voice type?',
-        a: 'Sing a comfortable siren from low to high and back down. MercuryPitch takes the lowest and highest notes it heard reliably and compares that span against the standard bands. It takes about ninety seconds and needs no piano.',
+        a: 'Sing a comfortable siren from low to high and back down. MercuryPitch takes the lowest and highest notes it heard reliably and compares that span against the standard bands. The timed part takes about a minute, each step waits until you are ready, and you need no piano.',
       },
       {
         q: 'Is voice type the same as vocal range?',
@@ -635,7 +635,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     themeColor: MIRROR_THEME_COLOR,
     title: 'Which Singer Has My Vocal Range? Match Your Voice | MercuryPitch',
     description:
-      'Glide low to high, find the voice band your range sits in, and meet a famous singer from it. Free, about ninety seconds, and your audio stays on your device.',
+      'Glide low to high, find the voice band your range sits in, and meet a famous singer from it. Free, a minute on the clock, and your audio stays on your device.',
     keywords:
       'which singer has my vocal range, singer with my voice, vocal range match, famous singer vocal ranges, what singer do i sound like',
     og: {
