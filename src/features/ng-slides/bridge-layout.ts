@@ -86,6 +86,18 @@ export function yOf(layout: BridgeLayout, y: number): number {
   return (y - layout.top) * layout.unit
 }
 
+/**
+ * The arch's shape (ng-geometry arch.function): 1 on the flat top (|u| up
+ * to f), easing down to 0 at the feet (|u| = 1), u = (X - X_k) / a.
+ */
+export function archG(u: number, f: number): number {
+  const x = Math.abs(u)
+  if (x <= f) return 1
+  if (x >= 1) return 0
+  const s = (x - f) / (1 - f)
+  return 1 - s * s * (3 - 2 * s)
+}
+
 /** A pitch on arch `root`'s scale to storyboard y (ng-geometry pitch_to_y). */
 export function pitchY(midi: number, root: number): number {
   return ARCH.deckY - (ARCH.h * (midi - root)) / 7

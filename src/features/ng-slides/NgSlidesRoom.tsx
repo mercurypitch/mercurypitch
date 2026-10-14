@@ -41,11 +41,21 @@ import type { NgSummary } from './ng-run'
 import { bestText, jumpsText, topsText } from './ng-run'
 import { NgLevel } from './NgLevel'
 import styles from './NgSlidesRoom.module.css'
+import type { NgController } from './useNgController'
 import { useNgController } from './useNgController'
 
 export interface NgSlidesRoomProps {
   /** Leave the room (Done). */
   onDone: () => void
+  /**
+   * The run, when it is not the room's own: the dev fixtures' pinned
+   * frames (fixture/NgFixture.tsx). Read once.
+   */
+  controller?: NgController
+  /** No animation at all (the fixtures). */
+  still?: boolean
+  /** Every picture the scene shows has decoded (the fixtures wait for it). */
+  onSettled?: () => void
 }
 
 /** Merc's bubble sits this far down his canvas: just over his head. */
@@ -78,7 +88,8 @@ export function resultChips(summary: NgSummary): string[] {
 }
 
 export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
-  const room = useNgController()
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const room = props.controller ?? useNgController()
   const phase = (): string => room.state().phase
   let rootEl: HTMLDivElement | undefined
   const [box, setBox] = createSignal<RoomBox | null>(null)
@@ -183,6 +194,8 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
             root={room.lines().root}
             reduced={reduced}
             showResult={room.showResult()}
+            still={props.still}
+            onSettled={props.onSettled}
             onReady={(view) => room.attach(view)}
             merc={
               <MercView

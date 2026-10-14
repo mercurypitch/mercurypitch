@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { MERC_FEET } from '@/components/room-kit/MercView'
 import { ARCH, NOTE_NAMES } from './bridge-geometry'
-import { cropTop, layoutBridge, MERC_SIZE_W, mercBoxAt, pitchY, yOf, } from './bridge-layout'
+import { archG, cropTop, layoutBridge, MERC_SIZE_W, mercBoxAt, pitchY, yOf, } from './bridge-layout'
 
 /** The room's chip and mic on a phone: safe areas as an iPhone's. */
 function box(
@@ -77,5 +77,16 @@ describe('pitchY', () => {
   it('puts the root on the deck and the fifth on the apex', () => {
     expect(pitchY(45, 45)).toBeCloseTo(ARCH.deckY, 9)
     expect(pitchY(52, 45)).toBeCloseTo(ARCH.deckY - ARCH.h, 9)
+  })
+})
+
+describe('archG', () => {
+  it('is the arch: flat on top, eased to the feet, the glide path on the bridge', () => {
+    expect(archG(0, ARCH.f)).toBe(1)
+    expect(archG(ARCH.f, ARCH.f)).toBe(1)
+    expect(archG(1, ARCH.f)).toBe(0)
+    expect(archG(-0.5, ARCH.f)).toBeCloseTo(archG(0.5, ARCH.f), 12)
+    // Halfway down the ramp, halfway up the arch (smoothstep's middle).
+    expect(archG((1 + ARCH.f) / 2, ARCH.f)).toBeCloseTo(0.5, 12)
   })
 })
