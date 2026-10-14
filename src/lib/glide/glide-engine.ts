@@ -11,7 +11,9 @@
 //
 // - The reading is the hold engine's (hold-reading.ts): voiced by offTarget,
 //   and held to a semitone by heldCents, so a tracker's octave slip costs
-//   one semitone, not twelve.
+//   one semitone, not twelve. A band of a semitone or wider (Lip roll at
+//   Learning) holds it to twice the band instead: held to the band itself,
+//   every voiced frame would sit inside it.
 // - The lag allowance: singers trail a moving target. The error is the
 //   smallest distance from the voice now to the path anywhere from `lagMs`
 //   behind this moment to `leadMs` ahead of it, sampled every 25 ms.
@@ -42,7 +44,7 @@
 //   is a fixed ring, and the events array is emptied, never replaced. Only
 //   a break, a jump, a top, an arch's end and the run's end make a record.
 
-import { heldCents, offTarget } from '@/lib/hold/hold-reading'
+import { heldCents, offTarget, READING_CLAMP_CENTS, } from '@/lib/hold/hold-reading'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { GlidePath } from './glide-path'
 import { judgedArchAt, segmentIndexAt, targetAt } from './glide-path'
@@ -321,12 +323,23 @@ function readVoiced(
     state.following = false
     return
   }
-  const held = heldCents(error)
+  const held = heldForBand(error, preset)
   const gap = state.lastVoicedAt === null ? 0 : t - state.lastVoicedAt
   const fresh = state.centre === null || gap >= preset.breakMs / 1000 - EPS
   state.centre = fresh ? held : smooth(state.centre ?? held, held, dt)
   state.following = Math.abs(state.centre) <= preset.bandCents + EPS
   if (state.following) countLag(state, error, preset)
+}
+
+/**
+ * The reading the band judges: held to a semitone, or to twice the band
+ * when the band is a semitone or wider, so a voice far off the path can
+ * still read outside it.
+ */
+function heldForBand(error: number, preset: GlidePreset): number {
+  if (preset.bandCents < READING_CLAMP_CENTS) return heldCents(error)
+  const limit = 2 * preset.bandCents
+  return Math.max(-limit, Math.min(limit, error))
 }
 
 /** One step of the one-pole smoother. */

@@ -127,6 +127,49 @@ describe('tickGlide, Lip roll: 80 ms tracker dropouts every 300 ms', () => {
   })
 })
 
+describe('tickGlide, Lip roll: a voice off the dots', () => {
+  it.each(LEVELS)(
+    'lights no %s wave half an octave under the path',
+    (level) => {
+      // Arrange: past every level's band, even with its lag allowed. (Three
+      // semitones is not: on the steepest stretch of a Learning wave, the
+      // dots 350 ms back are about that far down.)
+      const { path, preset } = lipRun(level)
+
+      // Act
+      const played = play(
+        path,
+        preset,
+        offset(follow(path), () => -600),
+      )
+      const result = computeGlideResult(played.state, path, preset)
+
+      // Assert
+      for (const arch of path.arches) {
+        expect(archCoverage(played.state, path, arch.index)).toBeLessThan(0.01)
+      }
+      expect(result.archesLit).toBe(0)
+    },
+  )
+
+  it('still lights Learning 90 cents flat: inside its semitone band', () => {
+    // Arrange
+    const { path, preset } = lipRun('learning')
+
+    // Act
+    const played = play(
+      path,
+      preset,
+      offset(follow(path), () => -90),
+    )
+    const result = computeGlideResult(played.state, path, preset)
+
+    // Assert
+    expect(preset.bandCents).toBe(100)
+    expect(result.archesLit).toBe(3)
+  })
+})
+
 describe('tickGlide, Lip roll: stalling at the top', () => {
   /** The voice stops halfway through each crest and stays silent to the wave's end. */
   const stalling = (path: GlidePath): Voice =>

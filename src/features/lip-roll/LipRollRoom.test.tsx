@@ -469,8 +469,6 @@ describe('a run sung on the dots', () => {
   })
 
   it("lights the waves exactly as far as the engine's coverage, wave by wave", async () => {
-    // At Singer: at Learning the band (100 c) is as wide as the engine's
-    // held reading, so any voiced frame counts as on the path.
     setExerciseLevel('singer')
     const plan = planFor('singer', 52)
     const a2 = plan.path.arches[2]
