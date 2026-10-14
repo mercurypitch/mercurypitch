@@ -21,6 +21,8 @@ export interface FixtureScene {
   readonly plate: 'world' | 'result'
   /** The state's cloud layer over the plate, or none. */
   readonly clouds: 'mid-take' | null
+  /** The state's city light over the clouds, or none (the result). */
+  readonly cityLight: 'intro' | 'mid-take' | null
   readonly celebration: boolean
   readonly merc: 'sing' | 'listen' | 'celebrate'
   readonly rings: readonly {
@@ -54,6 +56,7 @@ export const FIXTURE_SCENES: Readonly<
     screen: 1,
     plate: 'world',
     clouds: null,
+    cityLight: 'intro',
     celebration: false,
     merc: 'sing',
     rings: [
@@ -69,6 +72,7 @@ export const FIXTURE_SCENES: Readonly<
     screen: 2,
     plate: 'world',
     clouds: 'mid-take',
+    cityLight: 'mid-take',
     celebration: false,
     merc: 'listen',
     rings: [{ u: 0.8486, v: 0.408, rW: 0.06225, style: 'active' }],
@@ -173,6 +177,7 @@ export const FIXTURE_SCENES: Readonly<
     screen: 4,
     plate: 'result',
     clouds: null,
+    cityLight: null,
     celebration: true,
     merc: 'celebrate',
     rings: [{ u: 0.5766, v: 0.4111, rW: 0.03378, style: 'missed' }],
