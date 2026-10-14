@@ -77,7 +77,7 @@ const PROMISES: readonly { icon: () => JSX.Element; text: string }[] = [
         <path d="M4 15v4M9 11v8M14 7v12M19 12v7" />
       </svg>
     ),
-    text: 'Ninety seconds more maps your range, and the famous voice yours sits closest to.',
+    text: 'Four short tasks map your range and find a famous voice in your band.',
   },
   {
     // Padlock — the answer to the question everyone has at this screen.
