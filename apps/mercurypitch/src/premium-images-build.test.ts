@@ -1,5 +1,5 @@
 // ============================================================
-// The store build leaves the premium exercises' pictures out
+// The store build leaves the premium exercises' pictures and voices out
 // ============================================================
 //
 // The rooms fold away in a build without the premium exercises
@@ -10,7 +10,9 @@
 // `scripts/assert-bundle.mjs` STAGE 2 checks a store binary. A store binary
 // is made only from a release tag, so this reads the switch on every pull
 // request instead, for every picture in every premium room's folder, at
-// any depth (Echo's are in an art/ folder of their own).
+// any depth (Echo's are in an art/ folder of their own), and every voice
+// file (Merc's sung "ooh" set for Echo's calls, in its voice/ folder;
+// vite.config.ts, PREMIUM_VOICES).
 
 import { readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -25,10 +27,10 @@ const FEATURES = fileURLToPath(
 /** The premium rooms that paint pictures today, by folder. */
 const ROOMS = ['long-note', 'echo'] as const
 
-/** Every .webp under `dir`, as paths relative to it. */
+/** Every .webp and .mp3 under `dir`, as paths relative to it. */
 function picturesIn(dir: string): string[] {
   return readdirSync(dir, { recursive: true, encoding: 'utf8' })
-    .filter((name) => name.endsWith('.webp'))
+    .filter((name) => name.endsWith('.webp') || name.endsWith('.mp3'))
     .map((name) => relative(dir, join(dir, name)))
 }
 
@@ -94,6 +96,13 @@ describe("the premium rooms' pictures in a native build", () => {
     }
   })
 
+  it("has Merc's voice for Echo to fold, so the voice checks are not vacuous", () => {
+    const voices = PICTURES.filter(
+      (file) => file.room === 'echo' && file.name.endsWith('.mp3'),
+    )
+    expect(voices.length).toBe(10)
+  })
+
   it('resolves every one of them to nothing in the store build', async () => {
     const fold = await foldFor('production')
     for (const { name, importer } of PICTURES) {
@@ -102,6 +111,7 @@ describe("the premium rooms' pictures in a native build", () => {
     }
     // Only the rooms': a picture anywhere else is left to Vite.
     expect(fold('./backdrop.webp', join(FEATURES, 'path/Path.tsx'))).toBeNull()
+    expect(fold('./ding.mp3', join(FEATURES, 'path/Path.tsx'))).toBeNull()
   }, 60000)
 
   it('leaves them to Vite in a build with the premium exercises', async () => {

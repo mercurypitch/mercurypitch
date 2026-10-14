@@ -150,14 +150,25 @@ function isLaunchOffer(id: string): boolean {
 const PREMIUM_IMAGES =
   /\/src\/features\/(?:long-note|echo|ng-slides|lip-roll)\/(?:[^/]+\/)*[^/]+\.webp$/u
 
-/** What every premium picture is in a build without the premium exercises. */
+/**
+ * The premium exercises' voices (Merc's sung "ooh" set for Echo's calls in
+ * src/features/echo/voice/), folded with their pictures and for the same
+ * reason: Vite emits an audio file the moment Rollup loads the module that
+ * imports it. `assert-bundle.mjs` STAGE 2 checks the bundle;
+ * src/premium-images-build.test.ts checks this switch on every PR.
+ */
+const PREMIUM_VOICES =
+  /\/src\/features\/(?:long-note|echo|ng-slides|lip-roll)\/(?:[^/]+\/)*[^/]+\.mp3$/u
+
+/** What every premium picture or voice is in a build without them. */
 const FOLDED_IMAGE = '\0mercurypitch:folded-premium-image'
 
-/** Whether a relative import from `importer` names a premium picture. */
-function isPremiumImage(source: string, importer: string | undefined): boolean {
+/** Whether a relative import from `importer` names a premium picture or voice. */
+function isPremiumAsset(source: string, importer: string | undefined): boolean {
   if (importer === undefined || !source.startsWith('.')) return false
   const from = dirname(importer.replace(/\?.*$/u, ''))
-  return PREMIUM_IMAGES.test(resolve(from, source).replace(/\\/gu, '/'))
+  const path = resolve(from, source).replace(/\\/gu, '/')
+  return PREMIUM_IMAGES.test(path) || PREMIUM_VOICES.test(path)
 }
 
 export default defineConfig(({ mode, command }) => {
@@ -256,12 +267,12 @@ export default defineConfig(({ mode, command }) => {
         },
       },
       {
-        // The premium exercises' pictures, out of a build that has no
-        // premium exercises (PREMIUM_IMAGES, above).
+        // The premium exercises' pictures and voices, out of a build that
+        // has no premium exercises (PREMIUM_IMAGES, PREMIUM_VOICES, above).
         name: 'mercurypitch:fold-premium-images',
         enforce: 'pre',
         resolveId(source, importer) {
-          if (karaokeImport || !isPremiumImage(source, importer)) return null
+          if (karaokeImport || !isPremiumAsset(source, importer)) return null
           return FOLDED_IMAGE
         },
         load(id) {

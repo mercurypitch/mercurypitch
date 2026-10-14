@@ -212,6 +212,13 @@ const KARAOKE_STAGE_2 = [
     /\/(?:echo|bridge|bay)-[a-z0-9-]+-[\w-]{8}\.webp$/u,
     "the premium exercises' plates",
   ],
+  // Merc's voice for Echo's calls, found by file name the same way: the ten
+  // sung "ooh" notes fold with the room's pictures (vite.config.ts,
+  // PREMIUM_VOICES).
+  [
+    /\/echo-merc-ooh-\d+-[A-Za-z0-9]+-[\w-]{8}\.mp3$/u,
+    "Merc's voice for Echo's calls",
+  ],
   // The Sing room's way in to them: its exercise row, the picker, the
   // options' row and the record of the last one opened. The row and the
   // picker are lazy islands and the options' section a ternary, all on

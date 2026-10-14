@@ -18,6 +18,7 @@ import { setExerciseLevel } from '@/stores/exercise-level'
 import { CLOUD_LAYER } from './echo-geometry'
 import type * as CallModule from './merc-call'
 import { ECHO_LINES, fillFields } from './merc-lines'
+import type * as SamplerModule from './merc-sampler'
 import type * as CaptureModule from './useEchoCapture'
 
 // ── A capture the test feeds by hand ────────────────────────────
@@ -89,6 +90,20 @@ vi.mock('./merc-call', async () => {
           },
         }
       },
+    },
+  }
+})
+
+// Merc's own voice never loads here (jsdom decodes nothing), so every call
+// goes to the synth above. The load is counted, not made.
+const voiceLoads = vi.hoisted(() => ({ count: 0 }))
+
+vi.mock('./merc-sampler', async () => {
+  const actual = await vi.importActual<typeof SamplerModule>('./merc-sampler')
+  return {
+    ...actual,
+    preloadMercVoice: () => {
+      voiceLoads.count += 1
     },
   }
 })
@@ -293,6 +308,14 @@ describe('the intro', () => {
     expect(screen.getByTestId('echo-level').textContent).toContain('Learning')
     expect(stars()).toEqual([])
     expect(rings()).toEqual([])
+  })
+
+  it("starts loading Merc's voice as the singer comes in, before any call", () => {
+    voiceLoads.count = 0
+    render(() => <EchoRoom onDone={() => undefined} />)
+
+    expect(voiceLoads.count).toBe(1)
+    expect(calls.sung).toEqual([])
   })
 
   it('asks for any easy note first when there is no root to start on', () => {
