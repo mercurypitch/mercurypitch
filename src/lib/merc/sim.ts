@@ -23,6 +23,8 @@ import type { Warp } from './rest-space'
 import { bendAt, placeEyes, restToWorldExact } from './rest-space'
 import type { Arcs, Fx } from './sim-choreo'
 import { choreo, DROP_Y0 } from './sim-choreo'
+import type { GlideSmooth } from './sim-glide'
+import { freshGlide, stepGlide } from './sim-glide'
 import type { Q3, Q4 } from './sim-math'
 import { clamp, smooth } from './sim-math'
 import type { Springs, Targets } from './sim-springs'
@@ -36,6 +38,10 @@ export interface MercVoice {
   level: number
   /** How steady the pitch is, 0..1. */
   steady: number
+  /**
+   * The sung pitch, fractional MIDI. `ride` leans with how fast it moves,
+   * so a glide room feeds the voice here, not the path it follows.
+   */
   midi: number
 }
 
@@ -113,7 +119,7 @@ interface Lock {
   lastPulse: number
 }
 
-interface VoiceSmooth {
+interface VoiceSmooth extends GlideSmooth {
   voiced: number
   level: number
   cents: number
@@ -193,6 +199,11 @@ export class Sim {
    * only, so a host can keep them off whatever stands on his other side.
    */
   sparkleSide: SparkleSide = 'around'
+  /**
+   * Reduced motion, for the states that read it: `ride` stands upright and
+   * `hum`'s rings hold still and only fade.
+   */
+  still = false
 
   // Set by reset().
   state!: MercState
@@ -240,7 +251,14 @@ export class Sim {
     this.ripplePhase = 0
     this.arcPhase = 0
     this.voice = { voiced: false, cents: 0, level: 0, steady: 0, midi: 57 }
-    this.vs = { voiced: 0, level: 0, cents: 0, steady: 0, rate: 0 }
+    this.vs = {
+      voiced: 0,
+      level: 0,
+      cents: 0,
+      steady: 0,
+      rate: 0,
+      ...freshGlide(),
+    }
     this.lock = freshLock()
     this.fx = {
       speed: 0,
@@ -359,6 +377,7 @@ export class Sim {
   step(dt: number): void {
     const raw = this.voiceAt ? this.voiceAt(this.t - this.voiceT0) : this.voice
     smoothVoice(this.vs, raw, dt)
+    stepGlide(this.vs, raw.voiced, raw.midi, dt)
     this.trackLock(raw, dt)
 
     const tau = this.t - this.stateT0
@@ -449,7 +468,8 @@ export class Sim {
   // drawing them.
   private advancePhases(X: Fx, dt: number): void {
     this.ripplePhase += dt * (X.rippleSpeed ?? 9)
-    this.arcPhase += dt * (X.arcSpeed ?? 1.2)
+    if (X.arcPhase === undefined) this.arcPhase += dt * (X.arcSpeed ?? 1.2)
+    else this.arcPhase = X.arcPhase
     if (X.arcs) {
       this.lastArcs = X.arcs
       this.arcsK = 1

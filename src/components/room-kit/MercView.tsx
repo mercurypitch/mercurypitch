@@ -15,6 +15,7 @@ import { createEffect, onCleanup, onMount, untrack } from 'solid-js'
 import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice, SparkleSide } from '@/lib/merc/sim'
 import type { MercStage } from '@/lib/merc/stage'
+import { prefersReducedMotion } from './reduced-motion'
 
 /**
  * Where his feet touch the floor, as a share of the canvas height from its
@@ -31,6 +32,11 @@ export interface MercViewProps {
   voice: () => MercVoice
   /** Where his celebration's sparkles land; read once, at mount. */
   sparkles?: SparkleSide
+  /**
+   * Reduced motion for his glide states: `ride` stands upright and `hum`'s
+   * rings only fade. Default: the phone's own setting.
+   */
+  still?: () => boolean
   class?: string
   style?: JSX.CSSProperties
   /** The room's own id for him ("long-note-merc"). */
@@ -42,6 +48,8 @@ export function MercView(props: MercViewProps): JSX.Element {
   let stage: MercStage | null = null
   let disposed = false
   let frame = 0
+  const still = (): boolean => (props.still ?? prefersReducedMotion)()
+  let stillAtMount = false
 
   // The stage takes the voice pushed, so it is handed over once a frame.
   const feed = (): void => {
@@ -54,12 +62,14 @@ export function MercView(props: MercViewProps): JSX.Element {
   onMount(() => {
     void import('@/lib/merc/stage').then((merc) => {
       if (disposed || host === undefined) return
+      stillAtMount = untrack(still)
       stage = merc.mountMercStage(host, {
         transparent: true,
         quality: 'medium',
         // Whatever he is doing by the time his chunk arrives.
         state: untrack(() => props.state()),
         sparkles: untrack(() => props.sparkles),
+        still: stillAtMount,
       })
       if (stage.ok) frame = requestAnimationFrame(feed)
     })
@@ -68,6 +78,15 @@ export function MercView(props: MercViewProps): JSX.Element {
   createEffect(() => {
     const next = props.state()
     stage?.setState(next)
+  })
+
+  // Only a change after mount is handed over; mount took the first reading.
+  createEffect(() => {
+    const now = still()
+    if (stage !== null && now !== stillAtMount) {
+      stillAtMount = now
+      stage.setStill(now)
+    }
   })
 
   onCleanup(() => {

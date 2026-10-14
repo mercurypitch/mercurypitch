@@ -21,6 +21,9 @@ export const STATES = [
   'point',
   'sleep',
   'hop',
+  // The glide rooms (Ng slides, Lip roll): humming, and riding the voice.
+  'hum',
+  'ride',
 ] as const
 
 export type MercState = (typeof STATES)[number]

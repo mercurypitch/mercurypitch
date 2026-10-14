@@ -11,7 +11,9 @@
 //
 // Under reduced motion (`still`) he never drops in, hops or jumps: he goes
 // straight to his place, and a state that leaps or sparkles shows as a
-// still one (STILL_STATE).
+// still one (STILL_STATE). The glide rooms' `hum` and `ride` keep their
+// names: MercView hands the same setting to the stage, which stands `ride`
+// upright and lets `hum`'s rings only fade.
 
 import type { Accessor } from 'solid-js'
 import { batch, createSignal, untrack } from 'solid-js'
