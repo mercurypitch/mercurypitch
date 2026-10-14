@@ -83,6 +83,33 @@ describe("the take's clouds", () => {
     expect(layer()?.style.transition).toBe('none')
   })
 
+  it("show the demo's own layer through its first take, and only it", () => {
+    mount({ present: true, on: true, look: 'demo-off' })
+
+    expect(screen.getByTestId('echo-clouds-demo').style.opacity).toBe('1')
+    expect(screen.getByTestId('echo-clouds-demo-plate').style.top).toBe('-92px')
+    expect(layer()).toBeNull()
+  })
+
+  it("cross from the demo's layer to the take's over the spec's cross, then let it go", () => {
+    const set = mount({ present: true, on: true, look: 'demo-off' })
+    set({ present: true, on: true, look: 'mid-take' })
+    const demo = () => screen.queryByTestId('echo-clouds-demo')
+
+    expect(layer()?.style.opacity).toBe('1')
+    expect(layer()?.style.transition).toBe(
+      `opacity ${CLOUD_LAYER.crossMs}ms ease-in-out`,
+    )
+    expect(demo()?.style.opacity).toBe('0')
+    expect(demo()?.style.transition).toBe(
+      `opacity ${CLOUD_LAYER.crossMs}ms ease-in-out`,
+    )
+    vi.advanceTimersByTime(CLOUD_LAYER.crossMs - 1)
+    expect(demo()).not.toBeNull()
+    vi.advanceTimersByTime(1)
+    expect(demo()).toBeNull()
+  })
+
   it('come and go without a fade with reduced motion', () => {
     motion.reduced = true
     const set = mount({ present: true, on: true })

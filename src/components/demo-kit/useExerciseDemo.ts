@@ -35,6 +35,13 @@ export interface DemoScript<S> {
   active: Accessor<boolean>
   /** The room's audio clock, running (call it inside a tap), or null. */
   audio: () => Promise<AudioContext | null>
+  /**
+   * What the demo's sound needs loaded before it starts, if anything
+   * (Echo's: Merc's recorded voice). The demo waits for it, at most
+   * READY_WAIT_MS, once the clock is running; without it, the room's
+   * fallback sings.
+   */
+  ready?: () => Promise<unknown>
   /** The note the demo sings: the room's own, else the voice type's. */
   note: () => number
   /**
@@ -139,6 +146,8 @@ export interface ExerciseDemo<C extends string, T extends string> {
 const AUTO_PLAY_MS = 1200
 /** How long a first visit waits for sound before the play card. */
 const AUDIO_WAIT_MS = 700
+/** The longest a demo waits for its sound to be ready (DemoScript.ready). */
+export const READY_WAIT_MS = 3000
 /** The mic hint after Try it, seconds. */
 const HINT_SECONDS = 3.2
 
@@ -302,11 +311,26 @@ export function useExerciseDemo<
     }
   }
 
+  /** `fn` once the script's sound is ready, if request `mine` stands. */
+  const whenReady = (mine: number, fn: () => void): void => {
+    const wait = script.ready
+    if (wait === undefined) return fn()
+    let done = false
+    const go = (): void => {
+      if (done) return
+      done = true
+      clearTimeout(cap)
+      if (alive && mine === request) fn()
+    }
+    const cap = setTimeout(go, READY_WAIT_MS)
+    void wait().then(go, go)
+  }
+
   const ask = (): void => {
     const mine = ++request
     void soundNow().then(
       (ctx) => {
-        if (alive && mine === request) begin(ctx)
+        if (alive && mine === request) whenReady(mine, () => begin(ctx))
       },
       () => {
         if (alive && mine === request) begin(null)
@@ -337,7 +361,9 @@ export function useExerciseDemo<
     void soundNow().then((ctx) => {
       if (ctx === null || mine !== request) return offer()
       clearTimeout(audioWait)
-      if (alive && idleIntro()) begin(ctx)
+      whenReady(mine, () => {
+        if (idleIntro()) begin(ctx)
+      })
     }, offer)
   }
 

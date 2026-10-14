@@ -3,7 +3,8 @@
 // ============================================================
 //
 // Out of the controller: the one line about a finished phrase, the one
-// line over the run's result, and what a run leaves behind (the exercise
+// line over the run's result, the result as the room shows it (a run's
+// and the demo's alike), and what a run leaves behind (the exercise
 // history, the best at its level and the root it started on).
 //
 // A phrase with a miss gets one line about its most useful miss, never a
@@ -19,8 +20,11 @@ import type { EchoLevelId, MissedNote } from '@/lib/sequence/sequence-engine'
 import type { PhraseTake, SequenceMetrics, } from '@/lib/sequence/sequence-metrics'
 import { recordEchoBest, rememberEchoRoot } from '@/stores/echo-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { exerciseLevelName } from '@/stores/exercise-level'
+import { echoScene } from './echo-scene'
 import type { EchoMoment, LineFields } from './merc-lines'
 import { nthNote } from './merc-lines'
+import type { SkyScene } from './sky-scene'
 
 /** A steady note this near the one asked for was a try at it, cents. */
 const NEAR_CENTS = 100
@@ -163,4 +167,53 @@ export function keepEchoRun(
     at: now,
   })
   return { improved }
+}
+
+/** A run's numbers under its result. */
+export interface EchoSummary {
+  readonly landed: number
+  readonly notes: number
+  /** 0 to 100, or null when nothing landed. */
+  readonly accuracy: number | null
+  /** Notes landed in time, at a level that judges rhythm; else null. */
+  readonly inTime: number | null
+  readonly improved: boolean
+  /** The level the run was sung at ("Singer"). */
+  readonly levelName: string
+}
+
+/** A result as the room shows it: its numbers, its sky, and whether to cheer. */
+export interface ShownResult {
+  readonly summary: EchoSummary
+  readonly scene: SkyScene
+  /** A new best or every note landed: the celebration, and Merc cheers. */
+  readonly celebrate: boolean
+}
+
+/** The result of `done`, sung at `level` in run `run`. */
+export function showResultOf(
+  done: readonly PhraseTake[],
+  metrics: SequenceMetrics,
+  at: { level: EchoLevelId; run: number; improved: boolean },
+): ShownResult {
+  const all = metrics.notes > 0 && metrics.landed === metrics.notes
+  const celebrate = at.improved || all
+  return {
+    summary: {
+      landed: metrics.landed,
+      notes: metrics.notes,
+      accuracy: metrics.accuracy,
+      inTime: metrics.rhythm?.inTime ?? null,
+      improved: at.improved,
+      levelName: exerciseLevelName(at.level),
+    },
+    scene: echoScene({
+      run: at.run,
+      live: null,
+      done: [...done],
+      result: true,
+      celebration: celebrate,
+    }),
+    celebrate,
+  }
 }

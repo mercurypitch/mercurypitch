@@ -39,7 +39,7 @@ export interface DemoSoundtrack<Take extends SungDemoTake> {
 }
 
 /** What the speakers add, seconds, where the browser says. */
-function outputLatency(ctx: AudioContext): number {
+export function outputLatency(ctx: AudioContext): number {
   const reported = Number.isFinite(ctx.outputLatency)
     ? ctx.outputLatency
     : ctx.baseLatency

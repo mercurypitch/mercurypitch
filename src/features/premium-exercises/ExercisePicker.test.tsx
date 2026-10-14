@@ -16,7 +16,9 @@ interface Seed {
   note?: number
   /** The best on that note, in seconds held in the band. */
   best?: number
+  /** Both demos seen, unless Echo's is set apart. */
   demoSeen?: boolean
+  echoDemoSeen?: boolean
   /** The level every premium exercise is at. */
   level?: ExerciseLevel
   /** Echo's best at the Singer level: notes landed of notes asked. */
@@ -55,6 +57,9 @@ async function openPicker(seed: Seed = {}) {
       'mp_long_note_demo_seen',
       JSON.stringify(seed.demoSeen),
     )
+  }
+  if ((seed.echoDemoSeen ?? seed.demoSeen) === true) {
+    localStorage.setItem('mp_echo_demo_seen', 'true')
   }
   if (seed.echoBest !== undefined) {
     const [landed, notes] = seed.echoBest
@@ -156,10 +161,22 @@ describe("a card's third line", () => {
     expect(meta('echo-stars')).toBe('Best 18 of 20')
   })
 
-  it('is left out for Echo before its first best: its demo does not play by itself yet', async () => {
+  it('says Merc sings Echo first until its demo is seen, before its first best', async () => {
     await openPicker()
 
+    expect(meta('echo-stars')).toBe('Merc sings it first')
+  })
+
+  it('is left out for Echo with its demo seen and no best yet', async () => {
+    await openPicker({ echoDemoSeen: true })
+
     expect(meta('echo-stars')).toBeNull()
+  })
+
+  it("gives Echo's best, not its demo, once a run is kept", async () => {
+    await openPicker({ echoDemoSeen: false, echoBest: [18, 20] })
+
+    expect(meta('echo-stars')).toBe('Best 18 of 20')
   })
 })
 

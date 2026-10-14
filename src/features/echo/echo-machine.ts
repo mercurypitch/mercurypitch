@@ -22,6 +22,12 @@
 // the same phrase. The mic button mid-run (`stop`), leaving the app
 // (`leave`) and a minute with no voice (`rest`) each drop the run: back to
 // the intro with nothing kept.
+//
+// `demo` moves the room for the "how it works" demo (demo/), which sings
+// its one phrase through the room with no microphone: to the intro as it
+// starts and ends, to the call as each take starts, and to the result
+// after take 2. The phrase's own steps (`heard`, `phrase-end`) move it as
+// they move a run.
 
 export type EchoPhase =
   | 'intro'
@@ -34,6 +40,9 @@ export type EchoPhase =
   | 'blocked'
 
 export type EchoBlock = 'denied' | 'unavailable'
+
+/** The phases the demo puts the room in itself. */
+export type EchoDemoPhase = 'intro' | 'call' | 'between' | 'result'
 
 export interface EchoState {
   readonly phase: EchoPhase
@@ -65,6 +74,7 @@ export type EchoEvent =
   | { readonly type: 'stop' }
   | { readonly type: 'rest' }
   | { readonly type: 'leave' }
+  | { readonly type: 'demo'; readonly phase: EchoDemoPhase }
 
 /** The phases of a run under way: the microphone is open in all but the first. */
 const RUN_PHASES: ReadonlySet<EchoPhase> = new Set<EchoPhase>([
@@ -144,6 +154,19 @@ function onDrop(state: EchoState): EchoState {
     : state
 }
 
+/** The demo's own move: its one phrase is the run's first. */
+function onDemo(
+  state: EchoState,
+  event: Extract<EchoEvent, { type: 'demo' }>,
+): EchoState {
+  return {
+    ...state,
+    phase: event.phase,
+    phrase: event.phase === 'intro' ? -1 : 0,
+    block: null,
+  }
+}
+
 type Handlers = {
   readonly [K in EchoEvent['type']]: (
     state: EchoState,
@@ -163,6 +186,7 @@ const HANDLERS: Handlers = {
   stop: onDrop,
   rest: onDrop,
   leave: onDrop,
+  demo: onDemo,
 }
 
 export function echoReducer(state: EchoState, event: EchoEvent): EchoState {

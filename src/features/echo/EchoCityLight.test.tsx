@@ -35,7 +35,7 @@ const px = (value: string) => Number.parseFloat(value)
 describe("the town's city light", () => {
   it("places each state's layer at its offset in the plate's own box", () => {
     mount('intro')
-    for (const state of ['intro', 'mid-take'] as const) {
+    for (const state of ['intro', 'mid-take', 'demo-off'] as const) {
       const box = CITY_LIGHT.layers[state]
       const { style } = layer(state)
 

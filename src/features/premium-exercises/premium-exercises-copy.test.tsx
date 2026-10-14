@@ -12,6 +12,7 @@
 import { cleanup, render, screen, within } from '@solidjs/testing-library'
 import { readdirSync, readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEMO_COPY as ECHO_DEMO_COPY } from '@/features/echo/demo/demo-cues'
 import { DEMO_COPY } from '@/features/long-note/demo/demo-cues'
 // Loaded once, here. The options read no stored state, and loading their
 // graph fresh inside the test ran past the 5 s timeout under a full run.
@@ -57,6 +58,7 @@ function seed(state: { last?: boolean; best?: boolean; demoSeen?: boolean }) {
   }
   if (state.demoSeen === true) {
     localStorage.setItem('mp_long_note_demo_seen', 'true')
+    localStorage.setItem('mp_echo_demo_seen', 'true')
   }
 }
 
@@ -130,9 +132,9 @@ describe('the decided words, as they render', () => {
       within(sheet).getByRole('heading', { level: 2, name: 'Exercises' }),
     ).toBeTruthy()
     expect(within(sheet).getByRole('button', { name: 'Close' })).toBeTruthy()
-    expect(screen.getByTestId('sing-exercise-meta').textContent).toBe(
-      'Best 9.4 s on A3',
-    )
+    expect(
+      screen.getAllByTestId('sing-exercise-meta').map((m) => m.textContent),
+    ).toEqual(['Best 9.4 s on A3'])
   })
 
   it('names the options row', () => {
@@ -174,10 +176,11 @@ describe('the decided words, as they render', () => {
   it("tags a card with the demo's own first words", async () => {
     await showPicker()
 
-    expect(screen.getByTestId('sing-exercise-meta').textContent).toBe(
-      'Merc sings it first',
-    )
+    expect(
+      screen.getAllByTestId('sing-exercise-meta').map((m) => m.textContent),
+    ).toEqual(['Merc sings it first', 'Merc sings it first'])
     expect(DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
+    expect(ECHO_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
   })
 })
 

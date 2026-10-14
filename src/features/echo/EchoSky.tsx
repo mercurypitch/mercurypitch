@@ -261,6 +261,10 @@ function SkyStar(props: SkyStarProps): JSX.Element {
       classList={{ [styles.pop]: props.star.pop === true && !props.still }}
       data-testid="echo-star"
       data-size={props.star.size}
+      data-key={props.star.key}
+      data-cx={props.at.x.toFixed(1)}
+      data-cy={props.at.y.toFixed(1)}
+      data-r={((props.star.widthW * props.unit) / 2).toFixed(1)}
       style={{
         'transform-origin': `${props.at.x.toFixed(1)}px ${props.at.y.toFixed(1)}px`,
       }}
@@ -426,6 +430,9 @@ function SkyStrokes(props: SkyStrokesProps): JSX.Element {
                   data-testid="echo-ring"
                   data-style={ring.style}
                   data-radius={(ring.rW * props.unit).toFixed(1)}
+                  data-key={ring.key}
+                  data-cx={at().x.toFixed(1)}
+                  data-cy={at().y.toFixed(1)}
                 >
                   <circle
                     cx={at().x}

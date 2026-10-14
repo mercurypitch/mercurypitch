@@ -404,9 +404,12 @@ const MERC_VOICE = createVoiceLoader(MERC_SAMPLES, {
   report,
 })
 
-/** Start loading Merc's voice set; the room calls it as the singer enters. */
-export function preloadMercVoice(): void {
-  void MERC_VOICE.load()
+/**
+ * Start loading Merc's voice set; the room calls it as the singer enters,
+ * and the demo waits on it before its first call.
+ */
+export function preloadMercVoice(): Promise<LoadedVoice | null> {
+  return MERC_VOICE.load()
 }
 
 /** Merc's calls in his own voice, the synth until it has loaded. */

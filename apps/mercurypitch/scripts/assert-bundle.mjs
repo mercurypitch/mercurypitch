@@ -250,6 +250,10 @@ const KARAOKE_STAGE_2 = [
     "the exercise picker's Echo card",
   ],
   ['echo-level', "Echo's level control"],
+  // Its demo rides with the room: its take pill and its record of being
+  // seen.
+  ['echo-demo-take', "Echo's demo"],
+  ['mp_echo_demo_seen', "Echo's demo record"],
 ]
 
 /**

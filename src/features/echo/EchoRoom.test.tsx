@@ -138,6 +138,11 @@ vi.mock('@/stores/echo-store', () => ({
     return { improved: kept.improved }
   },
   echoBest: () => null,
+  // The demo has been seen on this device: the room opens on its own start
+  // (demo/EchoDemo.test.tsx plays the demo).
+  echoDemoSeen: () => true,
+  markEchoDemoSeen: () => undefined,
+  echoDemoAutoPlays: () => false,
 }))
 // No voiceprint on this device: the root is the one kept, or the singer's.
 vi.mock('@/db/services/voiceprint-service', () => ({
@@ -159,7 +164,7 @@ vi.mock('@/lib/haptics', () => ({
 const { CaptureError } = await import('./useEchoCapture')
 const { EchoRoom } = await import('./EchoRoom')
 const { PHRASE_SHOW_MS, QUIET_LIMIT_SECONDS, YOUR_TURN } =
-  await import('./useEchoController')
+  await import('./echo-controller-contract')
 
 // ── Screen frames, flushed by hand ─────────────────────────────
 

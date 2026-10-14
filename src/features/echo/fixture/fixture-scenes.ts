@@ -20,9 +20,9 @@ export interface FixtureScene {
   /** The world plate, or the result's lit town. */
   readonly plate: 'world' | 'result'
   /** The state's cloud layer over the plate, or none. */
-  readonly clouds: 'mid-take' | null
+  readonly clouds: 'mid-take' | 'demo-off' | null
   /** The state's city light over the clouds, or none (the result). */
-  readonly cityLight: 'intro' | 'mid-take' | null
+  readonly cityLight: 'intro' | 'mid-take' | 'demo-off' | null
   readonly celebration: boolean
   readonly merc: 'sing' | 'listen' | 'celebrate'
   readonly rings: readonly {
@@ -46,11 +46,13 @@ export interface FixtureScene {
   readonly ribbon: {
     readonly points: readonly (readonly [number, number])[]
     readonly scale: number
+    /** On the note (cyan) or off it (amber). */
+    readonly filling: boolean
   } | null
 }
 
 export const FIXTURE_SCENES: Readonly<
-  Record<'intro' | 'mid-take' | 'result', FixtureScene>
+  Record<'intro' | 'mid-take' | 'demo-off' | 'result', FixtureScene>
 > = {
   intro: {
     screen: 1,
@@ -171,6 +173,91 @@ export const FIXTURE_SCENES: Readonly<
         [0.7554, 0.3938],
       ],
       scale: 1.0101,
+      filling: true,
+    },
+  },
+  'demo-off': {
+    screen: 3,
+    plate: 'world',
+    clouds: 'demo-off',
+    cityLight: 'demo-off',
+    celebration: false,
+    merc: 'listen',
+    rings: [
+      { u: 0.4618, v: 0.3079, rW: 0.06196, style: 'missed' },
+      { u: 0.776, v: 0.4218, rW: 0.04774, style: 'waiting' },
+    ],
+    stars: [
+      { u: 0.1438, v: 0.4402, widthW: 0.15632, size: 'phrase', tint: 'bright' },
+    ],
+    lines: [],
+    ribbon: {
+      points: [
+        [0.353, 0.4002],
+        [0.3571, 0.3989],
+        [0.3598, 0.398],
+        [0.3632, 0.3967],
+        [0.3666, 0.3958],
+        [0.3699, 0.3945],
+        [0.3733, 0.3936],
+        [0.3767, 0.3927],
+        [0.3801, 0.392],
+        [0.3834, 0.3911],
+        [0.3868, 0.3902],
+        [0.3902, 0.3889],
+        [0.3936, 0.3877],
+        [0.397, 0.3861],
+        [0.4003, 0.3846],
+        [0.4037, 0.3827],
+        [0.4071, 0.3808],
+        [0.4105, 0.3789],
+        [0.4139, 0.3774],
+        [0.4172, 0.3758],
+        [0.4206, 0.3746],
+        [0.424, 0.3736],
+        [0.4274, 0.3727],
+        [0.4307, 0.3718],
+        [0.4341, 0.3711],
+        [0.4375, 0.3708],
+        [0.4409, 0.3702],
+        [0.4443, 0.3699],
+        [0.4476, 0.3699],
+        [0.451, 0.3699],
+        [0.4544, 0.3699],
+        [0.4578, 0.3705],
+        [0.4611, 0.3711],
+        [0.4645, 0.3718],
+        [0.4679, 0.3727],
+        [0.4713, 0.3736],
+        [0.4747, 0.3743],
+        [0.478, 0.3749],
+        [0.4814, 0.3752],
+        [0.4848, 0.3752],
+        [0.4882, 0.3752],
+        [0.4916, 0.3749],
+        [0.4949, 0.3746],
+        [0.4983, 0.3743],
+        [0.5017, 0.3736],
+        [0.5051, 0.373],
+        [0.5084, 0.373],
+        [0.5118, 0.373],
+        [0.5152, 0.373],
+        [0.5186, 0.3736],
+        [0.522, 0.3746],
+        [0.5253, 0.3758],
+        [0.5287, 0.3774],
+        [0.5321, 0.3793],
+        [0.5355, 0.3811],
+        [0.5389, 0.383],
+        [0.5422, 0.3842],
+        [0.5456, 0.3852],
+        [0.549, 0.3861],
+        [0.5524, 0.3867],
+        [0.5551, 0.3871],
+        [0.5591, 0.3877],
+      ],
+      scale: 0.9434,
+      filling: false,
     },
   },
   result: {
