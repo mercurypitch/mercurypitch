@@ -19,7 +19,7 @@
 // draws no way in (assert-bundle.mjs STAGE 2 holds the output to it).
 
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import type { NativeShellApi } from '@/stores/native-shell-store'
 import type { PushedScreen } from './run-shell-store'
@@ -32,6 +32,7 @@ function install(): PremiumExerciseApi {
   const screens: Record<PremiumExerciseId, PushedScreen> = {
     [EXERCISE_LONG_NOTE_LANTERN]: 'long-note',
     [EXERCISE_ECHO_STARS]: 'echo',
+    [EXERCISE_LIP_ROLL_BAY]: 'lip-roll',
     [EXERCISE_NG_SLIDES_BRIDGE]: 'ng-slides',
   }
   /** What a room starts loading on the tap that opens it. */
@@ -39,6 +40,11 @@ function install(): PremiumExerciseApi {
     [EXERCISE_ECHO_STARS]: () => {
       void import('@/features/echo/echo-art').then((art) => {
         art.preloadEchoArt()
+      })
+    },
+    [EXERCISE_LIP_ROLL_BAY]: () => {
+      void import('@/features/lip-roll/bay-art').then((art) => {
+        art.preloadLipArt()
       })
     },
     [EXERCISE_NG_SLIDES_BRIDGE]: () => {

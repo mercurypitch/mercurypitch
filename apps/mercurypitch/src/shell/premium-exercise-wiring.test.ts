@@ -15,10 +15,15 @@ import { installPremiumExercises } from './premium-exercise-wiring'
 import { pushed, pushedStack, resetRunShell } from './run-shell-store'
 
 const build = vi.hoisted(() => ({ premium: false }))
-const art = vi.hoisted(() => ({ preloads: 0, ng: 0 }))
+const art = vi.hoisted(() => ({ preloads: 0, ng: 0, lip: 0 }))
 vi.mock('@/features/echo/echo-art', () => ({
   preloadEchoArt: () => {
     art.preloads += 1
+  },
+}))
+vi.mock('@/features/lip-roll/bay-art', () => ({
+  preloadLipArt: () => {
+    art.lip += 1
   },
 }))
 vi.mock('@/features/ng-slides/bridge-art', () => ({
@@ -37,6 +42,7 @@ beforeEach(() => {
   build.premium = false
   art.preloads = 0
   art.ng = 0
+  art.lip = 0
   setActiveTab(TAB_SINGING)
   resetRunShell()
 })
@@ -86,6 +92,20 @@ describe('the shell in a build with the premium exercises', () => {
     await vi.waitFor(() => {
       expect(art.ng).toBe(1)
     })
+    expect(art.preloads).toBe(0)
+  })
+
+  it('pushes Lip roll for its id, and starts its bay loading on the same tap', async () => {
+    build.premium = true
+    const api = installPremiumExercises()
+
+    api.openExercise?.('lip-roll-bay')
+
+    expect(pushed()).toBe('lip-roll')
+    await vi.waitFor(() => {
+      expect(art.lip).toBe(1)
+    })
+    expect(art.ng).toBe(0)
     expect(art.preloads).toBe(0)
   })
 

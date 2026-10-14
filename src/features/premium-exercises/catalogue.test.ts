@@ -23,6 +23,7 @@ describe('the exercise catalogue', () => {
   it('finds an entry by its id', () => {
     expect(catalogueEntry('long-note-lantern')?.name).toBe('Long note')
     expect(catalogueEntry('echo-stars')?.name).toBe('Echo')
+    expect(catalogueEntry('lip-roll-bay')?.name).toBe('Lip roll')
     expect(catalogueEntry('ng-slides-bridge')?.name).toBe('Ng slides')
   })
 })

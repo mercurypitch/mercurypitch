@@ -98,6 +98,7 @@ These are the rules that break things when ignored.
 | `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 4.4k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.4k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.0k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
+| `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 4.0k | useLipController: one Lip roll run, from the tap to the result Owns the room's states (lip-machine.ts), the microphone and the audio cloc... |
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 3.9k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
@@ -114,9 +115,9 @@ These are the rules that break things when ignored.
 | `sidebar` | [sidebar-registry.ts](../../src/features/sidebar/sidebar-registry.ts) | 1.0k | ── Sidebar panel registry One AppSidebar shell; WHAT it shows is this file's decision, per tab. |
 | `account` | [native-sign-in.ts](../../src/features/account/native-sign-in.ts) | 900 | Native sign-in — the phone's own Apple and Google ceremonies On the web, Google sign-in is a full-page redirect (the app's `COOP: same-or... |
 | `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 750 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
+| `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 750 | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
 | `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 750 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
 | `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 700 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
-| `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 650 | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 600 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 600 | What's New — the 0.9 line, in the visitor's terms One page for the whole release LINE, not one per version, because that is the granulari... |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 550 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
@@ -235,6 +236,7 @@ These are the rules that break things when ignored.
 | [sync-ui-store.ts](../../src/stores/sync-ui-store.ts) | 150 | ── Sync UI state Whether the sync dialog is showing, whether a session is alive behind it, and — in the words the surfaces say out loud —... |
 | [console-store.ts](../../src/stores/console-store.ts) | 100 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
 | [index.ts](../../src/stores/index.ts) | 100 | Stores barrel export |
+| [lip-roll-store.ts](../../src/stores/lip-roll-store.ts) | 100 | Lip roll's records: the best at each level, the singer's easy note The live table of Lip roll's bests (its shape, its ordering and how a... |
 | [mic-store.ts](../../src/stores/mic-store.ts) | 100 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 100 | Pane Layout Store — Multi-pane layout persistence |
 | [sing-takes-store.ts](../../src/stores/sing-takes-store.ts) | 100 | Sing takes — the summaries this phone keeps, and nothing else A kept take is four numbers and two timestamps. |

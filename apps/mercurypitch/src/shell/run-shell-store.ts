@@ -99,6 +99,7 @@ export type PushedScreen =
   | 'karaoke-studio'
   | 'long-note'
   | 'echo'
+  | 'lip-roll'
   | 'ng-slides'
   | 'developer'
 
@@ -456,6 +457,7 @@ export type SettingsChild = Exclude<
   | 'karaoke-studio'
   | 'long-note'
   | 'echo'
+  | 'lip-roll'
   | 'ng-slides'
 >
 

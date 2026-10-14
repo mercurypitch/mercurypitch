@@ -130,6 +130,9 @@ describe('the cards', () => {
     expect(card('echo-stars').textContent).toBe(
       'EchoSingerMerc sings a phrase. Sing it back and light the stars.',
     )
+    expect(card('lip-roll-bay').textContent).toBe(
+      'Lip rollSingerBuzz your lips over three waves and light the bay.',
+    )
     expect(card('ng-slides-bridge').textContent).toBe(
       'Ng slidesSingerHum five slides up a fifth and back, and light the bridge.',
     )
@@ -218,13 +221,18 @@ describe("a card's level", () => {
   it('names the level the exercises are at: Singer, the accuracy tier it starts at', async () => {
     await openPicker()
 
-    expect(levels()).toEqual(['Singer', 'Singer', 'Singer'])
+    expect(levels()).toEqual(['Singer', 'Singer', 'Singer', 'Singer'])
   })
 
   it('names the level the singer picked', async () => {
     await openPicker({ level: 'professional' })
 
-    expect(levels()).toEqual(['Professional', 'Professional', 'Professional'])
+    expect(levels()).toEqual([
+      'Professional',
+      'Professional',
+      'Professional',
+      'Professional',
+    ])
   })
 })
 
@@ -234,6 +242,7 @@ describe('the last exercise opened', () => {
 
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
       'true',
+      null,
       null,
       null,
     ])
@@ -246,6 +255,18 @@ describe('the last exercise opened', () => {
       null,
       'true',
       null,
+      null,
+    ])
+  })
+
+  it('marks Lip roll when it was the last one opened', async () => {
+    await openPicker({ last: 'lip-roll-bay' })
+
+    expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
+      null,
+      'true',
+      null,
     ])
   })
 
@@ -253,6 +274,7 @@ describe('the last exercise opened', () => {
     await openPicker({ last: 'ng-slides-bridge' })
 
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
       null,
       null,
       'true',
@@ -263,6 +285,7 @@ describe('the last exercise opened', () => {
     await openPicker()
 
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
       null,
       null,
       null,
