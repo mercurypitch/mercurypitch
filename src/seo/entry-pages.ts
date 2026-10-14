@@ -110,7 +110,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     themeColor: MIRROR_THEME_COLOR,
     title: 'Voice Mirror: See Your Voice in 60 Seconds | MercuryPitch',
     description:
-      'See your voice in 60 seconds: your vocal range, pitch accuracy and steadiness as a shareable voiceprint. Free, and your audio never leaves your device.',
+      'See your voice in 60 seconds: your vocal range, pitch accuracy and steadiness as a shareable voiceprint. Free, in your browser.',
     og: {
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
       description:
@@ -122,7 +122,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
       description:
-        'Your vocal range, accuracy and steadiness as a shareable voiceprint. Audio never leaves your device.',
+        'Your vocal range, accuracy and steadiness as a shareable voiceprint. Free, in your browser.',
     },
     h1: 'Voice Mirror — see your voice in 60 seconds',
     lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then places your range in one of six voice types and names a famous singer of that type. Free, no account, and only you can hear you.',
@@ -151,7 +151,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     themeColor: MIRROR_THEME_COLOR,
     title: 'Free Vocal Range Test: Lowest & Highest Note | MercuryPitch',
     description:
-      'Glide from your lowest note to your highest and get both notes, your span in semitones and a voice-type guide. Free, and your audio stays on your device.',
+      'Glide from your lowest note to your highest and get both notes, your span in semitones and a voice-type guide. Free, in your browser.',
     og: {
       title: 'Free Vocal Range Test — Find Your Lowest & Highest Note',
       description:
@@ -163,7 +163,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Free Vocal Range Test — Find Your Lowest & Highest Note',
       description:
-        'Get your measured notes, semitone span and a broad voice-type guide. Audio stays on your device.',
+        'Get your measured notes, semitone span and a broad voice-type guide. Free, in your browser.',
     },
     h1: 'Free vocal range test',
     lede: 'Glide from your lowest comfortable note to your highest and get both notes, your span in semitones and a broad voice-type guide. It runs in your browser and needs no piano and no teacher. The timed part takes about a minute, and each step waits until you are ready.',
@@ -178,7 +178,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
       {
         q: 'Is this vocal range test free?',
-        a: 'Yes. The test runs in your browser and your microphone audio stays on your device. Only the derived note and pitch measurements are used to build your result.',
+        a: 'Yes. The test runs in your browser, and your result is built from the notes and pitch it measures.',
       },
     ],
     noscript:
@@ -267,7 +267,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     boot: '/src/features/glass/main.tsx',
     title: 'Break Glass With Your Voice: Free Challenge | MercuryPitch',
     description:
-      'Sing up to the note the glass rings at, hold it, and shatter it. A free in-browser challenge tuned to your own range, with your audio never leaving your device.',
+      'Sing up to the note the glass rings at, hold it, and shatter it. A free challenge in your browser, tuned to your own range.',
     og: {
       title: 'Break Glass With Your Voice — Free 60-Second Challenge',
       description:
@@ -280,7 +280,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Break Glass With Your Voice',
       description:
-        'Can you hold the note that breaks the glass? Free, in your browser, tuned to your own range. Audio never leaves your device.',
+        'Can you hold the note that breaks the glass? Free, in your browser, tuned to your own range.',
     },
     h1: 'Break glass with your voice',
     lede: 'The pane rings at a note picked from your own range. Sing up to it, hold it, and watch the cracks spread. A free in-browser challenge that plays your take back to you between attempts, with your audio never leaving your device.',
@@ -486,7 +486,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Vocal Pitch Practice — Free Pitch Training with Live Feedback',
       description:
-        'Practice on pitch with live feedback, then see where you drifted furthest after each run, in cents. Free, in your browser, audio stays on your device.',
+        'Practice on pitch with live feedback, then see where you drifted furthest after each run, in cents. Free, in your browser.',
     },
     h1: 'Practice singing on pitch, and see the proof',
     lede: 'Most pitch practice ends with a feeling. This ends with a number. Hold a note, run a scale or chase a moving target, and MercuryPitch draws what you actually sang against what you meant. After each run you get a score out of 100 and the spot where you drifted furthest, in cents, rather than being told it was close.',
@@ -533,7 +533,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Voice Type Test — Soprano, Alto, Tenor or Bass?',
       description:
-        'Find your range and see which voice type it overlaps most. Free, and your audio stays on your device.',
+        'Find your range and see which voice type it overlaps most. Free, in your browser.',
     },
     h1: 'Voice type test',
     lede: 'Sing one comfortable glide from your lowest note to your highest. MercuryPitch measures the notes you actually reached and shows which of six voice types (soprano, mezzo-soprano, alto, tenor, baritone or bass) your range overlaps most.',
@@ -614,7 +614,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     themeColor: MIRROR_THEME_COLOR,
     title: 'Which Singer Has My Vocal Range? | MercuryPitch',
     description:
-      'Find your range in 60 seconds, see which voice type it overlaps most, and meet a famous singer of that type. Free, and your audio stays on your device.',
+      'Find your range in 60 seconds, see which voice type it overlaps most, and meet a famous singer of that type. Free, in your browser.',
     og: {
       title: 'Which Singer Has My Vocal Range?',
       description:
