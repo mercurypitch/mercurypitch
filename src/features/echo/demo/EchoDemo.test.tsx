@@ -93,14 +93,6 @@ vi.mock('./demo-sound', () => ({
   },
 }))
 
-const seen = vi.hoisted(() => ({ value: false }))
-vi.mock('./demo-seen', () => ({
-  echoDemoSeen: () => seen.value,
-  markEchoDemoSeen: () => {
-    seen.value = true
-  },
-}))
-
 // ── Every moment the room reports to the demo ──────────────────
 
 const marks = vi.hoisted(() => ({ list: [] as string[] }))
@@ -131,6 +123,7 @@ vi.mock('@/stores/exercise-history-store', () => ({
     kept.history += 1
   },
 }))
+const seen = vi.hoisted(() => ({ value: false }))
 vi.mock('@/stores/echo-store', () => ({
   rememberedEchoRoot: () => kept.root,
   rememberEchoRoot: (midi: number) => {
@@ -141,6 +134,12 @@ vi.mock('@/stores/echo-store', () => ({
     return { improved: false }
   },
   echoBest: () => null,
+  echoDemoSeen: () => seen.value,
+  markEchoDemoSeen: () => {
+    seen.value = true
+  },
+  // The store's rule on this mock's records (no best is ever kept here).
+  echoDemoAutoPlays: () => !seen.value && kept.root === null,
 }))
 vi.mock('@/db/services/voiceprint-service', () => ({
   loadLocalVoiceprints: () => [],

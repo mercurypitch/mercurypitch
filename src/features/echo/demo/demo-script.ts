@@ -36,7 +36,6 @@
 import type { DemoEvent as KitDemoEvent, DemoTakeId, DemoTakeShape, DemoVoicePoint, FastStretch, } from '@/components/demo-kit/demo-plan'
 import { stretchClocks } from '@/components/demo-kit/demo-plan'
 import { midiToFrequency } from '@/lib/frequency-to-note'
-import { offTarget } from '@/lib/hold/hold-reading'
 import { seeded } from '@/lib/mirror/demo-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { EchoPhrase, Motif } from '@/lib/sequence/phrase-bank'
@@ -44,7 +43,7 @@ import { echoPhrase } from '@/lib/sequence/phrase-bank'
 import type { EchoLevelId, EchoLevelPreset, SequenceEvent, } from '@/lib/sequence/sequence-engine'
 import { createSequenceState, ECHO_LEVELS, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
 import type { CallNote } from '../early-singing'
-import { NO_EARLY, watchEarly } from '../early-singing'
+import { NO_EARLY, pitchOf, watchEarly } from '../early-singing'
 import type { EchoDemoMark } from '../scripted-take'
 
 export type { DemoTakeId, DemoVoicePoint, EchoDemoMark, FastStretch }
@@ -64,7 +63,7 @@ export const CALL_AT = 0.1
 
 /**
  * After a phrase ends, the room shows its constellation this long before
- * the next call or the result (useEchoController's PHRASE_SHOW_MS).
+ * the next call or the result (echo-controller-contract.ts, PHRASE_SHOW_MS).
  */
 export const RESULT_AFTER = 1.2
 
@@ -242,12 +241,6 @@ function trackerFor(
   }
 }
 
-/** A frame's pitch, fractional MIDI, or null when it is not voiced. */
-function pitchOf(frame: PitchFrame): number | null {
-  const cents = offTarget(frame, 0)
-  return cents === null ? null : cents / 100
-}
-
 /** The engine's event as the demo names it. */
 function markOf(event: SequenceEvent): EchoDemoMark {
   return event.type === 'phraseEnd'
@@ -284,11 +277,32 @@ interface SungTake {
 }
 
 /**
- * A take sung through the room's engine and its early rule, in one pass,
- * exactly as useEchoController hears it: every frame watched for singing
- * over the call, then ticked through the sequence engine. `rewrite` may
- * change the script when an event fires; the frames before the change are
- * the same either way, so the events before it stand.
+ * The room's ears on one take, exactly as useEchoController hears it:
+ * each frame watched for singing over the call, then ticked through the
+ * sequence engine. Returns what each frame set off, in that order.
+ */
+function roomEars(call: DemoCall): (frame: PitchFrame) => DemoEvent[] {
+  let state = createSequenceState(call.end + RESPONSE_GATE_SECONDS)
+  let early = NO_EARLY
+  let previous: PitchFrame | null = null
+  return (frame) => {
+    const heard: DemoEvent[] = []
+    const wasEarly = early.fired
+    early = watchEarly(early, frame, previous, pitchOf(frame), call.notes)
+    if (early.fired && !wasEarly) heard.push({ type: 'early', at: frame.t })
+    previous = frame
+    state = tickSequence(state, frame, call.phrase, DEMO_RULES)
+    for (const event of state.events) {
+      heard.push({ type: markOf(event), at: frame.t })
+    }
+    return heard
+  }
+}
+
+/**
+ * A take sung through the room's ears in one pass. `rewrite` may change
+ * the script when an event fires; the frames before the change are the
+ * same either way, so the events before it stand.
  */
 function singTake(
   segments: readonly Segment[],
@@ -297,16 +311,10 @@ function singTake(
   rewrite: (event: DemoEvent) => readonly Segment[] | null,
 ): SungTake {
   const frameAt = trackerFor(call.phrase.root, seed)
+  const hear = roomEars(call)
   let script = segments
-  let state = createSequenceState(call.end + RESPONSE_GATE_SECONDS)
-  let early = NO_EARLY
-  let previous: PitchFrame | null = null
   const frames: PitchFrame[] = []
   const events: DemoEvent[] = [{ type: 'call', at: CALL_AT }]
-  const happen = (event: DemoEvent): void => {
-    events.push(event)
-    script = rewrite(event) ?? script
-  }
   let end: number | null = null
   for (let i = 0; ; i++) {
     const t = i * FRAME_SECONDS
@@ -315,13 +323,9 @@ function singTake(
     const frame = frameAt(script, t)
     frames.push(frame)
     if (end !== null) continue
-    const wasEarly = early.fired
-    early = watchEarly(early, frame, previous, pitchOf(frame), call.notes)
-    if (early.fired && !wasEarly) happen({ type: 'early', at: frame.t })
-    previous = frame
-    state = tickSequence(state, frame, call.phrase, DEMO_RULES)
-    for (const event of state.events) {
-      happen({ type: markOf(event), at: frame.t })
+    for (const event of hear(frame)) {
+      events.push(event)
+      script = rewrite(event) ?? script
       if (event.type === 'phraseEnd') end = frame.t
     }
   }

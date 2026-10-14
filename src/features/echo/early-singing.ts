@@ -13,6 +13,7 @@
 // demo's script (demo/demo-script.ts) dates its "too early" moment with
 // the same rule, so the two cannot disagree.
 
+import { offTarget } from '@/lib/hold/hold-reading'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 
 /** Voice over the call, off Merc's note, for this long: "wait for me", s. */
@@ -21,6 +22,12 @@ export const EARLY_SECONDS = 0.3
 export const EARLY_SEMITONES = 1.5
 
 /** One of Merc's notes in the call, on the frames' clock. */
+/** A frame's pitch, fractional MIDI, or null when it is not voiced. */
+export function pitchOf(frame: PitchFrame): number | null {
+  const cents = offTarget(frame, 0)
+  return cents === null ? null : cents / 100
+}
+
 export interface CallNote {
   readonly from: number
   readonly to: number

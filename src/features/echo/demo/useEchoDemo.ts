@@ -13,13 +13,12 @@
 import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, } from '@/components/demo-kit/useExerciseDemo'
 import { useExerciseDemo } from '@/components/demo-kit/useExerciseDemo'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { echoDemoAutoPlays, markEchoDemoSeen } from '@/stores/echo-store'
+import type { EchoController } from '../echo-controller-contract'
 import type { ScriptedEchoTake } from '../scripted-take'
-import type { EchoController } from '../useEchoController'
-import { echoDemoAutoPlays } from './demo-auto-play'
 import type { DemoCueId, DemoTarget } from './demo-cues'
 import { DEMO_BEATS, DEMO_COPY, DEMO_CUES, demoCueText, planEchoDemo, } from './demo-cues'
 import { DEMO_LEVEL } from './demo-script'
-import { markEchoDemoSeen } from './demo-seen'
 import { createDemoSound } from './demo-sound'
 
 export type { DemoMode }

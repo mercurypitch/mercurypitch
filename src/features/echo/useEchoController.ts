@@ -31,7 +31,6 @@
 // `script` (scripted-take.ts): frames in place of the mic, Merc's call on
 // the take's own clock, and nothing kept, said or felt.
 
-import type { Accessor } from 'solid-js'
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves, HOP_MS } from '@/components/room-kit/merc-moves'
@@ -41,10 +40,8 @@ import { levelFromRms } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_ECHO_STARS } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
-import { offTarget } from '@/lib/hold/hold-reading'
 import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, } from '@/lib/hold/hold-target'
 import { settleLiveNote } from '@/lib/hold/settle-note'
-import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice } from '@/lib/merc/sim'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -58,23 +55,25 @@ import type { PhraseTake } from '@/lib/sequence/sequence-metrics'
 import { sequenceMetrics } from '@/lib/sequence/sequence-metrics'
 import { rememberedEchoRoot } from '@/stores/echo-store'
 import type { ExerciseLevel } from '@/stores/exercise-level'
-import { exerciseLevelName } from '@/stores/exercise-level'
 import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { CallNote, EarlyWatch } from './early-singing'
-import { centsOff, NO_EARLY, watchEarly } from './early-singing'
+import { centsOff, NO_EARLY, pitchOf, watchEarly } from './early-singing'
 import { preloadEchoResult } from './echo-art'
+import type { EchoController, EchoControllerOptions, EchoSummary, } from './echo-controller-contract'
+import { CALL_LEAD_SECONDS, PHRASE_SHOW_MS, QUIET_LIMIT_SECONDS, SETTLED_LEAD_SECONDS, YOUR_TURN, } from './echo-controller-contract'
 import type { PlatePoint } from './echo-geometry'
 import type { EchoEvent, EchoState } from './echo-machine'
 import { echoReducer, initialEchoState, isRunPhase } from './echo-machine'
-import { keepEchoRun, phraseLine, resultLine } from './echo-run'
+import { keepEchoRun, phraseLine, resultLine, showResultOf } from './echo-run'
 import type { LiveStage } from './echo-scene'
 import { echoScene, keepSame } from './echo-scene'
-import type { CallSchedule, CallVoice } from './merc-call'
+import type { CallSchedule } from './merc-call'
 import type { EchoMoment, LineFields } from './merc-lines'
 import { createEchoLines } from './merc-lines'
 import { MERC_CALL, preloadMercVoice } from './merc-sampler'
-import type { EchoDemoMark, EchoScript, ScriptedEchoTake, } from './scripted-take'
+import type { EchoDemoMark, ScriptedEchoTake } from './scripted-take'
+import { createScriptedRoom } from './scripted-take'
 import { phrasePlaces } from './sky-layout'
 import type { SkyScene } from './sky-scene'
 import { EMPTY_SCENE } from './sky-scene'
@@ -82,21 +81,10 @@ import { CaptureError, useEchoCapture } from './useEchoCapture'
 import type { VoicePoint, VoiceSample } from './voice-path'
 import { voicePath } from './voice-path'
 
-/** The constellation a phrase made shows this long before the next call. */
-export const PHRASE_SHOW_MS = 1200
-/** Merc's call starts this far ahead of now on the audio clock, s. */
-export const CALL_LEAD_SECONDS = 0.35
-/** After the singer's settled note, a breath before the first call, s. */
-export const SETTLED_LEAD_SECONDS = 0.9
-/** Nobody sang for this long during a run: the run stops, the mic closes. */
-export const QUIET_LIMIT_SECONDS = 60
 /** Merc's happy face after a landing, before he listens again, ms. */
 const LOCK_FACE_MS = 450
 /** Merc's voice while he sings his call (demo-audio's held level). */
 const SUNG_LEVEL = 0.8
-
-/** The chip while the singer sings the phrase back. */
-export const YOUR_TURN = 'Your turn'
 
 /** The level's id for Echo's rules (ECHO_LEVELS): one per accuracy tier. */
 const ECHO_LEVEL_IDS: Readonly<Record<ExerciseLevel, EchoLevelId>> = {
@@ -113,43 +101,6 @@ const SILENT_VOICE: MercVoice = {
   midi: 57,
 }
 
-export interface EchoSummary {
-  readonly landed: number
-  readonly notes: number
-  /** 0 to 100, or null when nothing landed. */
-  readonly accuracy: number | null
-  /** Notes landed in time, at a level that judges rhythm; else null. */
-  readonly inTime: number | null
-  readonly improved: boolean
-  /** The level the run was sung at ("Singer"). */
-  readonly levelName: string
-}
-
-export interface EchoController {
-  state: Accessor<EchoState>
-  scene: Accessor<SkyScene>
-  /** Merc's line in his bubble; '' for none. */
-  line: Accessor<string>
-  /** The chip at the top while the phrase is sung; null for none. */
-  chip: Accessor<string | null>
-  summary: Accessor<EchoSummary | null>
-  mercState: Accessor<MercState>
-  /** Read by Merc's renderer every frame; deliberately not reactive. */
-  mercVoice: () => MercVoice
-  /** "Hear it again" is on offer now. */
-  canReplay: Accessor<boolean>
-  /** Start a run: from the intro, a result or a blocked mic. */
-  start: () => void
-  /** The mic button during a run: the run stops, nothing kept. */
-  stop: () => void
-  /** Merc sings the phrase again, from its call. */
-  replay: () => void
-  /** Where the voice's path goes: the room draws each one it is handed. */
-  drawVoice: (sink: (points: readonly VoicePoint[] | null) => void) => void
-  /** The demo's way in (scripted-take.ts). */
-  script: EchoScript
-}
-
 /** A call the demo's sound sings: the room has nothing of it to stop. */
 const SCRIPTED_CALL: CallSchedule = {
   onsets: [],
@@ -160,12 +111,6 @@ const SCRIPTED_CALL: CallSchedule = {
 /** The singer's own note, when the room can start its phrases there. */
 function offerable(midi: number): boolean {
   return midi >= HOLD_TARGET_MIN_MIDI && midi <= HOLD_TARGET_MAX_MIDI
-}
-
-/** A frame's pitch, fractional MIDI, or null when it is not voiced. */
-function pitchOf(frame: PitchFrame): number | null {
-  const cents = offTarget(frame, 0)
-  return cents === null ? null : cents / 100
 }
 
 /** How far the speaker is behind the audio clock, s. */
@@ -182,13 +127,6 @@ interface Call {
   readonly notes: readonly CallNote[]
   /** When the call has ended at the speaker, frames' clock. */
   readonly endsAt: number
-}
-
-export interface EchoControllerOptions {
-  /** The voice that sings Merc's calls (merc-call.ts). */
-  voice?: CallVoice
-  /** Picks each run's phrases. */
-  random?: () => number
 }
 
 export function useEchoController(
@@ -354,16 +292,26 @@ export function useEchoController(
     const latency = outputLatency(ctx)
     const sound = voiceOfMerc.sing(ctx, phrase.notes, a0 + lead)
     const onFrames = (t: number): number => t - a0 + latency
-    call = {
-      sound,
-      notes: phrase.notes.map((note, i) => ({
-        from: onFrames(sound.onsets[i]),
-        to: onFrames(sound.onsets[i] + note.seconds),
-        midi: note.midi,
-      })),
-      endsAt: onFrames(sound.endAt),
-    }
-    engine = createSequenceState(call.endsAt + RESPONSE_GATE_SECONDS)
+    const notes = phrase.notes.map((note, i) => ({
+      from: onFrames(sound.onsets[i]),
+      to: onFrames(sound.onsets[i] + note.seconds),
+      midi: note.midi,
+    }))
+    singCall(
+      { sound, notes, endsAt: onFrames(sound.endAt) },
+      (note) => note.from * 1000,
+      untrack(state).phrase === phrases.length - 1,
+    )
+  }
+
+  /** A call under way: its engine, its rings as `appearMs` has them. */
+  const singCall = (
+    next: Call,
+    appearMs: (note: CallNote) => number,
+    last: boolean,
+  ): void => {
+    call = next
+    engine = createSequenceState(next.endsAt + RESPONSE_GATE_SECONDS)
     samples = []
     lastStar = null
     early = NO_EARLY
@@ -371,10 +319,10 @@ export function useEchoController(
     setChip(null)
     showRun(
       'call',
-      call.notes.map((note) => Math.max(0, Math.round(note.from * 1000))),
+      next.notes.map((note) => Math.max(0, Math.round(appearMs(note)))),
     )
     merc.set('sing')
-    if (untrack(state).phrase === phrases.length - 1) preloadEchoResult()
+    if (last) preloadEchoResult()
     startLoop()
   }
 
@@ -533,20 +481,11 @@ export function useEchoController(
     say('rest')
   }
 
-  /** The demo's call has begun on the take's clock: its tooltip may show. */
-  let callMarked = false
-
   function tick(): void {
     loop = 0
     if (!alive || !listening) return
-    if (scripted !== null) {
-      const take = scripted
-      if (!callMarked && take.now() >= (take.call[0]?.from ?? 0)) {
-        callMarked = true
-        mark('call')
-      }
-      follow(take.frames())
-    } else {
+    if (scripted !== null) follow(scripted.frames())
+    else {
       const frames = capture.peekFrames()
       if (phase() === 'settle') findRoot(frames)
       else follow(frames)
@@ -597,48 +536,7 @@ export function useEchoController(
       later(PHRASE_SHOW_MS, nextPhrase)
       return
     }
-    // The demo: take 2 goes on to its result; take 1 shows its phrase
-    // ending until the demo moves on.
-    if (!demoTake.toResult) return
-    const turn = demoTurn
-    later(PHRASE_SHOW_MS, () => {
-      if (turn === demoTurn && scripted === demoTake) showDemoResult(take)
-    })
-  }
-
-  /**
-   * The demo's result: its one phrase, shown as a run's would be, at the
-   * demo's level. Nothing is kept and nothing is felt or said: the demo's
-   * own tooltip explains it.
-   */
-  function showDemoResult(take: PhraseTake): void {
-    const take2 = scripted
-    if (take2 === null) return
-    const metrics = sequenceMetrics([take], rules().rhythmToleranceMs)
-    const all = metrics.notes > 0 && metrics.landed === metrics.notes
-    batch(() => {
-      setSummary({
-        landed: metrics.landed,
-        notes: metrics.notes,
-        accuracy: metrics.accuracy,
-        inTime: metrics.rhythm?.inTime ?? null,
-        improved: false,
-        levelName: exerciseLevelName(take2.level),
-      })
-      setScene(
-        echoScene({
-          run: untrack(state).run,
-          live: null,
-          done: [take],
-          result: true,
-          celebration: all,
-        }),
-      )
-      dispatch({ type: 'demo', phase: 'result' })
-    })
-    if (all) merc.cheer()
-    else merc.set('idle')
-    mark('result')
+    demo.phraseEnded(demoTake, take)
   }
 
   function nextPhrase(): void {
@@ -651,33 +549,22 @@ export function useEchoController(
   /** The run's result: kept, shown, and the mic closed. */
   function finishRun(): void {
     capture.release()
-    const { rhythmToleranceMs } = rules()
-    const metrics = sequenceMetrics(takes, rhythmToleranceMs)
-    const levelName = exerciseLevelName(runLevel)
+    const metrics = sequenceMetrics(takes, rules().rhythmToleranceMs)
     const { improved } = keepEchoRun(runLevel, metrics, phrases[0]?.root ?? 0)
-    const all = metrics.notes > 0 && metrics.landed === metrics.notes
+    const run = untrack(state).run
+    const shown = showResultOf(takes, metrics, {
+      level: runLevel,
+      run,
+      improved,
+    })
     batch(() => {
-      setSummary({
-        landed: metrics.landed,
-        notes: metrics.notes,
-        accuracy: metrics.accuracy,
-        inTime: metrics.rhythm?.inTime ?? null,
-        improved,
-        levelName,
-      })
-      setScene(
-        echoScene({
-          run: untrack(state).run,
-          live: null,
-          done: takes,
-          result: true,
-          celebration: improved || all,
-        }),
-      )
+      setSummary(shown.summary)
+      setScene(shown.scene)
+      const { levelName } = shown.summary
       const { moment, fields } = resultLine(metrics, improved, levelName)
       say(moment, fields)
     })
-    if (improved || all) {
+    if (shown.celebrate) {
       haptics.success()
       merc.cheer()
     } else {
@@ -687,20 +574,25 @@ export function useEchoController(
 
   /** The run stops where it is: nothing kept, the mic closed. */
   function dropRun(type: 'stop' | 'rest' | 'leave'): void {
+    capture.release()
+    takes = []
+    hush(() => dispatch({ type }))
+    merc.set('idle')
+  }
+
+  /** No call, no loop, no voice and an empty sky, with `also` in the batch. */
+  function hush(also: () => void): void {
     stopLoop()
     call?.sound.stop()
     call = null
-    capture.release()
     sink(null)
     voice = SILENT_VOICE
-    takes = []
+    merc.stopCheering()
     batch(() => {
-      dispatch({ type })
+      also()
       setChip(null)
       setScene(EMPTY_SCENE)
     })
-    merc.stopCheering()
-    merc.set('idle')
   }
 
   // ── What the singer does ───────────────────────────────────
@@ -828,92 +720,53 @@ export function useEchoController(
     stop,
   )
 
-  // ── The demo's way in ──────────────────────────────────────
-  /** Bumped by every move the demo makes: older timers fall silent. */
-  let demoTurn = 0
-
-  /** No take, no result, an empty sky; Merc where he is. */
-  const clearForScript = (): void => {
-    demoTurn += 1
-    stopLoop()
-    call?.sound.stop()
-    call = null
-    scripted = null
-    callMarked = false
-    sink(null)
-    voice = SILENT_VOICE
-    merc.stopCheering()
-    batch(() => {
-      setSummary(null)
-      setChip(null)
-      setScene(EMPTY_SCENE)
-    })
-  }
-
-  const script: EchoScript = {
-    active: scriptActive,
-    callVoice: voiceOfMerc,
-    audio: () => capture.audio(),
-    note: () => knownWindow().firstRoot,
-    enter: (text) => {
-      const from = phase()
-      if (!demoOn() && from !== 'intro' && from !== 'result') return false
-      clearForScript()
-      batch(() => {
-        setScriptActive(true)
-        setLine(text)
-        dispatch({ type: 'demo', phase: 'intro' })
-      })
-      merc.set('idle')
-      return true
+  // ── The demo's way in (scripted-take.ts) ───────────────────
+  const demo = createScriptedRoom(
+    {
+      callVoice: voiceOfMerc,
+      active: scriptActive,
+      setActive: setScriptActive,
+      setPlaying: setDemoPlaying,
+      phase,
+      audio: () => capture.audio(),
+      note: () => knownWindow().firstRoot,
+      clear: () => {
+        scripted = null
+        hush(() => setSummary(null))
+      },
+      load: (take) => {
+        scripted = take
+        processed = 0
+        previousFrame = null
+        setReplays(0)
+      },
+      begin: (take) => {
+        // Each ring comes in as its note is heard, on the take's clock.
+        const zero = take.startsAt - performance.now()
+        singCall(
+          { sound: SCRIPTED_CALL, notes: take.call, endsAt: take.callEnd },
+          (note) => zero + note.from * 1000,
+          take.toResult,
+        )
+      },
+      current: () => scripted,
+      run: () => untrack(state).run,
+      line: setLine,
+      sayIntro,
+      demo: (to) => dispatch({ type: 'demo', phase: to }),
+      showResult: (result, sky) =>
+        batch(() => {
+          setSummary(result)
+          setScene(sky)
+          dispatch({ type: 'demo', phase: 'result' })
+        }),
+      merc: merc.set,
+      cheer: merc.cheer,
+      later,
+      mark,
     },
-    play: (take) => {
-      if (!demoOn()) return
-      clearForScript()
-      scripted = take
-      processed = 0
-      previousFrame = null
-      early = NO_EARLY
-      samples = []
-      lastStar = null
-      setReplays(0)
-      call = { sound: SCRIPTED_CALL, notes: take.call, endsAt: take.callEnd }
-      engine = createSequenceState(take.callEnd + RESPONSE_GATE_SECONDS)
-      batch(() => {
-        setLine('')
-        dispatch({ type: 'demo', phase: 'call' })
-      })
-      // Each ring comes in as its note is heard, on the take's clock.
-      const zero = take.startsAt - performance.now()
-      showRun(
-        'call',
-        take.call.map((note) =>
-          Math.max(0, Math.round(zero + note.from * 1000)),
-        ),
-      )
-      merc.set('sing')
-      if (take.toResult) preloadEchoResult()
-      startLoop()
-    },
-    rest: () => {
-      if (!demoOn()) return
-      clearForScript()
-      dispatch({ type: 'demo', phase: 'between' })
-      merc.set('idle')
-    },
-    leave: () => {
-      if (!demoOn()) return
-      clearForScript()
-      batch(() => {
-        setScriptActive(false)
-        setDemoPlaying(false)
-        dispatch({ type: 'demo', phase: 'intro' })
-      })
-      sayIntro()
-      merc.set('idle')
-    },
-    playing: setDemoPlaying,
-  }
+    PHRASE_SHOW_MS,
+  )
 
   onCleanup(() => {
     alive = false
@@ -943,6 +796,6 @@ export function useEchoController(
     drawVoice: (next) => {
       sink = next
     },
-    script,
+    script: demo.script,
   }
 }
