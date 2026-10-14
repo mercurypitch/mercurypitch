@@ -319,6 +319,29 @@ function uncachedIfError(response: Response): Response {
   return uncached
 }
 
+/**
+ * A picture in sent mail, from the asset layer, never cached when missing.
+ *
+ * Every missing path gets the same 404 page with the same ETag, so a cache
+ * that stored the page under a picture's URL revalidates with it and the
+ * asset layer answers 304, with the year of caching. A picture is never
+ * HTML: that 304 is asked again without the condition, and the 404 it stands
+ * for goes out uncached.
+ */
+async function mailPicture(request: Request, env: Env): Promise<Response> {
+  const response = await env.ASSETS.fetch(request)
+  const type = response.headers.get('Content-Type') ?? ''
+  if (response.status !== 304 || !type.startsWith('text/html')) {
+    return uncachedIfError(response)
+  }
+  const headers = new Headers(request.headers)
+  headers.delete('If-None-Match')
+  headers.delete('If-Modified-Since')
+  return uncachedIfError(
+    await env.ASSETS.fetch(new Request(request, { headers })),
+  )
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -467,7 +490,7 @@ export default {
     // missing for a year in an image proxy or a mail app that cached the
     // miss. An existing file keeps its year; an error is never stored.
     if (url.pathname.startsWith('/email/')) {
-      return uncachedIfError(await env.ASSETS.fetch(request))
+      return mailPicture(request, env)
     }
 
     // All other requests (static assets, SPA routes) are served by the assets
