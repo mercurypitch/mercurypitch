@@ -109,7 +109,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     og: {
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
       description:
-        'See your voice in 60 seconds: your range, accuracy and steadiness as a voiceprint to share, plus a famous singer of your voice type.',
+        'Your range, accuracy and steadiness as a voiceprint to share, plus a famous singer of your voice type.',
       image: ogImage('mirror-og.png'),
       imageAlt:
         'A pitch contour rising, holding level, then falling — two glides around one steady note.',
