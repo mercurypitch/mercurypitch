@@ -369,6 +369,14 @@
   pointer-events: none;
 }
 
+/* At the result Merc stands on the left (screen 4): his line takes the
+   right, over the buttons. */
+.bubbleResult {
+  left: auto;
+  right: 16px;
+  max-width: min(calc(50% - 28px), 220px);
+}
+
 .bubble > p {
   margin: 0;
   background: rgba(6, 18, 40, 0.62);

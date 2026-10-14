@@ -125,17 +125,23 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
   })
 
   /**
-   * Merc's line over his head as he waits at a root: the intro's camera
-   * before a run, the run's in it; at the result, over the buttons.
+   * Merc's line over his head as he waits at a root, at the intro's camera
+   * or the run's, whichever holds him higher: the count-in zooms between
+   * the two while he listens. At the result, over the buttons on the
+   * right, clear of him on the left (screen 4).
    */
   const bubbleBottom = (): number => {
     const l = layout()
     const b = box()
     if (l === null || b === null) return 0
     if (phase() === 'result') return b.controlsClear + RESULT_BUBBLE_GAP
-    const zoom = zoomAt(phase() === 'run' ? 1 : 0)
-    const merc = mercBoxAt(l, zoom, MERC_INTRO_X, WAVE.rootY)
-    return l.height - (merc.top + merc.size * BUBBLE_OVER_MERC)
+    const head = Math.min(
+      ...[0, 1].map((z) => {
+        const merc = mercBoxAt(l, zoomAt(z), MERC_INTRO_X, WAVE.rootY)
+        return merc.top + merc.size * BUBBLE_OVER_MERC
+      }),
+    )
+    return l.height - head
   }
   const showLine = (): boolean => room.line() !== '' && phase() !== 'blocked'
   const showLevel = (): boolean =>
@@ -254,7 +260,11 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
       </Show>
 
       <Show when={showLine()}>
-        <div class={styles.bubble} style={{ bottom: `${bubbleBottom()}px` }}>
+        <div
+          class={styles.bubble}
+          classList={{ [styles.bubbleResult]: phase() === 'result' }}
+          style={{ bottom: `${bubbleBottom()}px` }}
+        >
           <RoomBubble testId="lip-bubble">{room.line()}</RoomBubble>
         </div>
       </Show>
