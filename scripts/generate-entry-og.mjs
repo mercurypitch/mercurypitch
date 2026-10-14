@@ -61,7 +61,7 @@ const CARDS = {
   'voice-type-test': {
     backdrop: 'voice-type-test.png',
     headline: 'Soprano, alto, tenor or bass?',
-    pills: ['Bass to soprano', 'A minute on the clock', 'Free'],
+    pills: ['Bass to soprano', 'Your type in 60 seconds', 'Free'],
     accent: '#58a6ff',
   },
   'which-singer-has-my-vocal-range': {

@@ -26,7 +26,7 @@ describe('voiceprintTitle', () => {
 describe('voiceprintDescription', () => {
   it('reads out what the take measured, in the order the card does', () => {
     expect(voiceprintDescription(FULL)).toBe(
-      'C3 – D5 · 2 octaves + 2 semitones · accuracy 87/100 · steadiness 92/100. Meet your own voice in about a minute.',
+      'C3 – D5 · 2 octaves + 2 semitones · accuracy 87/100 · steadiness 92/100. See your own voice in 60 seconds.',
     )
   })
 
