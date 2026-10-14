@@ -267,6 +267,10 @@ const KARAOKE_STAGE_2 = [
     'Quick slides, close to the line, and no notes in the breaths',
     "Ng slides' level control",
   ],
+  // Its demo rides with the room, as Echo's does: its take pill and its
+  // record of being seen.
+  ['ng-demo-take', "Ng slides' demo"],
+  ['mp_ng_demo_seen', "Ng slides' demo record"],
 ]
 
 /**

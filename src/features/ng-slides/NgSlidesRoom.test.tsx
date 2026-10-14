@@ -158,6 +158,10 @@ vi.mock('@/stores/ng-slides-store', () => ({
     return { improved: true, previous: null }
   },
   ngBest: () => null,
+  // The demo has been seen on this device: these runs are the singer's.
+  ngDemoSeen: () => true,
+  markNgDemoSeen: () => undefined,
+  ngDemoAutoPlays: () => false,
 }))
 // No voiceprint on this device: the root is the one kept, or the singer's.
 vi.mock('@/db/services/voiceprint-service', () => ({

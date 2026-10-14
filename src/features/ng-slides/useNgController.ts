@@ -23,6 +23,10 @@
 // is on: it hears the new frames (once each, on their own clock), then
 // hands the bridge its frame (bridge-view.ts) with no signal written
 // unless the chip, the line or Merc's state changed.
+//
+// The "how it works" demo hums its slides through this same room, by
+// `script` (scripted-take.ts): frames in place of the mic, on the take's
+// own clock, and nothing played, felt, said or kept.
 
 import type { Accessor } from 'solid-js'
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
@@ -66,6 +70,7 @@ import type { NgPlan, NgSummary, SlideHeard } from './ng-run'
 import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC, introLine, keepNgRun, planNgRun, resultLine, slideLine, summarize, } from './ng-run'
 import type { NgTake } from './ng-take'
 import { createNgTake } from './ng-take'
+import type { NgScript, ScriptedNgTake } from './scripted-take'
 import { CaptureError, useNgCapture } from './useNgCapture'
 
 /** Nobody hummed for this long during a run: it stops, the mic closes. */
@@ -115,6 +120,8 @@ export interface NgController {
   stop: () => void
   /** The scene the run draws on. */
   attach: (view: BridgeView) => void
+  /** The demo's way in: its slides hummed through this room. */
+  script: NgScript
 }
 
 /** The run in progress: its plan, scroll, take and what it has played. */
@@ -132,6 +139,8 @@ interface Live {
   resultAsked: boolean
   /** The last slide whose start hushed Merc (-1 before the first). */
   hushed: number
+  /** The demo's take in place of the mic, or null for the singer's run. */
+  readonly scripted: ScriptedNgTake | null
 }
 
 export function useNgController(): NgController {
@@ -145,6 +154,10 @@ export function useNgController(): NgController {
   const [chip, setChip] = createSignal<string | null>(null)
   const [summary, setSummary] = createSignal<NgSummary | null>(null)
   const [showResult, setShowResult] = createSignal(false)
+  // The demo: on, and playing (the screen stays on only while it plays).
+  const [scriptActive, setScriptActive] = createSignal(false)
+  const [demoPlaying, setDemoPlaying] = createSignal(false)
+  const demoOn = (): boolean => untrack(scriptActive)
   const level = createLevelPreset<GlidePreset>(NG_SLIDES_LEVELS, () =>
     isRunPhase(state().phase),
   )
@@ -243,9 +256,10 @@ export function useNgController(): NgController {
 
   const onSlideEnd = (run: Live, heard: SlideHeard): void => {
     if (heard.lit) {
-      haptics.tapLight()
+      if (run.scripted === null) haptics.tapLight()
       faceUntil = performance.now() + LOCK_FACE_MS
     }
+    if (run.scripted !== null) return
     const arches = run.plan.path.arches
     const next = arches[heard.arch + 1] as (typeof arches)[number] | undefined
     if (next === undefined) return
@@ -296,6 +310,7 @@ export function useNgController(): NgController {
   /** The breath's tone: the next root, once, where the level plays it. */
   const breathTone = (run: Live, t: number): void => {
     if (!run.preset.playsNextRoot || audio === null) return
+    if (run.scripted !== null) return
     const segment = segmentAt(run.plan.path, t)
     if (segment === null || segment.phase !== 'breath') return
     if (run.played.has(segment.arch)) return
@@ -306,6 +321,8 @@ export function useNgController(): NgController {
 
   /** What the singer reads, written only when it changes. */
   const showSlide = (run: Live, t: number): void => {
+    // The demo's tooltips and its take's pill speak for it.
+    if (run.scripted !== null) return
     const slide = slideOf(run, t)
     const text = `Slide ${slide + 1} of ${run.plan.path.arches.length}`
     if (untrack(chip) !== text) setChip(text)
@@ -339,17 +356,19 @@ export function useNgController(): NgController {
   }
 
   function runFrame(run: Live): void {
-    const frames = capture.peekFrames()
+    const scripted = run.scripted
+    const frames = scripted === null ? capture.peekFrames() : scripted.frames()
     run.take.hear(frames, run.plan.countIn)
     if (live !== run) return
-    const t = windowNow() - run.plan.countIn
+    const now = scripted === null ? windowNow() : scripted.now()
+    const t = now - run.plan.countIn
     if (t > run.plan.path.duration + END_GRACE_SEC) {
       run.take.finish()
       if (live !== run) return
     }
-    const now = performance.now()
-    const dt = Math.min(0.1, (now - run.lastFrameAt) / 1000)
-    run.lastFrameAt = now
+    const frameAt = performance.now()
+    const dt = Math.min(0.1, (frameAt - run.lastFrameAt) / 1000)
+    run.lastFrameAt = frameAt
     hearMerc(run, t)
     const state = run.take.state
     run.feetY = rideStep(
@@ -370,7 +389,7 @@ export function useNgController(): NgController {
     breathTone(run, t)
     showSlide(run, t)
     setMoment(rideMoment(run, t))
-    restIfQuiet()
+    if (scripted === null) restIfQuiet()
   }
 
   /** No root yet: the first easy note the singer settles on fits the slides. */
@@ -397,8 +416,22 @@ export function useNgController(): NgController {
   function begin(fit: GlideTargets, settled: number | null): void {
     const preset = untrack(level.preset)
     const plan = planNgRun(fit, preset)
-    const scroll = createBridgeScroll(plan.path, plan.countIn)
     setScenePlan(plan)
+    startRun(plan, preset, settled, null)
+  }
+
+  /**
+   * A run on `plan` from its count-in: the singer's, its window opened and
+   * its first root played, or the demo's `scripted` take, on its own clock
+   * with its own sound.
+   */
+  function startRun(
+    plan: NgPlan,
+    preset: GlidePreset,
+    settled: number | null,
+    scripted: ScriptedNgTake | null,
+  ): void {
+    const scroll = createBridgeScroll(plan.path, plan.countIn)
     let run: Live | null = null
     const take = createNgTake({
       path: plan.path,
@@ -409,6 +442,9 @@ export function useNgController(): NgController {
       },
       onEnd: (result) => {
         if (run !== null && live === run) finishRun(run, result)
+      },
+      onEvent: (event) => {
+        if (run !== null && live === run) scripted?.onEvent(event.type)
       },
     })
     run = {
@@ -423,22 +459,28 @@ export function useNgController(): NgController {
       lastFrameAt: performance.now(),
       resultAsked: false,
       hushed: -1,
+      scripted,
     }
     live = run
-    openWindow()
     view?.reset(INTRO_CAMERA)
-    if (audio !== null) {
-      tones.play(audio, plan.roots[0], COUNT_IN_TONE_SEC)
-      take.mute(-plan.countIn + COUNT_IN_TONE_SEC + TONE_TAIL_SEC)
-    }
-    if (settled === null) {
-      say('listen', { note: midiToNoteNameOctave(plan.roots[0]) })
+    // The count-in's note: the room's, or the demo's own (demo-sound.ts).
+    take.mute(-plan.countIn + COUNT_IN_TONE_SEC + TONE_TAIL_SEC)
+    if (scripted === null) {
+      openWindow()
+      if (audio !== null) tones.play(audio, plan.roots[0], COUNT_IN_TONE_SEC)
+      if (settled === null) {
+        say('listen', { note: midiToNoteNameOctave(plan.roots[0]) })
+      }
     }
     startLoop()
   }
 
   /** The run's result: kept, shown, and the mic closed. */
   function finishRun(run: Live, result: GlideResult): void {
+    if (run.scripted !== null) {
+      finishScripted()
+      return
+    }
     live = null
     stopLoop()
     tones.stop()
@@ -464,6 +506,28 @@ export function useNgController(): NgController {
     } else {
       setMoment('result')
     }
+  }
+
+  /**
+   * The demo's slide ended: the bridge stays as the take left it, and Merc
+   * keeps his happy face for a lit arch, then stands. Nothing is kept or
+   * shown: the demo's tooltip explains it.
+   */
+  function finishScripted(): void {
+    live = null
+    stopLoop()
+    voice = SILENT_VOICE
+    const face = faceUntil - performance.now()
+    if (face <= 0) {
+      setMoment('breath')
+      return
+    }
+    setMoment('archLit')
+    later(face, () => {
+      if (demoOn() && live === null && moment === 'archLit') {
+        setMoment('breath')
+      }
+    })
   }
 
   /** A minute with no hum during a run: it stops, and the mic closes. */
@@ -536,6 +600,7 @@ export function useNgController(): NgController {
   }
 
   const start = (): void => {
+    if (demoOn()) return
     const from = phase()
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
     level.take()
@@ -554,7 +619,7 @@ export function useNgController(): NgController {
   }
 
   const stop = (): void => {
-    if (!isRunPhase(phase())) return
+    if (!isRunPhase(phase()) || demoOn()) return
     dropRun('stop')
     sayIntro()
   }
@@ -564,7 +629,8 @@ export function useNgController(): NgController {
    * run is dropped, as Back drops it: no result, no best.
    */
   function leave(): void {
-    if (!isRunPhase(phase())) return
+    // The demo stops itself when the app goes (useExerciseDemo.ts).
+    if (!isRunPhase(phase()) || demoOn()) return
     dropRun('leave')
     say('left')
   }
@@ -585,11 +651,13 @@ export function useNgController(): NgController {
   }
   document.addEventListener('visibilitychange', onVisibility)
 
-  // The screen stays on, and the rail out of reach, while a run is on.
+  // The screen stays on, and the rail out of reach, while a run is on;
+  // the screen stays on while the demo plays too (its own say: not on its
+  // card or its end), but the rail stays: a demo can be left at any time.
   const awake = createScreenAwake()
   createEffect(() => {
-    const running = isRunPhase(state().phase)
-    awake.set(running)
+    const running = isRunPhase(state().phase) && !scriptActive()
+    awake.set(scriptActive() ? demoPlaying() : running)
     setExerciseFocus(running)
   })
 
@@ -597,9 +665,74 @@ export function useNgController(): NgController {
   // singer, and a microphone that died under it stops the run.
   const unregisterIndicator = registerMicIndicator(
     EXERCISE_NG_SLIDES_BRIDGE,
-    () => isRunPhase(phase()) && phase() !== 'starting',
+    () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
     stop,
   )
+
+  // ── The demo's way in (scripted-take.ts) ───────────────────
+  /** No take, no result, an empty bridge; Merc back on the pier. */
+  const clearForScript = (): void => {
+    live = null
+    stopLoop()
+    tones.stop()
+    voice = SILENT_VOICE
+    faceUntil = 0
+    view?.reset(INTRO_CAMERA)
+    batch(() => {
+      setSummary(null)
+      setChip(null)
+      setShowResult(false)
+    })
+    merc.stopCheering()
+  }
+
+  const script: NgScript = {
+    active: scriptActive,
+    audio: () => capture.audio(),
+    // The slides the singer would sing now: the demo hums the first one.
+    note: () => untrack(scenePlan).roots[0],
+    enter: (text) => {
+      const from = phase()
+      if (!demoOn() && from !== 'intro' && from !== 'result') return false
+      clearForScript()
+      batch(() => {
+        setScriptActive(true)
+        setScenePlan(introPlan())
+        setLine(text)
+        dispatch({ type: 'demo', phase: 'intro' })
+      })
+      setMoment('breath')
+      return true
+    },
+    play: (take) => {
+      if (!demoOn()) return
+      clearForScript()
+      batch(() => {
+        setLine('')
+        dispatch({ type: 'demo', phase: 'run' })
+      })
+      setMoment('countIn')
+      startRun(take.plan, take.preset, null, take)
+    },
+    rest: () => {
+      if (!demoOn()) return
+      clearForScript()
+      dispatch({ type: 'demo', phase: 'intro' })
+      setMoment('breath')
+    },
+    leave: () => {
+      if (!demoOn()) return
+      clearForScript()
+      batch(() => {
+        setScriptActive(false)
+        setDemoPlaying(false)
+        dispatch({ type: 'demo', phase: 'intro' })
+      })
+      sayIntro()
+      setMoment('intro')
+    },
+    playing: setDemoPlaying,
+  }
 
   onCleanup(() => {
     alive = false
@@ -637,5 +770,6 @@ export function useNgController(): NgController {
       view = next
       next.reset(INTRO_CAMERA)
     },
+    script,
   }
 }

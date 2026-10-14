@@ -80,6 +80,17 @@ export function fixtureController(scene: NgFixtureScene): NgController {
     showResult: () => scene.summary !== null,
     start: () => undefined,
     stop: () => undefined,
+    // A fixture has no demo (NgSlidesRoom: another's run has none).
+    script: {
+      active: () => false,
+      audio: () => Promise.resolve(null),
+      note: () => FIXTURE_ROOT,
+      enter: () => false,
+      play: () => undefined,
+      rest: () => undefined,
+      leave: () => undefined,
+      playing: () => undefined,
+    },
     attach: (view) => {
       view.reset(scene.camera)
       if (scene.summary !== null) {

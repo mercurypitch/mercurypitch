@@ -13,6 +13,11 @@
 // state here: it is the run's clock against the glide path, read by the
 // controller every frame. Stopping, a minute of quiet and leaving the app
 // drop the run: back to the intro, nothing kept.
+//
+// `demo` moves the room for the "how it works" demo (demo/), which hums its
+// slides through the room with no microphone: it never applies while a
+// microphone answer is pending or the room is blocked, and it bumps `run`
+// so no answer can land in it.
 
 export type NgPhase =
   | 'intro'
@@ -23,6 +28,9 @@ export type NgPhase =
   | 'blocked'
 
 export type NgBlock = 'denied' | 'unavailable'
+
+/** The phases the demo puts the room in: its start, and a slide. */
+export type NgDemoPhase = 'intro' | 'run'
 
 export interface NgState {
   readonly phase: NgPhase
@@ -48,6 +56,7 @@ export type NgEvent =
   | { readonly type: 'stop' }
   | { readonly type: 'rest' }
   | { readonly type: 'leave' }
+  | { readonly type: 'demo'; readonly phase: NgDemoPhase }
 
 const RUN_PHASES: ReadonlySet<NgPhase> = new Set<NgPhase>([
   'starting',
@@ -96,6 +105,15 @@ function onDrop(state: NgState): NgState {
   return isRunPhase(state.phase) ? { ...state, phase: 'intro' } : state
 }
 
+/** The demo's own move, never over a mic being opened or a block. */
+function onDemo(
+  state: NgState,
+  event: Extract<NgEvent, { type: 'demo' }>,
+): NgState {
+  if (state.phase === 'starting' || state.phase === 'blocked') return state
+  return { ...state, phase: event.phase, run: state.run + 1 }
+}
+
 type Handlers = {
   readonly [K in NgEvent['type']]: (
     state: NgState,
@@ -112,6 +130,7 @@ const HANDLERS: Handlers = {
   stop: onDrop,
   rest: onDrop,
   leave: onDrop,
+  demo: onDemo,
 }
 
 export function ngReducer(state: NgState, event: NgEvent): NgState {

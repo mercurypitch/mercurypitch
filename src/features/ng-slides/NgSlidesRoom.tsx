@@ -23,11 +23,18 @@
 //
 // The chip, the bubble, the result card, the mic, the result's buttons and
 // the level control are the room kit's; this room brings its world
-// (BridgeScene.tsx), its words and its test ids. There is no demo yet
-// (PR 9): a first visit opens on the intro.
+// (BridgeScene.tsx), its words and its test ids.
+//
+// "How it works" (demo/) plays over the same room: Merc hums one slide the
+// way not to and one the way to, through the room's own engine, with the
+// demo kit's layer, cards and take pill over it. A first visit opens on
+// it; the "?" plays it again from the intro or a result.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import { DemoLayer } from '@/components/demo-kit/DemoLayer'
+import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
+import { HelpCircle } from '@/components/icons'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
@@ -37,6 +44,10 @@ import { ARCH } from './bridge-geometry'
 import type { BridgeLayout } from './bridge-layout'
 import { layoutBridge, yOf } from './bridge-layout'
 import { BridgeScene } from './BridgeScene'
+import { DEMO_COPY } from './demo/demo-cues'
+import { aimNgTip } from './demo/tip-targets'
+import type { NgDemo } from './demo/useNgDemo'
+import { useNgDemo } from './demo/useNgDemo'
 import type { NgSummary } from './ng-run'
 import { bestText, jumpsText, topsText } from './ng-run'
 import { NgLevel } from './NgLevel'
@@ -49,7 +60,8 @@ export interface NgSlidesRoomProps {
   onDone: () => void
   /**
    * The run, when it is not the room's own: the dev fixtures' pinned
-   * frames (fixture/NgFixture.tsx). Read once.
+   * frames (fixture/NgFixture.tsx). Read once. A room on another's run has
+   * no demo.
    */
   controller?: NgController
   /** No animation at all (the fixtures). */
@@ -92,8 +104,20 @@ export function resultChips(summary: NgSummary): string[] {
 
 export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
   // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const own = props.controller === undefined
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
   const room = props.controller ?? useNgController()
+  const demo: NgDemo | null = own ? useNgDemo(room) : null
   const phase = (): string => room.state().phase
+  const demoMode = (): string => demo?.mode() ?? 'idle'
+  /** The demo has the room: its controls are out of reach. */
+  const demoBusy = (): boolean => demoMode() !== 'idle'
+  /**
+   * The demo is humming a take: Merc's bubble and the chip keep quiet, so
+   * the take's pill and the tooltip speak one at a time.
+   */
+  const demoTake = (): boolean => (demo?.take() ?? null) !== null
+  const scripted = (): boolean => room.script.active()
   let rootEl: HTMLDivElement | undefined
   const [box, setBox] = createSignal<RoomBox | null>(null)
   const reduced = prefersReducedMotion()
@@ -138,10 +162,14 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
       l.mercSize * BUBBLE_OVER_MERC
     return l.height - head
   }
-  const showLine = (): boolean => room.line() !== '' && phase() !== 'blocked'
+  const showLine = (): boolean =>
+    room.line() !== '' && phase() !== 'blocked' && !demoTake()
   const showLevel = (): boolean =>
-    phase() === 'intro' || phase() === 'result' || phase() === 'blocked'
-  const listening = (): boolean => phase() === 'run' || phase() === 'settle'
+    !scripted() &&
+    (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
+  /** The singer's own run is on: the mic listens. */
+  const listening = (): boolean =>
+    !scripted() && (phase() === 'run' || phase() === 'settle')
 
   /**
    * What a screen reader hears, from one polite region there from the
@@ -149,6 +177,8 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
    * during a run, his line otherwise.
    */
   const said = (): string => {
+    // The demo speaks for itself (its layer's region).
+    if (demoBusy() || scripted()) return ''
     const summary = phase() === 'result' ? room.summary() : null
     if (summary !== null) {
       const chips = resultChips(summary).join('. ')
@@ -161,12 +191,18 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
   // Focus on a control the room takes away goes to the one in its place.
   const focus = createFocusHandoff()
   const mainControl = (): HTMLElement | null => {
+    const mode = demoMode()
+    // The demo's cards take focus themselves.
+    if (mode === 'card' || mode === 'end') return null
     let id = 'ng-mic'
-    if (phase() === 'result') id = 'ng-again'
+    if (mode === 'playing') id = 'ng-demo-skip'
+    else if (phase() === 'result' && !scripted()) id = 'ng-again'
     else if (phase() === 'blocked') id = 'ng-retry'
     return rootEl?.querySelector<HTMLElement>(`[data-testid="${id}"]`) ?? null
   }
-  createEffect(on(phase, () => focus.handOff(mainControl), { defer: true }))
+  createEffect(
+    on([phase, demoMode], () => focus.handOff(mainControl), { defer: true }),
+  )
 
   const micLabel = (): string => {
     switch (phase()) {
@@ -186,6 +222,7 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
       ref={rootEl}
       class={`${styles.room} mp-dark-stage`}
       data-phase={phase()}
+      data-demo={demoMode()}
       data-testid="ng-slides-room"
       onFocusIn={(event) => focus.noteFocus(event)}
     >
@@ -212,7 +249,7 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
         )}
       </Show>
 
-      <div class={styles.head} data-testid="ng-header">
+      <div class={styles.head} data-testid="ng-header" inert={demoBusy()}>
         <Switch>
           <Match when={phase() === 'result' ? room.summary() : null}>
             {(summary) => (
@@ -244,7 +281,10 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
           </Match>
           <Match when={phase() !== 'result'}>
             <div class={styles.chip}>
-              <RoomChip text={room.chip()} testId="ng-chip" />
+              <RoomChip
+                text={demoTake() ? null : room.chip()}
+                testId="ng-chip"
+              />
             </div>
           </Match>
         </Switch>
@@ -253,6 +293,27 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
       <Show when={showLevel()}>
         <NgLevel class={styles.level} />
       </Show>
+      <Show when={demo?.canAsk() === true}>
+        <button
+          type="button"
+          class={styles.ask}
+          onClick={() => demo?.ask()}
+          aria-label={DEMO_COPY.ask}
+          data-testid="ng-ask"
+        >
+          <HelpCircle size={22} />
+        </button>
+      </Show>
+      <Show when={demoMode() === 'playing'}>
+        <button
+          type="button"
+          class={styles.skip}
+          onClick={() => demo?.skip()}
+          data-testid="ng-demo-skip"
+        >
+          {DEMO_COPY.skip}
+        </button>
+      </Show>
 
       <Show when={showLine()}>
         <div class={styles.bubble} style={{ bottom: `${bubbleBottom()}px` }}>
@@ -260,9 +321,15 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
         </div>
       </Show>
 
-      <div class={styles.bottom}>
+      <div
+        class={styles.bottom}
+        classList={{
+          [styles.bottomAway]: demoMode() === 'card' || demoMode() === 'end',
+        }}
+        inert={demoBusy()}
+      >
         <Switch>
-          <Match when={phase() === 'result'}>
+          <Match when={phase() === 'result' && !scripted()}>
             <ResultActions
               onAgain={() => room.start()}
               onDone={() => props.onDone()}
@@ -278,10 +345,18 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
             />
           </Match>
           <Match when={true}>
+            {/* The demo's take pill stands over the mic while it hums. */}
+            <Show when={scripted()}>
+              <DemoTakePill
+                take={demo?.take() ?? null}
+                copy={DEMO_COPY}
+                testId="ng-demo-take"
+              />
+            </Show>
             <MicButton
               listening={listening()}
-              demo={false}
-              pulse={false}
+              demo={scripted()}
+              pulse={demo?.micPulse() === true}
               disabled={phase() === 'starting'}
               label={micLabel()}
               onClick={() => {
@@ -296,6 +371,16 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
       <div class={styles.said} aria-live="polite" data-testid="ng-said">
         {said()}
       </div>
+      <Show when={demo}>
+        {(d) => (
+          <DemoLayer
+            demo={d()}
+            aim={(tip, layer) => aimNgTip(tip.target, layer)}
+            copy={DEMO_COPY}
+            testId="ng-demo"
+          />
+        )}
+      </Show>
     </div>
   )
 }

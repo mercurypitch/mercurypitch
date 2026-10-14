@@ -13,7 +13,7 @@
 // the engine (the count-in and the breaths are not judged) but not drawn:
 // the speaker is not the singer.
 
-import type { GlideState } from '@/lib/glide/glide-engine'
+import type { GlideEvent, GlideState } from '@/lib/glide/glide-engine'
 import { createGlideState, tickGlide } from '@/lib/glide/glide-engine'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
 import { computeGlideResult } from '@/lib/glide/glide-metrics'
@@ -41,6 +41,11 @@ export interface NgTakeDeps {
   readonly onSlideEnd: (heard: SlideHeard) => void
   /** The path ended: the run's result. */
   readonly onEnd: (result: GlideResult) => void
+  /**
+   * Every engine event, as it fires and before the two above (the demo's
+   * tooltips wait for them).
+   */
+  readonly onEvent?: (event: GlideEvent) => void
 }
 
 export interface NgTake {
@@ -99,6 +104,7 @@ export function createNgTake(deps: NgTakeDeps): NgTake {
 
   const onEvents = (): void => {
     for (const event of state.events) {
+      deps.onEvent?.(event)
       if (event.type === 'archEnd') {
         const lag = {
           sum: state.lagSum - lagMark.sum,
