@@ -38,7 +38,7 @@ describe('launch entry documents', () => {
     const vite = repoFile('vite.config.ts')
 
     expect(document.title).toBe(
-      'Free Vocal Range Test — Lowest & Highest Note | MercuryPitch',
+      'Free Vocal Range Test: Lowest & Highest Note | MercuryPitch',
     )
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
@@ -190,16 +190,11 @@ describe('entry document prelude', () => {
   // sitemap, and every document links every sibling but itself, so none of
   // them is an orphan.
 
-  // Three of the search-intent pages went live with titles longer than a
-  // result shows: 69, 76 and 77 characters. Shorter ones are a copy decision
-  // still open, so these are named here rather than left out of ENTRY_FILES:
-  // every other check still reaches them, and their title check fails as
-  // soon as a title fits, so the name comes off the list with the fix.
-  const LONG_TITLES: readonly string[] = [
-    'pitch-training.html',
-    'voice-type-test.html',
-    'vocal-remover.html',
-  ]
+  // Titles known to be longer than a result shows. Empty since 0.9.18, when
+  // the last three (69, 76 and 77 characters) were shortened. A page named
+  // here still gets every other check, and its title check fails as soon as
+  // the title fits, so the name comes off the list with the fix.
+  const LONG_TITLES: readonly string[] = []
 
   for (const file of ENTRY_FILES) {
     it(`gives ${file} a heading, a claim and a way out without JavaScript`, () => {
@@ -267,6 +262,8 @@ describe('entry document prelude', () => {
         const title = repoHtml(file).title.trim()
 
         expect(title.length).toBeGreaterThan(15)
+        // Decision D5: "Name: what it does | MercuryPitch", no em dash.
+        expect(title).not.toContain('—')
         if (long) {
           expect(
             title.length,

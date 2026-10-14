@@ -108,7 +108,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     navLabel: 'Voice Mirror',
     boot: '/src/features/mirror/main.tsx',
     themeColor: MIRROR_THEME_COLOR,
-    title: 'Voice Mirror — See Your Voice in 60 Seconds | MercuryPitch',
+    title: 'Voice Mirror: See Your Voice in 60 Seconds | MercuryPitch',
     description:
       'See your voice in 60 seconds: your vocal range, pitch accuracy and steadiness as a shareable voiceprint. Free, and your audio never leaves your device.',
     og: {
@@ -149,7 +149,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     navLabel: 'Vocal Range Test',
     boot: '/src/features/mirror/main.tsx',
     themeColor: MIRROR_THEME_COLOR,
-    title: 'Free Vocal Range Test — Lowest & Highest Note | MercuryPitch',
+    title: 'Free Vocal Range Test: Lowest & Highest Note | MercuryPitch',
     description:
       'Glide from your lowest note to your highest and get both notes, your span in semitones and a voice-type guide. Free, and your audio stays on your device.',
     og: {
@@ -189,7 +189,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/karaoke-night', '/karaoke'],
     navLabel: 'Karaoke Night',
     boot: '/src/features/karaoke-night/main.tsx',
-    title: 'Karaoke Night — Turn Your Songs Into Karaoke | MercuryPitch',
+    title: 'Karaoke Night: Turn Your Songs Into Karaoke | MercuryPitch',
     description:
       'Upload any song, the vocals lift away, and you sing with synced lyrics and live pitch scoring — right in your browser. Try the example song free.',
     og: {
@@ -229,7 +229,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/glass-game'],
     navLabel: 'Glassworks',
     boot: '/src/features/glass-adventure/main.tsx',
-    title: 'Glassworks — Explore a Museum With Your Voice | MercuryPitch',
+    title: 'Glassworks: Explore a Museum With Your Voice | MercuryPitch',
     description:
       'Explore a floating glass museum, discover your comfortable notes, and open each gallery by singing. Free, with microphone audio processed on your device.',
     og: {
@@ -265,7 +265,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     ],
     navLabel: 'Break Glass',
     boot: '/src/features/glass/main.tsx',
-    title: 'Break Glass With Your Voice — Free Challenge | MercuryPitch',
+    title: 'Break Glass With Your Voice: Free Challenge | MercuryPitch',
     description:
       'Sing up to the note the glass rings at, hold it, and shatter it. A free in-browser challenge tuned to your own range, with your audio never leaving your device.',
     og: {
@@ -306,7 +306,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/piano-night'],
     navLabel: 'Piano Night',
     boot: '/src/features/piano-night/main.tsx',
-    title: 'Piano Night — Practice Piano Phrase by Phrase | MercuryPitch',
+    title: 'Piano Night: Practice Piano Phrase by Phrase | MercuryPitch',
     description:
       'Slow a phrase down, loop the bar that will not sit, and play it back up to tempo — in your browser, with your own MIDI keyboard or the keys on screen.',
     og: {
@@ -337,7 +337,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/guitar-night'],
     navLabel: 'Guitar Night',
     boot: '/src/features/guitar-night/main.tsx',
-    title: 'Guitar Night — A Room That Reads Your Playing | MercuryPitch',
+    title: 'Guitar Night: A Room That Reads Your Playing | MercuryPitch',
     description:
       'A guitar rehearsal room in your browser. Begin on one open string or bring a song of your own — the room listens and reads the bar back to you as tab.',
     og: {
@@ -368,7 +368,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/drum-night'],
     navLabel: 'Drum Night',
     boot: '/src/features/drum-night/main.tsx',
-    title: 'Drum Night — A Room for Touch, Keys and E-Kits | MercuryPitch',
+    title: 'Drum Night: Play Drums in Your Browser | MercuryPitch',
     description:
       'A drum room for touch, keys and e-kits, with synth and sampled kits, MIDI and Guitar Pro percussion, and Pocket, Drummer Seat and Score views.',
     og: {
@@ -400,7 +400,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     navLabel: 'Ear Lab',
     boot: '/src/index.tsx',
     bootHash: '#/ear-lab',
-    title: 'Ear Lab — Ear Training Measured in Real Units | MercuryPitch',
+    title: 'Ear Lab: Ear Training Measured in Real Units | MercuryPitch',
     description:
       'An ear-training bench that reads in cents, milliseconds and notes — real units, not a grade. Calibrate once, then practice whichever faculty is neediest.',
     og: {
@@ -433,7 +433,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     navLabel: 'Jam Rooms',
     boot: '/src/index.tsx',
     bootHash: '#/jam',
-    title: 'Jam Rooms — Sing Together From Anywhere | MercuryPitch',
+    title: 'Jam Rooms: Sing Together From Anywhere | MercuryPitch',
     description:
       'Open a room, share the link, and sing a song together. Lyrics down the left, a live pitch lane for every singer in their own color, and one shared transport.',
     og: {
@@ -472,8 +472,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     navLabel: 'Pitch Training',
     boot: '/src/index.tsx',
     bootHash: '#/exercises',
-    title:
-      'Vocal Pitch Practice — Free Pitch Training with Live Feedback | MercuryPitch',
+    title: 'Vocal Pitch Practice: Free Pitch Training | MercuryPitch',
     description:
       'Practice singing on pitch and watch the note you are making against the note you meant. Free, runs in your browser, and scores every finished run out of 100.',
     og: {
@@ -520,8 +519,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     navLabel: 'Voice Type Test',
     boot: '/src/features/mirror/main.tsx',
     themeColor: MIRROR_THEME_COLOR,
-    title:
-      'Voice Type Test — Am I a Soprano, Alto, Tenor or Bass? | MercuryPitch',
+    title: 'Voice Type Test: Soprano, Alto, Tenor, Bass | MercuryPitch',
     description:
       'Find your range with a low-to-high glide and see which voice type it overlaps most: soprano, mezzo, alto, tenor, baritone or bass. Free, in your browser.',
     og: {
@@ -567,8 +565,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/vocal-remover'],
     navLabel: 'Vocal Remover',
     boot: '/src/features/karaoke-night/main.tsx',
-    title:
-      'Free Vocal Remover — Split a Song into Vocals and Instrumental | MercuryPitch',
+    title: 'Free Vocal Remover: Vocals and Instrumental | MercuryPitch',
     description:
       'Take out the vocal and keep the backing track, or keep the vocal alone. Separate a song you already own in your own browser, then sing over the result.',
     og: {
@@ -615,7 +612,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     navLabel: 'Singer Match',
     boot: '/src/features/mirror/main.tsx',
     themeColor: MIRROR_THEME_COLOR,
-    title: 'Which Singer Has My Vocal Range? Match Your Voice | MercuryPitch',
+    title: 'Which Singer Has My Vocal Range? | MercuryPitch',
     description:
       'Find your range in 60 seconds, see which voice type it overlaps most, and meet a famous singer of that type. Free, and your audio stays on your device.',
     og: {
