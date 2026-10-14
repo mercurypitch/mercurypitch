@@ -32,11 +32,15 @@ import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
 import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
 import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { mobileBarTabs, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
+import { publishFootSpace } from '@/lib/foot-space'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
 import styles from './BottomTabBar.module.css'
+
+/** The room the bar takes at the foot of the window, on <html>. */
+export const TABBAR_SPACE_VAR = '--tabbar-space'
 
 export interface BottomTabBarProps {
   activeTab: () => ActiveTab
@@ -161,6 +165,8 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
   return (
     <Show when={isNarrow()}>
       <nav
+        // The cookie banner stands on this, not over it (lib/foot-space.ts).
+        ref={(el) => publishFootSpace(el, TABBAR_SPACE_VAR)}
         class={styles.bar}
         data-tour="mobile-tabbar"
         aria-label="Primary navigation"

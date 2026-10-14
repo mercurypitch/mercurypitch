@@ -18,7 +18,14 @@
   position: fixed;
   left: 1rem;
   right: 1rem;
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  /* On the tab bar while there is one (a phone in the studio app), not over
+     it: the bar publishes the room it takes as --tabbar-space
+     (lib/foot-space.ts). Elsewhere, 1rem off the window's foot. */
+  bottom: max(
+    1rem,
+    env(safe-area-inset-bottom),
+    calc(var(--tabbar-space, 0px) + 0.5rem)
+  );
   margin-inline: auto;
   max-width: 640px;
   z-index: 2147483000; /* above app modals (z 1000) and the Mirror stage */

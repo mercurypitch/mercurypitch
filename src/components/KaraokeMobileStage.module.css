@@ -161,7 +161,16 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 24vh 1.5rem 32vh;
+  /* 24vh and 32vh, unless the stage is too short to hold them. While the
+     cookie banner is open the stage ends on it (StageShell), and padding is
+     a floor the column cannot shrink below: at 320x568 the 56vh of it
+     pushed the transport row out of the stage. So each is also held under
+     a share of what the header and the bottom bar (190px together) leave.
+     With the banner closed the vh values are always the smaller, from a
+     568px-tall phone up. */
+  --lyrics-room: calc(100vh - var(--consent-banner-space, 0px) - 190px);
+  padding: min(24vh, calc(var(--lyrics-room) * 0.4)) 1.5rem
+    min(32vh, calc(var(--lyrics-room) * 0.5));
   scrollbar-width: none;
   mask-image: linear-gradient(
     180deg,

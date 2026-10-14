@@ -7,7 +7,14 @@
 .pill {
   position: fixed;
   left: calc(var(--safe-left, 0px) + 0.75rem);
-  bottom: calc(var(--safe-bottom, 0px) + 0.75rem);
+  /* On the cookie banner while it is open, and on the confirm-email pill,
+     never under them (lib/foot-space.ts). The voice pill raised over this
+     one keeps the same floor (VoiceControlHud.module.css). */
+  bottom: max(
+    calc(var(--safe-bottom, 0px) + 0.75rem),
+    calc(var(--consent-banner-space, 0px) + 0.6rem),
+    calc(var(--verify-banner-space, 0px) + 0.6rem)
+  );
   z-index: var(--z-tabbar, 380);
   display: flex;
   align-items: center;
@@ -81,7 +88,14 @@
 /* Clear the mobile tab bar rather than sitting on it. */
 @media (max-width: 768px) {
   .pill {
-    bottom: calc(var(--tabbar-total, 54px) + 0.6rem);
+    bottom: calc(
+      max(
+          var(--tabbar-total, 54px),
+          var(--consent-banner-space, 0px),
+          var(--verify-banner-space, 0px)
+        ) +
+        0.6rem
+    );
   }
 }
 

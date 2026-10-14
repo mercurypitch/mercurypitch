@@ -280,10 +280,18 @@
        "5 credits added", and the banner covered both. While open, the banner
        publishes its footprint as --consent-banner-space (ConsentBanner.tsx),
        so the stack stands on whichever is taller. Pinned by
-       src/e2e/toast-above-consent-banner.spec.ts. */
+       src/e2e/toast-above-consent-banner.spec.ts.
+
+       The confirm-email pill is the layer above the banner (Karaoke Night
+       pins it at every width), and a toast drew over it too: 56 px of it at
+       390x844 with no banner at all (14 Oct 2026). It publishes its own
+       footprint, which already counts the banner under it, as
+       --verify-banner-space. The whole stack is in lib/foot-space.ts.
+       Pinned by src/e2e/toast-above-confirm-bar.spec.ts. */
     --toast-floor: max(
       var(--tabbar-total, 54px),
-      var(--consent-banner-space, 0px)
+      var(--consent-banner-space, 0px),
+      var(--verify-banner-space, 0px)
     );
 
     top: auto;

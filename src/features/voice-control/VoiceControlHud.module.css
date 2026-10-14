@@ -22,7 +22,19 @@
   left: calc(
     var(--safe-left, 0px) + var(--voice-pill-inset-left, 0px) + 0.75rem
   );
-  bottom: calc(var(--safe-bottom, 0px) + 0.75rem);
+  /* The layers pinned under it at the foot of the window: the cookie banner
+     while it is open, and the confirm-email pill, whose space already
+     counts the banner. Both covered the pill: 39 px of it on Karaoke Night
+     at 390x844, 35 px in the studio at 844x390 (14 Oct 2026). */
+  --voice-pill-floor: max(
+    var(--consent-banner-space, 0px),
+    var(--verify-banner-space, 0px)
+  );
+
+  bottom: max(
+    calc(var(--safe-bottom, 0px) + 0.75rem),
+    calc(var(--voice-pill-floor) + 0.6rem)
+  );
   z-index: var(--z-tabbar, 380);
   display: flex;
   align-items: center;
@@ -48,7 +60,10 @@
 }
 
 .raised {
-  bottom: calc(var(--safe-bottom, 0px) + 3.15rem);
+  bottom: max(
+    calc(var(--safe-bottom, 0px) + 3.15rem),
+    calc(var(--voice-pill-floor) + 3rem)
+  );
 }
 
 .expanded {
@@ -158,11 +173,15 @@
 /* Clear the mobile tab bar rather than sitting on it. */
 @media (max-width: 768px) {
   .pill {
-    bottom: calc(var(--tabbar-total, 54px) + 0.6rem);
+    bottom: calc(
+      max(var(--tabbar-total, 54px), var(--voice-pill-floor)) + 0.6rem
+    );
   }
 
   .raised {
-    bottom: calc(var(--tabbar-total, 54px) + 3rem);
+    bottom: calc(
+      max(var(--tabbar-total, 54px), var(--voice-pill-floor)) + 3rem
+    );
   }
 }
 

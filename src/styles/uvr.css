@@ -1772,7 +1772,13 @@
 /* History Toast */
 .history-toast {
   position: fixed;
-  bottom: 1.5rem;
+  /* Above the cookie banner and the confirm-email pill while they are
+     pinned here (lib/foot-space.ts). */
+  bottom: max(
+    1.5rem,
+    calc(var(--consent-banner-space, 0px) + 0.5rem),
+    calc(var(--verify-banner-space, 0px) + 0.5rem)
+  );
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -3698,7 +3704,13 @@
 /* Session Toast */
 .session-toast {
   position: fixed;
-  bottom: 1.5rem;
+  /* Above the cookie banner and the confirm-email pill while they are
+     pinned here (lib/foot-space.ts). */
+  bottom: max(
+    1.5rem,
+    calc(var(--consent-banner-space, 0px) + 0.5rem),
+    calc(var(--verify-banner-space, 0px) + 0.5rem)
+  );
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -4358,7 +4370,13 @@
 /* Result Viewer Toast */
 .rv-toast {
   position: fixed;
-  bottom: 1.5rem;
+  /* Above the cookie banner and the confirm-email pill while they are
+     pinned here (lib/foot-space.ts). */
+  bottom: max(
+    1.5rem,
+    calc(var(--consent-banner-space, 0px) + 0.5rem),
+    calc(var(--verify-banner-space, 0px) + 0.5rem)
+  );
   left: 50%;
   transform: translateX(-50%);
   padding: 0.6rem 1.25rem;

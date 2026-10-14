@@ -606,7 +606,9 @@
     align-items: flex-end;
     height: 56px;
     position: fixed;
-    bottom: calc(var(--tabbar-total, 62px) + 16px);
+    bottom: calc(
+      max(var(--tabbar-total, 62px), var(--consent-banner-space, 0px)) + 16px
+    );
     right: calc(max(12px, var(--safe-right, 0px)) + 68px);
     z-index: 999;
   }
