@@ -1606,7 +1606,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
             </div>
           </div>
           <p>
-            {peekLegend()} shares your voice band. That is yours now: it is on
+            {peekLegend()} shares your voice type. That is yours now: it is on
             your voiceprint whatever happens next.
           </p>
           <div class="mirror-actions">

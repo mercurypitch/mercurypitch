@@ -67,7 +67,7 @@ const CARDS = {
   'which-singer-has-my-vocal-range': {
     backdrop: 'which-singer-has-my-vocal-range.png',
     headline: 'Which singer has my vocal range?',
-    pills: ['31 famous singers', 'Matched by voice band', 'Free'],
+    pills: ['31 famous singers', 'Matched by voice type', 'Free'],
     accent: '#bc8cff',
   },
   mirror: {
