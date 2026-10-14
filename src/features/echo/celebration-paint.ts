@@ -2,31 +2,34 @@
 // The celebration star's paint: paths, gradients and timings, from its spec
 // ============================================================
 //
-// Art round 4 (CELEBRATION in echo-celebration.ts, from the A0 spec's r3
-// block) draws the result's star as four things: a hollow star (two
-// outlines over a translucent fill, in a glow, the inner outline lumpy),
-// 33 sparkle dots, three thin wispy ribbons along the dots' chains, and a
-// starburst (a cyan mist, a glow, rays and a core). The model is A0's
-// (tools/celebration_r3.py draw):
+// Art round 5 (CELEBRATION in echo-celebration.ts, from the A0 spec's r3
+// block) draws the result's star as five things: a hollow star (two
+// outlines over a translucent fill, in a glow, the outer outline lopsided,
+// the inner one lumpy, blue blotches inside), 33 sparkle dots and 26
+// smaller sparkles (echo-celebration-sparkles.ts), three thin wispy
+// ribbons along the dots' chains, and a starburst (a cyan mist, a glow,
+// rays and a core). The model is A0's (tools/celebration_r3.py draw):
 //
 //   glows         light added in linear RGB over whatever lies under it.
 //                 CSS cannot add in linear light, so a glow is a radial
 //                 gradient screened over the plate, each ring's colour
 //                 fitted offline to the plate's own pixels in that ring
 //                 (scripts/sync-echo-art.mjs fitLights).
-//   Gaussians     a dot's soft glow and crisp core (one colour), the
-//                 burst's core, a ray across its width, a ribbon across
-//                 its curve, the mist: alpha exp(-r^2 / 2 sigma^2),
-//                 sigma = FWHM / 2.3548.
-//   ribbons       laid over at alpha x the Gaussian across x the wisp
-//                 along (1 - depth (0.5 + 0.5 sin(2 pi s / period +
-//                 phase))) x the tapers at both ends. No CSS or SVG stroke
-//                 varies its alpha along a curve, so they are painted
-//                 pixel by pixel into a canvas (ribbonField, paintRibbons).
+//   Gaussians     a dot's or sparkle's soft glow and core (one colour, each
+//                 at its own alpha), the burst's core, a ray across its
+//                 width, a ribbon across its curve, the mist, a blotch:
+//                 alpha exp(-r^2 / 2 sigma^2), sigma = FWHM / 2.3548.
+//   ribbons       laid over at alpha x the link's gain x the Gaussian
+//                 across x the wisp along (1 - depth (0.5 + 0.5 sin(2 pi
+//                 s / period + phase))) x the tapers at both ends. No CSS
+//                 or SVG stroke varies its alpha along a curve, so they are
+//                 painted pixel by pixel into a canvas (ribbonField,
+//                 paintRibbons).
 //
 // Pure: sizes in px come in, CSS and SVG strings go out.
 
 import { CELEBRATION } from './echo-celebration'
+import { CELEBRATION_SPARKLES } from './echo-celebration-sparkles'
 import { PLATE_BASE } from './echo-geometry'
 
 /** A Gaussian's sigma from its full width at half maximum. */
@@ -64,25 +67,77 @@ export const gauss = (r: number, sigma: number): number =>
   Math.exp((-r * r) / (2 * sigma * sigma))
 
 /**
+ * Round 5's lopsided outline: each corner's radius factor and its turn
+ * about the centre, degrees counter-clockwise on screen, both listed
+ * counter-clockwise on screen from the top tip.
+ */
+export interface Lopsided {
+  readonly radiusCcw: readonly number[]
+  readonly turnCcwDeg: readonly number[]
+}
+
+/**
  * A five-point star about (0, 0), one tip straight up, `tip` px to a tip
  * and `valley` x that to a valley: the path starts at the top tip and runs
  * clockwise on screen, as the outline is drawn on. `wobbleCcw` (the inner
- * outline's lumps) scales each corner's radius; the spec lists its factors
- * counter-clockwise on screen from the top tip, so the path's corner i
- * takes factor (10 - i) % 10.
+ * outline's lumps) scales each corner's radius and `lopsided` (the outer
+ * outline's) scales and turns it; the spec lists both counter-clockwise on
+ * screen from the top tip, so the path's corner i takes entry (10 - i) % 10.
  */
 export function starPath(
   tip: number,
   valley: number,
   wobbleCcw?: readonly number[],
+  lopsided?: Lopsided,
 ): string {
   const corners = Array.from({ length: 10 }, (_, i) => {
+    const ccw = (10 - i) % 10
     const r =
-      (i % 2 === 0 ? tip : tip * valley) * (wobbleCcw?.[(10 - i) % 10] ?? 1)
-    const t = ((90 - 36 * i) * Math.PI) / 180
+      (i % 2 === 0 ? tip : tip * valley) *
+      (wobbleCcw?.[ccw] ?? 1) *
+      (lopsided?.radiusCcw[ccw] ?? 1)
+    const t = ((90 - 36 * i + (lopsided?.turnCcwDeg[ccw] ?? 0)) * Math.PI) / 180
     return `${(r * Math.cos(t)).toFixed(2)} ${(-r * Math.sin(t)).toFixed(2)}`
   })
   return `M ${corners.join(' L ')} Z`
+}
+
+/** A Gaussian disc's stops out to GAUSS_REACH sigmas: offset 0..1 and opacity. */
+export function gaussStops(
+  alpha: number,
+): { offset: number; opacity: number }[] {
+  return Array.from({ length: STOPS + 1 }, (_, i) => ({
+    offset: i / STOPS,
+    opacity: alpha * gauss((GAUSS_REACH * i) / STOPS, 1),
+  }))
+}
+
+/** A dot's or a sparkle's light: a soft glow round a core, one colour. */
+export interface PointLight {
+  readonly rgb: readonly number[]
+  readonly coreFwhmW: number
+  readonly coreAlpha: number
+  readonly glowFwhmW: number
+  readonly glowAlpha: number
+}
+
+/**
+ * A point light's disc at `unit` px a W: its reach (px) and its radial
+ * stops, the glow laid over and the core over it (A0's two over()s, one
+ * colour): alpha 1 - (1 - glow) (1 - core).
+ */
+export function pointLight(
+  light: PointLight,
+  unit: number,
+): { reach: number; stops: string[] } {
+  const glow = sigmaOf(light.glowFwhmW * unit)
+  const core = sigmaOf(light.coreFwhmW * unit)
+  const reach = GAUSS_REACH * Math.max(glow, core)
+  const alphaAt = (r: number) =>
+    1 -
+    (1 - light.glowAlpha * gauss(r, glow)) *
+      (1 - light.coreAlpha * gauss(r, core))
+  return { reach, stops: alphaStops(light.rgb, alphaAt, reach) }
 }
 
 /** The bottom tips' depth below the centre, as a share of the tip radius. */
@@ -108,20 +163,47 @@ export interface DotTiming {
   readonly twinkleAt: number
 }
 
-/** Each dot's reveal and twinkle, in the spec's order (by reveal rank). */
-export function dotTimings(): DotTiming[] {
-  const { dots, idleFromMs, idle } = CELEBRATION.timing
-  const random = seeded(idle.dotSeed)
-  const [shortest, longest] = idle.dotPeriodMs
-  return CELEBRATION.dots.map((dot) => {
+/** Twinkles from a seed: each item's period in [shortest, longest], then phase. */
+function twinkles(
+  reveals: readonly number[],
+  seed: number,
+  [shortest, longest]: readonly number[],
+): DotTiming[] {
+  const random = seeded(seed)
+  return reveals.map((revealAt) => {
     const periodMs = shortest + (longest - shortest) * random()
     const phase = periodMs * random()
     return {
-      revealAt: dots.firstMs + dot.rank * dots.staggerMs,
+      revealAt,
       periodMs,
-      twinkleAt: idleFromMs + phase,
+      twinkleAt: CELEBRATION.timing.idleFromMs + phase,
     }
   })
+}
+
+/** Each dot's reveal and twinkle, in the spec's order (by reveal rank). */
+export function dotTimings(): DotTiming[] {
+  const { dots, idle } = CELEBRATION.timing
+  return twinkles(
+    CELEBRATION.dots.map((dot) => dots.firstMs + dot.rank * dots.staggerMs),
+    idle.dotSeed,
+    idle.dotPeriodMs,
+  )
+}
+
+/**
+ * Each sparkle's reveal and twinkle (round 5): a delay after the dot it
+ * follows starts, then its own twinkle from its own seed.
+ */
+export function sparkleTimings(): DotTiming[] {
+  const { dots, sparkles } = CELEBRATION.timing
+  return twinkles(
+    CELEBRATION_SPARKLES.map(
+      (sp) => dots.firstMs + sp.afterRank * dots.staggerMs + sparkles.delayMs,
+    ),
+    sparkles.idleSeed,
+    sparkles.idlePeriodMs,
+  )
 }
 
 /**
@@ -142,6 +224,9 @@ export function keyframeOffsets(
 
 export type Pt = readonly [number, number]
 
+/** Samples per pair of a ribbon's points (A0's catmull(P, 40)). */
+export const RIBBON_SAMPLES = 40
+
 /**
  * A uniform Catmull-Rom curve through `points`, its ends extended by
  * reflection (A0's catmull()): `perSegment` samples per pair of points,
@@ -149,7 +234,7 @@ export type Pt = readonly [number, number]
  */
 export function catmullRom(
   points: readonly Pt[],
-  perSegment = 40,
+  perSegment = RIBBON_SAMPLES,
 ): [number, number][] {
   const out: [number, number][] = []
   const n = perSegment
@@ -267,6 +352,8 @@ interface Nearest {
   readonly d2: Float32Array
   /** px along the curve, or -1 out of reach. */
   readonly place: Float32Array
+  /** The curve's nearest sample (A0's idx, which picks a link's gain). */
+  readonly sample: Int32Array
 }
 
 /**
@@ -283,6 +370,7 @@ function nearestOnCurve(
   const { width, height, dpr } = canvas
   const d2 = new Float32Array(width * height).fill(Infinity)
   const place = new Float32Array(width * height).fill(-1)
+  const sample = new Int32Array(width * height)
   for (let k = 1; k < curve.length; k++) {
     const ax = curve[k - 1][0] * dpr
     const ay = curve[k - 1][1] * dpr
@@ -304,11 +392,12 @@ function nearestOnCurve(
         if (dx * dx + dy * dy < d2[i]) {
           d2[i] = dx * dx + dy * dy
           place[i] = along[k - 1] + t * (along[k] - along[k - 1])
+          sample[i] = t < 0.5 ? k - 1 : k
         }
       }
     }
   }
-  return { d2, place }
+  return { d2, place, sample }
 }
 
 /** A ribbon's tapers at `s` px along a curve `length` px long. */
@@ -322,18 +411,29 @@ const taperAt = (s: number, length: number, taper: number): number =>
  * A ribbon's field: for each device pixel within reach of `curve` (px in
  * the canvas's CSS box), its nearest point on the sampled curve (A0's
  * draw_ribbons takes the nearest sample), the Gaussian across at that
- * distance (`fwhm` px), the tapers over `taper` px at both ends, and where
- * along the curve it is.
+ * distance (`fwhm` px), the tapers over `taper` px at both ends, the gain
+ * of the link it is nearest (round 5: `segmentGain`, one per pair of the
+ * ribbon's points, RIBBON_SAMPLES samples each), and where along the curve
+ * it is.
  */
 export function ribbonField(
   curve: readonly Pt[],
-  o: { fwhm: number; taper: number; alpha: number; fromStart: boolean },
+  o: {
+    fwhm: number
+    taper: number
+    alpha: number
+    fromStart: boolean
+    segmentGain?: readonly number[]
+  },
   canvas: { width: number; height: number; dpr: number },
 ): RibbonField {
   const along = lengthsAlong(curve)
   const length = along[along.length - 1]
   const sigma = sigmaOf(o.fwhm) * canvas.dpr
-  const { d2, place } = nearestOnCurve(
+  const gains = o.segmentGain ?? [1]
+  const gainOf = (sample: number): number =>
+    gains[Math.min(Math.floor(sample / RIBBON_SAMPLES), gains.length - 1)]
+  const { d2, place, sample } = nearestOnCurve(
     curve,
     along,
     Math.ceil(RIBBON_REACH * sigma) + 1,
@@ -346,10 +446,13 @@ export function ribbonField(
   for (let i = 0; i < place.length; i++) {
     const s = place[i]
     if (s < 0 || d2[i] > limit) continue
-    const a =
+    const a = Math.min(
+      1,
       o.alpha *
-      Math.exp(-d2[i] / (2 * sigma * sigma)) *
-      taperAt(s, length, o.taper)
+        gainOf(sample[i]) *
+        Math.exp(-d2[i] / (2 * sigma * sigma)) *
+        taperAt(s, length, o.taper),
+    )
     if (a <= 0) continue
     pixels.push(i)
     alpha.push(a)

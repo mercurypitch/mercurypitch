@@ -2,18 +2,21 @@
 // CelebrationStar: the hollow neon star, its sparkles, ribbons and burst
 // ============================================================
 //
-// Storyboard screen 4, as art round 4 draws it (CELEBRATION in
+// Storyboard screen 4, as art round 5 draws it (CELEBRATION in
 // echo-celebration.ts; spec: echo-a0/geometry/echo-celebration-star.json r3).
 // Bottom to top, in A0's paint order (tools/celebration_r3.py draw):
 //
 //   star glow  light added round the star
 //   ribbons    three thin wispy cyan strokes along the dots' chains, in a
 //              canvas: their alpha varies along each curve (the wisp, the
-//              tapers), which no CSS or SVG stroke can do
-//   star       a translucent blue fill, then a small lumpy inner outline
-//              and the bright outer one, both running from violet-white at
-//              the top tip to cyan at the bottom tips
-//   dots       33 sparkles, each a soft glow round a crisp core
+//              tapers, each link's gain), which no CSS or SVG stroke can do
+//   star       a translucent blue fill, a small lumpy inner outline, blue
+//              blotches inside (clipped to the fill), then the bright
+//              lopsided outer outline; both outlines run from violet-white
+//              at the top tip to cyan at the bottom tips
+//   dots       33 sparkles, each a soft glow round a core, each its own
+//              size and brightness
+//   sparkles   26 smaller ones along the chains, drawn as the dots are
 //   starburst  a cyan mist laid over, a soft glow, four tapered rays and
 //              four fainter diagonal ones, a white core
 //
@@ -23,9 +26,10 @@
 //
 // Placed on the plate itself (it belongs to the town), not with the sky's
 // content. t 0 is when the result's stars are up: the starburst pops and
-// its mist swells, the dots appear nearest it first, the ribbons draw on
-// from their ends nearest it, the outlines draw on from the top tip,
-// clockwise, then the fill and the glow come up; from 1.8 s the dots
+// its mist swells, the dots appear nearest it first, each sparkle a beat
+// after its dot, the ribbons draw on from their ends nearest it, the
+// outlines draw on from the top tip, clockwise, then the fill, its
+// blotches and the glow come up; from 1.8 s the dots and sparkles
 // twinkle, the glow breathes, the rays shimmer and the ribbons' wisps
 // drift (CELEBRATION.timing). Every motion but the ribbons' is a Web
 // Animation of opacity, transform or a dash offset; the ribbons' canvas
@@ -36,10 +40,11 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createUniqueId, For, onCleanup, onMount, } from 'solid-js'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
-import type { RibbonField, RibbonFrame } from './celebration-paint'
-import { alphaStops, BOTTOM_TIPS, catmullRom, dotTimings, gauss, GAUSS_REACH, keyframeOffsets, MIST_REACH, mistAngleStops, paintRibbons, ribbonField, ribbonFrames, ribbonPlan, screenStops, sigmaOf, starPath, } from './celebration-paint'
+import type { DotTiming, PointLight, RibbonField, RibbonFrame, } from './celebration-paint'
+import { alphaStops, BOTTOM_TIPS, catmullRom, dotTimings, gauss, GAUSS_REACH, gaussStops, keyframeOffsets, MIST_REACH, mistAngleStops, paintRibbons, pointLight, ribbonField, ribbonFrames, ribbonPlan, screenStops, sigmaOf, sparkleTimings, starPath, } from './celebration-paint'
 import styles from './CelebrationStar.module.css'
 import { CELEBRATION } from './echo-celebration'
+import { CELEBRATION_SPARKLES } from './echo-celebration-sparkles'
 import type { ScreenPoint, SkyLayout } from './sky-layout'
 import { onPlate } from './sky-layout'
 
@@ -165,19 +170,15 @@ export function CelebrationStar(props: CelebrationStarProps): JSX.Element {
     }
   }
 
-  // ── The dots ──────────────────────────────────────────────
-  const dotStyle = (
-    dot: (typeof CELEBRATION.dots)[number],
+  // ── The dots and the sparkles ─────────────────────────────
+  const lightStyle = (
+    light: PointLight & { readonly u: number; readonly v: number },
   ): JSX.CSSProperties => {
-    const at = onPlate(props.layout, dot)
-    const glow = sigmaOf(dot.glowFwhmW * unit())
-    const core = sigmaOf(dot.coreFwhmW * unit())
-    const reach = GAUSS_REACH * Math.max(glow, core)
-    const alphaAt = (r: number) =>
-      1 - (1 - dot.glowAlpha * gauss(r, glow)) * (1 - gauss(r, core))
+    const at = onPlate(props.layout, light)
+    const { reach, stops } = pointLight(light, unit())
     return {
       ...disc(at.x, at.y, reach),
-      background: `radial-gradient(circle closest-side, ${alphaStops(dot.rgb, alphaAt, reach).join(', ')})`,
+      background: `radial-gradient(circle closest-side, ${stops.join(', ')})`,
     }
   }
 
@@ -220,6 +221,7 @@ export function CelebrationStar(props: CelebrationStarProps): JSX.Element {
           taper: r.taperW * unit(),
           alpha: r.alpha,
           fromStart: plan[i].fromStart,
+          segmentGain: r.segmentGain,
         },
         box,
       ),
@@ -255,8 +257,21 @@ export function CelebrationStar(props: CelebrationStarProps): JSX.Element {
 
   // ── The star ──────────────────────────────────────────────
   const tip = (): number => CELEBRATION.star.tipW * unit()
-  /** The star's SVG box: its tips, its stroke and a margin, px about its centre. */
-  const box = (): number => tip() + CELEBRATION.star.outer.strokeW * unit() + 2
+  /**
+   * The star's SVG box: its farthest corner (the lopsided outline reaches
+   * past the tip radius), its stroke and a margin, px about its centre.
+   */
+  const box = (): number =>
+    tip() * Math.max(1, ...CELEBRATION.star.outer.lopsided.radiusCcw) +
+    CELEBRATION.star.outer.strokeW * unit() +
+    2
+  const outerPath = (): string =>
+    starPath(
+      tip(),
+      CELEBRATION.star.outer.valleyOverTip,
+      undefined,
+      CELEBRATION.star.outer.lopsided,
+    )
 
   // ── Motion ────────────────────────────────────────────────
   let mistEl: HTMLDivElement | undefined
@@ -264,10 +279,12 @@ export function CelebrationStar(props: CelebrationStarProps): JSX.Element {
   let burstCoreEl: HTMLDivElement | undefined
   let starGlowEl: HTMLDivElement | undefined
   let fillEl: SVGPathElement | undefined
+  let blotchEl: SVGGElement | undefined
   let innerEl: SVGPathElement | undefined
   let outerEl: SVGPathElement | undefined
   const rayEls: HTMLDivElement[] = []
   const dotEls: HTMLDivElement[] = []
+  const sparkleEls: HTMLDivElement[] = []
   const running: Animation[] = []
 
   const animate = (
@@ -304,6 +321,37 @@ export function CelebrationStar(props: CelebrationStarProps): JSX.Element {
     ribbonNow = ribbonFrames(0)
     paintRibbonCanvas()
     frame = requestAnimationFrame(tick)
+  }
+
+  /** Lights come up from a scale, then twinkle between two opacities. */
+  const revealLights = (
+    els: readonly HTMLDivElement[],
+    timings: readonly DotTiming[],
+    o: {
+      fromScale: number
+      durationMs: number
+      opacity: readonly number[]
+    },
+  ): void => {
+    const [dim, full] = o.opacity
+    timings.forEach((t, i) => {
+      animate(
+        els[i],
+        [
+          { opacity: 0, transform: `scale(${o.fromScale})` },
+          { opacity: 1, transform: 'scale(1)' },
+        ],
+        { delay: t.revealAt, duration: o.durationMs, easing: 'ease-out' },
+      )
+      animate(els[i], [{ opacity: full }, { opacity: dim }], {
+        delay: t.twinkleAt,
+        duration: t.periodMs / 2,
+        iterations: Infinity,
+        direction: 'alternate',
+        easing: 'ease-in-out',
+        fill: 'none',
+      })
+    })
   }
 
   const play = (): void => {
@@ -385,34 +433,29 @@ export function CelebrationStar(props: CelebrationStarProps): JSX.Element {
         },
       )
     })
-    // The dots, nearest the starburst first; then each twinkles.
-    const [dim, full] = idle.dotOpacity
-    dotTimings().forEach((t, i) => {
-      animate(
-        dotEls[i],
-        [
-          { opacity: 0, transform: `scale(${dots.fromScale})` },
-          { opacity: 1, transform: 'scale(1)' },
-        ],
-        { delay: t.revealAt, duration: dots.durationMs, easing: 'ease-out' },
-      )
-      animate(dotEls[i], [{ opacity: full }, { opacity: dim }], {
-        delay: t.twinkleAt,
-        duration: t.periodMs / 2,
-        iterations: Infinity,
-        direction: 'alternate',
-        easing: 'ease-in-out',
-        fill: 'none',
-      })
+    // The dots, nearest the starburst first, each sparkle a beat after its
+    // dot; then each twinkles.
+    revealLights(dotEls, dotTimings(), {
+      fromScale: dots.fromScale,
+      durationMs: dots.durationMs,
+      opacity: idle.dotOpacity,
+    })
+    const { sparkles } = timing
+    revealLights(sparkleEls, sparkleTimings(), {
+      fromScale: sparkles.fromScale,
+      durationMs: sparkles.durationMs,
+      opacity: sparkles.idleOpacity,
     })
     // The star: the outlines draw on, then the fill and the glow come up.
     const draw = [{ strokeDashoffset: '1' }, { strokeDashoffset: '0' }]
     animate(outerEl, draw, { ...span(s.outer), easing: 'ease-in-out' })
     animate(innerEl, draw, { ...span(s.inner), easing: 'ease-in-out' })
-    animate(fillEl, [{ opacity: 0 }, { opacity: 1 }], {
-      ...span(s.fill),
-      easing: 'ease-in-out',
-    })
+    for (const el of [fillEl, blotchEl]) {
+      animate(el, [{ opacity: 0 }, { opacity: 1 }], {
+        ...span(s.fill),
+        easing: 'ease-in-out',
+      })
+    }
     animate(starGlowEl, [{ opacity: 0 }, { opacity: 1 }], {
       ...span(s.glow),
       easing: 'ease-in-out',
@@ -485,11 +528,29 @@ export function CelebrationStar(props: CelebrationStarProps): JSX.Element {
             <stop offset="0" stop-color={rgb(CELEBRATION.star.inner.top)} />
             <stop offset="1" stop-color={rgb(CELEBRATION.star.inner.bottom)} />
           </linearGradient>
+          <clipPath id={`${id}-inside`}>
+            <path d={outerPath()} />
+          </clipPath>
+          <For each={CELEBRATION.star.blotches}>
+            {(blotch, i) => (
+              <radialGradient id={`${id}-blotch-${i()}`}>
+                <For each={gaussStops(blotch.alpha)}>
+                  {(stop) => (
+                    <stop
+                      offset={stop.offset}
+                      stop-color={rgb(blotch.rgb)}
+                      stop-opacity={stop.opacity.toFixed(4)}
+                    />
+                  )}
+                </For>
+              </radialGradient>
+            )}
+          </For>
         </defs>
         <path
           ref={fillEl}
           data-part="fill"
-          d={starPath(tip(), CELEBRATION.star.outer.valleyOverTip)}
+          d={outerPath()}
           fill={rgb(CELEBRATION.star.fill.rgb)}
           fill-opacity={CELEBRATION.star.fill.alpha}
         />
@@ -503,15 +564,28 @@ export function CelebrationStar(props: CelebrationStarProps): JSX.Element {
           )}
           fill="none"
           stroke={`url(#${id}-inner)`}
+          stroke-opacity={CELEBRATION.star.inner.alpha}
           stroke-width={CELEBRATION.star.inner.strokeW * unit()}
           stroke-linejoin="round"
           pathLength="1"
           stroke-dasharray="1"
         />
+        <g ref={blotchEl} data-part="blotches" clip-path={`url(#${id}-inside)`}>
+          <For each={CELEBRATION.star.blotches}>
+            {(blotch, i) => (
+              <circle
+                cx={blotch.centreR[0] * tip()}
+                cy={blotch.centreR[1] * tip()}
+                r={GAUSS_REACH * blotch.sigmaR * tip()}
+                fill={`url(#${id}-blotch-${i()})`}
+              />
+            )}
+          </For>
+        </g>
         <path
           ref={outerEl}
           data-part="outer"
-          d={starPath(tip(), CELEBRATION.star.outer.valleyOverTip)}
+          d={outerPath()}
           fill="none"
           stroke={`url(#${id}-outer)`}
           stroke-width={CELEBRATION.star.outer.strokeW * unit()}
@@ -528,7 +602,19 @@ export function CelebrationStar(props: CelebrationStarProps): JSX.Element {
             }}
             class={styles.disc}
             data-part="dot"
-            style={dotStyle(dot)}
+            style={lightStyle(dot)}
+          />
+        )}
+      </For>
+      <For each={CELEBRATION_SPARKLES}>
+        {(sparkle, i) => (
+          <div
+            ref={(el) => {
+              sparkleEls[i()] = el
+            }}
+            class={styles.disc}
+            data-part="sparkle"
+            style={lightStyle(sparkle)}
           />
         )}
       </For>
