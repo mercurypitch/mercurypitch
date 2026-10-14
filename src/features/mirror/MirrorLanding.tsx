@@ -49,7 +49,7 @@ const DOOR_COPY: Record<MirrorEntryIntent, DoorCopy> = {
   },
   'voice-mirror': {
     headline: { lead: 'Meet your ', lit: 'voice twin.' },
-    lede: 'Sing a couple of short tasks and we name a legend from your voice band, then map your voice as a voiceprint you can share.',
+    lede: 'Sing a couple of short tasks. We find your range, name a legend of your voice type, then map your voice as a voiceprint you can share.',
     cta: 'Find my voice twin',
     howItWorks: 'How it works',
     mode: 'guided',

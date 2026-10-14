@@ -109,7 +109,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     og: {
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
       description:
-        'Sing for 60 seconds and get your range, accuracy and steadiness as a voiceprint to share, plus the famous singer in your voice band.',
+        'Sing for 60 seconds and get your range, accuracy and steadiness as a voiceprint to share, plus a famous singer of your voice type.',
       image: ogImage('mirror-og.png'),
       imageAlt:
         'A pitch contour rising, holding level, then falling — two glides around one steady note.',
@@ -120,7 +120,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'Your vocal range, accuracy and steadiness as a shareable voiceprint. Audio never leaves your device.',
     },
     h1: 'Voice Mirror — see your voice in 60 seconds',
-    lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then places your range in one of six voice bands and names a famous singer from that band. Free, no account, and only you can hear you.',
+    lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then places your range in one of six voice types and names a famous singer of that type. Free, no account, and only you can hear you.',
     faq: [
       {
         q: 'What is my vocal range?',
@@ -171,7 +171,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
       {
         q: 'Does vocal range determine my voice type?',
-        a: 'Not by itself. MercuryPitch shows the broad voice band that overlaps your measured range most, but voice type also depends on comfortable tessitura, tone and training. Treat the label as a guide, not a verdict.',
+        a: 'Not by itself. MercuryPitch shows the broad voice type whose range overlaps yours most, but voice type also depends on comfortable tessitura, tone and training. Treat the label as a guide, not a verdict.',
       },
       {
         q: 'Is this vocal range test free?',
@@ -537,34 +537,34 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title:
       'Voice Type Test — Am I a Soprano, Alto, Tenor or Bass? | MercuryPitch',
     description:
-      'Sing a low-to-high glide and see which voice band your measured range overlaps most: soprano, mezzo, alto, tenor, baritone or bass. Free, in your browser.',
+      'Find your range with a low-to-high glide and see which voice type it overlaps most: soprano, mezzo, alto, tenor, baritone or bass. Free, in your browser.',
     keywords:
       'voice type test, what is my voice type, am i a soprano or alto, tenor or baritone, singing voice type, voice classification',
     og: {
       title: 'Voice Type Test — Soprano, Alto, Tenor or Bass?',
       description:
-        'Glide from your lowest note to your highest and see which voice band your measured range overlaps most. A guide, not a verdict.',
+        'Glide from your lowest note to your highest and see which voice type your measured range overlaps most. A guide, not a verdict.',
       image: ogImage('voice-type-test-og.png'),
       imageAlt:
-        'Voice bands stacked from bass to soprano on a pitch scale, with one lit to show the measured range.',
+        'Voice types stacked from bass to soprano on a pitch scale, with one lit to show the measured range.',
     },
     twitter: {
       title: 'Voice Type Test — Soprano, Alto, Tenor or Bass?',
       description:
-        'See which voice band your measured range overlaps most. Free, and your audio stays on your device.',
+        'Find your range and see which voice type it overlaps most. Free, and your audio stays on your device.',
     },
     h1: 'Voice type test',
-    lede: 'Sing one comfortable glide from your lowest note to your highest. MercuryPitch measures the notes you actually reached and shows which of the standard bands — soprano, mezzo-soprano, alto, tenor, baritone or bass — your range overlaps most.',
+    lede: 'Sing one comfortable glide from your lowest note to your highest. MercuryPitch measures the notes you actually reached and shows which of six voice types (soprano, mezzo-soprano, alto, tenor, baritone or bass) your range overlaps most.',
     app: {
       name: 'MercuryPitch Voice Type Test',
       category: 'MusicApplication',
       description:
-        'A browser voice-type test: measures your sung range and shows the standard voice band it overlaps most, presented as a guide rather than a classification.',
+        'A browser voice-type test: measures your sung range and shows the standard voice type whose range it overlaps most, presented as a guide rather than a classification.',
     },
     faq: [
       {
         q: 'How do I find out my voice type?',
-        a: 'Sing a comfortable siren from low to high and back down. MercuryPitch takes the lowest and highest notes it heard reliably and compares that span against the standard bands. The timed part takes about a minute, each step waits until you are ready, and you need no piano.',
+        a: 'Sing a comfortable siren from low to high and back down. MercuryPitch takes the lowest and highest notes it heard reliably and compares that span with the typical ranges of six voice types. The timed part takes about a minute, each step waits until you are ready, and you need no piano.',
       },
       {
         q: 'Is voice type the same as vocal range?',
@@ -572,7 +572,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
       {
         q: 'Can a test really tell me if I am a soprano or an alto?',
-        a: 'Not on its own, and MercuryPitch does not pretend otherwise. What it gives you is the measured evidence — your real notes, in real units — and the band that best overlaps them. Treat the label as a starting point for a conversation with a teacher, not a verdict.',
+        a: 'Not on its own, and MercuryPitch does not pretend otherwise. What it gives you is the measured evidence — your real notes, in real units — and the voice type whose range best overlaps them. Treat the label as a starting point for a conversation with a teacher, not a verdict.',
       },
     ],
     noscript:
@@ -635,13 +635,13 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     themeColor: MIRROR_THEME_COLOR,
     title: 'Which Singer Has My Vocal Range? Match Your Voice | MercuryPitch',
     description:
-      'Glide low to high, find the voice band your range sits in, and meet a famous singer from it. Free, a minute on the clock, and your audio stays on your device.',
+      'Find your range, see which voice type it overlaps most, and meet a famous singer of that type. Free, a minute on the clock, and your audio stays on your device.',
     keywords:
       'which singer has my vocal range, singer with my voice, vocal range match, famous singer vocal ranges, what singer do i sound like',
     og: {
       title: 'Which Singer Has My Vocal Range?',
       description:
-        'Glide from your lowest note to your highest, get your measured range, and meet a famous singer from the same voice band.',
+        'Find your range, see which voice type it overlaps most, and meet a famous singer of that type.',
       image: ogImage('which-singer-has-my-vocal-range-og.png'),
       imageAlt:
         'Two vocal ranges drawn as spans on a scale, the stretch they share lit between them.',
@@ -649,24 +649,24 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Which Singer Has My Vocal Range?',
       description:
-        'Your measured range, the voice band it sits in, and a famous singer from that band. Free, in your browser.',
+        'Your measured range, the voice type it overlaps most, and a famous singer of that type. Free, in your browser.',
     },
     h1: 'Which singer has my vocal range?',
-    lede: 'Glide from your lowest comfortable note to your highest and back. MercuryPitch measures the notes you actually reached, places your range in one of six voice bands and introduces a famous singer from that band, on a card you can keep or share.',
+    lede: 'Glide from your lowest comfortable note to your highest and back. MercuryPitch measures the notes you actually reached, places your range in one of six voice types and introduces a famous singer of that type, on a card you can keep or share.',
     app: {
       name: 'MercuryPitch Singer Match',
       category: 'MusicApplication',
       description:
-        'Measures a vocal range in the browser, places it in one of six broad voice bands and pairs it with a famous singer from that band, producing a shareable card.',
+        'Measures a vocal range in the browser, places it in one of six broad voice types and pairs it with a famous singer of that type, producing a shareable card.',
     },
     faq: [
       {
         q: 'How does the match work?',
-        a: 'MercuryPitch compares the lowest and highest notes it measured from your glide with six broad voice bands, from bass to soprano, and picks the band your range overlaps most. You then meet a famous singer from that band, and the same range always meets the same singer. The band is arithmetic on notes, not an opinion about your voice.',
+        a: 'MercuryPitch compares the lowest and highest notes it measured from your glide with the typical ranges of six voice types, from bass to soprano, and picks the type your range overlaps most. You then meet a famous singer of that type, and the same range always meets the same singer. Picking the type is arithmetic on notes, not an opinion about your voice.',
       },
       {
         q: 'Does matching a singer mean I sound like them?',
-        a: 'No. It means your range sits in the same broad voice band. Timbre, weight, vibrato, accent and technique are what make a voice recognizable, and none of those are being compared here. Someone can share a band with a singer and sound nothing like them.',
+        a: 'No. It means your range points to the broad voice type that singer is listed under. Timbre, weight, vibrato, accent and technique are what make a voice recognizable, and none of those are being compared here. Someone can share a voice type with a singer and sound nothing like them.',
       },
       {
         q: 'Do I need to sing well to get a result?',

@@ -266,7 +266,7 @@ const LegendDetailDialog: Component<{
                 <dd>{props.legend.band}</dd>
               </div>
               <div>
-                <dt>Reference band</dt>
+                <dt>Reference range</dt>
                 <dd>{band()?.rangeLabel ?? 'Broad guide'}</dd>
               </div>
               <div>
@@ -277,8 +277,9 @@ const LegendDetailDialog: Component<{
 
             <p id="voice-legend-detail-note" class={styles.detailNote}>
               MercuryPitch places this legend in a broad{' '}
-              {props.legend.band.toLowerCase()} neighborhood. The band is a
-              playful point of reference, not a measured range for this artist.
+              {props.legend.band.toLowerCase()} neighborhood. The voice type is
+              a playful point of reference, not a measured range for this
+              artist.
             </p>
 
             <div class={styles.detailActions}>
@@ -398,11 +399,11 @@ export const VoiceConstellationSurface: Component<
     const range = measuredRange()
     const bands = overlappingBands()
     if (range === null || bands.length === 0) {
-      return 'The bands below are broad discovery guides, not a diagnosis or a ranking.'
+      return 'The voice types below are broad discovery guides, not a diagnosis or a ranking.'
     }
     return `Your latest measured range, ${range}, overlaps the broad ${joinLabels(
       bands.map((band) => band.label),
-    )} bands. They are discovery guides, not a diagnosis or a ranking.`
+    )} voice types. They are discovery guides, not a diagnosis or a ranking.`
   }
 
   useFocusTrap(() => dialog, {

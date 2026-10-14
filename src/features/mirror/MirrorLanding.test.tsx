@@ -26,7 +26,7 @@ beforeEach(() => {
 })
 
 const TWIN_LEDE =
-  'Sing a couple of short tasks and we name a legend from your voice band, then map your voice as a voiceprint you can share.'
+  'Sing a couple of short tasks. We find your range, name a legend of your voice type, then map your voice as a voiceprint you can share.'
 
 /** What each address promises (src/seo/entry-pages.ts sends the ads and the
  *  search pages here), and the one thing its start screen asks for. */
