@@ -16,6 +16,6 @@ export const OG_IMAGE_VERSIONS: Readonly<Record<string, string>> = {
   'pitch-training-og.png': 'cbeae6c6',
   'vocal-range-test-og.png': '6b1ae1b7',
   'voice-type-test-og.png': '6cf6f9fc',
-  'which-singer-has-my-vocal-range-og.png': 'eb194e09',
+  'which-singer-has-my-vocal-range-og.png': 'dfe12af7',
   'glass/og.jpg': 'b1495474',
 }
