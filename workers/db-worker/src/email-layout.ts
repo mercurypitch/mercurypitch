@@ -9,7 +9,7 @@
 // letters, digits and hyphens: Cloudflare answers anything a URL would
 // percent-encode, like an @, with a redirect before the picture.
 
-import { ABOUT_URL, escapeHtml, footerHtml, REPO_URL } from './email'
+import { ABOUT_URL, AUTO_LINK_STYLE, COLOR_SCHEME_META, escapeHtml, footerHtml, REPO_URL, } from './email'
 
 /**
  * Where a mail's links and pictures point. Links follow the app the sign-up
@@ -174,7 +174,7 @@ export function heroRow(
   origins: MailOrigins,
   link: HeroLink | null,
 ): string {
-  const img = `<img src="${url(origins.assetOrigin, art.path)}" width="600" height="${art.height}" alt="${escapeHtml(art.alt)}" style="display:block;width:100%;height:auto;border:0;border-radius:17px 17px 0 0;">`
+  const img = `<img src="${url(origins.assetOrigin, art.path)}" width="600" height="${art.height}" alt="${escapeHtml(art.alt)}" style="display:block;width:100%;height:auto;border:0;border-radius:17px 17px 0 0;color:${W.soft};">`
   const hero =
     link === null
       ? img
@@ -209,17 +209,17 @@ export function documentHtml(
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="x-apple-disable-message-reformatting">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
+${COLOR_SCHEME_META}
 <title>${escapeHtml(subject)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;display=swap" rel="stylesheet">
 <style>${HEAD_CSS}</style>
+${AUTO_LINK_STYLE}
 </head>
-<body style="margin:0; padding:0; background:${W.page}; -webkit-text-size-adjust:100%;">
+<body id="body" style="margin:0; padding:0; background:${W.page}; -webkit-text-size-adjust:100%;">
 <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${W.page}; font-size:1px; line-height:1px;">${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${W.page}" style="background:${W.page};"><tr><td align="center" style="padding:22px 12px 30px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
-<tr><td style="padding:2px 4px 16px;"><a href="${escapeHtml(origins.appOrigin)}" style="text-decoration:none;"><img src="${url(origins.assetOrigin, WORDMARK_PATH)}" width="204" height="40" alt="MercuryPitch" style="display:block;border:0;width:204px;height:40px;"></a></td></tr>
+<tr><td style="padding:2px 4px 16px;"><a href="${escapeHtml(origins.appOrigin)}" style="text-decoration:none;"><img src="${url(origins.assetOrigin, WORDMARK_PATH)}" width="204" height="40" alt="MercuryPitch" style="display:block;border:0;width:204px;height:40px;color:${W.text};"></a></td></tr>
 <tr><td style="background:${W.card};border:1px solid ${W.line};border-radius:18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table></td></tr>
 ${footerHtml(reason)}
 </table></td></tr></table>
