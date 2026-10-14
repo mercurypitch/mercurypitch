@@ -13,7 +13,7 @@
 import type { RenderedEmail, ResendConfig } from './email'
 import { escapeHtml, maskEmail, resendSend } from './email'
 import type { HeroLink, Lines, MailArt, MailOrigins } from './email-layout'
-import { arrowLink, button, DISPLAY, documentHtml, eyebrow, footerText, heroRow, inlineLink, introRow, MAIL_ART, MONO, SANS, signOffRow, url, W, } from './email-layout'
+import { arrowLink, button, DISPLAY, documentHtml, eyebrow, footerText, heroRow, inlineLink, introRow, MAIL_ART, MONO, SANS, signOffRow, twoUp, url, W, } from './email-layout'
 import type { SignupSource, SignupVoiceprint } from './signup-hint'
 import { noteName } from './signup-hint'
 
@@ -224,16 +224,18 @@ function roomBlurb(room: Room, appOrigin: string): string {
   return `${escapeHtml(room.blurb.before)}${inlineLink(escapeHtml(label), url(appOrigin, path))}${escapeHtml(room.blurb.after)}`
 }
 
-/** 2x2 on desktop, stacked on phones: inline blocks that wrap. */
+/** 2x2 on desktop, one per row filling the card on phones (twoUp). */
 function roomsRow(appOrigin: string): string {
-  const tiles = ROOMS.map(
-    (room) =>
-      `<div style="display:inline-block;width:100%;max-width:263px;vertical-align:top;font-size:16px;"><div style="margin:0 6px 12px;background:${W.panel};border:1px solid ${W.panelLine};border-radius:14px;padding:16px 16px 14px;"><div style="font:700 11px/1.3 ${SANS};letter-spacing:1.4px;text-transform:uppercase;color:${room.color};">${room.kicker}</div><div style="font:700 17px/1.3 ${DISPLAY};color:${W.text};margin:6px 0 4px;">${room.title}</div><div style="font:14px/1.5 ${SANS};color:${W.muted};min-height:63px;">${roomBlurb(room, appOrigin)}</div><a href="${url(appOrigin, room.path)}" style="display:inline-block;margin-top:10px;font:600 14px/1.4 ${SANS};color:${W.blue};text-decoration:none;">${room.cta} &rarr;</a></div></div>`,
-  ).join('')
+  const tiles = twoUp(
+    ROOMS.map(
+      (room) =>
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:0 6px 12px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr><td style="background:${W.panel};border:1px solid ${W.panelLine};border-radius:14px;padding:16px 16px 14px;"><div style="font:700 11px/1.3 ${SANS};letter-spacing:1.4px;text-transform:uppercase;color:${room.color};">${room.kicker}</div><div style="font:700 17px/1.3 ${DISPLAY};color:${W.text};margin:6px 0 4px;">${room.title}</div><div style="font:14px/1.5 ${SANS};color:${W.muted};min-height:63px;">${roomBlurb(room, appOrigin)}</div><a href="${url(appOrigin, room.path)}" style="display:inline-block;margin-top:10px;font:600 14px/1.4 ${SANS};color:${W.blue};text-decoration:none;">${room.cta} &rarr;</a></td></tr></table></td></tr></table>`,
+    ),
+  )
   const [challenges, piano, guitar, drums] = ALSO_WAITING.map(([label, path]) =>
     inlineLink(label, url(appOrigin, path)),
   )
-  return `<tr><td style="padding:22px 18px 4px;"><div style="font:700 12px/1.4 ${SANS};letter-spacing:1.6px;text-transform:uppercase;color:${W.muted};padding:0 6px 12px;">Start anywhere</div><div style="font-size:0;">${tiles}</div><div style="font:14px/1.55 ${SANS};color:${W.muted};padding:4px 6px 0;">Also waiting for you: ${challenges} and the night practice rooms for ${piano}, ${guitar} and ${drums}.</div></td></tr>`
+  return `<tr><td style="padding:22px 18px 4px;"><div style="font:700 12px/1.4 ${SANS};letter-spacing:1.6px;text-transform:uppercase;color:${W.muted};padding:0 6px 12px;">Start anywhere</div>${tiles}<div style="font:14px/1.55 ${SANS};color:${W.muted};padding:4px 6px 0;">Also waiting for you: ${challenges} and the night practice rooms for ${piano}, ${guitar} and ${drums}.</div></td></tr>`
 }
 
 // ── plain text ───────────────────────────────────────────────────────

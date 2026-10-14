@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { RenderedEmail } from './email'
 import type { MailOrigins } from './email-layout'
-import { MAIL_ART, WORDMARK_PATH } from './email-layout'
+import { COLUMN_CLASS, MAIL_ART, WORDMARK_PATH } from './email-layout'
 import { legendPortraitPath, rangeBarWidths, renderConfirmEmail, renderFreshLinkEmail, renderWelcomeEmail, } from './email-welcome'
 import type { SignupVoiceprint } from './signup-hint'
 import { parseVoiceprintHint } from './signup-hint'
@@ -272,6 +272,65 @@ describe('the rooms', () => {
 
   it('stay out of the fresh link, whose one job is the link', () => {
     expect(visibleText(freshLink(SINATRA).html)).not.toContain('Start anywhere')
+  })
+
+  const tileStyles = (html: string): string[] =>
+    [
+      ...html.matchAll(
+        new RegExp(`<div class="${COLUMN_CLASS}" style="([^"]*)"`, 'g'),
+      ),
+    ].map((m) => m[1])
+  const headCss = (html: string): string =>
+    html.match(
+      /<head>[\s\S]*?<style>([\s\S]*?)<\/style>[\s\S]*?<\/head>/,
+    )?.[1] ?? ''
+
+  // At 390 px each tile stopped at 263 px and left about 90 px of the card
+  // empty on its right (Gmail on iPhone, 14 Oct 2026).
+  it('fill the card on a phone and sit two to a row on a desktop', () => {
+    for (const mail of [welcome(null), confirm(SINATRA)]) {
+      const styles = tileStyles(mail.html)
+      expect(styles).toHaveLength(4)
+      // A client that drops the <style> in the head (Gmail with a non-Google
+      // account) keeps this: two to a row where two fit, stacked otherwise.
+      for (const style of styles)
+        expect(style).toMatch(
+          /^display:inline-block;width:100%;max-width:263px;vertical-align:top;/,
+        )
+      const css = headCss(mail.html)
+      expect(css).toMatch(
+        new RegExp(
+          `@media screen and \\(max-width:599px\\)\\{\\.${COLUMN_CLASS}\\{max-width:100%!important;\\}\\}`,
+        ),
+      )
+      expect(css).toMatch(
+        new RegExp(
+          `@media screen and \\(min-width:600px\\)\\{\\.${COLUMN_CLASS}\\{max-width:50%!important;\\}\\}`,
+        ),
+      )
+    }
+  })
+
+  it('stay two to a row in Outlook for Windows, which ignores both widths', () => {
+    // Outlook reads what sits in [if mso] comments and nothing else from
+    // this layout: a table of two rows with a half-width cell per tile.
+    const ghost = [
+      ...welcome(null).html.matchAll(
+        /<!--\[if mso\]>([\s\S]*?)<!\[endif\]-->/g,
+      ),
+    ]
+      .map((m) => m[1])
+      .join('')
+    expect(ghost.match(/<td width="50%" valign="top">/g)).toHaveLength(4)
+    expect(ghost.match(/<tr>/g)).toHaveLength(2)
+    expect(ghost.match(/<\/table>/g)).toHaveLength(1)
+    // Each tile's box is a table cell, which Outlook pads and fills; a div
+    // it would draw bare.
+    expect(welcome(null).html).not.toMatch(/<div[^>]*border-radius:14px/)
+  })
+
+  it.each(EVERY_MAIL)('lay out %s without flex or grid', (_name, render) => {
+    expect(render().html).not.toMatch(/display:\s*(?:inline-)?(?:flex|grid)/)
   })
 })
 

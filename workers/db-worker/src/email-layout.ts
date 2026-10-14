@@ -112,6 +112,47 @@ export function eyebrow(text: string, color: string = W.teal): string {
   return `<div style="font:700 12px/1.4 ${SANS};letter-spacing:1.6px;text-transform:uppercase;color:${color};margin:0 0 10px;">${escapeHtml(text)}</div>`
 }
 
+// ── columns ──────────────────────────────────────────────────────────
+
+/**
+ * The class on a column that sits beside another on a desktop and takes the
+ * whole card on a phone. HEAD_CSS sets its width; where a client drops the
+ * <style> (Gmail with a non-Google account), the inline 263 px still fits
+ * two to a row in the 600 px card and stacks narrower.
+ */
+export const COLUMN_CLASS = 'mp-col'
+
+/**
+ * Below 600 px a column takes the full width, so on a phone the tiles reach
+ * the card's right edge instead of stopping at 263 px. From 600 px two
+ * columns split the row evenly. Gmail, Apple Mail, Outlook's apps and Yahoo
+ * read media queries in the head; Outlook for Windows reads none and gets
+ * the [if mso] table in twoUp().
+ */
+const HEAD_CSS = `@media screen and (max-width:599px){.${COLUMN_CLASS}{max-width:100%!important;}}@media screen and (min-width:600px){.${COLUMN_CLASS}{max-width:50%!important;}}`
+
+/**
+ * Cells two to a row on a desktop and one to a row on a phone: inline
+ * blocks that wrap, in a cell with font-size 0 so no whitespace opens a gap
+ * between them. Outlook for Windows ignores inline-block and max-width, so it
+ * gets the same cells in a real table of half-width cells instead.
+ */
+export function twoUp(cells: readonly string[]): string {
+  const open = '<td width="50%" valign="top">'
+  const blocks = cells
+    .map((cell, i) => {
+      const before =
+        i === 0
+          ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${open}`
+          : i % 2 === 0
+            ? `</td></tr><tr>${open}`
+            : `</td>${open}`
+      return `<!--[if mso]>${before}<![endif]--><div class="${COLUMN_CLASS}" style="display:inline-block;width:100%;max-width:263px;vertical-align:top;font-size:16px;">${cell}</div>`
+    })
+    .join('')
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="font-size:0;">${blocks}<!--[if mso]></td></tr></table><![endif]--></td></tr></table>`
+}
+
 // ── sections ─────────────────────────────────────────────────────────
 
 /** The eyebrow, headline and first paragraph under the picture. */
@@ -172,6 +213,7 @@ export function documentHtml(
 <meta name="supported-color-schemes" content="dark">
 <title>${escapeHtml(subject)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>${HEAD_CSS}</style>
 </head>
 <body style="margin:0; padding:0; background:${W.page}; -webkit-text-size-adjust:100%;">
 <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${W.page}; font-size:1px; line-height:1px;">${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;</div>
