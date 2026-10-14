@@ -64,41 +64,6 @@ export interface DemoTakeShape<E extends string> {
 }
 
 /**
- * A take's two clocks through its fast stretches, each played `rate` engine
- * seconds to the wall second; between them the clocks run together.
- */
-export function stretchClocks(
-  fast: readonly FastStretch[],
-  rate: number,
-): Pick<DemoTakeShape<string>, 'engineAt' | 'wallAt'> {
-  const saves = (stretch: FastStretch): number =>
-    (stretch.to - stretch.from) * (1 - 1 / rate)
-  return {
-    engineAt: (w) => {
-      let saved = 0
-      for (const stretch of fast) {
-        const starts = stretch.from - saved
-        if (w <= starts) break
-        const ends = starts + (stretch.to - stretch.from) / rate
-        if (w <= ends) return stretch.from + (w - starts) * rate
-        saved += saves(stretch)
-      }
-      return w + saved
-    },
-    wallAt: (e) => {
-      let saved = 0
-      for (const stretch of fast) {
-        if (e <= stretch.from) break
-        if (e < stretch.to)
-          return stretch.from - saved + (e - stretch.from) / rate
-        saved += saves(stretch)
-      }
-      return e - saved
-    },
-  }
-}
-
-/**
  * A take's engine event, or `fast` and `slow`: one of its fast-forwards
  * beginning and ending.
  */

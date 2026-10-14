@@ -351,15 +351,6 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
                 testId="echo-chip"
               />
             </div>
-            <Show when={demo.fast()}>
-              <span
-                class={styles.fast}
-                aria-hidden="true"
-                data-testid="echo-demo-fast"
-              >
-                {DEMO_COPY.fast}
-              </span>
-            </Show>
           </Match>
         </Switch>
       </div>

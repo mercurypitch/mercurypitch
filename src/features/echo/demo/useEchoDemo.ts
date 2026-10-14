@@ -3,12 +3,11 @@
 // ============================================================
 //
 // The demo kit's driver (demo-kit/useExerciseDemo.ts) in the Echo room:
-// take 1 comes in over Merc's call, sits flat on the second note and
-// slides past the third; take 2 waits for the call and lands all three,
-// and its phrase joins the sky. Every tooltip waits for the moment it
-// explains (demo-cues.ts). The fast-forward through take 1's wait on the
-// flat note takes the tooltip down until the note misses, and the result
-// takes down the one on the phrase, whose stars it moves.
+// take 1 comes in over Merc's call, sits flat on the second note and moves
+// on to the third; take 2 waits for the call and lands all three, and its
+// phrase joins the sky. Every tooltip waits for the moment it explains
+// (demo-cues.ts), and both takes play at their own speed. The result takes
+// down the tooltip on the phrase, whose stars it moves.
 
 import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, } from '@/components/demo-kit/useExerciseDemo'
 import { useExerciseDemo } from '@/components/demo-kit/useExerciseDemo'
@@ -43,7 +42,7 @@ export function useEchoDemo(room: EchoController): EchoDemo {
     copy: DEMO_COPY,
     micTarget: 'mic',
     endMark: 'phraseEnd',
-    clearTipOn: ['fast', 'result'],
+    clearTipOn: ['result'],
     autoPlays: () => echoDemoAutoPlays(),
     markSeen: () => markEchoDemoSeen(),
     sound: (ctx, minLead) =>

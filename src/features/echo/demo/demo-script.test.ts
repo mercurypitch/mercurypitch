@@ -15,11 +15,11 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { MissedNote, NoteOutcome } from '@/lib/sequence/sequence-engine'
 import { createSequenceState, ECHO_LEVELS, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
 import { centsOff, NO_EARLY, watchEarly } from '../early-singing'
-import { PHRASE_SHOW_MS } from '../echo-controller-contract'
+import { DEMO_PHRASE_SHOW_MS, PHRASE_SHOW_MS, } from '../echo-controller-contract'
 import { phraseLine } from '../echo-run'
-import { DEMO_BEATS, DEMO_COPY, DEMO_CUES, demoCueText, planEchoDemo, } from './demo-cues'
-import type { EchoDemoTake } from './demo-script'
-import { CALL_AT, DEMO_FAST_RATE, DEMO_LEVEL, DEMO_VIBRATO, demoTake, FLAT_CENTS, RESULT_AFTER, } from './demo-script'
+import { DEMO_BEATS, DEMO_COPY, DEMO_CUES, demoCueText, planEchoDemo, TIP_READ_SECONDS, } from './demo-cues'
+import type { DemoVoicePoint, EchoDemoTake } from './demo-script'
+import { CALL_AT, DEMO_LEVEL, DEMO_VIBRATO, demoTake, ECHO_GLIDE_SECONDS, ECHO_NOTE_SECONDS, FLAT_CENTS, FLAT_NOTES, RESULT_AFTER, } from './demo-script'
 
 const ROOTS = Array.from(
   { length: HOLD_TARGET_MAX_MIDI - HOLD_TARGET_MIN_MIDI + 1 },
@@ -70,8 +70,37 @@ function replay(take: EchoDemoTake): Replay {
 
 const types = (r: Replay): string[] => r.marks.map((m) => m.type)
 
+/** The phrase's notes above its root, cents. */
+const centsAbove = (take: EchoDemoTake): number[] =>
+  take.phrase.notes.map((note) => (note.midi - take.root) * 100)
+
+/**
+ * How long the voice holds each of `targets` (cents above the root), in
+ * order: a note is left once the voice has reached it and is nearer the
+ * next, so a glide counts half to the note it leaves and half to the next.
+ */
+function sungNotes(
+  voice: readonly DemoVoicePoint[],
+  targets: readonly number[],
+): number[] {
+  const seconds = targets.map(() => 0)
+  let at = 0
+  let reached = false
+  for (const [i, point] of voice.entries()) {
+    if (i === 0 || point.level <= 0) continue
+    const off = (k: number): number => Math.abs(point.cents - targets[k])
+    if (reached && at + 1 < targets.length && off(at + 1) < off(at)) {
+      at += 1
+      reached = false
+    }
+    if (off(at) < 50) reached = true
+    seconds[at] += point.t - voice[i - 1].t
+  }
+  return seconds
+}
+
 describe("the demo's takes, at every root the room offers", () => {
-  it('take 1 comes in early, lands the first note, misses the second and the third', () => {
+  it('take 1 comes in early, lands the first note, misses the second and lands the third', () => {
     for (const root of ROOTS) {
       const r = replay(demoTake('off', root))
       expect(types(r), `root ${root}`).toEqual([
@@ -79,7 +108,7 @@ describe("the demo's takes, at every root the room offers", () => {
         'early',
         'land:0',
         'miss:1',
-        'miss:2',
+        'land:2',
         'phraseEnd',
       ])
     }
@@ -139,13 +168,18 @@ describe('what each tooltip says is what happened', () => {
     }
   })
 
-  it('"Flat": the second note sat flat, by more than the band, to its deadline', () => {
+  it('"Flat": the second note sat flat, by more than the band, until the voice moved on and landed the third', () => {
     const rules = ECHO_LEVELS[DEMO_LEVEL]
     for (const root of ROOTS) {
       const r = replay(demoTake('off', root))
       const second = r.outcomes[1] as MissedNote
       expect(second.landed).toBe(false)
-      expect(second.cause).toBe('deadline')
+      // The engine's own rule: a pending note misses when the voice lands
+      // the next one, long before its deadline.
+      expect(second.cause).toBe('skipped')
+      const at = (type: string) => r.marks.find((m) => m.type === type)?.at
+      expect(at('miss:1')).toBe(at('land:2'))
+      expect(r.outcomes[2].landed).toBe(true)
       expect(second.closest?.cents).toBeLessThan(-rules.tolCents)
       expect(second.closest?.cents).toBeGreaterThan(FLAT_CENTS - 15)
       // And the room's own line about the phrase says the same.
@@ -162,29 +196,18 @@ describe('what each tooltip says is what happened', () => {
     }
   })
 
-  it('"Slid past it": the voice crosses the third note too fast to land, then stops', () => {
-    const rules = ECHO_LEVELS[DEMO_LEVEL]
-    for (const root of ROOTS) {
-      const take = demoTake('off', root)
-      const r = replay(take)
-      const third = r.outcomes[2] as MissedNote
-      expect(third.landed).toBe(false)
-      expect(third.cause).toBe('silence')
-      expect(third.closest).toBeNull()
-      // It was heard, briefly, inside the third note's band.
-      const missed = r.marks.find((m) => m.type === 'miss:1')?.at ?? NaN
-      const inBand = take.frames.filter((frame) => {
-        const pitch = pitchOf(frame)
-        return (
-          frame.t > missed &&
-          pitch !== null &&
-          Math.abs(centsOff(pitch, take.phrase.notes[2].midi, false)) <=
-            rules.tolCents
-        )
-      })
-      expect(inBand.length).toBeGreaterThan(0)
-      expect(inBand.length / 60).toBeLessThan(rules.landMs / 1000 / 2)
-    }
+  it('"Flat": the flat note is heard, steady, for longer than a note of the call', () => {
+    const take = demoTake('off', 57)
+    const second = take.phrase.notes[1].midi
+    const flat = take.frames.filter((frame) => {
+      const pitch = pitchOf(frame)
+      if (pitch === null) return false
+      const off = centsOff(pitch, second, false)
+      return Math.abs(off - FLAT_CENTS) <= 20
+    })
+    const seconds = flat.length / 60
+    expect(seconds).toBeGreaterThan(ECHO_NOTE_SECONDS)
+    expect(seconds).toBeLessThan(FLAT_NOTES * ECHO_NOTE_SECONDS + 0.05)
   })
 
   it('"On the note": take 2 lands every note near its centre', () => {
@@ -202,7 +225,9 @@ describe('what each tooltip says is what happened', () => {
   })
 
   it('"Each note you land counts": the result follows the phrase as the room shows it', () => {
-    expect(RESULT_AFTER).toBe(PHRASE_SHOW_MS / 1000)
+    expect(RESULT_AFTER).toBe(DEMO_PHRASE_SHOW_MS / 1000)
+    // The demo holds the phrase a little longer than a run, never less.
+    expect(DEMO_PHRASE_SHOW_MS).toBeGreaterThanOrEqual(PHRASE_SHOW_MS)
     const take = demoTake('on', 57)
     const end = take.events.find((e) => e.type === 'phraseEnd')?.at ?? NaN
     const result = take.events.find((e) => e.type === 'result')?.at ?? NaN
@@ -211,21 +236,46 @@ describe('what each tooltip says is what happened', () => {
 })
 
 describe("the demo's clocks and voice", () => {
-  it("fast-forwards only take 1's wait on the flat note, at 4x", () => {
+  it('plays every take at its own speed: no fast-forward, one clock', () => {
+    for (const root of [HOLD_TARGET_MIN_MIDI, 57, HOLD_TARGET_MAX_MIDI]) {
+      for (const id of ['off', 'on'] as const) {
+        const take = demoTake(id, root)
+        expect(take.fast, `${id} ${root}`).toEqual([])
+        for (const event of take.events) {
+          expect(take.wallAt(event.at)).toBe(event.at)
+          expect(take.engineAt(event.at)).toBe(event.at)
+        }
+        const end = take.events.find((e) => e.type === 'phraseEnd')?.at
+        expect(take.length).toBe(end)
+      }
+    }
+    expect(DEMO_COPY).not.toHaveProperty('fast')
+  })
+
+  it("sings take 2 back at the call's pace: each note as long as Merc's", () => {
+    for (const root of [HOLD_TARGET_MIN_MIDI, 57, HOLD_TARGET_MAX_MIDI]) {
+      const take = demoTake('on', root)
+      const sung = sungNotes(take.voice, centsAbove(take))
+      expect(ECHO_NOTE_SECONDS).toBe(take.rules.noteSeconds)
+      expect(sung).toHaveLength(3)
+      for (const [i, seconds] of sung.entries()) {
+        const call = take.phrase.notes[i].seconds
+        expect(seconds, `root ${root} note ${i}`).toBeGreaterThan(call - 0.08)
+        expect(seconds, `root ${root} note ${i}`).toBeLessThan(call + 0.08)
+      }
+    }
+    // An unhurried move between notes, not a jump.
+    expect(ECHO_GLIDE_SECONDS).toBeGreaterThanOrEqual(0.15)
+  })
+
+  it("sings take 1's in-tune notes at the call's pace too, and holds the flat one longer", () => {
     const take = demoTake('off', 57)
-    const r = replay(take)
-    const landed = r.marks.find((m) => m.type === 'land:0')?.at ?? NaN
-    const missed = r.marks.find((m) => m.type === 'miss:1')?.at ?? NaN
-    expect(take.fast).toHaveLength(1)
-    expect(take.fast[0].from).toBeGreaterThan(landed + 0.3)
-    expect(take.fast[0].to).toBeLessThan(missed)
-    expect(DEMO_FAST_RATE).toBe(4)
-    expect(demoTake('on', 57).fast).toEqual([])
-    // The wall clock and the engine's agree but for the stretch.
-    expect(take.wallAt(take.fast[0].from)).toBeCloseTo(take.fast[0].from, 9)
-    const saved = (take.fast[0].to - take.fast[0].from) * (1 - 1 / 4)
-    expect(take.wallAt(missed)).toBeCloseTo(missed - saved, 9)
-    expect(take.engineAt(take.wallAt(missed))).toBeCloseTo(missed, 9)
+    const [first, second, third] = centsAbove(take)
+    const sung = sungNotes(take.voice, [first, second + FLAT_CENTS, third])
+    // The first came in early, over the call: longer than a note.
+    expect(sung[0]).toBeGreaterThan(ECHO_NOTE_SECONDS)
+    expect(sung[1]).toBeCloseTo(FLAT_NOTES * ECHO_NOTE_SECONDS, 1)
+    expect(sung[2]).toBeCloseTo(ECHO_NOTE_SECONDS, 1)
   })
 
   it('sings what the frames carry: the voice follows the frames to within the vibrato', () => {
@@ -234,7 +284,7 @@ describe("the demo's clocks and voice", () => {
       let worst = 0
       for (const point of take.voice) {
         if (point.level <= 0) continue
-        const e = take.engineAt(point.t)
+        const e = point.t
         const frame = take.frames.find((f) => f.t >= e - 1e-9)
         const pitch = frame === undefined ? null : pitchOf(frame)
         if (pitch === null) continue
@@ -246,10 +296,35 @@ describe("the demo's clocks and voice", () => {
     }
   })
 
-  it('lasts about 17 s, every tooltip inside its take, in order', () => {
+  it('gives every tooltip time to be read before the next takes its place', () => {
+    for (const root of [HOLD_TARGET_MIN_MIDI, 57, HOLD_TARGET_MAX_MIDI]) {
+      const plan = planEchoDemo(root)
+      const offOver =
+        plan.takeStart.off + plan.takes.off.length + DEMO_BEATS.afterOff
+      const result =
+        plan.takeStart.on +
+        (plan.takes.on.events.find((e) => e.type === 'result')?.at ?? NaN)
+      plan.cues.forEach((cue, i) => {
+        const take = DEMO_CUES[i].trigger.take
+        // Up until the next tooltip, the reset after take 1, the result
+        // (which takes the phrase's tooltip down) or the end card.
+        const ends = [
+          plan.cues[i + 1]?.at ?? plan.total,
+          take === 'off' ? offOver : plan.total,
+          cue.at < result ? result : plan.total,
+        ]
+        const up = Math.min(...ends) - cue.at
+        expect(up, `${cue.id} at root ${root}`).toBeGreaterThanOrEqual(
+          TIP_READ_SECONDS,
+        )
+      })
+    }
+  })
+
+  it('lasts about 19 s, every tooltip inside its take, in order', () => {
     const plan = planEchoDemo(57)
-    expect(plan.total).toBeGreaterThan(15.5)
-    expect(plan.total).toBeLessThan(18.5)
+    expect(plan.total).toBeGreaterThan(18.5)
+    expect(plan.total).toBeLessThan(19.5)
     const order = plan.cues.map((cue) => cue.id)
     expect(order).toEqual(DEMO_CUES.map((cue) => cue.id))
     const ats = plan.cues.map((cue) => cue.at)
@@ -277,7 +352,6 @@ describe("the demo's words", () => {
     expect(demoCueText('flat')).toMatch(/flat/iu)
     expect(demoCueText('flat')).toMatch(/higher/iu)
     expect(demoCueText('lands')).toMatch(/on the note/iu)
-    expect(demoCueText('slid')).toMatch(/stop on each note/iu)
   })
 
   it('keep out em dashes, "calm" and "practise"', () => {

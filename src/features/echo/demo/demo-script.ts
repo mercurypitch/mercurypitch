@@ -8,12 +8,15 @@
 //
 //   take 1, not like this   he comes in over his own last note (the room
 //                           ignores it and says so), lands the first note,
-//                           sits 65 cents flat on the second until its
-//                           deadline, then slides straight past the third
-//                           and stops: the silence ends the phrase
+//                           sits 65 cents flat on the second, then moves on
+//                           to the third and lands it: the second note
+//                           misses as he does
 //   take 2, like this       he waits for the call to end and lands all
 //                           three; the phrase joins the sky and the result
 //                           shows
+//
+// Both takes sing back at the call's pace: each note about as long as
+// Merc sang it, the moves between them unhurried. Nothing is played fast.
 //
 // Merc sings at one level, Beginner (the `learning` tier), whatever the
 // singer picked: the level a first visit starts at, with Merc's slowest
@@ -27,14 +30,14 @@
 // moment that really happened there, and the tests replay the same frames
 // through tickSequence to prove what each tooltip says.
 //
-// Two clocks. A take's frames are dated on the ENGINE clock, the one
-// tickSequence runs on (frame.t). The screen and the sound run on the WALL
-// clock. They agree except in take 1's one fast-forward, the wait on the
-// flat note for its deadline, where four engine seconds pass in each wall
-// second.
+// One clock. The demo kit can play a stretch of a take fast (Long note's
+// does); Echo's takes play at their own speed from start to end, so the
+// engine's clock (frame.t) and the screen's and the sound's are the same.
+// A flat note on its own misses only at its 4 s deadline, so take 1 lets
+// it miss the way a singer's does when they move on: the engine misses a
+// pending note the moment the voice lands the one after it.
 
-import type { DemoEvent as KitDemoEvent, DemoTakeId, DemoTakeShape, DemoVoicePoint, FastStretch, } from '@/components/demo-kit/demo-plan'
-import { stretchClocks } from '@/components/demo-kit/demo-plan'
+import type { DemoEvent as KitDemoEvent, DemoTakeId, DemoTakeShape, DemoVoicePoint, } from '@/components/demo-kit/demo-plan'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { seeded } from '@/lib/mirror/demo-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
@@ -46,7 +49,7 @@ import type { CallNote } from '../early-singing'
 import { NO_EARLY, pitchOf, watchEarly } from '../early-singing'
 import type { EchoDemoMark } from '../scripted-take'
 
-export type { DemoTakeId, DemoVoicePoint, EchoDemoMark, FastStretch }
+export type { DemoTakeId, DemoVoicePoint, EchoDemoMark }
 
 export type DemoEvent = KitDemoEvent<EchoDemoMark>
 
@@ -62,10 +65,10 @@ export const DEMO_MOTIF: Motif = [1, 3, 2]
 export const CALL_AT = 0.1
 
 /**
- * After a phrase ends, the room shows its constellation this long before
- * the next call or the result (echo-controller-contract.ts, PHRASE_SHOW_MS).
+ * After take 2's phrase ends, the room shows its constellation this long
+ * before the result (echo-controller-contract.ts, DEMO_PHRASE_SHOW_MS).
  */
-export const RESULT_AFTER = 1.2
+export const RESULT_AFTER = 2
 
 /** The vibrato both the frames and the synth carry on Merc's echo. */
 export const DEMO_VIBRATO = {
@@ -75,9 +78,6 @@ export const DEMO_VIBRATO = {
   /** Seconds after each onset for the vibrato to grow in. */
   rampSec: 0.3,
 } as const
-
-/** Engine seconds per wall second in take 1's fast-forward. */
-export const DEMO_FAST_RATE = 4
 
 /** How flat take 1's second note sits, cents: well outside the band. */
 export const FLAT_CENTS = -65
@@ -93,22 +93,23 @@ const TAIL = 0.1
 /** The longest a take may run before its phrase must have ended, s. */
 const LONGEST_TAKE = 30
 
-/** Take 1 comes in this long before the end of Merc's call, s. */
-const EARLY_BY = 0.62
-/** Take 2 comes in this long after the response opens, s. */
+/**
+ * Each note sung back is as long as Merc sang it in the call, onset to
+ * onset: the echo copies his pace.
+ */
+export const ECHO_NOTE_SECONDS = DEMO_RULES.noteSeconds
+/** A move from one note to the next, centred on the beat between them, s. */
+export const ECHO_GLIDE_SECONDS = 0.2
+/** Take 1 holds its flat note this many of Merc's notes before moving on. */
+export const FLAT_NOTES = 1.5
+
+/**
+ * Take 1 comes in this long before the end of Merc's call, s: long enough
+ * over his last note for the room's early rule (EARLY_SECONDS) to hear it.
+ */
+const EARLY_BY = 0.45
+/** Both takes' first note ends this long after the response opens, s. */
 const ON_TIME_AFTER = 0.05
-/** Take 1 is heard flat this long before its fast-forward, s. */
-const FLAT_HEARD = 0.6
-/** Its fast-forward ends this long before the flat note's deadline, s. */
-const SLOW_BEFORE_MISS = 0.3
-/** After the flat note misses it is held this long, then slid off, s. */
-const HOLD_AFTER_MISS = 0.3
-const SLIDE_SECONDS = 0.3
-/** Take 2 holds each landed note this long before it moves on, s. */
-const HOLD_AFTER_LAND = 0.1
-const GLIDE_SECONDS = 0.12
-/** Take 2 lets go of its last note this long after it lands, s. */
-const RELEASE_AFTER_LAST = 0.3
 
 type Segment =
   | { readonly kind: 'rest'; readonly until: number }
@@ -154,29 +155,8 @@ function sample(segments: readonly Segment[], t: number): Sung {
   return { cents: 0, level: 0, onset: null }
 }
 
-/**
- * The script cut at `at` (its open last segment ends there) and carried
- * on with `more`, each segment's end absolute.
- */
-function then(
-  segments: readonly Segment[],
-  at: number,
-  more: readonly Segment[],
-): Segment[] {
-  const kept = segments.slice(0, -1)
-  const last = segments[segments.length - 1]
-  return [...kept, { ...last, until: at }, ...more]
-}
-
-/** Held on `cents` from here on. */
-const hold = (cents: number): Segment => ({
-  kind: 'sing',
-  until: Number.POSITIVE_INFINITY,
-  cents: [cents, cents],
-  level: [0.8, 0.8],
-})
-
-const glide = (until: number, from: number, to: number): Segment => ({
+/** Sung from the segment before to `until`, `from` eased to `to` cents. */
+const sing = (until: number, from: number, to: number = from): Segment => ({
   kind: 'sing',
   until,
   cents: [from, to],
@@ -184,6 +164,43 @@ const glide = (until: number, from: number, to: number): Segment => ({
 })
 
 const REST_ON: Segment = { kind: 'rest', until: Number.POSITIVE_INFINITY }
+
+/**
+ * A line of held notes, `cents` above the root: the first comes in at
+ * `from` out of silence (from `attack` cents off it) and ends at
+ * `firstEnds`; each note after it lasts `lengths[i]` of Merc's notes.
+ * Each move is a glide centred on the beat between two notes, and the
+ * last note stops dead at its end (the synth gives it its release).
+ */
+function heldLine(
+  from: number,
+  attack: number,
+  firstEnds: number,
+  cents: readonly number[],
+  lengths: readonly number[],
+): Segment[] {
+  const half = ECHO_GLIDE_SECONDS / 2
+  const segments: Segment[] = [
+    { kind: 'rest', until: from },
+    {
+      kind: 'sing',
+      until: from + 0.1,
+      cents: [cents[0] + attack, cents[0]],
+      level: [0.5, 0.8],
+    },
+  ]
+  let beat = firstEnds
+  cents.forEach((note, i) => {
+    const next = cents[i + 1]
+    if (next === undefined) {
+      segments.push(sing(beat, note), REST_ON)
+      return
+    }
+    segments.push(sing(beat - half, note), sing(beat + half, note, next))
+    beat += lengths[i] * ECHO_NOTE_SECONDS
+  })
+  return segments
+}
 
 /** A slow, seeded wander of a few cents: a voice is never a sine. */
 function wanderFor(seed: number): (t: number) => number {
@@ -269,7 +286,7 @@ export function demoCall(root: number): DemoCall {
 }
 
 interface SungTake {
-  /** The script as it was sung, every change included. */
+  /** The script as it was sung. */
   readonly segments: readonly Segment[]
   /** Frames to the end of the phrase and TAIL past it. */
   readonly frames: readonly PitchFrame[]
@@ -299,20 +316,14 @@ function roomEars(call: DemoCall): (frame: PitchFrame) => DemoEvent[] {
   }
 }
 
-/**
- * A take sung through the room's ears in one pass. `rewrite` may change
- * the script when an event fires; the frames before the change are the
- * same either way, so the events before it stand.
- */
+/** A take sung through the room's ears in one pass. */
 function singTake(
   segments: readonly Segment[],
   call: DemoCall,
   seed: number,
-  rewrite: (event: DemoEvent) => readonly Segment[] | null,
 ): SungTake {
   const frameAt = trackerFor(call.phrase.root, seed)
   const hear = roomEars(call)
-  let script = segments
   const frames: PitchFrame[] = []
   const events: DemoEvent[] = [{ type: 'call', at: CALL_AT }]
   let end: number | null = null
@@ -320,16 +331,15 @@ function singTake(
     const t = i * FRAME_SECONDS
     if (end !== null && t > end + TAIL + 1e-9) break
     if (t > LONGEST_TAKE) throw new Error('Echo demo: a take never ends')
-    const frame = frameAt(script, t)
+    const frame = frameAt(segments, t)
     frames.push(frame)
     if (end !== null) continue
     for (const event of hear(frame)) {
       events.push(event)
-      script = rewrite(event) ?? script
       if (event.type === 'phraseEnd') end = frame.t
     }
   }
-  return { segments: script, frames, events }
+  return { segments, frames, events }
 }
 
 function eventAt(events: readonly DemoEvent[], type: EchoDemoMark): number {
@@ -352,20 +362,18 @@ function voiceEnds(segments: readonly Segment[]): number {
 function voiceFor(
   segments: readonly Segment[],
   seed: number,
-  engineAt: (wall: number) => number,
   length: number,
 ): DemoVoicePoint[] {
   const wander = wanderFor(seed)
   const points: DemoVoicePoint[] = []
   const count = Math.ceil(length / VOICE_STEP)
   for (let i = 0; i <= count; i++) {
-    const w = i * VOICE_STEP
-    const e = engineAt(w)
-    const sung = sample(segments, e)
+    const t = i * VOICE_STEP
+    const sung = sample(segments, t)
     const voiced = sung.onset !== null && sung.level > 0
     points.push({
-      t: w,
-      cents: voiced ? sung.cents + wander(e) : 0,
+      t,
+      cents: voiced ? sung.cents + wander(t) : 0,
       level: voiced ? sung.level : 0,
     })
   }
@@ -385,20 +393,21 @@ export interface EchoDemoTake extends DemoTakeShape<EchoDemoMark> {
   readonly rules: EchoLevelPreset
 }
 
+/** The two clocks of the demo kit, here one and the same. */
+const ONE_CLOCK = {
+  engineAt: (wall: number): number => wall,
+  wallAt: (engine: number): number => engine,
+} as const
+
 function buildTake(
   id: DemoTakeId,
   call: DemoCall,
   sung: SungTake,
   seed: number,
-  fast: readonly FastStretch[],
 ): EchoDemoTake {
-  const clock = stretchClocks(fast, DEMO_FAST_RATE)
-  const length = clock.wallAt(eventAt(sung.events, 'phraseEnd'))
+  const length = eventAt(sung.events, 'phraseEnd')
   // The voice runs to its own end, which may come after the phrase's.
-  const voiceLength = Math.max(
-    length,
-    clock.wallAt(voiceEnds(sung.segments)) + VOICE_STEP,
-  )
+  const voiceLength = Math.max(length, voiceEnds(sung.segments) + VOICE_STEP)
   return {
     id,
     root: call.phrase.root,
@@ -408,9 +417,9 @@ function buildTake(
     rules: DEMO_RULES,
     frames: sung.frames,
     events: sung.events,
-    fast,
-    ...clock,
-    voice: voiceFor(sung.segments, seed, clock.engineAt, voiceLength),
+    fast: [],
+    ...ONE_CLOCK,
+    voice: voiceFor(sung.segments, seed, voiceLength),
     length,
   }
 }
@@ -418,91 +427,51 @@ function buildTake(
 const OFF_SEED = 0xec40
 const ON_SEED = 0xec41
 
+/** The phrase's notes above the root, cents. */
+const centsOf = (call: DemoCall): number[] =>
+  call.phrase.notes.map((note) => (note.midi - call.phrase.root) * 100)
+
+/** Where both takes' first note ends: the response's first beat. */
+const firstEnds = (call: DemoCall): number =>
+  call.end + RESPONSE_GATE_SECONDS + ON_TIME_AFTER + ECHO_NOTE_SECONDS
+
 /**
  * Take 1: in over Merc's last note on the root, held into the response
- * (the first note lands), up to the second note 65 cents flat and held
- * there to its deadline, then a slide straight down past the third note
- * and silence, which ends the phrase.
+ * (the first note lands), on to the second note 65 cents flat and held
+ * there, then on to the third, which lands: the second misses as it does
+ * (skipped), and the phrase ends.
  */
 function offTake(root: number): EchoDemoTake {
   const call = demoCall(root)
-  const flat = 400 + FLAT_CENTS
-  const comesIn = call.end - EARLY_BY
-  let script: Segment[] = [
-    { kind: 'rest', until: comesIn },
-    { kind: 'sing', until: comesIn + 0.1, cents: [-40, 0], level: [0.5, 0.8] },
-    hold(0),
-  ]
-  let flatFrom = 0
-  const sung = singTake(script, call, OFF_SEED, (event) => {
-    if (event.type === 'land:0') {
-      const leave = event.at + HOLD_AFTER_LAND
-      flatFrom = leave + GLIDE_SECONDS
-      script = then(script, leave, [glide(flatFrom, 0, flat), hold(flat)])
-      return script
-    }
-    if (event.type === 'miss:1') {
-      const slide = event.at + HOLD_AFTER_MISS
-      script = then(script, slide, [
-        {
-          kind: 'sing',
-          until: slide + SLIDE_SECONDS,
-          cents: [flat, 20],
-          level: [0.8, 0.6],
-        },
-        REST_ON,
-      ])
-      return script
-    }
-    return null
-  })
-  const missAt = eventAt(sung.events, 'miss:1')
-  return buildTake('off', call, sung, OFF_SEED, [
-    { from: flatFrom + FLAT_HEARD, to: missAt - SLOW_BEFORE_MISS },
-  ])
+  const [first, second, third] = centsOf(call)
+  const script = heldLine(
+    call.end - EARLY_BY,
+    -40,
+    firstEnds(call),
+    [first, second + FLAT_CENTS, third],
+    [FLAT_NOTES, 1],
+  )
+  return buildTake('off', call, singTake(script, call, OFF_SEED), OFF_SEED)
 }
 
 /**
- * Take 2: in after the call, each note landed and held a moment, glided
- * to the next, and the last one let go once it lands.
+ * Take 2: in once the call has ended, and every note held as long as Merc
+ * held it, each landing on the way.
  */
 function onTake(root: number): EchoDemoTake {
   const call = demoCall(root)
-  const [, second, third] = call.phrase.notes.map(
-    (note) => (note.midi - root) * 100,
-  )
   const comesIn = call.end + RESPONSE_GATE_SECONDS + ON_TIME_AFTER
-  let script: Segment[] = [
-    { kind: 'rest', until: comesIn },
-    { kind: 'sing', until: comesIn + 0.1, cents: [-30, 0], level: [0.5, 0.8] },
-    hold(0),
-  ]
-  const next = (at: number, from: number, to: number): Segment[] => {
-    const leave = at + HOLD_AFTER_LAND
-    script = then(script, leave, [
-      glide(leave + GLIDE_SECONDS, from, to),
-      hold(to),
-    ])
-    return script
-  }
-  const sung = singTake(script, call, ON_SEED, (event) => {
-    if (event.type === 'land:0') return next(event.at, 0, second)
-    if (event.type === 'land:1') return next(event.at, second, third)
-    if (event.type === 'land:2') {
-      script = then(script, event.at + RELEASE_AFTER_LAST, [REST_ON])
-      return script
-    }
-    return null
-  })
+  const script = heldLine(comesIn, -30, firstEnds(call), centsOf(call), [1, 1])
+  const sung = singTake(script, call, ON_SEED)
   const end = eventAt(sung.events, 'phraseEnd')
   const events = [
     ...sung.events,
     { type: 'result' as const, at: end + RESULT_AFTER },
   ]
-  return buildTake('on', call, { ...sung, events }, ON_SEED, [])
+  return buildTake('on', call, { ...sung, events }, ON_SEED)
 }
 
-/** One of Merc's two takes on a root. */
+/** One of Merc's takes on a root. */
 export function demoTake(id: DemoTakeId, root: number): EchoDemoTake {
   return id === 'off' ? offTake(root) : onTake(root)
 }

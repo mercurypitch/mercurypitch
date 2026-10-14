@@ -20,6 +20,12 @@ export type { EchoSummary } from './echo-run'
 
 /** The constellation a phrase made shows this long before the next call. */
 export const PHRASE_SHOW_MS = 1200
+/**
+ * The demo's take 2 shows its constellation this long before its result:
+ * longer than a run's, so the tooltip on it can be read before the result
+ * moves its stars (demo/demo-cues.ts).
+ */
+export const DEMO_PHRASE_SHOW_MS = 2000
 /** Merc's call starts this far ahead of now on the audio clock, s. */
 export const CALL_LEAD_SECONDS = 0.35
 /** After the singer's settled note, a breath before the first call, s. */
