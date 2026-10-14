@@ -204,6 +204,12 @@ export class Sim {
    * `hum`'s rings hold still and only fade.
    */
   still = false
+  /**
+   * `hum` (and so `ride`) sends a fan of sound rings from the front of his
+   * face while the voice sounds. A room that draws its own sound there
+   * turns them off (Lip roll's buzz); everything else about the state stays.
+   */
+  soundRings = true
 
   // Set by reset().
   state!: MercState

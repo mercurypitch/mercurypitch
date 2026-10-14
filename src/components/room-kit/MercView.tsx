@@ -37,6 +37,11 @@ export interface MercViewProps {
    * rings only fade. Default: the phone's own setting.
    */
   still?: () => boolean
+  /**
+   * His sound rings while he hums or rides (default true); read once, at
+   * mount. Lip roll turns them off: its buzz is drawn where they would be.
+   */
+  rings?: boolean
   class?: string
   style?: JSX.CSSProperties
   /** The room's own id for him ("long-note-merc"). */
@@ -70,6 +75,7 @@ export function MercView(props: MercViewProps): JSX.Element {
         state: untrack(() => props.state()),
         sparkles: untrack(() => props.sparkles),
         still: stillAtMount,
+        rings: untrack(() => props.rings),
       })
       if (stage.ok) frame = requestAnimationFrame(feed)
     })

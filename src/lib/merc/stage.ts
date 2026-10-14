@@ -37,6 +37,12 @@ export interface MercStageOptions {
    * rings hold still and only fade. Default false.
    */
   still?: boolean
+  /**
+   * `hum`'s and `ride`'s sound rings from the front of his face while the
+   * voice sounds. Default true; a room that draws its own sound there
+   * turns them off.
+   */
+  rings?: boolean
   /** Called once, when Merc stops drawing for good (also during mount). */
   onFailure?: (reason: string) => void
 }
@@ -91,6 +97,7 @@ export function mountMercStage(
       pixelRatio: opts.pixelRatio,
       sparkles: opts.sparkles,
       still: opts.still,
+      rings: opts.rings,
       onFailure: report,
     })
   } catch (err) {

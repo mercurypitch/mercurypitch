@@ -62,6 +62,28 @@ export const BridgeGlyph: Component = () => (
   </svg>
 )
 
+/** A wave: one swell over a line of water, its crest dotted. */
+export const WaveGlyph: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 17.5c2.2 0 3-1.6 4.4-4.6" />
+    <path d="M16.6 12.9c1.4 3 2.2 4.6 4.4 4.6" />
+    <circle cx="8.6" cy="10.4" r="0.95" fill="currentColor" stroke="none" />
+    <circle cx="10.3" cy="8" r="0.95" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="7.2" r="0.95" fill="currentColor" stroke="none" />
+    <circle cx="13.7" cy="8" r="0.95" fill="currentColor" stroke="none" />
+    <circle cx="15.4" cy="10.4" r="0.95" fill="currentColor" stroke="none" />
+    <path d="M3 20.6h18" />
+  </svg>
+)
+
 /** Play, filled: the triangle on the row's accent disc. */
 export const PlayGlyph: Component = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">

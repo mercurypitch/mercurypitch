@@ -75,6 +75,8 @@ export interface ChoreoHost {
   readonly lock: Readonly<{ on: boolean; t0: number }>
   /** Reduced motion, for the glide states. */
   readonly still: boolean
+  /** `hum`'s sound rings are drawn (Sim.soundRings). */
+  readonly soundRings: boolean
   splash(edge?: number, k?: number, n?: number, kx?: number): void
   sparkle(): void
   ring(strength: number, speed: number): void
@@ -553,7 +555,8 @@ function hum(c: Cue): void {
     T.ripple = e * (0.0005 + 0.0008 * level)
     X.rippleSpeed = 6
   }
-  X.arcs = humRings(sim, e, level)
+  // A room that draws its own sound beside him turns the rings off.
+  X.arcs = sim.soundRings ? humRings(sim, e, level) : null
   // Under reduced motion the rings stand where they are and only fade.
   if (sim.still) {
     X.arcSpeed = 0

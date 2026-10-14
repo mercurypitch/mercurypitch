@@ -56,6 +56,8 @@ export interface MercMountOptions {
   sparkles?: SparkleSide
   /** Reduced motion for the glide states (`hum`, `ride`). Default false. */
   still?: boolean
+  /** `hum`'s and `ride`'s sound rings. Default true. */
+  rings?: boolean
   /** Called once if Merc stops drawing for good after mount. */
   onFailure?: (error: Error) => void
 }
@@ -148,6 +150,7 @@ export function mount(
   sim.voiceAt = opts.voiceAt ?? null
   sim.sparkleSide = opts.sparkles ?? 'around'
   sim.still = opts.still ?? false
+  sim.soundRings = opts.rings ?? true
 
   // ---------------------------------------------------------- GL resources
 

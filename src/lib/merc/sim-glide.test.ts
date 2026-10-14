@@ -318,6 +318,44 @@ describe('Sim, hum', () => {
   })
 })
 
+describe('Sim, with his rings off', () => {
+  it('rides with no rings at all, and still leans with the pitch', () => {
+    // Arrange: the same rising voice, rings on and rings off.
+    const voice = (t: number): MercVoice => hum(57 + 4 * t)
+    const ringed = simIn('ride', voice)
+    const plain = simIn('ride', voice)
+    plain.soundRings = false
+
+    // Act
+    const ringedLeans = leans(ringed, 1)
+    const plainLeans = leans(plain, 1)
+
+    // Assert: no fan ever, the same lean, the same closed mouth.
+    expect(ringed.pose().arcs[2]).toBeGreaterThan(0.3)
+    expect(plain.pose().arcs[2]).toBe(0)
+    expect(plain.pose().arcs2[2]).toBe(0)
+    expect(plainLeans).toEqual(ringedLeans)
+    expect(plain.pose().lean[0]).toBeGreaterThan(0.5 * RIDE.lean)
+    expect(plain.pose().mouth).toEqual(ringed.pose().mouth)
+  })
+
+  it('hums with no rings, and draws none while the voice sounds', () => {
+    // Arrange
+    const sim = simIn('hum', () => hum(57, 0.9))
+    sim.soundRings = false
+    let most = 0
+
+    // Act
+    for (let i = 0; i < Math.round(1.5 / STEP); i++) {
+      sim.step(STEP)
+      most = Math.max(most, sim.pose().arcs[2])
+    }
+
+    // Assert
+    expect(most).toBe(0)
+  })
+})
+
 describe('Sim, into and out of hum and ride', () => {
   it('rides while humming: the same face and rings, plus the lean', () => {
     // Arrange

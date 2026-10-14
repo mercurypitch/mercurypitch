@@ -47,6 +47,13 @@ export const EXERCISE_ECHO_STARS = 'echo-stars' as const
  * drill is a different exercise and ruler.
  */
 export const EXERCISE_NG_SLIDES_BRIDGE = 'ng-slides-bridge' as const
+/**
+ * The premium Lip roll (the singer buzzes their lips over three waves, up
+ * an octave and back, and each wave of the night bay lights where the
+ * voice rode its crest). Named as the others are: the exercise and what it
+ * draws. The web warm-up's lip trill is a different exercise and ruler.
+ */
+export const EXERCISE_LIP_ROLL_BAY = 'lip-roll-bay' as const
 
 export type ExerciseType =
   | typeof EXERCISE_VIBRATO
@@ -70,16 +77,18 @@ export type ExerciseType =
   | typeof EXERCISE_LONG_NOTE_LANTERN
   | typeof EXERCISE_ECHO_STARS
   | typeof EXERCISE_NG_SLIDES_BRIDGE
+  | typeof EXERCISE_LIP_ROLL_BAY
 
 /**
  * The premium exercises the phone app opens from the Sing screen (Long note,
- * Echo, then Ng slides). A type here, below the features, so the shell bridge in
+ * Echo, Ng slides, then Lip roll). A type here, below the features, so the shell bridge in
  * `src/stores` can name one without importing a feature.
  */
 export type PremiumExerciseId =
   | typeof EXERCISE_LONG_NOTE_LANTERN
   | typeof EXERCISE_ECHO_STARS
   | typeof EXERCISE_NG_SLIDES_BRIDGE
+  | typeof EXERCISE_LIP_ROLL_BAY
 
 // ── Config ──────────────────────────────────────────────────────
 

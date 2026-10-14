@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_INTERVAL_TRAINER, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -50,6 +50,15 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       'Merc sings three to five notes. When his last note ends, sing them back in the same order. Each note you hold on pitch lights a star, and the stars of a phrase join into a constellation.',
       'A run is five phrases. Your Accuracy Tier sets how many notes a phrase has, how close each one must be and how fast Merc sings. At Learning, a note sung an octave lower or higher counts too.',
       "The big number is how many notes you landed. Accuracy, out of 100, is how near the middle of each note you sang. At Professional, In time counts the notes you sang at Merc's pace.",
+    ],
+  },
+  [EXERCISE_LIP_ROLL_BAY]: {
+    summary:
+      'Buzz your lips over three waves, up an octave and back, and light the bay wherever your buzz follows the dots.',
+    body: [
+      'Close your lips loosely and blow until they buzz, like a motorboat. Each wave starts on the note Merc plays, rises to its crest, holds it for a moment and comes back down. Take a breath between waves.',
+      'The bay moves at the pace of the waves. Where your buzz follows the dots, that stretch of wave lights and stays lit. If your lips stop buzzing, the sound breaks and leaves a dark gap. If they will not buzz, a hum on "oo" works too.',
+      'The big number is how much of the three waves you lit. Your Accuracy Tier sets how fast the waves go and how close you need to stay. At Professional, the crest counts too: Tops is how many waves reached their top note in tune.',
     ],
   },
   [EXERCISE_NG_SLIDES_BRIDGE]: {

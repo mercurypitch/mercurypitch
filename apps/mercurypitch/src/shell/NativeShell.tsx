@@ -100,6 +100,15 @@ const EchoScreen: Component = PREMIUM_EXERCISES
     )
   : () => null
 
+/** The Lip roll exercise: the same ternary as Long note's, for the same reason. */
+const LipRollScreen: Component = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('./LipRollScreen').then((module) => ({
+        default: module.LipRollScreen,
+      })),
+    )
+  : () => null
+
 /** The Ng slides exercise: the same ternary as Long note's, for the same reason. */
 const NgSlidesScreen: Component = PREMIUM_EXERCISES
   ? lazy(async () =>
@@ -369,6 +378,7 @@ export const NativeShell: Component = () => {
             developer={DEVELOPER_AVAILABLE ? DeveloperScreen : undefined}
             longNote={PREMIUM_EXERCISES ? LongNoteScreen : undefined}
             echo={PREMIUM_EXERCISES ? EchoScreen : undefined}
+            lipRoll={PREMIUM_EXERCISES ? LipRollScreen : undefined}
             ngSlides={PREMIUM_EXERCISES ? NgSlidesScreen : undefined}
           />
 
