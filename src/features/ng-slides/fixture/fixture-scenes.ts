@@ -55,6 +55,7 @@ const worldX = (camera: number, x: number): number => camera - 0.35 + x
 /** The fitted rim's height at world X on arch k (screen 1's arch). */
 const rimY = (k: number, x: number): number =>
   ARCH.deckY - ARCH.h * archG((x - apexX(k)) / ARCH.a, ARCH.f)
+
 /** A ribbon along the fitted rim (and the deck between arches). */
 function alongRim(from: number, to: number, filling: boolean): TraceSample[] {
   const out: TraceSample[] = []
@@ -66,6 +67,7 @@ function alongRim(from: number, to: number, filling: boolean): TraceSample[] {
   }
   return out
 }
+
 /** A stepped voice: flat stretches at storyboard heights (fractions of H). */
 function stepped(
   camera: number,
