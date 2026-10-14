@@ -23,7 +23,7 @@ export const FACULTY_LABEL: Record<FacultyId, string> = {
   resolution: 'Resolution',
   function: 'Function',
   shape: 'Shape',
-  colour: 'Colour',
+  colour: 'Color',
   time: 'Time',
   wild: 'In The Wild',
 }
@@ -109,7 +109,7 @@ export const THRESHOLD_DRILLS: ThresholdDrill[] = [
   {
     id: 'colour',
     faculty: 'colour',
-    name: 'Colour',
+    name: 'Color',
     unit: 'dB boost',
     unitShort: 'dB',
     staircase: staircase({ start: 12, min: 0.5, max: 24 }),

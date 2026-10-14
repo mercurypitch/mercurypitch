@@ -109,7 +109,7 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
     <ThresholdDrillView
       title="Weight"
       drillId="desk-weight"
-      measures="Colour · the desk"
+      measures="Color · the desk"
       description="The same slice of the mix twice; one carries a low shelf under 120 Hz, the two matched for loudness. Say which is heavier. The shelf thins while you are right and thickens when you slip; the reading is the thinnest shelf you still hear. Practice only: the desk reads on its own plate and the Column never moves for it."
       prompt="Two renders — which has the weight?"
       listenHint="The first… then the second…"

@@ -1370,7 +1370,7 @@ async function auditStage(page, name) {
       fail(`${name} desk`, `the desk never rendered: "${text}"`)
   }
   results.deskIdle = await checkStage('desk idle', 'stage-desk-idle')
-  await page.getByRole('button', { name: /^Colour/ }).click()
+  await page.getByRole('button', { name: /^Color/ }).click()
   await page.waitForTimeout(400)
   results.colourIdle = await checkStage('colour idle', 'stage-colour-idle')
   await page.getByRole('button', { name: /Practice run/ }).click()

@@ -129,7 +129,7 @@ export function earPath(snapshot: PathSnapshot): PathMilestone[] {
     {
       id: 'first-desk',
       label: 'First desk reading',
-      note: 'Colour, Weight or Critique at the desk.',
+      note: 'Color, Weight or Critique at the desk.',
       view: 'desk',
       lit: any(attempted, DESK_TRACKS),
     },

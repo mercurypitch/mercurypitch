@@ -1926,7 +1926,7 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Six faculties',
     description:
-      'Resolution, Function, Shape, Colour, Time and In The Wild. Anything you have never measured says "Unmeasured" rather than pretending to be a zero — missing data is not a bad ear.',
+      'Resolution, Function, Shape, Color, Time and In The Wild. Anything you have never measured says "Unmeasured" rather than pretending to be a zero — missing data is not a bad ear.',
     targetSelector: '[data-tour="ear.faculties"]',
     placement: 'bottom',
     requiredTab: TAB_EAR_LAB,

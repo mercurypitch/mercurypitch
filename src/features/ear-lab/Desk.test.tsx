@@ -116,12 +116,12 @@ describe('the desk', () => {
     vi.useRealTimers()
   })
 
-  it('renders the house loop for an empty library and runs Colour on the desk id', async () => {
+  it('renders the house loop for an empty library and runs Color on the desk id', async () => {
     mount()
     await vi.advanceTimersByTimeAsync(0)
     expect(renderHouseLoop).toHaveBeenCalledWith(44_100)
     expect(status()).toContain('On the house loop')
-    fireEvent.click(screen.getByRole('button', { name: /^Colour/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^Color/ }))
     await vi.advanceTimersByTimeAsync(0)
     expect(screen.queryByRole('button', { name: /Calibration/ })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /Practice run/ }))
