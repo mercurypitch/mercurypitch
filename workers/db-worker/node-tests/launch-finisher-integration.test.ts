@@ -603,6 +603,44 @@ describe('who has no offer', () => {
   })
 })
 
+describe('the featured code states the offer before anyone claims it', () => {
+  async function featuredOffer(): Promise<unknown> {
+    const featured = await call('/api/billing/promo/featured')
+    expect(featured.status).toBe(200)
+    return (featured.body.promo as { offer?: unknown } | null)?.offer
+  }
+
+  it('promises the deadline /me reports for a claim made the same day', async () => {
+    at('2026-10-20T10:00:00.000Z')
+    const promised = await featuredOffer()
+    expect(promised).toEqual({
+      goal: 5,
+      deadline: '2026-11-03T23:59:59.999Z',
+      bonusCredits: 30,
+    })
+
+    at('2026-10-20T21:00:00.000Z')
+    const singer = await confirmedSinger('promised@example.com')
+    expect(await offerOf(singer)).toMatchObject({
+      state: 'counting',
+      ...(promised as object),
+    })
+  })
+
+  it("says nothing of an offer that is off, not started, or not this code's", async () => {
+    env.OFFER_START_AT = undefined
+    expect(await featuredOffer()).toBeNull()
+
+    env.OFFER_START_AT = OPENS
+    at('2026-10-14T23:59:59.000Z')
+    expect(await featuredOffer()).toBeNull()
+
+    at('2026-10-20T10:00:00.000Z')
+    env.OFFER_PROMO_ID = 'promo-some-other-campaign'
+    expect(await featuredOffer()).toBeNull()
+  })
+})
+
 describe('the account is erased with its unlock', () => {
   it('lists offerUnlocks among what deleting an account removes', async () => {
     const singer = await confirmedSinger('erased@example.com')

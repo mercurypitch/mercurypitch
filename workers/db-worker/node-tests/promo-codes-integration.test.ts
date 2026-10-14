@@ -579,12 +579,15 @@ describe('Promo codes integration', () => {
       })
     })
 
-    it('offers the featured code with only its code, credits and end', async () => {
+    it('offers the featured code with only its code, credits, end and offer', async () => {
+      // No launch offer runs in this suite (OFFER_START_AT unset), so it
+      // says there is none (launch-finisher-integration.test.ts has one).
       expect(await featured()).toEqual({
         promo: {
           code: 'LAUNCH',
           credits: 5,
           expiresAt: '2027-01-01T23:59:59.000Z',
+          offer: null,
         },
       })
     })
@@ -686,6 +689,7 @@ describe('Promo codes integration', () => {
           code: 'LAUNCH_TEST',
           credits: 5,
           expiresAt: '2099-01-01T00:00:00.000Z',
+          offer: null,
         },
       })
     })
