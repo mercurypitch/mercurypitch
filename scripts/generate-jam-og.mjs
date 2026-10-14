@@ -228,8 +228,8 @@ const html = /* html */ `<!doctype html>
       <div class="rm-kicker"><span class="live"></span>In the room</div>
       ${laneRows}
       <div class="score">
-        <span class="lab">Shared score</span>
-        <span class="val">92%</span>
+        <span class="lab">Your take</span>
+        <span class="val">92</span>
       </div>
     </aside>
 
@@ -242,7 +242,7 @@ const html = /* html */ `<!doctype html>
       </div>
 
       <h1 class="headline">Sing it together, from anywhere</h1>
-      <p class="sub">Open a room, share the link, and take a part. Lyrics down the left, <b>a pitch lane for every singer</b>, and one scoreboard for the whole room.</p>
+      <p class="sub">Open a room, share the link, and take a part. Lyrics down the left and <b>a pitch lane for every singer</b>.</p>
 
       <div class="pills">
         <span class="pill"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Live together</span>
@@ -255,7 +255,7 @@ const html = /* html */ `<!doctype html>
       <div class="footline">
         <span class="url">mercurypitch.com/jam</span>
         <span class="sep">•</span>
-        <span>No install — it runs in the browser</span>
+        <span>No install: it runs in the browser</span>
       </div>
     </div>
   </div>
