@@ -13,18 +13,18 @@
 // The celebration star is in echo-celebration.ts.
 //
 // The files this was written against:
-//   echo-citylight-demo-off-1290.webp  447x165  21762 bytes  sha256 d8b5d6f2fceb8b78
-//   echo-citylight-demo-off-860.webp  298x110  22668 bytes  sha256 f89f343ade750544
-//   echo-citylight-intro-1290.webp  318x141  28192 bytes  sha256 2bd68fd8fb357a66
-//   echo-citylight-intro-860.webp  212x94  21846 bytes  sha256 9fa5016fb0484d9f
-//   echo-citylight-mid-take-1290.webp  426x141  25468 bytes  sha256 09d05229769b052c
-//   echo-citylight-mid-take-860.webp  284x94  23288 bytes  sha256 cf0b9e1160f9774e
-//   echo-clouds-demo-off-1290.webp  1290x3096  71096 bytes  sha256 5a957b02ee541966
-//   echo-clouds-demo-off-860.webp  860x2064  50814 bytes  sha256 16aad420c34f3afa
-//   echo-clouds-mid-take-1290.webp  1290x3096  77424 bytes  sha256 5f7d46919bbd22ac
-//   echo-clouds-mid-take-860.webp  860x2064  55688 bytes  sha256 7f3004876a05c515
+//   echo-citylight-demo-off-1290.webp  447x180  19266 bytes  sha256 b04c467b763c4f28
+//   echo-citylight-demo-off-860.webp  298x120  20042 bytes  sha256 850486a4c7b2196a
+//   echo-citylight-intro-1290.webp  315x141  29900 bytes  sha256 bd01061fe9b0e47e
+//   echo-citylight-intro-860.webp  210x94  21286 bytes  sha256 c3e3cddda1f0e80e
+//   echo-citylight-mid-take-1290.webp  426x141  23898 bytes  sha256 f8ddfbfd0472f98b
+//   echo-citylight-mid-take-860.webp  284x94  19986 bytes  sha256 46e1f139ff0b516e
+//   echo-clouds-demo-off-1290.webp  1290x3096  70730 bytes  sha256 ef39b3c920ee786b
+//   echo-clouds-demo-off-860.webp  860x2064  50536 bytes  sha256 d6cba0eac9b34b26
+//   echo-clouds-mid-take-1290.webp  1290x3096  77070 bytes  sha256 e81e60762f595988
+//   echo-clouds-mid-take-860.webp  860x2064  55332 bytes  sha256 dc10ed0f07e753b1
 //   echo-halo-finished.webp  274x274  5764 bytes  sha256 0a498016c1ce6e4b
-//   echo-halo-phrase.webp  468x468  13892 bytes  sha256 8dbc17e0d7697260
+//   echo-halo-phrase.webp  468x468  17982 bytes  sha256 d08e3f9335d40979
 //   echo-halo-result.webp  388x388  9134 bytes  sha256 7cfa74bb5bdbdba3
 //   echo-star-finished-base.webp  92x92  2512 bytes  sha256 183621311ae6f401
 //   echo-star-finished-bright.webp  92x92  2496 bytes  sha256 707ffd25ae6ddbaf
@@ -38,10 +38,10 @@
 //   echo-star-result-bright.webp  218x218  8024 bytes  sha256 cbacf36fd4bda060
 //   echo-star-result-cyan.webp  218x218  8034 bytes  sha256 9d1c9a455d56dca1
 //   echo-star-result-violet.webp  218x218  8032 bytes  sha256 48f6c00e74c5a0bd
-//   echo-world-1290.webp  1290x3096  197930 bytes  sha256 09b323ae511192f7
-//   echo-world-860.webp  860x2064  116556 bytes  sha256 51b57ec0a5482712
-//   echo-world-result-1290.webp  1290x3096  272680 bytes  sha256 071ad0cc98ad6c85
-//   echo-world-result-860.webp  860x2064  158286 bytes  sha256 e2351c66146cce0d
+//   echo-world-1290.webp  1290x3096  198002 bytes  sha256 29541abefa16569a
+//   echo-world-860.webp  860x2064  108638 bytes  sha256 70f3fd061e0aa9ff
+//   echo-world-result-1290.webp  1290x3096  265960 bytes  sha256 979ac080042f107c
+//   echo-world-result-860.webp  860x2064  154102 bytes  sha256 8ba042b7fc7deeec
 
 export interface PlatePoint {
   readonly u: number
@@ -58,10 +58,10 @@ export const SKY_TOP_RGB = [7, 15, 37] as const
 
 /** The world plate's colours band by band, for its fallback. */
 export const WORLD_FALLBACK =
-  'linear-gradient(to bottom, rgb(7, 16, 36) 4.2%, rgb(8, 17, 36) 12.5%, rgb(9, 18, 37) 20.8%, rgb(8, 18, 39) 29.2%, rgb(9, 19, 41) 37.5%, rgb(10, 23, 48) 45.8%, rgb(16, 31, 63) 54.2%, rgb(42, 54, 107) 62.5%, rgb(45, 47, 75) 70.8%, rgb(37, 46, 79) 79.2%, rgb(24, 32, 63) 87.5%, rgb(22, 29, 56) 95.8%)'
+  'linear-gradient(to bottom, rgb(7, 16, 36) 4.2%, rgb(8, 17, 36) 12.5%, rgb(9, 18, 37) 20.8%, rgb(8, 19, 39) 29.2%, rgb(9, 19, 41) 37.5%, rgb(10, 23, 48) 45.8%, rgb(16, 31, 63) 54.2%, rgb(42, 53, 107) 62.5%, rgb(44, 47, 75) 70.8%, rgb(37, 46, 79) 79.2%, rgb(24, 32, 63) 87.5%, rgb(22, 29, 56) 95.8%)'
 /** The result plate's, the same way. */
 export const RESULT_FALLBACK =
-  'linear-gradient(to bottom, rgb(6, 15, 33) 4.2%, rgb(7, 15, 33) 12.5%, rgb(8, 16, 33) 20.8%, rgb(8, 19, 41) 29.2%, rgb(8, 22, 52) 37.5%, rgb(16, 35, 77) 45.8%, rgb(15, 33, 72) 54.2%, rgb(66, 70, 129) 62.5%, rgb(71, 69, 112) 70.8%, rgb(82, 82, 121) 79.2%, rgb(39, 49, 91) 87.5%, rgb(24, 36, 74) 95.8%)'
+  'linear-gradient(to bottom, rgb(6, 15, 33) 4.2%, rgb(7, 15, 32) 12.5%, rgb(8, 16, 33) 20.8%, rgb(8, 19, 41) 29.2%, rgb(8, 22, 51) 37.5%, rgb(16, 35, 77) 45.8%, rgb(14, 33, 72) 54.2%, rgb(66, 71, 129) 62.5%, rgb(71, 69, 112) 70.8%, rgb(82, 82, 121) 79.2%, rgb(39, 49, 91) 87.5%, rgb(24, 36, 74) 95.8%)'
 
 /** The foreground roof's ridge: left edge, finial, right edge. */
 export const RIDGE: readonly (readonly [number, number])[] = [
@@ -334,11 +334,11 @@ export const CITY_LIGHT = {
   opacity: { intro: 1, 'mid-take': 1, 'demo-off': 1, result: 0 },
   layers: {
     intro: {
-      left: 0.52326,
+      left: 0.52558,
       top: 0.65019,
-      width: 0.24651,
+      width: 0.24419,
       height: 0.04554,
-      px: [212, 318],
+      px: [210, 315],
     },
     'mid-take': {
       left: 0.45116,
@@ -349,9 +349,9 @@ export const CITY_LIGHT = {
     },
     'demo-off': {
       left: 0.42326,
-      top: 0.64244,
+      top: 0.6376,
       width: 0.34651,
-      height: 0.05329,
+      height: 0.05814,
       px: [298, 447],
     },
   },

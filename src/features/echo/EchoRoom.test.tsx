@@ -517,6 +517,9 @@ describe('the result', () => {
     )
     expect(stars('result')).toHaveLength(15)
     expect(screen.getByTestId('echo-result-plate')).toBeTruthy()
+    // The celebration comes up two frames after the result, in its own.
+    expect(screen.queryByTestId('echo-celebration')).toBeNull()
+    flush(2)
     expect(screen.getByTestId('echo-celebration')).toBeTruthy()
     expect(texts('resultAll', { total: 15, landed: 15 })).toContain(
       screen.getByTestId('echo-bubble').textContent,
@@ -596,6 +599,30 @@ describe("the town's city light", () => {
     }
     expect(phase()).toBe('result')
     expect(light()).toBe('none')
+  })
+})
+
+describe('the top light', () => {
+  const opacity = (id: string) => screen.getByTestId(id).style.opacity
+
+  it("gives way to the result's own as the lit town comes up", async () => {
+    await startRun()
+    expect(opacity('echo-top-light')).toBe('1')
+    expect(opacity('echo-top-light-result')).toBe('0')
+
+    respond(singBack)
+    vi.advanceTimersByTime(PHRASE_SHOW_MS)
+    for (let i = 1; i < 5; i++) {
+      respond(singBack)
+      vi.advanceTimersByTime(PHRASE_SHOW_MS)
+    }
+    expect(phase()).toBe('result')
+    expect(opacity('echo-top-light')).toBe('0')
+    expect(opacity('echo-top-light-result')).toBe('1')
+    // A fade, nothing that moves.
+    expect(screen.getByTestId('echo-top-light-result').style.transition).toBe(
+      'opacity 600ms ease-out',
+    )
   })
 })
 

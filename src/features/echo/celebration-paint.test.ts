@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { catmullRom, dotTimings, easeOut, gaussStops, keyframeOffsets, mistAngle, paintRibbons, pointLight, ribbonField, ribbonFrames, ribbonPlan, screenStops, seeded, sparkleTimings, starPath, } from './celebration-paint'
+import { catmullRom, dotTimings, easeOut, gaussStops, keyframeOffsets, mistAngle, paintRibbons, pointLight, ribbonField, ribbonFieldSteps, ribbonFrames, ribbonPixels, ribbonPlan, screenStops, seeded, sparkleTimings, starPath, } from './celebration-paint'
 import { CELEBRATION } from './echo-celebration'
 import { CELEBRATION_SPARKLES } from './echo-celebration-sparkles'
 
@@ -286,6 +286,92 @@ describe('the ribbons (round 4)', () => {
       CELEBRATION.ribbons[0].wisp.phase + idle.wispRadPerS,
       6,
     )
+  })
+})
+
+describe("the ribbons' build, spread out (round 6)", () => {
+  // The three real ribbons at a phone's scale: plate fractions to px over
+  // a 390 px plate 936 px tall, in a canvas round them at DPR 3.
+  const canvas = { width: 420, height: 300, dpr: 3 }
+  const ribbons = CELEBRATION.ribbons.map((r) =>
+    catmullRom(
+      r.points.map(([u, v]) => [u * 390 - 180, v * 936 - 490] as const),
+    ),
+  )
+  const looks = CELEBRATION.ribbons.map((r, i) => ({
+    fwhm: r.fwhmW * 390,
+    taper: r.taperW * 390,
+    alpha: r.alpha,
+    fromStart: ribbonPlan()[i].fromStart,
+    segmentGain: r.segmentGain,
+  }))
+  const atOnce = ribbons.map((c, i) => ribbonField(c, looks[i], canvas))
+  const n = canvas.width * canvas.height
+  const wisps = CELEBRATION.ribbons.map((r) => ({
+    depth: r.wisp.depth,
+    periodPx: r.wisp.periodW * 390,
+  }))
+  const colours = CELEBRATION.ribbons.map((r) => r.rgb)
+  /** The first byte where two paints differ, or -1. */
+  const firstDiff = (a: Uint8ClampedArray, b: Uint8ClampedArray): number =>
+    a.findIndex((v, i) => v !== b[i])
+
+  it('builds the same fields a step at a time, interleaved, as at once', () => {
+    const jobs = ribbons.map((c, i) => ribbonFieldSteps(c, looks[i], canvas))
+    const built: (typeof atOnce)[number][] = []
+    let steps = 0
+    // Round robin, a step of each in turn, as slices between frames would.
+    while (built.filter(Boolean).length < jobs.length) {
+      jobs.forEach((job, i) => {
+        if (built[i] !== undefined) return
+        const next = job.next()
+        if (next.done === true) built[i] = next.value
+        else steps++
+      })
+    }
+
+    expect(steps).toBeGreaterThan(10)
+    built.forEach((f, i) => {
+      expect(f.length).toBe(atOnce[i].length)
+      expect(f.pixels).toEqual(atOnce[i].pixels)
+      expect(f.alpha).toEqual(atOnce[i].alpha)
+      expect(f.along).toEqual(atOnce[i].along)
+      expect(f.fromBurst).toEqual(atOnce[i].fromBurst)
+    })
+  })
+
+  it('lists every pixel the fields light, once each, in order', () => {
+    const lit = ribbonPixels(atOnce, n)
+    const all = new Set(atOnce.flatMap((f) => [...f.pixels]))
+
+    expect(lit.length).toBe(all.size)
+    expect([...lit]).toEqual([...all].sort((a, b) => a - b))
+  })
+
+  it('paints the same picture into a kept buffer as into a fresh one', () => {
+    const scratch = {
+      lit: ribbonPixels(atOnce, n),
+      acc: new Float32Array(n * 4),
+    }
+    const kept = new Uint8ClampedArray(n * 4)
+    const { durationMs } = CELEBRATION.timing.ribbons
+    const plan = ribbonPlan()
+    // Drawing on, the last drawn whole, then the wisps drifted.
+    const moments = [
+      plan[0].revealAt + durationMs / 3,
+      plan[2].revealAt + durationMs / 2,
+      plan[2].revealAt + durationMs + 50,
+      CELEBRATION.timing.idleFromMs + 1700,
+    ]
+    for (const at of moments) {
+      const frames = ribbonFrames(at)
+      const fresh = new Uint8ClampedArray(n * 4)
+      paintRibbons(fresh, atOnce, frames, wisps, colours)
+      paintRibbons(kept, atOnce, frames, wisps, colours, scratch)
+
+      expect(firstDiff(kept, fresh)).toBe(-1)
+      expect(fresh.some((v) => v > 0)).toBe(true)
+    }
   })
 })
 

@@ -11,7 +11,9 @@
 //                             (EchoClouds.tsx)
 //   city light                the town's light per state, small layers in
 //                             the plate's box (EchoCityLight.tsx)
-//   the top light             the glow from the top of the screen
+//   the top light             the glow from the top of the screen; the
+//                             result and the demo's take on screen 3
+//                             have their own (top-light.ts), crossfaded
 //   twinkles                  a few painted stars that breathe
 //   rings and lines           SVG gradients: a soft core in its glow
 //   the ribbon                the voice (the room passes its canvas in)
@@ -24,7 +26,7 @@
 // still between scenes.
 
 import type { JSX } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
 import { PlateImage } from '@/components/room-kit/PlateImage'
 import { CelebrationStar } from './CelebrationStar'
 import type { CityLightState } from './echo-art'
@@ -39,6 +41,8 @@ import type { SkyLayout } from './sky-layout'
 import { inSky, onPlate } from './sky-layout'
 import type { LineStyle, RingStyle, SceneLine, SceneRing, SceneStar, SkyScene, } from './sky-scene'
 import { lineGradient, ringGradient } from './sky-strokes'
+import type { TopLightSpec, TopLightState } from './top-light'
+import { DEMO_OFF_TOP_LIGHT, RESULT_TOP_LIGHT, TOP_LIGHT_FADE, } from './top-light'
 
 const RING_STYLE: Record<RingStyle, StrokeStyle> = {
   waiting: STROKES.ringWaiting,
@@ -59,13 +63,18 @@ export const SKY_TOP = `rgb(${SKY_TOP_RGB.join(', ')})`
 const TOP_LIGHT_SIGMAS = 4
 
 /**
- * The top light's CSS gradient: a Gaussian to TOP_LIGHT_SIGMAS, in stops,
+ * A top light's CSS gradient: a Gaussian to TOP_LIGHT_SIGMAS, in stops,
  * its tail taken off so the last stop is clear. A CSS gradient paints its
  * last stop's colour on past its ending shape: a Gaussian cut at three
  * sigma (1.1 %) tinted the whole room blue.
  */
-export function topLight(unit: number, left: number, width: number): string {
-  const { rgb, alpha, centreYW, sigmaXW, sigmaYW } = TOP_LIGHT
+export function topLight(
+  unit: number,
+  left: number,
+  width: number,
+  light: TopLightSpec = TOP_LIGHT,
+): string {
+  const { rgb, alpha, centreYW, sigmaXW, sigmaYW } = light
   const tail = Math.exp(-0.5 * TOP_LIGHT_SIGMAS ** 2)
   const stops: string[] = []
   for (let i = 0; i <= 16; i++) {
@@ -78,7 +87,7 @@ export function topLight(unit: number, left: number, width: number): string {
   }
   const rx = TOP_LIGHT_SIGMAS * sigmaXW * unit
   const ry = TOP_LIGHT_SIGMAS * sigmaYW * unit
-  const cx = left + width / 2
+  const cx = left + width / 2 + (light.centreXW ?? 0) * unit
   return `radial-gradient(${rx.toFixed(1)}px ${ry.toFixed(1)}px at ${cx.toFixed(1)}px ${(centreYW * unit).toFixed(1)}px, ${stops.join(', ')})`
 }
 
@@ -98,7 +107,60 @@ export interface EchoSkyProps {
   children?: JSX.Element
 }
 
+/**
+ * Whether the celebration star is up: in a live room, two frames after the
+ * scene asks for it, so its mount (some 70 elements, their gradients and
+ * animations) lands in a frame of its own rather than in the result's.
+ * Its t 0 moves by those frames, well inside its starburst's pop. A
+ * fixture shows it at once.
+ */
+function useCelebrationShown(
+  wanted: () => boolean,
+  still: () => boolean,
+): () => boolean {
+  const [shown, setShown] = createSignal(wanted() && still())
+  let frame = 0
+  createEffect(
+    on(wanted, (want) => {
+      cancelAnimationFrame(frame)
+      if (!want || still()) {
+        setShown(want)
+        return
+      }
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => setShown(true))
+      })
+    }),
+  )
+  onCleanup(() => cancelAnimationFrame(frame))
+  return shown
+}
+
+/** The top lights, one per state that has its own (top-light.ts). */
+const TOP_LIGHTS: readonly {
+  state: TopLightState
+  spec: TopLightSpec
+  testId: string
+}[] = [
+  { state: 'room', spec: TOP_LIGHT, testId: 'echo-top-light' },
+  {
+    state: 'demo-off',
+    spec: DEMO_OFF_TOP_LIGHT,
+    testId: 'echo-top-light-demo-off',
+  },
+  { state: 'result', spec: RESULT_TOP_LIGHT, testId: 'echo-top-light-result' },
+]
+
 export function EchoSky(props: EchoSkyProps): JSX.Element {
+  /** Whose top light is up: the result's, screen 3's in the demo, or the room's. */
+  const topLightState = (): TopLightState => {
+    if (props.scene.result) return 'result'
+    return props.cityLight === 'demo-off' ? 'demo-off' : 'room'
+  }
+  const celebrating = useCelebrationShown(
+    () => props.scene.celebration,
+    () => props.still,
+  )
   const k = (): number =>
     props.scene.result ? props.layout.kResult : props.layout.k
   const unit = (): number => props.layout.unit
@@ -173,16 +235,24 @@ export function EchoSky(props: EchoSkyProps): JSX.Element {
           still={props.still}
         />
       </Show>
-      <div
-        class={styles.topLight}
-        style={{
-          background: topLight(
-            unit(),
-            props.layout.column.left,
-            props.layout.column.width,
-          ),
-        }}
-      />
+      <For each={TOP_LIGHTS}>
+        {(light) => (
+          <div
+            class={styles.topLight}
+            data-testid={light.testId}
+            style={{
+              background: topLight(
+                unit(),
+                props.layout.column.left,
+                props.layout.column.width,
+                light.spec,
+              ),
+              opacity: topLightState() === light.state ? 1 : 0,
+              transition: props.still ? 'none' : TOP_LIGHT_FADE,
+            }}
+          />
+        )}
+      </For>
       <Show when={!props.still}>
         <For each={TWINKLES}>
           {(twinkle, i) => {
@@ -225,7 +295,7 @@ export function EchoSky(props: EchoSkyProps): JSX.Element {
           )}
         </For>
       </div>
-      <Show when={props.scene.celebration}>
+      <Show when={celebrating()}>
         <CelebrationStar layout={props.layout} still={props.still} />
       </Show>
       {props.children}
