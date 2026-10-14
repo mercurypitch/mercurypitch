@@ -245,6 +245,11 @@ const echoFixture = import.meta.env.DEV
 const ngFixture = import.meta.env.DEV
   ? new URLSearchParams(window.location.search).get('ngFixture')
   : null
+// Lip roll's fixtures, the same way: `?lipFixture=<name>` (storyboard
+// 03-lip-roll, screens 1 to 4).
+const lipFixture = import.meta.env.DEV
+  ? new URLSearchParams(window.location.search).get('lipFixture')
+  : null
 
 const HYDRATION_DEADLINE_MS = 5000
 const hydrationDeadline = new Promise<never>((_, reject) => {
@@ -274,6 +279,12 @@ void Promise.race([hydrateStoragePort(), hydrationDeadline])
     if (import.meta.env.DEV && ngFixture !== null) {
       void import('@/features/ng-slides/fixture/mount-ng-fixture').then((m) =>
         m.mountNgFixture(root, ngFixture),
+      )
+      return
+    }
+    if (import.meta.env.DEV && lipFixture !== null) {
+      void import('@/features/lip-roll/fixture/mount-lip-fixture').then((m) =>
+        m.mountLipFixture(root, lipFixture),
       )
       return
     }
