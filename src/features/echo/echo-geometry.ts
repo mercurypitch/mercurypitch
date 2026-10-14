@@ -13,6 +13,12 @@
 // The celebration star is in echo-celebration.ts.
 //
 // The files this was written against:
+//   echo-citylight-demo-off-1290.webp  447x165  21762 bytes  sha256 d8b5d6f2fceb8b78
+//   echo-citylight-demo-off-860.webp  298x110  22668 bytes  sha256 f89f343ade750544
+//   echo-citylight-intro-1290.webp  318x141  28192 bytes  sha256 2bd68fd8fb357a66
+//   echo-citylight-intro-860.webp  212x94  21846 bytes  sha256 9fa5016fb0484d9f
+//   echo-citylight-mid-take-1290.webp  426x141  25468 bytes  sha256 09d05229769b052c
+//   echo-citylight-mid-take-860.webp  284x94  23288 bytes  sha256 cf0b9e1160f9774e
 //   echo-clouds-demo-off-1290.webp  1290x3096  71096 bytes  sha256 5a957b02ee541966
 //   echo-clouds-demo-off-860.webp  860x2064  50814 bytes  sha256 16aad420c34f3afa
 //   echo-clouds-mid-take-1290.webp  1290x3096  77424 bytes  sha256 5f7d46919bbd22ac
@@ -34,8 +40,8 @@
 //   echo-star-result-violet.webp  218x218  8032 bytes  sha256 48f6c00e74c5a0bd
 //   echo-world-1290.webp  1290x3096  197930 bytes  sha256 09b323ae511192f7
 //   echo-world-860.webp  860x2064  116556 bytes  sha256 51b57ec0a5482712
-//   echo-world-result-1290.webp  1290x3096  271634 bytes  sha256 a24a96cc80c10e76
-//   echo-world-result-860.webp  860x2064  157884 bytes  sha256 fd8f306b2c3b549e
+//   echo-world-result-1290.webp  1290x3096  272680 bytes  sha256 071ad0cc98ad6c85
+//   echo-world-result-860.webp  860x2064  158286 bytes  sha256 e2351c66146cce0d
 
 export interface PlatePoint {
   readonly u: number
@@ -55,7 +61,7 @@ export const WORLD_FALLBACK =
   'linear-gradient(to bottom, rgb(7, 16, 36) 4.2%, rgb(8, 17, 36) 12.5%, rgb(9, 18, 37) 20.8%, rgb(8, 18, 39) 29.2%, rgb(9, 19, 41) 37.5%, rgb(10, 23, 48) 45.8%, rgb(16, 31, 63) 54.2%, rgb(42, 54, 107) 62.5%, rgb(45, 47, 75) 70.8%, rgb(37, 46, 79) 79.2%, rgb(24, 32, 63) 87.5%, rgb(22, 29, 56) 95.8%)'
 /** The result plate's, the same way. */
 export const RESULT_FALLBACK =
-  'linear-gradient(to bottom, rgb(6, 15, 33) 4.2%, rgb(7, 15, 33) 12.5%, rgb(8, 16, 33) 20.8%, rgb(8, 19, 41) 29.2%, rgb(8, 22, 52) 37.5%, rgb(16, 35, 77) 45.8%, rgb(15, 33, 72) 54.2%, rgb(66, 71, 129) 62.5%, rgb(71, 69, 112) 70.8%, rgb(82, 82, 121) 79.2%, rgb(39, 49, 91) 87.5%, rgb(24, 36, 74) 95.8%)'
+  'linear-gradient(to bottom, rgb(6, 15, 33) 4.2%, rgb(7, 15, 33) 12.5%, rgb(8, 16, 33) 20.8%, rgb(8, 19, 41) 29.2%, rgb(8, 22, 52) 37.5%, rgb(16, 35, 77) 45.8%, rgb(15, 33, 72) 54.2%, rgb(66, 70, 129) 62.5%, rgb(71, 69, 112) 70.8%, rgb(82, 82, 121) 79.2%, rgb(39, 49, 91) 87.5%, rgb(24, 36, 74) 95.8%)'
 
 /** The foreground roof's ridge: left edge, finial, right edge. */
 export const RIDGE: readonly (readonly [number, number])[] = [
@@ -314,4 +320,43 @@ export const CLOUD_LAYER = {
   inMs: 1600,
   crossMs: 1200,
   outMs: 800,
+} as const
+
+/**
+ * The city light (echo-citylight-layer.json): the town's cyan light, one
+ * small layer per state, over the state's clouds and under everything
+ * drawn. Its opacity per state; each layer's box in fractions of the
+ * shipped plate's box (left, top, width, height) and its files' widths
+ * in px at the 860 and 1290 plates; the crossfade as the state changes and
+ * the fade to the result, ms and CSS easing.
+ */
+export const CITY_LIGHT = {
+  opacity: { intro: 1, 'mid-take': 1, 'demo-off': 1, result: 0 },
+  layers: {
+    intro: {
+      left: 0.52326,
+      top: 0.65019,
+      width: 0.24651,
+      height: 0.04554,
+      px: [212, 318],
+    },
+    'mid-take': {
+      left: 0.45116,
+      top: 0.65019,
+      width: 0.33023,
+      height: 0.04554,
+      px: [284, 426],
+    },
+    'demo-off': {
+      left: 0.42326,
+      top: 0.64244,
+      width: 0.34651,
+      height: 0.05329,
+      px: [298, 447],
+    },
+  },
+  crossMs: 1200,
+  crossEase: 'ease-in-out',
+  outMs: 800,
+  outEase: 'ease-in',
 } as const

@@ -3,8 +3,9 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { catmullRom, dotTimings, easeOut, keyframeOffsets, mistAngle, paintRibbons, ribbonField, ribbonFrames, ribbonPlan, screenStops, seeded, starPath, } from './celebration-paint'
+import { catmullRom, dotTimings, easeOut, gaussStops, keyframeOffsets, mistAngle, paintRibbons, pointLight, ribbonField, ribbonFrames, ribbonPlan, screenStops, seeded, sparkleTimings, starPath, } from './celebration-paint'
 import { CELEBRATION } from './echo-celebration'
+import { CELEBRATION_SPARKLES } from './echo-celebration-sparkles'
 
 /** A path's corners, [x, y]. */
 const corners = (path: string): number[][] =>
@@ -56,6 +57,65 @@ describe("the inner outline's lumps (round 4)", () => {
   it("keeps the spec's ten factors, and draws a plain star without them", () => {
     expect(CELEBRATION.star.inner.wobbleCcw).toHaveLength(10)
     expect(starPath(10, 0.5, Array(10).fill(1))).toBe(starPath(10, 0.5))
+  })
+})
+
+describe("the outer outline's lopsided corners (round 5)", () => {
+  it('scales and turns each corner, both counter-clockwise from the top tip', () => {
+    const radiusCcw = [1.2, 1, 1, 1, 1, 1, 1, 1, 1, 0.5]
+    const turnCcwDeg = [10, 0, 0, 0, 0, 0, 0, 0, 0, -20]
+    const points = corners(
+      starPath(10, 0.5, undefined, { radiusCcw, turnCcwDeg }),
+    )
+    const angle = ([x, y]: number[]) =>
+      ((Math.atan2(-y, x) * 180) / Math.PI + 360) % 360
+
+    expect(Math.hypot(...points[0])).toBeCloseTo(12, 2)
+    // Turned counter-clockwise on screen: the top tip leans left.
+    expect(points[0][0]).toBeLessThan(0)
+    expect(angle(points[0])).toBeCloseTo(100, 1)
+    // The first valley clockwise is entry 9: half as far, turned back 20.
+    expect(Math.hypot(...points[1])).toBeCloseTo(2.5, 2)
+    expect(angle(points[1])).toBeCloseTo(54 - 20, 0)
+  })
+
+  it("keeps the spec's ten factors and turns, and draws a plain star with none", () => {
+    const { lopsided } = CELEBRATION.star.outer
+
+    expect(lopsided.radiusCcw).toHaveLength(10)
+    expect(lopsided.turnCcwDeg).toHaveLength(10)
+    expect(
+      starPath(10, 0.5, undefined, {
+        radiusCcw: Array(10).fill(1),
+        turnCcwDeg: Array(10).fill(0),
+      }),
+    ).toBe(starPath(10, 0.5))
+  })
+})
+
+describe('a dot or a sparkle (round 5)', () => {
+  it('lays its core over its glow, each at its own alpha', () => {
+    const light = {
+      rgb: [100, 200, 255],
+      coreFwhmW: 0.003,
+      coreAlpha: 0.3,
+      glowFwhmW: 0.006,
+      glowAlpha: 0.8,
+    }
+    const { reach, stops } = pointLight(light, 390)
+    const alphaOf = (stop: string) => Number(/,\s*([\d.]+)\)/u.exec(stop)?.[1])
+
+    expect(reach).toBeCloseTo((3 * 0.006 * 390) / 2.3548, 6)
+    expect(alphaOf(stops[0])).toBeCloseTo(1 - 0.2 * 0.7, 4)
+    expect(alphaOf(stops[stops.length - 1])).toBeLessThan(0.01)
+  })
+
+  it('draws a blotch as a Gaussian at its alpha, out to three sigma', () => {
+    const stops = gaussStops(0.5)
+
+    expect(stops[0]).toEqual({ offset: 0, opacity: 0.5 })
+    expect(stops[stops.length - 1].offset).toBe(1)
+    expect(stops[stops.length - 1].opacity).toBeCloseTo(0.5 * Math.exp(-4.5), 6)
   })
 })
 
@@ -157,6 +217,28 @@ describe('the ribbons (round 4)', () => {
     expect([...rgba.slice((9 * 80 + 40) * 4, (9 * 80 + 40) * 4 + 3)]).toEqual([
       0, 225, 255,
     ])
+  })
+
+  it('lights each link at its own gain, capped at full (round 5)', () => {
+    const THREE = [
+      [10, 10],
+      [40, 10],
+      [70, 10],
+    ] as const
+    const gained = (segmentGain: number[]) =>
+      ribbonField(
+        catmullRom(THREE),
+        { fwhm: 2, taper: 0, alpha: 0.3, fromStart: true, segmentGain },
+        { width: 80, height: 20, dpr: 1 },
+      )
+    const at = (f: ReturnType<typeof gained>, x: number) =>
+      f.alpha[f.pixels.indexOf(10 * 80 + x)]
+    const plain = gained([1, 1])
+    const lit = gained([0.5, 2])
+
+    expect(at(lit, 25) / at(plain, 25)).toBeCloseTo(0.5, 5)
+    expect(at(lit, 55) / at(plain, 55)).toBeCloseTo(2, 5)
+    expect(Math.max(...gained([1, 10]).alpha)).toBe(1)
   })
 
   it('dips by the wisp along the curve, moving with its phase', () => {
@@ -278,6 +360,24 @@ describe("the glows' colours, fitted to the result plate", () => {
 })
 
 describe('the timings', () => {
+  it('reveals each sparkle its delay after the dot it follows, and twinkles it from its own seed', () => {
+    const { dots, sparkles } = CELEBRATION.timing
+    const [shortest, longest] = sparkles.idlePeriodMs
+    const timings = sparkleTimings()
+
+    expect(timings).toHaveLength(CELEBRATION_SPARKLES.length)
+    expect(timings.map((t) => t.revealAt)).toEqual(
+      CELEBRATION_SPARKLES.map(
+        (sp) => dots.firstMs + sp.afterRank * dots.staggerMs + sparkles.delayMs,
+      ),
+    )
+    expect(sparkleTimings()).toEqual(timings)
+    expect(
+      timings.every((t) => t.periodMs >= shortest && t.periodMs <= longest),
+    ).toBe(true)
+    expect(timings[0].periodMs).not.toBe(dotTimings()[0].periodMs)
+  })
+
   it('reveals the dots nearest the starburst first, a stagger apart', () => {
     const { firstMs, staggerMs } = CELEBRATION.timing.dots
     const reveal = dotTimings().map((t) => t.revealAt)

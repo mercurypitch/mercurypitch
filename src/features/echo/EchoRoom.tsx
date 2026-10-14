@@ -33,6 +33,7 @@ import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MercView } from '@/components/room-kit/MercView'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
+import type { CityLightState } from './echo-art'
 import type { CloudState } from './EchoClouds'
 import { EchoLevel } from './EchoLevel'
 import { EchoMerc, mercBox } from './EchoMerc'
@@ -180,6 +181,15 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
         (now === 'call' && phrase > 0),
     }
   }
+  /**
+   * The town's city light (art round 5): the intro's while the take's
+   * clouds are down, the take's with them, none at the result (its plate
+   * lights the town its own way).
+   */
+  const cityLight = (): CityLightState | null => {
+    if (phase() === 'result') return null
+    return clouds().on ? 'mid-take' : 'intro'
+  }
   /** Merc's line shows but while the singer sings the phrase back. */
   const showLine = (): boolean =>
     room.line() !== '' && phase() !== 'response' && phase() !== 'blocked'
@@ -239,6 +249,7 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
             scene={room.scene()}
             still={false}
             clouds={clouds()}
+            cityLight={cityLight()}
             ribbon={
               <EchoRibbon
                 box={ribbonBox(l())}

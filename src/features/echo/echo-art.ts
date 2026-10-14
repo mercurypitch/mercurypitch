@@ -13,10 +13,17 @@
 // own plate joins as a `<picture>` source in PR 5. The take's cloud layer
 // (art round 3) has the plate's own frame and widths, so it is loaded and
 // placed as a plate; the demo's (echo-clouds-demo-off-*) waits for the demo
-// in PR 4.
+// in PR 4. The city light (art round 5) is one small crop per state, cut
+// from the plate's frame at the same two widths, so each is a plate too,
+// drawn in its own box inside the plate's; the demo's
+// (echo-citylight-demo-off-*) waits for the demo with its clouds.
 
 import type { PlateSpec } from '@/components/room-kit/plate-loader'
 import { preloadPlate } from '@/components/room-kit/plate-loader'
+import cityIntro860 from './art/echo-citylight-intro-860.webp'
+import cityIntro1290 from './art/echo-citylight-intro-1290.webp'
+import cityTake860 from './art/echo-citylight-mid-take-860.webp'
+import cityTake1290 from './art/echo-citylight-mid-take-1290.webp'
 import cloudsTake860 from './art/echo-clouds-mid-take-860.webp'
 import cloudsTake1290 from './art/echo-clouds-mid-take-1290.webp'
 import haloFinished from './art/echo-halo-finished.webp'
@@ -39,6 +46,7 @@ import world1290 from './art/echo-world-1290.webp'
 import worldResult860 from './art/echo-world-result-860.webp'
 import worldResult1290 from './art/echo-world-result-1290.webp'
 import type { StarSize } from './echo-geometry'
+import { CITY_LIGHT } from './echo-geometry'
 
 /** A star's painted tint: the storyboard's stars run between these. */
 export type StarTint = 'base' | 'violet' | 'cyan' | 'bright'
@@ -74,6 +82,36 @@ export const CLOUD_PLATE: PlateSpec = {
     { url: cloudsTake1290, width: 1290 },
   ],
   sizes: '100vw',
+}
+
+/** The states whose city light the room shows (the demo's joins with it). */
+export type CityLightState = 'intro' | 'mid-take'
+
+/**
+ * A state's city light: its crop at both plate widths (the files' own
+ * widths, from the spec), drawn at its share of the plate's width, so the
+ * browser takes the width it takes for the plate.
+ */
+function cityLightPlate(
+  state: CityLightState,
+  small: string,
+  big: string,
+): PlateSpec {
+  const { width: share, px } = CITY_LIGHT.layers[state]
+  return {
+    key: `echo-citylight-${state}`,
+    candidates: [
+      { url: small, width: px[0] },
+      { url: big, width: px[1] },
+    ],
+    sizes: `${(100 * share).toFixed(2)}vw`,
+  }
+}
+
+/** The town's cyan light, one small layer per state (art round 5). */
+export const CITY_LIGHT_PLATES: Readonly<Record<CityLightState, PlateSpec>> = {
+  intro: cityLightPlate('intro', cityIntro860, cityIntro1290),
+  'mid-take': cityLightPlate('mid-take', cityTake860, cityTake1290),
 }
 
 /** Each size's sprite per tint, and its halo. */

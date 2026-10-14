@@ -13,8 +13,10 @@
 //                                              twinkles, the top light, the
 //                                              strokes, the sprites, the
 //                                              result slots, the cloud
-//                                              layer's fades
+//                                              layer's fades, the city
+//                                              light's boxes and fades
 //   src/features/echo/echo-celebration.ts      the celebration star
+//   src/features/echo/echo-celebration-sparkles.ts  its small sparkles
 //   src/features/echo/fixture/fixture-scenes.ts  the storyboard's frames,
 //                                              pinned, for the dev-only
 //                                              fixtures the fidelity
@@ -42,6 +44,10 @@ const A0 = resolve(SOURCE)
 const ART = join(ROOT, 'src/features/echo/art')
 const GEOMETRY_OUT = join(ROOT, 'src/features/echo/echo-geometry.ts')
 const CELEBRATION_OUT = join(ROOT, 'src/features/echo/echo-celebration.ts')
+const SPARKLES_OUT = join(
+  ROOT,
+  'src/features/echo/echo-celebration-sparkles.ts',
+)
 const FIXTURE_OUT = join(ROOT, 'src/features/echo/fixture/fixture-scenes.ts')
 
 const json = (path) => JSON.parse(readFileSync(join(A0, path), 'utf8'))
@@ -51,6 +57,7 @@ const PINS = json('geometry/echo-storyboard-pins.json')
 const CHOICES = json('geometry/fixture-choices.json')
 const STAR = json('geometry/echo-celebration-star.json')
 const CLOUDS = json('geometry/echo-cloud-layer.json')
+const CITY = json('geometry/echo-citylight-layer.json')
 const MASTER = json('masters/echo-world-phone-1290x3096.json')
 
 // ---- numbers as the A0 tools compute them --------------------------------
@@ -372,15 +379,115 @@ const SCREEN4_PX_W = Number(
 /** The starburst's right ray stops short of the result plate's lit spire. */
 const RIGHT_RAY_MAX_PX = 2.5
 
+/** The star's layers in the order the room paints them (CelebrationStar.tsx). */
+const STAR_ORDER = [
+  'glow',
+  'hollow_fill',
+  'inner_outline',
+  'blotches',
+  'outer_outline',
+]
+
 /**
- * The celebration star as art round 4 left it (the spec's r3 block,
+ * Round 5's star: the outer outline lopsided (each corner's radius factor
+ * and turn, counter-clockwise on screen from the top tip), the inner
+ * outline's opacity and the blue blotches inside. A paint order the room
+ * does not follow stops the sync.
+ */
+function starRound5(star) {
+  const order = star.draw_order ?? STAR_ORDER.filter((l) => l !== 'blotches')
+  const known = STAR_ORDER.filter((l) => order.includes(l))
+  if (JSON.stringify(order) !== JSON.stringify(known)) {
+    throw new Error(`the star's draw order ${order}: the room paints ${known}`)
+  }
+  const lop = star.outer_outline.lopsided
+  const radiusCcw = lop?.radius_factors ?? Array(10).fill(1)
+  const turnCcwDeg = lop?.turn_deg_ccw ?? Array(10).fill(0)
+  if (radiusCcw.length !== 10 || turnCcwDeg.length !== 10) {
+    throw new Error('the lopsided outline wants 10 factors and 10 turns')
+  }
+  return {
+    lopsided: { radiusCcw, turnCcwDeg },
+    innerAlpha: star.inner_outline.alpha ?? 1,
+    blotches: (star.blotches?.items ?? []).map((b) => ({
+      centreR: b.centre_R,
+      sigmaR: b.sigma_R,
+      alpha: b.alpha,
+      rgb: hexRgb(b.hex),
+    })),
+  }
+}
+
+/** A ribbon's gain per link, one per pair of its points (round 5). */
+function segmentGain(rb) {
+  const links = rb.through_uv.length - 1
+  const gain = rb.segment_gain ?? Array(links).fill(1)
+  if (gain.length !== links) {
+    throw new Error(`a ribbon of ${links} links has ${gain.length} gains`)
+  }
+  return gain
+}
+
+/**
+ * Round 5's sparkles: screen 4's smaller lights along the chains, drawn as
+ * the dots are, each revealed a delay after the dot it names (after_dot,
+ * a dot's index, taken here to that dot's reveal rank).
+ */
+function sparkles(draw) {
+  const items = draw.sparkles ?? []
+  if ((draw.counts.sparkles ?? 0) !== items.length) {
+    throw new Error(
+      `${items.length} sparkles, the spec counts ${draw.counts.sparkles}`,
+    )
+  }
+  const rankOf = new Map(draw.dots.map((d) => [d.i, d.reveal_rank]))
+  return items.map((sp) => {
+    if (!rankOf.has(sp.after_dot)) {
+      throw new Error(
+        `sparkle ${sp.j} follows dot ${sp.after_dot}: no such dot`,
+      )
+    }
+    return {
+      ...uvOf(sp.uv),
+      rgb: hexRgb(sp.hex),
+      coreFwhmW: sp.core_fwhm_W,
+      coreAlpha: sp.core_alpha,
+      glowFwhmW: sp.glow_fwhm_W,
+      glowAlpha: sp.glow_alpha,
+      afterRank: rankOf.get(sp.after_dot),
+    }
+  })
+}
+
+/** The sparkles' reveal and twinkle (r3.timing_ms, round 5). */
+function sparkleTiming(timing) {
+  const { sparkles: sp, idle } = timing
+  if (sp === undefined) return null
+  const { opacity, scale } = sp.each
+  if (opacity[0] !== 0 || opacity[1] !== 1 || scale[1] !== 1) {
+    throw new Error('a sparkle comes up from 0 to 1 and settles at scale 1')
+  }
+  return {
+    delayMs: sp.delay_ms,
+    durationMs: sp.each.duration_ms,
+    fromScale: scale[0],
+    idleOpacity: idle.sparkles_twinkle.opacity,
+    idlePeriodMs: idle.sparkles_twinkle.period_ms,
+    idleSeed: numberAfter(idle.sparkles_twinkle.per_sparkle, 'seed'),
+  }
+}
+
+/**
+ * The celebration star as art round 5 left it (the spec's r3 block,
  * r3.draw, plate fractions and W): a hollow double-outline star in its
- * glow, its inner outline lumpy; 33 sparkle dots in reveal order, three of
- * them moved off the lit spire (r3.dot_moves, already in their places);
- * three thin wispy ribbons along the dot chains; and the starburst, a cyan
- * mist under a glow, four rays and four diagonal ones, and a core; with
- * r3.timing_ms. The 12 Oct look (superseded_12oct) is not read. A part of
- * the spec the room does not draw stops the sync.
+ * glow, its outer outline lopsided, its inner outline lumpy and blue
+ * blotches inside; 33 sparkle dots in reveal order, each its own size and
+ * brightness, three of them moved off the lit spire (r3.dot_moves, already
+ * in their places); three thin wispy ribbons along the dot chains, each
+ * link at its own gain; and the starburst, a cyan mist under a glow, four
+ * rays and four diagonal ones, and a core; with r3.timing_ms. The
+ * sparkles are sparkles(). The 12 Oct look (superseded_12oct) is not
+ * read. A part of the spec the room does not draw stops the sync.
  */
 async function celebration() {
   const { draw, timing_ms: timing } = STAR.r3
@@ -454,16 +561,22 @@ async function celebration() {
   if (wobble.length !== 10) {
     throw new Error('the inner outline wants 10 radius factors')
   }
+  const round5 = starRound5(star)
   return {
     star: {
       ...uvOf(star.centre_uv),
       tipW: star.outer_outline.tip_radius_W,
-      outer: outline(star.outer_outline),
+      outer: {
+        ...outline(star.outer_outline),
+        lopsided: round5.lopsided,
+      },
       inner: {
         scale: star.inner_outline.scale,
         ...outline(star.inner_outline),
+        alpha: round5.innerAlpha,
         wobbleCcw: wobble,
       },
+      blotches: round5.blotches,
       fill: {
         rgb: hexRgb(star.hollow_fill.hex),
         alpha: star.hollow_fill.alpha,
@@ -475,6 +588,7 @@ async function celebration() {
         ...uvOf(d.uv),
         rgb: hexRgb(d.hex),
         coreFwhmW: d.core_fwhm_W,
+        coreAlpha: d.core_alpha ?? 1,
         glowFwhmW: d.glow_fwhm_W,
         glowAlpha: d.glow_alpha,
         rank: d.reveal_rank,
@@ -485,6 +599,7 @@ async function celebration() {
       fwhmW: rb.stroke_fwhm_W,
       rgb: hexRgb(rb.hex),
       alpha: rb.alpha,
+      segmentGain: segmentGain(rb),
       wisp: {
         depth: rb.wisp.depth,
         periodW: rb.wisp.period_W,
@@ -535,6 +650,7 @@ async function celebration() {
         durationMs: timing.ribbons.duration_ms,
         staggerMs: timing.ribbons.stagger_ms,
       },
+      sparkles: sparkleTiming(timing),
       star: {
         outer: timing.star.outer_outline_draw,
         inner: timing.star.inner_outline_draw,
@@ -566,6 +682,78 @@ function cloudLayer() {
     inMs: fades.intro_end.duration_ms,
     crossMs: fades.between_layers.duration_ms,
     outMs: fades.to_no_layer.duration_ms,
+  }
+}
+
+/** The shipped plate's box in px at a width: the base frame and its sky. */
+const plateRows = (width) => ((BASE.h + MASTER.extension_rows) * width) / BASE.w
+
+/**
+ * A city-light crop as shipped: the room imports it by the name
+ * echo-citylight-<state>-<plate width>.webp, so a spec that names it
+ * otherwise, or a file whose size is not the spec's, stops the sync. Its
+ * width in px, for the crop's `w` descriptor.
+ */
+function shippedCrop(state, f, plateWidth) {
+  const name = `echo-citylight-${state}-${plateWidth}.webp`
+  const file = files.find((c) => c.name === f.name)
+  if (f.name !== name || file === undefined) {
+    throw new Error(
+      `the ${state} city light is ${f.name}: the room loads ${name}`,
+    )
+  }
+  if (file.w !== f.w || file.h !== f.h) {
+    throw new Error(
+      `${name} is ${file.w}x${file.h}, the spec says ${f.w}x${f.h}`,
+    )
+  }
+  return file.w
+}
+
+/**
+ * The city light (echo-citylight-layer.json, art round 5): one small
+ * transparent layer per state, laid over the plate and that state's
+ * clouds at the state's opacity. Its box is in fractions of the shipped
+ * plate's own box (sky rows included), the same at both widths; the sync
+ * stops if the two widths disagree by half a px, or if the spec asks for a
+ * blend or a drift the room does not draw.
+ */
+function cityLight() {
+  if (CITY.drift.px_per_s !== 0) {
+    throw new Error('the city light drifts: the room does not move it')
+  }
+  if (!CITY.blend.startsWith('source-over')) {
+    throw new Error(`the city light's blend is ${CITY.blend}`)
+  }
+  const box = (f, width) => {
+    const rows = plateRows(width)
+    return [f.x / width, f.y / rows, f.w / width, f.h / rows]
+  }
+  const layers = {}
+  for (const [state, crops] of Object.entries(CITY.files)) {
+    const big = box(crops.phone_1290x3096, 1290)
+    const small = box(crops.phone_860x2064, 860)
+    const off = Math.max(...big.map((b, i) => Math.abs(b - small[i]) * 1290))
+    if (off > 0.75) {
+      throw new Error(`${state}'s city light: its widths are ${off} px apart`)
+    }
+    const [left, top, width, height] = big.map(r5)
+    const px = [
+      shippedCrop(state, crops.phone_860x2064, 860),
+      shippedCrop(state, crops.phone_1290x3096, 1290),
+    ]
+    layers[state] = { left, top, width, height, px }
+  }
+  const fades = CITY.fades_ms
+  return {
+    opacity: Object.fromEntries(
+      Object.entries(CITY.states).map(([state, s]) => [state, s.opacity]),
+    ),
+    layers,
+    crossMs: fades.between_states.duration_ms,
+    crossEase: fades.between_states.ease,
+    outMs: fades.to_result.duration_ms,
+    outEase: fades.to_result.ease,
   }
 }
 
@@ -608,6 +796,7 @@ function fixtures() {
     screen: 1,
     plate: 'world',
     clouds: null,
+    cityLight: 'intro',
     celebration: false,
     merc: 'sing',
     rings: p1.rings.map((r) => {
@@ -649,6 +838,7 @@ function fixtures() {
     screen: 2,
     plate: 'world',
     clouds: 'mid-take',
+    cityLight: 'mid-take',
     celebration: false,
     merc: 'listen',
     rings: [
@@ -684,6 +874,7 @@ function fixtures() {
     screen: 4,
     plate: 'result',
     clouds: null,
+    cityLight: null,
     celebration: true,
     merc: 'celebrate',
     rings: [
@@ -852,6 +1043,16 @@ export const RESULT_SLOTS: readonly {
  * fades in, between two states' layers, and out, ms.
  */
 export const CLOUD_LAYER = ${JSON.stringify(cloudLayer())} as const
+
+/**
+ * The city light (echo-citylight-layer.json): the town's cyan light, one
+ * small layer per state, over the state's clouds and under everything
+ * drawn. Its opacity per state; each layer's box in fractions of the
+ * shipped plate's box (left, top, width, height) and its files' widths
+ * in px at the 860 and 1290 plates; the crossfade as the state changes and
+ * the fade to the result, ms and CSS easing.
+ */
+export const CITY_LIGHT = ${JSON.stringify(cityLight())} as const
 `
 
 const celebrationFile = `// ============================================================
@@ -859,7 +1060,7 @@ const celebrationFile = `// ====================================================
 // ============================================================
 //
 // Written by scripts/sync-echo-art.mjs from the Echo A0 art's
-// echo-celebration-star.json (its r3 block, which art round 4 carries);
+// echo-celebration-star.json (its r3 block, which art round 5 carries);
 // do not edit by hand, re-run the script when the art changes. Places are
 // fractions of the plate's base frame (echo-geometry.ts PLATE_BASE), u
 // across and v down; sizes ending in W are fractions of the room's width.
@@ -867,17 +1068,39 @@ const celebrationFile = `// ====================================================
 // (echo-world-result-1290.webp ${files.find((f) => f.name === 'echo-world-result-1290.webp').sha}).
 
 /**
- * The result's celebration star, art round 4 (echo-celebration-star.json,
- * its r3 block): the star (a hollow double outline in its glow, the inner
- * one lumpy: its corners' radius factors counter-clockwise on screen from
- * the top tip), the 33 sparkle dots in reveal order, the three ribbons
- * (Catmull-Rom curves through their dots) and the starburst (a mist laid
- * over, a glow, rays and a core), places in plate fractions and sizes in
- * W, colours sRGB; and the timings, ms from the result's stars landing.
- * A glow is its reach (W) and its rings' screen colours, centre to edge,
- * fitted to the result plate (scripts/sync-echo-art.mjs fitLights).
+ * The result's celebration star, art round 5 (echo-celebration-star.json,
+ * its r3 block): the star (a hollow double outline in its glow; the outer
+ * one lopsided and the inner one lumpy, each corner's radius factor (and
+ * the outer's turn, degrees) counter-clockwise on screen from the top tip;
+ * blue blotches inside, centres and sigmas in tip radii, x right and y
+ * down), the 33 sparkle dots in reveal order, the three ribbons
+ * (Catmull-Rom curves through their dots, a gain per link) and the
+ * starburst (a mist laid over, a glow, rays and a core), places in plate
+ * fractions and sizes in W, colours sRGB; and the timings, ms from the
+ * result's stars landing. A glow is its reach (W) and its rings' screen
+ * colours, centre to edge, fitted to the result plate
+ * (scripts/sync-echo-art.mjs fitLights). The small sparkles are in
+ * echo-celebration-sparkles.ts.
  */
 export const CELEBRATION = ${JSON.stringify(celebrationSpec)} as const
+`
+
+const sparklesFile = `// ============================================================
+// Echo's celebration sparkles, in numbers (generated)
+// ============================================================
+//
+// Written by scripts/sync-echo-art.mjs from the Echo A0 art's
+// echo-celebration-star.json (r3.draw.sparkles, art round 5); do not edit
+// by hand, re-run the script when the art changes. Places are fractions of
+// the plate's base frame (echo-geometry.ts PLATE_BASE), u across and v
+// down; sizes ending in W are fractions of the room's width.
+
+/**
+ * Screen 4's smaller sparkles along the celebration's chains, each drawn as
+ * a dot is (a soft glow, then a core, one colour) and revealed a delay
+ * after the dot of reveal rank \`afterRank\` (CELEBRATION.timing.sparkles).
+ */
+export const CELEBRATION_SPARKLES = ${JSON.stringify(sparkles(STAR.r3.draw))} as const
 `
 
 const scenes = `// ============================================================
@@ -903,6 +1126,8 @@ export interface FixtureScene {
   readonly plate: 'world' | 'result'
   /** The state's cloud layer over the plate, or none. */
   readonly clouds: 'mid-take' | null
+  /** The state's city light over the clouds, or none (the result). */
+  readonly cityLight: 'intro' | 'mid-take' | null
   readonly celebration: boolean
   readonly merc: 'sing' | 'listen' | 'celebrate'
   readonly rings: readonly {
@@ -935,10 +1160,11 @@ export const FIXTURE_SCENES: Readonly<Record<'intro' | 'mid-take' | 'result', Fi
 mkdirSync(join(ROOT, 'src/features/echo/fixture'), { recursive: true })
 writeFileSync(GEOMETRY_OUT, geometry)
 writeFileSync(CELEBRATION_OUT, celebrationFile)
+writeFileSync(SPARKLES_OUT, sparklesFile)
 writeFileSync(FIXTURE_OUT, scenes)
 execFileSync(
   join(ROOT, 'node_modules/.bin/prettier'),
-  ['--write', GEOMETRY_OUT, CELEBRATION_OUT, FIXTURE_OUT],
+  ['--write', GEOMETRY_OUT, CELEBRATION_OUT, SPARKLES_OUT, FIXTURE_OUT],
   {
     stdio: 'ignore',
   },
@@ -953,4 +1179,5 @@ const total = files.reduce((sum, f) => sum + f.bytes, 0)
 console.info(`${files.length} files, ${(total / 1024).toFixed(1)} KB -> ${ART}`)
 console.info(`wrote ${GEOMETRY_OUT}`)
 console.info(`wrote ${CELEBRATION_OUT}`)
+console.info(`wrote ${SPARKLES_OUT}`)
 console.info(`wrote ${FIXTURE_OUT}`)
