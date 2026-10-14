@@ -858,6 +858,43 @@ function fixtures() {
       // The fixture convention: the shipped widths over the screen's own
       // world scale (mock_fixture.py, draw_ribbon).
       scale: r4(1 / GEO.screens['2'].scale),
+      filling: true,
+    },
+  }
+  // Screen 3, the demo's "not like this": the first note's star lit, the
+  // flat second note's ring dark, the third's waiting, and the voice's
+  // amber ribbon off the note. The room has no dark-filled ring of its own,
+  // so the flat one takes the missed style at screen 3's radius.
+  const p3 = PINS['3']
+  const [darkRing, waitingRing] = [...p3.rings].sort((a, b) => b.r_px - a.r_px)
+  const ring3 = (pin, style, key) => {
+    const [u, v] = toPlate(3, pin.x, pin.y)
+    return {
+      u: r4(u),
+      v: r4(v),
+      rW: r5(toW(3, STROKES[key].radius_px[0])),
+      style,
+    }
+  }
+  const demoOff = {
+    screen: 3,
+    plate: 'world',
+    clouds: 'demo-off',
+    cityLight: 'demo-off',
+    celebration: false,
+    merc: 'listen',
+    rings: [
+      ring3(darkRing, 'missed', 'ring_dark_demo'),
+      ring3(waitingRing, 'waiting', 'ring_waiting_screen3'),
+    ],
+    stars: p3.stars.map((pin, i) => fixtureStar(3, pin, `demo${i}`)),
+    lines: [],
+    ribbon: {
+      points: smoothPath(p3.amberRibbon.map((p) => [p[0], p[1]])).map(
+        ([x, y]) => pt(toPlate(3, x, y)),
+      ),
+      scale: r4(1 / GEO.screens['3'].scale),
+      filling: false,
     },
   }
   const p4 = PINS['4']
@@ -889,7 +926,7 @@ function fixtures() {
     lines: resultLines,
     ribbon: null,
   }
-  return { intro, 'mid-take': midTake, result }
+  return { intro, 'mid-take': midTake, 'demo-off': demoOff, result }
 }
 
 // ---- 8. write ---------------------------------------------------------------
@@ -1125,9 +1162,9 @@ export interface FixtureScene {
   /** The world plate, or the result's lit town. */
   readonly plate: 'world' | 'result'
   /** The state's cloud layer over the plate, or none. */
-  readonly clouds: 'mid-take' | null
+  readonly clouds: 'mid-take' | 'demo-off' | null
   /** The state's city light over the clouds, or none (the result). */
-  readonly cityLight: 'intro' | 'mid-take' | null
+  readonly cityLight: 'intro' | 'mid-take' | 'demo-off' | null
   readonly celebration: boolean
   readonly merc: 'sing' | 'listen' | 'celebrate'
   readonly rings: readonly {
@@ -1151,10 +1188,12 @@ export interface FixtureScene {
   readonly ribbon: {
     readonly points: readonly (readonly [number, number])[]
     readonly scale: number
+    /** On the note (cyan) or off it (amber). */
+    readonly filling: boolean
   } | null
 }
 
-export const FIXTURE_SCENES: Readonly<Record<'intro' | 'mid-take' | 'result', FixtureScene>> = ${JSON.stringify(fixtures())}
+export const FIXTURE_SCENES: Readonly<Record<'intro' | 'mid-take' | 'demo-off' | 'result', FixtureScene>> = ${JSON.stringify(fixtures())}
 `
 
 mkdirSync(join(ROOT, 'src/features/echo/fixture'), { recursive: true })

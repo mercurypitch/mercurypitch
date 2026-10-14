@@ -123,7 +123,7 @@ export function EchoFixture(props: EchoFixtureProps): JSX.Element {
     ribbon.draw({
       points: path.points.map(([u, v]) => ({
         ...onPlate(l, { u, v }),
-        filling: true,
+        filling: path.filling,
       })),
       scale: path.scale * (l.unit / RIBBON_REFERENCE_W),
     })
@@ -161,9 +161,10 @@ export function EchoFixture(props: EchoFixtureProps): JSX.Element {
         layout={layout()}
         scene={scene()}
         still
-        clouds={
-          fixture().clouds === null ? undefined : { present: true, on: true }
-        }
+        clouds={(() => {
+          const look = fixture().clouds
+          return look === null ? undefined : { present: true, on: true, look }
+        })()}
         cityLight={fixture().cityLight}
         onPlateSettled={settled}
         ribbon={
