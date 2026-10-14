@@ -22,6 +22,7 @@ import type { MercVoice } from '@/lib/merc/sim'
 import { bridgeArt, bridgeImage, REFLECTION_ART } from '../bridge-art'
 import type { LitStrip } from '../bridge-reveal'
 import { NgSlidesRoom } from '../NgSlidesRoom'
+import { introHum } from '../bridge-ride'
 import type { NgController } from '../useNgController'
 import type { NgFixtureName, NgFixtureScene } from './fixture-scenes'
 import { FIXTURE_ROOT, FIXTURE_SCENES } from './fixture-scenes'
@@ -36,6 +37,26 @@ const SILENT: MercVoice = {
   level: 0,
   steady: 1,
   midi: 57,
+}
+
+/** Screen 2's voice: on its way up a slide, so `ride` leans him. */
+const RISE_ST_PER_SEC = 5
+
+function voiceOf(kind: NgFixtureScene['voice']): () => MercVoice {
+  if (kind === 'hum') {
+    const hum = introHum(FIXTURE_ROOT)
+    return () => hum
+  }
+  if (kind === 'rise') {
+    return () => ({
+      voiced: true,
+      cents: 0,
+      level: 0.6,
+      steady: 1,
+      midi: FIXTURE_ROOT + (RISE_ST_PER_SEC * performance.now()) / 1000,
+    })
+  }
+  return () => SILENT
 }
 
 const PATH = ngSlidesPath(
@@ -54,7 +75,7 @@ export function fixtureController(scene: NgFixtureScene): NgController {
     chip: () => scene.chip,
     summary: () => scene.summary,
     mercState: () => scene.mercState,
-    mercVoice: () => SILENT,
+    mercVoice: voiceOf(scene.voice),
     lines: () => ({ path: PATH, root: scene.names ? FIXTURE_ROOT : null }),
     showResult: () => scene.summary !== null,
     start: () => undefined,

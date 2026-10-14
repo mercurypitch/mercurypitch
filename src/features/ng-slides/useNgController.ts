@@ -53,7 +53,7 @@ import { vocalRangePreset } from '@/stores/settings-store'
 import { preloadNgResult } from './bridge-art'
 import { ARCH } from './bridge-geometry'
 import type { RideMoment } from './bridge-ride'
-import { RIDE_STATES, rideStep, rideTarget, rideX } from './bridge-ride'
+import { introHum, RIDE_STATES, rideStep, rideTarget, rideX, } from './bridge-ride'
 import type { BridgeScroll } from './bridge-scroll'
 import { createBridgeScroll, INTRO_CAMERA } from './bridge-scroll'
 import { createBridgeTones } from './bridge-tones'
@@ -168,9 +168,12 @@ export function useNgController(): NgController {
     })
   const introPlan = (): NgPlan => planNgRun(knownFit(), untrack(level.preset))
   const [scenePlan, setScenePlan] = createSignal<NgPlan>(untrack(introPlan))
+  /** His own hum at the intro, on the first root (introHum). */
+  let introVoice: MercVoice = introHum(untrack(scenePlan).roots[0])
   const sayIntro = (): void => {
     const plan = introPlan()
     setScenePlan(plan)
+    introVoice = introHum(plan.roots[0])
     const { moment, fields } = introLine(plan.source === 'preset' ? null : plan)
     say(moment, fields)
   }
@@ -187,6 +190,7 @@ export function useNgController(): NgController {
   }
 
   // ── Merc ───────────────────────────────────────────────────
+  /** The singer's voice for him, during a run (hearMerc). */
   let voice: MercVoice = SILENT_VOICE
   const merc = createMercMoves({
     later,
@@ -568,8 +572,11 @@ export function useNgController(): NgController {
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
     sayIntro()
+    // He drops in, then hums at the arch's foot.
     later(1100, () => {
-      if (untrack(merc.state) === 'drop') merc.set('idle')
+      if (untrack(merc.state) === 'drop' && moment === 'intro') {
+        merc.set(RIDE_STATES.intro)
+      }
     })
   })
 
@@ -614,7 +621,8 @@ export function useNgController(): NgController {
     chip,
     summary,
     mercState: merc.state,
-    mercVoice: () => voice,
+    // At the intro he hums on his own; in a run he follows the singer.
+    mercVoice: () => (moment === 'intro' ? introVoice : voice),
     lines: () => {
       const plan = scenePlan()
       return {

@@ -39,6 +39,11 @@ export interface NgFixtureScene {
   /** Merc's feet: x of the screen (W) and storyboard y (W). */
   readonly merc: { readonly x: number; readonly feetY: number }
   readonly mercState: MercState
+  /**
+   * What he hears: nothing, his own hum (the intro), or a voice on its way
+   * up a slide (5 semitones a second, so `ride` leans him as on screen 2).
+   */
+  readonly voice: 'silent' | 'hum' | 'rise'
   readonly chip: string | null
   /** Merc's line moment's first line, as the room would say it. */
   readonly line: string
@@ -104,7 +109,8 @@ export const FIXTURE_SCENES = {
     trace: [],
     // Merc stands at the arch's left foot, on the pier (the room's place).
     merc: { x: MERC_INTRO_X, feetY: ARCH.deckY },
-    mercState: 'sing',
+    mercState: 'hum',
+    voice: 'hum',
     chip: null,
     line: 'Hum ng, like the end of sing. Slide up to E3 and back.',
     names: true,
@@ -125,7 +131,8 @@ export const FIXTURE_SCENES = {
     trace: alongRim(worldX(MID_CAMERA, 0), worldX(MID_CAMERA, 0.58), true),
     // By eye: Merc's centre at 0.37 W, his feet on the rim (0.515 H).
     merc: { x: 0.37, feetY: rimY(1, worldX(MID_CAMERA, 0.37)) },
-    mercState: 'sing',
+    mercState: 'ride',
+    voice: 'rise',
     chip: 'Slide 2 of 5',
     line: '',
     names: false,
@@ -154,6 +161,7 @@ export const FIXTURE_SCENES = {
     ]),
     merc: { x: 0.25, feetY: ARCH.deckY },
     mercState: 'listen',
+    voice: 'silent',
     chip: null,
     line: '',
     names: false,
@@ -166,6 +174,7 @@ export const FIXTURE_SCENES = {
     trace: [],
     merc: { x: 0.89, feetY: ARCH.deckY },
     mercState: 'idle',
+    voice: 'silent',
     chip: null,
     line: 'Five slides, no jumps.',
     names: false,

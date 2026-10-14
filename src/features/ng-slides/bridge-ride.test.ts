@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { STATES } from '@/lib/merc/constants'
 import { ARCH, PLAYHEAD_X } from './bridge-geometry'
 import { MERC_INTRO_X, pitchY } from './bridge-layout'
-import { RIDE_STATES, RIDE_TAU_SEC, rideStep, rideTarget, rideX, } from './bridge-ride'
+import { INTRO_HUM_LEVEL, introHum, RIDE_STATES, RIDE_TAU_SEC, rideStep, rideTarget, rideX, } from './bridge-ride'
 
 describe('where his feet go', () => {
   it('follows the voice while it sounds: on the line, under it flat, over it sharp', () => {
@@ -38,10 +38,23 @@ describe('his steps', () => {
 })
 
 describe('his states', () => {
-  it('uses only states he already has (hum and ride are PR 8)', () => {
+  it('hums at the intro and rides every slide, sung or quiet', () => {
+    expect(RIDE_STATES.intro).toBe('hum')
+    expect(RIDE_STATES.slideVoiced).toBe('ride')
+    expect(RIDE_STATES.slideQuiet).toBe('ride')
     for (const state of Object.values(RIDE_STATES)) {
       expect(STATES).toContain(state)
     }
+  })
+
+  it('hums the first root on his own at the intro, so his rings show', () => {
+    expect(introHum(43)).toEqual({
+      voiced: true,
+      cents: 0,
+      level: INTRO_HUM_LEVEL,
+      steady: 1,
+      midi: 43,
+    })
   })
 })
 
