@@ -64,6 +64,7 @@ function fakeContext() {
     stops: number[]
     onended: (() => void) | null
   })[] = []
+  const filters: (FakeNode & { frequency: Param; Q: Param })[] = []
   const destination = fakeNode('destination')
   const ctx = {
     currentTime: 10,
@@ -88,18 +89,22 @@ function fakeContext() {
       oscillators.push(node)
       return node
     },
-    createBiquadFilter: () =>
-      Object.assign(fakeNode('filter'), {
+    createBiquadFilter: () => {
+      const node = Object.assign(fakeNode('filter'), {
         type: 'lowpass',
         frequency: recordingParam(350),
         Q: recordingParam(1),
-      }),
+      })
+      filters.push(node)
+      return node
+    },
     createPeriodicWave: () => ({}),
   }
   return {
     ctx: ctx as unknown as AudioContext,
     gains,
     oscillators,
+    filters,
     destination,
   }
 }
@@ -221,6 +226,29 @@ describe('playVoiceContour', () => {
       destination: bus as unknown as AudioNode,
     })
     expect(fake.gains[0].connections).toEqual([bus])
+  })
+})
+
+describe("playVoiceContour's timbres", () => {
+  const colourOf = (timbre?: 'ooh' | 'hum') => {
+    const fake = fakeContext()
+    playVoiceContour(fake.ctx, LINE, { hz: 110, timbre })
+    const [filter] = fake.filters
+    return { hz: filter.frequency.value, q: filter.Q.value }
+  }
+
+  it('sings an open "ooh" unless told otherwise', () => {
+    expect(colourOf()).toEqual(colourOf('ooh'))
+    expect(colourOf('ooh').hz).toBe(2600)
+  })
+
+  it('hums through a lower, slightly resonant filter: the same partials, duller', () => {
+    const ooh = colourOf('ooh')
+    const hum = colourOf('hum')
+    expect(hum.hz).toBeLessThan(ooh.hz / 2)
+    expect(hum.q).toBeGreaterThan(ooh.q)
+    // A low hum on a phone speaker still reaches its overtones: A2's 8th.
+    expect(hum.hz).toBeGreaterThan(110 * 8)
   })
 })
 
