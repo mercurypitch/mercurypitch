@@ -1,5 +1,5 @@
 // ============================================================
-// MercView: reduced motion reaches the stage, at mount and after
+// MercView: reduced motion and the rings reach the stage
 // ============================================================
 
 import { render } from '@solidjs/testing-library'
@@ -59,6 +59,8 @@ describe('MercView', () => {
 
     // Assert
     expect(merc.options[0]).toMatchObject({ state: 'ride', still: true })
+    // Rings on unless the room says otherwise.
+    expect(merc.options[0]).toMatchObject({ rings: undefined })
     expect(merc.still).toEqual([false])
   })
 
@@ -78,5 +80,21 @@ describe('MercView', () => {
     // Assert
     expect(merc.options[0]).toMatchObject({ still: true })
     expect(merc.still).toEqual([])
+  })
+
+  it('hands the stage his rings when the room turns them off', async () => {
+    // Arrange, act
+    render(() => (
+      <MercView
+        state={() => 'ride'}
+        voice={() => SILENT}
+        rings={false}
+        testId="glide-merc"
+      />
+    ))
+    await vi.waitFor(() => expect(merc.options).toHaveLength(1))
+
+    // Assert
+    expect(merc.options[0]).toMatchObject({ state: 'ride', rings: false })
   })
 })
