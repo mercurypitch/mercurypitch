@@ -666,7 +666,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
       {
         q: 'Does matching a singer mean I sound like them?',
-        a: 'No. It means your range sits in the same broad voice band. Timbre, weight, vibrato, accent and technique are what make a voice recognisable, and none of those are being compared here. Someone can share a band with a singer and sound nothing like them.',
+        a: 'No. It means your range sits in the same broad voice band. Timbre, weight, vibrato, accent and technique are what make a voice recognizable, and none of those are being compared here. Someone can share a band with a singer and sound nothing like them.',
       },
       {
         q: 'Do I need to sing well to get a result?',

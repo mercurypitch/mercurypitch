@@ -1637,7 +1637,7 @@ export const JAM_ROOM_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'The stage',
     description:
-      'What the room is singing moves through here, with every singer’s pitch drawn live in their own colour. With a song loaded the words sit beside it: drag them to read ahead, and the host can hand lines to singers from the Parts bar.',
+      'What the room is singing moves through here, with every singer’s pitch drawn live in their own color. With a song loaded the words sit beside it: drag them to read ahead, and the host can hand lines to singers from the Parts bar.',
     targetSelector: '[data-tour="jam.stage"]',
     placement: 'top',
     requiredTab: TAB_JAM,
