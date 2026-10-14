@@ -124,7 +124,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     faq: [
       {
         q: 'What is my vocal range?',
-        a: 'Your vocal range is the span from the lowest to the highest note you can comfortably sing. Voice Mirror measures it in under a minute by analyzing a low-to-high siren glide directly in your browser.',
+        a: 'Your vocal range is the span from the lowest to the highest note you can comfortably sing. Voice Mirror measures it in under a minute from a glide up and a glide down, in your browser.',
       },
       {
         q: 'Am I tone deaf?',
