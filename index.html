@@ -69,10 +69,6 @@
       name="description"
       content="See your vocal range and pitch accuracy, turn songs you own into Karaoke Night stages with synced lyrics and live pitch scoring, and sing in Jam Rooms together."
     />
-    <meta
-      name="keywords"
-      content="karaoke night, vocal range test, voice mirror, singing practice, pitch training, live pitch feedback, jam rooms"
-    />
     <meta name="author" content="MercuryPitch" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://mercurypitch.com/" />
@@ -119,6 +115,10 @@
       name="twitter:image"
       content="https://mercurypitch.com/og-image.png?v=411005dd"
     />
+    <meta
+      name="twitter:image:alt"
+      content="MercuryPitch — live pitch feedback on a karaoke stage, every sung note drawn on screen."
+    />
     <!-- Icons: standardized names — swap the brand mark by replacing the files
          in public/. The current mark's masters are docs/branding/favicon/meniscus2/
          and docs/branding/logo/meniscus2/; rejected directions and the generation
@@ -156,14 +156,17 @@
       {
         "@context": "https://schema.org",
         "@type": "Organization",
+        "@id": "https://mercurypitch.com/#organization",
         "name": "MercuryPitch",
         "alternateName": "Mercury Pitch",
         "url": "https://mercurypitch.com/",
-        "logo": "https://mercurypitch.com/brand-mark.svg",
+        "logo": "https://mercurypitch.com/icon-512.png",
         "sameAs": [
           "https://github.com/mercurypitch/mercurypitch",
           "https://www.instagram.com/mercurypitch/",
           "https://www.tiktok.com/@mercurypitch",
+          "https://www.youtube.com/@mercurypitch",
+          "https://x.com/mercurypitch7",
           "https://about.mercurypitch.com/"
         ]
       }
@@ -191,7 +194,7 @@
           src="/brand-mark.svg"
           width="68"
           height="68"
-          alt=""
+          alt="MercuryPitch"
         />
         <span class="entry-prelude__wordmark">Mercury<span>Pitch</span></span>
       </div>
@@ -200,7 +203,7 @@
         A free browser studio for people who sing and play. See your vocal range
         and pitch accuracy, turn songs you own into Karaoke Night stages with
         synced lyrics and live pitch scoring, and sing together in Jam Rooms.
-        Nothing to install, and your audio is analysed on your own device.
+        Nothing to install, and your audio is analyzed on your own device.
       </p>
       <nav aria-label="More from MercuryPitch">
         <a href="/mirror">Voice Mirror</a>

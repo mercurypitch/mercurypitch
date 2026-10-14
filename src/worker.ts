@@ -459,10 +459,25 @@ export default {
     // client still reads the slug off the path. Fetching '/' rather than
     // '/index.html' for the same reason as the aliases above: ASSETS.fetch
     // answers an explicit .html path with a drop-`.html` redirect.
+    //
+    // Each slug answers 200 with the home document and its canonical, so a
+    // crawler that follows one finds a duplicate of /. X-Robots-Tag keeps the
+    // slugs out of the index without breaking the link (SEO recheck, 14 Oct
+    // 2026). It is set on the Worker's own response, because these paths are
+    // in assets.run_worker_first.
     if (EXERCISE_PATH.test(url.pathname) && method === 'GET') {
       const shellUrl = new URL(request.url)
       shellUrl.pathname = '/'
-      return env.ASSETS.fetch(new Request(shellUrl.toString(), request))
+      const shell = await env.ASSETS.fetch(
+        new Request(shellUrl.toString(), request),
+      )
+      const headers = new Headers(shell.headers)
+      headers.set('X-Robots-Tag', 'noindex')
+      return new Response(shell.body, {
+        status: shell.status,
+        statusText: shell.statusText,
+        headers,
+      })
     }
 
     // Admin entries serve the shell; the client rewrites the URL to the hash

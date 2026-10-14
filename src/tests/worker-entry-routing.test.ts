@@ -378,6 +378,21 @@ describe('exercise deep links', () => {
     expect(new URL(fetch.mock.calls[0][0].url).search).toBe('?src=ig')
   })
 
+  // Each slug serves the home document with its canonical, so a crawler that
+  // finds one indexes a duplicate of / under another URL. The header keeps
+  // them out of the index; the 200 stays, because the link still works.
+  it('asks search engines not to index the shell it serves', async () => {
+    const { env } = entryEnv()
+    const response = await worker.fetch(
+      new Request('https://mercurypitch.test/exercises/speed-scales'),
+      env,
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex')
+    await expect(response.text()).resolves.toBe('/')
+  })
+
   it('accepts a trailing slash', async () => {
     const { env } = entryEnv()
     const response = await worker.fetch(

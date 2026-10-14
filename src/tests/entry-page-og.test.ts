@@ -60,6 +60,42 @@ function meta(html: string, key: string): string | undefined {
   return /content="([^"]*)"/s.exec(tag)?.[1]
 }
 
+/** The file in public/ that a card URL names. */
+function publicFile(image: string): string {
+  return resolve(
+    repo,
+    'public',
+    // The URL carries the art's own hash so a regenerated card is a new
+    // link; the file it names is the part before the stamp.
+    image.replace(/^https:\/\/[^/]+\//, '').replace(/\?v=[0-9a-f]{8}$/, ''),
+  )
+}
+
+/** Pixel size of a PNG (IHDR) or a baseline/progressive JPEG (SOFn). */
+function imageSize(file: string): { width: number; height: number } {
+  const bytes = readFileSync(file)
+  if (bytes.readUInt32BE(0) === 0x89504e47) {
+    return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) }
+  }
+  let offset = 2
+  while (offset < bytes.length) {
+    const marker = bytes[offset + 1]
+    const length = bytes.readUInt16BE(offset + 2)
+    if (
+      marker >= 0xc0 &&
+      marker <= 0xcf &&
+      ![0xc4, 0xc8, 0xcc].includes(marker)
+    ) {
+      return {
+        height: bytes.readUInt16BE(offset + 5),
+        width: bytes.readUInt16BE(offset + 7),
+      }
+    }
+    offset += 2 + length
+  }
+  throw new Error(`${file}: no image size found`)
+}
+
 describe('entry pages', () => {
   it('found the pages to check', () => {
     expect(pages.length).toBeGreaterThanOrEqual(6)
@@ -80,27 +116,32 @@ describe('entry pages', () => {
       'og:image:alt',
       'twitter:card',
       'twitter:image',
+      'twitter:image:alt',
     ]) {
       expect(meta(html, key), `${name} is missing ${key}`).toBeTruthy()
     }
-
-    // The dimensions have to be true, not just present: an unfurler that
-    // trusts them and gets a different aspect crops the card.
-    expect(meta(html, 'og:image:width')).toBe('1200')
-    expect(meta(html, 'og:image:height')).toBe('630')
     expect(meta(html, 'twitter:card')).toBe('summary_large_image')
+  })
+
+  it.each(pages)('%s declares the size its card really is', (name) => {
+    // The dimensions have to be true, not just present: an unfurler that
+    // trusts them and gets a different aspect crops the card. /glass said
+    // 1200x630 for a 1200x670 file until 0.9.18.
+    const html = read(name)
+    const size = imageSize(publicFile(meta(html, 'og:image')!))
+    expect(meta(html, 'og:image:width'), name).toBe(String(size.width))
+    expect(meta(html, 'og:image:height'), name).toBe(String(size.height))
+  })
+
+  it.each(pages)('%s describes its card the same way to X', (name) => {
+    const html = read(name)
+    expect(meta(html, 'twitter:image:alt')).toBe(meta(html, 'og:image:alt'))
   })
 
   it.each(pages)('%s points at an image that exists', (name) => {
     const image = meta(read(name), 'og:image')
     expect(image).toMatch(/^https:\/\/mercurypitch\.com\//)
-    const file = resolve(
-      repo,
-      'public',
-      // The URL carries the art's own hash so a regenerated card is a new
-      // link; the file it names is the part before the stamp.
-      image!.replace(/^https:\/\/[^/]+\//, '').replace(/\?v=[0-9a-f]{8}$/, ''),
-    )
+    const file = publicFile(image!)
     expect(existsSync(file), `${image} has no file`).toBe(true)
   })
 
