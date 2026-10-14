@@ -9,7 +9,8 @@
 //
 // The tap that opens a room is also where its heaviest art starts loading:
 // Echo's sky plate is decoded while the screen pushes in (plate-loader.ts),
-// so the room shows it at once instead of a frame later.
+// so the room shows it at once instead of a frame later; Ng slides' river
+// and its glass start loading on the same tap.
 //
 // A build without the premium exercises (the store build, until the V1
 // flip) gets nothing. PREMIUM_EXERCISES is a compile-time constant there, so
@@ -18,7 +19,7 @@
 // draws no way in (assert-bundle.mjs STAGE 2 holds the output to it).
 
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_LONG_NOTE_LANTERN, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import type { NativeShellApi } from '@/stores/native-shell-store'
 import type { PushedScreen } from './run-shell-store'
@@ -31,12 +32,18 @@ function install(): PremiumExerciseApi {
   const screens: Record<PremiumExerciseId, PushedScreen> = {
     [EXERCISE_LONG_NOTE_LANTERN]: 'long-note',
     [EXERCISE_ECHO_STARS]: 'echo',
+    [EXERCISE_NG_SLIDES_BRIDGE]: 'ng-slides',
   }
   /** What a room starts loading on the tap that opens it. */
   const preloads: Partial<Record<PremiumExerciseId, () => void>> = {
     [EXERCISE_ECHO_STARS]: () => {
       void import('@/features/echo/echo-art').then((art) => {
         art.preloadEchoArt()
+      })
+    },
+    [EXERCISE_NG_SLIDES_BRIDGE]: () => {
+      void import('@/features/ng-slides/bridge-art').then((art) => {
+        art.preloadNgArt()
       })
     },
   }

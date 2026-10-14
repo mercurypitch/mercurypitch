@@ -100,6 +100,15 @@ const EchoScreen: Component = PREMIUM_EXERCISES
     )
   : () => null
 
+/** The Ng slides exercise: the same ternary as Long note's, for the same reason. */
+const NgSlidesScreen: Component = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('./NgSlidesScreen').then((module) => ({
+        default: module.NgSlidesScreen,
+      })),
+    )
+  : () => null
+
 export const NativeShell: Component = () => {
   const [minimised, setMinimised] = createSignal(false)
 
@@ -360,6 +369,7 @@ export const NativeShell: Component = () => {
             developer={DEVELOPER_AVAILABLE ? DeveloperScreen : undefined}
             longNote={PREMIUM_EXERCISES ? LongNoteScreen : undefined}
             echo={PREMIUM_EXERCISES ? EchoScreen : undefined}
+            ngSlides={PREMIUM_EXERCISES ? NgSlidesScreen : undefined}
           />
 
           {/* Inside the root, not beside it: the sheet copies the custom

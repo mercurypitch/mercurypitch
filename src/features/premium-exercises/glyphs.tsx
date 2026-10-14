@@ -44,6 +44,24 @@ export const EchoGlyph: Component = () => (
   </svg>
 )
 
+/** A glass moon bridge: one arch and its opening over a line of water. */
+export const BridgeGlyph: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 16c2.6-6.4 5.6-9.5 9-9.5s6.4 3.1 9 9.5" />
+    <path d="M7.5 16c1.3-3 2.8-4.5 4.5-4.5s3.2 1.5 4.5 4.5" />
+    <path d="M3 16h4.5M16.5 16H21" />
+    <path d="M4.5 19.6c1.2 0 1.2-.8 2.5-.8s1.2.8 2.5.8 1.2-.8 2.5-.8 1.2.8 2.5.8 1.2-.8 2.5-.8 1.2.8 2.5.8" />
+  </svg>
+)
+
 /** Play, filled: the triangle on the row's accent disc. */
 export const PlayGlyph: Component = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">

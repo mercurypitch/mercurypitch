@@ -18,6 +18,12 @@ describe('premium rooms', () => {
     expect(isPremiumRoom('echo')).toBe(true)
   })
 
+  it('draws Ng slides full-bleed too, held upright on a phone', () => {
+    expect(PREMIUM_ROOM_SCREENS['ng-slides']).toEqual({ fullBleed: true })
+    expect(isFullBleed('ng-slides')).toBe(true)
+    expect(isPremiumRoom('ng-slides')).toBe(true)
+  })
+
   it('leaves every other screen under the opaque bar, free to turn', () => {
     for (const screen of ['settings', 'karaoke', 'developer'] as const) {
       expect(isFullBleed(screen)).toBe(false)
