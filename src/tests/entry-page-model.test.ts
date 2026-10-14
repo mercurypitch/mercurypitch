@@ -56,7 +56,9 @@ describe('entry page model', () => {
       expect(page.title, page.slug).toContain('MercuryPitch')
       // Google truncates a title near 60 characters and a description near
       // 160. Over that is not an error, it is words nobody reads.
-      expect(page.title.length, `${page.slug} title`).toBeLessThanOrEqual(80)
+      expect(page.title.length, `${page.slug} title`).toBeLessThanOrEqual(60)
+      // Decision D5 (SEO audit, 12 Oct 2026): a colon, never an em dash.
+      expect(page.title, `${page.slug} title`).not.toContain('—')
       expect(
         page.description.length,
         `${page.slug} description`,
