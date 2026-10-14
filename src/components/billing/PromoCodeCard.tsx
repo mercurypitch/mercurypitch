@@ -12,6 +12,9 @@
 // 3. For verified accounts:
 //    - 1-click claim card while the server features an open code
 //      (promo-store.ts), or "Claimed" once this account has redeemed it.
+// Signed out, and on the claim card until it is claimed, the launch offer's
+// line says what using the credits earns while the server states one
+// (launch-gift-copy `giftOfferLine`).
 //    - Input box to redeem any promo code.
 // 4. Product Hunt featured badge with automatic dark/light theme switching.
 
@@ -19,7 +22,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createResource, createSignal, onMount, Show, } from 'solid-js'
 import { fetchMe, resendVerificationEmail } from '@/db/services/auth-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
-import { giftCount } from '@/lib/launch-gift-copy'
+import { giftCount, giftOfferLine } from '@/lib/launch-gift-copy'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { recordPromoClaim } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -102,6 +105,12 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
         : undefined),
     })
     return `Claimed on ${day}`
+  }
+
+  /** What using the code on offer earns, while the server states it. */
+  const giftOffer = (): string | null => {
+    const promo = offeredPromo()
+    return promo === null ? null : giftOfferLine(promo)
   }
 
   // Shared with the header pill; a no-op when the header already asked.
@@ -236,6 +245,13 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
               Sign up or log in
             </button>
           </span>
+          <Show when={giftOffer()}>
+            {(line) => (
+              <span class={styles.offerLine} data-testid="gift-offer-line">
+                {line()}
+              </span>
+            )}
+          </Show>
         </div>
       </Show>
 
@@ -270,6 +286,13 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
               <span class={styles.claimSub}>
                 {upperFirst(songSeparations(promo().credits))} on the Cloud GPU
               </span>
+              <Show when={!hasRedeemed(promo().code) && giftOffer()}>
+                {(line) => (
+                  <span class={styles.offerLine} data-testid="gift-offer-line">
+                    {line()}
+                  </span>
+                )}
+              </Show>
             </div>
 
             <Show

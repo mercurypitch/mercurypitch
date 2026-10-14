@@ -20,6 +20,7 @@ interface Offer {
   code: string
   credits: number
   expiresAt: string | null
+  offer?: { goal: number; deadline: string; bonusCredits: number } | null
 }
 
 const LAUNCH: Offer = {
@@ -224,6 +225,32 @@ describe('First Light and the launch gift', () => {
     expect(mocks.openAuthModal).toHaveBeenCalledWith('register', {
       signupSource: 'karaoke',
     })
+  })
+
+  it('says what using the gift earns, from the featured code, on Keep and the Map', async () => {
+    mocks.setOffer({
+      ...LAUNCH,
+      offer: {
+        goal: 5,
+        deadline: '2099-10-28T23:59:59.999Z',
+        bonusCredits: 30,
+      },
+    })
+    const line =
+      'Use all 5 by 28 October and your next credit pack comes with 30 extra credits.'
+
+    const keep = await atKeep()
+    expect(
+      keep.querySelector('[data-testid="gift-offer-line"]'),
+    ).toHaveTextContent(line)
+
+    cleanup()
+    resetOnboarding()
+    render(() => <FirstLight />)
+    chooseTrack('short')
+    openBeat('map')
+    await waitFor(() => expect(beat('map')).not.toBeNull())
+    expect(screen.getByTestId('gift-offer-line')).toHaveTextContent(line)
   })
 
   it('offers nothing in onboarding to a visitor who declined the microphone', async () => {

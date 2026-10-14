@@ -2001,6 +2001,13 @@ body {
   margin-top: 2px;
 }
 
+.mirror-keep-gift .mirror-keep-gift-offer {
+  color: #ffc46b;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin-top: 6px;
+}
+
 .mirror-keep-button {
   width: min(100%, 320px);
   margin-top: 16px;

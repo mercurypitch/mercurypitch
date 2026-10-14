@@ -5,6 +5,14 @@ interface Offer {
   code: string
   credits: number
   expiresAt: string | null
+  offer?: { goal: number; deadline: string; bonusCredits: number } | null
+}
+
+/** The launch offer's terms for a claim made on NOW's day. */
+const TERMS = {
+  goal: 5,
+  deadline: '2026-11-03T23:59:59.999Z',
+  bonusCredits: 30,
 }
 
 const LAUNCH: Offer = {
@@ -201,6 +209,51 @@ describe('saying the gift landed', () => {
     expect(store.giftClaimed()).toBe(true)
   })
 
+  it('adds what using them earns while /me counts the launch offer', async () => {
+    mocks.fetchBillingMe.mockResolvedValue({
+      ...me([claimedAgo(2 * MINUTE)]),
+      offer: { state: 'counting', used: 0, ...TERMS },
+    })
+    const store = await freshStore()
+
+    await store.syncPromoClaims(CONFIRMED)
+
+    expect(mocks.showNotification).toHaveBeenCalledWith(
+      '5 credits added. Try one in Karaoke Night. Use all 5 by 3 November and your next pack comes with 30 extra credits.',
+      'success',
+    )
+  })
+
+  it.each(['lapsed', 'used', 'unlocked'])(
+    'adds nothing about the offer when /me reports it %s',
+    async (state) => {
+      mocks.fetchBillingMe.mockResolvedValue({
+        ...me([claimedAgo(2 * MINUTE)]),
+        offer: { state, used: 5, ...TERMS },
+      })
+      const store = await freshStore()
+
+      await store.syncPromoClaims(CONFIRMED)
+
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        '5 credits added. Try one in Karaoke Night.',
+        'success',
+      )
+    },
+  )
+
+  it('adds the offer to the confirm link toast, from /me', async () => {
+    mocks.fetchBillingMe.mockResolvedValue({
+      ...me([claimedAgo(MINUTE)]),
+      offer: { state: 'counting', used: 0, ...TERMS },
+    })
+    const store = await freshStore()
+
+    expect(await store.confirmedGiftMessage()).toBe(
+      'Email confirmed. 5 credits added. Use all 5 by 3 November and your next pack comes with 30 extra credits.',
+    )
+  })
+
   it('lets the confirm link say it, in its own words, and only once', async () => {
     mocks.fetchBillingMe.mockResolvedValue(me([claimedAgo(MINUTE)]))
     const store = await freshStore()
@@ -287,6 +340,23 @@ describe('saying the gift landed', () => {
 
 describe('a sign-up made beside the gift', () => {
   it('says the gift waits for the confirm link, in the words the ask used', async () => {
+    const store = await freshStore()
+    expect(store.signUpGiftMessage()).toBe(
+      'Confirm your email to get up to 5 free song separations.',
+    )
+  })
+
+  it('adds what using the gift earns while the server states an offer', async () => {
+    mocks.offer = { ...LAUNCH, offer: TERMS }
+    const store = await freshStore()
+    expect(store.signUpGiftMessage()).toBe(
+      'Confirm your email to get up to 5 free song separations. Use all 5 by 3 November and your next credit pack comes with 30 extra credits.',
+    )
+  })
+
+  it('leaves the offer out once its day has passed', async () => {
+    mocks.offer = { ...LAUNCH, offer: TERMS }
+    vi.setSystemTime(Date.parse(TERMS.deadline) + 1)
     const store = await freshStore()
     expect(store.signUpGiftMessage()).toBe(
       'Confirm your email to get up to 5 free song separations.',

@@ -141,6 +141,41 @@ describe('the account ask', () => {
     )
   })
 
+  it('says what using the gift earns, beneath it, while the server states an offer', async () => {
+    promo.offered = {
+      code: 'LAUNCH',
+      credits: 5,
+      expiresAt: '2027-01-01T00:00:00.000Z',
+      offer: {
+        goal: 5,
+        deadline: '2099-10-28T23:59:59.999Z',
+        bonusCredits: 30,
+      },
+    }
+    render(() => <MirrorAccountAsk />)
+
+    const gift = await screen.findByTestId('mirror-account-gift')
+    const line = screen.getByTestId('gift-offer-line')
+    expect(gift).toContainElement(line)
+    expect(gift.lastElementChild).toBe(line)
+    expect(line).toHaveTextContent(
+      'Use all 5 by 28 October and your next credit pack comes with 30 extra credits.',
+    )
+  })
+
+  it('names the gift without the offer when the server states none', async () => {
+    promo.offered = {
+      code: 'LAUNCH',
+      credits: 5,
+      expiresAt: '2027-01-01T00:00:00.000Z',
+      offer: null,
+    }
+    render(() => <MirrorAccountAsk />)
+
+    await screen.findByTestId('mirror-account-gift')
+    expect(screen.queryByTestId('gift-offer-line')).toBeNull()
+  })
+
   it('names a one-credit gift in the singular', async () => {
     promo.offered = { code: 'ONE', credits: 1, expiresAt: null }
     render(() => <MirrorAccountAsk />)

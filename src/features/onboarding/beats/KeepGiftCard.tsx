@@ -15,13 +15,15 @@
 //
 // It renders only while a code is on offer, and promo-store already drops a
 // code that has ended or filled, so nothing here needs a release when the
-// offer closes.
+// offer closes. Last in the card, while the server states the launch offer,
+// what using the credits earns (giftOfferLine).
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { CreditCoin } from '@/components/billing/CreditCoin'
 import { Mascot } from '@/components/Mascot'
 import type { FeaturedPromo } from '@/db/services/billing-service'
+import { giftOfferLine } from '@/lib/launch-gift-copy'
 import { GIFT_BODY, giftTitle } from '../copy'
 import keep from '../keep.module.css'
 
@@ -73,6 +75,15 @@ export const KeepGiftCard: Component<{ gift: FeaturedPromo }> = (props) => {
               <span class={keep.narrowOnly} data-copy="narrow">
                 Until {day()}
               </span>
+            </p>
+          )}
+        </Show>
+        {/* After the gift's own end, so "Until 1 January" stays with the
+            gift and the offer's day reads as the offer's. */}
+        <Show when={giftOfferLine(props.gift)}>
+          {(line) => (
+            <p class={keep.giftOffer} data-testid="gift-offer-line">
+              {line()}
             </p>
           )}
         </Show>

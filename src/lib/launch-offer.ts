@@ -16,21 +16,15 @@ import { createSignal } from 'solid-js'
 import { currentAccountId } from '@/db/services/auth-service'
 import type { LaunchOffer } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
+import { offerDay, offerSentence } from '@/lib/launch-gift-copy'
 
-const DAY = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'long',
-  timeZone: 'UTC',
-})
-
-/** "23 October": the window's last day, in UTC like the window itself. */
-export function offerDay(deadline: string): string {
-  return DAY.format(new Date(deadline))
-}
+// The day is formatted where the gift's offer line formats it, so the line
+// before the claim and the progress after it name the same day alike.
+export { offerDay }
 
 /** While the window is open: what to do, by when, and what it earns. */
 export function offerProgressLine(offer: LaunchOffer): string {
-  return `Use all ${offer.goal} by ${offerDay(offer.deadline)} and your next pack comes with ${offer.bonusCredits} extra credits.`
+  return offerSentence(offer, 'pack')
 }
 
 /** Once it is earned. */

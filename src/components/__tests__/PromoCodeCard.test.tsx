@@ -9,6 +9,7 @@ interface Offer {
   code: string
   credits: number
   expiresAt: string | null
+  offer?: { goal: number; deadline: string; bonusCredits: number } | null
 }
 
 const LAUNCH: Offer = {
@@ -95,6 +96,72 @@ describe('PromoCodeCard', () => {
     const loginBtn = screen.getByRole('button', { name: /sign up or log in/i })
     fireEvent.click(loginBtn)
     expect(mocks.openAuthModal).toHaveBeenCalledWith('register')
+  })
+
+  it('tells a signed-out visitor what using the gift earns', async () => {
+    mocks.setOffer({
+      ...LAUNCH,
+      offer: {
+        goal: 5,
+        deadline: '2099-10-28T23:59:59.999Z',
+        bonusCredits: 30,
+      },
+    })
+    mocks.fetchMe.mockResolvedValue(null)
+    mocks.fetchBillingMe.mockResolvedValue(null)
+
+    render(() => <PromoCodeCard />)
+
+    expect(await screen.findByTestId('gift-offer-line')).toHaveTextContent(
+      'Use all 5 by 28 October and your next credit pack comes with 30 extra credits.',
+    )
+  })
+
+  it('says it on the claim card until the code is claimed', async () => {
+    mocks.setOffer({
+      ...LAUNCH,
+      offer: {
+        goal: 5,
+        deadline: '2099-10-28T23:59:59.999Z',
+        bonusCredits: 30,
+      },
+    })
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 0,
+      entitlements: [],
+      redeemedPromos: [],
+      stripeConfigured: true,
+    })
+
+    const view = render(() => <PromoCodeCard />)
+    await screen.findByTestId('claim-promo-btn')
+    expect(screen.getByTestId('gift-offer-line')).toHaveTextContent(
+      'Use all 5 by 28 October and your next credit pack comes with 30 extra credits.',
+    )
+    view.unmount()
+
+    // Claimed, the progress block in Settings › Credits takes over.
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 5,
+      entitlements: [],
+      redeemedPromos: ['LAUNCH'],
+      stripeConfigured: true,
+    })
+    render(() => <PromoCodeCard />)
+    await screen.findByText('Claimed')
+    expect(screen.queryByTestId('gift-offer-line')).toBeNull()
+  })
+
+  it('says nothing of an offer the server does not state', async () => {
+    mocks.setOffer({ ...LAUNCH, offer: null })
+    mocks.fetchMe.mockResolvedValue(null)
+    mocks.fetchBillingMe.mockResolvedValue(null)
+
+    render(() => <PromoCodeCard />)
+
+    expect(await screen.findByText('Account Required')).toBeInTheDocument()
+    expect(screen.queryByTestId('gift-offer-line')).toBeNull()
   })
 
   it('renders email verification required banner when unverified', async () => {

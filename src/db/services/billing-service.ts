@@ -498,6 +498,38 @@ export interface FeaturedPromo {
   credits: number
   /** When the offer ends (UTC); null when it has no end. */
   expiresAt: string | null
+  /** The launch offer's terms for a claim of this code made today, or null
+   *  when claiming it starts none. Absent on an older db-worker, and null
+   *  when it does not read as terms. */
+  offer?: GiftOfferTerms | null
+}
+
+/** What using the gift earns, before it is claimed: /me's LaunchOffer
+ *  without the progress (workers/db-worker/src/offer-rules.ts
+ *  `finisherTerms`). `deadline` is the window's last moment for a claim
+ *  made today. */
+export type GiftOfferTerms = Pick<
+  LaunchOffer,
+  'goal' | 'deadline' | 'bonusCredits'
+>
+
+function isGiftOfferTerms(value: unknown): value is GiftOfferTerms {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<GiftOfferTerms>
+  return (
+    isCount(candidate.goal) &&
+    candidate.goal > 0 &&
+    isCount(candidate.bonusCredits) &&
+    candidate.bonusCredits > 0 &&
+    typeof candidate.deadline === 'string' &&
+    Number.isFinite(Date.parse(candidate.deadline))
+  )
+}
+
+/** Terms that do not read as terms are no offer: the gift shows alone. */
+function withReadableTerms(promo: FeaturedPromo): FeaturedPromo {
+  if (promo.offer === undefined || promo.offer === null) return promo
+  return isGiftOfferTerms(promo.offer) ? promo : { ...promo, offer: null }
 }
 
 function isFeaturedPromo(value: unknown): value is FeaturedPromo {
@@ -530,7 +562,7 @@ export async function fetchFeaturedPromo(
     if (!res.ok) return null
     const body = (await res.json()) as { promo?: unknown } | null
     const promo = body?.promo
-    return isFeaturedPromo(promo) ? promo : null
+    return isFeaturedPromo(promo) ? withReadableTerms(promo) : null
   } catch {
     return null
   }

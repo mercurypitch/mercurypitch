@@ -15,6 +15,7 @@ interface Offer {
   code: string
   credits: number
   expiresAt: string | null
+  offer?: { goal: number; deadline: string; bonusCredits: number } | null
 }
 
 const LAUNCH: Offer = {
@@ -85,6 +86,46 @@ describe('the signed-out line under Add a song', () => {
     expect(gift).not.toHaveTextContent('credits')
     expect(gift).not.toHaveTextContent('paid option')
     expect(mocks.loadFeaturedPromo).toHaveBeenCalled()
+  })
+
+  it('says what using the gift earns, beneath it, while the server states an offer', () => {
+    mocks.setOffer({
+      ...LAUNCH,
+      offer: {
+        goal: 5,
+        deadline: '2099-10-28T23:59:59.999Z',
+        bonusCredits: 30,
+      },
+    })
+    render(() => <KaraokeGiftLine />)
+
+    const line = screen.getByTestId('gift-offer-line')
+    expect(line).toHaveTextContent(
+      'Use all 5 by 28 October and your next credit pack comes with 30 extra credits.',
+    )
+    // Under the gift's own sentence, above the button.
+    const gift = screen.getByTestId('kn-launch-gift')
+    expect(gift.children[1]).toBe(line)
+  })
+
+  it('leaves the offer out when the server states none, or its day has passed', () => {
+    mocks.setOffer({ ...LAUNCH, offer: null })
+    render(() => <KaraokeGiftLine />)
+    expect(screen.getByTestId('kn-launch-gift')).toBeInTheDocument()
+    expect(screen.queryByTestId('gift-offer-line')).toBeNull()
+    cleanup()
+
+    mocks.setOffer({
+      ...LAUNCH,
+      offer: {
+        goal: 5,
+        deadline: '2020-01-01T23:59:59.999Z',
+        bonusCredits: 30,
+      },
+    })
+    render(() => <KaraokeGiftLine />)
+    expect(screen.getByTestId('kn-launch-gift')).toBeInTheDocument()
+    expect(screen.queryByTestId('gift-offer-line')).toBeNull()
   })
 
   it('asks the account chip for its sign-up form, and counts the tap', () => {

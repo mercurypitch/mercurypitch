@@ -10,12 +10,14 @@
 // credit yet (as First Light's gift names them). The button opens the
 // account chip's form on "Create your account"; a sign-up from this page
 // already carries `signupSource: 'karaoke'`, which gives its first mail the
-// Karaoke Night picture.
+// Karaoke Night picture. Under it, while the server states the launch
+// offer, what using the credits earns (launch-gift-copy `giftOfferLine`):
+// the same terms the rail's progress block counts once they are claimed.
 //
 // Its own file so KaraokeRailPanels stays under the size ratchet.
 
 import { onMount, Show } from 'solid-js'
-import { giftCount } from '@/lib/launch-gift-copy'
+import { giftCount, giftOfferLine } from '@/lib/launch-gift-copy'
 import { rememberGiftOffered } from '@/stores/launch-gift-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { trackKaraoke } from './funnel'
@@ -43,6 +45,16 @@ export function KaraokeGiftLine() {
             <span class="kn-gift-credits">{giftCount(promo().credits)}</span>{' '}
             with a free account.
           </p>
+          <Show when={giftOfferLine(promo())}>
+            {(line) => (
+              <p
+                class="kn-card-sub kn-gift-offer"
+                data-testid="gift-offer-line"
+              >
+                {line()}
+              </p>
+            )}
+          </Show>
           <button
             type="button"
             class="kn-btn kn-btn--primary kn-gift-btn"

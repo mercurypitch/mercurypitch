@@ -1630,6 +1630,15 @@
   flex: none;
 }
 
+/* What using the gift earns, on its own line under the offer. */
+.mapGiftOffer {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #f6c768;
+}
+
 .mapGiftLink {
   display: inline-flex;
   align-items: center;

@@ -15,6 +15,9 @@
 //   - the confirm link: "Email confirmed. 5 credits added."
 //   - a password sign-up: the claim waits for the link, and the sign-up
 //     says so. "Confirm your email to get up to 5 free song separations."
+// While the launch offer runs, each of these adds what using the credits
+// earns: the claim toasts from /me's offer, the sign-up toast from the terms
+// the featured code carries (launch-gift-copy's offerSentence, both).
 //   - the code ran out between the offer and the claim:
 //     "The launch gift has run out. Your account is ready."
 //
@@ -30,7 +33,7 @@ import { currentAccountId, hasValidToken } from '@/db/services/auth-service'
 import type { BillingMe, FeaturedPromo, PromoClaim, } from '@/db/services/billing-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
-import { giftCount } from '@/lib/launch-gift-copy'
+import { giftCount, giftOfferLine, offerSentence } from '@/lib/launch-gift-copy'
 import { refreshBalance } from './billing-store'
 import { showNotification } from './notifications-store'
 import { loadFeaturedPromo, offeredPromo } from './promo-store'
@@ -39,6 +42,14 @@ import { loadFeaturedPromo, offeredPromo } from './promo-store'
  *  credits, so the toasts count credits, and one credit is singular. */
 function creditsAdded(credits: number): string {
   return credits === 1 ? '1 credit added' : `${credits} credits added`
+}
+
+/** What a claim's toast adds about the launch offer: /me's own terms while
+ *  its window is counting, in the progress line's words, or nothing. */
+function claimOfferLine(me: BillingMe): string {
+  return me.offer?.state === 'counting'
+    ? ` ${offerSentence(me.offer, 'pack')}`
+    : ''
 }
 
 /** How long a claim stays news. */
@@ -279,7 +290,7 @@ async function readClaims(
   const news = await giftNews(claims, account.verified)
   if (news?.kind === 'claimed') {
     showNotification(
-      `${creditsAdded(news.claim.credits)}. ${spend(news.claim.credits)}`,
+      `${creditsAdded(news.claim.credits)}. ${spend(news.claim.credits)}${claimOfferLine(me)}`,
       'success',
     )
   } else if (news?.kind === 'run-out') {
@@ -304,7 +315,7 @@ export async function confirmedGiftMessage(): Promise<string | null> {
     setKnown({ accountId, verified: true, claims })
     const news = await giftNews(claims, true)
     if (news?.kind === 'claimed') {
-      return `Email confirmed. ${creditsAdded(news.claim.credits)}.`
+      return `Email confirmed. ${creditsAdded(news.claim.credits)}.${claimOfferLine(me)}`
     }
     return news?.kind === 'run-out' ? GIFT_RUN_OUT : null
   } catch (err) {
@@ -326,8 +337,10 @@ export function signUpGiftMessage(): string | null {
   if (promo === null) return null
   rememberGiftOffered(promo)
   // In the gift's own unit (launch-gift-copy): the ask beside the form named
-  // song separations, and one credit is one separation, singular.
-  return `Confirm your email to get ${giftCount(promo.credits)}.`
+  // song separations, and one credit is one separation, singular. Then what
+  // using them earns, while the server states an offer.
+  const offer = giftOfferLine(promo)
+  return `Confirm your email to get ${giftCount(promo.credits)}.${offer === null ? '' : ` ${offer}`}`
 }
 
 /** A claim made with the Claim button or a typed code: the caller has said

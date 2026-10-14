@@ -49,6 +49,9 @@ import { ROOMS, SIDE_DOORS } from '../rooms'
 export interface MapGift {
   kind: 'join' | 'keep' | 'waiting'
   credits: number
+  /** What using the gift earns (launch-gift-copy `giftOfferLine`), under
+   *  the join and waiting lines; null while the server states no offer. */
+  offer?: string | null
 }
 
 /**
@@ -260,6 +263,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                 >
                   Claim them
                 </button>
+                <MapGiftOffer line={gift().offer} />
               </span>
             </p>
           )}
@@ -277,6 +281,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                 >
                   {MAP_GIFT_JOIN_LINK}
                 </button>
+                <MapGiftOffer line={gift().offer} />
               </span>
             </p>
           )}
@@ -315,5 +320,16 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
     </div>
   )
 }
+
+/** The offer line under the Map's gift line, while there is one. */
+const MapGiftOffer: Component<{ line?: string | null }> = (props) => (
+  <Show when={props.line}>
+    {(line) => (
+      <span class={styles.mapGiftOffer} data-testid="gift-offer-line">
+        {line()}
+      </span>
+    )}
+  </Show>
+)
 
 export default BeatMap

@@ -231,6 +231,10 @@ body {
   white-space: nowrap;
 }
 
+.kn-gift-offer {
+  color: #ffd9a0;
+}
+
 .kn-gift-btn {
   min-height: 44px;
 }
