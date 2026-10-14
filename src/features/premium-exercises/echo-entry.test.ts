@@ -76,9 +76,26 @@ describe("Echo's way in", () => {
     expect(pro.progress()).toBeNull()
   })
 
-  it('plays no demo by itself: Echo has none yet', async () => {
+  it('plays its demo by itself on a first visit', async () => {
+    const echo = await entry()
+
+    expect(echo.demoAutoPlays()).toBe(true)
+  })
+
+  it('plays no demo by itself once it has been seen', async () => {
+    localStorage.setItem('mp_echo_demo_seen', 'true')
     const echo = await entry()
 
     expect(echo.demoAutoPlays()).toBe(false)
+  })
+
+  it('plays no demo by itself once a run is kept or a root is held', async () => {
+    const sung = await entry({ bests: { professional: [20, 25] } })
+    expect(sung.demoAutoPlays()).toBe(false)
+
+    vi.resetModules()
+    localStorage.clear()
+    const rooted = await entry({ root: 57 })
+    expect(rooted.demoAutoPlays()).toBe(false)
   })
 })

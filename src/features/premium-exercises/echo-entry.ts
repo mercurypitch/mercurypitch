@@ -8,9 +8,12 @@
 // plays by itself. Each comes from the stores and rules the room itself
 // reads (echoWindow, echo-store.ts), so the way in and the room cannot
 // disagree. It lives here, beside the catalogue, and reads no file of the
-// room's: the room's own module graph stays out of the Sing screen's.
+// room's: the room's own module graph stays out of the Sing screen's. The
+// demo's rule is the one exception, a module of its own that reads only
+// the stores and the demo's seen flag (echo/demo/demo-auto-play.ts).
 
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
+import { echoDemoAutoPlays } from '@/features/echo/demo/demo-auto-play'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { echoWindow } from '@/lib/sequence/phrase-fit'
 import { echoBest, rememberedEchoRoot } from '@/stores/echo-store'
@@ -45,7 +48,6 @@ export function echoEntry(): EchoEntry {
       const best = echoBest(exerciseLevel())
       return best === null ? null : `Best ${best.landed} of ${best.notes}`
     },
-    // Echo's demo comes in a PR of its own; until then nothing plays.
-    demoAutoPlays: () => false,
+    demoAutoPlays: echoDemoAutoPlays,
   }
 }

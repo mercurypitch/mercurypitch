@@ -25,14 +25,24 @@
 // kit's MercView on the ridge (EchoMerc). The chip, the bubble, the result
 // card, the mic, the result's buttons and the level control are the room
 // kit's; this room brings its world, its words and its test ids.
+//
+// "How it works" (demo/) plays over the same room: Merc sings the phrase
+// and sings it back twice through the room's own engine, not like this and
+// like this, with the demo kit's layer, cards and take pill over it. A
+// first visit opens on it, and the "?" in the corner plays it again.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { Volume2 } from '@/components/icons'
+import { DemoLayer } from '@/components/demo-kit/DemoLayer'
+import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
+import { HelpCircle, Volume2 } from '@/components/icons'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MercView } from '@/components/room-kit/MercView'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
+import { DEMO_COPY } from './demo/demo-cues'
+import { aimEchoTip } from './demo/tip-targets'
+import { useEchoDemo } from './demo/useEchoDemo'
 import type { CityLightState } from './echo-art'
 import type { CloudState } from './EchoClouds'
 import { EchoLevel } from './EchoLevel'
@@ -90,7 +100,15 @@ export function resultDetail(summary: EchoSummary): string | null {
 
 export function EchoRoom(props: EchoRoomProps): JSX.Element {
   const room = useEchoController()
+  const demo = useEchoDemo(room)
   const phase = (): string => room.state().phase
+  /** The demo has the room: its controls are out of reach. */
+  const demoBusy = (): boolean => demo.mode() !== 'idle'
+  /**
+   * The demo is singing a take: Merc's bubble and the chip keep quiet, so
+   * the take's pill and the tooltip speak one at a time.
+   */
+  const demoTake = (): boolean => demo.take() !== null
   let rootEl: HTMLDivElement | undefined
   const [box, setBox] = createSignal<RoomBox | null>(null)
 
@@ -173,6 +191,16 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
    */
   const clouds = (): CloudState => {
     const { phase: now, phrase } = room.state()
+    // The demo: screen 3's clouds through the take not to copy, a take's
+    // through the one to copy; none at its result, its start or its end.
+    const take = demo.take()
+    if (room.script.active()) {
+      return {
+        present: take !== null,
+        on: take !== null && now !== 'result',
+        look: take === 'off' ? 'demo-off' : 'mid-take',
+      }
+    }
     return {
       present: now === 'starting' || now === 'settle' || running(),
       on:
@@ -192,9 +220,13 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
   }
   /** Merc's line shows but while the singer sings the phrase back. */
   const showLine = (): boolean =>
-    room.line() !== '' && phase() !== 'response' && phase() !== 'blocked'
+    room.line() !== '' &&
+    phase() !== 'response' &&
+    phase() !== 'blocked' &&
+    !demoTake()
   const showLevel = (): boolean =>
-    phase() === 'intro' || phase() === 'result' || phase() === 'blocked'
+    !room.script.active() &&
+    (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
 
   /**
    * What a screen reader hears, from one polite region there from the
@@ -202,6 +234,8 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
    * line at the result, his line otherwise.
    */
   const said = (): string => {
+    // The demo speaks for itself (its layer's region).
+    if (demoBusy() || room.script.active()) return ''
     if (phase() === 'response') return room.chip() ?? ''
     const summary = phase() === 'result' ? room.summary() : null
     if (summary === null) return room.line()
@@ -212,12 +246,21 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
   // Focus on a control the room takes away goes to the one in its place.
   const focus = createFocusHandoff()
   const mainControl = (): HTMLElement | null => {
+    const mode = demo.mode()
+    // The demo's cards take focus themselves.
+    if (mode === 'card' || mode === 'end') return null
     let id = 'echo-mic'
-    if (phase() === 'result') id = 'echo-again'
+    if (mode === 'playing') id = 'echo-demo-skip'
+    else if (phase() === 'result' && !room.script.active()) id = 'echo-again'
     else if (phase() === 'blocked') id = 'echo-retry'
     return rootEl?.querySelector<HTMLElement>(`[data-testid="${id}"]`) ?? null
   }
-  createEffect(on(phase, () => focus.handOff(mainControl), { defer: true }))
+  createEffect(
+    on([phase, demo.mode], () => focus.handOff(mainControl), { defer: true }),
+  )
+  /** The singer's own run is on: the mic listens. */
+  const listening = (): boolean =>
+    !room.script.active() && (running() || phase() === 'settle')
 
   const micLabel = (): string => {
     switch (phase()) {
@@ -239,6 +282,7 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
       ref={rootEl}
       class={`${styles.room} mp-dark-stage`}
       data-phase={phase()}
+      data-demo={demo.mode()}
       data-testid="echo-room"
       onFocusIn={(event) => focus.noteFocus(event)}
     >
@@ -277,7 +321,7 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
         )}
       </Show>
 
-      <div class={styles.head} data-testid="echo-header">
+      <div class={styles.head} data-testid="echo-header" inert={demoBusy()}>
         <Switch>
           <Match when={phase() === 'result' ? room.summary() : null}>
             {(summary) => (
@@ -300,14 +344,47 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
           </Match>
           <Match when={phase() !== 'result'}>
             <div class={styles.chip}>
-              <RoomChip text={room.chip()} testId="echo-chip" />
+              <RoomChip
+                text={demoTake() ? null : room.chip()}
+                testId="echo-chip"
+              />
             </div>
+            <Show when={demo.fast()}>
+              <span
+                class={styles.fast}
+                aria-hidden="true"
+                data-testid="echo-demo-fast"
+              >
+                {DEMO_COPY.fast}
+              </span>
+            </Show>
           </Match>
         </Switch>
       </div>
 
       <Show when={showLevel()}>
         <EchoLevel class={styles.level} />
+      </Show>
+      <Show when={demo.canAsk()}>
+        <button
+          type="button"
+          class={styles.ask}
+          onClick={() => demo.ask()}
+          aria-label={DEMO_COPY.ask}
+          data-testid="echo-ask"
+        >
+          <HelpCircle size={22} />
+        </button>
+      </Show>
+      <Show when={demo.mode() === 'playing'}>
+        <button
+          type="button"
+          class={styles.skip}
+          onClick={() => demo.skip()}
+          data-testid="echo-demo-skip"
+        >
+          {DEMO_COPY.skip}
+        </button>
       </Show>
       <Show when={room.canReplay()}>
         <button
@@ -327,9 +404,15 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
         </div>
       </Show>
 
-      <div class={styles.bottom}>
+      <div
+        class={styles.bottom}
+        classList={{
+          [styles.bottomAway]: demo.mode() === 'card' || demo.mode() === 'end',
+        }}
+        inert={demoBusy()}
+      >
         <Switch>
-          <Match when={phase() === 'result'}>
+          <Match when={phase() === 'result' && !room.script.active()}>
             <ResultActions
               onAgain={() => room.start()}
               onDone={() => props.onDone()}
@@ -345,10 +428,18 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
             />
           </Match>
           <Match when={true}>
+            {/* The demo's take pill stands over the mic while it sings. */}
+            <Show when={room.script.active()}>
+              <DemoTakePill
+                take={demo.take()}
+                copy={DEMO_COPY}
+                testId="echo-demo-take"
+              />
+            </Show>
             <MicButton
-              listening={running() || phase() === 'settle'}
-              demo={false}
-              pulse={false}
+              listening={listening()}
+              demo={room.script.active()}
+              pulse={demo.micPulse()}
               disabled={phase() === 'starting'}
               label={micLabel()}
               onClick={() => {
@@ -363,6 +454,12 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
       <div class={styles.said} aria-live="polite" data-testid="echo-said">
         {said()}
       </div>
+      <DemoLayer
+        demo={demo}
+        aim={(tip, layer) => aimEchoTip(tip.target, layer)}
+        copy={DEMO_COPY}
+        testId="echo-demo"
+      />
     </div>
   )
 }

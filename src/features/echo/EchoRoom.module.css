@@ -78,6 +78,54 @@
   color: var(--text-primary);
 }
 
+/* "How it works" and the demo's Skip take the corner "hear it again" uses
+   mid-phrase: the three never show at once. */
+.ask,
+.skip {
+  position: absolute;
+  top: calc(var(--pushed-top, 0px) + 6px);
+  right: 12px;
+  z-index: 5;
+  height: 44px;
+}
+
+.ask {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(10, 18, 44, 0.55);
+  color: var(--text-secondary);
+}
+
+.skip {
+  min-width: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  font: 600 15px/1 var(--font-body, sans-serif);
+}
+
+/* The demo's fast-forward, where the chip would be. */
+.fast {
+  margin-top: 12px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 196, 92, 0.6);
+  border-radius: 999px;
+  background: rgba(255, 186, 73, 0.16);
+  color: #ffd58a;
+  font: 700 15px/1 var(--font-body, sans-serif);
+  letter-spacing: 0.02em;
+}
+
+/* Under the demo's play card and end card, the mic keeps its place unseen. */
+.bottomAway > * {
+  visibility: hidden;
+}
+
 /* Merc's line, over his head on the ridge. The room sets its bottom. */
 .bubble {
   position: absolute;

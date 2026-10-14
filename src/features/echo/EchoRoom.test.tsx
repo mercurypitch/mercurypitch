@@ -139,6 +139,12 @@ vi.mock('@/stores/echo-store', () => ({
   },
   echoBest: () => null,
 }))
+// The demo has been seen on this device: the room opens on its own start
+// (demo/EchoDemo.test.tsx plays the demo).
+vi.mock('./demo/demo-seen', () => ({
+  echoDemoSeen: () => true,
+  markEchoDemoSeen: () => undefined,
+}))
 // No voiceprint on this device: the root is the one kept, or the singer's.
 vi.mock('@/db/services/voiceprint-service', () => ({
   loadLocalVoiceprints: () => [],
