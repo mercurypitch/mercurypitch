@@ -4,9 +4,11 @@
 //
 // Every tooltip waits for the moment it explains: "I sing first" for the
 // call, "wait for my last note" for the voice coming in over it, "flat"
-// and "slid" for take 1's two misses, "its star lights" for take 2's first
-// landing, "joins the sky" for its phrase ending, and the score for its
-// result. The demo kit's driver (useExerciseDemo.ts, through
+// for take 1's miss, "its star lights" for take 2's first landing, "joins
+// the sky" for its phrase ending, and the score for its result.
+//
+// Each stays up at least TIP_READ_SECONDS before the next replaces it or
+// the take moves on (demo-script.test.ts holds the plan to it). The demo kit's driver (useExerciseDemo.ts, through
 // useEchoDemo.ts) keys them to the moments the room really reaches, each
 // on the first time it comes; `planEchoDemo` lays the same table out on
 // the script's own replay, which is what the tests check and what the
@@ -32,26 +34,23 @@ export type DemoTarget =
   | 'score'
   | 'mic'
 
-export type DemoCueId =
-  | 'call'
-  | 'early'
-  | 'flat'
-  | 'slid'
-  | 'lands'
-  | 'joins'
-  | 'score'
+export type DemoCueId = 'call' | 'early' | 'flat' | 'lands' | 'joins' | 'score'
 
 export type DemoMark = KitDemoMark<EchoDemoMark>
 
 export type DemoCue = KitDemoCue<DemoCueId, EchoDemoMark, DemoTarget>
 
+/** The least time a tooltip stays up, s: two short lines, read aloud. */
+export const TIP_READ_SECONDS = 1.8
+
 /** One tooltip at a time; each stays until the next beat clears it. */
 export const DEMO_CUES: readonly DemoCue[] = [
-  // Once the first two rings have come in with Merc's notes.
+  // Once Merc's first note has its ring, in time to be read before take
+  // 1 comes in over his last note.
   {
     id: 'call',
     trigger: { take: 'off', mark: 'call' },
-    delay: 1.0,
+    delay: 0.75,
     target: 'rings',
   },
   {
@@ -60,17 +59,12 @@ export const DEMO_CUES: readonly DemoCue[] = [
     delay: 0.1,
     target: 'merc',
   },
+  // The flat note misses as the voice lands the next one.
   {
     id: 'flat',
     trigger: { take: 'off', mark: 'miss:1' },
-    delay: 0.2,
-    target: 'ring:1',
-  },
-  {
-    id: 'slid',
-    trigger: { take: 'off', mark: 'miss:2' },
     delay: 0.15,
-    target: 'ring:2',
+    target: 'ring:1',
   },
   {
     id: 'lands',
@@ -81,7 +75,7 @@ export const DEMO_CUES: readonly DemoCue[] = [
   {
     id: 'joins',
     trigger: { take: 'on', mark: 'phraseEnd' },
-    delay: 0.3,
+    delay: 0.1,
     target: 'phrase',
   },
   {
@@ -98,12 +92,15 @@ export const DEMO_BEATS = {
   intro: 0.9,
   /** From a take's start to its clock's zero: the sound's head start. */
   lead: 0.12,
-  /** Take 1's end to the reset: the "slid" tooltip's read. */
-  afterOff: 1.6,
+  /** Take 1's end to the reset: the "flat" tooltip's read. */
+  afterOff: 2.1,
   /** The sky empties and the pill turns. */
   reset: 0.5,
-  /** Take 2's end to the end card: its constellation (1.2 s), then the result. */
-  afterOn: 3.0,
+  /**
+   * Take 2's end to the end card: its constellation (RESULT_AFTER), then
+   * the result and its tooltip's read.
+   */
+  afterOn: 4.4,
 } as const
 
 /** The demo's words. No em dashes; "practice", never "practise". */
@@ -111,8 +108,6 @@ export const DEMO_COPY = {
   watch: 'Watch me first.',
   off: 'Not like this',
   on: 'Like this',
-  fast: '4x',
-  fastLabel: 'Four times faster',
   skip: 'Skip',
   ask: 'How it works',
   cardTitle: 'See how it works',
@@ -136,8 +131,6 @@ export function demoCueText(id: DemoCueId): string {
       return 'Too early. Wait for my last note.'
     case 'flat':
       return 'Flat, so its star stays dark. Sing it a little higher.'
-    case 'slid':
-      return 'Slid past it, so no star. Stop on each note.'
     case 'lands':
       return 'On the note: its star lights.'
     case 'joins':

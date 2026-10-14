@@ -18,8 +18,9 @@ import type { PhraseNote } from '@/lib/sequence/sequence-engine'
 import type * as CallModule from '../merc-call'
 import type * as SamplerModule from '../merc-sampler'
 import type * as CaptureModule from '../useEchoCapture'
-import { DEMO_COPY } from './demo-cues'
+import { DEMO_COPY, planEchoDemo } from './demo-cues'
 import type { EchoDemoTake } from './demo-script'
+import { CALL_AT } from './demo-script'
 
 // ── A capture the test controls ─────────────────────────────────
 
@@ -120,7 +121,11 @@ vi.mock('./demo-sound', () => ({
 
 // ── Every moment the room reports to the demo ──────────────────
 
-const marks = vi.hoisted(() => ({ list: [] as string[] }))
+const marks = vi.hoisted(() => ({
+  list: [] as string[],
+  /** When each moment was reported, performance.now() ms. */
+  at: new Map<string, number>(),
+}))
 vi.mock('@/components/demo-kit/demo-plan', async () => {
   const actual = await vi.importActual<typeof PlanModule>(
     '@/components/demo-kit/demo-plan',
@@ -130,6 +135,7 @@ vi.mock('@/components/demo-kit/demo-plan', async () => {
     takeClock: ((take, startsAt, onMark) =>
       actual.takeClock(take, startsAt, (mark) => {
         marks.list.push(`${take.id}:${mark}`)
+        marks.at.set(`${take.id}:${mark}`, performance.now())
         onMark(mark)
       })) as typeof actual.takeClock,
   }
@@ -355,6 +361,7 @@ describe('the Echo demo', () => {
     Object.assign(voice, { loads: 0, done: null, instant: true })
     Object.assign(kept, { history: 0, bests: 0, haptics: 0, root: null })
     marks.list = []
+    marks.at.clear()
     seen.value = false
     motion.reduced = false
     merc.states = []
@@ -397,17 +404,15 @@ describe('the Echo demo', () => {
     await open()
     expect(demoMode()).toBe('idle')
 
-    const log = await run(21000)
+    const log = await run(22000)
 
     // The room reported each moment exactly once, in the order it sang.
     expect(marks.list).toEqual([
       'off:call',
       'off:early',
       'off:land:0',
-      'off:fast',
-      'off:slow',
       'off:miss:1',
-      'off:miss:2',
+      'off:land:2',
       'off:phraseEnd',
       'on:call',
       'on:land:0',
@@ -421,7 +426,6 @@ describe('the Echo demo', () => {
       'call',
       'early',
       'flat',
-      'slid',
       'lands',
       'joins',
       'score',
@@ -436,13 +440,13 @@ describe('the Echo demo', () => {
       'p0-r2:waiting',
     ])
     expect(log.at.early.phase).toBe('call')
+    // Take 1 moved on from the flat note and landed the next: the flat
+    // note's ring is left dark between the two stars.
     expect(log.at.flat).toMatchObject({
-      phase: 'response',
-      stars: ['p0-0:phrase'],
+      phase: 'between',
+      stars: ['p0-0:phrase', 'p0-2:phrase'],
+      rings: ['p0-r1:missed'],
     })
-    expect(log.at.flat.rings).toContain('p0-r1:waiting')
-    expect(log.at.slid.phase).toBe('between')
-    expect(log.at.slid.rings).toEqual(['p0-r1:missed', 'p0-r2:missed'])
     expect(log.at.lands).toMatchObject({
       phase: 'response',
       take: DEMO_COPY.on,
@@ -467,7 +471,6 @@ describe('the Echo demo', () => {
     expect(log.at.score.clouds).toBe('none')
     // The town's light goes with the clouds: screen 3's, then a take's.
     expect(log.at.flat.light).toBe('demo-off')
-    expect(log.at.slid.light).toBe('demo-off')
     expect(log.at.lands.light).toBe('mid-take')
     expect(log.at.score.light).toBe('none')
     // So does the top light: screen 3's soft band, the room's, the result's.
@@ -496,18 +499,31 @@ describe('the Echo demo', () => {
     ])
   })
 
-  it('reaches its end card in about 17 s', async () => {
+  it('reaches its end card in about 19 s, nothing played fast', async () => {
     await open()
     await run(1200)
     expect(demoMode()).toBe('playing')
-    let ms = 0
-    while (demoMode() === 'playing' && ms < 30000) {
+    const from = performance.now()
+    while (demoMode() === 'playing' && performance.now() - from < 30000) {
       await run(100)
-      ms += 100
     }
     expect(demoMode()).toBe('end')
-    expect(ms / 1000).toBeGreaterThan(15.5)
-    expect(ms / 1000).toBeLessThan(18.6)
+    const seconds = (performance.now() - from) / 1000
+    expect(seconds).toBeGreaterThan(18.5)
+    expect(seconds).toBeLessThan(19.7)
+    // Each moment came as far after its take's call as the script dates
+    // it: the room played both takes at their own speed.
+    const plan = planEchoDemo(57)
+    for (const id of ['off', 'on'] as const) {
+      const call = marks.at.get(`${id}:call`) ?? NaN
+      for (const event of plan.takes[id].events) {
+        const at = marks.at.get(`${id}:${event.type}`) ?? NaN
+        expect((at - call) / 1000, `${id}:${event.type}`).toBeCloseTo(
+          event.at - CALL_AT,
+          1,
+        )
+      }
+    }
   })
 
   it('Skip ends it on the end card, with every sound off, and counts it seen', async () => {
@@ -531,9 +547,10 @@ describe('the Echo demo', () => {
     fireEvent.click(screen.getByTestId('echo-demo-skip'))
     await run(50)
     marks.list = []
+    marks.at.clear()
 
     fireEvent.click(screen.getByTestId('echo-demo-again'))
-    const log = await run(21000)
+    const log = await run(22000)
 
     expect(sound.made).toBe(2)
     expect(log.takes).toEqual([DEMO_COPY.off, DEMO_COPY.on])
@@ -544,7 +561,7 @@ describe('the Echo demo', () => {
 
   it('Try it hands the room back: the mic is pointed out, and a tap on it starts a run', async () => {
     await open()
-    await run(21000)
+    await run(22000)
     expect(demoMode()).toBe('end')
 
     fireEvent.click(screen.getByTestId('echo-demo-try'))
@@ -657,7 +674,7 @@ describe('the Echo demo', () => {
   it('moves Merc without a hop or a cheer with reduced motion', async () => {
     motion.reduced = true
     await open()
-    await run(21000)
+    await run(22000)
 
     expect(demoMode()).toBe('end')
     expect(merc.states).not.toContain('hop')

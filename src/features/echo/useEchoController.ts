@@ -61,7 +61,7 @@ import type { CallNote, EarlyWatch } from './early-singing'
 import { centsOff, NO_EARLY, pitchOf, watchEarly } from './early-singing'
 import { preloadEchoResult } from './echo-art'
 import type { EchoController, EchoControllerOptions, EchoSummary, } from './echo-controller-contract'
-import { CALL_LEAD_SECONDS, PHRASE_SHOW_MS, QUIET_LIMIT_SECONDS, SETTLED_LEAD_SECONDS, YOUR_TURN, } from './echo-controller-contract'
+import { CALL_LEAD_SECONDS, DEMO_PHRASE_SHOW_MS, PHRASE_SHOW_MS, QUIET_LIMIT_SECONDS, SETTLED_LEAD_SECONDS, YOUR_TURN, } from './echo-controller-contract'
 import type { PlatePoint } from './echo-geometry'
 import type { EchoEvent, EchoState } from './echo-machine'
 import { echoReducer, initialEchoState, isRunPhase } from './echo-machine'
@@ -763,7 +763,7 @@ export function useEchoController(
       later,
       mark,
     },
-    PHRASE_SHOW_MS,
+    DEMO_PHRASE_SHOW_MS,
   )
 
   onCleanup(() => {
