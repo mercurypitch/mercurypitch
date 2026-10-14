@@ -164,6 +164,7 @@ export function EchoFixture(props: EchoFixtureProps): JSX.Element {
         clouds={
           fixture().clouds === null ? undefined : { present: true, on: true }
         }
+        cityLight={fixture().cityLight}
         onPlateSettled={settled}
         ribbon={
           <EchoRibbon

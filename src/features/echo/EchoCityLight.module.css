@@ -1,0 +1,12 @@
+/* The town's city light (EchoCityLight.tsx): the whole sky's box, each
+   state's small layer in its own box inside the plate's. */
+.cityLight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.layer {
+  /* PlateImage sets position: absolute; the layout sets the box. */
+  contain: strict;
+}

@@ -9,6 +9,8 @@
 //   the result plate          the same world with the town lit, at the result
 //   clouds                    the take's painted layer, in the plate's box
 //                             (EchoClouds.tsx)
+//   city light                the town's light per state, small layers in
+//                             the plate's box (EchoCityLight.tsx)
 //   the top light             the glow from the top of the screen
 //   twinkles                  a few painted stars that breathe
 //   rings and lines           SVG gradients: a soft core in its glow
@@ -25,9 +27,11 @@ import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { PlateImage } from '@/components/room-kit/PlateImage'
 import { CelebrationStar } from './CelebrationStar'
+import type { CityLightState } from './echo-art'
 import { RESULT_PLATE, STAR_ART, WORLD_PLATE } from './echo-art'
 import type { StrokeStyle } from './echo-geometry'
 import { RESULT_FALLBACK, SKY_TOP_RGB, SPRITES, STROKES, TOP_LIGHT, TWINKLES, WORLD_FALLBACK, } from './echo-geometry'
+import { EchoCityLight } from './EchoCityLight'
 import type { CloudState } from './EchoClouds'
 import { EchoClouds } from './EchoClouds'
 import styles from './EchoSky.module.css'
@@ -87,6 +91,8 @@ export interface EchoSkyProps {
   onPlateSettled?: (state: 'ready' | 'failed') => void
   /** The take's cloud layer, over the plates and under everything drawn. */
   clouds?: CloudState
+  /** The state whose city light is up, over the clouds; null at the result. */
+  cityLight?: CityLightState | null
   /** The voice's canvas, drawn between the rings and the stars. */
   ribbon?: JSX.Element
   children?: JSX.Element
@@ -159,6 +165,13 @@ export function EchoSky(props: EchoSkyProps): JSX.Element {
             still={props.still}
           />
         )}
+      </Show>
+      <Show when={props.cityLight !== undefined}>
+        <EchoCityLight
+          state={props.cityLight ?? null}
+          plate={props.layout.plate}
+          still={props.still}
+        />
       </Show>
       <div
         class={styles.topLight}

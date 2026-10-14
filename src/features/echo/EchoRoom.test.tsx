@@ -550,6 +550,27 @@ describe("the take's clouds", () => {
   })
 })
 
+describe("the town's city light", () => {
+  const light = () => screen.getByTestId('echo-citylight').dataset.state
+
+  it("shows the intro's light, the take's with its clouds, none at the result", async () => {
+    await startRun()
+    // The first call is the storyboard's intro.
+    expect(light()).toBe('intro')
+
+    respond(singBack)
+    expect(light()).toBe('mid-take')
+
+    vi.advanceTimersByTime(PHRASE_SHOW_MS)
+    for (let i = 1; i < 5; i++) {
+      respond(singBack)
+      vi.advanceTimersByTime(PHRASE_SHOW_MS)
+    }
+    expect(phase()).toBe('result')
+    expect(light()).toBe('none')
+  })
+})
+
 describe('a run that stops', () => {
   it('stops on the mic button: nothing kept, the mic closed, the call silenced', async () => {
     await startRun()
