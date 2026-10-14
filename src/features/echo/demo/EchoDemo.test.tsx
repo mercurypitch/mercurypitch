@@ -13,8 +13,10 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as PlanModule from '@/components/demo-kit/demo-plan'
+import { READY_WAIT_MS } from '@/components/demo-kit/useExerciseDemo'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
 import type * as CallModule from '../merc-call'
+import type * as SamplerModule from '../merc-sampler'
 import type * as CaptureModule from '../useEchoCapture'
 import { DEMO_COPY } from './demo-cues'
 import type { EchoDemoTake } from './demo-script'
@@ -70,6 +72,29 @@ vi.mock('../merc-call', async () => {
         ...actual.callTimes(notes, at),
         stop: () => undefined,
       }),
+    },
+  }
+})
+
+// Merc's recorded voice: loaded when the test says so (merc-sampler.ts).
+// The calls fall back to the synth above until it has.
+const voice = vi.hoisted(() => ({
+  loads: 0,
+  /** Resolves the load in flight; null once it has, or before one. */
+  done: null as (() => void) | null,
+  /** The load answers at once. */
+  instant: true,
+}))
+vi.mock('../merc-sampler', async () => {
+  const actual = await vi.importActual<typeof SamplerModule>('../merc-sampler')
+  return {
+    ...actual,
+    preloadMercVoice: () => {
+      voice.loads += 1
+      if (voice.instant) return Promise.resolve(null)
+      return new Promise<null>((resolve) => {
+        voice.done = () => resolve(null)
+      })
     },
   }
 })
@@ -315,6 +340,7 @@ describe('the Echo demo', () => {
       audio: 'running',
     })
     Object.assign(sound, { made: 0, sung: [], stops: 0 })
+    Object.assign(voice, { loads: 0, done: null, instant: true })
     Object.assign(kept, { history: 0, bests: 0, haptics: 0, root: null })
     marks.list = []
     seen.value = false
@@ -328,6 +354,31 @@ describe('the Echo demo', () => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
+  })
+
+  it("waits for Merc's recorded voice before its first call", async () => {
+    voice.instant = false
+    await open()
+    await run(3000)
+    // The clock is running, the voice is still loading: no demo yet.
+    expect(voice.loads).toBeGreaterThan(0)
+    expect(demoMode()).toBe('idle')
+    expect(sound.sung).toEqual([])
+
+    voice.done?.()
+    await run(50)
+    expect(demoMode()).toBe('playing')
+    await run(1500)
+    expect(sound.sung).toEqual(['off'])
+  })
+
+  it('starts without the recorded voice once READY_WAIT_MS has passed', async () => {
+    voice.instant = false
+    await open()
+    await run(1200 + READY_WAIT_MS - 300)
+    expect(demoMode()).toBe('idle')
+    await run(600)
+    expect(demoMode()).toBe('playing')
   })
 
   it('plays by itself on a first visit: every moment once and in order, each tooltip on its own, nothing kept', async () => {

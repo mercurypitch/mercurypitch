@@ -688,7 +688,7 @@ export function useEchoController(
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
     // Merc's voice loads as the singer comes in, before the first call.
-    if (options.voice === undefined) preloadMercVoice()
+    if (options.voice === undefined) void preloadMercVoice()
     sayIntro()
     later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
@@ -729,6 +729,8 @@ export function useEchoController(
       setPlaying: setDemoPlaying,
       phase,
       audio: () => capture.audio(),
+      // The demo's calls are Merc's recorded voice too, once it has loaded.
+      ready: () => Promise.resolve(options.voice ?? preloadMercVoice()),
       note: () => knownWindow().firstRoot,
       clear: () => {
         scripted = null
@@ -754,12 +756,8 @@ export function useEchoController(
       line: setLine,
       sayIntro,
       demo: (to) => dispatch({ type: 'demo', phase: to }),
-      showResult: (result, sky) =>
-        batch(() => {
-          setSummary(result)
-          setScene(sky)
-          dispatch({ type: 'demo', phase: 'result' })
-        }),
+      summary: setSummary,
+      scene: setScene,
       merc: merc.set,
       cheer: merc.cheer,
       later,

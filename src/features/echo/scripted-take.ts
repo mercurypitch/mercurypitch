@@ -84,6 +84,8 @@ export interface ScriptHost {
   setPlaying: (on: boolean) => void
   phase: () => EchoPhase
   audio: () => Promise<AudioContext | null>
+  /** Merc's voice loaded for the calls (merc-sampler.ts). */
+  ready: () => Promise<unknown>
   note: () => number
   /** No take, no result, an empty sky; Merc where he is. */
   clear: () => void
@@ -98,8 +100,9 @@ export interface ScriptHost {
   line: (text: string) => void
   sayIntro: () => void
   demo: (phase: EchoDemoPhase) => void
-  /** The result, shown as a run's is: its numbers and its sky, at once. */
-  showResult: (summary: EchoSummary, scene: SkyScene) => void
+  /** The result's numbers under the sky, or none. */
+  summary: (summary: EchoSummary | null) => void
+  scene: (scene: SkyScene) => void
   merc: (state: MercState) => void
   cheer: () => void
   later: (ms: number, fn: () => void) => void
@@ -135,7 +138,12 @@ export function createScriptedRoom(
     const metrics = sequenceMetrics([sung], rhythmToleranceMs)
     const at = { level: take.level, run: host.run(), improved: false }
     const shown = showResultOf([sung], metrics, at)
-    host.showResult(shown.summary, shown.scene)
+    // Shown as a run's is: its numbers and its sky, at once.
+    batch(() => {
+      host.summary(shown.summary)
+      host.scene(shown.scene)
+      host.demo('result')
+    })
     if (shown.celebrate) host.cheer()
     else host.merc('idle')
     host.mark('result')
@@ -145,6 +153,7 @@ export function createScriptedRoom(
     active: host.active,
     callVoice: host.callVoice,
     audio: host.audio,
+    ready: host.ready,
     note: host.note,
     enter: (text) => {
       const from = host.phase()
