@@ -80,10 +80,14 @@ test('with no banner, toasts keep their place just above the tab bar', async ({
   })
   await expect(toast).toBeVisible()
 
-  const box = await toast.boundingBox()
-  if (box === null) throw new Error('toast has no box')
+  // Polled: the toast slides up 10px as it enters, and visible already holds
+  // on its first frame, when its foot is still below where it settles.
+  const foot = async (): Promise<number | null> => {
+    const box = await toast.boundingBox()
+    return box === null ? null : Math.round(box.y + box.height)
+  }
   // Above the tab bar (54px plus a 0.6rem gap), and no higher than the
   // banner's room would put it.
-  expect(box.y + box.height).toBeLessThanOrEqual(844 - 54)
-  expect(box.y + box.height).toBeGreaterThan(844 - BANNER_SPACE)
+  await expect.poll(foot).toBeLessThanOrEqual(844 - 54)
+  expect(await foot()).toBeGreaterThan(844 - BANNER_SPACE)
 })

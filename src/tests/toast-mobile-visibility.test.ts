@@ -49,9 +49,19 @@ describe('REQ-TMV-001 — Mobile toast container respects tab bar clearance', ()
     expect(block).toBeTruthy()
   })
 
-  it('sets max-height using --tabbar-total', () => {
-    // [\s\S] so the match survives Prettier wrapping the calc() value.
-    expect(block).toMatch(/max-height\s*:[\s\S]*?--tabbar-total/)
+  // The stack stands on its floor: the tab bar, or the cookie consent banner
+  // while it is open and taller. The banner sits at the top of the page's
+  // z-order, so a toast raised under it was never seen
+  // (src/e2e/toast-above-consent-banner.spec.ts).
+  it('stands on the tab bar or the consent banner, whichever is taller', () => {
+    // [\s\S] so the match survives Prettier wrapping the max() value.
+    expect(block).toMatch(
+      /--toast-floor\s*:\s*max\([\s\S]*?--tabbar-total[\s\S]*?--consent-banner-space[\s\S]*?\)/,
+    )
+  })
+
+  it('sets max-height using the toast floor', () => {
+    expect(block).toMatch(/max-height\s*:[\s\S]*?--toast-floor/)
   })
 
   it('uses dynamic viewport height (dvh)', () => {
@@ -69,7 +79,7 @@ describe('REQ-TMV-001 — Mobile toast container respects tab bar clearance', ()
   // The bottom edge is the strip a phone already reserves for chrome.
   it('anchors to the bottom, not the top', () => {
     expect(block).toMatch(/top\s*:\s*auto/)
-    expect(block).toMatch(/bottom\s*:[\s\S]*?--tabbar-total/)
+    expect(block).toMatch(/bottom\s*:[\s\S]*?--toast-floor/)
   })
 
   // Two specs pin this from opposite ends of the screen: room-chip-busy taps
