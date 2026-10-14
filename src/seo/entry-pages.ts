@@ -487,7 +487,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     title:
       'Vocal Pitch Practice — Free Pitch Training with Live Feedback | MercuryPitch',
     description:
-      'Practice singing on pitch and watch the note you are making against the note you meant. Free, runs in your browser, and scores every attempt in cents.',
+      'Practice singing on pitch and watch the note you are making against the note you meant. Free, runs in your browser, and scores every finished run out of 100.',
     keywords:
       'vocal pitch practice, pitch training, pitch trainer, sing on pitch, pitch accuracy, vocal pitch monitor, pitch matching',
     og: {
