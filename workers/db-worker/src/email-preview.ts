@@ -208,6 +208,9 @@ const VARIANTS: readonly Variant[] = [
   },
 ]
 
+/** Every mail the preview route can show, by id. */
+export const PREVIEW_MAIL_IDS: readonly string[] = VARIANTS.map((v) => v.id)
+
 function page(body: string, contentType: string, status = 200): Response {
   return new Response(body, {
     status,

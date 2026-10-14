@@ -9,7 +9,7 @@
 // letters, digits and hyphens: Cloudflare answers anything a URL would
 // percent-encode, like an @, with a redirect before the picture.
 
-import { ABOUT_URL, COLOR_SCHEME_META, escapeHtml, footerHtml, REPO_URL, } from './email'
+import { ABOUT_URL, AUTO_LINK_STYLE, COLOR_SCHEME_META, escapeHtml, footerHtml, REPO_URL, } from './email'
 
 /**
  * Where a mail's links and pictures point. Links follow the app the sign-up
@@ -213,8 +213,9 @@ ${COLOR_SCHEME_META}
 <title>${escapeHtml(subject)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;display=swap" rel="stylesheet">
 <style>${HEAD_CSS}</style>
+${AUTO_LINK_STYLE}
 </head>
-<body style="margin:0; padding:0; background:${W.page}; -webkit-text-size-adjust:100%;">
+<body id="body" style="margin:0; padding:0; background:${W.page}; -webkit-text-size-adjust:100%;">
 <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${W.page}; font-size:1px; line-height:1px;">${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${W.page}" style="background:${W.page};"><tr><td align="center" style="padding:22px 12px 30px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">

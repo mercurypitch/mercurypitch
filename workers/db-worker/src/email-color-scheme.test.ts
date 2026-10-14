@@ -1,43 +1,129 @@
 import { describe, expect, it } from 'vitest'
 import type { Env } from './auth'
-import { COLOR_SCHEME_META, renderAccountNotice, renderLoginCode, renderNewsletterIssue, renderPasswordReset, } from './email'
-import { EMAIL_PREVIEW_PATH, handleEmailPreview } from './email-preview'
+import { AUTO_LINK_STYLE, COLOR_SCHEME_META, renderAccountNotice, renderLoginCode, renderNewsletterIssue, renderPasswordReset, } from './email'
+import { EMAIL_PREVIEW_PATH, handleEmailPreview, PREVIEW_MAIL_IDS, } from './email-preview'
 import { renderSignUpCode } from './email-sign-up-code'
 
-// Every mail is drawn dark and declares "light only" (see COLOR_SCHEME_META),
-// so nothing in it may lean on the client's default text color.
+// Every mail is drawn dark and declares "light only" (see COLOR_SCHEME_META).
+// A client that honors it paints text with no color of its own black, and a
+// link link blue, so nothing in a mail may lean on those defaults.
 
-function preview(query: string): Promise<string> {
+/** An inline color of its own: not background-color or border-color, and
+ *  not a keyword that hands the choice back to the client. */
+const OWN_COLOR =
+  /(?:^|;)\s*color\s*:\s*(?!inherit|transparent|currentcolor)[^;\s]/i
+
+/** Elements that never wrap text. */
+const VOID = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'source',
+  'track',
+  'wbr',
+])
+
+/** A start tag's own style attribute ("data-style" does not count). */
+function styleOf(tag: string): string {
+  return /\sstyle="([^"]*)"/i.exec(tag)?.[1] ?? ''
+}
+
+interface Open {
+  name: string
+  colored: boolean
+  flagged: boolean
+}
+
+/**
+ * Every line of text with no inline color on any element between it and
+ * <body> (Gmail drops the body's own styles), every link with words in it
+ * and no color of its own, and every picture whose alt text would fall back
+ * to the client's default. The mails are generated, well-formed HTML, so a
+ * tokenizer is enough: comments (Outlook's [if mso] blocks among them), the
+ * doctype and the head's raw-text elements are skipped whole.
+ */
+function uncolored(html: string): string[] {
+  const found: string[] = []
+  const stack: Open[] = []
+  let inBody = false
+  const tokens =
+    /<!--[\s\S]*?-->|<!doctype[^>]*>|<(style|title|script)\b[^>]*>[\s\S]*?<\/\1\s*>|<\/?([a-z][a-z0-9]*)\b[^>]*>|[^<]+/gi
+  for (const [token, rawText, tagName] of html.matchAll(tokens)) {
+    if (token.startsWith('<!') || rawText !== undefined) continue
+    if (tagName === undefined) {
+      // Spacers and the preheader's zero-width padding draw nothing.
+      const text = token
+        .replace(
+          /&(?:nbsp|zwnj|#160|#x0*a0|#8203|#x200b|#8204|#847|#x34f);/gi,
+          ' ',
+        )
+        .trim()
+      if (!inBody || text === '') continue
+      if (!stack.some((open) => open.colored))
+        found.push(`text: ${text.slice(0, 40)}`)
+      const link = stack.findLast((open) => open.name === 'a')
+      if (link !== undefined && !link.colored && !link.flagged) {
+        link.flagged = true
+        found.push(`link: ${text.slice(0, 40)}`)
+      }
+      continue
+    }
+    const name = tagName.toLowerCase()
+    if (token.startsWith('</')) {
+      const at = stack.map((open) => open.name).lastIndexOf(name)
+      if (at >= 0) stack.length = at
+      continue
+    }
+    if (name === 'body') {
+      inBody = true
+      continue
+    }
+    const colored = OWN_COLOR.test(styleOf(token))
+    if (name === 'img') {
+      if (!colored)
+        found.push(`picture: ${/\salt="([^"]*)"/i.exec(token)?.[1] ?? ''}`)
+      continue
+    }
+    if (VOID.has(name) || token.endsWith('/>')) continue
+    stack.push({ name, colored, flagged: false })
+  }
+  return found
+}
+
+async function preview(id: string): Promise<string> {
   const res = handleEmailPreview(
-    new Request(`https://api.test${EMAIL_PREVIEW_PATH}${query}`),
+    new Request(`https://api.test${EMAIL_PREVIEW_PATH}?mail=${id}`),
     { EMAIL_PREVIEW: '1' } as Env,
     EMAIL_PREVIEW_PATH,
   )
   if (res === null || res.status !== 200)
-    throw new Error(`no preview at ${query}`)
+    throw new Error(`no preview called ${id}`)
   return res.text()
 }
 
+const item = {
+  title: 'What happened',
+  body: 'A paragraph.',
+  href: 'https://mercurypitch.com/',
+  cta: 'Open it',
+}
+
+/** Every preview, plus each renderer called directly. */
 async function everyMail(): Promise<[string, string][]> {
-  const index = await preview('')
-  const ids = [
-    ...new Set([...index.matchAll(/[?&]mail=([a-z0-9-]+)/g)].map((m) => m[1])),
-  ]
-  const item = {
-    title: 'What happened',
-    body: 'A paragraph.',
-    href: 'https://mercurypitch.com/',
-    cta: 'Open it',
-  }
-  const mails: [string, string][] = await Promise.all(
-    ids.map(
-      async (id): Promise<[string, string]> => [
-        id,
-        await preview(`?mail=${id}`),
-      ],
+  const previews = await Promise.all(
+    PREVIEW_MAIL_IDS.map(
+      async (id): Promise<[string, string]> => [id, await preview(id)],
     ),
   )
-  mails.push(
+  return [
+    ...previews,
     [
       'password reset',
       renderPasswordReset({
@@ -67,30 +153,48 @@ async function everyMail(): Promise<[string, string][]> {
         items: [item],
       }).html,
     ],
-  )
-  return mails
+  ]
 }
 
 describe('the color scheme every mail declares', () => {
-  it('covers all twelve previews and the five other mails', async () => {
-    expect((await everyMail()).length).toBeGreaterThanOrEqual(17)
+  it('reaches every preview and every renderer', async () => {
+    expect(PREVIEW_MAIL_IDS.length).toBeGreaterThan(0)
+    expect(await everyMail()).toHaveLength(PREVIEW_MAIL_IDS.length + 5)
   })
 
-  it('is "light only", once, and never "dark"', async () => {
+  it('is "light only", once, never "dark", with the auto-link rules beside it', async () => {
     for (const [name, html] of await everyMail()) {
       expect(html.split(COLOR_SCHEME_META).length - 1, name).toBe(1)
-      expect(html, name).toContain(
-        '<meta name="color-scheme" content="light only">',
-      )
+      expect(html.split(AUTO_LINK_STYLE).length - 1, name).toBe(1)
       expect(html, name).not.toMatch(/content="[^"]*dark[^"]*"/)
+      expect(html, name).toMatch(/<body id="body"/)
     }
   })
 
-  it('gives every picture a text color, for the alt text shown when pictures are off', async () => {
+  it('gives every line of text, every link and every picture a color of its own', async () => {
     for (const [name, html] of await everyMail()) {
-      for (const [img] of html.matchAll(/<img\b[^>]*>/g)) {
-        expect(img, name).toMatch(/style="(?:[^"]*;)?\s*color:/)
-      }
+      expect(uncolored(html), name).toEqual([])
     }
+  })
+
+  it('notices text, a link or a picture that leans on the default', () => {
+    const html =
+      '<!doctype html><html><body>' +
+      '<p>Plain</p>' +
+      '<p style="background-color:#000">Fill only</p>' +
+      '<div style="color:inherit">Handed back</div>' +
+      '<div style="color:#fff"><a href="https://a.test/">Bare link</a> and colored words</div>' +
+      '<img src="x.png" alt="Pictured" data-style="color:#fff" style="display:block">' +
+      '<IMG src="y.png" alt="Shouting" style="border-color:#fff">' +
+      '<img src="z.png" alt="Fine" style="color:#fff;display:block">' +
+      '</body></html>'
+    expect(uncolored(html)).toEqual([
+      'text: Plain',
+      'text: Fill only',
+      'text: Handed back',
+      'link: Bare link',
+      'picture: Pictured',
+      'picture: Shouting',
+    ])
   })
 })

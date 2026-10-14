@@ -33,15 +33,25 @@ export const C = {
 } as const
 
 /** The color-scheme lines in every mail's head. The mails are drawn dark but
- *  declare "light only". In dark mode, Gmail on the iPhone recolored the
- *  welcome mail while it declared "dark", turning its page white under a
- *  white wordmark, and left it as drawn once it declared "light only". Gmail
- *  on Android and Proton on the iPhone showed it as drawn either way (test
- *  mails of 14 Oct 2026). A client that honors "light only" gives text with
- *  no color of its own the light default, black, so every element with text
- *  in it sets its own color. */
+ *  declare "light only". In dark mode, Gmail on the iPhone (a Google account,
+ *  test mails of 14 Oct 2026) recolored the welcome mail while it declared
+ *  "dark", turning its page white under a white wordmark, and showed it as
+ *  drawn once it declared "light only". Gmail on Android and Proton on the
+ *  iPhone showed it as drawn either way. A client that honors "light only"
+ *  gives text with no color of its own the light defaults, black and link
+ *  blue, so every line of text takes its color from the mail:
+ *  email-color-scheme.test.ts checks that. */
 export const COLOR_SCHEME_META = `<meta name="color-scheme" content="light only">
 <meta name="supported-color-schemes" content="light only">`
+
+/** Text a client turns into a link takes the color of the words around it.
+ *  Apple Mail's data detectors, and possibly the Gmail apps, link dates,
+ *  addresses and the like; under "light only" such a link would be link
+ *  blue on the dark card. The Gmail apps keep a head <style> and match
+ *  `u + #body` (selector probe, 14 Oct 2026), which is why every mail's
+ *  <body> has id="body". The Gmail rule sets the color alone, so the mail's
+ *  own links keep their inline colors and underlines. */
+export const AUTO_LINK_STYLE = `<style>a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;line-height:inherit!important;}u + #body a{color:inherit;}</style>`
 
 export function escapeHtml(s: string): string {
   return s
@@ -221,9 +231,10 @@ export function renderPasswordReset(v: PasswordResetVars): RenderedEmail {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 ${COLOR_SCHEME_META}
+${AUTO_LINK_STYLE}
 <title>${escapeHtml(subject)}</title>
 </head>
-<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
+<body id="body" style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
     ${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
   </div>
@@ -345,9 +356,10 @@ export function renderLoginCode(v: LoginCodeVars): RenderedEmail {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 ${COLOR_SCHEME_META}
+${AUTO_LINK_STYLE}
 <title>${escapeHtml(subject)}</title>
 </head>
-<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
+<body id="body" style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
     ${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
   </div>
@@ -497,9 +509,10 @@ export function renderNewsletterIssue(v: NewsletterIssueVars): RenderedEmail {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 ${COLOR_SCHEME_META}
+${AUTO_LINK_STYLE}
 <title>${escapeHtml(v.subject)}</title>
 </head>
-<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
+<body id="body" style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
     ${escapeHtml(v.preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
   </div>
@@ -708,9 +721,10 @@ export function renderAccountNotice(v: AccountNoticeVars): RenderedEmail {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 ${COLOR_SCHEME_META}
+${AUTO_LINK_STYLE}
 <title>${escapeHtml(subject)}</title>
 </head>
-<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
+<body id="body" style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
     ${escapeHtml(v.preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
   </div>
