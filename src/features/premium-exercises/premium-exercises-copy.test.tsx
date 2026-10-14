@@ -14,6 +14,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEMO_COPY as ECHO_DEMO_COPY } from '@/features/echo/demo/demo-cues'
 import { DEMO_COPY } from '@/features/long-note/demo/demo-cues'
+import { DEMO_COPY as NG_DEMO_COPY } from '@/features/ng-slides/demo/demo-cues'
 // Loaded once, here. The options read no stored state, and loading their
 // graph fresh inside the test ran past the 5 s timeout under a full run.
 // The row and the picker load after seed() below: they read storage as
@@ -59,6 +60,7 @@ function seed(state: { last?: boolean; best?: boolean; demoSeen?: boolean }) {
   if (state.demoSeen === true) {
     localStorage.setItem('mp_long_note_demo_seen', 'true')
     localStorage.setItem('mp_echo_demo_seen', 'true')
+    localStorage.setItem('mp_ng_demo_seen', 'true')
   }
 }
 
@@ -178,9 +180,14 @@ describe('the decided words, as they render', () => {
 
     expect(
       screen.getAllByTestId('sing-exercise-meta').map((m) => m.textContent),
-    ).toEqual(['Merc sings it first', 'Merc sings it first'])
+    ).toEqual([
+      'Merc sings it first',
+      'Merc sings it first',
+      'Merc sings it first',
+    ])
     expect(DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
     expect(ECHO_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
+    expect(NG_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
   })
 })
 

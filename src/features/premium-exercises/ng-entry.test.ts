@@ -12,6 +12,8 @@ import type { ExerciseLevel } from '@/stores/exercise-level'
 interface Seed {
   /** The easy note the singer settled on last, MIDI. */
   note?: number
+  /** This device has seen the demo. */
+  seen?: boolean
   /** Ng slides' bests per level: the bridge lit, per cent. */
   bests?: Partial<Record<ExerciseLevel, number>>
   level?: ExerciseLevel
@@ -34,6 +36,9 @@ async function entry(seed: Seed = {}) {
       'pitchperfect_ng_slides_note',
       JSON.stringify(seed.note),
     )
+  }
+  if (seed.seen !== undefined) {
+    localStorage.setItem('mp_ng_demo_seen', JSON.stringify(seed.seen))
   }
   if (seed.bests !== undefined) {
     const table = Object.fromEntries(
@@ -74,9 +79,21 @@ describe("Ng slides' way in", () => {
     expect(pro.progress()).toBeNull()
   })
 
-  it('plays no demo by itself: there is none yet', async () => {
+  it('plays the demo by itself on a first visit: unseen, and no run kept', async () => {
     const ng = await entry()
 
-    expect(ng.demoAutoPlays()).toBe(false)
+    expect(ng.demoAutoPlays()).toBe(true)
+  })
+
+  it('plays no demo by itself once it is seen, a note is kept or a best is', async () => {
+    const seen = await entry({ seen: true })
+    expect(seen.demoAutoPlays()).toBe(false)
+
+    const noted = await entry({ note: 64 })
+    expect(noted.demoAutoPlays()).toBe(false)
+
+    // A best at any level, not only the one the singer is at now.
+    const best = await entry({ bests: { professional: 40 } })
+    expect(best.demoAutoPlays()).toBe(false)
   })
 })
