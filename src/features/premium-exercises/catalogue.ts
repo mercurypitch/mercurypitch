@@ -6,8 +6,9 @@
 // about the exercise, its glyph, and three live reads (the note it opens
 // on, its best there, and whether its demo plays by itself). This is the
 // one file that reaches into an exercise's own feature, so a new exercise
-// is one entry here and nothing in the row or the picker. Echo's reads sit
-// beside it (echo-entry.ts): they need its stores, not its room.
+// is one entry here and nothing in the row or the picker. Echo's and Ng
+// slides' reads sit beside it (echo-entry.ts, ng-entry.ts): they need
+// their stores, not their rooms.
 //
 // Catalogue order is the order the picker lists them. At four or more the
 // picker gains group headings (Pitch, Warm-ups) in the Karaoke library's
@@ -18,9 +19,10 @@
 import type { Component } from 'solid-js'
 import { longNoteEntry } from '@/features/long-note/long-note-entry'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_LONG_NOTE_LANTERN, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import { echoEntry } from './echo-entry'
-import { EchoGlyph, LanternGlyph } from './glyphs'
+import { BridgeGlyph, EchoGlyph, LanternGlyph } from './glyphs'
+import { ngEntry } from './ng-entry'
 
 export interface PremiumExercise {
   readonly id: PremiumExerciseId
@@ -57,6 +59,14 @@ export const EXERCISE_CATALOGUE: readonly PremiumExercise[] = [
     Glyph: EchoGlyph,
     bestOnNote: false,
     ...echoEntry(),
+  },
+  {
+    id: EXERCISE_NG_SLIDES_BRIDGE,
+    name: 'Ng slides',
+    line: 'Hum five slides up a fifth and back, and light the bridge.',
+    Glyph: BridgeGlyph,
+    bestOnNote: false,
+    ...ngEntry(),
   },
 ]
 

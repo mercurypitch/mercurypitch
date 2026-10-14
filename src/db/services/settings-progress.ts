@@ -8,6 +8,7 @@ import { currentAccountId, isRegisteredProvider, storedTokenProvider, } from '@/
 import { getDeviceId, getUserId } from '@/db/services/user-service'
 import type { PathProgress } from '@/features/path/path-progress'
 import { mergePathProgress, PATH_PROGRESS_KEY, } from '@/features/path/path-progress'
+import { mergeNgBestsOnPull, NG_BESTS_KEY } from '@/lib/glide/ng-bests'
 import { LONG_NOTE_BESTS_KEY, mergeBestsOnPull } from '@/lib/hold/hold-bests'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import { ECHO_BESTS_KEY, mergeEchoBestsOnPull } from '@/lib/sequence/echo-bests'
@@ -45,12 +46,13 @@ export const MERGE_ON_PULL: Record<
 
 // The premium exercises' bests are records too: a pull keeps the better
 // best on each note (Long note, hold-bests.ts) and at each level (Echo,
-// echo-bests.ts), not the newest device's table. Named only in a build
+// echo-bests.ts; Ng slides, ng-bests.ts), not the newest device's table. Named only in a build
 // with the premium exercises; a store build folds the keys and the merges
 // away.
 if (PREMIUM_EXERCISES) {
   MERGE_ON_PULL[LONG_NOTE_BESTS_KEY] = mergeBestsOnPull
   MERGE_ON_PULL[ECHO_BESTS_KEY] = mergeEchoBestsOnPull
+  MERGE_ON_PULL[NG_BESTS_KEY] = mergeNgBestsOnPull
 }
 
 /** Legacy owner stamps are read once when migrating each progress key. */
@@ -62,6 +64,7 @@ export const MERGE_DEFAULTS: Record<string, string> = {
 if (PREMIUM_EXERCISES) {
   MERGE_DEFAULTS[LONG_NOTE_BESTS_KEY] = '{}'
   MERGE_DEFAULTS[ECHO_BESTS_KEY] = '{}'
+  MERGE_DEFAULTS[NG_BESTS_KEY] = '{}'
 }
 
 interface ResetIntent {

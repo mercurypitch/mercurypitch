@@ -240,6 +240,11 @@ if (!root) {
 const echoFixture = import.meta.env.DEV
   ? new URLSearchParams(window.location.search).get('echoFixture')
   : null
+// Ng slides' fixtures, the same way: `?ngFixture=<name>` (storyboard
+// 02-ng-slides, screens 1 to 4).
+const ngFixture = import.meta.env.DEV
+  ? new URLSearchParams(window.location.search).get('ngFixture')
+  : null
 
 const HYDRATION_DEADLINE_MS = 5000
 const hydrationDeadline = new Promise<never>((_, reject) => {
@@ -263,6 +268,12 @@ void Promise.race([hydrateStoragePort(), hydrationDeadline])
     if (import.meta.env.DEV && echoFixture !== null) {
       void import('@/features/echo/fixture/mount-echo-fixture').then((m) =>
         m.mountEchoFixture(root, echoFixture),
+      )
+      return
+    }
+    if (import.meta.env.DEV && ngFixture !== null) {
+      void import('@/features/ng-slides/fixture/mount-ng-fixture').then((m) =>
+        m.mountNgFixture(root, ngFixture),
       )
       return
     }

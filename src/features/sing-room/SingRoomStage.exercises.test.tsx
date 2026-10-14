@@ -226,6 +226,7 @@ describe('at rest', () => {
     expect(cards.map((card) => card.getAttribute('data-exercise'))).toEqual([
       'long-note-lantern',
       'echo-stars',
+      'ng-slides-bridge',
     ])
     fireEvent.click(cards[0])
 

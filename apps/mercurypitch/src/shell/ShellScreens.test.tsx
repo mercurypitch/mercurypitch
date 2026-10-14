@@ -97,6 +97,23 @@ describe('the Echo room', () => {
   })
 })
 
+describe('the Ng slides room', () => {
+  it('draws the room passed in, titled Ng slides, full-bleed', () => {
+    view?.unmount()
+    view = renderShell(() => (
+      <ShellScreens ngSlides={() => <div data-testid="ng-stub" />} />
+    ))
+
+    pushScreen('ng-slides')
+    const room = screens()[0]
+    expect(room?.querySelector('[data-testid="ng-stub"]')).not.toBeNull()
+    expect(room?.classList.contains('mp-pushed--bleed')).toBe(true)
+    expect(room?.querySelector('.mp-pushed__title')?.textContent).toBe(
+      'Ng slides',
+    )
+  })
+})
+
 describe('the pushed screens', () => {
   it('draws only the screen on top of the stack', () => {
     // Two copies of the same Back would also be two matches for every probe

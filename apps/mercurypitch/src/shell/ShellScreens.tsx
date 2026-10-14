@@ -49,6 +49,8 @@ export interface ShellScreensProps {
   longNote?: Component
   /** The Echo exercise, passed in as Long note is, for the same reason. */
   echo?: Component
+  /** The Ng slides exercise, passed in as Long note is, for the same reason. */
+  ngSlides?: Component
 }
 
 const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
@@ -66,6 +68,7 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   'karaoke-studio': 'Karaoke studio',
   'long-note': 'Long note',
   echo: 'Echo',
+  'ng-slides': 'Ng slides',
   developer: 'Developer',
 }
 
@@ -110,6 +113,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
       case 'echo': {
         const Echo = props.echo
         return Echo === undefined ? null : <Echo />
+      }
+      case 'ng-slides': {
+        const NgSlides = props.ngSlides
+        return NgSlides === undefined ? null : <NgSlides />
       }
       case 'developer': {
         const Developer = props.developer

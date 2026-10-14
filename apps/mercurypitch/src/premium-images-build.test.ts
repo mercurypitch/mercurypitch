@@ -10,9 +10,9 @@
 // `scripts/assert-bundle.mjs` STAGE 2 checks a store binary. A store binary
 // is made only from a release tag, so this reads the switch on every pull
 // request instead, for every picture in every premium room's folder, at
-// any depth (Echo's are in an art/ folder of their own), and every voice
-// file (Merc's sung "ooh" set for Echo's calls, in its voice/ folder;
-// vite.config.ts, PREMIUM_VOICES).
+// any depth (Echo's and Ng slides' are in an art/ folder of their own),
+// and every voice file (Merc's sung "ooh" set for Echo's calls, in its
+// voice/ folder; vite.config.ts, PREMIUM_VOICES).
 
 import { readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -25,7 +25,7 @@ const FEATURES = fileURLToPath(
   new URL('../../../src/features/', import.meta.url),
 )
 /** The premium rooms that paint pictures today, by folder. */
-const ROOMS = ['long-note', 'echo'] as const
+const ROOMS = ['long-note', 'echo', 'ng-slides'] as const
 
 /** Every .webp and .mp3 under `dir`, as paths relative to it. */
 function picturesIn(dir: string): string[] {

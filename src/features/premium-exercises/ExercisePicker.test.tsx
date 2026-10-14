@@ -3,8 +3,8 @@
 // ============================================================
 //
 // A card's third line reads stored signals (the demo flag, the note Long
-// note opens on, its best there, Echo's best at the level), each read once
-// per module graph. Every case seeds storage and loads the picker fresh.
+// note opens on, its best there, Echo's and Ng slides' bests at the
+// level), each read once per module graph. Every case seeds storage and loads the picker fresh.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,6 +23,8 @@ interface Seed {
   level?: ExerciseLevel
   /** Echo's best at the Singer level: notes landed of notes asked. */
   echoBest?: readonly [number, number]
+  /** Ng slides' best at the Singer level: the bridge lit, per cent. */
+  ngBest?: number
 }
 
 beforeEach(() => {
@@ -66,6 +68,14 @@ async function openPicker(seed: Seed = {}) {
     localStorage.setItem(
       'pitchperfect_echo_stars_bests',
       JSON.stringify({ singer: { landed, notes, accuracy: 80, at: 1 } }),
+    )
+  }
+  if (seed.ngBest !== undefined) {
+    localStorage.setItem(
+      'pitchperfect_ng_slides_bests',
+      JSON.stringify({
+        singer: { lit: seed.ngBest, arches: 4, jumps: 0, at: 1 },
+      }),
     )
   }
   if (seed.level !== undefined) {
@@ -115,6 +125,9 @@ describe('the cards', () => {
     )
     expect(card('echo-stars').textContent).toBe(
       'EchoSingerMerc sings a phrase. Sing it back and light the stars.',
+    )
+    expect(card('ng-slides-bridge').textContent).toBe(
+      'Ng slidesSingerHum five slides up a fifth and back, and light the bridge.',
     )
   })
 
@@ -178,19 +191,30 @@ describe("a card's third line", () => {
 
     expect(meta('echo-stars')).toBe('Best 18 of 20')
   })
+
+  it("gives Ng slides' best at the card's level, and promises no demo", async () => {
+    await openPicker({ ngBest: 94 })
+    expect(meta('ng-slides-bridge')).toBe('Best 94% lit')
+
+    cleanup()
+    vi.resetModules()
+    localStorage.clear()
+    await openPicker()
+    expect(meta('ng-slides-bridge')).toBeNull()
+  })
 })
 
 describe("a card's level", () => {
   it('names the level the exercises are at: Singer, the accuracy tier it starts at', async () => {
     await openPicker()
 
-    expect(levels()).toEqual(['Singer', 'Singer'])
+    expect(levels()).toEqual(['Singer', 'Singer', 'Singer'])
   })
 
   it('names the level the singer picked', async () => {
     await openPicker({ level: 'professional' })
 
-    expect(levels()).toEqual(['Professional', 'Professional'])
+    expect(levels()).toEqual(['Professional', 'Professional', 'Professional'])
   })
 })
 
@@ -201,6 +225,7 @@ describe('the last exercise opened', () => {
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
       'true',
       null,
+      null,
     ])
   })
 
@@ -210,6 +235,17 @@ describe('the last exercise opened', () => {
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
       null,
       'true',
+      null,
+    ])
+  })
+
+  it('marks Ng slides when it was the last one opened', async () => {
+    await openPicker({ last: 'ng-slides-bridge' })
+
+    expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
+      null,
+      'true',
     ])
   })
 
@@ -217,6 +253,7 @@ describe('the last exercise opened', () => {
     await openPicker()
 
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
       null,
       null,
     ])

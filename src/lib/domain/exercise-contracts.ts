@@ -40,6 +40,13 @@ export const EXERCISE_LONG_NOTE_LANTERN = 'long-note-lantern' as const
  * it draws. The web Call & response is a different exercise and ruler.
  */
 export const EXERCISE_ECHO_STARS = 'echo-stars' as const
+/**
+ * The premium Ng slides (the singer hums five slides up a fifth and back,
+ * and each glass arch of the bridge lights where the voice followed it).
+ * Named as the others are: the exercise and what it draws. The web Slide
+ * drill is a different exercise and ruler.
+ */
+export const EXERCISE_NG_SLIDES_BRIDGE = 'ng-slides-bridge' as const
 
 export type ExerciseType =
   | typeof EXERCISE_VIBRATO
@@ -62,15 +69,17 @@ export type ExerciseType =
   | typeof EXERCISE_WARMUP
   | typeof EXERCISE_LONG_NOTE_LANTERN
   | typeof EXERCISE_ECHO_STARS
+  | typeof EXERCISE_NG_SLIDES_BRIDGE
 
 /**
  * The premium exercises the phone app opens from the Sing screen (Long note,
- * then Echo). A type here, below the features, so the shell bridge in
+ * Echo, then Ng slides). A type here, below the features, so the shell bridge in
  * `src/stores` can name one without importing a feature.
  */
 export type PremiumExerciseId =
   | typeof EXERCISE_LONG_NOTE_LANTERN
   | typeof EXERCISE_ECHO_STARS
+  | typeof EXERCISE_NG_SLIDES_BRIDGE
 
 // ── Config ──────────────────────────────────────────────────────
 

@@ -254,6 +254,19 @@ const KARAOKE_STAGE_2 = [
   // seen.
   ['echo-demo-take', "Echo's demo"],
   ['mp_echo_demo_seen', "Echo's demo record"],
+  // Ng slides, the third: its room, its card in the picker and its level
+  // control, built and folded exactly as Echo's. Its plates are the
+  // bridge- files above. The level control is found by its Pro line: its
+  // test id is too short to be a safe marker.
+  ['ng-slides-room', 'the premium Ng slides exercise'],
+  [
+    'Hum five slides up a fifth and back, and light the bridge',
+    "the exercise picker's Ng slides card",
+  ],
+  [
+    'Quick slides, close to the line, and no notes in the breaths',
+    "Ng slides' level control",
+  ],
 ]
 
 /**

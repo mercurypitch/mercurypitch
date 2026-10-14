@@ -15,10 +15,15 @@ import { installPremiumExercises } from './premium-exercise-wiring'
 import { pushed, pushedStack, resetRunShell } from './run-shell-store'
 
 const build = vi.hoisted(() => ({ premium: false }))
-const art = vi.hoisted(() => ({ preloads: 0 }))
+const art = vi.hoisted(() => ({ preloads: 0, ng: 0 }))
 vi.mock('@/features/echo/echo-art', () => ({
   preloadEchoArt: () => {
     art.preloads += 1
+  },
+}))
+vi.mock('@/features/ng-slides/bridge-art', () => ({
+  preloadNgArt: () => {
+    art.ng += 1
   },
 }))
 vi.mock('@/lib/native-build', async (importOriginal) => ({
@@ -31,6 +36,7 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
 beforeEach(() => {
   build.premium = false
   art.preloads = 0
+  art.ng = 0
   setActiveTab(TAB_SINGING)
   resetRunShell()
 })
@@ -68,6 +74,19 @@ describe('the shell in a build with the premium exercises', () => {
     await vi.waitFor(() => {
       expect(art.preloads).toBe(1)
     })
+  })
+
+  it('pushes Ng slides for its id, and starts its river loading on the same tap', async () => {
+    build.premium = true
+    const api = installPremiumExercises()
+
+    api.openExercise?.('ng-slides-bridge')
+
+    expect(pushed()).toBe('ng-slides')
+    await vi.waitFor(() => {
+      expect(art.ng).toBe(1)
+    })
+    expect(art.preloads).toBe(0)
   })
 
   it('starts no art for a room that has none to preload', async () => {
