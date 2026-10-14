@@ -11,11 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-12
 
-415 commits since `v0.9.16` before this release PR, #974: PRs #858, #898,
-#947, #957 to #973, #975 to #991 and #993 to #1000. Every commit came through
-a PR; none reached `main` without one. Of the 92 on `main`'s first-parent
-line, 34 are PR merge commits, 55 are the commits #947 (5), #898 (15), #991
-(5), #993 (2), #858 (1), #997 (7), #998 (6) and #999 (14) rebased onto `main`
+419 commits since `v0.9.16` before this release PR, #974: PRs #858, #898,
+#947, #957 to #973 and #975 to #1000. Every commit came through a PR; none
+reached `main` without one. Of the 96 on `main`'s first-parent line, 34 are
+PR merge commits, 59 are the commits #947 (5), #898 (15), #991 (5), #993 (2),
+#858 (1), #997 (7), #998 (6), #999 (14) and #992 (4) rebased onto `main`
 instead of merging, and 3 are the squash commits of #963, #980 and #995.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
@@ -38,8 +38,10 @@ and one row per setting and per challenge, enforced by migration 0070
 (#998); and sign-in, sign-up, 2FA and weekly races closed, with each singer's
 progress kept apart on a shared device (#999). It also brought two small
 features: coming-soon store chips on the voiceprint results and the Map
-(#963), and Karaoke Night links that name their song (#993). The native apps
-keep their own versions and tags; what reaches them is listed under
+(#963), and Karaoke Night links that name their song (#993). #992 followed
+on 14 October: Community's shared-session links open as read-only result
+summaries, and a dependency update clears 45 critical and high alerts. The
+native apps keep their own versions and tags; what reaches them is listed under
 `native-mercurypitch` and `native-besidecue`.
 
 ### Release steps (prod)
@@ -97,7 +99,9 @@ The order matters. Each step names the PR that asks for it.
 7. **Push the tag `v0.9.17`.** `deploy-db-prod` runs again and finds no
    migration left to apply. Once the site is live,
    `curl -sI 'https://mirror.mercurypitch.com/?v=x'` answers 301 with
-   `location: https://mercurypitch.com/mirror?v=x` (#978).
+   `location: https://mercurypitch.com/mirror?v=x` (#978). The tag's deploys
+   are the first prod runs of wrangler 4.150.0 (#992); the dev deploys of the
+   app and the DB Worker ran it on 14 October.
 
 If `STRIPE_SECRET_KEY` is a restricted key, it needs read access to Charges,
 Refunds, Disputes, Events and PaymentIntents (a withdrawal finds its charge
@@ -901,6 +905,46 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
   migration. Drum Night's first paint stays under its 520,000-byte budget, at
   519,988 bytes, by null-guarding the new storage hooks.
 
+### Web: Community's shared results, and 45 dependency alerts (#992)
+
+- **Shared results.** A Community session link pointed at a completed run
+  record but promised a playable setlist. It now opens a read-only result
+  summary (`#/result/...`). A guest's link carries its summary in the link
+  itself (base64url, at most 8,192 characters, `v: 1`, checked by a zod
+  schema and rendered as text), and opening a result leaves practice history
+  as it was. A public link asks for `where[id]` plus `where[isPublic]=true`
+  and checks `isPublic` on the row, so an owner never sees a private row
+  through one.
+- **Old links.** A board link copied by v0.9.16 (`#/share?type=session&id=`)
+  opens as a read-only result instead of a "may have expired" toast. A guest
+  link copied by v0.9.16 pointed at browser-local ids and shows the
+  unavailable page; copying the card again gives a working link. A row
+  v0.9.16 wrote that fails the summary contract is left off the board instead
+  of emptying the whole Sessions list.
+- **Cards and grouping.** Provably identical historical melody cards are
+  grouped for display, and no saved record is deleted to do it. A delayed
+  board response can no longer turn a local removal into a public deletion,
+  and example songs keep their grouping across reloads (twelve probes failed
+  before that fix).
+- **Dependencies.** The lockfile clears the 45 critical and high GitHub
+  alerts inventoried for the PR (`docs/agent/DEPENDENCY-TRIAGE-2026-10-13.md`):
+  solid-js 1.9.17, @huggingface/transformers 4.3.1, wrangler 4.150.0,
+  @cloudflare/workers-types 5, Capacitor 8.5.3, vite 6.4.4, sharp 0.35.5 and
+  @gltf-transform/cli 4.5.1, plus overrides for compression and immutable.
+  `pnpm audit` leaves one high, the development-only `braces`, which has no
+  patched release. GitHub closes the alerts once it rescans `main`.
+- **Budgets.** Solid's store runtime moves to its own `vendor-solid-store`
+  chunk, which the five entry documents that use the store load and no
+  standalone room does, so the update fits the existing budgets: Drum Night
+  516,277 bytes (519,987 before), Piano Night 300,700 (304,405 before), and
+  no limit raised.
+- Solid 1.9.17 re-suspends `lazy()` for a microtask after a remount, so the
+  room tests await the lazy controls, and the Encore test proves the
+  microphone is taken while the old audio fades.
+- Found, not fixed: in `whisper-worker.ts` and `voice-stt-worker.ts`, a
+  failed WebGPU attempt makes the WASM fallback fail too, before this PR and
+  after it.
+
 ### Tests: the jam-two-peer skill reaches a room again (#858)
 
 - `.claude/skills/jam-two-peer/two-peer.mjs` seeds
@@ -998,8 +1042,9 @@ of #985, TestFlight build 706) the ones marked with that. Two more followed
 on 13 October, and Mercury Pitch Mobile built both: `mp-v0.8.20`
 (ab8ce55ce, the merge of #996) carries #987 to #990, #898, #947, #963 and
 #993 to #996, and `mp-v0.8.21` (69051cfc0, the merge of #1000) adds #980 and
-#1000. #997 to #999 merged after it, so their client code arrives from the
-next native tag, as #974's does. #991 changed only the worker, and the worker
+#1000. #997 to #999 and #992 merged after it, so their client code arrives
+from the next native tag, as #974's does, and with it #992's Capacitor 8.5.3
+(regenerated native references) and Solid 1.9.17. #991 changed only the worker, and the worker
 halves of #997 to #999 reach every installed build the same way: with this
 release's worker deploy, under the server changes below. The merges after
 #991 were not matched against the bundle line by line: #963's chips render
@@ -1172,16 +1217,19 @@ native build)
 
 ### native-besidecue
 
-Only #989 reaches Beside Cue, and only a games-on build
-(`VITE_BESIDE_CUE_GAMES=1`). At this head that build keeps every line #989
-changed under `packages/glass-game`: four replay coaching lines
-(`replay-profiles.ts`), the steering slider's "Centered" value text
-(`RunnerSteeringControls.tsx`) and the runner's "Move to center" cue
-(`runner-hud.ts`). They arrive from the next Beside Cue tag; look at
-Glassworks' replay coaching and the runner's cues. The store build (games
-off) keeps none of them. No other file changed since `v0.9.16` has a line
-in either bundle, #973's `src/components/icons.tsx` and every file of #898,
-#947, #990 and #991 included, and no PR touched `apps/beside-cue`.
+Of the PRs merged up to #991, only #989 reaches Beside Cue, and only a
+games-on build (`VITE_BESIDE_CUE_GAMES=1`). At this release's head as it
+stood then, that build keeps every line #989 changed under
+`packages/glass-game`: four replay coaching lines (`replay-profiles.ts`), the
+steering slider's "Centered" value text (`RunnerSteeringControls.tsx`) and
+the runner's "Move to center" cue (`runner-hud.ts`). They arrive from the
+next Beside Cue tag; look at Glassworks' replay coaching and the runner's
+cues. The store build (games off) keeps none of them. No other file changed
+by then has a line in either bundle, #973's `src/components/icons.tsx` and
+every file of #898, #947, #990 and #991 included. The merges after #991 were
+not checked against Beside Cue's bundle. #992 is the first PR since
+`v0.9.16` to touch `apps/beside-cue`: the next Beside Cue build carries its
+Capacitor 8.5.3, with regenerated native references, and Solid 1.9.17.
 
 ### Tests: the Jam lyric-row spec (#982)
 
