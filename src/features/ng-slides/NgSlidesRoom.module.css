@@ -1,0 +1,362 @@
+/* Ng slides' room fills the pushed screen's body. Drawn full-bleed (the
+   shell's premium-rooms.ts, decision D1), the body is the whole screen:
+   the river runs under the status bar and the floating bar, and the
+   room's controls keep clear of them by --pushed-top and --pushed-bottom.
+
+   The head's and the controls' heights are custom properties: the room
+   reads them (NgSlidesRoom.tsx) so the bridge keeps Merc and the note
+   names under the chip and over the mic (bridge-layout.ts). */
+.room {
+  --ng-chip-clear: 58px;
+  --ng-controls-clear: 104px;
+  position: relative;
+  height: 100%;
+  min-height: 520px;
+  padding-top: var(--pushed-top, 0px);
+  padding-bottom: var(--pushed-bottom, 0px);
+  overflow: hidden;
+  background: #05081a;
+  color: var(--text-primary);
+}
+
+/* ── The scene (BridgeScene.tsx) ────────────────────────────── */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #05081a;
+  isolation: isolate;
+}
+
+/* Everything the take draws, pulled back as one at the result. The glass
+   blends with the river inside it, so the river must be inside too. */
+.take {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0% 55%;
+  transition:
+    transform 1200ms cubic-bezier(0.3, 0.1, 0.2, 1),
+    opacity 1000ms ease;
+}
+
+.river {
+  position: absolute;
+  left: 0;
+  will-change: transform;
+}
+
+.river picture,
+.river img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The water's light: one tile a screen wide, drifting by itself. */
+.shimmer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 200%;
+  background-repeat: repeat;
+  opacity: 0.32;
+  mix-blend-mode: plus-lighter;
+  pointer-events: none;
+  animation: ng-shimmer 18s linear infinite;
+}
+
+@keyframes ng-shimmer {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* The bridge's three moving layers: their children sit at world X. */
+.world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 100%;
+  will-change: transform;
+}
+
+/* The glass is light added over the river and the stone (N0 §6). */
+.glass {
+  mix-blend-mode: plus-lighter;
+}
+
+@supports not (mix-blend-mode: plus-lighter) {
+  .glass,
+  .shimmer {
+    mix-blend-mode: screen;
+  }
+}
+
+.sprite {
+  position: absolute;
+  display: block;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mirrored {
+  transform: scaleX(-1);
+}
+
+.lines {
+  position: absolute;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.names {
+  font-family: var(--font-body, sans-serif);
+  letter-spacing: 0.01em;
+}
+
+.ribbon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+/* The near bank: a fixed frame over the bottom corners (F2). */
+.nearLeft,
+.nearRight {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: block;
+  pointer-events: none;
+}
+
+/* The light under the island, as the storyboard paints it. */
+.topLight {
+  position: absolute;
+  left: 40%;
+  top: 0;
+  width: 45%;
+  height: 9%;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(160, 176, 255, 0.2),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* The pulled-back bridge (storyboard screen 4): in from close by, over
+   the last arch, while the take falls back and fades. */
+.result {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  transform: scale(1.6);
+  transform-origin: 86.5% 52.5%;
+  transition:
+    transform 1200ms cubic-bezier(0.3, 0.1, 0.2, 1),
+    opacity 900ms ease;
+  pointer-events: none;
+}
+
+.result picture,
+.result img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.resultLit {
+  position: absolute;
+  left: 0;
+  width: 100%;
+}
+
+.scene[data-result='true'] .take {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.scene[data-result='true'] .result {
+  opacity: 1;
+  transform: none;
+}
+
+/* Merc: a canvas of one size, moved and scaled by transform only. */
+.merc {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.merc > * {
+  position: absolute;
+  inset: 0;
+}
+
+.scene[data-result='true'] .merc {
+  transition: transform 1200ms cubic-bezier(0.3, 0.1, 0.2, 1);
+}
+
+/* Reduced motion: the scroll stays (it is the exercise), the river's
+   parallax and the shimmer stop, and the pull-back is a cross-fade. */
+.reduced .shimmer {
+  display: none;
+}
+
+.reduced .take,
+.reduced .result,
+.reduced[data-result='true'] .take,
+.reduced[data-result='true'] .result {
+  transform: none;
+}
+
+.reduced[data-result='true'] .merc {
+  transition: none;
+}
+
+.still .take,
+.still .result,
+.still .merc {
+  transition: none;
+}
+
+/* ── The room's interface ───────────────────────────────────── */
+
+/* The chip, or the result's numbers: centred under the bar. */
+.head {
+  position: absolute;
+  top: var(--pushed-top, 0px);
+  left: 64px;
+  right: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.head > * {
+  pointer-events: auto;
+}
+
+.chip > div {
+  margin-top: 12px;
+}
+
+.resultHead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pill {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(10, 18, 44, 0.55);
+  color: var(--text-primary);
+  font: 600 14px/1.1 var(--font-body, sans-serif);
+  white-space: nowrap;
+}
+
+.best {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font: 600 14px/1.2 var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The level takes the head's left corner, at the intro and the result. */
+.level {
+  position: absolute;
+  top: calc(var(--pushed-top, 0px) + 8px);
+  left: 12px;
+  z-index: 2;
+}
+
+/* Merc's line, over his head. The room sets its bottom. */
+.bubble {
+  position: absolute;
+  left: 16px;
+  max-width: min(68%, 280px);
+  pointer-events: none;
+}
+
+.bubble > p {
+  margin: 0;
+  background: rgba(10, 18, 44, 0.62);
+  text-align: left;
+}
+
+.bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--pushed-bottom, 0px) + 28px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+/* The room's one live region, for screen readers. */
+.said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A short phone (360 x 640, 375 x 667): tighter gaps, so the bridge keeps
+   its height. */
+@media (max-height: 700px) {
+  .room {
+    --ng-chip-clear: 46px;
+    --ng-controls-clear: 92px;
+  }
+
+  .chip > div {
+    margin-top: 6px;
+  }
+
+  .resultHead {
+    margin-top: 2px;
+  }
+
+  .bottom {
+    bottom: calc(var(--pushed-bottom, 0px) + 16px);
+  }
+}

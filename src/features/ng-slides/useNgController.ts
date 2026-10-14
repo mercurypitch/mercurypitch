@@ -1,0 +1,625 @@
+// ============================================================
+// useNgController: one Ng slides run, from the tap to the result
+// ============================================================
+//
+// Owns the room's states (ng-machine.ts), the microphone and the audio
+// clock (useNgCapture.ts), the room's tones (bridge-tones.ts), the take
+// (ng-take.ts: the glide engine and everything it lights) and what
+// answers it: the bridge's scroll, Merc's place and state, his lines and
+// the chip.
+//
+// A run: the mic opens on the tap; with neither a voiceprint nor a note
+// kept, the singer hums an easy note first (settle-note.ts) and the slides
+// are fitted to it. Then the count-in (the first root's tone, a breath
+// while the bridge rolls in) and the five slides; the next root plays in
+// each breath where the level says so (`playsNextRoot`). After the last
+// landing, the result: the run is kept and the view pulls back.
+// Stopping, a minute with no hum and leaving the app all drop the run:
+// nothing is kept.
+//
+// One capture window per run, opened as the count-in starts, so the
+// frames' clock and the screen's meet at one moment: the path's clock is
+// the window's, less the count-in. One loop a screen frame while the run
+// is on: it hears the new frames (once each, on their own clock), then
+// hands the bridge its frame (bridge-view.ts) with no signal written
+// unless the chip, the line or Merc's state changed.
+
+import type { Accessor } from 'solid-js'
+import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createLevelPreset } from '@/components/room-kit/level-preset'
+import { createMercMoves } from '@/components/room-kit/merc-moves'
+import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
+import { createScreenAwake } from '@/components/room-kit/screen-awake'
+import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
+import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
+import type { GlideResult } from '@/lib/glide/glide-metrics'
+import type { GlidePath } from '@/lib/glide/glide-path'
+import { segmentAt, targetAt } from '@/lib/glide/glide-path'
+import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
+import { NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
+import type { GlideTargets } from '@/lib/glide/glide-targets'
+import { fitNgSlides } from '@/lib/glide/glide-targets'
+import { haptics } from '@/lib/haptics'
+import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, } from '@/lib/hold/hold-target'
+import { settleLiveNote } from '@/lib/hold/settle-note'
+import type { MercState } from '@/lib/merc/constants'
+import type { MercVoice } from '@/lib/merc/sim'
+import { registerMicIndicator } from '@/lib/mic-sentinel'
+import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
+import { setExerciseFocus } from '@/stores/native-shell-store'
+import { rememberedNgNote } from '@/stores/ng-slides-store'
+import { vocalRangePreset } from '@/stores/settings-store'
+import { preloadNgResult } from './bridge-art'
+import { ARCH, PLAYHEAD_X } from './bridge-geometry'
+import type { RideMoment } from './bridge-ride'
+import { RIDE_STATES, rideStep, rideTarget } from './bridge-ride'
+import type { BridgeScroll } from './bridge-scroll'
+import { createBridgeScroll, INTRO_CAMERA } from './bridge-scroll'
+import { createBridgeTones } from './bridge-tones'
+import type { BridgeView } from './bridge-view'
+import type { NgFields, NgMoment } from './merc-lines'
+import { createNgLines } from './merc-lines'
+import type { NgEvent, NgState } from './ng-machine'
+import { initialNgState, isRunPhase, ngReducer } from './ng-machine'
+import type { NgPlan, NgSummary, SlideHeard } from './ng-run'
+import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC, introLine, keepNgRun, planNgRun, resultLine, slideLine, summarize, } from './ng-run'
+import type { NgTake } from './ng-take'
+import { createNgTake } from './ng-take'
+import { CaptureError, useNgCapture } from './useNgCapture'
+
+/** Nobody hummed for this long during a run: it stops, the mic closes. */
+export const QUIET_LIMIT_SECONDS = 60
+/** Merc's happy face after an arch lights, ms. */
+const LOCK_FACE_MS = 600
+/** The room's own tone is not drawn as the voice for this long after it, s. */
+const TONE_TAIL_SEC = 0.25
+/** The path is ended by the room this long after its end, if no frame did. */
+const END_GRACE_SEC = 0.5
+
+const SILENT_VOICE: MercVoice = {
+  voiced: false,
+  cents: 0,
+  level: 0,
+  steady: 0,
+  midi: 57,
+}
+
+/** The singer's own note, when the room can fit its slides to it. */
+function offerable(midi: number): boolean {
+  return midi >= HOLD_TARGET_MIN_MIDI && midi <= HOLD_TARGET_MAX_MIDI
+}
+
+/** What the scene draws its lines from: the path, and the names' root. */
+export interface NgLines {
+  readonly path: GlidePath
+  readonly root: number | null
+}
+
+export interface NgController {
+  state: Accessor<NgState>
+  /** Merc's line in his bubble; '' for none. */
+  line: Accessor<string>
+  /** "Slide 2 of 5" during a run; null for none. */
+  chip: Accessor<string | null>
+  summary: Accessor<NgSummary | null>
+  mercState: Accessor<MercState>
+  /** Read by Merc's renderer every frame; deliberately not reactive. */
+  mercVoice: () => MercVoice
+  lines: Accessor<NgLines>
+  /** The pulled-back result is up. */
+  showResult: Accessor<boolean>
+  /** Start a run: from the intro, a result or a blocked mic. */
+  start: () => void
+  /** The mic button during a run: the run stops, nothing kept. */
+  stop: () => void
+  /** The scene the run draws on. */
+  attach: (view: BridgeView) => void
+}
+
+/** The run in progress: its plan, scroll, take and what it has played. */
+interface Live {
+  readonly plan: NgPlan
+  readonly preset: GlidePreset
+  readonly level: GlideLevelId
+  readonly scroll: BridgeScroll
+  readonly take: NgTake
+  readonly settled: number | null
+  /** Breaths whose root has played, by the slide they lead into. */
+  readonly played: Set<number>
+  feetY: number
+  lastFrameAt: number
+  resultAsked: boolean
+}
+
+export function useNgController(): NgController {
+  const capture = useNgCapture()
+  const tones = createBridgeTones()
+  const lines = createNgLines()
+  const voicePreset = untrack(vocalRangePreset)
+
+  const [state, setState] = createSignal<NgState>(initialNgState())
+  const [line, setLine] = createSignal('')
+  const [chip, setChip] = createSignal<string | null>(null)
+  const [summary, setSummary] = createSignal<NgSummary | null>(null)
+  const [showResult, setShowResult] = createSignal(false)
+  const level = createLevelPreset<GlidePreset>(NG_SLIDES_LEVELS, () =>
+    isRunPhase(state().phase),
+  )
+
+  const dispatch = (event: NgEvent): void => {
+    setState((current) => ngReducer(current, event))
+  }
+  const phase = () => untrack(state).phase
+  const say = (moment: NgMoment, fields?: NgFields): void => {
+    setLine(lines.next(moment, fields))
+  }
+
+  /** The slides as they would be fitted now, before the singer is heard. */
+  const knownFit = (
+    settledMidi: number | null = rememberedNgNote(),
+  ): GlideTargets =>
+    fitNgSlides({
+      voiceprints: loadLocalVoiceprints(),
+      settledMidi,
+      voicePreset,
+    })
+  const introPlan = (): NgPlan => planNgRun(knownFit(), untrack(level.preset))
+  const [scenePlan, setScenePlan] = createSignal<NgPlan>(untrack(introPlan))
+  const sayIntro = (): void => {
+    const plan = introPlan()
+    setScenePlan(plan)
+    const { moment, fields } = introLine(plan.source === 'preset' ? null : plan)
+    say(moment, fields)
+  }
+
+  // ── Timers that belong to the screen ───────────────────────
+  let alive = true
+  const timers = new Set<ReturnType<typeof setTimeout>>()
+  const later = (ms: number, fn: () => void): void => {
+    const id = setTimeout(() => {
+      timers.delete(id)
+      if (alive) fn()
+    }, ms)
+    timers.add(id)
+  }
+
+  // ── Merc ───────────────────────────────────────────────────
+  let voice: MercVoice = SILENT_VOICE
+  const merc = createMercMoves({
+    later,
+    still: prefersReducedMotion,
+    afterCheer: () => 'idle',
+  })
+  let faceUntil = 0
+  let moment: RideMoment = 'intro'
+  const setMoment = (next: RideMoment): void => {
+    if (next === moment && untrack(merc.state) === RIDE_STATES[next]) return
+    moment = next
+    merc.set(RIDE_STATES[next])
+  }
+
+  // ── The run ────────────────────────────────────────────────
+  let view: BridgeView | null = null
+  let audio: AudioContext | null = null
+  let live: Live | null = null
+  let windowStartedAt = 0
+  let processed = 0
+  let loop = 0
+  let lastVoiceAt = 0
+  let settling = false
+  /** The level a run is sung at, pinned at its start. */
+  let runLevel: GlideLevelId = untrack(exerciseLevel)
+
+  /** Seconds on the window's clock. */
+  const windowNow = (): number => (performance.now() - windowStartedAt) / 1000
+
+  const openWindow = (): void => {
+    capture.startWindow()
+    windowStartedAt = performance.now()
+    processed = 0
+  }
+
+  const startLoop = (): void => {
+    if (loop === 0) loop = requestAnimationFrame(tick)
+  }
+  const stopLoop = (): void => {
+    if (loop !== 0) cancelAnimationFrame(loop)
+    loop = 0
+  }
+
+  /** The chip's slide: the count-in and a breath lead into theirs. */
+  const slideOf = (run: Live, t: number): number => {
+    if (t < 0) return 0
+    const segment = segmentAt(run.plan.path, t)
+    return segment === null ? run.plan.path.arches.length - 1 : segment.arch
+  }
+
+  const onSlideEnd = (run: Live, heard: SlideHeard): void => {
+    if (heard.lit) {
+      haptics.tapLight()
+      faceUntil = performance.now() + LOCK_FACE_MS
+    }
+    const arches = run.plan.path.arches
+    const next = arches[heard.arch + 1] as (typeof arches)[number] | undefined
+    if (next === undefined) return
+    const { moment: said, fields } = slideLine(
+      heard,
+      run.preset,
+      next.rootMidi,
+      arches[heard.arch].topMidi,
+    )
+    say(said, fields)
+  }
+
+  /** The moment for Merc, from the path's clock and the voice. */
+  const rideMoment = (run: Live, t: number): RideMoment => {
+    if (performance.now() < faceUntil) return 'archLit'
+    if (t < 0) return 'countIn'
+    const segment = segmentAt(run.plan.path, t)
+    if (
+      segment === null ||
+      segment.phase === 'breath' ||
+      segment.phase === 'landing'
+    ) {
+      return 'breath'
+    }
+    return run.take.state.voiceMidi === null ? 'slideQuiet' : 'slideVoiced'
+  }
+
+  /** His voice for the renderer: the singer's, against the path. */
+  const hearMerc = (run: Live, t: number): void => {
+    const state = run.take.state
+    const midi = state.voiceMidi
+    if (midi === null) {
+      voice = { ...voice, voiced: false, level: 0 }
+      return
+    }
+    const target = targetAt(run.plan.path, t)
+    const cents = target === null ? 0 : (midi - target) * 100
+    voice = {
+      voiced: true,
+      cents,
+      level: 0.6,
+      steady: 1 - Math.min(1, Math.abs(cents) / run.preset.bandCents),
+      midi,
+    }
+    lastVoiceAt = performance.now()
+  }
+
+  /** The breath's tone: the next root, once, where the level plays it. */
+  const breathTone = (run: Live, t: number): void => {
+    if (!run.preset.playsNextRoot || audio === null) return
+    const segment = segmentAt(run.plan.path, t)
+    if (segment === null || segment.phase !== 'breath') return
+    if (run.played.has(segment.arch)) return
+    run.played.add(segment.arch)
+    tones.play(audio, run.plan.roots[segment.arch], BREATH_TONE_SEC)
+    run.take.mute(t + BREATH_TONE_SEC + TONE_TAIL_SEC)
+  }
+
+  /** What the singer reads, written only when it changes. */
+  const showSlide = (run: Live, t: number): void => {
+    const slide = slideOf(run, t)
+    const text = `Slide ${slide + 1} of ${run.plan.path.arches.length}`
+    if (untrack(chip) !== text) setChip(text)
+    // No words while the singer slides: Merc speaks in the breaths.
+    const segment = t < 0 ? null : segmentAt(run.plan.path, t)
+    const sliding =
+      segment !== null &&
+      segment.phase !== 'breath' &&
+      segment.phase !== 'landing'
+    if (sliding && untrack(line) !== '') setLine('')
+    if (slide === run.plan.path.arches.length - 1 && !run.resultAsked) {
+      run.resultAsked = true
+      preloadNgResult()
+    }
+  }
+
+  function tick(): void {
+    loop = 0
+    if (!alive) return
+    const run = live
+    if (run !== null) runFrame(run)
+    else if (settling) settleFrame()
+    if (alive && (live !== null || settling) && loop === 0) {
+      loop = requestAnimationFrame(tick)
+    }
+  }
+
+  function runFrame(run: Live): void {
+    const frames = capture.peekFrames()
+    run.take.hear(frames, run.plan.countIn)
+    if (live !== run) return
+    const t = windowNow() - run.plan.countIn
+    if (t > run.plan.path.duration + END_GRACE_SEC) {
+      run.take.finish()
+      if (live !== run) return
+    }
+    const now = performance.now()
+    const dt = Math.min(0.1, (now - run.lastFrameAt) / 1000)
+    run.lastFrameAt = now
+    hearMerc(run, t)
+    const state = run.take.state
+    run.feetY = rideStep(
+      run.feetY,
+      rideTarget(
+        state.voiceMidi,
+        t < 0 ? null : targetAt(run.plan.path, t),
+        run.take.rootAt(t),
+      ),
+      dt,
+    )
+    view?.frame({
+      camera: run.scroll.at(t),
+      strips: run.take.drain(),
+      trace: run.take.trace,
+      merc: { x: PLAYHEAD_X, feetY: run.feetY },
+    })
+    breathTone(run, t)
+    showSlide(run, t)
+    setMoment(rideMoment(run, t))
+    restIfQuiet()
+  }
+
+  /** No root yet: the first easy note the singer settles on fits the slides. */
+  function settleFrame(): void {
+    const frames = capture.peekFrames()
+    if (frames.length === processed) return
+    processed = frames.length
+    const heard = settleLiveNote(frames)
+    const last = frames[frames.length - 1]
+    if (last.conf > 0.5 && last.f0 > 0) lastVoiceAt = performance.now()
+    const midi = heard === null ? null : Math.round(heard)
+    if (midi === null || !offerable(midi)) {
+      restIfQuiet()
+      return
+    }
+    settling = false
+    const fit = knownFit(heard)
+    dispatch({ type: 'settled' })
+    say('found', { note: midiToNoteNameOctave(fit.roots[0]) })
+    begin(fit, heard)
+  }
+
+  /** The count-in starts: the window opens, the first root sounds. */
+  function begin(fit: GlideTargets, settled: number | null): void {
+    const preset = untrack(level.preset)
+    const plan = planNgRun(fit, preset)
+    const scroll = createBridgeScroll(plan.path, plan.countIn)
+    setScenePlan(plan)
+    let run: Live | null = null
+    const take = createNgTake({
+      path: plan.path,
+      preset,
+      scroll,
+      onSlideEnd: (heard) => {
+        if (run !== null && live === run) onSlideEnd(run, heard)
+      },
+      onEnd: (result) => {
+        if (run !== null && live === run) finishRun(run, result)
+      },
+    })
+    run = {
+      plan,
+      preset,
+      level: runLevel,
+      scroll,
+      take,
+      settled,
+      played: new Set<number>(),
+      feetY: ARCH.deckY,
+      lastFrameAt: performance.now(),
+      resultAsked: false,
+    }
+    live = run
+    openWindow()
+    view?.reset(INTRO_CAMERA)
+    if (audio !== null) {
+      tones.play(audio, plan.roots[0], COUNT_IN_TONE_SEC)
+      take.mute(-plan.countIn + COUNT_IN_TONE_SEC + TONE_TAIL_SEC)
+    }
+    if (settled === null) {
+      say('listen', { note: midiToNoteNameOctave(plan.roots[0]) })
+    }
+    startLoop()
+  }
+
+  /** The run's result: kept, shown, and the mic closed. */
+  function finishRun(run: Live, result: GlideResult): void {
+    live = null
+    stopLoop()
+    tones.stop()
+    capture.release()
+    const kept = keepNgRun(run.level, result, run.settled)
+    const shown = summarize(result, kept, exerciseLevelName(run.level))
+    const { moment: said, fields } = resultLine(result, shown, run.preset)
+    batch(() => {
+      setSummary(shown)
+      setChip(null)
+      say(said, fields)
+      dispatch({ type: 'finished' })
+      setShowResult(true)
+    })
+    view?.result(
+      run.plan.path.arches.map((a) => run.take.reveal.litOf(a.index)),
+    )
+    voice = SILENT_VOICE
+    if (result.archesLit === result.arches.length) {
+      haptics.success()
+      moment = 'resultAllLit'
+      merc.cheer()
+    } else {
+      setMoment('result')
+    }
+  }
+
+  /** A minute with no hum during a run: it stops, and the mic closes. */
+  function restIfQuiet(): void {
+    if (performance.now() - lastVoiceAt <= QUIET_LIMIT_SECONDS * 1000) return
+    dropRun('rest')
+    say('rest')
+  }
+
+  /** The run stops where it is: nothing kept, the mic closed. */
+  function dropRun(type: 'stop' | 'rest' | 'leave'): void {
+    live = null
+    settling = false
+    stopLoop()
+    tones.stop()
+    capture.release()
+    voice = SILENT_VOICE
+    view?.reset(INTRO_CAMERA)
+    batch(() => {
+      dispatch({ type })
+      setChip(null)
+      setShowResult(false)
+    })
+    merc.stopCheering()
+    setMoment('intro')
+  }
+
+  // ── What the singer does ───────────────────────────────────
+  const openMic = (): void => {
+    const { run } = untrack(state)
+    const stands = (): boolean =>
+      alive && phase() === 'starting' && untrack(state).run === run
+    void capture
+      .acquire()
+      .then(() => capture.audio())
+      .then(
+        (ctx) => {
+          if (!stands()) return
+          if (ctx === null) {
+            dispatch({ type: 'mic-failed', run, block: 'unavailable' })
+            setMoment('intro')
+            return
+          }
+          audio = ctx
+          lastVoiceAt = performance.now()
+          const fit = knownFit()
+          const rooted = fit.source !== 'preset'
+          dispatch({ type: 'mic-ready', run, rooted })
+          if (rooted) begin(fit, null)
+          else {
+            openWindow()
+            settling = true
+            setMoment('countIn')
+            startLoop()
+          }
+          // The page went away while the microphone opened.
+          if (document.visibilityState === 'hidden') leave()
+        },
+        (error: unknown) => {
+          if (!stands()) return
+          dispatch({
+            type: 'mic-failed',
+            run,
+            block:
+              error instanceof CaptureError ? error.failure : 'unavailable',
+          })
+          setMoment('intro')
+        },
+      )
+  }
+
+  const start = (): void => {
+    const from = phase()
+    if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
+    level.take()
+    runLevel = untrack(exerciseLevel)
+    dispatch({ type: 'start' })
+    batch(() => {
+      setSummary(null)
+      setChip(null)
+      setShowResult(false)
+    })
+    view?.reset(INTRO_CAMERA)
+    if (from === 'result') say('again')
+    merc.stopCheering()
+    setMoment('countIn')
+    openMic()
+  }
+
+  const stop = (): void => {
+    if (!isRunPhase(phase())) return
+    dropRun('stop')
+    sayIntro()
+  }
+
+  /**
+   * The singer left the app. Nothing listens behind their back, and the
+   * run is dropped, as Back drops it: no result, no best.
+   */
+  function leave(): void {
+    if (!isRunPhase(phase())) return
+    dropRun('leave')
+    say('left')
+  }
+
+  // ── The screen's life ──────────────────────────────────────
+  onMount(() => {
+    sayIntro()
+    later(1100, () => {
+      if (untrack(merc.state) === 'drop') merc.set('idle')
+    })
+  })
+
+  const onVisibility = (): void => {
+    if (document.visibilityState === 'hidden') leave()
+  }
+  document.addEventListener('visibilitychange', onVisibility)
+
+  // The screen stays on, and the rail out of reach, while a run is on.
+  const awake = createScreenAwake()
+  createEffect(() => {
+    const running = isRunPhase(state().phase)
+    awake.set(running)
+    setExerciseFocus(running)
+  })
+
+  // The app's mic watchdog: the icon is on while the run hears the
+  // singer, and a microphone that died under it stops the run.
+  const unregisterIndicator = registerMicIndicator(
+    EXERCISE_NG_SLIDES_BRIDGE,
+    () => isRunPhase(phase()) && phase() !== 'starting',
+    stop,
+  )
+
+  onCleanup(() => {
+    alive = false
+    live = null
+    settling = false
+    stopLoop()
+    tones.stop()
+    for (const id of timers) clearTimeout(id)
+    timers.clear()
+    document.removeEventListener('visibilitychange', onVisibility)
+    unregisterIndicator()
+    awake.set(false)
+    setExerciseFocus(false)
+  })
+
+  return {
+    state,
+    line,
+    chip,
+    summary,
+    mercState: merc.state,
+    mercVoice: () => voice,
+    lines: () => {
+      const plan = scenePlan()
+      return {
+        path: plan.path,
+        root: plan.source === 'preset' ? null : plan.roots[0],
+      }
+    },
+    showResult,
+    start,
+    stop,
+    attach: (next) => {
+      view = next
+      next.reset(INTRO_CAMERA)
+    },
+  }
+}

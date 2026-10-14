@@ -225,6 +225,7 @@ describe('the last exercise opened', () => {
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
       'true',
       null,
+      null,
     ])
   })
 
@@ -234,6 +235,17 @@ describe('the last exercise opened', () => {
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
       null,
       'true',
+      null,
+    ])
+  })
+
+  it('marks Ng slides when it was the last one opened', async () => {
+    await openPicker({ last: 'ng-slides-bridge' })
+
+    expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
+      null,
+      'true',
     ])
   })
 
@@ -241,6 +253,7 @@ describe('the last exercise opened', () => {
     await openPicker()
 
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
       null,
       null,
     ])
