@@ -76,9 +76,8 @@ const centsAbove = (take: EchoDemoTake): number[] =>
 
 /**
  * How long the voice holds each of `targets` (cents above the root), in
- * order: a point is the next note's once it is nearer that note than the
- * one before, so a glide counts half to the note it leaves and half to
- * the next.
+ * order: a note is left once the voice has reached it and is nearer the
+ * next, so a glide counts half to the note it leaves and half to the next.
  */
 function sungNotes(
   voice: readonly DemoVoicePoint[],
@@ -86,11 +85,15 @@ function sungNotes(
 ): number[] {
   const seconds = targets.map(() => 0)
   let at = 0
+  let reached = false
   for (const [i, point] of voice.entries()) {
     if (i === 0 || point.level <= 0) continue
-    const next = targets[at + 1]
     const off = (k: number): number => Math.abs(point.cents - targets[k])
-    if (next !== undefined && off(at + 1) < off(at)) at += 1
+    if (reached && at + 1 < targets.length && off(at + 1) < off(at)) {
+      at += 1
+      reached = false
+    }
+    if (off(at) < 50) reached = true
     seconds[at] += point.t - voice[i - 1].t
   }
   return seconds
