@@ -3,7 +3,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { GuitarNightAccount } from './GuitarNightAccount'
+import { GuitarNightAccount, guitarNightGiftLine } from './GuitarNightAccount'
 
 const accountState = vi.hoisted(() => ({
   account: { email: 'player@example.com', provider: 'password' } as {
@@ -149,13 +149,19 @@ describe('GuitarNightAccount', () => {
 
     render(() => <GuitarNightAccount onSignIn={vi.fn()} />)
 
-    expect(gift.sync).toHaveBeenCalledWith({ upgraded: true, verified: true })
+    expect(gift.sync).toHaveBeenCalledWith(
+      { upgraded: true, verified: true },
+      guitarNightGiftLine,
+    )
   })
 
   it('leaves a password account confirmation to its link', () => {
     render(() => <GuitarNightAccount onSignIn={vi.fn()} />)
 
-    expect(gift.sync).toHaveBeenCalledWith({ upgraded: true, verified: false })
+    expect(gift.sync).toHaveBeenCalledWith(
+      { upgraded: true, verified: false },
+      guitarNightGiftLine,
+    )
   })
 
   it('tells the launch gift when nobody is signed in', () => {
@@ -164,6 +170,16 @@ describe('GuitarNightAccount', () => {
 
     render(() => <GuitarNightAccount onSignIn={vi.fn()} />)
 
-    expect(gift.sync).toHaveBeenCalledWith(null)
+    expect(gift.sync).toHaveBeenCalledWith(null, guitarNightGiftLine)
+  })
+
+  // A credit here pays for "Separate guitar", the cloud split of the backing
+  // into drums, bass and guitar (GuitarNightApp.tsx). That split costs more
+  // than one credit, so a lone credit goes toward it.
+  it.each([
+    [5, 'Use them to separate the guitar from a song.'],
+    [1, 'Put it toward separating the guitar from a song.'],
+  ])('says what %i credits do in Guitar Night', (credits, says) => {
+    expect(guitarNightGiftLine(credits)).toBe(says)
   })
 })

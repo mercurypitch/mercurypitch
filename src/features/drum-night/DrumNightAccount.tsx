@@ -12,6 +12,7 @@ import { UserRound } from '@/components/icons'
 import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { accountHeld, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { account, credits, refreshAccount, signOutStandalone, } from '@/lib/standalone-account'
+import type { GiftSpendLine } from '@/stores/launch-gift-store'
 import { syncPromoClaims } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './DrumNightApp.module.css'
@@ -21,6 +22,18 @@ interface DrumNightAccountProps {
   /** What a Google sign-in that just landed on this page said, once. */
   onGoogleRedirectResult?: (result: GoogleRedirectResult) => void
 }
+
+/**
+ * What the launch gift's credits do in Drum Night, said in its toast after
+ * "5 credits added.". They pay for "Separate drums + band", the cloud split
+ * that lifts the drums out of a song (drum-night-music-actions.ts). That
+ * split is priced above one credit (billing-core's demucs-6s multiplier), so
+ * a lone credit goes toward it.
+ */
+export const drumNightGiftLine: GiftSpendLine = (credits) =>
+  credits === 1
+    ? 'Put it toward separating the drums from a song.'
+    : 'Use them to separate the drums from a song.'
 
 export function DrumNightAccount(props: DrumNightAccountProps) {
   const [menuOpen, setMenuOpen] = createSignal(false)
@@ -83,6 +96,7 @@ export function DrumNightAccount(props: DrumNightAccountProps) {
             // password account's confirmation is the link's to say.
             verified: current.provider !== 'password',
           },
+      drumNightGiftLine,
     )
   })
 

@@ -3,7 +3,7 @@
 
 import { cleanup, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DrumNightAccount } from './DrumNightAccount'
+import { DrumNightAccount, drumNightGiftLine } from './DrumNightAccount'
 
 const accountState = vi.hoisted(() => ({
   account: { email: 'drummer@example.com', provider: 'google' } as {
@@ -49,7 +49,10 @@ describe('DrumNightAccount and the launch gift', () => {
   it('tells the launch gift who is signed in, so a gift a Google sign-up claimed is said here', () => {
     render(() => <DrumNightAccount onSignIn={vi.fn()} />)
 
-    expect(gift.sync).toHaveBeenCalledWith({ upgraded: true, verified: true })
+    expect(gift.sync).toHaveBeenCalledWith(
+      { upgraded: true, verified: true },
+      drumNightGiftLine,
+    )
   })
 
   it('leaves a password account confirmation to its link', () => {
@@ -60,7 +63,10 @@ describe('DrumNightAccount and the launch gift', () => {
 
     render(() => <DrumNightAccount onSignIn={vi.fn()} />)
 
-    expect(gift.sync).toHaveBeenCalledWith({ upgraded: true, verified: false })
+    expect(gift.sync).toHaveBeenCalledWith(
+      { upgraded: true, verified: false },
+      drumNightGiftLine,
+    )
   })
 
   it('tells the launch gift when nobody is signed in', () => {
@@ -69,6 +75,16 @@ describe('DrumNightAccount and the launch gift', () => {
 
     render(() => <DrumNightAccount onSignIn={vi.fn()} />)
 
-    expect(gift.sync).toHaveBeenCalledWith(null)
+    expect(gift.sync).toHaveBeenCalledWith(null, drumNightGiftLine)
+  })
+
+  // A credit here pays for "Separate drums + band", the cloud split that
+  // lifts the drums out of a song (drum-night-music-actions.ts). That split
+  // costs more than one credit, so a lone credit goes toward it.
+  it.each([
+    [5, 'Use them to separate the drums from a song.'],
+    [1, 'Put it toward separating the drums from a song.'],
+  ])('says what %i credits do in Drum Night', (credits, says) => {
+    expect(drumNightGiftLine(credits)).toBe(says)
   })
 })

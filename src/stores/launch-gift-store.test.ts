@@ -240,6 +240,26 @@ describe('saying the gift landed', () => {
     expect(mocks.showNotification).toHaveBeenCalledWith(says, 'success')
   })
 
+  // Guitar Night and Drum Night spend a credit on their own band split, so
+  // each says that instead of sending the player to Karaoke Night.
+  it.each([
+    [1, '1 credit added. One line for one credit.'],
+    [5, '5 credits added. A line for 5.'],
+  ])(
+    'lets a room say what a %i-credit claim does there',
+    async (credits, says) => {
+      mocks.offer = { ...LAUNCH, credits }
+      mocks.fetchBillingMe.mockResolvedValue(me([claimedAgo(MINUTE, credits)]))
+      const store = await freshStore()
+
+      await store.syncPromoClaims(CONFIRMED, (n) =>
+        n === 1 ? 'One line for one credit.' : `A line for ${n}.`,
+      )
+
+      expect(mocks.showNotification).toHaveBeenCalledWith(says, 'success')
+    },
+  )
+
   it.each([
     [1, '1 credit added. Try one in Karaoke Night.'],
     [5, '5 credits added. Try one in Karaoke Night.'],
