@@ -81,8 +81,8 @@ These are the rules that break things when ignored.
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 13.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.7k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
+| `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.1k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
-| `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 7.3k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 7.3k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.3k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
@@ -225,12 +225,12 @@ These are the rules that break things when ignored.
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 200 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 200 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
+| [echo-store.ts](../../src/stores/echo-store.ts) | 150 | Echo's records: the best at each level, the singer's root, the demo seen The live table of Echo's bests (its shape, its ordering and how... |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
 | [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 150 | Practice Timer Store — the voice-rest clock Off by default. |
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 150 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
 | [sync-ui-store.ts](../../src/stores/sync-ui-store.ts) | 150 | ── Sync UI state Whether the sync dialog is showing, whether a session is alive behind it, and — in the words the surfaces say out loud —... |
 | [console-store.ts](../../src/stores/console-store.ts) | 100 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
-| [echo-store.ts](../../src/stores/echo-store.ts) | 100 | Echo's records: the best at each level, and the singer's root The live table of Echo's bests (its shape, its ordering and how a settings... |
 | [index.ts](../../src/stores/index.ts) | 100 | Stores barrel export |
 | [mic-store.ts](../../src/stores/mic-store.ts) | 100 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 100 | Pane Layout Store — Multi-pane layout persistence |
