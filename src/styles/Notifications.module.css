@@ -270,9 +270,24 @@
        src/e2e/room-chip-busy.spec.ts.
 
        The bottom edge is the one strip a phone already reserves for chrome,
-       and the tab bar's own height is budgeted out below. */
+       and the tab bar's own height is budgeted out below.
+
+       The cookie consent banner shares that strip, at the highest z-index on
+       the page, and a new visitor in Europe has it open until they answer it.
+       Toasts raised meanwhile were drawn under it. Reproduced on 14 Oct 2026
+       in a production build at 390px: a Google sign-up landing back on the
+       onboarding Map raised "Signed in with Google" and the launch gift's
+       "5 credits added", and the banner covered both. While open, the banner
+       publishes its footprint as --consent-banner-space (ConsentBanner.tsx),
+       so the stack stands on whichever is taller. Pinned by
+       src/e2e/toast-above-consent-banner.spec.ts. */
+    --toast-floor: max(
+      var(--tabbar-total, 54px),
+      var(--consent-banner-space, 0px)
+    );
+
     top: auto;
-    bottom: calc(var(--tabbar-total, 54px) + 0.6rem);
+    bottom: calc(var(--toast-floor) + 0.6rem);
     right: max(0.5rem, var(--safe-right, 0px));
     left: max(0.5rem, var(--safe-left, 0px));
     width: auto;
@@ -282,7 +297,7 @@
        screen: budget the safe area and the tab bar out of the height, and
        scroll so every toast and its buttons remain reachable. */
     max-height: calc(
-      100dvh - env(safe-area-inset-top) - var(--tabbar-total, 54px) - 1.3rem
+      100dvh - env(safe-area-inset-top) - var(--toast-floor) - 1.3rem
     );
     overflow-y: auto;
     overscroll-behavior: contain;
