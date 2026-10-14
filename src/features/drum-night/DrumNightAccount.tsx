@@ -7,11 +7,12 @@
 // (Same contract as Guitar Night's chip — a shared component is planned once
 // both rooms settle.)
 
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { UserRound } from '@/components/icons'
 import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { accountHeld, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { account, credits, refreshAccount, signOutStandalone, } from '@/lib/standalone-account'
+import { syncPromoClaims } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './DrumNightApp.module.css'
 
@@ -66,6 +67,23 @@ export function DrumNightAccount(props: DrumNightAccountProps) {
       window.removeEventListener('pointerdown', closeOnOutside)
       window.removeEventListener('keydown', closeOnEscape)
     })
+  })
+
+  // What this account has claimed, so a launch gift claimed as it signed in
+  // is said once, in a toast (launch-gift-store). A Google sign-up started in
+  // Drum Night comes back to Drum Night, and nothing else here would say it.
+  createEffect(() => {
+    const current = account()
+    void syncPromoClaims(
+      current === null
+        ? null
+        : {
+            upgraded: current.provider !== 'anonymous',
+            // Google's address is confirmed as the account is made. A
+            // password account's confirmation is the link's to say.
+            verified: current.provider !== 'password',
+          },
+    )
   })
 
   const email = () => account()?.email ?? ''

@@ -17,6 +17,7 @@ const accountState = vi.hoisted(() => ({
 }))
 
 const notifications = vi.hoisted(() => ({ show: vi.fn() }))
+const gift = vi.hoisted(() => ({ sync: vi.fn(async () => undefined) }))
 
 vi.mock('@/db/services/auth-service', () => ({
   accountHeld: () => accountState.held,
@@ -29,6 +30,10 @@ vi.mock('@/db/services/auth-service', () => ({
 
 vi.mock('@/stores/notifications-store', () => ({
   showNotification: notifications.show,
+}))
+
+vi.mock('@/stores/launch-gift-store', () => ({
+  syncPromoClaims: gift.sync,
 }))
 
 vi.mock('@/lib/standalone-account', () => ({
@@ -50,6 +55,7 @@ afterEach(() => {
   accountState.held = true
   accountState.googleResult = null
   notifications.show.mockClear()
+  gift.sync.mockClear()
 })
 
 describe('GuitarNightAccount', () => {
@@ -133,5 +139,31 @@ describe('GuitarNightAccount', () => {
     expect(onGoogleRedirectResult).toHaveBeenCalledOnce()
     expect(onGoogleRedirectResult).toHaveBeenCalledWith({ ok: true })
     expect(accountState.googleResult).toBeNull()
+  })
+
+  // A Google sign-up started here comes back here, with the launch gift
+  // already claimed. The player is in the room, so the room has to say
+  // it landed, as Karaoke Night does (launch-gift-store).
+  it('tells the launch gift who is signed in, so a gift a Google sign-up claimed is said here', () => {
+    accountState.account = { email: 'player@example.com', provider: 'google' }
+
+    render(() => <GuitarNightAccount onSignIn={vi.fn()} />)
+
+    expect(gift.sync).toHaveBeenCalledWith({ upgraded: true, verified: true })
+  })
+
+  it('leaves a password account confirmation to its link', () => {
+    render(() => <GuitarNightAccount onSignIn={vi.fn()} />)
+
+    expect(gift.sync).toHaveBeenCalledWith({ upgraded: true, verified: false })
+  })
+
+  it('tells the launch gift when nobody is signed in', () => {
+    accountState.account = null
+    accountState.held = false
+
+    render(() => <GuitarNightAccount onSignIn={vi.fn()} />)
+
+    expect(gift.sync).toHaveBeenCalledWith(null)
   })
 })
