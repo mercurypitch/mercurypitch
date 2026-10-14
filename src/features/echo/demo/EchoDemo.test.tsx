@@ -202,6 +202,8 @@ interface Moment {
   stars: string[]
   result: string | null
   clouds: string
+  /** The town's city light: its state's layer, or none. */
+  light: string
 }
 
 interface Seen {
@@ -260,6 +262,7 @@ async function run(ms: number, log: Seen = watched()): Promise<Seen> {
         stars: keys('echo-star'),
         result: screen.queryByTestId('echo-result')?.textContent ?? null,
         clouds: cloudsUp(),
+        light: screen.getByTestId('echo-citylight').dataset.state ?? '',
       }
     }
     push(log.tips, tip)
@@ -400,6 +403,11 @@ describe('the Echo demo', () => {
     expect(log.at.flat.clouds).toBe('demo-off')
     expect(log.at.lands.clouds).toBe('mid-take')
     expect(log.at.score.clouds).toBe('none')
+    // The town's light goes with the clouds: screen 3's, then a take's.
+    expect(log.at.flat.light).toBe('demo-off')
+    expect(log.at.slid.light).toBe('demo-off')
+    expect(log.at.lands.light).toBe('mid-take')
+    expect(log.at.score.light).toBe('none')
 
     // Merc speaks once, before the takes; the takes' chip and bubble keep quiet.
     expect(log.bubbleAlone).toEqual([DEMO_COPY.watch])

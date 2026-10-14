@@ -211,12 +211,14 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
   }
   /**
    * The town's city light (art round 5): the intro's while the take's
-   * clouds are down, the take's with them, none at the result (its plate
-   * lights the town its own way).
+   * clouds are down, the clouds' own state's with them (the demo's first
+   * take has screen 3's), none at the result (its plate lights the town
+   * its own way).
    */
   const cityLight = (): CityLightState | null => {
     if (phase() === 'result') return null
-    return clouds().on ? 'mid-take' : 'intro'
+    const sky = clouds()
+    return sky.on ? (sky.look ?? 'mid-take') : 'intro'
   }
   /** Merc's line shows but while the singer sings the phrase back. */
   const showLine = (): boolean =>
