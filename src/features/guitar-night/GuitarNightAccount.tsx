@@ -5,11 +5,12 @@
 // paint. It reports state and delegates sign-in to the route-level host; it
 // does not carry a second form or authentication state machine of its own.
 
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { UserRound } from '@/components/icons'
 import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { accountHeld, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { account, credits, refreshAccount, signOutStandalone, } from '@/lib/standalone-account'
+import { syncPromoClaims } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './GuitarNightApp.module.css'
 
@@ -63,6 +64,23 @@ export function GuitarNightAccount(props: GuitarNightAccountProps) {
       window.removeEventListener('pointerdown', closeOnOutside)
       window.removeEventListener('keydown', closeOnEscape)
     })
+  })
+
+  // What this account has claimed, so a launch gift claimed as it signed in
+  // is said once, in a toast (launch-gift-store). A Google sign-up started in
+  // Guitar Night comes back to Guitar Night, and nothing else here would say it.
+  createEffect(() => {
+    const current = account()
+    void syncPromoClaims(
+      current === null
+        ? null
+        : {
+            upgraded: current.provider !== 'anonymous',
+            // Google's address is confirmed as the account is made. A
+            // password account's confirmation is the link's to say.
+            verified: current.provider !== 'password',
+          },
+    )
   })
 
   const email = () => account()?.email ?? ''
