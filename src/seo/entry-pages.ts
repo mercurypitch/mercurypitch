@@ -445,7 +445,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     bootHash: '#/jam',
     title: 'Jam Rooms — Sing Together From Anywhere | MercuryPitch',
     description:
-      'Open a room, share the link, and sing a song together. Lyrics down the left, a live pitch lane for every singer in their own colour, and one shared transport.',
+      'Open a room, share the link, and sing a song together. Lyrics down the left, a live pitch lane for every singer in their own color, and one shared transport.',
     keywords:
       'sing together online, online jam room, group karaoke online, harmony practice, sing with friends remotely',
     og: {
@@ -462,7 +462,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'Take a part and sing it with friends, each on a live pitch lane of their own. In your browser.',
     },
     h1: 'Jam Rooms — sing together from anywhere',
-    lede: 'Open a room, share the link, and sing a song together. Lyrics down the left, a live pitch lane for every singer in their own colour, and one transport that keeps every room in step.',
+    lede: 'Open a room, share the link, and sing a song together. Lyrics down the left, a live pitch lane for every singer in their own color, and one transport that keeps every room in step.',
     app: {
       name: 'Jam Rooms',
       category: 'MusicApplication',
