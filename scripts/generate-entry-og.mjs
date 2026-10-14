@@ -37,9 +37,10 @@ const H = 630
 /** Per-card display copy. Everything else comes from ENTRY_PAGES.
  *
  *  `pills` have to be read against that page's og.description, which sits
- *  directly above them on the card: three of the four descriptions already
- *  say "Free" and one already says "semitone span", so a pill repeating it
- *  spends a slot saying nothing.
+ *  directly above them on the card: Pitch Training's already says "Free" and
+ *  the range test's already says "span in semitones", so a pill repeating it
+ *  spends a slot saying nothing. Every pill must be true of the app as it
+ *  ships: the six bands are VOICE_TYPE_BANDS, the 31 singers VOICE_LEGENDS.
  *
  *  `art` nudges the backdrop when a generated subject sits badly. `size` is a
  *  CSS background-size, `pos` a background-position. Mind the direction: a
@@ -57,13 +58,13 @@ const CARDS = {
   'voice-type-test': {
     backdrop: 'voice-type-test.png',
     headline: 'Soprano, alto, tenor or bass?',
-    pills: ['Four voice bands', 'Takes one minute', 'No sign-up'],
+    pills: ['Six voice bands', 'About ninety seconds', 'Free'],
     accent: '#58a6ff',
   },
   'which-singer-has-my-vocal-range': {
     backdrop: 'which-singer-has-my-vocal-range.png',
     headline: 'Which singer has my vocal range?',
-    pills: ['One glide', 'Measured in semitones', 'No sign-up'],
+    pills: ['31 famous singers', 'Matched by your range', 'Free'],
     accent: '#bc8cff',
   },
   mirror: {
@@ -81,7 +82,7 @@ const CARDS = {
   'pitch-training': {
     backdrop: 'pitch-training.png',
     headline: 'Practice on pitch, and see the proof',
-    pills: ['Live feedback', 'Hold, scale or chase', 'No sign-up'],
+    pills: ['Live feedback', 'Hold, scale or chase', 'Every attempt scored'],
     accent: '#2dd4bf',
   },
 }

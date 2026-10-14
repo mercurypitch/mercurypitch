@@ -208,7 +208,7 @@ const html = /* html */ `<!doctype html>
       </div>
 
       <h1 class="headline">Turn any song into karaoke</h1>
-      <p class="sub">The vocals lift away, the lyrics light up line by line, and <b>every note you sing is scored live</b> — right in your browser.</p>
+      <p class="sub">The vocals lift away, the lyrics light up line by line, and <b>every note you sing is scored live</b>.</p>
 
       <div class="pills">
         <span class="pill"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Vocals removed</span>

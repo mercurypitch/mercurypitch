@@ -109,7 +109,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     og: {
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
       description:
-        'Sing for 60 seconds, get your vocal range, accuracy and steadiness as a shareable voiceprint. Analyzed entirely in your browser.',
+        'Sing for 60 seconds and get your range, accuracy and steadiness as a voiceprint to share, plus the famous singer in your voice band.',
       image: ogImage('mirror-og.png'),
       imageAlt:
         'A pitch contour rising, holding level, then falling — two glides around one steady note.',
@@ -152,7 +152,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     og: {
       title: 'Free Vocal Range Test — Find Your Lowest & Highest Note',
       description:
-        'Sing a low-to-high glide and get your measured notes, semitone span and a broad voice-type guide. Analyzed entirely in your browser.',
+        'Glide from your lowest note to your highest and get both notes, your span in semitones and a broad voice-type guide.',
       image: ogImage('vocal-range-test-og.png'),
       imageAlt:
         'A measured vocal span marked on a pitch ruler, with the lowest and highest notes lit at each end.',
@@ -451,15 +451,15 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     og: {
       title: 'Jam Rooms — sing it together, from anywhere',
       description:
-        'Open a room, share the link, and take a part. A live pitch lane for every singer, and one scoreboard for the whole room.',
+        'Open a room, share the link, and take a part. Lyrics down the left and a live pitch lane for every singer.',
       image: ogImage('jam-og.png'),
       imageAlt:
-        'MercuryPitch Jam Rooms — a rehearsal room with a mic and drum kit, and a panel showing three singers, each with their own pitch lane and a shared score.',
+        'MercuryPitch Jam Rooms: a rehearsal room with a mic and drum kit, and a panel showing three singers, each on their own pitch lane, above your own take score.',
     },
     twitter: {
       title: 'Jam Rooms — sing it together, from anywhere',
       description:
-        'A live pitch lane for every singer, and one scoreboard for the whole room. In your browser.',
+        'Take a part and sing it with friends, each on a live pitch lane of their own. In your browser.',
     },
     h1: 'Jam Rooms — sing together from anywhere',
     lede: 'Open a room, share the link, and sing a song together. Lyrics down the left, a live pitch lane for every singer in their own colour, and one transport that keeps every room in step.',
@@ -543,7 +543,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     og: {
       title: 'Voice Type Test — Soprano, Alto, Tenor or Bass?',
       description:
-        'Sing one glide and see which voice band your measured range overlaps most. A guide, not a verdict.',
+        'Glide from your lowest note to your highest and see which voice band your measured range overlaps most. A guide, not a verdict.',
       image: ogImage('voice-type-test-og.png'),
       imageAlt:
         'Four voice bands stacked as spans on a pitch scale, with one lit to show the measured range.',
@@ -641,7 +641,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     og: {
       title: 'Which Singer Has My Vocal Range?',
       description:
-        'Sing one glide and see which famous singer covers the same notes you do. Free, and your audio never leaves your device.',
+        'Glide from your lowest note to your highest, get your measured range, and meet a famous singer from the same voice band.',
       image: ogImage('which-singer-has-my-vocal-range-og.png'),
       imageAlt:
         'Two vocal ranges drawn as spans on a scale, the stretch they share lit between them.',
