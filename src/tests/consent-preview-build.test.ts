@@ -11,7 +11,6 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 
 const ROOT = resolve(__dirname, '..', '..')
@@ -27,14 +26,37 @@ interface WranglerConfig extends WranglerEnv {
   env: Record<string, WranglerEnv | undefined>
 }
 
+/**
+ * JSONC to JSON: drop comments and trailing commas outside strings. A parser
+ * of its own, not `typescript`'s: importing that here pushed type-aware
+ * `eslint src` past CI's default heap.
+ */
+function stripJsonc(text: string): string {
+  let out = ''
+  let inString = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inString) {
+      out += c
+      if (c === '\\') out += text[++i] ?? ''
+      else if (c === '"') inString = false
+    } else if (c === '"') {
+      inString = true
+      out += c
+    } else if (c === '/' && text[i + 1] === '/') {
+      while (i < text.length && text[i] !== '\n') i++
+      out += '\n'
+    } else if (c === '/' && text[i + 1] === '*') {
+      i = text.indexOf('*/', i + 2) + 1
+    } else {
+      out += c
+    }
+  }
+  return out.replace(/,(\s*[}\]])/g, '$1')
+}
+
 function wranglerConfig(): WranglerConfig {
-  const parsed = ts.parseConfigFileTextToJson(
-    'wrangler.jsonc',
-    read('wrangler.jsonc'),
-  )
-  if (parsed.error !== undefined)
-    throw new Error('wrangler.jsonc did not parse')
-  return parsed.config as WranglerConfig
+  return JSON.parse(stripJsonc(read('wrangler.jsonc'))) as WranglerConfig
 }
 
 /** The build command Wrangler runs for an env (`build` is inherited). */

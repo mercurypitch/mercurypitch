@@ -167,6 +167,7 @@ describe('consent preview (flag on, no Google tag)', () => {
     consent.trackAdConversion(consent.AD_CONVERSIONS.app_open)
     consent.trackGa4Event('cta_account_click')
 
+    expect(tagWindow().dataLayer).toBeUndefined()
     expectNothingForGoogle()
   })
 })
