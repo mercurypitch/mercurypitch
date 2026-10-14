@@ -12,18 +12,23 @@
 // px plate, a DPR 3 phone the 1290 px one (plate-loader.ts). A tablet's
 // own plate joins as a `<picture>` source in PR 5. The take's cloud layer
 // (art round 3) has the plate's own frame and widths, so it is loaded and
-// placed as a plate; the demo's (echo-clouds-demo-off-*) waits for the demo
-// in PR 4. The city light (art round 5) is one small crop per state, cut
-// from the plate's frame at the same two widths, so each is a plate too,
-// drawn in its own box inside the plate's; the demo's
-// (echo-citylight-demo-off-*) waits for the demo with its clouds.
+// placed as a plate, and so is the demo's "not like this" layer
+// (echo-clouds-demo-off-*), which only the demo's first take shows. The
+// city light (art round 5) is one small crop per state, cut from the
+// plate's frame at the same two widths, so each is a plate too, drawn in
+// its own box inside the plate's; the demo's first take has its own
+// (echo-citylight-demo-off-*), with its clouds.
 
 import type { PlateSpec } from '@/components/room-kit/plate-loader'
 import { preloadPlate } from '@/components/room-kit/plate-loader'
+import cityDemo860 from './art/echo-citylight-demo-off-860.webp'
+import cityDemo1290 from './art/echo-citylight-demo-off-1290.webp'
 import cityIntro860 from './art/echo-citylight-intro-860.webp'
 import cityIntro1290 from './art/echo-citylight-intro-1290.webp'
 import cityTake860 from './art/echo-citylight-mid-take-860.webp'
 import cityTake1290 from './art/echo-citylight-mid-take-1290.webp'
+import cloudsDemo860 from './art/echo-clouds-demo-off-860.webp'
+import cloudsDemo1290 from './art/echo-clouds-demo-off-1290.webp'
 import cloudsTake860 from './art/echo-clouds-mid-take-860.webp'
 import cloudsTake1290 from './art/echo-clouds-mid-take-1290.webp'
 import haloFinished from './art/echo-halo-finished.webp'
@@ -84,8 +89,8 @@ export const CLOUD_PLATE: PlateSpec = {
   sizes: '100vw',
 }
 
-/** The states whose city light the room shows (the demo's joins with it). */
-export type CityLightState = 'intro' | 'mid-take'
+/** The states whose city light the room shows, the demo's first take's among them. */
+export type CityLightState = 'intro' | 'mid-take' | 'demo-off'
 
 /**
  * A state's city light: its crop at both plate widths (the files' own
@@ -112,6 +117,17 @@ function cityLightPlate(
 export const CITY_LIGHT_PLATES: Readonly<Record<CityLightState, PlateSpec>> = {
   intro: cityLightPlate('intro', cityIntro860, cityIntro1290),
   'mid-take': cityLightPlate('mid-take', cityTake860, cityTake1290),
+  'demo-off': cityLightPlate('demo-off', cityDemo860, cityDemo1290),
+}
+
+/** The demo's "not like this" clouds (storyboard screen 3), as the take's. */
+export const DEMO_CLOUD_PLATE: PlateSpec = {
+  key: 'echo-clouds-demo-off',
+  candidates: [
+    { url: cloudsDemo860, width: 860 },
+    { url: cloudsDemo1290, width: 1290 },
+  ],
+  sizes: '100vw',
 }
 
 /** Each size's sprite per tint, and its halo. */
