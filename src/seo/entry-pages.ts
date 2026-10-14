@@ -21,7 +21,7 @@
 // production resolves /vocal-range-test through Cloudflare's asset-layer
 // html_handling, which only maps a clean path to a document beside it.
 
-import { OG_IMAGE_VERSIONS } from './og-image-versions'
+import { OG_IMAGE_VERSIONS } from './og-image-versions.ts'
 
 export interface FaqItem {
   q: string
