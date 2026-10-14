@@ -9,7 +9,7 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.17] - 2026-10-12
+## [0.9.17] - 2026-10-14
 
 424 commits since `v0.9.16` before this release PR, #974: PRs #858, #898,
 #947, #957 to #973 and #975 to #1001. Every commit came through a PR; none
