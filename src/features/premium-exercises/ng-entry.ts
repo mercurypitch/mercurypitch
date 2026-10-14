@@ -8,15 +8,14 @@
 // itself. Each comes from the stores and rules the room itself reads
 // (fitNgSlides, ng-slides-store.ts), so the way in and the room cannot
 // disagree. It lives here, beside the catalogue, and reads no file of the
-// room's: the room's own module graph stays out of the Sing screen's.
-//
-// There is no demo yet (it is PR 9 of the plan): nothing plays by itself.
+// room's: the room's own module graph stays out of the Sing screen's. The
+// demo's rule is ng-slides-store.ts's too (ngDemoAutoPlays).
 
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { fitNgSlides } from '@/lib/glide/glide-targets'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { exerciseLevel } from '@/stores/exercise-level'
-import { ngBest, rememberedNgNote } from '@/stores/ng-slides-store'
+import { ngBest, ngDemoAutoPlays, rememberedNgNote, } from '@/stores/ng-slides-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 
 export interface NgEntry {
@@ -24,7 +23,7 @@ export interface NgEntry {
   note: () => string | null
   /** The best at the singer's level ("Best 94% lit"), or null when none. */
   progress: () => string | null
-  /** The demo plays by itself on the way in: never, until there is one. */
+  /** The demo plays by itself on the way in. */
   demoAutoPlays: () => boolean
 }
 
@@ -45,6 +44,6 @@ export function ngEntry(): NgEntry {
       const best = ngBest(exerciseLevel())
       return best === null ? null : `Best ${best.lit}% lit`
     },
-    demoAutoPlays: () => false,
+    demoAutoPlays: ngDemoAutoPlays,
   }
 }

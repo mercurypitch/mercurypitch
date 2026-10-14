@@ -223,6 +223,23 @@ export interface VoiceContourOptions {
    * `rampSec` after each onset. Its phase is 0 at `startAt`.
    */
   vibrato?: { hz: number; cents: number; rampSec: number }
+  /** The voice's colour: an open "ooh" (the default), or a closed hum. */
+  timbre?: VoiceTimbre
+}
+
+/**
+ * How the voice is coloured: an open "ooh", or "hum", the same partials
+ * through a lower, slightly resonant filter, the dull, closed sound of a
+ * hum on "ng" (Ng slides' demo). Both keep the overtones a phone speaker
+ * needs to carry a low note.
+ */
+export type VoiceTimbre = 'ooh' | 'hum'
+
+const TIMBRE_FILTERS: Readonly<
+  Record<VoiceTimbre, { readonly hz: number; readonly q: number }>
+> = {
+  ooh: { hz: 2600, q: 0.5 },
+  hum: { hz: 950, q: 0.9 },
 }
 
 /**
@@ -327,9 +344,10 @@ export function playVoiceContour(
   voice.setPeriodicWave(oohWave(ctx))
   voice.frequency.value = options.hz
   const filter = ctx.createBiquadFilter()
+  const colour = TIMBRE_FILTERS[options.timbre ?? 'ooh']
   filter.type = 'lowpass'
-  filter.frequency.value = 2600
-  filter.Q.value = 0.5
+  filter.frequency.value = colour.hz
+  filter.Q.value = colour.q
   const level = ctx.createGain()
   level.gain.setValueAtTime(FLOOR, start)
   voice.connect(filter)

@@ -14,7 +14,7 @@
 // to 0.58 W, ahead of Merc at 0.37 W; the room draws both at the playhead
 // (0.35 W, DESIGN-ng-slides.md 1). Screen 3 is the demo's "not like this"
 // take, drawn across the whole arch; the room draws a voice only up to
-// the playhead, and the demo itself is PR 9.
+// the playhead, so the live demo (demo/) shows the arch as it scrolls by.
 
 import type { MercState } from '@/lib/merc/constants'
 import { ARCH, STORYBOARD_ASPECT } from '../bridge-geometry'
