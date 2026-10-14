@@ -120,7 +120,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'Your vocal range, accuracy and steadiness as a shareable voiceprint. Audio never leaves your device.',
     },
     h1: 'Voice Mirror — see your voice in 60 seconds',
-    lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then names the legendary singer whose range matches yours. Free, no account, and only you can hear you.',
+    lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then places your range in one of six voice bands and names a famous singer from that band. Free, no account, and only you can hear you.',
     faq: [
       {
         q: 'What is my vocal range?',
@@ -635,7 +635,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     themeColor: MIRROR_THEME_COLOR,
     title: 'Which Singer Has My Vocal Range? Match Your Voice | MercuryPitch',
     description:
-      'Sing one glide, get your measured range, and see which famous singer covers the same notes. Free, about ninety seconds, and your audio stays on your device.',
+      'Glide low to high, find the voice band your range sits in, and meet a famous singer from it. Free, about ninety seconds, and your audio stays on your device.',
     keywords:
       'which singer has my vocal range, singer with my voice, vocal range match, famous singer vocal ranges, what singer do i sound like',
     og: {
@@ -649,24 +649,24 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     twitter: {
       title: 'Which Singer Has My Vocal Range?',
       description:
-        'One glide, your measured range, and the singer who covers the same notes. Free, in your browser.',
+        'Your measured range, the voice band it sits in, and a famous singer from that band. Free, in your browser.',
     },
     h1: 'Which singer has my vocal range?',
-    lede: 'Sing one glide from your lowest comfortable note to your highest. MercuryPitch measures the notes you actually reached and shows you a singer whose range covers the same ground, on a card you can keep or share.',
+    lede: 'Glide from your lowest comfortable note to your highest and back. MercuryPitch measures the notes you actually reached, places your range in one of six voice bands and introduces a famous singer from that band, on a card you can keep or share.',
     app: {
       name: 'MercuryPitch Singer Match',
       category: 'MusicApplication',
       description:
-        'Measures a vocal range in the browser and matches it against the ranges of well-known singers, producing a shareable card.',
+        'Measures a vocal range in the browser, places it in one of six broad voice bands and pairs it with a famous singer from that band, producing a shareable card.',
     },
     faq: [
       {
         q: 'How does the match work?',
-        a: 'It compares the lowest and highest notes MercuryPitch measured from your glide against the ranges well-known singers are documented as covering, and shows the closest fit. The comparison is arithmetic on notes, not an opinion about your voice.',
+        a: 'MercuryPitch compares the lowest and highest notes it measured from your glide with six broad voice bands, from bass to soprano, and picks the band your range overlaps most. You then meet a famous singer from that band, and the same range always meets the same singer. The band is arithmetic on notes, not an opinion about your voice.',
       },
       {
         q: 'Does matching a singer mean I sound like them?',
-        a: 'No. It means you cover similar notes. Timbre, weight, vibrato, accent and technique are what make a voice recognisable, and none of those are being compared here. Someone can share a range with a singer and sound nothing like them.',
+        a: 'No. It means your range sits in the same broad voice band. Timbre, weight, vibrato, accent and technique are what make a voice recognisable, and none of those are being compared here. Someone can share a band with a singer and sound nothing like them.',
       },
       {
         q: 'Do I need to sing well to get a result?',
