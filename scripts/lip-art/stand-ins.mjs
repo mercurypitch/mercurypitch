@@ -267,7 +267,6 @@ export async function waveLitImage(src, px, geo) {
   const apx = wave.a * px
   const hpx = wave.h * px
   const edgeAt = (x) => crestRow + hpx * (1 - waveG((x - crestX) / apx, wave.f))
-  gradeLit(source, edgeAt, foam, hpx)
   // The picture's water: the wave down to its feet, then the foam line
   // (the near sea's top, a little under the wave's fitted root).
   const rootRow = crestRow + hpx
@@ -283,11 +282,25 @@ export async function waveLitImage(src, px, geo) {
   const dy = geo.waterEdge * px
   const glow = 0.012 * px
   const feather = 0.08 * px
+  // The storyboard's mound runs on to the foam line, FOAM_UNDER_ROOT under
+  // the root; the picture's own lit sea fills it (not stretched: stretched,
+  // its sparkles run into streaks), and only under that line does it fade.
+  const rootOut = fy0 + dy + hpx
+  const foamOut = rootOut + geo.foamUnderRoot * px
+  const sourceRow = (yOut) => crestRow + (yOut - fy0 - dy)
+  const fade = 0.06 * px
+  // The picture's own edge is not the model's: on the flanks it runs up to
+  // 0.08 W under it. Each column is pulled up so its painted edge meets the
+  // model's, the pull easing out to nothing at the root.
+  const lift = paintedLift(source, crestX, apx, edgeAt, rootRow, px)
   const rgba = [0, 0, 0, 0]
   for (let y = 0; y < out.height; y++) {
     for (let x = 0; x < out.width; x++) {
       const sx = crestX + (x + 0.5 - fx0)
-      const sy = crestRow + (y + 0.5 - fy0 - dy)
+      const sy0 = sourceRow(y + 0.5)
+      const col = Math.max(0, Math.min(lift.length - 1, Math.floor(sx)))
+      const span = Math.max(1, rootRow - edgeAt(sx))
+      const sy = sy0 + lift[col] * clamp((rootRow - sy0) / span, 0, 1)
       sampleReflect(source, sx - 0.5, sy - 0.5, rgba)
       const above = waterAt(sx) - sy
       // Over the water only the glow's own light shows: its black is air.
@@ -296,6 +309,18 @@ export async function waveLitImage(src, px, geo) {
         above <= 0 ? 1 : (1 - smoothstep(above / glow)) * smoothstep(light / 70)
       const side = Math.min(x + 0.5, out.width - x - 0.5)
       alpha *= smoothstep(side / feather)
+      // Under the root the wave's light pools in the sea: widest at the
+      // root, narrowing and dimming down to the foam line, where the near
+      // sea is the sea-front's and it fades out.
+      const depth = (y + 0.5 - rootOut) / (foamOut - rootOut)
+      if (depth > 0) {
+        const u = Math.abs(sx - crestX) / apx
+        const reach = 1.3 - 0.45 * Math.min(1, depth)
+        alpha *= 1 - smoothstep((u - reach + 0.35) / 0.35)
+        alpha *= 1 - 0.35 * smoothstep(depth)
+      }
+      const under = y + 0.5 - foamOut
+      if (under > 0) alpha *= 1 - smoothstep(under / fade)
       const i = (y * out.width + x) * 4
       out.data[i] = rgba[0]
       out.data[i + 1] = rgba[1]
@@ -303,11 +328,57 @@ export async function waveLitImage(src, px, geo) {
       out.data[i + 3] = Math.round(255 * alpha)
     }
   }
+  // Graded on the plate, so the zones run from the storyboard's foam line.
+  const edgeOut = (x) => fy0 + dy + hpx * (1 - waveG((x - fx0) / apx, wave.f))
+  gradeLit(
+    out,
+    edgeOut,
+    foamOut,
+    hpx,
+    (x) => Math.abs(x - fx0) < 0.9 * apx,
+    fy0 + dy + (foam - crestRow) - 0.01 * px,
+  )
   return out
 }
 
-/** Each lit zone's mean moved onto screen 2's, in Lab, twice over. */
-function gradeLit(img, edgeAt, foam, hpx) {
+/**
+ * How far under the model's edge the picture paints its own, per source
+ * column, px: the first row from the top lit past `LIGHT`, smoothed, kept
+ * between 0 and 0.12 W, zero outside the wave's flanks.
+ */
+function paintedLift(img, crestX, apx, edgeAt, rootRow, px) {
+  const LIGHT = 70
+  const { width: w, height: h, data } = img
+  const raw = new Float64Array(w)
+  for (let x = 0; x < w; x++) {
+    const u = Math.abs(x + 0.5 - crestX) / apx
+    if (u >= 0.97) continue
+    const model = edgeAt(x + 0.5)
+    let row = -1
+    for (let y = Math.max(0, Math.floor(model - 0.04 * px)); y < rootRow; y++) {
+      const i = (y * w + x) * 4
+      if (Math.max(data[i], data[i + 1], data[i + 2]) > LIGHT) {
+        row = y
+        break
+      }
+    }
+    if (row >= 0) raw[x] = clamp(row - model, 0, 0.12 * px)
+  }
+  const out = new Float64Array(w)
+  const r = Math.round(0.01 * px)
+  for (let x = 0; x < w; x++) {
+    const near = []
+    for (let k = Math.max(0, x - r); k <= Math.min(w - 1, x + r); k++) {
+      near.push(raw[k])
+    }
+    near.sort((p, q) => p - q)
+    out[x] = near[Math.floor(near.length / 2)]
+  }
+  return out
+}
+
+/** Each lit zone's mean moved onto screen 2's, in Lab, three times over. */
+function gradeLit(img, edgeAt, foam, hpx, inWave, setBelow = Infinity) {
   const { width: w, height: h, data } = img
   const targets = LIT_ZONES.map((z) => hexLab(z.hex))
   const tOf = (x, y) => {
@@ -315,8 +386,23 @@ function gradeLit(img, edgeAt, foam, hpx) {
     if (y + 0.5 < edge) return null
     return (foam - (y + 0.5)) / Math.max(foam - edge, 0.1 * hpx)
   }
-  const judged = (x) => edgeAt(x + 0.5) < foam - 0.03 * h
-  for (let pass = 0; pass < 2; pass++) {
+  // Measured inside the wave's flanks only, on the plate's opaque pixels.
+  const judged = (x) => inWave(x + 0.5)
+  // Under `setBelow` the picture's water is dark sea, too dark to move:
+  // there the zone's colour is set, with the water's own light about its
+  // row's mean kept as texture (its sparkles and ripples).
+  const rowL = new Float64Array(h)
+  for (let y = Math.max(0, Math.floor(setBelow)); y < h; y++) {
+    let sum = 0
+    let n = 0
+    for (let x = 0; x < w; x += 2) {
+      const i = (y * w + x) * 4
+      sum += rgbToLab(data[i], data[i + 1], data[i + 2])[0]
+      n += 1
+    }
+    rowL[y] = n > 0 ? sum / n : 0
+  }
+  for (let pass = 0; pass < 3; pass++) {
     const sums = LIT_ZONES.map(() => [0, 0, 0, 0])
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
@@ -325,6 +411,7 @@ function gradeLit(img, edgeAt, foam, hpx) {
         const z = LIT_ZONES.findIndex((q) => t >= q.t[0] && t < q.t[1])
         if (z < 0) continue
         const i = (y * w + x) * 4
+        if (data[i + 3] < 64) continue
         const lab = rgbToLab(data[i], data[i + 1], data[i + 2])
         sums[z][0] += lab[0]
         sums[z][1] += lab[1]
@@ -346,6 +433,15 @@ function gradeLit(img, edgeAt, foam, hpx) {
         const shift = zoneAt(LIT_ZONES, 't', shifts, clamp(t, -0.15, 1))
         const i = (y * w + x) * 4
         const lab = rgbToLab(data[i], data[i + 1], data[i + 2])
+        if (pass === 0 && y + 0.5 >= setBelow) {
+          const target = zoneAt(LIT_ZONES, 't', targets, clamp(t, -0.15, 1))
+          const texture = clamp(1.4 * (lab[0] - rowL[y]), -12, 40)
+          const set = labToRgb(target[0] + texture, target[1], target[2])
+          data[i] = set[0]
+          data[i + 1] = set[1]
+          data[i + 2] = set[2]
+          continue
+        }
         // Black stays black: the move is weighted by how much light is there.
         const k = smoothstep(lab[0] / 12)
         const rgb = labToRgb(
@@ -362,17 +458,17 @@ function gradeLit(img, edgeAt, foam, hpx) {
 }
 
 /** The lit zones' means on a plate, for the report (Lab, and dE to target). */
-export function litZoneReport(img, edgeAt, foam, hpx) {
+export function litZoneReport(img, edgeAt, foam, hpx, inWave) {
   const { width: w, height: h, data } = img
   const sums = LIT_ZONES.map(() => [0, 0, 0, 0])
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const edge = edgeAt(x + 0.5)
-      if (y + 0.5 < edge || edge >= foam - 0.03 * h) continue
+      if (y + 0.5 < edge || !inWave(x + 0.5)) continue
       const t = (foam - (y + 0.5)) / Math.max(foam - edge, 0.1 * hpx)
       const z = LIT_ZONES.findIndex((q) => t >= q.t[0] && t < q.t[1])
       const i = (y * w + x) * 4
-      if (z < 0 || data[i + 3] < 250) continue
+      if (z < 0 || data[i + 3] < 64) continue
       const lab = rgbToLab(data[i], data[i + 1], data[i + 2])
       for (let c = 0; c < 3; c++) sums[z][c] += lab[c]
       sums[z][3] += 1
@@ -507,13 +603,37 @@ function stops(c, list, y0, y1) {
     .join('')
 }
 
-/** A jagged land profile: its top at each x, W, seeded. */
-function profile(rng, x0, x1, topAt, roughness) {
+/**
+ * A rocky land profile: its top at each x, W, seeded. Three octaves of
+ * smoothed noise over `topAt`, sloping down to the horizon over `taper`
+ * at both ends, so a headland stands on the water and is not a box.
+ */
+function profile(rng, x0, x1, topAt, roughness, horizon, taper = 0.09) {
+  const octaves = [
+    { step: 0.06, amp: 1 },
+    { step: 0.02, amp: 0.45 },
+    { step: 0.007, amp: 0.2 },
+  ].map((o) => ({
+    ...o,
+    knots: Array.from(
+      { length: Math.ceil((x1 - x0) / o.step) + 2 },
+      () => rng() - 0.5,
+    ),
+  }))
+  const noise = (x) =>
+    octaves.reduce((sum, o) => {
+      const p = (x - x0) / o.step
+      const i = Math.floor(p)
+      const t = smoothstep(p - i)
+      return sum + o.amp * (o.knots[i] * (1 - t) + o.knots[i + 1] * t)
+    }, 0)
   const points = []
-  const n = Math.max(4, Math.ceil((x1 - x0) / 0.012))
+  const n = Math.max(8, Math.ceil((x1 - x0) / 0.003))
   for (let i = 0; i <= n; i++) {
     const x = x0 + ((x1 - x0) * i) / n
-    points.push([x, topAt(x) + (rng() - 0.5) * roughness])
+    const edge = smoothstep(Math.min(x - x0, x1 - x) / taper)
+    const top = topAt(x) + noise(x) * roughness
+    points.push([x, horizon - (horizon - top) * edge])
   }
   return points
 }
@@ -559,21 +679,39 @@ export function bayBackSvg(frame, px, bay) {
       ...points.map(([x, y]) => `L${fmt(c.X(x))} ${fmt(c.Y(y))}`),
       `L${fmt(c.X(points[points.length - 1][0]))} ${fmt(c.Y(horizon + 0.004))}Z`,
     ].join('')
-    return `<path d="${d}" fill="${fill}"/>`
+    // Moonlight catches each ridge: a thin pale rim along its top.
+    const rim = points
+      .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${fmt(c.X(x))} ${fmt(c.Y(y))}`)
+      .join('')
+    return `<path d="${d}" fill="${fill}"/><path d="${rim}" fill="none" stroke="#3a5a8a" stroke-opacity="0.45" stroke-width="${fmt(c.L(0.003))}" filter="url(#soft2)"/>`
   }
   const yH = (h) => h * H
+  // A far ridge behind the cliffs, lower and lighter, all along the bay.
+  body += land(
+    profile(
+      rng,
+      frame.left,
+      frame.left + frame.width,
+      () => yH(0.285),
+      0.025,
+      horizon,
+      0.02,
+    ),
+    '#0d1c36',
+  )
   body += land(
     profile(
       rng,
       frame.left,
       0.215,
       (x) => yH(0.19 + 0.04 * smoothstep((x - 0.02) / 0.19)),
-      0.02,
+      0.05,
+      horizon,
     ),
     '#060f20',
   )
   body += land(
-    profile(rng, 0.2, 0.445, () => yH(0.236), 0.012),
+    profile(rng, 0.2, 0.445, () => yH(0.236), 0.02, horizon, 0.03),
     '#08142a',
   )
   body += land(
@@ -582,12 +720,13 @@ export function bayBackSvg(frame, px, bay) {
       0.885,
       1.12,
       (x) => yH(0.25 - 0.025 * smoothstep((x - 0.885) / 0.1)),
-      0.018,
+      0.05,
+      horizon,
     ),
     '#060f20',
   )
   body += land(
-    profile(rng, 1.11, 1.36, () => yH(0.262), 0.01),
+    profile(rng, 1.11, 1.36, () => yH(0.262), 0.02, horizon, 0.03),
     '#0a162c',
   )
   body += land(
@@ -596,7 +735,8 @@ export function bayBackSvg(frame, px, bay) {
       1.42,
       frame.left + frame.width,
       (x) => yH(0.24 - 0.03 * smoothstep((x - 1.42) / 0.12)),
-      0.02,
+      0.05,
+      horizon,
     ),
     '#060f20',
   )
@@ -640,14 +780,14 @@ export function bayBackSvg(frame, px, bay) {
 export function seaFrontSvg(frame, px) {
   const c = canvas(frame, px)
   const rng = seeded(47)
-  let body = `<rect x="0" y="${fmt(c.L(0.012))}" width="${c.width}" height="${c.height}" fill="url(#near)"/>`
+  let body = `<rect x="0" y="0" width="${c.width}" height="${c.height}" fill="url(#near)"/>`
   // The foam line, soft and broken, wrapping at the tile's edges.
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 40; i++) {
     const x = rng()
     const w = 0.02 + rng() * 0.07
-    const y = 0.006 + (rng() - 0.5) * 0.008
+    const y = 0.03 + (rng() - 0.5) * 0.02
     for (const shift of [0, -1, 1]) {
-      body += `<rect x="${fmt(c.L(x + shift))}" y="${fmt(c.L(y))}" width="${fmt(c.L(w))}" height="${fmt(c.L(0.004 + rng() * 0.003))}" rx="${fmt(c.L(0.002))}" fill="#9fd4ee" opacity="${fmt(0.25 + rng() * 0.35)}" filter="url(#foam)"/>`
+      body += `<rect x="${fmt(c.L(x + shift))}" y="${fmt(c.L(y))}" width="${fmt(c.L(w))}" height="${fmt(c.L(0.004 + rng() * 0.003))}" rx="${fmt(c.L(0.002))}" fill="#9fd4ee" opacity="${fmt(0.12 + rng() * 0.22)}" filter="url(#foam)"/>`
     }
   }
   // Ripple streaks, shorter and dimmer with depth.
@@ -661,7 +801,8 @@ export function seaFrontSvg(frame, px) {
     }
   }
   const defs = [
-    `<linearGradient id="near" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#07203e"/><stop offset="100%" stop-color="#030e1c"/></linearGradient>`,
+    // Its top fades in over 0.06 W: the far sea runs into it with no seam.
+    `<linearGradient id="near" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#07203e" stop-opacity="0"/><stop offset="${fmt((0.06 / frame.height) * 100)}%" stop-color="#07203e" stop-opacity="1"/><stop offset="100%" stop-color="#030e1c"/></linearGradient>`,
     `<filter id="foam" x="-20%" y="-100%" width="140%" height="300%"><feGaussianBlur stdDeviation="${fmt(c.L(0.0015))}"/></filter>`,
   ].join('')
   return svgDoc(c, body, defs)

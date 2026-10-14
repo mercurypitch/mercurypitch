@@ -168,7 +168,21 @@ const pick = {
   foamRow: PICK_MEASURE.foam_row_H,
 }
 
-const waveGeo = { wave, frame: WAVE_FRAME, pick, waterEdge: dots.waterEdge }
+/**
+ * Screen 2's foam line, W under the wave's root: the lit wave is a mound
+ * of water from the path down to it (L0 2.3, the lit zones' t = 0).
+ */
+const FOAM_UNDER_ROOT = r4(
+  BOARD.screens['2'].lit_zones.foam_y_H_median * ASPECT - wave.rootY,
+)
+
+const waveGeo = {
+  wave,
+  frame: WAVE_FRAME,
+  pick,
+  waterEdge: dots.waterEdge,
+  foamUnderRoot: FOAM_UNDER_ROOT,
+}
 
 /** The wave's dotted line in a wave plate's pixels (the unlit grade's depth). */
 const lineInPlate = (px) => {
@@ -307,14 +321,14 @@ async function reportZones() {
   const top = -WAVE_FRAME.top * px + dots.waterEdge * px
   const edgeAt = (x) =>
     top + wave.h * px * (1 - waveG((x - cx) / (wave.a * px), wave.f))
-  const foam =
-    top +
-    (pick.foamRow - pick.crestRow) *
-      (pick.height / pick.width) *
-      (wave.h / pick.h) *
-      pick.width *
-      (px / pick.width)
-  const zones = litZoneReport(img, edgeAt, foam, wave.h * px)
+  const foam = top + (wave.h + FOAM_UNDER_ROOT) * px
+  const zones = litZoneReport(
+    img,
+    edgeAt,
+    foam,
+    wave.h * px,
+    (x) => Math.abs(x - cx) < 0.9 * wave.a * px,
+  )
   console.log(
     'wave-lit zones, dE2000 to screen 2:',
     zones.map((z) => `${z.zone.join('..')}: ${z.dE ?? '-'}`).join(', '),
