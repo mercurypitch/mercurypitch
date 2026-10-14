@@ -58,8 +58,11 @@ export interface NgSlidesRoomProps {
   onSettled?: () => void
 }
 
-/** Merc's bubble sits this far down his canvas: just over his head. */
-const BUBBLE_OVER_MERC = 0.3
+/**
+ * Merc's bubble sits this far down his canvas: just over his head (the
+ * top of his head is 0.21 down it, measured on the intro fixture).
+ */
+const BUBBLE_OVER_MERC = 0.17
 /** At the result the bubble sits this far over the controls, px. */
 const RESULT_BUBBLE_GAP = 12
 

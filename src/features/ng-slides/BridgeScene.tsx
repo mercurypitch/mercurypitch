@@ -36,7 +36,7 @@ import { ARCH, NOTE_NAMES, PARALLAX, PLATES, PLAYHEAD_X, RESULT_VIEW, SHIMMER, S
 import type { GlassImages } from './bridge-glass'
 import { createArchGlass } from './bridge-glass'
 import type { BridgeLayout, MercBox } from './bridge-layout'
-import { mercBoxAt, mercResultBox, pitchY, yOf } from './bridge-layout'
+import { MERC_INTRO_X, mercBoxAt, mercResultBox, pitchY, yOf, } from './bridge-layout'
 import { apexX, INTRO_CAMERA } from './bridge-scroll'
 import type { BridgeView, TraceSample } from './bridge-view'
 import type { BridgeRibbonApi, StrokePoint } from './BridgeRibbon'
@@ -232,18 +232,23 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
     })
   }
 
+  /** The last frame's voice, for a ribbon that mounts after it. */
+  let lastTrace: { trace: readonly TraceSample[]; camera: number } | null = null
+
   const view: BridgeView = {
     frame: (f) => {
       moveTo(f.camera)
       glass.paint(f.strips)
+      lastTrace = { trace: f.trace, camera: f.camera }
       ribbon?.draw(strokesOf(f.trace, f.camera, props.layout), ribbonScale())
       placeMerc(mercBoxAt(props.layout, f.merc.x, f.merc.feetY))
     },
     reset: (at) => {
       glass.reset()
+      lastTrace = null
       ribbon?.draw([], ribbonScale())
       moveTo(at)
-      placeMerc(mercBoxAt(props.layout, PLAYHEAD_X, ARCH.deckY))
+      placeMerc(mercBoxAt(props.layout, MERC_INTRO_X, ARCH.deckY))
       setResultReady(false)
     },
     result: (lit) => {
@@ -267,7 +272,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
       river.appendChild(riverPlate.picture)
     }
     moveTo(camera)
-    placeMerc(mercBoxAt(props.layout, PLAYHEAD_X, ARCH.deckY))
+    placeMerc(mercBoxAt(props.layout, MERC_INTRO_X, ARCH.deckY))
     props.onReady(view)
     if (props.onSettled !== undefined && rootEl !== undefined) {
       const done = props.onSettled
@@ -493,6 +498,13 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
           scale={ribbonScale()}
           onReady={(api) => {
             ribbon = api
+            // The scene's first frame can come before the ribbon mounts.
+            if (lastTrace !== null) {
+              api.draw(
+                strokesOf(lastTrace.trace, lastTrace.camera, props.layout),
+                ribbonScale(),
+              )
+            }
           }}
         />
         <img

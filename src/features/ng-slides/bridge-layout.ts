@@ -17,6 +17,12 @@ import { ARCH, NOTE_NAMES, STORYBOARD_ASPECT } from './bridge-geometry'
 
 /** Merc's canvas on the bridge, square, W (his body is about half of it). */
 export const MERC_SIZE_W = 0.36
+/**
+ * Merc's centre at the intro (screen 1), W: at the first arch's foot, on
+ * the pier, clear of the root's name. Measured on the storyboard crop: his
+ * body spans 0.08 to 0.33 W.
+ */
+export const MERC_INTRO_X = 0.21
 /** Merc at the result (screen 4): small, at the bridge's far end. */
 export const MERC_RESULT = { x: 0.89, feetH: 0.535, sizeW: 0.2 } as const
 /** Px kept between the chip and what is drawn under it. */

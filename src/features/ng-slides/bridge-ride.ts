@@ -17,8 +17,8 @@
 // changes.
 
 import type { MercState } from '@/lib/merc/constants'
-import { ARCH } from './bridge-geometry'
-import { pitchY } from './bridge-layout'
+import { ARCH, PLAYHEAD_X } from './bridge-geometry'
+import { MERC_INTRO_X, pitchY } from './bridge-layout'
 
 /** What the run is doing, as Merc's choreography sees it. */
 export type RideMoment =
@@ -74,4 +74,17 @@ export function rideStep(current: number, target: number, dt: number): number {
   if (!(dt > 0)) return current
   const k = 1 - Math.exp(-dt / RIDE_TAU_SEC)
   return current + (target - current) * k
+}
+
+/**
+ * His x (W) at path time `t`: from his place on the pier at the intro to
+ * the playhead over the count-in (t from -countIn to 0), eased at both
+ * ends, as the bridge rolls the first arch's foot in under him. From the
+ * first slide on he stays at the playhead.
+ */
+export function rideX(t: number, countIn: number): number {
+  if (t >= 0 || countIn <= 0) return PLAYHEAD_X
+  const p = Math.min(1, Math.max(0, (t + countIn) / countIn))
+  const eased = p * p * (3 - 2 * p)
+  return MERC_INTRO_X + (PLAYHEAD_X - MERC_INTRO_X) * eased
 }

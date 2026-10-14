@@ -235,7 +235,8 @@
 
 .still .take,
 .still .result,
-.still .merc {
+.still .merc,
+.still[data-result='true'] .merc {
   transition: none;
 }
 

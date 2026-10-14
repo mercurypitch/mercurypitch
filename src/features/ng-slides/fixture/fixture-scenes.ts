@@ -18,7 +18,7 @@
 
 import type { MercState } from '@/lib/merc/constants'
 import { ARCH, STORYBOARD_ASPECT } from '../bridge-geometry'
-import { archG } from '../bridge-layout'
+import { archG, MERC_INTRO_X } from '../bridge-layout'
 import { apexX, INTRO_CAMERA } from '../bridge-scroll'
 import type { TraceSample } from '../bridge-view'
 import type { NgPhase } from '../ng-machine'
@@ -100,8 +100,8 @@ export const FIXTURE_SCENES = {
     camera: INTRO_CAMERA,
     lit: NONE,
     trace: [],
-    // By eye: Merc stands at the arch's left foot, on the pier.
-    merc: { x: 0.3, feetY: ARCH.deckY },
+    // Merc stands at the arch's left foot, on the pier (the room's place).
+    merc: { x: MERC_INTRO_X, feetY: ARCH.deckY },
     mercState: 'sing',
     chip: null,
     line: 'Hum ng, like the end of sing. Slide up to E3 and back.',
@@ -133,7 +133,16 @@ export const FIXTURE_SCENES = {
     phase: 'run',
     camera: DEMO_CAMERA,
     // By eye: a short lit patch at the foot, and one where a step met the line.
-    lit: [[[-1, -0.93], [-0.42, -0.37]], [], [], [], []],
+    lit: [
+      [
+        [-1, -0.93],
+        [-0.42, -0.37],
+      ],
+      [],
+      [],
+      [],
+      [],
+    ],
     // By eye: the amber steps, x from and to (W) at a height (H).
     trace: stepped(DEMO_CAMERA, [
       [0.33, 0.47, 0.505],

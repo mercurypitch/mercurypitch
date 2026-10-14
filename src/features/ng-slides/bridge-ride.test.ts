@@ -4,9 +4,9 @@
 
 import { describe, expect, it } from 'vitest'
 import { STATES } from '@/lib/merc/constants'
-import { ARCH } from './bridge-geometry'
-import { pitchY } from './bridge-layout'
-import { RIDE_STATES, RIDE_TAU_SEC, rideStep, rideTarget } from './bridge-ride'
+import { ARCH, PLAYHEAD_X } from './bridge-geometry'
+import { MERC_INTRO_X, pitchY } from './bridge-layout'
+import { RIDE_STATES, RIDE_TAU_SEC, rideStep, rideTarget, rideX, } from './bridge-ride'
 
 describe('where his feet go', () => {
   it('follows the voice while it sounds: on the line, under it flat, over it sharp', () => {
@@ -42,5 +42,28 @@ describe('his states', () => {
     for (const state of Object.values(RIDE_STATES)) {
       expect(STATES).toContain(state)
     }
+  })
+})
+
+describe('his walk to the playhead', () => {
+  it('starts on the pier and ends at the playhead as the first slide starts', () => {
+    expect(rideX(-1.7, 1.7)).toBeCloseTo(MERC_INTRO_X, 9)
+    expect(rideX(0, 1.7)).toBe(PLAYHEAD_X)
+    expect(rideX(12, 1.7)).toBe(PLAYHEAD_X)
+  })
+
+  it('moves one way only, and gently at both ends', () => {
+    let last = rideX(-2, 2)
+    for (let t = -2; t <= 0; t += 0.05) {
+      const x = rideX(t, 2)
+      expect(x).toBeGreaterThanOrEqual(last - 1e-12)
+      last = x
+    }
+    expect(rideX(-1.95, 2) - rideX(-2, 2)).toBeLessThan(0.002)
+    expect(rideX(-1, 2)).toBeCloseTo((MERC_INTRO_X + PLAYHEAD_X) / 2, 9)
+  })
+
+  it('stays at the playhead when there is no count-in', () => {
+    expect(rideX(-0.5, 0)).toBe(PLAYHEAD_X)
   })
 })

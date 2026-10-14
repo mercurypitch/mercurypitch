@@ -51,9 +51,9 @@ import { setExerciseFocus } from '@/stores/native-shell-store'
 import { rememberedNgNote } from '@/stores/ng-slides-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { preloadNgResult } from './bridge-art'
-import { ARCH, PLAYHEAD_X } from './bridge-geometry'
+import { ARCH } from './bridge-geometry'
 import type { RideMoment } from './bridge-ride'
-import { RIDE_STATES, rideStep, rideTarget } from './bridge-ride'
+import { RIDE_STATES, rideStep, rideTarget, rideX } from './bridge-ride'
 import type { BridgeScroll } from './bridge-scroll'
 import { createBridgeScroll, INTRO_CAMERA } from './bridge-scroll'
 import { createBridgeTones } from './bridge-tones'
@@ -354,7 +354,7 @@ export function useNgController(): NgController {
       camera: run.scroll.at(t),
       strips: run.take.drain(),
       trace: run.take.trace,
-      merc: { x: PLAYHEAD_X, feetY: run.feetY },
+      merc: { x: rideX(t, run.plan.countIn), feetY: run.feetY },
     })
     breathTone(run, t)
     showSlide(run, t)
