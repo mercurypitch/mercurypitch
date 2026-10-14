@@ -279,6 +279,15 @@
   text-wrap: pretty;
 }
 
+/* What using the gift earns, in the coins' amber. */
+.keepBeat .giftOffer {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #f6c768;
+  text-wrap: pretty;
+}
+
 /* ── The action ──────────────────────────────────────────────── */
 
 .keepBeat .keepFact {
@@ -432,6 +441,10 @@
   }
 
   .keepWithGift .giftFine {
+    font-size: 1rem;
+  }
+
+  .keepWithGift .giftOffer {
     font-size: 1rem;
   }
 

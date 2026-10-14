@@ -17,7 +17,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, createUniqueId, ErrorBoundary, lazy, onMount, Show, Suspense, } from 'solid-js'
 import type { FeaturedPromo } from '@/db/services/billing-service'
-import { GIFT_ARRIVES, GIFT_BODY, giftTitle } from '@/lib/launch-gift-copy'
+import { GIFT_ARRIVES, GIFT_BODY, giftOfferLine, giftTitle, } from '@/lib/launch-gift-copy'
 import type * as PromoStoreModule from '@/stores/promo-store'
 import { askForAccount, asksForAccount, hostDidNotLoad, hostFailed, hostWanted, signUpAsked, } from './account-ask'
 import { trackFunnel } from './funnel'
@@ -106,7 +106,8 @@ const AccountAsk: Component = () => {
 }
 
 /** The launch gift, in the words onboarding's Keep uses for it
- *  (src/lib/launch-gift-copy.ts). */
+ *  (src/lib/launch-gift-copy.ts), and what using it earns while the server
+ *  states the launch offer. */
 const GiftLine: Component<{ promo: FeaturedPromo }> = (props) => {
   const until = () => offerEndDay(props.promo.expiresAt)
   return (
@@ -126,6 +127,13 @@ const GiftLine: Component<{ promo: FeaturedPromo }> = (props) => {
       </p>
       <p class="mirror-keep-gift-line">{giftTitle(props.promo.credits)}</p>
       <p class="mirror-keep-gift-body">{GIFT_BODY}</p>
+      <Show when={giftOfferLine(props.promo)}>
+        {(line) => (
+          <p class="mirror-keep-gift-offer" data-testid="gift-offer-line">
+            {line()}
+          </p>
+        )}
+      </Show>
     </div>
   )
 }

@@ -129,6 +129,74 @@ describe('Keep with the launch gift', () => {
   })
 })
 
+describe('what using the gift earns, under it', () => {
+  const TERMS = {
+    goal: 5,
+    deadline: '2026-10-28T23:59:59.999Z',
+    bonusCredits: 30,
+  }
+  const LINE =
+    'Use all 5 by 28 October and your next credit pack comes with 30 extra credits.'
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function at(iso: string): void {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(iso))
+  }
+
+  it('says it on the Keep card, under the gift, while the offer is live', () => {
+    at('2026-10-14T12:00:00.000Z')
+    renderKeep({ gift: { ...LAUNCH, offer: TERMS } })
+
+    const line = screen.getByTestId('gift-offer-line')
+    expect(line).toHaveTextContent(LINE)
+    // Beneath the gift's own words, inside its card.
+    const card = screen.getByTestId('keep-gift')
+    expect(card).toContainElement(line)
+    expect(
+      screen
+        .getByText('Up to 5 free song separations')
+        .compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('takes the count, the day and the bonus from the server', () => {
+    at('2026-10-14T12:00:00.000Z')
+    renderKeep({
+      gift: {
+        ...LAUNCH,
+        credits: 3,
+        offer: {
+          goal: 3,
+          deadline: '2026-11-02T23:59:59.999Z',
+          bonusCredits: 12,
+        },
+      },
+    })
+
+    expect(screen.getByTestId('gift-offer-line')).toHaveTextContent(
+      'Use all 3 by 2 November and your next credit pack comes with 12 extra credits.',
+    )
+  })
+
+  it('leaves the Keep card without it when the server states no offer', () => {
+    at('2026-10-14T12:00:00.000Z')
+    renderKeep({ gift: { ...LAUNCH, offer: null } })
+    expect(screen.getByTestId('keep-gift')).toBeInTheDocument()
+    expect(screen.queryByTestId('gift-offer-line')).toBeNull()
+  })
+
+  it('leaves the Keep card without it once the deadline has passed', () => {
+    at('2026-10-29T00:00:00.000Z')
+    renderKeep({ gift: { ...LAUNCH, offer: TERMS } })
+    expect(screen.getByTestId('keep-gift')).toBeInTheDocument()
+    expect(screen.queryByTestId('gift-offer-line')).toBeNull()
+  })
+})
+
 describe('Keep with no code on offer', () => {
   it('trades the gift for a third row and a plain fact', () => {
     const { beat } = renderKeep()
@@ -240,6 +308,32 @@ describe('the Map gift lines', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Claim them' }))
     expect(onGift).toHaveBeenCalledOnce()
+  })
+
+  it.each(['join', 'waiting'] as const)(
+    'says what using the gift earns under the %s line',
+    (kind) => {
+      const line =
+        'Use all 5 by 28 October and your next credit pack comes with 30 extra credits.'
+      const { map } = renderMap({ kind, credits: 5, offer: line })
+
+      const shown = screen.getByTestId('gift-offer-line')
+      expect(shown).toHaveTextContent(line)
+      expect(map).toContainElement(shown)
+    },
+  )
+
+  it('says nothing of the offer under the gift lines without one', () => {
+    renderMap({ kind: 'join', credits: 5, offer: null })
+    expect(screen.queryByTestId('gift-offer-line')).toBeNull()
+  })
+
+  it('keeps the offer off the way back to Keep, which names no count', () => {
+    renderMap(
+      { kind: 'keep', credits: 5, offer: 'Use all 5 by 28 October' },
+      vi.fn(),
+    )
+    expect(screen.queryByTestId('gift-offer-line')).toBeNull()
   })
 
   it('keeps the plain way back when there is no gift', () => {

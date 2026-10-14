@@ -178,6 +178,37 @@ describe('fetchFeaturedPromo', () => {
     })
   })
 
+  it('keeps the launch offer terms the server states beside the code', async () => {
+    const offer = {
+      goal: 5,
+      deadline: '2026-10-28T23:59:59.999Z',
+      bonusCredits: 30,
+    }
+    answer({ promo: { ...LAUNCH, offer } })
+    expect(await fetchFeaturedPromo('https://api.test')).toEqual({
+      ...LAUNCH,
+      offer,
+    })
+  })
+
+  it.each([
+    ['a deadline that does not parse', { deadline: 'soon' }],
+    ['no bonus', { bonusCredits: 0 }],
+    ['a fractional goal', { goal: 2.5 }],
+  ])('keeps the code and drops offer terms with %s', async (_label, bad) => {
+    const offer = {
+      goal: 5,
+      deadline: '2026-10-28T23:59:59.999Z',
+      bonusCredits: 30,
+      ...bad,
+    }
+    answer({ promo: { ...LAUNCH, offer } })
+    expect(await fetchFeaturedPromo('https://api.test')).toEqual({
+      ...LAUNCH,
+      offer: null,
+    })
+  })
+
   it('returns null when nothing is featured', async () => {
     answer({ promo: null })
     expect(await fetchFeaturedPromo('https://api.test')).toBeNull()

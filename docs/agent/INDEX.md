@@ -423,12 +423,12 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/piano/instrument/piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 1.4k |
 | [src/features/progress/model.ts](../../src/features/progress/model.ts) | 1.4k |
 | [src/stores/sync-store.ts](../../src/stores/sync-store.ts) | 1.4k |
+| [workers/db-worker/src/billing.ts](../../workers/db-worker/src/billing.ts) | 1.4k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/features/guitar-night/GuitarNightScoreDebug.tsx](../../src/features/guitar-night/GuitarNightScoreDebug.tsx) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |
 | [src/lib/jam/service.ts](../../src/lib/jam/service.ts) | 1.3k |
 | [src/pages/GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k |
-| [workers/db-worker/src/billing.ts](../../workers/db-worker/src/billing.ts) | 1.3k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
 | [src/features/sing-room/SingRoomStage.tsx](../../src/features/sing-room/SingRoomStage.tsx) | 1.2k |
 <!-- END:GENERATED heavy-files -->

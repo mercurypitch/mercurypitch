@@ -114,7 +114,7 @@ const GIFT = {
  * order, so the catch-all goes first (see
  * google-signup-voiceprint-adoption.spec.ts).
  */
-async function mockCloud(page: Page): Promise<Cloud> {
+async function mockCloud(page: Page, gift: object = GIFT): Promise<Cloud> {
   const cloud: Cloud = { uploaded: [], registered: [], googleStarts: [] }
   const json = (route: Route, status: number, body: unknown) =>
     route.fulfill({
@@ -140,7 +140,7 @@ async function mockCloud(page: Page): Promise<Cloud> {
     await json(route, 200, [])
   })
   await page.route('**/cloud/api/billing/promo/featured', (route) =>
-    json(route, 200, { promo: GIFT }),
+    json(route, 200, { promo: gift }),
   )
   await page.route('**/cloud/api/auth/register', async (route) => {
     cloud.registered.push(route.request().postDataJSON() as Sent)
@@ -287,5 +287,42 @@ test.describe('the Voice Mirror account ask', () => {
       takenAt: TAKEN_AT,
     })
     await expect(page.getByTestId(ASK)).toHaveCount(0)
+  })
+
+  test('says what using the gift earns, inside the gift, on a 390 px phone', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await mockCloud(page, {
+      ...GIFT,
+      offer: {
+        goal: 5,
+        deadline: '2099-10-28T23:59:59.999Z',
+        bonusCredits: 30,
+      },
+    })
+    await seedSignedOutRun(page)
+    await page.goto('/vocal-range-test#take-1')
+
+    const gift = page.getByTestId('mirror-account-gift')
+    const line = gift.getByTestId('gift-offer-line')
+    await line.scrollIntoViewIfNeeded()
+    await expect(line).toHaveText(
+      'Use all 5 by 28 October and your next credit pack comes with 30 extra credits.',
+    )
+    const [lineBox, giftBox] = await Promise.all([
+      line.boundingBox(),
+      gift.boundingBox(),
+    ])
+    expect(lineBox).not.toBeNull()
+    expect(giftBox).not.toBeNull()
+    if (lineBox === null || giftBox === null) return
+    expect(lineBox.x).toBeGreaterThanOrEqual(giftBox.x)
+    expect(lineBox.x + lineBox.width).toBeLessThanOrEqual(
+      giftBox.x + giftBox.width,
+    )
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(390)
   })
 })

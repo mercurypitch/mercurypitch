@@ -20,6 +20,7 @@ import { shareOutcomeMessage } from '@/features/mirror/card-renderer'
 import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
+import { giftOfferLine } from '@/lib/launch-gift-copy'
 import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
@@ -133,13 +134,21 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       const waiting = giftWaiting()
       return waiting === null
         ? null
-        : { kind: 'waiting', credits: waiting.credits }
+        : {
+            kind: 'waiting',
+            credits: waiting.credits,
+            offer: giftOfferLine(waiting),
+          }
     }
     const promo = offeredPromo()
     if (promo === null || micDenied()) return null
+    const kind = voiceprint() !== null ? 'keep' : 'join'
     return {
-      kind: voiceprint() !== null ? 'keep' : 'join',
+      kind,
       credits: promo.credits,
+      // The keep line names the gift without its count, so it carries no
+      // offer line: "Use all 5" would point at nothing on screen.
+      offer: kind === 'join' ? giftOfferLine(promo) : null,
     }
   }
 
