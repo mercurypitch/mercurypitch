@@ -130,6 +130,8 @@ interface Live {
   feetY: number
   lastFrameAt: number
   resultAsked: boolean
+  /** The last slide whose start hushed Merc (-1 before the first). */
+  hushed: number
 }
 
 export function useNgController(): NgController {
@@ -303,13 +305,18 @@ export function useNgController(): NgController {
     const slide = slideOf(run, t)
     const text = `Slide ${slide + 1} of ${run.plan.path.arches.length}`
     if (untrack(chip) !== text) setChip(text)
-    // No words while the singer slides: Merc speaks in the breaths.
+    // No words while the singer slides: Merc speaks in the breaths. He is
+    // hushed once, as each slide starts, so a line said as a slide ends
+    // stays up even when the screen's clock is a hair behind the frames'.
     const segment = t < 0 ? null : segmentAt(run.plan.path, t)
     const sliding =
       segment !== null &&
       segment.phase !== 'breath' &&
       segment.phase !== 'landing'
-    if (sliding && untrack(line) !== '') setLine('')
+    if (sliding && segment.arch > run.hushed) {
+      run.hushed = segment.arch
+      if (untrack(line) !== '') setLine('')
+    }
     if (slide === run.plan.path.arches.length - 1 && !run.resultAsked) {
       run.resultAsked = true
       preloadNgResult()
@@ -411,6 +418,7 @@ export function useNgController(): NgController {
       feetY: ARCH.deckY,
       lastFrameAt: performance.now(),
       resultAsked: false,
+      hushed: -1,
     }
     live = run
     openWindow()
