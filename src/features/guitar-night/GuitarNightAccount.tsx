@@ -10,6 +10,7 @@ import { UserRound } from '@/components/icons'
 import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { accountHeld, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { account, credits, refreshAccount, signOutStandalone, } from '@/lib/standalone-account'
+import type { GiftSpendLine } from '@/stores/launch-gift-store'
 import { syncPromoClaims } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './GuitarNightApp.module.css'
@@ -18,6 +19,18 @@ interface GuitarNightAccountProps {
   onSignIn: () => void
   onGoogleRedirectResult?: (result: GoogleRedirectResult) => void
 }
+
+/**
+ * What the launch gift's credits do in Guitar Night, said in its toast after
+ * "5 credits added.". They pay for "Separate guitar", the cloud split of the
+ * backing into drums, bass and guitar (GuitarNightApp.tsx). That split is
+ * priced above one credit (billing-core's demucs-6s multiplier), so a lone
+ * credit goes toward it.
+ */
+export const guitarNightGiftLine: GiftSpendLine = (credits) =>
+  credits === 1
+    ? 'Put it toward separating the guitar from a song.'
+    : 'Use them to separate the guitar from a song.'
 
 export function GuitarNightAccount(props: GuitarNightAccountProps) {
   const [menuOpen, setMenuOpen] = createSignal(false)
@@ -80,6 +93,7 @@ export function GuitarNightAccount(props: GuitarNightAccountProps) {
             // password account's confirmation is the link's to say.
             verified: current.provider !== 'password',
           },
+      guitarNightGiftLine,
     )
   })
 

@@ -10,7 +10,8 @@
 //
 //   - Google, Apple or a mailed code: the email is confirmed as the account
 //     is made, so the claim is moments old when the app next reads /me.
-//     "5 credits added. Try one in Karaoke Night."
+//     "5 credits added. Try one in Karaoke Night." A room that spends a
+//     credit on something of its own says that instead (GiftSpendLine).
 //   - the confirm link: "Email confirmed. 5 credits added."
 //   - a password sign-up: the claim waits for the link, and the sign-up
 //     says so. "Confirm your email to get up to 5 free song separations."
@@ -64,6 +65,15 @@ interface AccountClaims {
 }
 
 const [known, setKnown] = createSignal<AccountClaims | null>(null)
+
+/**
+ * What the credits do where the toast is said, after "5 credits added.":
+ * Guitar Night and Drum Night spend them on their own band split, not in
+ * Karaoke Night. Given the count, for a line that reads right for one.
+ */
+export type GiftSpendLine = (credits: number) => string
+
+const KARAOKE_SPEND: GiftSpendLine = () => 'Try one in Karaoke Night.'
 
 /** The account `syncPromoClaims` describes, as its caller knows it. */
 export interface GiftAccount {
@@ -234,20 +244,26 @@ let confirmPending = false
  * Read what the account signed in here has claimed, and say so when a claim
  * is news. Call it whenever the signed-in account may have changed: sign-in,
  * sign-out, a page opened while signed in. `null` is nobody signed in.
+ * `spend` is what the credits do here, for a room that does not send the
+ * singer to Karaoke Night.
  */
 export async function syncPromoClaims(
   account: GiftAccount | null,
+  spend: GiftSpendLine = KARAOKE_SPEND,
 ): Promise<void> {
   // Called without waiting on it: a failed read means no toast, never an
   // unhandled rejection.
   try {
-    await readClaims(account)
+    await readClaims(account, spend)
   } catch (err) {
     console.warn('[launch-gift] could not read the promo claims:', err)
   }
 }
 
-async function readClaims(account: GiftAccount | null): Promise<void> {
+async function readClaims(
+  account: GiftAccount | null,
+  spend: GiftSpendLine,
+): Promise<void> {
   if (account === null || !account.upgraded || !hasValidToken()) {
     setKnown(null)
     return
@@ -263,7 +279,7 @@ async function readClaims(account: GiftAccount | null): Promise<void> {
   const news = await giftNews(claims, account.verified)
   if (news?.kind === 'claimed') {
     showNotification(
-      `${creditsAdded(news.claim.credits)}. Try one in Karaoke Night.`,
+      `${creditsAdded(news.claim.credits)}. ${spend(news.claim.credits)}`,
       'success',
     )
   } else if (news?.kind === 'run-out') {

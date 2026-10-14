@@ -216,7 +216,7 @@ These are the rules that break things when ignored.
 | [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 500 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
 | [session-store.ts](../../src/stores/session-store.ts) | 500 | Session Store — Unified session management with localStorage |
 | [jam-diagnostics-store.ts](../../src/stores/jam-diagnostics-store.ts) | 400 | ── Jam diagnostics store The numbers behind the Jam network panel, and the loop that collects them. |
-| [launch-gift-store.ts](../../src/stores/launch-gift-store.ts) | 350 | launch-gift-store — the launch gift, as this browser sees it The server claims the featured promo code the moment an account's email is c... |
+| [launch-gift-store.ts](../../src/stores/launch-gift-store.ts) | 400 | launch-gift-store — the launch gift, as this browser sees it The server claims the featured promo code the moment an account's email is c... |
 | [notifications-store.ts](../../src/stores/notifications-store.ts) | 350 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
 | [jam-pitch-provision-store.ts](../../src/stores/jam-pitch-provision-store.ts) | 300 | ── Working out a room song's pitch line A song that has never been opened in the stem mixer has no stored analysis, so `sessionSongNotes`... |
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 300 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
