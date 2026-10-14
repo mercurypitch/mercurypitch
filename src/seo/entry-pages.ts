@@ -103,13 +103,13 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     themeColor: MIRROR_THEME_COLOR,
     title: 'Voice Mirror — See Your Voice in 60 Seconds | MercuryPitch',
     description:
-      'Sing for 60 seconds and get your vocal range, pitch accuracy and steadiness as a shareable voiceprint. Free, and your audio never leaves your device.',
+      'See your voice in 60 seconds: your vocal range, pitch accuracy and steadiness as a shareable voiceprint. Free, and your audio never leaves your device.',
     keywords:
       'vocal range test, tone deaf test, pitch accuracy test, voice type, singing test, free vocal test',
     og: {
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
       description:
-        'Sing for 60 seconds and get your range, accuracy and steadiness as a voiceprint to share, plus a famous singer of your voice type.',
+        'See your voice in 60 seconds: your range, accuracy and steadiness as a voiceprint to share, plus a famous singer of your voice type.',
       image: ogImage('mirror-og.png'),
       imageAlt:
         'A pitch contour rising, holding level, then falling — two glides around one steady note.',
@@ -635,7 +635,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     themeColor: MIRROR_THEME_COLOR,
     title: 'Which Singer Has My Vocal Range? Match Your Voice | MercuryPitch',
     description:
-      'Find your range, see which voice type it overlaps most, and meet a famous singer of that type. Free, a minute on the clock, and your audio stays on your device.',
+      'Find your range in 60 seconds, see which voice type it overlaps most, and meet a famous singer of that type. Free, and your audio stays on your device.',
     keywords:
       'which singer has my vocal range, singer with my voice, vocal range match, famous singer vocal ranges, what singer do i sound like',
     og: {

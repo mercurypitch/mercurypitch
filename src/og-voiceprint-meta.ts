@@ -76,7 +76,7 @@ export function voiceprintDescription(data: VoiceprintShareData): string {
   const measured = parts.join(' · ')
   return measured === ''
     ? 'A voiceprint, measured in cents and milliseconds.'
-    : `${measured}. Meet your own voice in about a minute.`
+    : `${measured}. See your own voice in 60 seconds.`
 }
 
 /** The headline an unfurl shows above the card. */
