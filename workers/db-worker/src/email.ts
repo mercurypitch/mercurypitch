@@ -32,6 +32,17 @@ export const C = {
   purple: '#bc8cff',
 } as const
 
+/** The color-scheme lines in every mail's head. The mails are drawn dark but
+ *  declare "light only". In dark mode, Gmail on the iPhone recolored the
+ *  welcome mail while it declared "dark", turning its page white under a
+ *  white wordmark, and left it as drawn once it declared "light only". Gmail
+ *  on Android and Proton on the iPhone showed it as drawn either way (test
+ *  mails of 14 Oct 2026). A client that honors "light only" gives text with
+ *  no color of its own the light default, black, so every element with text
+ *  in it sets its own color. */
+export const COLOR_SCHEME_META = `<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">`
+
 export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -209,8 +220,7 @@ export function renderPasswordReset(v: PasswordResetVars): RenderedEmail {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
+${COLOR_SCHEME_META}
 <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
@@ -334,8 +344,7 @@ export function renderLoginCode(v: LoginCodeVars): RenderedEmail {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
+${COLOR_SCHEME_META}
 <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
@@ -487,8 +496,7 @@ export function renderNewsletterIssue(v: NewsletterIssueVars): RenderedEmail {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
+${COLOR_SCHEME_META}
 <title>${escapeHtml(v.subject)}</title>
 </head>
 <body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
@@ -699,8 +707,7 @@ export function renderAccountNotice(v: AccountNoticeVars): RenderedEmail {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
+${COLOR_SCHEME_META}
 <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">

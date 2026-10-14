@@ -6,7 +6,7 @@
 // one only borrows its palette, footer and sender.
 
 import type { RenderedEmail, ResendConfig } from './email'
-import { ABOUT_URL, APP_URL, C, escapeHtml, footerHtml, maskEmail, REPO_URL, resendSend, } from './email'
+import { ABOUT_URL, APP_URL, C, COLOR_SCHEME_META, escapeHtml, footerHtml, maskEmail, REPO_URL, resendSend, } from './email'
 
 export interface SignUpCodeVars {
   /** The six-digit code, exactly as the form expects it. */
@@ -38,8 +38,7 @@ export function renderSignUpCode(v: SignUpCodeVars): RenderedEmail {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
+${COLOR_SCHEME_META}
 <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">

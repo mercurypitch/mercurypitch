@@ -207,7 +207,7 @@ function voiceprintPanel(
   } else {
     const twin = escapeHtml(voiceprint.twin)
     const span = voiceprint.highMidi - voiceprint.lowMidi
-    left = `<img src="${url(origins.assetOrigin, legendPortraitPath(voiceprint.legendId))}" width="80" height="80" alt="Painted portrait of ${twin} from the Voice Mirror legends" style="display:block;border:0;outline:none;text-decoration:none;width:80px;height:80px;border-radius:50%;border:2px solid ${W.violet};">`
+    left = `<img src="${url(origins.assetOrigin, legendPortraitPath(voiceprint.legendId))}" width="80" height="80" alt="Painted portrait of ${twin} from the Voice Mirror legends" style="display:block;border:0;outline:none;text-decoration:none;width:80px;height:80px;border-radius:50%;border:2px solid ${W.violet};color:${W.soft};">`
     inner =
       eyebrow('Your voiceprint twin', W.violet) +
       `<div style="font:700 24px/1.15 ${DISPLAY};color:${W.text};margin:-4px 0 6px;">${twin}</div><div style="font:14px/1.5 ${SANS};color:${W.soft};">${escapeHtml(voiceprint.voiceType)} &middot; ${noteName(voiceprint.lowMidi)} to ${noteName(voiceprint.highMidi)} &middot; ${span} semitones</div>` +
