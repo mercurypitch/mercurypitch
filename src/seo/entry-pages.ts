@@ -546,7 +546,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'Glide from your lowest note to your highest and see which voice band your measured range overlaps most. A guide, not a verdict.',
       image: ogImage('voice-type-test-og.png'),
       imageAlt:
-        'Four voice bands stacked as spans on a pitch scale, with one lit to show the measured range.',
+        'Voice bands stacked from bass to soprano on a pitch scale, with one lit to show the measured range.',
     },
     twitter: {
       title: 'Voice Type Test — Soprano, Alto, Tenor or Bass?',
