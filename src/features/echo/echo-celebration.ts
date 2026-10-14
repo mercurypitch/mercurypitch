@@ -8,7 +8,7 @@
 // fractions of the plate's base frame (echo-geometry.ts PLATE_BASE), u
 // across and v down; sizes ending in W are fractions of the room's width.
 // The glows' screen colours are fitted to the result plate
-// (echo-world-result-1290.webp 071ad0cc98ad6c85).
+// (echo-world-result-1290.webp 979ac080042f107c).
 
 /**
  * The result's celebration star, art round 5 (echo-celebration-star.json,
@@ -59,16 +59,16 @@ export const CELEBRATION = {
     glow: {
       reachW: 0.11546,
       screen: [
-        [6, 32, 118],
         [6, 33, 118],
         [6, 33, 118],
         [6, 33, 118],
-        [6, 30, 105],
+        [6, 33, 118],
+        [6, 29, 105],
         [5, 26, 92],
         [5, 24, 83],
         [5, 23, 80],
         [5, 23, 81],
-        [5, 20, 71],
+        [4, 20, 71],
         [4, 16, 57],
         [3, 14, 49],
         [3, 12, 41],
@@ -486,20 +486,20 @@ export const CELEBRATION = {
       reachW: 0.04377,
       screen: [
         [45, 232, 255],
-        [45, 229, 255],
-        [43, 221, 255],
-        [40, 210, 255],
+        [45, 230, 255],
+        [43, 223, 255],
+        [40, 211, 255],
         [37, 192, 245],
-        [33, 172, 232],
-        [30, 153, 216],
+        [33, 173, 232],
+        [30, 153, 214],
         [27, 132, 184],
         [24, 112, 154],
-        [20, 95, 125],
+        [21, 95, 125],
         [17, 78, 97],
         [14, 63, 77],
         [11, 50, 61],
         [9, 39, 46],
-        [7, 31, 34],
+        [6, 31, 35],
         [5, 23, 26],
         [4, 18, 19],
         [2, 13, 14],
