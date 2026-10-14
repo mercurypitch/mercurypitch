@@ -3,11 +3,12 @@
 // ============================================================
 //
 // Echo's call goes through this one seam, so the voice behind it can
-// change without the room knowing. Today it is the synth "ooh"
-// (playVoiceContour, demo-audio.ts) singing the phrase's line
-// (phrase-voice.ts). The owner decided on 13 Oct 2026 that Merc sings the
-// calls with vibrato, which comes as a sampler in a PR of its own and
-// stands where SYNTH_CALL does.
+// change without the room knowing. The owner decided on 13 Oct 2026 that
+// Merc sings the calls with vibrato: the room's voice is MERC_CALL
+// (merc-sampler.ts), his recorded "ooh". The synth "ooh" here
+// (playVoiceContour, demo-audio.ts, singing the phrase's line from
+// phrase-voice.ts) sings while his voice loads, if it cannot load, and any
+// call his voice set does not reach.
 //
 // Both take the same thing in: the notes, each with its onset and length
 // from the call's start, and the audio clock time the call starts at. Both

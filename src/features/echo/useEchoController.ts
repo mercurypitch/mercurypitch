@@ -65,9 +65,9 @@ import { keepEchoRun, phraseLine, resultLine } from './echo-run'
 import type { LiveStage } from './echo-scene'
 import { echoScene, keepSame } from './echo-scene'
 import type { CallSchedule, CallVoice } from './merc-call'
-import { SYNTH_CALL } from './merc-call'
 import type { EchoMoment, LineFields } from './merc-lines'
 import { createEchoLines } from './merc-lines'
+import { MERC_CALL, preloadMercVoice } from './merc-sampler'
 import { phrasePlaces } from './sky-layout'
 import type { SkyScene } from './sky-scene'
 import { EMPTY_SCENE } from './sky-scene'
@@ -196,7 +196,7 @@ export function useEchoController(
   options: EchoControllerOptions = {},
 ): EchoController {
   const capture = useEchoCapture()
-  const voiceOfMerc = options.voice ?? SYNTH_CALL
+  const voiceOfMerc = options.voice ?? MERC_CALL
   const random = options.random ?? Math.random
   const lines = createEchoLines()
   const voicePreset = untrack(vocalRangePreset)
@@ -724,6 +724,8 @@ export function useEchoController(
 
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
+    // Merc's voice loads as the singer comes in, before the first call.
+    if (options.voice === undefined) preloadMercVoice()
     sayIntro()
     later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
