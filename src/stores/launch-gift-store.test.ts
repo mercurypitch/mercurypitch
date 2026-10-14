@@ -150,6 +150,35 @@ describe('saying the gift landed', () => {
     expect(mocks.trackEvent).toHaveBeenCalledWith('promo_claimed')
   })
 
+  it('says nothing when the sign-in claimed nothing', async () => {
+    // Already claimed on a deleted account, the code full, an address another
+    // account holds: the worker claims nothing, and /me lists no claim.
+    mocks.fetchBillingMe.mockResolvedValue(me([]))
+    const store = await freshStore()
+
+    await store.syncPromoClaims(CONFIRMED)
+
+    expect(mocks.showNotification).not.toHaveBeenCalled()
+    expect(mocks.trackEvent).not.toHaveBeenCalled()
+  })
+
+  it('says a claim once across a reload of the page', async () => {
+    mocks.fetchBillingMe.mockResolvedValue(me([claimedAgo(2 * MINUTE)]))
+    const first = await freshStore()
+    await first.syncPromoClaims(CONFIRMED)
+    expect(mocks.showNotification).toHaveBeenCalledTimes(1)
+
+    // A reload is a new module over the same localStorage, still inside the
+    // half hour in which the claim is news.
+    vi.setSystemTime(NOW + 5 * MINUTE)
+    const reloaded = await freshStore()
+    await reloaded.syncPromoClaims(CONFIRMED)
+
+    expect(mocks.showNotification).toHaveBeenCalledTimes(1)
+    expect(mocks.trackEvent).toHaveBeenCalledTimes(1)
+    expect(reloaded.giftClaimed()).toBe(true)
+  })
+
   it('stays quiet about a claim the singer has had for hours', async () => {
     mocks.fetchBillingMe.mockResolvedValue(me([claimedAgo(31 * MINUTE)]))
     const store = await freshStore()

@@ -2127,3 +2127,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** two successful 41-second software-rendered course loads exhausted the test's 90-second total; the final click received only 35 milliseconds before teardown.
 **Rule:** inspect the trace's global deadline before diagnosing a missing control. When real scene loading is part of the journey, budget the test for its aggregate bounded loads and interactions; keep each load limit and every assertion intact.
 **See:** `apps/beside-cue/e2e/glass-adventure-native-current.e2e.ts`.
+
+### Check bottom-pinned phone UI with the consent banner open
+
+**Symptom:** on a phone, a Google sign-up from the onboarding Map showed no word of the launch gift. Both toasts it raised ("Signed in with Google", "5 credits added") were on screen, under the cookie banner.
+**Cause:** the banner opens only in a build with a Google tag and on a Europe clock. `pnpm dev`, `build:e2e` (tag ids emptied) and CI (UTC) never show it, so nothing anchored to the foot of a phone screen was ever seen beside it.
+**Rule:** anything pinned to the bottom of a phone screen stands on `--consent-banner-space`, which the banner publishes while open. To see the real banner, build with the production env and run the browser with `timezoneId: 'Europe/Zagreb'`.
+**See:** `src/styles/Notifications.module.css`, `src/e2e/toast-above-consent-banner.spec.ts`
