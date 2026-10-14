@@ -100,8 +100,8 @@ export const API_BASE_URL: string | undefined = import.meta.env
 
 /**
  * Google Ads global site tag id (`AW-XXXXXXXXXX`). Empty unless explicitly set
- * for a build, so dev / test / tour builds never load the tag, show the consent
- * banner, or hit Google. Set `VITE_GOOGLE_ADS_TAG_ID=AW-18321142458` in the
+ * for a build, so dev / test / tour builds never load the tag or hit Google
+ * (dev and PR previews show the banner alone: CONSENT_PREVIEW). Set `VITE_GOOGLE_ADS_TAG_ID=AW-18321142458` in the
  * production build only.
  */
 export const GOOGLE_ADS_TAG_ID: string =
@@ -121,6 +121,18 @@ export const TURNSTILE_SITE_KEY: string =
  */
 export const GA4_MEASUREMENT_ID: string =
   import.meta.env.VITE_GA4_MEASUREMENT_ID ?? ''
+
+/**
+ * Consent preview: mount the cookie bar in a build with no Google tag, so its
+ * look and its place in the foot stack can be checked on dev.mercurypitch.com
+ * and PR previews. The bar asks and stores the choice as in production, but
+ * nothing loads gtag.js, calls gtag or writes the dataLayer (lib/consent.ts).
+ * `build:dev` sets `VITE_CONSENT_PREVIEW=true`; the production-mode build
+ * can never turn it on, so the tag build compiles the preview path out.
+ */
+export const CONSENT_PREVIEW: boolean =
+  import.meta.env.MODE === 'development' &&
+  import.meta.env.VITE_CONSENT_PREVIEW === 'true'
 
 export function getUvrApiBase(): string {
   return IS_DEV

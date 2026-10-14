@@ -178,8 +178,8 @@ These are the rules that break things when ignored.
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 700 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 700 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 700 | Shared Whisper transcription controller hook. |
+| [consent.ts](../../src/lib/consent.ts) | 650 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
 | [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 650 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
-| [consent.ts](../../src/lib/consent.ts) | 600 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 600 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
 | [preview-player.ts](../../src/lib/preview-player.ts) | 600 | Preview player — pop-free HTMLAudioElement playback HOW TO NOT POP, the house rules (see .claude/memory/ audio-pop-free-playback.md): A b... |
 | [device-tier.ts](../../src/lib/device-tier.ts) | 550 | Device tier — one answer to "how much frame budget does this machine have?" TV browsers (Google TV / Android TV, Tizen, webOS, Fire TV) a... |
@@ -478,7 +478,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm build:tours` | `cross-env VITE_API_BASE_URL= VITE_OVERRIDE_ONNX_MODEL= VITE_JAM_MOCK_SIGNALING=1 VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --unlisted` |
 | `pnpm build:e2e` | `cross-env VITE_API_BASE_URL= VITE_E2E_LAB_ACCESS=1 VITE_JAM_MOCK_SIGNALING=1 VITE_GLASSWORKS_LISTED=1 VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-piano-night-bundle.mjs dist && node scripts/assert-drum-night-bundle.mjs dist && node scripts/assert-first-paint-budgets.mjs dist && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --listed` |
 | `pnpm build:e2e:devices` | `cross-env VITE_API_BASE_URL=http://localhost:8788 VITE_JAM_SIGNALING_URL=http://localhost:8787/api/jam VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-no-portable-console.mjs dist` |
-| `pnpm build:dev` | `vite build --mode development && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --listed` |
+| `pnpm build:dev` | `cross-env VITE_CONSENT_PREVIEW=true vite build --mode development && node scripts/assert-no-portable-console.mjs dist && node scripts/assert-glassworks-listing.mjs dist --listed` |
 | `pnpm preview` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite preview` |
 | `pnpm prod` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite build && vite preview` |
 | `pnpm test` | `vitest` |

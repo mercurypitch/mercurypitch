@@ -20,11 +20,13 @@
 // never leaves your device".
 //
 // The Google tag is only loaded when an Ads or GA4 id is set for the
-// build (prod only) — dev, test and tour builds stay inert.
+// build (prod only) — dev, test and tour builds stay inert. Dev and PR
+// previews (CONSENT_PREVIEW, no tag) show the banner and store the choice
+// but never touch gtag, the dataLayer or Google: see isConsentPreview.
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import { GA4_MEASUREMENT_ID, GOOGLE_ADS_TAG_ID, IS_TEST } from '@/lib/defaults'
+import { CONSENT_PREVIEW, GA4_MEASUREMENT_ID, GOOGLE_ADS_TAG_ID, IS_TEST, } from '@/lib/defaults'
 import { ga4TrafficParams } from '@/lib/internal-traffic'
 
 export type ConsentStatus = 'granted' | 'denied'
@@ -235,6 +237,9 @@ function consentSignals(value: ConsentStatus): Record<string, ConsentStatus> {
 }
 
 function applyConsent(value: ConsentStatus): void {
+  // Without a tag there is nobody to tell: consent preview stores the choice
+  // and stops here, so no gtag or dataLayer ever appears on the page.
+  if (!hasAnyTag()) return
   pushGtag('consent', 'update', consentSignals(value))
   // Redact ad click identifiers while consent is withheld (Consent Mode v2).
   pushGtag('set', 'ads_data_redaction', value === 'denied')
@@ -318,15 +323,52 @@ export function hasAnyTag(): boolean {
 }
 
 /**
+ * Consent preview: a dev or PR-preview build (CONSENT_PREVIEW) with no Google
+ * tag. The banner shows and stores the choice by production's rules; no
+ * gtag.js loads, gtag is never called and the dataLayer is never written.
+ * A build with a tag ignores the flag and runs Consent Mode as production.
+ */
+export function isConsentPreview(): boolean {
+  return !hasAnyTag() && CONSENT_PREVIEW
+}
+
+/** True when this build mounts the consent banner: a Google tag, or preview. */
+export function isConsentActive(): boolean {
+  return hasAnyTag() || isConsentPreview()
+}
+
+/** Show the banner for this visitor unless they already chose. */
+function decideBanner(): void {
+  const stored = readStored()
+  if (stored !== null && !stored.implicit) {
+    setStatus(stored.status)
+    applyConsent(stored.status)
+  } else {
+    // A silent grant from an earlier version is not a choice: drop it.
+    if (stored !== null) forgetStored()
+    // EEA/UK/CH by the clock: ask. Elsewhere: no banner and no update, so a
+    // visitor inside the region list stays denied whatever the clock says.
+    if (isRestrictedTimezone(currentTimezone())) setBannerOpen(true)
+  }
+}
+
+/**
  * Boot Consent Mode and decide the initial state. Idempotent and safe to call
- * from every entry point. No-op unless the build ships a Google tag.
+ * from every entry point. No-op unless the build ships a Google tag or is a
+ * consent preview, and a preview only decides the banner.
  */
 export function initConsent(): void {
   if (typeof window === 'undefined') return
-  if (!hasAnyTag()) return
+  if (!isConsentActive()) return
   const w = gtagWindow()
   if (w.__mpConsentBooted === true) return
   w.__mpConsentBooted = true
+
+  if (isConsentPreview()) {
+    decideBanner()
+    console.info('[consent] preview: banner only, no Google tag')
+    return
+  }
 
   // 1) Consent Mode v2 defaults — pushed BEFORE gtag.js loads. Global default
   //    is granted (opt-out regimes); the EEA/UK/CH region default is denied.
@@ -349,17 +391,7 @@ export function initConsent(): void {
 
   // 2) Apply the visitor's own prior decision immediately. Otherwise leave the
   //    region defaults above in charge: they follow the IP, not the clock.
-  const stored = readStored()
-  if (stored !== null && !stored.implicit) {
-    setStatus(stored.status)
-    applyConsent(stored.status)
-  } else {
-    // A silent grant from an earlier version is not a choice: drop it.
-    if (stored !== null) forgetStored()
-    // EEA/UK/CH by the clock: ask. Elsewhere: no banner and no update, so a
-    // visitor inside the region list stays denied whatever the clock says.
-    if (isRestrictedTimezone(currentTimezone())) setBannerOpen(true)
-  }
+  decideBanner()
 
   // 3) Load the tag (async, non-blocking).
   loadTag()
