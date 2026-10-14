@@ -17,9 +17,11 @@
 //   node --experimental-strip-types scripts/generate-entry-og.mjs voice-type-test
 //   OUT_DIR=/tmp/preview node --experimental-strip-types scripts/generate-entry-og.mjs
 //
-// The flag is needed because entry-pages.ts is TypeScript; it is import-free,
-// so stripping types is all it takes. Nothing in CI runs this — the PNG is
-// committed, like every sibling card.
+// The flag is needed because entry-pages.ts is TypeScript. Its one import,
+// og-image-versions.ts, is written with its extension, because Node's own
+// resolver does not guess one; keep any new import there the same way, or
+// this script dies with ERR_MODULE_NOT_FOUND before it draws a card. Nothing
+// in CI runs this: the PNG is committed, like every sibling card.
 
 import { chromium } from '@playwright/test'
 import { readFileSync, existsSync } from 'node:fs'
