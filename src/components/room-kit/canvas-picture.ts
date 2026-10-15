@@ -45,18 +45,6 @@ export async function decodePicture(
   return fallback(url)
 }
 
-/**
- * Start the file's download ahead of its decodePicture, keeping nothing:
- * the bytes wait in the HTTP cache (hashed /assets/ files are immutable
- * there, public/_headers), not as a decoded picture in memory.
- */
-export function warmPicture(url: string): void {
-  if (url === '' || typeof fetch !== 'function') return
-  void fetch(url)
-    .then((response) => (response.ok ? response.arrayBuffer() : undefined))
-    .catch(() => undefined)
-}
-
 /** Done with a picture: a bitmap's pixels go; an <img> stays its loader's. */
 export function releasePicture(picture: CanvasPicture): void {
   if (typeof ImageBitmap !== 'undefined' && picture instanceof ImageBitmap) {

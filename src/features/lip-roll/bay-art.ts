@@ -14,11 +14,13 @@
 // DPR 2 or under takes the 860 px-per-W files, a DPR 3 phone the 1290
 // ones. The waves and the result's lit band are copied into canvases
 // (bay-waves.ts, room-kit/result-band.ts) from pictures the scene decodes
-// off the main thread (room-kit/canvas-picture.ts); the files are only
-// downloaded ahead here. The bay-back is a plate (plate-loader.ts),
-// decoded while the screen pushes in.
+// off the main thread (room-kit/canvas-picture.ts). The waves are still
+// loaded here as images and kept decoded: each wave is also an <img> in
+// the scene (BayScene.tsx), and with only the files downloaded ahead a
+// 33 ms frame came back into wave 1 in 3 of 15 measured runs, against
+// none in 9 with this hold (2026-10-15). The bay-back is a plate
+// (plate-loader.ts), decoded while the screen pushes in.
 
-import { warmPicture } from '@/components/room-kit/canvas-picture'
 import type { PlateSpec } from '@/components/room-kit/plate-loader'
 import { preloadPlate } from '@/components/room-kit/plate-loader'
 import bayBack from './art/bay-back.webp'
@@ -95,8 +97,9 @@ const images = new Map<string, Promise<HTMLImageElement>>()
 
 /**
  * One image, loaded and decoded once and kept; rejects when it will not
- * load. The bubble is drawn from this; the waves and the result's band
- * only fall back to it where a bitmap cannot be made.
+ * load. The bubble is drawn from this and the waves are held in it; the
+ * waves' canvases and the result's band only fall back to it where a
+ * bitmap cannot be made.
  */
 export function bayImage(url: string): Promise<HTMLImageElement> {
   const known = images.get(url)
@@ -122,17 +125,15 @@ const dpr = (): number =>
   typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1
 
 /**
- * On the tap that opens the room: the bay-back's decode, the waves'
- * downloads (the scene decodes them, BayScene.tsx) and the bubble. The
- * result's pictures wait for the last wave.
+ * On the tap that opens the room: the bay-back's decode, the waves' and
+ * the bubble's loads. The result's pictures wait for the last wave.
  */
 export function preloadLipArt(): void {
   preloadPlate(BAY_PLATE)
+  if (typeof Image === 'undefined') return
   const art = bayArt(dpr())
-  warmPicture(art.waveUnlit)
-  warmPicture(art.waveLit)
-  if (typeof Image !== 'undefined' && BUBBLE_URL !== '') {
-    void bayImage(BUBBLE_URL).catch(() => undefined)
+  for (const url of [art.waveUnlit, art.waveLit, BUBBLE_URL]) {
+    if (url !== '') void bayImage(url).catch(() => undefined)
   }
 }
 
