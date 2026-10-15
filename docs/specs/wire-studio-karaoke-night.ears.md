@@ -2,8 +2,8 @@
 
 Requirements for bidirectional linking and session URL state synchronization between the main MercuryPitch studio app and the standalone Karaoke Night stage (`/karaoke-night`).
 
-**Source:** `src/lib/karaoke-night-link.ts` — deep link helpers (`karaokeNightSessionUrl`, `studioSessionUrl`); `src/features/karaoke-night/KaraokeNightApp.tsx` — Karaoke Night URL state sync & restoration; `src/components/UvrPanel.tsx` — studio topbar link and the phone signpost; `src/features/karaoke-night/KaraokeRailPanels.tsx` — the rail's sync door
-**Tests:** `src/tests/karaoke-night-link.test.ts` (`SK-LINK-*`); `src/components/__tests__/UvrPanel.test.tsx` and `src/features/karaoke-night/KaraokeRailPanels.test.tsx` (`REQ-SKL-007..009`); `src/features/karaoke-night/example-links.test.ts`, `stage-example-link.test.ts`, `KaraokeNightApp.test.tsx` and `src/e2e/karaoke-example-links.spec.ts` (`REQ-SKL-012..013`)
+**Source:** `src/lib/karaoke-night-link.ts` — deep link helpers (`karaokeNightSessionUrl`, `studioSessionUrl`); `src/features/karaoke-night/KaraokeNightApp.tsx` — Karaoke Night URL state sync & restoration; `src/components/UvrPanel.tsx` — studio topbar link and the phone signpost; `src/features/karaoke-night/KaraokeRailPanels.tsx` — the rail's sync door; `src/components/stem-mixer/header/MixerHeader.tsx` and `karaoke-night.ts` — the mixer's Open in Karaoke Night (`mixerKaraokeNightUrl`)
+**Tests:** `src/tests/karaoke-night-link.test.ts` (`SK-LINK-*`); `src/components/__tests__/UvrPanel.test.tsx` and `src/features/karaoke-night/KaraokeRailPanels.test.tsx` (`REQ-SKL-007..009`); `src/features/karaoke-night/example-links.test.ts`, `stage-example-link.test.ts`, `KaraokeNightApp.test.tsx` and `src/e2e/karaoke-example-links.spec.ts` (`REQ-SKL-012..013`); `src/tests/karaoke-night-link.test.ts`, `src/components/__tests__/StemMixerHeader.test.tsx`, `src/components/stem-mixer/header/MixerHeader.test.tsx` and `karaoke-night.test.ts` (`REQ-SKL-014`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
@@ -118,3 +118,21 @@ the parameter nothing shall change. `zen` shall stay in the URL while zen is
 on and shall be removed when the visitor leaves zen. It combines with
 `song` and with `session`. Verified by `KaraokeNightApp.test.tsx`,
 `karaoke-night-link.test.ts` and `karaoke-example-links.spec.ts`.
+
+### REQ-SKL-014 — The mixer opens its song on the stage
+
+**WHEN** the singer presses Open in Karaoke Night in the studio mixer's
+header, the system shall open Karaoke Night on the song in the mixer:
+`?session=<sessionId>`, or `?song=<slug>` for an example, so a vocal or
+lyrics the visitor replaced come along (REQ-SKL-012). The link shall carry
+`&t=<seconds>` at the playhead when the playhead is past the start, and
+shall never carry `autoplay`: the stage opens paused. The mixer's song
+shall pause with its fade as the page leaves. **WHILE** a take is saving, a
+song is separating or uploading in this tab, or a playlist is running, the
+link shall not navigate and shall say why in words when pressed, hovered or
+focused (in that order of priority; a playlist opens in Karaoke Night from
+Songs). **WHERE** the mixer runs in the native app, in the Karaoke room,
+on the Karaoke Night stage itself or in the performance preset, the link
+shall not be drawn. Verified by `REQ-SKL-014` in `karaoke-night-link.test.ts`,
+and by `StemMixerHeader.test.tsx`, `MixerHeader.test.tsx` and
+`karaoke-night.test.ts`.

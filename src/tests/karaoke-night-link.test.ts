@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KARAOKE_NIGHT_PATH, karaokeNightPlaylistUrl, karaokeNightSessionUrl, karaokeNightSongUrl, parseKaraokeNightLaunch, studioSessionUrl, takeScannedSyncLink, } from '@/lib/karaoke-night-link'
+import { KARAOKE_NIGHT_PATH, karaokeNightPlaylistUrl, karaokeNightSessionUrl, karaokeNightSongUrl, mixerKaraokeNightUrl, parseKaraokeNightLaunch, studioSessionUrl, takeScannedSyncLink, } from '@/lib/karaoke-night-link'
 
 describe('karaoke-night-link', () => {
   // REQ-SKL-001 & REQ-SKL-006: karaokeNightSessionUrl
@@ -9,6 +9,37 @@ describe('karaoke-night-link', () => {
     )
     expect(karaokeNightSessionUrl('demo/test 1')).toBe(
       `${KARAOKE_NIGHT_PATH}?session=demo%2Ftest%201`,
+    )
+  })
+
+  // REQ-SKL-014: the mixer's Open in Karaoke Night
+  it('opens the mixer’s song on the stage, paused where it is (REQ-SKL-014)', () => {
+    expect(mixerKaraokeNightUrl('session-123', { startAtSec: 83.24 })).toBe(
+      `${KARAOKE_NIGHT_PATH}?session=session-123&t=83.2`,
+    )
+    expect(mixerKaraokeNightUrl('session-123')).toBe(
+      `${KARAOKE_NIGHT_PATH}?session=session-123`,
+    )
+    // Never autoplay: a browser may refuse it after a page load.
+    expect(
+      mixerKaraokeNightUrl('session-123', { startAtSec: 5 }),
+    ).not.toContain('autoplay')
+    // The start of the song needs no position.
+    expect(mixerKaraokeNightUrl('session-123', { startAtSec: 0 })).toBe(
+      `${KARAOKE_NIGHT_PATH}?session=session-123`,
+    )
+  })
+
+  it('opens an example by its song link, which keeps what the visitor replaced (REQ-SKL-014)', () => {
+    expect(
+      mixerKaraokeNightUrl('karaoke-night-demo:nothing-in-the-dark', {
+        startAtSec: 12,
+      }),
+    ).toBe(`${KARAOKE_NIGHT_PATH}?song=nothing-in-the-dark&t=12`)
+    // The original demo's own id names the legacy slug, which the page
+    // reads and rewrites to the song's link slug.
+    expect(mixerKaraokeNightUrl('karaoke-night-demo')).toBe(
+      `${KARAOKE_NIGHT_PATH}?song=karaoke-night`,
     )
   })
 
