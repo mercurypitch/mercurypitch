@@ -260,3 +260,10 @@
     transition: none;
   }
 }
+
+/* The fixtures: nothing moves (the room's `still`). */
+.still .trace,
+.still .band,
+.still .mercHop {
+  transition: none;
+}

@@ -9,8 +9,9 @@
 //
 // The tap that opens a room is also where its heaviest art starts loading:
 // Echo's sky plate is decoded while the screen pushes in (plate-loader.ts),
-// so the room shows it at once instead of a frame later; Ng slides' river
-// and its glass start loading on the same tap.
+// so the room shows it at once instead of a frame later; Long note's
+// lantern plates the same way; Ng slides' river and its glass start
+// loading on the same tap.
 //
 // A build without the premium exercises (the store build, until the V1
 // flip) gets nothing. PREMIUM_EXERCISES is a compile-time constant there, so
@@ -37,6 +38,11 @@ function install(): PremiumExerciseApi {
   }
   /** What a room starts loading on the tap that opens it. */
   const preloads: Partial<Record<PremiumExerciseId, () => void>> = {
+    [EXERCISE_LONG_NOTE_LANTERN]: () => {
+      void import('@/features/long-note/long-note-art').then((art) => {
+        art.preloadLongNoteArt()
+      })
+    },
     [EXERCISE_ECHO_STARS]: () => {
       void import('@/features/echo/echo-art').then((art) => {
         art.preloadEchoArt()

@@ -61,6 +61,11 @@ export interface VoiceTraceProps {
   active: () => boolean
   /** The result dims the line: its amber eases back to cyan. */
   muted?: () => boolean
+  /**
+   * No animation at all (the fixtures): one still frame, redrawn only when
+   * what it shows changes, and a dimmed line is cyan at once.
+   */
+  still?: boolean
   class?: string
   style?: JSX.CSSProperties
   testId?: string
@@ -182,6 +187,7 @@ export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
   /** How much of the amber still shows: 1, easing to 0 once dimmed. */
   const amber = (): number => {
     if (mutedAt === null) return 1
+    if (props.still === true) return 0
     return Math.max(0, 1 - (performance.now() - mutedAt) / MUTE_MS)
   }
 
@@ -214,10 +220,13 @@ export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
 
   /** Still easing the amber away after the line dimmed. */
   const easing = (): boolean => mutedAt !== null && amber() > 0
+  /** Drawing frame after frame: the take, or the amber easing away. */
+  const running = (): boolean =>
+    props.still !== true && (props.active() || easing())
 
   const loop = (): void => {
     draw()
-    frame = props.active() || easing() ? requestAnimationFrame(loop) : 0
+    frame = running() ? requestAnimationFrame(loop) : 0
   }
 
   onMount(() => {
@@ -236,7 +245,7 @@ export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
     const dimmed = props.muted?.() === true
     if (dimmed && mutedAt === null) mutedAt = performance.now()
     if (!dimmed) mutedAt = null
-    if (props.active() || easing()) {
+    if (running()) {
       if (frame === 0) frame = requestAnimationFrame(loop)
     } else {
       // One last frame, so the line the singer just drew stays put.

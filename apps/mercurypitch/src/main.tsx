@@ -250,6 +250,11 @@ const ngFixture = import.meta.env.DEV
 const lipFixture = import.meta.env.DEV
   ? new URLSearchParams(window.location.search).get('lipFixture')
   : null
+// Long note's fixtures, the same way: `?longNoteFixture=<name>` (the
+// room's states: intro, rest, mid-take, demo-off, result).
+const longNoteFixture = import.meta.env.DEV
+  ? new URLSearchParams(window.location.search).get('longNoteFixture')
+  : null
 
 const HYDRATION_DEADLINE_MS = 5000
 const hydrationDeadline = new Promise<never>((_, reject) => {
@@ -285,6 +290,12 @@ void Promise.race([hydrateStoragePort(), hydrationDeadline])
     if (import.meta.env.DEV && lipFixture !== null) {
       void import('@/features/lip-roll/fixture/mount-lip-fixture').then((m) =>
         m.mountLipFixture(root, lipFixture),
+      )
+      return
+    }
+    if (import.meta.env.DEV && longNoteFixture !== null) {
+      void import('@/features/long-note/fixture/mount-long-note-fixture').then(
+        (m) => m.mountLongNoteFixture(root, longNoteFixture),
       )
       return
     }
