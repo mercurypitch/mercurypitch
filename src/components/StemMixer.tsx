@@ -881,18 +881,34 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Manual playlist transport (header controls). Pause first — without scoring —
   // so audio stops even when the action doesn't remount the mixer (skipping the
   // last song into the summary, or stopping the playlist).
-  const handlePlaylistPrev = () => {
+  //
+  // The playlist changes once the pause's fade has played, the key shifter's
+  // tail included (releaseLeft). Changed at once, the next entry's key
+  // re-routed the key graph while the old song still sounded through it, and
+  // the remount closed the clock under it: either cut the song off at full
+  // level, heard as a click. Each press still counts: two quick Skips skip two.
+  const entryChanges = new Set<ReturnType<typeof setTimeout>>()
+  onCleanup(() => {
+    for (const timer of entryChanges) clearTimeout(timer)
+    entryChanges.clear()
+  })
+  const pauseThenChangeEntry = (change: () => void): void => {
     audio.handlePause()
-    playlist.prev()
+    const fading = audio.releaseLeft()
+    if (fading <= 0) {
+      change()
+      return
+    }
+    const timer = setTimeout(() => {
+      entryChanges.delete(timer)
+      change()
+    }, fading)
+    entryChanges.add(timer)
   }
-  const handlePlaylistNext = () => {
-    audio.handlePause()
-    playlist.advance()
-  }
-  const handlePlaylistStopAll = () => {
-    audio.handlePause()
-    playlist.stopPlaylist()
-  }
+  const handlePlaylistPrev = () => pauseThenChangeEntry(playlist.prev)
+  const handlePlaylistNext = () => pauseThenChangeEntry(playlist.advance)
+  const handlePlaylistStopAll = () =>
+    pauseThenChangeEntry(playlist.stopPlaylist)
 
   // ── Zen transport: unified song navigation ───────────────────
   // The zen stage's back/next controls span whichever context is active: an
@@ -2064,12 +2080,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         random: () => {
           const entries = playlist.queue()
           if (entries.length === 0) return false
-          audio.handlePause()
           let index = Math.floor(Math.random() * entries.length)
           if (entries.length > 1 && index === playlist.currentIndex()) {
             index = (index + 1) % entries.length
           }
-          playlist.jumpTo(index)
+          pauseThenChangeEntry(() => playlist.jumpTo(index))
           return true
         },
       },
