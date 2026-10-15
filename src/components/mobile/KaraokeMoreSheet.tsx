@@ -172,8 +172,14 @@ const SpeedAndLoop: Component<{ binding: KaraokeMoreBinding }> = (props) => {
     props.binding.loopStart() === null && props.binding.loopEnd() === null
 
   const point = (which: 'A' | 'B') => {
-    const at =
-      which === 'A' ? props.binding.loopStart() : props.binding.loopEnd()
+    // The point is read inside its text, not here: a read here rebuilt the
+    // whole row, its button with it, each time the point moved, so a press
+    // dropped keyboard and screen-reader focus to the page.
+    const shown = (): string => {
+      const at =
+        which === 'A' ? props.binding.loopStart() : props.binding.loopEnd()
+      return at === null ? 'Not set' : formatLoopPoint(at)
+    }
     return (
       <div class={styles.point}>
         <span class={styles.pointName} aria-hidden="true">
@@ -183,7 +189,7 @@ const SpeedAndLoop: Component<{ binding: KaraokeMoreBinding }> = (props) => {
           class={styles.pointTime}
           data-testid={`karaoke-more-point-${which.toLowerCase()}`}
         >
-          {at === null ? 'Not set' : formatLoopPoint(at)}
+          {shown()}
         </span>
         <button
           type="button"
