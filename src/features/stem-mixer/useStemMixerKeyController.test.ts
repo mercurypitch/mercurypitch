@@ -4,6 +4,7 @@ import type { Setter } from 'solid-js'
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
+import { formatKeyShift } from '@/lib/key-shift/key-shift'
 import type { TimedNote } from '@/lib/key-shift/key-suggest'
 import type { QueueEntry } from '@/stores/karaoke-playlist-store'
 import { notifications, removeNotificationsByChannel, resetNotifications, showNotification, } from '@/stores/notifications-store'
@@ -551,6 +552,116 @@ describe('find my key', () => {
     land(FOUND)
     await vi.waitFor(() => expect(controller.finding()).toBe(false))
     expect(controller.keyShift()).toBe(controller.suggestion()?.keyShift)
+  })
+
+  /** A song whose melody is found only when the test lands it. */
+  function mountDetecting(sessionId = freshSong(), notify?: Notify) {
+    let land: () => void = () => {}
+    harness = mount(sessionId, null, null, {
+      melody: [],
+      notify,
+      detectMelody: (setMelody) =>
+        new Promise<PitchAnalysisOutcome>((resolve) => {
+          land = () => {
+            setMelody(MELODY)
+            resolve(FOUND)
+          }
+        }),
+    })
+    return { controller: harness.controller, land: () => land() }
+  }
+
+  const KEPT = 'You moved the key meanwhile, so it stays where you put it.'
+  const CHANNEL = { channel: 'stem-mixer-find-my-key' }
+
+  // A key the singer moves while Find my key still waits, for the melody or
+  // for the stored range, is theirs: the fit lands later and must not undo
+  // it. The fit is said instead, and Find my key, pressed again, moves to it.
+  it('keeps a key the singer moved while the melody was found, and says the fit', async () => {
+    const notify = vi.fn<Notify>()
+    const { controller, land } = mountDetecting(freshSong(), notify)
+
+    controller.applyVoiceType('bass')
+    controller.setKeyShift(2)
+    land()
+    await vi.waitFor(() => expect(controller.finding()).toBe(false))
+    const fit = controller.suggestion()?.keyShift ?? 0
+
+    expect([fit === 2, controller.keyShift()]).toEqual([false, 2])
+    expect(notify).toHaveBeenLastCalledWith(
+      `Key ${formatKeyShift(fit)} fits your voice. ${KEPT}`,
+      'info',
+      CHANNEL,
+    )
+  })
+
+  it('keeps a key the singer moved while the stored range was read, and says the fit', async () => {
+    fakes.takes = [MEASURED_TAKE]
+    const notify = vi.fn<Notify>()
+    const controller = start(freshSong(), null, null, { notify })
+
+    const asked = controller.findMyKey()
+    controller.setKeyShift(2)
+    await rangeRead()
+    const fit = controller.suggestion()?.keyShift ?? 0
+
+    expect([asked, fit === 2, controller.keyShift()]).toEqual([
+      'reading-range',
+      false,
+      2,
+    ])
+    expect(notify).toHaveBeenLastCalledWith(
+      `Key ${formatKeyShift(fit)} fits your voice. ${KEPT}`,
+      'info',
+      CHANNEL,
+    )
+  })
+
+  it("names the song's own key when that is the fit the singer moved away from", async () => {
+    const notify = vi.fn<Notify>()
+    const { controller, land } = mountDetecting(freshSong(), notify)
+
+    controller.applyVoiceType('tenor')
+    controller.setKeyShift(2)
+    land()
+    await vi.waitFor(() => expect(controller.finding()).toBe(false))
+
+    expect([controller.suggestion()?.keyShift, controller.keyShift()]).toEqual([
+      0, 2,
+    ])
+    expect(notify).toHaveBeenLastCalledWith(
+      `The song's own key fits your voice. ${KEPT}`,
+      'info',
+      CHANNEL,
+    )
+  })
+
+  it('applies the fit when Find my key is pressed again after the key moved', async () => {
+    const { controller, land } = mountDetecting()
+
+    controller.applyVoiceType('bass')
+    controller.setKeyShift(2)
+    expect(controller.findMyKey()).toBe('detecting')
+    land()
+    await vi.waitFor(() => expect(controller.finding()).toBe(false))
+
+    expect(controller.keyShift()).toBe(controller.suggestion()?.keyShift)
+  })
+
+  // The key a fit is measured against is the one the singer had when they
+  // asked, not 0: a song that opened in another key and was left alone still
+  // moves to its fit.
+  it('applies the fit to a song that opened in another key and was left alone', async () => {
+    const song = freshSong()
+    setSongKeyShift(song, 1)
+    const { controller, land } = mountDetecting(song)
+
+    controller.applyVoiceType('bass')
+    land()
+    await vi.waitFor(() => expect(controller.finding()).toBe(false))
+    const fit = controller.suggestion()?.keyShift
+
+    expect([fit === 1, controller.keyShift() === fit]).toEqual([false, true])
   })
 
   it('stops finding when the detection fails', async () => {
