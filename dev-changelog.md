@@ -9,6 +9,270 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.18]
+
+103 commits since `v0.9.17` (543f43c6c) before this release PR: PRs #1002,
+#1003, #1005 to #1007, #1009 to #1017 and #1019 to #1025. Every commit came
+through a PR; none reached `main` without one. Of the 48 on `main`'s
+first-parent line, 15 are PR merge commits, 31 are the commits #1006 (4),
+#1007 (19), #1009 (5) and #1014 (3) rebased onto `main` instead of merging,
+and 2 are the squash commits of #1010 and #1019. The owner decided on 15
+October to release `main` as it stands: the key change and the mixer rail
+(#857) are not in 0.9.18 and go in 0.9.19.
+
+On the web, the release is the launch offer's terms beneath the gift (#1014),
+a foot of the screen that stacks instead of hiding under the cookie banner
+(#1009), share cards and copy that say only what the tools do, in American
+spelling (#1007), and mails that stay dark in Gmail on the iPhone (#1010,
+#1006). Most of the commits are the premium exercises, which reach no web
+build: Echo's art rounds 5 and 6, its demo and Merc's recorded voice; the
+glide engine; and Ng slides and Lip roll, each a room and a demo on stand-in
+art.
+
+### Release steps (prod)
+
+1. **No migration, secret or worker variable.** Nothing under
+   `workers/db-worker/migrations` and nothing in
+   `workers/db-worker/wrangler.jsonc` changed since `v0.9.17`. The tag's
+   `deploy-db-prod` deploys the worker halves of #1006 and #1010 (the mail
+   layout) and #1014 (the featured code's `offer`). The order of the two
+   deploys does not matter: an app that lands first gets no `offer` and shows
+   the gift alone (`withReadableTerms` in `billing-service.ts` reads a
+   missing `offer` as none), and the old app ignores the field.
+2. **Push the tag `v0.9.18`.** Build & Deploy runs as before.
+3. **#1008 stays out of this release.** It points new mail at
+   `/email/wordmark-v2-2x.png`, which ships with this tag's static deploy
+   (#1006). Merge it once
+   `curl -sI https://mercurypitch.com/email/wordmark-v2-2x.png` answers 200;
+   its change is in the DB worker, so it reaches prod with the next worker
+   deploy. Until then every mail keeps wordmark v1.
+
+### Migrations
+
+None.
+
+### Web and API: the launch offer, beneath the gift (#1014)
+
+- `GET /api/billing/promo/featured` gains `offer`: the launch offer's terms
+  for a claim of the featured code made today, from `finisherTerms` in
+  `offer-rules.ts`, which uses the same window and goal functions as `/me`'s
+  tracker. It is `null` while `OFFER_START_AT` is unset or not reached, and
+  for a featured code other than `OFFER_PROMO_ID`. A claim on a later day
+  (an email confirmed tomorrow) gets a later deadline, never an earlier one.
+- The sentence lives once, `offerSentence` in `src/lib/launch-gift-copy.ts`:
+  "Use all 5 by 28 October and your next credit pack comes with 30 extra
+  credits." The count, the day (through `offerDay`, en-GB, UTC) and the bonus
+  come from the terms; nothing is written into the app. The tracker's
+  progress line uses the same function with "pack". The line hides once its
+  day has passed and whenever the server sends `offer: null`.
+- It shows on the Keep screen's gift card, the Map's join and one-tap claim
+  lines, Karaoke Night signed out, the Voice Mirror's account ask, Settings ›
+  Credits (signed out, and on the claim card until the code is claimed) and
+  the password sign-up toast. The Promo pill and the Map's one-tap claim
+  toast are unchanged, and the two claim toasts ("5 credits added." and
+  "Email confirmed. 5 credits added.") leave the offer out: owner decision,
+  14 October (7279a4088).
+- Native: `assert-bundle.mjs`'s OFFER check passes, and "extra credits",
+  "credit pack" and "Use all" appear 0 times in the native bundle.
+
+### Web: the foot of the screen stacks, and the gift's toasts are seen (#1009)
+
+- **Toasts over the cookie banner.** The owner signed up with Google from the
+  onboarding Map on prod (v0.9.17) and saw no word of the gift. The toasts
+  were raised; in a production build at 390 px with a European clock, the
+  consent banner covered them. The banner only opens in a build with a
+  Google tag on a European clock, so `pnpm dev`, `build:e2e` and CI never
+  showed it (#1019 now shows it on dev and previews).
+- **Every layer at the foot stands on the one below** (`src/lib/foot-space.ts`).
+  Each publishes the room it takes on `<html>`: the banner stands on
+  `--tabbar-space`, the confirm-email pill on `--consent-banner-space`, and
+  the phone toasts on `--verify-banner-space` too. Measured before: the
+  banner covered 46 px of the tab bar at 390x844 and 108 px of Karaoke
+  Night's confirm pill, Resend and Dismiss included; with no banner a toast
+  still covered 56 px of the pill. After: 0 px of overlap in 64 measured
+  combinations (main app and Karaoke Night; 320x568, 390x844, 844x390 and
+  1440x900; banner, pill and toast each on and off). The voice pill, the
+  practice-timer pill, the mixer edit toolbar, the vocal remover's toasts,
+  the jam chat bubble and guide dock and Merc's bottom corners stand on the
+  banner as well. Desktop toasts sit top right and are unchanged.
+- **Guitar Night and Drum Night read the claims.** A Google sign-up started
+  in either room comes back with the gift claimed; their account chips now
+  hand the account to `syncPromoClaims`, with each room's own line: "5
+  credits added. Use them to separate the drums from a song." and "... the
+  guitar from a song." Both rooms are web-only entries.
+- Tests: `toast-above-consent-banner.spec.ts` (red before: toast bottom 780
+  against a banner top of 668), `toast-above-confirm-bar.spec.ts`,
+  `foot-space.test.ts` and `foot-stack-css.test.ts`.
+
+### Web: share cards and copy that say what the tools do (#1007)
+
+- **Seven share cards** (jam, karaoke, mirror, pitch-training,
+  vocal-range-test, voice-type-test, which-singer) drop lines the about page
+  dropped in Komediruzecki/disjoint-colliders#109 and pills the app does not
+  back, and are re-stamped (`pnpm run og:versions`). The Jam entry page no
+  longer says "one scoreboard for the whole room": a song room has none
+  (`JamSongTimeline.tsx`), only drill rooms draw one. The voice type card
+  says six voice types (`VOICE_TYPE_BANDS`), Singer Match says 31 singers
+  (`legend-catalog.ts`), and the range FAQ says the Mirror measures a glide
+  up and a glide down.
+- **Voice type, not voice band** (owner). Every visible "voice band" now says
+  "voice type", and each claim stays as `singer-match.ts` runs it: the range
+  picks the type it overlaps most, the singer comes from that type, and the
+  same range always gets the same singer. Nothing says the singer's own
+  range was compared with yours. Identifiers and comments keep "band".
+- **The intro's promise** reads "Four short tasks map your range and find a
+  famous singer of your voice type." It said "Ninety seconds more"; the run
+  is four tasks (`VOICEPRINT_STEPS`) with 66 timed seconds and four I'm
+  ready gates.
+- **"See your voice in 60 seconds"** (owner: fine as a hook though the visit
+  takes a few minutes) frames the Mirror's meta and card, and the voice type
+  card, Singer Match and a shared voiceprint's unfurl use the same framing.
+- **American spelling** in the rest of the visible copy: recognize, colored,
+  practiced, practice (verb), color and favorite. Ear Lab's faculty is
+  "Color" on screen; every id, key and stored value keeps `colour`, and
+  saved readings store only the drill id, so nothing needed mapping.
+
+### Mail: light only, wordmark v2, tiles on phones, no cached misses (#1010, #1006)
+
+- **`color-scheme: light only` (#1010)** in every mail where it said `dark`:
+  welcome, confirm, fresh link, purchase, withdrawal, password reset,
+  sign-in code, sign-up code, newsletter and account notice. In dark mode,
+  Gmail on the iPhone recolored a mail that declares `dark`, and the white
+  "Mercury" in the wordmark vanished into the white page; with `light only`
+  it shows the mail as drawn (test mails of 14 October on real phones). The
+  mails are still drawn dark. Because a client that honors `light only`
+  gives uncolored text the light defaults, every picture's alt text now has
+  a color, and every head carries `a[x-apple-data-detectors]` and
+  `u + #body a` rules for auto-linked dates and addresses, with
+  `<body id="body">`. `email-color-scheme.test.ts` renders every mail in
+  `PREVIEW_MAIL_IDS` plus the five renderers it does not show.
+- **Wordmark v2 (#1006)**: `public/email/wordmark-v2-2x.png`, v1 on a
+  rounded plate in the page color `#010409`, made from v1 by
+  `scripts/generate-mail-wordmark.mjs`. Nothing references it until #1008
+  (release step 3).
+- **Room tiles on a phone (#1006).** In the welcome and confirm mails a tile
+  stopped at 263 px and left about 90 px of the card empty at 390 px. A head
+  `<style>` makes a tile full width below 600 px and splits two evenly from
+  600 px; Outlook for Windows gets an `[if mso]` table. A client that drops
+  the `<style>` keeps the inline 263 px. `twoUp()` and `COLUMN_CLASS` are in
+  `email-layout.ts`.
+- **A missing mail picture is never cached (#1006).** `public/_headers`
+  gives `/email/*` a year of immutable caching, and the asset layer put it
+  on a 404 too. `/email/*` is now in `run_worker_first` (`wrangler.jsonc`),
+  and `src/worker.ts` passes the asset layer's answer through with
+  `Cache-Control: no-store` on any status from 400 up. Existing files keep
+  their immutable 200 and 304. The cost is one Worker invocation per mail
+  picture fetch.
+
+### Web, dev and PR previews only: the cookie bar with no Google tag (#1019)
+
+`build:dev` sets `VITE_CONSENT_PREVIEW=true`, and `CONSENT_PREVIEW` in
+`src/lib/defaults.ts` is true only for a development-mode build with it, so
+the dev deploy and PR previews show the bar by production's rules, store
+`mp.consent.v1` and publish `--consent-banner-space`, with no gtag.js, no
+`gtag` and no `dataLayer`. The tag build runs `pnpm run build` and cannot
+turn it on, even with the variable in the shell; a build with a tag ignores
+the flag. To be asked again on dev, clear `mp.consent.v1` or open Settings ›
+About › Cookie settings.
+
+### Shared code: the pitch detector's history (#1024)
+
+`PitchDetector`'s stability filter history (`packages/pitch-engine`) starts
+as a list of doubles and is only emptied and refilled in place, including on
+a confirmed note change. An empty `[]` changed kind on its first reading, and
+V8's compiled YIN pass dropped to the interpreter during a take's first
+voiced frames. Output is unchanged: four recordings fed frame by frame
+through both detectors gave 0 different frames in 6280 (48 kHz) and 6835
+(44.1 kHz). On its own it does not remove the first voiced frame's stall.
+This file runs everywhere the detector does: the web, Mercury Pitch and
+Beside Cue.
+
+### Premium exercises, native test builds only: Echo, the glide engine, Ng slides, Lip roll and Long note (#1002, #1003, #1005, #1011 to #1013, #1015 to #1017, #1020 to #1025)
+
+None of them reaches the web. `PREMIUM_EXERCISES` is `KARAOKE_IMPORT`, true
+only in a native test build (`src/lib/native-build.ts`); the Sing room's
+exercise row and picker are lazy imports behind it, and a store build folds
+them out (`assert-bundle.mjs` Stage 2). **Ng slides and Lip roll are work in
+progress: every one of their 17 plates is a stand-in** (`standIn: true` in
+`bridge-geometry.ts` and `bay-geometry.ts`), drawn from the measures until
+the paintings exist, and neither has tablet layouts. The owner chose to ship
+them in that state for the native test builds. `STAND-INS.md` in each room
+says how a painting replaces its stand-in without a code change.
+
+- **Echo.**
+  - Art round 5 (#1002): new phone result plates, a lopsided celebration
+    star with blotches, 26 sparkles along the chains, per-link ribbon gains,
+    and a city light per state that crossfades over 1200 ms.
+    `sync-echo-art.mjs` writes every number and stops on a crop or spec it
+    cannot follow.
+  - Merc's own voice (#1005): ten sustained "ooh" MP3s, F2 to F5 (257,720
+    bytes), played by `merc-sampler.ts` (`MERC_CALL`), loaded on entering
+    Echo; the synth sings any call the set cannot, or while it loads. These
+    are development placeholders. `PREMIUM_VOICES` folds them out of a store
+    build.
+  - The demo (#1003): two takes through the room's real engine, "Not like
+    this" and "Like this", with tooltips that each wait for the engine event
+    they explain, then a "Your turn" end card. It plays by itself only on a
+    first visit; "?" plays it again.
+  - Art round 6 and the result's hitch (#1012): 15 phone files with the
+    lamps painted out, a top light per state, and a celebration whose
+    ribbon fields build in 4 ms slices between frames. Demo take 2's longest
+    frame went from 83 to 100 ms to 16.8 ms; a real run's result still has
+    one 33 ms frame from the result's own mount.
+  - Pacing (#1016): TestFlight build 807 rushed the demo. Both takes now run
+    on one clock with no 4x stretch, take 2 sings back at the call's pace
+    (0.9 s a note) and every tooltip stays up at least 1.8 s. Take 1 lost its
+    "Slid past it" tooltip; the demo is 19.1 s.
+- **The glide engine (#1011, #1021).** `src/lib/glide/` is pure and
+  unit-tested: the path (`glide-path.ts`), the fit to the newest voiceprint
+  or the kept note (`glide-targets.ts`), `tickGlide` (lag and lead window,
+  60 ms smoothing, coverage per arch, breaks, jumps and the Pro top), the
+  metrics and `NG_SLIDES_LEVELS` / `LIP_ROLL_LEVELS`. #1021 fixed a
+  Learning band of 100 c that equalled the reading clamp, so Lip roll's
+  Learning lit any voiced frame: a band of a semitone or more now holds the
+  reading to twice the band (`heldForBand`). Every Ng level and Lip's Singer
+  and Professional read as before.
+- **Merc's hum and ride (#1013, #1020).** `merc.set('hum')` closes his mouth
+  and sends rings that follow the voice level; `ride` adds a lean that
+  follows the sung pitch's slope (0.8 semitones/s dead band, full lean at
+  6). Reduced motion stands him upright. `sim-pinned.test.ts` hashes every
+  approved state, and every digest matched after the change. #1020 adds a
+  `rings` switch, off in Lip roll.
+- **Ng slides (#1015, #1017).** The bridge room: an intro, a count-in on the
+  first root's tone, five slides fitted to the singer, the glass lit in
+  strips as far as the engine's coverage, and a result that pulls back to
+  the whole bridge with the lit share, a jumps chip and the best for the
+  level. Stop, Back or leaving drops the take. The demo (#1017) hums two
+  slides through the real engine (63.8 % lit, then 100 %), 18.84 s. Dev
+  fixtures: `?ngFixture=intro|mid-take|demo-off|result`.
+- **Lip roll (#1020, #1022).** The bay room, built as Ng's: three waves
+  fitted to the singer, a ribbon that sheds bubbles and buzzes, waves lit
+  where the voice followed, and a result with the share lit, a breaks chip,
+  jumps when there were any, and the best for the level. The demo (#1022)
+  buzzes two waves through the real engine with a 25 Hz level flutter
+  (`LIP_FLUTTER`): 48.4 % lit, then 100 %, 22.44 s. Dev fixtures:
+  `?lipFixture=intro|mid-take|demo-off|result`.
+- **First frames (#1023, #1024).** Lip's first lit strip cost a 167 ms frame
+  (both pictures decoded on the main thread in that frame's commit).
+  `room-kit/canvas-picture.ts` decodes a canvas's pictures off the main
+  thread with `createImageBitmap`, and wave 1's canvas (Ng: arch 1's glass)
+  is made hidden before the run: the frame is now at most 50 ms, the
+  detector's first voiced frame. `room-kit/result-band.ts` does the same for
+  each room's result band, prepared as the last wave or slide begins: Lip's
+  result went from 67 to 83 ms to 33 ms.
+- **Long note (#1025).** The room takes `controller`, `still` and
+  `onSettled` as Lip's and Ng's do, gains
+  `?longNoteFixture=intro|rest|mid-take|demo-off|result`, and preloads its
+  five lantern plates on the tap that opens it. Nothing visible changes:
+  pixels compared SHA-identical before and after. The web's Long note is the
+  older `src/features/exercises/long-note` and is untouched.
+- Shared kits these PRs grew: the demo kit's take clock (`demo-plan.ts`), a
+  `ready` wait and the scripted take; `playVoiceContour` in
+  `src/lib/demo-audio.ts` gains `timbre: 'hum'` and `flutter`, both off by
+  default, so every existing caller sounds as before. The fixtures are read
+  in `apps/mercurypitch/src/main.tsx` behind `import.meta.env.DEV`, and no
+  fixture string is in a production bundle (#1025).
+
 ## [0.9.17] - 2026-10-14
 
 424 commits since `v0.9.16` before this release PR, #974: PRs #858, #898,
