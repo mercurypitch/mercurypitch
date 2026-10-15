@@ -327,7 +327,7 @@ import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, welcomeSeen, } from '@/stores'
-import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
+import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, sessionLostOnLeave, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
@@ -492,17 +492,7 @@ const AppShell: Component<AppProps> = (props) => {
   // queue intentionally keeps running. Keep reload protection at this shell
   // level so queued File objects cannot be lost while another tab is visible.
   createEffect(() => {
-    const sessionBusy = getAllUvrSessionsReactive().some((session) => {
-      if (session.status === 'finalizing') return true
-      const recoverableServer =
-        session.processingMode === 'server' &&
-        session.apiSessionId !== undefined &&
-        session.apiSessionId !== ''
-      return (
-        (session.status === 'processing' || session.status === 'uploading') &&
-        !recoverableServer
-      )
-    })
+    const sessionBusy = getAllUvrSessionsReactive().some(sessionLostOnLeave)
     const queueBusy =
       uvrUploadQueue.isRunning() ||
       uvrUploadQueue.items().some((item) => item.status === 'queued')
