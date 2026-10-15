@@ -235,6 +235,9 @@ export interface StemMixerAudioDeps {
 export interface StemMixerAudioController {
   // Signals (accessors only — controller owns the signals)
   loading: Accessor<boolean>
+  /** The stems play from a stream (a phone, the app's hosted room), so the
+   *  vocal is never decoded whole and nothing here can read its samples. */
+  streamsStems: boolean
   loadError: Accessor<string>
   /** False when loading again cannot change the answer (the device, not
    *  the network, is what stands in the way): no Retry is offered. */
@@ -2434,6 +2437,7 @@ export const useStemMixerAudioController = (
     setMusicLevel,
     musicLevelRange: MUSIC_LEVEL.spec,
     loading,
+    streamsStems: streamStems,
     loadError,
     loadErrorRetryable,
     loadProgress,
