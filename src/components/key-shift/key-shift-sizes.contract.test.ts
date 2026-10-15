@@ -45,6 +45,15 @@ describe('the key control in a compact host', () => {
     ).toBeGreaterThanOrEqual(12)
   })
 
+  // Monospace made the label and the buttons look like a terminal beside the
+  // rest of the room. The number keeps still with tabular figures instead.
+  it("speaks in the app's typeface, with figures that keep still", () => {
+    expect(css).not.toMatch(/font-family:\s*monospace/)
+    expect(css).toMatch(
+      /(?:^|\n)\.value\s*\{[^}]*font-variant-numeric:\s*tabular-nums/,
+    )
+  })
+
   it('gives each of its buttons 44 px to press on a coarse pointer', () => {
     const step = rule(coarse, ".keyShift[data-size='compact'] .step")
     expect(lengthPx(step, 'width')).toBeGreaterThanOrEqual(44)

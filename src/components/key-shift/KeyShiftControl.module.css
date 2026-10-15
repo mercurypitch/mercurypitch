@@ -6,7 +6,6 @@
   align-items: center;
   gap: 0.3rem;
   margin: 0 0.3rem;
-  font-family: monospace;
   /* 12 px, the floor for text. */
   font-size: 0.75rem;
   color: var(--fg-secondary, #8b949e);
