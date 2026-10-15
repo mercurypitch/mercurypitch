@@ -33,7 +33,17 @@
 }
 
 .dialog {
-  background: var(--bg-secondary);
+  /* The caller's surface, carried over by the portal skin bridge. On a
+     stage that surface is glass: a translucent --bg-secondary that lets the
+     backdrop through the panels (45% in Karaoke Night). A dialog is never
+     glass, so the same colour sits on the dark stage's own ground
+     (dark-stage.css), and a bright photo behind cannot wash out its words.
+     Every glass in the app is a dark stage's (the mixer, Karaoke Night,
+     Jam, Ear Lab); an opaque surface, light or dark, covers the ground.
+     Not light-dark(): Lightning CSS polyfills it for the TV targets with
+     variables the bridge's inline color-scheme never sets. */
+  background:
+    linear-gradient(var(--bg-secondary), var(--bg-secondary)), #0d1117;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   padding: 1.5rem;

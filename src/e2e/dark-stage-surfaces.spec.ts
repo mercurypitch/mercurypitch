@@ -129,8 +129,17 @@ test('performance confirmations keep their stage skin outside the stage @smoke',
       throw new Error('Confirm dialog destructive action is missing')
     }
     const destructiveStyle = getComputedStyle(destructive)
+    // rgba(r, g, b, a), rgb(r g b / a) and color(srgb r g b / a) all end on
+    // their alpha; anything else is opaque.
+    const alphaOf = (color: string): number => {
+      const match =
+        /\/\s*([\d.]+)\s*\)$/.exec(color) ??
+        /^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/.exec(color)
+      return match === null ? 1 : Number(match[1])
+    }
     return {
       background: style.backgroundColor,
+      backgroundAlpha: alphaOf(style.backgroundColor),
       bodyColor: getComputedStyle(body).color,
       destructiveBackground: destructiveStyle.backgroundColor,
       destructiveColor: destructiveStyle.color,
@@ -140,6 +149,10 @@ test('performance confirmations keep their stage skin outside the stage @smoke',
   })
   expect(dialogPalette.outsideStage).toBe(true)
   expect(dialogPalette.primary).toBe(callerPrimary)
+  // The stage's glass reaches the dialog's tokens, but a dialog is never
+  // glass: it stands on a solid ground, so a bright backdrop cannot show
+  // through and wash out its words.
+  expect(dialogPalette.backgroundAlpha).toBe(1)
   expect(
     contrast(dialogPalette.bodyColor, dialogPalette.background),
   ).toBeGreaterThanOrEqual(4.5)
