@@ -676,6 +676,34 @@ function layoutTests(windows: readonly Size[], touch: boolean): void {
 layoutTests(MOUSE, false)
 layoutTests(TOUCH, true)
 
+test.describe('the app sidebar beside a tablet held upright', () => {
+  test.use({ hasTouch: true, isMobile: true })
+
+  test('can be put away without a hover, and gives the rail its room', async ({
+    page,
+  }) => {
+    await openSeededSong(page, { width: 800, height: 1280 })
+    const collapse = page.getByRole('button', { name: 'Collapse sidebar' })
+    // Shown without a hover, at a finger's size.
+    expect(
+      await collapse.evaluate((button) => getComputedStyle(button).opacity),
+    ).toBe('1')
+    const box = await collapse.boundingBox()
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
+    await expect(page.getByTestId('key-chip')).toHaveCount(0)
+
+    await collapse.click()
+
+    // The rail takes the room back: the key chip returns to it.
+    await expect(page.getByTestId('key-chip')).toHaveCount(1)
+    expect(overlapping(await readRows(page))).toEqual([])
+
+    await page.getByRole('button', { name: 'Expand sidebar' }).click()
+    await expect(page.getByTestId('key-chip')).toHaveCount(0)
+  })
+})
+
 test.describe('a blocked mic at 1440x900', () => {
   test('stays red under the pointer that pressed it', async ({ page }) => {
     await openSeededSong(page, { width: 1440, height: 900 })
