@@ -114,6 +114,20 @@ vi.mock('./bay-waves', async () => {
   }
 })
 
+// The result's lit band: what the room asks of it, in order. Its paint
+// never settles, as an <img> never loads in jsdom.
+const band = vi.hoisted(() => ({ calls: [] as string[] }))
+vi.mock('@/components/room-kit/result-band', () => ({
+  createResultBand: () => ({
+    prepare: () => band.calls.push('prepare'),
+    paint: () => {
+      band.calls.push('paint')
+      return new Promise<void>(() => undefined)
+    },
+    release: () => band.calls.push('release'),
+  }),
+}))
+
 const art = vi.hoisted(() => ({ resultAsked: 0 }))
 vi.mock('./bay-art', async () => {
   const actual = await vi.importActual<typeof ArtModule>('./bay-art')
@@ -362,6 +376,7 @@ beforeEach(() => {
   glass.strips = []
   glass.resets = 0
   art.resultAsked = 0
+  band.calls = []
   kept.history = []
   kept.bests = []
   kept.note = 52
@@ -469,6 +484,9 @@ describe('a run sung on the dots', () => {
       },
     ])
     expect(art.resultAsked).toBe(1)
+    // The band was decoded and sized as the last one began, so the
+    // result's frame only copies its columns (room-kit/result-band.ts).
+    expect(band.calls).toEqual(['prepare', 'paint'])
     expect(fake.released).toBe(1)
     expect(chip()).toBeNull()
   })

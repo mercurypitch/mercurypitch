@@ -12,11 +12,13 @@
 //
 // The wave, the sea-front and the result come in two widths: a phone at
 // DPR 2 or under takes the 860 px-per-W files, a DPR 3 phone the 1290
-// ones. The waves are drawn into canvases strip by strip (bay-waves.ts),
-// so they are loaded as images and decoded before the first strip; the
-// bay-back is a plate (plate-loader.ts), decoded while the screen pushes
-// in.
+// ones. The waves and the result's lit band are copied into canvases
+// (bay-waves.ts, room-kit/result-band.ts) from pictures the scene decodes
+// off the main thread (room-kit/canvas-picture.ts); the files are only
+// downloaded ahead here. The bay-back is a plate (plate-loader.ts),
+// decoded while the screen pushes in.
 
+import { warmPicture } from '@/components/room-kit/canvas-picture'
 import type { PlateSpec } from '@/components/room-kit/plate-loader'
 import { preloadPlate } from '@/components/room-kit/plate-loader'
 import bayBack from './art/bay-back.webp'
@@ -92,8 +94,9 @@ export const RESULT_PLATE: PlateSpec = {
 const images = new Map<string, Promise<HTMLImageElement>>()
 
 /**
- * One image, loaded and decoded once per room visit; rejects when it will
- * not load. Canvases draw from these.
+ * One image, loaded and decoded once and kept; rejects when it will not
+ * load. The bubble is drawn from this; the waves and the result's band
+ * only fall back to it where a bitmap cannot be made.
  */
 export function bayImage(url: string): Promise<HTMLImageElement> {
   const known = images.get(url)
@@ -119,22 +122,24 @@ const dpr = (): number =>
   typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1
 
 /**
- * On the tap that opens the room: the bay-back's decode and the waves'
- * loads. The result's picture waits for the last wave.
+ * On the tap that opens the room: the bay-back's decode, the waves'
+ * downloads (the scene decodes them, BayScene.tsx) and the bubble. The
+ * result's pictures wait for the last wave.
  */
 export function preloadLipArt(): void {
   preloadPlate(BAY_PLATE)
-  if (typeof Image === 'undefined') return
   const art = bayArt(dpr())
-  for (const url of [art.waveUnlit, art.waveLit, BUBBLE_URL]) {
-    if (url !== '') void bayImage(url).catch(() => undefined)
+  warmPicture(art.waveUnlit)
+  warmPicture(art.waveLit)
+  if (typeof Image !== 'undefined' && BUBBLE_URL !== '') {
+    void bayImage(BUBBLE_URL).catch(() => undefined)
   }
 }
 
-/** The result's pictures, started as the last wave begins. */
+/**
+ * The result's plate, started as the last wave begins; the scene decodes
+ * its lit band at the same moment (BayView.prepareResult).
+ */
 export function preloadLipResult(): void {
   preloadPlate(RESULT_PLATE)
-  if (typeof Image === 'undefined') return
-  const url = bayArt(dpr()).resultLit
-  if (url !== '') void bayImage(url).catch(() => undefined)
 }

@@ -40,6 +40,11 @@ export interface BridgeView {
   /** A new run or the intro: every arch unlit, no trace, the camera here. */
   reset: (camera: number) => void
   /**
+   * The last slide has begun: the result's lit band is decoded and its
+   * canvas sized now, so the result's frame does not decode it.
+   */
+  prepareResult: () => void
+  /**
    * The run is over: the pulled-back view, each arch lit over the ranges
    * (its u) the take lit.
    */

@@ -29,6 +29,7 @@ import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-
 import { createPictureSet } from '@/components/room-kit/canvas-picture'
 import type { Plate } from '@/components/room-kit/plate-loader'
 import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
+import { createResultBand } from '@/components/room-kit/result-band'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { targetAt } from '@/lib/glide/glide-path'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -209,42 +210,30 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
 
   const ribbonScale = (): number => (unit() / RIBBON_REFERENCE_W) * RIBBON_WIDEN
 
+  // The lit band's picture, decoded off the main thread as the last slide
+  // begins (room-kit/result-band.ts), so the result's frame only copies.
+  const litBand = createResultBand(
+    () => resultLit,
+    () => art().resultLit,
+    bridgeImage,
+  )
   /** The result's lit band: the take's ranges, at screen 4's arches. */
-  const paintResult = async (
+  const paintResult = (
     lit: readonly (readonly (readonly [number, number])[])[],
-  ): Promise<void> => {
-    const image = await bridgeImage(art().resultLit).catch(() => null)
-    const canvas = resultLit
-    if (image === null || canvas === undefined) return
-    canvas.width = image.naturalWidth || image.width
-    canvas.height = image.naturalHeight || image.height
-    const ctx = canvas.getContext('2d')
-    if (ctx === null) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    lit.forEach((ranges, k) => {
-      const apex = RESULT_VIEW.apexX[k] as number | undefined
-      if (apex === undefined) return
-      for (const [from, to] of ranges) {
-        const x0 = Math.floor(
-          (apex + from * RESULT_VIEW.halfWidth) * canvas.width,
+  ): Promise<void> =>
+    litBand.paint((width) =>
+      lit.flatMap((ranges, k) => {
+        const apex = RESULT_VIEW.apexX[k] as number | undefined
+        if (apex === undefined) return []
+        return ranges.map(
+          ([from, to]) =>
+            [
+              Math.floor((apex + from * RESULT_VIEW.halfWidth) * width),
+              Math.ceil((apex + to * RESULT_VIEW.halfWidth) * width),
+            ] as const,
         )
-        const x1 = Math.ceil((apex + to * RESULT_VIEW.halfWidth) * canvas.width)
-        if (x1 > x0) {
-          ctx.drawImage(
-            image,
-            x0,
-            0,
-            x1 - x0,
-            canvas.height,
-            x0,
-            0,
-            x1 - x0,
-            canvas.height,
-          )
-        }
-      }
-    })
-  }
+      }),
+    )
 
   /** The last frame's voice, for a ribbon that mounts after it. */
   let lastTrace: { trace: readonly TraceSample[]; camera: number } | null = null
@@ -265,6 +254,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
       placeMerc(mercBoxAt(props.layout, MERC_INTRO_X, ARCH.deckY))
       setResultReady(false)
     },
+    prepareResult: () => litBand.prepare(),
     result: (lit) => {
       if (resultHolder !== undefined && resultPlate === null) {
         resultPlate = claimPlate(RESULT_PLATE)
@@ -301,6 +291,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
   onCleanup(() => {
     glass.dispose()
     glassPictures.release()
+    litBand.release()
     if (riverPlate !== null) releasePlate(riverPlate)
     if (resultPlate !== null) releasePlate(resultPlate)
     riverPlate = null
