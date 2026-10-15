@@ -1324,10 +1324,15 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     // Several tour targets only exist in the fixed-2col workspace (the stem
     // controls are absent in the performance layout; the lyrics-panel action
     // buttons and the pitch lane only render in fixed-2col) — so the tour
-    // standardizes on that layout up front. Clicking the layout button is
-    // idempotent (a direct set, not a toggle); the choice persists after the
-    // tour like any manual layout switch.
-    navigate: ['[data-tour="mixer.layout-fixed"]'],
+    // standardizes on that layout up front. The layout is a row in the
+    // header's Layout menu (the View menu on a narrow header): the tour opens
+    // the menu and picks the row, which is idempotent (a direct set, not a
+    // toggle) and closes the menu; the choice persists after the tour like
+    // any manual layout switch.
+    navigate: [
+      '[data-tour="mixer.layout"]',
+      '[data-tour="mixer.layout-fixed"]',
+    ],
   },
   {
     title: 'Transport & seek',

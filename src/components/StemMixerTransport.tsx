@@ -10,7 +10,7 @@
 // rail's More carries them there: the stage panels (waveform, pitch,
 // lyrics), the edge the controls dock to, the workspace layout and, in the
 // one layout that has it, the mixer sidebar. The layout rows and the sidebar
-// row are the header's own (MixerViewControls), driven by the same object.
+// row are the header's own (mixerViewRows), driven by the same object.
 //
 // Docking is a choice in More. The handle stays a drag handle: dragged past
 // a few pixels it shows the edge it will land on (natural on touch), and a
@@ -24,7 +24,7 @@ import { createSignal, Show } from 'solid-js'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import type { OverflowMenuItem } from '@/components/OverflowMenu'
 import type { MixerViewControlsProps } from '@/components/stem-mixer/MixerViewControls'
-import { MIXER_LAYOUTS } from '@/components/stem-mixer/MixerViewControls'
+import { mixerViewRows } from '@/components/stem-mixer/MixerViewControls'
 import { MixerCapsule } from '@/components/stem-mixer/rail/MixerCapsule'
 import { MixerRail } from '@/components/stem-mixer/rail/MixerRail'
 import { MixerTimeline } from '@/components/stem-mixer/rail/MixerTimeline'
@@ -222,33 +222,10 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
       onSelect: () => props.setToolbarPosition?.(side),
     }))
 
-  const viewRows = (): OverflowMenuItem[] => {
-    const rows: OverflowMenuItem[] = MIXER_LAYOUTS.map((option, index) => ({
-      key: `layout-${option.layout}`,
-      label: option.label,
-      checked: props.view.layout === option.layout,
-      checkType: 'radio',
-      separatorBefore: index === 0,
-      icon: () => tick(props.view.layout === option.layout),
-      onSelect: () => props.view.onLayoutChange(option.layout),
-    }))
-    // Only the fixed two-column layout has a sidebar to hide, as in the header.
-    if (props.view.layout === 'fixed-2col') {
-      rows.push({
-        key: 'sidebar',
-        label: 'Mixer sidebar',
-        checked: !props.view.sidebarHidden,
-        checkType: 'checkbox',
-        separatorBefore: true,
-        icon: () => tick(!props.view.sidebarHidden),
-        onSelect: () => props.view.onToggleSidebar(),
-      })
-    }
-    return rows
-  }
-
   const focusRows = (): OverflowMenuItem[] =>
-    props.karaokeFocus() ? [...stageRows(), ...dockRows(), ...viewRows()] : []
+    props.karaokeFocus()
+      ? [...stageRows(), ...dockRows(), ...mixerViewRows(props.view)]
+      : []
 
   return (
     <>

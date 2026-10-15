@@ -1,60 +1,81 @@
-// The header's view controls: which layout is on, switching it, and the
-// sidebar toggle that only the fixed layout has.
+// The mixer's view rows: the layouts, the one in use ticked, a pick that
+// switches, the tour's hook on the fixed layout, and the sidebar switch that
+// only the fixed layout has. The header's Layout and View menus and focus
+// mode's More all show these rows.
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { MixerLayout } from './MixerViewControls'
-import { MixerViewControls } from './MixerViewControls'
+import { describe, expect, it, vi } from 'vitest'
+import type { MixerLayout, MixerViewControlsProps } from './MixerViewControls'
+import { currentLayout, MIXER_LAYOUTS, mixerViewRows, } from './MixerViewControls'
 
-afterEach(cleanup)
+function view(initial: MixerLayout) {
+  const [layout, setLayout] = createSignal<MixerLayout>(initial)
+  const [hidden, setHidden] = createSignal(false)
+  const onLayoutChange = vi.fn(setLayout)
+  const onToggleSidebar = vi.fn(() => setHidden((was) => !was))
+  const props: MixerViewControlsProps = {
+    get layout() {
+      return layout()
+    },
+    onLayoutChange,
+    get sidebarHidden() {
+      return hidden()
+    },
+    onToggleSidebar,
+  }
+  return { props, onLayoutChange, onToggleSidebar }
+}
 
-describe('MixerViewControls', () => {
-  it('marks the layout in use and switches on a press', () => {
-    const [layout, setLayout] = createSignal<MixerLayout>('auto-1col')
-    const onLayoutChange = vi.fn(setLayout)
-    render(() => (
-      <MixerViewControls
-        layout={layout()}
-        onLayoutChange={onLayoutChange}
-        sidebarHidden={false}
-        onToggleSidebar={() => {}}
-      />
-    ))
-    const single = screen.getByRole('button', { name: 'Single column' })
-    const fixed = screen.getByRole('button', { name: 'Two columns fixed' })
-    expect(single).toHaveAttribute('aria-pressed', 'true')
-    expect(fixed).toHaveAttribute('aria-pressed', 'false')
+describe('mixerViewRows', () => {
+  it('lists the layouts as radio rows, the one in use checked', () => {
+    const { props, onLayoutChange } = view('auto-1col')
+    const rows = mixerViewRows(props)
 
-    fireEvent.click(fixed)
+    expect(rows.map((row) => row.label)).toEqual(
+      MIXER_LAYOUTS.map((option) => option.label),
+    )
+    expect(rows.every((row) => row.checkType === 'radio')).toBe(true)
+    expect(rows.find((row) => row.checked === true)?.key).toBe(
+      'layout-auto-1col',
+    )
 
+    rows.find((row) => row.key === 'layout-fixed-2col')?.onSelect()
     expect(onLayoutChange).toHaveBeenCalledWith('fixed-2col')
-    expect(fixed).toHaveAttribute('aria-pressed', 'true')
-    expect(single).toHaveAttribute('aria-pressed', 'false')
-    // The tour switches to the fixed layout through this hook.
-    expect(fixed).toHaveAttribute('data-tour', 'mixer.layout-fixed')
+    expect(mixerViewRows(props).find((row) => row.checked === true)?.key).toBe(
+      'layout-fixed-2col',
+    )
   })
 
-  it('offers the sidebar toggle in the fixed layout only, named for what it does', () => {
-    const [layout, setLayout] = createSignal<MixerLayout>('fixed-2col')
-    const [hidden, setHidden] = createSignal(false)
-    const onToggle = vi.fn(() => setHidden((was) => !was))
-    render(() => (
-      <MixerViewControls
-        layout={layout()}
-        onLayoutChange={setLayout}
-        sidebarHidden={hidden()}
-        onToggleSidebar={onToggle}
-      />
-    ))
+  it('carries the tour’s hook on the fixed layout, which the tour picks first', () => {
+    const { props } = view('auto-1col')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hide mixer sidebar' }))
-    expect(onToggle).toHaveBeenCalledTimes(1)
     expect(
-      screen.getByRole('button', { name: 'Show mixer sidebar' }),
-    ).toHaveAttribute('title', 'Show mixer sidebar')
+      mixerViewRows(props)
+        .filter((row) => row.tour !== undefined)
+        .map((row) => [row.key, row.tour]),
+    ).toEqual([['layout-fixed-2col', 'mixer.layout-fixed']])
+  })
 
-    setLayout('performance')
-    expect(screen.queryByRole('button', { name: /mixer sidebar/ })).toBeNull()
+  it('offers the sidebar switch in the fixed layout only, checked while shown', () => {
+    const { props, onToggleSidebar } = view('fixed-2col')
+    const sidebar = () =>
+      mixerViewRows(props).find((row) => row.key === 'sidebar')
+
+    expect(sidebar()?.checked).toBe(true)
+    sidebar()?.onSelect()
+    expect(onToggleSidebar).toHaveBeenCalledTimes(1)
+    expect(sidebar()?.checked).toBe(false)
+
+    props.onLayoutChange('performance')
+    expect(sidebar()).toBeUndefined()
+  })
+})
+
+describe('currentLayout', () => {
+  it('names and draws the layout in use', () => {
+    expect(currentLayout('performance').label).toBe(
+      'Performance: big centered lyrics',
+    )
+    expect(currentLayout('auto-2col').label).toBe('Two columns auto')
   })
 })

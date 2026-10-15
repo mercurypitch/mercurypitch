@@ -6,7 +6,6 @@ import type { Accessor, Component } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { UvrStemType } from '@/db/entities'
 import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
-import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
@@ -39,8 +38,9 @@ import { yourDevicePossessive } from '@/lib/device-noun'
 import { deviceClass } from '@/lib/device-tier'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
+import { mixerKaraokeNightUrl } from '@/lib/karaoke-night-link'
 import { transposePitchReadings } from '@/lib/key-shift/key-shift'
-import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
+import { isLocalSaveNavigationLocked, useLocalSaveNavigationLock, } from '@/lib/local-save-navigation-lock'
 import { hasPlayableLoop } from '@/lib/loop-gap'
 import { lyricGlance } from '@/lib/lyric-glance'
 import { lyricWindowScript } from '@/lib/lyric-window-script'
@@ -49,6 +49,7 @@ import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import { createPersistedSignal } from '@/lib/storage'
@@ -68,7 +69,7 @@ import { activeTab, karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } 
 import { recordActivity } from '@/stores/usage-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
-import { AlertTriangle, ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
+import { AlertTriangle, SkipBack, SkipForward, X } from './icons'
 import { KaraokeMobileStage } from './KaraokeMobileStage'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
@@ -77,9 +78,11 @@ import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
 import type { KeyShiftBinding } from './key-shift/KeyShiftControl'
 import { VoiceTypePicker } from './key-shift/VoiceTypePicker'
 import type { KaraokeMoreBinding } from './mobile/KaraokeMoreSheet'
+import { karaokeNightReason } from './stem-mixer/header/karaoke-night'
+import type { MixerHeaderKaraokeNight, MixerHeaderPlaylist, MixerHeaderStage, } from './stem-mixer/header/MixerHeader'
+import { MixerHeader } from './stem-mixer/header/MixerHeader'
 import type { LoopPoint } from './stem-mixer/LoopPointMenu'
 import { LoopPointMenu } from './stem-mixer/LoopPointMenu'
-import { MixerViewControls } from './stem-mixer/MixerViewControls'
 import type { StemMixerHosting } from './stem-mixer-hosting'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
@@ -126,6 +129,11 @@ interface StemMixerProps {
   autoPlay?: boolean
   /** Karaoke playlist mode: silence the vocal but keep it as scoring reference. */
   karaokeReferenceVocal?: boolean
+  /**
+   * A separation or an upload in this tab that leaving the page would stop.
+   * The studio passes it, so Open in Karaoke Night waits while it runs.
+   */
+  separationRunning?: () => boolean
   /** Rendering preset. 'studio' (default) is the full in-app toolset; the
    *  standalone karaoke page uses 'performance' — a clean stage without the
    *  pitch-analysis/edit tooling. */
@@ -910,6 +918,103 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const handlePlaylistPrev = () => fadeThenSwitch(playlist.prev)
   const handlePlaylistNext = () => fadeThenSwitch(playlist.advance)
   const handlePlaylistStopAll = () => fadeThenSwitch(playlist.stopPlaylist)
+
+  // ── Header ───────────────────────────────────────────────────
+  // The playlist line under the title, while one runs.
+  const headerPlaylist = (): MixerHeaderPlaylist | null => {
+    if (!playlist.isPlaylistActive()) return null
+    const current = playlist.currentSong()
+    if (current === null || current === undefined) return null
+    const next = playlist.nextSong()
+    return {
+      singer: current.singerName,
+      song: current.songTitle,
+      next:
+        next === null || next === undefined
+          ? undefined
+          : { song: next.songTitle, singer: next.singerName },
+      canGoBack: playlist.currentIndex() !== 0,
+      onPrevious: handlePlaylistPrev,
+      onNext: handlePlaylistNext,
+      onStop: handlePlaylistStopAll,
+    }
+  }
+
+  const headerStage = (): MixerHeaderStage | undefined => {
+    if (props.showStageSettings === false) return undefined
+    return {
+      background,
+      // The performance stage keeps the room's own transparency.
+      transparency:
+        props.preset === 'performance'
+          ? undefined
+          : {
+              value: stageAlpha(),
+              min: KARAOKE_STAGE_ALPHA.min,
+              max: KARAOKE_STAGE_ALPHA.max,
+              step: KARAOKE_STAGE_ALPHA.step,
+              fillPercent: stageGlassFillPercent(),
+              onInput: updateStageAlpha,
+            },
+    }
+  }
+
+  // Open in Karaoke Night: not where it has nothing to add. The native app
+  // has no Karaoke Night page, and a hosted mixer (the Karaoke room) and
+  // the performance stage (Karaoke Night itself) are already a stage.
+  const offersKaraokeNight = (): boolean =>
+    !IS_NATIVE_BUILD &&
+    props.preset !== 'performance' &&
+    hosted === undefined &&
+    !isStandaloneKaraokeSurface()
+  const headerKaraokeNight = (): MixerHeaderKaraokeNight | undefined => {
+    if (!offersKaraokeNight()) return undefined
+    return {
+      href: mixerKaraokeNightUrl(props.sessionId),
+      hrefNow: () =>
+        mixerKaraokeNightUrl(props.sessionId, {
+          startAtSec: audio.elapsed(),
+        }),
+      reason: karaokeNightReason({
+        playlistRunning: playlist.isPlaylistActive(),
+        separating: props.separationRunning?.() === true,
+        takeSaving: isLocalSaveNavigationLocked(),
+      }),
+      // The page load takes longer than the fade, so the song fades out
+      // under it rather than stopping mid-note when this page goes.
+      onLeave: () => {
+        if (audio.playing()) audio.handlePause()
+      },
+    }
+  }
+
+  // Share links are only useful once songs are cloud-synced across devices:
+  // gated behind the premium flag (off by default).
+  const shareSong = () => {
+    const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
+    // A blocked clipboard (iOS Safari, or any non-secure origin such as a
+    // LAN dev host) must not become an unhandled rejection, which
+    // AppErrorBoundary turns into the full-screen crash modal. Failing to
+    // copy a link is a message, not a crash.
+    void navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        setShareToast('Link copied')
+      })
+      .catch(() => {
+        setShareToast('Could not copy. Press and hold the link.')
+      })
+      .finally(() => {
+        setTimeout(() => setShareToast(''), 2500)
+      })
+  }
+  const headerShare = () =>
+    PREMIUM_FEATURES
+      ? {
+          label: shareToast() === '' ? 'Share' : shareToast(),
+          onShare: shareSong,
+        }
+      : undefined
 
   // ── Zen transport: unified song navigation ───────────────────
   // The zen stage's back/next controls span whichever context is active: an
@@ -2671,244 +2776,41 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       >
         {/* Header */}
         <Show when={!karaokeFocus()}>
-          <div class="sm-header">
-            <div class="sm-header-left">
-              <Show when={props.onBack}>
-                <button
-                  class="sm-back-btn"
-                  onClick={() => props.onBack?.()}
-                  title="Back"
-                >
-                  <ChevronLeft />
-                </button>
-              </Show>
-              <div class="sm-header-titles">
-                <h2>{props.songTitle.replace(/\.[^.]+$/, '')} (session)</h2>
-                <Show
-                  when={playlist.isPlaylistActive() && playlist.currentSong()}
-                  fallback={
-                    <Show when={audio.duration() > 0}>
-                      <span class="sm-session-id">
-                        {canvas.formatTime(audio.duration())}
-                      </span>
-                    </Show>
-                  }
-                >
-                  <div class="sm-playlist-subtitle">
-                    <Show when={playlist.currentSong()!.singerName}>
-                      <span class="sm-playlist-singer">
-                        {playlist.currentSong()!.singerName}
-                      </span>
-                      <span class="sm-playlist-dot">·</span>
-                    </Show>
-                    <span>{playlist.currentSong()!.songTitle}</span>
-                    <Show when={playlist.nextSong()}>
-                      <span class="sm-playlist-next">
-                        · Next: {playlist.nextSong()!.songTitle}
-                        <Show when={playlist.nextSong()!.singerName}>
-                          {' '}
-                          ({playlist.nextSong()!.singerName})
-                        </Show>
-                      </span>
-                    </Show>
-                    <span class="sm-playlist-controls">
-                      <button
-                        class="sm-playlist-ctrl-btn"
-                        title="Previous song"
-                        disabled={playlist.currentIndex() === 0}
-                        onClick={handlePlaylistPrev}
-                      >
-                        <SkipBack />
-                      </button>
-                      <button
-                        class="sm-playlist-ctrl-btn"
-                        title="Skip to next song"
-                        onClick={handlePlaylistNext}
-                      >
-                        <SkipForward />
-                      </button>
-                      <button
-                        class="sm-playlist-ctrl-btn"
-                        title="Stop playlist"
-                        onClick={handlePlaylistStopAll}
-                      >
-                        <X />
-                      </button>
-                    </span>
-                  </div>
-                </Show>
-              </div>
-            </div>
-            {/* The view settings sit on the title's line, so a header that
-                wraps keeps its actions on one row below them. */}
-            <div class="sm-header-view">
-              <MixerViewControls {...layout.viewControls} />
-            </div>
-            <div
-              class="sm-header-actions"
-              style={{ display: 'flex', gap: '0.5rem' }}
-              data-tour="mixer.header"
-            >
-              <Show when={props.showStageSettings !== false}>
-                <Show when={props.preset !== 'performance'}>
-                  <label class="sm-stage-glass" title="Stage transparency">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"
-                      />
-                    </svg>
-                    <input
-                      type="range"
-                      class="sm-stage-glass-slider"
-                      min={KARAOKE_STAGE_ALPHA.min}
-                      max={KARAOKE_STAGE_ALPHA.max}
-                      step={KARAOKE_STAGE_ALPHA.step}
-                      value={stageAlpha()}
-                      // A custom track cannot read the input's own value, so
-                      // the filled share travels as a percentage — the same
-                      // arrangement the stem faders use with --stem-volume.
-                      style={{
-                        '--sm-stage-glass-fill': `${stageGlassFillPercent()}%`,
-                      }}
-                      aria-label="Stage transparency"
-                      onInput={(event) =>
-                        updateStageAlpha(Number(event.currentTarget.value))
-                      }
-                    />
-                  </label>
-                </Show>
-                <PremiumBackgroundPicker
-                  controller={background}
-                  label="Stage"
-                />
-              </Show>
-              <Show when={props.onOfferTour}>
-                <button
-                  class="sm-btn sm-btn-secondary"
-                  onClick={() => props.onOfferTour?.('button')}
-                  title="Take a guided tour of the mixer"
-                  style={{ gap: '0.4rem' }}
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14">
-                    <path
-                      fill="currentColor"
-                      d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
-                    />
-                  </svg>{' '}
-                  Tour
-                </button>
-              </Show>
-              <button
-                type="button"
-                class="sm-btn sm-btn-secondary"
-                data-tour="mixer.playlist"
-                classList={{ 'sm-btn--active': playlistSidebarOpen() }}
-                onClick={() => {
-                  const opening = !playlistSidebarOpen()
-                  if (opening) {
-                    closePitchTools()
-                    setPlaylistSidebarMounted(true)
-                  }
-                  setPlaylistSidebarOpen(opening)
-                }}
-                title="Open songs and playlists"
-                style={{ gap: '0.4rem' }}
-              >
-                <Music /> Songs
-              </button>
-              <button
-                type="button"
-                class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
-                classList={{ 'sm-btn--active': pitchAnalysis.panelOpen() }}
-                onClick={() => {
-                  const opening = !pitchAnalysis.panelOpen()
-                  if (opening) {
-                    setPlaylistSidebarOpen(false)
-                    pitchAnalysis.setEditMode(false)
-                    pitchAnalysis.setSelectedNoteId(null)
-                  }
-                  pitchAnalysis.setPanelOpen(opening)
-                }}
-                title="Pitch Analysis & Settings"
-                style={{ gap: '0.4rem' }}
-              >
-                <Settings /> Pitch
-              </button>
-              {/* Share links are only useful once songs are cloud-synced across
-                devices — gated behind the premium flag (off by default). */}
-              <Show when={PREMIUM_FEATURES}>
-                <button
-                  class="sm-share-btn"
-                  classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
-                  onClick={() => {
-                    const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
-                    // No catch here meant a blocked clipboard — iOS Safari,
-                    // or any non-secure origin such as a LAN dev host — became
-                    // an unhandled rejection, and AppErrorBoundary turns those
-                    // into the full-screen crash modal. Failing to copy a link
-                    // is a toast, not a crash.
-                    void navigator.clipboard
-                      .writeText(url)
-                      .then(() => {
-                        setShareToast('Link copied to clipboard!')
-                      })
-                      .catch(() => {
-                        setShareToast(
-                          'Could not copy — press and hold the link',
-                        )
-                      })
-                      .finally(() => {
-                        setTimeout(() => setShareToast(''), 2500)
-                      })
-                  }}
-                  title="Copy share link"
-                >
-                  <Share /> {shareToast() || 'Share'}
-                </button>
-              </Show>
-              <button
-                class="sm-btn sm-btn-secondary"
-                onClick={() => setKaraokeZen(true)}
-                title="Zen mode — the clean, lyrics-forward karaoke view (Back returns here)"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M4 7h16M4 12h16M4 17h9" />
-                </svg>
-                Zen
-              </button>
-              <button
-                class="sm-btn sm-btn-secondary"
-                data-tour="mixer.focus"
-                onClick={() => setKaraokeFocus((prev) => !prev)}
-                title={
-                  karaokeFocus()
-                    ? 'Exit karaoke mode (Esc)'
-                    : 'Karaoke focus mode'
-                }
-              >
-                {karaokeFocus() ? (
-                  <Minimize2 size={14} />
-                ) : (
-                  <Maximize2 size={14} />
-                )}
-              </button>
-            </div>
-          </div>
+          <MixerHeader
+            title={props.songTitle.replace(/\.[^.]+$/, '')}
+            onBack={props.onBack}
+            playlist={headerPlaylist()}
+            songsOpen={playlistSidebarOpen()}
+            onToggleSongs={() => {
+              const opening = !playlistSidebarOpen()
+              if (opening) {
+                closePitchTools()
+                setPlaylistSidebarMounted(true)
+              }
+              setPlaylistSidebarOpen(opening)
+            }}
+            pitchOpen={pitchAnalysis.panelOpen()}
+            onTogglePitch={() => {
+              const opening = !pitchAnalysis.panelOpen()
+              if (opening) {
+                setPlaylistSidebarOpen(false)
+                pitchAnalysis.setEditMode(false)
+                pitchAnalysis.setSelectedNoteId(null)
+              }
+              pitchAnalysis.setPanelOpen(opening)
+            }}
+            stage={headerStage()}
+            view={layout.viewControls}
+            onZen={() => setKaraokeZen(true)}
+            onFocus={() => setKaraokeFocus(true)}
+            karaokeNight={headerKaraokeNight()}
+            onTour={
+              props.onOfferTour === undefined
+                ? undefined
+                : () => props.onOfferTour?.('button')
+            }
+            share={headerShare()}
+          />
         </Show>
 
         {/* Focus-mode now-playing bar — the header (with the playlist subtitle and
@@ -3536,180 +3438,10 @@ export const StemMixerStyles: string = `
     #161b22;
 }
 
-/* Header */
-.sm-header {
-  display: flex;
-  /* Wraps rather than overflows: a long song title beside the full set of
-     actions can outgrow any width, not only the tablet seam below. */
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.55rem 0.75rem;
-  padding: 0.875rem 1.25rem;
-  background: var(--bg-primary, #0d1117);
-  border-bottom: 1px solid var(--border, #30363d);
-  flex-shrink: 0;
-}
-
-/* Layout and sidebar (MixerViewControls): pushed to the right, beside the
-   actions on a wide header and on the title's line when it wraps. */
-.sm-header-view {
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-}
-
-/* The app sidebar leaves the full mixer with a tablet-sized content column
-   before the <=768px Zen stage takes over. Keep every action reachable in
-   that seam instead of letting the right side clip off-screen. */
-@media (max-width: 1100px) {
-  .sm-header {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.55rem;
-  }
-
-  .sm-header-left {
-    min-width: 0;
-  }
-
-  .sm-header-actions {
-    flex: 1 1 100%;
-    min-width: 0;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-}
-
-.sm-header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.sm-header-left h2 {
-  margin: 0;
-  font-size: 1.05rem;
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-stage-glass {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--fg-secondary, #8b949e);
-}
-
-.sm-stage-glass svg {
-  flex: none;
-}
-
-/* The only mixer slider that still wore the native appearance. A native range
-   paints its unfilled half in a hard-coded UA grey -- #3b3b3b under a dark
-   color-scheme -- which owes nothing to the stage palette and reads as a grey
-   plate on the glass, more or less visible depending on the backdrop behind
-   it. The stem faders and the pitch-analysis sliders already draw their own
-   track; this one now does too, from the same tokens. */
-.sm-stage-glass-slider {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  width: 88px;
-  height: 14px;
-  background: transparent;
-  border: none;
-  outline: none;
-  cursor: pointer;
-}
-
-/* WebKit track */
-.sm-stage-glass-slider::-webkit-slider-runnable-track {
-  height: 4px;
-  border: none;
-  border-radius: 2px;
-  background: linear-gradient(
-    to right,
-    var(--accent, #58a6ff) 0 var(--sm-stage-glass-fill, 45%),
-    var(--bg-tertiary, #21262d) var(--sm-stage-glass-fill, 45%) 100%
-  );
-}
-
-.sm-stage-glass-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  margin-top: -4px;
-  border-radius: 50%;
-  border: 2px solid var(--on-accent, #0d1117);
-  background: var(--accent, #58a6ff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-}
-
-/* Firefox track */
-.sm-stage-glass-slider::-moz-range-track {
-  height: 4px;
-  border: none;
-  border-radius: 2px;
-  background: linear-gradient(
-    to right,
-    var(--accent, #58a6ff) 0 var(--sm-stage-glass-fill, 45%),
-    var(--bg-tertiary, #21262d) var(--sm-stage-glass-fill, 45%) 100%
-  );
-}
-
-.sm-stage-glass-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid var(--on-accent, #0d1117);
-  background: var(--accent, #58a6ff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-}
-
-.sm-stage-glass-slider:focus-visible {
-  outline: 2px solid var(--accent, #58a6ff);
-  outline-offset: 2px;
-}
-
-.sm-session-id {
-  /* Flex child in a column — only as wide as its content, not stretched to the
-     song-title width above it. */
-  align-self: flex-start;
-  max-width: 100%;
-  font-size: 0.7rem;
-  color: var(--fg-tertiary, #484f58);
-  background: var(--bg-tertiary, #21262d);
-  padding: 0.15rem 0.5rem;
-  border-radius: 0.3rem;
-  font-family: monospace;
-}
-
-.sm-header-titles {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.sm-playlist-subtitle {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  font-size: 0.78rem;
-  color: var(--fg-tertiary, #768390);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/* The playlist line in focus mode's now-playing bar. */
 .sm-playlist-singer {
   font-weight: 600;
   color: #ffd166;
-}
-.sm-playlist-dot {
-  opacity: 0.6;
 }
 .sm-playlist-next {
   opacity: 0.7;
@@ -3811,71 +3543,6 @@ export const StemMixerStyles: string = `
   .sm-left-rail-wrap {
     animation: none;
   }
-}
-
-.sm-btn--active {
-  background: var(--accent, #58a6ff) !important;
-  color: var(--on-accent, #0d1117) !important;
-  border-color: var(--accent, #58a6ff) !important;
-}
-
-.sm-back-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-
-.sm-back-btn:hover {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-back-btn svg {
-  width: 0.9rem;
-  height: 0.9rem;
-}
-
-.sm-share-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--accent, #8b5cf6);
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.sm-share-btn:hover {
-  background: var(--bg-hover, #30363d);
-  border-color: var(--accent, #8b5cf6);
-}
-
-.sm-share-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-.sm-share-btn--copied {
-  color: var(--success, #3fb950);
-  border-color: var(--success, #3fb950);
-  background: rgba(63, 185, 80, 0.1);
 }
 
 /* Loading */
@@ -7747,47 +7414,4 @@ export const StemMixerStyles: string = `
     transition: none;
   }
 }
-
-/* Standard Buttons */
-.sm-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.15s;
-}
-
-.sm-btn-secondary {
-  background: var(--bg-tertiary, #21262d);
-  border-color: var(--border, #30363d);
-  color: var(--fg-secondary, #8b949e);
-}
-
-.sm-btn-secondary:hover {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-pitch-debug-btn svg {
-  width: 0.8rem;
-  height: 0.8rem;
-}
-
-.sm-btn-primary {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-
-.sm-btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover, #79c0ff);
-}
-
-.sm-btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}`
+`

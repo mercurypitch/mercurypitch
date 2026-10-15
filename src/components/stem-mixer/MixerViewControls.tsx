@@ -1,21 +1,17 @@
-// MixerViewControls is the mixer header's layout switch and sidebar toggle.
+// The mixer's workspace layouts and its sidebar switch, as data and rows.
 // ============================================================
 //
-// How the workspace is laid out is a view setting, chosen once and left,
-// so it sits in the header beside Zen and Focus rather than in the playback
-// rail, where the timeline needs the room.
+// How the workspace is laid out is a view setting, chosen once and left, so
+// the header holds it in one Layout menu (MixerHeader) rather than four
+// buttons, beside a sidebar toggle that only the fixed two-column layout has.
 //
-// The sidebar toggle only exists in the fixed two-column layout, the one
-// layout with a sidebar to hide.
-//
-// Focus mode hides the header. The rail's More menu offers the same layouts
-// and the same sidebar switch there (StemMixerTransport), named from
-// MIXER_LAYOUTS and driven by the same props object.
+// Focus mode hides the header. The rail's More menu offers the same rows
+// there (StemMixerTransport), built here from MIXER_LAYOUTS and driven by
+// the same props object.
 
-import type { Component, JSX } from 'solid-js'
-import { For, Show } from 'solid-js'
-import { SlidersHorizontal } from '@/components/icons'
-import styles from './MixerViewControls.module.css'
+import type { JSX } from 'solid-js'
+import { CheckSmall } from '@/components/icons'
+import type { OverflowMenuItem } from '@/components/OverflowMenu'
 
 /** The mixer's workspace layouts (useStemMixerLayoutController). */
 export type MixerLayout =
@@ -76,6 +72,8 @@ const PerformanceIcon = () => (
   </svg>
 )
 
+const tick = (on: boolean) => (on ? <CheckSmall size={16} /> : null)
+
 /** The four layouts, in the order and the words both places offer them. */
 export const MIXER_LAYOUTS: readonly {
   layout: MixerLayout
@@ -100,41 +98,43 @@ export const MIXER_LAYOUTS: readonly {
   },
 ]
 
-export const MixerViewControls: Component<MixerViewControlsProps> = (props) => {
-  const sidebarLabel = () =>
-    props.sidebarHidden ? 'Show mixer sidebar' : 'Hide mixer sidebar'
+/**
+ * The layouts as menu rows, and the sidebar switch in the one layout that
+ * has a sidebar: the header's Layout menu, its View menu when the header is
+ * folded, and More in focus mode, where the header is hidden. The fixed
+ * layout's row carries the tour's hook: the tour opens the menu and picks it.
+ */
+export function mixerViewRows(
+  view: MixerViewControlsProps,
+): OverflowMenuItem[] {
+  const rows: OverflowMenuItem[] = MIXER_LAYOUTS.map((option, index) => ({
+    key: `layout-${option.layout}`,
+    label: option.label,
+    checked: view.layout === option.layout,
+    checkType: 'radio',
+    separatorBefore: index === 0,
+    tour: option.tour,
+    icon: () => tick(view.layout === option.layout),
+    onSelect: () => view.onLayoutChange(option.layout),
+  }))
+  if (view.layout === 'fixed-2col') {
+    rows.push({
+      key: 'sidebar',
+      label: 'Mixer sidebar',
+      checked: !view.sidebarHidden,
+      checkType: 'checkbox',
+      separatorBefore: true,
+      icon: () => tick(!view.sidebarHidden),
+      onSelect: () => view.onToggleSidebar(),
+    })
+  }
+  return rows
+}
 
+/** The layout in use, as MIXER_LAYOUTS names and draws it. */
+export function currentLayout(layout: MixerLayout) {
   return (
-    <div class={styles.viewControls}>
-      <div class={styles.layouts} role="group" aria-label="Mixer layout">
-        <For each={MIXER_LAYOUTS}>
-          {(option) => (
-            <button
-              type="button"
-              class={styles.layoutBtn}
-              data-tour={option.tour}
-              aria-pressed={props.layout === option.layout}
-              aria-label={option.label}
-              title={option.label}
-              onClick={() => props.onLayoutChange(option.layout)}
-            >
-              {option.icon()}
-            </button>
-          )}
-        </For>
-      </div>
-      <Show when={props.layout === 'fixed-2col'}>
-        <button
-          type="button"
-          class={styles.sidebarBtn}
-          classList={{ [styles.sidebarBtnOn!]: !props.sidebarHidden }}
-          aria-label={sidebarLabel()}
-          title={sidebarLabel()}
-          onClick={() => props.onToggleSidebar()}
-        >
-          <SlidersHorizontal />
-        </button>
-      </Show>
-    </div>
+    MIXER_LAYOUTS.find((option) => option.layout === layout) ??
+    MIXER_LAYOUTS[0]!
   )
 }

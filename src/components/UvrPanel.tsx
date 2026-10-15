@@ -41,7 +41,7 @@ import { PART_STEM_DISPLAY, StemSplitError } from '@/lib/uvr-stem-split'
 import type { UvrUploadQueueWorkerContext } from '@/lib/uvr-upload-queue'
 import { isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, isSessionStoreReady, karaokeActiveGroupId, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setKaraokeActiveGroupId, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, isSessionStoreReady, karaokeActiveGroupId, resumableServerSessions, retryUvrSession, saveAllUvrSessions, sessionLostOnLeave, setCurrentUvrSession, setErrorUvrSession, setKaraokeActiveGroupId, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
 import { karaokeAutoIndexShazam, karaokeStemDenoise, } from '@/stores/karaoke-settings-store'
@@ -2977,6 +2977,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   initialSeekSec={mixerInitialSeekSec()}
                   autoPlay={mixerAutoPlay()}
                   karaokeReferenceVocal={isPlaylistActive()}
+                  // Leaving for Karaoke Night in this tab would stop these.
+                  separationRunning={() =>
+                    getAllUvrSessionsReactive().some(sessionLostOnLeave) ||
+                    uploadQueue.isRunning() ||
+                    uploadQueue.items().some((item) => item.status === 'queued')
+                  }
                   onOfferTour={(trigger) => {
                     if (trigger === 'mount') {
                       offerTourOnce(
