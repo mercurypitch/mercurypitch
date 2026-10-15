@@ -9,7 +9,7 @@
 // the chip is never hidden without its rows in More, or shown beside them.
 //
 // The timeline's second line is CSS alone (MixerRail.module.css), since no
-// script needs to know about it: under 600 px of rail on a mouse, and under
+// script needs to know about it: under 650 px of rail on a mouse, and under
 // 1000 px on a coarse pointer, where the controls are 44 px.
 
 /** Below this many px of rail, on a mouse, Speed folds into More. */

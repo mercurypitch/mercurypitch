@@ -6,7 +6,10 @@
      860 px and up    one row
      under 860 px     one row; Speed folds into More (rail-fold.ts, by
                       script, since More's rows change too)
-     under 600 px     the controls on one line, the timeline under them
+     under 650 px     the controls on one line, the timeline under them.
+                      With Speed in More the two ends, their gaps and the
+                      bar's edges take 410 px (Chromium, October 2026), so
+                      the timeline beside them never has less than 240 px.
    On a coarse pointer the controls are 44 px, so the timeline takes its
    own line under 1000 px of rail, and Speed stays on the controls line
    down to 640 px (rail-fold.ts). */
@@ -81,7 +84,7 @@
 
 /* ── Short of width ────────────────────────────────────────────────── */
 
-@container mixer-rail (max-width: 599px) {
+@container mixer-rail (max-width: 649px) {
   .grid {
     grid-template-areas:
       'left . right'
