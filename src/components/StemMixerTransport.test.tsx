@@ -251,6 +251,15 @@ describe('StemMixerTransport, short of width', () => {
     resize(120)
 
     expect(screen.getByTestId('speed-chip')).toBeInTheDocument()
+    // Kept, not folded: More opens without the speeds. Its other radio rows
+    // are the focus pill's own.
+    fireEvent.click(screen.getByTestId('mixer-more'))
+    expect(
+      screen.getByRole('menuitem', { name: 'Clear loop' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryAllByRole('menuitemradio', { name: /^Speed / }),
+    ).toHaveLength(0)
   })
 })
 

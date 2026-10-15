@@ -386,6 +386,8 @@ describe('MixerHeader, short of room', () => {
     )
 
     expect(screen.getByRole('dialog', { name: 'Stage' })).toBeInTheDocument()
+    // Choosing the row closes the View menu behind it.
+    expect(screen.queryByRole('menu')).toBeNull()
   })
 
   it('folds under 1000 px on a touch screen', () => {
