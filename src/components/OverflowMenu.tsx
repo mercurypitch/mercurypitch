@@ -40,6 +40,8 @@ export interface OverflowMenuItem {
   checkType?: 'radio' | 'checkbox'
   /** Separate independent radio choices, such as playback source and tone. */
   separatorBefore?: boolean
+  /** A guided tour's hook (`data-tour`) on the row, for a step that picks it. */
+  tour?: string
   /**
    * Sorted to the bottom, under a divider.
    *
@@ -65,6 +67,8 @@ export interface OverflowMenuProps {
   panelClass?: string
   triggerTitle?: string
   testId?: string
+  /** A guided tour's hook (`data-tour`) on the trigger, for a step that opens it. */
+  triggerTour?: string
 }
 
 export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
@@ -183,6 +187,7 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
         type="button"
         class={`${styles.trigger} ${props.triggerClass ?? ''}`}
         data-testid={props.testId}
+        data-tour={props.triggerTour}
         aria-label={props.label}
         title={props.triggerTitle}
         aria-haspopup="menu"
@@ -269,6 +274,7 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
                     }
                     aria-checked={item().checked}
                     data-testid={`overflow-${item().key}`}
+                    data-tour={item().tour}
                     class={styles.row}
                     classList={{
                       [styles.rowDestructive!]: item().destructive,
