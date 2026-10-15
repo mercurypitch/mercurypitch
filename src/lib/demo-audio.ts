@@ -252,6 +252,36 @@ export const LIP_FLUTTER: VoiceFlutter = { hz: 25, depth: 0.85 }
  */
 const FLUTTER_PARTIALS = [0, 1, 0.45, 0.2]
 
+/** Points per period where flutterMakeup reads the shape. */
+const FLUTTER_SAMPLES = 4096
+
+/**
+ * The gain that gives a line with `flutter` the loudness of the line
+ * without it. The flutter dips the level and never lifts it, so a buzzed
+ * line is quieter (by 4.0 dB with LIP_FLUTTER: 1 over the RMS of the
+ * swing). The shape is read as Web Audio plays it, scaled to a peak of 1.
+ */
+export function flutterMakeup(flutter: VoiceFlutter): number {
+  const swing = Math.max(0, Math.min(1, flutter.depth)) / 2
+  const shape: number[] = []
+  let peak = 0
+  for (let i = 0; i < FLUTTER_SAMPLES; i++) {
+    const x = (2 * Math.PI * i) / FLUTTER_SAMPLES
+    let value = 0
+    FLUTTER_PARTIALS.forEach((amount, k) => {
+      value += amount * Math.sin(k * x)
+    })
+    shape.push(value)
+    peak = Math.max(peak, Math.abs(value))
+  }
+  let power = 0
+  for (const value of shape) {
+    const gain = 1 - swing + (swing * value) / peak
+    power += gain * gain
+  }
+  return 1 / Math.sqrt(power / FLUTTER_SAMPLES)
+}
+
 /**
  * How the voice is coloured: an open "ooh", or "hum", the same partials
  * through a lower, slightly resonant filter, the dull, closed sound of a

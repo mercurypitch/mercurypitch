@@ -442,6 +442,22 @@ export const SpeakerIcon: Component<ShellIconProps> = (props) => (
   </svg>
 )
 
+/** The speaker with one small wave: the volume is low. */
+export const VolumeLowIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+    <path d="M15.5 9.5a3.5 3.5 0 0 1 0 5" />
+  </svg>
+)
+
+/** The speaker with a cross: the volume is all the way down. */
+export const VolumeOffIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+    <path d="M16 9.5l5 5M21 9.5l-5 5" />
+  </svg>
+)
+
 /** A document: the terms of use. */
 export const DocIcon: Component<ShellIconProps> = (props) => (
   <svg {...base(props)}>

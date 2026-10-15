@@ -17,8 +17,9 @@ import type { Component, JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { thisDevice } from '@/lib/device-noun'
 import { KaraokeStudioScreen } from './KaraokeStudioScreen'
-import { isFullBleed } from './premium-rooms'
+import { isFullBleed, isPremiumRoom } from './premium-rooms'
 import { PushedScreen } from './PushedScreen'
+import { RoomVolumeHint } from './RoomVolumeHint'
 import type { PushedScreen as PushedScreenId } from './run-shell-store'
 import { popScreen, pushed, pushScreen } from './run-shell-store'
 import { AboutScreen } from './settings/AboutScreen'
@@ -141,6 +142,9 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
           bleed={isFullBleed(screen)}
         >
           {body(screen)}
+          {/* A premium room's notes play through the phone's volume: the
+              hint asks for it to go up while it is down (RoomVolumeHint). */}
+          {isPremiumRoom(screen) ? <RoomVolumeHint /> : null}
         </PushedScreen>
       )}
     </Show>

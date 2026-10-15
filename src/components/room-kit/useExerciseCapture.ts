@@ -24,6 +24,7 @@ import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import { playReferenceTone } from '@/lib/reference-tone'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
+import { roomOutput } from './room-output'
 
 export type CaptureFailure = 'denied' | 'unavailable'
 
@@ -170,7 +171,7 @@ export function useExerciseCapture(
     playTone: async (midi, seconds = 1.1) => {
       const ctx = await unlock()
       if (ctx === null) return
-      await playReferenceTone(ctx, midi, seconds)
+      await playReferenceTone(ctx, midi, seconds, roomOutput(ctx))
     },
     audio: () => (disposed ? Promise.resolve(null) : unlock()),
   }

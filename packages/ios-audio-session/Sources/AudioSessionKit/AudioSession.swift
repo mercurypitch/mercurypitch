@@ -188,6 +188,49 @@ public enum AudioSession {
         }
     }
 
+    /// The app's session as it stands, read and nothing else: the phone's
+    /// volume and route for a page's low-volume hint, and the category, mode
+    /// and options for a test build's audio readout. Reading never changes
+    /// the session: WebKit owns it too, and a change under its audio is how
+    /// #923 lost the song's sound (docs/agent/MISTAKES.md).
+    public static func snapshot() -> [String: Any] {
+        let session = AVAudioSession.sharedInstance()
+        let route = session.currentRoute
+        let port: (AVAudioSessionPortDescription) -> [String: String] = { description in
+            ["type": description.portType.rawValue, "name": description.portName]
+        }
+        return [
+            "outputVolume": Double(session.outputVolume),
+            "outputs": route.outputs.map(port),
+            "inputs": route.inputs.map(port),
+            "category": session.category.rawValue,
+            "mode": session.mode.rawValue,
+            "options": optionNames(session.categoryOptions),
+            "otherAudioPlaying": session.isOtherAudioPlaying,
+            "silenceHint": session.secondaryAudioShouldBeSilencedHint,
+            "sampleRate": session.sampleRate,
+            "ioBufferDuration": session.ioBufferDuration,
+            "outputLatency": session.outputLatency,
+        ]
+    }
+
+    /// The category options by name, read off their bits, so that none of
+    /// the names iOS has since renamed is spelled here.
+    private static let optionBits: [(UInt, String)] = [
+        (0x1, "mixWithOthers"),
+        (0x2, "duckOthers"),
+        (0x4, "allowBluetoothHFP"),
+        (0x8, "defaultToSpeaker"),
+        (0x10, "interruptSpokenAudio"),
+        (0x20, "allowBluetoothA2DP"),
+        (0x40, "allowAirPlay"),
+        (0x80, "overrideMutedMicrophoneInterruption"),
+    ]
+
+    private static func optionNames(_ options: AVAudioSession.CategoryOptions) -> [String] {
+        optionBits.filter { (options.rawValue & $0.0) != 0 }.map { $0.1 }
+    }
+
     /// What the session actually is right now, for the dev readout.
     public static func describe() -> String {
         let session = AVAudioSession.sharedInstance()

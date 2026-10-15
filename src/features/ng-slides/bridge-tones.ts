@@ -8,6 +8,7 @@
 // the singer slides: every tone is shorter than the breath it sits in, and
 // a dropped run stops whatever still sounds.
 
+import { roomOutput } from '@/components/room-kit/room-output'
 import type { ReferenceTone } from '@/lib/reference-tone'
 import { startReferenceTone } from '@/lib/reference-tone'
 
@@ -22,7 +23,7 @@ export function createBridgeTones(): BridgeTones {
   const sounding = new Set<ReferenceTone>()
   return {
     play: (ctx, midi, seconds) => {
-      const tone = startReferenceTone(ctx, midi, seconds)
+      const tone = startReferenceTone(ctx, midi, seconds, roomOutput(ctx))
       sounding.add(tone)
       void tone.done.then(() => sounding.delete(tone))
     },

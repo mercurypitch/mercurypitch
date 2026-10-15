@@ -4,14 +4,15 @@
 //
 // What the Karaoke room needs and cannot import: the app's one AudioContext
 // and its background hold (`packages/audio-io`, which the root package does
-// not depend on), and the screen's keep-awake, the system's media controls
-// and the picture-in-picture window (`@irchiinnuss/mobile-runtime/
-// platform`, which eslint keeps out of `src/`).
+// not depend on), and the screen's keep-awake, the system's media controls,
+// the picture-in-picture window and the phone's volume and route
+// (`@irchiinnuss/mobile-runtime/platform`, which eslint keeps out of
+// `src/`).
 // Registered once from `main.tsx` through `registerNativeDevice`; the web
 // registers nothing.
 
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
-import { claimNowPlaying, keepAwake, micStopsOtherApps, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, pictureInPictureNeedsLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
+import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, pictureInPictureNeedsLyrics, readAudioOutput, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 
@@ -50,6 +51,12 @@ export function createNativeDevice(): NativeDeviceApi {
           void setPictureInPictureLyrics(script).catch(() => undefined)
         }
       : null,
+    // The volume and the route: read only, and none on a phone without
+    // the plugin (both answer null and nothing).
+    audioOutput: {
+      read: () => readAudioOutput(),
+      watch: (handler) => onAudioOutput(handler),
+    },
   }
 }
 

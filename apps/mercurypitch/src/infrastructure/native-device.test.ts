@@ -29,6 +29,8 @@ const platform = vi.hoisted(() => ({
   ),
   claimNowPlaying: vi.fn(),
   micStopsOtherApps: vi.fn(() => false),
+  readAudioOutput: vi.fn(async () => Promise.resolve(null as unknown)),
+  onAudioOutput: vi.fn((_handler: (reading: unknown) => void) => vi.fn()),
 }))
 
 const unlock = vi.hoisted(() => ({
@@ -227,6 +229,31 @@ describe('the device a room reaches through the bridge', () => {
       [script],
       [null],
     ])
+  })
+
+  it("reads the phone's volume and route, and passes every change through", async () => {
+    const reading = {
+      volume: 0.125,
+      step: 2,
+      steps: 15,
+      route: 'speaker',
+      outputs: [{ type: 'builtin-speaker', name: 'Phone' }],
+      detail: {},
+      reason: null,
+    }
+    platform.readAudioOutput.mockResolvedValueOnce(reading)
+    const stop = vi.fn()
+    platform.onAudioOutput.mockReturnValueOnce(stop)
+    const output = createNativeDevice().audioOutput
+    const handler = vi.fn()
+
+    expect(await output?.read()).toBe(reading)
+    const unsubscribe = output?.watch(handler)
+    platform.onAudioOutput.mock.calls[0]?.[0](reading)
+    unsubscribe?.()
+
+    expect(handler).toHaveBeenCalledWith(reading)
+    expect(stop).toHaveBeenCalledTimes(1)
   })
 
   it('has no lyrics to hand an Android window, which shows the page', () => {

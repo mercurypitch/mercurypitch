@@ -17,6 +17,7 @@
 
 import type { DemoSoundtrack } from '@/components/demo-kit/demo-sound'
 import { createDemoSoundtrack, outputLatency, } from '@/components/demo-kit/demo-sound'
+import { roomOutput } from '@/components/room-kit/room-output'
 import { LIP_FLUTTER } from '@/lib/demo-audio'
 import type { ReferenceTone } from '@/lib/reference-tone'
 import { startReferenceTone } from '@/lib/reference-tone'
@@ -50,7 +51,12 @@ export function createDemoSound(
       const id = setTimeout(() => {
         timers.delete(id)
         if (stopped) return
-        const tone = startReferenceTone(ctx, take.root, COUNT_IN_TONE_SEC)
+        const tone = startReferenceTone(
+          ctx,
+          take.root,
+          COUNT_IN_TONE_SEC,
+          roomOutput(ctx),
+        )
         tones.add(tone)
         void tone.done.then(() => tones.delete(tone))
       }, wait)

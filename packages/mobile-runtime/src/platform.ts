@@ -43,6 +43,12 @@ import { attempt, finiteOr, isIos, isNative, lazyListener, } from './native-call
 import { listenToTheWindow, tellTheWindowTheClock } from './picture-in-picture'
 import { claimCarrier, listenOnWebKit, onCarrierHolding, showOnWebKit, takeTheSound, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
+export type {
+  AudioOutputPort,
+  AudioOutputReading,
+  AudioRoute,
+} from './audio-output'
+export { onAudioOutput, readAudioOutput } from './audio-output'
 export type { Unsubscribe } from './native-calls'
 export type { PictureInPictureLyrics } from './picture-in-picture'
 export {

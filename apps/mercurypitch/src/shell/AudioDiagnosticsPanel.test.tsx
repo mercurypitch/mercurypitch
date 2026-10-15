@@ -25,6 +25,8 @@ interface FakeOscillator {
 let contexts: FakeAudioContext[] = []
 let oscillators: FakeOscillator[] = []
 let decode: () => Promise<unknown>
+/** What every analyser reads: one sample value, held. */
+let analyserLevel = 0
 
 class FakeAudioContext {
   state = 'suspended'
@@ -57,6 +59,15 @@ class FakeAudioContext {
   }
   createBufferSource() {
     return { connect() {}, disconnect() {}, start() {}, stop() {} }
+  }
+  createAnalyser() {
+    return {
+      fftSize: 2048,
+      connect() {},
+      getFloatTimeDomainData(samples: Float32Array) {
+        samples.fill(analyserLevel)
+      },
+    }
   }
   createOscillator() {
     const oscillator = {
@@ -107,6 +118,7 @@ beforeEach(() => {
   vi.useFakeTimers()
   contexts = []
   oscillators = []
+  analyserLevel = 0
   decode = async () => ({
     duration: 13.1,
     numberOfChannels: 2,
@@ -280,5 +292,129 @@ describe('the Audio section', () => {
     view?.unmount()
     view = null
     expect(ambient().sounding()).toBeNull()
+  })
+})
+
+describe("the phone's output, the census and the rooms' output", () => {
+  /** An iPhone playing to its receiver, then moved to the speaker turned low. */
+  const RECEIVER = {
+    volume: 1,
+    step: null,
+    steps: null,
+    route: 'receiver' as const,
+    outputs: [{ type: 'Receiver', name: 'Receiver' }],
+    detail: {
+      category: 'AVAudioSessionCategoryPlayAndRecord',
+      mode: 'AVAudioSessionModeDefault',
+      options: ['mixWithOthers', 'defaultToSpeaker'],
+      otherAudioPlaying: false,
+      silenceHint: false,
+      sampleRate: 48_000,
+      ioBufferDuration: 0.0213,
+      outputLatency: 0.012,
+    },
+    reason: null,
+  }
+
+  it('says the web has no reading of the phone', async () => {
+    await openPanel()
+    expect(row('Output')).toBe('not read on the web')
+    expect(row('Volume')).toBe('not read')
+    expect(row('Mic tracks')).toBe(
+      '0 live · 0 opened, 0 ended · mic manager holds none, no one using it',
+    )
+    expect(row('Contexts')).toBe('none made yet')
+    expect(row('Shared clock')).toBe('none')
+    expect(row('Room output')).toBe('none yet: open a room')
+  })
+
+  it("reads the phone's route, volume and session, and follows each change", async () => {
+    const store = await import('@/stores/native-shell-store')
+    let send: (reading: typeof RECEIVER) => void = () => undefined
+    const unregister = store.registerNativeDevice({
+      audioOutput: {
+        read: async () => RECEIVER,
+        watch: (handler: (reading: typeof RECEIVER) => void) => {
+          send = handler
+          return () => undefined
+        },
+      },
+    } as unknown as Parameters<typeof store.registerNativeDevice>[0])
+    try {
+      await openPanel()
+      await settle()
+      expect(row('Output')).toBe('Receiver (the earpiece) · Receiver')
+      expect(row('Volume')).toBe('1.00')
+      expect(row('Phone session')).toBe(
+        'PlayAndRecord · Default · mixWithOthers, defaultToSpeaker',
+      )
+      expect(row('Phone audio')).toMatch(
+        /^other audio none · silence hint off/u,
+      )
+
+      send({
+        ...RECEIVER,
+        volume: 0.0625,
+        route: 'speaker' as never,
+        outputs: [{ type: 'Speaker', name: 'Speaker' }],
+      })
+      expect(row('Output')).toBe('Speaker · Speaker')
+      expect(row('Volume')).toBe('0.06 · low: the rooms ask for more')
+    } finally {
+      unregister()
+    }
+  })
+
+  it('counts the mic tracks and contexts the page holds open', async () => {
+    const track = {
+      kind: 'audio',
+      label: 'iPhone Microphone',
+      readyState: 'live',
+      getSettings: () => ({
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+      }),
+      stop() {
+        this.readyState = 'ended'
+      },
+      addEventListener() {},
+    }
+    const getUserMedia = vi.fn(async () => ({ getAudioTracks: () => [track] }))
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      userAgent: navigator.userAgent,
+      mediaDevices: { getUserMedia },
+    })
+    const census = await import('./audio-census')
+    census.installAudioCensus({ win: window })
+    void new AudioContext()
+    await navigator.mediaDevices.getUserMedia({ audio: true })
+
+    await openPanel()
+    expect(row('Mic tracks')).toBe(
+      '1 live (#1 echo off noise off gain off) · 1 opened, 0 ended · mic manager holds none, no one using it',
+    )
+    expect(row('Contexts')).toBe('#1 suspended 48000 Hz · 0 closed')
+
+    track.stop()
+    vi.advanceTimersByTime(250)
+    expect(row('Mic tracks')).toMatch(/^0 live · 1 opened, 1 ended/u)
+  })
+
+  it("reads the rooms' output gain and what it sends, and names their context", async () => {
+    const census = await import('./audio-census')
+    census.installAudioCensus({ win: window })
+    const { roomOutput } = await import('@/components/room-kit/room-output')
+    const context = new AudioContext()
+    roomOutput(context)
+    // A sample of 0.316 is -10 dBFS.
+    analyserLevel = 0.316
+
+    await openPanel()
+    expect(row('Room output')).toBe(
+      'gain 1.00 · now -10.0 dBFS peak, -10.0 dBFS RMS',
+    )
+    expect(row('Contexts')).toBe('#1 suspended 48000 Hz (rooms) · 0 closed')
   })
 })

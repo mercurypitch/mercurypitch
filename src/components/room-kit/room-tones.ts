@@ -11,6 +11,7 @@
 
 import type { ReferenceTone } from '@/lib/reference-tone'
 import { startReferenceTone } from '@/lib/reference-tone'
+import { roomOutput } from './room-output'
 
 export interface RoomTones {
   /** Play `midi` for `seconds`, now. */
@@ -23,7 +24,7 @@ export function createRoomTones(): RoomTones {
   const sounding = new Set<ReferenceTone>()
   return {
     play: (ctx, midi, seconds) => {
-      const tone = startReferenceTone(ctx, midi, seconds)
+      const tone = startReferenceTone(ctx, midi, seconds, roomOutput(ctx))
       sounding.add(tone)
       void tone.done.then(() => sounding.delete(tone))
     },

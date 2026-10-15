@@ -11,8 +11,9 @@
 // scheduled that far ahead, less the speaker's own latency, so it is heard
 // when the screen shows it.
 
+import { roomOutput } from '@/components/room-kit/room-output'
 import type { DemoSound, VoiceContourOptions } from '@/lib/demo-audio'
-import { playVoiceContour } from '@/lib/demo-audio'
+import { flutterMakeup, playVoiceContour } from '@/lib/demo-audio'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { playReferenceTone } from '@/lib/reference-tone'
 import type { DemoVoicePoint } from './demo-plan'
@@ -49,7 +50,9 @@ export function outputLatency(ctx: AudioContext): number {
 /**
  * The demo's sound on `ctx`; `vibrato` is the one its frames carry,
  * `timbre` the voice's colour (an open "ooh" unless a room asks for a hum)
- * and `flutter` a lip buzz over it (Lip roll's).
+ * and `flutter` a lip buzz over it (Lip roll's). A buzzed voice is given
+ * back the loudness its flutter takes (flutterMakeup), so it sits level
+ * with the room's note as every demo voice does.
  */
 export function createDemoSoundtrack<Take extends SungDemoTake>(
   ctx: AudioContext,
@@ -59,7 +62,14 @@ export function createDemoSoundtrack<Take extends SungDemoTake>(
   flutter?: VoiceContourOptions['flutter'],
 ): DemoSoundtrack<Take> {
   const bus = ctx.createGain()
-  bus.connect(ctx.destination)
+  bus.connect(roomOutput(ctx))
+  let voiceOut: AudioNode = bus
+  if (flutter !== undefined) {
+    const makeup = ctx.createGain()
+    makeup.gain.value = flutterMakeup(flutter)
+    makeup.connect(bus)
+    voiceOut = makeup
+  }
   const voices: DemoSound[] = []
   const latency = outputLatency(ctx)
   const lead = Math.max(minLead, latency + 0.03)
@@ -75,7 +85,7 @@ export function createDemoSoundtrack<Take extends SungDemoTake>(
         playVoiceContour(ctx, take.voice, {
           hz: midiToFrequency(midi),
           startAt: ctx.currentTime + lead - latency,
-          destination: bus,
+          destination: voiceOut,
           vibrato,
           timbre,
           flutter,
@@ -95,7 +105,13 @@ export function createDemoSoundtrack<Take extends SungDemoTake>(
         // The context closed under us: nothing is sounding.
       }
       // Nothing of the demo stays in the graph once its tail has died.
-      setTimeout(() => bus.disconnect(), (RELEASE + 0.12) * 1000)
+      setTimeout(
+        () => {
+          if (voiceOut !== bus) voiceOut.disconnect()
+          bus.disconnect()
+        },
+        (RELEASE + 0.12) * 1000,
+      )
     },
   }
 }
