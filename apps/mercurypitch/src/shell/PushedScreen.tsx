@@ -17,8 +17,15 @@
 // art across the whole body. The art is a dark stage in either app theme
 // (dark-stage.css), so the bar over it takes the same contract: in the light
 // theme a dark title would otherwise sit on the dark art.
+//
+// The bar's right side is the screen's own: a slot (registerPushedBarEnd,
+// native-shell-store.ts) the screen under it fills. A premium room puts its
+// level pill and its "?" there (RoomBarEnd in the room kit); every other
+// screen leaves it empty.
 
 import type { Component, JSX } from 'solid-js'
+import { onCleanup } from 'solid-js'
+import { registerPushedBarEnd } from '@/stores/native-shell-store'
 import { BackIcon } from './icons'
 
 export interface PushedScreenProps {
@@ -52,6 +59,11 @@ export const PushedScreen: Component<PushedScreenProps> = (props) => (
         <BackIcon />
       </button>
       <span class="mp-pushed__title">{props.title}</span>
+      <div
+        class="mp-pushed__end"
+        ref={(el) => onCleanup(registerPushedBarEnd(el))}
+        data-testid="shell-pushed-end"
+      />
     </div>
     <div class="mp-pushed__body">{props.children}</div>
   </div>

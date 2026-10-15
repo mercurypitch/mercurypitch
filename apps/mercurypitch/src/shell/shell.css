@@ -748,6 +748,27 @@
   color: var(--text-primary);
 }
 
+/* The bar's right side: a slot the screen under it fills (PushedScreen.tsx),
+   as a premium room does with its level pill and "?". Solid's Portal wraps
+   what it draws there in a div of its own, which takes no box, so the
+   controls are the slot's own items. */
+.mp-pushed__end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.mp-pushed__end > * {
+  display: contents;
+}
+
+/* Empty, as on every screen but a room's, it is no item at all, so the
+   bar's gap does not take 8 px from the title. */
+.mp-pushed__end:empty {
+  display: none;
+}
+
 /* Its own scroll container: `.main-content` is the app's scroller and this
    screen is not inside it. */
 .mp-pushed__body {
@@ -793,11 +814,34 @@
   pointer-events: auto;
 }
 
+/* The slot is only as wide as its controls, but the gap between them is
+   the room's art too. */
+.mp-pushed--bleed .mp-pushed__bar > .mp-pushed__end {
+  pointer-events: none;
+}
+
+.mp-pushed--bleed .mp-pushed__bar > .mp-iconbtn,
+.mp-pushed--bleed .mp-pushed__bar > .mp-pushed__end {
+  flex: none;
+}
+
+.mp-pushed--bleed .mp-pushed__end button {
+  pointer-events: auto;
+}
+
 /* Over the art, the back button keeps its own glass and the title gets a
    soft scrim behind the word alone, so the sky stays open everywhere
    else. The bar takes the room's dark stage (PushedScreen.tsx), so the
    scrim and the halo are the stage's ground in either app theme. */
 .mp-pushed--bleed .mp-pushed__title {
+  /* With a room's controls on the right, a narrow phone shortens the
+     name rather than the controls or Back. Clipped across only: the
+     padding round it holds its shadow, and above and below it shows. */
+  min-width: 0;
+  white-space: nowrap;
+  overflow-x: hidden;
+  overflow-x: clip;
+  text-overflow: ellipsis;
   margin-left: -6px;
   padding: 6px 12px;
   border-radius: 999px;

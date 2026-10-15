@@ -1,0 +1,25 @@
+/* The room's side of the bar (RoomBar.tsx): the level pill and "?". */
+
+/* With no shell (a test, a fixture) they sit where the bar's right side
+   would be: the bar's own padding round a 44 px control. */
+.inPlace {
+  position: absolute;
+  top: calc(var(--safe-top, 0px) + 4px);
+  right: max(12px, var(--safe-right, 0px));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* "?" in the rooms' own glass, a 44 px target. */
+.ask {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(10, 18, 44, 0.55);
+  color: var(--text-secondary);
+}
