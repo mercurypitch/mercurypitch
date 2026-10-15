@@ -591,6 +591,15 @@ describe('the levels', () => {
       const seen = play(frames, plan)
 
       expect(heard.tones.slice(1)).toHaveLength(breathTones)
+      // Each root after its rest's pause, never while the singer lands.
+      const pause = LIP_ROLL_LEVELS[level].pauseSec
+      heard.tones.slice(1).forEach((played, k) => {
+        const due = plan.path.arches[k].landingEnd + pause
+        expect(played.at - plan.countIn).toBeGreaterThanOrEqual(due - 1e-9)
+        expect(played.at - plan.countIn).toBeLessThan(
+          due + STEP_MS / 1000 + 1e-9,
+        )
+      })
       // The path is the level's: the result comes as its last landing ends.
       const end = seen.find((s) => s.phase === 'result')
       expect(end?.t).toBeGreaterThanOrEqual(plan.path.duration - 1e-9)

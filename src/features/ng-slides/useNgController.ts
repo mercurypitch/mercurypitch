@@ -11,8 +11,9 @@
 // A run: the mic opens on the tap; with neither a voiceprint nor a note
 // kept, the singer hums an easy note first (settle-note.ts) and the slides
 // are fitted to it. Then the count-in (the first root's tone, a breath
-// while the bridge rolls in) and the five slides; the next root plays in
-// each breath where the level says so (`playsNextRoot`). After the last
+// while the bridge rolls in) and the five slides. Between slides the
+// bridge stops: a pause, then the next root plays where the level says so
+// (`playsNextRoot`), then the next slide rolls in. After the last
 // landing, the result: the run is kept and the view pulls back.
 // Stopping, a minute with no hum and leaving the app all drop the run:
 // nothing is kept.
@@ -39,7 +40,7 @@ import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
 import type { GlidePath } from '@/lib/glide/glide-path'
-import { segmentAt, targetAt } from '@/lib/glide/glide-path'
+import { restToneDue, segmentAt, targetAt } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import { NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
 import type { GlideTargets } from '@/lib/glide/glide-targets'
@@ -328,15 +329,12 @@ export function useNgController(): NgController {
     lastVoiceAt = performance.now()
   }
 
-  /** The breath's tone: the next root, once, where the level plays it. */
+  /** The next root's tone, after the rest's pause, where the level plays it. */
   const breathTone = (run: Live, t: number): void => {
-    if (!run.preset.playsNextRoot || audio === null) return
-    if (run.scripted !== null) return
-    const segment = segmentAt(run.plan.path, t)
-    if (segment === null || segment.phase !== 'breath') return
-    if (run.played.has(segment.arch)) return
-    run.played.add(segment.arch)
-    tones.play(audio, run.plan.roots[segment.arch], BREATH_TONE_SEC)
+    if (audio === null || run.scripted !== null) return
+    const arch = restToneDue(run.plan.path, run.preset, t, run.played)
+    if (arch === null) return
+    tones.play(audio, run.plan.roots[arch], BREATH_TONE_SEC)
     run.take.mute(t + BREATH_TONE_SEC + TONE_TAIL_SEC)
   }
 

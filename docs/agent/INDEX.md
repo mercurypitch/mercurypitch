@@ -90,7 +90,7 @@ These are the rules that break things when ignored.
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 5.6k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 5.4k | useLipController: one Lip roll run, from the tap to the result Owns the room's states (lip-machine.ts), the microphone and the audio cloc... |
-| `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 5.2k | useNgController: one Ng slides run, from the tap to the result Owns the room's states (ng-machine.ts), the microphone and the audio clock... |
+| `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 5.1k | useNgController: one Ng slides run, from the tap to the result Owns the room's states (ng-machine.ts), the microphone and the audio clock... |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 5.0k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.9k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
@@ -149,7 +149,7 @@ These are the rules that break things when ignored.
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 2.4k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 2.0k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
-| `glide` | [glide-engine.ts](../../src/lib/glide/glide-engine.ts) | 1.8k | Glide engine — a voice following a moving target: the lit share of each arch Ng slides' engine, and Lip roll's. |
+| `glide` | [glide-engine.ts](../../src/lib/glide/glide-engine.ts) | 1.9k | Glide engine — a voice following a moving target: the lit share of each arch Ng slides' engine, and Lip roll's. |
 | `sequence` | [sequence-engine.ts](../../src/lib/sequence/sequence-engine.ts) | 1.8k | Sequence engine — a phrase sung back note by note: each lands or misses Echo's engine, and later Note runner's and the onboarding's sung... |
 | `hold` | [hold-engine.ts](../../src/lib/hold/hold-engine.ts) | 1.7k | Hold engine — one held note: lock, breaks, the lantern's fill and the end A pure tick on a state object, the shape of `tickPhysics` in `s... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 1.1k | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |

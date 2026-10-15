@@ -87,8 +87,9 @@ export function rideX(t: number, countIn: number): number {
 /**
  * His x (W) at path time `t` on `scroll`: rideX, and past the playhead by
  * as far as the voice has ridden on while a held camera stood (the demo's,
- * bay-scroll.ts holdCamera). A run's camera never stops: he stays at the
- * playhead.
+ * bay-scroll.ts holdCamera). A run's camera is where the voice is sung
+ * (it stands between waves, and the voice's place with it): he stays at
+ * the playhead.
  */
 export function rideXOn(scroll: BayScroll, t: number): number {
   const ahead = scroll.at(t) - scroll.camera(t)

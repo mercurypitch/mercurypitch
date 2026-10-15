@@ -10,7 +10,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { GlidePath, TimedTarget } from './glide-path'
-import { judgedArchAt, lipRollPath, ngSlideRoots, ngSlidesPath, pathFromTargets, segmentAt, smoothstep, targetAt, } from './glide-path'
+import { judgedArchAt, lipRollPath, ngSlideRoots, ngSlidesPath, pathFromTargets, restToneDue, segmentAt, smoothstep, targetAt, } from './glide-path'
 import type { GlideLevelId } from './glide-presets'
 import { LIP_ROLL_LEVELS, NG_SLIDES_LEVELS } from './glide-presets'
 
@@ -61,17 +61,23 @@ describe('ngSlidesPath', () => {
       'breath',
       'up',
     ])
-    // 5 x (1.5 + 0.5 + 1.5 + 0.5) + 4 x 1.6
-    expect(path.duration).toBeCloseTo(26.4, 9)
-    expect(path.arches[1].start).toBeCloseTo(5.6, 9)
-    expect(path.arches[1].end).toBeCloseTo(9.1, 9)
+    // 5 x (1.5 + 0.5 + 1.5 + 0.5) + 4 x (1.0 + 1.6): the pause, the breath
+    expect(path.duration).toBeCloseTo(30.4, 9)
+    expect(path.arches[1].start).toBeCloseTo(6.6, 9)
+    expect(path.arches[1].end).toBeCloseTo(10.1, 9)
+    // One rest between slides, from the landing's end to the next slide.
+    const rest = path.segments[4]
+    expect([rest.kind, rest.arch, rest.fromMidi]).toEqual(['rest', 1, 49])
+    expect(rest.start).toBeCloseTo(path.arches[0].landingEnd, 9)
+    expect(rest.end - rest.start).toBeCloseTo(2.6, 9)
   })
 
   it.each(LEVELS)('runs %s at the design table timing', (level) => {
     // Arrange
     const preset = NG_SLIDES_LEVELS[level]
     const slide = preset.upSec + preset.topSec + preset.downSec
-    const expected = 5 * (slide + preset.landingSec) + 4 * preset.breathSec
+    const rest = preset.pauseSec + preset.breathSec
+    const expected = 5 * (slide + preset.landingSec) + 4 * rest
 
     // Act
     const path = ngSlidesPath(ngSlideRoots(50), preset)
@@ -192,7 +198,7 @@ describe('lipRollPath', () => {
     ])
     const wave = preset.upSec + preset.topSec + preset.downSec
     expect(path.duration).toBeCloseTo(
-      3 * (wave + preset.landingSec) + 2 * preset.breathSec,
+      3 * (wave + preset.landingSec) + 2 * (preset.pauseSec + preset.breathSec),
       9,
     )
     const first = path.arches[0]
@@ -258,5 +264,38 @@ describe('pathFromTargets', () => {
     ])
     expect(targetAt(path, 1.9)).toBeNull()
     expect(targetAt(path, 2.5)).toBe(64)
+  })
+})
+
+describe('restToneDue', () => {
+  it("plays each rest's root once, after the rest's pause", () => {
+    // Arrange
+    const preset = LIP_ROLL_LEVELS.singer
+    const path = lipRollPath([48, 50, 52], 12, preset)
+    const played = new Set<number>()
+    const [first, second] = path.arches
+    const due = (t: number) => restToneDue(path, preset, t, played)
+
+    // Act + Assert: nothing in a wave, its landing, or the pause.
+    expect(due(first.start + 1)).toBeNull()
+    expect(due(first.end + 0.1)).toBeNull()
+    expect(due(first.landingEnd + 0.01)).toBeNull()
+    expect(due(first.landingEnd + preset.pauseSec - 0.01)).toBeNull()
+    // Then the next wave's root, once.
+    expect(due(first.landingEnd + preset.pauseSec)).toBe(1)
+    expect(due(first.landingEnd + preset.pauseSec + 0.1)).toBeNull()
+    expect(due(second.landingEnd + preset.pauseSec + 0.02)).toBe(2)
+    expect([...played]).toEqual([1, 2])
+  })
+
+  it('plays nothing at a level that plays no root', () => {
+    // Arrange
+    const preset = NG_SLIDES_LEVELS.professional
+    const path = ngSlidesPath(ngSlideRoots(48), preset)
+
+    // Act + Assert
+    for (let t = 0; t < path.duration; t += 0.05) {
+      expect(restToneDue(path, preset, t, new Set())).toBeNull()
+    }
   })
 })

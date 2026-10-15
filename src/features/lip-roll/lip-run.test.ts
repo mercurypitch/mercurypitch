@@ -29,6 +29,7 @@ vi.mock('@/stores/lip-roll-store', () => ({
 }))
 
 const {
+  BREATH_TONE_SEC,
   bestText,
   breaksText,
   introLine,
@@ -82,6 +83,45 @@ const result = (over: Partial<GlideResult> = {}): GlideResult => ({
   topsReached: null,
   topTendencyCents: null,
   ...over,
+})
+
+describe('the pacing between waves (owner, 15 Oct 2026)', () => {
+  // Seconds from a wave's landing to the next wave: a pause, the next
+  // root's tone where the level plays one, then the rest of the breath;
+  // and the whole run with its count-in.
+  it.each([
+    [
+      'learning',
+      { pause: 1.0, tone: 0.7, afterTone: 1.1, rest: 2.8, run: 25.2 },
+    ],
+    ['singer', { pause: 1.0, tone: 0.7, afterTone: 0.8, rest: 2.5, run: 21.3 }],
+    [
+      'professional',
+      { pause: 0, tone: 0, afterTone: 1.2, rest: 1.2, run: 15.4 },
+    ],
+  ] as const)(
+    '%s: stops, waits, plays the next root, then rolls on',
+    (level, want) => {
+      const preset = LIP_ROLL_LEVELS[level]
+      const plan = planLipRun(
+        { roots: [48, 50, 52], semitones: 12, source: 'settled' },
+        preset,
+      )
+      const { arches } = plan.path
+      for (let k = 0; k + 1 < arches.length; k++) {
+        expect(arches[k + 1].start - arches[k].landingEnd).toBeCloseTo(
+          want.rest,
+          9,
+        )
+      }
+      expect(preset.pauseSec).toBe(want.pause)
+      expect(preset.playsNextRoot ? BREATH_TONE_SEC : 0).toBe(want.tone)
+      expect(want.rest - want.pause - want.tone).toBeCloseTo(want.afterTone, 9)
+      // From the tone to the next wave: the breath, as it was before.
+      expect(want.tone + want.afterTone).toBeCloseTo(preset.breathSec, 9)
+      expect(plan.countIn + plan.path.duration).toBeCloseTo(want.run, 9)
+    },
+  )
 })
 
 describe('the plan', () => {

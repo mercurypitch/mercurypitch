@@ -92,7 +92,7 @@ describe('his place under a held camera (the demo)', () => {
   const scroll = createBayScroll(path, 2.8)
   const held = holdCamera(scroll, { from: 1.5, to: 2.95 })
 
-  it('is the playhead on a run: its camera never stops', () => {
+  it('is the playhead on a run: its camera is where the voice is sung', () => {
     for (const t of [-2.8, -1, 0, 2, 5]) {
       expect(rideXOn(scroll, t)).toBeCloseTo(rideX(t, 2.8), 12)
     }
