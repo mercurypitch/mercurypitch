@@ -20,7 +20,8 @@ Frames are in W (the screen's width), placed as `bay-art.ts` and
 
 | Plate       | Files (`art/`)                   | Frame (left, top, width, height)            | The stand-in                                                                                                                                                                                                                                                                                                                                                         |
 | ----------- | -------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bay-back    | `bay-back.webp` (645 a W)        | -0.02, -0.14, 1.724, 2.7606                 | Drawn: screen 1's sky bands, the moon and its halo at the measured place and size, thin clouds, rimmed cliff profiles on the horizon, the far sea with the moonlight path. Scrolls at a quarter of the waves' speed; its horizon moves from screen 1's to the run's with the zoom. 0.14 W of sky over L0's frame for that move.                                      |
+| Bay-back    | `bay-back.webp` (645 a W)        | -0.02, -0.14, 1.724, 2.7606                 | Drawn: screen 1's sky bands, thin clouds, rimmed cliff profiles on the horizon, the far sea with the moonlight path. No moon: that is its own plate. Slides with the camera (`bay-sky.ts`: fast through screens 2 and 3, slower after); its horizon moves from screen 1's to the run's with the zoom. 0.14 W of sky over L0's frame for that move.                   |
+| Moon        | `bay-moon.webp` (645 a W)        | 0.4074, 0.1607, 0.5386, 0.5386              | Drawn: the halo, then the disc, at screen 1's measured size and colour, centred in the frame, clear around. Drawn in the bay-back's box, so it slides with the sky; over the count-in's zoom it shrinks to screens 2 and 3's size and rises to their mean height (`bay-sky.ts`).                                                                                     |
 | Wave, lit   | `bay-wave-lit-{860,1290}.webp`   | -0.5625, -0.04, 1.125, 0.9228 about a crest | Gemini's `lip_wave_lit_a`, scaled to wave B (h 0.3708, a 0.4125), each column pulled up so its painted edge meets the model's 0.0102 W under the dots, its water run on to screen 2's foam line (0.448 W under the root) and graded to screen 2's six lit zones (each within 2.5 CIEDE2000; the sync prints them). Pooled under the wave, faded under the foam line. |
 | Wave, unlit | `bay-wave-unlit-{860,1290}.webp` | the same                                    | The lit plate, its colour set by depth under the dots to screen 1's unlit zones (masked grading), its own light kept as texture. Same pixels, same alpha.                                                                                                                                                                                                            |
 | Sea-front   | `bay-sea-front-{860,1290}.webp`  | 0, 1.7594, 1, 0.8612, a tile one W wide     | Drawn: #07203e to #030e1c with ripple streaks and a broken foam line; its top fades in over 0.06 W. Drawn over Merc, so he sits in the water.                                                                                                                                                                                                                        |
@@ -28,7 +29,7 @@ Frames are in W (the screen's width), placed as `bay-art.ts` and
 | Result, lit | `bay-result-lit-{860,1290}.webp` | 0, 1.0516, 1, 1.2093 (the waves' band)      | The same picture, ungraded, cropped to the band. The room copies in each wave's lit ranges from the take.                                                                                                                                                                                                                                                            |
 | Bubble      | `bay-bubble.webp` (64 px)        | drawn at 0.014 to 0.028 W                   | Drawn: a thin bright ring, a faint fill and a highlight. Likely final.                                                                                                                                                                                                                                                                                               |
 
-The files add up to about 530 KB. Every file folds out of a store build
+The files add up to about 550 KB. Every file folds out of a store build
 with the room (`apps/mercurypitch/vite.config.ts`, `PREMIUM_IMAGES`; checked
 by `premium-images-build.test.ts` and `scripts/assert-bundle.mjs`, which
 finds them by their `bay-` names).
@@ -62,6 +63,15 @@ the foam's sparkles on a lit crest are drawn in code, not plates.
          "height": 2.7606
        }
      },
+     "moon": {
+       "files": { "645": "bay-moon-645.webp" },
+       "frame": {
+         "left": 0.4074,
+         "top": 0.1607,
+         "width": 0.5386,
+         "height": 0.5386
+       }
+     },
      "bubble": { "files": { "sprite": "bubble.webp" }, "px": 64 }
    }
    ```
@@ -92,5 +102,11 @@ the foam's sparkles on a lit crest are drawn in code, not plates.
   room slides the plate down to the run's 0.9277 W with the zoom, so a
   painting needs the sky above its frame's top as L0's frame gives it plus
   0.14 W.
+- **The bay-back leaves the moon out.** The moon is its own plate (owner,
+  15 Oct 2026: it shrinks a little in the run), centred in its frame and
+  clear around its halo. The moonlight path stays on the bay-back's far
+  sea, under screen 1's moon (0.6767 W): the moon slides with the sky, so
+  it stays over its path. A painted bay-back with a moon in it would show
+  two moons in the run.
 - **The result picture is screen 4 whole**, waves at their measured places
   (`RESULT_VIEW`); the lit band is its rows 1.0516 to 2.2609 W.

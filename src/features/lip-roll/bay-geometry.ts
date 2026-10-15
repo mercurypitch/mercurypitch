@@ -46,12 +46,15 @@ export const DOTS = {
   waterEdge: 0.0102,
 } as const
 
-/** The bay-back: its horizon on the intro (screen 1) and in the run (screens 2 and 3), its parallax. */
+/** The bay-back's horizon on the intro (screen 1) and in the run (screens 2 and 3); the moon on screen 1, and on screens 2 and 3. */
 export const BAY = {
   horizon: 0.8215,
   horizonRun: 0.9277,
-  parallax: 0.25,
   moon: { cx: 0.6767, cy: 0.43, d: 0.1168 },
+  moonScreens: [
+    { cx: 0.5934, cy: 0.575, d: 0.1046 },
+    { cx: 0.5164, cy: 0.4754, d: 0.1035 },
+  ],
 } as const
 
 /** The pulled-back view (screen 4): three waves across the bay. */
@@ -78,6 +81,7 @@ export interface PlateFrame {
 
 export type BayPlate =
   | 'back'
+  | 'moon'
   | 'wave-lit'
   | 'wave-unlit'
   | 'sea-front'
@@ -88,6 +92,11 @@ export type BayPlate =
 export const PLATES: Readonly<Record<BayPlate, PlateFrame>> = {
   back: {
     frame: { left: -0.02, top: -0.14, width: 1.724, height: 2.7606 },
+    widths: [645],
+    standIn: true,
+  },
+  moon: {
+    frame: { left: 0.4074, top: 0.1607, width: 0.5386, height: 0.5386 },
     widths: [645],
     standIn: true,
   },

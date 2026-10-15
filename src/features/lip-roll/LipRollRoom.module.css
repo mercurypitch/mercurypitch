@@ -52,10 +52,22 @@
 }
 
 .bay picture,
-.bay img {
+.bay picture img {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* The moon: its own plate in the bay-back's box, over the sky (the plate's
+   picture comes after it in the box), shrunk and raised about its centre
+   while the count-in zooms (bay-sky.ts). */
+.moon {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  pointer-events: none;
 }
 
 /* The waves, the dots and the near sea: their children sit at world X. */

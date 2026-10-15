@@ -4,9 +4,10 @@
 //
 // L0 5.4's layers, back to front:
 //
-//   bay-back     sky, moon, cliffs, the far sea: one plate, scrolled at a
-//                quarter of the waves' speed (BAY.parallax), its horizon
-//                moved from screen 1's to screens 2 and 3's with the zoom
+//   bay-back     sky, cliffs, the far sea: one plate, slid with the camera
+//                (bay-sky.ts), its horizon moved from screen 1's to
+//                screens 2 and 3's with the zoom; the moon, a plate of its
+//                own in the same box, shrinks and rises with the zoom
 //   waves        each wave's unlit water, and a canvas for each wave
 //                lighting (bay-waves.ts); drawn normally, opaque water
 //   dots         the target: pale dots along each crest (an SVG path per
@@ -39,12 +40,13 @@ import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
 import { createResultBand } from '@/components/room-kit/result-band'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { targetAt } from '@/lib/glide/glide-path'
-import { BAY_PLATE, bayArt, bayImage, BUBBLE_URL, RESULT_PLATE, } from './bay-art'
+import { BAY_PLATE, bayArt, bayImage, BUBBLE_URL, MOON_URL, RESULT_PLATE, } from './bay-art'
 import { createBubbleStream } from './bay-bubbles'
 import { BAY, DOTS, PLATES, PLAYHEAD_X, RESULT_ASPECT, RESULT_VIEW, WAVE, } from './bay-geometry'
 import type { BayLayout, MercBox, Zoom } from './bay-layout'
 import { frameY, horizonAt, MERC_INTRO_X, mercBoxAt, mercResultBox, pitchY, waveG, worldXOf, yOf, zoomAt, } from './bay-layout'
 import { crestX, INTRO_CAMERA } from './bay-scroll'
+import { moonPose, skyTravel } from './bay-sky'
 import type { BayView, TraceSample } from './bay-view'
 import type { WaveImages } from './bay-waves'
 import { createBayWaves } from './bay-waves'
@@ -146,6 +148,7 @@ function strokesOf(
 export function BayScene(props: BaySceneProps): JSX.Element {
   let rootEl: HTMLDivElement | undefined
   let bay: HTMLDivElement | undefined
+  let moonEl: HTMLImageElement | undefined
   let waveLayer: HTMLDivElement | undefined
   let frontLayer: HTMLDivElement | undefined
   let dotsLayer: HTMLDivElement | undefined
@@ -257,12 +260,22 @@ export function BayScene(props: BaySceneProps): JSX.Element {
     }
     if (bay !== undefined) {
       const back = PLATES.back.frame
-      const travel = props.reduced ? 0 : (camera - INTRO_CAMERA) * BAY.parallax
+      const travel = props.reduced ? 0 : skyTravel(camera)
       const bx = back.left * layout.width - travel * u
       const by =
         yOf(layout, horizonAt(z)) - (BAY.horizon - back.top) * layout.width
       bay.style.transform = `translate3d(${bx.toFixed(2)}px,${by.toFixed(2)}px,0)`
     }
+    placeMoon(z)
+  }
+
+  /** The moon's own shrink and rise, written only while the zoom moves. */
+  let moonZoom = Number.NaN
+  const placeMoon = (z: number): void => {
+    if (moonEl === undefined || z === moonZoom) return
+    moonZoom = z
+    const pose = moonPose(z)
+    moonEl.style.transform = `translate3d(0,${(pose.dy * unit()).toFixed(2)}px,0) scale(${pose.scale.toFixed(4)})`
   }
 
   /** His canvas keeps one size (a resize reallocates its GL buffers): scaled. */
@@ -452,6 +465,16 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   const waveFrame = PLATES['wave-unlit'].frame
   const front = PLATES['sea-front'].frame
   const back = PLATES.back.frame
+  /** The moon's box in the bay-back's (both on screen 1's frame). */
+  const moonBox = (): JSX.CSSProperties => {
+    const f = PLATES.moon.frame
+    return {
+      left: `${((f.left - back.left) * unit()).toFixed(1)}px`,
+      top: `${((f.top - back.top) * unit()).toFixed(1)}px`,
+      width: `${(f.width * unit()).toFixed(1)}px`,
+      height: `${(f.height * unit()).toFixed(1)}px`,
+    }
+  }
   const waveBox = (k: number) =>
     worldBox(
       crestX(k) + waveFrame.left,
@@ -525,7 +548,16 @@ export function BayScene(props: BaySceneProps): JSX.Element {
             height: `${(back.height * props.layout.width).toFixed(1)}px`,
           }}
           data-testid="lip-bay"
-        />
+        >
+          <img
+            ref={moonEl}
+            class={styles.moon}
+            src={MOON_URL}
+            alt=""
+            style={moonBox()}
+            data-testid="lip-moon"
+          />
+        </div>
         <div ref={waveLayer} class={styles.world} data-testid="lip-waves">
           <For each={wavesList}>
             {(k) => (
