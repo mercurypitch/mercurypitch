@@ -38,7 +38,11 @@ export interface OverflowMenuItem {
   /** Defined for selectable choices; omitted for ordinary actions. */
   checked?: boolean
   checkType?: 'radio' | 'checkbox'
-  /** Separate independent radio choices, such as playback source and tone. */
+  /**
+   * Separate independent radio choices, such as playback source and tone.
+   * Ignored on the first row: a list built to follow other rows can open a
+   * menu of its own, and a menu never opens on a divider.
+   */
   separatorBefore?: boolean
   /** A guided tour's hook (`data-tour`) on the row, for a step that picks it. */
   tour?: string
@@ -257,8 +261,9 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
                 <>
                   <Show
                     when={
-                      item().separatorBefore === true ||
-                      (firstDestructive() > 0 && index === firstDestructive())
+                      index > 0 &&
+                      (item().separatorBefore === true ||
+                        index === firstDestructive())
                     }
                   >
                     <div class={styles.divider} role="separator" />
