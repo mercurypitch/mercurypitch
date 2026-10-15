@@ -19,7 +19,7 @@
 //            A); and All settings, which pushes Settings as Sing's does.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, For, on, onCleanup, Show } from 'solid-js'
+import { createEffect, For, onCleanup, Show, untrack } from 'solid-js'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import { KeyShiftControl } from '@/components/key-shift/KeyShiftControl'
 import { OptionSection, OptionsSheet } from '@/components/mobile/OptionsSheet'
@@ -95,18 +95,15 @@ export const KaraokeRoomOptions: Component<KaraokeRoomOptionsProps> = (
   props,
 ) => {
   // Open, the sheet holds Find my key's notices and says them in the key
-  // row: a toast would sit over the sheet. Let go as it shuts, and as the
-  // room goes with it open.
-  createEffect(
-    on(
-      () => props.isOpen,
-      (open, wasOpen) => {
-        if (open || wasOpen === true) props.keyControl?.()?.holdNotices?.(open)
-      },
-    ),
-  )
-  onCleanup(() => {
-    if (props.isOpen) props.keyControl?.()?.holdNotices?.(false)
+  // row: a toast would sit over the sheet. The hold follows the key that is
+  // there now, since songs change under an open sheet and each song's mixer
+  // brings its own: the old one lets go, the new one holds. Let go as the
+  // sheet shuts, and as the room goes with it open.
+  createEffect(() => {
+    const key = props.keyControl?.() ?? null
+    if (key === null || !props.isOpen) return
+    untrack(() => key.holdNotices?.(true))
+    onCleanup(() => key.holdNotices?.(false))
   })
 
   return (
