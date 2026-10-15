@@ -188,11 +188,11 @@ These are the rules that break things when ignored.
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 550 | Pitch Algorithm Tester — Compare pitch detection algorithms |
 | [runpod.ts](../../src/lib/runpod.ts) | 550 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 550 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
+| [demo-audio.ts](../../src/lib/demo-audio.ts) | 500 | Audible guided demos (glass plan §17.4, decision 18). |
 | [hash-router.ts](../../src/lib/hash-router.ts) | 500 | Hash Router — Client-side hash-based routing |
 | [scale-data.ts](../../src/lib/scale-data.ts) | 500 | Scale Data — Music theory utilities for MercuryPitch |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 500 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [uvr-stem-split.ts](../../src/lib/uvr-stem-split.ts) | 500 | Stem split — break a session's instrumental into its parts Second separation pass over the ALREADY-SEPARATED instrumental: the server (de... |
-| [demo-audio.ts](../../src/lib/demo-audio.ts) | 450 | Audible guided demos (glass plan §17.4, decision 18). |
 | [lyricsfile.ts](../../src/lib/lyricsfile.ts) | 450 | lyricsfile 1.0 — serialising a mapping to the interchange format Enhanced LRC is what the app has always exported, and it is lossy in way... |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [midi-song.ts](../../src/lib/midi-song.ts) | 450 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |

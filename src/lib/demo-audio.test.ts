@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VoicePoint } from './demo-audio'
-import { LIP_FLUTTER, playHoldTone, playVoiceContour } from './demo-audio'
+import { flutterMakeup, LIP_FLUTTER, playHoldTone, playVoiceContour, } from './demo-audio'
 
 type Call = readonly [
   method: string,
@@ -312,6 +312,25 @@ describe("playVoiceContour's lip buzz", () => {
     const [master, level] = fake.gains
     expect(level.connections).toEqual([master])
     expect(fake.oscillators).toHaveLength(1)
+  })
+})
+
+describe('flutterMakeup', () => {
+  // The flutter dips the level and never lifts it, so a buzzed line is
+  // quieter than the line: Lip roll's demo measured 4.5 to 5 LU under its
+  // own count-in tone (EBU R128, Chromium's render, 15 Oct). The makeup is
+  // the gain that gives the line its loudness back: 1 over the RMS of the
+  // swing, computed here apart from the code (numpy, 2^16 points of the
+  // shape, normalised to a peak of 1 as Web Audio does).
+  it("gives Lip roll's buzz back the 4.0 dB its flutter takes", () => {
+    expect(flutterMakeup(LIP_FLUTTER)).toBeCloseTo(1.589, 2)
+  })
+
+  it('adds nothing where nothing flutters, and more the deeper it goes', () => {
+    expect(flutterMakeup({ hz: 25, depth: 0 })).toBeCloseTo(1, 6)
+    const shallow = flutterMakeup({ hz: 25, depth: 0.4 })
+    expect(shallow).toBeGreaterThan(1)
+    expect(flutterMakeup(LIP_FLUTTER)).toBeGreaterThan(shallow)
   })
 })
 
