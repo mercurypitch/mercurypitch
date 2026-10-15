@@ -79,3 +79,50 @@ for (const size of [
     })
   })
 }
+
+test.describe('Find my key asked again at 1280x800', () => {
+  test('offers the other voices instead of stopping at "already fits"', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await openSeededSong(page, { width: 1280, height: 800 })
+    const chip = page.getByTestId('key-chip')
+    const panel = page.getByTestId('key-chip-popover')
+    const picker = page.getByRole('dialog', { name: 'Which is your voice?' })
+
+    await chip.click()
+    await panel.getByRole('button', { name: 'Find my key' }).click()
+    await picker.locator('[data-voice="soprano"]').click()
+    await expect(picker).toBeHidden()
+    // The song is one note, A3, which a soprano sings an octave up: the
+    // song's own key fits once the melody has been found.
+    await expect(chip).toHaveAttribute('data-finding', 'false', {
+      timeout: 30_000,
+    })
+    await expect(chip).toHaveText('Key')
+
+    await chip.click()
+    await panel.getByRole('button', { name: 'Find my key' }).click()
+    await expect(picker).toBeVisible()
+    await expect(picker).toHaveAccessibleDescription(
+      "The song's own key already fits your voice. Pick another voice to try a different key.",
+    )
+    await expect(picker.locator('[aria-current="true"]')).toHaveAttribute(
+      'data-voice',
+      'soprano',
+    )
+    // Already in its own key: nothing to go back to.
+    await expect(
+      picker.getByRole('button', { name: 'Back to original key' }),
+    ).toHaveCount(0)
+
+    await picker.locator('[data-voice="bass"]').click()
+    await expect(picker).toBeHidden()
+    await chip.click()
+    await panel.getByRole('button', { name: 'Find my key' }).click()
+    await expect(picker.locator('[aria-current="true"]')).toHaveAttribute(
+      'data-voice',
+      'bass',
+    )
+  })
+})
