@@ -43,6 +43,11 @@ export interface BayView {
   /** A new run or the intro: every wave unlit, no trace, the intro's camera. */
   reset: (camera: number) => void
   /**
+   * The last wave has begun: the result's lit band is decoded and its
+   * canvas sized now, so the result's frame does not decode it.
+   */
+  prepareResult: () => void
+  /**
    * The run is over: the pulled-back view, each wave lit over the ranges
    * (its u) the take lit.
    */

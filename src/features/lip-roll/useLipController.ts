@@ -342,6 +342,7 @@ export function useLipController(): LipController {
     if (wave === run.plan.path.arches.length - 1 && !run.resultAsked) {
       run.resultAsked = true
       preloadLipResult()
+      view?.prepareResult()
     }
   }
 

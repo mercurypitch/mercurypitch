@@ -161,10 +161,10 @@ export function preloadNgArt(): void {
   }
 }
 
-/** The result's pictures, started as the last slide begins. */
+/**
+ * The result's plate, started as the last slide begins; the scene decodes
+ * its lit band at the same moment (BridgeView.prepareResult).
+ */
 export function preloadNgResult(): void {
   preloadPlate(RESULT_PLATE)
-  if (typeof Image === 'undefined') return
-  const url = bridgeArt(dpr()).resultLit
-  if (url !== '') void bridgeImage(url).catch(() => undefined)
 }

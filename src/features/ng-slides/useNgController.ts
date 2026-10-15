@@ -341,6 +341,7 @@ export function useNgController(): NgController {
     if (slide === run.plan.path.arches.length - 1 && !run.resultAsked) {
       run.resultAsked = true
       preloadNgResult()
+      view?.prepareResult()
     }
   }
 

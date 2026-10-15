@@ -36,6 +36,7 @@ import type { GlideRibbonApi, StrokePoint, } from '@/components/room-kit/GlideRi
 import { GlideRibbon } from '@/components/room-kit/GlideRibbon'
 import type { Plate } from '@/components/room-kit/plate-loader'
 import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
+import { createResultBand } from '@/components/room-kit/result-band'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { targetAt } from '@/lib/glide/glide-path'
 import { BAY_PLATE, bayArt, bayImage, BUBBLE_URL, RESULT_PLATE, } from './bay-art'
@@ -325,48 +326,32 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   }
 
   // ── The result ─────────────────────────────────────────────
+  // The lit band's picture, decoded off the main thread as the last wave
+  // begins (room-kit/result-band.ts), so the result's frame only copies.
+  const litBand = createResultBand(
+    () => resultLit,
+    () => art().resultLit,
+    bayImage,
+  )
   /** The result's lit band: the take's ranges, at screen 4's waves. */
-  const paintResult = async (
+  const paintResult = (
     lit: readonly (readonly (readonly [number, number])[])[],
-  ): Promise<void> => {
-    const image = await bayImage(art().resultLit).catch(() => null)
-    const canvas = resultLit
-    if (image === null || canvas === undefined) return
-    canvas.width = image.naturalWidth || image.width
-    canvas.height = image.naturalHeight || image.height
-    const ctx = canvas.getContext('2d')
-    if (ctx === null) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    lit.forEach((ranges, k) => {
-      const wave = RESULT_VIEW.waves[k] as
-        | (typeof RESULT_VIEW.waves)[number]
-        | undefined
-      if (wave === undefined) return
-      for (const [from, to] of ranges) {
-        const x0 = Math.max(
-          0,
-          Math.floor((wave.x + from * wave.a) * canvas.width),
+  ): Promise<void> =>
+    litBand.paint((width) =>
+      lit.flatMap((ranges, k) => {
+        const wave = RESULT_VIEW.waves[k] as
+          | (typeof RESULT_VIEW.waves)[number]
+          | undefined
+        if (wave === undefined) return []
+        return ranges.map(
+          ([from, to]) =>
+            [
+              Math.max(0, Math.floor((wave.x + from * wave.a) * width)),
+              Math.min(width, Math.ceil((wave.x + to * wave.a) * width)),
+            ] as const,
         )
-        const x1 = Math.min(
-          canvas.width,
-          Math.ceil((wave.x + to * wave.a) * canvas.width),
-        )
-        if (x1 > x0) {
-          ctx.drawImage(
-            image,
-            x0,
-            0,
-            x1 - x0,
-            canvas.height,
-            x0,
-            0,
-            x1 - x0,
-            canvas.height,
-          )
-        }
-      }
-    })
-  }
+      }),
+    )
 
   /** The last frame, for a ribbon that mounts after it. */
   let lastTrace: readonly TraceSample[] | null = null
@@ -397,6 +382,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
       setBuzz(true)
       setResultReady(false)
     },
+    prepareResult: () => litBand.prepare(),
     result: (lit) => {
       if (resultHolder !== undefined && resultPlate === null) {
         resultPlate = claimPlate(RESULT_PLATE)
@@ -442,6 +428,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   onCleanup(() => {
     waves.dispose()
     wavePictures.release()
+    litBand.release()
     bubbles.clear()
     if (bayPlate !== null) releasePlate(bayPlate)
     if (resultPlate !== null) releasePlate(resultPlate)
