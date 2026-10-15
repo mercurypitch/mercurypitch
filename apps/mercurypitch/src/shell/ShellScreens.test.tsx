@@ -166,6 +166,36 @@ describe('the Lip roll room', () => {
   })
 })
 
+describe('the low-volume hint', () => {
+  const stub = () => <div />
+
+  it.each(['long-note', 'echo', 'lip-roll', 'ng-slides'] as const)(
+    'watches the volume over %s',
+    (screen) => {
+      view?.unmount()
+      view = renderShell(() => (
+        <ShellScreens
+          longNote={stub}
+          echo={stub}
+          lipRoll={stub}
+          ngSlides={stub}
+        />
+      ))
+      pushScreen(screen)
+      expect(
+        screens()[0]?.querySelector('[data-testid="room-volume-slot"]'),
+      ).not.toBeNull()
+    },
+  )
+
+  it('is over no other screen', () => {
+    pushScreen('settings')
+    expect(
+      screens()[0]?.querySelector('[data-testid="room-volume-slot"]'),
+    ).toBeNull()
+  })
+})
+
 describe('the pushed screens', () => {
   it('draws only the screen on top of the stack', () => {
     // Two copies of the same Back would also be two matches for every probe

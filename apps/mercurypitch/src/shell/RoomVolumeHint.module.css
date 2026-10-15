@@ -1,0 +1,74 @@
+/* The low-volume hint over a premium room (RoomVolumeHint.tsx). */
+
+/* Always there, empty while the volume is fine, so a screen reader hears
+   the hint the moment it appears. It takes no taps of its own.
+
+   In the bar, over the room's title, between Back and the room's own
+   controls: every band of the stage below the bar is some room's, with
+   Lip roll's and Ng slides' chips, Long note's timer, line and steppers,
+   Echo's stars, the mic button and every room's result (measured at
+   390 x 844 off the rooms' fixtures, 15 Oct 2026). The title is the one
+   thing it covers, for as long as the volume is down.
+
+   Back is 44 px from the bar's padding, and the title begins 6 px in from
+   the gap after it. The right edge is the room's controls' left edge, set
+   from the bar's slot when it is measured (RoomVolumeHint.tsx), else the
+   width a level pill and "?" take. */
+.slot {
+  position: absolute;
+  top: calc(var(--safe-top, 0px) + 4px);
+  left: calc(max(12px, var(--safe-left, 0px)) + 50px);
+  right: calc(max(12px, var(--safe-right, 0px)) + 139px);
+  height: 44px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* In the rooms' own glass (RoomBar.module.css), dense enough to hide the
+   title under it, over art that is dark in either app theme, so its ink
+   is the dark stage's and not the theme's. */
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 4px 12px 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 22px;
+  background: rgba(10, 18, 44, 0.9);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #e6edf3;
+  font: 500 13px/1.25 var(--font-body, sans-serif);
+  animation: arrive 220ms ease-out both;
+}
+
+.hint svg {
+  flex: none;
+  color: #ffd166;
+}
+
+/* Two lines, and never a third over the stage, however narrow the bar. */
+.words {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none;
+  }
+}
