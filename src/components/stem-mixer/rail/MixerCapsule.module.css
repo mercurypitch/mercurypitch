@@ -111,7 +111,6 @@
 .play {
   width: calc(var(--mixer-control-size, 28px) + 4px);
   height: calc(var(--mixer-control-size, 28px) + 4px);
-  margin-right: 2px;
   border-radius: 50%;
   color: var(--on-accent, #0d1117);
   background: var(--accent, #58a6ff);
@@ -152,7 +151,8 @@
   height: 18px;
   border: 1.5px solid currentColor;
   border-radius: 50%;
-  font-size: 11px;
+  /* The rail's floor for text, letters in a ring included. */
+  font-size: 12px;
   font-weight: 700;
   line-height: 1;
 }
@@ -336,7 +336,6 @@
   .markGlyph {
     width: 20px;
     height: 20px;
-    font-size: 12px;
   }
 
   .moreSlot[data-dot='true']::after {
