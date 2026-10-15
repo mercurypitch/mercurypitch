@@ -68,3 +68,30 @@ describe('the A-B loop while the song plays', () => {
     expect(audio.elapsed()).toBeGreaterThanOrEqual(5)
   })
 })
+
+describe('setting and moving A and B', () => {
+  it('turns the loop on when B is set, and leaves it alone when B moves', async () => {
+    const audio = await loadedSong()
+    audio.placeLoopPoint('A', 2)
+    audio.placeLoopPoint('B', 6)
+    expect(audio.loopEnabled()).toBe(true)
+    audio.setLoopEnabled(false)
+
+    expect(audio.moveLoopPoint('B', 7).placed).toBe(true)
+
+    expect(audio.loopEnd()).toBe(7)
+    expect(audio.loopEnabled()).toBe(false)
+  })
+
+  it('moves by the same rule that sets, and says why a move is refused', async () => {
+    const audio = await loadedSong()
+    audio.placeLoopPoint('A', 2)
+    audio.placeLoopPoint('B', 6)
+
+    const refused = audio.moveLoopPoint('B', 1)
+
+    expect(refused.placed).toBe(false)
+    expect(audio.loopEnd()).toBe(6)
+    expect(audio.loopEnabled()).toBe(true)
+  })
+})

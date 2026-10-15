@@ -1284,16 +1284,28 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // menu (clicked time). A point on the wrong side of the other one, or
   // within 0.1 s of it, is refused and the toast says why (loop-points.ts).
   // Setting B enables the loop; setting A alone just marks the start (drawn
-  // immediately by the canvas overlay).
-  const applyLoopPoint = (which: 'A' | 'B', time: number) => {
-    const reason = placeLoopPointAt(which, time)
+  // immediately by the canvas overlay). A mark dragged or stepped along the
+  // timeline is a 'move': same rule, and the loop stays on or off.
+  const applyLoopPoint = (
+    which: 'A' | 'B',
+    time: number,
+    how: 'set' | 'move' = 'set',
+  ) => {
+    const reason = placeLoopPointAt(which, time, how)
     if (reason !== null) {
       showNotification(reason, 'warning', { channel: LOOP_POINT_CHANNEL })
     }
   }
   /** Place a point; why it was refused, or null once it is placed. */
-  const placeLoopPointAt = (which: 'A' | 'B', time: number): string | null => {
-    const result = audio.placeLoopPoint(which, time)
+  const placeLoopPointAt = (
+    which: 'A' | 'B',
+    time: number,
+    how: 'set' | 'move' = 'set',
+  ): string | null => {
+    const result =
+      how === 'move'
+        ? audio.moveLoopPoint(which, time)
+        : audio.placeLoopPoint(which, time)
     if (!result.placed) return result.reason
     // A refusal still on screen no longer describes the loop.
     removeNotificationsByChannel(LOOP_POINT_CHANNEL)
@@ -3011,7 +3023,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             minimumLoopGap={audio.loopMinGap}
             onSetLoopA={() => applyLoopPoint('A', audio.elapsed())}
             onSetLoopB={() => applyLoopPoint('B', audio.elapsed())}
-            onMoveLoopPoint={(which, seconds) => applyLoopPoint(which, seconds)}
+            onMoveLoopPoint={(which, seconds) =>
+              applyLoopPoint(which, seconds, 'move')
+            }
             onClearLoop={() => {
               audio.clearLoop()
               setLoopStartLyricIdx(null)

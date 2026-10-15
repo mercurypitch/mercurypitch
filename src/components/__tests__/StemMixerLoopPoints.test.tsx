@@ -145,3 +145,39 @@ describe('loop points on the mixer rail', () => {
     expect(loopToggle()).toHaveAttribute('aria-pressed', 'true')
   })
 })
+
+// Setting B makes a loop, so it turns the loop on. Moving a B that is
+// already there only reshapes the loop: dragged or stepped along the
+// timeline, it leaves the loop the way the singer left it.
+describe('moving a mark along the timeline', () => {
+  const markB = () => screen.getByRole('slider', { name: 'Loop end marker' })
+
+  async function loopFromTwoToSix(): Promise<void> {
+    await mountLoadedMixer()
+    seekTo(2)
+    fireEvent.click(buttonA())
+    seekTo(6)
+    fireEvent.click(buttonB())
+    expect(loopToggle()).toHaveAttribute('aria-pressed', 'true')
+  }
+
+  it('keeps a loop that was switched off, off, while B moves', async () => {
+    await loopFromTwoToSix()
+    fireEvent.keyDown(document.body, { key: 'l', code: 'KeyL' })
+    expect(loopToggle()).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.keyDown(markB(), { key: 'ArrowRight' })
+
+    expect(markB()).toHaveAttribute('aria-valuenow', '6.1')
+    expect(loopToggle()).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('keeps a loop that is on, on, while B moves', async () => {
+    await loopFromTwoToSix()
+
+    fireEvent.keyDown(markB(), { key: 'ArrowLeft' })
+
+    expect(markB()).toHaveAttribute('aria-valuenow', '5.9')
+    expect(loopToggle()).toHaveAttribute('aria-pressed', 'true')
+  })
+})

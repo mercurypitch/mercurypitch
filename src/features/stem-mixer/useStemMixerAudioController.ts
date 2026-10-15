@@ -356,6 +356,12 @@ export interface StemMixerAudioController {
    * reason. A placed B turns the loop on.
    */
   placeLoopPoint: (which: 'A' | 'B', time: number) => LoopPointPlacement
+  /**
+   * Move a mark along the timeline by the same rule. The loop stays on or
+   * off as it was: a dragged or stepped B reshapes the loop, it does not
+   * turn one on.
+   */
+  moveLoopPoint: (which: 'A' | 'B', time: number) => LoopPointPlacement
   /** The least time between A and B that placeLoopPoint accepts. */
   loopMinGap: number
   clearLoop: () => void
@@ -2392,9 +2398,10 @@ export const useStemMixerAudioController = (
     }
   }
 
-  const placeLoopPoint = (
+  const putLoopPoint = (
     which: 'A' | 'B',
     time: number,
+    turnsLoopOn: boolean,
   ): LoopPointPlacement => {
     const result = placeLoop(which, time, {
       start: loopStart(),
@@ -2405,11 +2412,15 @@ export const useStemMixerAudioController = (
       batch(() => {
         setLoopStart(points.start)
         setLoopEnd(points.end)
-        if (which === 'B') setLoopEnabled(true)
+        if (turnsLoopOn) setLoopEnabled(true)
       })
     }
     return result
   }
+  const placeLoopPoint = (which: 'A' | 'B', time: number) =>
+    putLoopPoint(which, time, which === 'B')
+  const moveLoopPoint = (which: 'A' | 'B', time: number) =>
+    putLoopPoint(which, time, false)
 
   const clearLoop = () => {
     setLoopEnabled(false)
@@ -2469,6 +2480,7 @@ export const useStemMixerAudioController = (
     loopEnd,
     setLoopEnd,
     placeLoopPoint,
+    moveLoopPoint,
     loopMinGap: LOOP_MIN_GAP,
     clearLoop,
     loopCount,
