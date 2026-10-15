@@ -299,8 +299,11 @@ export function createKeyShiftGraph(
     return !failed && Math.abs(state.semitones) > SHIFT_EPSILON
   }
 
+  // A graph let go while its engine loaded belongs to nobody: an engine that
+  // fails after dispose() is not this song's news, and its owner (a mixer
+  // or a Jam stage already gone) must not hear about it.
   function fail(error: unknown): void {
-    if (failed) return
+    if (failed || disposed) return
     failed = true
     options.onError?.(error)
   }

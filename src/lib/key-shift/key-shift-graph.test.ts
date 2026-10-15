@@ -358,6 +358,35 @@ describe('stem key graph', () => {
     expect(bus('pitched').outputs).toEqual(new Set([output()]))
   })
 
+  // A song or a room left while its engine was still loading: an engine that
+  // then fails belongs to nobody, and a notice about it would describe a
+  // song no longer on screen.
+  it('says nothing of an engine that fails after the graph was let go', async () => {
+    const refusals: ((error: Error) => void)[] = []
+    const late = vi.fn(
+      () =>
+        new Promise<PitchShifter>((_resolve, reject) => {
+          refusals.push(reject)
+        }),
+    )
+    graph.dispose()
+    graph = createKeyShiftGraph(
+      ctx as unknown as AudioContext,
+      destination as unknown as AudioNode,
+      { preset: 'default', onError, createShifter: late },
+    )
+
+    const applied = graph.apply(still(3))
+    await vi.waitFor(() => {
+      expect(late).toHaveBeenCalled()
+    })
+    graph.dispose()
+    for (const refuse of refusals) refuse(new Error('no wasm'))
+    await applied
+
+    expect(onError).not.toHaveBeenCalled()
+  })
+
   it('releases the shifters on dispose', async () => {
     await graph.apply(still(2))
     const out = output()
