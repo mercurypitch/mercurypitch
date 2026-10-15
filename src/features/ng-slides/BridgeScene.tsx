@@ -26,6 +26,7 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createPictureSet } from '@/components/room-kit/canvas-picture'
 import type { Plate } from '@/components/room-kit/plate-loader'
 import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
 import type { GlidePath } from '@/lib/glide/glide-path'
@@ -146,15 +147,28 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
   const art = createMemo(() => bridgeArt(dpr()))
   const unit = (): number => props.layout.unit
 
+  // The glass's four pictures, decoded off the main thread once a visit
+  // and released when the room goes (room-kit/canvas-picture.ts).
+  const glassPictures = createPictureSet(
+    () => [
+      art().glassUnlit,
+      art().glassLit,
+      REFLECTION_ART.unlit,
+      REFLECTION_ART.lit,
+    ],
+    bridgeImage,
+  )
   const glassImages = async (): Promise<GlassImages> => {
-    const files = art()
     const [glassUnlit, glassLit, reflectionUnlit, reflectionLit] =
-      await Promise.all([
-        bridgeImage(files.glassUnlit),
-        bridgeImage(files.glassLit),
-        bridgeImage(REFLECTION_ART.unlit),
-        bridgeImage(REFLECTION_ART.lit),
-      ])
+      await glassPictures.get()
+    if (
+      glassUnlit === undefined ||
+      glassLit === undefined ||
+      reflectionUnlit === undefined ||
+      reflectionLit === undefined
+    ) {
+      throw new Error('bridge art: the glass')
+    }
     return { glassUnlit, glassLit, reflectionUnlit, reflectionLit }
   }
 
@@ -276,12 +290,17 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
     props.onReady(view)
     if (props.onSettled !== undefined && rootEl !== undefined) {
       const done = props.onSettled
-      void imagesDecoded(rootEl).then(done)
+      // The glass's canvases paint once their pictures decode: after this.
+      void Promise.all([
+        imagesDecoded(rootEl),
+        glassImages().catch(() => undefined),
+      ]).then(done)
     }
   })
 
   onCleanup(() => {
-    glass.reset()
+    glass.dispose()
+    glassPictures.release()
     if (riverPlate !== null) releasePlate(riverPlate)
     if (resultPlate !== null) releasePlate(resultPlate)
     riverPlate = null
