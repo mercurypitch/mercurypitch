@@ -94,7 +94,16 @@ export class PitchDetector {
   private readonly stabilize: boolean
   private readonly telemetry: 'live' | 'off'
   private readonly yinBuffer: Float32Array
-  private pitchHistory: number[] = []
+  /**
+   * The stability filter's recent readings: a list of doubles from the
+   * start (made with one and emptied in the constructor) and for good, as
+   * it is only ever emptied and refilled in place, never replaced. An
+   * empty `[]` changes kind on the first reading it keeps, and V8's
+   * compiled YIN pass drops back out to the interpreter for that change
+   * in the middle of a take's first voiced frames (--trace-deopt,
+   * 2026-10-15). Its contents are the same either way.
+   */
+  private pitchHistory: number[] = [0.5]
   private readonly maxHistory = 5
   private swiftDetector: SwiftF0Detector | null = null
   private onnxModule: typeof ort | MockOnnxModule | null = null
@@ -114,6 +123,7 @@ export class PitchDetector {
     this.stabilize = opts.stabilize
     this.telemetry = opts.telemetry
     this.yinBuffer = new Float32Array(Math.floor(this.bufferSize / 2))
+    this.pitchHistory.length = 0
   }
 
   /**
@@ -677,8 +687,12 @@ export class PitchDetector {
       const oldSorted = [...oldValues].sort((a, b) => a - b)
       const oldMedian = oldSorted[Math.floor(oldSorted.length / 2)]!
       if (Math.abs(newest - oldMedian) / oldMedian > 0.15) {
-        // Confirmed note change — flush history to new frequency
-        this.pitchHistory = [newest, secondNewest]
+        // Confirmed note change — flush history to new frequency. Refilled
+        // in place, not replaced with a literal: a literal of two whole
+        // numbers would be a list of small integers again (the field's
+        // comment above).
+        this.pitchHistory.length = 0
+        this.pitchHistory.push(newest, secondNewest)
         return frequency
       }
     }
