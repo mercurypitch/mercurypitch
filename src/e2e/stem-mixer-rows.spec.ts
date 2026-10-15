@@ -715,7 +715,10 @@ test.describe('Open in Karaoke Night at 1440x900', () => {
   })
 })
 
-/** The mixer tour's step titles, in order (STEM_MIXER_TOUR_STEPS). */
+/** The mixer tour's step titles for a song without lyrics, in order
+ *  (STEM_MIXER_TOUR_STEPS): Sync the timing and Organize & export point at
+ *  the lyrics panel's own buttons, which a song without lyrics does not
+ *  have, so those two steps drop out. */
 const MIXER_TOUR = [
   'Mix the stems',
   'Transport & seek',
@@ -725,17 +728,12 @@ const MIXER_TOUR = [
   'Song overview',
   'Synced lyrics',
   'Get lyrics in',
-  'Sync the timing',
-  'Organize & export',
   'See your pitch',
   'Songs and playlists',
   'Pitch analysis',
   'Full-screen focus',
   'Karaoke Night',
 ]
-
-/** Steps whose targets are the lyrics panel's own buttons. */
-const LYRICS_ONLY = ['Sync the timing', 'Organize & export']
 
 for (const size of [
   { width: 1440, height: 900 },
@@ -774,8 +772,6 @@ for (const size of [
 
       expect(steps.map((step) => step.title)).toEqual(MIXER_TOUR)
       for (const step of steps) {
-        // Their buttons show once a song has lyrics, and this one has none.
-        if (LYRICS_ONLY.includes(step.title)) continue
         expect
           .soft(step.width, `${step.title} has no spotlight`)
           .toBeGreaterThan(14)

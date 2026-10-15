@@ -1399,6 +1399,8 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="mixer.lyric-sync"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
+    // Drawn once the song has lyrics; without them the step drops out.
+    whenPresent: true,
   },
   {
     title: 'Organize & export',
@@ -1407,6 +1409,8 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="mixer.lyric-export"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
+    // Drawn once the song has lyrics; without them the step drops out.
+    whenPresent: true,
   },
   {
     title: 'See your pitch',

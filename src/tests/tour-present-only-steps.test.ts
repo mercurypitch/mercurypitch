@@ -2,7 +2,8 @@
 // ============================================================
 //
 // The mixer's Open in Karaoke Night is not drawn in the native app, in the
-// Karaoke room or inside Karaoke Night itself. A tour step pointing at it
+// Karaoke room or inside Karaoke Night itself, and the lyrics panel's sync
+// and export buttons are not drawn until a song has lyrics. A tour step pointing at it
 // would land on nothing there and show its words in the middle of the
 // screen, about a button that is not on it. Such a step is marked
 // `whenPresent`, and drops out of the tour when its target is not on the
@@ -55,5 +56,18 @@ describe('a step only some hosts can show', () => {
     )
 
     expect(night?.whenPresent).toBe(true)
+  })
+
+  it('is how the mixer tour treats the lyrics panel’s own buttons', () => {
+    // Sync and export show once a song has lyrics; without them the two
+    // steps would talk about buttons that are not there.
+    const lyricButtons = STEM_MIXER_TOUR_STEPS.filter((step) =>
+      [
+        '[data-tour="mixer.lyric-sync"]',
+        '[data-tour="mixer.lyric-export"]',
+      ].includes(step.targetSelector),
+    )
+
+    expect(lyricButtons.map((step) => step.whenPresent)).toEqual([true, true])
   })
 })
