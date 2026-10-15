@@ -9,6 +9,7 @@ import type { SessionPitchData } from '@/db/services/session-pitch-analysis-serv
 import { loadPitchAnalysisFromDbStrict, savePitchAnalysisToDbStrict, } from '@/db/services/session-pitch-analysis-service'
 import { deleteImportedUvrSessionDataStrict, getOriginalFileBlobStrict, getStemBlobStrict, getStemFingerprintDataStrict, listStemTypesStrict, saveStemBlobDurable, saveStemFingerprintDataStrict, } from '@/db/services/uvr-service'
 import { loadTranscriptionFromDbStrict, saveTranscriptionToDbStrict, } from '@/db/services/whisper-transcription-db-service'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { IS_DEV } from '@/lib/defaults'
 import { addStemFingerprint, removeStemFingerprint, } from '@/lib/shazam/melody-fingerprints'
 import type { MelodyFingerprint } from '@/lib/shazam/types'
@@ -22,7 +23,7 @@ export function getSafeSessionName(session: {
   sessionId: string
 }): string {
   const rawName = session.originalFile?.name ?? session.sessionId
-  const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
+  const nameWithoutExt = stripAudioExtension(rawName)
   // Some browsers/servers replace '.' with '_' for extensions, strip lingering _mp3
   const cleanedName = nameWithoutExt.replace(
     /_(mp3|wav|flac|ogg|m4a|aac)$/i,

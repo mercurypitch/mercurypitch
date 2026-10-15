@@ -31,6 +31,7 @@ import { useStemMixerVocalLyricsController } from '@/features/stem-mixer/useStem
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { createBlobUrlOwner, revokeBlobUrl } from '@/lib/blob-url-owner'
 import { IS_DIAGNOSTIC_BUILD, PREMIUM_FEATURES } from '@/lib/defaults'
@@ -1154,7 +1155,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const baseDocTitle = typeof document !== 'undefined' ? document.title : ''
   createEffect(() => {
     if (typeof document === 'undefined') return
-    const songName = (props.songTitle ?? '').replace(/\.[^.]+$/, '').trim()
+    const songName = stripAudioExtension(props.songTitle ?? '').trim()
     document.title =
       audio.playing() && songName ? `MercuryPitch — ${songName}` : baseDocTitle
   })
@@ -2665,7 +2666,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       fallback={
         <>
           <KaraokeMobileStage
-            songTitle={props.songTitle}
+            songTitle={stripAudioExtension(props.songTitle)}
             hosted={hosted?.stage}
             onBack={handleZenBack}
             playing={audio.playing}
@@ -2777,7 +2778,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         {/* Header */}
         <Show when={!karaokeFocus()}>
           <MixerHeader
-            title={props.songTitle.replace(/\.[^.]+$/, '')}
+            title={stripAudioExtension(props.songTitle)}
             onBack={props.onBack}
             playlist={headerPlaylist()}
             songsOpen={playlistSidebarOpen()}

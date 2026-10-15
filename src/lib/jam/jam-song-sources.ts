@@ -7,6 +7,7 @@
 // depends on device-sync landing first (docs/plans/jam-karaoke-songs.md).
 
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { DEMO_SESSION_ID, demoSessionId, isDemoSessionId, } from '@/lib/example-session'
 import type { JamSong } from '@/lib/jam/jam-song'
 import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
@@ -163,9 +164,7 @@ export function sessionToJamSong(
     id: `${SESSION_SONG_PREFIX}${session.sessionId}`,
     // The filename is the only name a separated session has; strip the
     // extension so the shelf does not read "my song.mp3".
-    title: (session.originalFile?.name ?? 'Untitled')
-      .replace(/\.[^.]+$/, '')
-      .trim(),
+    title: stripAudioExtension(session.originalFile?.name ?? 'Untitled').trim(),
     stems: {
       instrumental: urls.instrumental,
       ...(urls.vocal === undefined || urls.vocal === ''

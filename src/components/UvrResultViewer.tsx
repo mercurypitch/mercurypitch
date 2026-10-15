@@ -10,6 +10,7 @@ import { setSessionStem } from '@/db/services/manual-stem-service'
 import type { StemBlobEntry } from '@/db/services/uvr-service'
 import { getStemBlobEntry } from '@/db/services/uvr-service'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { eventBus } from '@/lib/event-bus'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
@@ -199,8 +200,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const base = (props.originalFileName ?? 'audio')
-        .replace(/\.[^.]+$/, '')
+      const base = stripAudioExtension(props.originalFileName ?? 'audio')
         .replace(/\s+/g, '_')
         .replace(/[^a-zA-Z0-9_-]/g, '')
       a.download =

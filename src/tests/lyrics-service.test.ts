@@ -124,6 +124,12 @@ describe('Title Extraction', () => {
     expect(extractTitle('song.wav')).toBe('song')
   })
 
+  it('keeps a dot that belongs to the title', () => {
+    expect(extractTitle('Mr. Brightside')).toBe('Mr. Brightside')
+    expect(extractTitle('Mr. Brightside.m4a')).toBe('Mr. Brightside')
+    expect(extractTitle('A.B.C')).toBe('A.B.C')
+  })
+
   it('removes "Official Video" suffixes', () => {
     expect(extractTitle('My Song - Official Video')).toBe('My Song')
     expect(extractTitle('My Song - Official Music Video')).toBe('My Song')

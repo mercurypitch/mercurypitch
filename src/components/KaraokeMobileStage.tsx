@@ -112,6 +112,7 @@ export interface KaraokeStageHosting {
 }
 
 export interface KaraokeMobileStageProps {
+  /** The song's name as shown, its audio file extension already gone. */
   songTitle: string
   onBack?: () => void
   /** Hosted by the native Karaoke room; see `KaraokeStageHosting`. */
@@ -495,8 +496,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // Mirrors the Scrubber's preview so the time readouts track the finger.
   const [scrub, setScrub] = createSignal<number | null>(null)
 
-  const displayTitle = (): string =>
-    (props.songTitle ?? '').replace(/\.[^.]+$/, '').trim() || 'Your song'
+  const displayTitle = (): string => props.songTitle.trim() || 'Your song'
 
   // ── In-stage song sheet ───────────────────────────────────────
   const [sheetOpen, setSheetOpen] = createSignal(false)

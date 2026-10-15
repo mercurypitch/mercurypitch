@@ -114,6 +114,21 @@ describe('the mixer header', () => {
     expect(header).not.toHaveTextContent('4:17')
   })
 
+  it('keeps a dot that belongs to the title', async () => {
+    render(() => (
+      <StemMixer
+        stems={{ vocal: 'blob:vocal', instrumental: 'blob:instrumental' }}
+        sessionId="song-b"
+        songTitle="Mr. Brightside"
+      />
+    ))
+    await screen.findByRole('button', { name: 'Play' })
+
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
+      /^Mr\. Brightside$/,
+    )
+  })
+
   it('opens this song in Karaoke Night, and waits while the studio separates', async () => {
     const [separating, setSeparating] = createSignal(false)
     render(() => (

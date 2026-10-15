@@ -7,6 +7,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { batch, createEffect, createSignal, on, onCleanup } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { audioReporter, describeAudioError } from '@/lib/audio-diagnostics'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { installAudioUnlock, unlockForPlayback } from '@/lib/audio-unlock'
 import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
 import { analysisFps, deviceClass as sessionDeviceClass, presentationFps, readDeviceProbe, recordAnimationFrame, } from '@/lib/device-tier'
@@ -2382,8 +2383,7 @@ export const useStemMixerAudioController = (
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const base = deps.songTitle
-        .replace(/\.[^.]+$/, '')
+      const base = stripAudioExtension(deps.songTitle)
         .replace(/\s+/g, '_')
         .replace(/[^a-zA-Z0-9_-]/g, '')
       a.download =

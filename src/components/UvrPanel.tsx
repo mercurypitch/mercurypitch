@@ -17,6 +17,7 @@ import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/ste
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { formatFileSize } from '@/lib/audio-accept'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
 import { isTvDevice } from '@/lib/device-tier'
 import { fuzzyScore } from '@/lib/fuzzy-match'
@@ -1650,8 +1651,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const base = (s.originalFile?.name ?? 'audio')
-        .replace(/\.[^.]+$/, '')
+      const base = stripAudioExtension(s.originalFile?.name ?? 'audio')
         .replace(/\s+/g, '_')
         .replace(/[^a-zA-Z0-9_-]/g, '')
       a.download = `${base}_${type.replace('-', '_')}${ext}`

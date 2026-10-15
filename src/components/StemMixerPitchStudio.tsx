@@ -2,6 +2,7 @@ import type { Component } from 'solid-js'
 import { createMemo, Show } from 'solid-js'
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
 import type { EditableNote } from '@/features/stem-mixer/pitch-edit-model'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { midiToNote } from '@/lib/scale-data'
 import { CheckSmall, MusicNote, Pause, Play, SkipBack } from './icons'
 import { PitchStageShell } from './pitch-stage/PitchStageShell'
@@ -57,7 +58,7 @@ export const StemMixerPitchStudio: Component<StemMixerPitchStudioProps> = (
       testId="stem-mixer-pitch-studio"
       ariaLabel="Pitch Studio note editor"
       eyebrow="Pitch Studio"
-      title={props.songTitle.replace(/\.[^.]+$/, '')}
+      title={stripAudioExtension(props.songTitle)}
       icon={<MusicNote />}
       referenceColor={PITCH_VISUAL_COLORS.reference}
       userColor={PITCH_VISUAL_COLORS.singer}

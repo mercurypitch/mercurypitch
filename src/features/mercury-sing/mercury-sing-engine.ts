@@ -18,6 +18,7 @@ import { createSignal } from 'solid-js'
 import { getStemBlobUrl, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { acquireWakeWordHold, speechActiveWithin, } from '@/features/voice-control/voice-command-registry'
 import { AudioEngine } from '@/lib/audio-engine'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { audioRegistry } from '@/lib/audio-registry'
 import { karaokeNightSessionUrl } from '@/lib/karaoke-night-link'
 import { LivePitchBuffer } from '@/lib/shazam/live-pitch-buffer'
@@ -118,7 +119,7 @@ const toMidi = (frequency: number): number =>
 /** Library file names read better without their extension. */
 const songName = (session: UvrSession): string => {
   const raw = session.originalFile?.name ?? ''
-  const trimmed = raw.replace(/\.[a-z0-9]+$/i, '').trim()
+  const trimmed = stripAudioExtension(raw).trim()
   return trimmed === '' ? 'Your song' : trimmed
 }
 
@@ -258,7 +259,7 @@ export function createMercurySingEngine(): MercurySingEngine {
           sessionId: c.sessionId,
           // A fingerprint saved without a file name must still read as
           // something in the list — a blank row is unpickable.
-          name: c.name.replace(/\.[a-z0-9]+$/i, '').trim() || 'Your song',
+          name: stripAudioExtension(c.name).trim() || 'Your song',
           confidence: Math.round(c.confidence),
           matchOffsetSec: c.matchOffsetSec ?? null,
           breakdown: {
