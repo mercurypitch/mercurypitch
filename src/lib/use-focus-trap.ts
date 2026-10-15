@@ -122,10 +122,14 @@ export function useFocusTrap(
       const first = items[0]
       const last = items[items.length - 1]
       const active = document.activeElement
-      if (e.shiftKey && (active === first || !root.contains(active))) {
+      // The root is not one of its own stops. A dialog that can take the
+      // focus itself (tabindex -1) gets it from a press on its words, and
+      // from there Shift+Tab went back to the page behind.
+      const inCycle = active !== root && root.contains(active)
+      if (e.shiftKey && (active === first || !inCycle)) {
         e.preventDefault()
         last.focus()
-      } else if (!e.shiftKey && (active === last || !root.contains(active))) {
+      } else if (!e.shiftKey && (active === last || !inCycle)) {
         e.preventDefault()
         first.focus()
       }

@@ -62,7 +62,10 @@ export const VoiceTypePicker: Component<VoiceTypePickerProps> = (props) => {
   const portalSkin = createPortalSkinBridge(() => props.open)
 
   // Isolated: the mixer's shortcuts sit behind this dialog on the page, and
-  // Escape must close the picker without leaving focus mode as well.
+  // Escape must close the picker without leaving focus mode as well. The
+  // dialog takes the focus itself (tabindex -1), so a press on its words
+  // keeps the focus inside, where the trap hears the keys, instead of
+  // dropping it to the page behind.
   useFocusTrap(() => dialogRef, {
     isOpen: () => props.open,
     onClose: () => props.onCancel(),
@@ -84,6 +87,7 @@ export const VoiceTypePicker: Component<VoiceTypePickerProps> = (props) => {
               class={`${confirmStyles.dialog} ${styles.dialog} mp-dark-stage`}
               role="dialog"
               aria-modal="true"
+              tabIndex={-1}
               aria-labelledby={titleId}
               aria-describedby={bodyId}
               onClick={(e) => e.stopPropagation()}

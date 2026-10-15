@@ -67,4 +67,22 @@ describe('useFocusTrap native disclosures', () => {
     fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
     expect(screen.getByText('Input')).toHaveFocus()
   })
+
+  // A press on a dialog's words gives the focus to the dialog itself when it
+  // can take it (tabindex -1). The dialog is not one of its own stops: from
+  // there Shift+Tab went back to the page behind.
+  it('keeps Tab and Shift+Tab inside when the dialog itself has the focus', async () => {
+    render(() => <DisclosureDialog />)
+    await Promise.resolve()
+    const dialog = screen.getByRole('dialog')
+
+    dialog.focus()
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true })
+    const afterShiftTab = document.activeElement?.textContent
+    dialog.focus()
+    fireEvent.keyDown(dialog, { key: 'Tab' })
+    const afterTab = document.activeElement?.textContent
+
+    expect([afterShiftTab, afterTab]).toEqual(['Shape tone', 'Close'])
+  })
 })

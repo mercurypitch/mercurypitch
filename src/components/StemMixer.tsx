@@ -509,12 +509,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // focus to the control that launched it. The same goes for any dialog,
   // menu or listbox: one press closes the top layer only. On window, so
   // every document-level menu has had its turn and could claim the key with
-  // preventDefault.
+  // preventDefault. The voice picker is modal: while it is up, Escape is
+  // its own, even once the focus has fallen to the page behind it.
   createEffect(() => {
     if (!karaokeFocus() || scoreModalOpen()) return
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
-      if (scoreModalOpen() || isInsideOverlay(e.target)) return
+      if (scoreModalOpen() || key.voiceTypePickerOpen()) return
+      if (isInsideOverlay(e.target)) return
       setKaraokeFocus(false)
     }
     window.addEventListener('keydown', handler)
@@ -2415,13 +2417,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     canvas.initObserver()
     canvas.queueCanvasRedraw()
 
-    // The import and score dialogs, and any dialog, menu or listbox holding
-    // the focus, keep their own keys. Without this the score dialog's
-    // keep-or-close decision had Space restart playback and the letter
-    // shortcuts change the mixer behind it.
+    // The import and score dialogs and the voice picker, and any dialog,
+    // menu or listbox holding the focus, keep their own keys. Without this
+    // the score dialog's keep-or-close decision had Space restart playback
+    // and the letter shortcuts change the mixer behind it. The modal ones
+    // keep them wherever the focus is: a press on a dialog's words can drop
+    // it to the page behind.
     const layerAboveOwnsKeys = (target: EventTarget | null): boolean =>
       props.importOpen?.() === true ||
       scoreModalOpen() ||
+      key.voiceTypePickerOpen() ||
       isInsideOverlay(target)
 
     // Space plays and pauses from anywhere on the mixer, as in every room

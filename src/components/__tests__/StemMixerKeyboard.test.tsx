@@ -42,6 +42,12 @@ vi.mock('@/lib/audio-unlock', () => ({
   unlockForPlayback: (ensure: () => AudioContext | null) => ensure(),
 }))
 
+// No measured range and no voice type picked: Find my key asks which voice.
+vi.mock('@/db/services/voiceprint-service', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  listVoiceprints: async () => [],
+}))
+
 beforeEach(() => {
   resetNotifications()
   localStorage.clear()
@@ -257,6 +263,44 @@ describe('Space and the letter shortcuts', () => {
 
     expect(isPlaying()).toBe(false)
     expect(isSet(buttonA())).toBe(false)
+  })
+
+  // The mixer's own picker, from Find my key, with the focus fallen to the
+  // page behind it: the picker is still the top layer. Space used to play,
+  // A to set the loop, and Escape to leave focus mode from there.
+  it('plays nothing, sets nothing and keeps focus mode while its own voice picker is up, wherever the focus is', async () => {
+    // jsdom has no AudioWorklet, and without one the key chip is off. The
+    // song stays at key 0 and 1x, which never builds the engine, so empty
+    // stand-ins are enough to offer Find my key.
+    vi.stubGlobal('AudioWorkletNode', vi.fn())
+    Object.defineProperty(AudioContext.prototype, 'audioWorklet', {
+      configurable: true,
+      value: { addModule: async () => undefined },
+    })
+    try {
+      await mountLoadedMixer()
+      // The chip's name carries the key, which moves; its id does not.
+      fireEvent.click(screen.getByTestId('key-chip'))
+      fireEvent.click(screen.getByRole('button', { name: 'Find my key' }))
+      await screen.findByRole('dialog', { name: /your voice/i })
+      setKaraokeFocus(true)
+      ;(document.activeElement as HTMLElement | null)?.blur()
+
+      space(document.body)
+      press(document.body, 'a')
+      // The key chip's panel is still open under the picker and takes the
+      // first Escape; the second is the one focus mode must leave alone.
+      escape(document.body)
+      escape(document.body)
+
+      expect([isPlaying(), isSet(buttonA()), karaokeFocus()]).toEqual([
+        false,
+        false,
+        true,
+      ])
+    } finally {
+      delete (AudioContext.prototype as { audioWorklet?: unknown }).audioWorklet
+    }
   })
 
   it('leaves modifier chords to the browser', async () => {

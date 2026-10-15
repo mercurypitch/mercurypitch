@@ -168,6 +168,26 @@ describe('VoiceTypePicker', () => {
     expect(onOriginalKey).toHaveBeenCalledTimes(1)
   })
 
+  // A press on the picker's words gives the focus to the nearest focusable
+  // element around them. That was the page behind the dialog, where Escape
+  // and Space reached the mixer; the dialog itself takes it now. jsdom moves
+  // no focus on a press, so the test gives it as a browser would: the voice
+  // the dialog opened on lets go, and the dialog is offered the focus.
+  it('takes the focus itself, so Escape after a press on its words still closes it', async () => {
+    const { onCancel } = open()
+    const dialog = screen.getByRole('dialog', { name: /your voice/i })
+    await Promise.resolve()
+    ;(document.activeElement as HTMLElement).blur()
+
+    dialog.focus()
+    const focused = document.activeElement === dialog
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: 'Escape',
+    })
+
+    expect([focused, onCancel.mock.calls.length]).toEqual([true, 1])
+  })
+
   it('renders nothing while closed', () => {
     render(() => (
       <VoiceTypePicker open={false} onPick={vi.fn()} onCancel={vi.fn()} />
