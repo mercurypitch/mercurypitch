@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { CATCH_AFTER_OFF_SEC, CATCH_EVERY_SEC, createContactTracker, } from './contact-light'
+import { CATCH_AFTER_OFF_SEC, CATCH_EVERY_SEC, CATCH_LATE_START_SEC, createContactTracker, } from './contact-light'
 
 describe('the catch', () => {
   it('rings once as the voice comes on after a spell off the path', () => {
@@ -36,6 +36,23 @@ describe('the catch', () => {
     // Later, it may ring again.
     expect(tracker.step(caught + 1, 'off')).toBe(false)
     expect(tracker.step(caught + 1.3, 'on')).toBe(true)
+  })
+
+  it("does not ring for the engine's own onset as an arch starts, and rings for a late start", () => {
+    const tracker = createContactTracker()
+    // An arch starts with the voice on time: the light shows off until the
+    // engine hears the note, 0.11 to 0.17 s in the built app's takes.
+    tracker.step(0, 'hidden')
+    expect(tracker.step(0.017, 'off')).toBe(false)
+    expect(tracker.step(0.017 + CATCH_AFTER_OFF_SEC + 0.03, 'on')).toBe(false)
+    // The next arch: the singer comes in late and finds the note.
+    tracker.step(3, 'hidden')
+    expect(tracker.step(3.017, 'off')).toBe(false)
+    expect(tracker.step(3.017 + CATCH_LATE_START_SEC, 'on')).toBe(true)
+    // Once the light has been on, a spell off and back rings as before.
+    const found = 3.017 + CATCH_LATE_START_SEC
+    expect(tracker.step(found + 1, 'off')).toBe(false)
+    expect(tracker.step(found + 1 + CATCH_AFTER_OFF_SEC, 'on')).toBe(true)
   })
 
   it('forgets a spell off across a landing and the rest', () => {

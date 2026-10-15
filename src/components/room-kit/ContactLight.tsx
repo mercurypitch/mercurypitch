@@ -7,10 +7,11 @@
 // singer found the note. This does, at the point of contact: a glow on
 // the target at the playhead, in the room's lit colour while the engine
 // has the voice on the path (contact-light.ts), with a ring that catches
-// the moment the voice comes on. Merc stands on that point while the
-// voice is on it, so each room sizes the glow to show round him. Off, a
-// small neutral mark stays on the target while Merc rides the voice
-// away from it, so it also marks where to go.
+// the voice coming back on, or finding the note late as an arch starts.
+// Merc stands on that point while the voice is on it, so each room sizes
+// the glow to show round him. Off, a small neutral mark stays on the
+// target while Merc rides the voice away from it, so it also marks where
+// to go.
 //
 // Cheap to composite: the room moves one box by transform each frame; the
 // two glows are radial gradients painted once, cross-faded by opacity; the
