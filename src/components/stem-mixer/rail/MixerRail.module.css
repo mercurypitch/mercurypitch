@@ -84,11 +84,19 @@
 
 /* ── Short of width ────────────────────────────────────────────────── */
 
+/* On its own line the timeline sits right under the controls, so the A-B
+   close-up opens from the timeline's top edge down, over the bar's edge,
+   instead of centred on it, which would cover the controls' lower edge. */
 @container mixer-rail (max-width: 649px) {
   .grid {
     grid-template-areas:
       'left . right'
       'time time time';
+  }
+
+  .timeline {
+    --loop-range-lens-over-top: 0px;
+    --loop-range-lens-over-shift: 0px;
   }
 }
 
@@ -98,6 +106,11 @@
       grid-template-areas:
         'left . right'
         'time time time';
+    }
+
+    .timeline {
+      --loop-range-lens-over-top: 0px;
+      --loop-range-lens-over-shift: 0px;
     }
   }
 }

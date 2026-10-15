@@ -13,7 +13,11 @@
      --loop-range-size            the rail's height, and the marks' and the
                                   close-up button's targets (a finger's
                                   44 px; a host on a fine pointer may set
-                                  less) */
+                                  less)
+     --loop-range-lens-over-top   where a close-up opened over the rail
+     --loop-range-lens-over-shift sits: centred on it (50%, -50%), or from
+                                  its top edge down (0, 0) where controls
+                                  sit right above the rail */
 .frame {
   --loop-range-track: rgba(244, 234, 219, 0.2);
   --loop-range-progress: rgba(224, 164, 93, 0.78);
@@ -198,9 +202,9 @@
 /* Opened over the rail, in its place: the close-up stands in for the full
    song while it is open, and covers nothing else. */
 .precisionLens[data-side='over'] {
-  top: 50%;
+  top: var(--loop-range-lens-over-top, 50%);
   bottom: auto;
-  transform: translateY(-50%);
+  transform: translateY(var(--loop-range-lens-over-shift, -50%));
 }
 
 .precisionLabel {
