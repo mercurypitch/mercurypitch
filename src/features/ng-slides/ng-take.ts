@@ -18,7 +18,7 @@ import { createGlideState, tickGlide } from '@/lib/glide/glide-engine'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
 import { computeGlideResult } from '@/lib/glide/glide-metrics'
 import type { GlidePath } from '@/lib/glide/glide-path'
-import { segmentAt } from '@/lib/glide/glide-path'
+import { segmentAt, targetAt } from '@/lib/glide/glide-path'
 import type { GlidePreset } from '@/lib/glide/glide-presets'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { PLAYHEAD_X } from './bridge-geometry'
@@ -26,7 +26,7 @@ import { pitchY } from './bridge-layout'
 import type { BridgeReveal } from './bridge-reveal'
 import { createBridgeReveal } from './bridge-reveal'
 import type { BridgeScroll } from './bridge-scroll'
-import type { TraceSample } from './bridge-view'
+import type { BridgeContact, TraceSample } from './bridge-view'
 import type { SlideHeard } from './ng-run'
 import { slideHeard } from './ng-run'
 
@@ -63,6 +63,11 @@ export interface NgTake {
   readonly reveal: BridgeReveal
   /** The arch a time belongs to (a breath to the slide it leads into). */
   rootAt: (t: number) => number
+  /**
+   * The contact light at screen time `t`: the target's storyboard y and
+   * the engine's onPath, while its last frame is in a slide's sung part.
+   */
+  contact: (t: number) => BridgeContact | null
 }
 
 export function createNgTake(deps: NgTakeDeps): NgTake {
@@ -149,5 +154,10 @@ export function createNgTake(deps: NgTakeDeps): NgTake {
     state,
     reveal,
     rootAt,
+    contact: (t) => {
+      const target = state.arch < 0 ? null : targetAt(path, t)
+      if (target === null) return null
+      return { y: pitchY(target, rootAt(t)), on: state.onPath }
+    },
   }
 }

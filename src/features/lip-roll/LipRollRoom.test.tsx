@@ -26,7 +26,7 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type * as ArtModule from './bay-art'
-import { INTRO } from './bay-geometry'
+import { INTRO, PLAYHEAD_X } from './bay-geometry'
 import type * as WavesModule from './bay-waves'
 import type { LipPlan } from './lip-run'
 import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC, planLipRun } from './lip-run'
@@ -271,6 +271,8 @@ interface Seen {
   /** The mic's state, and its ring's scale (NaN when it is not drawn). */
   readonly mic: string | undefined
   readonly ring: number
+  /** The contact light: its state, and its centre, px. */
+  readonly light: { state?: string; x: number; y: number }
 }
 
 /** The mic's ring as drawn now: its scale, NaN with none written. */
@@ -280,6 +282,17 @@ function ringScale(): number {
     (ring as HTMLElement | null)?.style.transform ?? '',
   )
   return scale === null ? Number.NaN : Number(scale[1])
+}
+
+/** The contact light's state and centre (its box's translate plus half). */
+function lightNow(): Seen['light'] {
+  const el = screen.getByTestId('lip-contact')
+  const at = /translate3d\(([-\d.]+)px,([-\d.]+)px/u.exec(el.style.transform)
+  return {
+    state: el.dataset.state,
+    x: Number(at?.[1] ?? Number.NaN) + Number.parseFloat(el.style.width) / 2,
+    y: Number(at?.[2] ?? Number.NaN) + Number.parseFloat(el.style.height) / 2,
+  }
 }
 
 /**
@@ -308,6 +321,7 @@ function play(
       bubble: bubble(),
       mic: screen.queryByTestId('lip-mic')?.dataset.state,
       ring: ringScale(),
+      light: lightNow(),
     })
     if (phase() !== 'run') break
   }
@@ -570,6 +584,86 @@ describe('a run sung on the dots', () => {
     )
     expect(felt.taps).toBe(litWaves.length)
     expect(felt.successes).toBe(0)
+  })
+})
+
+describe('the contact light', () => {
+  it.each(['learning', 'singer', 'professional'] as const)(
+    "is lit inside the %s band and dim outside it, on the target at Merc's x",
+    async (level) => {
+      setExerciseLevel(level)
+      const plan = planFor(level, 52)
+      const { bandCents } = LIP_ROLL_LEVELS[level]
+      const [, second] = plan.path.arches
+      // Inside the band on the first and last waves, outside it on the
+      // second: read at each top's middle, where the path is flat and the
+      // lag allowance cannot help.
+      const voice = offset(follow(plan.path), (t) =>
+        t >= second.start && t <= second.landingEnd
+          ? 1.5 * bandCents
+          : 0.8 * bandCents,
+      )
+      await startRun()
+      const seen = play(windowFrames(plan, voice), plan)
+
+      const crests = screen.getAllByTestId('lip-target')
+      for (const [k, wave] of plan.path.arches.entries()) {
+        const top = seen.find((s) => s.t >= (wave.topStart + wave.topEnd) / 2)
+        expect(top?.light.state).toBe(k === 1 ? 'off' : 'on')
+        // On the dotted crest's middle, at the playhead.
+        const points = (crests[k].getAttribute('d') ?? '')
+          .split(/[ML]/u)
+          .filter((p) => p !== '')
+          .map((p) => p.split(' ').map(Number))
+        expect(top?.light.y).toBeCloseTo(points[(points.length - 1) / 2][1], 0)
+        expect(top?.light.x).toBeCloseTo(PLAYHEAD_X * 390, 0)
+      }
+      // Nothing outside the sung parts: the count-in, landings and rests.
+      const judged = (t: number) =>
+        plan.path.arches.some((a) => t > a.start - 0.1 && t < a.end + 0.1)
+      for (const s of seen) {
+        if (s.phase === 'run' && !judged(s.t)) {
+          expect(s.light.state).toBe('hidden')
+        }
+      }
+    },
+  )
+
+  it('rings once as the voice comes back onto the path, and not with reduced motion', async () => {
+    const rings: unknown[] = []
+    Element.prototype.animate = vi.fn((frames: unknown) => {
+      rings.push(frames)
+      return {} as Animation
+    })
+    setExerciseLevel('singer')
+    const plan = planFor('singer', 52)
+    const [first] = plan.path.arches
+    const offAt = first.start + 0.5
+    // Off by a third of an octave for half a second, then back on.
+    const voice = offset(follow(plan.path), (t) =>
+      t >= offAt && t < offAt + 0.5 ? 400 : 0,
+    )
+    await startRun()
+    play(windowFrames(plan, voice), plan, plan.countIn + first.end)
+
+    expect(rings).toHaveLength(1)
+    expect(screen.getByTestId('lip-contact').dataset.catches).toBe('1')
+    cleanup()
+
+    // Reduced motion: the colour changes, no ring runs.
+    rings.length = 0
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+    fake.frames = []
+    await startRun()
+    const seen = play(windowFrames(plan, voice), plan, plan.countIn + first.end)
+
+    expect(rings).toHaveLength(0)
+    expect(seen.some((s) => s.light.state === 'off')).toBe(true)
+    expect(seen.at(-1)?.light.state).toBe('on')
   })
 })
 

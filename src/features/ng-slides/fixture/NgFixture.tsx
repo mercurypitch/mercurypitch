@@ -107,6 +107,8 @@ export function fixtureController(scene: NgFixtureScene): NgController {
         strips,
         trace: scene.trace,
         merc: scene.merc,
+        // The storyboard's frames: no contact light.
+        contact: null,
       })
     },
   }

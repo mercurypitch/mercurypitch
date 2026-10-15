@@ -1,0 +1,43 @@
+/* The glow where the voice meets the path (ContactLight.tsx). The room
+   moves the box by transform; the glows cross-fade by opacity; the ring
+   runs on transform and opacity. All compositor work, no repaint. */
+.light {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease-out;
+  will-change: transform, opacity;
+}
+
+.light[data-state='off'],
+.light[data-state='on'] {
+  opacity: 1;
+}
+
+.glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 90ms linear;
+  will-change: opacity;
+}
+
+.light[data-state='off'] .off,
+.light[data-state='on'] .on {
+  opacity: 1;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* Reduced motion: the colour changes at once, and no ring runs. */
+.reduced,
+.reduced .glow {
+  transition: none;
+}

@@ -26,7 +26,7 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type * as ArtModule from './bridge-art'
-import { TARGET_LINE } from './bridge-geometry'
+import { PLAYHEAD_X, TARGET_LINE } from './bridge-geometry'
 import type * as GlassModule from './bridge-glass'
 import type { LitStrip } from './bridge-reveal'
 import { NG_LINES } from './merc-lines'
@@ -267,6 +267,8 @@ interface Seen {
   /** The mic's state, and its ring's scale (NaN when it is not drawn). */
   readonly mic: string | undefined
   readonly ring: number
+  /** The contact light: its state, and its centre, px. */
+  readonly light: { state?: string; x: number; y: number }
 }
 
 /** The mic's ring as drawn now: its scale, NaN with none written. */
@@ -276,6 +278,17 @@ function ringScale(): number {
     (ring as HTMLElement | null)?.style.transform ?? '',
   )
   return scale === null ? Number.NaN : Number(scale[1])
+}
+
+/** The contact light's state and centre (its box's translate plus half). */
+function lightNow(): Seen['light'] {
+  const el = screen.getByTestId('ng-contact')
+  const at = /translate3d\(([-\d.]+)px,([-\d.]+)px/u.exec(el.style.transform)
+  return {
+    state: el.dataset.state,
+    x: Number(at?.[1] ?? Number.NaN) + Number.parseFloat(el.style.width) / 2,
+    y: Number(at?.[2] ?? Number.NaN) + Number.parseFloat(el.style.height) / 2,
+  }
 }
 
 /**
@@ -304,6 +317,7 @@ function play(
       bubble: bubble(),
       mic: screen.queryByTestId('ng-mic')?.dataset.state,
       ring: ringScale(),
+      light: lightNow(),
     })
     if (phase() !== 'run') break
   }
@@ -553,6 +567,51 @@ describe('a run sung on the line', () => {
     expect(felt.taps).toBe(litArches.length)
     expect(felt.successes).toBe(0)
   })
+})
+
+describe('the contact light', () => {
+  it.each(['learning', 'singer', 'professional'] as const)(
+    "is lit inside the %s band and dim outside it, on the target at Merc's feet",
+    async (level) => {
+      setExerciseLevel(level)
+      const plan = planFor(level, 45)
+      const { bandCents } = NG_SLIDES_LEVELS[level]
+      const odd = (t: number) =>
+        plan.path.arches.some(
+          (a) => a.index % 2 === 1 && t >= a.start && t <= a.landingEnd,
+        )
+      // Inside the band on slides 1, 3 and 5, outside it on 2 and 4: read
+      // at each top's middle, where the path is flat and the lag
+      // allowance cannot help.
+      const voice = offset(follow(plan.path), (t) =>
+        odd(t) ? 1.5 * bandCents : 0.8 * bandCents,
+      )
+      await startRun()
+      const seen = play(windowFrames(plan, voice), plan)
+
+      const lines = screen.getAllByTestId('ng-target')
+      for (const [k, arch] of plan.path.arches.entries()) {
+        const top = seen.find((s) => s.t >= (arch.topStart + arch.topEnd) / 2)
+        expect(top?.light.state).toBe(k % 2 === 1 ? 'off' : 'on')
+        // On the target line's middle (less the line's own offset), at
+        // the playhead.
+        const points = (lines[k].getAttribute('d') ?? '')
+          .split(/[ML]/u)
+          .filter((p) => p !== '')
+          .map((p) => p.split(' ').map(Number))
+        const lineY = points[(points.length - 1) / 2][1]
+        expect(top?.light.y).toBeCloseTo(lineY - TARGET_LINE.offset * 390, 0)
+        expect(top?.light.x).toBeCloseTo(PLAYHEAD_X * 390, 0)
+      }
+      const judged = (t: number) =>
+        plan.path.arches.some((a) => t > a.start - 0.1 && t < a.end + 0.1)
+      for (const s of seen) {
+        if (s.phase === 'run' && !judged(s.t)) {
+          expect(s.light.state).toBe('hidden')
+        }
+      }
+    },
+  )
 })
 
 describe('stopping', () => {

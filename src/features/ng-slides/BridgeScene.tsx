@@ -12,6 +12,11 @@
 //   glass        each arch's glass and its reflection, light added over
 //                what is behind (`plus-lighter`): unlit pictures, and a
 //                canvas for each arch lighting (bridge-glass.ts)
+//   contact      where the voice meets the path now (room-kit
+//                ContactLight), a pool of light at Merc's feet, up round
+//                him and over the glass: the lit glass's colours while the
+//                voice is on the path, a small mark of the line's pale
+//                grey off it
 //   lines        the target line along each arch (an SVG path from the
 //                glide path's own targetAt), the first arch's root name and
 //                each arch's top note under its apex (room-kit CrestNote);
@@ -29,6 +34,8 @@
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { createPictureSet } from '@/components/room-kit/canvas-picture'
+import type { ContactLightApi, ContactPalette, } from '@/components/room-kit/ContactLight'
+import { ContactLight } from '@/components/room-kit/ContactLight'
 import { CREST_NOTE, CrestNote } from '@/components/room-kit/CrestNote'
 import type { Plate } from '@/components/room-kit/plate-loader'
 import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
@@ -42,7 +49,7 @@ import { createArchGlass } from './bridge-glass'
 import type { BridgeLayout, MercBox } from './bridge-layout'
 import { MERC_INTRO_X, mercBoxAt, mercResultBox, pitchY, yOf, } from './bridge-layout'
 import { apexX, INTRO_CAMERA } from './bridge-scroll'
-import type { BridgeView, TraceSample } from './bridge-view'
+import type { BridgeContact, BridgeView, TraceSample } from './bridge-view'
 import type { BridgeRibbonApi, StrokePoint } from './BridgeRibbon'
 import { BridgeRibbon } from './BridgeRibbon'
 import styles from './NgSlidesRoom.module.css'
@@ -57,6 +64,21 @@ const LINES_MARGIN = 1.3
 const ARCHES = 5
 /** The water's top on the storyboard (ng-n0 bands: 0.38 H). */
 const WATER_TOP = 0.38 * STORYBOARD_ASPECT
+/**
+ * The contact light: a pool of light where Merc stands on the line, up
+ * round his body (about 0.18 W wide, 0.2 W tall) and down over the glass
+ * under him, in the lit glass's own colours (sampled from glass-lit:
+ * violet high, teal low); off, a small mark of the target line's pale
+ * grey, which shows when he is off it. glide-feedback's glow probe
+ * measured it on a held frame at Singer: 0.07 W^2 of the screen lifted by
+ * 6 L* or more against off, where the first draft lifted 0.002 W^2.
+ */
+const CONTACT = { rxW: 0.2, ryW: 0.22 } as const
+const CONTACT_PALETTE: ContactPalette = {
+  on: 'radial-gradient(closest-side, rgba(240, 236, 255, 0.72), rgba(200, 178, 248, 0.62) 40%, rgba(146, 112, 203, 0.44) 62%, rgba(122, 178, 207, 0.16) 82%, rgba(122, 178, 207, 0) 100%)',
+  off: 'radial-gradient(closest-side, rgba(231, 239, 249, 0.46), rgba(231, 239, 249, 0.22) 22%, rgba(231, 239, 249, 0.07) 40%, rgba(231, 239, 249, 0) 54%)',
+  ring: 'radial-gradient(closest-side, rgba(226, 220, 255, 0) 56%, rgba(226, 220, 255, 0.85) 70%, rgba(146, 112, 203, 0.32) 80%, rgba(146, 112, 203, 0) 92%)',
+}
 
 export interface BridgeSceneProps {
   layout: BridgeLayout
@@ -140,6 +162,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
   let resultLit: HTMLCanvasElement | undefined
   let resultHolder: HTMLDivElement | undefined
   let ribbon: BridgeRibbonApi | null = null
+  let contact: ContactLightApi | null = null
   let riverPlate: Plate | null = null
   let resultPlate: Plate | null = null
   const glassHolders: HTMLDivElement[] = []
@@ -237,6 +260,15 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
       }),
     )
 
+  /** The contact light at Merc's x, on the target. */
+  const showContact = (at: BridgeContact | null, x: number): void => {
+    if (at === null) contact?.show(0, 0, 'hidden')
+    else {
+      const y = yOf(props.layout, at.y)
+      contact?.show(x * props.layout.unit, y, at.on ? 'on' : 'off')
+    }
+  }
+
   /** The last frame's voice, for a ribbon that mounts after it. */
   let lastTrace: { trace: readonly TraceSample[]; camera: number } | null = null
 
@@ -247,11 +279,13 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
       lastTrace = { trace: f.trace, camera: f.camera }
       ribbon?.draw(strokesOf(f.trace, f.camera, props.layout), ribbonScale())
       placeMerc(mercBoxAt(props.layout, f.merc.x, f.merc.feetY))
+      showContact(f.contact, f.merc.x)
     },
     reset: (at) => {
       glass.reset()
       lastTrace = null
       ribbon?.draw([], ribbonScale())
+      contact?.reset()
       moveTo(at)
       placeMerc(mercBoxAt(props.layout, MERC_INTRO_X, ARCH.deckY))
       setResultReady(false)
@@ -263,6 +297,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
         resultPlate.img.alt = ''
         resultHolder.prepend(resultPlate.picture)
       }
+      contact?.reset()
       void paintResult(lit).finally(() => {
         setResultReady(true)
         // A frame later, so his walk to the far end is a transition.
@@ -450,6 +485,14 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
             )}
           </For>
         </div>
+        <ContactLight
+          rx={CONTACT.rxW * unit()}
+          ry={CONTACT.ryW * unit()}
+          palette={CONTACT_PALETTE}
+          reduced={props.reduced}
+          testId="ng-contact"
+          onReady={(api) => (contact = api)}
+        />
         <div ref={lines} class={styles.world} data-testid="ng-lines">
           <svg
             class={styles.lines}

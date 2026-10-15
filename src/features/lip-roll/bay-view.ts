@@ -35,6 +35,20 @@ export interface BayFrame {
   readonly merc: { readonly x: number; readonly feetY: number }
   /** The voice sounds now: bubbles stream from the ribbon's head. */
   readonly voiced: boolean
+  /**
+   * The contact light at Merc's x (room-kit ContactLight): the target's
+   * world y now, and the voice on it. Null where nothing is judged (the
+   * count-in, a landing, a rest) and in the demo's takes.
+   */
+  readonly contact: BayContact | null
+}
+
+/** Where the voice meets the path now, for the contact light. */
+export interface BayContact {
+  /** The target's world y (wave B's frame). */
+  readonly y: number
+  /** The engine has the voice on the path. */
+  readonly on: boolean
 }
 
 export interface BayView {

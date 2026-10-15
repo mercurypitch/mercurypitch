@@ -407,6 +407,7 @@ export function useNgController(): NgController {
       strips: run.take.drain(),
       trace: run.take.trace,
       merc: { x: rideX(t, run.plan.countIn), feetY: run.feetY },
+      contact: run.scripted === null ? run.take.contact(t) : null,
     })
     breathTone(run, t)
     showSlide(run, t)

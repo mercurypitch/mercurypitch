@@ -112,6 +112,8 @@ export function fixtureController(scene: LipFixtureScene): LipController {
         trace: scene.trace,
         merc: scene.merc,
         voiced: scene.voiced,
+        // The storyboard's frames: no contact light.
+        contact: null,
       })
     },
   }

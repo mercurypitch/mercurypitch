@@ -413,6 +413,7 @@ export function useLipController(): LipController {
       trace: run.take.trace,
       merc: { x: rideXOn(run.scroll, t), feetY: run.feetY },
       voiced: run.take.voiced(),
+      contact: scripted === null ? run.take.contact(t) : null,
     })
     breathTone(run, t)
     showWave(run, t)
