@@ -136,6 +136,11 @@ export interface StemMixerKeyController {
   suggestion: Accessor<KeySuggestion | null>
   rangeKnown: Accessor<boolean>
   findMyKey: () => FindMyKeyResult
+  /**
+   * A find is under way: the melody is being detected, or the stored range
+   * read. The key controls show it, so a second press is not needed.
+   */
+  finding: Accessor<boolean>
   /** Picks the voice type (Settings' own), then fits as `findMyKey` does. */
   applyVoiceType: (preset: VocalRangePreset) => FindMyKeyResult
   voiceTypePickerOpen: Accessor<boolean>
@@ -179,6 +184,8 @@ export function useStemMixerKeyController(
   // yet", not "none": a find asked for meanwhile waits for the read.
   let rangeRead = false
   let findWaiting = false
+  const [finding, setFinding] = createSignal(false)
+  const showFinding = () => setFinding(detecting || findWaiting)
 
   const keyShift = createMemo(() => {
     const entryKey = deps.queueEntry()?.keyShift
@@ -223,6 +230,7 @@ export function useStemMixerKeyController(
 
   const fitAfterDetection = (outcome: PitchAnalysisOutcome) => {
     detecting = false
+    showFinding()
     if (disposed) return
     if (!outcome.ok) {
       // Said once: here, or already by an analysis someone else started.
@@ -251,8 +259,10 @@ export function useStemMixerKeyController(
     const detection = deps.detectMelody?.() ?? null
     if (detection === null) return 'no-melody'
     detecting = true
+    showFinding()
     detection.then(fitAfterDetection, () => {
       detecting = false
+      showFinding()
     })
     return 'detecting'
   }
@@ -268,6 +278,7 @@ export function useStemMixerKeyController(
   const findMyKey = (): FindMyKeyResult => {
     if (!rangeRead && !rangeKnown()) {
       findWaiting = true
+      showFinding()
       return 'reading-range'
     }
     return findWithRange()
@@ -277,9 +288,13 @@ export function useStemMixerKeyController(
     setVocalRangePreset(preset)
     rangeRequest++
     rangeRead = true
+    // The pick drops the read, so it answers a find that waited for it.
+    findWaiting = false
     setRange(voiceTypeRange())
     setPickerOpen(false)
-    return fitOrDetect()
+    const result = fitOrDetect()
+    showFinding()
+    return result
   }
 
   // A find asked for before the read: nobody is waiting on its answer, so
@@ -287,7 +302,9 @@ export function useStemMixerKeyController(
   const answerWaitingFind = () => {
     if (!findWaiting || disposed) return
     findWaiting = false
-    const notice = findNotice(findWithRange(), keyShift())
+    const result = findWithRange()
+    showFinding()
+    const notice = findNotice(result, keyShift())
     if (notice !== null) notify(notice, 'info')
   }
 
@@ -315,6 +332,7 @@ export function useStemMixerKeyController(
     suggestion,
     rangeKnown,
     findMyKey,
+    finding,
     applyVoiceType,
     voiceTypePickerOpen: pickerOpen,
     closeVoiceTypePicker: () => setPickerOpen(false),
@@ -346,7 +364,12 @@ export function songMelody(
 export interface StemMixerKeyViewDeps {
   key: Pick<
     StemMixerKeyController,
-    'keyShift' | 'setKeyShift' | 'suggestion' | 'findMyKey' | 'applyVoiceType'
+    | 'keyShift'
+    | 'setKeyShift'
+    | 'suggestion'
+    | 'findMyKey'
+    | 'finding'
+    | 'applyVoiceType'
   >
   /** The key being heard: 0 in Pitch Studio, and 0 without the engine. */
   heardShift: Accessor<number>
@@ -420,6 +443,7 @@ export function useStemMixerKeyView(
       },
       suggestion: deps.key.suggestion,
       onFindKey: () => announce(deps.key.findMyKey()),
+      finding: deps.key.finding,
       disabledReason: () => {
         if (!deps.engineAvailable())
           return 'Changing the key is not available right now'

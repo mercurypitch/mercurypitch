@@ -49,6 +49,8 @@ export interface KeyShiftBinding {
   notice?: Accessor<KeyShiftNotice | null>
   /** A sheet opens (true) or shuts (false): its notices go in it meanwhile. */
   holdNotices?: (held: boolean) => void
+  /** "Find my key" is waiting for the melody, or for the singer's range. */
+  finding?: Accessor<boolean>
 }
 
 interface KeyShiftControlProps {

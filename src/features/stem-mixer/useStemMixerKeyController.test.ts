@@ -483,6 +483,70 @@ describe('find my key', () => {
     expect(harness.controller.keyShift()).toBe(0)
   })
 
+  it('is finding while the melody is detected, and stops once it lands', async () => {
+    let land: (outcome: PitchAnalysisOutcome) => void = () => {}
+    harness = mount(freshSong(), null, null, {
+      melody: [],
+      detectMelody: (setMelody) =>
+        new Promise<PitchAnalysisOutcome>((resolve) => {
+          land = (outcome) => {
+            setMelody(MELODY)
+            resolve(outcome)
+          }
+        }),
+    })
+    const controller = harness.controller
+    expect(controller.finding()).toBe(false)
+
+    expect(controller.applyVoiceType('bass')).toBe('detecting')
+    expect(controller.finding()).toBe(true)
+
+    land(FOUND)
+    await vi.waitFor(() => expect(controller.finding()).toBe(false))
+    expect(controller.keyShift()).toBe(controller.suggestion()?.keyShift)
+  })
+
+  it('stops finding when the detection fails', async () => {
+    let fail: () => void = () => {}
+    harness = mount(freshSong(), null, null, {
+      melody: [],
+      detectMelody: () =>
+        new Promise<PitchAnalysisOutcome>((_resolve, reject) => {
+          fail = () => reject(new Error('worker died'))
+        }),
+    })
+    const controller = harness.controller
+
+    controller.applyVoiceType('bass')
+    expect(controller.finding()).toBe(true)
+
+    fail()
+    await vi.waitFor(() => expect(controller.finding()).toBe(false))
+  })
+
+  it('is finding while a find waits for the stored range', async () => {
+    fakes.takes = [MEASURED_TAKE]
+    const controller = start(freshSong())
+
+    expect(controller.findMyKey()).toBe('reading-range')
+    expect(controller.finding()).toBe(true)
+
+    await vi.waitFor(() => expect(controller.finding()).toBe(false))
+    expect(controller.keyShift()).toBe(controller.suggestion()?.keyShift)
+  })
+
+  it('stops finding when a voice type picked meanwhile answers the find', async () => {
+    fakes.takes = [MEASURED_TAKE]
+    const controller = start(freshSong())
+    expect(controller.findMyKey()).toBe('reading-range')
+
+    expect(controller.applyVoiceType('bass')).toBe('applied')
+
+    expect(controller.finding()).toBe(false)
+    await rangeRead()
+    expect(controller.finding()).toBe(false)
+  })
+
   it('says so when there is no melody to fit yet', () => {
     const controller = start(freshSong())
     controller.applyVoiceType('tenor')
@@ -523,6 +587,7 @@ describe('what the mixer shows', () => {
           setKeyShift: (value) => setKey(value),
           suggestion: () => null,
           findMyKey: () => fit.next,
+          finding: () => false,
           applyVoiceType: (preset) => {
             fit.picked.push(preset)
             return fit.next
