@@ -7,46 +7,41 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  /* "Key −6" and the chevron: the chip does not change width as the key
-     moves, so the capsule does not shift under the singer's pointer. */
-  min-width: 5.75rem;
-  /* The capsule's control size and look (MixerCapsule.module.css). */
-  min-height: var(--mixer-control-size, 32px);
-  padding: 0 0.5rem 0 0.6rem;
-  border: 1px solid var(--mixer-control-border, var(--border-subtle, #30363d));
-  border-radius: 0.5rem;
-  color: var(--text-primary, #e6edf3);
-  background: var(
-    --mixer-control-bg,
-    color-mix(in srgb, var(--text-primary, #e6edf3) 6%, transparent)
-  );
+  gap: 4px;
+  /* "Key −6" and the chevron, at a fixed width: the chip does not change
+     width as the key moves or while it is being found, so the rail does
+     not shift under the singer's pointer. */
+  width: 72px;
+  height: var(--mixer-control-size, 28px);
+  padding: 0 6px 0 8px;
+  border: none;
+  border-radius: var(--mixer-control-radius, 8px);
+  color: var(--text-secondary, #a8b3bf);
+  background: rgba(230, 237, 243, 0.06);
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 12px;
   font-weight: 600;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   cursor: pointer;
   transition:
     background 0.15s ease,
-    border-color 0.15s ease;
+    color 0.15s ease;
 }
 
-/* Under the pointer and while open, the tint the capsule's buttons take
-   (MixerCapsule.module.css): a solid fill reads as a box on the focus
-   pill's glass. */
+/* Under the pointer, the tint the rail's buttons take: a solid fill reads
+   as a box on the glass. The stage is dark in every theme, so its tints
+   are plain rgba. */
 @media (hover: hover) {
   .chip:hover {
-    background: color-mix(
-      in srgb,
-      var(--text-primary, #e6edf3) 12%,
-      transparent
-    );
+    color: var(--text-primary, #e6edf3);
+    background: rgba(230, 237, 243, 0.12);
   }
 }
 
 .chip[aria-expanded='true'] {
-  background: color-mix(in srgb, var(--text-primary, #e6edf3) 16%, transparent);
+  box-shadow: inset 0 0 0 1px rgba(88, 166, 255, 0.5);
 }
 
 .chip:focus-visible {
@@ -56,18 +51,40 @@
 
 .chip svg {
   flex: none;
-  color: var(--text-secondary, #a8b3bf);
+  width: 12px;
+  height: 12px;
+  opacity: 0.75;
 }
 
 /* The song is being played in a moved key: worth a glance from across the
    room, as on the Jam room key. */
-.chipMoved {
-  border-color: var(--accent, #58a6ff);
+.chipMoved,
+.chipMoved:hover {
+  color: var(--accent, #58a6ff);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
 }
 
 .face {
   flex: 1 1 auto;
   text-align: center;
+}
+
+/* While "Find my key" waits for the melody: in the chevron's place on the
+   chip, and in the crosshair's on the find button. */
+.spin {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(88, 166, 255, 0.5);
+  border-top-color: var(--accent, #58a6ff);
+  border-radius: 50%;
+  animation: turn 0.9s linear infinite;
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Panel ─────────────────────────────────────────────────────────── */
@@ -217,7 +234,10 @@
 }
 
 @media (pointer: coarse) {
-  .chip,
+  .chip {
+    width: 84px;
+  }
+
   .action {
     min-height: 44px;
   }
@@ -228,8 +248,18 @@
   }
 }
 
+.note[data-notice='success'] {
+  color: var(--success, #56d364);
+}
+
+.note[data-notice='warning'],
+.note[data-notice='error'] {
+  color: var(--warning, #e3b341);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .panel {
+  .panel,
+  .spin {
     animation: none;
   }
 }

@@ -1,8 +1,9 @@
 // ============================================================
 // Every Stem Mixer transport control has an accessible name. The buttons are
 // icon-only; a screen reader that lands on "button" nine times in a row has
-// been told nothing (UX-32). The key chip sits right after the speed chip,
-// and in karaoke focus the stage toggles live in More.
+// been told nothing (UX-32). The key chip sits at the rail's right end,
+// before More, Speed folds into More when the rail is short of width, and in
+// karaoke focus the stage toggles live in More.
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
@@ -12,6 +13,35 @@ import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import type { MixerLayout, MixerViewControlsProps, } from '@/components/stem-mixer/MixerViewControls'
 import type { StemMixerTransportProps } from '@/components/StemMixerTransport'
 import { StemMixerTransport } from '@/components/StemMixerTransport'
+
+const viewport = vi.hoisted(() => ({ coarse: false }))
+
+vi.mock('@/lib/use-viewport', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  isCoarsePointer: () => viewport.coarse,
+}))
+
+type Resize = (entries: { contentRect: { width: number } }[]) => void
+
+/** The rail's ResizeObserver, driven by hand: jsdom has no layout. */
+function stubResizeObserver(): { resize: (width: number) => void } {
+  const callbacks: Resize[] = []
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(callback: Resize) {
+        callbacks.push(callback)
+      }
+      observe() {}
+      disconnect() {}
+    },
+  )
+  return {
+    resize: (width) => {
+      for (const callback of callbacks) callback([{ contentRect: { width } }])
+    },
+  }
+}
 
 /** The header's view controls, live, as the layout controller hands them. */
 function viewState(initial: MixerLayout) {
@@ -85,7 +115,11 @@ function props(
   }
 }
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+  viewport.coarse = false
+})
 
 const nameOf = (el: Element): string =>
   el.getAttribute('aria-label') ?? el.textContent?.trim() ?? ''
@@ -132,7 +166,7 @@ describe('StemMixerTransport accessible names', () => {
 })
 
 describe('StemMixerTransport key', () => {
-  it('puts the key chip right after the speed chip, when the mixer binds one', () => {
+  it('puts the key chip at the right end of the rail, before More, when the mixer binds one', () => {
     const [value, setValue] = createSignal(0)
     const binding: KeyShiftBinding = {
       value,
@@ -146,9 +180,11 @@ describe('StemMixerTransport key', () => {
     render(() => <StemMixerTransport {...props({ keyControl: binding })} />)
 
     const chip = screen.getByTestId('key-chip')
-    expect(
-      screen.getByTestId('speed-chip').parentElement?.nextElementSibling,
-    ).toBe(chip)
+    const end = screen.getByTestId('mixer-capsule-end')
+    expect(end.firstElementChild).toBe(chip)
+    expect(chip.nextElementSibling).toContainElement(
+      screen.getByTestId('mixer-more'),
+    )
     fireEvent.click(chip)
     fireEvent.click(screen.getByRole('button', { name: 'Raise the key' }))
     expect(screen.getByTestId('key-chip-value').textContent).toBe('+1')
@@ -160,6 +196,61 @@ describe('StemMixerTransport key', () => {
     render(() => <StemMixerTransport {...props()} />)
 
     expect(screen.queryByTestId('key-chip')).toBeNull()
+  })
+})
+
+describe('StemMixerTransport, short of width', () => {
+  const speedRows = () => {
+    fireEvent.click(screen.getByTestId('mixer-more'))
+    const rows = screen.queryAllByRole('menuitemradio')
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    return rows.length
+  }
+
+  it('folds Speed into More below 860 px of rail, and back above it', () => {
+    const { resize } = stubResizeObserver()
+    render(() => <StemMixerTransport {...props()} />)
+    expect(screen.getByTestId('speed-chip')).toBeInTheDocument()
+
+    resize(859)
+    expect(screen.queryByTestId('speed-chip')).toBeNull()
+    expect(screen.getByTestId('mixer-rail')).toHaveAttribute(
+      'data-speed-folded',
+      'true',
+    )
+    expect(speedRows()).toBe(8)
+
+    resize(860)
+    expect(screen.getByTestId('speed-chip')).toBeInTheDocument()
+    expect(speedRows()).toBe(0)
+  })
+
+  it('keeps Speed on the controls line down to 640 px on a touch screen', () => {
+    viewport.coarse = true
+    const { resize } = stubResizeObserver()
+    render(() => <StemMixerTransport {...props()} />)
+
+    resize(700)
+    expect(screen.getByTestId('speed-chip')).toBeInTheDocument()
+
+    resize(639)
+    expect(screen.queryByTestId('speed-chip')).toBeNull()
+  })
+
+  it('keeps the chip on a side dock, which stacks the groups', () => {
+    const { resize } = stubResizeObserver()
+    render(() => (
+      <StemMixerTransport
+        {...props({
+          karaokeFocus: () => true,
+          toolbarPosition: () => 'left',
+        })}
+      />
+    ))
+
+    resize(120)
+
+    expect(screen.getByTestId('speed-chip')).toBeInTheDocument()
   })
 })
 

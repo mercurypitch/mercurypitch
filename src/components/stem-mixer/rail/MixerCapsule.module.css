@@ -1,82 +1,59 @@
-/* MixerCapsule: the rail's controls in groups, split by 1x22 hairlines as
-   in the Jam room's capsule (JamControlBar.module.css).
+/* MixerCapsule: the rail's controls in groups split by hairlines, in two
+   parts (left and right) that MixerRail's grid places either side of the
+   timeline, by their data-rail-part. The rail draws the glass bar; the
+   parts add no box of their own, so there is no box inside a box.
 
    Custom properties set its size and look, so a host changes them without
    reaching into the capsule. Each has its default where it is read.
-     --mixer-control-size    every button and chip, square or tall (32px)
-     --mixer-control-bg      a control at rest
-     --mixer-control-border  its edge
-     --mixer-capsule-gap     between controls and hairlines (6px)
-     --mixer-group-gap       between controls in a group (4px)
-     --mixer-capsule-pad     inside the capsule's edge (5px 8px)
-     --mixer-capsule-wrap    nowrap, or wrap when the row is too narrow
-     --mixer-capsule-divider the hairlines' display: block, or none
-   MixerRail sets the size and spacing ones from its own width (its module
-   holds the container queries: Lightning CSS scopes a container's name to
-   the module that declares it). The chips read the first three. */
+     --mixer-control-size    every button and chip's height (28px; 44px on
+                             a coarse pointer)
+     --mixer-control-radius  their corners (8px; 12px on a coarse pointer)
+     --mixer-group-gap       between controls in a group (2px; 4px)
+   The chips read the first two. */
 
 .capsule {
-  --mixer-control-bg: color-mix(
-    in srgb,
-    var(--text-primary, #e6edf3) 6%,
-    transparent
-  );
-  --mixer-control-border: var(--border-subtle, #30363d);
+  --mixer-control-bg: transparent;
   --mixer-loop-a: #58a6ff;
   --mixer-loop-b: #ff7b72;
 
   display: flex;
   flex: none;
-  flex-wrap: var(--mixer-capsule-wrap, nowrap);
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--mixer-capsule-gap, 6px);
-  max-width: 100%;
-  padding: var(--mixer-capsule-pad, 5px 8px);
-  border: 1px solid var(--border-subtle, #30363d);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--text-primary, #e6edf3) 3%, transparent);
+  gap: 0;
+  min-width: 0;
 }
 
-/* An engine without color-mix() keeps a custom property set with it but
-   cannot use it: every control reading it would lose its resting tint. The
-   same tint as rgba (the default text colour at 6%). A declaration
-   fallback cannot do this, since a custom property is never invalid at
-   parse time. */
-@supports not (color: color-mix(in srgb, red, blue)) {
-  .capsule {
-    --mixer-control-bg: rgba(230, 237, 243, 0.06);
-  }
+.right {
+  gap: var(--mixer-group-gap, 2px);
 }
 
-/* Inside a host that draws the box (the focus pill): no second box, and
-   controls clear at rest, as the pill's glass had them. */
+/* Inside a host that draws the box (the focus pill): the same, and clear
+   at rest, as the pill's glass had them. */
 .capsule[data-bare='true'] {
   --mixer-control-bg: transparent;
-  --mixer-control-border: transparent;
-
-  padding: 0;
-  border: none;
-  background: none;
 }
 
 .group {
   display: flex;
   flex: none;
   align-items: center;
-  gap: var(--mixer-group-gap, 4px);
+  gap: var(--mixer-group-gap, 2px);
 }
 
 .divider {
-  display: var(--mixer-capsule-divider, block);
+  display: block;
   flex: none;
   width: 1px;
-  height: 22px;
+  height: 16px;
+  margin: 0 6px;
   border-radius: 1px;
-  background: var(--border, #30363d);
+  background: color-mix(in srgb, var(--text-primary, #e6edf3) 14%, transparent);
 }
 
 /* The chip's wrapper exists for the tour to point at; it adds no box. */
 .slot {
+  position: relative;
   display: inline-flex;
   flex: none;
 }
@@ -84,21 +61,21 @@
 /* ── Buttons ───────────────────────────────────────────────────────── */
 
 .btn {
+  position: relative;
   display: inline-grid;
   flex: none;
   place-items: center;
-  width: var(--mixer-control-size, 32px);
-  height: var(--mixer-control-size, 32px);
+  width: var(--mixer-control-size, 28px);
+  height: var(--mixer-control-size, 28px);
   padding: 0;
-  border: 1px solid var(--mixer-control-border);
-  border-radius: 8px;
+  border: none;
+  border-radius: var(--mixer-control-radius, 8px);
   color: var(--text-secondary, #a8b3bf);
   background: var(--mixer-control-bg);
   font: inherit;
   cursor: pointer;
   transition:
     background 0.15s ease,
-    border-color 0.15s ease,
     color 0.15s ease;
 }
 
@@ -109,7 +86,7 @@
 }
 
 @media (hover: hover) {
-  .btn:hover:not(:disabled) {
+  .btn:hover:not([aria-disabled='true']) {
     color: var(--text-primary, #e6edf3);
     background: color-mix(
       in srgb,
@@ -124,29 +101,32 @@
   outline-offset: 2px;
 }
 
-.btn:disabled {
-  opacity: 0.4;
-  cursor: default;
+/* Waiting, not disabled: it still takes a press, which says why. */
+.btn[aria-disabled='true'] {
+  opacity: 0.38;
+  cursor: not-allowed;
 }
 
 /* Play is the one filled control: the thing to find first. */
 .play {
-  width: calc(var(--mixer-control-size, 32px) + 4px);
-  height: calc(var(--mixer-control-size, 32px) + 4px);
-  border-color: var(--accent, #58a6ff);
+  width: calc(var(--mixer-control-size, 28px) + 4px);
+  height: calc(var(--mixer-control-size, 28px) + 4px);
+  margin-right: 2px;
   border-radius: 50%;
   color: var(--on-accent, #0d1117);
   background: var(--accent, #58a6ff);
 }
 
 .play svg {
+  width: 18px;
+  height: 18px;
   fill: currentColor;
 }
 
 @media (hover: hover) {
-  .play:hover:not(:disabled) {
+  .play:hover:not([aria-disabled='true']) {
     color: var(--on-accent, #0d1117);
-    background: color-mix(in srgb, var(--accent, #58a6ff) 85%, white);
+    background: var(--accent-hover, #79b8ff);
   }
 }
 
@@ -155,11 +135,10 @@
   fill: currentColor;
 }
 
-/* An on toggle (Loop, Monitor) in the accent, as the Jam room's are. */
+/* An on toggle (Loop, Hear my voice) in the accent. */
 .toggle[aria-pressed='true'] {
-  border-color: var(--accent, #58a6ff);
   color: var(--accent, #58a6ff);
-  background: var(--accent-dim, rgba(88, 166, 255, 0.16));
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
 }
 
 /* ── A and B ───────────────────────────────────────────────────────── */
@@ -169,11 +148,11 @@
 .markGlyph {
   display: inline-grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border: 1.5px solid currentColor;
   border-radius: 50%;
-  font-size: 0.75rem;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1;
 }
@@ -187,9 +166,13 @@
 }
 
 @media (hover: hover) {
-  .mark:hover:not(:disabled) {
+  .mark:hover {
     color: var(--mark-colour);
   }
+}
+
+.mark[data-set='true'] {
+  color: var(--mark-colour);
 }
 
 .mark[data-set='true'] .markGlyph {
@@ -201,23 +184,42 @@
 /* ── Mic ───────────────────────────────────────────────────────────── */
 
 .mic[data-state='on'] {
-  border-color: var(--accent, #58a6ff);
   color: var(--on-accent, #0d1117);
   background: var(--accent, #58a6ff);
   animation: micPulse 1.5s ease-in-out infinite;
 }
 
 @media (hover: hover) {
-  .mic[data-state='on']:hover:not(:disabled) {
+  .mic[data-state='on']:hover {
     color: var(--on-accent, #0d1117);
-    background: color-mix(in srgb, var(--accent, #58a6ff) 85%, white);
+    background: var(--accent-hover, #79b8ff);
   }
 }
 
 .mic[data-state='error'] {
-  border-color: var(--danger, #da3633);
   color: var(--danger, #ff7b72);
-  background: color-mix(in srgb, var(--danger, #da3633) 18%, transparent);
+  background: color-mix(in srgb, var(--danger, #ff7b72) 18%, transparent);
+}
+
+/* A blocked mic carries a mark of its own, so the red is not the only sign. */
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  color: #0d1117;
+  background: var(--danger, #ff7b72);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 12px;
+  text-align: center;
+}
+
+.mic[data-state='error'] .badge {
+  display: block;
 }
 
 @keyframes micPulse {
@@ -237,24 +239,24 @@
    which is meant for card lists, whatever order the sheets load in. */
 .more.more {
   flex: none;
-  width: var(--mixer-control-size, 32px);
+  width: var(--mixer-control-size, 28px);
   min-width: 0;
-  height: var(--mixer-control-size, 32px);
+  height: var(--mixer-control-size, 28px);
   min-height: 0;
   padding: 0;
-  border: 1px solid var(--mixer-control-border);
-  border-radius: 8px;
+  border: none;
+  border-radius: var(--mixer-control-radius, 8px);
   color: var(--text-secondary, #a8b3bf);
   background: var(--mixer-control-bg);
 }
 
 /* Under the pointer and while its menu is open, the tint the buttons beside
-   it take, not the menu's own solid hover: on the focus pill's glass a
-   solid fill reads as a box. Doubled and qualified to outrank
-   OverflowMenu's trigger states. */
+   it take, not the menu's own solid hover: on the glass a solid fill reads
+   as a box. Doubled and qualified to outrank OverflowMenu's trigger
+   states. */
 @media (hover: hover) {
   .more.more:hover:not(:disabled) {
-    border-color: var(--mixer-control-border);
+    border: none;
     color: var(--text-primary, #e6edf3);
     background: color-mix(
       in srgb,
@@ -265,7 +267,7 @@
 }
 
 .more.more[aria-expanded='true'] {
-  border-color: var(--mixer-control-border);
+  border: none;
   color: var(--text-primary, #e6edf3);
   background: color-mix(in srgb, var(--text-primary, #e6edf3) 16%, transparent);
 }
@@ -273,6 +275,19 @@
 .more.more:focus-visible {
   outline: 2px solid var(--accent, #58a6ff);
   outline-offset: 2px;
+}
+
+/* Speed is in More and is not 1x: a dot says More holds something set. */
+.moreSlot[data-dot='true']::after {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, #58a6ff);
+  pointer-events: none;
+  content: '';
 }
 
 /* In focus mode More also holds the dock, the layout and the stage
@@ -291,34 +306,49 @@
 /* ── Docked to a side edge ─────────────────────────────────────────────
    Each group is a row and the groups stack: thirteen controls in one
    column would need about 400 px at 28 px, more than a phone on its side
-   has. The chips are wider than a control, so they stack inside their
-   group instead, and the pill is as narrow as the playback row. */
+   has. */
 
 .capsule[data-vertical='true'] {
   flex-direction: column;
-}
-
-.capsule[data-vertical='true'] .chips {
-  flex-direction: column;
+  gap: 4px;
 }
 
 .capsule[data-vertical='true'] .divider {
   align-self: stretch;
   width: auto;
   height: 1px;
+  margin: 2px 0;
 }
 
-/* A finger needs 44 px, in a rail or out of one (MixerRail repeats this
-   after its narrow sizes, so the two agree whichever sheet loads last). */
+/* A finger needs 44 px, and the play button a little more. */
 @media (pointer: coarse) {
   .capsule {
     --mixer-control-size: 44px;
+    --mixer-control-radius: 12px;
+    --mixer-group-gap: 4px;
+  }
+
+  .btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .markGlyph {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+  }
+
+  .moreSlot[data-dot='true']::after {
+    top: 8px;
+    right: 8px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .mic[data-state='on'] {
     animation: none;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.4);
   }
 
   .btn {

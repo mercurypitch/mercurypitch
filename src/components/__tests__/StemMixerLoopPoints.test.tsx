@@ -26,6 +26,7 @@ window.matchMedia = ((query: string) => ({
   dispatchEvent: () => false,
 })) as unknown as typeof window.matchMedia
 
+import { LOOP_NEEDS_B } from '@/components/stem-mixer/rail/MixerCapsule'
 import { StemMixer } from '@/components/StemMixer'
 
 const B_TOO_SOON =
@@ -102,7 +103,9 @@ describe('loop points on the mixer rail', () => {
     fireEvent.click(buttonB())
 
     expect(buttonB()).toHaveAttribute('data-set', 'false')
-    expect(loopToggle()).toBeDisabled()
+    // Waiting, not disabled: a press says what is missing.
+    expect(loopToggle()).toHaveAttribute('aria-disabled', 'true')
+    expect(loopToggle()).toHaveAccessibleDescription(LOOP_NEEDS_B)
     expect(shown()).toContain(B_TOO_SOON)
   })
 
@@ -127,7 +130,7 @@ describe('loop points on the mixer rail', () => {
     fireEvent.keyDown(document.body, { key: 'l', code: 'KeyL' })
 
     expect(loopToggle()).toHaveAttribute('aria-pressed', 'false')
-    expect(loopToggle()).toBeDisabled()
+    expect(loopToggle()).toHaveAttribute('aria-disabled', 'true')
   })
 
   it('turns an A-B loop off and on again from L', async () => {

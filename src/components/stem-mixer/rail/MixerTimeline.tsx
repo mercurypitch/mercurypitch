@@ -122,7 +122,10 @@ export const MixerTimeline: Component<MixerTimelineProps> = (props) => {
       data-testid="mixer-timeline"
       onKeyDown={onKeyDown}
     >
-      <span class={styles.time} data-testid="mixer-time-elapsed">
+      <span
+        class={`${styles.time} ${styles.elapsed}`}
+        data-testid="mixer-time-elapsed"
+      >
         {props.formatTime(shown())}
       </span>
       <div class={styles.slider}>
@@ -159,7 +162,10 @@ export const MixerTimeline: Component<MixerTimelineProps> = (props) => {
           zoomOutLabel="Show the whole song"
         />
       </div>
-      <span class={styles.time} data-testid="mixer-time-total">
+      <span
+        class={`${styles.time} ${styles.total}`}
+        data-testid="mixer-time-total"
+      >
         {props.formatTime(end())}
       </span>
     </div>

@@ -78,7 +78,6 @@ describe('the rail without color-mix()', () => {
   it('finds the custom properties set with color-mix()', () => {
     expect(mixed).toEqual(
       expect.arrayContaining([
-        ['MixerCapsule.module.css', '--mixer-control-bg'],
         ['MixerTimeline.module.css', '--loop-range-track'],
       ]),
     )

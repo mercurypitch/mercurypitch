@@ -98,6 +98,14 @@ export const isPhoneStage: () => boolean = createReactiveMatch(
   `${NARROW_QUERY}, ${SHORT_TOUCH_LANDSCAPE_QUERY}`,
 )
 
+/**
+ * Reactive: the main pointer is a finger. Controls grow to 44 px for it, so
+ * layouts that measure their own room (the mixer's playback rail) fold
+ * sooner. A touch laptop with a mouse attached reports fine.
+ */
+export const isCoarsePointer: () => boolean =
+  createReactiveMatch('(pointer: coarse)')
+
 /** Hook-style alias for ergonomics in components. */
 export function useIsMobile(): () => boolean {
   return isMobile

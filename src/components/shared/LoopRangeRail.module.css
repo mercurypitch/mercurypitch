@@ -9,7 +9,11 @@
      --loop-range-region-border-style  the A-B region's edge while inactive
      --loop-range-knob-size       a playhead knob at the progress end (0: none)
      --loop-range-knob            its colour
-     --loop-range-lens-label-font the label over the A-B close-up */
+     --loop-range-lens-label-font the label over the A-B close-up
+     --loop-range-size            the rail's height, and the marks' and the
+                                  close-up button's targets (a finger's
+                                  44 px; a host on a fine pointer may set
+                                  less) */
 .frame {
   --loop-range-track: rgba(244, 234, 219, 0.2);
   --loop-range-progress: rgba(224, 164, 93, 0.78);
@@ -29,14 +33,14 @@
    (keepCloseUpPlace): a track that lost 44 px when B made a short loop moved
    every point on it under the pointer. */
 .frame[data-keep-close-up='true'] {
-  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr) var(--loop-range-size, 44px);
 }
 
 .rail,
 .precisionRail {
   position: relative;
   min-width: 0;
-  min-height: var(--touch-target, 44px);
+  min-height: var(--loop-range-size, var(--touch-target, 44px));
 }
 
 .track,
@@ -111,8 +115,8 @@
   position: absolute;
   z-index: 4;
   top: 0;
-  width: 44px;
-  height: 44px;
+  width: var(--loop-range-size, 44px);
+  height: var(--loop-range-size, 44px);
   color: var(--loop-range-a);
   cursor: ew-resize;
   opacity: var(--loop-range-marker-opacity, 1);
@@ -218,9 +222,9 @@
 .focusAction {
   display: grid;
   place-items: center;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
+  width: var(--loop-range-size, 44px);
+  min-width: var(--loop-range-size, 44px);
+  height: var(--loop-range-size, 44px);
   padding: 0;
   border: 0;
   border-radius: 0.38rem;

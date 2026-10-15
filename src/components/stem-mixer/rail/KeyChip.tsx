@@ -16,9 +16,15 @@
 // It closes by the app's one rule for floating panels (use-popover-layer),
 // and Escape hands focus back to the chip. Tab past either end of the panel
 // does the same, since the panel is portalled away from the chip.
+//
+// The chip has a fixed width, so the rail never moves under the pointer:
+// while "Find my key" waits for the melody a spinner takes the chevron's
+// place. Open, the panel holds the find's notices and says them in its
+// note line, beside the button the singer just pressed, instead of a toast
+// across the room.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, createUniqueId, onCleanup, Show, } from 'solid-js'
+import { createEffect, createSignal, createUniqueId, on, onCleanup, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { AlertTriangle, ChevronDown, Crosshair, Minus, Plus, } from '@/components/icons'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
@@ -29,6 +35,8 @@ import styles from './KeyChip.module.css'
 
 /** Under the stepper while the key is within the range that stays clean. */
 export const KEY_CLEAN_NOTE = 'Within ±4 semitones the backing stays clean'
+/** The find button while the melody is still being found. */
+export const KEY_FINDING_LABEL = 'Finding the melody…'
 
 export interface KeyChipProps {
   binding: KeyShiftBinding
@@ -55,13 +63,17 @@ export const KeyChip: Component<KeyChipProps> = (props) => {
       ? suggestion.keyShift
       : null
   }
+  const finding = (): boolean => props.binding.finding?.() === true
   const tone = (): Tone => {
     if (unavailable()) return 'unavailable'
     return isCleanKeyShift(value()) ? 'clean' : 'stretch'
   }
+  const notice = () => props.binding.notice?.() ?? null
   const note = (): string => {
     const why = reason()
     if (why !== undefined) return why
+    const said = notice()
+    if (said !== null) return said.message
     return tone() === 'stretch' ? KEY_SHIFT_STRETCH_NOTE : KEY_CLEAN_NOTE
   }
 
@@ -128,8 +140,17 @@ export const KeyChip: Component<KeyChipProps> = (props) => {
     })
   })
 
-  // The rail can unmount with the panel open (leaving the mixer).
-  onCleanup(() => setOpen(false))
+  // Open, the panel says the find's notices itself. Let go as it shuts, and
+  // as the rail goes with it open (leaving the mixer).
+  createEffect(
+    on(open, (isOpen, wasOpen) => {
+      if (isOpen || wasOpen === true) props.binding.holdNotices?.(isOpen)
+    }),
+  )
+  onCleanup(() => {
+    if (open()) props.binding.holdNotices?.(false)
+    setOpen(false)
+  })
 
   return (
     <>
@@ -139,13 +160,17 @@ export const KeyChip: Component<KeyChipProps> = (props) => {
         class={styles.chip}
         classList={{ [styles.chipMoved!]: props.binding.heard() !== 0 }}
         data-testid="key-chip"
+        data-finding={finding() ? 'true' : 'false'}
+        aria-busy={finding() ? 'true' : undefined}
         aria-haspopup="dialog"
         aria-expanded={open()}
         aria-controls={open() ? panelId : undefined}
         onClick={() => (open() ? close(false) : setOpen(true))}
       >
         <span class={styles.face}>{face()}</span>
-        <ChevronDown size={14} />
+        <Show when={finding()} fallback={<ChevronDown size={12} />}>
+          <span class={styles.spin} aria-hidden="true" />
+        </Show>
       </button>
 
       <Show when={open()}>
@@ -211,20 +236,27 @@ export const KeyChip: Component<KeyChipProps> = (props) => {
               type="button"
               class={styles.action}
               aria-label={
-                offer() === null
-                  ? 'Find my key'
-                  : `Find my key: try ${formatKeyShift(offer() ?? 0)}`
+                finding()
+                  ? KEY_FINDING_LABEL
+                  : offer() === null
+                    ? 'Find my key'
+                    : `Find my key: try ${formatKeyShift(offer() ?? 0)}`
               }
+              aria-busy={finding() ? 'true' : undefined}
               disabled={unavailable()}
               onClick={() => {
-                if (!unavailable()) props.binding.onFindKey()
+                if (!unavailable() && !finding()) props.binding.onFindKey()
               }}
             >
-              <Crosshair />
+              <Show when={finding()} fallback={<Crosshair />}>
+                <span class={styles.spin} aria-hidden="true" />
+              </Show>
               <span>
-                {offer() === null
-                  ? 'Find my key'
-                  : `Try ${formatKeyShift(offer() ?? 0)}`}
+                {finding()
+                  ? KEY_FINDING_LABEL
+                  : offer() === null
+                    ? 'Find my key'
+                    : `Try ${formatKeyShift(offer() ?? 0)}`}
               </span>
             </button>
 
@@ -232,8 +264,9 @@ export const KeyChip: Component<KeyChipProps> = (props) => {
               class={styles.note}
               aria-live="polite"
               data-testid="key-chip-note"
+              data-notice={reason() === undefined ? notice()?.tone : undefined}
             >
-              <Show when={tone() !== 'clean'}>
+              <Show when={tone() !== 'clean' && notice() === null}>
                 <AlertTriangle />
               </Show>
               <span>{note()}</span>

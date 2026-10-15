@@ -8,8 +8,8 @@
 // rule as every menu in the app. Space still plays and pauses while the
 // chip has focus; Enter or the arrow keys open it.
 //
-// The chip is as wide as its widest speed, so the capsule does not shift
-// when the speed changes.
+// The chip has a fixed width, so the rail does not shift when the speed
+// changes, and takes the accent while the song is not at 1x.
 
 import type { Component } from 'solid-js'
 import { CheckSmall, ChevronDown } from '@/components/icons'
@@ -26,12 +26,12 @@ export const SpeedChip: Component<SpeedChipProps> = (props) => (
   <OverflowMenu
     label={`Playback speed ${formatPlaybackSpeed(props.speed)}`}
     testId="speed-chip"
-    triggerClass={styles.chip}
+    triggerClass={`${styles.chip} ${props.speed === 1 ? '' : styles.changed}`}
     panelClass={`${styles.panel} mp-dark-stage`}
     triggerContent={
       <>
         <span class={styles.value}>{formatPlaybackSpeed(props.speed)}</span>
-        <ChevronDown size={14} />
+        <ChevronDown size={12} />
       </>
     }
     items={STEM_MIXER_PLAYBACK_SPEEDS.map((speed) => ({

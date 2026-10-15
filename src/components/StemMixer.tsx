@@ -1424,7 +1424,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     detectedKey: pitchAnalysis.detectedKey,
     notify: findKeyNotices.notify,
   })
-  const phoneKeyBinding: KeyShiftBinding = {
+  // The key controls hold find my key's notices while open and say them
+  // themselves: the phone's key sheet, and the rail's key panel.
+  const keyBinding: KeyShiftBinding = {
     ...keyView.binding,
     notice: findKeyNotices.notice,
     holdNotices: findKeyNotices.hold,
@@ -2268,7 +2270,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           untimedCount: lyricsLines().length,
           duration: audio.duration(),
         }),
-      key: phoneKeyBinding,
+      key: keyBinding,
     })
 
     // Load cached data from IndexedDB in parallel:
@@ -2627,7 +2629,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             micPitch={mic.micPitch}
             ribbonNotes={displayNotes}
             // Hosted, the key is a row in the room's options instead.
-            keyControl={hosted ? undefined : phoneKeyBinding}
+            keyControl={hosted ? undefined : keyBinding}
             more={hosted ? undefined : phoneMore}
           />
           <StemMixerScoreModal
@@ -3033,7 +3035,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             formatTime={canvas.formatTime}
             speed={audio.speed}
             onSpeedChange={audio.setSpeed}
-            keyControl={keyView.binding}
+            keyControl={keyBinding}
             karaokeFocus={karaokeFocus}
             setKaraokeFocus={setKaraokeFocus}
             toolbarPosition={karaokeToolbarPosition}

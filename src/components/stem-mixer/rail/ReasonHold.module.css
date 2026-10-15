@@ -1,0 +1,73 @@
+/* ReasonHold: a control and the reason it waits, as a line of text under
+   it. Hidden by visibility, not opacity, so a reason that is not showing
+   is not a visible element either; aria-describedby still reads it. */
+
+.hold {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.hint {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  z-index: 30;
+  padding: 6px 10px;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 8px;
+  color: var(--text-primary, #e6edf3);
+  background: var(--bg-secondary, #161b22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The notch that points at the control. */
+.hint::before {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-top: 1px solid var(--border, #30363d);
+  border-left: 1px solid var(--border, #30363d);
+  background: var(--bg-secondary, #161b22);
+  transform: rotate(45deg);
+  content: '';
+}
+
+.hint[data-tone='warn'],
+.hint[data-tone='warn']::before {
+  border-color: var(--danger, #ff7b72);
+}
+
+.hold[data-hint='on'] > .hint {
+  visibility: visible;
+}
+
+/* The focus pill docked at the bottom of the screen has no room under it:
+   the reason opens above the control instead, its notch underneath. */
+:global(.stem-mixer--focus-docked-bottom) .hint {
+  top: auto;
+  bottom: calc(100% + 10px);
+}
+
+:global(.stem-mixer--focus-docked-bottom) .hint::before {
+  top: auto;
+  bottom: -5px;
+  border-top: none;
+  border-right: 1px solid var(--border, #30363d);
+  border-bottom: 1px solid var(--border, #30363d);
+  border-left: none;
+}
+
+:global(.stem-mixer--focus-docked-bottom) .hint[data-tone='warn']::before {
+  border-color: var(--danger, #ff7b72);
+}

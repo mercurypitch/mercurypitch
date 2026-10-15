@@ -15,6 +15,9 @@
 // Docking is a choice in More. The handle stays a drag handle: dragged past
 // a few pixels it shows the edge it will land on (natural on touch), and a
 // plain press does nothing, so it cannot open something by accident.
+//
+// The rail reports its width here, and this decides whether Speed folds into
+// More (rail-fold.ts), since that changes More's rows as well as the chip.
 
 import type { Accessor, Component, Setter } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
@@ -25,6 +28,8 @@ import { MIXER_LAYOUTS } from '@/components/stem-mixer/MixerViewControls'
 import { MixerCapsule } from '@/components/stem-mixer/rail/MixerCapsule'
 import { MixerRail } from '@/components/stem-mixer/rail/MixerRail'
 import { MixerTimeline } from '@/components/stem-mixer/rail/MixerTimeline'
+import { speedFolds } from '@/components/stem-mixer/rail/rail-fold'
+import { isCoarsePointer } from '@/lib/use-viewport'
 import { CheckSmall, GripVertical, Minimize2 } from './icons'
 import styles from './StemMixerTransport.module.css'
 
@@ -110,6 +115,12 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
   const dock = (): DockPos => props.toolbarPosition?.() ?? 'bottom'
   const isVertical = () =>
     props.karaokeFocus() && (dock() === 'left' || dock() === 'right')
+
+  // ── Fold ─────────────────────────────────────────────────────────
+  // A side dock stacks the groups and has the height for the chip.
+  const [railWidth, setRailWidth] = createSignal(0)
+  const speedFolded = (): boolean =>
+    !isVertical() && speedFolds(railWidth(), isCoarsePointer())
 
   // ── Dock handle ──────────────────────────────────────────────────
   // A drag past a few pixels shows the edge the pill will land on, and
@@ -252,6 +263,9 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
       >
         <MixerRail
           vertical={isVertical()}
+          bare={props.karaokeFocus()}
+          speedFolded={speedFolded()}
+          onWidth={setRailWidth}
           capsule={
             <MixerCapsule
               playing={props.playing()}
@@ -268,6 +282,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               onClearLoop={() => props.onClearLoop()}
               speed={props.speed()}
               onSpeedChange={(speed) => props.onSpeedChange(speed)}
+              speedFolded={speedFolded()}
               keyControl={props.keyControl}
               micActive={props.micActive()}
               micError={props.micError()}

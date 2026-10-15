@@ -4,10 +4,10 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
+import type { KeyShiftBinding, KeyShiftNotice, } from '@/components/key-shift/KeyShiftControl'
 import { KEY_SHIFT_STRETCH_NOTE } from '@/components/key-shift/KeyShiftControl'
 import type { KeySuggestion } from '@/lib/key-shift/key-suggest'
-import { KEY_CLEAN_NOTE, KeyChip } from './KeyChip'
+import { KEY_CLEAN_NOTE, KEY_FINDING_LABEL, KeyChip } from './KeyChip'
 
 afterEach(cleanup)
 
@@ -18,11 +18,19 @@ interface Options {
   disabledReason?: string
 }
 
+const FINDING_NOTICE: KeyShiftNotice = {
+  message: 'Finding the melody first. This takes a moment.',
+  tone: 'info',
+}
+
 function mount(options: Options = {}) {
   const [value, setValue] = createSignal(options.value ?? 0)
   const [reason, setReason] = createSignal(options.disabledReason)
   const onChange = vi.fn(setValue)
   const onFindKey = vi.fn()
+  const [finding, setFinding] = createSignal(false)
+  const [notice, setNotice] = createSignal<KeyShiftNotice | null>(null)
+  const holdNotices = vi.fn()
   const binding: KeyShiftBinding = {
     value,
     heard: value,
@@ -31,6 +39,9 @@ function mount(options: Options = {}) {
     suggestion: () => options.suggestion ?? null,
     onFindKey,
     disabledReason: reason,
+    finding,
+    notice,
+    holdNotices,
   }
   render(() => (
     <>
@@ -38,7 +49,15 @@ function mount(options: Options = {}) {
       <KeyChip binding={binding} />
     </>
   ))
-  return { onChange, onFindKey, setValue, setReason }
+  return {
+    onChange,
+    onFindKey,
+    setValue,
+    setReason,
+    setFinding,
+    setNotice,
+    holdNotices,
+  }
 }
 
 const chip = () => screen.getByTestId('key-chip')
@@ -139,6 +158,59 @@ describe('KeyChip', () => {
     fireEvent.click(find)
 
     expect(onFindKey).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps its width while it finds: a spinner takes the chevron', () => {
+    const { setFinding } = mount()
+    const before = chip().className
+    expect(chip()).not.toHaveAttribute('aria-busy')
+    expect(chip().querySelector('svg')).not.toBeNull()
+
+    setFinding(true)
+
+    expect(chip()).toHaveAttribute('aria-busy', 'true')
+    expect(chip()).toHaveAttribute('data-finding', 'true')
+    expect(chip().querySelector('svg')).toBeNull()
+    expect(chip()).toHaveAccessibleName('Key')
+    expect(chip().className).toBe(before)
+  })
+
+  it('says it is finding on the button, and takes no second press', () => {
+    const { onFindKey, setFinding } = mount()
+    openPanel()
+    setFinding(true)
+
+    const find = screen.getByRole('button', { name: KEY_FINDING_LABEL })
+    expect(find).toHaveAttribute('aria-busy', 'true')
+    fireEvent.click(find)
+    expect(onFindKey).not.toHaveBeenCalled()
+
+    setFinding(false)
+    expect(screen.getByRole('button', { name: 'Find my key' })).toBeVisible()
+  })
+
+  it('holds the find’s notices while open and says them in its note', () => {
+    const { holdNotices, setNotice } = mount()
+    expect(holdNotices).not.toHaveBeenCalled()
+
+    openPanel()
+    expect(holdNotices.mock.calls).toEqual([[true]])
+    setNotice(FINDING_NOTICE)
+    expect(note()).toHaveTextContent(FINDING_NOTICE.message)
+    setNotice(null)
+    expect(note()).toHaveTextContent(KEY_CLEAN_NOTE)
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(holdNotices.mock.calls).toEqual([[true], [false]])
+  })
+
+  it('lets the notices go when the rail goes with the panel open', () => {
+    const { holdNotices } = mount()
+    openPanel()
+
+    cleanup()
+
+    expect(holdNotices.mock.calls).toEqual([[true], [false]])
   })
 
   it('closes on a press outside, without moving the key', () => {

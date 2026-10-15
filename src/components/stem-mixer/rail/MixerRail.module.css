@@ -1,61 +1,100 @@
-/* MixerRail: the capsule, then the timeline, wrapping as one row. The
-   timeline's basis is the 380 px it needs to be worth dragging; below
-   that it starts a line of its own and grows to fill it. */
+/* MixerRail: one glass bar, three areas. The capsule's left and right
+   parts name their own grid areas (MixerCapsule.module.css); the timeline
+   takes the middle and every pixel left over.
+
+   How it folds, by its own width (the rail is the size container):
+     860 px and up    one row
+     under 860 px     one row; Speed folds into More (rail-fold.ts, by
+                      script, since More's rows change too)
+     under 600 px     the controls on one line, the timeline under them
+   On a coarse pointer the controls are 44 px, so the timeline takes its
+   own line under 1000 px of rail, and Speed stays on the controls line
+   down to 640 px (rail-fold.ts). */
 
 .rail {
   container: mixer-rail / inline-size;
 
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
+  position: relative;
+  z-index: 5;
   width: 100%;
   min-width: 0;
+  border: 1px solid rgba(230, 237, 243, 0.1);
+  border-radius: 12px;
+  background: rgba(13, 17, 23, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.rail[data-vertical='true'] {
-  container-type: normal;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  width: auto;
+/* Inside the focus pill, which is the glass. */
+.rail[data-bare='true'] {
+  border: none;
+  border-radius: 0;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-areas: 'left time right';
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 6px 8px;
+}
+
+.rail[data-bare='true'] .grid {
+  padding: 0;
+}
+
+/* The capsule's two ends. Placed here by attribute, not in the capsule's
+   sheet: the build scopes a grid area's name to the sheet it is written
+   in, so "left" there would not be this grid's "left". */
+.grid > [data-rail-part='left'] {
+  grid-area: left;
+}
+
+.grid > [data-rail-part='right'] {
+  grid-area: right;
 }
 
 .timeline {
   display: flex;
-  flex: 1 1 380px;
+  grid-area: time;
   align-items: center;
   min-width: 0;
 }
 
-/* ── Short of width ────────────────────────────────────────────────────
-   The capsule reads these (MixerCapsule.module.css lists them). Smaller
-   controls first; past that its groups wrap, and space between them
-   stands in for the hairlines, since a hairline at the start of a line
-   divides nothing. Set on the rail's children, which are the capsule and
-   the timeline's box.
-   The thresholds follow the capsule's measured width, which no state
-   changes: 554 px at full size, 492 px at the smaller size (Chromium,
-   October 2026). A control added to the capsule moves both. */
-@container mixer-rail (max-width: 560px) {
-  .rail > * {
-    --mixer-control-size: 28px;
-    --mixer-capsule-gap: 4px;
-    --mixer-group-gap: 3px;
-    --mixer-capsule-pad: 4px 6px;
+/* Docked to a side edge: the parts stack, and there is no timeline. */
+.rail[data-vertical='true'] {
+  container-type: normal;
+  width: auto;
+}
+
+.rail[data-vertical='true'] .grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Short of width ────────────────────────────────────────────────── */
+
+@container mixer-rail (max-width: 599px) {
+  .grid {
+    grid-template-areas:
+      'left . right'
+      'time time time';
   }
 }
 
-@container mixer-rail (max-width: 495px) {
-  .rail > * {
-    --mixer-capsule-gap: 6px 12px;
-    --mixer-capsule-wrap: wrap;
-    --mixer-capsule-divider: none;
-  }
-}
-
-/* A finger needs 44 px however narrow the rail is. */
 @media (pointer: coarse) {
-  .rail > * {
-    --mixer-control-size: 44px;
+  @container mixer-rail (max-width: 999px) {
+    .grid {
+      grid-template-areas:
+        'left . right'
+        'time time time';
+    }
   }
 }

@@ -1,15 +1,15 @@
-/* StemMixerTransport: the bar the rail sits in, and the focus pill's own
-   parts (dock handle, drop-zone preview, exit). The pill's glass and its
-   dock positions are in src/styles/mixer-shared.css, under
-   .stem-mixer--focus, keyed on the .sm-transport class this element keeps. */
+/* StemMixerTransport: the row the rail sits in, and the focus pill's own
+   parts (dock handle, drop-zone preview, exit). The rail draws its own
+   glass bar on the stage (MixerRail), so the row adds only its margins.
+   The pill's glass and its dock positions are in src/styles/mixer-shared.css,
+   under .stem-mixer--focus, keyed on the .sm-transport class this element
+   keeps. */
 
 .transport {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  border-top: 1px solid var(--border, #30363d);
-  background: var(--bg-primary, #0d1117);
+  padding: 4px 16px 0;
   flex-shrink: 0;
   user-select: none;
   -webkit-user-select: none;

@@ -4,20 +4,31 @@
 .timeline {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   width: 100%;
   min-width: 0;
 }
 
-/* Tabular figures and a floor of five, so 9:59 turning 10:00 is the only
-   time the slider's length moves. */
+/* Tabular figures in a fixed floor that holds 59:59, so the slider's
+   length never moves while the song plays. Elapsed hugs the slider from
+   the left and the length from the right. */
 .time {
   flex: none;
-  min-width: 5ch;
+  min-width: 34px;
   color: var(--text-secondary, #a8b3bf);
-  font-size: 0.8125rem;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
-  text-align: center;
+}
+
+.elapsed {
+  color: var(--text-primary, #e6edf3);
+  text-align: right;
+}
+
+.total {
+  text-align: left;
 }
 
 .slider {
@@ -42,6 +53,15 @@
   --loop-range-lens-label-font: 0.75rem;
   --loop-range-knob-size: 12px;
   --loop-range-knob: var(--text-primary, #e6edf3);
+  /* As tall as Play, so the timeline adds no height to the rail on a
+     mouse; a finger keeps the rail's own 44 px. */
+  --loop-range-size: 32px;
+}
+
+@media (pointer: coarse) {
+  .rail.rail {
+    --loop-range-size: 44px;
+  }
 }
 
 /* An engine without color-mix() keeps the custom property but cannot use
