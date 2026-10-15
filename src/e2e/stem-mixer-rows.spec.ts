@@ -5,10 +5,11 @@
 // The header and the playback rail as approved in the rail redesign of
 // 15 October: one header row and one glass bar, 28 px controls on a mouse
 // and 44 px under a finger, chips of a fixed width, and folds by each row's
-// own width. At eight windows, five on a mouse and three on a touch screen,
+// own width. At nine windows, five on a mouse and four on a touch screen,
 // this checks what only a browser can: both rows' heights and control
 // sizes, the timeline's room, that no control runs past the window or over
-// another, where Speed and the view controls fold, that no control moves
+// another, where Speed, Key, Play from the start and the view controls
+// fold, that no control moves
 // while the singer uses the rail, and that Loop and Hear my voice say why
 // they wait in words on screen. At 1440 px it also opens the song in
 // Karaoke Night, paused where the singer was, and the mixer's tour lands
@@ -17,7 +18,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { HEADER_WORDS_PX, headerFolds, } from '../components/stem-mixer/header/header-fold'
-import { speedFolds, TIMELINE_OWN_LINE_COARSE_PX, TIMELINE_OWN_LINE_PX, } from '../components/stem-mixer/rail/rail-fold'
+import { keyFolds, restartFolds, speedFolds, TIMELINE_OWN_LINE_COARSE_PX, TIMELINE_OWN_LINE_PX, } from '../components/stem-mixer/rail/rail-fold'
 import { contrast } from './helpers/color'
 import { blockMic, openSeededSong, playhead, seek } from './helpers/mixer-song'
 
@@ -41,6 +42,9 @@ const TOUCH: readonly Size[] = [
   { width: 962, height: 601 },
   // An Android tablet held sideways.
   { width: 1280, height: 800 },
+  // The same tablet upright, beside the app's sidebar: Key and Play from
+  // the start fold into More.
+  { width: 800, height: 1280 },
 ]
 
 /** The approved sizes, in px: a mouse's and a finger's. */
@@ -267,6 +271,27 @@ const monitorButton = (page: Page) =>
   page.getByRole('button', { name: 'Hear my voice', exact: true })
 const moreButton = (page: Page) =>
   page.getByRole('button', { name: /^More playback options/ })
+const restartButton = (page: Page) =>
+  page
+    .getByTestId('mixer-rail')
+    .getByRole('button', { name: 'Play from the start', exact: true })
+
+/**
+ * Opens the key's panel where the rail offers it: its chip, or More's Key
+ * row once the chip is folded. True when it came from More.
+ */
+async function openKey(page: Page): Promise<boolean> {
+  const chip = page.getByTestId('key-chip')
+  const folded = (await chip.count()) === 0
+  if (folded) {
+    await moreButton(page).click()
+    await page.getByRole('menuitem', { name: /^Key/ }).click()
+  } else {
+    await chip.click()
+  }
+  await expect(page.getByRole('dialog', { name: 'Key' })).toBeVisible()
+  return folded
+}
 
 /** Picks a speed where the rail offers it: its chip, or More's rows. */
 async function pickSpeed(page: Page, speed: string): Promise<void> {
@@ -284,12 +309,16 @@ async function pickSpeed(page: Page, speed: string): Promise<void> {
   await page
     .getByRole('menuitemradio', { name: `Speed ${speed}`, exact: true })
     .click()
-  // More names the speed while it is not 1x.
-  await expect(moreButton(page)).toHaveAccessibleName(
-    speed === '1x'
-      ? 'More playback options'
-      : `More playback options. Speed ${speed}`,
-  )
+  // More names the speed while it is not 1x, before a moved key's name.
+  if (speed === '1x') {
+    await expect(moreButton(page)).not.toHaveAccessibleName(/Speed/)
+  } else {
+    await expect(moreButton(page)).toHaveAccessibleName(
+      new RegExp(
+        `^More playback options\\. Speed ${speed.replace('.', '\\.')}`,
+      ),
+    )
+  }
 }
 
 function sizeChecks(rows: Rows, touch: boolean): string[] {
@@ -375,6 +404,12 @@ function layoutTests(windows: readonly Size[], touch: boolean): void {
         expect(rows.speedFolded).toBe(speedFolds(bar, touch))
         expect(await page.getByTestId('speed-chip').count()).toBe(
           rows.speedFolded ? 0 : 1,
+        )
+        expect(await page.getByTestId('key-chip').count()).toBe(
+          keyFolds(bar, touch) ? 0 : 1,
+        )
+        expect(await restartButton(page).count()).toBe(
+          restartFolds(bar, touch) ? 0 : 1,
         )
         const header = rows.header.w - HEADER_PADDING
         expect(rows.headerFolded).toBe(headerFolds(header, touch))
@@ -470,12 +505,16 @@ function layoutTests(windows: readonly Size[], touch: boolean): void {
           [
             'the key +2',
             async () => {
-              await keyChip.click()
+              const folded = await openKey(page)
               const raise = page.getByRole('button', { name: 'Raise the key' })
               await raise.click()
               await raise.click()
               await page.keyboard.press('Escape')
-              await expect(keyChip).toContainText('+2')
+              if (folded) {
+                await expect(moreButton(page)).toHaveAccessibleName(/Key \+2/)
+              } else {
+                await expect(keyChip).toContainText('+2')
+              }
             },
           ],
           ['the speed 0.75x', () => pickSpeed(page, '0.75x')],

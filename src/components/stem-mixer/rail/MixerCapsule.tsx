@@ -20,9 +20,12 @@
 // (ReasonHold). A blocked mic says how to unblock it the same way, and
 // still takes the press that tries again.
 //
-// Short of width the rail folds Speed into More (`speedFolded`, see
-// rail-fold.ts): More then lists the speeds, carries a dot while the speed
-// is not 1x, and says the speed in its name.
+// Short of width the rail folds controls into More, one at a time (see
+// rail-fold.ts): Speed (`speedFolded`), then Key (`keyFolded`), then Play
+// from the start (`restartFolded`). More then lists the speeds, opens the
+// key's own panel from a Key row, and plays from the start from its first
+// row. While the speed is not 1x or the key has moved, More carries a dot
+// and says so in its name.
 //
 // It takes values and callbacks only, like the rest of the rail, so the
 // mixer, the focus pill and the tests drive it the same way. The focus pill
@@ -31,14 +34,14 @@
 // (`vertical`), each group is a row and the groups stack.
 
 import type { Component, JSX } from 'solid-js'
-import { children, Show } from 'solid-js'
+import { children, createSignal, onCleanup, Show } from 'solid-js'
 import { CheckSmall, Headphones, Loop, Mic, Pause, Play, SkipBack, Square, } from '@/components/icons'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import type { OverflowMenuItem } from '@/components/OverflowMenu'
 import { OverflowMenu } from '@/components/OverflowMenu'
 import { hasPlayableLoop } from '@/lib/loop-gap'
 import { formatPlaybackSpeed, STEM_MIXER_PLAYBACK_SPEEDS, } from '@/lib/playback-speed-options'
-import { KeyChip } from './KeyChip'
+import { KeyChip, keyFace, KeyPanel } from './KeyChip'
 import styles from './MixerCapsule.module.css'
 import { ReasonHold } from './ReasonHold'
 import { SpeedChip } from './SpeedChip'
@@ -76,6 +79,10 @@ export interface MixerCapsuleProps {
   onSpeedChange: (speed: number) => void
   /** The rail is short of width: Speed lives in More (rail-fold.ts). */
   speedFolded?: boolean
+  /** Shorter still: the key chip lives in More too. */
+  keyFolded?: boolean
+  /** The narrowest: Play from the start lives in More as well. */
+  restartFolded?: boolean
   /** The singer's key. A host without one gets no key chip. */
   keyControl?: KeyShiftBinding
 
@@ -140,6 +147,30 @@ export const MixerCapsule: Component<MixerCapsuleProps> = (props) => {
 
   const speedChanged = (): boolean => props.speed !== 1
   const folded = (): boolean => props.speedFolded === true
+  const keyFolded = (): boolean =>
+    props.keyFolded === true && props.keyControl !== undefined
+  const keyMoved = (): boolean => (props.keyControl?.value() ?? 0) !== 0
+  const restartFolded = (): boolean => props.restartFolded === true
+
+  // The key's panel, opened from More's Key row while the chip is folded.
+  const [keyOpen, setKeyOpen] = createSignal(false)
+  let moreSlot: HTMLSpanElement | undefined
+  const closeKey = (restoreFocus: boolean): void => {
+    setKeyOpen(false)
+    if (restoreFocus) moreSlot?.querySelector<HTMLElement>('button')?.focus()
+  }
+
+  const restartRows = (): OverflowMenuItem[] =>
+    restartFolded()
+      ? [
+          {
+            key: 'restart',
+            label: 'Play from the start',
+            icon: () => <SkipBack />,
+            onSelect: () => props.onRestart(),
+          },
+        ]
+      : []
 
   const speedRows = (): OverflowMenuItem[] =>
     folded()
@@ -154,7 +185,20 @@ export const MixerCapsule: Component<MixerCapsuleProps> = (props) => {
         }))
       : []
 
+  const keyRows = (): OverflowMenuItem[] =>
+    keyFolded()
+      ? [
+          {
+            key: 'key',
+            label: keyFace(props.keyControl?.value() ?? 0),
+            separatorBefore: true,
+            onSelect: () => setKeyOpen(true),
+          },
+        ]
+      : []
+
   const moreRows = (): OverflowMenuItem[] => [
+    ...restartRows(),
     {
       key: 'clear-loop',
       label: 'Clear loop',
@@ -162,12 +206,24 @@ export const MixerCapsule: Component<MixerCapsuleProps> = (props) => {
       onSelect: () => props.onClearLoop(),
     },
     ...speedRows(),
+    ...keyRows(),
     ...(props.moreItems ?? []),
   ]
-  const moreLabel = (): string =>
-    folded() && speedChanged()
-      ? `More playback options. Speed ${formatPlaybackSpeed(props.speed)}`
-      : 'More playback options'
+  // What More holds that is not where the singer left it.
+  const moreSays = (): string[] => [
+    ...(folded() && speedChanged()
+      ? [`Speed ${formatPlaybackSpeed(props.speed)}`]
+      : []),
+    ...(keyFolded() && keyMoved()
+      ? [keyFace(props.keyControl?.value() ?? 0)]
+      : []),
+  ]
+  const moreLabel = (): string => {
+    const said = moreSays()
+    return said.length === 0
+      ? 'More playback options'
+      : `More playback options. ${said.join(', ')}`
+  }
 
   return (
     <>
@@ -202,15 +258,17 @@ export const MixerCapsule: Component<MixerCapsuleProps> = (props) => {
           >
             <Square />
           </button>
-          <button
-            type="button"
-            class={styles.btn}
-            aria-label="Play from the start"
-            title="Play from the start"
-            onClick={() => props.onRestart()}
-          >
-            <SkipBack />
-          </button>
+          <Show when={!restartFolded()}>
+            <button
+              type="button"
+              class={styles.btn}
+              aria-label="Play from the start"
+              title="Play from the start"
+              onClick={() => props.onRestart()}
+            >
+              <SkipBack />
+            </button>
+          </Show>
         </div>
 
         <span class={styles.divider} aria-hidden="true" />
@@ -340,15 +398,16 @@ export const MixerCapsule: Component<MixerCapsuleProps> = (props) => {
         data-vertical={props.vertical === true ? 'true' : 'false'}
         data-bare={props.bare === true ? 'true' : 'false'}
       >
-        <Show when={props.keyControl}>
+        <Show when={keyFolded() ? undefined : props.keyControl}>
           {(binding) => <KeyChip binding={binding()} />}
         </Show>
         {/* The tour's speed step lands here while Speed is in More;
             Walkthrough spotlights whichever of the two is on screen. */}
         <span
+          ref={moreSlot}
           class={`${styles.slot} ${styles.moreSlot}`}
           data-tour={folded() ? 'mixer.speed' : undefined}
-          data-dot={folded() && speedChanged() ? 'true' : 'false'}
+          data-dot={moreSays().length > 0 ? 'true' : 'false'}
         >
           <OverflowMenu
             label={moreLabel()}
@@ -358,6 +417,21 @@ export const MixerCapsule: Component<MixerCapsuleProps> = (props) => {
             items={moreRows()}
           />
         </span>
+        <Show when={keyFolded() ? props.keyControl : undefined}>
+          {(binding) => {
+            // Unfolded with the panel open: it must not come back on its
+            // own the next time the rail folds.
+            onCleanup(() => setKeyOpen(false))
+            return (
+              <KeyPanel
+                binding={binding()}
+                open={keyOpen()}
+                anchor={() => moreSlot}
+                onClose={closeKey}
+              />
+            )
+          }}
+        </Show>
 
         <Show when={trailing()}>
           <span class={styles.divider} aria-hidden="true" />

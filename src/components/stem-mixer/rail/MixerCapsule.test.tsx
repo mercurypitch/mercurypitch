@@ -1,6 +1,7 @@
 // The capsule: every control named and in tab order, Loop and Hear my voice
 // that wait for what they need and say so in words, the mic's state in one
-// fixed-size button, Speed folding into More, and More itself.
+// fixed-size button, Speed, Key and Play from the start folding into More,
+// and More itself.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
@@ -29,6 +30,8 @@ interface Extra {
   moreItems?: OverflowMenuItem[]
   speedFolded?: boolean
   speed?: number
+  keyFolded?: boolean
+  restartFolded?: boolean
 }
 
 function mount(extra: Extra = {}) {
@@ -41,6 +44,11 @@ function mount(extra: Extra = {}) {
   const [monitor, setMonitor] = createSignal(false)
   const [speed, setSpeed] = createSignal(extra.speed ?? 1)
   const [speedFolded, setSpeedFolded] = createSignal(extra.speedFolded ?? false)
+  const [key, setKey] = createSignal(0)
+  const [keyFolded, setKeyFolded] = createSignal(extra.keyFolded ?? false)
+  const [restartFolded, setRestartFolded] = createSignal(
+    extra.restartFolded ?? false,
+  )
   const calls = {
     play: vi.fn(() => setPlaying(true)),
     pause: vi.fn(() => setPlaying(false)),
@@ -60,6 +68,7 @@ function mount(extra: Extra = {}) {
     toggleMic: vi.fn(() => setMicActive((on) => !on)),
     toggleMonitor: vi.fn(() => setMonitor((on) => !on)),
     speed: vi.fn(setSpeed),
+    key: vi.fn(setKey),
   }
   render(() => (
     <MixerCapsule
@@ -78,7 +87,9 @@ function mount(extra: Extra = {}) {
       speed={speed()}
       onSpeedChange={calls.speed}
       speedFolded={speedFolded()}
-      keyControl={keyBinding()}
+      keyFolded={keyFolded()}
+      restartFolded={restartFolded()}
+      keyControl={{ ...keyBinding(), value: key, onChange: calls.key }}
       micActive={micActive()}
       micError={micError()}
       onToggleMic={calls.toggleMic}
@@ -96,6 +107,9 @@ function mount(extra: Extra = {}) {
     setMicActive,
     setSpeed,
     setSpeedFolded,
+    setKey,
+    setKeyFolded,
+    setRestartFolded,
   }
 }
 
@@ -384,5 +398,103 @@ describe('Speed, folded into More', () => {
 
     expect(speedStep()).toHaveLength(1)
     expect(speedStep()[0]).toContainElement(more())
+  })
+})
+
+describe('Key and Play from the start, folded into More', () => {
+  const menuRows = () =>
+    Array.from(
+      screen.getByRole('menu').querySelectorAll('[role^="menuitem"]'),
+    ).map((row) => row.textContent?.trim())
+
+  it('moves the key from its chip to a row in More, never both', () => {
+    const { setKeyFolded } = mount()
+    expect(screen.getByTestId('key-chip')).toBeInTheDocument()
+
+    setKeyFolded(true)
+
+    expect(screen.queryByTestId('key-chip')).toBeNull()
+    openMore()
+    expect(menuRows()).toEqual(['Clear loop', 'Key'])
+  })
+
+  it('opens the same stepper from More, which stays open while the singer steps', () => {
+    const { calls } = mount({ keyFolded: true })
+    openMore()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Key' }))
+
+    expect(screen.queryByRole('menu')).toBeNull()
+    const panel = screen.getByRole('dialog', { name: 'Key' })
+    fireEvent.click(
+      within(panel).getByRole('button', { name: 'Raise the key' }),
+    )
+    expect(calls.key).toHaveBeenCalledWith(1)
+    expect(screen.getByRole('dialog', { name: 'Key' })).toBeInTheDocument()
+  })
+
+  it('hands focus back to More when Escape shuts the stepper', () => {
+    mount({ keyFolded: true })
+    openMore()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Key' }))
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+
+    expect(screen.queryByRole('dialog', { name: 'Key' })).toBeNull()
+    expect(more()).toHaveFocus()
+  })
+
+  it('shuts the stepper when More is pressed again', () => {
+    mount({ keyFolded: true })
+    openMore()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Key' }))
+
+    fireEvent.pointerDown(more())
+
+    expect(screen.queryByRole('dialog', { name: 'Key' })).toBeNull()
+  })
+
+  it('says a moved key on More: a dot, and in its name and its row', () => {
+    const { setKey } = mount({ keyFolded: true })
+    const slot = () => more().parentElement as HTMLElement
+    expect(slot()).toHaveAttribute('data-dot', 'false')
+
+    setKey(2)
+
+    expect(more()).toHaveAccessibleName('More playback options. Key +2')
+    expect(slot()).toHaveAttribute('data-dot', 'true')
+    openMore()
+    expect(menuRows()).toContain('Key +2')
+  })
+
+  it('names the speed and the key together while both are in More', () => {
+    const { setKey } = mount({
+      keyFolded: true,
+      speedFolded: true,
+      speed: 0.75,
+    })
+
+    setKey(-1)
+
+    expect(more()).toHaveAccessibleName(
+      'More playback options. Speed 0.75x, Key −1',
+    )
+  })
+
+  it('moves Play from the start to the top of More, and plays from there', () => {
+    const { calls, setRestartFolded } = mount()
+    expect(button('Play from the start')).toBeInTheDocument()
+
+    setRestartFolded(true)
+
+    expect(
+      screen.queryByRole('button', { name: 'Play from the start' }),
+    ).toBeNull()
+    openMore()
+    expect(menuRows()[0]).toBe('Play from the start')
+    fireEvent.click(
+      screen.getByRole('menuitem', { name: 'Play from the start' }),
+    )
+    expect(calls.restart).toHaveBeenCalledTimes(1)
   })
 })

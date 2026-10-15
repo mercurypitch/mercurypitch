@@ -28,7 +28,7 @@ import { mixerViewRows } from '@/components/stem-mixer/MixerViewControls'
 import { MixerCapsule } from '@/components/stem-mixer/rail/MixerCapsule'
 import { MixerRail } from '@/components/stem-mixer/rail/MixerRail'
 import { MixerTimeline } from '@/components/stem-mixer/rail/MixerTimeline'
-import { speedFolds } from '@/components/stem-mixer/rail/rail-fold'
+import { keyFolds, restartFolds, speedFolds, } from '@/components/stem-mixer/rail/rail-fold'
 import { isCoarsePointer } from '@/lib/use-viewport'
 import { CheckSmall, GripVertical, Minimize2 } from './icons'
 import styles from './StemMixerTransport.module.css'
@@ -117,10 +117,14 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
     props.karaokeFocus() && (dock() === 'left' || dock() === 'right')
 
   // ── Fold ─────────────────────────────────────────────────────────
-  // A side dock stacks the groups and has the height for the chip.
+  // A side dock stacks the groups and has the height for every control.
   const [railWidth, setRailWidth] = createSignal(0)
   const speedFolded = (): boolean =>
     !isVertical() && speedFolds(railWidth(), isCoarsePointer())
+  const keyFolded = (): boolean =>
+    !isVertical() && keyFolds(railWidth(), isCoarsePointer())
+  const restartFolded = (): boolean =>
+    !isVertical() && restartFolds(railWidth(), isCoarsePointer())
 
   // ── Dock handle ──────────────────────────────────────────────────
   // A drag past a few pixels shows the edge the pill will land on, and
@@ -260,6 +264,8 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               speed={props.speed()}
               onSpeedChange={(speed) => props.onSpeedChange(speed)}
               speedFolded={speedFolded()}
+              keyFolded={keyFolded()}
+              restartFolded={restartFolded()}
               keyControl={props.keyControl}
               micActive={props.micActive()}
               micError={props.micError()}
