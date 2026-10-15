@@ -11,12 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.18]
 
-113 commits since `v0.9.17` (543f43c6c) before this release PR: PRs #908,
-#1002 to #1007, #1009 to #1017 and #1019 to #1025. Every commit came through
-a PR; none reached `main` without one. Of the 58 on `main`'s first-parent
+114 commits since `v0.9.17` (543f43c6c) before this release PR: PRs #908,
+#1002 to #1007, #1009 to #1017 and #1019 to #1026. Every commit came through
+a PR; none reached `main` without one. Of the 59 on `main`'s first-parent
 line, 15 are PR merge commits, 41 are the commits #1006 (4), #1007 (19),
 #1009 (5), #1014 (3), #908 (8) and #1004 (2) rebased onto `main` instead of
-merging, and 2 are the squash commits of #1010 and #1019. The owner decided
+merging, and 3 are the squash commits of #1010, #1019 and #1026. The owner decided
 on 15 October to release `main` as it stands: the key change and the mixer
 rail (#857) are not in 0.9.18 and go in 0.9.19.
 
@@ -26,7 +26,8 @@ a foot of the screen that stacks instead of hiding under the cookie banner
 spelling (#1007), mails that stay dark in Gmail on the iPhone (#1010,
 #1006), and the compact UI audit's fixes for focus rings, contrast, the
 control font and small screens (#908). Release tags now walk the guided
-tours in their own workflow instead of running PR Gate (#1004). Most of the
+tours in their own workflow instead of running PR Gate (#1004), and PR
+Gate's lint step has the memory to finish (#1026). Most of the
 commits are the premium exercises, which reach no web build: Echo's art
 rounds 5 and 6, its demo and Merc's recorded voice; the glide engine; and Ng
 slides and Lip roll, each a room and a demo on stand-in art. The native apps
@@ -222,6 +223,14 @@ in the job summary, and the logs are uploaded as `guided-tours-desktop` and
 runs beside the deploy, not in front of it: the blocking walk is the
 dispatch before the tag (release step 2). `mp-v*` and `bc-v*` tags start the
 same workflows as before.
+
+### CI: room for ESLint in PR Gate (#1026)
+
+`eslint src` ran out of Node's default heap of about 4 GB in PR Gate's Lint
+and typecheck job: on main push runs 38719559931 and 38708038077, and on the
+first attempts of #908, #1004 and #1018. On `main`'s tree it peaks at about
+6.2 GB. That step now sets `NODE_OPTIONS=--max-old-space-size=8192`; GitHub's
+runners for public repositories have 16 GB.
 
 ### Web, dev and PR previews only: the cookie bar with no Google tag (#1019)
 
