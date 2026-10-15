@@ -95,7 +95,7 @@ import { registerDeveloperSection } from '@/lib/developer-sections'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
-import { registerNativeDevice } from '@/stores/native-shell-store'
+import { nativeDeviceApi, registerNativeDevice, } from '@/stores/native-shell-store'
 import { initTheme } from '@/stores/theme-store'
 import { createNativeDevice, standUnlockClipAsideForNowPlaying, } from './infrastructure/native-device'
 import { installNativeShell } from './infrastructure/native-shell'
@@ -195,6 +195,18 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       id: 'debug-console',
       title: 'Debug console',
       render: () => <Panel />,
+    })
+  })
+  // Every context and mic track the page makes, every change to where the
+  // phone sends its sound, and each sound the rooms send: the record a room
+  // that went quiet is read from (audio-census.ts). Same gate, same reason.
+  void Promise.all([
+    import('./shell/audio-census'),
+    import('@/components/room-kit/room-output'),
+  ]).then(([census, rooms]) => {
+    census.installAudioCensus({
+      output: nativeDeviceApi()?.audioOutput,
+      roomLevels: rooms.roomOutputReadings,
     })
   })
   // And whether the web view was ever turned: a line in the same record at

@@ -59,6 +59,9 @@ const storeBinary = args.includes(STORE_BINARY_FLAG)
  * (src/features/account/NativeSignInPanel.tsx), the audio record
  * (AudioDiagnosticsPanel.tsx) and the Karaoke audio switches
  * (KaraokeAudioPanel.tsx). Nothing the web imports reaches any of them.
+ * And the audio census the native entry installs beside them
+ * (apps/mercurypitch/src/shell/audio-census.ts), by the event it records
+ * for each mic track.
  */
 const FINGERPRINTS = [
   'MercuryPitch portable console',
@@ -73,6 +76,7 @@ const FINGERPRINTS = [
   'native-signin-result',
   'dev-audio-report',
   'dev-karaoke-audio',
+  'mic-opened',
 ]
 
 /**

@@ -22,14 +22,28 @@
 // report is what comes back from a device round, and its record already
 // carries a line for every turn the web view was told about.
 //
+// The rows under them are for a room that went quiet (TestFlight build
+// 842: Lip roll faint at full volume until a relaunch): where the phone
+// sends the sound and how loud (AudioOutput, live on every change), the
+// session it plays through, the mic tracks and contexts the page holds
+// open (audio-census.ts), who holds the shared clock, and the rooms' one
+// output (room-output.ts). audio-readout.ts words each of them.
+//
 // Registered by the native entry alone, behind VITE_PORTABLE_CONSOLE and
 // through a dynamic import (main.tsx), so a store build carries none of it.
 
+import { sharedAudioContextOwners } from '@irchiinnuss/audio-io'
 import type { Component } from 'solid-js'
 import { createSignal, Index, onCleanup, Show } from 'solid-js'
+import { roomOutputIfMade, roomOutputReadings, } from '@/components/room-kit/room-output'
 import type { AudioDiagnosticEntry } from '@/lib/audio-diagnostics'
 import { describeAudioError, formatAudioDiagnostics, lastAudioDiagnostic, onAudioDiagnostic, } from '@/lib/audio-diagnostics'
+import { micManager } from '@/lib/mic-manager'
+import type { NativeAudioOutputReading } from '@/stores/native-shell-store'
+import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { ambient } from '../alley/RoomsAlley'
+import { censusContexts, censusCounts, censusTracks } from './audio-census'
+import { contextsLine, hardwareLine, leasesLine, outputLine, roomOutputLine, sessionLine, tracksLine, volumeLine, } from './audio-readout'
 import { playTestTone } from './test-tone'
 import { orientationRow, safeInsetsRow } from './viewport-diagnostics'
 
@@ -78,6 +92,13 @@ function errorRow(): string {
   return `${stage} · ${entry.source} · ${why} · ${String(age)} s ago`
 }
 
+/** Whose a context is, where the panel can tell: the alley's or the rooms'. */
+function whose(context: BaseAudioContext): string | null {
+  if (context === ambient().context()) return 'alley'
+  if (roomOutputIfMade(context) !== null) return 'rooms'
+  return null
+}
+
 function audioSessionType(): string {
   const session = (
     navigator as Navigator & { audioSession?: { type?: string } }
@@ -95,6 +116,18 @@ export const AudioDiagnosticsPanel: Component = () => {
   let moving = false
   let startedHere = false
   let copiedTimer: number | undefined
+
+  const [output, setOutput] = createSignal<NativeAudioOutputReading | null>(
+    null,
+  )
+  const phone = nativeDeviceApi()
+  const audioOutput = phone?.audioOutput
+  if (audioOutput !== undefined) {
+    void audioOutput.read().then((reading) => {
+      if (reading !== null) setOutput(reading)
+    })
+    onCleanup(audioOutput.watch(setOutput))
+  }
 
   const redraw = (): void => void setTick((n) => n + 1)
   const poll = window.setInterval(() => {
@@ -146,6 +179,23 @@ export const AudioDiagnosticsPanel: Component = () => {
       { label: 'Page', value: document.visibilityState },
       { label: 'Orientation', value: orientationRow() },
       { label: 'Safe insets', value: safeInsetsRow() },
+      { label: 'Output', value: outputLine(output(), phone !== null) },
+      { label: 'Volume', value: volumeLine(output()) },
+      { label: 'Phone session', value: sessionLine(output()) },
+      { label: 'Phone audio', value: hardwareLine(output()) },
+      {
+        label: 'Mic tracks',
+        value: tracksLine(censusTracks(), censusCounts(), {
+          stream: micManager.getStream() !== null,
+          consumers: micManager.getConsumers(),
+        }),
+      },
+      {
+        label: 'Contexts',
+        value: contextsLine(censusContexts(), censusCounts(), whose),
+      },
+      { label: 'Shared clock', value: leasesLine(sharedAudioContextOwners()) },
+      { label: 'Room output', value: roomOutputLine(roomOutputReadings()) },
     ]
   }
 
