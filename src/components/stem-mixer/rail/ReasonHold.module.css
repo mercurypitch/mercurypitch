@@ -1,6 +1,8 @@
 /* ReasonHold: a control and the reason it waits, as a line of text under
    it. Hidden by visibility, not opacity, so a reason that is not showing
-   is not a visible element either; aria-describedby still reads it. */
+   is not a visible element either; aria-describedby still reads it. The
+   line carries .mp-dark-stage, so --bg-secondary here is the stage's solid
+   surface, not the rail's glass. */
 
 .hold {
   position: relative;

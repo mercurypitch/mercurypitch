@@ -18,6 +18,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { HEADER_WORDS_PX, headerFolds, } from '../components/stem-mixer/header/header-fold'
 import { speedFolds, TIMELINE_OWN_LINE_COARSE_PX, TIMELINE_OWN_LINE_PX, } from '../components/stem-mixer/rail/rail-fold'
+import { contrast } from './helpers/color'
 import { blockMic, openSeededSong, playhead, seek } from './helpers/mixer-song'
 
 test.use({ permissions: ['microphone'] })
@@ -645,6 +646,41 @@ test.describe('a blocked mic at 1440x900', () => {
     await mic.hover()
     await expect(mic).toHaveCSS('color', 'rgb(255, 123, 114)')
   })
+
+  for (const theme of ['dark', 'light'] as const) {
+    test(`says why on a solid line over a white backdrop, ${theme} theme`, async ({
+      page,
+    }) => {
+      await page.addInitScript((value) => {
+        localStorage.setItem('pitchperfect_theme', value)
+      }, theme)
+      await openSeededSong(page, { width: 1440, height: 900 })
+      // Brighter than any photo: the stage's glass shows the backdrop most.
+      await page.locator('.stem-mixer').evaluate((mixer) => {
+        ;(mixer as HTMLElement).style.setProperty(
+          '--mp-stage-image',
+          'linear-gradient(#fff, #fff)',
+        )
+      })
+      const mic = micButton(page)
+      await blockMic(page)
+      await mic.click()
+      await expect(mic).toHaveAttribute('data-state', 'error')
+      await mic.hover()
+
+      const id = await mic.getAttribute('aria-describedby')
+      expect(id).not.toBeNull()
+      const reason = page.locator(`[id="${id}"]`)
+      await expect(reason).toBeVisible()
+      const look = await reason.evaluate((line) => {
+        const style = getComputedStyle(line)
+        return { background: style.backgroundColor, ink: style.color }
+      })
+      // Opaque: an rgb() colour, not glass mixed with the backdrop.
+      expect(look.background).toMatch(/^rgb\(/)
+      expect(contrast(look.ink, look.background)).toBeGreaterThanOrEqual(4.5)
+    })
+  }
 })
 
 test.describe('Open in Karaoke Night at 1440x900', () => {

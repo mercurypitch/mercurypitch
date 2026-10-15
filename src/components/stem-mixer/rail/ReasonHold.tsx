@@ -13,6 +13,10 @@
 //
 // The hold renders the control through a function, so the control keeps its
 // own markup and handlers and only adds the ones it is given here.
+//
+// The reason is solid, on the stage's own palette unfaded (.mp-dark-stage),
+// not the rail's glass: over a bright photo the glass let the backdrop show
+// through the words.
 
 import type { Accessor, Component, JSX } from 'solid-js'
 import { createSignal, createUniqueId, onCleanup, Show } from 'solid-js'
@@ -101,7 +105,7 @@ export const ReasonHold: Component<ReasonHoldProps> = (props) => {
         {(reason) => (
           <span
             id={id}
-            class={styles.hint}
+            class={`${styles.hint} mp-dark-stage`}
             data-tone={props.tone ?? 'wait'}
             data-align={props.align ?? 'center'}
             data-testid="rail-reason"
