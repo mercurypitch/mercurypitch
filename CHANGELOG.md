@@ -5,6 +5,47 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.18]
+
+The launch gift now says what using it earns, and the cookie banner no
+longer hides the tab bar, the confirm-email bar or your notifications. Mails
+stay dark in Gmail on the iPhone, and the Voice Mirror talks about voice
+types.
+
+### Added
+
+- **The launch gift says what using it earns.** A line under the gift gives
+  the date to use all 5 by for 30 extra credits on your next credit pack, in
+  the intro, Karaoke Night, the Voice Mirror and Settings › Credits.
+
+### Changed
+
+- **Voice types, not voice bands.** The Voice Mirror and the free voice
+  tests now say voice type, and your twin is a famous singer of the type
+  your range overlaps most.
+- **The intro no longer names a time.** It says four short tasks map your
+  range and find a famous singer of your voice type, and each task starts
+  when you're ready.
+- **Link previews for the free tools say what the tools do.** Seven cards
+  drop claims the app doesn't back, like a shared scoreboard in a jam room.
+- **Mails from MercuryPitch stay dark in Gmail on the iPhone.** In dark mode
+  Gmail turned them light, and the wordmark's white lettering disappeared.
+- **The room tiles in the welcome and confirm mails fill the card on a
+  phone**, with no gap on the right.
+- **American spelling in the rest of the app**: color, favorite, recognize
+  and practiced. Ear Lab's Colour drill is now Color.
+
+### Fixed
+
+- **The cookie banner no longer covers the foot of the screen.** The tab
+  bar, the confirm-email bar and phone notifications stand above it, so
+  "5 credits added" no longer arrives unseen.
+- **A notification no longer covers the confirm-email bar** and its Resend
+  button.
+- **Guitar Night and Drum Night say when the launch gift lands.** Sign up
+  with Google from either room and it tells you the 5 credits arrived, and
+  what they separate there.
+
 ## [0.9.17] - 2026-10-14
 
 Confirm your email for five free credits, and use all five for 30 more. Credit
