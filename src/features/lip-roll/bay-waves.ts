@@ -14,7 +14,20 @@
 // water, transparent around it), so a strip is cleared before the lit
 // picture is drawn into it: the lit glow's edge must not sit on the
 // unlit's.
+//
+// The first wave's canvas is made ahead, as soon as the pictures have
+// decoded after a reset (the view attaching, a run starting), so wave 1's
+// first lit strip is one strip's copy and nothing else. Made on that
+// frame, it cost a full-plate copy and, from <img> sources, both
+// pictures' decodes on the main thread: 167 ms at 4x CPU, measured
+// 2026-10-15. The pictures now come decoded off the main thread
+// (room-kit/canvas-picture.ts). The ready canvas stays hidden until its
+// first strip: over the zoomed <img> a canvas is drawn a little
+// differently (up to 11 of 255 on screen 1), so the unlit wave looks as it
+// always did until it lights.
 
+import type { CanvasPicture } from '@/components/room-kit/canvas-picture'
+import { pictureSize } from '@/components/room-kit/canvas-picture'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import { PLATES, WAVE } from './bay-geometry'
 
@@ -23,8 +36,8 @@ const FRAME = PLATES['wave-unlit'].frame
 
 /** The two pictures a lit wave is copied from, decoded. */
 export interface WaveImages {
-  readonly unlit: HTMLImageElement
-  readonly lit: HTMLImageElement
+  readonly unlit: CanvasPicture
+  readonly lit: CanvasPicture
 }
 
 export interface BayWavesDeps {
@@ -37,8 +50,13 @@ export interface BayWavesDeps {
 export interface BayWaves {
   /** Copy these strips in, each onto its wave. */
   paint: (strips: readonly LitStrip[]) => void
-  /** A new run: every canvas goes, every wave shows its unlit picture. */
+  /**
+   * A new run: every lit canvas goes, every wave shows its unlit picture,
+   * and the first wave's canvas is made ready for its first strip.
+   */
   reset: () => void
+  /** The room is leaving: every canvas goes and nothing more is made. */
+  dispose: () => void
 }
 
 interface Lit {
@@ -63,7 +81,7 @@ export function columnsOf(
 
 function copyColumns(
   canvas: HTMLCanvasElement,
-  image: HTMLImageElement,
+  image: CanvasPicture,
   from: number,
   to: number,
 ): void {
@@ -87,11 +105,12 @@ function copyColumns(
 
 function canvasOver(
   holder: HTMLElement,
-  image: HTMLImageElement,
+  image: CanvasPicture,
 ): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
-  canvas.width = image.naturalWidth || image.width
-  canvas.height = image.naturalHeight || image.height
+  const size = pictureSize(image)
+  canvas.width = size.width
+  canvas.height = size.height
   canvas.setAttribute('aria-hidden', 'true')
   canvas.dataset.lit = 'true'
   canvas.style.cssText =
@@ -104,17 +123,38 @@ function canvasOver(
 export function createBayWaves(deps: BayWavesDeps): BayWaves {
   const maxLive = deps.maxLive ?? 2
   let live: Lit[] = []
+  /** The first wave's canvas, made ahead and not lit yet. */
+  let ready: Lit | null = null
   let images: WaveImages | null = null
   let asked = false
+  let disposed = false
   /** Strips heard before the pictures decoded, painted once they have. */
   let queued: LitStrip[] = []
+
+  /** The first wave's canvas, before its first strip needs it. */
+  const makeReady = (art: WaveImages): void => {
+    if (disposed || ready !== null || live.length > 0) return
+    const holder = deps.holder(0)
+    if (holder === null) return
+    const canvas = canvasOver(holder, art.unlit)
+    // Hidden until lit: the picture under it shows, as before it existed.
+    canvas.style.visibility = 'hidden'
+    ready = { wave: 0, canvas }
+  }
 
   const litFor = (wave: number, art: WaveImages): Lit | null => {
     const known = live.find((lit) => lit.wave === wave)
     if (known !== undefined) return known
-    const holder = deps.holder(wave)
-    if (holder === null) return null
-    const lit: Lit = { wave, canvas: canvasOver(holder, art.unlit) }
+    let lit: Lit
+    if (ready !== null && ready.wave === wave) {
+      lit = ready
+      ready = null
+      lit.canvas.style.visibility = ''
+    } else {
+      const holder = deps.holder(wave)
+      if (holder === null) return null
+      lit = { wave, canvas: canvasOver(holder, art.unlit) }
+    }
     live.push(lit)
     // The oldest goes back to its picture: it has scrolled off.
     while (live.length > maxLive) live.shift()?.canvas.remove()
@@ -133,10 +173,12 @@ export function createBayWaves(deps: BayWavesDeps): BayWaves {
     asked = true
     void deps.images().then(
       (art) => {
+        if (disposed) return
         images = art
         const waiting = queued
         queued = []
-        draw(waiting, art)
+        if (waiting.length === 0) makeReady(art)
+        else draw(waiting, art)
       },
       () => {
         // No pictures: the run goes on with the bay unlit.
@@ -148,7 +190,7 @@ export function createBayWaves(deps: BayWavesDeps): BayWaves {
 
   return {
     paint: (strips) => {
-      if (strips.length === 0) return
+      if (strips.length === 0 || disposed) return
       if (images === null) {
         queued.push(...strips)
         ask()
@@ -159,6 +201,18 @@ export function createBayWaves(deps: BayWavesDeps): BayWaves {
     reset: () => {
       for (const lit of live) lit.canvas.remove()
       live = []
+      queued = []
+      if (disposed) return
+      // A ready canvas never lit is still the unlit picture: it stays.
+      if (images === null) ask()
+      else makeReady(images)
+    },
+    dispose: () => {
+      disposed = true
+      for (const lit of live) lit.canvas.remove()
+      ready?.canvas.remove()
+      live = []
+      ready = null
       queued = []
     },
   }

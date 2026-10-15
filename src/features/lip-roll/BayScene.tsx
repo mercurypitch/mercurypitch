@@ -30,6 +30,7 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, } from 'solid-js'
+import { createPictureSet } from '@/components/room-kit/canvas-picture'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import type { GlideRibbonApi, StrokePoint, } from '@/components/room-kit/GlideRibbon'
 import { GlideRibbon } from '@/components/room-kit/GlideRibbon'
@@ -166,12 +167,17 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   const unit = (): number => props.layout.unit
   const bubbles = createBubbleStream()
 
+  // The waves' two pictures, decoded off the main thread once a visit and
+  // released when the room goes (room-kit/canvas-picture.ts).
+  const wavePictures = createPictureSet(
+    () => [art().waveUnlit, art().waveLit],
+    bayImage,
+  )
   const waveImages = async (): Promise<WaveImages> => {
-    const files = art()
-    const [unlit, lit] = await Promise.all([
-      bayImage(files.waveUnlit),
-      bayImage(files.waveLit),
-    ])
+    const [unlit, lit] = await wavePictures.get()
+    if (unlit === undefined || lit === undefined) {
+      throw new Error('bay art: the waves')
+    }
     return { unlit, lit }
   }
 
@@ -425,12 +431,17 @@ export function BayScene(props: BaySceneProps): JSX.Element {
     props.onReady(view)
     if (props.onSettled !== undefined && rootEl !== undefined) {
       const done = props.onSettled
-      void imagesDecoded(rootEl).then(done)
+      // The waves' canvases paint once their pictures decode: after this.
+      void Promise.all([
+        imagesDecoded(rootEl),
+        waveImages().catch(() => undefined),
+      ]).then(done)
     }
   })
 
   onCleanup(() => {
-    waves.reset()
+    waves.dispose()
+    wavePictures.release()
     bubbles.clear()
     if (bayPlate !== null) releasePlate(bayPlate)
     if (resultPlate !== null) releasePlate(resultPlate)
