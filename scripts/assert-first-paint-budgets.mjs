@@ -29,6 +29,12 @@
 // because the diagnosis differs: a JS breach means an import dragged a
 // feature in, a CSS breach means a global sheet grew or reached a page it
 // should not have.
+//
+// A third list is not about weight. Some modules are small enough to hide
+// under any page's ceiling and are still meant to load only on demand: the
+// key-change engine is 111 KB that a song played in its own key never needs.
+// Each first-paint chunk's source map says what it was built from, and a
+// module on that list fails the build on whichever page it lands.
 
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
@@ -134,6 +140,25 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   'pitch-training.html': 1260,
 }
 
+/**
+ * Modules no document may download before its first paint, at any size.
+ *
+ * Each is reached only through `await import(...)`, and each has been
+ * dragged onto first paint before by a manualChunks rule that filed it
+ * under a chunk with static importers, which erases the dynamic boundary
+ * without any change to the source. Matched against the `sources` of every
+ * first-paint chunk's source map.
+ */
+export const FIRST_PAINT_FORBIDDEN_SOURCES = [
+  {
+    // Signalsmith Stretch, the key and speed shifter. `pitch-shift-node.ts`
+    // imports it when a song first plays off its own key or speed; the
+    // worklet half is a separate `?worker&url` asset outside every graph.
+    label: 'the key-change engine',
+    pattern: /(?:^|\/)node_modules\/signalsmith-stretch\//,
+  },
+]
+
 const KB = 1024
 
 function normalizePath(path) {
@@ -210,6 +235,27 @@ function resolveSpecifier(specifier, importer, distDir) {
   return path
 }
 
+function sourceMapSpecifier(source) {
+  const matches = [...source.matchAll(/sourceMappingURL=([^\s]+)/g)]
+  return matches.at(-1)?.[1] ?? null
+}
+
+/**
+ * What a chunk was built from, by its source map, or null when it names no
+ * map. A null is not a pass: `judgeFirstPaint` cannot clear such a chunk.
+ */
+async function chunkSources(chunkPath, source, distDir) {
+  const specifier = sourceMapSpecifier(source)
+  if (specifier === null || specifier.startsWith('data:')) return null
+  const mapPath = resolve(dirname(chunkPath), specifier)
+  assertInsideDist(mapPath, distDir)
+  const map = JSON.parse(await readFile(mapPath, 'utf8'))
+  if (!Array.isArray(map.sources)) return null
+  return map.sources
+    .filter((entry) => typeof entry === 'string')
+    .map(normalizePath)
+}
+
 /** The static chunk closure of one document, heaviest chunk first. */
 export async function firstPaintOf(documentPath, distDir) {
   const html = await readFile(documentPath, 'utf8')
@@ -217,6 +263,7 @@ export async function firstPaintOf(documentPath, distDir) {
     resolveSpecifier(url, documentPath, distDir),
   )
   const sizes = new Map()
+  const sourcesByChunk = new Map()
 
   while (queue.length > 0) {
     const chunkPath = queue.shift()
@@ -225,6 +272,10 @@ export async function firstPaintOf(documentPath, distDir) {
     sizes.set(chunkPath, (await stat(chunkPath)).size)
 
     const source = await readFile(chunkPath, 'utf8')
+    sourcesByChunk.set(
+      chunkPath,
+      await chunkSources(chunkPath, source, distDir),
+    )
     for (const specifier of staticImportSpecifiers(source)) {
       const dependency = resolveSpecifier(specifier, chunkPath, distDir)
       if (dependency !== null && !sizes.has(dependency)) queue.push(dependency)
@@ -235,6 +286,7 @@ export async function firstPaintOf(documentPath, distDir) {
     .map(([path, bytes]) => ({
       file: normalizePath(relative(distDir, path)),
       bytes,
+      sources: sourcesByChunk.get(path) ?? null,
     }))
     .sort((a, b) => b.bytes - a.bytes)
 
@@ -288,8 +340,32 @@ export function judgeFirstPaint(
   measured,
   budgets = FIRST_PAINT_BUDGETS_KB,
   cssBudgets = FIRST_PAINT_CSS_BUDGETS_KB,
+  forbidden = FIRST_PAINT_FORBIDDEN_SOURCES,
 ) {
   const problems = []
+
+  // The on-demand half. A chunk measured without `sources` predates this
+  // check and is left alone; a chunk whose map is missing cannot be cleared.
+  for (const [name, result] of measured) {
+    for (const chunk of result.chunks) {
+      if (chunk.sources === undefined) continue
+      if (chunk.sources === null) {
+        if (forbidden.length > 0) {
+          problems.push(
+            `${name}: cannot check its first paint for on-demand modules, because ${chunk.file} has no source map.`,
+          )
+        }
+        continue
+      }
+      for (const rule of forbidden) {
+        const hit = chunk.sources.find((source) => rule.pattern.test(source))
+        if (hit === undefined) continue
+        problems.push(
+          `${name} downloads ${rule.label} before first paint: ${hit} rides ${chunk.file}. It must load only on demand; give it a chunk of its own in vite.config.ts manualChunks, or find the static import that pulls it in.`,
+        )
+      }
+    }
+  }
 
   for (const [name, result] of measured) {
     const budget = budgets[name]

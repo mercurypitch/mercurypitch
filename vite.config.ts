@@ -666,6 +666,15 @@ export default defineConfig(({ command, mode }) => {
               // core, which IS statically reachable (jam-store).
               if (/@mediabunny[+/]aac-encoder/.test(id)) return 'vendor-aac'
               if (id.includes('mediabunny')) return 'vendor-media'
+              // Signalsmith Stretch, the key-change engine (111 KB). The
+              // main-thread half is reached only from `pitch-shift-node.ts`'s
+              // dynamic import, the first time a song plays off its own key
+              // or speed; a song at key 0 and 1x never needs it. Its worklet
+              // half is a separate `?worker&url` asset. Filed under 'vendor'
+              // it rode every app document's first paint, which
+              // assert-first-paint-budgets.mjs now refuses.
+              if (id.includes('/signalsmith-stretch/'))
+                return 'vendor-key-shift'
               // The self-hosted brand fonts belong to index.html alone, the one
               // page that ever linked them (src/lib/self-hosted-fonts.ts).
               // Inside 'vendor' their @font-face rules would ride the shared

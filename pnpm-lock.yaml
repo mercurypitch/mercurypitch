@@ -65,7 +65,7 @@ importers:
         specifier: ^1.25.1
         version: 1.26.0
       signalsmith-stretch:
-        specifier: ^1.3.2
+        specifier: 1.3.2
         version: 1.3.2
       solid-js:
         specifier: ^1.9.17
