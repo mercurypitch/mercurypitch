@@ -225,7 +225,32 @@ export interface VoiceContourOptions {
   vibrato?: { hz: number; cents: number; rampSec: number }
   /** The voice's colour: an open "ooh" (the default), or a closed hum. */
   timbre?: VoiceTimbre
+  /**
+   * A lip buzz: the loudness flutters `hz` times a second, each time down
+   * to `1 - depth` of the line's level, as the lips open and close.
+   */
+  flutter?: VoiceFlutter
 }
+
+export interface VoiceFlutter {
+  readonly hz: number
+  /** 0..1: how far each closing dips the loudness. */
+  readonly depth: number
+}
+
+/**
+ * Lip roll's "brrr" (DESIGN-lip-roll.md 4): a trill's lips open and close
+ * about 25 times a second. Too slow to hear as a pitch, too fast to hear as
+ * a rhythm: it reads as a buzz, and a phone speaker carries it, because it
+ * moves the loudness of the overtones, not a note of its own.
+ */
+export const LIP_FLUTTER: VoiceFlutter = { hz: 25, depth: 0.85 }
+
+/**
+ * The flutter's shape: a rounded sawtooth, so each closing is quick and
+ * each opening swells, as lips do in a trill. Normalised to a peak of 1.
+ */
+const FLUTTER_PARTIALS = [0, 1, 0.45, 0.2]
 
 /**
  * How the voice is coloured: an open "ooh", or "hum", the same partials
@@ -322,9 +347,44 @@ function scheduleRun(
 }
 
 /**
+ * The flutter between `from` and `to`: a gain swung by a 25 Hz shape about
+ * its middle, so the loudness runs from full down to `1 - depth`. Returns
+ * the nodes it made, for the voice's own clean-up.
+ */
+function addFlutter(
+  ctx: AudioContext,
+  from: AudioNode,
+  to: AudioNode,
+  flutter: VoiceFlutter,
+  start: number,
+  stopAt: number,
+  track: (node: OscillatorNode) => void,
+): AudioNode[] {
+  const swing = Math.max(0, Math.min(1, flutter.depth)) / 2
+  const lips = ctx.createGain()
+  lips.gain.value = 1 - swing
+  const shape = ctx.createOscillator()
+  const imag = new Float32Array(FLUTTER_PARTIALS)
+  shape.setPeriodicWave(
+    ctx.createPeriodicWave(new Float32Array(imag.length), imag),
+  )
+  shape.frequency.value = flutter.hz
+  const amount = ctx.createGain()
+  amount.gain.value = swing
+  shape.connect(amount)
+  amount.connect(lips.gain)
+  from.connect(lips)
+  lips.connect(to)
+  shape.start(start)
+  shape.stop(stopAt)
+  track(shape)
+  return [lips, shape, amount]
+}
+
+/**
  * A sung line, as Merc would sing it: one "ooh" that follows `points` in
  * pitch and loudness, rests where the level is 0, with a natural vibrato on
- * top. Every onset opens and every rest closes on the house envelope.
+ * top, or a lip buzz's flutter (`flutter`, Lip roll's demo). Every onset opens and every rest closes on the house envelope.
  * Returns a handle that closes it pop-free at any moment.
  */
 export function playVoiceContour(
@@ -352,7 +412,6 @@ export function playVoiceContour(
   level.gain.setValueAtTime(FLOOR, start)
   voice.connect(filter)
   filter.connect(level)
-  level.connect(master)
 
   const runs = voicedRuns(points)
   for (const run of runs) {
@@ -361,6 +420,11 @@ export function playVoiceContour(
 
   const stopAt = end + VOICE_RELEASE + STOP_SLACK
   const graph: AudioNode[] = [voice, filter, level, master]
+  const flutter = options.flutter
+  if (flutter === undefined) level.connect(master)
+  else {
+    graph.push(...addFlutter(ctx, level, master, flutter, start, stopAt, track))
+  }
   const vibrato = options.vibrato
   if (vibrato !== undefined) {
     const lfo = ctx.createOscillator()

@@ -47,14 +47,16 @@ export function outputLatency(ctx: AudioContext): number {
 }
 
 /**
- * The demo's sound on `ctx`; `vibrato` is the one its frames carry, and
- * `timbre` the voice's colour (an open "ooh" unless a room asks for a hum).
+ * The demo's sound on `ctx`; `vibrato` is the one its frames carry,
+ * `timbre` the voice's colour (an open "ooh" unless a room asks for a hum)
+ * and `flutter` a lip buzz over it (Lip roll's).
  */
 export function createDemoSoundtrack<Take extends SungDemoTake>(
   ctx: AudioContext,
   minLead: number,
   vibrato: VoiceContourOptions['vibrato'],
   timbre?: VoiceContourOptions['timbre'],
+  flutter?: VoiceContourOptions['flutter'],
 ): DemoSoundtrack<Take> {
   const bus = ctx.createGain()
   bus.connect(ctx.destination)
@@ -76,6 +78,7 @@ export function createDemoSoundtrack<Take extends SungDemoTake>(
           destination: bus,
           vibrato,
           timbre,
+          flutter,
         }),
       )
     },
