@@ -11,24 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.18]
 
-103 commits since `v0.9.17` (543f43c6c) before this release PR: PRs #1002,
-#1003, #1005 to #1007, #1009 to #1017 and #1019 to #1025. Every commit came
-through a PR; none reached `main` without one. Of the 48 on `main`'s
-first-parent line, 15 are PR merge commits, 31 are the commits #1006 (4),
-#1007 (19), #1009 (5) and #1014 (3) rebased onto `main` instead of merging,
-and 2 are the squash commits of #1010 and #1019. The owner decided on 15
-October to release `main` as it stands: the key change and the mixer rail
-(#857) are not in 0.9.18 and go in 0.9.19.
+113 commits since `v0.9.17` (543f43c6c) before this release PR: PRs #908,
+#1002 to #1007, #1009 to #1017 and #1019 to #1025. Every commit came through
+a PR; none reached `main` without one. Of the 58 on `main`'s first-parent
+line, 15 are PR merge commits, 41 are the commits #1006 (4), #1007 (19),
+#1009 (5), #1014 (3), #908 (8) and #1004 (2) rebased onto `main` instead of
+merging, and 2 are the squash commits of #1010 and #1019. The owner decided
+on 15 October to release `main` as it stands: the key change and the mixer
+rail (#857) are not in 0.9.18 and go in 0.9.19.
 
 On the web, the release is the launch offer's terms beneath the gift (#1014),
 a foot of the screen that stacks instead of hiding under the cookie banner
 (#1009), share cards and copy that say only what the tools do, in American
-spelling (#1007), and mails that stay dark in Gmail on the iPhone (#1010,
-#1006). Most of the commits are the premium exercises, which reach no web
-build: Echo's art rounds 5 and 6, its demo and Merc's recorded voice; the
-glide engine; and Ng slides and Lip roll, each a room and a demo on stand-in
-art. The native apps keep their own versions and tags; what reaches them is
-listed under `native-mercurypitch` and `native-besidecue`.
+spelling (#1007), mails that stay dark in Gmail on the iPhone (#1010,
+#1006), and the compact UI audit's fixes for focus rings, contrast, the
+control font and small screens (#908). Release tags now walk the guided
+tours in their own workflow instead of running PR Gate (#1004). Most of the
+commits are the premium exercises, which reach no web build: Echo's art
+rounds 5 and 6, its demo and Merc's recorded voice; the glide engine; and Ng
+slides and Lip roll, each a room and a demo on stand-in art. The native apps
+keep their own versions and tags; what reaches them is listed under
+`native-mercurypitch` and `native-besidecue`.
 
 ### Release steps (prod)
 
@@ -40,8 +43,15 @@ listed under `native-mercurypitch` and `native-besidecue`.
    deploys does not matter: an app that lands first gets no `offer` and shows
    the gift alone (`withReadableTerms` in `billing-service.ts` reads a
    missing `offer` as none), and the old app ignores the field.
-2. **Push the tag `v0.9.18`.** Build & Deploy runs as before.
-3. **#1008 stays out of this release.** It points new mail at
+2. **Walk the tours on `main` before the tag (#1004).** prod-upd step 4
+   dispatches Release Tours (`release-tours.yml`) on `main` and stops on a
+   red run. The baseline is 0 misses: v0.9.15, v0.9.16 and v0.9.17 each
+   walked 144 desktop and 127 phone steps with none. The local `/tour-check`
+   walk on `build:tours` is the fallback.
+3. **Push the tag `v0.9.18`.** Build & Deploy runs as before, and Release
+   Tours walks the tagged commit beside it: a red run there is an alert, not
+   a block. PR Gate no longer runs on `v*` tags.
+4. **#1008 stays out of this release.** It points new mail at
    `/email/wordmark-v2-2x.png`, which ships with this tag's static deploy
    (#1006). Merge it once
    `curl -sI https://mercurypitch.com/email/wordmark-v2-2x.png` answers 200;
@@ -150,7 +160,7 @@ None.
 - **Wordmark v2 (#1006)**: `public/email/wordmark-v2-2x.png`, v1 on a
   rounded plate in the page color `#010409`, made from v1 by
   `scripts/generate-mail-wordmark.mjs`. Nothing references it until #1008
-  (release step 3).
+  (release step 4).
 - **Room tiles on a phone (#1006).** In the welcome and confirm mails a tile
   stopped at 263 px and left about 90 px of the card empty at 390 px. A head
   `<style>` makes a tile full width below 600 px and splits two evenly from
@@ -164,6 +174,54 @@ None.
   `Cache-Control: no-store` on any status from 400 up. Existing files keep
   their immutable 200 and 304. The cost is one Worker invocation per mail
   picture fetch.
+
+### Web: focus rings, MIDI contrast, tab labels, menu target and control font (#908)
+
+From the compact UI audit:
+
+- **Settings selects** wear a 2px accent outline at 2px offset on keyboard
+  focus (4.72-8.20:1 against the panel in all nine presets).
+  `.settingsRow select` restated the border after `select:focus` turned the
+  outline off, which left only a 1.15-1.26:1 glow. The token contract now
+  holds `--accent` at 3:1 or more against every app surface.
+- **Karaoke's song upload zone** shows a 2px accent ring while its input has
+  keyboard focus. The input covers the zone at opacity 0, so its own ring was
+  invisible. Enter and Space still open the file picker.
+- **The MIDI stem pill** draws its label in a new token, `--stem-midi-fg`
+  (#8b5cf6's hue, its lightness moved per preset: `#ac8bf9` dark, `#b090f9`
+  Forest, `#5d1cf2` Light): 5.46-6.69:1 at rest and 5.07-6.19:1 on hover,
+  where every preset was at 4.16:1 or less before.
+- **Form controls in the app font.** The base reset sets
+  `font-family: inherit` on button, input, select and textarea (the family
+  only: the `font` shorthand would pull the page's size in). Arial controls
+  went from 32-87 a view to 0; no control grew more than 7 px wide, and no
+  view gained overflow. The CSS contract fails if the rule goes or becomes
+  the shorthand.
+- **Community's tabs on a phone.** Below 480 px a tab drops its icon, uses a
+  narrower count chip and no longer ellipsizes, so "Melodies" and "Sessions"
+  stay whole at 320, 360 and 390 px. At 200% text the bar takes a second row.
+- **The song card menu** takes taps across 46x46 on a coarse pointer, through
+  a transparent box 7 px beyond its 32x32 border. Mouse pointers keep 32x32.
+- **The onboarding primary button** keeps the pixel it rose from while lifted
+  on hover, so a pointer resting in its bottom pixel no longer makes it
+  shake. The app font moved First Light by 1 px into exactly that band.
+- `src/e2e/ui-audit-regressions.spec.ts` holds six browser regressions, each
+  shown to fail with its CSS fix removed.
+
+### CI: Release Tours on web tags, not PR Gate (#1004)
+
+PR Gate ran on every `v*` tag, against a commit `main` had already gated,
+and failed there on Beside Cue's adventure jobs (v0.9.16: 45 failed; v0.9.17:
+42 failed) that passed on `main`. `pr-gate.yml` loses its tag trigger. The
+new `.github/workflows/release-tours.yml` runs the `/tour-check` walk in CI
+(`build:tours` with LFS hydrated, `serve dist`, `scripts/walk-tours.mjs`),
+desktop and phone as two parallel jobs, on `v*` tags and by
+`workflow_dispatch`. Each missed step becomes an error annotation and a line
+in the job summary, and the logs are uploaded as `guided-tours-desktop` and
+`guided-tours-mobile`. A walk takes about 5 minutes and a job about 7, so it
+runs beside the deploy, not in front of it: the blocking walk is the
+dispatch before the tag (release step 2). `mp-v*` and `bc-v*` tags start the
+same workflows as before.
 
 ### Web, dev and PR previews only: the cookie bar with no Google tag (#1019)
 
@@ -282,8 +340,9 @@ Mercury Pitch Mobile built every one: `mp-v0.8.23` (34e62d5e4, the merge of
 #1006, #1010, #1011 and #1012; `mp-v0.8.25` (64bbe1835, #1016) adds #1013,
 #1015 and #1016; `mp-v0.8.26` (0991af43a, #1017) adds #1007, #1009, #1014
 and #1017; `mp-v0.8.27` (e8f35a07d, #1021) adds #1020 and #1021; and
-`mp-v0.8.28` (165be6475, #1023) adds #1022 and #1023. #1019, #1024 and
-#1025 merged after it and arrive with the next `mp-v` tag. #974's own
+`mp-v0.8.28` (165be6475, #1023) adds #1022 and #1023. #1019, #1024,
+#1025 and #908 merged after it and arrive with the next `mp-v` tag; #1004
+changed only CI and the prod-upd skill. #974's own
 changes, the 0.9.17 release notes and version, arrived with `mp-v0.8.23`.
 
 These tags were not matched against the native bundle line by line, as
@@ -291,9 +350,10 @@ These tags were not matched against the native bundle line by line, as
 
 - **Premium exercises**: Echo's round 5 and 6 art, its voice and demo, Ng
   slides and Lip roll with their demos, and the result bands and Long note's
-  preload (#1024, #1025, next tag) are in a test build only. Each PR ran `assert-bundle.mjs` on a dev
-  target and a store target (`MERCURYPITCH_API_TARGET=production`); the
-  store build carries none of them.
+  preload (#1024, #1025, next tag) are in a test build only. Each PR ran
+  `assert-bundle.mjs` on a dev target and a store target
+  (`MERCURYPITCH_API_TARGET=production`); the store build carries none of
+  them.
 - **The launch offer line (#1014)** is not in the native bundle: the OFFER
   check passes and its words appear 0 times. #1009's Guitar Night and Drum
   Night lines are in web-only entries.
