@@ -40,8 +40,9 @@ const pluginName = /@CapacitorPlugin\(\s*name\s*=\s*"([^"]+)"/u.exec(
 
 describe('the plugin', () => {
   it('is registered before the bridge starts', () => {
+    // The app's own plugins, each registered before super.onCreate.
     expect(ACTIVITY).toMatch(
-      /void onCreate\(Bundle savedInstanceState\)\s*\{\s*registerPlugin\(PictureInPicturePlugin\.class\);\s*super\.onCreate\(savedInstanceState\);/u,
+      /void onCreate\(Bundle savedInstanceState\)\s*\{(\s*registerPlugin\(\w+\.class\);)*\s*registerPlugin\(PictureInPicturePlugin\.class\);(\s*registerPlugin\(\w+\.class\);)*\s*super\.onCreate\(savedInstanceState\);/u,
     )
   })
 

@@ -295,6 +295,41 @@ export type NativeMediaAction =
   | NativeMediaSeek
   | NativeMediaSkip
 
+/** Where the phone's sound goes, by kind. */
+export type NativeAudioRoute =
+  | 'speaker'
+  | 'receiver'
+  | 'headphones'
+  | 'bluetooth'
+  | 'other'
+  | 'none'
+
+/**
+ * The phone's output at one moment: the volume the app's sound plays at and
+ * where it goes (packages/mobile-runtime audio-output.ts reads it).
+ */
+export interface NativeAudioOutputReading {
+  /** 0 to 1. */
+  readonly volume: number
+  /** Android: the volume in the phone's own steps, and how many there are. */
+  readonly step: number | null
+  readonly steps: number | null
+  readonly route: NativeAudioRoute
+  readonly outputs: readonly { readonly type: string; readonly name: string }[]
+  /** The rest of what the phone said: iOS's session, Android's mode. */
+  readonly detail: Readonly<Record<string, unknown>>
+  /** On a change, what moved it. */
+  readonly reason: string | null
+}
+
+/** The phone's output, read now and heard on every change. */
+export interface NativeAudioOutput {
+  /** Null where the phone gives no reading. */
+  read: () => Promise<NativeAudioOutputReading | null>
+  /** Returns the unsubscribe. */
+  watch: (handler: (reading: NativeAudioOutputReading) => void) => () => void
+}
+
 export interface NativeDeviceApi {
   /**
    * Whether the microphone coming on takes the sound from another app, as
@@ -341,6 +376,12 @@ export interface NativeDeviceApi {
    * draws itself. Null on Android, whose window shows the page.
    */
   pictureInPictureLyrics: ((script: LyricWindowScript | null) => void) | null
+  /**
+   * The phone's volume and where its sound goes, for the premium rooms'
+   * low-volume hint and a test build's audio readout. Absent where the app
+   * has no reading of it.
+   */
+  audioOutput?: NativeAudioOutput
 }
 
 const [runControls, setRunControls] = createSignal<NativeRunControls | null>(

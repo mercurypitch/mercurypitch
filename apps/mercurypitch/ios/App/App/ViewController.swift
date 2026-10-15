@@ -8,5 +8,6 @@ import UIKit
 class ViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(LyricsWindowPlugin())
+        bridge?.registerPluginInstance(AudioOutputPlugin())
     }
 }

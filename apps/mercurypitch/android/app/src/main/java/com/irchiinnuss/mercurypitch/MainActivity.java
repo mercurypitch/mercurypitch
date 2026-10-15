@@ -37,6 +37,9 @@ import ee.forgr.capacitor.social.login.SocialLoginPlugin;
 // find it by itself: it is registered here, before the bridge starts. The
 // activity hears the two moments the plugin needs, leaving the app and the
 // window coming and going, and passes both on.
+//
+// And the phone's sound output (AudioOutputPlugin.java): the volume and the
+// route, for the premium rooms' low-volume hint. Registered the same way.
 public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
 
     private static final String TAG = "MainActivity";
@@ -44,6 +47,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(PictureInPicturePlugin.class);
+        registerPlugin(AudioOutputPlugin.class);
         super.onCreate(savedInstanceState);
     }
 
