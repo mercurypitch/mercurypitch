@@ -97,6 +97,13 @@ export interface WalkthroughStep {
    * against isNarrow(), so a tour started at either width shows the right run.
    */
   viewport?: 'mobile' | 'desktop'
+  /**
+   * A control some hosts leave out (the mixer's Open in Karaoke Night is
+   * not drawn in the native app, the Karaoke room or Karaoke Night itself).
+   * The step drops out of the tour when its target is not on the page as the
+   * tour starts, rather than showing its words about nothing.
+   */
+  whenPresent?: boolean
 }
 export interface WalkthroughSection {
   id: string
@@ -1438,6 +1445,15 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
   },
+  {
+    title: 'Karaoke Night',
+    description:
+      'Sing this song on the Karaoke Night stage, in the key you set here. It opens paused, where you left off.',
+    targetSelector: '[data-tour="mixer.karaoke-night"]',
+    placement: 'bottom',
+    requiredTab: TAB_KARAOKE,
+    whenPresent: true,
+  },
 ]
 
 const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
@@ -2123,8 +2139,14 @@ export function hasPageTour(tab: ActiveTab): boolean {
 /** Start an arbitrary spotlight tour from a list of steps (no-op if empty). */
 export function startTour(steps: WalkthroughStep[]): void {
   if (!TOURS_AVAILABLE) return
-  if (steps.length === 0) return
-  setTourSteps(steps)
+  const shown = steps.filter(
+    (step) =>
+      step.whenPresent !== true ||
+      (typeof document !== 'undefined' &&
+        document.querySelector(step.targetSelector) !== null),
+  )
+  if (shown.length === 0) return
+  setTourSteps(shown)
   setWalkthroughActive(true)
   setWalkthroughStep(0)
 }
