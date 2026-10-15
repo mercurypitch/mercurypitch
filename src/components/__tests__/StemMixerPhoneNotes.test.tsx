@@ -16,6 +16,11 @@
 // the real one so that each way it can end is chosen, and looks for the row
 // the way a thumb would. The device class is the one setting between a phone
 // that streams the song and a computer that decodes the whole of it.
+//
+// While the song is still loading there is no vocal to analyse on any device,
+// so the row waits for one. Find my key reads the same vocal: where the song
+// will be decoded it says the song is still loading, and where it streams it
+// gives its plain answer at once, since a second press would fare no better.
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -55,33 +60,45 @@ vi.mock('@/lib/device-tier', async (importOriginal) => ({
 }))
 
 // jsdom has no AudioDecoder, so the stream a phone would open is stood in for:
-// thirty seconds that nobody plays. Only a phone asks for it.
+// thirty seconds that nobody plays. Only a phone asks for it, and a stalled one
+// never opens, as for a song still loading.
+const streaming = vi.hoisted(() => ({ stalled: false }))
+
 vi.mock('@/features/stem-mixer/stem-streaming-load', () => ({
-  loadStreamedStem: async () => ({
-    stream: {
+  loadStreamedStem: async () => {
+    if (streaming.stalled) await new Promise(() => {})
+    return {
+      stream: {
+        sampleRate: 44100,
+        channelCount: 2,
+        durationSeconds: 30,
+        // eslint-disable-next-line require-yield
+        chunks: async function* () {
+          return
+        },
+        dispose: () => undefined,
+      },
+      displayBuffer: {
+        duration: 30,
+        length: 512,
+        numberOfChannels: 1,
+        sampleRate: 44100,
+        getChannelData: () => new Float32Array(512),
+        copyToChannel: () => undefined,
+      },
+      displaySampleRate: 44100,
+      durationSeconds: 30,
       sampleRate: 44100,
       channelCount: 2,
-      durationSeconds: 30,
-      // eslint-disable-next-line require-yield
-      chunks: async function* () {
-        return
-      },
-      dispose: () => undefined,
-    },
-    displayBuffer: {
-      duration: 30,
-      length: 512,
-      numberOfChannels: 1,
-      sampleRate: 44100,
-      getChannelData: () => new Float32Array(512),
-      copyToChannel: () => undefined,
-    },
-    displaySampleRate: 44100,
-    durationSeconds: 30,
-    sampleRate: 44100,
-    channelCount: 2,
-    displayBytes: 2048,
-  }),
+      displayBytes: 2048,
+    }
+  },
+}))
+
+// No measured range and no voice type picked: Find my key asks which voice.
+vi.mock('@/db/services/voiceprint-service', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  listVoiceprints: async () => [],
 }))
 
 // The analysis the notes row asks for: pending, or ended, as each test says.
@@ -124,6 +141,7 @@ import { resetNotifications } from '@/stores/notifications-store'
 
 beforeEach(() => {
   device.klass = 'desktop'
+  streaming.stalled = false
   toasts.shown = []
   pipeline.analyze.mockReset()
   resetNotifications()
@@ -318,5 +336,88 @@ describe('the mic, which asks for the notes on its own account', () => {
       expect(toasts.shown.join('\n')).toMatch(/noise cancelling/)
     })
     expect(pipeline.analyze).not.toHaveBeenCalled()
+  })
+})
+
+describe('while the song is still loading', () => {
+  afterEach(() => {
+    delete (AudioContext.prototype as { audioWorklet?: unknown }).audioWorklet
+  })
+
+  /** The mixer at phone width over stems that never finish loading. */
+  function mountLoading(): Promise<HTMLElement> {
+    streaming.stalled = true
+    vi.stubGlobal('fetch', (url: string) =>
+      String(url).startsWith('blob:')
+        ? new Promise(() => {}) // the stems never finish downloading
+        : Promise.resolve({ ok: true, status: 200, json: async () => [] }),
+    )
+    render(() => (
+      <StemMixer
+        stems={{ vocal: 'blob:vocal', instrumental: 'blob:instrumental' }}
+        sessionId="phone-notes-loading"
+        songTitle="Consent"
+      />
+    ))
+    return screen.findByTestId('karaoke-mobile-stage')
+  }
+
+  // jsdom has no AudioWorklet, and without one the key control is off. The
+  // song never leaves key 0 at 1x, which builds no engine, so empty
+  // stand-ins are enough to offer Find my key.
+  function offerFindMyKey(): void {
+    vi.stubGlobal('AudioWorkletNode', vi.fn())
+    Object.defineProperty(AudioContext.prototype, 'audioWorklet', {
+      configurable: true,
+      value: { addModule: async () => undefined },
+    })
+  }
+
+  /** Find my key from the stage's key sheet, a voice picked when it asks
+   *  for one: what the sheet then says. */
+  async function findMyKeyFromTheSheet(stage: HTMLElement): Promise<string> {
+    // The key button's name carries the key, which moves; its id does not.
+    fireEvent.click(within(stage).getByTestId('mobile-key-shift'))
+    const sheet = screen.getByRole('dialog', { name: 'Key' })
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Find my key' }))
+    const picker = await screen.findByRole('dialog', { name: /your voice/i })
+    fireEvent.click(within(picker).getByRole('button', { name: /^Tenor/ }))
+    return sheet.textContent ?? ''
+  }
+
+  // A tap on the row only toasted "No vocal stem loaded".
+  it('offers no notes row: there is no vocal to analyse yet', async () => {
+    const stage = await mountLoading()
+
+    const sheet = openMore(stage)
+
+    sheet.getByRole('switch', { name: 'Loop A to B' }) // the sheet is up
+    expect(sheet.queryByRole('switch', { name: NOTES_ROW })).toBeNull()
+  })
+
+  // It said the melody "cannot be found on this device", which was not so
+  // for a song that will be decoded.
+  it('has Find my key say the song is still loading, where it will be decoded', async () => {
+    offerFindMyKey()
+    const stage = await mountLoading()
+
+    const said = await findMyKeyFromTheSheet(stage)
+
+    expect(said).toContain(
+      'The song is still loading. Press Find my key again once it plays.',
+    )
+  })
+
+  it('has Find my key answer at once on a phone, which streams the song', async () => {
+    device.klass = 'mobile'
+    offerFindMyKey()
+    const stage = await mountLoading()
+
+    const said = await findMyKeyFromTheSheet(stage)
+
+    expect([
+      said.includes('still loading'),
+      said.includes('cannot be found on this device'),
+    ]).toEqual([false, true])
   })
 })

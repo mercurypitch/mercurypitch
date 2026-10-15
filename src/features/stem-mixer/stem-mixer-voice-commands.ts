@@ -258,6 +258,7 @@ export function createStemMixerVoiceCommands(
     if (result === 'detecting') return 'Finding the melody first'
     if (result === 'no-melody')
       return voiceFailure('The melody cannot be found on this device')
+    if (result === 'loading') return voiceFailure('The song is still loading')
     return formatKey(deps.keyShift())
   }
 

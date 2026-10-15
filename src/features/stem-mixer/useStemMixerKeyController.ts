@@ -56,6 +56,8 @@ import type { PitchAnalysisOutcome } from './useStemMixerPitchAnalysisController
  * 'reading-range': the stored range is still being read; the find follows.
  * 'detecting': the melody is being found first; the fit follows on its own.
  * 'no-melody': there is none and it cannot be detected here.
+ * 'loading': there is none yet, and the song is still loading; it may be
+ * found once the song has loaded.
  */
 export type FindMyKeyResult =
   | 'applied'
@@ -65,6 +67,7 @@ export type FindMyKeyResult =
   | 'reading-range'
   | 'detecting'
   | 'no-melody'
+  | 'loading'
 
 /** Every "find my key" notice goes here, so each one replaces the last. */
 export const FIND_MY_KEY_CHANNEL = 'stem-mixer-find-my-key'
@@ -140,6 +143,8 @@ function findNotice(result: FindMyKeyResult, keyShift: number): string | null {
     return 'Finding the melody first. This takes a moment.'
   if (result === 'no-melody')
     return "Find my key needs the song's melody, and it cannot be found on this device. Set the key with − and + instead."
+  if (result === 'loading')
+    return 'The song is still loading. Press Find my key again once it plays.'
   if (result === 'unchanged') return fitMessage('unchanged', keyShift)
   return null
 }
@@ -190,6 +195,11 @@ export interface StemMixerKeyDeps {
   ) => void
   /** Clears a channel: the wait, when the analysis has said why it failed. */
   dismiss?: (channel: string) => void
+  /**
+   * The song is still loading: no melody can be detected yet, though one
+   * may be once it has.
+   */
+  melodyLoading?: () => boolean
 }
 
 export function useStemMixerKeyController(
@@ -303,7 +313,8 @@ export function useStemMixerKeyController(
     if (fitted !== null) return fitted
     if (detecting) return 'detecting'
     const detection = deps.detectMelody?.() ?? null
-    if (detection === null) return 'no-melody'
+    if (detection === null)
+      return deps.melodyLoading?.() === true ? 'loading' : 'no-melody'
     detecting = true
     showFinding()
     detection.then(fitAfterDetection, () => {

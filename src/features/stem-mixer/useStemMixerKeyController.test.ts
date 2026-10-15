@@ -84,6 +84,8 @@ interface MountOptions {
   ) => Promise<PitchAnalysisOutcome> | null
   notify?: Notify
   dismiss?: (channel: string) => void
+  /** The song is still loading: its melody can be read once it has. */
+  melodyLoading?: () => boolean
 }
 
 const FOUND: PitchAnalysisOutcome = { ok: true }
@@ -133,6 +135,7 @@ function mount(
       detectMelody: detect === undefined ? undefined : () => detect(setMelody),
       notify: options.notify,
       dismiss: options.dismiss,
+      melodyLoading: options.melodyLoading,
     })
     return { controller, setSessionId, setMelody, dispose }
   })
@@ -531,6 +534,26 @@ describe('find my key', () => {
     expect(harness.controller.keyShift()).toBe(0)
   })
 
+  // Pressed while the song loads, the melody is not there yet, though it
+  // may well be found once the song has loaded: "cannot be found on this
+  // device" was not true.
+  it('says the song is still loading, and only once it has loaded that its melody cannot be found', () => {
+    const [loading, setLoading] = createSignal(true)
+    harness = mount(freshSong(), null, null, {
+      melody: [],
+      detectMelody: () => null,
+      melodyLoading: loading,
+    })
+
+    const whileLoading = harness.controller.applyVoiceType('alto')
+    setLoading(false)
+
+    expect([whileLoading, harness.controller.findMyKey()]).toEqual([
+      'loading',
+      'no-melody',
+    ])
+  })
+
   it('is finding while the melody is detected, and stops once it lands', async () => {
     let land: (outcome: PitchAnalysisOutcome) => void = () => {}
     harness = mount(freshSong(), null, null, {
@@ -876,6 +899,7 @@ describe('what the mixer shows', () => {
     const results: FindMyKeyResult[] = [
       'detecting',
       'no-melody',
+      'loading',
       'applied',
       'needs-range',
       'reading-range',
@@ -890,6 +914,10 @@ describe('what the mixer shows', () => {
       ['Finding the melody first. This takes a moment.', 'info'],
       [
         "Find my key needs the song's melody, and it cannot be found on this device. Set the key with − and + instead.",
+        'info',
+      ],
+      [
+        'The song is still loading. Press Find my key again once it plays.',
         'info',
       ],
     ])

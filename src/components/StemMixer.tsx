@@ -604,6 +604,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         : pitchAnalysis.runAnalysis({ quiet: true }),
     notify: findKeyNotices.notify,
     dismiss: findKeyNotices.dismiss,
+    // Only where the song is decoded: a streamed vocal is never analysed
+    // here, so "still loading" would promise a second press that fails.
+    melodyLoading: () => audio.loading() && !audio.streamsStems,
   })
 
   // ── Audio controller ─────────────────────────────────────────
@@ -2563,11 +2566,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // denoised pipeline once; the alignment (and the glyphs) follow reactively.
   //
   // The stage is handed this only while calling it would start an analysis. A
-  // streamed vocal cannot be analysed on this device (phones stream), and once
-  // the analysis has its notes there is nothing left to ask for: a song with no
-  // word segments has no notes to draw, and a tap would do nothing.
+  // streamed vocal cannot be analysed on this device (phones stream), nor can
+  // one still loading, and once the analysis has its notes there is nothing
+  // left to ask for: a song with no word segments has no notes to draw, and a
+  // tap would do nothing.
   const canFindZenNotes = (): boolean =>
-    !vocalIsStreamed() &&
+    analysableVocal() !== null &&
     pitchAnalysis.offlineSegmentedNotes().length === 0 &&
     pitchAnalysis.offlineMergedNotes().length === 0
   const ensureZenNotes = () => {
