@@ -206,3 +206,14 @@
     transition: none;
   }
 }
+
+/* The fixtures: nothing moves (LongNoteRoom's `still`). */
+.paused .sparkle,
+.paused .sparkle svg,
+.paused .dust {
+  animation: none;
+}
+
+.paused .halo {
+  transition: none;
+}

@@ -43,6 +43,7 @@ import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/Roo
 import { ResultCard, RoomBubble, RoomChip, RoomHeader, RoomTimer, } from '@/components/room-kit/RoomHeader'
 import { DEMO_COPY } from './demo/demo-cues'
 import { aimLongNoteTip } from './demo/tip-targets'
+import type { LongNoteDemo } from './demo/useLongNoteDemo'
 import { useLongNoteDemo } from './demo/useLongNoteDemo'
 import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
@@ -50,12 +51,34 @@ import { formatHoldSeconds } from './long-note-entry'
 import { LongNoteLevel } from './LongNoteLevel'
 import styles from './LongNoteRoom.module.css'
 import { BESIDE_X, createLayoutGlide, layoutStage, MERC_UNITS, } from './stage-layout'
+import type { LongNoteController } from './useLongNoteController'
 import { useLongNoteController } from './useLongNoteController'
 import { TRACE_PX_PER_CENT, VoiceTrace } from './VoiceTrace'
 
 export interface LongNoteRoomProps {
   /** Leave the room (Done). */
   onDone: () => void
+  /**
+   * The run, when it is not the room's own: the dev fixtures' pinned
+   * frames (fixture/LongNoteFixture.tsx). Read once. A room on another's
+   * run has no demo.
+   */
+  controller?: LongNoteController
+  /** No animation at all (the fixtures). */
+  still?: boolean
+  /** Every picture the room shows has decoded (the fixtures wait for it). */
+  onSettled?: () => void
+}
+
+/** Every image under `root` decoded (a failure counts: it will not get better). */
+async function imagesDecoded(root: HTMLElement): Promise<void> {
+  await Promise.all(
+    [...root.querySelectorAll('img')].map((img) =>
+      typeof img.decode === 'function'
+        ? img.decode().catch(() => undefined)
+        : Promise.resolve(),
+    ),
+  )
 }
 
 // ── Where things go, in lantern view-box units ─────────────────
@@ -79,15 +102,19 @@ const BOWL_FLOOR = CHIMNEY_BOTTOM - 4
 const TRACE_HEAD_X = 240
 
 export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
-  const room = useLongNoteController()
-  const demo = useLongNoteDemo(room)
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const own = props.controller === undefined
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const room = props.controller ?? useLongNoteController()
+  const demo: LongNoteDemo | null = own ? useLongNoteDemo(room) : null
+  const demoMode = (): string => demo?.mode() ?? 'idle'
   /** The demo has the room: its controls are out of reach. */
-  const demoBusy = (): boolean => demo.mode() !== 'idle'
+  const demoBusy = (): boolean => demoMode() !== 'idle'
   /**
    * The demo is singing a take: Merc's bubble and chip keep quiet, so the
    * take's pill and the tooltip speak one at a time.
    */
-  const demoTake = (): boolean => demo.take() !== null
+  const demoTake = (): boolean => (demo?.take() ?? null) !== null
   let stageEl: HTMLDivElement | undefined
   const [stageSize, setStageSize] = createSignal({ width: 0, height: 0 })
   // Centred while Merc floats in the glass, moved over for him beside it;
@@ -112,6 +139,10 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
     onCleanup(() => {
       observer.disconnect()
     })
+    if (props.onSettled !== undefined && rootEl !== undefined) {
+      // The lantern's plates are in the room from its first frame.
+      void imagesDecoded(rootEl).then(props.onSettled)
+    }
   })
 
   const phase = (): string => room.state().phase
@@ -209,7 +240,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
    * region), so the room keeps quiet while it runs.
    */
   const said = (): string => {
-    if (demo.mode() !== 'idle' || room.script.active()) return ''
+    if (demoBusy() || room.script.active()) return ''
     if (phase() === 'hold') return room.chip() ?? ''
     const summary = phase() === 'result' ? room.summary() : null
     if (summary === null) return room.line()
@@ -228,7 +259,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   let rootEl: HTMLDivElement | undefined
   const focus = createFocusHandoff()
   const mainControl = (): HTMLElement | null => {
-    const mode = demo.mode()
+    const mode = demoMode()
     // The demo's cards take focus themselves.
     if (mode === 'card' || mode === 'end') return null
     let id = 'long-note-mic'
@@ -239,7 +270,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
     return rootEl?.querySelector<HTMLElement>(`[data-testid="${id}"]`) ?? null
   }
   createEffect(
-    on([phase, demo.mode], () => focus.handOff(mainControl), { defer: true }),
+    on([phase, demoMode], () => focus.handOff(mainControl), { defer: true }),
   )
 
   /**
@@ -270,8 +301,9 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
     <div
       ref={rootEl}
       class={`${styles.room} mp-dark-stage`}
+      classList={{ [styles.still]: props.still === true }}
       data-phase={phase()}
-      data-demo={demo.mode()}
+      data-demo={demoMode()}
       data-testid="long-note-room"
       onFocusIn={(event) => focus.noteFocus(event)}
     >
@@ -280,7 +312,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           <Match when={phase() === 'hold'}>
             <RoomTimer testId="long-note-timer">
               {formatHoldSeconds(room.hold().inBandSeconds)}
-              <Show when={demo.fast()}>
+              <Show when={demo?.fast() === true}>
                 <span
                   class={styles.fast}
                   aria-hidden="true"
@@ -350,6 +382,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             level={room.lanternLevel}
             glow={room.lanternGlow}
             shine={room.shine}
+            paused={props.still}
           />
           {/* In the glass the line and the voice pass behind Merc. */}
           <VoiceTrace
@@ -369,6 +402,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             lantern={layout}
             active={tracing}
             muted={() => phase() === 'result'}
+            still={props.still}
           />
           {/* He celebrates beside the lantern: his stars go on his far side. */}
           <MercView
@@ -389,7 +423,8 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             glow={room.lanternGlow}
             shine={room.shine}
             // Reduced motion: the demo shows the full lantern unsparkled.
-            still={() => demo.still && room.script.active()}
+            still={() => demo?.still === true && room.script.active()}
+            paused={props.still}
           />
         </div>
         {/* Out of the glass they cross the lantern's frame in front. */}
@@ -403,24 +438,25 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           lantern={layout}
           active={tracing}
           muted={() => phase() === 'result'}
+          still={props.still}
         />
-        <Show when={demo.canAsk()}>
+        <Show when={demo?.canAsk() === true}>
           <LongNoteLevel class={styles.level} />
           <button
             type="button"
             class={styles.ask}
-            onClick={() => demo.ask()}
+            onClick={() => demo?.ask()}
             aria-label={DEMO_COPY.ask}
             data-testid="long-note-ask"
           >
             <HelpCircle size={22} />
           </button>
         </Show>
-        <Show when={demo.mode() === 'playing'}>
+        <Show when={demoMode() === 'playing'}>
           <button
             type="button"
             class={styles.skip}
-            onClick={() => demo.skip()}
+            onClick={() => demo?.skip()}
             data-testid="long-note-demo-skip"
           >
             {DEMO_COPY.skip}
@@ -431,7 +467,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
       <div
         class={styles.bottom}
         classList={{
-          [styles.bottomAway]: demo.mode() === 'card' || demo.mode() === 'end',
+          [styles.bottomAway]: demoMode() === 'card' || demoMode() === 'end',
         }}
         inert={demoBusy()}
       >
@@ -464,7 +500,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                 take pill stands in it while the demo sings. */}
             <Show when={room.script.active()}>
               <DemoTakePill
-                take={demo.take()}
+                take={demo?.take() ?? null}
                 copy={DEMO_COPY}
                 testId="long-note-demo-take"
               />
@@ -526,7 +562,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                 !room.script.active()
               }
               demo={room.script.active()}
-              pulse={demo.micPulse()}
+              pulse={demo?.micPulse() === true}
               disabled={phase() === 'starting'}
               label={micLabel()}
               onClick={() => {
@@ -541,14 +577,18 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
       <div class={styles.said} aria-live="polite" data-testid="long-note-said">
         {said()}
       </div>
-      <DemoLayer
-        demo={demo}
-        aim={(tip, layer) =>
-          aimLongNoteTip(tip.target, layer, room.lanternLevel())
-        }
-        copy={DEMO_COPY}
-        testId="long-note-demo"
-      />
+      <Show when={demo}>
+        {(d) => (
+          <DemoLayer
+            demo={d()}
+            aim={(tip, layer) =>
+              aimLongNoteTip(tip.target, layer, room.lanternLevel())
+            }
+            copy={DEMO_COPY}
+            testId="long-note-demo"
+          />
+        )}
+      </Show>
     </div>
   )
 }

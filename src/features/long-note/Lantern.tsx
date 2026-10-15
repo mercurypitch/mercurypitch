@@ -30,16 +30,18 @@
 // The plates never repaint while the light rises: each one sits in a window
 // that slides with the surface while the plate inside slides back the same
 // distance (two transforms), so only the cut moves.
+//
+// The plates are the room kit's (plate-loader.ts, long-note-art.ts): the tap
+// that opens the room starts decoding them, and the lantern adopts those
+// pictures.
 
 import type { JSX } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { For, onCleanup, Show } from 'solid-js'
+import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
 import styles from './Lantern.module.css'
-import frameUrl from './lantern-frame.webp'
-import frameLitUrl from './lantern-frame-lit.webp'
 import { CHIMNEY_BOTTOM, CHIMNEY_PATH, CHIMNEY_TOP, chimneyHalfWidth, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, } from './lantern-geometry'
-import glassUrl from './lantern-glass.webp'
-import liquidUrl from './lantern-liquid.webp'
-import starsUrl from './lantern-stars.webp'
+import type { LanternPlate } from './long-note-art'
+import { FRAME, FRAME_LIT, GLASS, LIQUID, STARS } from './long-note-art'
 
 export interface LanternProps {
   /** How full the liquid is, 0 to 1. */
@@ -53,54 +55,14 @@ export interface LanternProps {
   shine: () => number
   /** Reduced motion: the brim's sparkles and dust stay away. */
   still?: () => boolean
+  /**
+   * No animation at all (the fixtures): the sparkles and dust hold their
+   * first pose and the halo takes its strength at once.
+   */
+  paused?: boolean
 }
 
 const VIEW_BOX = `0 0 ${LANTERN_VIEW_W} ${LANTERN_VIEW_H}`
-
-/** A plate and its box in view-box units, as measured when it was cut. */
-interface Plate {
-  src: string
-  x: number
-  y: number
-  w: number
-  h: number
-}
-
-const FRAME: Plate = {
-  src: frameUrl,
-  x: 19.945,
-  y: 2.624,
-  w: 160.109,
-  h: 368.502,
-}
-const FRAME_LIT: Plate = {
-  src: frameLitUrl,
-  x: 19.695,
-  y: 2.874,
-  w: 160.61,
-  h: 368.252,
-}
-const GLASS: Plate = {
-  src: glassUrl,
-  x: 40.96,
-  y: 115.201,
-  w: 118.081,
-  h: 197.385,
-}
-const LIQUID: Plate = {
-  src: liquidUrl,
-  x: 40.96,
-  y: 115.201,
-  w: 118.081,
-  h: 197.385,
-}
-const STARS: Plate = {
-  src: starsUrl,
-  x: 49.465,
-  y: 115.451,
-  w: 101.069,
-  h: 182.625,
-}
 
 /**
  * How far above the surface its light reaches up the frame, in view units:
@@ -180,21 +142,21 @@ const haloShown = (level: number): number =>
 const surfaceShown = (level: number): number =>
   smoothstep(0, 0.03, level) * (1 - smoothstep(0.93, 1, level))
 
-function PlateImage(props: { plate: Plate }): JSX.Element {
-  return (
-    <img
-      class={styles.plate}
-      src={props.plate.src}
-      alt=""
-      draggable={false}
-      style={{
-        left: pct(props.plate.x, LANTERN_VIEW_W),
-        top: pct(props.plate.y, LANTERN_VIEW_H),
-        width: pct(props.plate.w, LANTERN_VIEW_W),
-        height: pct(props.plate.h, LANTERN_VIEW_H),
-      }}
-    />
-  )
+/**
+ * A plate in place: the picture the tap that opened the room started
+ * decoding (long-note-art.ts), or a fresh one. Let go when the lantern goes.
+ */
+function PlateImage(props: { plate: LanternPlate }): JSX.Element {
+  // eslint-disable-next-line solid/reactivity -- a plate never changes
+  const { spec, x, y, w, h } = props.plate
+  const plate = claimPlate(spec)
+  plate.img.className = styles.plate
+  plate.img.style.left = pct(x, LANTERN_VIEW_W)
+  plate.img.style.top = pct(y, LANTERN_VIEW_H)
+  plate.img.style.width = pct(w, LANTERN_VIEW_W)
+  plate.img.style.height = pct(h, LANTERN_VIEW_H)
+  onCleanup(() => releasePlate(plate))
+  return plate.picture
 }
 
 /**
@@ -246,7 +208,11 @@ export function LanternBack(props: LanternProps): JSX.Element {
   /** How lit the lantern is: the glow, or its shine when that is more. */
   const brightness = (): number => Math.max(props.glow(), props.shine())
   return (
-    <div class={styles.layer} data-testid="lantern-back">
+    <div
+      class={styles.layer}
+      classList={{ [styles.paused]: props.paused === true }}
+      data-testid="lantern-back"
+    >
       <div
         class={styles.floor}
         style={{ opacity: 0.75 + 0.25 * props.level() * brightness() }}
@@ -427,7 +393,11 @@ export function LanternFront(props: LanternProps): JSX.Element {
   const lit = (): number =>
     smoothstep(0, 0.1, props.level()) * (0.45 + 0.55 * brightness())
   return (
-    <div class={styles.layer} data-testid="lantern-front">
+    <div
+      class={styles.layer}
+      classList={{ [styles.paused]: props.paused === true }}
+      data-testid="lantern-front"
+    >
       <svg class={styles.layer} viewBox={VIEW_BOX} aria-hidden="true">
         <defs>
           <clipPath id={`${id}-chimney`}>

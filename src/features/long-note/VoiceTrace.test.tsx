@@ -227,3 +227,59 @@ describe('VoiceTrace', () => {
     expect(queue).toHaveLength(0)
   })
 })
+
+describe('VoiceTrace held still (the fixtures)', () => {
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  function stillTrace(muted: () => boolean): {
+    recorder: ReturnType<typeof recordingContext>
+    queue: FrameRequestCallback[]
+  } {
+    const queue: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      queue.push(cb)
+      return queue.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => undefined)
+    const recorder = recordingContext()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      recorder.ctx as never,
+    )
+    render(() => (
+      <VoiceTrace
+        trace={driftedTake()}
+        now={() => 4}
+        lineY={() => 200}
+        anchorX={() => 300}
+        lantern={() => ({ k: 1, left: 0, top: 0 })}
+        region="outside"
+        active={() => true}
+        muted={muted}
+        still
+      />
+    ))
+    return { recorder, queue }
+  }
+
+  it('draws one frame of a take and asks for no more', () => {
+    const { recorder, queue } = stillTrace(() => false)
+
+    expect(ribbonOf(recorder.strokes).length).toBeGreaterThan(0)
+    expect(queue).toHaveLength(0)
+  })
+
+  it('dims the line to cyan at once, with no easing frames', () => {
+    const { recorder, queue } = stillTrace(() => true)
+
+    const ribbon = ribbonOf(recorder.strokes)
+    expect(ribbon.length).toBeGreaterThan(0)
+    expect(
+      ribbon.some((stroke) => ribbonColours(stroke.stops).some((c) => c.amber)),
+    ).toBe(false)
+    expect(queue).toHaveLength(0)
+  })
+})

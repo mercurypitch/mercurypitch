@@ -15,7 +15,12 @@ import { installPremiumExercises } from './premium-exercise-wiring'
 import { pushed, pushedStack, resetRunShell } from './run-shell-store'
 
 const build = vi.hoisted(() => ({ premium: false }))
-const art = vi.hoisted(() => ({ preloads: 0, ng: 0, lip: 0 }))
+const art = vi.hoisted(() => ({ preloads: 0, ng: 0, lip: 0, long: 0 }))
+vi.mock('@/features/long-note/long-note-art', () => ({
+  preloadLongNoteArt: () => {
+    art.long += 1
+  },
+}))
 vi.mock('@/features/echo/echo-art', () => ({
   preloadEchoArt: () => {
     art.preloads += 1
@@ -43,6 +48,7 @@ beforeEach(() => {
   art.preloads = 0
   art.ng = 0
   art.lip = 0
+  art.long = 0
   setActiveTab(TAB_SINGING)
   resetRunShell()
 })
@@ -68,6 +74,20 @@ describe('the shell in a build with the premium exercises', () => {
 
     expect(pushed()).toBe('long-note')
     expect(pushedStack()).toEqual(['long-note'])
+  })
+
+  it('starts the lantern decoding on the tap that opens Long note', async () => {
+    build.premium = true
+    const api = installPremiumExercises()
+
+    api.openExercise?.('long-note-lantern')
+
+    await vi.waitFor(() => {
+      expect(art.long).toBe(1)
+    })
+    expect(art.preloads).toBe(0)
+    expect(art.lip).toBe(0)
+    expect(art.ng).toBe(0)
   })
 
   it('pushes Echo for its id, and starts its sky decoding on the same tap', async () => {
@@ -109,14 +129,16 @@ describe('the shell in a build with the premium exercises', () => {
     expect(art.preloads).toBe(0)
   })
 
-  it('starts no art for a room that has none to preload', async () => {
+  it("starts no other room's art", async () => {
     build.premium = true
     const api = installPremiumExercises()
 
-    api.openExercise?.('long-note-lantern')
-    await Promise.resolve()
+    api.openExercise?.('echo-stars')
+    await vi.waitFor(() => {
+      expect(art.preloads).toBe(1)
+    })
 
-    expect(art.preloads).toBe(0)
+    expect(art.long).toBe(0)
   })
 
   it('pushes it once, however often it is asked', () => {
