@@ -77,11 +77,31 @@ export interface WorkerReadyMessage {
   provider: string
 }
 
+/** The model is downloaded and the graphics card is being set up. */
+export interface WorkerGpuStartMessage {
+  type: 'gpu-start'
+}
+
+/** The GPU device was lost: a crashed or hung GPU process, a driver reset. */
+export interface WorkerGpuLostMessage {
+  type: 'gpu-lost'
+  message: string
+}
+
+/** The worker moved to another provider by itself, after a GPU error. */
+export interface WorkerProviderMessage {
+  type: 'provider'
+  provider: string
+}
+
 export type WorkerOutMessage =
   | WorkerProgressMessage
   | WorkerCompleteMessage
   | WorkerErrorMessage
   | WorkerReadyMessage
+  | WorkerGpuStartMessage
+  | WorkerGpuLostMessage
+  | WorkerProviderMessage
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -130,6 +150,42 @@ function assertWorkerActive(): void {
   if (destroying) {
     throw new DOMException('Vocal separator worker is closing', 'AbortError')
   }
+}
+
+let gpuWatched = false
+
+/**
+ * Hand ORT an adapter whose device reports its own loss. A GPU process that
+ * crashes or hangs mid-setup can leave ORT's promises unsettled for good, so
+ * the loss has to reach the main thread directly. False when the browser
+ * offers no adapter.
+ */
+async function watchGpuDevice(ortModule: typeof OrtModule): Promise<boolean> {
+  if (gpuWatched) return true
+  let adapter: GPUAdapter | null
+  try {
+    adapter = await navigator.gpu.requestAdapter()
+  } catch {
+    return false
+  }
+  if (adapter === null) return false
+
+  const requestDevice = adapter.requestDevice.bind(adapter)
+  adapter.requestDevice = async (descriptor?: GPUDeviceDescriptor) => {
+    const device = await requestDevice(descriptor)
+    void device.lost.then((info) => {
+      // 'destroyed' is our own release, not a failure.
+      if (info.reason === 'destroyed') return
+      postMessage({
+        type: 'gpu-lost',
+        message: info.message,
+      } satisfies WorkerOutMessage)
+    })
+    return device
+  }
+  ortModule.env.webgpu.adapter = adapter
+  gpuWatched = true
+  return true
 }
 
 async function loadModel(
@@ -186,6 +242,18 @@ async function loadModel(
     }
   }
 
+  if (activeProviders.includes('webgpu')) {
+    // From here the main thread holds the GPU to a time limit.
+    postMessage({ type: 'gpu-start' } satisfies WorkerOutMessage)
+    if (!(await watchGpuDevice(ort))) {
+      activeProviders = ['wasm']
+      postMessage({
+        type: 'provider',
+        provider: 'wasm',
+      } satisfies WorkerOutMessage)
+    }
+  }
+
   assertWorkerActive()
   await releaseActiveSession()
   assertWorkerActive()
@@ -205,6 +273,10 @@ async function loadModel(
         err,
       )
       activeProviders = ['wasm']
+      postMessage({
+        type: 'provider',
+        provider: 'wasm',
+      } satisfies WorkerOutMessage)
       session = await ort.InferenceSession.create(buffer, {
         executionProviders: activeProviders,
         freeDimensionOverrides: {
@@ -428,6 +500,10 @@ async function separate(
     } catch (err) {
       if (err instanceof Error && err.message === 'WEBGPU_CRASH') {
         // Fallback to wasm and retry the chunk
+        postMessage({
+          type: 'provider',
+          provider: 'wasm',
+        } satisfies WorkerOutMessage)
         await loadModel(currentModelPath)
         const { instrumental, vocals } = await processChunk(chunk)
         instrChunks.push(instrumental)
