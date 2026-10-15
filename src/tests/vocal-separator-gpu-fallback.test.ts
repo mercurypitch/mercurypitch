@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-type SeparatorModule = typeof import('@/lib/vocal-separator')
+import type * as SeparatorModule from '@/lib/vocal-separator'
 
 interface SentMessage {
   type: string
@@ -28,7 +27,7 @@ class MockWorker {
 const MODEL = '/models/vocals.onnx'
 const LOST = { type: 'gpu-lost', message: 'GPU connection lost' }
 
-let mod: SeparatorModule
+let mod: typeof SeparatorModule
 
 function initOf(worker: MockWorker | undefined): SentMessage | undefined {
   return worker?.postMessage.mock.calls.find(([m]) => m.type === 'init')?.[0]
@@ -140,7 +139,7 @@ describe('VocalSeparator when the graphics card stops answering', () => {
 
 describe('VocalSeparator when the device is lost mid-run', () => {
   async function readyOnGpu(): Promise<{
-    separator: InstanceType<SeparatorModule['VocalSeparator']>
+    separator: SeparatorModule.VocalSeparator
     gpuWorker: MockWorker
     notices: string[]
   }> {

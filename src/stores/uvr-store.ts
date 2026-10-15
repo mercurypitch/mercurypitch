@@ -25,6 +25,7 @@ import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcripti
 import { IS_DEV } from '@/lib/defaults'
 import { isExampleSession } from '@/lib/example-session'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { showNotification } from '@/stores/notifications-store'
 
 // ── UVR (Vocal Separation) ─────────────────────────────────────
 //
@@ -102,6 +103,12 @@ export type UvrModelStatus = 'unloaded' | 'loading' | 'ready' | 'error'
 export const [uvrModelStatus, setUvrModelStatus] =
   createSignal<UvrModelStatus>('unloaded')
 export const [uvrModelError, setUvrModelError] = createSignal('')
+
+/** Tells the user the local separator changed course, such as leaving a
+ *  graphics card that stopped answering for the CPU. */
+export function showUvrModelNotice(message: string): void {
+  showNotification(message, 'warning')
+}
 
 // ── UVR Session Management (Full Workflow) ─────────────────────────
 

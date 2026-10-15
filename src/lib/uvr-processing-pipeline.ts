@@ -6,9 +6,8 @@
 
 import { ensurePersistentStorage } from '@/db/persistent-storage'
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
-import { showNotification } from '@/stores/notifications-store'
 import type { UvrProcessingMode, UvrSession } from '@/stores/uvr-store'
-import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/uvr-store'
+import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionProvider, showUvrModelNotice, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/uvr-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import { audioDurationSecs } from './audio-duration'
 
@@ -52,7 +51,7 @@ async function getSeparator(): Promise<VocalSeparator> {
   let sep = separator
   if (sep === null) {
     sep = new VocalSeparator()
-    sep.onNotice = (message) => showNotification(message, 'warning')
+    sep.onNotice = (message) => showUvrModelNotice(message)
     separator = sep
   }
 
