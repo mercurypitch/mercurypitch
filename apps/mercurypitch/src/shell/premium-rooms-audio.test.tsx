@@ -20,7 +20,7 @@
 
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FakeMedia } from './fake-web-audio.test-fixtures'
+import type { FakeGainNode, FakeMedia } from './fake-web-audio.test-fixtures'
 import type { FakeNode } from './fake-web-audio.test-fixtures'
 import { FakeAudioContext, FakeSourceNode, installFakeMedia, } from './fake-web-audio.test-fixtures'
 
@@ -71,6 +71,8 @@ const { useLongNoteController } =
   await import('@/features/long-note/useLongNoteController')
 const { useLongNoteDemo } =
   await import('@/features/long-note/demo/useLongNoteDemo')
+const { ROOM_OUTPUT_GAIN, resetRoomOutputsForTests, roomOutputIfMade } =
+  await import('@/components/room-kit/room-output')
 const lipStore = await import('@/stores/lip-roll-store')
 const ngStore = await import('@/stores/ng-slides-store')
 const echoStore = await import('@/stores/echo-store')
@@ -101,6 +103,24 @@ function shared(): FakeAudioContext {
  * note's nodes are let go once it ends.
  */
 const peaks = new Map<FakeSourceNode, number>()
+/** Sounds with a way to the speakers that does not pass the room output. */
+const bypassed = new Set<FakeSourceNode>()
+
+/** Whether `node` reaches the speakers without passing through `avoid`. */
+function reachesAvoiding(
+  ctx: FakeAudioContext,
+  node: FakeNode,
+  avoid: unknown,
+  seen = new Set<FakeNode>(),
+): boolean {
+  if (node === avoid) return false
+  if (node === ctx.destination) return true
+  if (seen.has(node)) return false
+  seen.add(node)
+  return [...node.outputs].some((next) =>
+    reachesAvoiding(ctx, next, avoid, seen),
+  )
+}
 
 function profile(): void {
   for (const ctx of FakeAudioContext.made) {
@@ -108,6 +128,8 @@ function profile(): void {
       if (!(node instanceof FakeSourceNode) || peaks.has(node)) continue
       if (node.startAt === null || !ctx.reaches(node)) continue
       peaks.set(node, peakOf(ctx, node))
+      const output = roomOutputIfMade(ctx as unknown as BaseAudioContext)
+      if (reachesAvoiding(ctx, node, output)) bypassed.add(node)
     }
   }
 }
@@ -222,7 +244,28 @@ function expectSilentGraph(): void {
     for (const next of node.outputs) walk(next)
   }
   for (const source of armed) walk(source)
-  expect(ctx.gainsToDestination().filter((gain) => !fed.has(gain))).toEqual([])
+  // The room output stands between every room and the speakers: it may
+  // stay with nothing behind it, but only ever at rest.
+  const output = roomOutputIfMade(
+    ctx as unknown as BaseAudioContext,
+  ) as unknown as FakeGainNode | null
+  expect(
+    ctx
+      .gainsToDestination()
+      .filter((gain) => !fed.has(gain) && gain !== output),
+  ).toEqual([])
+  expectOutputAtRest()
+}
+
+/** The room output, if a room made one, at 1 now and for every time ahead. */
+function expectOutputAtRest(): void {
+  const ctx = shared()
+  const output = roomOutputIfMade(ctx as unknown as BaseAudioContext)
+  if (output === null) return
+  const gain = (output as unknown as FakeGainNode).gain
+  for (const ahead of [0, 1, 10, 100]) {
+    expect(gain.valueAt(ctx.currentTime + ahead)).toBe(ROOM_OUTPUT_GAIN)
+  }
 }
 
 let media: FakeMedia
@@ -240,6 +283,8 @@ beforeEach(async () => {
   })
   frames = []
   peaks.clear()
+  bypassed.clear()
+  resetRoomOutputsForTests()
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
     frames.push(callback)
     return frames.length
@@ -456,6 +501,30 @@ describe('H3: no gain is left turned down', () => {
       expect(loudestSince(from)).toBeCloseTo(fresh, 6)
       again.dispose()
       await run(1000)
+      expectSilentGraph()
+    },
+  )
+})
+
+describe('the room output', () => {
+  it.each(ROOMS)(
+    '%s: every sound, its demo too, goes to the speakers through it, at rest',
+    async (name) => {
+      const room = mount(name)
+      await run(100)
+      const from = mark()
+      room.start()
+      await run(2500)
+      room.stop()
+      await run(500)
+      room.ask()
+      await run(6000)
+      const sounded = sourcesSince(from).filter((source) => peaks.has(source))
+      expect(sounded.length).toBeGreaterThan(1)
+      expect(sounded.filter((source) => bypassed.has(source))).toEqual([])
+      expectOutputAtRest()
+      room.dispose()
+      await run(LINGER_MS + 500)
       expectSilentGraph()
     },
   )

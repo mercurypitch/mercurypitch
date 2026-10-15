@@ -3,6 +3,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { roomOutputIfMade } from '@/components/room-kit/room-output'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
 import type { CallSchedule, CallVoice } from './merc-call'
 import type { LoadedVoice, VoiceLoaderDeps } from './merc-sampler'
@@ -53,14 +54,18 @@ interface FakeSource {
 
 function fakeContext(now = 0) {
   const sources: FakeSource[] = []
-  const gains: { gain: Automation }[] = []
+  const gains: { gain: Automation; connections: unknown[] }[] = []
   const ctx = {
     currentTime: now,
     destination: {},
+    state: 'running',
     createGain: () => {
       const node = {
         gain: param(1),
-        connect: () => undefined,
+        connections: [] as unknown[],
+        connect: (to: unknown) => {
+          node.connections.push(to)
+        },
         disconnect: () => undefined,
       }
       gains.push(node)
@@ -262,6 +267,19 @@ describe('the sampled call voice', () => {
     // The seam's schedule: the onsets the notes land on, and the end.
     expect(schedule.onsets.map((t) => +t.toFixed(9))).toEqual([2, 2.9, 3.8])
     expect(schedule.endAt).toBeCloseTo(4.7, 9)
+  })
+
+  it("sings to the speakers through the rooms' output, as every room sound does", () => {
+    const { ctx, gains } = fakeContext()
+    samplerCall(() => voiceOf(), recordingFallback().voice).sing(
+      ctx,
+      BEGINNER,
+      2,
+    )
+    const output = roomOutputIfMade(ctx)
+    expect(output).not.toBeNull()
+    expect(gains[0].gain.value).toBe(SAMPLED_GAIN)
+    expect(gains[0].connections).toEqual([output])
   })
 
   it("moves each sample's start past the priming silence its decoder left", () => {

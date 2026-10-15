@@ -11,6 +11,7 @@
 // scheduled that far ahead, less the speaker's own latency, so it is heard
 // when the screen shows it.
 
+import { roomOutput } from '@/components/room-kit/room-output'
 import type { DemoSound, VoiceContourOptions } from '@/lib/demo-audio'
 import { flutterMakeup, playVoiceContour } from '@/lib/demo-audio'
 import { midiToFrequency } from '@/lib/frequency-to-note'
@@ -61,7 +62,7 @@ export function createDemoSoundtrack<Take extends SungDemoTake>(
   flutter?: VoiceContourOptions['flutter'],
 ): DemoSoundtrack<Take> {
   const bus = ctx.createGain()
-  bus.connect(ctx.destination)
+  bus.connect(roomOutput(ctx))
   let voiceOut: AudioNode = bus
   if (flutter !== undefined) {
     const makeup = ctx.createGain()

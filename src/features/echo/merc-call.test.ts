@@ -12,6 +12,12 @@ const played = vi.hoisted(() => ({
   stops: 0,
 }))
 
+// The rooms' one way to the speakers (room-kit/room-output.ts).
+const ROOM_OUTPUT = vi.hoisted(() => ({ kind: 'room output' }))
+vi.mock('@/components/room-kit/room-output', () => ({
+  roomOutput: () => ROOM_OUTPUT,
+}))
+
 vi.mock('@/lib/demo-audio', () => ({
   playVoiceContour: (_ctx: unknown, points: unknown, options: unknown) => {
     played.calls.push({ points, options })
@@ -49,14 +55,18 @@ describe("Merc's call", () => {
     expect(callTimes(overlapping, 1).endAt).toBe(3)
   })
 
-  it('sings the phrase as the synth line, from its first note, at the start asked for', () => {
+  it('sings the phrase as the synth line, from its first note, at the start asked for, through the room output', () => {
     played.calls = []
     const schedule = SYNTH_CALL.sing(ctx, notes, 4.2)
 
     expect(played.calls).toEqual([
       {
         points: phraseToVoicePoints({ notes }, 57),
-        options: { hz: midiToFrequency(57), startAt: 4.2 },
+        options: {
+          hz: midiToFrequency(57),
+          startAt: 4.2,
+          destination: ROOM_OUTPUT,
+        },
       },
     ])
     expect(schedule.onsets.map((t) => +t.toFixed(9))).toEqual([4.2, 4.85, 5.5])

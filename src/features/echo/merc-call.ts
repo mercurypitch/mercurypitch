@@ -16,6 +16,7 @@
 // that clock (the rings appear on the onsets, and the response opens
 // after the end), and a stop.
 
+import { roomOutput } from '@/components/room-kit/room-output'
 import { playVoiceContour } from '@/lib/demo-audio'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { phraseToVoicePoints } from '@/lib/sequence/phrase-voice'
@@ -65,7 +66,7 @@ export const SYNTH_CALL: CallVoice = {
     const sound = playVoiceContour(
       ctx,
       phraseToVoicePoints({ notes }, refMidi),
-      { hz: midiToFrequency(refMidi), startAt },
+      { hz: midiToFrequency(refMidi), startAt, destination: roomOutput(ctx) },
     )
     return { ...times, stop: () => sound.stop() }
   },

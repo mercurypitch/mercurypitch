@@ -44,6 +44,7 @@
 // moves that file's timing by the silence it finds, so the onsets hold.
 
 import { fetchAssetRead } from '@irchiinnuss/mobile-runtime/asset-fetch'
+import { roomOutput } from '@/components/room-kit/room-output'
 import type { AudioReport } from '@/lib/audio-diagnostics'
 import { audioReporter } from '@/lib/audio-diagnostics'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
@@ -326,7 +327,7 @@ export function samplerCall(
 
       const master = ctx.createGain()
       master.gain.value = gain
-      master.connect(ctx.destination)
+      master.connect(roomOutput(ctx))
       const sources: { node: AudioBufferSourceNode; stopAt: number }[] = []
       let playing = plan.notes.length
       for (const note of plan.notes) {
