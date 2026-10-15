@@ -12,6 +12,13 @@ export const HEADER_FOLD_PX = 600
 /** A finger's 44 px controls fold them sooner. */
 export const HEADER_FOLD_COARSE_PX = 1000
 
+/**
+ * Below this many px of header the buttons drop their words and keep their
+ * icons. MixerHeader.module.css holds the rule (a touch screen never shows
+ * the words); this is its twin for the tests.
+ */
+export const HEADER_WORDS_PX = 1000
+
 /** True when the view controls belong in the View menu at this width. */
 export function headerFolds(headerWidthPx: number, coarse: boolean): boolean {
   // Not measured yet (jsdom, or before the first layout): nothing folds.

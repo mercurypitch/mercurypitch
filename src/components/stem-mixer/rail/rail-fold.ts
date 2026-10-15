@@ -17,6 +17,15 @@ export const SPEED_FOLD_PX = 860
 /** On a coarse pointer the controls line keeps Speed down to this width. */
 export const SPEED_FOLD_COARSE_PX = 640
 
+/**
+ * Below this many px of rail, on a mouse, the timeline takes its own line
+ * under the controls. MixerRail.module.css holds the rule; this number is
+ * its twin for the tests (fold-thresholds.contract.test.ts keeps them equal).
+ */
+export const TIMELINE_OWN_LINE_PX = 650
+/** On a coarse pointer, where the controls are 44 px. */
+export const TIMELINE_OWN_LINE_COARSE_PX = 1000
+
 /** True when Speed belongs in More at this rail width. */
 export function speedFolds(railWidthPx: number, coarse: boolean): boolean {
   // Not measured yet (jsdom, or before the first layout): keep the chip.
