@@ -282,6 +282,38 @@ describe('the A/B loop', () => {
     ])
   })
 
+  // A button rebuilt under the finger drops focus to the page, and a screen
+  // reader or keyboard user has to find their place in the sheet again.
+  it('places each point and keeps the same button, with the focus on it', () => {
+    const { setPlayhead } = mountSheet()
+    const setA = button('Set A')
+    const setB = button('Set B')
+    const shown = (point: 'a' | 'b') =>
+      screen.getByTestId(`karaoke-more-point-${point}`).textContent
+
+    setA.focus()
+    setPlayhead(3)
+    fireEvent.click(setA)
+    const afterA = [
+      shown('a'),
+      button('Set A') === setA,
+      document.activeElement === setA,
+    ]
+    setB.focus()
+    setPlayhead(8)
+    fireEvent.click(setB)
+    const afterB = [
+      shown('b'),
+      button('Set B') === setB,
+      document.activeElement === setB,
+    ]
+
+    expect([afterA, afterB]).toEqual([
+      ['0:03.0', true, true],
+      ['0:08.0', true, true],
+    ])
+  })
+
   it('turns the loop off and on with the switch once it is ready', () => {
     const { setPlayhead, loopOn } = mountSheet()
     setPlayhead(2)
