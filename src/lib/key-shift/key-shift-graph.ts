@@ -21,7 +21,8 @@
 //
 // De-click. A re-route while playing ramps the output to 0 over 15 ms,
 // switches, holds it silent for the shifter latency, then ramps back over
-// 15 ms. The hold matters even when paused: a worklet that was disconnected
+// 15 ms. Just after a pause the song is still heard (the stems' fade, then
+// the shifter's latency), so a re-route then dips too. The hold matters even when paused: a worklet that was disconnected
 // may not have been pulled since (browsers differ) and can still hold its
 // last L seconds of old audio, which would otherwise come out first. A guide
 // vocal that returns is held the same way on its own bus gain, so the rest
@@ -69,6 +70,12 @@ export interface KeyShiftGraphOptions {
 }
 
 const DIP_SEC = 0.015
+/**
+ * How long the stems take to fall silent after a pause, upstream of the
+ * shifter: their 50 ms fade and its slack (useStemMixerAudioController),
+ * rounded up. The shifter's latency comes on top.
+ */
+const STOP_TAIL_SEC = 0.1
 // setTimeout runs on the main thread's clock, not the audio clock.
 const SWITCH_SLACK_MS = 10
 const MAX_DELAY_SEC = 1
@@ -131,6 +138,12 @@ export function createKeyShiftGraph(
   }
   let chain: Promise<void> = Promise.resolve()
   const sleepers = new Set<Sleeper>()
+  // Until when a song that stopped is still heard: its stems fade after the
+  // pause, and the shifter plays on for its latency after them. A re-route
+  // before then still dips, as it does while playing.
+  let soundingUntil = 0
+  const sounding = (state: KeyShiftState): boolean =>
+    state.playing || ctx.currentTime < soundingUntil
 
   function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -269,7 +282,8 @@ export function createKeyShiftGraph(
     const set = shifters
     if (next.shifted && set !== null) {
       setSemitones(set, next.semitones)
-      if (next.drums.path === 'own') drumShifter?.setSemitones(next.drums.semitones)
+      if (next.drums.path === 'own')
+        drumShifter?.setSemitones(next.drums.semitones)
       setShiftedEdges(true, set)
       setDrumEdges(next.drums.path, set)
       setVocalEdges(next.vocal, set)
@@ -439,6 +453,7 @@ export function createKeyShiftGraph(
     }
     // Re-read: requests that arrived while the engine loaded win.
     const want = desired
+    const heard = sounding(want)
     const next: Route =
       wantsShift(want) && shifters !== null
         ? {
@@ -448,7 +463,7 @@ export function createKeyShiftGraph(
             drums: drumRouteFor(want),
           }
         : { shifted: false }
-    await transition(next, want.playing)
+    await transition(next, heard)
   }
 
   return {
@@ -458,6 +473,11 @@ export function createKeyShiftGraph(
       return pitchedIn
     },
     apply(state) {
+      if (desired.playing && !state.playing) {
+        const latency =
+          route.shifted && shifters !== null ? shifters.latencySec : 0
+        soundingUntil = ctx.currentTime + STOP_TAIL_SEC + latency
+      }
       desired = state
       const run = chain.then(step).catch((error: unknown) => {
         fail(error)

@@ -305,6 +305,39 @@ describe('stem key graph', () => {
     expect(output().gain.settled()).toBe(1)
   })
 
+  // A pause fades the stems upstream of the shifter, which plays on for its
+  // latency after them. A re-route in that tail (the key back to 0 straight
+  // after Pause, or a playlist's next entry) cut the tail off at its level.
+  it('still dips a re-route that comes straight after a pause', async () => {
+    await graph.apply({ semitones: 2, vocalAudible: true, playing: true })
+    await graph.apply(still(2))
+    vi.useFakeTimers()
+
+    const applied = graph.apply(still(0))
+    await vi.advanceTimersByTimeAsync(0)
+    // Still shifted while the gain ramps down.
+    expect(bus('pitched').outputs.has(output())).toBe(false)
+    expect(output().gain.events.at(-1)).toEqual(['ramp', 0, 10.015])
+
+    ctx.currentTime = 10.03
+    await vi.advanceTimersByTimeAsync(30)
+    await applied
+
+    expect(bus('pitched').outputs).toEqual(new Set([output()]))
+    expect(output().gain.settled()).toBe(1)
+  })
+
+  it('re-routes at once once the pause has played out', async () => {
+    await graph.apply({ semitones: 2, vocalAudible: true, playing: true })
+    await graph.apply(still(2))
+    ctx.currentTime = 11
+
+    await graph.apply(still(0))
+
+    expect(bus('pitched').outputs).toEqual(new Set([output()]))
+    expect(output().gain.events).not.toContainEqual(['ramp', 0, 11.015])
+  })
+
   it('holds a returning guide vocal silent until the shifter has flushed', async () => {
     await graph.apply(still(2, false))
     ctx.currentTime = 20
