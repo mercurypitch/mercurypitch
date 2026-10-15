@@ -17,7 +17,7 @@
 // handed back what it got. Once the screen is gone, `acquire` opens nothing
 // at all.
 //
-// As the mic opens, the pitch detector's code is warmed in short tasks
+// As the room mounts, the pitch detector's code is warmed in idle time
 // (lib/pitch-detector-warmup.ts), so the take's first voiced frame does not
 // pay for compiling it: 45-52 ms of script at 4x CPU before.
 
@@ -78,8 +78,8 @@ export function useExerciseCapture(
   const lease = untrack(nativeDeviceApi)?.acquireAudio(owner)
   let ownContext: AudioContext | null = null
   let f0: F0Stream | null = null
-  /** Stops the detector's warm-up, while it runs. */
-  let stopWarm: (() => void) | null = null
+  /** The detector's warm-up, in idle time from the room's mount. */
+  const stopWarm = warmPitchDetector()
   /** The acquisition in flight, and the release count it began under. */
   let acquiring: { generation: number; done: Promise<void> } | null = null
   let generation = 0
@@ -104,8 +104,6 @@ export function useExerciseCapture(
 
   const release = (): void => {
     generation += 1
-    stopWarm?.()
-    stopWarm = null
     f0?.dispose()
     f0 = null
     micManager.release(owner)
@@ -144,11 +142,11 @@ export function useExerciseCapture(
       micManager.release(owner)
       throw new CaptureError('unavailable', room)
     }
-    stopWarm = warmPitchDetector()
   }
 
   onCleanup(() => {
     disposed = true
+    stopWarm()
     release()
     lease?.release()
     if (ownContext !== null) {

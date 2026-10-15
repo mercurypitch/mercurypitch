@@ -12,10 +12,12 @@
 // chain on the first voiced frames: 45-54 ms of script in that frame at 4x
 // CPU, then frames of about 20 ms, in Lip roll and Ng slides.
 //
-// So a room warms the pass as its capture opens (useExerciseCapture.ts), in
-// the count-in, before anyone sings: throwaway detectors, with the
-// stream's settings, run it over a few synthetic buffers, a few passes a
-// task, in two stages. First 96-sample buffers at 9600 Hz (a 48-lag pass,
+// So a room warms the pass as it mounts (useExerciseCapture.ts), in idle
+// time, long before anyone sings: throwaway detectors, with the stream's
+// settings, run it over a few synthetic buffers, two passes an idle
+// callback, in two stages. Warming in the count-in instead (as the mic
+// opened) left frames of the run a hair slower: one 33 ms frame in Lip
+// roll's waves in 13 of 20 runs, against none without it (2026-10-15). First 96-sample buffers at 9600 Hz (a 48-lag pass,
 // about 1/450 of a real one): small enough that every step of the pass
 // runs many times before the engine compiles any of it, so the compiled
 // code has seen every step. A first pass big enough to be compiled part
@@ -32,8 +34,11 @@
 import { F0_DETECTOR_OPTIONS } from '@/lib/f0-detector-options'
 import { PitchDetector } from '@/lib/pitch-detector'
 
-/** Passes a task. */
-export const WARM_PASSES_PER_TASK = 4
+/** Passes an idle callback. */
+export const WARM_PASSES_PER_TASK = 2
+
+/** The longest a pass waits for idle time before it runs anyway, ms. */
+export const WARM_IDLE_TIMEOUT_MS = 2000
 
 /** One stage: its buffers' size and rate, and how many passes it runs. */
 interface WarmStage {
@@ -108,8 +113,18 @@ function warmBuffers(stage: WarmStage): Float32Array[] {
   ]
 }
 
+/** Run `task` in idle time, or after a timer where there is no idle callback. */
+function whenIdle(task: () => void): () => void {
+  if (typeof requestIdleCallback === 'function') {
+    const id = requestIdleCallback(task, { timeout: WARM_IDLE_TIMEOUT_MS })
+    return () => cancelIdleCallback(id)
+  }
+  const id = setTimeout(task, 0)
+  return () => clearTimeout(id)
+}
+
 /**
- * Warm the detector's code in short tasks from now on. Returns a stop for
+ * Warm the detector's code in idle time from now on. Returns a stop for
  * the passes not yet run.
  */
 export function warmPitchDetector(): () => void {
@@ -124,9 +139,9 @@ export function warmPitchDetector(): () => void {
   }))
   let stageAt = 0
   let run = 0
-  let timer: ReturnType<typeof setTimeout> | null = null
+  let cancel: (() => void) | null = null
   const task = (): void => {
-    timer = null
+    cancel = null
     for (let i = 0; i < WARM_PASSES_PER_TASK; i++) {
       const stage = stages[stageAt]
       if (stage === undefined) return
@@ -139,11 +154,11 @@ export function warmPitchDetector(): () => void {
         run = 0
       }
     }
-    if (stageAt < stages.length) timer = setTimeout(task, 0)
+    if (stageAt < stages.length) cancel = whenIdle(task)
   }
-  timer = setTimeout(task, 0)
+  cancel = whenIdle(task)
   return () => {
-    if (timer !== null) clearTimeout(timer)
-    timer = null
+    cancel?.()
+    cancel = null
   }
 }

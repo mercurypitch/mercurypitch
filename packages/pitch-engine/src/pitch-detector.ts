@@ -96,8 +96,9 @@ export class PitchDetector {
   private readonly yinBuffer: Float32Array
   /**
    * The stability filter's recent readings. A list of doubles from the
-   * start (made with one and emptied in the constructor): an empty `[]`
-   * would change kind on the first reading it keeps, and V8's compiled
+   * start (made with one and emptied in the constructor) and for good:
+   * it is only ever emptied and refilled in place, never replaced. An
+   * empty `[]` would change kind on the first reading it keeps, and V8's compiled
    * YIN pass drops back out to the interpreter for that change, in the
    * middle of a take's first voiced frame (2026-10-15; see the app's
    * src/lib/pitch-detector-warmup.ts). Its contents are the same either way.
@@ -686,8 +687,12 @@ export class PitchDetector {
       const oldSorted = [...oldValues].sort((a, b) => a - b)
       const oldMedian = oldSorted[Math.floor(oldSorted.length / 2)]!
       if (Math.abs(newest - oldMedian) / oldMedian > 0.15) {
-        // Confirmed note change — flush history to new frequency
-        this.pitchHistory = [newest, secondNewest]
+        // Confirmed note change — flush history to new frequency. Refilled
+        // in place, not replaced with a literal: a literal of two whole
+        // numbers would be a list of small integers again (the field's
+        // comment above).
+        this.pitchHistory.length = 0
+        this.pitchHistory.push(newest, secondNewest)
         return frequency
       }
     }

@@ -4,8 +4,8 @@
 //
 // The first voiced frame of a take used to compile the pitch detector's
 // YIN pass in the middle of a screen frame (45-54 ms of script at 4x CPU,
-// lib/pitch-detector-warmup.ts). The capture warms it as the mic opens,
-// in the count-in, and stops warming when the mic is handed back.
+// lib/pitch-detector-warmup.ts). The capture warms it in idle time from
+// the room's mount, and stops warming when the room leaves.
 
 import { createRoot } from 'solid-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -65,41 +65,31 @@ describe('useExerciseCapture warms the pitch detector', () => {
     warm.warmPitchDetector.mockReset().mockReturnValue(warm.stop)
   })
 
-  it('as the mic opens, after the pitch stream, before the first take', async () => {
-    const { capture, dispose } = mount()
-    expect(warm.warmPitchDetector).not.toHaveBeenCalled()
+  it('as the room mounts, long before the mic opens', () => {
+    const { dispose } = mount()
 
+    expect(warm.warmPitchDetector).toHaveBeenCalledOnce()
+    expect(mic.acquire).not.toHaveBeenCalled()
+    expect(pitch.createF0Stream).not.toHaveBeenCalled()
+    dispose()
+  })
+
+  it('once a visit, whatever the mic does', async () => {
+    const { capture, dispose } = mount()
+    await capture.acquire()
+    capture.release()
     await capture.acquire()
 
     expect(warm.warmPitchDetector).toHaveBeenCalledOnce()
-    expect(warm.warmPitchDetector.mock.invocationCallOrder[0]).toBeGreaterThan(
-      pitch.createF0Stream.mock.invocationCallOrder[0] ?? 0,
-    )
+    expect(warm.stop).not.toHaveBeenCalled()
     dispose()
   })
 
-  it('and stops warming when the mic is handed back', async () => {
-    const { capture, dispose } = mount()
-    await capture.acquire()
-    expect(warm.stop).not.toHaveBeenCalled()
+  it('and stops warming when the room leaves', () => {
+    const { dispose } = mount()
 
-    capture.release()
+    dispose()
 
     expect(warm.stop).toHaveBeenCalledOnce()
-    dispose()
-  })
-
-  it('not at all when the pitch stream cannot start', async () => {
-    pitch.createF0Stream.mockImplementation(() => {
-      throw new Error('no worklet')
-    })
-    const { capture, dispose } = mount()
-
-    await expect(capture.acquire()).rejects.toMatchObject({
-      failure: 'unavailable',
-    })
-
-    expect(warm.warmPitchDetector).not.toHaveBeenCalled()
-    dispose()
   })
 })

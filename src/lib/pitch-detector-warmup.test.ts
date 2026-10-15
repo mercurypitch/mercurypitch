@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { F0_DETECTOR_OPTIONS } from './f0-detector-options'
 import type { DetectedPitch } from './pitch-detector'
 import { PitchDetector } from './pitch-detector'
-import { WARM_PASSES, WARM_PASSES_PER_TASK, warmPitchDetector, } from './pitch-detector-warmup'
+import { WARM_IDLE_TIMEOUT_MS, WARM_PASSES, WARM_PASSES_PER_TASK, warmPitchDetector, } from './pitch-detector-warmup'
 
 const RATE = 48000
 const SIZE = 2048
@@ -57,7 +57,7 @@ describe('the pitch detector warm-up', () => {
     vi.restoreAllMocks()
   })
 
-  it('runs its passes in short tasks after the tap, none inside it', () => {
+  it('runs its passes in short tasks after its call, none inside it', () => {
     const detect = vi.spyOn(PitchDetector.prototype, 'detect')
 
     warmPitchDetector()
@@ -97,6 +97,29 @@ describe('the pitch detector warm-up', () => {
     vi.runAllTimers()
 
     expect(detect).toHaveBeenCalledTimes(WARM_PASSES_PER_TASK)
+  })
+
+  it('waits for idle time, two passes a callback, where the browser has it', () => {
+    const idle: { task: () => void; timeout: number | undefined }[] = []
+    vi.stubGlobal(
+      'requestIdleCallback',
+      (task: () => void, options?: { timeout?: number }) =>
+        idle.push({ task, timeout: options?.timeout }),
+    )
+    vi.stubGlobal('cancelIdleCallback', () => undefined)
+    const detect = vi.spyOn(PitchDetector.prototype, 'detect')
+
+    warmPitchDetector()
+    expect(idle).toHaveLength(1)
+    expect(idle[0]?.timeout).toBe(WARM_IDLE_TIMEOUT_MS)
+    expect(detect).not.toHaveBeenCalled()
+
+    for (let i = 0; i < idle.length; i++) idle[i]?.task()
+
+    expect(WARM_PASSES_PER_TASK).toBe(2)
+    expect(idle).toHaveLength(WARM_PASSES / WARM_PASSES_PER_TASK)
+    expect(detect).toHaveBeenCalledTimes(WARM_PASSES)
+    vi.unstubAllGlobals()
   })
 
   it("leaves a stream's detector answering exactly as before", () => {
