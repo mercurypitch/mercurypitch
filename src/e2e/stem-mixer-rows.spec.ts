@@ -5,7 +5,7 @@
 // The header and the playback rail as approved in the rail redesign of
 // 15 October: one header row and one glass bar, 28 px controls on a mouse
 // and 44 px under a finger, chips of a fixed width, and folds by each row's
-// own width. At seven windows, five on a mouse and two on a touch screen,
+// own width. At eight windows, five on a mouse and three on a touch screen,
 // this checks what only a browser can: both rows' heights and control
 // sizes, the timeline's room, that no control runs past the window or over
 // another, where Speed and the view controls fold, that no control moves
@@ -39,6 +39,8 @@ const MOUSE: readonly Size[] = [
 const TOUCH: readonly Size[] = [
   { width: 1024, height: 768 },
   { width: 962, height: 601 },
+  // An Android tablet held sideways.
+  { width: 1280, height: 800 },
 ]
 
 /** The approved sizes, in px: a mouse's and a finger's. */
