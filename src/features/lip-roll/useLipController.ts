@@ -22,8 +22,13 @@
 // the window's, less the count-in. One loop a screen frame while the run
 // is on: it hears the new frames (once each, on their own clock), then
 // hands the bay its frame (bay-view.ts) with no signal written unless the
-// chip, the line or Merc's state changed. Ng slides' controller, before
-// its demo, on the bay.
+// chip, the line or Merc's state changed. Ng slides' controller, on the
+// bay.
+//
+// The "how it works" demo buzzes its waves through this same room, by
+// `script` (scripted-take.ts): frames in place of the mic, on the take's
+// own clock, and nothing played, felt, said or kept. Its camera may stand
+// still while the voice rides on (the take's `hold`).
 
 import type { Accessor } from 'solid-js'
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
@@ -55,9 +60,9 @@ import { vocalRangePreset } from '@/stores/settings-store'
 import { preloadLipResult } from './bay-art'
 import { WAVE } from './bay-geometry'
 import type { RideMoment } from './bay-ride'
-import { introHum, RIDE_STATES, rideStep, rideTarget, rideX } from './bay-ride'
+import { introHum, RIDE_STATES, rideStep, rideTarget, rideXOn, } from './bay-ride'
 import type { BayScroll } from './bay-scroll'
-import { createBayScroll, INTRO_CAMERA } from './bay-scroll'
+import { createBayScroll, holdCamera, INTRO_CAMERA } from './bay-scroll'
 import type { BayView } from './bay-view'
 import type { LipEvent, LipState } from './lip-machine'
 import { initialLipState, isRunPhase, lipReducer } from './lip-machine'
@@ -65,8 +70,11 @@ import type { LipPlan, LipSummary, WaveHeard } from './lip-run'
 import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC, introLine, keepLipRun, planLipRun, resultLine, summarize, waveLine, } from './lip-run'
 import type { LipTake } from './lip-take'
 import { createLipTake } from './lip-take'
+import type { MercSpot } from './merc-ahead'
+import { mercAheadOf } from './merc-ahead'
 import type { LipFields, LipMoment } from './merc-lines'
 import { createLipLines } from './merc-lines'
+import type { LipScript, ScriptedLipTake } from './scripted-take'
 import { CaptureError, useLipCapture } from './useLipCapture'
 
 /** Nobody sang for this long during a run: it stops, the mic closes. */
@@ -111,6 +119,13 @@ export interface LipController {
   stop: () => void
   /** The scene the run draws on. */
   attach: (view: BayView) => void
+  /** The demo's way in: its waves buzzed through this room. */
+  script: LipScript
+  /**
+   * Where Merc will ride over the next `seconds` of the demo's take,
+   * sampled; empty outside a take (the demo's tooltips stay clear of it).
+   */
+  mercAhead: (seconds: number) => readonly MercSpot[]
 }
 
 /** The run in progress: its plan, scroll, take and what it has played. */
@@ -128,6 +143,8 @@ interface Live {
   resultAsked: boolean
   /** The last wave whose start hushed Merc (-1 before the first). */
   hushed: number
+  /** The demo's take in place of the mic, or null for the singer's run. */
+  readonly scripted: ScriptedLipTake | null
 }
 
 export function useLipController(): LipController {
@@ -141,6 +158,10 @@ export function useLipController(): LipController {
   const [chip, setChip] = createSignal<string | null>(null)
   const [summary, setSummary] = createSignal<LipSummary | null>(null)
   const [showResult, setShowResult] = createSignal(false)
+  // The demo: on, and playing (the screen stays on only while it plays).
+  const [scriptActive, setScriptActive] = createSignal(false)
+  const [demoPlaying, setDemoPlaying] = createSignal(false)
+  const demoOn = (): boolean => untrack(scriptActive)
   const level = createLevelPreset<GlidePreset>(LIP_ROLL_LEVELS, () =>
     isRunPhase(state().phase),
   )
@@ -236,9 +257,10 @@ export function useLipController(): LipController {
 
   const onWaveEnd = (run: Live, heard: WaveHeard): void => {
     if (heard.lit) {
-      haptics.tapLight()
+      if (run.scripted === null) haptics.tapLight()
       faceUntil = performance.now() + LOCK_FACE_MS
     }
+    if (run.scripted !== null) return
     const waves = run.plan.path.arches
     const next = waves[heard.wave + 1] as (typeof waves)[number] | undefined
     if (next === undefined) return
@@ -288,6 +310,7 @@ export function useLipController(): LipController {
   /** The breath's tone: the next root, once, where the level plays it. */
   const breathTone = (run: Live, t: number): void => {
     if (!run.preset.playsNextRoot || audio === null) return
+    if (run.scripted !== null) return
     const segment = segmentAt(run.plan.path, t)
     if (segment === null || segment.phase !== 'breath') return
     if (run.played.has(segment.arch)) return
@@ -298,6 +321,8 @@ export function useLipController(): LipController {
 
   /** What the singer reads, written only when it changes. */
   const showWave = (run: Live, t: number): void => {
+    // The demo's tooltips and its take's pill speak for it.
+    if (run.scripted !== null) return
     const wave = waveOf(run, t)
     const text = `Wave ${wave + 1} of ${run.plan.path.arches.length}`
     if (untrack(chip) !== text) setChip(text)
@@ -332,9 +357,12 @@ export function useLipController(): LipController {
   }
 
   function runFrame(run: Live): void {
-    run.take.hear(capture.peekFrames(), run.plan.countIn)
+    const scripted = run.scripted
+    const frames = scripted === null ? capture.peekFrames() : scripted.frames()
+    run.take.hear(frames, run.plan.countIn)
     if (live !== run) return
-    const t = windowNow() - run.plan.countIn
+    const now = scripted === null ? windowNow() : scripted.now()
+    const t = now - run.plan.countIn
     if (t > run.plan.path.duration + END_GRACE_SEC) {
       run.take.finish()
       if (live !== run) return
@@ -355,17 +383,17 @@ export function useLipController(): LipController {
       dt,
     )
     view?.frame({
-      camera: run.scroll.at(t),
+      camera: run.scroll.camera(t),
       zoom: run.scroll.zoom(t),
       strips: run.take.drain(),
       trace: run.take.trace,
-      merc: { x: rideX(t, run.plan.countIn), feetY: run.feetY },
+      merc: { x: rideXOn(run.scroll, t), feetY: run.feetY },
       voiced: run.take.voiced(),
     })
     breathTone(run, t)
     showWave(run, t)
     setMoment(rideMoment(run, t))
-    restIfQuiet()
+    if (scripted === null) restIfQuiet()
   }
 
   /** No root yet: the first easy note the singer settles on fits the waves. */
@@ -393,7 +421,23 @@ export function useLipController(): LipController {
     const preset = untrack(level.preset)
     const plan = planLipRun(fit, preset)
     setScenePlan(plan)
-    const scroll = createBayScroll(plan.path, plan.countIn)
+    startRun(plan, preset, settled, null)
+  }
+
+  /**
+   * A run on `plan` from its count-in: the singer's, its window opened and
+   * its first root played, or the demo's `scripted` take, on its own clock
+   * with its own sound, its camera standing where the take holds it.
+   */
+  function startRun(
+    plan: LipPlan,
+    preset: GlidePreset,
+    settled: number | null,
+    scripted: ScriptedLipTake | null,
+  ): void {
+    const follow = createBayScroll(plan.path, plan.countIn)
+    const hold = scripted?.hold ?? null
+    const scroll = hold === null ? follow : holdCamera(follow, hold)
     let run: Live | null = null
     const take = createLipTake({
       path: plan.path,
@@ -404,6 +448,9 @@ export function useLipController(): LipController {
       },
       onEnd: (result) => {
         if (run !== null && live === run) finishRun(run, result)
+      },
+      onEvent: (event) => {
+        if (run !== null && live === run) scripted?.onEvent(event.type)
       },
     })
     run = {
@@ -418,20 +465,28 @@ export function useLipController(): LipController {
       lastFrameAt: performance.now(),
       resultAsked: false,
       hushed: -1,
+      scripted,
     }
     live = run
     view?.reset(INTRO_CAMERA)
-    openWindow()
-    if (audio !== null) tones.play(audio, plan.roots[0], COUNT_IN_TONE_SEC)
+    // The count-in's note: the room's, or the demo's own (demo-sound.ts).
     take.mute(-plan.countIn + COUNT_IN_TONE_SEC + TONE_TAIL_SEC)
-    if (settled === null) {
-      say('listen', { note: midiToNoteNameOctave(plan.roots[0]) })
+    if (scripted === null) {
+      openWindow()
+      if (audio !== null) tones.play(audio, plan.roots[0], COUNT_IN_TONE_SEC)
+      if (settled === null) {
+        say('listen', { note: midiToNoteNameOctave(plan.roots[0]) })
+      }
     }
     startLoop()
   }
 
   /** The run's result: kept, shown, and the mic closed. */
   function finishRun(run: Live, result: GlideResult): void {
+    if (run.scripted !== null) {
+      finishScripted()
+      return
+    }
     live = null
     stopLoop()
     tones.stop()
@@ -458,6 +513,28 @@ export function useLipController(): LipController {
     } else {
       setMoment('result')
     }
+  }
+
+  /**
+   * The demo's wave ended: the bay stays as the take left it, and Merc
+   * keeps his happy face for a lit wave, then stands. Nothing is kept or
+   * shown: the demo's tooltip explains it.
+   */
+  function finishScripted(): void {
+    live = null
+    stopLoop()
+    voice = SILENT_VOICE
+    const face = faceUntil - performance.now()
+    if (face <= 0) {
+      setMoment('breath')
+      return
+    }
+    setMoment('waveLit')
+    later(face, () => {
+      if (demoOn() && live === null && moment === 'waveLit') {
+        setMoment('breath')
+      }
+    })
   }
 
   /** A minute with no voice during a run: it stops, and the mic closes. */
@@ -530,6 +607,7 @@ export function useLipController(): LipController {
   }
 
   const start = (): void => {
+    if (demoOn()) return
     const from = phase()
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
     level.take()
@@ -548,7 +626,7 @@ export function useLipController(): LipController {
   }
 
   const stop = (): void => {
-    if (!isRunPhase(phase())) return
+    if (!isRunPhase(phase()) || demoOn()) return
     dropRun('stop')
     sayIntro()
   }
@@ -558,7 +636,8 @@ export function useLipController(): LipController {
    * run is dropped, as Back drops it: no result, no best.
    */
   function leave(): void {
-    if (!isRunPhase(phase())) return
+    // The demo stops itself when the app goes (useExerciseDemo.ts).
+    if (!isRunPhase(phase()) || demoOn()) return
     dropRun('leave')
     say('left')
   }
@@ -579,11 +658,13 @@ export function useLipController(): LipController {
   }
   document.addEventListener('visibilitychange', onVisibility)
 
-  // The screen stays on, and the rail out of reach, while a run is on.
+  // The screen stays on, and the rail out of reach, while a run is on;
+  // the screen stays on while the demo plays too (its own say: not on its
+  // card or its end), but the rail stays: a demo can be left at any time.
   const awake = createScreenAwake()
   createEffect(() => {
-    const running = isRunPhase(state().phase)
-    awake.set(running)
+    const running = isRunPhase(state().phase) && !scriptActive()
+    awake.set(scriptActive() ? demoPlaying() : running)
     setExerciseFocus(running)
   })
 
@@ -591,9 +672,93 @@ export function useLipController(): LipController {
   // singer, and a microphone that died under it stops the run.
   const unregisterIndicator = registerMicIndicator(
     EXERCISE_LIP_ROLL_BAY,
-    () => isRunPhase(phase()) && phase() !== 'starting',
+    () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
     stop,
   )
+
+  // ── The demo's way in (scripted-take.ts) ───────────────────
+  /** No take, no result, an empty bay; Merc back at the first root. */
+  const clearForScript = (): void => {
+    live = null
+    stopLoop()
+    tones.stop()
+    voice = SILENT_VOICE
+    faceUntil = 0
+    view?.reset(INTRO_CAMERA)
+    batch(() => {
+      setSummary(null)
+      setChip(null)
+      setShowResult(false)
+    })
+    merc.stopCheering()
+  }
+
+  const script: LipScript = {
+    active: scriptActive,
+    audio: () => capture.audio(),
+    // The waves the singer would ride now: the demo buzzes the first one.
+    note: () => untrack(scenePlan).roots[0],
+    enter: (text) => {
+      const from = phase()
+      if (!demoOn() && from !== 'intro' && from !== 'result') return false
+      clearForScript()
+      batch(() => {
+        setScriptActive(true)
+        setScenePlan(introPlan())
+        setLine(text)
+        dispatch({ type: 'demo', phase: 'intro' })
+      })
+      setMoment('breath')
+      return true
+    },
+    play: (take) => {
+      if (!demoOn()) return
+      clearForScript()
+      batch(() => {
+        setLine('')
+        setScenePlan(take.plan)
+        dispatch({ type: 'demo', phase: 'run' })
+      })
+      setMoment('countIn')
+      startRun(take.plan, take.preset, null, take)
+    },
+    rest: () => {
+      if (!demoOn()) return
+      clearForScript()
+      dispatch({ type: 'demo', phase: 'intro' })
+      setMoment('breath')
+    },
+    leave: () => {
+      if (!demoOn()) return
+      clearForScript()
+      batch(() => {
+        setScriptActive(false)
+        setDemoPlaying(false)
+        dispatch({ type: 'demo', phase: 'intro' })
+      })
+      sayIntro()
+      setMoment('intro')
+    },
+    playing: setDemoPlaying,
+  }
+
+  /** Where Merc will ride over the next `seconds` of the demo's take. */
+  const mercAhead = (seconds: number): MercSpot[] => {
+    const run = live
+    const scripted = run?.scripted ?? null
+    if (run === null || scripted === null) return []
+    return mercAheadOf(
+      {
+        path: run.plan.path,
+        countIn: run.plan.countIn,
+        scroll: run.scroll,
+        waveAt: run.take.waveAt,
+        voice: scripted.voice,
+        now: scripted.now(),
+      },
+      seconds,
+    )
+  }
 
   onCleanup(() => {
     alive = false
@@ -625,5 +790,7 @@ export function useLipController(): LipController {
       view = next
       next.reset(INTRO_CAMERA)
     },
+    script,
+    mercAhead,
   }
 }

@@ -273,7 +273,7 @@ const KARAOKE_STAGE_2 = [
   ['mp_ng_demo_seen', "Ng slides' demo record"],
   // Lip roll, the fourth: its room, its card in the picker and its level
   // control, built and folded exactly as Ng slides'. Its plates are the
-  // bay- files above; it has no demo yet.
+  // bay- files above.
   ['lip-roll-room', 'the premium Lip roll exercise'],
   [
     'Buzz your lips over three waves and light the bay',
@@ -283,6 +283,10 @@ const KARAOKE_STAGE_2 = [
     'Quick waves, close to the dots, and no notes in the breaths',
     "Lip roll's level control",
   ],
+  // Its demo rides with the room, as Ng slides' does: its take pill and
+  // its record of being seen.
+  ['lip-demo-take', "Lip roll's demo"],
+  ['mp_lip_demo_seen', "Lip roll's demo record"],
 ]
 
 /**

@@ -162,6 +162,10 @@ vi.mock('@/stores/lip-roll-store', () => ({
     return { improved: true, previous: null }
   },
   lipBest: () => null,
+  // The demo has been seen on this device: these runs are the singer's.
+  lipDemoSeen: () => true,
+  markLipDemoSeen: () => undefined,
+  lipDemoAutoPlays: () => false,
 }))
 // No voiceprint on this device: the root is the one kept, or the singer's.
 vi.mock('@/db/services/voiceprint-service', () => ({

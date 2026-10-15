@@ -13,6 +13,7 @@ import { cleanup, render, screen, within } from '@solidjs/testing-library'
 import { readdirSync, readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEMO_COPY as ECHO_DEMO_COPY } from '@/features/echo/demo/demo-cues'
+import { DEMO_COPY as LIP_DEMO_COPY } from '@/features/lip-roll/demo/demo-cues'
 import { DEMO_COPY } from '@/features/long-note/demo/demo-cues'
 import { DEMO_COPY as NG_DEMO_COPY } from '@/features/ng-slides/demo/demo-cues'
 // Loaded once, here. The options read no stored state, and loading their
@@ -61,6 +62,7 @@ function seed(state: { last?: boolean; best?: boolean; demoSeen?: boolean }) {
     localStorage.setItem('mp_long_note_demo_seen', 'true')
     localStorage.setItem('mp_echo_demo_seen', 'true')
     localStorage.setItem('mp_ng_demo_seen', 'true')
+    localStorage.setItem('mp_lip_demo_seen', 'true')
   }
 }
 
@@ -184,10 +186,12 @@ describe('the decided words, as they render', () => {
       'Merc sings it first',
       'Merc sings it first',
       'Merc sings it first',
+      'Merc sings it first',
     ])
     expect(DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
     expect(ECHO_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
     expect(NG_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
+    expect(LIP_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
   })
 })
 

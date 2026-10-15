@@ -3,10 +3,13 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { lipRollPath } from '@/lib/glide/glide-path'
+import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
 import { STATES } from '@/lib/merc/constants'
 import { PLAYHEAD_X, WAVE } from './bay-geometry'
 import { ABOVE_CREST_W, MERC_INTRO_X, pitchY, UNDER_ROOT_W } from './bay-layout'
-import { INTRO_HUM_LEVEL, introHum, RIDE_STATES, RIDE_TAU_SEC, rideStep, rideTarget, rideX, } from './bay-ride'
+import { INTRO_HUM_LEVEL, introHum, RIDE_STATES, RIDE_TAU_SEC, rideStep, rideTarget, rideX, rideXOn, } from './bay-ride'
+import { createBayScroll, holdCamera } from './bay-scroll'
 
 describe('where he rides', () => {
   it('follows the voice while it sounds: on the path, under it flat, over it sharp', () => {
@@ -81,5 +84,31 @@ describe('his move to the playhead', () => {
     }
     expect(rideX(-1.95, 2) - rideX(-2, 2)).toBeLessThan(0.002)
     expect(rideX(-1, 2)).toBeCloseTo((MERC_INTRO_X + PLAYHEAD_X) / 2, 9)
+  })
+})
+
+describe('his place under a held camera (the demo)', () => {
+  const path = lipRollPath([48], 12, LIP_ROLL_LEVELS.learning)
+  const scroll = createBayScroll(path, 2.8)
+  const held = holdCamera(scroll, { from: 1.5, to: 2.95 })
+
+  it('is the playhead on a run: its camera never stops', () => {
+    for (const t of [-2.8, -1, 0, 2, 5]) {
+      expect(rideXOn(scroll, t)).toBeCloseTo(rideX(t, 2.8), 12)
+    }
+  })
+
+  it('rides on past the playhead as far as the camera stood still', () => {
+    expect(rideXOn(held, 1)).toBeCloseTo(PLAYHEAD_X, 12)
+    for (const t of [2, 3, 4, 5.2]) {
+      expect(rideXOn(held, t)).toBeCloseTo(
+        PLAYHEAD_X + scroll.at(t) - held.camera(t),
+        12,
+      )
+    }
+    // Down the far side of the wave, on the screen, by its far foot.
+    const atEnd = rideXOn(held, path.arches[0].end)
+    expect(atEnd).toBeGreaterThan(0.75)
+    expect(atEnd).toBeLessThan(0.9)
   })
 })

@@ -89,6 +89,7 @@ These are the rules that break things when ignored.
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 5.6k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
+| `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 5.3k | useLipController: one Lip roll run, from the tap to the result Owns the room's states (lip-machine.ts), the microphone and the audio cloc... |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 5.0k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 5.0k | useNgController: one Ng slides run, from the tap to the result Owns the room's states (ng-machine.ts), the microphone and the audio clock... |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
@@ -98,7 +99,6 @@ These are the rules that break things when ignored.
 | `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 4.4k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.4k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.0k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
-| `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 4.0k | useLipController: one Lip roll run, from the tap to the result Owns the room's states (lip-machine.ts), the microphone and the audio cloc... |
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 3.9k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
@@ -192,6 +192,7 @@ These are the rules that break things when ignored.
 | [scale-data.ts](../../src/lib/scale-data.ts) | 500 | Scale Data — Music theory utilities for MercuryPitch |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 500 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [uvr-stem-split.ts](../../src/lib/uvr-stem-split.ts) | 500 | Stem split — break a session's instrumental into its parts Second separation pass over the ALREADY-SEPARATED instrumental: the server (de... |
+| [demo-audio.ts](../../src/lib/demo-audio.ts) | 450 | Audible guided demos (glass plan §17.4, decision 18). |
 | [lyricsfile.ts](../../src/lib/lyricsfile.ts) | 450 | lyricsfile 1.0 — serialising a mapping to the interchange format Enhanced LRC is what the app has always exported, and it is lossy in way... |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [midi-song.ts](../../src/lib/midi-song.ts) | 450 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
@@ -230,13 +231,13 @@ These are the rules that break things when ignored.
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
 | [echo-store.ts](../../src/stores/echo-store.ts) | 150 | Echo's records: the best at each level, the singer's root, the demo seen The live table of Echo's bests (its shape, its ordering and how... |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
+| [lip-roll-store.ts](../../src/stores/lip-roll-store.ts) | 150 | Lip roll's records: the best at each level, the singer's easy note The live table of Lip roll's bests (its shape, its ordering and how a... |
 | [ng-slides-store.ts](../../src/stores/ng-slides-store.ts) | 150 | Ng slides' records: the best at each level, the singer's easy note The live table of Ng slides' bests (its shape, its ordering and how a... |
 | [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 150 | Practice Timer Store — the voice-rest clock Off by default. |
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 150 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
 | [sync-ui-store.ts](../../src/stores/sync-ui-store.ts) | 150 | ── Sync UI state Whether the sync dialog is showing, whether a session is alive behind it, and — in the words the surfaces say out loud —... |
 | [console-store.ts](../../src/stores/console-store.ts) | 100 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
 | [index.ts](../../src/stores/index.ts) | 100 | Stores barrel export |
-| [lip-roll-store.ts](../../src/stores/lip-roll-store.ts) | 100 | Lip roll's records: the best at each level, the singer's easy note The live table of Lip roll's bests (its shape, its ordering and how a... |
 | [mic-store.ts](../../src/stores/mic-store.ts) | 100 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 100 | Pane Layout Store — Multi-pane layout persistence |
 | [sing-takes-store.ts](../../src/stores/sing-takes-store.ts) | 100 | Sing takes — the summaries this phone keeps, and nothing else A kept take is four numbers and two timestamps. |
