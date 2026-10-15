@@ -2650,11 +2650,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  // "Find my key" opens it from either stage.
+  // "Find my key" opens it from either stage: for a first voice, and again
+  // with the song already at the fit, to try another or go back.
   const voiceTypePicker = () => (
     <VoiceTypePicker
       open={key.voiceTypePickerOpen()}
+      fits={key.voiceTypePickerFit()}
+      current={key.pickedVoiceType()}
       onPick={keyView.pickVoiceType}
+      onOriginalKey={key.backToOriginalKey}
       onCancel={key.closeVoiceTypePicker}
     />
   )

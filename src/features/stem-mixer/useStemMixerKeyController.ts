@@ -15,7 +15,10 @@
 // "Find my key" fits the melody to the singer's range (see singer-range.ts).
 // A suggestion is only ever applied when asked for. With no range yet it
 // opens the voice-type picker; with no melody yet it runs Pitch Studio's
-// detection once and fits when that is done. Asked before the stored range
+// detection once and fits when that is done. Asked again with the song
+// already at the fit, it opens the picker too, saying so: the singer who
+// asks twice wants another answer, and the picker offers the other voices
+// and the song's own key rather than "already fits" and nothing to do. Asked before the stored range
 // has been read, it waits for the read rather than asking the singer for a
 // range they have. The range is read again whenever the tab is shown, so one
 // measured in Voice Mirror's own tab counts as soon as the singer comes back.
@@ -40,13 +43,16 @@ import { setSongKeyShift, songKeyShift } from '@/stores/karaoke-key-store'
 import type { QueueEntry } from '@/stores/karaoke-playlist-store'
 import { setItemKeyShift } from '@/stores/karaoke-playlist-store'
 import type { VocalRangePreset } from '@/stores/settings-store'
-import { setVocalRangePreset } from '@/stores/settings-store'
+import { setVocalRangePreset, vocalRangePreset } from '@/stores/settings-store'
 import type { ResolvedSingerRange } from './singer-range'
 import { resolveSingerRange, voiceTypeRange } from './singer-range'
 import type { PitchAnalysisOutcome } from './useStemMixerPitchAnalysisController'
 
 /**
- * 'unchanged': the song is in the key that fits already, so nothing moved.
+ * 'unchanged': the song is in the key that fits already, so nothing moved
+ *   (a voice picked in the picker; a find asked again says 'other-voice').
+ * 'other-voice': the song already sat at the fit, so the picker opened to
+ *   try another voice, or go back to the song's own key.
  * 'reading-range': the stored range is still being read; the find follows.
  * 'detecting': the melody is being found first; the fit follows on its own.
  * 'no-melody': there is none and it cannot be detected here.
@@ -54,6 +60,7 @@ import type { PitchAnalysisOutcome } from './useStemMixerPitchAnalysisController
 export type FindMyKeyResult =
   | 'applied'
   | 'unchanged'
+  | 'other-voice'
   | 'needs-range'
   | 'reading-range'
   | 'detecting'
@@ -144,6 +151,15 @@ export interface StemMixerKeyController {
   /** Picks the voice type (Settings' own), then fits as `findMyKey` does. */
   applyVoiceType: (preset: VocalRangePreset) => FindMyKeyResult
   voiceTypePickerOpen: Accessor<boolean>
+  /**
+   * The key the song already sat at when the picker opened to try another
+   * voice; null when it opened to ask for a first one.
+   */
+  voiceTypePickerFit: Accessor<number | null>
+  /** The voice type the range came from; null for a measured range. */
+  pickedVoiceType: Accessor<VocalRangePreset | null>
+  /** The picker's way out: the song's own key, and the picker shut. */
+  backToOriginalKey: () => void
   closeVoiceTypePicker: () => void
 }
 
@@ -173,6 +189,11 @@ export function useStemMixerKeyController(
 ): StemMixerKeyController {
   const [range, setRange] = createSignal<ResolvedSingerRange | null>(null)
   const [pickerOpen, setPickerOpen] = createSignal(false)
+  const [pickerFit, setPickerFit] = createSignal<number | null>(null)
+  const openPicker = (fit: number | null) => {
+    setPickerFit(fit)
+    setPickerOpen(true)
+  }
   let detecting = false
   let disposed = false
   onCleanup(() => {
@@ -269,10 +290,13 @@ export function useStemMixerKeyController(
 
   const findWithRange = (): FindMyKeyResult => {
     if (!rangeKnown()) {
-      setPickerOpen(true)
+      openPicker(null)
       return 'needs-range'
     }
-    return fitOrDetect()
+    const result = fitOrDetect()
+    if (result !== 'unchanged') return result
+    openPicker(keyShift())
+    return 'other-voice'
   }
 
   const findMyKey = (): FindMyKeyResult => {
@@ -335,6 +359,13 @@ export function useStemMixerKeyController(
     finding,
     applyVoiceType,
     voiceTypePickerOpen: pickerOpen,
+    voiceTypePickerFit: pickerFit,
+    pickedVoiceType: () =>
+      range()?.source === 'voice-type' ? vocalRangePreset() : null,
+    backToOriginalKey: () => {
+      setKeyShift(0)
+      setPickerOpen(false)
+    },
     closeVoiceTypePicker: () => setPickerOpen(false),
   }
 }

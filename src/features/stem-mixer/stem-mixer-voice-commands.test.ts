@@ -515,6 +515,10 @@ describe('stem mixer voice commands — key', () => {
     )
     fixture.setFindResult('reading-range')
     expect(fire(fixture, 'find my key')).toBe('Finding your key')
+    fixture.setFindResult('other-voice')
+    expect(fire(fixture, 'find my key')).toBe(
+      'Already your key. Pick another voice',
+    )
   })
 
   it('says why the key cannot change, and changes nothing', () => {

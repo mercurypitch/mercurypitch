@@ -422,13 +422,60 @@ describe('find my key', () => {
     expect(notify).not.toHaveBeenCalled()
   })
 
-  it('says so when the song already sits at the key that fits', () => {
+  it('offers another voice when the song already sits at the key that fits', () => {
     const controller = start(freshSong())
     expect(controller.applyVoiceType('bass')).toBe('applied')
     const fitted = controller.keyShift()
+    expect(controller.voiceTypePickerOpen()).toBe(false)
 
-    expect(controller.findMyKey()).toBe('unchanged')
+    expect(controller.findMyKey()).toBe('other-voice')
     expect(controller.keyShift()).toBe(fitted)
+    expect(controller.voiceTypePickerOpen()).toBe(true)
+    expect(controller.voiceTypePickerFit()).toBe(fitted)
+    expect(controller.pickedVoiceType()).toBe('bass')
+  })
+
+  it('moves to the fit of another voice picked from there', () => {
+    const controller = start(freshSong())
+    controller.applyVoiceType('bass')
+    const bass = controller.keyShift()
+    controller.findMyKey()
+
+    expect(controller.applyVoiceType('soprano')).toBe('applied')
+    expect(controller.keyShift()).not.toBe(bass)
+    expect(controller.pickedVoiceType()).toBe('soprano')
+    expect(controller.voiceTypePickerOpen()).toBe(false)
+  })
+
+  it('takes the song back to its own key from there', () => {
+    const controller = start(freshSong())
+    controller.applyVoiceType('bass')
+    controller.findMyKey()
+
+    controller.backToOriginalKey()
+
+    expect(controller.keyShift()).toBe(0)
+    expect(controller.voiceTypePickerOpen()).toBe(false)
+  })
+
+  it('asks for a first voice with no key that fits yet', async () => {
+    const controller = start(freshSong())
+    await rangeRead()
+
+    expect(controller.findMyKey()).toBe('needs-range')
+    expect(controller.voiceTypePickerOpen()).toBe(true)
+    expect(controller.voiceTypePickerFit()).toBeNull()
+    expect(controller.pickedVoiceType()).toBeNull()
+  })
+
+  it('names no picked voice for a range measured in Voice Mirror', async () => {
+    fakes.takes = [MEASURED_TAKE]
+    const controller = start(freshSong())
+    await rangeRead()
+
+    controller.findMyKey()
+    expect(controller.findMyKey()).toBe('other-voice')
+    expect(controller.pickedVoiceType()).toBeNull()
   })
 
   it('waits for the stored range instead of asking for one the singer has', async () => {
@@ -751,6 +798,15 @@ describe('what the mixer shows', () => {
     ])
   })
 
+  it('leaves the voice picker to say it when it offers another voice', () => {
+    const shown = startView()
+    shown.fit.next = 'other-voice'
+
+    shown.view.binding.onFindKey()
+
+    expect(shown.notices).toEqual([])
+  })
+
   it('fits a picked voice type the way find my key does', () => {
     const shown = startView()
     shown.fit.next = 'detecting'
@@ -869,7 +925,8 @@ describe('find my key, on the phone stage', () => {
 
     shown.notices.hold(false)
     const shut = shown.notices.notice()
-    shown.view.binding.onFindKey()
+    // The same voice again: nothing moves, and it says so.
+    shown.view.pickVoiceType('bass')
 
     expect([shut, toasts()]).toEqual([
       null,

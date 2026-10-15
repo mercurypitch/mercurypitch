@@ -103,6 +103,71 @@ describe('VoiceTypePicker', () => {
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
+  it('asks a first time without any key that fits yet', () => {
+    open()
+
+    const dialog = screen.getByRole('dialog', { name: /your voice/i })
+    expect(dialog).toHaveTextContent(
+      'Find my key moves the song into your range.',
+    )
+    expect(dialog.querySelector('[aria-current]')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Back to original key' }),
+    ).toBeNull()
+  })
+
+  it('says the key already fits, and marks the voice picked before', () => {
+    render(() => (
+      <VoiceTypePicker
+        open
+        fits={-2}
+        current="bass"
+        onPick={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    ))
+
+    const dialog = screen.getByRole('dialog', { name: /your voice/i })
+    expect(dialog).toHaveAccessibleDescription(
+      'Key −2 already fits your voice. Pick another voice to try a different key.',
+    )
+    const marked = [...dialog.querySelectorAll('[aria-current="true"]')]
+    expect(marked.map((voice) => voice.getAttribute('data-voice'))).toEqual([
+      'bass',
+    ])
+  })
+
+  it('says when the song’s own key already fits', () => {
+    render(() => (
+      <VoiceTypePicker open fits={0} onPick={vi.fn()} onCancel={vi.fn()} />
+    ))
+
+    expect(
+      screen.getByRole('dialog', { name: /your voice/i }),
+    ).toHaveAccessibleDescription(
+      "The song's own key already fits your voice. Pick another voice to try a different key.",
+    )
+  })
+
+  it('takes the song back to its own key, when it is in another', () => {
+    const onOriginalKey = vi.fn<() => void>()
+    render(() => (
+      <VoiceTypePicker
+        open
+        fits={-2}
+        onPick={vi.fn()}
+        onCancel={vi.fn()}
+        onOriginalKey={onOriginalKey}
+      />
+    ))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Back to original key' }),
+    )
+
+    expect(onOriginalKey).toHaveBeenCalledTimes(1)
+  })
+
   it('renders nothing while closed', () => {
     render(() => (
       <VoiceTypePicker open={false} onPick={vi.fn()} onCancel={vi.fn()} />

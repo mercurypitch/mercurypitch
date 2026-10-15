@@ -253,6 +253,7 @@ export function createStemMixerVoiceCommands(
     if (blocked !== null) return blocked
     const result = deps.findMyKey()
     if (result === 'needs-range') return 'Pick your voice type'
+    if (result === 'other-voice') return 'Already your key. Pick another voice'
     if (result === 'reading-range') return 'Finding your key'
     if (result === 'detecting') return 'Finding the melody first'
     if (result === 'no-melody')
