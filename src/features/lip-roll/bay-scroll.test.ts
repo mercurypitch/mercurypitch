@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { lipRollPath } from '@/lib/glide/glide-path'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
 import { INTRO, LANDING_W, PERIOD_W, PLAYHEAD_X, WAVE } from './bay-geometry'
-import { createBayScroll, crestX, INTRO_CAMERA } from './bay-scroll'
+import { createBayScroll, crestX, holdCamera, INTRO_CAMERA } from './bay-scroll'
 
 const ROOTS = [48, 50, 52]
 const COUNT_IN = 2.5
@@ -117,5 +117,51 @@ describe('the count-in, its zoom, and the end', () => {
     expect(scroll.at(end)).toBeCloseTo(scroll.max, 9)
     expect(scroll.at(end + 5)).toBeCloseTo(scroll.max, 9)
     expect(scroll.max).toBeGreaterThan(crestX(2) + WAVE.a)
+  })
+})
+
+describe("a held camera (the demo's one wave)", () => {
+  const path = lipRollPath([48], 12, LIP_ROLL_LEVELS.learning)
+  const scroll = createBayScroll(path, COUNT_IN)
+  const hold = { from: 1.2, to: 3 }
+  const held = holdCamera(scroll, hold)
+
+  it('follows the voice until the hold, as the room does', () => {
+    expect(scroll.camera).toBe(scroll.at)
+    for (const t of [-COUNT_IN, -1, 0, 0.6, hold.from]) {
+      expect(held.camera(t)).toBeCloseTo(scroll.at(t), 12)
+    }
+  })
+
+  it('slows to a stand with no jolt, and stands still from then on', () => {
+    const dt = 1 / 120
+    let previous = held.camera(hold.from)
+    let speed = scroll.waveSpeed
+    for (let t = hold.from + dt; t <= hold.to + 1e-9; t += dt) {
+      const now = held.camera(t)
+      const v = (now - previous) / dt
+      // Never backwards, never faster than the waves, never a sudden stop.
+      expect(v).toBeGreaterThanOrEqual(-1e-9)
+      expect(v).toBeLessThanOrEqual(scroll.waveSpeed + 1e-9)
+      expect(Math.abs(v - speed)).toBeLessThan(scroll.waveSpeed * 0.02)
+      previous = now
+      speed = v
+    }
+    const stand = held.camera(hold.to)
+    expect(held.camera(path.duration)).toBe(stand)
+    expect(held.camera(path.duration + 5)).toBe(stand)
+    expect(held.max).toBe(stand)
+    // Half the slowing's span at the wave speed: the eased stop's travel.
+    expect(stand - held.camera(hold.from)).toBeCloseTo(
+      (scroll.waveSpeed * (hold.to - hold.from)) / 2,
+      9,
+    )
+  })
+
+  it('moves nothing the voice sings: each moment is sung where it was', () => {
+    for (const t of [-1, 0, 1, 2.5, 4, path.duration]) {
+      expect(held.at(t)).toBe(scroll.at(t))
+    }
+    expect(held.zoom).toBe(scroll.zoom)
   })
 })

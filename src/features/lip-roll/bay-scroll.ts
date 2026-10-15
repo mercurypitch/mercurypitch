@@ -21,6 +21,11 @@
 //   end         after the last wave, the scroll comes to rest over its
 //               landing
 //
+// `at` is where in the bay a moment is sung; `camera` is what the screen
+// shows, the same unless a hold stops it (holdCamera: the demo's one wave,
+// kept in view while its tooltips are read). Under a held camera the
+// voice and Merc ride on past the playhead, across the screen.
+//
 // Ng slides' bridge-scroll.ts with the bay's period and the zoom. Pure
 // arithmetic on the glide path's own times (src/lib/glide), so the wave
 // under the playhead is always the wave the engine judges.
@@ -53,8 +58,13 @@ const smoothstep = (x: number): number => {
 }
 
 export interface BayScroll {
-  /** The camera at time `t` on the path's clock (s; the count-in is t < 0). */
+  /**
+   * Where time `t` on the path's clock is sung, world X (s; the count-in
+   * is t < 0): the camera, while it follows the voice.
+   */
   at: (t: number) => number
+  /** The camera at `t`: `at`, unless a hold stopped it (holdCamera). */
+  camera: (t: number) => number
   /** The zoom at `t`: 0 at the intro's (wave A), 1 from the first wave on. */
   zoom: (t: number) => number
   /** The camera's speed during every wave, W/s. */
@@ -151,5 +161,37 @@ export function createBayScroll(
   for (let i = 1; i < 64; i++) {
     min = Math.min(min, at(-countInSec + (i / 64) * lead))
   }
-  return { at, zoom, waveSpeed: v, min, max: restX, countIn: countInSec }
+  return {
+    at,
+    camera: at,
+    zoom,
+    waveSpeed: v,
+    min,
+    max: restX,
+    countIn: countInSec,
+  }
+}
+
+/** A stop of the camera: it slows from `from` and stands from `to`, path s. */
+export interface CameraHold {
+  readonly from: number
+  readonly to: number
+}
+
+/**
+ * `scroll` with its camera brought to rest: at the wave speed until
+ * `from`, slowing on a smoothstep to a stand at `to`, still from then on.
+ * Where each moment is sung (`at`) does not move. The hold must lie inside
+ * a wave, where the camera moves at the wave speed.
+ */
+export function holdCamera(scroll: BayScroll, hold: CameraHold): BayScroll {
+  const span = Math.max(1e-3, hold.to - hold.from)
+  const base = scroll.camera(hold.from)
+  const v = scroll.waveSpeed
+  const camera = (t: number): number => {
+    if (t <= hold.from) return scroll.camera(t)
+    const s = Math.min(1, (t - hold.from) / span)
+    return base + v * span * (s - eased(s))
+  }
+  return { ...scroll, camera, max: camera(hold.to) }
 }

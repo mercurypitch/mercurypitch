@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { LIP_NOTE_KEY, lipBest, recordLipBest, rememberedLipNote, rememberLipNote, resetLipStoreForTests, } from './lip-roll-store'
+import { LIP_DEMO_SEEN_KEY, LIP_NOTE_KEY, lipBest, lipDemoAutoPlays, lipDemoSeen, markLipDemoSeen, recordLipBest, rememberedLipNote, rememberLipNote, resetLipStoreForTests, } from './lip-roll-store'
 
 beforeEach(() => {
   localStorage.clear()
@@ -43,5 +43,36 @@ describe("Lip roll's records", () => {
     rememberLipNote(55)
     resetLipStoreForTests()
     expect(rememberedLipNote()).toBe(55)
+  })
+})
+
+describe("Lip roll's demo", () => {
+  it('plays by itself on a first visit: unseen, no note kept, no best', () => {
+    expect(lipDemoSeen()).toBe(false)
+    expect(lipDemoAutoPlays()).toBe(true)
+  })
+
+  it('stops playing by itself once it is seen, and remembers that on this device', () => {
+    markLipDemoSeen()
+    expect(lipDemoSeen()).toBe(true)
+    expect(lipDemoAutoPlays()).toBe(false)
+    expect(localStorage.getItem('mp_lip_demo_seen')).toBe('true')
+    resetLipStoreForTests()
+    expect(lipDemoSeen()).toBe(true)
+  })
+
+  it('keeps its flag out of the settings sync: an mp_ key, not pitchperfect_', () => {
+    expect(LIP_DEMO_SEEN_KEY).toBe('mp_lip_demo_seen')
+    expect(LIP_DEMO_SEEN_KEY.startsWith('pitchperfect_')).toBe(false)
+  })
+
+  it('does not play by itself once a run has been kept: a note or a best', () => {
+    rememberLipNote(57)
+    expect(lipDemoAutoPlays()).toBe(false)
+
+    localStorage.clear()
+    resetLipStoreForTests()
+    recordLipBest('professional', best(40))
+    expect(lipDemoAutoPlays()).toBe(false)
   })
 })

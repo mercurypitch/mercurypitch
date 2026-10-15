@@ -81,6 +81,18 @@ export function fixtureController(scene: LipFixtureScene): LipController {
     showResult: () => scene.summary !== null,
     start: () => undefined,
     stop: () => undefined,
+    // A fixture has no demo (LipRollRoom: another's run has none).
+    script: {
+      active: () => false,
+      audio: () => Promise.resolve(null),
+      note: () => FIXTURE_ROOT,
+      enter: () => false,
+      play: () => undefined,
+      rest: () => undefined,
+      leave: () => undefined,
+      playing: () => undefined,
+    },
+    mercAhead: () => [],
     attach: (view) => {
       view.reset(scene.camera)
       if (scene.summary !== null) {

@@ -16,10 +16,11 @@ interface Seed {
   note?: number
   /** The best on that note, in seconds held in the band. */
   best?: number
-  /** Every demo seen, unless Echo's or Ng slides' is set apart. */
+  /** Every demo seen, unless Echo's, Ng slides' or Lip roll's is set apart. */
   demoSeen?: boolean
   echoDemoSeen?: boolean
   ngDemoSeen?: boolean
+  lipDemoSeen?: boolean
   /** The level every premium exercise is at. */
   level?: ExerciseLevel
   /** Echo's best at the Singer level: notes landed of notes asked. */
@@ -66,6 +67,9 @@ async function openPicker(seed: Seed = {}) {
   }
   if ((seed.ngDemoSeen ?? seed.demoSeen) === true) {
     localStorage.setItem('mp_ng_demo_seen', 'true')
+  }
+  if ((seed.lipDemoSeen ?? seed.demoSeen) === true) {
+    localStorage.setItem('mp_lip_demo_seen', 'true')
   }
   if (seed.echoBest !== undefined) {
     const [landed, notes] = seed.echoBest
@@ -214,6 +218,17 @@ describe("a card's third line", () => {
     localStorage.clear()
     await openPicker({ ngDemoSeen: true })
     expect(meta('ng-slides-bridge')).toBeNull()
+  })
+
+  it('says Merc sings Lip roll first until its demo is seen, before its first best', async () => {
+    await openPicker()
+    expect(meta('lip-roll-bay')).toBe('Merc sings it first')
+
+    cleanup()
+    vi.resetModules()
+    localStorage.clear()
+    await openPicker({ lipDemoSeen: true })
+    expect(meta('lip-roll-bay')).toBeNull()
   })
 })
 

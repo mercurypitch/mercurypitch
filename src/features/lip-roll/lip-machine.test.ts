@@ -94,3 +94,45 @@ describe('isRunPhase', () => {
     ).toBe(false)
   })
 })
+
+describe('the demo', () => {
+  it('moves the room to a wave and back, a new run each move', () => {
+    const wave = play([{ type: 'demo', phase: 'run' }])
+    expect(wave).toEqual({ phase: 'run', run: 1, block: null })
+
+    const back = lipReducer(wave, { type: 'demo', phase: 'intro' })
+    expect(back).toEqual({ phase: 'intro', run: 2, block: null })
+  })
+
+  it('starts from a result too', () => {
+    const result = play([
+      { type: 'start' },
+      { type: 'mic-ready', run: 1, rooted: true },
+      { type: 'finished' },
+    ])
+
+    expect(lipReducer(result, { type: 'demo', phase: 'run' }).phase).toBe('run')
+  })
+
+  it('never moves a room whose mic is opening or blocked', () => {
+    const starting = play([{ type: 'start' }])
+    expect(lipReducer(starting, { type: 'demo', phase: 'run' })).toBe(starting)
+
+    const blocked = play([
+      { type: 'start' },
+      { type: 'mic-failed', run: 1, block: 'denied' },
+    ])
+    expect(lipReducer(blocked, { type: 'demo', phase: 'run' })).toBe(blocked)
+  })
+
+  it('lands no mic answer from before it', () => {
+    const state = play([
+      { type: 'start' },
+      { type: 'stop' },
+      { type: 'demo', phase: 'run' },
+      { type: 'mic-ready', run: 1, rooted: true },
+    ])
+
+    expect(state).toEqual({ phase: 'run', run: 2, block: null })
+  })
+})

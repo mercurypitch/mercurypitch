@@ -8,14 +8,14 @@
 // Each comes from the stores and rules the room itself reads (fitLipRoll,
 // lip-roll-store.ts), so the way in and the room cannot disagree. It lives
 // here, beside the catalogue, and reads no file of the room's: the room's
-// own module graph stays out of the Sing screen's. There is no demo yet
-// (PR 12), so it never plays by itself.
+// own module graph stays out of the Sing screen's. The demo's rule is
+// lip-roll-store.ts's too (lipDemoAutoPlays).
 
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { fitLipRoll } from '@/lib/glide/glide-targets'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { exerciseLevel } from '@/stores/exercise-level'
-import { lipBest, rememberedLipNote } from '@/stores/lip-roll-store'
+import { lipBest, lipDemoAutoPlays, rememberedLipNote, } from '@/stores/lip-roll-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 
 export interface LipEntry {
@@ -23,7 +23,7 @@ export interface LipEntry {
   note: () => string | null
   /** The best at the singer's level ("Best 88% lit"), or null when none. */
   progress: () => string | null
-  /** The demo plays by itself on the way in: never, until it is built. */
+  /** The demo plays by itself on the way in. */
   demoAutoPlays: () => boolean
 }
 
@@ -44,6 +44,6 @@ export function lipEntry(): LipEntry {
       const best = lipBest(exerciseLevel())
       return best === null ? null : `Best ${best.lit}% lit`
     },
-    demoAutoPlays: () => false,
+    demoAutoPlays: lipDemoAutoPlays,
   }
 }

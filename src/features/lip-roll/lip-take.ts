@@ -109,7 +109,7 @@ export function createLipTake(deps: LipTakeDeps): LipTake {
     })
     lastVoiced = true
     // Drop what has scrolled off: the trace stays the screen's length.
-    const left = deps.scroll.at(t) - PLAYHEAD_X - TRACE_SLACK_W
+    const left = deps.scroll.camera(t) - PLAYHEAD_X - TRACE_SLACK_W
     let old = 0
     while (old < trace.length && trace[old].x < left) old++
     if (old > 64) trace.splice(0, old)

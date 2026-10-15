@@ -13,7 +13,12 @@
 // here: it is the run's clock against the glide path, read by the
 // controller every frame. Stopping, a minute of quiet and leaving the app
 // drop the run: back to the intro, nothing kept. Ng slides' machine
-// (ng-machine.ts), before its demo.
+// (ng-machine.ts).
+//
+// `demo` moves the room for the "how it works" demo (demo/), which buzzes
+// its waves through the room with no microphone: it never applies while a
+// microphone answer is pending or the room is blocked, and it bumps `run`
+// so no answer can land in it.
 
 export type LipPhase =
   | 'intro'
@@ -24,6 +29,9 @@ export type LipPhase =
   | 'blocked'
 
 export type LipBlock = 'denied' | 'unavailable'
+
+/** The phases the demo puts the room in: its start, and a wave. */
+export type LipDemoPhase = 'intro' | 'run'
 
 export interface LipState {
   readonly phase: LipPhase
@@ -49,6 +57,7 @@ export type LipEvent =
   | { readonly type: 'stop' }
   | { readonly type: 'rest' }
   | { readonly type: 'leave' }
+  | { readonly type: 'demo'; readonly phase: LipDemoPhase }
 
 const RUN_PHASES: ReadonlySet<LipPhase> = new Set<LipPhase>([
   'starting',
@@ -97,6 +106,15 @@ function onDrop(state: LipState): LipState {
   return isRunPhase(state.phase) ? { ...state, phase: 'intro' } : state
 }
 
+/** The demo's own move, never over a mic being opened or a block. */
+function onDemo(
+  state: LipState,
+  event: Extract<LipEvent, { type: 'demo' }>,
+): LipState {
+  if (state.phase === 'starting' || state.phase === 'blocked') return state
+  return { ...state, phase: event.phase, run: state.run + 1 }
+}
+
 type Handlers = {
   readonly [K in LipEvent['type']]: (
     state: LipState,
@@ -113,6 +131,7 @@ const HANDLERS: Handlers = {
   stop: onDrop,
   rest: onDrop,
   leave: onDrop,
+  demo: onDemo,
 }
 
 export function lipReducer(state: LipState, event: LipEvent): LipState {

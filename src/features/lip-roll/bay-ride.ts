@@ -18,7 +18,8 @@
 import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice } from '@/lib/merc/sim'
 import { PLAYHEAD_X, WAVE } from './bay-geometry'
-import { ABOVE_CREST_W, MERC_INTRO_X, pitchY, UNDER_ROOT_W } from './bay-layout'
+import { ABOVE_CREST_W, MERC_INTRO_X, pitchY, UNDER_ROOT_W, zoomAt, } from './bay-layout'
+import type { BayScroll } from './bay-scroll'
 
 /** What the run is doing, as Merc's choreography sees it. */
 export type RideMoment =
@@ -81,6 +82,17 @@ export function rideX(t: number, countIn: number): number {
   const p = Math.min(1, Math.max(0, (t + countIn) / countIn))
   const eased = p * p * (3 - 2 * p)
   return MERC_INTRO_X + (PLAYHEAD_X - MERC_INTRO_X) * eased
+}
+
+/**
+ * His x (W) at path time `t` on `scroll`: rideX, and past the playhead by
+ * as far as the voice has ridden on while a held camera stood (the demo's,
+ * bay-scroll.ts holdCamera). A run's camera never stops: he stays at the
+ * playhead.
+ */
+export function rideXOn(scroll: BayScroll, t: number): number {
+  const ahead = scroll.at(t) - scroll.camera(t)
+  return rideX(t, scroll.countIn) + zoomAt(scroll.zoom(t)).sx * ahead
 }
 
 /** How strongly he buzzes on his own at the intro, 0..1. */

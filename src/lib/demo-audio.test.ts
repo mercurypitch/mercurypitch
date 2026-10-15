@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VoicePoint } from './demo-audio'
-import { playHoldTone, playVoiceContour } from './demo-audio'
+import { LIP_FLUTTER, playHoldTone, playVoiceContour } from './demo-audio'
 
 type Call = readonly [
   method: string,
@@ -249,6 +249,69 @@ describe("playVoiceContour's timbres", () => {
     expect(hum.q).toBeGreaterThan(ooh.q)
     // A low hum on a phone speaker still reaches its overtones: A2's 8th.
     expect(hum.hz).toBeGreaterThan(110 * 8)
+  })
+})
+
+describe("playVoiceContour's lip buzz", () => {
+  function buzz() {
+    const fake = fakeContext()
+    const handle = playVoiceContour(fake.ctx, LINE, {
+      hz: 130,
+      startAt: 11,
+      flutter: LIP_FLUTTER,
+    })
+    // master, level, the lips' gain, the flutter's amount; voice, flutter
+    const [master, level, lips, amount] = fake.gains
+    const [voice, shape] = fake.oscillators
+    return { ...fake, handle, master, level, lips, amount, voice, shape }
+  }
+
+  it('flutters 25 times a second, the lip rate of a trill', () => {
+    const { shape } = buzz()
+    expect(LIP_FLUTTER.hz).toBe(25)
+    expect(shape.frequency.value).toBe(25)
+  })
+
+  it('swings the loudness from full down to 1 - depth, never below silence', () => {
+    const { lips, amount } = buzz()
+    const swing = LIP_FLUTTER.depth / 2
+    expect(lips.gain.value).toBeCloseTo(1 - swing, 9)
+    expect(amount.gain.value).toBeCloseTo(swing, 9)
+    // The shape peaks at 1 either way: the gain runs 1 - depth to 1.
+    expect(lips.gain.value + amount.gain.value).toBeCloseTo(1, 9)
+    expect(lips.gain.value - amount.gain.value).toBeCloseTo(
+      1 - LIP_FLUTTER.depth,
+      9,
+    )
+    expect(1 - LIP_FLUTTER.depth).toBeGreaterThan(0)
+  })
+
+  it('sits between the line and the speaker, moving the loudness, not the pitch', () => {
+    const { level, lips, amount, master, shape, voice } = buzz()
+    expect(level.connections).toEqual([lips])
+    expect(lips.connections).toEqual([master])
+    expect(shape.connections).toEqual([amount])
+    expect(amount.connections).toEqual([lips.gain])
+    expect(voice.detune.calls.some((c) => c[0] === 'set')).toBe(true)
+    expect(shape.connections).not.toContain(voice.detune)
+  })
+
+  it('starts with the line, stops with it, and leaves nothing connected', () => {
+    const { voice, shape, gains, oscillators } = buzz()
+    expect(shape.starts).toEqual([11])
+    expect(shape.stops).toEqual(voice.stops)
+    voice.onended?.()
+    for (const node of [...gains, ...oscillators]) {
+      expect(node.disconnected, node.kind).toBe(true)
+    }
+  })
+
+  it('leaves a line without it as it was: straight to the speaker', () => {
+    const fake = fakeContext()
+    playVoiceContour(fake.ctx, LINE, { hz: 130 })
+    const [master, level] = fake.gains
+    expect(level.connections).toEqual([master])
+    expect(fake.oscillators).toHaveLength(1)
   })
 })
 
