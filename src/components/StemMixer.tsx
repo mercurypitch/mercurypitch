@@ -55,7 +55,7 @@ import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, emptyAlignmentResult, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentNotes, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
 import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/lib/use-karaoke-voice-capture-controller'
-import { isNarrow, isShortTouchLandscape } from '@/lib/use-viewport'
+import { isPhoneStage } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
 import { isStemSplitActive, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
@@ -764,8 +764,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // on its side is not narrow, and got the desktop mixer (K6). Off the room,
   // a phone on its side gets the stage too (owner decision 2, 2 October
   // 2026): short and touch, which keeps tablets and touch laptops on the
-  // mixer (isShortTouchLandscape).
-  const phoneStage = () => isNarrow() || isShortTouchLandscape()
+  // mixer. isPhoneStage asks both as one media query: as two, a turning
+  // phone was neither for a moment, and the desktop mixer mounted.
+  const phoneStage = isPhoneStage
   const zenStage = () => hosted !== undefined || phoneStage() || karaokeZen()
 
   // ── "Why did the music get quiet?" ───────────────────────────

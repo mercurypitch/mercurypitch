@@ -35,6 +35,7 @@ window.matchMedia = ((query: string) => ({
 vi.mock('@/lib/use-viewport', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   isNarrow: () => true,
+  isPhoneStage: () => true,
   isMobile: () => true,
 }))
 

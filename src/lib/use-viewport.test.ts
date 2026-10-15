@@ -152,3 +152,50 @@ describe('a short touch screen held sideways', () => {
     ])
   })
 })
+
+describe('the phone stage, as a phone turns', () => {
+  // A browser tells each media query list of its change on its own. Asked as
+  // two lists, "narrow" and "short sideways", the phone was neither between
+  // the two notices, and the mixer mounted its desktop layout for that
+  // moment. One list answers in one notice.
+  it('never passes through the desktop mixer on the way round', async () => {
+    const viewport = await loadFor({ width: 390, height: 844, coarse: true })
+    const { createComputed, createRoot } = await import('solid-js')
+    const seen: boolean[] = []
+    const dispose = createRoot((done) => {
+      createComputed(() => seen.push(viewport.isPhoneStage()))
+      return done
+    })
+
+    changeTo({ width: 844, height: 390, coarse: true })
+    changeTo({ width: 390, height: 844, coarse: true })
+    dispose()
+
+    expect(seen).toEqual([true])
+  })
+
+  it.each([
+    ['an upright phone, 390x844', { width: 390, height: 844, coarse: true }],
+    ['a phone on its side, 844x390', { width: 844, height: 390, coarse: true }],
+    [
+      'a narrow desktop window, 700x900',
+      { width: 700, height: 900, coarse: false },
+    ],
+  ])('puts %s on the phone stage', async (_name, device) => {
+    expect((await loadFor(device)).isPhoneStage()).toBe(true)
+  })
+
+  it.each([
+    ['a desktop window, 1440x900', { width: 1440, height: 900, coarse: false }],
+    [
+      'a short desktop window, 844x390',
+      { width: 844, height: 390, coarse: false },
+    ],
+    [
+      'iPad mini on its side, 1133x744',
+      { width: 1133, height: 744, coarse: true },
+    ],
+  ])('keeps %s on the desktop mixer', async (_name, device) => {
+    expect((await loadFor(device)).isPhoneStage()).toBe(false)
+  })
+})

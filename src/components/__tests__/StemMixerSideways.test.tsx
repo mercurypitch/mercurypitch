@@ -42,6 +42,8 @@ vi.mock('@/lib/use-viewport', async (importOriginal) => {
     isNarrow: () => false,
     isMobile: () => true,
     isShortTouchLandscape: sideways,
+    // Narrow is false here, so the phone stage is the sideways match alone.
+    isPhoneStage: sideways,
   }
 })
 

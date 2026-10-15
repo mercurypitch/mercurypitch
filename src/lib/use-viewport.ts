@@ -87,6 +87,17 @@ export const isShortTouchLandscape: () => boolean = createReactiveMatch(
   SHORT_TOUCH_LANDSCAPE_QUERY,
 )
 
+/**
+ * Reactive: the phone stage's screens, narrow or a phone on its side, asked
+ * as ONE media query list. A browser tells each list of its change on its
+ * own, so `isNarrow() || isShortTouchLandscape()` was false for a moment
+ * while an upright phone turned (narrow had answered, sideways had not), and
+ * the desktop mixer mounted in between. One list answers in one notice.
+ */
+export const isPhoneStage: () => boolean = createReactiveMatch(
+  `${NARROW_QUERY}, ${SHORT_TOUCH_LANDSCAPE_QUERY}`,
+)
+
 /** Hook-style alias for ergonomics in components. */
 export function useIsMobile(): () => boolean {
   return isMobile
