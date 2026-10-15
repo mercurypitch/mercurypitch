@@ -1,0 +1,12 @@
+/* A glide room's note name under a crest (CrestNote.tsx): the body face,
+   and a dark halo painted under the letters. */
+.note {
+  font-family: var(--font-body, sans-serif);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  paint-order: stroke;
+  stroke: rgba(4, 9, 26, 0.62);
+  stroke-linejoin: round;
+  pointer-events: none;
+  user-select: none;
+}

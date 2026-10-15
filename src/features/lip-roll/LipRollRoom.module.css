@@ -103,6 +103,43 @@
   pointer-events: none;
 }
 
+/* A wave's top name: a small layer of its own over the dots, moved by
+   transform (BayScene placeDots), so a zoom never lays out its text. The
+   transform is on this div, not the svg: a transform on the svg itself
+   makes the browser lay its text out again every frame. */
+.name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.name > svg {
+  display: block;
+  overflow: visible;
+}
+
+/* The names are for singing: they leave as the take pulls back at the
+   result. Inside the scaling take the browser would lay their SVG text
+   out again every frame. */
+.scene[data-result='true'] .name {
+  display: none;
+  opacity: 0;
+}
+
+@supports (transition-behavior: allow-discrete) {
+  .name {
+    transition:
+      opacity 200ms ease,
+      display 200ms allow-discrete;
+  }
+
+  .reduced .name {
+    transition: none;
+  }
+}
+
 /* The foam's sparkles: on a crest once its top is lit. */
 .sparkles {
   opacity: 0;

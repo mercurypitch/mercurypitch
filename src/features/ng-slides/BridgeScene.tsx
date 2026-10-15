@@ -13,7 +13,9 @@
 //                what is behind (`plus-lighter`): unlit pictures, and a
 //                canvas for each arch lighting (bridge-glass.ts)
 //   lines        the target line along each arch (an SVG path from the
-//                glide path's own targetAt), the first arch's note names
+//                glide path's own targetAt), the first arch's root name and
+//                each arch's top note under its apex (room-kit CrestNote);
+//                the names leave as the take pulls back at the result
 //   ribbon       the voice (BridgeRibbon.tsx), fixed to the screen
 //   near bank    the corners' frame, fixed (F2), and the light at the top
 //   result       the pulled-back bridge, lit once from the take
@@ -27,12 +29,12 @@
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { createPictureSet } from '@/components/room-kit/canvas-picture'
+import { CREST_NOTE, CrestNote } from '@/components/room-kit/CrestNote'
 import type { Plate } from '@/components/room-kit/plate-loader'
 import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
 import { createResultBand } from '@/components/room-kit/result-band'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { targetAt } from '@/lib/glide/glide-path'
-import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { bridgeArt, bridgeImage, REFLECTION_ART, RESULT_PLATE, RIVER_PLATE, SHIMMER_URL, } from './bridge-art'
 import { ARCH, NOTE_NAMES, PARALLAX, PLATES, PLAYHEAD_X, RESULT_VIEW, SHIMMER, STORYBOARD_ASPECT, TARGET_LINE, } from './bridge-geometry'
 import type { GlassImages } from './bridge-glass'
@@ -328,24 +330,23 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
   const archLines = createMemo(() =>
     arches.map((k) => linePath(props.path, k, props.layout)),
   )
+  /** The first arch's root at its foot (screen 1), and each arch's top under its apex. */
   const names = createMemo(() => {
     const root = props.root
     if (root === null) return null
-    const fontPx = (NOTE_NAMES.capHeight / 0.72) * unit()
-    const at = (dx: number, y: number) => ({
-      x: (dx + LINES_MARGIN) * unit(),
+    const at = (x: number, y: number) => ({
+      x: (x + LINES_MARGIN) * unit(),
       y: yOf(props.layout, y),
     })
     return {
-      fontPx,
       root: {
         ...at(NOTE_NAMES.root.dx, ARCH.deckY + NOTE_NAMES.root.dy),
-        text: midiToNoteNameOctave(root),
+        midi: root,
       },
-      top: {
-        ...at(NOTE_NAMES.top.dx, ARCH.apexY + NOTE_NAMES.top.dy),
-        text: midiToNoteNameOctave(root + 7),
-      },
+      tops: props.path.arches.map((arch) => ({
+        ...at(apexX(arch.index), ARCH.apexY + CREST_NOTE.belowW),
+        midi: arch.topMidi,
+      })),
     }
   })
 
@@ -474,29 +475,27 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
             </For>
             <Show when={names()}>
               {(n) => (
-                <g
-                  font-size={n().fontPx.toFixed(1)}
-                  font-weight="600"
-                  text-anchor="middle"
-                  dominant-baseline="central"
-                  class={styles.names}
-                >
-                  <text
+                <g class={styles.names}>
+                  <CrestNote
                     x={n().root.x}
                     y={n().root.y}
+                    unit={unit()}
+                    midi={n().root.midi}
                     fill={NOTE_NAMES.root.colour}
-                    data-testid="ng-root-name"
-                  >
-                    {n().root.text}
-                  </text>
-                  <text
-                    x={n().top.x}
-                    y={n().top.y}
-                    fill={NOTE_NAMES.top.colour}
-                    data-testid="ng-top-name"
-                  >
-                    {n().top.text}
-                  </text>
+                    testId="ng-root-name"
+                  />
+                  <For each={n().tops}>
+                    {(top) => (
+                      <CrestNote
+                        x={top.x}
+                        y={top.y}
+                        unit={unit()}
+                        midi={top.midi}
+                        fill={NOTE_NAMES.top.colour}
+                        testId="ng-top-name"
+                      />
+                    )}
+                  </For>
                 </g>
               )}
             </Show>

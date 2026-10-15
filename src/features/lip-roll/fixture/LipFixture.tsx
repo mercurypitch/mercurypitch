@@ -83,6 +83,7 @@ export function fixtureController(scene: LipFixtureScene): LipController {
     mercState: () => scene.mercState,
     mercVoice: voice,
     path: () => PATH,
+    named: () => true,
     showResult: () => scene.summary !== null,
     start: () => undefined,
     stop: () => undefined,

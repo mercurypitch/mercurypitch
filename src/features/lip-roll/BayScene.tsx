@@ -12,7 +12,12 @@
 //                lighting (bay-waves.ts); drawn normally, opaque water
 //   dots         the target: pale dots along each crest (an SVG path per
 //                wave from the glide path's own targetAt, dashed to dots),
-//                and the foam's sparkles on a crest once its top is lit
+//                the foam's sparkles on a crest once its top is lit; over
+//                them each wave's top note under its crest (room-kit
+//                CrestNote), each name a small layer of its own, a div
+//                moved by transform: a zoom neither lays out nor repaints
+//                text (a transform inside the SVG would relay its text);
+//                the names leave as the take pulls back at the result
 //   ribbon       the voice (GlideRibbon), fixed to the screen
 //   bubbles      what the voice sheds while it sounds (bay-bubbles.ts)
 //   Merc         his canvas, moved by transform, with the buzz beside his
@@ -30,8 +35,9 @@
 // arrive (STAND-INS.md).
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { createPictureSet } from '@/components/room-kit/canvas-picture'
+import { CREST_NOTE, CrestNote, crestNoteFontPx, } from '@/components/room-kit/CrestNote'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import type { GlideRibbonApi, StrokePoint, } from '@/components/room-kit/GlideRibbon'
 import { GlideRibbon } from '@/components/room-kit/GlideRibbon'
@@ -73,6 +79,8 @@ export interface BaySceneProps {
   layout: BayLayout
   /** The glide path whose targets the dots follow. */
   path: GlidePath
+  /** The waves' notes are the singer's, not the room's guess: name their tops. */
+  named: boolean
   /** Reduced motion: the bay's parallax stops, no bubbles, the buzz holds still. */
   reduced: boolean
   /** The pulled-back result is showing. */
@@ -164,11 +172,17 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   const waveHolders: HTMLDivElement[] = []
   const dotPaths: SVGPathElement[] = []
   const sparkleGroups: SVGGElement[] = []
+  const topNames: HTMLDivElement[] = []
   const [resultReady, setResultReady] = createSignal(false)
 
   const dpr = (): number => window.devicePixelRatio || 1
   const art = createMemo(() => bayArt(dpr()))
   const unit = (): number => props.layout.unit
+  /** A top name's own box, px: the name and its halo, centred in it. */
+  const nameBox = (): { w: number; h: number } => {
+    const size = crestNoteFontPx(unit())
+    return { w: Math.ceil(size * 4), h: Math.ceil(size * 2) }
+  }
   const bubbles = createBubbleStream()
 
   // The waves' two pictures, decoded off the main thread once a visit and
@@ -206,6 +220,14 @@ export function BayScene(props: BaySceneProps): JSX.Element {
         )
         .join('')
       dotPaths[k]?.setAttribute('d', d)
+      const name = topNames[k] as HTMLDivElement | undefined
+      if (name !== undefined) {
+        const y = WAVE.crestY + CREST_NOTE.belowW
+        const box = nameBox()
+        const nx = localX(layout, zoom, crestX(k)) - box.w / 2
+        const ny = yOf(layout, frameY(zoom, y)) - box.h / 2
+        name.style.transform = `translate3d(${nx.toFixed(1)}px,${ny.toFixed(1)}px,0)`
+      }
       const group = sparkleGroups[k] as SVGGElement | undefined
       if (group === undefined) continue
       SPARKLES_U.forEach((u, i) => {
@@ -614,6 +636,38 @@ export function BayScene(props: BaySceneProps): JSX.Element {
               )}
             </For>
           </svg>
+          <For each={wavesList}>
+            {(k) => (
+              <Show when={props.named ? props.path.arches[k] : undefined}>
+                {(wave) => (
+                  <div
+                    ref={(el) => {
+                      topNames[k] = el
+                      dotsZoom = Number.NaN
+                      placeDots(zoomNow)
+                    }}
+                    class={styles.name}
+                  >
+                    <svg
+                      width={nameBox().w}
+                      height={nameBox().h}
+                      viewBox={`0 0 ${nameBox().w} ${nameBox().h}`}
+                      aria-hidden="true"
+                    >
+                      <CrestNote
+                        x={nameBox().w / 2}
+                        y={nameBox().h / 2}
+                        midi={wave().topMidi}
+                        unit={unit()}
+                        fill={DOTS.colour}
+                        testId="lip-top-name"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </Show>
+            )}
+          </For>
         </div>
         <GlideRibbon
           width={props.layout.width}

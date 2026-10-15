@@ -124,11 +124,6 @@
   pointer-events: none;
 }
 
-.names {
-  font-family: var(--font-body, sans-serif);
-  letter-spacing: 0.01em;
-}
-
 .ribbon {
   position: absolute;
   left: 0;
@@ -197,6 +192,26 @@
 .scene[data-result='true'] .result {
   opacity: 1;
   transform: none;
+}
+
+/* The note names are for singing: they leave as the take pulls back at
+   the result. Inside the scaling take the browser would lay their SVG
+   text out again every frame. */
+.scene[data-result='true'] .names {
+  display: none;
+  opacity: 0;
+}
+
+@supports (transition-behavior: allow-discrete) {
+  .names {
+    transition:
+      opacity 200ms ease,
+      display 200ms allow-discrete;
+  }
+
+  .reduced .names {
+    transition: none;
+  }
 }
 
 /* Merc: a canvas of one size, moved and scaled by transform only. */

@@ -124,6 +124,8 @@ export interface LipController {
   mercVoice: () => MercVoice
   /** The path the scene draws its dots from. */
   path: Accessor<GlidePath>
+  /** The waves are not the room's guess: their tops are named. */
+  named: Accessor<boolean>
   /** The pulled-back result is up. */
   showResult: Accessor<boolean>
   /** Start a run: from the intro, a result or a blocked mic. */
@@ -811,6 +813,7 @@ export function useLipController(): LipController {
     // At the intro he buzzes on his own; in a run he follows the singer.
     mercVoice: () => (moment === 'intro' ? introVoice : voice),
     path: () => scenePlan().path,
+    named: () => scenePlan().source !== 'preset',
     showResult,
     start,
     stop,

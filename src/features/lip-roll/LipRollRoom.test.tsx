@@ -11,6 +11,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CREST_NOTE } from '@/components/room-kit/CrestNote'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import mic from '@/components/room-kit/RoomControls.module.css'
 import { tone } from '@/lib/glass/test-frames'
@@ -25,6 +26,7 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type * as ArtModule from './bay-art'
+import { INTRO } from './bay-geometry'
 import type * as WavesModule from './bay-waves'
 import type { LipPlan } from './lip-run'
 import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC, planLipRun } from './lip-run'
@@ -418,6 +420,44 @@ describe('the intro', () => {
     expect(chip()).toBeNull()
     // The kept note's fit names the first wave's top.
     expect(bubble()).toContain('C4')
+  })
+
+  it("names each wave's top under the middle of its crest, as Merc's line does", () => {
+    render(() => <LipRollRoom onDone={() => undefined} />)
+
+    const names = screen.getAllByTestId('lip-top-name')
+    expect(names.map((n) => n.textContent)).toEqual(['C4', 'C4', 'C4'])
+    const crests = screen.getAllByTestId('lip-target')
+    names.forEach((name, k) => {
+      // The dotted crest's middle point: the middle of the wave's top.
+      const points = (crests[k].getAttribute('d') ?? '')
+        .split(/[ML]/u)
+        .filter((p) => p !== '')
+        .map((p) => p.split(' ').map(Number))
+      const [x, y] = points[(points.length - 1) / 2]
+      // Each name is centred in a small layer of its own, moved by
+      // transform: the layer's offset plus half its box is the name's centre.
+      const box = name.parentElement as Element
+      const layer = box.parentElement as HTMLElement
+      const [tx, ty] = layer.style.transform
+        .match(/-?[\d.]+(?=px)/gu)
+        ?.map(Number) ?? [Number.NaN, Number.NaN]
+      const cx = tx + Number(box.getAttribute('width')) / 2
+      const cy = ty + Number(box.getAttribute('height')) / 2
+      expect(Number(name.getAttribute('x'))).toBe(
+        Number(box.getAttribute('width')) / 2,
+      )
+      expect(cx).toBeCloseTo(x, 0)
+      // Under it, by the name's offset at the intro's zoom (wave A).
+      expect(cy - y).toBeCloseTo(INTRO.sy * CREST_NOTE.belowW * 390, 0)
+    })
+  })
+
+  it("names no tops while the waves are only the room's guess", () => {
+    kept.note = null
+    render(() => <LipRollRoom onDone={() => undefined} />)
+
+    expect(screen.queryAllByTestId('lip-top-name')).toEqual([])
   })
 
   it("turns Merc's sound rings off for the whole room: the buzz is drawn beside him", async () => {

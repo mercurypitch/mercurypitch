@@ -11,6 +11,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CREST_NOTE } from '@/components/room-kit/CrestNote'
 import mic from '@/components/room-kit/RoomControls.module.css'
 import { tone } from '@/lib/glass/test-frames'
 import type { GlidePath } from '@/lib/glide/glide-path'
@@ -25,6 +26,7 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type * as ArtModule from './bridge-art'
+import { TARGET_LINE } from './bridge-geometry'
 import type * as GlassModule from './bridge-glass'
 import type { LitStrip } from './bridge-reveal'
 import { NG_LINES } from './merc-lines'
@@ -416,6 +418,40 @@ describe('the intro', () => {
     expect(screen.getByTestId('ng-root-name').textContent).toBe(
       midiToNoteNameOctave(root),
     )
+  })
+})
+
+describe('the note names', () => {
+  it("names each arch's top under the middle of its apex", () => {
+    render(() => <NgSlidesRoom onDone={() => undefined} />)
+    const plan = planFor('learning', 45)
+
+    const tops = screen.getAllByTestId('ng-top-name')
+    expect(tops.map((n) => n.textContent)).toEqual(
+      plan.path.arches.map((a) => midiToNoteNameOctave(a.topMidi)),
+    )
+    const lines = screen.getAllByTestId('ng-target')
+    tops.forEach((name, k) => {
+      // The target line's middle point: the middle of the arch's top.
+      const points = (lines[k].getAttribute('d') ?? '')
+        .split(/[ML]/u)
+        .filter((p) => p !== '')
+        .map((p) => p.split(' ').map(Number))
+      const [x, y] = points[(points.length - 1) / 2]
+      expect(Number(name.getAttribute('x'))).toBeCloseTo(x, 0)
+      expect(Number(name.getAttribute('y')) - y).toBeCloseTo(
+        (CREST_NOTE.belowW - TARGET_LINE.offset) * 390,
+        0,
+      )
+    })
+  })
+
+  it("names nothing while the slides are only the room's guess", () => {
+    kept.note = null
+    render(() => <NgSlidesRoom onDone={() => undefined} />)
+
+    expect(screen.queryAllByTestId('ng-top-name')).toEqual([])
+    expect(screen.queryByTestId('ng-root-name')).toBeNull()
   })
 })
 
