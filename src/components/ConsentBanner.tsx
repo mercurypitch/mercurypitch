@@ -14,7 +14,7 @@
 import type { Component } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
 import { render } from 'solid-js/web'
-import { acceptConsent, closeConsentSettings, consentSettingsLine, declineConsent, hasAnyTag, initConsent, isConsentBannerOpen, isConsentSettingsOpen, markConsentBannerMounted, } from '@/lib/consent'
+import { acceptConsent, closeConsentSettings, consentSettingsLine, declineConsent, initConsent, isConsentActive, isConsentBannerOpen, isConsentSettingsOpen, markConsentBannerMounted, } from '@/lib/consent'
 import { publishFootSpace } from '@/lib/foot-space'
 import { PRIVACY_URL } from '@/lib/legal-links'
 import styles from './ConsentBanner.module.css'
@@ -132,13 +132,14 @@ const HOST_ID = 'mp-consent-root'
 /**
  * Boot Consent Mode and mount the banner into its own root appended to
  * <body>. Idempotent — call once per entry point (index.tsx, mirror/main).
- * No-op unless the build ships an ad tag, so dev / test / tour builds add
- * nothing to the DOM.
+ * No-op unless the build ships a Google tag or is a consent preview (dev and
+ * PR previews, CONSENT_PREVIEW), so test, tour and local builds add nothing
+ * to the DOM.
  */
 export function setupConsent(): void {
   if (typeof document === 'undefined') return
   initConsent()
-  if (!hasAnyTag()) return
+  if (!isConsentActive()) return
   if (document.getElementById(HOST_ID) !== null) return
   const host = document.createElement('div')
   host.id = HOST_ID
