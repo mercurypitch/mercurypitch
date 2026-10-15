@@ -5,7 +5,7 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
-## [0.9.18]
+## [0.9.18] - 2026-10-15
 
 The launch gift now says what using it earns, and the cookie banner no
 longer hides the tab bar, the confirm-email bar or your notifications. Mails
