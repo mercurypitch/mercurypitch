@@ -11,11 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.18]
 
-114 commits since `v0.9.17` (543f43c6c) before this release PR: PRs #908,
-#1002 to #1007, #1009 to #1017 and #1019 to #1026. Every commit came through
-a PR; none reached `main` without one. Of the 59 on `main`'s first-parent
-line, 15 are PR merge commits, 41 are the commits #1006 (4), #1007 (19),
-#1009 (5), #1014 (3), #908 (8) and #1004 (2) rebased onto `main` instead of
+117 commits since `v0.9.17` (543f43c6c) before this release PR: PRs #908,
+#1002 to #1007 and #1009 to #1026. Every commit came through a PR; none
+reached `main` without one. Of the 62 on `main`'s first-parent line, 15 are
+PR merge commits, 44 are the commits #1006 (4), #1007 (19), #1009 (5), #1014
+(3), #908 (8), #1004 (2) and #1018 (3) rebased onto `main` instead of
 merging, and 3 are the squash commits of #1010, #1019 and #1026. The owner decided
 on 15 October to release `main` as it stands: the key change and the mixer
 rail (#857) are not in 0.9.18 and go in 0.9.19.
@@ -25,7 +25,9 @@ a foot of the screen that stacks instead of hiding under the cookie banner
 (#1009), share cards and copy that say only what the tools do, in American
 spelling (#1007), mails that stay dark in Gmail on the iPhone (#1010,
 #1006), and the compact UI audit's fixes for focus rings, contrast, the
-control font and small screens (#908). Release tags now walk the guided
+control font and small screens (#908), and page titles that fit a search
+result, with snippets that no longer promise where audio goes (#1018).
+Release tags now walk the guided
 tours in their own workflow instead of running PR Gate (#1004), and PR
 Gate's lint step has the memory to finish (#1026). Most of the
 commits are the premium exercises, which reach no web build: Echo's art
@@ -208,6 +210,32 @@ From the compact UI audit:
   shake. The app font moved First Light by 1 px into exactly that band.
 - `src/e2e/ui-audit-regressions.spec.ts` holds six browser regressions, each
   shown to fail with its CSS fix removed.
+
+### Web: titles that fit a search result, snippets without device claims (#1018)
+
+Three commits from the SEO recheck of 14 October; the owner approved the
+titles and snippets on 15 October.
+
+- The prelude logo has `alt="MercuryPitch"` on every entry document and
+  `index.html`. Every entry document gets `twitter:image:alt`, the same text
+  as its `og:image:alt`, and the shared-voiceprint rewriter swaps it along
+  with the image. `/exercises/<slug>` still answers 200, now with
+  `X-Robots-Tag: noindex`, since each slug served the home document under
+  another URL. Meta keywords are gone and `imageAlt` is required in the
+  model. The Organization node takes the landing's `@id`, a PNG logo and the
+  landing's YouTube and X accounts. `/glass` declares its card's real size,
+  1200x670.
+- The home `<title>` and 14 page titles use a colon instead of an em dash and
+  fit a search result, 47 to 59 characters. The home title is now
+  "MercuryPitch: Free Singing Practice and Karaoke Online". `og:title` and
+  `twitter:title` keep their wording, so a shared link still says "See Your
+  Voice".
+- Ten strings on six pages (4 descriptions, 5 X lines and 1 FAQ answer) no
+  longer promise that audio never leaves the device; they end on "Free, in
+  your browser." A test rejects that absolute wording in any description,
+  card, X line or FAQ answer. The vocal remover's FAQ keeps "the file never
+  leaves your machine", which is true of its default local path, and names
+  the server option beside it.
 
 ### CI: Release Tours on web tags, not PR Gate (#1004)
 
