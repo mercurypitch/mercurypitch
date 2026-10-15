@@ -19,10 +19,11 @@
   color: var(--text-primary, #e6edf3);
   background: var(--bg-secondary, #161b22);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  width: max-content;
+  max-width: min(320px, calc(100vw - 32px));
   font-size: 0.75rem;
   font-weight: 500;
   line-height: 16px;
-  white-space: nowrap;
   transform: translateX(-50%);
   visibility: hidden;
   pointer-events: none;
@@ -46,6 +47,18 @@
 .hint[data-tone='warn'],
 .hint[data-tone='warn']::before {
   border-color: var(--danger, #ff7b72);
+}
+
+.hint[data-align='end'] {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+
+.hint[data-align='end']::before {
+  right: 14px;
+  left: auto;
+  margin-left: 0;
 }
 
 .hold[data-hint='on'] > .hint {

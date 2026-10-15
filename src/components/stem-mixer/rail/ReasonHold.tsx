@@ -45,6 +45,9 @@ export interface ReasonHoldProps {
   blocks: boolean
   /** A warning (red edge) rather than a wait. */
   tone?: 'wait' | 'warn'
+  /** Under the control's middle, or ending at its right edge (a control
+   *  near the right of the screen, whose reason would run off it). */
+  align?: 'center' | 'end'
   class?: string
   children: (control: ReasonControl) => JSX.Element
 }
@@ -100,6 +103,7 @@ export const ReasonHold: Component<ReasonHoldProps> = (props) => {
             id={id}
             class={styles.hint}
             data-tone={props.tone ?? 'wait'}
+            data-align={props.align ?? 'center'}
             data-testid="rail-reason"
           >
             {reason()}
