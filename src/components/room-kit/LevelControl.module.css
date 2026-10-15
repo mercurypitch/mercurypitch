@@ -1,7 +1,10 @@
-/* The level control: the pill on a room's stage, and the sheet it opens. */
+/* The level control: the pill in a room's side of the bar, and the sheet
+   it opens. */
 
-/* Sized for the longest tier name, Professional: in Long note, at 320 and
-   390 px wide the stage's top-left corner meets the lantern's top. */
+.control {
+  display: inline-flex;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -9,9 +12,11 @@
   min-width: 44px;
   height: 44px;
   padding: 0 10px 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  /* The bar's dark glass, as "?" beside it has: the art under the bar
+     can be bright (Lip roll's moon at 320 and 360 px wide). */
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(10, 18, 44, 0.55);
   color: var(--text-secondary);
   font: 600 13px/1 var(--font-body, sans-serif);
   white-space: nowrap;

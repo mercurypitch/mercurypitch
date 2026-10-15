@@ -47,6 +47,14 @@ export interface EchoController {
   mercState: Accessor<MercState>
   /** Read by Merc's renderer every frame; deliberately not reactive. */
   mercVoice: () => MercVoice
+  /**
+   * How loud the singer is, 0..1, from the newest frame the run has read:
+   * the mic's ring follows it on the singer's turn. Merc's call through
+   * the speaker is not the singer: the response's gate (the call plus
+   * RESPONSE_GATE_SECONDS) reads as silence. Read every frame;
+   * deliberately not reactive.
+   */
+  micLevel: () => number
   /** "Hear it again" is on offer now. */
   canReplay: Accessor<boolean>
   /** Start a run: from the intro, a result or a blocked mic. */

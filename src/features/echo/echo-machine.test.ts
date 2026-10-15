@@ -3,8 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { EchoEvent, EchoState } from './echo-machine'
-import { echoReducer, initialEchoState, isRunPhase } from './echo-machine'
+import type { EchoEvent, EchoPhase, EchoState } from './echo-machine'
+import { echoMicState, echoReducer, initialEchoState, isRunPhase, } from './echo-machine'
 
 const run = (events: readonly EchoEvent[], from = initialEchoState(5)) =>
   events.reduce<EchoState>(echoReducer, from)
@@ -148,6 +148,42 @@ describe('the Echo room machine', () => {
     )
     expect(still.map((p) => isRunPhase(p as EchoState['phase']))).toEqual(
       still.map(() => false),
+    )
+  })
+})
+
+describe('the mic in each phase', () => {
+  const PHASES: readonly EchoPhase[] = [
+    'intro',
+    'starting',
+    'settle',
+    'call',
+    'response',
+    'between',
+    'result',
+    'blocked',
+  ]
+
+  it('is the singer turn only in the settle and the response', () => {
+    const states = PHASES.map((phase) => [phase, echoMicState(phase, false)])
+
+    expect(Object.fromEntries(states)).toEqual({
+      intro: 'ready',
+      starting: 'wait',
+      settle: 'sing',
+      call: 'wait',
+      response: 'sing',
+      between: 'wait',
+      result: 'done',
+      blocked: 'ready',
+    })
+  })
+
+  it('waits through the whole demo, and is done at its result', () => {
+    const states = PHASES.map((phase) => echoMicState(phase, true))
+
+    expect(states).toEqual(
+      PHASES.map((phase) => (phase === 'result' ? 'done' : 'wait')),
     )
   })
 })

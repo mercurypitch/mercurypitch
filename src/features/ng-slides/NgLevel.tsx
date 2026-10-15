@@ -2,7 +2,7 @@
 // Ng slides' level: the room kit's level control, with Ng's lines
 // ============================================================
 //
-// The pill in the head's top-left corner and the sheet it opens
+// The pill in the bar, beside "?" (RoomBar.tsx), and the sheet it opens
 // (LevelControl.tsx). Ng slides reads the level as its slides' rules
 // (NG_SLIDES_LEVELS, DESIGN-ng-slides.md 3): how fast each slide goes,
 // how close to the line the voice must stay, whether the next note plays
@@ -24,8 +24,8 @@ export const NG_LEVEL_LINES: Record<ExerciseLevel, string> = {
 }
 
 export interface NgLevelProps {
-  /** The room's class for the pill, placed by the room. */
-  class: string
+  /** A class of the room's own for the pill, if it places it itself. */
+  class?: string
 }
 
 export function NgLevel(props: NgLevelProps): JSX.Element {

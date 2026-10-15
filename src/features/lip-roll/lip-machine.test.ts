@@ -3,8 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { LipEvent, LipState } from './lip-machine'
-import { initialLipState, isRunPhase, lipReducer } from './lip-machine'
+import type { LipEvent, LipPhase, LipState } from './lip-machine'
+import { initialLipState, isRunPhase, lipMicState, lipReducer, } from './lip-machine'
 
 const play = (
   events: readonly LipEvent[],
@@ -134,5 +134,40 @@ describe('the demo', () => {
     ])
 
     expect(state).toEqual({ phase: 'run', run: 2, block: null })
+  })
+})
+
+describe('the mic in each phase', () => {
+  const PHASES: readonly LipPhase[] = [
+    'intro',
+    'starting',
+    'settle',
+    'run',
+    'result',
+    'blocked',
+  ]
+
+  it('is the singer turn in the settle and while a wave is ridden', () => {
+    const states = PHASES.map((phase) => [
+      phase,
+      [lipMicState(phase, false, false), lipMicState(phase, true, false)],
+    ])
+
+    expect(Object.fromEntries(states)).toEqual({
+      intro: ['ready', 'ready'],
+      starting: ['wait', 'wait'],
+      settle: ['sing', 'sing'],
+      run: ['wait', 'sing'],
+      result: ['done', 'done'],
+      blocked: ['ready', 'ready'],
+    })
+  })
+
+  it('waits through the whole demo, a ridden wave included', () => {
+    const states = PHASES.map((phase) => lipMicState(phase, true, true))
+
+    expect(states).toEqual(
+      PHASES.map((phase) => (phase === 'result' ? 'done' : 'wait')),
+    )
   })
 })

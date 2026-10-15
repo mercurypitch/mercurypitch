@@ -20,6 +20,8 @@
 // microphone answer is pending or the room is blocked, and it bumps `run`
 // so no answer can land in it.
 
+import type { MicState } from '@/components/room-kit/mic-state'
+
 export type LipPhase =
   | 'intro'
   | 'starting'
@@ -68,6 +70,34 @@ const RUN_PHASES: ReadonlySet<LipPhase> = new Set<LipPhase>([
 /** A run is under way: the microphone is asked for or open. */
 export function isRunPhase(phase: LipPhase): boolean {
   return RUN_PHASES.has(phase)
+}
+
+/**
+ * The mic's state (mic-state.ts) in a phase. A run is the singer's turn
+ * only while a wave is being ridden (`riding`: its up, top and down, from
+ * the run's clock against the glide path); it waits, open, through the
+ * count-in, each landing and breath, and the mic's opening. The settle,
+ * an easy note before the waves, is the singer's too. The demo's waves
+ * never open the mic: they wait.
+ */
+export function lipMicState(
+  phase: LipPhase,
+  riding: boolean,
+  demo: boolean,
+): MicState {
+  if (phase === 'result') return 'done'
+  if (demo) return 'wait'
+  switch (phase) {
+    case 'settle':
+      return 'sing'
+    case 'run':
+      return riding ? 'sing' : 'wait'
+    case 'starting':
+      return 'wait'
+    case 'intro':
+    case 'blocked':
+      return 'ready'
+  }
 }
 
 export function initialLipState(): LipState {

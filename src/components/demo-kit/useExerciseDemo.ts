@@ -12,9 +12,16 @@
 // sound stops on Skip, on the way out and when the app goes to the
 // background. Sound needs a running audio clock: a first visit that cannot
 // start one without a tap opens on a play card instead of a silent demo.
+//
+// Its mic hint ("Tap the mic to start.") is the room's at rest: it stays
+// over the mic whenever the room waits for the tap that starts a take
+// (the mic's ready state, room-kit mic-state.ts) and the demo is not on.
+// The owner asked for it in every room after seeing it under Lip roll's
+// Try it (15 Oct 2026). It is not said out loud: the mic's own name says
+// what a tap does, and Try it says the hint once.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import type { DemoBeats, DemoCue, DemoMark, DemoTakeId, DemoTakeShape, TakeClock, } from './demo-plan'
 import { takeClock } from './demo-plan'
@@ -121,6 +128,7 @@ export interface ExerciseDemo<C extends string, T extends string> {
   mode: Accessor<DemoMode>
   /** The take on the pill; null outside the takes. */
   take: Accessor<DemoTakeId | null>
+  /** The tooltip showing: one of the takes', or the mic hint at rest. */
   tip: Accessor<DemoTip<C, T> | null>
   /** One of a take's fast-forwards is running. */
   fast: Accessor<boolean>
@@ -148,7 +156,7 @@ const AUTO_PLAY_MS = 1200
 const AUDIO_WAIT_MS = 700
 /** The longest a demo waits for its sound to be ready (DemoScript.ready). */
 export const READY_WAIT_MS = 3000
-/** The mic hint after Try it, seconds. */
+/** The mic's nudge after Try it, seconds. */
 const HINT_SECONDS = 3.2
 
 export function useExerciseDemo<
@@ -170,6 +178,21 @@ export function useExerciseDemo<
   )
   const [micPulse, setMicPulse] = createSignal(false)
   const [said, setSaid] = createSignal('')
+  /** A first visit's demo is about to start: no hint to flash before it. */
+  const [autoPending, setAutoPending] = createSignal(false)
+  /** The mic hint: one object, so the tooltip is not placed again. */
+  const micHint: DemoTip<C, T> = {
+    id: 'mic',
+    text: copy.micHint,
+    target: config.micTarget,
+  }
+  /** The room waits for the singer's tap, and nothing else is on. */
+  const atRest = (): boolean =>
+    mode() === 'idle' &&
+    !autoPending() &&
+    !script.active() &&
+    room.phase() === 'intro'
+  const shownTip = createMemo(() => tip() ?? (atRest() ? micHint : null))
 
   let alive = true
   /** Bumped by every start and stop: older timers fall silent. */
@@ -271,6 +294,7 @@ export function useExerciseDemo<
 
   const begin = (ctx: AudioContext | null): void => {
     halt()
+    setAutoPending(false)
     // The sound answered while the app was in the background (a first
     // visit's wait, or a Watch): no demo behind the singer's back. It
     // offers itself again, unseen, as a hide mid-demo leaves it.
@@ -349,13 +373,17 @@ export function useExerciseDemo<
 
   const autoPlay = (): void => {
     autoTimer = undefined
-    if (!idleIntro()) return
+    if (!idleIntro()) {
+      setAutoPending(false)
+      return
+    }
     const mine = ++request
     const offer = (): void => {
       clearTimeout(audioWait)
       if (!alive || mine !== request) return
       request += 1
       if (idleIntro()) setMode('card')
+      setAutoPending(false)
     }
     audioWait = setTimeout(offer, AUDIO_WAIT_MS)
     void soundNow().then((ctx) => {
@@ -363,6 +391,7 @@ export function useExerciseDemo<
       clearTimeout(audioWait)
       whenReady(mine, () => {
         if (idleIntro()) begin(ctx)
+        setAutoPending(false)
       })
     }, offer)
   }
@@ -370,10 +399,12 @@ export function useExerciseDemo<
   const cancelAuto = (): void => {
     if (autoTimer !== undefined) clearTimeout(autoTimer)
     autoTimer = undefined
+    setAutoPending(false)
   }
 
   onMount(() => {
     if (!config.autoPlays()) return
+    setAutoPending(true)
     autoTimer = setTimeout(autoPlay, AUTO_PLAY_MS)
   })
 
@@ -387,11 +418,9 @@ export function useExerciseDemo<
       room.moment,
       () => {
         cancelAuto()
-        // The mic hint is done once the singer starts.
-        if (untrack(tip)?.id === 'mic' && room.phase() !== 'intro') {
-          show(null)
-          setMicPulse(false)
-        }
+        // The nudge is done once the singer starts; the hint goes with
+        // the room's rest by itself.
+        if (room.phase() !== 'intro') setMicPulse(false)
       },
       { defer: true },
     ),
@@ -424,7 +453,7 @@ export function useExerciseDemo<
   return {
     mode,
     take,
-    tip,
+    tip: shownTip,
     fast,
     run,
     micPulse,
@@ -452,12 +481,10 @@ export function useExerciseDemo<
       setTake(null)
       setRun(null)
       setMode('idle')
-      show({ id: 'mic', text: copy.micHint, target: config.micTarget })
+      // The room is back at rest, so the mic hint is up: said once here.
+      setSaid(copy.micHint)
       setMicPulse(!still)
-      later(HINT_SECONDS, () => {
-        show(null)
-        setMicPulse(false)
-      })
+      later(HINT_SECONDS, () => setMicPulse(false))
     },
   }
 }

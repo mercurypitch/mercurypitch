@@ -37,6 +37,7 @@ import { createMercMoves } from '@/components/room-kit/merc-moves'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { createRoomTones } from '@/components/room-kit/room-tones'
 import { createScreenAwake } from '@/components/room-kit/screen-awake'
+import { newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
@@ -105,6 +106,17 @@ export interface LipController {
   line: Accessor<string>
   /** "Wave 2 of 3" during a run; null for none. */
   chip: Accessor<string | null>
+  /**
+   * A wave is being ridden (its up, top and down): the singer's turn in a
+   * run (lipMicState). False in the count-in, a landing, a breath and the
+   * demo.
+   */
+  riding: Accessor<boolean>
+  /**
+   * How loud the singer is, 0..1, from the newest frame the run has read:
+   * the mic's ring follows it. Read every frame; deliberately not reactive.
+   */
+  micLevel: () => number
   summary: Accessor<LipSummary | null>
   mercState: Accessor<MercState>
   /** Read by Merc's renderer every frame; deliberately not reactive. */
@@ -156,6 +168,7 @@ export function useLipController(): LipController {
   const [state, setState] = createSignal<LipState>(initialLipState())
   const [line, setLine] = createSignal('')
   const [chip, setChip] = createSignal<string | null>(null)
+  const [ridingWave, setRidingWave] = createSignal(false)
   const [summary, setSummary] = createSignal<LipSummary | null>(null)
   const [showResult, setShowResult] = createSignal(false)
   // The demo: on, and playing (the screen stays on only while it plays).
@@ -230,12 +243,20 @@ export function useLipController(): LipController {
   let processed = 0
   let loop = 0
   let lastVoiceAt = 0
+  /** How loud the newest frame is, 0..1, for the mic's ring. */
+  let loudness = 0
   let settling = false
   /** The level a run is sung at, pinned at its start. */
   let runLevel: GlideLevelId = untrack(exerciseLevel)
 
   /** Seconds on the window's clock. */
   const windowNow = (): number => (performance.now() - windowStartedAt) / 1000
+
+  /** The mic hears nothing now: no wave ridden, no loudness. */
+  const quietMic = (): void => {
+    loudness = 0
+    setRidingWave(false)
+  }
 
   const openWindow = (): void => {
     capture.startWindow()
@@ -339,6 +360,7 @@ export function useLipController(): LipController {
       run.hushed = segment.arch
       if (untrack(line) !== '') setLine('')
     }
+    if (untrack(ridingWave) !== riding) setRidingWave(riding)
     if (wave === run.plan.path.arches.length - 1 && !run.resultAsked) {
       run.resultAsked = true
       preloadLipResult()
@@ -360,6 +382,7 @@ export function useLipController(): LipController {
   function runFrame(run: Live): void {
     const scripted = run.scripted
     const frames = scripted === null ? capture.peekFrames() : scripted.frames()
+    if (scripted === null) loudness = newestLevel(frames)
     run.take.hear(frames, run.plan.countIn)
     if (live !== run) return
     const now = scripted === null ? windowNow() : scripted.now()
@@ -400,6 +423,7 @@ export function useLipController(): LipController {
   /** No root yet: the first easy note the singer settles on fits the waves. */
   function settleFrame(): void {
     const frames = capture.peekFrames()
+    loudness = newestLevel(frames)
     if (frames.length === processed) return
     processed = frames.length
     const heard = settleLiveNote(frames)
@@ -496,6 +520,7 @@ export function useLipController(): LipController {
     const shown = summarize(result, kept, exerciseLevelName(run.level))
     const { moment: said, fields } = resultLine(result, shown, run.preset)
     batch(() => {
+      quietMic()
       setSummary(shown)
       setChip(null)
       say(said, fields)
@@ -555,6 +580,7 @@ export function useLipController(): LipController {
     voice = SILENT_VOICE
     view?.reset(INTRO_CAMERA)
     batch(() => {
+      quietMic()
       dispatch({ type })
       setChip(null)
       setShowResult(false)
@@ -687,6 +713,7 @@ export function useLipController(): LipController {
     faceUntil = 0
     view?.reset(INTRO_CAMERA)
     batch(() => {
+      quietMic()
       setSummary(null)
       setChip(null)
       setShowResult(false)
@@ -779,6 +806,8 @@ export function useLipController(): LipController {
     state,
     line,
     chip,
+    riding: ridingWave,
+    micLevel: () => loudness,
     summary,
     mercState: merc.state,
     // At the intro he buzzes on his own; in a run he follows the singer.

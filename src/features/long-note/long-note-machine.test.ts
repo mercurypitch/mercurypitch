@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { LongNoteEvent, LongNoteState } from './long-note-machine'
-import { initialLongNoteState, longNoteReducer } from './long-note-machine'
+import type { LongNoteEvent, LongNotePhase, LongNoteState, } from './long-note-machine'
+import { initialLongNoteState, longNoteMicState, longNoteReducer, } from './long-note-machine'
 
 function run(
   events: LongNoteEvent[],
@@ -220,5 +220,40 @@ describe('long-note-machine', () => {
     )
     expect(state.phase).toBe('hold')
     expect(state.targetMidi).toBeNull()
+  })
+})
+
+describe('the mic in each phase', () => {
+  const PHASES: readonly LongNotePhase[] = [
+    'intro',
+    'starting',
+    'listen',
+    'hold',
+    'result',
+    'blocked',
+  ]
+
+  it('waits through the cue note and is the singer turn from the open mic on', () => {
+    const states = PHASES.map((phase) => [
+      phase,
+      longNoteMicState(phase, false),
+    ])
+
+    expect(Object.fromEntries(states)).toEqual({
+      intro: 'ready',
+      starting: 'wait',
+      listen: 'sing',
+      hold: 'sing',
+      result: 'done',
+      blocked: 'ready',
+    })
+  })
+
+  it('waits through the whole demo, and is done at its result', () => {
+    const states = PHASES.map((phase) => longNoteMicState(phase, true))
+
+    expect(states).toEqual(
+      PHASES.map((phase) => (phase === 'result' ? 'done' : 'wait')),
+    )
   })
 })

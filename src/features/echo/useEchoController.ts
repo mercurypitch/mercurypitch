@@ -36,7 +36,7 @@ import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves, HOP_MS } from '@/components/room-kit/merc-moves'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { createScreenAwake } from '@/components/room-kit/screen-awake'
-import { levelFromRms } from '@/components/room-kit/voice-level'
+import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_ECHO_STARS } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
@@ -214,6 +214,8 @@ export function useEchoController(
   let listening = false
   let loop = 0
   let lastVoiceAt = 0
+  /** How loud the newest frame is, 0..1, for the mic's ring. */
+  let loudness = 0
   /** Voice over the call, off Merc's note: shown once per call. */
   let early: EarlyWatch = NO_EARLY
   let previousFrame: PitchFrame | null = null
@@ -269,6 +271,7 @@ export function useEchoController(
   }
   const stopLoop = (): void => {
     listening = false
+    loudness = 0
     if (loop !== 0) cancelAnimationFrame(loop)
     loop = 0
   }
@@ -474,6 +477,19 @@ export function useEchoController(
     callPhrase(SETTLED_LEAD_SECONDS)
   }
 
+  /**
+   * The singer's loudness in the newest frame, on their turns alone: the
+   * settle, and the response from its gate. Before the gate the mic still
+   * hears Merc's call from the speaker, and that is silence here.
+   */
+  const singerLoudness = (frames: readonly PitchFrame[]): number => {
+    const last = frames.length === 0 ? null : frames[frames.length - 1]
+    if (last === null) return 0
+    if (phase() === 'settle') return newestLevel(frames)
+    if (phase() !== 'response' || last.t < engine.responseStart) return 0
+    return newestLevel(frames)
+  }
+
   /** A minute with no voice during a run: it stops, and the mic closes. */
   const restIfQuiet = (): void => {
     if (performance.now() - lastVoiceAt <= QUIET_LIMIT_SECONDS * 1000) return
@@ -487,6 +503,7 @@ export function useEchoController(
     if (scripted !== null) follow(scripted.frames())
     else {
       const frames = capture.peekFrames()
+      loudness = singerLoudness(frames)
       if (phase() === 'settle') findRoot(frames)
       else follow(frames)
       if (listening) restIfQuiet()
@@ -786,6 +803,7 @@ export function useEchoController(
     summary,
     mercState: merc.state,
     mercVoice: () => (phase() === 'call' ? callVoice() : voice),
+    micLevel: () => loudness,
     canReplay: () =>
       state().phase === 'response' && replays() > 0 && !scriptActive(),
     start,

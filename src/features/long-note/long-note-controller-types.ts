@@ -41,6 +41,11 @@ export interface LongNoteController {
   mercPlace: Accessor<MercPlace>
   /** Read by Merc's renderer every frame; deliberately not reactive. */
   mercVoice: () => MercVoice
+  /**
+   * How loud the singer is, 0..1, from the newest frame the take has read:
+   * the mic's ring follows it. Read every frame; deliberately not reactive.
+   */
+  micLevel: () => number
   lanternLevel: Accessor<number>
   lanternGlow: Accessor<number>
   /** The lantern's shine: 0, GOAL_SHINE from the goal, 1 at the brim. */

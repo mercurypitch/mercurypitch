@@ -34,6 +34,7 @@ import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { createScreenAwake } from '@/components/room-kit/screen-awake'
+import { newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
@@ -107,6 +108,17 @@ export interface NgController {
   line: Accessor<string>
   /** "Slide 2 of 5" during a run; null for none. */
   chip: Accessor<string | null>
+  /**
+   * A slide is being sung (its up, top and down): the singer's turn in a
+   * run (ngMicState). False in the count-in, a landing, a breath and the
+   * demo.
+   */
+  sliding: Accessor<boolean>
+  /**
+   * How loud the singer is, 0..1, from the newest frame the run has read:
+   * the mic's ring follows it. Read every frame; deliberately not reactive.
+   */
+  micLevel: () => number
   summary: Accessor<NgSummary | null>
   mercState: Accessor<MercState>
   /** Read by Merc's renderer every frame; deliberately not reactive. */
@@ -152,6 +164,7 @@ export function useNgController(): NgController {
   const [state, setState] = createSignal<NgState>(initialNgState())
   const [line, setLine] = createSignal('')
   const [chip, setChip] = createSignal<string | null>(null)
+  const [onSlide, setOnSlide] = createSignal(false)
   const [summary, setSummary] = createSignal<NgSummary | null>(null)
   const [showResult, setShowResult] = createSignal(false)
   // The demo: on, and playing (the screen stays on only while it plays).
@@ -226,12 +239,20 @@ export function useNgController(): NgController {
   let processed = 0
   let loop = 0
   let lastVoiceAt = 0
+  /** How loud the newest frame is, 0..1, for the mic's ring. */
+  let loudness = 0
   let settling = false
   /** The level a run is sung at, pinned at its start. */
   let runLevel: GlideLevelId = untrack(exerciseLevel)
 
   /** Seconds on the window's clock. */
   const windowNow = (): number => (performance.now() - windowStartedAt) / 1000
+
+  /** The mic hears nothing now: no slide sung, no loudness. */
+  const quietMic = (): void => {
+    loudness = 0
+    setOnSlide(false)
+  }
 
   const openWindow = (): void => {
     capture.startWindow()
@@ -338,6 +359,7 @@ export function useNgController(): NgController {
       run.hushed = segment.arch
       if (untrack(line) !== '') setLine('')
     }
+    if (untrack(onSlide) !== sliding) setOnSlide(sliding)
     if (slide === run.plan.path.arches.length - 1 && !run.resultAsked) {
       run.resultAsked = true
       preloadNgResult()
@@ -359,6 +381,7 @@ export function useNgController(): NgController {
   function runFrame(run: Live): void {
     const scripted = run.scripted
     const frames = scripted === null ? capture.peekFrames() : scripted.frames()
+    if (scripted === null) loudness = newestLevel(frames)
     run.take.hear(frames, run.plan.countIn)
     if (live !== run) return
     const now = scripted === null ? windowNow() : scripted.now()
@@ -396,6 +419,7 @@ export function useNgController(): NgController {
   /** No root yet: the first easy note the singer settles on fits the slides. */
   function settleFrame(): void {
     const frames = capture.peekFrames()
+    loudness = newestLevel(frames)
     if (frames.length === processed) return
     processed = frames.length
     const heard = settleLiveNote(frames)
@@ -490,6 +514,7 @@ export function useNgController(): NgController {
     const shown = summarize(result, kept, exerciseLevelName(run.level))
     const { moment: said, fields } = resultLine(result, shown, run.preset)
     batch(() => {
+      quietMic()
       setSummary(shown)
       setChip(null)
       say(said, fields)
@@ -548,6 +573,7 @@ export function useNgController(): NgController {
     voice = SILENT_VOICE
     view?.reset(INTRO_CAMERA)
     batch(() => {
+      quietMic()
       dispatch({ type })
       setChip(null)
       setShowResult(false)
@@ -680,6 +706,7 @@ export function useNgController(): NgController {
     faceUntil = 0
     view?.reset(INTRO_CAMERA)
     batch(() => {
+      quietMic()
       setSummary(null)
       setChip(null)
       setShowResult(false)
@@ -753,6 +780,8 @@ export function useNgController(): NgController {
     state,
     line,
     chip,
+    sliding: onSlide,
+    micLevel: () => loudness,
     summary,
     mercState: merc.state,
     // At the intro he hums on his own; in a run he follows the singer.

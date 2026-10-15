@@ -75,6 +75,8 @@ export function fixtureController(
     mercState: () => scene.mercState,
     mercPlace: () => scene.mercPlace,
     mercVoice: () => voice,
+    // The mic's ring holds at the pinned voice's loudness.
+    micLevel: () => voice.level,
     lanternLevel: () => scene.level,
     lanternGlow: () => scene.glow,
     shine: () => scene.shine,

@@ -3,8 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { NgEvent, NgState } from './ng-machine'
-import { initialNgState, isRunPhase, ngReducer } from './ng-machine'
+import type { NgEvent, NgPhase, NgState } from './ng-machine'
+import { initialNgState, isRunPhase, ngMicState, ngReducer } from './ng-machine'
 
 const play = (events: readonly NgEvent[], from = initialNgState()): NgState =>
   events.reduce(ngReducer, from)
@@ -132,5 +132,40 @@ describe('the demo', () => {
     ])
 
     expect(state).toEqual({ phase: 'run', run: 2, block: null })
+  })
+})
+
+describe('the mic in each phase', () => {
+  const PHASES: readonly NgPhase[] = [
+    'intro',
+    'starting',
+    'settle',
+    'run',
+    'result',
+    'blocked',
+  ]
+
+  it('is the singer turn in the settle and while a slide is sung', () => {
+    const states = PHASES.map((phase) => [
+      phase,
+      [ngMicState(phase, false, false), ngMicState(phase, true, false)],
+    ])
+
+    expect(Object.fromEntries(states)).toEqual({
+      intro: ['ready', 'ready'],
+      starting: ['wait', 'wait'],
+      settle: ['sing', 'sing'],
+      run: ['wait', 'sing'],
+      result: ['done', 'done'],
+      blocked: ['ready', 'ready'],
+    })
+  })
+
+  it('waits through the whole demo, a sung slide included', () => {
+    const states = PHASES.map((phase) => ngMicState(phase, true, true))
+
+    expect(states).toEqual(
+      PHASES.map((phase) => (phase === 'result' ? 'done' : 'wait')),
+    )
   })
 })

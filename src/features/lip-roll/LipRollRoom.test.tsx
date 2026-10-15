@@ -12,6 +12,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
+import mic from '@/components/room-kit/RoomControls.module.css'
 import { tone } from '@/lib/glass/test-frames'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { segmentAt } from '@/lib/glide/glide-path'
@@ -19,7 +20,7 @@ import type { GlideLevelId } from '@/lib/glide/glide-presets'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
 import { fitLipRoll } from '@/lib/glide/glide-targets'
 import type { Voice } from '@/lib/glide/test-glides'
-import { follow, framesOf, offset, playGlide } from '@/lib/glide/test-glides'
+import { follow, framesOf, offset, playGlide, silentWhen, } from '@/lib/glide/test-glides'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
@@ -265,6 +266,18 @@ interface Seen {
   readonly phase: string | undefined
   readonly chip: string | null
   readonly bubble: string | null
+  /** The mic's state, and its ring's scale (NaN when it is not drawn). */
+  readonly mic: string | undefined
+  readonly ring: number
+}
+
+/** The mic's ring as drawn now: its scale, NaN with none written. */
+function ringScale(): number {
+  const ring = screen.queryByTestId('lip-mic')?.querySelector(`.${mic.ring}`)
+  const scale = /scale\(([\d.]+)\)/u.exec(
+    (ring as HTMLElement | null)?.style.transform ?? '',
+  )
+  return scale === null ? Number.NaN : Number(scale[1])
 }
 
 /**
@@ -291,6 +304,8 @@ function play(
       phase: phase(),
       chip: chip(),
       bubble: bubble(),
+      mic: screen.queryByTestId('lip-mic')?.dataset.state,
+      ring: ringScale(),
     })
     if (phase() !== 'run') break
   }
@@ -637,5 +652,59 @@ describe('a blocked mic', () => {
     fireEvent.click(screen.getByTestId('lip-retry'))
     await settle()
     expect(phase()).toBe('run')
+  })
+})
+
+describe('the mic through a run', () => {
+  /** Strictly inside a wave's up, top or down: the singer's turn. */
+  const ridden = (plan: LipPlan, t: number): boolean => {
+    const segment = t < 0 ? null : segmentAt(plan.path, t)
+    return (
+      segment !== null &&
+      segment.phase !== 'breath' &&
+      segment.phase !== 'landing'
+    )
+  }
+
+  it('waits through the count-in, each landing and each breath, and is the singer turn on every wave', async () => {
+    const plan = planFor('learning', 52)
+    const frames = windowFrames(plan, follow(plan.path))
+    await startRun()
+
+    const seen = play(frames, plan)
+
+    // Clear of each edge by more than a screen frame.
+    const clear = seen.filter(
+      (s) =>
+        s.phase === 'run' &&
+        ridden(plan, s.t - 0.06) === ridden(plan, s.t + 0.06),
+    )
+    const turns = clear.filter((s) => ridden(plan, s.t))
+    const waits = clear.filter((s) => !ridden(plan, s.t))
+    expect(turns.length).toBeGreaterThan(0)
+    expect(waits.some((s) => s.t < 0)).toBe(true)
+    expect(turns.every((s) => s.mic === 'sing')).toBe(true)
+    expect(waits.every((s) => s.mic === 'wait')).toBe(true)
+  })
+
+  it('moves the ring with the voice and lets it fall back when the voice stops mid-wave', async () => {
+    const plan = planFor('learning', 52)
+    const arch = plan.path.arches[1]
+    const gap = { from: arch.start + 0.4, to: arch.start + 1.2 }
+    const voice = silentWhen(
+      follow(plan.path),
+      (t) => t >= gap.from && t < gap.to,
+    )
+    await startRun()
+
+    const seen = play(windowFrames(plan, voice), plan)
+
+    const sung = seen.filter((s) => s.t > gap.from - 0.2 && s.t < gap.from)
+    const hushed = seen.filter((s) => s.t > gap.to - 0.1 && s.t < gap.to)
+    expect(gap.to).toBeLessThan(arch.end)
+    expect(sung.length).toBeGreaterThan(0)
+    expect(hushed.length).toBeGreaterThan(0)
+    expect(sung.every((s) => s.mic === 'sing' && s.ring > 1.2)).toBe(true)
+    expect(hushed.every((s) => s.mic === 'sing' && s.ring < 1.05)).toBe(true)
   })
 })

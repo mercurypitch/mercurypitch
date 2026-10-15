@@ -69,13 +69,18 @@ export function fixtureController(scene: NgFixtureScene): NgController {
   const strips: LitStrip[] = scene.lit.flatMap((ranges, arch) =>
     ranges.map(([from, to]) => ({ arch, from, to })),
   )
+  const voice = voiceOf(scene.voice)
   return {
     state: () => ({ phase: scene.phase, run: 0, block: null }),
     line: () => scene.line,
     chip: () => scene.chip,
+    // A pinned slide is being sung, and the mic's ring holds at the
+    // pinned voice's loudness.
+    sliding: () => scene.phase === 'run',
+    micLevel: () => voice().level,
     summary: () => scene.summary,
     mercState: () => scene.mercState,
-    mercVoice: voiceOf(scene.voice),
+    mercVoice: voice,
     lines: () => ({ path: PATH, root: scene.names ? FIXTURE_ROOT : null }),
     showResult: () => scene.summary !== null,
     start: () => undefined,

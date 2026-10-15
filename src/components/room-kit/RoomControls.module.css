@@ -1,11 +1,30 @@
 /* The room's controls: the mic button, Again and Done, the mic's notice. */
+
+/* The mic: a disc, with a breathing glow under it (ready) and a ring the
+   voice moves (sing). Its four looks are its data-state (mic-state.ts).
+   The room sets its lit colour, --mic-lit, on its root. */
 .mic {
+  --lit: var(--mic-lit, #04ecd8);
   position: relative;
   display: grid;
   place-items: center;
   width: 84px;
   height: 84px;
+  padding: 0;
   border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #fff;
+}
+
+/* Every part is sized, not stretched: WebKit shrink-wraps an absolute
+   child of a grid (MISTAKES.md, painted control bounds). */
+.disc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 35% 30%,
@@ -14,71 +33,123 @@
     #7b4cf5 100%
   );
   box-shadow: 0 8px 28px rgba(123, 76, 245, 0.45);
-  color: #fff;
+  transition: opacity 160ms ease;
 }
 
-.mic svg {
+.disc svg {
   width: 32px;
   height: 32px;
 }
 
-.mic::after {
-  content: '';
+/* Ready's invitation: a soft light behind the disc, breathing slowly. */
+.halo {
   position: absolute;
-  inset: -8px;
+  top: 50%;
+  left: 50%;
+  width: 132px;
+  height: 132px;
+  margin: -66px 0 0 -66px;
   border-radius: 50%;
-  border: 2px solid rgba(160, 130, 255, 0.55);
-  animation: mic-pulse 2s ease-out infinite;
+  background: radial-gradient(
+    closest-side,
+    rgba(150, 125, 255, 0.55) 0%,
+    rgba(150, 125, 255, 0.22) 64%,
+    rgba(150, 125, 255, 0) 100%
+  );
+  opacity: 0;
   pointer-events: none;
 }
 
-.micListening::after {
-  border-color: rgba(4, 236, 216, 0.7);
-  animation-duration: 1.2s;
+/* The voice's ring, in the room's lit colour: shown in sing only, and
+   moved there by the button's frame loop (transform and opacity). */
+.ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  box-sizing: border-box;
+  width: 100px;
+  height: 100px;
+  margin: -50px 0 0 -50px;
+  border: 2.5px solid var(--lit);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.mic:disabled {
-  opacity: 0.6;
+.mic[data-state='ready'] .halo {
+  animation: mic-breathe 3.2s ease-in-out infinite;
 }
 
-/* While a demo sings, the mic is not listening and looks it. */
-.micDemo {
-  opacity: 0.35;
+/* Open, not the singer's turn: dimmed and still. */
+.mic[data-state='wait'] .disc {
+  opacity: 0.38;
   box-shadow: none;
 }
 
-.micDemo::after {
-  animation: none;
-  opacity: 0;
+/* The singer's turn: the disc lights in the room's colour, the mic fills,
+   and the ring wakes. One short pop says the turn has come. */
+.mic[data-state='sing'] .disc {
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--lit) 30%, #fff) 0%,
+    var(--lit) 55%,
+    color-mix(in srgb, var(--lit) 62%, #2a3aa8) 100%
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--lit) 55%, #fff),
+    0 0 30px color-mix(in srgb, var(--lit) 55%, transparent);
+  color: #0a1238;
+  animation: mic-turn 200ms ease-out;
+}
+
+.mic[data-state='sing'] .ring {
+  opacity: 0.45;
+  will-change: transform, opacity;
+}
+
+/* Closed at a result: an outline. */
+.mic[data-state='done'] .disc {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 /* After Try it: one nudge to say "this one". */
-.micPulse {
+.micPulse .disc {
   animation: mic-nudge 900ms ease-out 1;
+}
+
+@keyframes mic-breathe {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.9;
+  }
+}
+
+@keyframes mic-turn {
+  0% {
+    transform: scale(0.9);
+  }
+  55% {
+    transform: scale(1.07);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes mic-nudge {
   0%,
   100% {
     transform: scale(1);
-    box-shadow: 0 8px 28px rgba(123, 76, 245, 0.45);
   }
   40% {
     transform: scale(1.1);
-    box-shadow:
-      0 8px 28px rgba(123, 76, 245, 0.45),
-      0 0 0 10px rgba(160, 130, 255, 0.28);
-  }
-}
-
-@keyframes mic-pulse {
-  from {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  to {
-    transform: scale(1.35);
-    opacity: 0;
   }
 }
 
@@ -119,30 +190,62 @@
 }
 
 /* A short phone (360 x 640, 375 x 667): a smaller mic. Its ring's travel
-   is (64 + 2 x 6) x 1.35 / 2 - 32 = 19.3 px past the disc, inside the
-   room's gap and bottom padding there. */
+   is (64 + 2 x 6) x 1.3 / 2 - 32 = 17.4 px past the disc, and the glow's
+   at its widest 104 x 1.06 / 2 - 32 = 23.1 px, inside the room's gap and
+   bottom padding there. */
 @media (max-height: 700px) {
-  .mic {
+  .mic,
+  .disc {
     width: 64px;
     height: 64px;
   }
 
-  .mic svg {
+  .disc svg {
     width: 26px;
     height: 26px;
   }
 
-  .mic::after {
-    inset: -6px;
+  .halo {
+    width: 104px;
+    height: 104px;
+    margin: -52px 0 0 -52px;
+  }
+
+  .ring {
+    width: 76px;
+    height: 76px;
+    margin: -38px 0 0 -38px;
   }
 }
 
+/* Reduced motion: no breathing, no pop and no nudge. The glow stays,
+   still, and the ring keeps its size and brightens in steps
+   (mic-state.ts, ringLook): it still says the mic hears the singer. */
 @media (prefers-reduced-motion: reduce) {
-  .mic::after {
+  .mic[data-state='ready'] .halo {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .mic[data-state='sing'] .disc,
+  .micPulse .disc {
     animation: none;
   }
 
-  .micPulse {
-    animation: none;
+  .disc {
+    transition: none;
   }
+}
+
+/* A room held still (its `still`, the fixtures): the state's look and
+   nothing moving. The glow holds where reduced motion holds it, and the
+   ring is drawn once, at the level the room gives it (RoomControls.tsx). */
+.mic.still[data-state='ready'] .halo {
+  animation: none;
+  opacity: 0.6;
+}
+
+.mic.still .disc {
+  animation: none;
+  transition: none;
 }
