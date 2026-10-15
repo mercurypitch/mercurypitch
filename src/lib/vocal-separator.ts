@@ -27,9 +27,11 @@ export type SeparatorStatus =
  * How long the graphics card gets to set the model up, counted from the end
  * of the download. A GPU that hangs without reporting a lost device left the
  * separator loading forever; past this the worker is replaced and the model
- * set up on the CPU.
+ * set up on the CPU. A crashed GPU process reports a lost device and moves at
+ * once, so this only backs up a silent hang, and is generous enough that a
+ * slow but healthy GPU never meets it.
  */
-export const GPU_SETUP_LIMIT_MS = 30_000
+export const GPU_SETUP_LIMIT_MS = 60_000
 
 /**
  * After the device is lost mid-run, how long the worker gets to report that
