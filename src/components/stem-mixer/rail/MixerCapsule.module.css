@@ -201,6 +201,14 @@
   background: color-mix(in srgb, var(--danger, #ff7b72) 18%, transparent);
 }
 
+/* Still red under the pointer that pressed it, while its reason shows. */
+@media (hover: hover) {
+  .mic[data-state='error']:hover {
+    color: var(--danger, #ff7b72);
+    background: color-mix(in srgb, var(--danger, #ff7b72) 26%, transparent);
+  }
+}
+
 /* A blocked mic carries a mark of its own, so the red is not the only sign. */
 .badge {
   position: absolute;

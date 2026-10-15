@@ -634,6 +634,19 @@ function layoutTests(windows: readonly Size[], touch: boolean): void {
 layoutTests(MOUSE, false)
 layoutTests(TOUCH, true)
 
+test.describe('a blocked mic at 1440x900', () => {
+  test('stays red under the pointer that pressed it', async ({ page }) => {
+    await openSeededSong(page, { width: 1440, height: 900 })
+    const mic = micButton(page)
+    await blockMic(page)
+    await mic.click()
+    await expect(mic).toHaveAttribute('data-state', 'error')
+    // The pointer is still on the mic, as it is when the reason shows.
+    await mic.hover()
+    await expect(mic).toHaveCSS('color', 'rgb(255, 123, 114)')
+  })
+})
+
 test.describe('Open in Karaoke Night at 1440x900', () => {
   test('opens the song on the stage, paused where the singer was', async ({
     page,
