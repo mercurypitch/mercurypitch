@@ -152,6 +152,23 @@ export function targetAt(path: GlidePath, t: number): number | null {
 }
 
 /**
+ * The segment the singer rides at `t` (an arch's up, top or down), or null
+ * in the count-in, a landing and a rest. The rooms' mic says sing and their
+ * contact light shows only then. An arch's end belongs to its landing.
+ */
+export function riddenSegmentAt(
+  path: GlidePath,
+  t: number,
+): GlideSegment | null {
+  const segment = segmentAt(path, t)
+  return segment !== null &&
+    segment.phase !== 'breath' &&
+    segment.phase !== 'landing'
+    ? segment
+    : null
+}
+
+/**
  * The arch whose sung part (up, top and down) holds `t`, or -1. The
  * landing and the breath belong to none: they are not judged.
  */

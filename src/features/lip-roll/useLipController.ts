@@ -43,7 +43,7 @@ import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
 import type { GlidePath } from '@/lib/glide/glide-path'
-import { restToneDue, segmentAt, targetAt } from '@/lib/glide/glide-path'
+import { restToneDue, riddenSegmentAt, segmentAt, targetAt, } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
 import type { GlideTargets } from '@/lib/glide/glide-targets'
@@ -351,13 +351,10 @@ export function useLipController(): LipController {
     // He is hushed once, as each wave starts, so a line said as a wave
     // ends stays up even when the screen's clock is a hair behind the
     // frames'.
-    const segment = t < 0 ? null : segmentAt(run.plan.path, t)
-    const riding =
-      segment !== null &&
-      segment.phase !== 'breath' &&
-      segment.phase !== 'landing'
-    if (riding && segment.arch > run.hushed) {
-      run.hushed = segment.arch
+    const ridden = riddenSegmentAt(run.plan.path, t)
+    const riding = ridden !== null
+    if (ridden !== null && ridden.arch > run.hushed) {
+      run.hushed = ridden.arch
       if (untrack(line) !== '') setLine('')
     }
     if (untrack(ridingWave) !== riding) setRidingWave(riding)
@@ -413,7 +410,12 @@ export function useLipController(): LipController {
       trace: run.take.trace,
       merc: { x: rideXOn(run.scroll, t), feetY: run.feetY },
       voiced: run.take.voiced(),
-      contact: scripted === null ? run.take.contact(t) : null,
+      // Only in the singer's turn, as the mic shows it: the engine judges
+      // an arch's last instant, the mic gives it to the landing.
+      contact:
+        scripted === null && riddenSegmentAt(run.plan.path, t) !== null
+          ? run.take.contact(t)
+          : null,
     })
     breathTone(run, t)
     showWave(run, t)

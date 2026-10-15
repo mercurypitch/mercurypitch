@@ -797,3 +797,43 @@ describe('the mic through a run', () => {
     expect(hushed.every((s) => s.mic === 'sing' && s.ring < 1.05)).toBe(true)
   })
 })
+
+describe('the mic and the contact light', () => {
+  it.each(['learning', 'singer', 'professional'] as const)(
+    'at %s, wait and no light through each stop between slides, and the light only while the mic says sing',
+    async (level) => {
+      setExerciseLevel(level)
+      const plan = planFor(level, 45)
+      const { pauseSec } = NG_SLIDES_LEVELS[level]
+      await startRun()
+
+      const seen = play(windowFrames(plan, follow(plan.path)), plan)
+
+      const run = seen.filter((s) => s.phase === 'run')
+      // Each stop: the slide's landing, the pause, then the rest of the
+      // rest, up to the next slide.
+      for (const [k, arch] of plan.path.arches.slice(0, -1).entries()) {
+        const next = plan.path.arches[k + 1]
+        const stop = run.filter((s) => s.t >= arch.end && s.t < next.start)
+        const pause = stop.filter(
+          (s) => s.t >= arch.landingEnd && s.t < arch.landingEnd + pauseSec,
+        )
+        expect(stop.length).toBeGreaterThan(0)
+        expect(pause.length > 0).toBe(pauseSec > 0)
+        expect(
+          stop.every((s) => s.mic === 'wait' && s.light.state === 'hidden'),
+        ).toBe(true)
+      }
+      // Frame by frame, the light shows exactly while the mic says sing,
+      // its last instant included (the take hands the engine every frame
+      // sung by the screen's time).
+      const apart = run.filter(
+        (s) => (s.light.state !== 'hidden') !== (s.mic === 'sing'),
+      )
+      expect(apart).toEqual([])
+      expect(run.some((s) => s.mic === 'sing' && s.light.state === 'on')).toBe(
+        true,
+      )
+    },
+  )
+})

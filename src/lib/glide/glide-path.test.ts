@@ -10,7 +10,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { GlidePath, TimedTarget } from './glide-path'
-import { judgedArchAt, lipRollPath, ngSlideRoots, ngSlidesPath, pathFromTargets, restToneDue, segmentAt, smoothstep, targetAt, } from './glide-path'
+import { judgedArchAt, lipRollPath, ngSlideRoots, ngSlidesPath, pathFromTargets, restToneDue, riddenSegmentAt, segmentAt, smoothstep, targetAt, } from './glide-path'
 import type { GlideLevelId } from './glide-presets'
 import { LIP_ROLL_LEVELS, NG_SLIDES_LEVELS } from './glide-presets'
 
@@ -265,6 +265,32 @@ describe('pathFromTargets', () => {
     expect(targetAt(path, 1.9)).toBeNull()
     expect(targetAt(path, 2.5)).toBe(64)
   })
+})
+
+describe('riddenSegmentAt', () => {
+  it.each(LEVELS)(
+    "is the singer's turn on a %s arch: its up, top and down, not the count-in, its landing or the rest",
+    (level) => {
+      // Arrange
+      const preset = LIP_ROLL_LEVELS[level]
+      const path = lipRollPath([48, 50, 52], 12, preset)
+      const [first, second] = path.arches
+      const phaseAt = (t: number) => riddenSegmentAt(path, t)?.phase ?? null
+
+      // Act + Assert
+      expect(phaseAt(-0.5)).toBeNull()
+      expect(phaseAt(first.start)).toBe('up')
+      expect(phaseAt(first.topStart)).toBe('top')
+      expect(phaseAt(first.end - 0.01)).toBe('down')
+      // The arch's last instant is its landing's, though the engine still
+      // judges it (judgedArchAt): the room shows the mic's side.
+      expect(phaseAt(first.end)).toBeNull()
+      expect(judgedArchAt(path, first.end)).toBe(0)
+      expect(phaseAt(first.landingEnd + preset.pauseSec / 2)).toBeNull()
+      expect(phaseAt(second.start - 0.01)).toBeNull()
+      expect(riddenSegmentAt(path, second.start)?.arch).toBe(1)
+    },
+  )
 })
 
 describe('restToneDue', () => {
