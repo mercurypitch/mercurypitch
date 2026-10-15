@@ -7,8 +7,14 @@
 //   - vocal:     a guide vocal → shifter V (formant compensation), only
 //                while it is audible; a muted guide's shifter idles on
 //                silence, which the engine skips;
-//   - unpitched: what stays put (drums, when the setting says so) → a
-//                DelayNode of the shifter latency, so it stays in time.
+//   - unpitched: what stays out of the key (drums, when the setting says so).
+//                It still plays at the speed's rate, so it is shifted by the
+//                speed's correction alone (`unpitchedSemitones`): at 1x, a
+//                DelayNode of the shifter latency keeps it in time; when the
+//                key is 0 its shift is the pitched one, and it rides shifter
+//                P; otherwise it gets a shifter of its own, D, made the
+//                first time it is needed. D failing to load leaves the drums
+//                on the delay, in time and uncorrected, and the key working.
 // At 0 semitones every bus goes straight to the output: no shifter, no delay.
 // The karaoke mixer feeds it its stems (see stem-key-control.ts); a Jam room
 // its backing track and guide vocal.
@@ -33,6 +39,11 @@ export type KeyShiftBus = 'pitched' | 'vocal' | 'unpitched'
 export interface KeyShiftState {
   /** What the shifter must do: the key shift, speed compensation included. */
   semitones: number
+  /**
+   * What the unpitched bus must be shifted by: the speed's correction alone,
+   * 0 at 1x. Left out, 0: the bus is only delayed into time.
+   */
+  unpitchedSemitones?: number
   vocalAudible: boolean
   playing: boolean
 }
@@ -71,9 +82,17 @@ interface Shifters {
   latencySec: number
 }
 
+/** Where the unpitched bus goes while the graph is shifted. */
+type DrumRoute =
+  | { path: 'delay' }
+  | { path: 'shared' }
+  | { path: 'own'; semitones: number }
+
+type DrumEdges = 'none' | DrumRoute['path']
+
 type Route =
   | { shifted: false }
-  | { shifted: true; semitones: number; vocal: boolean }
+  | { shifted: true; semitones: number; vocal: boolean; drums: DrumRoute }
 
 interface Sleeper {
   timer: ReturnType<typeof setTimeout>
@@ -97,7 +116,12 @@ export function createKeyShiftGraph(
   let bypassEdges = true
   let shiftedEdges = false
   let vocalEdges = false
+  let drumEdges: DrumEdges = 'none'
   let shifters: Shifters | null = null
+  // The drums' own shifter, made the first time the key and the speed both
+  // move. One that would not load is not asked for again.
+  let drumShifter: PitchShifter | null = null
+  let drumShifterFailed = false
   let failed = !canShiftPitch(ctx)
   let disposed = false
   let desired: KeyShiftState = {
@@ -146,15 +170,38 @@ export function createKeyShiftGraph(
     if (on) {
       pitchedIn.connect(set.pitched.node)
       set.pitched.node.connect(output)
-      unpitchedIn.connect(set.delay)
-      set.delay.connect(output)
     } else {
       pitchedIn.disconnect(set.pitched.node)
       set.pitched.node.disconnect(output)
-      unpitchedIn.disconnect(set.delay)
-      set.delay.disconnect(output)
     }
     shiftedEdges = on
+  }
+
+  // The unpitched bus's way to the output while shifted; 'none' while not.
+  function setDrumEdges(next: DrumEdges, set: Shifters): void {
+    if (next === drumEdges) return
+    const own = drumShifter
+    if (drumEdges === 'delay') {
+      unpitchedIn.disconnect(set.delay)
+      set.delay.disconnect(output)
+    } else if (drumEdges === 'shared') {
+      unpitchedIn.disconnect(set.pitched.node)
+    } else if (drumEdges === 'own' && own !== null) {
+      unpitchedIn.disconnect(own.node)
+      own.node.disconnect(output)
+    }
+    drumEdges = 'none'
+    if (next === 'delay') {
+      unpitchedIn.connect(set.delay)
+      set.delay.connect(output)
+    } else if (next === 'shared') {
+      unpitchedIn.connect(set.pitched.node)
+    } else if (next === 'own') {
+      if (own === null) return
+      unpitchedIn.connect(own.node)
+      own.node.connect(output)
+    }
+    drumEdges = next
   }
 
   // Out of the path, the shifter can still be run -- Chromium keeps pulling
@@ -222,7 +269,9 @@ export function createKeyShiftGraph(
     const set = shifters
     if (next.shifted && set !== null) {
       setSemitones(set, next.semitones)
+      if (next.drums.path === 'own') drumShifter?.setSemitones(next.drums.semitones)
       setShiftedEdges(true, set)
+      setDrumEdges(next.drums.path, set)
       setVocalEdges(next.vocal, set)
       set.vocalOut.gain.cancelScheduledValues(ctx.currentTime)
       set.vocalOut.gain.setValueAtTime(1, ctx.currentTime)
@@ -234,6 +283,7 @@ export function createKeyShiftGraph(
     setBypassEdges(true)
     if (set !== null) {
       setShiftedEdges(false, set)
+      setDrumEdges('none', set)
       setVocalEdges(false, set)
     }
     route = { shifted: false }
@@ -244,8 +294,21 @@ export function createKeyShiftGraph(
     const from = route
     const set = shifters
     if (from.shifted && next.shifted && set !== null) {
+      // The drums changing their way to the output re-route under a dip: a
+      // delay or a shifter put back in the path may still hold old audio.
+      if (from.drums.path !== next.drums.path) {
+        await reroute(next, playing)
+        return
+      }
+      const at = ctx.currentTime + set.latencySec
       if (from.semitones !== next.semitones)
-        setSemitones(set, next.semitones, ctx.currentTime + set.latencySec)
+        setSemitones(set, next.semitones, at)
+      if (
+        next.drums.path === 'own' &&
+        from.drums.path === 'own' &&
+        from.drums.semitones !== next.drums.semitones
+      )
+        drumShifter?.setSemitones(next.drums.semitones, at)
       route = next
       if (from.vocal !== next.vocal) await switchVocal(set, next.vocal, playing)
       return
@@ -295,8 +358,50 @@ export function createKeyShiftGraph(
     set.delay.disconnect()
   }
 
+  const unpitchedOf = (state: KeyShiftState): number =>
+    state.unpitchedSemitones ?? 0
+
   function wantsShift(state: KeyShiftState): boolean {
-    return !failed && Math.abs(state.semitones) > SHIFT_EPSILON
+    return (
+      !failed &&
+      (Math.abs(state.semitones) > SHIFT_EPSILON ||
+        Math.abs(unpitchedOf(state)) > SHIFT_EPSILON)
+    )
+  }
+
+  /** The drums need a shift of their own: neither none nor the pitched one. */
+  function wantsOwnDrumShift(state: KeyShiftState): boolean {
+    const drums = unpitchedOf(state)
+    return (
+      Math.abs(drums) > SHIFT_EPSILON &&
+      Math.abs(drums - state.semitones) > SHIFT_EPSILON
+    )
+  }
+
+  function drumRouteFor(state: KeyShiftState): DrumRoute {
+    const drums = unpitchedOf(state)
+    if (Math.abs(drums) <= SHIFT_EPSILON) return { path: 'delay' }
+    if (!wantsOwnDrumShift(state)) return { path: 'shared' }
+    // No shifter of their own (it would not load): in time, uncorrected.
+    if (drumShifter === null) return { path: 'delay' }
+    return { path: 'own', semitones: drums }
+  }
+
+  async function loadDrumShifter(): Promise<void> {
+    const create = options.createShifter ?? createPitchShifter
+    try {
+      const made = await create(ctx, {
+        formantCompensation: false,
+        preset: options.preset,
+      })
+      if (disposed) {
+        made.dispose()
+        return
+      }
+      drumShifter = made
+    } catch {
+      drumShifterFailed = true
+    }
   }
 
   // A graph let go while its engine loaded belongs to nobody: an engine that
@@ -322,11 +427,26 @@ export function createKeyShiftGraph(
         fail(error)
       }
     }
+    if (
+      shifters !== null &&
+      drumShifter === null &&
+      !drumShifterFailed &&
+      wantsShift(desired) &&
+      wantsOwnDrumShift(desired)
+    ) {
+      await loadDrumShifter()
+      if (disposed) return
+    }
     // Re-read: requests that arrived while the engine loaded win.
     const want = desired
     const next: Route =
       wantsShift(want) && shifters !== null
-        ? { shifted: true, semitones: want.semitones, vocal: want.vocalAudible }
+        ? {
+            shifted: true,
+            semitones: want.semitones,
+            vocal: want.vocalAudible,
+            drums: drumRouteFor(want),
+          }
         : { shifted: false }
     await transition(next, want.playing)
   }
@@ -367,6 +487,8 @@ export function createKeyShiftGraph(
       output.disconnect()
       if (shifters !== null) release(shifters)
       shifters = null
+      drumShifter?.dispose()
+      drumShifter = null
     },
   }
 }

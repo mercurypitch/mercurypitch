@@ -7,8 +7,10 @@
 // speed, Pitch Studio's suspension and the guide vocal's audibility into one
 // KeyShiftState and re-applies it whenever any of them changes. Speed is
 // compensated here: the shifter runs at key − 12·log2(speed), so speed changes
-// only the tempo. Pitch Studio edits the song's own notes, so it hears the
-// original key — at any speed.
+// only the tempo. Drums left out of the key get the speed's half of that
+// alone, −12·log2(speed), so at 0.75x they keep their own pitch too. Pitch
+// Studio edits the song's own notes, so it hears the original key — at any
+// speed.
 //
 // Lifetime. The graph is how every stem reaches the master, key 0 included, so
 // it must outlive the mixer's own cleanup: a song left while it plays fades its
@@ -38,6 +40,11 @@ export interface StemKeyControlDeps {
   speed: Accessor<number>
   playing: Accessor<boolean>
   keepDrums: Accessor<boolean>
+  /**
+   * The song has a Drums stem. Without one nothing rides the unpitched bus,
+   * so it follows the pitched shift and costs no shifter of its own.
+   */
+  hasDrums?: Accessor<boolean>
   preset: PitchShiftPreset
   /** The engine failed to load; the song keeps its original key. */
   onUnavailable: (error: unknown) => void
@@ -74,8 +81,12 @@ export function createStemKeyControl(deps: StemKeyControlDeps): StemKeyControl {
 
   const state = (): KeyShiftState => {
     const key = deps.suspended() ? 0 : clampKeyShift(deps.keyShift())
+    const speed = deps.speed()
+    const semitones = shifterSemitones(key, speed)
+    const drumsApart = deps.keepDrums() && (deps.hasDrums?.() ?? true)
     return {
-      semitones: shifterSemitones(key, deps.speed()),
+      semitones,
+      unpitchedSemitones: drumsApart ? shifterSemitones(0, speed) : semitones,
       vocalAudible: deps.vocalAudible(),
       // Decides whether a re-route dips. Re-applied on play and pause, which
       // costs nothing on an unchanged route, so a shifter that finishes

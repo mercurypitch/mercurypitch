@@ -509,6 +509,7 @@ export const useStemMixerAudioController = (
     speed,
     playing: () => playing(),
     keepDrums: () => deps.keepDrums?.() ?? true,
+    hasDrums: () => deps.tracks().some((track) => track.label === 'Drums'),
     // Phones and televisions take the lighter engine setting.
     preset: sessionDeviceClass() === 'desktop' ? 'default' : 'cheaper',
     onUnavailable: (error) => {

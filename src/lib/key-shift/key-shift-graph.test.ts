@@ -358,6 +358,138 @@ describe('stem key graph', () => {
     expect(bus('pitched').outputs).toEqual(new Set([output()]))
   })
 
+  // ── Drums left out of the key, at a speed other than 1x ──
+  //
+  // A speed is a playbackRate, which moves every stem's pitch. The pitched
+  // shifter undoes that along with the key; drums kept out of the key went
+  // through the latency delay alone, so at 0.75x they played five semitones
+  // low. They get the speed's correction and nothing else.
+
+  /** The shift that undoes 0.75x: about +4.98. */
+  const SLOWER = -12 * Math.log2(0.75)
+
+  const atSpeed = (
+    semitones: number,
+    unpitchedSemitones: number,
+    playing = false,
+  ): KeyShiftState => ({
+    semitones,
+    unpitchedSemitones,
+    vocalAudible: true,
+    playing,
+  })
+
+  /** The third shifter, made for the drums after the pitched and the vocal. */
+  const drums = () => {
+    const made = factory.made[2]
+    if (made === undefined) throw new Error('no drum shifter was made')
+    return made
+  }
+
+  it('gives drums left out of the key the speed correction alone', async () => {
+    await graph.apply(atSpeed(2 + SLOWER, SLOWER))
+
+    expect(factory.made).toHaveLength(3)
+    expect(drums().options).toMatchObject({
+      formantCompensation: false,
+      preset: 'default',
+    })
+    expect(passesThrough(bus('unpitched'), drums().fakeNode, output())).toBe(
+      true,
+    )
+    expect(reaches(bus('unpitched'), factory.pitched().fakeNode)).toBe(false)
+    expect(drums().semitones.at(-1)).toBeCloseTo(SLOWER, 9)
+    expect(factory.pitched().semitones.at(-1)).toBeCloseTo(2 + SLOWER, 9)
+  })
+
+  it('sends the drums through the pitched shifter when only the speed moves', async () => {
+    await graph.apply(atSpeed(SLOWER, SLOWER))
+
+    expect(factory.made).toHaveLength(2)
+    expect(
+      passesThrough(bus('unpitched'), factory.pitched().fakeNode, output()),
+    ).toBe(true)
+    expect(reaches(bus('unpitched'), ctx.delays[0])).toBe(false)
+  })
+
+  it('puts the drums back on the delay at 1x', async () => {
+    await graph.apply(atSpeed(2 + SLOWER, SLOWER))
+
+    await graph.apply(atSpeed(2, 0))
+
+    expect(passesThrough(bus('unpitched'), ctx.delays[0], output())).toBe(true)
+    expect(reaches(bus('unpitched'), drums().fakeNode)).toBe(false)
+  })
+
+  it('moves the drum shift in place when the speed changes again', async () => {
+    await graph.apply(atSpeed(2 + SLOWER, SLOWER, true))
+    const eventsBefore = output().gain.events.length
+
+    await graph.apply(atSpeed(2 + 12, 12, true))
+
+    expect(drums().semitones.at(-1)).toBe(12)
+    expect(factory.pitched().semitones.at(-1)).toBe(14)
+    expect(output().gain.events.length).toBe(eventsBefore)
+    expect(factory.made).toHaveLength(3)
+  })
+
+  it('dips the output while the drums change their path during play', async () => {
+    await graph.apply(atSpeed(SLOWER, SLOWER))
+    vi.useFakeTimers()
+
+    const applied = graph.apply(atSpeed(2 + SLOWER, SLOWER, true))
+    await vi.advanceTimersByTimeAsync(0)
+    // Still on the old path while the gain ramps down.
+    expect(reaches(bus('unpitched'), factory.pitched().fakeNode)).toBe(true)
+    expect(output().gain.events).toContainEqual(['ramp', 0, 10.015])
+
+    ctx.currentTime = 10.03
+    await vi.advanceTimersByTimeAsync(30)
+    await applied
+
+    expect(passesThrough(bus('unpitched'), drums().fakeNode, output())).toBe(
+      true,
+    )
+    expect(output().gain.events.at(-1)?.[2]).toBeCloseTo(
+      10.03 + LATENCY + 0.015,
+      6,
+    )
+    expect(output().gain.settled()).toBe(1)
+  })
+
+  it('keeps the key, and the drums in time, when the drum engine will not load', async () => {
+    let made = 0
+    const thirdFails = vi.fn(
+      (context: BaseAudioContext, options: PitchShifterOptions) => {
+        made += 1
+        return made === 3
+          ? Promise.reject(new Error('no third engine'))
+          : factory.create(context, options)
+      },
+    )
+    graph.dispose()
+    graph = createKeyShiftGraph(
+      ctx as unknown as AudioContext,
+      destination as unknown as AudioNode,
+      { preset: 'default', onError, createShifter: thirdFails },
+    )
+
+    await graph.apply(atSpeed(2 + SLOWER, SLOWER))
+
+    expect(graph.available()).toBe(true)
+    expect(onError).not.toHaveBeenCalled()
+    expect(factory.pitched().semitones.at(-1)).toBeCloseTo(2 + SLOWER, 9)
+    expect(passesThrough(bus('unpitched'), ctx.delays[0], output())).toBe(true)
+  })
+
+  it('releases the drum shifter on dispose', async () => {
+    await graph.apply(atSpeed(2 + SLOWER, SLOWER))
+
+    graph.dispose()
+
+    expect(drums().dispose).toHaveBeenCalledTimes(1)
+  })
+
   // A song or a room left while its engine was still loading: an engine that
   // then fails belongs to nobody, and a notice about it would describe a
   // song no longer on screen.

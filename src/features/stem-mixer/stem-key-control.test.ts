@@ -68,6 +68,7 @@ function setup(initial: Initial = {}) {
   const [suspended, setSuspended] = createSignal(initial.suspended ?? false)
   const [vocalAudible, setVocalAudible] = createSignal(true)
   const [keepDrums, setKeepDrums] = createSignal(true)
+  const [hasDrums, setHasDrums] = createSignal(true)
   const factory = fakeGraphFactory()
   const onUnavailable = vi.fn()
   let dispose = () => {}
@@ -80,6 +81,7 @@ function setup(initial: Initial = {}) {
       speed,
       playing,
       keepDrums,
+      hasDrums,
       preset: 'cheaper',
       onUnavailable,
       createGraph: factory.create,
@@ -103,6 +105,7 @@ function setup(initial: Initial = {}) {
     setSuspended,
     setVocalAudible,
     setKeepDrums,
+    setHasDrums,
     setPlaying,
     dispose,
   }
@@ -128,6 +131,7 @@ describe('stem key control', () => {
     expect(t.graph().options.preset).toBe('cheaper')
     expect(t.graph().applied.at(-1)).toEqual({
       semitones: 14,
+      unpitchedSemitones: 12,
       vocalAudible: true,
       playing: true,
     })
@@ -166,6 +170,45 @@ describe('stem key control', () => {
 
     expect(t.graph().applied.at(-1)?.semitones).toBe(6)
     expect(t.control.appliedKey()).toBe(6)
+  })
+
+  // Drums left out of the key still play at the speed's rate.
+  it('gives drums left out of the key the speed correction alone', () => {
+    const t = start({ key: 2, speed: 0.75 })
+
+    t.attach()
+
+    const state = t.graph().applied.at(-1)
+    expect(state?.semitones).toBeCloseTo(2 - 12 * Math.log2(0.75), 9)
+    expect(state?.unpitchedSemitones).toBeCloseTo(-12 * Math.log2(0.75), 9)
+  })
+
+  it('shifts the unpitched bus with the rest once the drums go with the key', () => {
+    const t = start({ key: 2, speed: 0.75 })
+    t.attach()
+
+    t.setKeepDrums(false)
+
+    const state = t.graph().applied.at(-1)
+    expect(state?.unpitchedSemitones).toBe(state?.semitones)
+  })
+
+  it('asks for no drum shift of its own when the song has no drums', () => {
+    const t = start({ key: 2, speed: 0.75 })
+    t.setHasDrums(false)
+
+    t.attach()
+
+    const state = t.graph().applied.at(-1)
+    expect(state?.unpitchedSemitones).toBe(state?.semitones)
+  })
+
+  it('leaves the drums unshifted at 1x, whatever the key', () => {
+    const t = start({ key: -3 })
+
+    t.attach()
+
+    expect(t.graph().applied.at(-1)?.unpitchedSemitones).toBe(0)
   })
 
   it('routes each track to its bus, drums by the setting', () => {
@@ -228,6 +271,7 @@ describe('stem key control', () => {
 
     expect(t.graph().applied.at(-1)).toEqual({
       semitones: 2,
+      unpitchedSemitones: 0,
       vocalAudible: true,
       playing: true,
     })
@@ -253,6 +297,7 @@ describe('stem key control', () => {
         speed: read('speed', 1),
         playing: read('playing', false),
         keepDrums: read('keepDrums', true),
+        hasDrums: read('hasDrums', true),
         preset: 'cheaper',
         onUnavailable: vi.fn(),
         createGraph: fakeGraphFactory().create,

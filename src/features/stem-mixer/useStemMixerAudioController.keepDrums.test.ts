@@ -9,10 +9,14 @@
 
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { KeyShiftState } from '@/lib/key-shift/key-shift-graph'
 import type { AudioHarness } from '@/tests/helpers/stem-mixer-audio-harness'
 import { createAudioHarness, decodedStem, } from '@/tests/helpers/stem-mixer-audio-harness'
 
-const graph = vi.hoisted(() => ({ routes: [] as string[] }))
+const graph = vi.hoisted(() => ({
+  routes: [] as string[],
+  applied: [] as KeyShiftState[],
+}))
 
 // The silent <audio> that unlocks playback on iOS is a browser concern, and
 // jsdom cannot play it.
@@ -30,7 +34,10 @@ vi.mock('@/lib/key-shift/key-shift-graph', () => ({
       graph.routes.push(bus)
       return { connect: vi.fn(), disconnect: vi.fn() }
     },
-    apply: async () => Promise.resolve(),
+    apply: async (state: KeyShiftState) => {
+      graph.applied.push(state)
+      return Promise.resolve()
+    },
     latencySec: () => 0,
     shiftSemitones: () => 0,
     available: () => true,
@@ -44,6 +51,7 @@ afterEach(() => {
   active?.dispose()
   active = null
   graph.routes = []
+  graph.applied = []
   vi.unstubAllGlobals()
 })
 
@@ -103,5 +111,34 @@ describe('leave drums unshifted, changed mid-song', () => {
     expect(graph.routes.length).toBe(routesSoFar)
     audio.handlePlay()
     expect(lastRoutes()).toEqual(['vocal', 'pitched', 'pitched'])
+  })
+})
+
+// A speed is a playbackRate, which moves the drums' pitch as much as any
+// stem's. Left out of the key they still need the speed undone.
+describe('drums left out of the key, at another speed', () => {
+  const slower = -12 * Math.log2(0.75)
+
+  it('get the speed correction alone, while the rest take the key too', async () => {
+    const { audio } = await startPlaying(
+      createAudioHarness({ extraTracks: drums(), keyShift: () => 2 }),
+    )
+
+    audio.setSpeed(0.75)
+
+    const state = graph.applied.at(-1)
+    expect(state?.semitones).toBeCloseTo(2 + slower, 9)
+    expect(state?.unpitchedSemitones).toBeCloseTo(slower, 9)
+  })
+
+  it('ask for no shift of their own on a song with no drums', async () => {
+    const { audio } = await startPlaying(
+      createAudioHarness({ keyShift: () => 2 }),
+    )
+
+    audio.setSpeed(0.75)
+
+    const state = graph.applied.at(-1)
+    expect(state?.unpitchedSemitones).toBe(state?.semitones)
   })
 })
