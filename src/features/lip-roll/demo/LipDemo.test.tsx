@@ -520,6 +520,30 @@ describe('the Lip roll demo', () => {
     expect(screen.queryByTestId('lip-demo-tip')).toBeNull()
   })
 
+  it('points the mic out at rest, unsaid, and lets it go once a take starts', async () => {
+    seen.value = true
+    await open()
+    await run(100)
+    const tip = screen.getByTestId('lip-demo-tip')
+    const atRest = [tip.dataset.tip, tip.textContent]
+    const unsaid = screen.getByTestId('lip-demo-said').textContent
+
+    fireEvent.click(screen.getByTestId('lip-mic'))
+    await run(100)
+
+    expect(atRest).toEqual(['mic', DEMO_COPY.micHint])
+    expect(unsaid).toBe('')
+    expect(screen.queryByTestId('lip-demo-tip')).toBeNull()
+  })
+
+  it('points nothing out while a first visit is about to play the demo', async () => {
+    render(() => <LipRollRoom onDone={() => undefined} />)
+
+    const pointed = screen.queryByTestId('lip-demo-tip')?.dataset.tip ?? null
+
+    expect(pointed).not.toBe('mic')
+  })
+
   it('plays by itself only until it is seen; then "?" plays it', async () => {
     seen.value = true
     await open()

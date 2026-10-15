@@ -2,14 +2,15 @@
 // The level control: Learning, Singer or Professional, picked in a room
 // ============================================================
 //
-// A pill on the room's stage names the level; a tap opens a sheet with the
-// three, each saying what it asks of the singer in this exercise (the
-// room's own lines). The level is the accuracy tier from Settings
-// (exercise-level.ts): picking one here picks it for every exercise, mic
-// preset and score mode included, as Settings does, and the sheet says so.
-// Each exercise reads it as its own rules (level-preset.ts; Long note's
-// LANTERN_LEVELS). A room shows the pill where it shows "?" (Long note: at
-// the start and at a result, never while a take listens or the demo plays).
+// A pill in the room's side of the bar (RoomBar.tsx) names the level; a
+// tap opens a sheet with the three, each saying what it asks of the
+// singer in this exercise (the room's own lines). The level is the
+// accuracy tier from Settings (exercise-level.ts): picking one here picks
+// it for every exercise, mic preset and score mode included, as Settings
+// does, and the sheet says so. Each exercise reads it as its own rules
+// (level-preset.ts; Long note's LANTERN_LEVELS). A room shows the pill
+// beside "?": at the start and at a result, never while a take listens or
+// the demo plays.
 
 import type { JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
@@ -20,8 +21,8 @@ import { EXERCISE_LEVELS, exerciseLevel, exerciseLevelName, setExerciseLevel, } 
 import styles from './LevelControl.module.css'
 
 export interface LevelControlProps {
-  /** The stage's class for the pill, placed by the room. */
-  class: string
+  /** A class of the room's own for the pill, if it places it itself. */
+  class?: string
   /** What each level asks of the singer in this exercise, one line each. */
   lines: Readonly<Record<ExerciseLevel, string>>
   /** The pill's test id; each level in the sheet is `${testId}-option`. */
@@ -34,11 +35,17 @@ export function LevelControl(props: LevelControlProps): JSX.Element {
     setExerciseLevel(level)
     setOpen(false)
   }
+  // One box for the pill and the sheet's anchor (Sheet.tsx leaves an empty
+  // span in place): in the bar's row the anchor would take a gap of its own.
   return (
-    <>
+    <span class={styles.control}>
       <button
         type="button"
-        class={`${styles.pill} ${props.class}`}
+        class={
+          props.class === undefined
+            ? styles.pill
+            : `${styles.pill} ${props.class}`
+        }
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-label={`Level: ${exerciseLevelName(exerciseLevel())}`}
@@ -92,6 +99,6 @@ export function LevelControl(props: LevelControlProps): JSX.Element {
           </For>
         </div>
       </Sheet>
-    </>
+    </span>
   )
 }

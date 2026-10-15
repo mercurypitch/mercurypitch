@@ -7,6 +7,8 @@
    reads them (LipRollRoom.tsx) so the waves keep Merc under the chip and
    over the mic (bay-layout.ts). */
 .room {
+  /* The mic's colour on the singer's turn (room kit, mic-state.ts): the lit waves' cyan. */
+  --mic-lit: #2fb8e4;
   --lip-chip-clear: 58px;
   --lip-controls-clear: 104px;
   position: relative;
@@ -353,35 +355,14 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The level takes the head's left corner, at the intro and the result. */
-.level {
-  position: absolute;
-  top: calc(var(--pushed-top, 0px) + 8px);
-  left: 12px;
-  z-index: 2;
-}
-
-/* The demo's "?" and its Skip, in the corner across from the level. */
-.ask,
+/* The demo's Skip, in the head's right corner. The level and "?" are in
+   the bar (RoomBar.tsx). */
 .skip {
   position: absolute;
   top: calc(var(--pushed-top, 0px) + 8px);
   right: 12px;
   z-index: 5;
   height: 44px;
-}
-
-.ask {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 50%;
-  background: rgba(10, 18, 44, 0.55);
-  color: var(--text-secondary);
-}
-
-.skip {
   min-width: 44px;
   padding: 0 16px;
   border: 0;

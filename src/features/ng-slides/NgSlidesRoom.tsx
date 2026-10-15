@@ -34,10 +34,12 @@ import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import { DemoLayer } from '@/components/demo-kit/DemoLayer'
 import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
-import { HelpCircle } from '@/components/icons'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
+import type { MicState } from '@/components/room-kit/mic-state'
+import { micLabel as labelFor } from '@/components/room-kit/mic-state'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
+import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
 import { ARCH } from './bridge-geometry'
@@ -48,6 +50,7 @@ import { DEMO_COPY } from './demo/demo-cues'
 import { aimNgTip } from './demo/tip-targets'
 import type { NgDemo } from './demo/useNgDemo'
 import { useNgDemo } from './demo/useNgDemo'
+import { ngMicState } from './ng-machine'
 import type { NgSummary } from './ng-run'
 import { bestText, jumpsText, topsText } from './ng-run'
 import { NgLevel } from './NgLevel'
@@ -90,6 +93,9 @@ const cssPx = (style: CSSStyleDeclaration, name: string): number => {
   const value = Number.parseFloat(style.getPropertyValue(name))
   return Number.isFinite(value) ? value : 0
 }
+
+/** What the mic says at rest: a tap starts a run. */
+const START_LABEL = 'Start: hum the slides over the bridge'
 
 /** "84%": the result's big number is the share of the bridge lit. */
 export function litText(summary: NgSummary): string {
@@ -167,9 +173,9 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
   const showLevel = (): boolean =>
     !scripted() &&
     (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
-  /** The singer's own run is on: the mic listens. */
-  const listening = (): boolean =>
-    !scripted() && (phase() === 'run' || phase() === 'settle')
+  /** The mic: ready, waiting through a count-in or a breath, or hearing a slide. */
+  const micState = (): MicState =>
+    ngMicState(room.state().phase, room.sliding(), scripted())
 
   /**
    * What a screen reader hears, from one polite region there from the
@@ -205,16 +211,10 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
   )
 
   const micLabel = (): string => {
-    switch (phase()) {
-      case 'starting':
-        return 'Opening the microphone'
-      case 'settle':
-        return 'Listening for your note. Tap to stop'
-      case 'run':
-        return 'Listening. Tap to stop'
-      default:
-        return 'Start: hum the slides over the bridge'
-    }
+    if (scripted()) return START_LABEL
+    if (phase() === 'starting') return 'Opening the microphone'
+    if (phase() === 'settle') return 'Listening for your note. Tap to stop'
+    return labelFor(micState(), START_LABEL)
   }
 
   return (
@@ -290,20 +290,18 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
         </Switch>
       </div>
 
-      <Show when={showLevel()}>
-        <NgLevel class={styles.level} />
-      </Show>
-      <Show when={demo?.canAsk() === true}>
-        <button
-          type="button"
-          class={styles.ask}
-          onClick={() => demo?.ask()}
-          aria-label={DEMO_COPY.ask}
-          data-testid="ng-ask"
-        >
-          <HelpCircle size={22} />
-        </button>
-      </Show>
+      <RoomBarEnd>
+        <Show when={showLevel()}>
+          <NgLevel />
+        </Show>
+        <Show when={demo?.canAsk() === true}>
+          <RoomAsk
+            onAsk={() => demo?.ask()}
+            label={DEMO_COPY.ask}
+            testId="ng-ask"
+          />
+        </Show>
+      </RoomBarEnd>
       <Show when={demoMode() === 'playing'}>
         <button
           type="button"
@@ -354,9 +352,10 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
               />
             </Show>
             <MicButton
-              listening={listening()}
-              demo={scripted()}
+              state={micState()}
+              level={room.micLevel}
               pulse={demo?.micPulse() === true}
+              still={props.still}
               disabled={phase() === 'starting'}
               label={micLabel()}
               onClick={() => {

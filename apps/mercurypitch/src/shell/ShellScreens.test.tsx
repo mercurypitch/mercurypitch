@@ -3,6 +3,7 @@
 // ============================================================
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores/ui-store'
 import type { RenderedShell } from './render-for-test'
@@ -70,6 +71,40 @@ describe('a premium room, full-bleed (D1)', () => {
         ?.querySelector('.mp-pushed__bar')
         ?.classList.contains('mp-dark-stage'),
     ).toBe(false)
+  })
+})
+
+describe("the bar's right side", () => {
+  it("holds the room's own controls after Back and the room's name", () => {
+    view?.unmount()
+    view = renderShell(() => (
+      <ShellScreens
+        echo={() => (
+          <RoomBarEnd>
+            <RoomAsk
+              onAsk={() => undefined}
+              label="How it works"
+              testId="echo-ask"
+            />
+          </RoomBarEnd>
+        )}
+      />
+    ))
+
+    pushScreen('echo')
+
+    const bar = screens()[0]?.querySelector('.mp-pushed__bar')
+    const order = [
+      ...(bar?.querySelectorAll('button, .mp-pushed__title') ?? []),
+    ].map((el) => el.getAttribute('data-testid') ?? el.textContent)
+    expect(order).toEqual(['shell-pushed-back', 'Echo', 'echo-ask'])
+  })
+
+  it('is empty on a screen that puts nothing there', () => {
+    pushScreen('settings')
+
+    const end = screens()[0]?.querySelector('[data-testid="shell-pushed-end"]')
+    expect(end?.childElementCount).toBe(0)
   })
 })
 

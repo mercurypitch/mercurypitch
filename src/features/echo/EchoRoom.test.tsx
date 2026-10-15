@@ -11,6 +11,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext, ribbonColours, } from '@/components/room-kit/ribbon-test-context'
+import mic from '@/components/room-kit/RoomControls.module.css'
 import { silence, tone } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
@@ -695,5 +696,61 @@ describe('with no root yet', () => {
     expect(texts('found', { note: 'A3' })).toContain(
       screen.getByTestId('echo-bubble').textContent,
     )
+  })
+})
+
+describe('the mic through a phrase', () => {
+  const micState = (): string | undefined =>
+    screen.getByTestId('echo-mic').dataset.state
+  /** The ring's scale as drawn now; NaN with none written. */
+  const ringScale = (): number => {
+    const ring = screen.getByTestId('echo-mic').querySelector(`.${mic.ring}`)
+    const scale = /scale\(([\d.]+)\)/u.exec(
+      (ring as HTMLElement | null)?.style.transform ?? '',
+    )
+    return scale === null ? Number.NaN : Number(scale[1])
+  }
+  /** Screen frames 16 ms apart, the clock moving with them. */
+  const frames = (count: number): void => {
+    for (let i = 0; i < count; i++) {
+      vi.advanceTimersByTime(16)
+      flush()
+    }
+  }
+
+  it('waits while the mic opens and Merc sings, and is the singer turn once the call has ended', async () => {
+    render(() => <EchoRoom onDone={() => undefined} />)
+    const resting = micState()
+    fireEvent.click(screen.getByTestId('echo-mic'))
+    const opening = micState()
+    await settle()
+    const calling = micState()
+
+    toTurn()
+
+    expect([resting, opening, calling, micState()]).toEqual([
+      'ready',
+      'wait',
+      'wait',
+      'sing',
+    ])
+  })
+
+  it("moves the ring with the reply, not with Merc's call from the speaker", async () => {
+    await startRun()
+    const { notes, startAt } = currentCall()
+    // The call, heard back from the speaker while Merc sings it.
+    fake.frames.push(...tone(notes[0].midi, 0.6, { startT: startAt + 0.05 }))
+    toTurn()
+    frames(6)
+    const overTheCall = ringScale()
+
+    fake.frames.push(
+      ...tone(notes[0].midi, 0.5, { startT: responseStart() + 0.05 }),
+    )
+    frames(6)
+
+    expect(overTheCall).toBe(1)
+    expect(ringScale()).toBeGreaterThan(1.2)
   })
 })

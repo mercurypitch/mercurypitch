@@ -19,6 +19,8 @@
 // microphone answer is pending or the room is blocked, and it bumps `run`
 // so no answer can land in it.
 
+import type { MicState } from '@/components/room-kit/mic-state'
+
 export type NgPhase =
   | 'intro'
   | 'starting'
@@ -67,6 +69,34 @@ const RUN_PHASES: ReadonlySet<NgPhase> = new Set<NgPhase>([
 /** A run is under way: the microphone is asked for or open. */
 export function isRunPhase(phase: NgPhase): boolean {
   return RUN_PHASES.has(phase)
+}
+
+/**
+ * The mic's state (mic-state.ts) in a phase. A run is the singer's turn
+ * only while a slide is being sung (`sliding`: its up, top and down, from
+ * the run's clock against the glide path); it waits, open, through the
+ * count-in, each landing and breath, and the mic's opening. The settle,
+ * an easy note before the slides, is the singer's too. The demo's slides
+ * never open the mic: they wait.
+ */
+export function ngMicState(
+  phase: NgPhase,
+  sliding: boolean,
+  demo: boolean,
+): MicState {
+  if (phase === 'result') return 'done'
+  if (demo) return 'wait'
+  switch (phase) {
+    case 'settle':
+      return 'sing'
+    case 'run':
+      return sliding ? 'sing' : 'wait'
+    case 'starting':
+      return 'wait'
+    case 'intro':
+    case 'blocked':
+      return 'ready'
+  }
 }
 
 export function initialNgState(): NgState {

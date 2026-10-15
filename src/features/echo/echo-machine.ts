@@ -29,6 +29,8 @@
 // after take 2. The phrase's own steps (`heard`, `phrase-end`) move it as
 // they move a run.
 
+import type { MicState } from '@/components/room-kit/mic-state'
+
 export type EchoPhase =
   | 'intro'
   | 'starting'
@@ -88,6 +90,29 @@ const RUN_PHASES: ReadonlySet<EchoPhase> = new Set<EchoPhase>([
 /** A run is under way: the microphone is asked for or open. */
 export function isRunPhase(phase: EchoPhase): boolean {
   return RUN_PHASES.has(phase)
+}
+
+/**
+ * The mic's state in each phase (mic-state.ts). The singer's turns are the
+ * settle and the response; it waits, open, through the mic's opening,
+ * Merc's call (and "hear it again") and the moment between phrases. The
+ * demo's takes never open it: they wait, and its result is done.
+ */
+export function echoMicState(phase: EchoPhase, demo: boolean): MicState {
+  if (phase === 'result') return 'done'
+  if (demo) return 'wait'
+  switch (phase) {
+    case 'settle':
+    case 'response':
+      return 'sing'
+    case 'starting':
+    case 'call':
+    case 'between':
+      return 'wait'
+    case 'intro':
+    case 'blocked':
+      return 'ready'
+  }
 }
 
 export function initialEchoState(phrases: number): EchoState {

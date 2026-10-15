@@ -16,9 +16,10 @@
 //
 // "How it works" (demo/) plays over the same room: Merc sings two takes
 // through it while tooltips explain them. A first visit opens on it, and
-// the "?" in the stage's corner plays it again at the start or a result.
-// The level in the corner across from it (LongNoteLevel.tsx) sets how much
-// room the note has and how steady the top asks the voice to be.
+// the "?" in the bar plays it again at the start or a result. The level
+// beside it (LongNoteLevel.tsx) sets how much room the note has and how
+// steady the top asks the voice to be. Both sit in the bar's right side
+// (RoomBar.tsx).
 //
 // The head, the mic, the result's buttons and the level control are the
 // room kit's (src/components/room-kit/); the demo's layer, cards and take
@@ -36,9 +37,12 @@ import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { DemoLayer } from '@/components/demo-kit/DemoLayer'
 import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
-import { HelpCircle, Minus, Plus, Volume2 } from '@/components/icons'
+import { Minus, Plus, Volume2 } from '@/components/icons'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
+import type { MicState } from '@/components/room-kit/mic-state'
+import { micLabel as labelFor } from '@/components/room-kit/mic-state'
+import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, RoomHeader, RoomTimer, } from '@/components/room-kit/RoomHeader'
 import { DEMO_COPY } from './demo/demo-cues'
@@ -48,6 +52,7 @@ import { useLongNoteDemo } from './demo/useLongNoteDemo'
 import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
 import { formatHoldSeconds } from './long-note-entry'
+import { longNoteMicState } from './long-note-machine'
 import { LongNoteLevel } from './LongNoteLevel'
 import styles from './LongNoteRoom.module.css'
 import { BESIDE_X, createLayoutGlide, layoutStage, MERC_UNITS, } from './stage-layout'
@@ -282,19 +287,21 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
       ? null
       : `Steadiness ${Math.round(steadiness)}`
 
+  /** The mic: ready, waiting through the note, or hearing the hold. */
+  const micState = (): MicState =>
+    longNoteMicState(room.state().phase, room.script.active())
+
+  /** What the mic says at rest: a tap starts a take. */
+  const startLabel = (): string =>
+    room.noteName() === ''
+      ? 'Start: sing any easy note'
+      : `Start: hold ${room.noteName()}`
+
   const micLabel = (): string => {
-    switch (phase()) {
-      case 'starting':
-        return 'Opening the microphone'
-      case 'listen':
-        return 'Listening. Tap to stop'
-      case 'hold':
-        return 'Listening. Tap to finish'
-      default:
-        return room.noteName() === ''
-          ? 'Start: sing any easy note'
-          : `Start: hold ${room.noteName()}`
-    }
+    if (room.script.active()) return startLabel()
+    if (phase() === 'starting') return 'Opening the microphone'
+    if (phase() === 'hold') return 'Listening. Tap to finish'
+    return labelFor(micState(), startLabel())
   }
 
   return (
@@ -440,18 +447,6 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           muted={() => phase() === 'result'}
           still={props.still}
         />
-        <Show when={demo?.canAsk() === true}>
-          <LongNoteLevel class={styles.level} />
-          <button
-            type="button"
-            class={styles.ask}
-            onClick={() => demo?.ask()}
-            aria-label={DEMO_COPY.ask}
-            data-testid="long-note-ask"
-          >
-            <HelpCircle size={22} />
-          </button>
-        </Show>
         <Show when={demoMode() === 'playing'}>
           <button
             type="button"
@@ -463,6 +458,17 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           </button>
         </Show>
       </div>
+
+      <RoomBarEnd>
+        <Show when={demo?.canAsk() === true}>
+          <LongNoteLevel />
+          <RoomAsk
+            onAsk={() => demo?.ask()}
+            label={DEMO_COPY.ask}
+            testId="long-note-ask"
+          />
+        </Show>
+      </RoomBarEnd>
 
       <div
         class={styles.bottom}
@@ -557,12 +563,10 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
               </button>
             </div>
             <MicButton
-              listening={
-                (phase() === 'listen' || phase() === 'hold') &&
-                !room.script.active()
-              }
-              demo={room.script.active()}
+              state={micState()}
+              level={room.micLevel}
               pulse={demo?.micPulse() === true}
+              still={props.still}
               disabled={phase() === 'starting'}
               label={micLabel()}
               onClick={() => {

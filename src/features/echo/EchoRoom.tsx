@@ -29,15 +29,18 @@
 // "How it works" (demo/) plays over the same room: Merc sings the phrase
 // and sings it back twice through the room's own engine, not like this and
 // like this, with the demo kit's layer, cards and take pill over it. A
-// first visit opens on it, and the "?" in the corner plays it again.
+// first visit opens on it, and the "?" in the bar plays it again.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { DemoLayer } from '@/components/demo-kit/DemoLayer'
 import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
-import { HelpCircle, Volume2 } from '@/components/icons'
+import { Volume2 } from '@/components/icons'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MercView } from '@/components/room-kit/MercView'
+import type { MicState } from '@/components/room-kit/mic-state'
+import { micLabel as labelFor } from '@/components/room-kit/mic-state'
+import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
 import { DEMO_COPY } from './demo/demo-cues'
@@ -45,6 +48,7 @@ import { aimEchoTip } from './demo/tip-targets'
 import { useEchoDemo } from './demo/useEchoDemo'
 import type { CityLightState } from './echo-art'
 import type { EchoSummary } from './echo-controller-contract'
+import { echoMicState } from './echo-machine'
 import type { CloudState } from './EchoClouds'
 import { EchoLevel } from './EchoLevel'
 import { EchoMerc, mercBox } from './EchoMerc'
@@ -80,6 +84,9 @@ const px = (style: CSSStyleDeclaration, name: string): number => {
   const value = Number.parseFloat(style.getPropertyValue(name))
   return Number.isFinite(value) ? value : 0
 }
+
+/** What the mic says at rest: a tap starts a run. */
+const START_LABEL = 'Start: Merc sings, you sing it back'
 
 /** "17 of 20": the result's big number counts the lit stars. */
 export function landedText(summary: EchoSummary): string {
@@ -260,23 +267,15 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
   createEffect(
     on([phase, demo.mode], () => focus.handOff(mainControl), { defer: true }),
   )
-  /** The singer's own run is on: the mic listens. */
-  const listening = (): boolean =>
-    !room.script.active() && (running() || phase() === 'settle')
+  /** The mic: ready, waiting through Merc's call, or hearing the reply. */
+  const micState = (): MicState =>
+    echoMicState(room.state().phase, room.script.active())
 
   const micLabel = (): string => {
-    switch (phase()) {
-      case 'starting':
-        return 'Opening the microphone'
-      case 'settle':
-        return 'Listening for your note. Tap to stop'
-      case 'call':
-      case 'response':
-      case 'between':
-        return 'Listening. Tap to stop'
-      default:
-        return 'Start: Merc sings, you sing it back'
-    }
+    if (room.script.active()) return START_LABEL
+    if (phase() === 'starting') return 'Opening the microphone'
+    if (phase() === 'settle') return 'Listening for your note. Tap to stop'
+    return labelFor(micState(), START_LABEL)
   }
 
   return (
@@ -355,20 +354,18 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
         </Switch>
       </div>
 
-      <Show when={showLevel()}>
-        <EchoLevel class={styles.level} />
-      </Show>
-      <Show when={demo.canAsk()}>
-        <button
-          type="button"
-          class={styles.ask}
-          onClick={() => demo.ask()}
-          aria-label={DEMO_COPY.ask}
-          data-testid="echo-ask"
-        >
-          <HelpCircle size={22} />
-        </button>
-      </Show>
+      <RoomBarEnd>
+        <Show when={showLevel()}>
+          <EchoLevel />
+        </Show>
+        <Show when={demo.canAsk()}>
+          <RoomAsk
+            onAsk={() => demo.ask()}
+            label={DEMO_COPY.ask}
+            testId="echo-ask"
+          />
+        </Show>
+      </RoomBarEnd>
       <Show when={demo.mode() === 'playing'}>
         <button
           type="button"
@@ -430,8 +427,8 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
               />
             </Show>
             <MicButton
-              listening={listening()}
-              demo={room.script.active()}
+              state={micState()}
+              level={room.micLevel}
               pulse={demo.micPulse()}
               disabled={phase() === 'starting'}
               label={micLabel()}

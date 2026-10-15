@@ -516,3 +516,24 @@ export function registerSkipTarget(element: HTMLElement): () => void {
 export function nativeSkipTarget(): HTMLElement | null {
   return skipTarget !== null && skipTarget.isConnected ? skipTarget : null
 }
+
+// ── The bar's right side, for the screen under it ────────────
+//
+// A pushed screen's bar (PushedScreen.tsx) has Back and the screen's name
+// on its left. Its right side is a slot the screen under it fills: a
+// premium room puts its level pill and its "?" there (RoomBarEnd in the
+// room kit), so anything a room needs in the bar later goes the same way.
+// The shell registers the slot's element; the room draws into it from its
+// own tree, so its signals and its cleanup stay the room's.
+
+const [barEnd, setBarEnd] = createSignal<HTMLElement | null>(null)
+
+/** The bar's right-hand slot, or null with no pushed screen up. */
+export const pushedBarEnd = barEnd
+
+export function registerPushedBarEnd(element: HTMLElement): () => void {
+  setBarEnd(element)
+  return () => {
+    setBarEnd((current) => (current === element ? null : current))
+  }
+}

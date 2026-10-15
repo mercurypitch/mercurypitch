@@ -70,13 +70,18 @@ export function fixtureController(scene: LipFixtureScene): LipController {
   const strips: LitStrip[] = scene.lit.flatMap((ranges, arch) =>
     ranges.map(([from, to]) => ({ arch, from, to })),
   )
+  const voice = voiceOf(scene.voice)
   return {
     state: () => ({ phase: scene.phase, run: 0, block: null }),
     line: () => scene.line,
     chip: () => scene.chip,
+    // A pinned wave is being ridden, and the mic's ring holds at the
+    // pinned voice's loudness.
+    riding: () => scene.phase === 'run',
+    micLevel: () => voice().level,
     summary: () => scene.summary,
     mercState: () => scene.mercState,
-    mercVoice: voiceOf(scene.voice),
+    mercVoice: voice,
     path: () => PATH,
     showResult: () => scene.summary !== null,
     start: () => undefined,

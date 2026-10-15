@@ -2,8 +2,8 @@
 // Long note's level: the room kit's level control, with Long note's lines
 // ============================================================
 //
-// The pill in the stage's top-left corner, across from "?", and the sheet
-// it opens (LevelControl.tsx). Long note reads the level as the room around
+// The pill in the bar, beside "?" (RoomBar.tsx), and the sheet it opens
+// (LevelControl.tsx). Long note reads the level as the room around
 // the note and the steadiness the lantern's top asks for (LANTERN_LEVELS);
 // these lines say so, one per level.
 
@@ -21,8 +21,8 @@ const LEVEL_LINES: Record<ExerciseLevel, string> = {
 }
 
 export interface LongNoteLevelProps {
-  /** The stage's class for the pill, placed by the room. */
-  class: string
+  /** A class of the room's own for the pill, if it places it itself. */
+  class?: string
 }
 
 export function LongNoteLevel(props: LongNoteLevelProps): JSX.Element {

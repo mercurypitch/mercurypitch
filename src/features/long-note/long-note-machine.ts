@@ -21,6 +21,8 @@
 // microphone answer is pending or the room is blocked, and it bumps `run` so
 // no answer can land in it.
 
+import type { MicState } from '@/components/room-kit/mic-state'
+
 export type LongNotePhase =
   | 'intro'
   | 'starting'
@@ -59,6 +61,31 @@ export type LongNoteEvent =
   | { readonly type: 'again' }
   | { readonly type: 'change-note' }
   | { readonly type: 'demo'; readonly phase: LongNoteDemoPhase }
+
+/**
+ * The mic's state in each phase (mic-state.ts). The note plays first, then
+ * the mic opens (`starting`): the singer waits. From the open mic until
+ * the take ends it is the singer's turn, waiting for the note (`listen`)
+ * and holding it (`hold`). The demo's takes never open the mic: they
+ * wait, and its result is done.
+ */
+export function longNoteMicState(
+  phase: LongNotePhase,
+  demo: boolean,
+): MicState {
+  if (phase === 'result') return 'done'
+  if (demo) return 'wait'
+  switch (phase) {
+    case 'listen':
+    case 'hold':
+      return 'sing'
+    case 'starting':
+      return 'wait'
+    case 'intro':
+    case 'blocked':
+      return 'ready'
+  }
+}
 
 export function initialLongNoteState(targetMidi: number | null): LongNoteState {
   return { phase: 'intro', targetMidi, run: 0, block: null }

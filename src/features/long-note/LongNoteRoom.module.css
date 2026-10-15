@@ -5,6 +5,8 @@
    --pushed-bottom. Under the opaque bar both are unset, and the body's own
    bottom padding keeps the dock clear (shell.css .mp-pushed__body). */
 .room {
+  /* The mic's lit colour in the singer's turn: the lantern's blue light. */
+  --mic-lit: #5d8cff;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -115,37 +117,15 @@
   position: absolute;
 }
 
-/* "?" and the demo's Skip share the stage's top corner, clear of the timer
-   and the chip above it and the note tag on the line below. */
-.ask,
+/* The demo's Skip takes the stage's top corner, clear of the timer and
+   the chip above it and the note tag on the line below. The level and "?"
+   are in the bar (RoomBar.tsx). */
 .skip {
   position: absolute;
   top: 4px;
   right: 6px;
   z-index: 6;
   height: 44px;
-}
-
-.ask {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-secondary);
-}
-
-/* The level pill takes the stage's other top corner, across from "?": on a
-   narrow phone the lantern's handle reaches into the space beside "?". */
-.level {
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  z-index: 6;
-}
-
-.skip {
   min-width: 44px;
   padding: 0 16px;
   border: 0;

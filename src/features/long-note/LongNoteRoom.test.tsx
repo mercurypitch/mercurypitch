@@ -1134,6 +1134,33 @@ describe('LongNoteRoom', () => {
     expect(lower.parentElement?.getAttribute('aria-hidden')).toBe('true')
   })
 
+  it('waits through the note it plays, then is the singer turn from the open mic', async () => {
+    let endTone: () => void = () => undefined
+    fake.toneGate = new Promise<void>((resolve) => {
+      endTone = resolve
+    })
+    const micState = (): string | undefined =>
+      screen.queryByTestId('long-note-mic')?.dataset.state
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const resting = micState()
+    fireEvent.click(screen.getByTestId('long-note-mic'))
+    await settle()
+    const cue = micState()
+    endTone()
+    await settle()
+    const listening = micState()
+
+    feed(sung(1, () => 0)(0))
+
+    expect(phase()).toBe('hold')
+    expect([resting, cue, listening, micState()]).toEqual([
+      'ready',
+      'wait',
+      'sing',
+      'sing',
+    ])
+  })
+
   it('opens no mic when the singer leaves during the note', async () => {
     let endTone: () => void = () => undefined
     fake.toneGate = new Promise<void>((resolve) => {

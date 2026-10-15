@@ -2,7 +2,7 @@
 // Lip roll's level: the room kit's level control, with Lip roll's lines
 // ============================================================
 //
-// The pill in the head's top-left corner and the sheet it opens
+// The pill in the bar, beside "?" (RoomBar.tsx), and the sheet it opens
 // (LevelControl.tsx). Lip roll reads the level as its waves' rules
 // (LIP_ROLL_LEVELS, DESIGN-lip-roll.md 3): how fast each wave goes, how
 // close to the dots the voice must stay, whether the next note plays in
@@ -23,8 +23,8 @@ export const LIP_LEVEL_LINES: Record<ExerciseLevel, string> = {
 }
 
 export interface LipLevelProps {
-  /** The room's class for the pill, placed by the room. */
-  class: string
+  /** A class of the room's own for the pill, if it places it itself. */
+  class?: string
 }
 
 export function LipLevel(props: LipLevelProps): JSX.Element {

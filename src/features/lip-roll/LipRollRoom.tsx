@@ -39,10 +39,12 @@ import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, onMo
 import { DemoLayer } from '@/components/demo-kit/DemoLayer'
 import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
 import type { Rect } from '@/components/demo-kit/tip-place'
-import { HelpCircle } from '@/components/icons'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MercView } from '@/components/room-kit/MercView'
+import type { MicState } from '@/components/room-kit/mic-state'
+import { micLabel as labelFor } from '@/components/room-kit/mic-state'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
+import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
 import { WAVE } from './bay-geometry'
@@ -53,6 +55,7 @@ import { DEMO_COPY } from './demo/demo-cues'
 import { aimLipTip } from './demo/tip-targets'
 import type { LipDemo } from './demo/useLipDemo'
 import { useLipDemo } from './demo/useLipDemo'
+import { lipMicState } from './lip-machine'
 import type { LipSummary } from './lip-run'
 import { bestText, resultChips } from './lip-run'
 import { LipLevel } from './LipLevel'
@@ -100,6 +103,9 @@ const cssPx = (style: CSSStyleDeclaration, name: string): number => {
   const value = Number.parseFloat(style.getPropertyValue(name))
   return Number.isFinite(value) ? value : 0
 }
+
+/** What the mic says at rest: a tap starts a run. */
+const START_LABEL = 'Start: buzz your lips over the waves'
 
 /** "88%": the result's big number is the share of the waves lit. */
 export function litText(summary: LipSummary): string {
@@ -178,9 +184,9 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
   const showLevel = (): boolean =>
     !scripted() &&
     (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
-  /** The singer's own run is on: the mic listens. */
-  const listening = (): boolean =>
-    !scripted() && (phase() === 'run' || phase() === 'settle')
+  /** The mic: ready, waiting through a count-in or a breath, or hearing a wave. */
+  const micState = (): MicState =>
+    lipMicState(room.state().phase, room.riding(), scripted())
 
   /** Merc's canvas over the next moments of the demo's take, px. */
   const mercLane = (): Rect[] => {
@@ -226,16 +232,10 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
   )
 
   const micLabel = (): string => {
-    switch (phase()) {
-      case 'starting':
-        return 'Opening the microphone'
-      case 'settle':
-        return 'Listening for your note. Tap to stop'
-      case 'run':
-        return 'Listening. Tap to stop'
-      default:
-        return 'Start: buzz your lips over the waves'
-    }
+    if (scripted()) return START_LABEL
+    if (phase() === 'starting') return 'Opening the microphone'
+    if (phase() === 'settle') return 'Listening for your note. Tap to stop'
+    return labelFor(micState(), START_LABEL)
   }
 
   return (
@@ -311,21 +311,18 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
         </Switch>
       </div>
 
-      <Show when={showLevel()}>
-        <LipLevel class={styles.level} />
-      </Show>
-
-      <Show when={demo?.canAsk() === true}>
-        <button
-          type="button"
-          class={styles.ask}
-          onClick={() => demo?.ask()}
-          aria-label={DEMO_COPY.ask}
-          data-testid="lip-ask"
-        >
-          <HelpCircle size={22} />
-        </button>
-      </Show>
+      <RoomBarEnd>
+        <Show when={showLevel()}>
+          <LipLevel />
+        </Show>
+        <Show when={demo?.canAsk() === true}>
+          <RoomAsk
+            onAsk={() => demo?.ask()}
+            label={DEMO_COPY.ask}
+            testId="lip-ask"
+          />
+        </Show>
+      </RoomBarEnd>
       <Show when={demoMode() === 'playing'}>
         <button
           type="button"
@@ -380,9 +377,10 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
               />
             </Show>
             <MicButton
-              listening={listening()}
-              demo={scripted()}
+              state={micState()}
+              level={room.micLevel}
               pulse={demo?.micPulse() === true}
+              still={props.still}
               disabled={phase() === 'starting'}
               label={micLabel()}
               onClick={() => {

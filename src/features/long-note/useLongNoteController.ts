@@ -26,7 +26,7 @@ import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { createScreenAwake } from '@/components/room-kit/screen-awake'
-import { levelFromRms } from '@/components/room-kit/voice-level'
+import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
@@ -149,6 +149,8 @@ export function useLongNoteController(): LongNoteController {
   let lastTick: HoldTick | null = null
   let windowOpen = false
   let windowStartedAt = 0
+  /** The singer's loudness in the newest frame, for the mic's ring. */
+  let loudness = 0
   // The take's rules (the goal fills the lantern halfway; past it, steady
   // singing fills the top): the singer's level as the take opens, or the
   // demo's own. Between takes the band follows the level as it is picked.
@@ -219,6 +221,7 @@ export function useLongNoteController(): LongNoteController {
   const closeWindow = (): PitchFrame[] => {
     closedAt = now()
     windowOpen = false
+    loudness = 0
     setExerciseFocus(false)
     return scripted === null ? capture.takeFrames() : [...scripted.frames()]
   }
@@ -456,6 +459,7 @@ export function useLongNoteController(): LongNoteController {
         follow(scripted.frames(), scripted.targetMidi)
       } else {
         const frames = capture.peekFrames()
+        loudness = newestLevel(frames)
         if (targetMidi === null) findNote(frames)
         else follow(frames, targetMidi)
         restIfQuiet()
@@ -761,6 +765,7 @@ export function useLongNoteController(): LongNoteController {
     mercState: merc.state,
     mercPlace: merc.place,
     mercVoice: () => voice,
+    micLevel: () => loudness,
     // In the hold the engine's two fills; otherwise the level the take
     // left, or emptying for a new one.
     lanternLevel: () => {
