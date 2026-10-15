@@ -227,6 +227,10 @@ jobs:
       # All commands are non-mutating; CI, rather than a local hook, is the
       # authoritative formatting, lint, and typecheck gate.
       - name: Check MercuryPitch syntax and formatting
+        # eslint src peaks at about 6.2 GB of memory (measured 15 Oct 2026)
+        # and ran out of Node's default heap of about 4 GB on main and on PRs.
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         run: pnpm run typecheck && pnpm run lint && pnpm run fmt
 
       # Gated on root alone, as it was before the split. It must not inherit
