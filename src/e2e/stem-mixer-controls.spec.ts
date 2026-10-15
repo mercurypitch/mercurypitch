@@ -377,9 +377,11 @@ test('switches songs directly from the Songs drawer @smoke', async ({
   // controls. This test is about the drawer's own list.
   await drawer.getByRole('button', { name: /Drawer navigation target/ }).click()
 
+  // The title is the song's own name, without the old "(session)" tag.
   await expect(
     page.getByRole('heading', {
-      name: 'Drawer navigation target (session)',
+      name: 'Drawer navigation target',
+      exact: true,
     }),
   ).toBeVisible()
 })
@@ -510,7 +512,7 @@ test('keeps the play-along role picker readable in dark and light themes @smoke'
   await expect(drawerRole).toBeEnabled()
   await assertReadableTheme(drawerRole, 'dark')
   await assertReadableTheme(drawerRole, 'light', 'dark')
-  await page.getByTitle('Karaoke focus mode').click()
+  await page.getByRole('button', { name: 'Focus mode', exact: true }).click()
   await expect(page.locator('.stem-mixer')).toHaveClass(/stem-mixer--focus/)
   await expect(drawerRole).toHaveCSS('background-color', 'rgb(28, 33, 40)')
   await assertReadablePalette(drawerRole, 'dark')
@@ -597,12 +599,13 @@ test('owns a dark stage skin in every app theme and fades its chrome to glass @s
     expect(palette.stagePrimary).toBe('#0d1117')
     expect(palette.stageText).toBe('#e6edf3')
     expect(palette.colorScheme).toBe('dark')
-    // The chrome paints the faded value, never the opaque source it came
+    // The panels paint the faded value, never the opaque source it came
     // from -- this is the stage-transparency slider actually reaching the
-    // panels rather than only the backdrop behind them.
-    expect(palette.headerBackground).toBe(palette.resolvedPrimary)
+    // panels rather than only the backdrop behind them. The header is a row
+    // of controls on the stage itself and draws no band of its own.
+    expect(palette.headerBackground).toBe('rgba(0, 0, 0, 0)')
     expect(palette.panelBackground).toBe(palette.resolvedPrimary)
-    expect(palette.headerBackground).not.toBe('rgb(13, 17, 23)')
+    expect(palette.panelBackground).not.toBe('rgb(13, 17, 23)')
     expect(palette.titleColor).toBe(palette.resolvedText)
     // The canvas draws light-on-dark ink, so it keeps the same dark plate in
     // every theme -- a step more opaque than the panels, still glass.
@@ -638,7 +641,7 @@ test('owns a dark stage skin in every app theme and fades its chrome to glass @s
     .locator('.sm-lyrics-version-backdrop')
     .click({ position: { x: 2, y: 2 } })
 
-  await page.getByTitle('Karaoke focus mode').click()
+  await page.getByRole('button', { name: 'Focus mode', exact: true }).click()
   await expect(mixer).toHaveClass(/stem-mixer--focus/)
   await expect(mixer).toHaveClass(/mp-dark-stage/)
   await expect(mixer).toHaveCSS('color-scheme', 'dark')
@@ -684,7 +687,7 @@ test('activates Pitch Studio from light with complete dark ownership @smoke', as
     renderedContrast(badgePalette.color, badgePalette.background),
   ).toBeGreaterThanOrEqual(4.5)
 
-  await page.getByTitle('Pitch Analysis & Settings').click()
+  await page.getByRole('button', { name: 'Pitch', exact: true }).click()
   const editNotes = page.getByRole('button', { name: 'Edit notes' })
   await expect(editNotes).toBeEnabled({ timeout: 15_000 })
   await editNotes.click()
@@ -727,10 +730,9 @@ function playheadShare(page: Page): Promise<number> {
 test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
   page,
 }) => {
+  // One name in every state; aria-pressed and data-state say which.
   const micButton = (target: import('@playwright/test').Page) =>
-    target.getByRole('button', {
-      name: /^(?:Enable|Disable|Retry) microphone$/,
-    })
+    target.getByRole('button', { name: 'Microphone', exact: true })
   const secondPage = await page.context().newPage()
   await secondPage.addInitScript(() => {
     ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
@@ -769,7 +771,7 @@ test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
   // The tab that yielded must visibly become neutral/off. A handoff is
   // intentional, so presenting it as a red recording/error state is false.
   await expect(firstMic).toBeEnabled()
-  await expect(firstMic).toHaveAccessibleName('Enable microphone')
+  await expect(firstMic).toHaveAccessibleName('Microphone')
   await expect(firstMic).toHaveAttribute('aria-pressed', 'false')
   await expect(firstMic).toHaveAttribute('data-state', 'off')
   await secondPage.close()

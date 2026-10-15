@@ -1,30 +1,24 @@
 // ============================================================
-// Stem mixer rail: one row that keeps its timeline
+// Stem mixer rail: one glass bar that keeps its timeline
 // ============================================================
 //
-// The rail is a capsule of grouped controls with the timeline beside it,
-// and the timeline keeps 380 px or takes a line of its own. These are the
-// claims only a browser can check, at three window sizes: the timeline
-// stays usable, nothing runs past the window, the row does not move when a
-// loop is set or the mic turns on, the key panel and the speed list close
-// on a press outside and on Escape, a short loop's close-up opens clear
-// of the controls in type of 12 px or more, without shortening the track,
-// and a toast keeps off focus mode's pill docked at the top.
-// At 1440 px, an A-B loop also plays round without freezing, the close-up
-// stays on screen with the pill docked at the top, and the focus pill docks
-// to every edge from the More menu.
+// The rail is one bar: the controls on its left, the timeline in the
+// middle, Key and More on its right. Beside the controls the timeline keeps
+// 380 px, or 240 px once Speed has folded into More, and short of that it
+// takes a line of its own. These are the claims only a browser can check,
+// at three window sizes: the timeline stays usable, nothing runs past the
+// window, the key panel and the speed list close on a press outside and on
+// Escape, a short loop's close-up opens clear of the controls in type of
+// 12 px or more, without shortening the track, and a toast keeps off focus
+// mode's pill docked at the top. At 1440 px, an A-B loop also plays round
+// without freezing, the close-up stays on screen with the pill docked at
+// the top, and the focus pill docks to every edge from the More menu.
+// stem-mixer-rows.spec.ts holds both rows' sizes, folds and stillness.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from './helpers/ui'
-
-interface SongSeed {
-  seedSong: (input: {
-    name: string
-    fileHash: string
-    vocalWavBase64: string
-  }) => Promise<string>
-}
+import { SPEED_FOLD_PX, TIMELINE_OWN_LINE_PX, } from '../components/stem-mixer/rail/rail-fold'
+import { openSeededSong, playhead, setLoop, songPosition, } from './helpers/mixer-song'
 
 const VIEWPORTS = [
   { width: 1440, height: 900 },
@@ -32,89 +26,7 @@ const VIEWPORTS = [
   { width: 844, height: 390 },
 ] as const
 
-/** A mono 8 kHz sine as a WAV, base64 for page.evaluate. */
-function toneWavBase64(seconds: number, hz: number): string {
-  const rate = 8000
-  const samples = Math.floor(rate * seconds)
-  const buf = Buffer.alloc(44 + samples * 2)
-  buf.write('RIFF', 0)
-  buf.writeUInt32LE(36 + samples * 2, 4)
-  buf.write('WAVE', 8)
-  buf.write('fmt ', 12)
-  buf.writeUInt32LE(16, 16)
-  buf.writeUInt16LE(1, 20)
-  buf.writeUInt16LE(1, 22)
-  buf.writeUInt32LE(rate, 24)
-  buf.writeUInt32LE(rate * 2, 28)
-  buf.writeUInt16LE(2, 32)
-  buf.writeUInt16LE(16, 34)
-  buf.write('data', 36)
-  buf.writeUInt32LE(samples * 2, 40)
-  for (let index = 0; index < samples; index += 1) {
-    buf.writeInt16LE(
-      Math.round(Math.sin((2 * Math.PI * hz * index) / rate) * 8000),
-      44 + index * 2,
-    )
-  }
-  return buf.toString('base64')
-}
-
-const SONG = {
-  name: 'Rail Layout Song',
-  fileHash: 'rail-layout-song',
-  vocalWavBase64: toneWavBase64(30, 220),
-}
-
-// The mic's own plumbing is not under test here; a Web Audio stream stands
-// in for the device, as in stem-mixer-controls.spec.ts.
-const SYNTHETIC_MIC_INIT = () => {
-  Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
-    configurable: true,
-    value: async () => {
-      const context = new AudioContext()
-      const oscillator = context.createOscillator()
-      const destination = context.createMediaStreamDestination()
-      oscillator.frequency.value = 220
-      oscillator.connect(destination)
-      oscillator.start()
-      return destination.stream
-    },
-  })
-}
-
 test.use({ permissions: ['microphone'] })
-
-async function openSeededSong(
-  page: Page,
-  viewport: { width: number; height: number },
-): Promise<void> {
-  await page.setViewportSize(viewport)
-  await page.addInitScript(() => {
-    ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
-  })
-  await page.addInitScript(SYNTHETIC_MIC_INIT)
-  await page.goto('/')
-  await dismissOverlays(page)
-  await page.waitForFunction(
-    () =>
-      (window as unknown as { __ppSongSeed?: unknown }).__ppSongSeed !==
-      undefined,
-  )
-  const sessionId = await page.evaluate((song) => {
-    // The first-visit tour offer is a toast that sits on the rail at
-    // 844x390 for ten seconds (a phone-stage item, Phase 3 of the rail
-    // plan). It is not what this spec measures; mark it already offered.
-    localStorage.setItem('pitchperfect_mixer_tour_offered', 'true')
-    return (
-      window as unknown as { __ppSongSeed: SongSeed }
-    ).__ppSongSeed.seedSong(song)
-  }, SONG)
-  await page.goto(`/#/karaoke/session/${sessionId}/mixer`)
-  await dismissOverlays(page)
-  await expect(page.getByTestId('mixer-time-total')).toHaveText('0:30', {
-    timeout: 20_000,
-  })
-}
 
 interface Box {
   x: number
@@ -127,8 +39,14 @@ interface Box {
 
 interface RailLayout {
   rail: Box
+  /** The glass bar itself, whose width the folds read. */
+  bar: Box
   capsule: Box
+  /** The song-position slider. */
   timeline: Box
+  /** The timeline around it: elapsed, the slider and the length. */
+  timelineBox: Box
+  speedFolded: boolean
   scrollWidth: number
   innerWidth: number
   /** Painted things in the rail that start or end outside the window. */
@@ -165,14 +83,20 @@ function railLayout(page: Page): Promise<RailLayout> {
             element.getAttribute('aria-label') ?? element.className
           }]`,
       )
+    const bar = document.querySelector('[data-testid="mixer-rail"]')
     return {
       rail: box(rail),
+      bar: box(bar),
       capsule: box(document.querySelector('[data-testid="mixer-capsule"]')),
       timeline: box(
         document.querySelector(
           '[data-testid="mixer-timeline"] input[type="range"]',
         ),
       ),
+      timelineBox: box(
+        document.querySelector('[data-testid="mixer-timeline"]'),
+      ),
+      speedFolded: bar?.getAttribute('data-speed-folded') === 'true',
       scrollWidth: document.documentElement.scrollWidth,
       innerWidth: window.innerWidth,
       outside,
@@ -192,6 +116,9 @@ interface PillLayout {
    * (times included), and whether it has a line of its own.
    */
   timeline: { w: number; box: number; ownLine: boolean } | null
+  /** The bar's own width, and whether Speed has folded into More. */
+  barWidth: number
+  speedFolded: boolean
 }
 
 /** The focus pill as a singer meets it. */
@@ -261,34 +188,16 @@ function pillLayout(page: Page): Promise<PillLayout> {
               slider.getBoundingClientRect().top >=
               capsule.getBoundingClientRect().bottom - 1,
           }
+    const bar = pill.querySelector('[data-testid="mixer-rail"]')
     return {
       cutOff,
       smallestTarget: Math.min(...sizes),
       smallestText: Math.min(...texts),
       timeline,
+      barWidth: bar?.getBoundingClientRect().width ?? 0,
+      speedFolded: bar?.getAttribute('data-speed-folded') === 'true',
     }
   })
-}
-
-const songPosition = (page: Page) =>
-  page.getByRole('slider', { name: 'Song position' })
-
-/** Where the playhead is, in seconds. */
-const playhead = (page: Page): Promise<number> =>
-  songPosition(page).evaluate((element) =>
-    Number((element as HTMLInputElement).value),
-  )
-
-async function setLoop(page: Page, a: number, b: number): Promise<void> {
-  await songPosition(page).fill(String(a))
-  await expect.poll(() => playhead(page)).toBeCloseTo(a, 1)
-  await page.getByRole('button', { name: 'Set loop start (A)' }).click()
-  await songPosition(page).fill(String(b))
-  await expect.poll(() => playhead(page)).toBeCloseTo(b, 1)
-  await page.getByRole('button', { name: 'Set loop end (B)' }).click()
-  await expect(
-    page.getByRole('button', { name: 'Set loop end (B)' }),
-  ).toHaveAttribute('data-set', 'true')
 }
 
 /** A press on the rail's own padding: outside every control and panel. */
@@ -325,31 +234,23 @@ for (const viewport of VIEWPORTS) {
       const layout = await railLayout(page)
       const ownLine = layout.timeline.y >= layout.capsule.bottom - 1
 
-      expect(layout.timeline.w).toBeGreaterThanOrEqual(200)
-      expect(
-        ownLine || layout.timeline.w >= 380,
-        `a ${layout.timeline.w} px timeline squeezed in beside the capsule`,
-      ).toBe(true)
+      // Speed folds into More below 860 px of bar, and the timeline takes
+      // its own line below 650 (rail-fold.ts, read by the CSS's twin).
+      expect(layout.speedFolded).toBe(layout.bar.w < SPEED_FOLD_PX)
+      if (layout.bar.w < TIMELINE_OWN_LINE_PX) {
+        expect(ownLine, 'the timeline beside the controls').toBe(true)
+        // Its line is the bar's, less the bar's own padding.
+        expect(layout.timelineBox.w).toBeGreaterThanOrEqual(layout.bar.w - 20)
+      } else {
+        expect(ownLine, 'the timeline on a line of its own').toBe(false)
+        const floor = layout.speedFolded ? 240 : 380
+        expect(
+          layout.timelineBox.w,
+          `a ${layout.timelineBox.w} px timeline squeezed in beside the controls`,
+        ).toBeGreaterThanOrEqual(floor)
+      }
       expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth)
       expect(layout.outside).toEqual([])
-    })
-
-    test('keeps its width when a loop is set and the mic turns on', async ({
-      page,
-    }) => {
-      const before = await railLayout(page)
-
-      await setLoop(page, 5, 15)
-      await page.getByRole('button', { name: 'Enable microphone' }).click()
-      await expect(
-        page.getByRole('button', { name: 'Disable microphone' }),
-      ).toHaveAttribute('aria-pressed', 'true')
-
-      const after = await railLayout(page)
-      expect(after.capsule.w).toBeCloseTo(before.capsule.w, 1)
-      expect(after.timeline.w).toBeCloseTo(before.timeline.w, 1)
-      expect(after.rail.h).toBeCloseTo(before.rail.h, 1)
-      expect(after.outside).toEqual([])
     })
 
     test('closes the key panel and the speed list on a press outside and on Escape', async ({
@@ -379,8 +280,15 @@ for (const viewport of VIEWPORTS) {
       await expect(keyPanel).toBeHidden()
       await expect(keyChip).toBeFocused()
 
-      const speedChip = page.getByTestId('speed-chip')
-      const speedList = page.getByRole('menu', { name: /^Playback speed/ })
+      // Short of width, the speeds are rows in More (stem-mixer-rows.spec.ts
+      // checks those rows); More closes by the same rule.
+      const folded = (await railLayout(page)).speedFolded
+      const speedChip = folded
+        ? page.getByRole('button', { name: /^More playback options/ })
+        : page.getByTestId('speed-chip')
+      const speedList = folded
+        ? page.getByRole('menu', { name: /^More playback options/ })
+        : page.getByRole('menu', { name: /^Playback speed/ })
       await speedChip.click()
       await expect(speedList).toBeVisible()
       await pressOutside(page)
@@ -467,13 +375,13 @@ for (const viewport of VIEWPORTS) {
           // The side docks stack the controls and leave the timeline out.
           expect.soft(pill.timeline, side).toBeNull()
         } else {
-          // The page's rule: the timeline keeps 380 px or takes a line of
-          // its own, and is never squeezed under 200.
-          expect.soft(pill.timeline?.w ?? 0, side).toBeGreaterThanOrEqual(200)
+          // The rail's rule: beside the controls the timeline keeps 380 px,
+          // or 240 once Speed is in More, or it takes a line of its own.
+          const floor = pill.speedFolded ? 240 : 380
           expect
             .soft(
               pill.timeline?.ownLine === true ||
-                (pill.timeline?.box ?? 0) >= 380,
+                (pill.timeline?.box ?? 0) >= floor,
               `${side}: a ${pill.timeline?.box} px timeline beside the controls`,
             )
             .toBe(true)
