@@ -9,8 +9,8 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 The launch gift now says what using it earns, and the cookie banner no
 longer hides the tab bar, the confirm-email bar or your notifications. Mails
-stay dark in Gmail on the iPhone, and the Voice Mirror talks about voice
-types.
+stay dark in Gmail on the iPhone, the Voice Mirror talks about voice types,
+and keyboard focus and small screens get a round of fixes.
 
 ### Added
 
@@ -45,6 +45,14 @@ types.
 - **Guitar Night and Drum Night say when the launch gift lands.** Sign up
   with Google from either room and it tells you the 5 credits arrived, and
   what they separate there.
+- **Keyboard focus shows** on Settings' dropdowns and on Karaoke's song
+  upload area.
+- **Community's tabs fit on a phone.** Melodies and Sessions no longer cut
+  off to "Mel…" and "Ses…".
+- **Smaller things.** Buttons and fields use the app's font, not Arial. The
+  song card's menu is easier to tap on a phone, the MIDI stem label is easier
+  to read in every theme, and the intro's buttons no longer shake under a
+  resting pointer.
 
 ## [0.9.17] - 2026-10-14
 
