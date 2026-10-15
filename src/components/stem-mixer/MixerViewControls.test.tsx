@@ -1,6 +1,5 @@
 // The mixer's view rows: the layouts, the one in use ticked, a pick that
-// switches, the tour's hook on the fixed layout, and the sidebar switch that
-// only the fixed layout has. The header's Layout and View menus and focus
+// switches, and the sidebar switch that only the fixed layout has. The header's Layout and View menus and focus
 // mode's More all show these rows.
 
 import { createSignal } from 'solid-js'
@@ -44,16 +43,6 @@ describe('mixerViewRows', () => {
     expect(mixerViewRows(props).find((row) => row.checked === true)?.key).toBe(
       'layout-fixed-2col',
     )
-  })
-
-  it('carries the tour’s hook on the fixed layout, which the tour picks first', () => {
-    const { props } = view('auto-1col')
-
-    expect(
-      mixerViewRows(props)
-        .filter((row) => row.tour !== undefined)
-        .map((row) => [row.key, row.tour]),
-    ).toEqual([['layout-fixed-2col', 'mixer.layout-fixed']])
   })
 
   it('offers the sidebar switch in the fixed layout only, checked while shown', () => {

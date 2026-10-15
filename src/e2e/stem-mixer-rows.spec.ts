@@ -750,3 +750,53 @@ for (const size of [
     })
   })
 }
+
+test.describe('the mixer tour starting at 1440x900', () => {
+  test('goes to the fixed layout without opening a menu', async ({ page }) => {
+    await openSeededSong(page, { width: 1440, height: 900 })
+    // From another layout, so the tour has to switch before it starts.
+    const layout = page.getByTestId('mixer-layout')
+    await layout.click()
+    await page.getByRole('menuitemradio', { name: 'Single column' }).click()
+    await expect(layout).toHaveAttribute('title', 'Layout: Single column')
+
+    await page.evaluate(() => {
+      const seen = window as unknown as { __menusOpened: number }
+      seen.__menusOpened = 0
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (
+              node instanceof Element &&
+              (node.matches('[role="menu"]') ||
+                node.querySelector('[role="menu"]') !== null)
+            )
+              seen.__menusOpened += 1
+          }
+        }
+      }).observe(document.body, { childList: true, subtree: true })
+    })
+    await page.getByRole('button', { name: 'Tour', exact: true }).click()
+
+    await expect(layout).toHaveAttribute('title', 'Layout: Two columns fixed')
+    const stems = page.locator('[data-tour="mixer.stems"]')
+    const spotlight = page.locator('[class*="walkthroughHighlight"]')
+    await expect
+      .poll(async () => {
+        const target = await stems.boundingBox()
+        const lit = await spotlight.boundingBox()
+        return (
+          target !== null &&
+          lit !== null &&
+          Math.abs(target.x - lit.x) < 12 &&
+          Math.abs(target.y - lit.y) < 12
+        )
+      })
+      .toBe(true)
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __menusOpened: number }).__menusOpened,
+      ),
+    ).toBe(0)
+  })
+})

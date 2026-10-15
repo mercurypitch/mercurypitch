@@ -147,6 +147,9 @@ interface StemMixerProps {
    *  removes the tour UI — and keeps the tour engine (app-store) out of
    *  standalone entry bundles. */
   onOfferTour?: (trigger: 'mount' | 'button') => void
+  /** True while the mixer's tour runs, from the same studio host: the mixer
+   *  takes the fixed layout its steps point at. */
+  tourRunning?: () => boolean
   /** Fires once per mount after ~30s of cumulative playback — the Karaoke
    *  Night page uses it as the demo-engagement funnel milestone. */
   onThirtySecondsPlayed?: () => void
@@ -1859,6 +1862,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       : {}),
   })
+  // The tour's targets live in the fixed two-column layout, so the mixer
+  // goes there itself as its tour starts. The tour used to open the Layout
+  // menu and pick the row, and the menu flashed open over its first step.
+  createEffect(
+    on(
+      () => props.tourRunning?.() === true,
+      (running) => {
+        if (running) layout.viewControls.onLayoutChange('fixed-2col')
+      },
+    ),
+  )
 
   // ── Derived helpers ───────────────────────────────────────────
   const showMidi = () =>

@@ -279,7 +279,6 @@ export const MixerHeader: Component<MixerHeaderProps> = (props) => {
               <OverflowMenu
                 label="Layout"
                 testId="mixer-layout"
-                triggerTour="mixer.layout"
                 triggerTitle={`Layout: ${currentLayout(props.view.layout).label}`}
                 triggerClass={`${styles.hb} ${styles.menu}`}
                 panelClass={`mp-dark-stage ${styles.menuPanel}`}
@@ -398,7 +397,6 @@ export const MixerHeader: Component<MixerHeaderProps> = (props) => {
                 <OverflowMenu
                   label="View"
                   testId="mixer-view"
-                  triggerTour="mixer.layout"
                   triggerTitle="Stage, layout, sidebar and tour"
                   triggerClass={`${styles.hb} ${styles.menu}`}
                   panelClass={`mp-dark-stage ${styles.menuPanel}`}

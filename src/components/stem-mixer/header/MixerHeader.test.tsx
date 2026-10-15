@@ -195,17 +195,15 @@ describe('MixerHeader', () => {
     expect(screen.queryByRole('button', { name: 'Mixer sidebar' })).toBeNull()
   })
 
-  it('switches the layout from its menu, which the tour opens by its hook', () => {
+  it('switches the layout from its menu', () => {
     const view = viewState('auto-1col')
     mount({ view })
     const trigger = screen.getByRole('button', { name: 'Layout' })
-    expect(trigger).toHaveAttribute('data-tour', 'mixer.layout')
 
     fireEvent.click(trigger)
     const fixed = screen.getByRole('menuitemradio', {
       name: 'Two columns fixed',
     })
-    expect(fixed).toHaveAttribute('data-tour', 'mixer.layout-fixed')
     fireEvent.click(fixed)
 
     expect(view.onLayoutChange).toHaveBeenCalledWith('fixed-2col')
@@ -357,7 +355,6 @@ describe('MixerHeader, short of room', () => {
       'true',
     )
     const viewMenu = screen.getByRole('button', { name: 'View' })
-    expect(viewMenu).toHaveAttribute('data-tour', 'mixer.layout')
     expect(link()).toBeInTheDocument()
     fireEvent.click(viewMenu)
     expect(

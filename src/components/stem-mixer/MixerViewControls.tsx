@@ -79,18 +79,10 @@ export const MIXER_LAYOUTS: readonly {
   layout: MixerLayout
   label: string
   icon: () => JSX.Element
-  tour?: string
 }[] = [
   { layout: 'auto-1col', label: 'Single column', icon: SingleColumnIcon },
   { layout: 'auto-2col', label: 'Two columns auto', icon: TwoColumnsIcon },
-  {
-    layout: 'fixed-2col',
-    label: 'Two columns fixed',
-    icon: FixedColumnsIcon,
-    // The tour switches to this layout first: several of its targets only
-    // exist there.
-    tour: 'mixer.layout-fixed',
-  },
+  { layout: 'fixed-2col', label: 'Two columns fixed', icon: FixedColumnsIcon },
   {
     layout: 'performance',
     label: 'Performance: big centered lyrics',
@@ -101,8 +93,7 @@ export const MIXER_LAYOUTS: readonly {
 /**
  * The layouts as menu rows, and the sidebar switch in the one layout that
  * has a sidebar: the header's Layout menu, its View menu when the header is
- * folded, and More in focus mode, where the header is hidden. The fixed
- * layout's row carries the tour's hook: the tour opens the menu and picks it.
+ * folded, and More in focus mode, where the header is hidden.
  */
 export function mixerViewRows(
   view: MixerViewControlsProps,
@@ -113,7 +104,6 @@ export function mixerViewRows(
     checked: view.layout === option.layout,
     checkType: 'radio',
     separatorBefore: index === 0,
-    tour: option.tour,
     icon: () => tick(view.layout === option.layout),
     onSelect: () => view.onLayoutChange(option.layout),
   }))

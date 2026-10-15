@@ -1328,18 +1328,13 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="mixer.stems"]',
     placement: 'left',
     requiredTab: TAB_KARAOKE,
-    // Several tour targets only exist in the fixed-2col workspace (the stem
-    // controls are absent in the performance layout; the lyrics-panel action
-    // buttons and the pitch lane only render in fixed-2col) — so the tour
-    // standardizes on that layout up front. The layout is a row in the
-    // header's Layout menu (the View menu on a narrow header): the tour opens
-    // the menu and picks the row, which is idempotent (a direct set, not a
-    // toggle) and closes the menu; the choice persists after the tour like
-    // any manual layout switch.
-    navigate: [
-      '[data-tour="mixer.layout"]',
-      '[data-tour="mixer.layout-fixed"]',
-    ],
+    // Several tour targets only exist in the fixed-2col workspace (the
+    // lyrics-panel action buttons and the pitch lane only render there), so
+    // the tour standardizes on that layout up front. The mixer switches to
+    // it itself as this tour starts (its tourRunning prop): the tour used to
+    // open the header's Layout menu and pick the row, and the menu flashed
+    // open over this step. The choice persists after the tour like any
+    // manual layout switch.
   },
   {
     title: 'Transport & seek',
@@ -2137,6 +2132,18 @@ export function hasPageTour(tab: ActiveTab): boolean {
 }
 
 /** Start an arbitrary spotlight tour from a list of steps (no-op if empty). */
+/**
+ * True while the mixer's own tour runs. The studio host hands it to the
+ * mixer (StemMixer's tourRunning), which takes the layout the tour's steps
+ * point at, so the tour never has to open the Layout menu.
+ */
+export function stemMixerTourRunning(): boolean {
+  return (
+    walkthroughActive() &&
+    tourSteps().some((step) => STEM_MIXER_TOUR_STEPS.includes(step))
+  )
+}
+
 export function startTour(steps: WalkthroughStep[]): void {
   if (!TOURS_AVAILABLE) return
   const shown = steps.filter(
