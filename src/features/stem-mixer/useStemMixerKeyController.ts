@@ -123,6 +123,14 @@ function fitMessage(result: 'applied' | 'unchanged', keyShift: number): string {
     : `Key ${formatKeyShift(keyShift)} already fits your voice.`
 }
 
+/** What "find my key" says when the singer moved the key while it worked. */
+function keptMessage(fit: number, keyShift: number): string {
+  if (fit === keyShift) return fitMessage('unchanged', keyShift)
+  const fits =
+    fit === 0 ? "The song's own key fits" : `Key ${formatKeyShift(fit)} fits`
+  return `${fits} your voice. You moved the key meanwhile, so it stays where you put it.`
+}
+
 /**
  * The notice a result needs; null where the screen says it already: an
  * applied fit moves the stepper, and the picker asks for a range itself.
@@ -195,6 +203,10 @@ export function useStemMixerKeyController(
     setPickerOpen(true)
   }
   let detecting = false
+  // The key as the singer had it when they last asked for a fit. One they
+  // move while Find my key still waits, for the stored range or for the
+  // melody, is theirs: the fit lands later and must not undo it.
+  let keyAtFind = 0
   let disposed = false
   onCleanup(() => {
     disposed = true
@@ -249,6 +261,18 @@ export function useStemMixerKeyController(
     return 'applied'
   }
 
+  /**
+   * For a fit that lands after a wait: true, the fit said and not applied,
+   * when the singer has moved the key since asking. Find my key, pressed
+   * again, moves to it.
+   */
+  const keptTheirKey = (): boolean => {
+    const fit = suggestion()
+    if (fit === null || keyShift() === keyAtFind) return false
+    notify(keptMessage(fit.keyShift, keyShift()), 'info')
+    return true
+  }
+
   const fitAfterDetection = (outcome: PitchAnalysisOutcome) => {
     detecting = false
     showFinding()
@@ -259,6 +283,7 @@ export function useStemMixerKeyController(
       else notify(outcome.message, 'error')
       return
     }
+    if (keptTheirKey()) return
     const result = applyFit()
     if (result === null) {
       notify(
@@ -300,6 +325,7 @@ export function useStemMixerKeyController(
   }
 
   const findMyKey = (): FindMyKeyResult => {
+    keyAtFind = keyShift()
     if (!rangeRead && !rangeKnown()) {
       findWaiting = true
       showFinding()
@@ -309,6 +335,8 @@ export function useStemMixerKeyController(
   }
 
   const applyVoiceType = (preset: VocalRangePreset): FindMyKeyResult => {
+    // A pick asks for a fit afresh.
+    keyAtFind = keyShift()
     setVocalRangePreset(preset)
     rangeRequest++
     rangeRead = true
@@ -326,6 +354,10 @@ export function useStemMixerKeyController(
   const answerWaitingFind = () => {
     if (!findWaiting || disposed) return
     findWaiting = false
+    if (keptTheirKey()) {
+      showFinding()
+      return
+    }
     const result = findWithRange()
     showFinding()
     const notice = findNotice(result, keyShift())
