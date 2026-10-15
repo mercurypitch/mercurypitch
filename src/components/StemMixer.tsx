@@ -883,17 +883,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // so audio stops even when the action doesn't remount the mixer (skipping the
   // last song into the summary, or stopping the playlist).
   //
-  // The playlist changes once the pause's fade has played, the key shifter's
-  // tail included (releaseLeft). Changed at once, the next entry's key
-  // re-routed the key graph while the old song still sounded through it, and
-  // the remount closed the clock under it: either cut the song off at full
-  // level, heard as a click. Each press still counts: two quick Skips skip two.
-  const entryChanges = new Set<ReturnType<typeof setTimeout>>()
+  // The song changes once the pause's fade has played, the key shifter's
+  // tail included (releaseLeft): a playlist's next entry, or the library's
+  // next song. Changed at once, the next entry's key re-routed the key graph
+  // while the old song still sounded through it, and the remount closed the
+  // clock under it: either cut the song off at full level, heard as a click.
+  // Each press still counts: two quick Skips skip two.
+  const songSwitches = new Set<ReturnType<typeof setTimeout>>()
   onCleanup(() => {
-    for (const timer of entryChanges) clearTimeout(timer)
-    entryChanges.clear()
+    for (const timer of songSwitches) clearTimeout(timer)
+    songSwitches.clear()
   })
-  const pauseThenChangeEntry = (change: () => void): void => {
+  const fadeThenSwitch = (change: () => void): void => {
     audio.handlePause()
     const fading = audio.releaseLeft()
     if (fading <= 0) {
@@ -901,15 +902,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return
     }
     const timer = setTimeout(() => {
-      entryChanges.delete(timer)
+      songSwitches.delete(timer)
       change()
     }, fading)
-    entryChanges.add(timer)
+    songSwitches.add(timer)
   }
-  const handlePlaylistPrev = () => pauseThenChangeEntry(playlist.prev)
-  const handlePlaylistNext = () => pauseThenChangeEntry(playlist.advance)
-  const handlePlaylistStopAll = () =>
-    pauseThenChangeEntry(playlist.stopPlaylist)
+  const handlePlaylistPrev = () => fadeThenSwitch(playlist.prev)
+  const handlePlaylistNext = () => fadeThenSwitch(playlist.advance)
+  const handlePlaylistStopAll = () => fadeThenSwitch(playlist.stopPlaylist)
 
   // ── Zen transport: unified song navigation ───────────────────
   // The zen stage's back/next controls span whichever context is active: an
@@ -964,7 +964,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return
     }
     const id = prevSessionId(orderedLibraryIds(), props.sessionId)
-    if (id !== null) props.onPickSession?.(id)
+    const pick = props.onPickSession
+    if (id !== null && pick !== undefined) fadeThenSwitch(() => pick(id))
   }
 
   const goNextItem = (): void => {
@@ -977,7 +978,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return
     }
     const id = nextSessionId(orderedLibraryIds(), props.sessionId)
-    if (id !== null) props.onPickSession?.(id)
+    const pick = props.onPickSession
+    if (id !== null && pick !== undefined) fadeThenSwitch(() => pick(id))
   }
 
   // The same retry the desktop card has carried all along. On a phone the
@@ -2085,7 +2087,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           if (entries.length > 1 && index === playlist.currentIndex()) {
             index = (index + 1) % entries.length
           }
-          pauseThenChangeEntry(() => playlist.jumpTo(index))
+          fadeThenSwitch(() => playlist.jumpTo(index))
           return true
         },
       },
@@ -2494,14 +2496,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
       return
     }
+    // The mixer's own context: closing it stops it at once, so a song left
+    // while it played closes it once that fade has played too. Closed under
+    // the fade, the song stopped mid-note.
     const ctx = audio.getAudioCtx()
-    if (ctx) {
-      ctx.close().catch(() => {
+    const close = (): void => {
+      ctx?.close().catch(() => {
         /* */
       })
+      // Closing takes the nodes with it, but not the key graph's timers.
+      audio.detachGraph()
     }
-    // Closing takes the nodes with it, but not the key graph's timers.
-    audio.detachGraph()
+    const fading = audio.releaseLeft()
+    if (fading > 0) {
+      setTimeout(close, fading)
+    } else {
+      close()
+    }
   })
 
   const handleKeepKaraokeVoiceTake = (): void => {
