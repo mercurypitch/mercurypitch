@@ -14,9 +14,9 @@ and keyboard focus and small screens get a round of fixes.
 
 ### Added
 
-- **The launch gift says what using it earns.** A line under the gift gives
-  the date to use all 5 by for 30 extra credits on your next credit pack, in
-  the intro, Karaoke Night, the Voice Mirror and Settings › Credits.
+- **The launch gift says what using it earns.** Use all 5 credits by the date
+  shown under it to get 30 extra credits on your next credit pack. The line is
+  in the intro, Karaoke Night, the Voice Mirror and Settings › Credits.
 
 ### Changed
 
