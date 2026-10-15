@@ -82,6 +82,7 @@ vi.mock('../bay-waves', async () => {
         glass.resets += 1
         glass.strips = []
       },
+      dispose: () => undefined,
     }),
   }
 })

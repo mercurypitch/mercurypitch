@@ -384,8 +384,9 @@ function addFlutter(
 /**
  * A sung line, as Merc would sing it: one "ooh" that follows `points` in
  * pitch and loudness, rests where the level is 0, with a natural vibrato on
- * top, or a lip buzz's flutter (`flutter`, Lip roll's demo). Every onset opens and every rest closes on the house envelope.
- * Returns a handle that closes it pop-free at any moment.
+ * top, or a lip buzz's flutter (`flutter`, Lip roll's demo). Every onset
+ * opens and every rest closes on the house envelope. Returns a handle that
+ * closes it pop-free at any moment.
  */
 export function playVoiceContour(
   ctx: AudioContext,

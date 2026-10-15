@@ -82,6 +82,7 @@ vi.mock('../bridge-glass', async () => {
         glass.resets += 1
         glass.strips = []
       },
+      dispose: () => undefined,
     }),
   }
 })
