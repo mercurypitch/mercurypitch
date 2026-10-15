@@ -27,7 +27,8 @@ spelling (#1007), and mails that stay dark in Gmail on the iPhone (#1010,
 #1006). Most of the commits are the premium exercises, which reach no web
 build: Echo's art rounds 5 and 6, its demo and Merc's recorded voice; the
 glide engine; and Ng slides and Lip roll, each a room and a demo on stand-in
-art.
+art. The native apps keep their own versions and tags; what reaches them is
+listed under `native-mercurypitch` and `native-besidecue`.
 
 ### Release steps (prod)
 
@@ -272,6 +273,42 @@ says how a painting replaces its stand-in without a code change.
   default, so every existing caller sounds as before. The fixtures are read
   in `apps/mercurypitch/src/main.tsx` behind `import.meta.env.DEV`, and no
   fixture string is in a production bundle (#1025).
+
+### native-mercurypitch
+
+Six tags since `mp-v0.8.22`, each the merge of a premium-exercise PR, and
+Mercury Pitch Mobile built every one: `mp-v0.8.23` (34e62d5e4, the merge of
+#1003) carries #1002, #1005 and #1003; `mp-v0.8.24` (8422fec07, #1012) adds
+#1006, #1010, #1011 and #1012; `mp-v0.8.25` (64bbe1835, #1016) adds #1013,
+#1015 and #1016; `mp-v0.8.26` (0991af43a, #1017) adds #1007, #1009, #1014
+and #1017; `mp-v0.8.27` (e8f35a07d, #1021) adds #1020 and #1021; and
+`mp-v0.8.28` (165be6475, #1023) adds #1022 and #1023. #1019, #1024 and
+#1025 merged after it and arrive with the next `mp-v` tag. #974's own
+changes, the 0.9.17 release notes and version, arrived with `mp-v0.8.23`.
+
+These tags were not matched against the native bundle line by line, as
+0.9.17's were. What each PR's own checks say:
+
+- **Premium exercises**: Echo's round 5 and 6 art, its voice and demo, Ng
+  slides and Lip roll with their demos, and the result bands and Long note's
+  preload (#1024, #1025, next tag) are in a test build only. Each PR ran `assert-bundle.mjs` on a dev
+  target and a store target (`MERCURYPITCH_API_TARGET=production`); the
+  store build carries none of them.
+- **The launch offer line (#1014)** is not in the native bundle: the OFFER
+  check passes and its words appear 0 times. #1009's Guitar Night and Drum
+  Night lines are in web-only entries.
+- **Mail (#1006, #1010)** reaches every installed build the same way, with
+  this release's worker deploy.
+- **#1024's detector change** reaches the next tag's build of every room, and
+  its output is unchanged.
+
+### native-besidecue
+
+No file under `apps/beside-cue` or `packages/glass-game` changed since
+`v0.9.17`. The one change in a package Beside Cue depends on is #1024's
+`packages/pitch-engine/src/pitch-detector.ts`, whose output is unchanged
+(above); the next Beside Cue build carries it. It was not checked against
+Beside Cue's bundle.
 
 ## [0.9.17] - 2026-10-14
 
