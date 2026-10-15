@@ -14,6 +14,7 @@
 // Lives in src/lib/ so it rides the `pitch-core` manualChunk.
 // ============================================================
 
+import { F0_DETECTOR_OPTIONS } from '@/lib/f0-detector-options'
 import { publishMicLevel, resetMicLevel } from '@/lib/mic-level'
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { PitchDetector } from '@/lib/pitch-detector'
@@ -76,14 +77,7 @@ export function createF0Stream(
   const detector = new PitchDetector({
     sampleRate: audioContext.sampleRate,
     bufferSize: FFT_SIZE,
-    algorithm: 'yin',
-    // Human singing range with headroom; keeps YIN off subharmonics.
-    minFrequency: 60,
-    maxFrequency: 1600,
-    // The mirror captures with AGC off (required for honest pitch), so raw
-    // mobile input is quiet — the detector's 0.02 default RMS gate would
-    // reject normal singing at arm's length on a phone.
-    minAmplitude: 0.005,
+    ...F0_DETECTOR_OPTIONS,
   })
 
   const buffer = new Float32Array(FFT_SIZE)

@@ -94,7 +94,15 @@ export class PitchDetector {
   private readonly stabilize: boolean
   private readonly telemetry: 'live' | 'off'
   private readonly yinBuffer: Float32Array
-  private pitchHistory: number[] = []
+  /**
+   * The stability filter's recent readings. A list of doubles from the
+   * start (made with one and emptied in the constructor): an empty `[]`
+   * would change kind on the first reading it keeps, and V8's compiled
+   * YIN pass drops back out to the interpreter for that change, in the
+   * middle of a take's first voiced frame (2026-10-15; see the app's
+   * src/lib/pitch-detector-warmup.ts). Its contents are the same either way.
+   */
+  private pitchHistory: number[] = [0.5]
   private readonly maxHistory = 5
   private swiftDetector: SwiftF0Detector | null = null
   private onnxModule: typeof ort | MockOnnxModule | null = null
@@ -114,6 +122,7 @@ export class PitchDetector {
     this.stabilize = opts.stabilize
     this.telemetry = opts.telemetry
     this.yinBuffer = new Float32Array(Math.floor(this.bufferSize / 2))
+    this.pitchHistory.length = 0
   }
 
   /**
