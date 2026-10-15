@@ -16,10 +16,11 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
+import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { VOICE_LEGENDS } from '../../../src/lib/mirror/legend-catalog'
 import type { Env } from '../src/auth'
-import { MAIL_ART, WORDMARK_PATH } from '../src/email-layout'
+import { documentHtml, MAIL_ART, W, WORDMARK_PATH } from '../src/email-layout'
 import { legendPortraitPath } from '../src/email-welcome'
 import worker from '../src/index'
 import { applyMigrations, SqliteD1Database } from './sqlite-d1'
@@ -347,7 +348,7 @@ describe('the pictures a mail points at', () => {
     ...VOICE_LEGENDS.map((legend) => legendPortraitPath(legend.id)),
   ]
   // No new mail uses these, but mails already sent still point at them.
-  const sentOnly = ['/email/wordmark-v1@2x.png']
+  const sentOnly = ['/email/wordmark-v1@2x.png', '/email/wordmark-v1-2x.png']
   const publicFile = (path: string) =>
     new URL(`../../../public${path}`, import.meta.url)
 
@@ -369,5 +370,50 @@ describe('the pictures a mail points at', () => {
   it('stay in public/email after new mail stops using them', () => {
     for (const path of sentOnly)
       expect(existsSync(publicFile(path)), path).toBe(true)
+  })
+
+  // Gmail on iPhone in dark mode recolours a dark mail light but never a
+  // picture, so the wordmark carries its own dark plate (made by
+  // scripts/generate-mail-wordmark.mjs): the page colour, so it cannot be
+  // seen on our page, with transparent corners.
+  it('the wordmark is stored at 2x, on a plate in the page colour', async () => {
+    const { data, info } = await sharp(readFileSync(publicFile(WORDMARK_PATH)))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    const html = documentHtml(
+      'Subject',
+      'Preheader',
+      { appOrigin: DEV, assetOrigin: DEV },
+      [],
+      'Reason',
+    )
+    const img =
+      /<img src="[^"]*wordmark[^"]*" width="(\d+)" height="(\d+)"/.exec(html)
+    expect(img).not.toBeNull()
+    expect([Number(img?.[1]) * 2, Number(img?.[2]) * 2]).toEqual([
+      info.width,
+      info.height,
+    ])
+
+    const at = (x: number, y: number) => {
+      const i = (y * info.width + x) * 4
+      const hex = [data[i], data[i + 1], data[i + 2]]
+        .map((v) => v.toString(16).padStart(2, '0'))
+        .join('')
+      return { colour: `#${hex}`, alpha: data[i + 3] }
+    }
+    const plate = { colour: W.page, alpha: 255 }
+    expect(at(0, 0).alpha, 'top-left corner').toBe(0)
+    expect(
+      at(info.width - 1, info.height - 1).alpha,
+      'bottom-right corner',
+    ).toBe(0)
+    expect(at(Math.floor(info.width / 2), 0), 'top edge').toEqual(plate)
+    expect(at(0, Math.floor(info.height / 2)), 'left edge').toEqual(plate)
+    expect(
+      at(info.width - 1, Math.floor(info.height / 2)),
+      'right edge',
+    ).toEqual(plate)
   })
 })

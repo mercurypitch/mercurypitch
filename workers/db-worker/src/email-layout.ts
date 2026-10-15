@@ -59,10 +59,16 @@ export const MAIL_ART = {
 } as const satisfies Record<string, MailArt>
 
 /**
- * Mails sent before this name point at /email/wordmark-v1@2x.png, the same
- * bytes reached through Cloudflare's redirect. That file stays for them.
+ * The wordmark on its own dark plate in the page colour, made by
+ * scripts/generate-mail-wordmark.mjs. Gmail on iPhone in dark mode recolours
+ * our page light but never a picture: there the plate reads as a dark badge
+ * and the white "Mercury" stays readable. On our page it cannot be seen.
+ *
+ * Mails sent before it point at /email/wordmark-v1-2x.png, and before that
+ * at /email/wordmark-v1@2x.png, the same bytes reached through Cloudflare's
+ * redirect. Both files stay for them.
  */
-export const WORDMARK_PATH = '/email/wordmark-v1-2x.png'
+export const WORDMARK_PATH = '/email/wordmark-v2-2x.png'
 
 // ── look ─────────────────────────────────────────────────────────────
 
@@ -219,7 +225,7 @@ ${AUTO_LINK_STYLE}
 <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${W.page}; font-size:1px; line-height:1px;">${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${W.page}" style="background:${W.page};"><tr><td align="center" style="padding:22px 12px 30px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
-<tr><td style="padding:2px 4px 16px;"><a href="${escapeHtml(origins.appOrigin)}" style="text-decoration:none;"><img src="${url(origins.assetOrigin, WORDMARK_PATH)}" width="204" height="40" alt="MercuryPitch" style="display:block;border:0;width:204px;height:40px;color:${W.text};"></a></td></tr>
+<tr><td style="padding:0 0 8px;"><a href="${escapeHtml(origins.appOrigin)}" style="text-decoration:none;"><img src="${url(origins.assetOrigin, WORDMARK_PATH)}" width="220" height="56" alt="MercuryPitch" style="display:block;border:0;width:220px;height:56px;color:${W.text};"></a></td></tr>
 <tr><td style="background:${W.card};border:1px solid ${W.line};border-radius:18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table></td></tr>
 ${footerHtml(reason)}
 </table></td></tr></table>
