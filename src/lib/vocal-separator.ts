@@ -23,6 +23,32 @@ export type SeparatorStatus =
   | 'processing'
   | 'error'
 
+/**
+ * How long the graphics card gets to set the model up, counted from the end
+ * of the download. A GPU that hangs without reporting a lost device left the
+ * separator loading forever; past this the worker is replaced and the model
+ * set up on the CPU. A crashed GPU process reports a lost device and moves at
+ * once, so this only backs up a silent hang, and is generous enough that a
+ * slow but healthy GPU never meets it.
+ */
+export const GPU_SETUP_LIMIT_MS = 60_000
+
+/**
+ * After the device is lost mid-run, how long the worker gets to report that
+ * it moved to the CPU by itself before the run is called off.
+ */
+export const GPU_LOST_GRACE_MS = 20_000
+
+export const GPU_FALLBACK_NOTICE =
+  "The graphics card didn't answer in time, so the separator switched to the CPU. It's slower, but it will finish."
+
+export const GPU_LOST_RUN_MESSAGE =
+  'The graphics card stopped answering mid-separation. Try again and it will run on the CPU.'
+
+// Once the graphics card has hung in this page, every separator after it
+// starts on the CPU: trying it again would only repeat the wait.
+let gpuUnavailable = false
+
 export class VocalSeparator {
   private worker: Worker | null = null
   private _status: SeparatorStatus = 'idle'
@@ -37,6 +63,9 @@ export class VocalSeparator {
     requestId: number
   } | null = null
   private nextRequestId = 1
+  private modelPath = ''
+  private gpuTimer: ReturnType<typeof setTimeout> | null = null
+  private gpuLost = false
 
   get status(): SeparatorStatus {
     return this._status
@@ -53,29 +82,38 @@ export class VocalSeparator {
   /** Progress callback — receives 0-100 percentage. */
   onProgress: ((pct: number) => void) | null = null
 
+  /** Receives one sentence for the user when the separator leaves the GPU. */
+  onNotice: ((message: string) => void) | null = null
+
   constructor() {
     this._initWorker()
   }
 
   private _initWorker(): void {
-    this.worker = new Worker(
+    const worker = new Worker(
       new URL('../workers/vocal-separator.worker.ts', import.meta.url),
       { type: 'module' },
     )
 
-    this.worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
-      this._handleMessage(e.data)
+    // A replaced worker can still have messages in flight: only the current
+    // one is listened to.
+    worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
+      if (worker === this.worker) this._handleMessage(e.data)
     }
 
-    this.worker.onerror = (err) => {
+    worker.onerror = (err) => {
+      if (worker !== this.worker) return
       this._status = 'error'
       this._error = `Worker error: ${err.message}`
     }
+
+    this.worker = worker
   }
 
   private _handleMessage(msg: WorkerOutMessage): void {
     switch (msg.type) {
       case 'ready': {
+        this._clearGpuTimer()
         this._status = 'ready'
         this._error = null
         this._provider = msg.provider
@@ -83,6 +121,41 @@ export class VocalSeparator {
           this.readyResolve()
           this.readyResolve = null
           this.readyReject = null
+        }
+        break
+      }
+
+      case 'gpu-start': {
+        if (this._status === 'initializing') {
+          this._armGpuTimer(GPU_SETUP_LIMIT_MS)
+        }
+        break
+      }
+
+      case 'gpu-lost': {
+        // Already off the GPU: the loss changes nothing.
+        if (this._provider === 'wasm') break
+        this.gpuLost = true
+        if (this._status === 'initializing') {
+          this._moveToCpu()
+        } else if (this._status === 'processing') {
+          this._armGpuTimer(GPU_LOST_GRACE_MS)
+        } else if (this._status === 'ready') {
+          // Nothing is running, so start over on the next use. Nothing hung
+          // either, and that setup may try the GPU again.
+          this._replaceWorker()
+          this._status = 'idle'
+        }
+        break
+      }
+
+      case 'provider': {
+        // The worker moved to the CPU by itself, after a GPU error.
+        this._clearGpuTimer()
+        this._provider = msg.provider
+        if (this.gpuLost) {
+          gpuUnavailable = true
+          this.onNotice?.(GPU_FALLBACK_NOTICE)
         }
         break
       }
@@ -99,6 +172,7 @@ export class VocalSeparator {
 
       case 'complete': {
         if (msg.requestId === this.pendingRequest?.requestId) {
+          this._clearGpuTimer()
           this._status = 'ready'
           this.pendingRequest.resolve({
             vocals: msg.vocals,
@@ -113,6 +187,7 @@ export class VocalSeparator {
 
       case 'error': {
         if (msg.requestId === this.pendingRequest?.requestId) {
+          this._clearGpuTimer()
           const isCancel = msg.message === 'Cancelled'
           this._status = isCancel ? 'ready' : 'error'
           this._error = isCancel ? null : msg.message
@@ -120,6 +195,7 @@ export class VocalSeparator {
           this.pendingRequest = null
         } else if (msg.requestId === -1) {
           // Init error
+          this._clearGpuTimer()
           this._status = 'error'
           this._error = msg.message
           if (this.readyResolve) {
@@ -133,6 +209,56 @@ export class VocalSeparator {
     }
   }
 
+  private _armGpuTimer(ms: number): void {
+    this._clearGpuTimer()
+    this.gpuTimer = setTimeout(() => {
+      this.gpuTimer = null
+      this._moveToCpu()
+    }, ms)
+  }
+
+  private _clearGpuTimer(): void {
+    if (this.gpuTimer !== null) {
+      clearTimeout(this.gpuTimer)
+      this.gpuTimer = null
+    }
+  }
+
+  /** A fresh worker. A hung one may never answer a polite 'destroy'. */
+  private _replaceWorker(): void {
+    this._clearGpuTimer()
+    this.worker?.terminate()
+    this.worker = null
+    this._provider = null
+    this.gpuLost = false
+    this._initWorker()
+  }
+
+  /** Give up on the graphics card for the rest of the page. */
+  private _moveToCpu(): void {
+    gpuUnavailable = true
+    const wasProcessing = this._status === 'processing'
+    this._replaceWorker()
+
+    if (wasProcessing) {
+      // The audio went to the hung worker, so the run cannot be resumed.
+      this._status = 'idle'
+      this.pendingRequest?.reject(new Error(GPU_LOST_RUN_MESSAGE))
+      this.pendingRequest = null
+      return
+    }
+
+    // Still initializing: the caller keeps waiting on the same promise, which
+    // the CPU worker's 'ready' resolves.
+    this.onNotice?.(GPU_FALLBACK_NOTICE)
+    const msg: WorkerInitMessage = {
+      type: 'init',
+      modelPath: this.modelPath,
+      forceWebGpu: false,
+    }
+    this.worker?.postMessage(msg)
+  }
+
   /** Initialize the ONNX model. Must be called before `separate()`. */
   async initialize(modelPath: string, forceWebGpu?: boolean): Promise<void> {
     if (this._status === 'ready') return
@@ -143,12 +269,18 @@ export class VocalSeparator {
 
     this._status = 'initializing'
     this._error = null
+    this._provider = null
+    this.modelPath = modelPath
     this.readyPromise = new Promise((resolve, reject) => {
       this.readyResolve = resolve
       this.readyReject = reject
     })
 
-    const msg: WorkerInitMessage = { type: 'init', modelPath, forceWebGpu }
+    const msg: WorkerInitMessage = {
+      type: 'init',
+      modelPath,
+      forceWebGpu: forceWebGpu === true && !gpuUnavailable,
+    }
     this.worker?.postMessage(msg)
 
     await this.readyPromise
@@ -207,6 +339,7 @@ export class VocalSeparator {
       'AbortError',
     )
 
+    this._clearGpuTimer()
     this.readyReject?.(abortError)
     this.pendingRequest?.reject(abortError)
 
