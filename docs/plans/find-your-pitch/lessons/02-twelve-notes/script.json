@@ -1,0 +1,662 @@
+{
+  "title": "Find Your Pitch, Lesson 2: Twelve notes",
+  "voices": {
+    "blue": {
+      "voice": "am_michael",
+      "speed": 0.84
+    },
+    "orange": {
+      "voice": "af_heart",
+      "speed": 0.9
+    }
+  },
+  "gap": 0.3,
+  "events": [
+    {
+      "id": "open",
+      "type": "mark",
+      "gap": 0.6
+    },
+    {
+      "id": "sing-blue-a3",
+      "type": "sing",
+      "who": "blue",
+      "note": "A3",
+      "dur": 1.9
+    },
+    {
+      "id": "sing-orange-a4",
+      "type": "sing",
+      "who": "orange",
+      "note": "A4",
+      "dur": 1.9,
+      "gap": 0.35
+    },
+    {
+      "id": "b1",
+      "type": "line",
+      "who": "blue",
+      "text": "Warm-up: how much faster does the higher A shake?",
+      "gap": 0.35
+    },
+    {
+      "id": "q0",
+      "type": "pause",
+      "dur": 1.8
+    },
+    {
+      "id": "b2",
+      "type": "line",
+      "who": "blue",
+      "text": "Twice as fast. An octave: the same letter, one turn up."
+    },
+    {
+      "id": "o1",
+      "type": "line",
+      "who": "orange",
+      "text": "And the five dim beads between the letters? Are those just gaps?",
+      "gap": 0.5
+    },
+    {
+      "id": "b3",
+      "type": "line",
+      "who": "blue",
+      "text": "They're notes, every one. Seven letters, but twelve notes.",
+      "gap": 0.35
+    },
+    {
+      "id": "o2",
+      "type": "line",
+      "who": "orange",
+      "text": "Then where do the other five come from?",
+      "gap": 0.3
+    },
+    {
+      "id": "b4",
+      "type": "line",
+      "who": "blue",
+      "text": "Let's go and find them.",
+      "gap": 0.35
+    },
+    {
+      "id": "title",
+      "type": "sting",
+      "dur": 3.2,
+      "gap": 0.4
+    },
+    {
+      "id": "b5",
+      "type": "line",
+      "who": "blue",
+      "text": "By the end, you'll find all twelve, hear the smallest step between them, and sing it.",
+      "gap": 0.2
+    },
+    {
+      "id": "act1",
+      "type": "mark",
+      "gap": 0.6
+    },
+    {
+      "id": "b6",
+      "type": "line",
+      "who": "blue",
+      "text": "Here's an A. Now the very next note up.",
+      "gap": 0.5
+    },
+    {
+      "id": "first-step",
+      "type": "sound",
+      "sound": "first-step",
+      "dur": 2.0,
+      "gap": 0.35
+    },
+    {
+      "id": "b7",
+      "type": "line",
+      "who": "blue",
+      "text": "It sits in the gap between A and B. One of the five.",
+      "gap": 0.4
+    },
+    {
+      "id": "o3",
+      "type": "line",
+      "who": "orange",
+      "text": "If we keep taking steps that small, how many until we're back at A?",
+      "gap": 0.5
+    },
+    {
+      "id": "b8",
+      "type": "line",
+      "who": "blue",
+      "text": "Count with me."
+    },
+    {
+      "id": "climb",
+      "type": "sound",
+      "sound": "climb",
+      "dur": 6.0,
+      "gap": 0.35
+    },
+    {
+      "id": "b9",
+      "type": "line",
+      "who": "blue",
+      "text": "Twelve steps, and we're back at A, one turn up.",
+      "gap": 0.5
+    },
+    {
+      "id": "b10",
+      "type": "line",
+      "who": "blue",
+      "text": "Two hundred and twenty hertz has doubled to four hundred and forty."
+    },
+    {
+      "id": "b11",
+      "type": "line",
+      "who": "blue",
+      "text": "Seven letters, five notes between them: twelve notes in every octave.",
+      "gap": 0.4
+    },
+    {
+      "id": "o4",
+      "type": "line",
+      "who": "orange",
+      "text": "And are all twelve steps the same size?",
+      "gap": 0.6
+    },
+    {
+      "id": "b12",
+      "type": "line",
+      "who": "blue",
+      "text": "Exactly the same. Each one turns the spiral by the same amount.",
+      "gap": 0.35
+    },
+    {
+      "id": "b13",
+      "type": "line",
+      "who": "blue",
+      "text": "That smallest step has a name. A semitone.",
+      "gap": 0.5
+    },
+    {
+      "id": "b14",
+      "type": "line",
+      "who": "blue",
+      "text": "Some people call it a half step.",
+      "gap": 0.4
+    },
+    {
+      "id": "act2",
+      "type": "mark",
+      "gap": 0.7
+    },
+    {
+      "id": "b15",
+      "type": "line",
+      "who": "blue",
+      "text": "Now unroll the spiral, like last time.",
+      "gap": 2.2
+    },
+    {
+      "id": "unroll",
+      "type": "sound",
+      "sound": "unroll",
+      "dur": 3.0,
+      "gap": 0.4
+    },
+    {
+      "id": "b16",
+      "type": "line",
+      "who": "blue",
+      "text": "Every bead lands on a key. Seven white and five black, octave after octave.",
+      "with": "unroll",
+      "offset": 0.6
+    },
+    {
+      "id": "b17",
+      "type": "line",
+      "who": "blue",
+      "text": "Look at B and C. There's no black key between them.",
+      "gap": 0.5
+    },
+    {
+      "id": "o5",
+      "type": "line",
+      "who": "orange",
+      "text": "No black key to step on? Then B to C must be a bigger jump than C to D.",
+      "gap": 0.5
+    },
+    {
+      "id": "b18",
+      "type": "line",
+      "who": "blue",
+      "text": "Let's test it. Before you listen, predict. Which step is bigger: B to C, or C to D?",
+      "gap": 0.5
+    },
+    {
+      "id": "predict",
+      "type": "pause",
+      "dur": 2.6,
+      "gap": 0.3
+    },
+    {
+      "id": "bc-cd",
+      "type": "sound",
+      "sound": "bc-cd",
+      "dur": 3.4,
+      "gap": 0.2
+    },
+    {
+      "id": "b19",
+      "type": "line",
+      "who": "blue",
+      "text": "C to D is the bigger one. B to C is the smallest step a piano has.",
+      "gap": 0.5
+    },
+    {
+      "id": "b20",
+      "type": "line",
+      "who": "blue",
+      "text": "Listen to C and the black key above it, then B and C.",
+      "gap": 0.4
+    },
+    {
+      "id": "neighbours",
+      "type": "sound",
+      "sound": "neighbours",
+      "dur": 3.4,
+      "gap": 0.35
+    },
+    {
+      "id": "b21",
+      "type": "line",
+      "who": "blue",
+      "text": "The same step. B and C are already neighbours, a semitone apart, so there's no room for a key between them.",
+      "gap": 0.4
+    },
+    {
+      "id": "b22",
+      "type": "line",
+      "who": "blue",
+      "text": "E and F, too.",
+      "gap": 0.4
+    },
+    {
+      "id": "e-f",
+      "type": "sound",
+      "sound": "e-f",
+      "dur": 1.5,
+      "gap": 0.25
+    },
+    {
+      "id": "b23",
+      "type": "line",
+      "who": "blue",
+      "text": "Draw every key the same width, and it's plain to see. Neighbouring keys, white or black, are always one semitone apart.",
+      "gap": 0.5
+    },
+    {
+      "id": "tone-split",
+      "type": "sound",
+      "sound": "tone-split",
+      "dur": 3.7,
+      "gap": 0.6
+    },
+    {
+      "id": "b24",
+      "type": "line",
+      "who": "blue",
+      "text": "Two semitones make a bigger step: a tone. Some call it a whole step.",
+      "gap": 0.35
+    },
+    {
+      "id": "b25",
+      "type": "line",
+      "who": "blue",
+      "text": "So that's where the other five come from.",
+      "gap": 0.6
+    },
+    {
+      "id": "b26",
+      "type": "line",
+      "who": "blue",
+      "text": "Five pairs of neighbouring letters are a tone apart, and each gap holds one note."
+    },
+    {
+      "id": "b27",
+      "type": "line",
+      "who": "blue",
+      "text": "B to C and E to F are only a semitone, so there's no gap to fill.",
+      "gap": 0.35
+    },
+    {
+      "id": "act3",
+      "type": "mark",
+      "gap": 0.7
+    },
+    {
+      "id": "b28",
+      "type": "line",
+      "who": "blue",
+      "text": "Now the five need names. They borrow them from their neighbours.",
+      "gap": 2.2
+    },
+    {
+      "id": "b29",
+      "type": "line",
+      "who": "blue",
+      "text": "Sharp means one semitone up. Flat means one semitone down.",
+      "gap": 0.4
+    },
+    {
+      "id": "two-ways",
+      "type": "sound",
+      "sound": "two-ways",
+      "dur": 3.4,
+      "gap": 0.4
+    },
+    {
+      "id": "b30",
+      "type": "line",
+      "who": "blue",
+      "text": "Up from C, it's C sharp. Down from D, it's D flat. The same key.",
+      "gap": 0.35
+    },
+    {
+      "id": "b31",
+      "type": "line",
+      "who": "blue",
+      "text": "One key, two names. Musicians call that enharmonic.",
+      "gap": 0.35
+    },
+    {
+      "id": "o6",
+      "type": "line",
+      "who": "orange",
+      "text": "So black keys are the sharps and flats, and white keys are the plain ones?",
+      "gap": 0.6
+    },
+    {
+      "id": "b32",
+      "type": "line",
+      "who": "blue",
+      "text": "Not quite. Sharp isn't a colour. It's a direction: one semitone up.",
+      "gap": 0.4
+    },
+    {
+      "id": "ef-again",
+      "type": "sound",
+      "sound": "e-f",
+      "dur": 1.5,
+      "gap": 0.3
+    },
+    {
+      "id": "b33",
+      "type": "line",
+      "who": "blue",
+      "text": "One semitone up from E is F, a white key. So E sharp is just another name for F.",
+      "gap": 0.3
+    },
+    {
+      "id": "o7",
+      "type": "line",
+      "who": "orange",
+      "text": "Then which name is the right one?",
+      "gap": 0.5
+    },
+    {
+      "id": "b34",
+      "type": "line",
+      "who": "blue",
+      "text": "Both are. Which one musicians write depends on the music around it."
+    },
+    {
+      "id": "b35",
+      "type": "line",
+      "who": "blue",
+      "text": "On MercuryPitch's pitch line, you'll see the sharp names, like C sharp.",
+      "gap": 0.4
+    },
+    {
+      "id": "o8",
+      "type": "line",
+      "who": "orange",
+      "text": "And how big is a semitone, exactly? Can you measure it?",
+      "gap": 0.6
+    },
+    {
+      "id": "b36",
+      "type": "line",
+      "who": "blue",
+      "text": "In cents. Every semitone is a hundred cents wide.",
+      "gap": 0.35
+    },
+    {
+      "id": "cents-glide",
+      "type": "sound",
+      "sound": "cents-glide",
+      "dur": 3.6,
+      "gap": 0.35
+    },
+    {
+      "id": "b37",
+      "type": "line",
+      "who": "blue",
+      "text": "Glide from A to the next note up, and you pass through a hundred cents.",
+      "with": "cents-glide",
+      "offset": 0.4
+    },
+    {
+      "id": "b38",
+      "type": "line",
+      "who": "blue",
+      "text": "Twelve semitones make an octave, so an octave is twelve hundred cents.",
+      "gap": 0.5
+    },
+    {
+      "id": "b39",
+      "type": "line",
+      "who": "blue",
+      "text": "MercuryPitch tells you how far you are from the nearest note, in cents.",
+      "gap": 0.5
+    },
+    {
+      "id": "b40",
+      "type": "line",
+      "who": "blue",
+      "text": "Fifty cents is halfway. Past that, you're nearer the next note.",
+      "gap": 0.35
+    },
+    {
+      "id": "act4",
+      "type": "mark",
+      "gap": 0.7
+    },
+    {
+      "id": "b41",
+      "type": "line",
+      "who": "blue",
+      "text": "Let's sing one. I'll hold an A, slide up a semitone, and come back."
+    },
+    {
+      "id": "slide-blue",
+      "type": "sound",
+      "sound": "slide-blue",
+      "dur": 4.2,
+      "gap": 0.4
+    },
+    {
+      "id": "b42a",
+      "type": "line",
+      "who": "blue",
+      "text": "Now you. Hum it, or sing it on ooh.",
+      "gap": 0.4
+    },
+    {
+      "id": "b42b",
+      "type": "line",
+      "who": "blue",
+      "text": "Start on my A, or the A an octave up. Slide up a semitone, and back.",
+      "gap": 0.25
+    },
+    {
+      "id": "your-turn",
+      "type": "pause",
+      "dur": 5.2,
+      "gap": 0.4
+    },
+    {
+      "id": "slide-orange",
+      "type": "sound",
+      "sound": "slide-orange",
+      "dur": 4.2,
+      "gap": 0.3
+    },
+    {
+      "id": "o9",
+      "type": "line",
+      "who": "orange",
+      "text": "How do I know I went up exactly one semitone, and not a little more?",
+      "gap": 0.35
+    },
+    {
+      "id": "b43",
+      "type": "line",
+      "who": "blue",
+      "text": "Watch the cents. Up a hundred, then back to zero. One semitone, there and back.",
+      "gap": 0.4
+    },
+    {
+      "id": "b44",
+      "type": "line",
+      "who": "blue",
+      "text": "Keep it gentle. Never push.",
+      "gap": 0.35
+    },
+    {
+      "id": "recap",
+      "type": "mark",
+      "gap": 0.7
+    },
+    {
+      "id": "b45",
+      "type": "line",
+      "who": "blue",
+      "text": "Quick check."
+    },
+    {
+      "id": "b46",
+      "type": "line",
+      "who": "blue",
+      "text": "How many semitones make an octave?",
+      "gap": 0.3
+    },
+    {
+      "id": "q1",
+      "type": "pause",
+      "dur": 1.8
+    },
+    {
+      "id": "b47",
+      "type": "line",
+      "who": "blue",
+      "text": "Twelve. Seven letters, and five notes in the gaps."
+    },
+    {
+      "id": "b48",
+      "type": "line",
+      "who": "blue",
+      "text": "Now listen to two steps. Which one is the semitone?",
+      "gap": 0.6
+    },
+    {
+      "id": "quiz-pair",
+      "type": "sound",
+      "sound": "quiz-pair",
+      "dur": 3.4,
+      "gap": 0.35
+    },
+    {
+      "id": "q2",
+      "type": "pause",
+      "dur": 1.8,
+      "gap": 0.2
+    },
+    {
+      "id": "b49",
+      "type": "line",
+      "who": "blue",
+      "text": "The second. E to F: two white keys, and one semitone."
+    },
+    {
+      "id": "b50",
+      "type": "line",
+      "who": "blue",
+      "text": "C sharp and D flat. Two notes, or one?",
+      "gap": 0.6
+    },
+    {
+      "id": "q3",
+      "type": "pause",
+      "dur": 1.8
+    },
+    {
+      "id": "b51",
+      "type": "line",
+      "who": "blue",
+      "text": "One key, two names."
+    },
+    {
+      "id": "o10",
+      "type": "line",
+      "who": "orange",
+      "text": "And if a semitone is a hundred cents, how many cents is a tone?",
+      "gap": 0.5
+    },
+    {
+      "id": "b52",
+      "type": "line",
+      "who": "blue",
+      "text": "Two hundred. Two semitones, two hundred cents.",
+      "gap": 0.35
+    },
+    {
+      "id": "next",
+      "type": "mark",
+      "gap": 0.7
+    },
+    {
+      "id": "b53",
+      "type": "line",
+      "who": "blue",
+      "text": "Next time."
+    },
+    {
+      "id": "b54",
+      "type": "line",
+      "who": "blue",
+      "text": "Asked, most of eleven hundred and five students said they couldn't copy a tune.",
+      "gap": 0.35
+    },
+    {
+      "id": "b55",
+      "type": "line",
+      "who": "blue",
+      "text": "Tested, only about one in ten to one in six missed by a semitone or more.",
+      "gap": 0.4
+    },
+    {
+      "id": "o11",
+      "type": "line",
+      "who": "orange",
+      "text": "So what's going on?",
+      "gap": 0.5
+    },
+    {
+      "id": "end",
+      "type": "sting",
+      "dur": 5.0,
+      "gap": 0.4
+    }
+  ]
+}

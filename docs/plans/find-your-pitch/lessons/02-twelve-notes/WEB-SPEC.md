@@ -1,0 +1,224 @@
+# Lesson 2 web page: spec
+
+The Lesson 2 page is the web lesson for "Twelve notes" (written steps, live toys, two predicts, a
+sung checkpoint, a quiz), with the episode embedded and the lesson explorer below it. Copy is in
+[LESSON.md](LESSON.md); every claim is in [FACTS.md](FACTS.md). It is the second page built from
+the Phase 1 toy kit, so it is also that kit's test: "two lessons share it with no copy-paste"
+(MASTER-PLAN § 7, Web kit). Where the kit is not ready yet, Lesson 1's page (specified in
+[../01-what-is-a-note/WEB-SPEC.md](../01-what-is-a-note/WEB-SPEC.md)) is the code to promote into
+the kit, never to copy.
+
+Like Lesson 1's, it is built first as a claude.ai artifact page, the proof preview only. Its public
+home is MASTER-PLAN § 12 item 9 (recommended: `mercurypitch.com/learn/02`).
+
+## Look
+
+Lesson 1's, unchanged: the dark listening room (Obsidian ground, `#161b22` panels, the faint staff
+texture, three soft glows), the series colour code (blue, orange, gold for the fit only, violet for
+the contrast case, chrome for any other note), the app's canvas colours on the one pitch-canvas toy
+(the slide guide: target amber `#f59e0b`, singer violet `#a78bfa`), Lesson 1's type, the "Find
+Your Pitch" wordmark, and its motion rules. Three things move on their own here: the two Merc idle
+loops and the spiral's drift (there is no living staff in this hero). Under
+`prefers-reduced-motion` all three always stop, and every transition this page adds (the climb's
+trail, Look down, Unroll, Straighten, Lift out, the names flipping, the slide guide's dot) lands
+in its final state with no travel; what the viewer starts (a tone, a slide) still sounds. For
+everyone else the masthead's Pause animations toggle stops the same three (WCAG 2.2.2).
+
+## Sections
+
+The page anatomy (MASTER-PLAN § 4.2), with Lesson 1's departures kept: the step toys double as the
+Playground (item 9), the Wrap comes before the episode, and each "Common mix-up" card sits inside
+the step whose toy refutes it. New against Lesson 1: the warm-up retrieval (item 3) runs for the
+first time; the practise link sits in the Wrap, as the anatomy has it; the page has two mix-up
+cards, one per concept (playbook rule 3); and there is no series blueprint section (Lesson 1's page
+carries it for the team), so the masthead's anchors are Lesson, Watch and Explorer.
+
+1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 02", anchors Lesson, Watch, Explorer, the
+   Sound toggle off by default, the Pause animations toggle with its reduced-motion lock).
+2. **Hero**: kicker; the hook question as the title; the meta as chips (10 minutes, After Lesson 1,
+   Sound on) plus a prerequisite chip linking Lesson 1; the promise; the two Mercs live on the
+   floor line either side of the spiral, which shows the lit A3 to A4 turn with its five dim beads.
+3. **Warm-up from Lesson 1**: two questions (see Toys, 6).
+4. **Cold open: predict**: orange's guess and blue's reply in speech bubbles, then the two-choice
+   predict (a note of its own, or just a gap); choosing unlocks Play A, Play the dim bead and Play
+   B on the hero spiral; after the dim bead plays, the reveal from LESSON.md.
+5. **Four words you'll meet**: semitone, tone, sharp and flat, cent, each with its one-line
+   definition and a play button (A3 to A♯3; A3 to B3; C4 to C♯4; the 100-cent glide).
+6. **The steps**: Lesson 1's sticky stage and step deck ("N of 6", Previous and Next, the stage
+   beside the text on desktop and above it on phones). Each step has its heading, text, one "Try:",
+   one "Notice:" and its toy:
+   1. The very next note: the spiral (Toys, 1).
+   2. Twelve equal steps make an octave: the spiral with Climb and Look down.
+   3. B to C: the keyboard with Unroll and Straighten, the second predict, mix-up card 1.
+   4. Tones, and where the five come from: the tile row with Lift out the five; the Semitone or
+      tone? game (Toys, 4).
+   5. Two names for one key: the tile row with the two-names toggle (Toys, 3), mix-up card 2.
+   6. A hundred cents: the semitone ruler with cents (Toys, 2), and the Go deeper drawer.
+7. **Sing it**: the slide guide (Toys, 5) with Merc's slide, the octave-up slide and the guide; the
+   safety line; nothing listens.
+8. **Quick check**: Lesson 1's quiz component with LESSON.md's four questions, three answers each,
+   shuffled (seeded per question), one-line feedback for every answer, a check icon and ink (not
+   gold) on the right one; question 2 has its own play button (E4 then F4). Ids `l02-q1` to
+   `l02-q4`. Answers stay in localStorage on the preview; on the public host each first answer is
+   a Lesson telemetry event behind consent (MASTER-PLAN Phase 1). A later visit asks them afresh,
+   and Lesson 3's page will open with two of them.
+9. **Wrap**: the three recap lines, the challenge, the practise card (Leap, with today's caveat,
+   and Contour as an optional warm-up), the next lesson's hook on a card that opens Lesson 3 in the
+   explorer. Free play unlocks here: every control of the step toys on one stage (playbook rule
+   17: guided first, free play after).
+10. **Watch the episode**: Lesson 1's player section (chapters beside it, captions on, a transcript
+    disclosure); until Lesson 2's delivery master exists, the chapters and transcript with an
+    "episode in production" note.
+11. **Lesson explorer**: Lesson 1's, with Lesson 2 as the current node; Lesson 2 marks done when its
+    quiz is finished; its card's practise link reads as LESSON.md's Wrap.
+12. **Footer**: Lesson 1's, with the practise link (`mercurypitch.com/ear-lab`, `?lesson=02` on the
+    public host) and the same credits (scratch voices, synthesised examples, placeholder sung
+    notes).
+
+## Toys: what each reuses, and what is new
+
+| Toy                           | Reuses from Lesson 1's page                                                    | New in Lesson 2                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| 1. Spiral and keyboard        | Step 5's spiral and step 6's keyboard, as one kit component                    | Dim beads that light once heard; Climb; Look down; all keys lit and playable; Straighten; step bars; Lift out the five |
+| 2. Semitone ruler with cents  | Step 2's dial (its slider, readout and held tone), turned vertical             | The cents scale, the one-semitone zoom, the app-style monitor that flips at 50 cents, the 100-cent glide             |
+| 3. Two-names toggle           | Step 5's per-bead labels                                                       | Sharps, flats or both on every black key, page-wide; Sharp and Flat arrows; the rare white-key names                |
+| 4. Semitone or tone?          | The quiz's feedback lines and the tone player                                  | All new: a ten-round ear game, two answers                                                                          |
+| 5. Slide guide (Sing it)      | The Sing it card, Merc's synthesised "ooh", the hum-along ring                 | Four lanes and Merc's amber path; the guide dot; the octave-up slide                                                |
+| 6. Warm-up retrieval          | The quick-check component and Lesson 1's questions 2 and 4                     | Its place at the top of the page, and asking by Lesson 1's ids                                                      |
+| 7. Predict widgets            | Lesson 1's predict widget (choice locks, play buttons unlock, a kind reveal)  | Two of them: note or gap (cold open), B to C or C to D (step 3)                                                    |
+| 8. Go deeper drawer           | none                                                                           | All new: a disclosure (`details`) for the ratio, the cent's origin and "sharp" meaning a little high                |
+
+### 1. Spiral and keyboard
+
+One component with four states, so the object the film transforms is one object on the page too.
+
+- **Spiral** (steps 1 and 2, and the hero): Lesson 1's helix (canvas 2D, projected and
+  depth-sorted, three turns A2 to A5, 30 degrees per semitone, A at the front, draggable, slow
+  drift except under reduced motion or Pause animations, letters at their angles, C seams with
+  octave numbers, tap a bead to hear it). New: the five beads on each turn start dim with a "?" and
+  light, keeping their glow, once heard; their names follow the two-names toggle. **Climb** plays
+  the thirteen notes from A3 to A4 (FACTS 43), lights each bead in turn, counts 1 to 12 and shows
+  "220 Hz" and "440 Hz" at the ends with a gold "× 2". **Look down** moves the camera to the
+  spiral's axis: one turn becomes the ring of twelve, its wedges lit in gold; press again to
+  return. Under reduced motion both land in their end state at once.
+- **Keyboard** (step 3): Lesson 1's Unroll button and keyboard (A2 to A5, low notes left, A3 blue,
+  A4 orange), now with every key lit and playable, the black keys named by the toggle. Two keys
+  played one after the other draw a step bar between them, a notch per semitone. Phones show one
+  octave, A3 to A4, at full width: the white keys are about 45 px wide, and each black key's tap
+  area is 44 px wide in the keys' upper zone, so every key keeps a target of at least 44 px (the
+  white keys are always tappable in their lower zone).
+- **Straighten** (step 3): the octave's keys glide into the row of equal tiles, one per semitone,
+  with a "1" under each neighbouring pair and B–C and E–F flashing gold once; press again to bend
+  them back into a keyboard. On phones the tile row stands vertical, low notes at the bottom, 13
+  tiles of 44 px (pitch is height, playbook rule 20).
+- **Lift out the five** (step 4): the five dark tiles rise out of the row; the seven letters show
+  five holes labelled "tone" and two touching pairs labelled "semitone"; press Drop back to return
+  them, one by one, with "7 + 5 = 12".
+- **Predict** (step 3): the two-choice widget; choosing unlocks Play B to C and Play C to D; the
+  reveal (LESSON.md) never tells either choice it was wrong.
+
+### 2. Semitone ruler with cents
+
+Built on Lesson 1's dial: the same log-pitch slider, readout and held tone, turned to stand
+vertical (pitch is height).
+
+- A ruler from A3 (bottom) to A4 (top) with thirteen ticks: names on the left (they follow the
+  toggle), cents on the right (0, 100 ... 1200). A marker the viewer drags; while dragging, a soft
+  tone sounds at the marker's pitch (Web Audio, the dial's envelope).
+- Readouts: cents above A3 (0 to 1200, whole cents), the frequency to two decimals (f = 220 x
+  2^(c/1200)), and an app-style monitor labelled "How MercuryPitch shows it": the nearest note in
+  the app's sharp spelling, and a bar from -50 to +50 cents that flips to the next note past 50
+  (FACTS 24, 30). The monitor always uses sharps, whatever the toggle says, because the app does.
+- **One semitone** zooms the ruler to A3 to A♯3 with a tick every 10 cents. **Glide** plays the
+  100-cent glide (FACTS 25) and moves the marker with it (under reduced motion the readout counts
+  while the marker stays put).
+- Keyboard: the marker is a slider (`role="slider"`, values 0 to 1200, `aria-valuetext` such as
+  "A3 plus 37 cents, 224.75 hertz"); arrow keys move it 1 cent, Shift with an arrow 10, Page Up and
+  Page Down 100.
+
+### 3. Two-names toggle
+
+- A segmented control, "Sharps · Flats · Both" (buttons with `aria-pressed`), at the top of the
+  step 5 stage and in the free-play stage. It relabels every black key, tile and bead on the page
+  at once (C♯ or D♭ or both). Default: Sharps, matching the app, with a small note "MercuryPitch's
+  pitch line shows sharps".
+- **Sharp** and **Flat** buttons: select any key or tile, press one, and an arrow steps one
+  semitone up or down and writes the name it gives on the key it lands on. From E, Sharp lands on F
+  and writes E♯ under F, the step's Notice. A switch **Show the rare ones** adds the four white-key
+  second names (E♯ on F, F♭ on E, B♯ on C, C♭ on B; FACTS 20).
+- The keys' accessible names follow the toggle: "C sharp 4, also D flat 4".
+
+### 4. Semitone or tone?
+
+- Ten rounds. Each plays one step inside A3 to A4, a semitone or a tone, chosen at random from a
+  seeded sequence; two answers, Semitone and Tone. Feedback names the keys and the sound, never the
+  listener: "E to F: a semitone, no key between them" or "C to D: a tone, with C♯ between". A miss
+  replays the step slowly. A count "7 of 10" at the end; no rating, no streak.
+- A switch **Up and down** mixes in falling steps, because Leap plays both (FACTS 32); off at
+  first.
+- The two buttons sit side by side, each at least 44 px tall; keys 1 and 2 answer, Space replays.
+
+### 5. Slide guide (Sing it)
+
+- Four lanes (G♯, A, A♯, B, labelled A3 or A4 by the octave chosen) in the app's canvas style,
+  with Merc's model as an amber target path: A held, up one lane, held, and back (FACTS 50).
+- **Play Merc's slide** (A3) and **Play it an octave up** (A4) sound Merc's synthesised "ooh"
+  (Lesson 1's recipe: partials 1, .62, .38, .24, .14, .08, .045, .025 over a lowpass near 2.6 kHz,
+  vibrato 5.5 Hz, +-14 cents, grown in over 0.35 s), with blue or orange Merc singing beside it
+  (state `ride`). **Start the guide** counts in for one second, then a dot runs the path in 4.2 s
+  while a breathing ring waits. Nothing listens and nothing is scored: no microphone on this page.
+  Under reduced motion the path's segments light one after another instead of a travelling dot.
+- The safety line from LESSON.md sits under the buttons.
+
+### 6. Warm-up retrieval
+
+- The quick-check component, at the top of the page, with Lesson 1's questions 2 and 4 under their
+  Lesson 1 ids (the first time the page anatomy's item 3 runs). Options are reshuffled and earlier
+  answers are never shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). On the
+  public host each answer is a telemetry event with its `visit_index`.
+
+### 7 and 8. Predicts and the Go deeper drawer
+
+- Both predicts are Lesson 1's widget: the choice locks, the play buttons unlock, the reveal plays
+  after the sound and never calls a choice wrong.
+- The Go deeper drawer is a `details` disclosure, closed by default, under step 6's toy.
+
+## Audio
+
+Every tone is synthesised in the page with Web Audio at the frequencies in FACTS 6 (Lesson 1's soft
+tone and envelope), started only by a tap; Merc's "ooh" as in Toys 5. Nothing autoplays. The page
+has no music bed.
+
+## Mercs
+
+Lesson 1's setup, unchanged: the film's own bundles published beside the page, one WebGL context
+per Merc, `medium` quality on phones, orange with the warm look, turned toward each other, paused
+off screen; a still image if WebGL fails. Reactions: blue `sing` while A3 plays, orange `sing`
+while A4 plays, `ride` during the slides, orange `celebrate` once after the cold-open reveal (no
+sparkles). Under `prefers-reduced-motion` or Pause animations each Merc holds a still frame and
+skips the reactions; the buttons and the reveal carry the moment.
+
+## Practise link: what exists and what needs engineering
+
+- Today: `mercurypitch.com/ear-lab` opens the Ear Lab bench; the viewer taps Leap, which offers all
+  twelve intervals, plays each pair up or down, and roves the lower note from C3 to A4 (FACTS 32,
+  33). The page says so in the Wrap.
+- Needed (CURRICULUM § 4 item 5, Phase 1 App track): an `ear-drill` launch kind that accepts a bank
+  subset, so `/exercises/semitone-or-tone` (proposed slug) opens Leap with only `leap:m2` and
+  `leap:M2`. Two details for that work, not decided here: the drill's `choices` count sets its Elo
+  guess floor and must match the two buttons shown (`src/lib/ear/drills.ts:58-59`), and whether a
+  two-item run should move the viewer's full Leap rating at all. The launch should also carry
+  `?lesson=02` so First Light steps aside (CURRICULUM § 4 item 6).
+- When it ships, the Wrap, the footer, the explorer card and the YouTube description switch to the
+  slug; the film's end card keeps `/ear-lab`, which stays valid.
+
+## Contract
+
+Lesson 1's contract, unchanged and binding (layout, accessibility, sound, motion and storage
+rules; the artifact host's wrapper rules bind only the preview): 16 px side gutters, no sideways
+scroll at 390 px, `min-width: 0` on text children, touch targets of at least 44 px, visible focus,
+a single dark theme with every colour a token and an explicit body background, sound only after a
+tap, localStorage only for per-viewer conveniences inside try/catch, and the whole page usable
+with no sound, no WebGL and no storage. Page QA before publishing (PRODUCTION-PIPELINE § 5) adds
+two checks for this page: every black key and tile reachable and named by keyboard in each toggle
+state, and the ruler's slider operable by keys alone.
