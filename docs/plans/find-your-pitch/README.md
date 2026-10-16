@@ -18,6 +18,6 @@ Start with [MASTER-PLAN.md](MASTER-PLAN.md).
 Lesson 1's documents are kept in `lessons/01-what-is-a-note/`; its LEDGER follows the critic
 rounds. Its film project (compositions, tools, Merc passes) lives in `output/motion/lesson-01/`,
 gitignored per the motion pipeline's house rules; those sources move to a private repository
-(MASTER-PLAN § 12 item 2). Its web lesson was proved as a claude.ai artifact page, and its public
+(MASTER-PLAN § 12 item 2). Its web lesson was proved as a private preview page, and its public
 home is the app's `mercurypitch.com/learn/01` (MASTER-PLAN § 12 item 9). MASTER-PLAN § 11 lists
 what exists now.

@@ -180,7 +180,7 @@ sung checkpoint (hum along with Merc, unscored: nothing listens; to be scored, s
 in Voice Mirror), quick check (four questions), Wrap, the episode with chapters and captions, and
 the lesson explorer (Season 1 and the trailer; Lesson 1 ready, the rest planned).
 
-Where it lives: Lesson 1's page is built as a claude.ai artifact page, the proof preview only, and
+Where it lives: Lesson 1's page was built first as a private preview page, the proof preview only, and
 the no-iframe rule in its contract (WEB-SPEC) binds only that preview. The public lessons live at
 `mercurypitch.com/learn/NN` (MASTER-PLAN § 12 item 9), on the same origin as the app's analytics,
 accounts and `?lesson=` marker, built by the Phase 1 Lesson host track, whose exit is Lesson 1
