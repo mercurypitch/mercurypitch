@@ -128,6 +128,11 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // would land on whatever tab was last active instead of the room they opened.
   '/jam',
   '/jam.html',
+  // Find Your Pitch lessons: each is its own document (learn/01.html), with
+  // the whole lesson in its markup. The shell in its place would be a page
+  // with no lesson on it.
+  '/learn/01',
+  '/learn/01.html',
   '/jam-rooms',
   '/jam-rooms.html',
   // Search-intent entries (src/seo/entry-pages.ts). Each boots an existing

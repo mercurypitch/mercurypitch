@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>What is a note? Find Your Pitch, Lesson 1 | MercuryPitch</title>
+    <meta
+      name="description"
+      content="Why do 220 Hz and 440 Hz have the same name? A ten-minute lesson with live sound toys: what a note is, why notes come back an octave higher, and how to read A4 and C4. With the episode and the Season 1 map."
+    />
+    <link rel="canonical" href="https://mercurypitch.com/learn/01" />
+    <meta name="robots" content="index, follow" />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#0d1117" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="MercuryPitch" />
+    <meta property="og:url" content="https://mercurypitch.com/learn/01" />
+    <meta property="og:title" content="What is a note? Find Your Pitch, Lesson 1" />
+    <meta
+      property="og:description"
+      content="If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note? Hear it, then see why."
+    />
+    <meta
+      property="og:image"
+      content="https://mercurypitch.com/learn/lesson-01-og.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="440 Hz in orange above 220 Hz in blue, the letter A beside both, joined by a gold bracket marked times two."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="What is a note? Find Your Pitch, Lesson 1" />
+    <meta
+      name="twitter:description"
+      content="If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?"
+    />
+    <meta
+      name="twitter:image"
+      content="https://mercurypitch.com/learn/lesson-01-og.jpg"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="440 Hz in orange above 220 Hz in blue, the letter A beside both, joined by a gold bracket marked times two."
+    />
+    <!-- A lesson is its own document, like delete-account.html: every word of
+         it is in this markup, so it reads without the script; the module adds
+         the sound, the toys, the Mercs and the motion. The service worker
+         leaves /learn/* alone (STANDALONE_DOCUMENT_PATHS). -->
+    <script type="module" src="/src/features/lessons/lesson-01/main.ts"></script>
+  </head>
+  <body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="7" y="6" width="3.6" height="12" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.4" y="6" width="3.6" height="12" rx="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 6h9v9M18 6L7 17"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.5 8h15M4.5 16h15"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2.1-5"/><path d="M5 4.5V8h3.5"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M12 21c-4.4-2.2-7-5.6-7-9.6C5 7 8.5 4 12 3c3.5 1 7 4 7 8.4 0 4-2.6 7.4-7 9.6z"/><path d="M12 8v13"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12c1.5-4 3-4 4.5 0s3 4 4.5 0 3-4 4.5 0 3 4 4.5 0"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M10 17.5V5.5l9-2v12"/><ellipse cx="7.5" cy="17.5" rx="2.5" ry="2"/><ellipse cx="16.5" cy="15.5" rx="2.5" ry="2"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4.5 5.5c2.8-.8 5.3-.5 7.5 1 2.2-1.5 4.7-1.8 7.5-1v13c-2.8-.8-5.3-.5-7.5 1-2.2-1.5-4.7-1.8-7.5-1z"/><path d="M12 6.5v13"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-spiral" viewBox="0 0 24 24"><path d="M12 12a1.6 1.6 0 1 1 1.6 1.6A3.4 3.4 0 1 1 17 10.2a5.6 5.6 0 1 1-5.6-5.6"/></symbol>
+</svg>
+
+<a class="skip" href="#lesson">Skip to the lesson</a>
+
+<header class="mast" id="mast">
+  <div class="wrap mast-in">
+    <a class="brand" href="#top" aria-label="Find Your Pitch, back to the top">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><defs><linearGradient id="bm" x1="0" x2="1"><stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/></linearGradient></defs><rect x="1" y="1" width="26" height="26" rx="8" fill="#161b22" stroke="rgba(195,204,214,.3)"/><path d="M5 17c2.4 0 3-6 5.4-6s2.8 4 5 4 2.6-6 5.4-6" fill="none" stroke="url(#bm)" stroke-width="2" stroke-linecap="round"/><circle cx="21" cy="9" r="2.2" fill="#ff7448"/></svg>
+      <span class="wm"><span class="m">Find Your</span> <span class="p">Pitch</span></span>
+    </a>
+    <span class="mast-ep">Season 1 · Lesson 01</span>
+    <nav class="mast-nav" id="mastNav" aria-label="Sections">
+      <a href="#lesson"><b>I</b>Lesson</a>
+      <a href="#watch"><b>II</b>Watch</a>
+      <a href="#explorer"><b>III</b>Explorer</a>
+      <a href="#blueprint"><b>&#167;</b>Blueprint</a>
+    </nav>
+    <button class="sound-switch motion-switch" id="motionSwitch" type="button" aria-pressed="false" aria-label="Pause animations">
+      <svg class="ico" aria-hidden="true"><use href="#i-pause"/></svg><span data-motion-label>Pause<span class="mw"> animations</span></span>
+    </button>
+    <button class="sound-switch" id="soundSwitch" type="button" aria-pressed="false" aria-label="Sound">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="wave" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/><path class="mute" d="M16 10l4 4M20 10l-4 4"/></svg>
+      <span data-sound-label>Sound</span>
+    </button>
+    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mastNav" aria-label="Sections menu"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg></button>
+  </div>
+</header>
+
+<main id="top">
+<!-- ============================================================ HERO: the cold open -->
+<section class="hero" aria-labelledby="hook">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="motion-note" id="motionNote" hidden><svg class="ico" aria-hidden="true"><use href="#i-pause"/></svg>Paused by your reduced-motion setting</p>
+      <p class="kicker" id="heroKicker"><span>Find Your Pitch</span><span class="dot"></span><span>Season 1</span><span class="dot"></span><span class="hl">Lesson 01</span></p>
+      <h1 class="hook" id="hook">If <span class="hz o">440&#8239;Hz</span> shakes the air twice as fast as <span class="hz b">220&#8239;Hz</span>, why do musicians call them the same note?</h1>
+      <ul class="meta" aria-label="About this lesson">
+        <li class="chip"><i style="--c:var(--aqua)"></i>10 minutes</li>
+        <li class="chip"><i style="--c:var(--violet)"></i>No theory needed</li>
+        <li class="chip"><i style="--c:var(--orange)"></i>Sound on</li>
+      </ul>
+      <p class="promise">By the end you'll know what a note really is, why notes come back an octave higher, and how to read names like A4 and C4.</p>
+      <div class="gate" id="gate">
+        <svg class="ico" aria-hidden="true"><use href="#i-speaker"/></svg>
+        <p id="gateText">This lesson is about sound. Tap to turn it on: nothing plays until you press a play button.</p>
+        <button class="btn sm tint" id="gateBtn" type="button" style="--c:var(--aqua)">Turn sound on</button>
+      </div>
+    </div>
+
+    <div class="hero-side">
+      <div class="stage-night" id="heroStage">
+        <canvas class="sky" id="sky" aria-hidden="true"></canvas>
+        <div class="stage-shot" id="stageShot">
+        <div class="bubbles">
+          <p class="bubble o" id="bubbleO"><b>Orange Merc</b>Ha! Same note.</p>
+          <p class="bubble b" id="bubbleB"><b>Blue Merc</b>Is it? Mine shook the air 220 times a second. Yours shook it 440.</p>
+        </div>
+        <div class="duo pending" id="duo">
+          <div class="floor" aria-hidden="true"></div>
+          <div class="merc merc-blue" id="mercBlue"><img src="/src/features/lessons/lesson-01/assets/merc-blue.png" alt="Blue Merc, a glossy blue droplet with big eyes, turned towards orange Merc" width="512" height="512"><div class="live" aria-hidden="true"></div><span class="splash" aria-hidden="true"></span></div>
+          <div class="rail" aria-hidden="true"><svg id="heroRail"></svg></div>
+          <div class="merc merc-orange" id="mercOrange"><img src="/src/features/lessons/lesson-01/assets/merc-orange.png" alt="Orange Merc, the same droplet in warm orange and gold, turned towards blue Merc" width="512" height="512"><div class="live" aria-hidden="true"></div><span class="splash" aria-hidden="true"></span></div>
+        </div>
+        </div>
+      </div>
+
+      <div class="predict card" id="predict">
+        <p class="eyebrow"><span class="fig">Predict</span> before you listen</p>
+        <p class="pq" id="predictQ">Two different notes, or the same one?</p>
+        <div class="choices" role="group" aria-labelledby="predictQ">
+          <button class="btn choice" type="button" data-choice="different" aria-pressed="false">Different</button>
+          <button class="btn choice" type="button" data-choice="same" aria-pressed="false">Same note</button>
+        </div>
+        <div class="plays" id="plays">
+          <button class="btn tint" type="button" data-play="220" style="--c:var(--blue)" disabled><span class="dot"></span>Play 220 Hz</button>
+          <button class="btn tint" type="button" data-play="440" style="--c:var(--orange)" disabled><span class="dot"></span>Play 440 Hz</button>
+          <button class="btn tint" type="button" data-play="both" style="--c:var(--chrome)" disabled><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Play both</button>
+        </div>
+        <p class="lock-hint" id="lockHint"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>Choose an answer to unlock the sound.</p>
+        <p class="reveal" id="reveal" hidden aria-live="polite"><span class="mono" id="revealGuess">Your guess</span>One after the other, 440 sounds higher. Played together, they melt into one sound. Alike enough that music gives them one name: by the end of this lesson you'll know why.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ THREE WORDS -->
+<section class="mv" id="words" aria-labelledby="words-title">
+  <div class="wrap">
+    <header class="mv-head">
+      <p class="mv-tempo">Three words you'll meet <span>before the first step</span></p>
+      <h2 class="mv-title" id="words-title">Pitch, hertz and the octave</h2>
+      <div class="mv-staff" aria-hidden="true"><svg class="clef" viewBox="0 0 44 84" data-clef="g"></svg></div>
+    </header>
+    <div class="tickets">
+      <article class="ticket" data-word="pitch">
+        <div class="stub"><svg viewBox="0 0 64 120" id="wPitch" aria-hidden="true"></svg></div>
+        <div class="body">
+          <h3>Pitch</h3>
+          <p>How high or low a sound is.</p>
+          <button class="btn sm tint" type="button" data-word-play="pitch" style="--c:var(--chrome)"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Low to high</button>
+        </div>
+      </article>
+      <article class="ticket" data-word="hertz">
+        <div class="stub"><svg viewBox="0 0 64 120" id="wHertz" aria-hidden="true"></svg></div>
+        <div class="body">
+          <h3>Hertz <small>Hz</small></h3>
+          <p>Swings per second.</p>
+          <button class="btn sm tint" type="button" data-word-play="hertz" style="--c:var(--blue)"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Play 220 Hz</button>
+        </div>
+      </article>
+      <article class="ticket" data-word="octave">
+        <div class="stub"><svg viewBox="0 0 64 120" id="wOctave" aria-hidden="true"></svg></div>
+        <div class="body">
+          <h3>Octave</h3>
+          <p>The jump to twice the frequency, the same note one level higher.</p>
+          <button class="btn sm tint" type="button" data-word-play="octave" style="--c:var(--chrome)"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>220, then 440</button>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ THE STEPS -->
+<section class="mv steps" id="lesson" aria-labelledby="steps-title">
+  <div class="wrap">
+    <header class="mv-head">
+      <p class="mv-tempo">Six steps, one object: <span>a line, then a spiral, then a piano</span></p>
+      <h2 class="mv-title" id="steps-title">What is a note?</h2>
+      <div class="mv-staff" aria-hidden="true"><svg class="clef" viewBox="0 0 44 84" data-clef="g"></svg></div>
+    </header>
+
+    <div class="steps-grid">
+      <div class="steps-stage" id="stepsStage">
+        <div class="card stage-card">
+          <div class="stage-head">
+            <p class="counter" aria-live="polite">Step <b id="stepNow">1</b> of 6</p>
+            <div class="progress" aria-hidden="true"><i class="now"></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="stage-nav">
+              <button class="btn icon sm" type="button" data-step-go="-1" aria-label="Previous step"><svg class="ico" aria-hidden="true"><use href="#i-left"/></svg></button>
+              <button class="btn icon sm" type="button" data-step-go="1" aria-label="Next step"><svg class="ico" aria-hidden="true"><use href="#i-right"/></svg></button>
+            </div>
+          </div>
+
+          <!-- Fig 1: the string -->
+          <div class="toy is-active" data-toy="1">
+            <p class="eyebrow"><span class="fig">Fig. 1</span> The plucked string</p>
+            <div class="viz" id="vizString">
+              <canvas id="cvString" role="img" aria-label="A string pinned at both ends. Tap it to pluck it."></canvas>
+              <div class="readout">
+                <div class="ro"><span class="k">Swings</span><span class="v big" id="roSwings">0</span></div>
+                <div class="ro"><span class="k">Time</span><span class="v" id="roTime">0.0<small>s</small></span></div>
+              </div>
+              <div class="readout right"><div class="ro"><span class="k">Speed</span><span class="v" id="roRate">220<small>per s</small></span></div></div>
+              <p class="hint" id="stringHint">Tap the string to pluck it</p>
+            </div>
+            <div class="controls">
+              <button class="btn primary" type="button" id="pluckBtn"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Pluck</button>
+              <button class="switch" type="button" id="slowBtn" aria-pressed="false"><span class="track" aria-hidden="true"></span>Slow motion, 220&#215;</button>
+            </div>
+          </div>
+
+          <!-- Fig 2: the dial -->
+          <div class="toy" data-toy="2">
+            <p class="eyebrow"><span class="fig">Fig. 2</span> The frequency dial</p>
+            <div class="viz" id="vizDial">
+              <canvas id="cvDial" role="img" aria-label="A wave that squeezes as the frequency rises, beside a pitch rail with a bead."></canvas>
+              <div class="readout">
+                <div class="ro"><span class="k">Frequency</span><span class="v big" id="roHz">220<small>Hz</small></span></div>
+                <div class="ro"><span class="k">One swing every</span><span class="v" id="roPeriod">4.55<small>ms</small></span></div>
+              </div>
+            </div>
+            <div class="slider-row">
+              <label for="dial">Hold and drag to hear it <b id="dialNote">A3</b></label>
+              <input class="range" id="dial" type="range" min="0" max="1000" step="1" value="333" aria-valuetext="220 hertz">
+              <div class="ticks" aria-hidden="true"><span style="left:0%">110</span><span style="left:33.33%">220</span><span style="left:66.67%">440</span><span style="left:100%">880</span></div>
+            </div>
+          </div>
+
+          <!-- Fig 3: loud is not high -->
+          <div class="toy" data-toy="3">
+            <p class="eyebrow"><span class="fig">Fig. 3</span> How far and how fast</p>
+            <div class="viz" id="vizLoud">
+              <canvas id="cvLoud" role="img" aria-label="A wave whose height follows how far it swings and whose squeeze follows how fast, beside a pitch rail and a loudness meter."></canvas>
+              <div class="readout">
+                <div class="ro"><span class="k">Loudness</span><span class="v" id="roLoud">50<small>%</small></span></div>
+                <div class="ro"><span class="k">Pitch</span><span class="v" id="roPitch">220<small>Hz</small></span></div>
+              </div>
+            </div>
+            <p class="viz-status" id="loudStatus"><span class="vs-hint">Hold a slider to hear it</span><span class="flag" id="loudFlag" style="opacity:0"></span></p>
+            <div class="slider-row">
+              <label for="amp">How far (amplitude) <b id="ampVal">50%</b></label>
+              <input class="range" id="amp" type="range" min="5" max="100" step="1" value="50">
+            </div>
+            <div class="slider-row">
+              <label for="fast">How fast (frequency) <b id="fastVal">220 Hz</b></label>
+              <input class="range" id="fast" type="range" min="0" max="1000" step="1" value="333">
+            </div>
+          </div>
+
+          <!-- Fig 4: twice as fast -->
+          <div class="toy" data-toy="4">
+            <p class="eyebrow"><span class="fig">Fig. 4</span> Two waves, one fit</p>
+            <div class="oct-grid">
+            <div class="oct-main">
+            <div class="viz" id="vizOct">
+              <canvas id="cvOct" role="img" aria-label="A blue wave at 220 hertz and an orange wave at 220 times the ratio, with gold marks where their peaks meet."></canvas>
+              <div class="readout">
+                <div class="ro"><span class="k">Ratio</span><span class="v big" id="roRatio">2.00<small>&#215;</small></span></div>
+                <div class="ro"><span class="k">Orange</span><span class="v" id="roOrange" style="color:var(--orange)">440<small>Hz</small></span></div>
+                <div class="ro"><span class="k">Blue</span><span class="v" style="color:var(--blue)">220<small>Hz</small></span></div>
+              </div>
+            </div>
+            <p class="viz-status" id="octStatus"><span class="vs-hint">Gold marks where the peaks meet</span><span class="flag" id="octFlag"></span></p>
+            </div>
+            <div class="ladder" id="ladder">
+              <div class="ladder-head"><p class="eyebrow">Octave ladder</p><button class="btn sm" type="button" id="ladderAll"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Climb</button></div>
+            </div>
+            </div>
+            <div class="slider-row">
+              <label for="ratio">Ratio, orange to blue <b id="ratioVal">2.00</b></label>
+              <input class="range" id="ratio" type="range" min="100" max="300" step="1" value="200" style="--fill:var(--orange)">
+              <div class="ticks" aria-hidden="true"><span style="left:0%">1</span><span class="mark" style="left:13%">1.26</span><span style="left:25%">1.5</span><span class="gold" style="left:50%">2</span><span style="left:75%">2.5</span><span style="left:100%">3 · E5</span></div>
+            </div>
+            <div class="controls">
+              <button class="btn tint" type="button" id="octPlay" style="--c:var(--chrome)"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg><span>Play both</span></button>
+              <button class="btn sm" type="button" data-ratio="1.26"><span class="dot" style="--c:var(--violet)"></span>Try 1.26</button>
+              <button class="btn sm" type="button" data-ratio="2"><span class="dot" style="--c:var(--gold)"></span>Back to 2</button>
+              <button class="btn sm" type="button" data-ratio="3"><span class="dot" style="--c:var(--chrome)"></span>Try 3</button>
+            </div>
+          </div>
+
+          <!-- Fig 5 and 6: the spiral, and the keyboard it unrolls into -->
+          <div class="toy" data-toy="5">
+            <p class="eyebrow" id="spiralEyebrow"><span class="fig">Fig. 5</span> The pitch spiral</p>
+            <div class="viz tall" id="vizSpiral">
+              <canvas id="cvSpiral" role="slider" aria-label="Pick a note, A2 to A5" aria-describedby="spiralDesc"></canvas>
+              <div class="readout"><div class="ro"><span class="k" id="spiralK">Last note</span><span class="v" id="roSpiral">&#8212;</span></div></div>
+              <p class="hint" id="spiralHint">Drag to turn &#183; tap a bead to hear it</p>
+              <p class="sr" id="spiralDesc">A spiral of 37 beads from A2 to A5, three turns. Every A sits on the same side, and a seam marks each C, where the octave number goes up. Drag to turn it, or tap a bead to hear it. With the keyboard, the arrow keys pick a note, Enter or Space plays it, and Shift with Left or Right turns the spiral. Unrolled, the same keys walk the piano.</p>
+            </div>
+            <div class="controls" id="spiralControls">
+              <button class="btn sm" type="button" id="driftBtn"><svg class="ico" aria-hidden="true"><use href="#i-pause"/></svg><span>Pause turning</span></button>
+              <button class="btn sm tint" type="button" id="playAs" style="--c:var(--chrome)"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Play every A</button>
+            </div>
+            <div class="controls" id="keysControls" hidden>
+              <button class="btn primary" type="button" id="unrollBtn"><svg class="ico" aria-hidden="true"><use href="#i-spiral"/></svg><span>Unroll the spiral</span></button>
+              <button class="btn sm tint" type="button" data-key="57" style="--c:var(--blue)"><span class="dot"></span>Play A3</button>
+              <button class="btn sm tint" type="button" data-key="69" style="--c:var(--orange)"><span class="dot"></span>Play A4</button>
+            </div>
+            <div class="kb-pan" id="kbPan" hidden>
+              <button class="btn icon sm" type="button" data-pan="-1" aria-label="Show the lower octave"><svg class="ico" aria-hidden="true"><use href="#i-left"/></svg></button>
+              <span class="win" id="kbWin" aria-live="polite">A3 to A4</span>
+              <button class="btn icon sm" type="button" data-pan="1" aria-label="Show the higher octave"><svg class="ico" aria-hidden="true"><use href="#i-right"/></svg></button>
+            </div>
+            <div class="tickets-row" id="keyTickets" hidden>
+              <button class="tk" type="button" data-key="69" style="--c:var(--orange)"><b>A4</b><span>440 Hz</span><em>the orchestra's A</em></button>
+              <button class="tk" type="button" data-key="60" style="--c:var(--chrome)"><b>C4</b><span>261.63 Hz</span><em>middle C</em></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="steps-text" id="stepsText">
+        <article class="step" id="step-1" data-step="1">
+          <p class="step-kicker"><span class="n" aria-hidden="true">1</span>Step 1 of 6</p>
+          <h3>A note is something shaking</h3>
+          <p>Every note you've ever heard starts with something shaking: a guitar string, a speaker cone, the vocal folds in your throat. Pluck a string and it swings back and forth, pushing on the air. Each push travels outward as a wave, all the way to your ear.</p>
+          <p class="try"><span class="k">Try</span><span><b>Pluck the string.</b> Then turn on slow motion.</span></p>
+          <p class="notice"><span class="k">Notice</span><span>Slowed 220 times, the string swings once a second: there and back is one swing.</span></p>
+        </article>
+        <article class="step" id="step-2" data-step="2">
+          <p class="step-kicker"><span class="n" aria-hidden="true">2</span>Step 2 of 6</p>
+          <h3>Count the swings</h3>
+          <p>Count the swings in one second and you have the note's frequency. We measure it in hertz: swings per second. This string swings 220 times a second, so its note is 220&#8239;Hz.</p>
+          <p class="try"><span class="k">Try</span><span><b>Drag the dial from 110 to 880&#8239;Hz.</b></span></p>
+          <p class="notice"><span class="k">Notice</span><span>Faster swings make a higher note, and the bead climbs. Your ear hears speed as height.</span></p>
+        </article>
+        <article class="step" id="step-3" data-step="3">
+          <p class="step-kicker"><span class="n" aria-hidden="true">3</span>Step 3 of 6</p>
+          <h3>Loud is not high</h3>
+          <aside class="mixup" aria-label="Common mix-up">
+            <p class="eyebrow">Common mix-up</p>
+            <blockquote>&#8220;A high note is just a loud note.&#8221;</blockquote>
+            <p>It seems right because we use &#8220;high&#8221; and &#8220;up&#8221; for volume too (&#8220;turn it up&#8221;). But try it: make the swing bigger and the note gets louder without moving at all. Make it faster and the note climbs, however soft it is.</p>
+            <p>Loud is how far it swings. High is how fast.</p>
+          </aside>
+          <p class="try"><span class="k">Try</span><span><b>Move the &#8220;how far&#8221; slider, then the &#8220;how fast&#8221; one.</b></span></p>
+          <p class="notice"><span class="k">Notice</span><span>Only &#8220;how fast&#8221; moves the bead. That's why MercuryPitch draws your voice as a line that climbs when you go higher, soft or loud.</span></p>
+        </article>
+        <article class="step" id="step-4" data-step="4">
+          <p class="step-kicker"><span class="n" aria-hidden="true">4</span>Step 4 of 6</p>
+          <h3>Twice as fast</h3>
+          <p>Back to the puzzle. 440 is exactly twice 220. Lay the two waves on top of each other: every second peak of the fast one lands right on a peak of the slow one, again and again, forever. Two for one: the simplest fit there is. That jump is called an <b>octave</b>.</p>
+          <p class="try"><span class="k">Try</span><span><b>Slide the ratio from 1 to 3 and listen.</b></span></p>
+          <p class="notice"><span class="k">Notice</span><span>At exactly 2 the waves meet on every slow peak, two for one. At 1.26 (277&#8239;Hz, a different note) they drift in and out of step. At 3 they meet again, three for one, but that's a different note too (E5): of all the fits, two for one is the simplest, and that's the octave.</span></p>
+          <p class="ladder-note">The octave keeps going: 110, 220, 440, 880. Each doubling sounds like the same size of jump, even though the gap in hertz doubles every time. Your ear hears multiplying, not adding.</p>
+        </article>
+        <article class="step" id="step-5" data-step="5">
+          <p class="step-kicker"><span class="n" aria-hidden="true">5</span>Step 5 of 6</p>
+          <h3>Pitch is a spiral</h3>
+          <p>So pitch isn't really a straight line. It's more like a spiral: go up an octave and you come back round, right above where you started. Musicians name the notes with seven letters, A&#8201;B&#8201;C&#8201;D&#8201;E&#8201;F&#8201;G, and then the pattern repeats.</p>
+          <p class="try"><span class="k">Try</span><span><b>Turn the spiral, and tap any bead to hear it.</b></span></p>
+          <p class="notice"><span class="k">Notice</span><span>Every A sits on the same side, one turn apart. Between the letters there are five more notes without a letter of their own. Twelve in all: that's Lesson 2.</span></p>
+        </article>
+        <article class="step" id="step-6" data-step="6">
+          <p class="step-kicker"><span class="n" aria-hidden="true">6</span>Step 6 of 6</p>
+          <h3>Names and numbers</h3>
+          <p>A number tells you which turn a note is on, and the number goes up at C, not at A: B3 is followed by C4. So the A that orchestras tune to is A4, 440&#8239;Hz, and middle C on a piano is C4. A3 and A4 share a letter because A4 swings exactly twice as fast: they're an octave apart, same spot on the spiral, one turn higher. Unroll the spiral and you get the piano: the same seven letters, octave after octave.</p>
+          <p class="try"><span class="k">Try</span><span><b>Unroll the spiral into a keyboard; tap A3, then A4.</b></span></p>
+          <p class="notice"><span class="k">Notice</span><span>They sit seven white keys apart and still sound like the same note.</span></p>
+        </article>
+        <div class="deck-nav" id="deckNav">
+          <button class="btn" type="button" data-step-go="-1"><svg class="ico" aria-hidden="true"><use href="#i-left"/></svg>Previous</button>
+          <button class="btn primary" type="button" data-step-go="1"><span id="deckNextLabel">Next: Count the swings</span><svg class="ico" aria-hidden="true"><use href="#i-right"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SING IT -->
+<section class="mv" id="sing" aria-labelledby="sing-title">
+  <div class="wrap">
+    <div class="sing-grid">
+      <div class="sing-copy">
+        <header class="mv-head">
+          <p class="mv-tempo">Cadenza: <span>your solo, and any octave counts</span></p>
+          <h2 class="mv-title" id="sing-title">Sing it</h2>
+        </header>
+        <p>When two people sing the same tune, they're often an octave apart, and it still sounds like one tune. So when you match a note, an octave up or down counts.</p>
+        <p class="turn"><b>Your turn:</b> play Merc's A. Hum it back, wherever it feels easy.</p>
+        <p class="unscored">Humming along here is just for you: nothing listens and nothing is scored.</p>
+        <div class="sing-btns">
+          <button class="btn primary lg" type="button" id="singA3"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Play Merc's A</button>
+          <button class="btn tint lg" type="button" id="singA4" style="--c:var(--orange)"><span class="dot"></span>Play it an octave up</button>
+        </div>
+        <p class="safety"><svg class="ico" aria-hidden="true"><use href="#i-leaf"/></svg><span>Keep it gentle. Never push, and stop if anything feels uncomfortable.</span></p>
+      </div>
+      <div class="ring" id="ring">
+        <svg class="r" viewBox="0 0 400 400" aria-hidden="true">
+          <defs>
+            <radialGradient id="ringGlow"><stop offset="0" stop-color="#58a6ff" stop-opacity=".22"/><stop offset="1" stop-color="#58a6ff" stop-opacity="0"/></radialGradient>
+            <linearGradient id="ringStroke" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/></linearGradient>
+          </defs>
+          <circle cx="200" cy="200" r="190" fill="url(#ringGlow)" id="ringHalo"/>
+          <circle cx="200" cy="200" r="168" fill="none" stroke="rgba(195,204,214,.16)"/>
+          <circle cx="200" cy="200" r="150" fill="none" stroke="url(#ringStroke)" stroke-width="2" id="ringBreath" opacity=".55"/>
+          <circle cx="200" cy="200" r="182" fill="none" stroke="#2dd4bf" stroke-width="3" stroke-linecap="round" id="ringProgress" stroke-dasharray="1143.5" stroke-dashoffset="1143.5" transform="rotate(-90 200 200)"/>
+          <g id="ringRipples"></g>
+        </svg>
+        <img id="ringMerc" src="/src/features/lessons/lesson-01/assets/merc-blue.png" alt="" width="512" height="512">
+        <div class="lbl" aria-live="polite"><b id="ringNote">A3 · 220 Hz</b><span id="ringState">Ready when you are</span></div>
+      </div>
+    </div>
+
+    <a class="app-card card" href="/mirror?lesson=01" target="_blank" rel="noopener">
+      <div>
+        <p class="eyebrow"><span class="fig">Practise</span> in MercuryPitch</p>
+        <h3>Voice Mirror</h3>
+        <p>To be scored, sing it: in MercuryPitch, Voice Mirror finds your comfortable range, then plays five notes for you to sing back on &#8220;ooh&#8221;, and counts a match in any octave. Free, no account.</p>
+        <span class="addr">mercurypitch.com/mirror <svg class="ico" aria-hidden="true"><use href="#i-out"/></svg></span>
+      </div>
+      <figure class="fig" style="margin:0">
+        <svg viewBox="0 0 360 150" id="mirrorFig" aria-hidden="true"></svg>
+        <figcaption>Illustration: a note sung an octave below its target still counts</figcaption>
+      </figure>
+    </a>
+  </div>
+</section>
+
+<!-- ============================================================ QUICK CHECK -->
+<section class="mv" id="check" aria-labelledby="check-title">
+  <div class="wrap">
+    <header class="mv-head">
+      <p class="mv-tempo">Ripresa: <span>the theme comes back, from memory</span></p>
+      <h2 class="mv-title" id="check-title">Quick check</h2>
+    </header>
+    <div class="card quiz" id="quiz">
+      <div class="quiz-top">
+        <p class="eyebrow"><span class="fig">Tap an answer</span> one try each, then the reason</p>
+        <div style="display:flex;align-items:center;gap:14px">
+          <p class="score" style="margin:0"><span id="scoreN">0</span><small>of 4</small></p>
+          <button class="btn sm" type="button" id="quizReset"><svg class="ico" aria-hidden="true"><use href="#i-redo"/></svg>Try again</button>
+        </div>
+      </div>
+      <div class="qs" id="qs"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ WRAP -->
+<section class="mv" id="wrap" aria-labelledby="wrap-title">
+  <div class="wrap">
+    <header class="mv-head">
+      <p class="mv-tempo">Coda: <span>the closing bars</span></p>
+      <h2 class="mv-title" id="wrap-title">Three lines to keep</h2>
+    </header>
+    <div class="wrapup">
+      <div>
+        <ul class="recap">
+          <li><svg aria-hidden="true" class="ico"><use href="#i-check"/></svg><span>A note is something shaking; its frequency is swings per second, in hertz.</span></li>
+          <li><svg aria-hidden="true" class="ico"><use href="#i-check"/></svg><span>Faster is higher; bigger is louder.</span></li>
+          <li><svg aria-hidden="true" class="ico"><use href="#i-check"/></svg><span>Double the frequency and the same note comes back an octave higher, so pitch is a spiral, and the piano is that spiral unrolled.</span></li>
+        </ul>
+        <p class="challenge"><b class="lbl">One-sentence challenge</b>Explain to a friend, in one sentence, why a man and a woman singing &#8220;the same&#8221; tune can be an octave apart.</p>
+      </div>
+      <a class="next-card card" href="#explorer" data-select-lesson="2">
+        <p class="eyebrow"><span class="fig">Next lesson</span> 02 · Twelve notes <span class="tempo">planned</span></p>
+        <p class="q2">Musicians only use seven letters, so where do the other five notes come from?</p>
+        <span class="chip"><i style="--c:var(--violet)"></i>See it in the explorer</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ WATCH -->
+<section class="mv" id="watch" aria-labelledby="watch-title">
+  <div class="wrap">
+    <header class="mv-head">
+      <p class="mv-tempo">The same lesson, as a film: <span><span class="dur">4:57</span>, captions on</span></p>
+      <h2 class="mv-title" id="watch-title">Watch the episode</h2>
+    </header>
+    <div class="player-grid" id="playerGrid">
+      <div class="player" id="player">
+        <video id="ep" playsinline preload="none" poster="/src/features/lessons/lesson-01/assets/poster.jpg" aria-label="Find Your Pitch, Lesson 01: What is a note?">
+          <track kind="captions" srclang="en" label="English" src="/src/features/lessons/lesson-01/assets/lesson-01.en.vtt" default>
+        </video>
+        <button class="big-play" id="bigPlay" type="button" data-state="ready" aria-label="Play the episode"><span class="disc"><svg class="ico fill" aria-hidden="true"><use href="#i-play"/></svg></span><span class="cap"><b id="bigPlayCap">Play the episode</b><small id="bigPlaySub"><span class="dur">4:57</span> · captions on</small></span></button>
+      </div>
+      <div class="card chap-card">
+        <p class="eyebrow"><span class="fig">Chapters</span> tap to jump</p>
+        <ol class="chapters" id="chapters"></ol>
+      </div>
+    </div>
+    <details class="transcript" id="transcript">
+      <summary><svg class="ico" aria-hidden="true"><use href="#i-right"/></svg>Read the transcript<small>from the captions</small></summary>
+      <div class="tx" id="tx"></div>
+    </details>
+  </div>
+</section>
+
+<!-- ============================================================ EXPLORER -->
+<section class="mv" id="explorer" aria-labelledby="explorer-title">
+  <div class="wrap">
+    <header class="mv-head">
+      <p class="mv-tempo">Season 1, fourteen lessons and a trailer: <span>theory and voice, alternating</span></p>
+      <h2 class="mv-title" id="explorer-title">The season, mapped</h2>
+      <p class="mv-lede">Each lesson's closing question opens the next. Pick a lesson to light up the path of lessons it builds on. Lesson 1 is ready to watch and read; the rest are planned.</p>
+    </header>
+    <div class="ex-bar">
+      <div class="filters" role="group" aria-label="Filter by lane">
+        <button class="btn sm" type="button" data-lane="all" aria-pressed="true">All</button>
+        <button class="btn sm" type="button" data-lane="theory" aria-pressed="false" style="--c:var(--blue)">Theory</button>
+        <button class="btn sm" type="button" data-lane="voice" aria-pressed="false" style="--c:var(--orange)">Voice</button>
+      </div>
+      <div class="legend"><span><i class="ready"></i>Ready</span><span><i class="planned"></i>Planned</span><span><i class="done"></i>Done</span></div>
+    </div>
+    <div class="card graph" id="graph"></div>
+    <ol class="ex-list" id="exList"></ol>
+    <div id="exCardHost"></div>
+  </div>
+</section>
+
+<!-- ============================================================ BLUEPRINT -->
+<section class="mv" id="blueprint" aria-labelledby="bp-title">
+  <div class="wrap">
+    <header class="mv-head">
+      <p class="mv-tempo">For the team: <span>how every lesson is made, the plan compressed</span></p>
+      <h2 class="mv-title" id="bp-title">Series blueprint</h2>
+    </header>
+    <div class="bp">
+      <figure class="bp-promise">
+        <p class="eyebrow" style="margin-bottom:10px">The promise</p>
+        <blockquote><b>&#8220;Find your pitch.&#8221;</b> By the end of Season 1 a beginner can hear and explain what a note is, find any note on a keyboard, match a note with their own voice, sing a scale and a leap in tune, and understand the chords under a song they love.</blockquote>
+      </figure>
+      <div class="bp-panel bp-beats">
+        <p class="eyebrow"><span class="fig">Format</span> the episode beat sheet <span class="tempo">7:30, scaled per lesson</span></p>
+        <h3>A question first, the term last</h3>
+        <div class="beatbar" id="beatbar" role="img" aria-label="The ten beats of a 7 minute 30 episode, drawn to scale."></div>
+        <ol class="beatlist" id="beatlist"></ol>
+      </div>
+      <div class="bp-panel bp-anatomy">
+        <p class="eyebrow"><span class="fig">Format</span> the page anatomy</p>
+        <h3>Eleven parts, ten on this page</h3>
+        <div class="anatomy">
+          <div class="phone" aria-hidden="true">
+            <i style="--h:16px;--o:.5"></i><i style="--h:8px;--o:.25"></i><i class="later" style="--h:10px"></i><i class="toy" style="--h:26px"></i><i class="toy" style="--h:44px"></i><i style="--h:14px;--o:.35"></i><i class="sing" style="--h:20px"></i><i class="quiz" style="--h:18px"></i><i class="toy" style="--h:20px"></i><i style="--h:24px;--o:.45"></i><i style="--h:12px;--o:.3"></i>
+          </div>
+          <ol>
+            <li>Header: number, hook, time, prerequisite chips, promise</li>
+            <li>Sound gate</li>
+            <li class="later">Warm-up retrieval: two earlier questions, asked afresh (from Lesson 2)</li>
+            <li>Cold-open toy: predict, then reveal</li>
+            <li>Four to six steps, sticky figure</li>
+            <li>The common mix-up card</li>
+            <li>Sung checkpoint, octave-tolerant</li>
+            <li>Quick check: retrieval questions</li>
+            <li>Playground: the main toy, every control</li>
+            <li>The episode, chapters, captions</li>
+            <li>Wrap, challenge, practise link, next hook</li>
+          </ol>
+        </div>
+      </div>
+      <div class="bp-panel bp-rules">
+        <p class="eyebrow"><span class="fig">Teaching</span> the five that matter most</p>
+        <h3>Five rules</h3>
+        <ol class="rules">
+          <li><span><b>Voice the misconception, then refute it.</b> Orange holds the plausible wrong belief; blue and the demonstration break it (Muller 2008, d = 0.83).</span></li>
+          <li><span><b>Orange asks deep questions.</b> Why, how and what-if; never filler (Driscoll 2003; Craig 2006).</span></li>
+          <li><span><b>Predict before every reveal.</b> A committed guess helps even when it is wrong (Richland 2009).</span></li>
+          <li><span><b>Sound before symbol.</b> Hear it, sing it, name it; the staff waits for Season&nbsp;2.</span></li>
+          <li><span><b>Retrieve at the end, and again later.</b> A short quiz now, one question again in the next cold open (Roediger and Karpicke 2006).</span></li>
+        </ol>
+      </div>
+      <div class="bp-panel bp-pipe">
+        <p class="eyebrow"><span class="fig">Production</span> built in code, one clock</p>
+        <h3>The pipeline in eight steps</h3>
+        <ol class="chain">
+          <li><b>Brief and facts</b>Every claim sourced in FACTS.md</li>
+          <li><b>Script</b>A typed event list; a script critic checks orange</li>
+          <li><b>Voice and clock</b>Per-line voice; cues.json times everything</li>
+          <li><b>Storyboard</b>Shot lines, handoffs, fresh critic rounds</li>
+          <li><b>Merc performances</b>Rendered once per performance, straight alpha</li>
+          <li><b>Scenes</b>Built in parallel, each proven in its lab</li>
+          <li><b>Render and mix</b>A fresh critic per round until SHIP</li>
+          <li><b>Deliver</b>Master, captions, chapters, this web lesson</li>
+        </ol>
+      </div>
+      <div class="bp-panel bp-phases">
+        <p class="eyebrow"><span class="fig">Roadmap</span> phases</p>
+        <h3>Where the series stands</h3>
+        <div class="phases">
+          <div class="ph now"><span class="t">Phase&nbsp;0&nbsp;· in&nbsp;progress</span><b>Discovery and proof</b><p>Research, curriculum, playbook, hosts; Lesson 1 built. Done when its delivery master and LEDGER exist.</p></div>
+          <div class="ph"><span class="t">Phase&nbsp;1&nbsp;· ~3&nbsp;weeks</span><b>Foundation</b><p>Voices cast, film kit, web toy kit, app deep links.</p></div>
+          <div class="ph"><span class="t">Phase&nbsp;2&nbsp;· ~7&nbsp;weeks</span><b>Arc A, Hear it</b><p>Lessons 2 to 7 and the trailer, one a week after launch.</p></div>
+          <div class="ph"><span class="t">Phase&nbsp;3&nbsp;· ~7&nbsp;weeks</span><b>Arc B, Shape it</b><p>Lessons 8 to 14: rhythm, leaps, chords, vowels, a whole song.</p></div>
+          <div class="ph"><span class="t">Phase 5</span><b>Season 2</b><p>Read it, harmonise it: the staff, keys, harmony singing.</p></div>
+          <div class="ph4"><span class="t">Phase 4 · from launch, continuous</span><b>Measure and improve</b><span>Retrieval scores per question, retention, lesson-to-app conversions; re-cut what lags.</span></div>
+        </div>
+      </div>
+      <div class="bp-panel bp-links">
+        <p class="eyebrow"><span class="fig">Sources</span> docs/plans/find-your-pitch/ in the MercuryPitch repository</p>
+        <h3>The plan files</h3>
+        <div class="files" id="files"></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div>
+      <p class="wm" style="margin:0"><span class="m">Find Your</span> <span class="p">Pitch</span></p>
+      <p>Season 1 · Lesson 01 · What is a note?</p>
+      <p>Proof episode, October 2026.</p>
+    </div>
+    <div>
+      <h4>Practise</h4>
+      <p><a href="/mirror?lesson=01" target="_blank" rel="noopener">mercurypitch.com/mirror</a><br>Voice Mirror is free and needs no account.</p>
+    </div>
+    <div>
+      <h4>Credits</h4>
+      <p>Fonts: Outfit, Inter, Instrument Serif, JetBrains Mono and Noto Music, all SIL OFL 1.1. Scratch voices in the episode: local <span class="nw">Kokoro-82M</span> (Apache 2.0), to be <span class="nw">re-voiced</span>. Merc's sung notes in the film: development placeholders re-pitched from ElevenLabs takes. Every other musical example is synthesised in code; on this page every sound is synthesised in the browser.</p>
+    </div>
+  </div>
+    <nav class="foot-legal" aria-label="Legal">
+      <a href="https://about.mercurypitch.com/privacy/">Privacy</a>
+      <a href="https://about.mercurypitch.com/terms/">Terms</a>
+      <a href="https://about.mercurypitch.com/imprint/">Imprint</a>
+    </nav>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><p id="toastText">Sound is off.</p><button class="btn sm tint" type="button" id="toastBtn" style="--c:var(--aqua)" hidden>Turn on</button></div>
+  </body>
+</html>

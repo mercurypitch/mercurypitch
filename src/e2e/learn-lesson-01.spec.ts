@@ -1,0 +1,83 @@
+// ============================================================
+// Lesson 1 loads at /learn/01 as its own document, and boots
+// ============================================================
+//
+// The lesson is a plain document with the whole lesson in its markup. Two
+// things could hand a visitor something else, as with /delete-account: the
+// asset layer could answer the 404 page, and a visitor who has used the
+// studio has a service worker that answers every navigation it does not know
+// with the cached app shell. Once it loads, the module must boot too: a page
+// that reads but never plays is a failure nobody would think to report.
+
+import { expect, test } from '@playwright/test'
+
+const TITLE = 'What is a note? Find Your Pitch, Lesson 1 | MercuryPitch'
+
+test('a hard load of /learn/01 answers 200 with the lesson @smoke', async ({
+  page,
+}) => {
+  const response = await page.goto('/learn/01')
+
+  expect(response?.status()).toBe(200)
+  await expect(page).toHaveTitle(TITLE)
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    'why do musicians call them the same note?',
+  )
+  await expect(page.locator('#root')).toHaveCount(0)
+})
+
+test('the lesson boots: a guess unlocks the sounds, the explorer lights a path @smoke', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/learn/01')
+
+  // the play buttons wait for a committed guess
+  const play220 = page.locator('#predict [data-play="220"]')
+  await expect(play220).toBeDisabled()
+  await page.locator('#predict [data-choice="same"]').click()
+  await expect(play220).toBeEnabled()
+
+  // picking Lesson 14 lights every lesson it builds on, Lesson 1 among them
+  await page.locator('#explorer').scrollIntoViewIfNeeded()
+  await page.getByRole('button', { name: /^Lesson 14:/ }).click()
+  await expect(page.getByRole('button', { name: /^Lesson 1:/ })).toHaveClass(
+    /\banc\b/,
+  )
+  await expect(page.locator('#graph .edge.path').first()).toBeAttached()
+  await expect(page.locator('#exCardHost h3')).toHaveText(
+    'Phrasing: sing a whole song',
+  )
+
+  expect(errors).toEqual([])
+})
+
+test('a visitor with the studio installed still gets the lesson, not the shell @smoke', async ({
+  page,
+}) => {
+  await page.goto('/')
+  // Registration is deferred to `load` (src/lib/pwa-service-worker.ts), and
+  // the worker does not claim the page that registered it: one reload hands
+  // it control, as in delete-account.spec.ts.
+  await page.waitForFunction(
+    async () =>
+      (await navigator.serviceWorker.getRegistration('/')) !== undefined,
+    undefined,
+    { timeout: 20_000 },
+  )
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready
+  })
+  await page.reload()
+  await page.waitForFunction(
+    () => navigator.serviceWorker.controller !== null,
+    undefined,
+    { timeout: 20_000 },
+  )
+
+  await page.goto('/learn/01')
+
+  await expect(page).toHaveTitle(TITLE)
+  await expect(page.locator('#root')).toHaveCount(0)
+})
