@@ -4711,6 +4711,28 @@ async function walkToSignIn(page, ctx, pushed, rail) {
   steps.push(
     'sign-in: Back stepped the sheet from the email pane to its ways in, closed it onto Settings, then popped Settings',
   )
+
+  // Keep opened from Settings is this phone's one ask (account-offer.ts), so
+  // the room's Keep after the first take would never come in this page. The
+  // walk checks the ask was counted, then forgets it the way a fresh install
+  // would and starts the app again, so the run half can see the room's Keep.
+  const asked = await page.evaluate(() =>
+    localStorage.getItem('mp:account-offer-shown'),
+  )
+  if (asked === null) {
+    throw new Error('Keep from Settings did not count as the one ask')
+  }
+  await page.evaluate(() => {
+    localStorage.removeItem('mp:account-offer-shown')
+  })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page
+    .locator('#root.loaded')
+    .waitFor({ state: 'attached', timeout: BOOT_TIMEOUT_MS })
+  await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  steps.push(
+    'offer: Keep from Settings counted as the one ask; forgotten, and the app started again for the room',
+  )
   return steps
 }
 
