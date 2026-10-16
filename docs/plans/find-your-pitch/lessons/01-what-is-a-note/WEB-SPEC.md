@@ -146,12 +146,16 @@ in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
 ## Video
 
 On the public page (`/learn/01`) the episode is an MP4 on R2 (MASTER-PLAN § 12 item 7): 1080p, and
-a 720p copy below 900 px, both cut from the delivery master. Their URLs are the lesson's film
+a 720p copy below 900 px, both cut from the delivery master. They are served from R2's custom
+domain (planned: `media.mercurypitch.com`, which `media-src` must list first), not `r2.dev`. Once
+the episode is on YouTube, the section adds a "Watch on YouTube" link; there is no YouTube embed. Their URLs are the lesson's film
 setting (`src/features/lessons/lesson-01/film.ts`); until the files are uploaded the setting is
 empty and the section shows the poster, the chapters and the transcript with "Film coming soon".
 Captions are the same-origin VTT in a `<track>`; the transcript is built from the same VTT text,
 and the chapters from the film's generated `chapters.json`, both copied beside the page module
-(`lesson-01/assets/`, from this folder's `captions/`). A chapter or transcript jump while playing dips the
+(`lesson-01/assets/`, from this folder's `captions/`). Captions and chapters travel with the film: a
+re-cut that re-times it changes both copies in the same commit as the MP4s (`film-sync.test.ts`
+holds the copies equal). A chapter or transcript jump while playing dips the
 element's volume around the seek, so it does not click (iOS ignores element volume).
 
 The proof preview on the artifact host used HLS (`video/lesson-01.m3u8` plus segments) with hls.js,
