@@ -26,7 +26,7 @@
   --ink-3: #8d97a3;
   --on-light: #071018;
   /* the series colour code: gold is the fit and nothing else; violet the contrast note; chrome any other note */
-  --blue: #58a6ff;
+  --signal-blue: #58a6ff;
   --orange: #ff7448;
   --gold: #ffd84d;
   --violet: #bc8cff;
@@ -38,7 +38,7 @@
   --chrome-900: #1b2430;
   --grad-spectrum: linear-gradient(
     120deg,
-    var(--blue) 0%,
+    var(--signal-blue) 0%,
     var(--aqua) 50%,
     var(--violet) 100%
   );
@@ -59,7 +59,7 @@
     150deg,
     color-mix(in srgb, var(--chrome) 34%, transparent),
     color-mix(in srgb, var(--chrome) 6%, transparent) 36%,
-    color-mix(in srgb, var(--blue) 18%, transparent) 70%,
+    color-mix(in srgb, var(--signal-blue) 18%, transparent) 70%,
     color-mix(in srgb, var(--violet) 26%, transparent)
   );
   --shadow:
@@ -126,7 +126,7 @@ body {
   background-image:
     radial-gradient(
       70% 46% at 50% -6%,
-      color-mix(in srgb, var(--blue) 14%, transparent),
+      color-mix(in srgb, var(--signal-blue) 14%, transparent),
       transparent 62%
     ),
     radial-gradient(
@@ -181,12 +181,12 @@ video {
   max-width: 100%;
 }
 a {
-  color: var(--blue);
+  color: var(--signal-blue);
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
 }
 a:hover {
-  color: color-mix(in srgb, var(--blue) 70%, white);
+  color: color-mix(in srgb, var(--signal-blue) 70%, white);
 }
 button {
   font: inherit;
