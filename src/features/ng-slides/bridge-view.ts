@@ -9,7 +9,7 @@
 // canvases, never through a signal (ART-FIDELITY.md 4: the scroll is one
 // transform a frame, the reveal one drawImage a strip).
 
-import type { LitStrip } from './bridge-reveal'
+import type { LitStrip } from '@/components/room-kit/glide-reveal'
 
 /** One sample of the voice's trace on the bridge. */
 export interface TraceSample {

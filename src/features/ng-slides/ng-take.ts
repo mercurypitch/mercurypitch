@@ -5,14 +5,17 @@
 // The engine is ticked once per CAPTURED frame, on the frames' own clock
 // (shifted so the first slide starts at 0 and the count-in is t < 0),
 // never once per screen frame. Each tick credits the reveal the same
-// stretch it credits the arch's coverage (bridge-reveal.ts), adds the
-// voice to the trace where it was sung, and reports a slide's end and the
-// path's end. The screen frame (useNgController.ts) reads what this left.
+// stretch it credits the arch's coverage (room-kit glide-reveal.ts), adds
+// the voice to the trace where it was sung, and reports a slide's end and
+// the path's end. The screen frame (useNgController.ts) reads what this
+// left.
 //
 // While the room's own tone sounds (`mute`), the voice is still heard by
 // the engine (the count-in and the breaths are not judged) but not drawn:
 // the speaker is not the singer.
 
+import type { GlideReveal } from '@/components/room-kit/glide-reveal'
+import { createGlideReveal } from '@/components/room-kit/glide-reveal'
 import type { GlideEvent, GlideState } from '@/lib/glide/glide-engine'
 import { createGlideState, tickGlide } from '@/lib/glide/glide-engine'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
@@ -23,8 +26,6 @@ import type { GlidePreset } from '@/lib/glide/glide-presets'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { PLAYHEAD_X } from './bridge-geometry'
 import { pitchY } from './bridge-layout'
-import type { BridgeReveal } from './bridge-reveal'
-import { createBridgeReveal } from './bridge-reveal'
 import type { BridgeScroll } from './bridge-scroll'
 import type { BridgeContact, TraceSample } from './bridge-view'
 import type { SlideHeard } from './ng-run'
@@ -56,11 +57,11 @@ export interface NgTake {
   /** Draw no voice until path time `until`: the room's own tone sounds. */
   mute: (until: number) => void
   /** Strips lit since the last call. */
-  drain: BridgeReveal['drain']
+  drain: GlideReveal['drain']
   /** The voice's trace, oldest first; old samples are dropped as it grows. */
   readonly trace: readonly TraceSample[]
   readonly state: GlideState
-  readonly reveal: BridgeReveal
+  readonly reveal: GlideReveal
   /** The arch a time belongs to (a breath to the slide it leads into). */
   rootAt: (t: number) => number
   /**
@@ -73,7 +74,7 @@ export interface NgTake {
 export function createNgTake(deps: NgTakeDeps): NgTake {
   const { path, preset } = deps
   const state = createGlideState(path)
-  const reveal = createBridgeReveal(path)
+  const reveal = createGlideReveal(path)
   const trace: TraceSample[] = []
   let processed = 0
   let mutedUntil = Number.NEGATIVE_INFINITY
