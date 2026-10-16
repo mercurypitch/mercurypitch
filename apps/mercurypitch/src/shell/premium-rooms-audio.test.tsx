@@ -21,6 +21,10 @@
 // (fake-web-audio.test-fixtures.ts), both keeping score. The controllers,
 // their demos, the capture kit, the mic manager and the audio lease are the
 // real ones.
+//
+// Every case runs on the one harness below (the mocks, the clocks moved by
+// hand and the graph readers), which is why the file runs past the 600
+// lines docs/agent/TESTING.md allows: split, each part would repeat it.
 
 import { createRoot } from 'solid-js'
 import type { MockInstance } from 'vitest'
@@ -79,8 +83,12 @@ const { useLongNoteController } =
   await import('@/features/long-note/useLongNoteController')
 const { useLongNoteDemo } =
   await import('@/features/long-note/demo/useLongNoteDemo')
-const { ROOM_OUTPUT_GAIN, resetRoomOutputsForTests, roomOutputIfMade } =
-  await import('@/components/room-kit/room-output')
+const {
+  ROOM_OUTPUT_GAIN,
+  resetRoomOutputsForTests,
+  roomOutputIfMade,
+  roomStagesOn,
+} = await import('@/components/room-kit/room-output')
 const lipStore = await import('@/stores/lip-roll-store')
 const ngStore = await import('@/stores/ng-slides-store')
 const echoStore = await import('@/stores/echo-store')
@@ -230,9 +238,10 @@ function mark(): number {
  * Nothing of the rooms left to be heard. A sound still on the speakers'
  * path is one the clock parked in its fade: it has a stop time, and it is
  * silent by then (under -60 dB). No gain stays on the path to the speakers
- * without a sound behind it: a bus left connected is a bus left set.
+ * without a sound behind it: a bus left connected is a bus left set. A
+ * room's stage stays only while the room is open (`roomOpen`).
  */
-function expectSilentGraph(): void {
+function expectSilentGraph(roomOpen = false): void {
   const ctx = shared()
   const armed = ctx.nodes.filter(
     (node): node is FakeSourceNode =>
@@ -252,27 +261,46 @@ function expectSilentGraph(): void {
     for (const next of node.outputs) walk(next)
   }
   for (const source of armed) walk(source)
-  // The room output stands between every room and the speakers: it may
-  // stay with nothing behind it, but only ever at rest.
+  // The room output stands between every room and the speakers, and an
+  // open room's stage in front of it: they may stay with nothing behind
+  // them, but only ever at rest.
   const output = roomOutputIfMade(
     ctx as unknown as BaseAudioContext,
   ) as unknown as FakeGainNode | null
+  const stages = stagesOn(ctx)
+  if (!roomOpen) expect(stages).toEqual([])
   expect(
     ctx
       .gainsToDestination()
-      .filter((gain) => !fed.has(gain) && gain !== output),
+      .filter(
+        (gain) => !fed.has(gain) && gain !== output && !stages.includes(gain),
+      ),
   ).toEqual([])
   expectOutputAtRest()
 }
 
-/** The room output, if a room made one, at 1 now and for every time ahead. */
+/** The room stages open on `ctx`: a room's, while it is open. */
+function stagesOn(ctx: FakeAudioContext): FakeGainNode[] {
+  return roomStagesOn(
+    ctx as unknown as BaseAudioContext,
+  ) as unknown as FakeGainNode[]
+}
+
+/**
+ * The room output, if a room made one, and every room stage open in front
+ * of it: at 1 now and for every time ahead.
+ */
 function expectOutputAtRest(): void {
   const ctx = shared()
   const output = roomOutputIfMade(ctx as unknown as BaseAudioContext)
   if (output === null) return
-  const gain = (output as unknown as FakeGainNode).gain
-  for (const ahead of [0, 1, 10, 100]) {
-    expect(gain.valueAt(ctx.currentTime + ahead)).toBe(ROOM_OUTPUT_GAIN)
+  for (const { gain } of [
+    output as unknown as FakeGainNode,
+    ...stagesOn(ctx),
+  ]) {
+    for (const ahead of [0, 1, 10, 100]) {
+      expect(gain.valueAt(ctx.currentTime + ahead)).toBe(ROOM_OUTPUT_GAIN)
+    }
   }
 }
 
@@ -418,7 +446,7 @@ describe('H3: no gain is left turned down', () => {
       lip.stop()
       await run(LINGER_MS + 500)
       expect(media.live()).toBe(0)
-      expectSilentGraph()
+      expectSilentGraph(true)
     }
     lip.dispose()
     await run(LINGER_MS + 500)
@@ -578,6 +606,46 @@ describe('the way out: nothing of a room is heard in the next', () => {
     throw new Error('no note sounded')
   }
 
+  /** How far into a take's first sound its live level is read, s. */
+  const HELD_SEC = 0.3
+
+  /** What a take sends to the speakers. */
+  interface TakeLevel {
+    /** Its loudest sound over its first 3 s, as scheduled (loudestSince). */
+    readonly peak: number
+    /** Its first sound HELD_SEC in, through the graph as it is by then. */
+    readonly held: number
+  }
+
+  /**
+   * `start` starts a take, and the clocks run 3 s. The peak is what the
+   * older checks read (`fresh`). The held level is read live, past a
+   * room's 250 ms tail: a stage cut under a sounding note reads as
+   * silence there, where the peak was taken as the note began.
+   */
+  async function takeLevel(start: () => void): Promise<TakeLevel> {
+    const from = mark()
+    start()
+    let held = 0
+    for (let ms = 0; ms < 3000; ms += FRAME_MS) {
+      await run(FRAME_MS)
+      if (held === 0) held = loudestNow(from, HELD_SEC)
+    }
+    return { peak: loudestSince(from), held }
+  }
+
+  /** A take in `name` on a visit of its own: how it usually sounds. */
+  async function usualLevel(name: RoomName): Promise<TakeLevel> {
+    const room = mount(name)
+    await run(100)
+    const level = await takeLevel(room.start)
+    expect(level.peak).toBeGreaterThan(0.05)
+    expect(level.held).toBeGreaterThan(0.05)
+    room.dispose()
+    await run(LINGER_MS + 500)
+    return level
+  }
+
   /**
    * What of `left` the clock plays once it starts again: from each
    * source still armed when the clock next starts, the loudest it would
@@ -654,6 +722,28 @@ describe('the way out: nothing of a room is heard in the next', () => {
       const { heard, starts } = await leaveMidNote(name, (room) => room.ask())
       expect(starts).toBeGreaterThan(0)
       expect(heard).toEqual([])
+    },
+  )
+
+  it.each(ROOMS)(
+    '%s: left mid-note and the next room started inside its tail, the next room is heard past the tail',
+    async (name) => {
+      const usual = await usualLevel(nextRoom(name))
+      const room = mount(name)
+      await run(100)
+      const from = mark()
+      room.start()
+      await runUntilSounding(from)
+      // The clock runs on through the tail, so for its 250 ms two rooms
+      // have a stage open: the one left, fading, and the next one's.
+      room.dispose()
+      const next = mount(nextRoom(name))
+      const level = await takeLevel(next.start)
+      expect(level.peak).toBeCloseTo(usual.peak, 6)
+      expect(level.held).toBeCloseTo(usual.held, 6)
+      next.dispose()
+      await run(LINGER_MS + 500)
+      expectSilentGraph()
     },
   )
 
@@ -751,6 +841,133 @@ describe('the way out: nothing of a room is heard in the next', () => {
         await run(3000)
         expect(listened.starts()).toBeGreaterThan(0)
         expect(listened.heard).toEqual([])
+        next.dispose()
+        await run(LINGER_MS + 500)
+        expectSilentGraph()
+      },
+    )
+
+    /**
+     * `start` starts a take, which sets the clock going again: what of the
+     * sounds made since `from` the speakers get from then on
+     * (listenForTheRest's readout), and how the new take sounds.
+     */
+    async function heardAfter(
+      from: number,
+      start: () => void,
+    ): Promise<{ heard: string[]; level: TakeLevel }> {
+      const listened = listenForTheRest(sourcesSince(from))
+      const level = await takeLevel(start)
+      expect(listened.starts()).toBeGreaterThan(0)
+      return { heard: listened.heard, level }
+    }
+
+    describe('the app leaving with the page still showing', () => {
+      // Control Center and the notification shade send the app to the
+      // background with the OS's word alone. The page never hides, so the
+      // room hears nothing, and its note stays where the clock parked it.
+
+      /** `what` in `name` with a note sounding, then the clock parked. */
+      async function parkMidNote(
+        name: RoomName,
+        what: 'take' | 'demo',
+      ): Promise<{ room: Mounted; from: number }> {
+        afterAnEarlierVisit()
+        const room = mount(name)
+        await run(100)
+        const from = mark()
+        if (what === 'take') room.start()
+        else room.ask()
+        await runUntilSounding(from)
+        suspendSharedAudioContext()
+        await run(1000)
+        expect(shared().state).toBe('suspended')
+        return { room, from }
+      }
+
+      it.each(ROOMS.flatMap((name) => [`${name} take`, `${name} demo`]))(
+        '%s: back in the app and out of the room, the next room hears nothing of it',
+        async (label) => {
+          const [name, what] = label.split(' ') as [RoomName, 'take' | 'demo']
+          const usual = await usualLevel(nextRoom(name))
+          const { room, from } = await parkMidNote(name, what)
+          // The clock stays parked until the next room's tap. Nothing of
+          // the room is left on the way to the speakers, its stage
+          // included.
+          room.dispose()
+          await run(LINGER_MS + 500)
+          expectSilentGraph()
+          const next = mount(nextRoom(name))
+          await run(100)
+          const { heard, level } = await heardAfter(from, next.start)
+          expect(heard).toEqual([])
+          // The next room's take is heard as on a visit of its own.
+          expect(level.peak).toBeCloseTo(usual.peak, 6)
+          expect(level.held).toBeCloseTo(usual.held, 6)
+          next.dispose()
+          await run(LINGER_MS + 500)
+          expectSilentGraph()
+        },
+      )
+
+      it.each(ROOMS)(
+        '%s: out of the room and the next one started inside the tail, it hears nothing of it',
+        async (name) => {
+          const usual = await usualLevel(nextRoom(name))
+          const { room, from } = await parkMidNote(name, 'take')
+          room.dispose()
+          const next = mount(nextRoom(name))
+          const { heard, level } = await heardAfter(from, next.start)
+          expect(heard).toEqual([])
+          expect(level.peak).toBeCloseTo(usual.peak, 6)
+          expect(level.held).toBeCloseTo(usual.held, 6)
+          next.dispose()
+          await run(LINGER_MS + 500)
+          expectSilentGraph()
+        },
+      )
+
+      it.each(ROOMS)(
+        '%s: Stop and Start in the room start the new take clean',
+        async (name) => {
+          const usual = await usualLevel(name)
+          const { room, from } = await parkMidNote(name, 'take')
+          // Still in the room: Stop stops the note on the parked clock,
+          // and Start sets the clock going again.
+          room.stop()
+          await run(500)
+          const { heard, level } = await heardAfter(from, room.start)
+          expect(heard).toEqual([])
+          // The new take is heard as the room's takes always are.
+          expect(level.peak).toBeCloseTo(usual.peak, 6)
+          expect(level.held).toBeCloseTo(usual.held, 6)
+          room.dispose()
+          await run(LINGER_MS + 500)
+          expectSilentGraph()
+        },
+      )
+    })
+
+    it.each(ROOMS)(
+      '%s: left mid-note, its clock parked by the system inside the tail, the next room hears nothing of it',
+      async (name) => {
+        const usual = await usualLevel(nextRoom(name))
+        const room = mount(name)
+        await run(100)
+        const from = mark()
+        room.start()
+        await runUntilSounding(from)
+        // Out of the room: its note fades over the tail. 40 ms into the
+        // fade the system parks the clock (a call, Siri), and the next
+        // room's Start comes before the tail would have run out.
+        room.dispose()
+        await run(40)
+        void shared().suspend()
+        const next = mount(nextRoom(name))
+        const { heard, level } = await heardAfter(from, next.start)
+        expect(heard).toEqual([])
+        expect(level.peak).toBeCloseTo(usual.peak, 6)
+        expect(level.held).toBeCloseTo(usual.held, 6)
         next.dispose()
         await run(LINGER_MS + 500)
         expectSilentGraph()

@@ -1,14 +1,16 @@
 // ============================================================
-// The rooms' output bus: one per context, at 1, metered only when asked
+// The rooms' output bus: one per context, at 1, metered only when asked,
+// with each room's stage in front of it
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { resetRoomOutputsForTests, ROOM_OUTPUT_GAIN, roomOutput, roomOutputReadings, } from './room-output'
+import { openRoomStage, resetRoomOutputsForTests, ROOM_OUTPUT_GAIN, roomOutput, roomOutputReadings, roomStagesOn, } from './room-output'
 
 interface FakeNode {
   kind: string
   outputs: unknown[]
   connect: (to: unknown) => unknown
+  disconnect: () => void
 }
 
 function fakeContext(samples: number[] = []) {
@@ -21,6 +23,9 @@ function fakeContext(samples: number[] = []) {
         connect: (to: unknown) => {
           n.outputs.push(to)
           return to
+        },
+        disconnect: () => {
+          n.outputs.length = 0
         },
       },
       extra,
@@ -66,6 +71,41 @@ describe('roomOutput', () => {
     expect(roomOutputReadings().map((r) => r.context)).toEqual([a.ctx, b.ctx])
     a.raw.state = 'closed'
     expect(roomOutputReadings().map((r) => r.context)).toEqual([b.ctx])
+  })
+})
+
+describe('openRoomStage', () => {
+  it("stands in front of the bus at 1, and takes the rooms' sound while it is open", () => {
+    const { ctx } = fakeContext()
+    const bus = roomOutput(ctx)
+    openRoomStage(ctx)
+    const stage = roomOutput(ctx) as unknown as FakeNode & {
+      gain: { value: number }
+    }
+
+    expect(stage).not.toBe(bus)
+    expect(stage.gain.value).toBe(ROOM_OUTPUT_GAIN)
+    expect(stage.outputs).toEqual([bus])
+    expect(roomStagesOn(ctx)).toEqual([stage])
+  })
+
+  it('once cut, is off the speakers and hands the sound to the stage before it, or to the bus', () => {
+    const { ctx } = fakeContext()
+    const bus = roomOutput(ctx)
+    const left = openRoomStage(ctx)
+    const leftNode = roomOutput(ctx) as unknown as FakeNode
+    const next = openRoomStage(ctx)
+    const nextNode = roomOutput(ctx)
+
+    // The room left earlier ends its tail while the next one is open.
+    left.cut()
+    expect(leftNode.outputs).toEqual([])
+    expect(roomOutput(ctx)).toBe(nextNode)
+
+    next.cut()
+    next.cut()
+    expect(roomOutput(ctx)).toBe(bus)
+    expect(roomStagesOn(ctx)).toEqual([])
   })
 })
 
