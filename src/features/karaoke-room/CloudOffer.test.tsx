@@ -45,6 +45,48 @@ vi.mock('@/db/services/auth-service', () => ({
   requireAuth: async () => Promise.resolve(true),
 }))
 
+/** What /api/auth/me says of the signed-in account, and how often asked. */
+const account = vi.hoisted(() => ({
+  read: { status: 'unreachable' } as
+    | { status: 'unreachable' }
+    | {
+        status: 'ok'
+        me: {
+          user: {
+            authProvider: string
+            email: string | null
+            emailVerified: boolean
+          }
+          profile: null
+        }
+      },
+  reads: 0,
+}))
+vi.mock('@/db/services/auth-me-service', () => ({
+  readMe: vi.fn(async () => {
+    account.reads += 1
+    return Promise.resolve(account.read)
+  }),
+}))
+
+function accountSays(user: {
+  authProvider?: string
+  email?: string | null
+  emailVerified: boolean
+}): void {
+  account.read = {
+    status: 'ok',
+    me: {
+      user: {
+        authProvider: 'password',
+        email: 'singer@example.com',
+        ...user,
+      },
+      profile: null,
+    },
+  }
+}
+
 import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
@@ -99,6 +141,8 @@ beforeEach(() => {
   server.next = null
   server.hold = null
   auth.account = false
+  account.read = { status: 'unreachable' }
+  account.reads = 0
   resetKaraokeSongsForTests(noSongs)
   resetCloudOfferForTests()
 })
@@ -477,6 +521,58 @@ describe('who is offered what', () => {
     const offer = await open()
 
     expect(offer.textContent).not.toContain('Your next free song')
+  })
+
+  it('tells a singer the server gives a free song each month when the next one comes', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-16T12:00:00.000Z'))
+    auth.account = true
+    resetKaraokeSongsForTests({ ...noSongs, monthly: true })
+    withStore(store())
+    const offer = await open()
+
+    expect(offer.textContent).toContain(
+      'Your next free song comes on 1 November.',
+    )
+    expect(account.reads).toBe(0)
+  })
+
+  it('asks an account with its email unconfirmed to confirm it, and promises no next song', async () => {
+    auth.account = true
+    accountSays({ emailVerified: false })
+    resetKaraokeSongsForTests({ ...noSongs, monthly: false })
+    withStore(store())
+    const offer = await open()
+
+    await waitFor(() =>
+      expect(offer.textContent).toContain(
+        'Confirm your email for 1 free song a month.',
+      ),
+    )
+    expect(offer.textContent).not.toContain('Your next free song')
+  })
+
+  it('says nothing of a free song to an account confirming would not help', async () => {
+    auth.account = true
+    accountSays({ emailVerified: true })
+    resetKaraokeSongsForTests({ ...noSongs, monthly: false })
+    withStore(store())
+    const offer = await open()
+
+    await waitFor(() => expect(account.reads).toBe(1))
+    expect(offer.textContent).not.toContain('Your next free song')
+    expect(offer.textContent).not.toContain('Confirm your email')
+  })
+
+  it('says nothing of a free song when the account cannot be read', async () => {
+    auth.account = true
+    resetKaraokeSongsForTests({ ...noSongs, monthly: false })
+    withStore(store())
+    const offer = await open()
+
+    await waitFor(() => expect(account.reads).toBe(1))
+    expect(offer.textContent).not.toContain('Your next free song')
+    expect(offer.textContent).not.toContain('Confirm your email')
   })
 })
 

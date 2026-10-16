@@ -118,6 +118,11 @@ export interface BillingSongs {
    *  (db-worker songs-allowance.ts songsSummary). Absent on the web, and on
    *  an older db-worker. */
   free?: number
+  /** In the app: whether the singer gets a free song each month at all, so
+   *  none left can be told apart from none to come (db-worker
+   *  songs-allowance.ts appSongs). Absent on the web, and on an older
+   *  db-worker. */
+  monthly?: boolean
 }
 
 type BillingEntitlement = BillingMe['entitlements'][number]
@@ -141,11 +146,18 @@ function isBillingSongs(value: unknown): value is BillingSongs {
 
 /** A songs summary that does not read as one is set aside, and the rest of
  *  /me stands: the web never reads it, and the room falls back to the
- *  balance. */
+ *  balance. A free-song answer that is not a yes or no is read as one never
+ *  given, as an older db-worker's. */
 function withReadableSongs(me: BillingMe): BillingMe {
-  if (me.songs === undefined || isBillingSongs(me.songs)) return me
-  const { songs: _unreadable, ...rest } = me
-  return rest
+  if (me.songs === undefined) return me
+  if (!isBillingSongs(me.songs)) {
+    const { songs: _unreadable, ...rest } = me
+    return rest
+  }
+  const monthly: unknown = me.songs.monthly
+  if (monthly === undefined || typeof monthly === 'boolean') return me
+  const { monthly: _unreadable, ...songs } = me.songs
+  return { ...me, songs }
 }
 
 function isPromoClaim(value: unknown): value is PromoClaim {
