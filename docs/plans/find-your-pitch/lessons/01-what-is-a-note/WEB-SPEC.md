@@ -48,7 +48,7 @@ the first two): the step toys double as the Playground (item 9); the Wrap comes 
 episode; the "Common mix-up" card (item 6) sits inside step 3, beside the toy that refutes it,
 rather than after the steps; "Three words you'll meet" is an extra section before the steps; and
 the practise link (item 11) sits in the Sing it card and the footer, not in the Wrap, whose copy
-in LESSON.md has none. The warm-up retrieval (item 3) starts with Lesson 2.
+in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
 
 1. **Masthead** (sticky, slim): wordmark, "Season 1 · Lesson 01", anchors (Lesson, Watch,
    Explorer, Blueprint), a Sound toggle (off by default; nothing plays without a tap), and a

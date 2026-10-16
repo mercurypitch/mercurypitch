@@ -23,7 +23,7 @@ the contrast case, chrome for any other note), the app's canvas colours on the o
 Your Pitch" wordmark, and its motion rules. Three things move on their own here: the two Merc idle
 loops and the spiral's drift (there is no living staff in this hero). Under
 `prefers-reduced-motion` all three always stop, and every transition this page adds (the climb's
-trail, Look down, Unroll, Straighten, Lift out, the names flipping, the slide guide's dot) lands
+trail, Look down, Unroll, Straighten, Lift out, the names flipping, the slide guide's line) lands
 in its final state with no travel; what the viewer starts (a tone, a slide) still sounds. For
 everyone else the masthead's Pause animations toggle stops the same three (WCAG 2.2.2).
 
@@ -31,8 +31,8 @@ everyone else the masthead's Pause animations toggle stops the same three (WCAG 
 
 The page anatomy (MASTER-PLAN § 4.2), with Lesson 1's departures kept: the step toys double as the
 Playground (item 9), the Wrap comes before the episode, and each "Common mix-up" card sits inside
-the step whose toy refutes it. New against Lesson 1: the warm-up retrieval (item 3) runs for the
-first time; the practice link sits in the Wrap, as the anatomy has it; the page has two mix-up
+the step whose toy refutes it. New against Lesson 1: the recall check (item 3) runs for the first
+time; the practice link sits in the Wrap, as the anatomy has it; the page has two mix-up
 cards, one per concept (playbook rule 3); and there is no series blueprint section (Lesson 1's page
 carries it for the team), so the masthead's anchors are Lesson, Watch and Explorer.
 
@@ -41,7 +41,7 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
 2. **Hero**: kicker; the hook question as the title; the meta as chips (10 minutes, After Lesson 1,
    Sound on) plus a prerequisite chip linking Lesson 1; the promise; the two Mercs live on the
    floor line either side of the spiral, which shows the lit A3 to A4 turn with its five dim beads.
-3. **Warm-up from Lesson 1**: two questions (see Toys, 6).
+3. **Recall from Lesson 1**: two questions (see Toys, 6).
 4. **Cold open: predict**: orange's guess ("Is there a hidden note between every two letters?")
    and blue's reply in speech bubbles, then the two-choice predict (every gap holds a note, or only
    some); choosing unlocks Play the climb on the hero spiral, which lights each bead as it sounds
@@ -68,10 +68,10 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
    `l02-q4`. Answers stay in the viewer's browser (localStorage) until the Lesson telemetry track
    exists; then each first answer is a telemetry event behind consent (MASTER-PLAN Phase 1). A
    later visit asks them afresh, and Lesson 3's page will open with two of them.
-9. **Wrap**: the three recap lines, the challenge, the practice card (Leap, with today's caveat,
-   and Contour as an optional warm-up), the next lesson's hook on a card that opens Lesson 3 in the
-   explorer. Free play unlocks here: every control of the step toys on one stage (playbook rule
-   17: guided first, free play after).
+9. **Wrap**: the three recap lines, the challenge, the practice card (Leap, with today's caveat, and
+   Contour as an optional first drill), the next lesson's hook on a card that opens Lesson 3 in the
+   explorer. Free play unlocks here: every control of the step toys on one stage (playbook rule 17:
+   guided first, free play after).
 10. **Watch the episode**: the kit's episode section (`kit/episode.ts`): the film as an MP4 on R2,
     1080p with a 720p copy for phones (MASTER-PLAN § 12 item 7, decided), its URLs in
     `lesson-02/film.ts`; captions as a same-origin VTT track, the transcript and the chapters built
@@ -85,30 +85,30 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
 
 ## Toys: what each reuses, and what is new
 
-| Toy                          | Reuses from Lesson 1's page                                                                                                     | New in Lesson 2                                                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| 1. Spiral and keyboard       | Step 5's spiral and step 6's keyboard (`lesson-01/toy-spiral.ts`, `toy-spiral-draw.ts`), promoted into the kit as one component | Dim beads that light once heard; Climb; Look down; all keys lit and playable; Straighten; step bars; Lift out the five |
-| 2. Semitone ruler with cents | Step 2's dial (`lesson-01/toy-dial.ts`: its slider, readout and held tone), turned vertical                                     | The cents scale, the one-semitone zoom, the app-style monitor that flips at 50 cents, the 100-cent glide               |
-| 3. Two-names toggle          | Step 5's per-bead labels                                                                                                        | Sharps, flats or both on every black key, page-wide; Sharp and Flat arrows; the rare white-key names                   |
-| 4. Semitone or tone?         | The quiz's feedback lines (`kit/quiz.ts`) and the tone player (`kit/sound.ts`)                                                  | All new: a ten-round ear game, two answers                                                                             |
-| 5. Slide guide (Sing it)     | The Sing it card (`lesson-01/sing.ts`), Merc's synthesised "ooh", the hum-along ring                                            | Four lanes and Merc's amber path; the guide dot; the octave-up slide                                                   |
-| 6. Warm-up retrieval         | The quick-check component (`kit/quiz.ts`) and Lesson 1's questions 2 and 4 (`lesson-01/quiz-questions.ts`)                      | Its place at the top of the page, and asking by Lesson 1's ids                                                         |
-| 7. Predict widgets           | Lesson 1's predict widget (`lesson-01/predict.ts`: choice locks, play buttons unlock, a kind reveal), promoted into the kit     | Two of them: every gap or only some (cold open); B to C, the same, or C to D (step 3, three choices)                   |
-| 8. Go deeper drawer          | none                                                                                                                            | All new: a disclosure (`details`) for the ratio, the cent's origin and "sharp" meaning a little high                   |
+| Toy                          | Reuses from Lesson 1's page                                                                                                                           | New in Lesson 2                                                                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1. Spiral and keyboard       | Step 5's spiral and step 6's keyboard (`lesson-01/toy-spiral.ts`, `toy-spiral-draw.ts`, `toy-spiral-keys.ts`), promoted into the kit as one component | Dim beads that light once heard; Climb; Look down; all keys lit and playable; Straighten; step bars; Lift out the five |
+| 2. Semitone ruler with cents | Step 2's dial (`lesson-01/toy-dial.ts`: its slider, readout and held tone), turned vertical                                                           | The cents scale, the one-semitone zoom, the app-style monitor that flips at 50 cents, the 100-cent glide               |
+| 3. Two-names toggle          | Step 5's per-bead labels                                                                                                                              | Sharps, flats or both on every black key, page-wide; Sharp and Flat arrows; the rare white-key names                   |
+| 4. Semitone or tone?         | The quiz's feedback lines (`kit/quiz.ts`) and the tone player (`kit/sound.ts`)                                                                        | All new: a ten-round ear game, two answers                                                                             |
+| 5. Slide guide (Sing it)     | The Sing it card (`lesson-01/sing.ts`), Merc's synthesised "ooh", the hum-along ring                                                                  | Four lanes and Merc's amber path; the guide's sweeping line; the octave-up slide                                       |
+| 6. Recall check              | The quick-check component (`kit/quiz.ts`) and Lesson 1's questions 2 and 4 (`lesson-01/quiz-questions.ts`)                                            | Its place at the top of the page, and asking by Lesson 1's ids                                                         |
+| 7. Predict widgets           | Lesson 1's predict widget (`lesson-01/predict.ts`: choice locks, play buttons unlock, a kind reveal), promoted into the kit                           | Two of them: every gap or only some (cold open); B to C, the same, or C to D (step 3, three choices)                   |
+| 8. Go deeper drawer          | none                                                                                                                                                  | All new: a disclosure (`details`) for the ratio, the cent's origin and "sharp" meaning a little high                   |
 
 ### 1. Spiral and keyboard
 
 One component with four states, so the object the film transforms is one object on the page too.
 
-- **Spiral** (steps 1 and 2, and the hero): Lesson 1's helix (canvas 2D, projected and
-  depth-sorted, three turns A2 to A5, 30 degrees per semitone, A at the front, draggable, slow
-  drift except under reduced motion or Pause animations, letters at their angles, C seams with
-  octave numbers, tap a bead to hear it). New: the five beads on each turn start dim with a "?" and
-  light, keeping their glow, once heard; their names follow the two-names toggle. **Climb** plays
-  the thirteen notes from A3 to A4 (FACTS 43), lights each bead in turn, counts 1 to 12 and shows
-  "220 Hz" and "440 Hz" at the ends with a gold "× 2". **Look down** moves the camera to the
-  spiral's axis: one turn becomes the ring of twelve, its wedges lit in gold; press again to
-  return. Under reduced motion both land in their end state at once.
+- **Spiral** (steps 1 and 2, and the hero): Lesson 1's helix (canvas 2D, projected and depth-sorted,
+  three turns A2 to A5, 30 degrees per semitone, A at the front, draggable, slow drift except under
+  reduced motion or Pause animations, letters at their angles, C seams with octave numbers, tap a
+  bead to hear it). New: the five beads on each turn start dim with a "?" and light, keeping their
+  glow, once heard; their names follow the two-names toggle. **Climb** plays the thirteen notes from
+  A3 to A4 (FACTS 43), lights each bead in turn, counts 1 to 12 and shows each note's frequency as
+  it lights (220 Hz up to 440 Hz, FACTS 43), with a gold "× 2" at the end. **Look down** moves the
+  camera to the spiral's axis: one turn becomes the ring of twelve, its wedges lit in gold; press
+  again to return. Under reduced motion both land in their end state at once.
 - **Keyboard** (step 3): Lesson 1's Unroll button and keyboard (A2 to A5, low notes left, A3 blue,
   A4 orange), now with every key lit and playable, the black keys named by the toggle. Two keys
   played one after the other draw a step bar between them, a notch per semitone. Phones show one
@@ -175,14 +175,15 @@ vertical (pitch is height).
 - **Play Merc's slide** (A3) and **Play it an octave up** (A4) sound Merc's synthesised "ooh"
   (Lesson 1's recipe: partials 1, .62, .38, .24, .14, .08, .045, .025 over a lowpass near 2.6 kHz,
   vibrato 5.5 Hz, +-14 cents, grown in over 0.35 s), with blue or orange Merc singing beside it
-  (state `ride`). **Start the guide** counts in for one second, then a dot runs the path in 4.2 s
-  while a breathing ring waits, with Merc's still in its centre as in Lesson 1's hum-along ring,
-  never a microphone icon (the film's fix too, DECISIONS 65). Nothing listens and nothing is
-  scored: no microphone on this page.
-  Under reduced motion the path's segments light one after another instead of a travelling dot.
+  (state `ride`). **Start the guide** counts in for one second, then a vertical line sweeps across
+  the lanes along the path in 4.2 s, with nothing riding the path itself (the film's fix,
+  DECISIONS 68), while a breathing ring waits, with Merc's still in its centre as in Lesson 1's hum-along
+  ring, never a microphone icon (the film's fix too, DECISIONS 65). Nothing listens and nothing is
+  scored: no microphone on this page. Under reduced motion the path's segments light one after
+  another instead of a travelling line.
 - The safety line from LESSON.md sits under the buttons.
 
-### 6. Warm-up retrieval
+### 6. Recall check
 
 - The quick-check component, at the top of the page, with Lesson 1's questions 2 and 4 under their
   Lesson 1 `question_id`s (the first time the page anatomy's item 3 runs; the kit's `QuizQuestion`

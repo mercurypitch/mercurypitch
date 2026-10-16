@@ -327,7 +327,7 @@
       "id": "b27",
       "type": "line",
       "who": "blue",
-      "text": "B to C and E to F are only a semitone, so there's no gap to fill.",
+      "text": "B to C and E to F have no gap to fill.",
       "gap": 0.35
     },
     {
@@ -387,7 +387,7 @@
     {
       "id": "predict-e",
       "type": "pause",
-      "dur": 1.8,
+      "dur": 2.0,
       "gap": 0.3
     },
     {
@@ -401,21 +401,21 @@
       "id": "b33",
       "type": "line",
       "who": "blue",
-      "text": "White. It lands on F. So E sharp is just another name for F. Sharp is a direction, not a colour.",
+      "text": "White: F. So E sharp is another name for F. Sharp is a direction, not a colour.",
       "gap": 0.3
     },
     {
       "id": "o7",
       "type": "line",
       "who": "orange",
-      "text": "Then how do musicians choose?",
+      "text": "Then how do musicians choose a name?",
       "gap": 0.5
     },
     {
       "id": "b34",
       "type": "line",
       "who": "blue",
-      "text": "Both are right. It depends on the music around it."
+      "text": "It depends on the music around it. Both are right."
     },
     {
       "id": "b35",
@@ -482,7 +482,7 @@
       "id": "b41",
       "type": "line",
       "who": "blue",
-      "text": "Let's sing one. I'll hold an A, slide up a semitone, and come back.",
+      "text": "Listen first. I'll hold an A, slide up a semitone, and come back.",
       "gap": 0.5
     },
     {
@@ -510,7 +510,7 @@
       "id": "b43",
       "type": "line",
       "who": "blue",
-      "text": "Watch the monitor. A four turns to A sharp four, with the marker in the middle. Then back to A. One semitone, there and back.",
+      "text": "Watch the monitor. A four turns to A sharp four, with the marker in the middle. Then back again.",
       "gap": 0.4
     },
     {
@@ -610,7 +610,7 @@
       "id": "o10",
       "type": "line",
       "who": "orange",
-      "text": "Then how many cents is a tone?",
+      "text": "And how many cents is a tone?",
       "gap": 0.5
     },
     {
@@ -628,7 +628,7 @@
       "id": "b52a",
       "type": "line",
       "who": "blue",
-      "text": "Practise telling semitones from tones in Ear Lab.",
+      "text": "In Ear Lab's Leap, listen for the semitone and the tone.",
       "gap": 0.5
     },
     {

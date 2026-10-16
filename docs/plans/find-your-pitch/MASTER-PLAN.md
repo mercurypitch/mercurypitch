@@ -139,7 +139,7 @@ sung checkpoint, the embedded episode.
 1. Header: lesson number, the hook question as the title, time, prerequisite chips, a one-line
    promise.
 2. Sound gate: one tap enables audio; the microphone is asked for only at the checkpoint.
-3. From Lesson 2 on, a warm-up retrieval: two questions from earlier lessons, asked again rather
+3. From Lesson 2 on, a recall check: two questions from earlier lessons, asked again rather
    than shown with their stored answers, which give the delayed score (§ 9).
 4. Cold-open toy, predict then reveal: orange's guess in a bubble; the learner taps a prediction;
    the sound and the reveal play.

@@ -58,8 +58,8 @@ goes in the thumbnail text, the first line of the description and the cold open 
 | --- | ---------------- | ------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0   | Trailer          | Find your pitch                       | all                    | What if you could see every note you sing? (2 to 3 minutes: the promise and the map of all 14 hooks)                                                        |
 | 1   | Theory           | What is a note? **(in production)**   | T01, T02               | If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?                                                                 |
-| 2   | Theory           | Twelve notes                          | T03, T04               | Musicians only use seven letters, so where do the other five notes come from?                                                                               |
-| 3   | Voice            | Match a note                          | S01, S05               | Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going on? |
+| 2   | Theory           | Twelve notes                          | T03, T04: cents        | Musicians only use seven letters, so where do the other five notes come from?                                                                               |
+| 3   | Voice            | Match a note                          | S01, S05, T04: in tune | Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going on? |
 | 4   | Theory           | The major scale and home              | T09, T10               | Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?                                                                     |
 | 5   | Voice            | Breath and a steady note              | S02, S03, S04, S06     | Singers are told to "support" a long note. If that doesn't mean pushing, what keeps it steady?                                                              |
 | 6   | Theory           | Intervals: the distance between notes | T11, T12               | Why can you start "Twinkle, Twinkle" on any note and it is still the same tune?                                                                             |
@@ -111,8 +111,8 @@ lesson is in build; 4:57)
 - Checkpoint: slide up one semitone from a held note and back.
 - Practise: Ear Lab Leap with only Minor 2nd and Major 2nd (`leap:m2`, `leap:M2` in
   `src/lib/ear/banks.ts`); needs the `ear-drill` launch kind to accept a bank subset, until then
-  `/ear-lab`, then tap Leap. Contour (tiers "Half steps" and "Whole steps") only as an optional
-  warm-up for direction: it asks up, down or same, never semitone or tone.
+  `/ear-lab`, then tap Leap. Contour (tiers "Half steps" and "Whole steps") only as an easier
+  first drill for direction: it asks up, down or same, never semitone or tone.
 - Facts: 12-TET ratio; 100 cents per equal-tempered semitone (Ellis, 1885); keyboard layout;
   the app's pitch line labels notes with sharps only (its sheet-music view spells flats in flat
   keys).
@@ -125,7 +125,8 @@ lesson is in build; 4:57)
   folds give a higher note (a callback to Lesson 1); look after it: sing at about speaking volume,
   drink water, rest when it feels tired, and stop if it feels scratchy or hoarse; understand that
   matching is a hear, try, compare, adjust loop; know an octave match counts; get a first success
-  at a slow pace in a comfortable range.
+  at a slow pace in a comfortable range; read "in tune" in cents: how far the voice sits from the
+  target note, and the target band it should land in (T04's second half; Lesson 2 teaches the cent).
 - Misconception: "Some people are just tone deaf." (Orange voices "I can't sing" once; blue
   answers with the evidence: congenital amusia is about 1.5 % of people; poor-pitch singing is
   mostly a mapping skill between ear and voice, and it improves with practice.)
@@ -410,7 +411,7 @@ draws the fewest lines. Every prerequisite is an earlier Season 1 lesson.
 | 2 Twelve notes                    | 1           | T03 needs T02                                                                         |
 | 3 Match a note                    | 1           | S01 needs T01; S05 needs T02                                                          |
 | 4 The major scale and home        | 2           | T09 needs T03                                                                         |
-| 5 Breath and a steady note        | 2, 3        | S06 needs T04 (2) and S05 (3); S02 needs S01 (3)                                      |
+| 5 Breath and a steady note        | 2, 3        | S06 needs T04 (cents in 2, in tune in 3) and S05 (3); S02 needs S01 (3)               |
 | 6 Intervals                       | 4           | T11 needs T10; T12 needs T09                                                          |
 | 7 Slides, sirens and your range   | 3           | S07 and S08 need S05                                                                  |
 | 8 Beat, tempo and the backbeat    | none        | T05 has no prerequisite: rhythm starts fresh                                          |

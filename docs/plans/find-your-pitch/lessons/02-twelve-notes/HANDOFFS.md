@@ -4,7 +4,7 @@ The last frame of scene N and the first frame of scene N+1 must show every carri
 same pixels (within 2 px). Values marked **(provisional)** are starting values: the two builders on
 either side of a handoff confirm them in a lab still, then this file is updated and the mark
 removed before either scene is built further. Unmarked values are carried from Lesson 1 or follow
-from arithmetic and are fixed now. Times are the estimates in SCRIPT.md (storyboard v2).
+from arithmetic and are fixed now. Times are the estimates in SCRIPT.md (storyboard v3).
 
 Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 to S13, [E] S14,
 [F] S15 to S17.
@@ -15,6 +15,11 @@ Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 
   from `T`, so its phase matches across a cut.
 - Easing names are GSAP's: `power1` is quadratic, `power2` cubic, `power3` quartic. Evaluate a
   curve that spans a cut with GSAP's own function on both sides, never a hand-written polynomial.
+- A push of scale `s` about `(cx, cy)` maps `x' = cx + s (x - cx)`, `y' = cy + s (y - cy)` on the
+  mid layer; every push below names its scale, its centre, its span and its curve.
+- The Mercs ride the near layer only in S1; everywhere else they are placed in screen space, so a
+  camera move never shifts or scales them. A Merc's body is about 0.53 of its shown size wide and
+  0.64 of it tall, standing on its feet point (measured on Lesson 1's frames).
 - Beads: `L.bead(svg, { r: 22, color })`. Chrome `#c3ccd6`; a dim bead is chrome at 35 % opacity
   with a "?" glyph (Lesson 1's S14c); a lit bead is chrome at 100 % with a soft glow (16 px).
 - Orange's guesses: a dashed ink-2 `#a8b3bf` stroke (dash 10, gap 8, 3 px) with a "?" in
@@ -39,11 +44,14 @@ Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 
   every key also carries a soft chrome edge glow ("lit"), A3 a 55 % blue fill mix and A4 a 55 %
   orange mix, as in Lesson 1.
 - **The chapter card**: Lesson 1's act 2 card (`output/motion/lesson-01/compositions/s08-puzzle.html`,
-  "the chapter card for the breath"): one SVG text line centred at (960, 612), the numeral in aqua
-  `#2dd4bf` at 300 px and the title in a chrome gradient at 170 px, 56 px apart; in from act + 0.22
-  (0.85 s, expo.out, y +34 to 0, scale 0.95 to 1), breathing to scale 1.03, out 0.1 s before the
-  next line (0.38 s, power3.in, y to -70). It sits in the top layer, so it never moves with the
-  camera, and it has left before any handoff below.
+  "the chapter card for the breath"): one SVG text line, anchored at its middle on x 960 with its
+  baseline at y 612 (its glyphs measure y 393 to 615 in Lesson 1's frame at 86.0 s), the numeral in
+  aqua `#2dd4bf` at 300 px and the title in a chrome gradient at 170 px, 56 px apart; in from act +
+  0.22 (0.85 s, expo.out, y +34 to 0, scale 0.95 to 1), breathing to scale 1.03, out 0.1 s before
+  the next line (0.38 s, power3.in, y to -70). It sits in the top layer, so it never moves with the
+  camera, and it has left before any handoff below. In Lesson 2 the act 2 card keeps that line, over
+  a spiral dimmed to 25 %; the act 3 and 4 cards set the same line at baseline y 360, so their
+  glyphs run from about y 141 to 394 and clear the tile row's top (y 420).
 
 ## A to B: S3 -> S4 at act1 - 0.15 (est. 36.24)
 
@@ -54,8 +62,8 @@ Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 
 - One push spans the cut: camera scale 1.0 at 35.37 (b5 end - 0.42) to 2.2 at 37.37 (act1 +
   0.98), `power2.inOut`, centred on the front of the lit turn between A3 and B3 (provisional
   (1010, 650)). Both builders evaluate the same curve; at the estimated cut (u = 0.435) its value
-  is 1.395, GSAP's cubic `power2.inOut` (v1 gave 1.457, the quadratic `power1` value; recompute at
-  the measured cut). This is a match motion, so speed and direction continue across the join.
+  is 1.395, GSAP's cubic `power2.inOut` (recompute at the measured cut). This is a match motion,
+  so speed and direction continue across the join.
 - No text on screen (S3's last kicker has left by 36.0). No Mercs. Dust continues (near layer).
 
 ## B to C: S6 -> S7 at act2 - 0.15 (est. 95.39)
@@ -70,23 +78,30 @@ A rest frame, so the crane down in S7a starts from stillness.
   520.0), C♯ (1219.8, 370.0), D (1110.0, 260.2), D♯ (960.0, 220.0), E (810.0, 260.2), F (700.2, 370.0),
   F♯ (660.0, 520.0), G (700.2, 670.0), G♯ (810.0, 779.8). All twelve lit chrome, except A: the orange
   A4 bead drawn exactly over the blue A3 bead, a 3 px blue rim showing round it.
-- The twelve gold wedges at 0 (dimmed by 95.0); "semitone" (right of the ring, baseline y 800 from
-  x 1330), its leader and "HALF STEP" gone; the "+13 Hz" and "+25 Hz" labels gone since S6b.
+- The twelve gold wedges at 0 (dimmed by 95.0); "semitone" (its 300 px full-frame moment over, then
+  settled at 120 px right of the ring, baseline y 800 from x 1330) and "HALF STEP" (baseline y 850)
+  gone by 95.0; the "+13 Hz" and "+25 Hz" labels gone since S6b.
 - No kicker. No Mercs.
 
 ## Inside C: S7 -> S8, the one-octave close-up (fixed)
 
 S7b ends on a uniform 2x push about (960, 820) of the Lesson 1 keyboard (x' = 2x - 960,
-y' = 2y - 820), which frames the A3 to A4 octave, because that octave is centred on x 960 there.
-S8 starts from exactly this frame:
+y' = 2y - 820), 105.8 to 107.3, `power2.inOut`, which frames the A3 to A4 octave, because that
+octave is centred on x 960 there. The frame spans x 480 to 1440 of the keyboard before the push,
+so it would also hold E3 (a sliver) to G♯3 on the left and A♯4 to D♯5 on the right: every key
+outside A3 to A4 fades from 100 % to 0 over the push, on the same curve. S8 starts from exactly
+this frame:
 
 - White keys 138.18 px wide, y 300 to 820. Left edges: A3 407.27, B3 545.45, C4 683.64, D4 821.82, E4
-  960.00, F4 1098.18, G4 1236.36, A4 1374.55; centres 69.09 px to the right of each.
+  960.00, F4 1098.18, G4 1236.36, A4 1374.55 (right edge 1512.73); centres 69.09 px to the right of
+  each.
 - Black keys 80 px wide, y 300 to 628, centred on A♯3 545.45, C♯4 821.82, D♯4 960.00, F♯4 1236.36,
-  G♯4 1374.55.
+  G♯4 1374.55. G♯3 and A♯4, which overlapped the A3 and A4 keys' outer corners, are at 0 with the
+  rest, so the octave reads as 8 white and 5 black keys and nothing else.
 - Labels A3, B3, C4, D4, E4, F4, G4, A4 on the white keys: JetBrains Mono 60 px on screen (authored at
-  30 px before the push), `#2a323c`, baseline 36 px above the key bottom (y 784). The keys outside
-  the octave (G♯3 and A♯4 at the frame's edges) are dimmed to 40 %.
+  30 px before the push), `#2a323c`, baseline 36 px above the key bottom (y 784).
+- The empty frame either side of the octave (x 0 to 407 and 1513 to 1920) is where Orange stands
+  in S8b (feet 1700, 840, shown at 480: body about x 1573 to 1827).
 - The "7 white + 5 black" bracket has left by 105.6.
 
 ## Inside C: S8 and S9, arcs, pills and bars (provisional)
@@ -94,87 +109,157 @@ S8 starts from exactly this frame:
 - S8b's arcs: chrome from the C4 centre (752.73) to the D4 centre (890.91), dashed ink-2 from the B3
   centre (614.54) to the C4 centre, both with their apex 70 px above the key tops (y 230).
 - S8c's pills (Outfit 44 px, 60 px tall): "B to C" centred at (614, 180), "C to D" at (890, 180),
-  "The same" at (752, 90); "Predict." at the top right (baseline y 200 from x 1180). The keyboard is
-  never dimmed.
+  "The same" at (752, 90); "Predict." at the top right (baseline y 200 from x 1180), "WHICH STEP IS
+  BIGGER?" under it (378 px). The keyboard is never dimmed.
 - S8d's bars: over B3 and C4 at x 683.64, over C4 and D4 at x 821.82, standing from y 290: one notch
   to y 210, two notches to y 130.
-- S9a's close-up: a uniform 1.35x push about (700, 600), so key tops sit at y 195 and the labels at
-  y 848; the two one-notch bars stand from y 185 to y 105 over B3/C4 and C4/C♯4.
+- S8e's pills: the same three at 0.7 scale in one row at the top right, right-aligned at x 1800,
+  centred on y 180, where "Predict." was; nothing in the kicker lane.
+- S8c's slow push (6 %) and S8e's (4 % more) are both about (752, 300), so S9a starts from the S8
+  frame at 1.10x about that point; the positions above are on the S8 frame before those pushes, and
+  S9a's push lands on its own framing from there.
+- S9a's close-up: after the bars fade (141.1 to 141.5), a uniform 2.2x push about (580, 317) on the
+  S8 frame, 141.5 to 143.1, `power2.inOut`. Key tops land at y 280; on screen A3 runs x 200 to 504,
+  B3 504 to 808, C4 808 to 1112, D4 1112 to 1416 and E4 1416 to 1720 (F4 past the edge); C♯4's black
+  key is 176 px wide, centred on x 1112. The key labels ride the top layer at baseline y 860. The two
+  one-notch bars stand from y 270 to y 190, over the B3/C4 join (x 808) and over C4/C♯4 (x 1036,
+  midway between their centres).
+- S9c pulls back to the S8 frame (1x), 157.6 to 159.0, `power2.inOut`; S9d is that frame at rest.
 
-## Inside C: S9d, keys to tiles (fixed)
+## Inside C: S9d and S10, keys to tiles (fixed geometry, provisional timing)
 
-Every key of the octave glides to its tile; the two edge keys outside the octave fade out. Tiles:
+Every key of the octave glides to its tile (the keys outside it have been at 0 since S7b's push).
+Tiles:
 
 - 13 tiles, 112 px wide, 8 px gaps, centres x = 240 + 120 i (A3 240, A♯3 360, B3 480, C4 600, C♯4
   720, D4 840, D♯4 960, E4 1080, F4 1200, F♯4 1320, G4 1440, G♯4 1560, A4 1680), so the row runs from
-  x 184 to 1736; y 420 to 700 (provisional); corner radius 10.
+  x 184 to 1736; its home is y 420 to 700; corner radius 10.
 - White tiles `#e6edf3` at 92 % with their labels (JetBrains Mono 40 px, `#2a323c`, baseline y 676);
   dark tiles `#161b22` with the `#30363d` rim and no label.
 - Under the row, at y 740: a chrome bracket under each of the 12 neighbouring pairs, labelled "1"
   (Outfit 40 px, baseline y 790). The step bars shrink into them.
 - The A3 tile's top edge glows blue, the A4 tile's orange (the two beads' notes).
-- In S10c the five dark tiles lift 300 px (to y 120 to 400) and drop back into the same slots;
-  "tone", "= 2 semitones" and "WHOLE STEP" have left that space by 177.9. Orange's peek sits at feet
-  (110, 870), size 300, left of the A3 tile (provisional).
+- S10c and S10d: the five dark tiles lift 300 px (to y 120 to 400) from 179.3 and drop back into
+  the same slots from 188.1, 1.0 s each, `power2.inOut`, while the camera tilts with them, so the
+  whole picture eases down 80 px on screen and back: while they hover, the lifted tiles sit at y 200
+  to 480, the row at y 500 to 780 and the bracket labels at baseline y 870. "tone", "= 2 semitones"
+  and "WHOLE STEP" have left that space by 177.9. Orange's peek sits at feet (96, 870), shown at
+  300 (body about x 16 to 176), in screen space, left of the A3 tile (x 184).
+- S10e: a 2.6x push that carries the B3/C4 join (540, 560) to the frame's centre (x' = 960 + 2.6
+  (x - 540), y' = 560 + 2.6 (y - 560)), 190.0 to 190.9, `power2.inOut`: B3 and C4 at x 658 to 1262,
+  the tiles from y 196 to 924, their labels at baseline y 862; then back to 1x from 191.3 to 192.3.
+  "7 + 5 = 12" leaves as the push begins.
 
-## C to D: S10 -> S11 at act3 - 0.15 (est. 197.11)
+## C to D: S10 -> S11 at act3 - 0.15 (est. 195.19)
 
-- The tile row exactly as in "Inside C: S9d", every tile in its slot, the five dark tiles with no
-  label, the twelve "1" brackets under the row in chrome.
+- The tile row at home exactly as in "Inside C: S9d and S10", every tile in its slot, the five dark
+  tiles with no label, the twelve "1" brackets under the row in chrome.
 - "tone", "semitone", "= 2 semitones", "WHOLE STEP", the returning "?" rings and "7 + 5 = 12" all
-  gone (cleared by 196.9).
-- Camera at rest (scale 1). No Mercs (Orange hopped out at b26). No kicker.
+  gone (cleared by 195.0).
+- Camera at rest (scale 1) since 192.3. No Mercs (Orange hopped out at b26). No kicker.
 
-## Inside D: S13a, tiles to ruler (fixed geometry, provisional timing)
+## Inside D: S11 and S12, the tile framings (provisional)
 
-- From 259.8 to 262.2 (2.4 s, `power2.inOut`), starting as the act 4 chapter card leaves: the tile row
-  tips up 90 degrees anticlockwise (low notes end at the bottom) while it scales to 55/120 and
-  moves its centre from (960, 560) to (480, 490): a vertical ruler at x 480 with A3 at y 820 and
-  A4 at y 160, 55 px per semitone. Each tile shrinks into a 24 px tick on the right of the ruler
-  line, with its name on the left in the pitch line's sharp spelling (JetBrains Mono 30 px, ink-2,
-  right-aligned at x 460): A3, A#3, B3, C4, C#4, D4, D#4, E4, F4, F#4, G4, G#4, A4. The dark tiles'
-  flat names fade as they shrink. The house label "AS ON MERCURYPITCH'S PITCH LINE" (JetBrains Mono
-  30 px, ink-2) sits above the names column, right-aligned at x 460, baseline y 120. The blue bead
-  rides the A3 tick, the orange bead the A4 tick.
-- S13b's push to the A3 to A♯3 segment (y 760 to 160) eases the logarithm of the scale with
-  `power2.inOut` over 262.86 to 268.59, so its rate looks even.
-- S13e's cents labels sit right of the ticks (JetBrains Mono 30 px, left-aligned at x 520): 0, 100
-  ... 1200.
+- S11b and S11c: a 2.4x push about (549, 560), 202.2 to 203.8, `power2.inOut`: C4, C♯4 and D4 at x
+  538 to 1382, centred; the tiles from y 224 to 896, their labels at baseline y 838. The ♯ glyph
+  (160 px) sits over the C4 tile from x 622 and the ♭ over the D4 tile from x 1242, both at y 50 to
+  210, their mono labels beside them; the act 3 kicker ends at x 419. S11d pulls back to 1x, 216.3
+  to 217.5.
+- S12a: the row eases up 80 px to y 340 to 620 (218.4 to 219.2, `power2.inOut`), and Orange stands
+  below its right end, at feet (1640, 860), shown at 360 (body about x 1545 to 1735, y 630 to 860).
+- S12b and S12c: Orange ducks out right as a 2.4x push about (1140, 420) runs, 224.6 to 225.8,
+  `power2.inOut`: E4 and F4 at x 862 to 1418, the tiles from y 228 to 900, their labels at baseline
+  y 842; the predict row ("Predict." and the two pills) over E4 at y 110 to 200, from x 650 to 1350;
+  "E♯ = F" from x 1460, baseline y 180. S12d pulls back to 1x, 242.2 to 243.2, and Orange peeks back
+  in at the same feet.
+- S12e: the row slides down 200 px to y 540 to 820 (249.4 to 250.2, `power2.inOut`); the panel sits
+  at y 200 to 480. The panel leaves at 254.77, and the row eases home to y 420 to 700 from 254.77 to
+  255.27, `power2.inOut`, across the S12 to S13 cut (254.97), so S13 opens on the row at home before
+  the act 4 card lands (255.34).
 
-## D to E: S13 -> S14 at b41 (est. 294.39)
+## Inside D: S13, tiles to ruler (fixed geometry, provisional timing)
 
-S13f's push in on the ruler's A3 region (292.39 to 294.39, `power2.inOut`) lands at rest exactly on
-the cut, and S14a starts from that rest frame by drawing the lanes:
+- From 257.3 to 259.7 (2.4 s, `power2.inOut`), starting as the act 4 chapter card leaves: the tile
+  row tips up 90 degrees anticlockwise about its centre (low notes end at the bottom) while it
+  scales to 55/120 and moves its centre from (960, 560) to (560, 490): a vertical ruler with its
+  line at x 560, A3 at y 820 and A4 at y 160, 55 px per semitone. Each tile shrinks into a 24 px tick
+  on the right of the line, with its name on the left in the pitch line's sharp spelling (JetBrains
+  Mono 30 px, ink-2, right-aligned at x 540): A3, A#3, B3, C4, C#4, D4, D#4, E4, F4, F#4, G4, G#4, A4.
+  The dark tiles' flat names fade as they shrink. The blue bead rides the A3 tick, the orange bead
+  the A4 tick.
+- Every label on the ruler keeps a fixed distance from the line on screen (names 20 px left of it,
+  cents 40 px right of it), so a push moves them with their ticks but never scales them; every push
+  is about a point on the line, so the line stays at x 560.
+- The column labels (JetBrains Mono 30 px, ink-2, tracking .18em, top layer, baseline y 120): the
+  house label "PITCH-LINE NAMES" (369 px) right-aligned at x 540, directly over the names (x 171 to
+  540), from b36's start (260.37); the film's label "CENTS ABOVE A3" (322 px) left-aligned at x 600,
+  over the cents (x 600 to 922), from b37's "a hundred cents". The act 4 kicker has left their lane
+  at 260.1; both labels leave at 289.9, as S13f's push begins. At 1x they sit above the ruler's
+  top tick, A4 at y 160.
+- S13b's push to the A3 to A♯3 segment (y 760 to 160, 600 px per semitone, scale 10.9) eases the
+  logarithm of the scale with `power2.inOut` over 260.37 to 266.10, so its rate looks even.
+- S13e's cents labels sit right of the ticks (JetBrains Mono 30 px, left-aligned at x 600): 0, 100
+  ... 1200; the gold bracket runs from 0 to 1200 at x 730, "1200 ¢ = 1 octave" beside it. The
+  bracket leaves as the monitor (a box from x 1260 to 1770) slides in at b39.
 
-- The ruler line at x 560 (provisional), 160 px per semitone: ticks for G♯3 at y 680, A3 at 520, A♯3
-  at 360, B3 at 200 (provisional). G♯3 is the dim tick the ruler grew below A3 as the push began;
-  the rest of the ruler is off frame.
+## D to E: S13 -> S14 at b41 (est. 291.90)
+
+S13f's push in on the ruler's A3 region, from 1x to 160 px per semitone (scale 2.909) about
+(560, 977), 289.90 to 291.90, `power2.inOut`, lands at rest exactly on the cut, and S14a starts
+from that rest frame by drawing the lanes:
+
+- The ruler line at x 560, 160 px per semitone: ticks for G♯3 at y 680, A3 at 520, A♯3 at 360, B3
+  at 200 (each follows from the push). G♯3 is the dim tick the ruler grew below A3 as the push
+  began; the rest of the ruler is off frame.
 - Labels "G#3", "A3", "A#3", "B3" in JetBrains Mono 30 px, ink-2, right-aligned at x 540; they live
   in the top layer, so they stay 30 px through the push. No cents labels; no bead; the monitor has
-  gone (292.5); the house label has gone with the rest of the ruler.
+  gone (290.0); the column labels have gone (289.9).
 - No Mercs (both drop in during S14a).
 
-## E to F: S14 -> S15 at recap - 0.15 (est. 347.49)
+## Inside E: S14, the canvas (provisional)
 
-- The canvas at 20 %: lanes from x 560 to 1400 at the four heights above (provisional), the amber
-  path and orange's violet line still drawn; "Your turn.", its labels, the ring timer and the
-  monitor gone.
+- Lanes from x 560 to 1360 at the four heights above; the title "How MercuryPitch draws your voice"
+  (JetBrains Mono 30 px, 594 px) from x 560, baseline y 150, from 292.0 until b42a's "Now you"
+  (320.3).
+- The app's "you are here" marker, drawn as the app draws it (FACTS 28): a dot with a soft glow 14
+  px inside the canvas's left edge (x 574) at the singer's current height, a faint dashed guide
+  running right from it, and a dark pill from 25 px in (x 585) naming the note. It leaves with the
+  title.
+- The monitor (S13f's drawing at 0.8 scale) in S14d and S14e: a box from x 1400 to 1820 and y 160 to
+  440, 30 px of padding round its 360 px title, above Orange (body from y 591).
+- S14d's push: 3 % about the marker (574, 520), 306.4 to 307.4, `power2.inOut`, so the lanes end at
+  x 1384, clear of the monitor box (x 1400); S14f eases back to 1x, 320.4 to 321.4, so the viewer's
+  turn plays on the lanes exactly as drawn in S14a.
+- The Mercs: Blue at feet (230, 860), Orange at (1690, 860), shown at 420 (bodies about x 119 to 341
+  and 1579 to 1801, from y 591).
+- The your-turn cursor: a vertical amber line spanning the four lanes, waiting at x 560 from 335.26,
+  then sweeping to x 1360 from 336.26 to 340.46 in step with Merc's path (A held 1.2 s, up 0.5, A♯
+  held 1.0, down 0.5, A held 1.0). Nothing rides the path.
+
+## E to F: S14 -> S15 at recap - 0.15 (est. 342.31)
+
+- The canvas at 20 %: lanes from x 560 to 1360 at the four heights above, the amber path and
+  orange's violet line still drawn; "Your turn.", the safety labels, the chip, the cursor and the
+  ring timer gone (by 341.9); the monitor gone since 320.2.
 - The Mercs are mid-move on one curve that spans the cut (S14g to S15a): from feet (230, 860) and
-  (1690, 860) at 347.07 to (170, 860) and (1750, 860) at 348.27, shown size 420 to 300 (scale 0.808
+  (1690, 860) at 341.89 to (170, 860) and (1750, 860) at 343.09, shown size 420 to 300 (scale 0.808
   to 0.577 of the 520 render), `power3.inOut` (provisional). The pass is the same on both sides
   (m14-duo), so their pixels match by construction.
 
-## Inside F: S15 -> S16 at next - 0.15 (est. 393.09)
+## Inside F: S15 -> S16 at next - 0.15 (est. 389.06)
 
-- The Mercs are mid-move on one curve that spans the cut (S15g to S16): from feet (170, 860) and
-  (1750, 860), shown at 300 (scale 0.577), at 392.29 to (560, 840) and (1360, 840), shown at 520
-  (scale 1.0), at 393.89, `power3.inOut` (provisional). The same m14-duo pass on both sides: no hop
-  out, no drop in.
-- S15g's buttons and kicker leave by 392.9; S16's canvas fades in under the move.
+- S15g's grid, its labels and its kicker leave from 388.5 to 388.8, before the Mercs move.
+- The Mercs are then mid-move on one curve that spans the cut (S15g to S16): from feet (170, 860)
+  and (1750, 860), shown at 300 (scale 0.577), at 388.8 to (560, 840) and (1360, 840), shown at 520
+  (scale 1.0), at 390.4, `power3.inOut` (provisional). The same m14-duo pass on both sides: no hop
+  out, no drop in. S16's canvas fades in under the move.
 
-## Inside F: S16 -> S17 at end (est. 409.04)
+## Inside F: S16 -> S17 at end (est. 405.00)
 
-- Both Mercs on the floor: Blue feet (560, 840), Orange feet (1360, 840), shown at 520, the same
-  m14-duo pass on both sides.
-- S16's canvas (one amber band and the faded violet line) is still at 100 % at the cut and fades
-  out over S17's first 0.5 s; S16's kicker and numbers have gone by 408.8.
+- Both Mercs on the floor: Blue feet (560, 840), Orange feet (1360, 840), shown at 520 (bodies about
+  x 422 to 698 and 1222 to 1498, from y 507), the same m14-duo pass on both sides. The 524 px
+  between their bodies holds S16's numbers and then S17's two-line legend.
+- S16's canvas (one amber band and the faded violet line, y 200 to 440) is still at 100 % at the cut
+  and fades out over S17's first 0.5 s; S16's kicker and numbers have gone by 404.74.
+- S17's text sits above the Mercs' heads: the lockup at y 40 to 220, "Find your pitch." at baseline
+  y 330, the URL at baseline y 440.
