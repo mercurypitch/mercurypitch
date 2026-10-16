@@ -15,35 +15,33 @@
 // (where the voice flips), then a break (where the sound stopped), then a
 // top that fell short or overshot (Pro), then the timing, then praise.
 
+import type { GlideKept, GlidePlan, } from '@/components/room-kit/glide/glide-room-contract'
+import { COUNT_IN_TONE_SEC } from '@/components/room-kit/glide/glide-room-contract'
 import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import type { GlideState } from '@/lib/glide/glide-engine'
 import type { GlideNote, GlideResult } from '@/lib/glide/glide-metrics'
-import type { GlidePath } from '@/lib/glide/glide-path'
 import { lipRollPath } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
-import type { GlideTargets, GlideTargetSource } from '@/lib/glide/glide-targets'
+import type { GlideTargets } from '@/lib/glide/glide-targets'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { lipBest, recordLipBest, rememberLipNote, } from '@/stores/lip-roll-store'
 import type { LipFields, LipMoment } from './merc-lines'
 
-/** The count-in's tone: the first root, s. */
-export const COUNT_IN_TONE_SEC = 1
-/** A breath's tone: the next root, s (levels that play it). */
-export const BREATH_TONE_SEC = 0.7
+// The room's tones, as long as every glide room's.
+export {
+  BREATH_TONE_SEC,
+  COUNT_IN_TONE_SEC,
+} from '@/components/room-kit/glide/glide-room-contract'
+
 /** A wave this near fully lit is a clean one. */
 const CLEAN_SHARE = 0.95
 /** A take that broke this often gets the "oo works too" line. */
 const TIP_OO_BREAKS = 3
 
-export interface LipPlan {
-  readonly roots: readonly number[]
+export interface LipPlan extends GlidePlan {
   /** How far each wave rises, semitones (an octave, or less). */
   readonly semitones: number
-  readonly path: GlidePath
-  /** The count-in before the first wave, s: its tone and a breath. */
-  readonly countIn: number
-  readonly source: GlideTargetSource
 }
 
 /** The run's path from the fitted roots, at the level's timing. */
@@ -198,7 +196,7 @@ export function commonNote(marks: readonly GlideNote[]): number | null {
 
 export function summarize(
   result: GlideResult,
-  kept: { improved: boolean; previousBest: number | null },
+  kept: GlideKept,
   levelName: string,
 ): LipSummary {
   return {
@@ -298,7 +296,7 @@ export function keepLipRun(
   result: GlideResult,
   settled: number | null,
   now: number = Date.now(),
-): { improved: boolean; previousBest: number | null } {
+): GlideKept {
   const lit = Math.round(result.litShare * 100)
   recordExerciseResult({
     type: EXERCISE_LIP_ROLL_BAY,

@@ -187,7 +187,7 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
     (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
   /** The mic: ready, waiting through a count-in or a breath, or hearing a wave. */
   const micState = (): MicState =>
-    lipMicState(room.state().phase, room.riding(), scripted())
+    lipMicState(room.state().phase, room.singing(), scripted())
 
   /** Merc's canvas over the next moments of the demo's take, px. */
   const mercLane = (): Rect[] => {
@@ -252,8 +252,8 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
         {(l) => (
           <BayScene
             layout={l()}
-            path={room.path()}
-            named={room.named()}
+            path={room.lines().path}
+            named={room.lines().root !== null}
             reduced={reduced}
             showResult={room.showResult()}
             still={props.still}

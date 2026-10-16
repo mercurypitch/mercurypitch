@@ -42,6 +42,8 @@ export const INTRO_CAMERA = PLAYHEAD_X - INTRO_APEX_X
 export interface BridgeScroll {
   /** The camera at time `t` on the path's clock (s; the count-in is t < 0). */
   at: (t: number) => number
+  /** The camera at `t`: `at`, as the glide rooms' take reads it. */
+  camera: (t: number) => number
   /** The camera's speed during every slide, W/s. */
   readonly slideSpeed: number
   /** The camera's lowest and highest X over the run. */
@@ -111,5 +113,12 @@ export function createBridgeScroll(
   for (let i = 1; i < 64; i++) {
     min = Math.min(min, at(-countInSec + (i / 64) * (countInSec + first.start)))
   }
-  return { at, slideSpeed: v, min, max: restX, countIn: countInSec }
+  return {
+    at,
+    camera: at,
+    slideSpeed: v,
+    min,
+    max: restX,
+    countIn: countInSec,
+  }
 }

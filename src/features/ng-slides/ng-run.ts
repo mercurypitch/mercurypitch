@@ -14,32 +14,30 @@
 // stepping), then a break, then a top that fell short or overshot (Pro),
 // then the timing, then praise.
 
+import type { GlideKept, GlidePlan, } from '@/components/room-kit/glide/glide-room-contract'
+import { COUNT_IN_TONE_SEC } from '@/components/room-kit/glide/glide-room-contract'
 import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import type { GlideState } from '@/lib/glide/glide-engine'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
-import type { GlidePath } from '@/lib/glide/glide-path'
 import { ngSlidesPath } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
-import type { GlideTargets, GlideTargetSource } from '@/lib/glide/glide-targets'
+import type { GlideTargets } from '@/lib/glide/glide-targets'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { ngBest, recordNgBest, rememberNgNote } from '@/stores/ng-slides-store'
 import type { NgFields, NgMoment } from './merc-lines'
 
-/** The count-in's tone: the first root, s. */
-export const COUNT_IN_TONE_SEC = 1
-/** A breath's tone: the next root, s (levels that play it). */
-export const BREATH_TONE_SEC = 0.7
+// The room's tones, as long as every glide room's.
+export {
+  BREATH_TONE_SEC,
+  COUNT_IN_TONE_SEC,
+} from '@/components/room-kit/glide/glide-room-contract'
+
 /** A slide this near fully lit is a clean one. */
 const CLEAN_SHARE = 0.95
 
-export interface NgPlan {
-  readonly roots: readonly number[]
-  readonly path: GlidePath
-  /** The count-in before the first slide, s: its tone and a breath. */
-  readonly countIn: number
-  readonly source: GlideTargetSource
-}
+/** Five slides' roots and path, and the count-in before them. */
+export type NgPlan = GlidePlan
 
 /** The run's path from the fitted roots, at the level's timing. */
 export function planNgRun(fit: GlideTargets, preset: GlidePreset): NgPlan {
@@ -170,7 +168,7 @@ export interface NgSummary {
 
 export function summarize(
   result: GlideResult,
-  kept: { improved: boolean; previousBest: number | null },
+  kept: GlideKept,
   levelName: string,
 ): NgSummary {
   return {
@@ -246,7 +244,7 @@ export function keepNgRun(
   result: GlideResult,
   settled: number | null,
   now: number = Date.now(),
-): { improved: boolean; previousBest: number | null } {
+): GlideKept {
   const lit = Math.round(result.litShare * 100)
   recordExerciseResult({
     type: EXERCISE_NG_SLIDES_BRIDGE,

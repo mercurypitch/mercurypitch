@@ -76,7 +76,7 @@ export function fixtureController(scene: NgFixtureScene): NgController {
     chip: () => scene.chip,
     // A pinned slide is being sung, and the mic's ring holds at the
     // pinned voice's loudness.
-    sliding: () => scene.phase === 'run',
+    singing: () => scene.phase === 'run',
     micLevel: () => voice().level,
     summary: () => scene.summary,
     mercState: () => scene.mercState,
