@@ -1045,6 +1045,13 @@
   color: var(--text-secondary);
 }
 
+/* Keep sizes to its content, up to the screen under the status bar. At the
+   sheet's own cap (68dvh) the voiceprint variant hid Use email below the
+   fold on a 390 x 844 iPhone. A phone shorter than Keep still scrolls it. */
+[role='dialog'].mp-offer-sheet {
+  --sheet-max-h: calc(100dvh - var(--safe-top, 0px) - 8px);
+}
+
 /* On its side the sheet sits in the middle, 560 wide, with the room showing
    at both ends (2a). The attribute outranks the sheet's own width. */
 @media (orientation: landscape) and (min-width: 640px) {

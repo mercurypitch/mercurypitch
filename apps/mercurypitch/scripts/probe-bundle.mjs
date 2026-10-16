@@ -4564,6 +4564,18 @@ async function keepShape(page) {
             }
           : null,
       notNowFirst: notNow !== null && panel?.querySelector('button') === notNow,
+      // The last way in, whole, with nothing scrolled: no way in hides
+      // below the fold.
+      waysInView: (() => {
+        const ways = root?.querySelectorAll('.mp-keep__ways button')
+        const last = ways?.[ways.length - 1]?.getBoundingClientRect()
+        return (
+          last !== undefined &&
+          frame !== undefined &&
+          panel.scrollTop === 0 &&
+          last.bottom <= Math.min(frame.bottom, window.innerHeight)
+        )
+      })(),
       close: panel?.querySelector('[aria-label="Close"]') !== null,
     }
   })
@@ -4581,12 +4593,13 @@ function keepShapeHolds(shape) {
     shape.notNow.height >= 44 &&
     shape.notNow.fromRight < 40 &&
     shape.notNowFirst &&
+    shape.waysInView &&
     !shape.close
   )
 }
 
 function keepShapeLine(shape) {
-  return `"${shape.title}", ${shape.rows} rows, the fact line, ${shape.ways.join(', ')}, and "${shape.notNow.label}" ${Math.round(shape.notNow.width)} x ${Math.round(shape.notNow.height)} at the top right with no close button`
+  return `"${shape.title}", ${shape.rows} rows, the fact line, ${shape.ways.join(', ')} all in view, and "${shape.notNow.label}" ${Math.round(shape.notNow.width)} x ${Math.round(shape.notNow.height)} at the top right with no close button`
 }
 
 /**
