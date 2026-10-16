@@ -1,7 +1,7 @@
 # Lesson 1: What is a note? (written lesson)
 
-The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Drafted in British
-English, pending MASTER-PLAN § 12 decision 5 (the app's screens now use American spelling).
+The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
+English, as MASTER-PLAN § 12 item 5 decides (the app's own screens use American spelling).
 Each step names its toy (the interactive visual it sits beside); the page spec is
 [WEB-SPEC.md](WEB-SPEC.md).
 

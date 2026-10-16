@@ -427,9 +427,10 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    paid). Still open: whether premium stays the Merc practice rooms, which already sit uneasily with
    `premium.md:3-8` (everything that runs on the device is free forever).
 4. **Proposed, no recommendation yet.** 1080p or 4K delivery. (The frame rate is decided: D10.)
-5. **Proposed: American spelling**, to match the app's screens (0.9.18). British or American
-   English for narration and lesson copy (the exercise locale is en-GB). Drafts stay in British
-   English until this is decided.
+5. **Decided (16 October 2026): British English in general,** with American wording where the
+   owner prefers it, case by case. Narration and lesson copy stay as drafted ("semitone" and "tone"
+   lead, "half step" and "whole step" are the alternates), so nothing re-voices. The app's screens
+   (0.9.18) stay American; the lesson pages are their own documents.
 6. **Proposed: the Learn chapters** (`#/learn/<chapterId>`), the natural home for the lessons
    inside the app once their errors are fixed, with voice lessons also linked from their matching
    Ascent weeks (§ 4.4). Whether the in-app lessons live in Learn chapters, the Ascent, or a new
