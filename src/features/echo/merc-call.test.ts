@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { phraseToVoicePoints } from '@/lib/sequence/phrase-voice'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
+import type { CallVoice } from './merc-call'
 
 const played = vi.hoisted(() => ({
   calls: [] as { points: unknown; options: unknown }[],
@@ -29,7 +30,7 @@ vi.mock('@/lib/demo-audio', () => ({
   },
 }))
 
-const { callTimes, SYNTH_CALL } = await import('./merc-call')
+const { callTimes, scheduleCall, SYNTH_CALL } = await import('./merc-call')
 
 const notes: PhraseNote[] = [
   { midi: 57, at: 0, seconds: 0.65 },
@@ -88,5 +89,55 @@ describe("Merc's call", () => {
     expect(schedule.onsets).toEqual([])
     expect(schedule.endAt).toBe(2)
     expect(() => schedule.stop()).not.toThrow()
+  })
+})
+
+describe("Merc's call on the frames' clock", () => {
+  /** A voice that schedules on the call's own times and sounds nothing. */
+  const voice: CallVoice = {
+    sing: (_ctx, sung, startAt) => ({
+      ...callTimes(sung, startAt),
+      stop: () => undefined,
+    }),
+  }
+  const at = (latency: Partial<AudioContext>): AudioContext =>
+    ({ currentTime: 10, ...latency }) as AudioContext
+  const rounded = (t: number): number => +t.toFixed(9)
+
+  it('sings the call `lead` ahead and dates each note from now, as the speaker plays it', () => {
+    const call = scheduleCall(
+      voice,
+      at({ outputLatency: 0.05, baseLatency: 0.01 }),
+      notes,
+      0.35,
+    )
+
+    expect(rounded(call.sound.onsets[0])).toBe(10.35)
+    expect(
+      call.notes.map((n) => [rounded(n.from), rounded(n.to), n.midi]),
+    ).toEqual([
+      [0.4, 1.05, 57],
+      [1.05, 1.7, 61],
+      [1.7, 2.35, 64],
+    ])
+    expect(rounded(call.endsAt)).toBe(2.35)
+  })
+
+  it('takes the base latency when the output latency is unknown, and none when both are', () => {
+    const base = scheduleCall(
+      voice,
+      at({ outputLatency: 0, baseLatency: 0.02 }),
+      notes,
+      0,
+    )
+    const neither = scheduleCall(
+      voice,
+      at({ outputLatency: Number.NaN }),
+      notes,
+      0,
+    )
+
+    expect(rounded(base.notes[0].from)).toBe(0.02)
+    expect(neither.notes[0].from).toBe(0)
   })
 })

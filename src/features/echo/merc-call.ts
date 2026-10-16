@@ -15,12 +15,18 @@
 // hand back the same schedule: each note's onset and the call's end on
 // that clock (the rings appear on the onsets, and the response opens
 // after the end), and a stop.
+//
+// The room hears the call on the frames' clock, not the audio clock:
+// scheduleCall sings it a little ahead and carries every time in it to the
+// frames' clock, with the output latency, so each note is dated as the
+// speaker plays it.
 
 import { roomOutput } from '@/components/room-kit/room-output'
 import { playVoiceContour } from '@/lib/demo-audio'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { phraseToVoicePoints } from '@/lib/sequence/phrase-voice'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
+import type { CallNote } from './early-singing'
 
 /** A call on the audio clock, as it was scheduled. */
 export interface CallSchedule {
@@ -75,4 +81,46 @@ export const SYNTH_CALL: CallVoice = {
     )
     return { ...times, stop: () => sound.stop() }
   },
+}
+
+/** The call under way: its sound and its notes on the frames' clock. */
+export interface Call {
+  readonly sound: CallSchedule
+  readonly notes: readonly CallNote[]
+  /** When the call has ended at the speaker, frames' clock. */
+  readonly endsAt: number
+}
+
+/** How far the speaker is behind the audio clock, s. */
+function outputLatency(ctx: AudioContext): number {
+  const out = ctx.outputLatency
+  if (Number.isFinite(out) && out > 0) return out
+  const base = ctx.baseLatency
+  return Number.isFinite(base) && base > 0 ? base : 0
+}
+
+/**
+ * `voice` sings `notes` `lead` seconds from now on `ctx`'s clock. The
+ * frames' clock starts now (the capture window has just opened), and the
+ * speaker is the output latency behind the audio clock.
+ */
+export function scheduleCall(
+  voice: CallVoice,
+  ctx: AudioContext,
+  notes: readonly PhraseNote[],
+  lead: number,
+): Call {
+  const a0 = ctx.currentTime
+  const latency = outputLatency(ctx)
+  const sound = voice.sing(ctx, notes, a0 + lead)
+  const onFrames = (t: number): number => t - a0 + latency
+  return {
+    sound,
+    notes: notes.map((note, i) => ({
+      from: onFrames(sound.onsets[i]),
+      to: onFrames(sound.onsets[i] + note.seconds),
+      midi: note.midi,
+    })),
+    endsAt: onFrames(sound.endAt),
+  }
 }

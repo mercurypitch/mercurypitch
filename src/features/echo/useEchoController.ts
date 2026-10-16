@@ -68,12 +68,13 @@ import { echoReducer, initialEchoState, isRunPhase } from './echo-machine'
 import { keepEchoRun, phraseLine, resultLine, showResultOf } from './echo-run'
 import type { LiveStage } from './echo-scene'
 import { echoScene, keepSame } from './echo-scene'
-import type { CallSchedule } from './merc-call'
+import type { Call } from './merc-call'
+import { scheduleCall } from './merc-call'
 import type { EchoMoment, LineFields } from './merc-lines'
 import { createEchoLines } from './merc-lines'
 import { MERC_CALL, preloadMercVoice } from './merc-sampler'
 import type { EchoDemoMark, ScriptedEchoTake } from './scripted-take'
-import { createScriptedRoom } from './scripted-take'
+import { createScriptedRoom, SCRIPTED_CALL } from './scripted-take'
 import { phrasePlaces } from './sky-layout'
 import type { SkyScene } from './sky-scene'
 import { EMPTY_SCENE } from './sky-scene'
@@ -101,32 +102,9 @@ const SILENT_VOICE: MercVoice = {
   midi: 57,
 }
 
-/** A call the demo's sound sings: the room has nothing of it to stop. */
-const SCRIPTED_CALL: CallSchedule = {
-  onsets: [],
-  endAt: 0,
-  stop: () => undefined,
-}
-
 /** The singer's own note, when the room can start its phrases there. */
 function offerable(midi: number): boolean {
   return midi >= HOLD_TARGET_MIN_MIDI && midi <= HOLD_TARGET_MAX_MIDI
-}
-
-/** How far the speaker is behind the audio clock, s. */
-function outputLatency(ctx: AudioContext): number {
-  const out = ctx.outputLatency
-  if (Number.isFinite(out) && out > 0) return out
-  const base = ctx.baseLatency
-  return Number.isFinite(base) && base > 0 ? base : 0
-}
-
-/** The call under way: its sound and its notes on the frames' clock. */
-interface Call {
-  readonly sound: CallSchedule
-  readonly notes: readonly CallNote[]
-  /** When the call has ended at the speaker, frames' clock. */
-  readonly endsAt: number
 }
 
 export function useEchoController(
@@ -291,17 +269,8 @@ export function useEchoController(
     if (phrase === null || ctx === null) return
     call?.sound.stop()
     openWindow()
-    const a0 = ctx.currentTime
-    const latency = outputLatency(ctx)
-    const sound = voiceOfMerc.sing(ctx, phrase.notes, a0 + lead)
-    const onFrames = (t: number): number => t - a0 + latency
-    const notes = phrase.notes.map((note, i) => ({
-      from: onFrames(sound.onsets[i]),
-      to: onFrames(sound.onsets[i] + note.seconds),
-      midi: note.midi,
-    }))
     singCall(
-      { sound, notes, endsAt: onFrames(sound.endAt) },
+      scheduleCall(voiceOfMerc, ctx, phrase.notes, lead),
       (note) => note.from * 1000,
       untrack(state).phrase === phrases.length - 1,
     )

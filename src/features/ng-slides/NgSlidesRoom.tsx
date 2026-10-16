@@ -50,12 +50,12 @@ import { DEMO_COPY } from './demo/demo-cues'
 import { aimNgTip } from './demo/tip-targets'
 import type { NgDemo } from './demo/useNgDemo'
 import { useNgDemo } from './demo/useNgDemo'
+import type { NgController } from './ng-controller-contract'
 import { ngMicState } from './ng-machine'
 import type { NgSummary } from './ng-run'
 import { bestText, jumpsText, topsText } from './ng-run'
 import { NgLevel } from './NgLevel'
 import styles from './NgSlidesRoom.module.css'
-import type { NgController } from './useNgController'
 import { useNgController } from './useNgController'
 
 export interface NgSlidesRoomProps {

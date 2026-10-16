@@ -31,7 +31,6 @@
 // own clock, and nothing played, felt, said or kept. Its camera may stand
 // still while the voice rides on (the take's `hold`).
 
-import type { Accessor } from 'solid-js'
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
@@ -42,7 +41,6 @@ import { newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
-import type { GlidePath } from '@/lib/glide/glide-path'
 import { restToneDue, riddenSegmentAt, segmentAt, targetAt, } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
@@ -51,7 +49,6 @@ import { fitLipRoll } from '@/lib/glide/glide-targets'
 import { haptics } from '@/lib/haptics'
 import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, } from '@/lib/hold/hold-target'
 import { settleLiveNote } from '@/lib/hold/settle-note'
-import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice } from '@/lib/merc/sim'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -66,6 +63,8 @@ import { introHum, RIDE_STATES, rideStep, rideTarget, rideXOn, } from './bay-rid
 import type { BayScroll } from './bay-scroll'
 import { createBayScroll, holdCamera, INTRO_CAMERA } from './bay-scroll'
 import type { BayView } from './bay-view'
+import type { LipController } from './lip-controller-contract'
+import { QUIET_LIMIT_SECONDS } from './lip-controller-contract'
 import type { LipEvent, LipState } from './lip-machine'
 import { initialLipState, isRunPhase, lipReducer } from './lip-machine'
 import type { LipPlan, LipSummary, WaveHeard } from './lip-run'
@@ -79,8 +78,6 @@ import { createLipLines } from './merc-lines'
 import type { LipScript, ScriptedLipTake } from './scripted-take'
 import { CaptureError, useLipCapture } from './useLipCapture'
 
-/** Nobody sang for this long during a run: it stops, the mic closes. */
-export const QUIET_LIMIT_SECONDS = 60
 /** Merc's happy face after a wave lights, ms. */
 const LOCK_FACE_MS = 600
 /** The room's own tone is not drawn as the voice for this long after it, s. */
@@ -99,48 +96,6 @@ const SILENT_VOICE: MercVoice = {
 /** The singer's own note, when the room can fit its waves to it. */
 function offerable(midi: number): boolean {
   return midi >= HOLD_TARGET_MIN_MIDI && midi <= HOLD_TARGET_MAX_MIDI
-}
-
-export interface LipController {
-  state: Accessor<LipState>
-  /** Merc's line in his bubble; '' for none. */
-  line: Accessor<string>
-  /** "Wave 2 of 3" during a run; null for none. */
-  chip: Accessor<string | null>
-  /**
-   * A wave is being ridden (its up, top and down): the singer's turn in a
-   * run (lipMicState). False in the count-in, a landing, a breath and the
-   * demo.
-   */
-  riding: Accessor<boolean>
-  /**
-   * How loud the singer is, 0..1, from the newest frame the run has read:
-   * the mic's ring follows it. Read every frame; deliberately not reactive.
-   */
-  micLevel: () => number
-  summary: Accessor<LipSummary | null>
-  mercState: Accessor<MercState>
-  /** Read by Merc's renderer every frame; deliberately not reactive. */
-  mercVoice: () => MercVoice
-  /** The path the scene draws its dots from. */
-  path: Accessor<GlidePath>
-  /** The waves are not the room's guess: their tops are named. */
-  named: Accessor<boolean>
-  /** The pulled-back result is up. */
-  showResult: Accessor<boolean>
-  /** Start a run: from the intro, a result or a blocked mic. */
-  start: () => void
-  /** The mic button during a run: the run stops, nothing kept. */
-  stop: () => void
-  /** The scene the run draws on. */
-  attach: (view: BayView) => void
-  /** The demo's way in: its waves buzzed through this room. */
-  script: LipScript
-  /**
-   * Where Merc will ride over the next `seconds` of the demo's take,
-   * sampled; empty outside a take (the demo's tooltips stay clear of it).
-   */
-  mercAhead: (seconds: number) => readonly MercSpot[]
 }
 
 /** The run in progress: its plan, scroll, take and what it has played. */
