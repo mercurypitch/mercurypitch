@@ -19,7 +19,7 @@ import type { NgScript } from './scripted-take'
 export const QUIET_LIMIT_SECONDS = 60
 
 /** What the scene draws its lines from: the path, and the names' root. */
-export interface NgLines {
+export interface NgSceneLines {
   readonly path: GlidePath
   readonly root: number | null
 }
@@ -45,7 +45,7 @@ export interface NgController {
   mercState: Accessor<MercState>
   /** Read by Merc's renderer every frame; deliberately not reactive. */
   mercVoice: () => MercVoice
-  lines: Accessor<NgLines>
+  lines: Accessor<NgSceneLines>
   /** The pulled-back result is up. */
   showResult: Accessor<boolean>
   /** Start a run: from the intro, a result or a blocked mic. */
