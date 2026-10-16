@@ -13,8 +13,9 @@
 // stack (`run-shell-store.ts`), so Back walks down it one level at a time.
 // The groups sit in one column upright and two on a phone on its side.
 //
-// With nothing signed in, Save your progress sits over the Account row and
-// opens Keep, the account offer (S7b §5, account-offer.ts).
+// With nothing signed in, Save your progress sits between this phone's group
+// and Mercury Pitch Cloud, and opens Keep, the account offer (S7b §5,
+// account-offer.ts).
 
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
@@ -63,19 +64,10 @@ export interface SettingsScreenProps {
   onPush: (screen: SettingsSubScreen) => void
 }
 
-/** Save your progress while signed out, the Account row, and Delete account
- *  under it while there is one. */
+/** The Account row, and Delete account under it while there is one. */
 function AccountGroup(props: SettingsScreenProps): JSX.Element {
   return (
     <SettingsGroup>
-      <Show when={saveProgressHere()}>
-        <SettingsRow
-          id="save-progress"
-          icon={<ProgressIcon />}
-          label={KEEP.titleProgress}
-          onPress={openKeep}
-        />
-      </Show>
       <SettingsRow
         id="account"
         icon={<AccountAvatar />}
@@ -176,6 +168,18 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
           </SettingsGroup>
         </div>
         <div class="mp-set__col">
+          {/* What this phone keeps goes with an account: Keep says what one
+              saves, beside what Cloud adds (S7b §5). */}
+          <Show when={saveProgressHere()}>
+            <SettingsGroup>
+              <SettingsRow
+                id="save-progress"
+                icon={<ProgressIcon />}
+                label={KEEP.titleProgress}
+                onPress={openKeep}
+              />
+            </SettingsGroup>
+          </Show>
           {/* Mercury Pitch Cloud, in a build that sells it: how it stands,
               the songs left, the plan, Manage and Restore (S7b §5). A plain
               conditional, so a store build folds it away (CloudGroup). */}

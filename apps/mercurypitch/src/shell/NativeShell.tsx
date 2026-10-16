@@ -417,13 +417,13 @@ export const NativeShell: Component = () => {
           <AccountOfferSheet />
 
           {/* The Cloud offer (paywall B v2), opened by the Karaoke room's
-              Import, Settings and the onboarding. Its free account hands
-              over to the sign-in sheet, which is drawn over it. Stage 2:
-              a plain conditional, so a store build folds it away. */}
+              Import, Settings and the onboarding. Its free account, and
+              Sign in after a purchase, close it and open Keep (S7b §3.5).
+              Stage 2: a plain conditional, so a store build folds it away. */}
           {KARAOKE_IMPORT ? (
             <CloudOffer
               platform={Capacitor.getPlatform()}
-              onAccount={openSignIn}
+              onAccount={openKeep}
             />
           ) : null}
 

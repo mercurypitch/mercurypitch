@@ -331,18 +331,25 @@ describe('Settings', () => {
     expect(onPush).toHaveBeenCalledWith('delete-account')
   })
 
-  it('puts Save your progress first, over the Account row, while nothing is signed in (S7b §5)', () => {
+  it('puts Save your progress after this phone and before the rooms, a group of its own, while nothing is signed in (S7b §5)', () => {
     view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
 
     const save = row('save-progress')
-    const rows = [
+    const order = [
+      ...document.querySelectorAll<HTMLElement>('[data-settings-row]'),
+    ].map((one) => one.dataset.settingsRow)
+    const group = [
       ...(save
         ?.closest('section')
         ?.querySelectorAll<HTMLElement>('[data-settings-row]') ?? []),
     ].map((one) => one.dataset.settingsRow)
 
     expect(save?.textContent).toContain(KEEP.titleProgress)
-    expect(rows.slice(0, 2)).toEqual(['save-progress', 'account'])
+    expect(order.indexOf('save-progress')).toBe(order.indexOf('appearance') + 1)
+    expect(order.indexOf('save-progress')).toBeLessThan(
+      order.indexOf('rooms-sing'),
+    )
+    expect(group).toEqual(['save-progress'])
   })
 
   it('opens Keep from Save your progress', () => {
