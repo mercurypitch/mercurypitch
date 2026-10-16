@@ -64,6 +64,9 @@ export interface KaraokeSongs {
   /** The month's free song among those left, 1 or 0, for a signed-in
    *  singer (owner, S7 D5); absent where the server does not say. */
   readonly free?: number
+  /** Whether the server gives this singer a free song each month at all,
+   *  spent or not (db-worker getsFreeSong); absent where it does not say. */
+  readonly monthly?: boolean
 }
 
 const UNKNOWN: KaraokeSongs = Object.freeze({
@@ -100,6 +103,9 @@ export async function refreshKaraokeSongs(
           perPeriod: me.songs.perPeriod,
           cap: me.songs.cap,
           ...(me.songs.free === undefined ? {} : { free: me.songs.free }),
+          ...(me.songs.monthly === undefined
+            ? {}
+            : { monthly: me.songs.monthly }),
         }
   setSongs(next)
   return next
@@ -259,11 +265,55 @@ export function nextFreeSongLine(now: Date = new Date()): string {
 /**
  * A signed-in singer without a subscription whose month's free song is
  * used: the server counts it among the songs left (owner, S7 D5), so none
- * left means it is spent.
+ * left means it is spent. Not for a singer the server says gets none a
+ * month (`monthly` false): none left is then not a song spent, and no next
+ * one is coming. An older server that does not say is read as before.
  */
 export function freeSongUsed(state: KaraokeSongs, account: boolean): boolean {
-  return account && !state.subscribed && state.left === 0
+  return (
+    account && !state.subscribed && state.left === 0 && state.monthly !== false
+  )
 }
+
+/**
+ * A signed-in singer without a subscription the server gives no free song a
+ * month (`monthly` false). Only the server's word counts: an older server
+ * that does not say withholds nothing here.
+ */
+export function freeSongWithheld(
+  state: KaraokeSongs,
+  account: boolean,
+): boolean {
+  return account && !state.subscribed && state.monthly === false
+}
+
+/** The account, as /api/auth/me describes it. */
+interface FreeSongAccount {
+  readonly authProvider: string
+  readonly email: string | null
+  readonly emailVerified: boolean
+}
+
+/**
+ * Whether confirming its email is what stands between this account and the
+ * month's free song. The server gives it to an account that is not
+ * anonymous, has an email and has confirmed it, without a subscription
+ * (db-worker songs-allowance.ts getsFreeSong); the subscription is the
+ * caller's to rule out (freeSongWithheld).
+ */
+export function confirmEmailForFreeSong(user: FreeSongAccount): boolean {
+  return (
+    user.authProvider !== 'anonymous' &&
+    user.email !== null &&
+    user.email !== '' &&
+    !user.emailVerified
+  )
+}
+
+/** The offer's line above the plan, for an account whose email is not
+ *  confirmed yet (confirmEmailForFreeSong). */
+export const CONFIRM_FOR_FREE_SONG_LINE =
+  'Confirm your email for 1 free song a month.'
 
 /** Settings, Karaoke: the subscription's status line (plan §9). */
 export function subscriptionStatusLine(state: KaraokeSongs): string {

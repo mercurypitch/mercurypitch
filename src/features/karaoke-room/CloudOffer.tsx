@@ -24,7 +24,10 @@
 // WHO IS ASKED WHAT (§4.3). Without an account, a text button under
 // Subscribe offers the free song an account brings; it hands over to the
 // account sheet the shell names (`onAccount`). A signed-in singer whose free
-// song is used is told when the next one comes, above the plan. After a
+// song is used is told when the next one comes, above the plan; one the
+// server gives none a month (`monthly` false) is never told that, and is
+// asked to confirm their email only when /api/auth/me says it is not
+// confirmed yet, which is what the server's rule asks (getsFreeSong). After a
 // purchase on a phone without an account, Sign in opens the sign-in sheet
 // the shell names (`onSignIn`): the singer has paid, so it is no offer.
 //
@@ -38,8 +41,9 @@
 // as well (cloud-offer.module.css).
 
 import type { Accessor, JSX } from 'solid-js'
-import { createEffect, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import { createEffect, createResource, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
+import { readMe } from '@/db/services/auth-me-service'
 import { accountHeld } from '@/db/services/auth-service'
 import { deviceNoun, thisDeviceLower, yourDevice } from '@/lib/device-noun'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
@@ -48,7 +52,7 @@ import { nativeShellApi } from '@/stores/native-shell-store'
 import heroArt from './assets/paywall-two-lights.webp'
 import styles from './cloud-offer.module.css'
 import { closeCloudOffer, cloudOffer, showCloudSubscribed, } from './cloud-offer-store'
-import { awaitSubscription, CLOUD_NAME, freeSongUsed, KARAOKE_PLAN, karaokeSongs, nextFreeSongLine, refreshKaraokeSongs, restoreNote, songsOnTheWay, } from './karaoke-songs'
+import { awaitSubscription, CLOUD_NAME, CONFIRM_FOR_FREE_SONG_LINE, confirmEmailForFreeSong, freeSongUsed, freeSongWithheld, KARAOKE_PLAN, karaokeSongs, nextFreeSongLine, refreshKaraokeSongs, restoreNote, songsOnTheWay, } from './karaoke-songs'
 
 /** The sheet's name, and its title: what the singer gets (E3). */
 export const CLOUD_OFFER_TITLE = 'Sing your own songs'
@@ -216,6 +220,18 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
 
   const view = () => cloudOffer()?.view ?? null
   const offering = (): boolean => view() === 'offer'
+
+  // A signed-in singer the server gives no free song a month is asked to
+  // confirm their email only when that is what stands in the way: the
+  // account is read each time the offer opens for one. An account that
+  // cannot be read is told nothing.
+  const [askToConfirm] = createResource(
+    () => offering() && freeSongWithheld(karaokeSongs(), accountHeld()),
+    async (): Promise<boolean> => {
+      const read = await readMe()
+      return read.status === 'ok' && confirmEmailForFreeSong(read.me.user)
+    },
+  )
 
   const openAccount = (): void => {
     closeCloudOffer('done')
@@ -397,6 +413,14 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
             <div class={styles.deal}>
               <Show when={freeSongUsed(karaokeSongs(), accountHeld())}>
                 <p class={styles.freeLine}>{nextFreeSongLine()}</p>
+              </Show>
+              <Show
+                when={
+                  freeSongWithheld(karaokeSongs(), accountHeld()) &&
+                  askToConfirm() === true
+                }
+              >
+                <p class={styles.freeLine}>{CONFIRM_FOR_FREE_SONG_LINE}</p>
               </Show>
               <div class={styles.plan}>
                 <p class={styles.planText}>

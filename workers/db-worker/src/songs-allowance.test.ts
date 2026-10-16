@@ -693,6 +693,7 @@ describe('the songs the app can spend', () => {
       free: 1,
       left: 17,
       freeKey: `free-song:${USER}:2026-09:0`,
+      monthly: true,
     })
   })
 
@@ -701,6 +702,7 @@ describe('the songs the app can spend', () => {
       held: 16,
       free: 0,
       left: 16,
+      monthly: false,
     })
   })
 
@@ -713,6 +715,7 @@ describe('the songs the app can spend', () => {
       left: 17,
       free: 1,
       gift: 0,
+      monthly: true,
       renewsAt: null,
       perPeriod: 20,
       cap: 50,

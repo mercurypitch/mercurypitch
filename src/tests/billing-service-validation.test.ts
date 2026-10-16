@@ -103,6 +103,40 @@ describe('the Karaoke songs on /me (plan S8 §8)', () => {
     await expect(fetchBillingMe('https://api.test')).resolves.toEqual(body)
   })
 
+  it("reads whether the app's singer gets a free song each month", async () => {
+    const body: BillingMe = {
+      ...base,
+      songs: {
+        subscribed: false,
+        left: 0,
+        renewsAt: null,
+        perPeriod: 20,
+        cap: 50,
+        free: 0,
+        monthly: false,
+      },
+    }
+    answer(body)
+
+    await expect(fetchBillingMe('https://api.test')).resolves.toEqual(body)
+  })
+
+  it('reads a free-song answer that is not a yes or no as one never given', async () => {
+    const songs = {
+      subscribed: false,
+      left: 0,
+      renewsAt: null,
+      perPeriod: 20,
+      cap: 50,
+      free: 0,
+    }
+    answer({ ...base, songs: { ...songs, monthly: 'no' } })
+
+    const billing = await fetchBillingMe('https://api.test')
+
+    expect(billing?.songs).toEqual(songs)
+  })
+
   it('reads an older worker, which says nothing of songs', async () => {
     answer(base)
 

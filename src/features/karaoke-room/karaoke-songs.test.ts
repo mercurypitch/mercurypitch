@@ -32,7 +32,7 @@ vi.mock('@/db/services/auth-service', () => ({
 
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { KaraokeSongs } from './karaoke-songs'
-import { awaitSubscription, collectLine, confirmCostLine, freeSongUsed, importChip, importLine, karaokeSongs, nextFreeSongLine, nextFreeSongOn, noSongsLeftLine, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsOnTheWay, songsOptionRow, STEMS_KEPT_DAYS, subscriptionStatusLine, } from './karaoke-songs'
+import { awaitSubscription, collectLine, CONFIRM_FOR_FREE_SONG_LINE, confirmCostLine, confirmEmailForFreeSong, freeSongUsed, freeSongWithheld, importChip, importLine, karaokeSongs, nextFreeSongLine, nextFreeSongOn, noSongsLeftLine, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsOnTheWay, songsOptionRow, STEMS_KEPT_DAYS, subscriptionStatusLine, } from './karaoke-songs'
 
 const subscriber: KaraokeSongs = {
   left: 18,
@@ -87,6 +87,30 @@ describe('asking the server', () => {
     }
     await refreshKaraokeSongs()
     expect('free' in karaokeSongs()).toBe(false)
+  })
+
+  it('reads whether the singer gets a free song each month, where the server says', async () => {
+    const used = {
+      left: 0,
+      subscribed: false,
+      renewsAt: null,
+      perPeriod: 20,
+      cap: 50,
+      free: 0,
+    }
+    billing.me = {
+      creditBalance: 0,
+      entitlements: [],
+      stripeConfigured: false,
+      songs: { ...used, monthly: false },
+    }
+
+    await refreshKaraokeSongs()
+    expect(karaokeSongs().monthly).toBe(false)
+
+    billing.me = { ...billing.me, songs: used }
+    await refreshKaraokeSongs()
+    expect('monthly' in karaokeSongs()).toBe(false)
   })
 
   it('never reads the balance as songs: web credits are not the app’s', async () => {
@@ -274,6 +298,53 @@ describe('the next free song', () => {
     expect(freeSongUsed({ ...none, left: 1 }, true)).toBe(false)
     expect(freeSongUsed({ ...none, subscribed: true }, true)).toBe(false)
     expect(freeSongUsed({ ...none, left: null }, true)).toBe(false)
+  })
+
+  it('is never promised to a singer the server gives none a month', () => {
+    const none = { left: 0, subscribed: false, renewsAt: null, perPeriod: 20 }
+
+    expect(freeSongUsed({ ...none, monthly: true }, true)).toBe(true)
+    expect(freeSongUsed({ ...none, monthly: false }, true)).toBe(false)
+  })
+})
+
+describe('a free song a month the account does not get yet', () => {
+  const none = {
+    left: 0,
+    subscribed: false,
+    renewsAt: null,
+    perPeriod: 20,
+    monthly: false,
+  }
+  const unconfirmed = {
+    authProvider: 'password' as const,
+    email: 'singer@example.com',
+    emailVerified: false,
+  }
+
+  it('is withheld only from a signed-in singer without a subscription', () => {
+    expect(freeSongWithheld(none, true)).toBe(true)
+    expect(freeSongWithheld({ ...none, left: 3 }, true)).toBe(true)
+    expect(freeSongWithheld(none, false)).toBe(false)
+    expect(freeSongWithheld({ ...none, subscribed: true }, true)).toBe(false)
+    expect(freeSongWithheld({ ...none, monthly: true }, true)).toBe(false)
+    // An older server says nothing, and nothing is read into it.
+    const { monthly: _monthly, ...older } = none
+    expect(freeSongWithheld(older, true)).toBe(false)
+  })
+
+  it('comes with a confirmed email, so only an unconfirmed one is asked', () => {
+    expect(confirmEmailForFreeSong(unconfirmed)).toBe(true)
+    expect(
+      confirmEmailForFreeSong({ ...unconfirmed, emailVerified: true }),
+    ).toBe(false)
+    expect(confirmEmailForFreeSong({ ...unconfirmed, email: null })).toBe(false)
+    expect(
+      confirmEmailForFreeSong({ ...unconfirmed, authProvider: 'anonymous' }),
+    ).toBe(false)
+    expect(CONFIRM_FOR_FREE_SONG_LINE).toBe(
+      'Confirm your email for 1 free song a month.',
+    )
   })
 })
 
