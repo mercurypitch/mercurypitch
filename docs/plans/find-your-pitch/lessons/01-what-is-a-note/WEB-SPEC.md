@@ -6,7 +6,7 @@ captions), and the **lesson explorer** for Season 1 (all lessons, Lesson 1 live,
 placeholders). A short **series blueprint** section closes it for the team. Copy is in
 [LESSON.md](LESSON.md); the curriculum is [../../CURRICULUM.md](../../CURRICULUM.md).
 
-It was built first as a claude.ai artifact page, which is the **proof preview** only (MASTER-PLAN
+It was built first as a private preview page, which is the **proof preview** only (MASTER-PLAN
 § 11). Its public home is the app's `mercurypitch.com/learn/01` (MASTER-PLAN § 12 item 9), built
 in the Phase 1 Lesson host track.
 
@@ -175,11 +175,14 @@ WebGL context per Merc; pause them (`setPaused(true)`) when the hero is off scre
 (`setPaused(true)` once its first frame has drawn) and skips the sing and celebrate reactions; the
 play buttons and the reveal carry the moment alone. (The bundle's `setStill` is not enough: it
 calms only the `hum` and `ride` states, not `idle`.) If WebGL fails (the mount throws), show the
-still images (`merc-blue.png`, `merc-orange.png`).
+still images (`merc-blue.png`, `merc-orange.png`). Show them too, without loading the renderer,
+when WebGL2 would run on the CPU: the browser reports a major performance caveat, or the renderer
+names itself as SwiftShader, llvmpipe, softpipe or the Basic Render Driver. Two Mercs drawn there
+held the main thread for about 11 s after load, and the page under them stopped answering.
 
-## Contract (the proof preview on the artifact host)
+## Contract (the proof preview on its preview host)
 
-The claude.ai artifact page is the proof preview only. Its host rules (the wrapper tags, the
+The preview page is the proof preview only. Its host rules (the wrapper tags, the
 script and stylesheet sources, no iframes) bind only the preview. The layout, accessibility,
 sound, motion and storage rules bind the page wherever it lives, and carry into the Phase 1 toy
 kit's contract.
