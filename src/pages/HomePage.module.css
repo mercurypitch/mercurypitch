@@ -7,7 +7,8 @@
   flex-shrink: 0;
 }
 
-/* Greeting left, the two "explain the app" doors right. They wrap under the
+/* Greeting left, the doors right: Learn and What's new explain the app,
+   Lessons leaves it for the Find Your Pitch lessons. They wrap under the
    greeting on a narrow phone rather than squeezing it — a date and a name
    are the point of this row, the buttons are the guests. */
 .head {
@@ -41,6 +42,8 @@
   color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 600;
+  /* Lessons is a link, so it would be underlined. */
+  text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
 }

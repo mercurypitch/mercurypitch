@@ -10,6 +10,7 @@
 // that reads but never plays is a failure nobody would think to report.
 
 import { expect, test } from '@playwright/test'
+import { dismissOverlays } from './helpers/ui'
 
 const TITLE = 'What is a note? Find Your Pitch, Lesson 1 | MercuryPitch'
 
@@ -51,6 +52,24 @@ test('the lesson boots: a guess unlocks the sounds, the explorer lights a path @
   )
 
   expect(errors).toEqual([])
+})
+
+test("Home's Lessons link, beside Learn and What's new, opens the lesson @smoke", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    ;(window as unknown as { E2E_TEST_MODE: boolean }).E2E_TEST_MODE = true
+  })
+  await page.goto('/')
+  await page.waitForSelector('#app-tabs', { timeout: 10_000 })
+  await dismissOverlays(page)
+
+  const lessons = page.getByTestId('home-lessons')
+  await expect(lessons).toHaveAttribute('href', '/learn/01')
+  await lessons.click()
+
+  await expect(page).toHaveURL(/\/learn\/01$/)
+  await expect(page).toHaveTitle(TITLE)
 })
 
 test('a visitor with the studio installed still gets the lesson, not the shell @smoke', async ({
