@@ -363,6 +363,9 @@
   background: none;
   color: var(--cloud-signal);
   font: 600 15px/20px var(--font-body, sans-serif);
+  /* Two even lines, never one word left on its own (WebKit 17.5 and
+     Chromium 114 on; older ones wrap as before). */
+  text-wrap: balance;
   cursor: pointer;
 }
 

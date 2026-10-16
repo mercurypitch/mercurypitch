@@ -75,7 +75,7 @@ describe('the Cloud offer in the shell', () => {
 
     fireEvent.click(
       within(offer).getByRole('button', {
-        name: 'Get 1 free song with a free account',
+        name: 'Sign up and confirm your email for 1 free song a month',
       }),
     )
 

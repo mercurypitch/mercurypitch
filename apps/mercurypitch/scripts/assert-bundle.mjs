@@ -192,7 +192,10 @@ const LAUNCH_OFFER = [
 const KARAOKE_STAGE_2 = [
   ['Import a song', "the Karaoke room's Import button"],
   ['Sing your own songs', 'the Cloud offer'],
-  ['Get 1 free song with a free account', "the Cloud offer's free account"],
+  [
+    'Sign up and confirm your email for 1 free song a month',
+    "the Cloud offer's free account",
+  ],
   // The offer's art, found by file name: it folds with the premium rooms'
   // pictures (vite.config.ts, PREMIUM_IMAGES).
   [/\/paywall-two-lights-[\w-]{8}\.webp$/u, "the Cloud offer's art"],
