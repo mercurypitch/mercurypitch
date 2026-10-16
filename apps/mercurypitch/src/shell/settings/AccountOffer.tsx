@@ -72,8 +72,11 @@ function giftLine(): string | null {
   return keepGiftLine(gift.songs, until)
 }
 
-/** The singer's voiceprint, small: the range, and the twin when there is one. */
-function VoiceprintCard(props: { print: KeepableVoiceprint }): JSX.Element {
+/** The singer's voiceprint, small: the range, and the twin when there is
+ *  one. Keep draws it, and so does the voiceprint ask (VoiceprintAsk.tsx). */
+export function VoiceprintCard(props: {
+  print: KeepableVoiceprint
+}): JSX.Element {
   return (
     <div class="mp-keep__print" data-testid="keep-voiceprint">
       <WaveIcon size={22} />
