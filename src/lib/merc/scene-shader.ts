@@ -104,7 +104,7 @@ uniform vec3 uEyeZ[2];
 uniform vec2 uEyeFrz;  // bend height and sway weight at the eyes, frozen
 uniform vec4 uEyeA;    // open L, open R, squint L, squint R
 uniform vec4 uEyeB;    // happy arc L, R, sleepy arc L, R
-uniform vec4 uMouth;   // smile, O, grin
+uniform vec4 uMouth;   // smile, O, grin, lip buzz
 uniform vec4 uColor;   // hue shift, emission, glow build, -
 uniform float uGradH[GRAD_N]; // palette: stop heights (padded past 1)
 uniform vec3 uGradC[GRAD_N];  // palette: stop colours, linear

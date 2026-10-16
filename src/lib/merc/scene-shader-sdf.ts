@@ -127,6 +127,11 @@ float sdCrown(vec3 q) {
   return sdRoundCone(qc, CONE_R1, CONE_R2, CONE_H) * (1.0 - pn);
 }
 float sdBodyQ(vec3 q) {
+  // A lip roll (uMouth.w) fills his cheeks: a little wider about the mouth.
+  if (uMouth.w > 0.0) {
+    float cy = (q.y - 0.36) / 0.11;
+    q.x /= 1.0 + 0.03 * uMouth.w * exp(-cy * cy);
+  }
   float e = sdEllipsoid(q - vec3(0.0, BULB_Y, 0.0), BULB_R);
   float c = sdCrown(q);
   float d = -smin(-smin(e, c, BODY_K), q.y - FLAT_Y, FLAT_K);

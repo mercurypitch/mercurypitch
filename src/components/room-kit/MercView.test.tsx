@@ -1,5 +1,5 @@
 // ============================================================
-// MercView: reduced motion and the rings reach the stage
+// MercView: reduced motion, the rings and the mouth reach the stage
 // ============================================================
 
 import { render } from '@solidjs/testing-library'
@@ -80,6 +80,27 @@ describe('MercView', () => {
     // Assert
     expect(merc.options[0]).toMatchObject({ still: true })
     expect(merc.still).toEqual([])
+  })
+
+  it('hands the stage the mouth the room names, and none when it names none', async () => {
+    // Arrange, act
+    render(() => (
+      <MercView
+        state={() => 'ride'}
+        voice={() => SILENT}
+        mouth="buzz"
+        testId="lip-merc"
+      />
+    ))
+    await vi.waitFor(() => expect(merc.options).toHaveLength(1))
+    render(() => (
+      <MercView state={() => 'hum'} voice={() => SILENT} testId="glide-merc" />
+    ))
+    await vi.waitFor(() => expect(merc.options).toHaveLength(2))
+
+    // Assert: none is the closed smile (the stage's default).
+    expect(merc.options[0]).toMatchObject({ state: 'ride', mouth: 'buzz' })
+    expect(merc.options[1]).toMatchObject({ state: 'hum', mouth: undefined })
   })
 
   it('hands the stage his rings when the room turns them off', async () => {

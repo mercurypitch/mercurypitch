@@ -19,6 +19,7 @@
 // measures the chip's bottom and the controls' top and hands them in.
 
 import { MERC_FEET } from '@/components/room-kit/MercView'
+import { CORE } from '@/components/room-kit/ribbon'
 import { BAY, INTRO, PLAYHEAD_X, RESULT_ASPECT, WAVE } from './bay-geometry'
 
 /** Merc's canvas in the bay, square, W (his body is about 0.30 W wide in it). */
@@ -33,11 +34,25 @@ export const MERC_RESULT = { x: 0.289, feetY: 1.8548, sizeW: 0.56 } as const
 /** How far over the crest and under the root the voice takes him, W. */
 export const ABOVE_CREST_W = 0.12
 export const UNDER_ROOT_W = 0.08
+/** The voice's ribbon: the shared look at 390 px, a little wider, as on the bridge. */
+export const RIBBON_REFERENCE_W = 390
+export const RIBBON_WIDEN = 1.15
+/** Half the ribbon's core across, W (4.9 px on a 390 px phone). */
+export const RIBBON_HALF_W =
+  (CORE[0].width * RIBBON_WIDEN) / 2 / RIBBON_REFERENCE_W
 /**
- * He sits in the water, not on it: his feet this far under the voice's
- * line, W (screens 2 and 3 draw the voice 0.14 to 0.18 W over his feet).
+ * How far his toes reach under MERC_FEET while he rides, W: 2.6 px on a
+ * 390 px phone (measured on a held note, 16 Oct).
  */
-export const MERC_SINK_W = 0.15
+const RIDE_TOES_W = 0.0067
+/**
+ * His feet this far under the voice's line, W: negative, so they rest on
+ * the ribbon's top edge and the whole line shows under him. On the path he
+ * stands on the dots; flat, the dots cross him; sharp, he stands clear
+ * over them. Screens 2 and 3 sink him 0.14 to 0.18 W into the wave, the
+ * line across his middle; the owner asked for it under his feet (16 Oct).
+ */
+export const MERC_SINK_W = -(RIBBON_HALF_W + RIDE_TOES_W)
 /** Px kept between the chip or the controls and what is drawn near them. */
 const CLEAR_PX = 4
 
@@ -188,8 +203,8 @@ export interface MercBox {
 }
 
 /**
- * Merc's canvas riding world y `feetY` (the voice's line; his feet sit
- * MERC_SINK_W under it) at screen x `x` (W) under `zoom`, kept under the
+ * Merc's canvas riding world y `feetY` (the voice's line; his feet rest
+ * on it, MERC_SINK_W) at screen x `x` (W) under `zoom`, kept under the
  * chip however sharp the voice.
  */
 export function mercBoxAt(
