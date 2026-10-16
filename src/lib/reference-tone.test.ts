@@ -9,6 +9,7 @@
 // tail. A cut at full level is a pop on a PA.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { lowNoteOctaveLevel, normalizedFundamental, } from './low-note-reinforcement'
 import { startReferenceTone } from './reference-tone'
 
 interface FakeParam {
@@ -30,11 +31,21 @@ const fakeParam = (value = 0): FakeParam => ({
 })
 
 function fakeContext() {
-  const gains: Array<{ gain: FakeParam }> = []
+  const gains: Array<{
+    gain: FakeParam
+    connect: ReturnType<typeof vi.fn>
+    disconnect: ReturnType<typeof vi.fn>
+  }> = []
   const oscillators: Array<{
+    type?: string
+    frequency: FakeParam
+    start: ReturnType<typeof vi.fn>
     stop: ReturnType<typeof vi.fn>
+    connect: ReturnType<typeof vi.fn>
+    disconnect: ReturnType<typeof vi.fn>
     onended: (() => void) | null
   }> = []
+  const filters: Array<{ disconnect: ReturnType<typeof vi.fn> }> = []
   const node = () => ({ connect: vi.fn(), disconnect: vi.fn() })
   const ctx = {
     currentTime: 10,
@@ -58,15 +69,19 @@ function fakeContext() {
       oscillators.push(o)
       return o
     }),
-    createBiquadFilter: vi.fn(() => ({
-      ...node(),
-      frequency: fakeParam(),
-      Q: fakeParam(),
-      type: 'lowpass',
-    })),
+    createBiquadFilter: vi.fn(() => {
+      const f = {
+        ...node(),
+        frequency: fakeParam(),
+        Q: fakeParam(),
+        type: 'lowpass',
+      }
+      filters.push(f)
+      return f
+    }),
     createPeriodicWave: vi.fn(() => ({})),
   }
-  return { ctx, gains, oscillators }
+  return { ctx, gains, oscillators, filters }
 }
 
 describe('startReferenceTone', () => {
@@ -185,5 +200,93 @@ describe('startReferenceTone', () => {
       expect(anchors[0]).toBe(0)
       expect(gains[0]!.gain.setTargetAtTime).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('startReferenceTone, asked to carry a low note', () => {
+  // The premium rooms ask for the classic engine's help on a small speaker:
+  // below C3 a sine an octave up fades in, at the engine's level relative to
+  // the note's fundamental, under the note's own filter and envelope.
+  const PIANO_PARTIALS = [0, 1, 0.55, 0.32, 0.2, 0.12, 0.07, 0.04]
+  const D2 = 38
+  const D2_HZ = 440 * 2 ** ((D2 - 69) / 12)
+
+  it("adds a sine an octave up under the note, at the engine's level", () => {
+    // Arrange
+    const { ctx, gains, oscillators, filters } = fakeContext()
+
+    // Act
+    startReferenceTone(ctx as unknown as AudioContext, D2, 1.1, undefined, {
+      lowNoteOctave: true,
+    })
+
+    // Assert
+    expect(oscillators).toHaveLength(2)
+    const [note, octave] = oscillators
+    expect(octave!.type).toBe('sine')
+    expect(octave!.frequency.value).toBeCloseTo(D2_HZ * 2, 6)
+    const level = gains.find((g) =>
+      octave!.connect.mock.calls.some(([to]) => to === g),
+    )
+    expect(level).toBeDefined()
+    expect(level!.gain.value).toBeCloseTo(
+      lowNoteOctaveLevel(D2_HZ) * normalizedFundamental(PIANO_PARTIALS),
+      9,
+    )
+    // Through the note's own filter, so its envelope shapes both.
+    expect(level!.connect).toHaveBeenCalledWith(filters[0])
+    expect(note!.connect).toHaveBeenCalledWith(filters[0])
+    // Starts and ends with the note.
+    expect(octave!.start).toHaveBeenCalledWith(10)
+    expect(octave!.stop.mock.calls).toEqual(note!.stop.mock.calls)
+  })
+
+  it('stops with the note when the note is stopped early', () => {
+    // Arrange
+    const { ctx, oscillators } = fakeContext()
+    const tone = startReferenceTone(
+      ctx as unknown as AudioContext,
+      D2,
+      3,
+      undefined,
+      { lowNoteOctave: true },
+    )
+    ctx.currentTime = 11
+
+    // Act
+    tone.stop()
+
+    // Assert
+    const [note, octave] = oscillators
+    expect(octave!.stop.mock.calls).toEqual(note!.stop.mock.calls)
+  })
+
+  it('leaves nothing connected once the note has ended', () => {
+    // Arrange
+    const { ctx, gains, oscillators } = fakeContext()
+    startReferenceTone(ctx as unknown as AudioContext, D2, 1.1, undefined, {
+      lowNoteOctave: true,
+    })
+
+    // Act
+    oscillators[0]!.onended?.()
+
+    // Assert
+    for (const osc of oscillators) expect(osc.disconnect).toHaveBeenCalled()
+    for (const gain of gains) expect(gain.disconnect).toHaveBeenCalled()
+  })
+
+  it('adds nothing at C3 and above, or when not asked', () => {
+    const at = (midi: number, lowNoteOctave?: boolean): number => {
+      const { ctx, oscillators } = fakeContext()
+      startReferenceTone(ctx as unknown as AudioContext, midi, 1.1, undefined, {
+        lowNoteOctave,
+      })
+      return oscillators.length
+    }
+    expect(at(48, true)).toBe(1)
+    expect(at(60, true)).toBe(1)
+    expect(at(D2, false)).toBe(1)
+    expect(at(D2)).toBe(1)
   })
 })

@@ -23,7 +23,9 @@ export function createBridgeTones(): BridgeTones {
   const sounding = new Set<ReferenceTone>()
   return {
     play: (ctx, midi, seconds) => {
-      const tone = startReferenceTone(ctx, midi, seconds, roomOutput(ctx))
+      const tone = startReferenceTone(ctx, midi, seconds, roomOutput(ctx), {
+        lowNoteOctave: true,
+      })
       sounding.add(tone)
       void tone.done.then(() => sounding.delete(tone))
     },

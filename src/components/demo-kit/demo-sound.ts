@@ -77,7 +77,11 @@ export function createDemoSoundtrack<Take extends SungDemoTake>(
   return {
     lead,
     tone: (midi) => {
-      if (!stopped) void playReferenceTone(ctx, midi, TONE_SECONDS, bus)
+      if (!stopped) {
+        void playReferenceTone(ctx, midi, TONE_SECONDS, bus, {
+          lowNoteOctave: true,
+        })
+      }
     },
     sing: (take, midi) => {
       if (stopped) return
@@ -89,6 +93,7 @@ export function createDemoSoundtrack<Take extends SungDemoTake>(
           vibrato,
           timbre,
           flutter,
+          lowNoteOctave: true,
         }),
       )
     },

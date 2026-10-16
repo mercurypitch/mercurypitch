@@ -56,6 +56,7 @@ export function createDemoSound(
           take.root,
           COUNT_IN_TONE_SEC,
           roomOutput(ctx),
+          { lowNoteOctave: true },
         )
         tones.add(tone)
         void tone.done.then(() => tones.delete(tone))

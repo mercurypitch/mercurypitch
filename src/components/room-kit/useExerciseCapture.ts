@@ -222,7 +222,9 @@ export function useExerciseCapture(
       // Released while the clock unlocked (a start given up, or the room
       // left): no note.
       if (ctx === null || mine !== generation) return
-      const tone = startReferenceTone(ctx, midi, seconds, roomOutput(ctx))
+      const tone = startReferenceTone(ctx, midi, seconds, roomOutput(ctx), {
+        lowNoteOctave: true,
+      })
       tones.add(tone)
       await tone.done
       tones.delete(tone)

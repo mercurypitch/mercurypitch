@@ -14,6 +14,8 @@
 // before starting the next and the moment recording begins.
 // ============================================================
 
+import { lowNoteOctaveLevel, normalizedFundamental, } from '@/lib/low-note-reinforcement'
+
 /** Master level for demo audio — examples, not performances. */
 const DEMO_GAIN = 0.07
 
@@ -230,6 +232,13 @@ export interface VoiceContourOptions {
    * to `1 - depth` of the line's level, as the lips open and close.
    */
   flutter?: VoiceFlutter
+  /**
+   * Wherever the line is below C3, a sine an octave up fades in under the
+   * voice's own filter and envelope, at the classic engine's level relative
+   * to the voice's fundamental (low-note-reinforcement.ts, which says what
+   * it measures as). The premium rooms ask for it.
+   */
+  lowNoteOctave?: boolean
 }
 
 export interface VoiceFlutter {
@@ -302,6 +311,8 @@ const TIMBRE_FILTERS: Readonly<
  * plays little of a low voice's fundamental (the Hear tone's own trick).
  */
 const OOH_PARTIALS = [0, 1, 0.62, 0.38, 0.24, 0.14, 0.08, 0.045, 0.025]
+/** The fundamental's amplitude in the "ooh", as Web Audio plays it. */
+const OOH_FUNDAMENTAL = normalizedFundamental(OOH_PARTIALS)
 const oohCache = new WeakMap<BaseAudioContext, PeriodicWave>()
 /**
  * The voice at full level. A held note (level 0.8) measures level with the
@@ -352,7 +363,7 @@ function scheduleRun(
   run: VoiceRun,
   at: (t: number) => number,
   gain: AudioParam,
-  detune: AudioParam,
+  detunes: readonly AudioParam[],
 ): void {
   const first = points[run.from]
   const onset = at(first.t)
@@ -361,10 +372,12 @@ function scheduleRun(
     VOICE_PEAK * first.level,
     onset + VOICE_ATTACK,
   )
-  detune.setValueAtTime(first.cents, onset)
+  for (const detune of detunes) detune.setValueAtTime(first.cents, onset)
   for (let i = run.from + 1; i <= run.to; i++) {
     const when = at(points[i].t)
-    detune.linearRampToValueAtTime(points[i].cents, when)
+    for (const detune of detunes) {
+      detune.linearRampToValueAtTime(points[i].cents, when)
+    }
     if (when > onset + VOICE_ATTACK) {
       gain.linearRampToValueAtTime(VOICE_PEAK * points[i].level, when)
     }
@@ -444,13 +457,24 @@ export function playVoiceContour(
   voice.connect(filter)
   filter.connect(level)
 
-  const runs = voicedRuns(points)
-  for (const run of runs) {
-    scheduleRun(points, run, at, level.gain, voice.detune)
-  }
-
   const stopAt = end + VOICE_RELEASE + STOP_SLACK
   const graph: AudioNode[] = [voice, filter, level, master]
+  const voices: OscillatorNode[] = [voice]
+  const octave =
+    options.lowNoteOctave === true
+      ? lowOctave(ctx, points, options.hz, at)
+      : null
+  if (octave !== null) {
+    octave.level.connect(filter)
+    voices.push(octave.voice)
+    graph.push(octave.voice, octave.level)
+  }
+
+  const runs = voicedRuns(points)
+  const detunes = voices.map((each) => each.detune)
+  for (const run of runs) {
+    scheduleRun(points, run, at, level.gain, detunes)
+  }
   const flutter = options.flutter
   if (flutter === undefined) level.connect(master)
   else {
@@ -469,7 +493,7 @@ export function playVoiceContour(
       depth.gain.linearRampToValueAtTime(vibrato.cents, onset + vibrato.rampSec)
     }
     lfo.connect(depth)
-    depth.connect(voice.detune)
+    for (const detune of detunes) depth.connect(detune)
     lfo.start(start)
     lfo.stop(stopAt)
     track(lfo)
@@ -479,8 +503,40 @@ export function playVoiceContour(
   voice.onended = () => {
     for (const node of graph) node.disconnect()
   }
-  voice.start(start)
-  voice.stop(stopAt)
-  track(voice)
+  for (const each of voices) {
+    each.start(start)
+    each.stop(stopAt)
+    track(each)
+  }
   return handle
+}
+
+/**
+ * The low-note octave of a line (VoiceContourOptions.lowNoteOctave): a sine
+ * at twice `hz`, whose level follows the line's pitch point by point, or
+ * null for a line that never goes below C3. Its pitch follows the line
+ * through the same detune as the voice.
+ */
+function lowOctave(
+  ctx: AudioContext,
+  points: readonly VoicePoint[],
+  hz: number,
+  at: (t: number) => number,
+): { voice: OscillatorNode; level: GainNode } | null {
+  const levels = points.map(
+    (point) =>
+      lowNoteOctaveLevel(hz * 2 ** (point.cents / 1200)) * OOH_FUNDAMENTAL,
+  )
+  if (!levels.some((value) => value > 0)) return null
+  const voice = ctx.createOscillator()
+  voice.type = 'sine'
+  voice.frequency.value = hz * 2
+  const level = ctx.createGain()
+  levels.forEach((value, i) => {
+    const when = at(points[i].t)
+    if (i === 0) level.gain.setValueAtTime(value, when)
+    else level.gain.linearRampToValueAtTime(value, when)
+  })
+  voice.connect(level)
+  return { voice, level }
 }

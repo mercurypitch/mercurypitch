@@ -55,7 +55,7 @@ describe("Merc's call", () => {
     expect(callTimes(overlapping, 1).endAt).toBe(3)
   })
 
-  it('sings the phrase as the synth line, from its first note, at the start asked for, through the room output', () => {
+  it('sings the phrase as the synth line, from its first note, at the start asked for, through the room output, with its low-note octave', () => {
     played.calls = []
     const schedule = SYNTH_CALL.sing(ctx, notes, 4.2)
 
@@ -66,6 +66,7 @@ describe("Merc's call", () => {
           hz: midiToFrequency(57),
           startAt: 4.2,
           destination: ROOM_OUTPUT,
+          lowNoteOctave: true,
         },
       },
     ])

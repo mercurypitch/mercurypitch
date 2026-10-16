@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { VoicePoint } from './demo-audio'
 import { flutterMakeup, LIP_FLUTTER, playHoldTone, playVoiceContour, } from './demo-audio'
+import { lowNoteOctaveLevel, normalizedFundamental, } from './low-note-reinforcement'
 
 type Call = readonly [
   method: string,
@@ -312,6 +313,103 @@ describe("playVoiceContour's lip buzz", () => {
     const [master, level] = fake.gains
     expect(level.connections).toEqual([master])
     expect(fake.oscillators).toHaveLength(1)
+  })
+})
+
+describe("playVoiceContour's low-note octave", () => {
+  // Asked (the premium rooms ask), a line that goes below C3 gets the
+  // classic engine's help on a small speaker: a sine an octave up, at the
+  // engine's level relative to the voice's fundamental, fading in below C3
+  // as the line's pitch moves, under the voice's own filter and envelope.
+  const OOH_PARTIALS = [0, 1, 0.62, 0.38, 0.24, 0.14, 0.08, 0.045, 0.025]
+  const E2 = 82.41
+
+  function low(hz = E2, lowNoteOctave = true) {
+    const fake = fakeContext()
+    const handle = playVoiceContour(fake.ctx, LINE, {
+      hz,
+      startAt: 11,
+      vibrato: VIBRATO,
+      lowNoteOctave,
+    })
+    // voice, octave, vibrato
+    const [voice, octave, lfo] = fake.oscillators
+    const octaveLevel = fake.gains.find((gain) =>
+      octave?.connections.includes(gain),
+    )
+    return { ...fake, handle, voice, octave, lfo, octaveLevel }
+  }
+
+  it('sings a sine an octave up, following the line in cents', () => {
+    const { voice, octave } = low()
+    expect(octave.type).toBe('sine')
+    expect(octave.frequency.value).toBeCloseTo(E2 * 2, 9)
+    expect(octave.detune.calls).toEqual(voice.detune.calls)
+  })
+
+  it("sets the octave's level from the line's pitch, point by point", () => {
+    const { octaveLevel } = low()
+    expect(octaveLevel).toBeDefined()
+    const fundamental = normalizedFundamental(OOH_PARTIALS)
+    const expected = LINE.map((point, i) => [
+      i === 0 ? 'set' : 'linear',
+      expect.closeTo(
+        lowNoteOctaveLevel(E2 * 2 ** (point.cents / 1200)) * fundamental,
+        9,
+      ),
+      11 + point.t,
+    ])
+    expect(octaveLevel?.gain.calls).toEqual(expected)
+  })
+
+  it("goes through the voice's filter, so the voice's envelope shapes it", () => {
+    const { octaveLevel, filters, voice } = low()
+    expect(octaveLevel?.connections).toEqual([filters[0]])
+    expect(voice.connections).toEqual([filters[0]])
+  })
+
+  it('wavers with the vibrato, and starts and stops with the voice', () => {
+    const { octave, voice, gains } = low()
+    const depth = gains.find((gain) => gain.connections.includes(voice.detune))
+    expect(depth?.connections).toContain(octave.detune)
+    expect(octave.starts).toEqual(voice.starts)
+    expect(octave.stops).toEqual(voice.stops)
+  })
+
+  it('closes with the voice on stop(), and leaves nothing connected', () => {
+    const { handle, octave, voice, gains, oscillators } = low()
+    handle.stop()
+    expect(octave.stops.at(-1)).toBe(voice.stops.at(-1))
+    voice.onended?.()
+    for (const node of [...gains, ...oscillators]) {
+      expect(node.disconnected, node.kind).toBe(true)
+    }
+  })
+
+  it('fades out as the line climbs past C3', () => {
+    // From just under C3 to a tone above it: the octave is there at the
+    // start and gone once the line is over C3.
+    const fake = fakeContext()
+    playVoiceContour(
+      fake.ctx,
+      [
+        { t: 0, cents: 0, level: 0.8 },
+        { t: 1, cents: 200, level: 0.8 },
+        { t: 1.5, cents: 200, level: 0 },
+      ],
+      { hz: 123.47, startAt: 11, lowNoteOctave: true },
+    )
+    const [, octave] = fake.oscillators
+    const level = fake.gains.find((gain) => octave.connections.includes(gain))
+    const values = level?.gain.calls.map(([, value]) => value) ?? []
+    expect(values[0]).toBeGreaterThan(0)
+    expect(values[1]).toBe(0)
+  })
+
+  it('adds nothing to a line at C3 and above, or when not asked', () => {
+    // Voice and vibrato only, as before.
+    expect(low(220).oscillators).toHaveLength(2)
+    expect(low(E2, false).oscillators).toHaveLength(2)
   })
 })
 

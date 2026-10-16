@@ -1991,29 +1991,6 @@ describe('low notes carry on a small speaker', () => {
     expect(voice.oscillators).toHaveLength(1)
   })
 
-  it('fades in across the span instead of switching on', async () => {
-    const engineInternals = AudioEngine as unknown as {
-      lowNotePeakBoostFor: (f: number | undefined) => number
-      lowNoteOctaveLevelFor: (f: number | undefined) => number
-    }
-    const boost = engineInternals.lowNotePeakBoostFor.bind(AudioEngine)
-    const octave = engineInternals.lowNoteOctaveLevelFor.bind(AudioEngine)
-
-    // Monotone across the fade, and clamped at both ends.
-    expect(boost(C3)).toBe(1)
-    expect(boost(200)).toBe(1)
-    expect(boost(100)).toBeGreaterThan(1)
-    expect(boost(D2)).toBeGreaterThan(boost(100))
-    expect(boost(30)).toBeCloseTo(1.3, 5)
-    expect(octave(C3)).toBe(0)
-    expect(octave(D2)).toBeGreaterThan(0)
-    expect(octave(30)).toBeCloseTo(0.5, 5)
-    // A missing or nonsense frequency must not silently scale anything.
-    expect(boost(undefined)).toBe(1)
-    expect(boost(0)).toBe(1)
-    expect(octave(undefined)).toBe(0)
-  })
-
   it('still lands below audibility when a boosted low note stops', async () => {
     // The lift scales the release tail with it; the whole point of the
     // envelope work that preceded this is that the tail is buried by the

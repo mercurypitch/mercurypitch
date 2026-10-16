@@ -14,16 +14,28 @@ vi.mock('@/lib/pitch-f0-stream', () => pitch)
 
 // The room's notes: each one started, and whether it was stopped.
 const notes = vi.hoisted(() => ({
-  started: [] as { midi: number; stop: () => void; stopped: boolean }[],
+  started: [] as {
+    midi: number
+    options: unknown
+    stop: () => void
+    stopped: boolean
+  }[],
 }))
 vi.mock('@/lib/reference-tone', () => ({
-  startReferenceTone: (_ctx: AudioContext, midi: number) => {
+  startReferenceTone: (
+    _ctx: AudioContext,
+    midi: number,
+    _seconds?: number,
+    _destination?: unknown,
+    options?: unknown,
+  ) => {
     let settle: () => void = () => undefined
     const done = new Promise<void>((resolve) => {
       settle = resolve
     })
     const note = {
       midi,
+      options,
       stopped: false,
       stop: () => {
         note.stopped = true
@@ -251,6 +263,14 @@ describe('useLongNoteCapture', () => {
       expect(prepare?.()).toBe(ROOM_TAIL_MS - 100)
       vi.advanceTimersByTime(ROOM_TAIL_MS)
       expect(prepare?.()).toBe(0)
+    })
+
+    it('plays the note with its low-note octave', async () => {
+      const { capture, dispose } = mount()
+      void capture.playTone(45)
+      await vi.waitFor(() => expect(notes.started).toHaveLength(1))
+      expect(notes.started[0].options).toEqual({ lowNoteOctave: true })
+      dispose()
     })
 
     it('stops its note when the mic goes back, and when the room goes', async () => {

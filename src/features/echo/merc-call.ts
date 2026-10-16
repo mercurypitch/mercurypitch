@@ -66,7 +66,12 @@ export const SYNTH_CALL: CallVoice = {
     const sound = playVoiceContour(
       ctx,
       phraseToVoicePoints({ notes }, refMidi),
-      { hz: midiToFrequency(refMidi), startAt, destination: roomOutput(ctx) },
+      {
+        hz: midiToFrequency(refMidi),
+        startAt,
+        destination: roomOutput(ctx),
+        lowNoteOctave: true,
+      },
     )
     return { ...times, stop: () => sound.stop() }
   },
