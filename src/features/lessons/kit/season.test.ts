@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { ancestors, EDGES, LESSONS, lessonPath, unlocks } from './season'
+import { ancestors, EDGES, lessonPath, LESSONS, unlocks } from './season'
 
 /** Lesson n's lit edges as { 'a-b': role }, leaving out the edges off its path. */
 function litEdges(n: number): Record<string, string> {

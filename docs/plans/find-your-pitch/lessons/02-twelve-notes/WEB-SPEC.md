@@ -8,8 +8,11 @@ the Phase 1 toy kit, so it is also that kit's test: "two lessons share it with n
 [../01-what-is-a-note/WEB-SPEC.md](../01-what-is-a-note/WEB-SPEC.md)) is the code to promote into
 the kit, never to copy.
 
-Like Lesson 1's, it is built first as a claude.ai artifact page, the proof preview only. Its public
-home is MASTER-PLAN § 12 item 9 (recommended: `mercurypitch.com/learn/02`).
+Its public home is `mercurypitch.com/learn/02` (MASTER-PLAN § 12 item 9, decided 16 October
+2026): a hand-written document `learn/02.html` with its module in `src/features/lessons/lesson-02/`,
+built on the shared parts in `src/features/lessons/kit/`, the way Lesson 1's page (`learn/01.html`,
+`src/features/lessons/lesson-01/`, in build as this is written) is. A proof preview on the
+claude.ai artifact host is optional; if one is made, its host rules bind only the preview.
 
 ## Look
 
@@ -59,33 +62,35 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
 8. **Quick check**: Lesson 1's quiz component with LESSON.md's four questions, three answers each,
    shuffled (seeded per question), one-line feedback for every answer, a check icon and ink (not
    gold) on the right one; question 2 has its own play button (E4 then F4). Ids `l02-q1` to
-   `l02-q4`. Answers stay in localStorage on the preview; on the public host each first answer is
-   a Lesson telemetry event behind consent (MASTER-PLAN Phase 1). A later visit asks them afresh,
-   and Lesson 3's page will open with two of them.
+   `l02-q4`. Answers stay in the viewer's browser (localStorage) until the Lesson telemetry track
+   exists; then each first answer is a telemetry event behind consent (MASTER-PLAN Phase 1). A
+   later visit asks them afresh, and Lesson 3's page will open with two of them.
 9. **Wrap**: the three recap lines, the challenge, the practise card (Leap, with today's caveat,
    and Contour as an optional warm-up), the next lesson's hook on a card that opens Lesson 3 in the
    explorer. Free play unlocks here: every control of the step toys on one stage (playbook rule
    17: guided first, free play after).
-10. **Watch the episode**: Lesson 1's player section (chapters beside it, captions on, a transcript
-    disclosure); until Lesson 2's delivery master exists, the chapters and transcript with an
-    "episode in production" note.
+10. **Watch the episode**: the kit's episode section (`kit/episode.ts`): the film as an MP4 on R2,
+    1080p with a 720p copy for phones (MASTER-PLAN § 12 item 7, decided), its URLs in
+    `lesson-02/film.ts`; captions as a same-origin VTT track, the transcript and the chapters built
+    from the film's captions and `chapters.json`. Until the files are uploaded the section shows the
+    poster, the chapters and the transcript with "Film coming soon".
 11. **Lesson explorer**: Lesson 1's, with Lesson 2 as the current node; Lesson 2 marks done when its
     quiz is finished; its card's practise link reads as LESSON.md's Wrap.
-12. **Footer**: Lesson 1's, with the practise link (`mercurypitch.com/ear-lab`, `?lesson=02` on the
-    public host) and the same credits (scratch voices, synthesised examples, placeholder sung
-    notes).
+12. **Footer**: Lesson 1's, with the practise link (`mercurypitch.com/ear-lab?lesson=02`) and the
+    same credits (scratch voices to be re-voiced, every example synthesised, Merc's sung notes
+    ElevenLabs-derived, whose rights the owner holds, MASTER-PLAN § 12 item 1).
 
 ## Toys: what each reuses, and what is new
 
 | Toy                           | Reuses from Lesson 1's page                                                    | New in Lesson 2                                                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| 1. Spiral and keyboard        | Step 5's spiral and step 6's keyboard, as one kit component                    | Dim beads that light once heard; Climb; Look down; all keys lit and playable; Straighten; step bars; Lift out the five |
-| 2. Semitone ruler with cents  | Step 2's dial (its slider, readout and held tone), turned vertical             | The cents scale, the one-semitone zoom, the app-style monitor that flips at 50 cents, the 100-cent glide             |
+| 1. Spiral and keyboard        | Step 5's spiral and step 6's keyboard (`lesson-01/toy-spiral.ts`, `toy-spiral-draw.ts`), promoted into the kit as one component | Dim beads that light once heard; Climb; Look down; all keys lit and playable; Straighten; step bars; Lift out the five |
+| 2. Semitone ruler with cents  | Step 2's dial (`lesson-01/toy-dial.ts`: its slider, readout and held tone), turned vertical | The cents scale, the one-semitone zoom, the app-style monitor that flips at 50 cents, the 100-cent glide             |
 | 3. Two-names toggle           | Step 5's per-bead labels                                                       | Sharps, flats or both on every black key, page-wide; Sharp and Flat arrows; the rare white-key names                |
-| 4. Semitone or tone?          | The quiz's feedback lines and the tone player                                  | All new: a ten-round ear game, two answers                                                                          |
-| 5. Slide guide (Sing it)      | The Sing it card, Merc's synthesised "ooh", the hum-along ring                 | Four lanes and Merc's amber path; the guide dot; the octave-up slide                                                |
-| 6. Warm-up retrieval          | The quick-check component and Lesson 1's questions 2 and 4                     | Its place at the top of the page, and asking by Lesson 1's ids                                                      |
-| 7. Predict widgets            | Lesson 1's predict widget (choice locks, play buttons unlock, a kind reveal)  | Two of them: note or gap (cold open), B to C or C to D (step 3)                                                    |
+| 4. Semitone or tone?          | The quiz's feedback lines (`kit/quiz.ts`) and the tone player (`kit/sound.ts`) | All new: a ten-round ear game, two answers                                                                          |
+| 5. Slide guide (Sing it)      | The Sing it card (`lesson-01/sing.ts`), Merc's synthesised "ooh", the hum-along ring | Four lanes and Merc's amber path; the guide dot; the octave-up slide                                                |
+| 6. Warm-up retrieval          | The quick-check component (`kit/quiz.ts`) and Lesson 1's questions 2 and 4 (`lesson-01/quiz-questions.ts`) | Its place at the top of the page, and asking by Lesson 1's ids                                                      |
+| 7. Predict widgets            | Lesson 1's predict widget (`lesson-01/predict.ts`: choice locks, play buttons unlock, a kind reveal), promoted into the kit | Two of them: note or gap (cold open), B to C or C to D (step 3)                                                    |
 | 8. Go deeper drawer           | none                                                                           | All new: a disclosure (`details`) for the ratio, the cent's origin and "sharp" meaning a little high                |
 
 ### 1. Spiral and keyboard
@@ -153,7 +158,8 @@ vertical (pitch is height).
 - Ten rounds. Each plays one step inside A3 to A4, a semitone or a tone, chosen at random from a
   seeded sequence; two answers, Semitone and Tone. Feedback names the keys and the sound, never the
   listener: "E to F: a semitone, no key between them" or "C to D: a tone, with C♯ between". A miss
-  replays the step slowly. A count "7 of 10" at the end; no rating, no streak.
+  replays the step slowly; after two misses in a row the game adds the playbook's line "If that
+  felt tricky, good: that's learning" (rule 15). A count "7 of 10" at the end; no rating, no streak.
 - A switch **Up and down** mixes in falling steps, because Leap plays both (FACTS 32); off at
   first.
 - The two buttons sit side by side, each at least 44 px tall; keys 1 and 2 answer, Space replays.
@@ -173,7 +179,8 @@ vertical (pitch is height).
 ### 6. Warm-up retrieval
 
 - The quick-check component, at the top of the page, with Lesson 1's questions 2 and 4 under their
-  Lesson 1 ids (the first time the page anatomy's item 3 runs). Options are reshuffled and earlier
+  Lesson 1 `question_id`s (the first time the page anatomy's item 3 runs; the kit's `QuizQuestion`
+  has no id field yet, so the Lesson telemetry track adds one). Options are reshuffled and earlier
   answers are never shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). On the
   public host each answer is a telemetry event with its `visit_index`.
 
@@ -185,17 +192,19 @@ vertical (pitch is height).
 
 ## Audio
 
-Every tone is synthesised in the page with Web Audio at the frequencies in FACTS 6 (Lesson 1's soft
-tone and envelope), started only by a tap; Merc's "ooh" as in Toys 5. Nothing autoplays. The page
-has no music bed.
+Every tone is synthesised in the page with Web Audio at the frequencies in FACTS 6, through the
+kit's `sound.ts` (`hz()` in `kit/notes.ts` is the same formula), with the house envelope rules
+(`.claude/memory/audio-pop-free-playback.md`), started only by a tap; Merc's "ooh" as in Toys 5.
+Nothing autoplays. The page has no music bed.
 
 ## Mercs
 
-Lesson 1's setup, unchanged: the film's own bundles published beside the page, one WebGL context
-per Merc, `medium` quality on phones, orange with the warm look, turned toward each other, paused
-off screen; a still image if WebGL fails. Reactions: blue `sing` while A3 plays, orange `sing`
-while A4 plays, `ride` during the slides, orange `celebrate` once after the cold-open reveal (no
-sparkles). Under `prefers-reduced-motion` or Pause animations each Merc holds a still frame and
+Lesson 1's setup: the app's own renderer (`src/lib/merc/renderer.ts`) through the kit
+(`kit/merc-duo.ts`), loaded after first paint, orange with the warm look and warm light
+(`kit/merc-warm.ts`), one WebGL context per Merc, `medium` quality on phones, turned toward each
+other, paused off screen; a still image if WebGL fails. Reactions: blue `sing` while A3 plays,
+orange `sing` while A4 plays, `ride` during the slides, orange `celebrate` once after the
+cold-open reveal (no sparkles). Under `prefers-reduced-motion` or Pause animations each Merc holds a still frame and
 skips the reactions; the buttons and the reveal carry the moment.
 
 ## Practise link: what exists and what needs engineering
@@ -214,11 +223,12 @@ skips the reactions; the buttons and the reveal carry the moment.
 
 ## Contract
 
-Lesson 1's contract, unchanged and binding (layout, accessibility, sound, motion and storage
-rules; the artifact host's wrapper rules bind only the preview): 16 px side gutters, no sideways
-scroll at 390 px, `min-width: 0` on text children, touch targets of at least 44 px, visible focus,
-a single dark theme with every colour a token and an explicit body background, sound only after a
-tap, localStorage only for per-viewer conveniences inside try/catch, and the whole page usable
-with no sound, no WebGL and no storage. Page QA before publishing (PRODUCTION-PIPELINE § 5) adds
+Lesson 1's contract, unchanged and binding, including what its page on the app changed from the
+preview (Lesson 1 WEB-SPEC, "On the app"): no CDN at all, self-hosted fonts, Web Animations in
+place of GSAP, and practise links that carry `?lesson=02`. Then the layout, accessibility, sound,
+motion and storage rules: 16 px side gutters, no sideways scroll at 390 px, `min-width: 0` on text
+children, touch targets of at least 44 px, visible focus, a single dark theme with every colour a
+token and an explicit body background, sound only after a tap, localStorage only for per-viewer
+conveniences inside try/catch, and the whole page usable with no sound, no WebGL and no storage. Page QA before publishing (PRODUCTION-PIPELINE § 5) adds
 two checks for this page: every black key and tile reachable and named by keyboard in each toggle
 state, and the ruler's slider operable by keys alone.

@@ -75,6 +75,7 @@ the series stays in MASTER-PLAN § 12, and the questions this lesson raises are 
 50. Brief front matter `renders: ask`, `unattended: false`: no unattended Lesson 2 production run has been authorised; flip them when the owner does.
 51. Every frequency comes from f = 440 x 2^((m - 69) / 12), rounded to two decimals and re-checked by script (FACTS 6); the timings come from a simulation of `tools/cues.py` at 2.6 words a second, so SCRIPT.md and STORYBOARD.md agree to the tenth of a second until the first voice pass re-times both.
 52. Considered and left out, though true: Voice Mirror's 12-cent full-marks window (a tuning value that changes between releases), why there are twelve notes (the Pythagorean comma, Season 2's T29), quarter tones, and C sharp and D flat differing in other tunings (Season 2).
+53. Aligned with the owner's decisions of 16 October 2026, made while this draft was written (MASTER-PLAN § 12 items 1, 2, 7 and 9): the Echo sung notes stay, because the owner holds their rights; the film's sources move to the private repository; and the page lives at `/learn/02`, built from `src/features/lessons/kit/` like Lesson 1's page, with the episode as an MP4 on R2. Orange's name and pronouns are still open, so no document gives orange a pronoun.
 
 ## Open for the owner
 

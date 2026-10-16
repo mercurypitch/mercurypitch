@@ -12,15 +12,14 @@
 // interpolate is defined in season.ts or here; the poster URL, which comes
 // from the page, is set as a property instead.
 
-import { clamp, mulberry32, q, qa, svg, TAU } from './dom'
-import { Grains, metronomeSVG } from './explorer-figures'
-import type { Surface } from './frame-loop'
-import { addDrawer, surface, watch } from './frame-loop'
-import { Motion, reducedMotion } from './motion-switch'
-import { COLOR } from './notes'
+import { clamp, q, qa, svg } from './dom'
+import type { PlateFigure } from './explorer-figures'
+import { cardFigure, plateFigure, pluckString } from './explorer-figures'
+import { addDrawer, watch } from './frame-loop'
+import { reducedMotion } from './motion-switch'
 import { Done } from './progress'
 import type { Lane, Lesson, Practise } from './season'
-import { EDGES, LESSONS, lessonPath, PREREQ, TOPICS, unlocks } from './season'
+import { EDGES, lessonPath, LESSONS, PREREQ, TOPICS, unlocks } from './season'
 
 export interface ExplorerOptions {
   /** The episode poster, for Lesson 1's card. */
@@ -48,8 +47,6 @@ const ARCS: readonly (readonly [string, string, number, number])[] = [
   ['Hear it', 'Lessons 1 to 7', 1, 7],
   ['Shape it', 'Lessons 8 to 14', 8, 14],
 ]
-const PLATE = { n: 3, m: 5, sign: -1 } as const
-const STRAIGHT = 'M0 12 L1000 12'
 
 const pad = (n: number): string => String(n).padStart(2, '0')
 const check = (px: number): string =>
@@ -104,7 +101,7 @@ function cardMarkup(L: Lesson, st: Status, len: string | undefined): string {
   return `<div class="main">
       <p class="eyebrow"><span class="fig">${L.n === 0 ? 'Trailer' : `Lesson ${pad(L.n)}`}</span> ${laneName(L)} <span class="chip" style="letter-spacing:0;text-transform:none"><i style="--c:${chipCol}"></i>${stLabel}</span></p>
       <h3>${L.title}</h3>
-      <svg class="string" viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden="true"><path d="${STRAIGHT}"/></svg>
+      <svg class="string" viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0 12 L1000 12"/></svg>
       <p class="hookq">${L.hook}</p>
       <dl class="ex-rows">
         ${L.topics.length > 0 ? `<dt>Topics</dt><dd>${topics}</dd>` : ''}
@@ -118,55 +115,6 @@ function cardMarkup(L: Lesson, st: Status, len: string | undefined): string {
     </div>`
 }
 
-function figure(L: Lesson, poster: string): HTMLElement | null {
-  if (L.fig === undefined) return null
-  const f = document.createElement('figure')
-  f.className = 'ex-fig'
-  f.style.margin = '0'
-  if (L.fig === 'poster') {
-    const img = document.createElement('img')
-    img.src = poster
-    img.alt = 'A frame from the episode: 220 Hz and 440 Hz, times two'
-    img.loading = 'lazy'
-    const cap = document.createElement('figcaption')
-    cap.textContent = 'From the episode: the cold open'
-    f.append(img, cap)
-  } else if (L.fig === 'metronome') {
-    f.innerHTML = `${metronomeSVG()}<figcaption>The stats site's metronome, its arm on 2 and 4</figcaption>`
-  } else {
-    f.innerHTML =
-      '<div class="plate"><canvas aria-hidden="true"></canvas></div><figcaption>Chladni plate: sand gathers where the plate stays still, the standing-wave motif for harmonics</figcaption>'
-  }
-  return f
-}
-
-/** The string under a card's title, plucked once as the card opens. */
-function pluckString(el: HTMLElement): void {
-  const path = el.querySelector('.string path')
-  if (path === null || reducedMotion()) return
-  const t0 = performance.now()
-  const frame = (now: number): void => {
-    const t = (now - t0) / 1000
-    if (t >= 1.5) {
-      path.setAttribute('d', STRAIGHT)
-      return
-    }
-    const env = Math.exp(-t * 3.2)
-    const a = Math.cos(t * TAU * 7.5)
-    const b = Math.cos(t * TAU * 15 + 0.6) * 0.35
-    let d = 'M0 12'
-    for (let i = 1; i <= 48; i++) {
-      const l = i / 48
-      const y =
-        12 + 9 * env * (Math.sin(Math.PI * l) * a + Math.sin(TAU * l) * b)
-      d += ` L${(l * 1000).toFixed(1)} ${y.toFixed(2)}`
-    }
-    path.setAttribute('d', d)
-    requestAnimationFrame(frame)
-  }
-  requestAnimationFrame(frame)
-}
-
 export function createExplorer(opts: ExplorerOptions): Explorer {
   const graph = q('#graph')
   const list = q('#exList')
@@ -178,7 +126,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   let nodes = new Map<number, HTMLButtonElement>()
   let labels = new Map<number, HTMLDivElement>()
   let edgeEls: SVGPathElement[] = []
-  let plate: { sf: Surface; grains: Grains } | null = null
+  let plate: PlateFigure | null = null
 
   const status = (L: Lesson): Status =>
     Done.has(L.n) ? 'done' : L.ready === true ? 'ready' : 'planned'
@@ -190,8 +138,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     const el = document.createElement('article')
     el.className = 'card ex-card'
     el.innerHTML = cardMarkup(L, status(L), lengths.get(L.n) ?? L.len)
-    const fig = figure(L, opts.poster)
-    if (fig !== null) el.appendChild(fig)
+    if (L.fig !== undefined) el.appendChild(cardFigure(L.fig, opts.poster))
     el.addEventListener('click', (e) => {
       const target = e.target instanceof Element ? e.target : null
       const go = target?.closest<HTMLElement>('[data-go]')
@@ -208,46 +155,12 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     return el
   }
 
-  function startPlate(el: HTMLElement): void {
-    plate = null
-    const c = el.querySelector<HTMLCanvasElement>('.plate canvas')
-    if (c === null) return
-    let sf: Surface
-    try {
-      sf = surface(c)
-    } catch {
-      return // no 2D canvas: the plate stays bare
-    }
-    const grains = new Grains(1500, PLATE, mulberry32(7))
-    grains.retune(PLATE, 1500)
-    grains.settle(Motion.paused ? 3 : 0.4)
-    plate = { sf, grains }
-  }
-
   // the card sits in the host on a wide screen and inside the list on a phone
   const hostSeen = watch(cardHost)
   const listSeen = watch(list)
   addDrawer({
     active: () => plate !== null && (hostSeen() || listSeen()),
-    draw(_now, dt) {
-      if (plate === null) return
-      const { sf, grains } = plate
-      const { ctx, w, h } = sf.fit()
-      if (!Motion.paused) grains.step(dt)
-      ctx.fillStyle = COLOR.blue
-      for (let i = 0; i < grains.capacity; i++) {
-        const a = grains.alpha[i]
-        if (a <= 0) continue
-        ctx.globalAlpha = Math.min(1, a) * 0.9
-        ctx.fillRect(
-          Math.round(grains.x[i] * w - 1),
-          Math.round(grains.y[i] * h - 1),
-          2,
-          2,
-        )
-      }
-      ctx.globalAlpha = 1
-    },
+    draw: (_now, dt) => plate?.draw(dt),
   })
 
   function renderCard(): void {
@@ -264,7 +177,8 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
       cardHost.textContent = ''
       cardHost.appendChild(el)
     }
-    startPlate(el)
+    const canvas = el.querySelector<HTMLCanvasElement>('.plate canvas')
+    plate = canvas === null ? null : plateFigure(canvas)
     pluckString(el)
   }
 

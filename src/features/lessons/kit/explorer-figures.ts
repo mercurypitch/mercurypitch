@@ -1,13 +1,21 @@
 // ============================================================
-// Explorer figures — the metronome and the Chladni plate's grains
+// Explorer figures — the drawings on a lesson card
 // ============================================================
 //
-// Two of the season's motifs, drawn small for the lesson cards, both from
-// the stats site. The metronome is instrument-figures.js's, recoloured with
-// the page tokens (its arm swings in CSS). The plate is chladni-plate.js's:
-// grains slide towards the nodal lines of
+// The figure beside a card (Lesson 1's poster, the metronome, the Chladni
+// plate) and the string under its title. The metronome and the plate come
+// from the stats site. The metronome is instrument-figures.js's, recoloured
+// with the page tokens (its arm swings in CSS). The plate is
+// chladni-plate.js's: grains slide towards the nodal lines of
 //   u = cos(n pi x) cos(m pi y) + sign cos(m pi x) cos(n pi y),
 // shaken in proportion to |u|, so sand gathers where the plate stays still.
+
+import { mulberry32, TAU } from './dom'
+import type { Surface } from './frame-loop'
+import { surface } from './frame-loop'
+import { Motion, reducedMotion } from './motion-switch'
+import { COLOR } from './notes'
+import type { Lesson } from './season'
 
 /** The metronome as SVG markup; one per page at a time (its gradient has a fixed id). */
 export function metronomeSVG(): string {
@@ -26,7 +34,7 @@ export interface PlateMode {
   readonly sign: 1 | -1
 }
 
-/** The plate's displacement u at a point and its gradient. */
+/** The plate's displacement u at a point, and its gradient. */
 export interface FieldSample {
   u: number
   gx: number
@@ -126,4 +134,95 @@ export class Grains {
     for (let k = Math.ceil(seconds * 60); k > 0; k--) this.step(1 / 60)
     for (let i = 0; i < this.capacity; i++) this.alpha[i] = 1
   }
+}
+
+const PLATE: PlateMode = { n: 3, m: 5, sign: -1 }
+
+/** Lesson 13's plate in its canvas, shaken on every frame it is drawn. */
+export interface PlateFigure {
+  draw(dt: number): void
+}
+
+/** The card's plate, already settled into its pattern; null without a 2D canvas. */
+export function plateFigure(canvas: HTMLCanvasElement): PlateFigure | null {
+  let sf: Surface
+  try {
+    sf = surface(canvas)
+  } catch {
+    return null
+  }
+  const grains = new Grains(1500, PLATE, mulberry32(7))
+  grains.retune(PLATE, 1500)
+  grains.settle(Motion.paused ? 3 : 0.4)
+  return {
+    draw(dt) {
+      const { ctx, w, h } = sf.fit()
+      if (!Motion.paused) grains.step(dt)
+      ctx.fillStyle = COLOR.blue
+      for (let i = 0; i < grains.capacity; i++) {
+        const a = grains.alpha[i]
+        if (a <= 0) continue
+        ctx.globalAlpha = Math.min(1, a) * 0.9
+        ctx.fillRect(
+          Math.round(grains.x[i] * w - 1),
+          Math.round(grains.y[i] * h - 1),
+          2,
+          2,
+        )
+      }
+      ctx.globalAlpha = 1
+    },
+  }
+}
+
+/** The figure beside a lesson's card. The poster URL is a property, never markup. */
+export function cardFigure(
+  fig: NonNullable<Lesson['fig']>,
+  poster: string,
+): HTMLElement {
+  const f = document.createElement('figure')
+  f.className = 'ex-fig'
+  f.style.margin = '0'
+  if (fig === 'poster') {
+    const img = document.createElement('img')
+    img.src = poster
+    img.alt = 'A frame from the episode: 220 Hz and 440 Hz, times two'
+    img.loading = 'lazy'
+    const cap = document.createElement('figcaption')
+    cap.textContent = 'From the episode: the cold open'
+    f.append(img, cap)
+  } else if (fig === 'metronome') {
+    f.innerHTML = `${metronomeSVG()}<figcaption>The stats site's metronome, its arm on 2 and 4</figcaption>`
+  } else {
+    f.innerHTML =
+      '<div class="plate"><canvas aria-hidden="true"></canvas></div><figcaption>Chladni plate: sand gathers where the plate stays still, the standing-wave motif for harmonics</figcaption>'
+  }
+  return f
+}
+
+/** Plucks the string under a card's title once (its first two modes, dying away over 1.5 s). */
+export function pluckString(card: HTMLElement): void {
+  const path = card.querySelector('.string path')
+  if (path === null || reducedMotion()) return
+  const t0 = performance.now()
+  const frame = (now: number): void => {
+    const t = (now - t0) / 1000
+    if (t >= 1.5) {
+      path.setAttribute('d', 'M0 12 L1000 12')
+      return
+    }
+    const env = Math.exp(-t * 3.2)
+    const a = Math.cos(t * TAU * 7.5)
+    const b = Math.cos(t * TAU * 15 + 0.6) * 0.35
+    let d = 'M0 12'
+    for (let i = 1; i <= 48; i++) {
+      const l = i / 48
+      const y =
+        12 + 9 * env * (Math.sin(Math.PI * l) * a + Math.sin(TAU * l) * b)
+      d += ` L${(l * 1000).toFixed(1)} ${y.toFixed(2)}`
+    }
+    path.setAttribute('d', d)
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
 }
