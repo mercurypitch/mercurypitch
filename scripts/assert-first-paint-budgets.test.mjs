@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import test from 'node:test'
 import { documentScriptUrls, documentStylesheetUrls, FIRST_PAINT_BUDGETS_KB, FIRST_PAINT_CSS_BUDGETS_KB, FIRST_PAINT_FORBIDDEN_SOURCES, firstPaintOf, judgeFirstPaint, measureFirstPaint, staticImportSpecifiers, } from './assert-first-paint-budgets.mjs'
 
@@ -16,6 +16,7 @@ function distWith(t, files) {
   for (const [name, { source = '', bytes }] of Object.entries(files)) {
     const padding =
       bytes === undefined ? '' : ' '.repeat(Math.max(0, bytes - source.length))
+    mkdirSync(dirname(join(dist, name)), { recursive: true })
     writeFileSync(join(dist, name), source + padding)
   }
   return dist
@@ -76,6 +77,21 @@ test('a document that runs no script is not weighed', async (t) => {
   const measured = await measureFirstPaint(dist)
 
   assert.deepEqual([...measured.keys()], ['room.html'])
+})
+
+test('weighs a document in a folder by its path, and nothing under assets', async (t) => {
+  const dist = distWith(t, {
+    'room.html': { source: page('/assets/entry.js') },
+    'learn/01.html': { source: page('/assets/lesson.js') },
+    'assets/entry.js': { bytes: KB },
+    'assets/lesson.js': { bytes: 3 * KB },
+    'assets/frame.html': { source: page('/assets/entry.js') },
+  })
+
+  const measured = await measureFirstPaint(dist)
+
+  assert.deepEqual([...measured.keys()], ['learn/01.html', 'room.html'])
+  assert.equal(measured.get('learn/01.html')?.bytes, 3 * KB)
 })
 
 test('refuses an import that leaves the build', async (t) => {
@@ -150,7 +166,7 @@ test('every ceiling in the table is a whole number of KB, for a document', () =>
   const entries = Object.entries(FIRST_PAINT_BUDGETS_KB)
   assert.ok(entries.length > 0)
   for (const [name, budget] of entries) {
-    assert.match(name, /^[a-z0-9-]+\.html$/)
+    assert.match(name, /^(?:[a-z0-9-]+\/)?[a-z0-9-]+\.html$/)
     assert.ok(Number.isInteger(budget) && budget > 0, `${name}: ${budget}`)
   }
 })
@@ -299,7 +315,7 @@ test('every CSS ceiling is a whole number of KB, for a document', () => {
   const entries = Object.entries(FIRST_PAINT_CSS_BUDGETS_KB)
   assert.ok(entries.length > 0)
   for (const [name, budget] of entries) {
-    assert.match(name, /^[a-z0-9-]+\.html$/)
+    assert.match(name, /^(?:[a-z0-9-]+\/)?[a-z0-9-]+\.html$/)
     assert.ok(Number.isInteger(budget) && budget > 0, `${name}: ${budget}`)
   }
 })
