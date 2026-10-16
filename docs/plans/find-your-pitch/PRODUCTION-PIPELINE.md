@@ -1,12 +1,16 @@
 # Find Your Pitch: production pipeline
 
-How a lesson becomes a film and a web page, as built and proven on Lesson 1. The film follows the
-repository's `motion-designer` skill (`.claude/skills/motion-designer/SKILL.md`): HyperFrames
-compositions on one seekable GSAP timeline, a fresh `motion-critic` after every stage, a measured
-quality bar. This file records what a teaching film adds to that pipeline.
+How a lesson becomes a film and a web page, as built on Lesson 1 (all 17 Merc passes and all 21
+scenes built; the full-film critic rounds and the delivery render are still to come). The film
+follows the repository's `motion-designer` skill (`.claude/skills/motion-designer/SKILL.md`):
+HyperFrames compositions on one seekable GSAP timeline, a fresh `motion-critic` after every stage,
+a measured quality bar. This file records what a teaching film adds to that pipeline.
 
 The Lesson 1 project is `output/motion/lesson-01/` (gitignored, per the skill's house rules). Its
-`tools/` and `assets/lib/` are the seed of the reusable film kit planned for Phase 1.
+`tools/` and `assets/lib/` are the seed of the reusable film kit planned for Phase 1. Its documents
+(brief, facts, script, storyboard, handoffs, build guide, decisions, captions) are kept in this
+repo in `lessons/01-what-is-a-note/`; where the compositions and tools live is MASTER-PLAN § 12
+item 2.
 
 ## 1. The project layout
 
@@ -40,20 +44,20 @@ Toolchain: Node 22, FFmpeg with `ebur128`, `tblend`, `signalstats`, `scdet`, Pyt
 `HYPERFRAMES_SKIP_SKILLS=1 HYPERFRAMES_NO_TELEMETRY=1`. Run the skill's smoke test once per
 session.
 
-| #   | Step              | Command                                                                                                                                                               | Output and gate                                                                                       |
-| --- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| 1   | Scaffold          | `npx --yes hyperframes@0.8.97 init output/motion/lesson-NN --non-interactive`; copy the kit; fetch OFL fonts from `google/fonts` with their licences                  | Director block appended to the project's CLAUDE.md and AGENTS.md                                      |
-| 2   | Brief and facts   | write `BRIEF.md`, `FACTS.md`                                                                                                                                          | Every claim sourced (code beats PRODUCT.md beats CHANGELOG beats BRAND)                               |
-| 3   | Script            | write `script.json`                                                                                                                                                   | Script critic: true, teachable, every orange line a deep question or sincere guess                    |
-| 4   | Voice and clock   | `python tools/cues.py`                                                                                                                                                | Per-line WAV and loudness envelope; `cues.json`; pacing report (target 140 to 165 wpm while speaking) |
-| 5   | Sound             | `python tools/mix.py`                                                                                                                                                 | `full.wav`, `music-only.wav`, stems; examples at exact pitch; bed ducked under examples               |
-| 6   | Scenes table      | `python3 tools/gen-root.py`                                                                                                                                           | `assets/scenes.js`, `index.html`, placeholder scenes so the film always renders                       |
-| 7   | Storyboard        | write `STORYBOARD.md`, `HANDOFFS.md`                                                                                                                                  | Fresh critic, fix, verification critic (Lesson 1 took two rounds plus a third set of fixes)           |
-| 8   | Merc performances | `python3 tools/merc-shots.py` then `node tools/merc-pass.mjs merc/shots/*.json`                                                                                       | One straight-alpha WebM per performance; render in the background while scenes are built              |
-| 9   | Scenes            | builders, in parallel, each owning contiguous scenes; static Merc `<video data-merc>` tags timed by `python3 tools/merc-tags.py`; `node tools/lab.mjs <scene> --clip` | Each scene proven by a lab render (not a snapshot); `merc-tags.py --check` and `check` at 0 errors    |
-| 10  | Captions          | `python3 tools/captions.py`                                                                                                                                           | SRT and VTT, with sound descriptions in the gaps                                                      |
-| 11  | Render            | `npx --yes hyperframes@0.8.97 render --fps 60 --quality delivery --strict`                                                                                            | Measured with `scripts/measure.py render`; fresh critic per round to SHIP                             |
-| 12  | Deliver           | master, music-only mux, contact sheet, captions, LEDGER, DELIVERY                                                                                                     | Owner review                                                                                          |
+| #   | Step              | Command                                                                                                                                                               | Output and gate                                                                                                                |
+| --- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Scaffold          | `npx --yes hyperframes@0.8.97 init output/motion/lesson-NN --non-interactive`; copy the kit; fetch OFL fonts from `google/fonts` with their licences                  | Director block appended to the project's CLAUDE.md and AGENTS.md                                                               |
+| 2   | Brief and facts   | write `BRIEF.md`, `FACTS.md`                                                                                                                                          | Every claim sourced (code beats PRODUCT.md beats CHANGELOG beats BRAND)                                                        |
+| 3   | Script            | write `script.json`                                                                                                                                                   | Script critic: true, teachable, every orange line a deep question or sincere guess; voice lessons: the vocal coach signs off   |
+| 4   | Voice and clock   | `python tools/cues.py`                                                                                                                                                | Per-line WAV and loudness envelope; `cues.json`; pacing report (target 140 to 165 wpm while speaking)                          |
+| 5   | Sound             | `python tools/mix.py`                                                                                                                                                 | `full.wav`, `music-only.wav`, stems; examples at exact pitch; bed only in act transitions, silent under narration and examples |
+| 6   | Scenes table      | `python3 tools/gen-root.py`                                                                                                                                           | `assets/scenes.js`, `index.html`, placeholder scenes so the film always renders                                                |
+| 7   | Storyboard        | write `STORYBOARD.md`, `HANDOFFS.md`                                                                                                                                  | Fresh critic, fix, verification critic (Lesson 1 took two rounds plus a third set of fixes)                                    |
+| 8   | Merc performances | `python3 tools/merc-shots.py` then `node tools/merc-pass.mjs merc/shots/*.json`                                                                                       | One straight-alpha WebM per performance; render in the background while scenes are built                                       |
+| 9   | Scenes            | builders, in parallel, each owning contiguous scenes; static Merc `<video data-merc>` tags timed by `python3 tools/merc-tags.py`; `node tools/lab.mjs <scene> --clip` | Each scene proven by a lab render (not a snapshot); `merc-tags.py --check` and `check` at 0 errors                             |
+| 10  | Captions          | `python3 tools/captions.py`                                                                                                                                           | SRT and VTT, with sound descriptions in the gaps                                                                               |
+| 11  | Render            | `npx --yes hyperframes@0.8.97 render --fps 60 --quality delivery --strict`                                                                                            | Measured with `scripts/measure.py render`; fresh critic per round to SHIP                                                      |
+| 12  | Deliver           | master, music-only mux, contact sheet, captions, LEDGER, DELIVERY                                                                                                     | Owner review; voice lessons: the vocal coach signs off the film and page                                                       |
 
 ## 3. Decisions a teaching film adds to the skill
 
@@ -70,19 +74,56 @@ session.
   are split into phrase events so the picture can land on a word.
 - **Merc.** Pre-render each performance once (`merc-pass.mjs`), from the cue sheet
   (`merc-shots.py`): he sings on his sung cues, talks on his lines (mouth from the line's loudness;
-  sound arcs off), listens while the other speaks. Each performance is ONE straight-alpha WebM with
-  alpha = max(A, R, G, B) over his premultiplied colour, so his bloom and floor light survive and
-  he composites correctly in any moved, scaled or faded layer. (A matte plus a `plus-lighter`
-  light pass is exact only when nothing above it creates a stacking context: a camera layer breaks
-  it into a black square. And always force `format=rgba` in the ffmpeg graph: left to negotiate,
-  ffmpeg once dropped the alpha.) The orange Merc's warm floor light comes from a build-time swap
-  of the shader's hard-coded cool constants (`build-merc.mjs`), never an edit of `src/lib/merc`.
+  sound arcs off), listens while the other speaks. Each performance is ONE straight-alpha VP9 WebM
+  (`<id>-merc.webm`) with alpha = max(A, R, G, B) over his premultiplied colour, so his bloom and
+  floor light survive and he composites correctly in any moved, scaled or faded layer; each scene
+  holds static `<video data-merc>` tags timed by `tools/merc-tags.py` (trap 4). Always force
+  `format=rgba` in the ffmpeg graph: left to negotiate, ffmpeg once dropped the alpha. (The earlier
+  matte plus `plus-lighter` light-pass pair is abandoned: it is exact only when nothing above it
+  creates a stacking context, so a camera layer turned it into a black square.) The orange Merc's
+  warm floor light comes from a build-time swap of the shader's hard-coded cool constants
+  (`build-merc.mjs`), never an edit of `src/lib/merc`. Measured cost per frame on a 4-core CPU
+  with SwiftShader at `medium` (Lesson 1, `merc/render.log`); the other plan files cite this table.
+  Its first column is the encoded frame that `render.log` prints, which at `medium` is three
+  quarters of the shot file's `size` (`src/lib/merc/constants.ts`): a shot of `size` 640 encodes
+  at 480 x 480. A builder sets the shot `size`, so read the table by its shot column, not by the
+  frame column.
+
+  | Encoded frame | Shot `size` | CPU                    | Seconds per frame | Lesson 1 passes                    |
+  | ------------- | ----------- | ---------------------- | ----------------- | ---------------------------------- |
+  | 225 px        | 300         | alone                  | 0.26              | m19                                |
+  | 270 to 315 px | 360 to 420  | alone                  | 0.47 to 0.62      | m03, m14, m17                      |
+  | 360 to 420 px | 480 to 560  | alone                  | 0.64 to 0.85      | m01, m06, m18-duo, m21             |
+  | 480 px        | 640         | alone                  | 1.08              | m18                                |
+  | 390 px        | 520         | shared by seven agents | 1.5 to 2.3        | m10                                |
+  | 390 px        | 520         | shared                 | 1.24 to 1.28      | m10-blue crescent-guard re-renders |
+  | 315 px        | 420         | shared                 | 2.13              | m03-blue re-render                 |
+
+  Sharing the CPU costs up to four times as much: alone, 390 px ran at 0.71 to 0.76 s (m18-duo,
+  m21) and m03-blue at 0.54 s, against 1.24 to 2.3 s and 2.13 s shared. The cause is the shared
+  CPU, not the container restart before m10: m14, m17, m18, m18-duo, m19 and m21 ran after the same
+  restart at the solo speeds above.
+
 - **Frame rate.** 60 fps master; Merc at 30 fps (each frame shown twice: animation on twos).
-- **Audio.** Every musical example is synthesised at its exact frequency in `mix.py`; Merc's sung
-  notes are the Echo voice set (placeholders) and the app's own "ooh" timbre; the bed is a quiet
-  open-fifth pad in the key, ducked to silence half a second around every example; one soft
-  whoosh per act change. A music-only render is not needed: the music-only mix muxed onto the same
-  picture is identical by construction.
+- **Audio.** Every musical example is synthesised at its exact frequency in `mix.py`. Merc's sung
+  notes are the app's Echo "ooh" set: ElevenLabs takes re-pitched onto exact contours, development
+  placeholders that the app withholds from its store build (`src/features/echo/merc-voice-set.ts`);
+  the two-voice tune (s17) uses the app's synthesised "ooh" (`src/lib/demo-audio.ts`). Confirm the
+  Echo samples' rights before any public release, or switch the public film to the synthesised
+  "ooh" (MASTER-PLAN § 12 item 1). The bed is a quiet open-fifth pad in the key that plays only in
+  act transitions and is silent under narration and under every musical example. `mix.py` mutes it
+  around every spoken line, example, sung note and hum or predict window, merging windows closer
+  than 1.2 s so it never pumps between lines. In Lesson 1 the merge closes the short Act 2, 3 and 4
+  changes, so the bed sounds at the title-to-Act 1 change (22.6 to 25.8 s) and under the end card,
+  the film's last transition. `mix.py` mutes it around every `line`, `sound`, `sing` and `pause` cue, merging gaps under 1.2 s, so in Lesson 1 it sounds only under the title (22.5 to 26.0 s, measured from the bed stem). One soft whoosh per act change. A music-only render is not
+  needed: the music-only mix muxed onto the same picture is identical by construction.
+- **Quality bar additions.** Two measured checks join the skill's quality bar. The bed is silent
+  inside every spoken line, musical example and pause (the bed stem's RMS is zero there); Lesson 1 passes (measured).
+  And a colour-blindness gate: a Machado et al. (2009) simulation (protan, deutan, tritan, severity
+  1.0) and CIEDE2000 over the full palette (the series code, the pitch-canvas set, both Merc
+  bodies), with the worst case recorded beside the canvas set's 12.4
+  ([research/production-research.md](research/production-research.md)). Pitch-canvas scenes use
+  the app's canvas set; the series code governs explanatory diagrams (MASTER-PLAN § 5).
 - **Captions.** Upload the SRT; never burn full captions into the long form (redundancy). Keep the
   bottom 17 % of every frame free of essential content.
 - **Parallel builders.** A build guide, a shared kit, exact handoff frames between builders, and
@@ -114,20 +155,40 @@ session.
    or isolation): see the Merc note above.
 8. The workflow tool runs at most two agents at once on a 4-core machine; long parallel builds use
    separate background agents.
-9. Merc on SwiftShader costs about 0.4 s (300 px) to 1.0 s (640 px) per frame at `medium`;
-   the CPU is shared with everything else, so start his performances early.
-10. A cloud container can restart mid-production and stop every background process (renders,
+9. Merc on SwiftShader costs from about a quarter of a second (a 225 px frame, shot `size` 300)
+   to about a second (480 px, shot `size` 640) per frame at `medium`, and up to four times that
+   when other agents share the CPU (the table in § 3): start his performances early.
+10. The shader can paint an opaque black crescent along Merc's crown for one frame at the top of a
+    fast stretch (hop take-off, celebrate), at any quality (seen in 5 of Lesson 1's 17 passes,
+    every hop). `merc-pass.mjs` guards each frame: more than 40 opaque near-black pixels in the
+    top 40 % of the frame means it re-renders that frame at a time nudged by up to 12 ms. The
+    renderer bug itself is in `src/lib/merc` and in the app too (MERC-BIBLE backlog).
+11. A cloud container can restart mid-production and stop every background process (renders,
     builders). Files survive. Keep long jobs resumable: one output file per Merc pass, written only
     when complete, so a restarted queue needs only the passes that are missing or empty.
 
 ## 5. The web lesson
 
-Built from the same sources: the written lesson (`lessons/NN/LESSON.md`), the facts, the captions
-(VTT track and transcript), the film (an MP4 encoded for the web), the colour code and type, and a
-shared toy kit (Phase 1). Lesson 1's page is a single HTML file: sound gate, predict-then-reveal
-opener, step deck with live toys (vibration, loud versus high, octave fit, spiral to keyboard),
-misconception card, sung checkpoint (hum along with a reference; the live microphone version lives
-in the app), quick check, the embedded episode with chapters and captions, and the lesson explorer
-with all fourteen lessons as placeholders. Checks before publishing: phone (390 px) and desktop
-widths in light and dark, keyboard focus, reduced motion, no sideways scroll, every audio button
-user-initiated.
+Built from the same sources: the written lesson (`lessons/NN-<slug>/LESSON.md`), the facts, the
+captions (VTT track and transcript), the film (HLS at 1080p30 from the master,
+`tools/web-video.sh`), the colour code and type, and a shared toy kit (Phase 1). Lesson 1's page is
+a single HTML file: sound gate, predict-then-reveal opener, step deck with live toys (vibration,
+loud versus high, octave fit, spiral to keyboard) that double as the Playground, misconception card,
+sung checkpoint (hum along with Merc, unscored: nothing listens; to be scored, sing it back on "ooh"
+in Voice Mirror), quick check (four questions), Wrap, the episode with chapters and captions, and
+the lesson explorer (Season 1 and the trailer; Lesson 1 ready, the rest planned).
+
+Where it lives: Lesson 1's page is built as a claude.ai artifact page, the proof preview only, and
+the no-iframe rule in its contract (WEB-SPEC) binds only that preview. The public lessons live
+where MASTER-PLAN § 12 item 9 puts them (recommended: a `mercurypitch.com/learn/NN` route in the
+app, on the same origin as the app's analytics, accounts and `?lesson=` marker), built by the
+Phase 1 Lesson host track, whose exit is Lesson 1 served at its public URL with CTAs carrying
+`?lesson=01`. The episode's player there, self-hosted HLS or a YouTube embed (§ 12 item 7), is
+decided with the host. Until the Lesson telemetry track exists, quiz answers stay in the viewer's
+browser.
+
+Checks before publishing: phone (390 px) and desktop widths in light and dark, keyboard focus, no
+sideways scroll, every audio button user-initiated, and motion. Under `prefers-reduced-motion` the
+Merc idle loops freeze (`setPaused(true)` or a still frame), and the staff vibration and the
+spiral's drift stop; a visible "Pause animations" toggle in the masthead lets anyone stop them
+(WCAG 2.2.2). The shared toy kit's contract carries both rules.

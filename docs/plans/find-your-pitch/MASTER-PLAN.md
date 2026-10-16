@@ -4,18 +4,22 @@ A music theory and singing tutorial series by MercuryPitch, in two forms per les
 (short text, many motion visuals, interactive toys, a lesson explorer) and a YouTube explainer
 built entirely in code, hosted by blue Merc and orange Merc.
 
-Status, 16 Oct 2026: Phase 0 is done. Research, curriculum, playbook, host bible and production
-pipeline are written; Lesson 1 exists as a script, a storyboard, a rendered film and a web lesson
-with the explorer (see § 11). Phase 1 starts with the owner decisions in § 12.
+Status, 16 Oct 2026: Phase 0 is in progress, and is done only when Lesson 1's delivery master and
+LEDGER exist. Written: the research, curriculum, playbook, host bible and production pipeline, and
+Lesson 1's documents (script, storyboard and the rest, see § 11). Built: all 17 Merc passes and
+all 21 scenes of the Lesson 1 film; the web lesson with the explorer is in build. Still to come:
+the full-film critic rounds, the delivery render and the LEDGER. The film runs 4:53 (293.2 s) on
+the current cue sheet. Phase 1 starts with the owner decisions in § 12.
 
-| Document                                                 | What it holds                                                      |
-| -------------------------------------------------------- | ------------------------------------------------------------------ |
-| This file                                                | Vision, decisions, formats, pipeline, phases, measurement, risks   |
-| [CURRICULUM.md](CURRICULUM.md)                           | Season 1 lesson cards, the topic graph, Seasons 2 and 3            |
-| [TEACHING-PLAYBOOK.md](TEACHING-PLAYBOOK.md)             | The 25 teaching rules with their evidence; claims and safety rules |
-| [MERC-BIBLE.md](MERC-BIBLE.md)                           | The hosts: roles, looks, voices, behaviour, production, backlog    |
-| [PRODUCTION-PIPELINE.md](PRODUCTION-PIPELINE.md)         | Step by step, tool by tool, for the film and the web lesson        |
-| [lessons/01-what-is-a-note/](lessons/01-what-is-a-note/) | Lesson 1: brief, facts, script, storyboard, written lesson, ledger |
+| Document                                                 | What it holds                                                        |
+| -------------------------------------------------------- | -------------------------------------------------------------------- |
+| This file                                                | Vision, decisions, formats, pipeline, phases, measurement, risks     |
+| [CURRICULUM.md](CURRICULUM.md)                           | Season 1 lesson cards, the topic graph, Seasons 2 and 3              |
+| [TEACHING-PLAYBOOK.md](TEACHING-PLAYBOOK.md)             | The 25 teaching rules with their evidence; claims and safety rules   |
+| [MERC-BIBLE.md](MERC-BIBLE.md)                           | The hosts: roles, looks, voices, behaviour, production, backlog      |
+| [PRODUCTION-PIPELINE.md](PRODUCTION-PIPELINE.md)         | Step by step, tool by tool, for the film and the web lesson          |
+| [lessons/01-what-is-a-note/](lessons/01-what-is-a-note/) | Lesson 1: brief, facts, script, storyboard, written lesson, web spec |
+| [research/](research/)                                   | The seven Phase 0 research reports and the stats-site snippets       |
 
 ---
 
@@ -33,9 +37,11 @@ has together:
 2. **A practice room one tap away.** Each lesson ends in the app on the exact drill that practises
    it, with the same pitch line the lesson taught.
 3. **Two hosts with a teaching job.** Blue Merc explains; orange Merc voices the guess most people
-   make. This is not decoration: a tutor-student dialogue that voices and refutes a misconception
-   beat a clear lecture in Derek Muller's research (effect size 0.83), the strongest single finding
-   behind Veritasium.
+   make. In Derek Muller's research, the strongest single finding behind Veritasium, stating a
+   misconception and refuting it beat a clear lecture whether it was narrated (d = 0.79) or played
+   as a tutor-student dialogue (d = 0.83; Muller et al. 2008). The gain is the refutation; orange
+   is how we voice it, and orange's deep questions (Craig et al. 2006) are what make a dialogue
+   pay.
 
 **Quality bar:** Veritasium's misconception-first storytelling and 3Blue1Brown's "one object that
 transforms into the next idea", with motion craft that holds up next to the best launch films.
@@ -46,23 +52,26 @@ captions) and they want to understand, not memorise jargon.
 
 ## 2. Decisions made (and why)
 
-| #   | Decision                                                                                                                                     | Reason                                                                                                                                  |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Series name **"Find Your Pitch"**                                                                                                            | The brand's recommended tagline (`docs/branding/BRAND.md` § 1), with its double meaning                                                 |
-| D2  | **The WebGL2 resin Merc is canon**; blue teaches, orange asks                                                                                | Most expressive, deterministic, company-owned code, already the premium-exercise host. See MERC-BIBLE                                   |
-| D3  | **Orange Merc = the same body with a warm palette** (gold, orange `#ff7448`, rose)                                                           | No orange Merc existed anywhere in the repo; this pairs with the stats site's cold-blue/warm-orange themes and keeps one rig            |
-| D4  | **Season 1 is sound-first: 14 lessons and a trailer; the staff waits for Season 2**                                                          | The app's native representation is a live pitch line, the sound-first choice; all major music methods put sound before symbol           |
-| D5  | **Theory and voice alternate** after two theory openers; each closing question is the next cold open                                         | Interleaving; a running open loop across episodes                                                                                       |
-| D6  | **Episodes 6 to 9 minutes** (cap 10; tiny topics 4 to 5)                                                                                     | 3Blue1Brown's curriculum series and MOOC engagement data; Lesson 1 runs 4:48                                                            |
-| D7  | **Built in code**: HyperFrames (HTML, GSAP, one seekable timeline)                                                                           | Deterministic, versionable, every number exact, reusable scene kit, the repo's existing motion pipeline                                 |
-| D8  | **Merc is pre-rendered per performance** into straight-alpha video, from the narration cue sheet                                             | His raymarcher costs about 1 s a frame on CPU; one pass per performance is cached and re-timed automatically                            |
-| D9  | **Every musical example synthesised at exact pitch; no licensed music**; a quiet synthesised bed ducked to silence under every example       | Precision, no Content ID risk (it matches melodies), the coherence principle                                                            |
-| D10 | **60 fps master, Merc at 30 fps**                                                                                                            | Smooth camera, waves and type; character animation on twos is a standard look. Revisit if a GPU host makes 60 fps Merc cheap            |
-| D11 | **Captions: a word-perfect SRT/VTT for the long form; burned-in captions only for Shorts**; the bottom 17 % of every frame stays clear       | Redundancy principle (verbatim on-screen text hurts learning); YouTube auto-translates uploaded captions                                |
-| D12 | **Scratch voices are local Kokoro; final voices are a human-quality cast** (blue: the owner-approved ElevenLabs "D2" voice; orange: to cast) | Human voices rate higher, and the on-screen agent's benefit needs a human voice. The cue pipeline re-times the film from new recordings |
-| D13 | **Web lesson = step deck + toys + predict + sung checkpoint + quiz**; explorer in two lanes (Theory, Voice)                                  | Ableton Learning Music, Ciechanowski, Brilliant, 3Blue1Brown lesson pages, The Pudding (benchmark § 3)                                  |
-| D14 | **Lesson CTAs go to `/exercises/<slug>` and named pages**; Lesson 1 goes to `/mirror`                                                        | Voice Mirror is free, needs no account and accepts octave matches, matching the lesson's own claim                                      |
-| D15 | **Every claim has a line in the lesson's FACTS.md** and is checked against code, standards or primary research                               | The motion pipeline's honesty rule; the app's guided-voice claims rules                                                                 |
+All fifteen are decided: the plan and Lesson 1 follow them. Where part of one still waits for the
+owner, its status names the § 12 item; § 12 is the single register of what is still open.
+
+| #   | Decision                                                                                                                                                                      | Reason                                                                                                                                                                                                                                                                              | Status                                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| D1  | Series name **"Find Your Pitch"**                                                                                                                                             | The brand's recommended tagline (`docs/branding/BRAND.md` § 1), with its double meaning                                                                                                                                                                                             | Decided                               |
+| D2  | **The WebGL2 resin Merc is canon**; blue teaches, orange asks                                                                                                                 | Most expressive, deterministic, company-owned code, already the premium-exercise host. See MERC-BIBLE                                                                                                                                                                               | Decided (owner-confirmed)             |
+| D3  | **Orange Merc = the same body with a warm palette** (gold, orange `#ff7448`, rose)                                                                                            | No orange Merc existed anywhere in the repo; this pairs with the stats site's cold-blue/warm-orange themes and keeps one rig                                                                                                                                                        | Decided; in the app: § 12 item 10     |
+| D4  | **Season 1 is sound-first: 14 lessons and a trailer; the staff waits for Season 2**                                                                                           | The app's native representation is a live pitch line, the sound-first choice; all major music methods put sound before symbol                                                                                                                                                       | Decided                               |
+| D5  | **Theory and voice alternate** after two theory openers; each closing question is the next cold open                                                                          | Interleaving; a running open loop across episodes                                                                                                                                                                                                                                   | Decided                               |
+| D6  | **Episodes 6 to 9 minutes** (cap 10; tiny topics 4 to 5)                                                                                                                      | 3Blue1Brown's curriculum series and MOOC engagement data; Lesson 1 runs 4:53 (293.2 s on the current cue sheet)                                                                                                                                                                     | Decided                               |
+| D7  | **Built in code**: HyperFrames (HTML, GSAP, one seekable timeline)                                                                                                            | Deterministic, versionable, every number exact, reusable scene kit, the repo's existing motion pipeline                                                                                                                                                                             | Decided                               |
+| D8  | **Merc is pre-rendered per performance** into one straight-alpha VP9 WebM, from the narration cue sheet                                                                       | His raymarcher costs a quarter of a second to over a second a frame on CPU, by size (measured table in PRODUCTION-PIPELINE); one pass per performance is cached and re-timed automatically                                                                                          | Decided                               |
+| D9  | **Every musical example synthesised at exact pitch; no licensed music**; a quiet synthesised pad that plays only in act transitions, silent under narration and every example | Precision, no Content ID risk (it matches melodies), the coherence principle                                                                                                                                                                                                        | Decided                               |
+| D10 | **60 fps master, Merc at 30 fps**                                                                                                                                             | Smooth camera, waves and type; character animation on twos is a standard look. Revisit if a GPU host makes 60 fps Merc cheap                                                                                                                                                        | Decided; delivery size: § 12 item 4   |
+| D11 | **Captions: a word-perfect SRT/VTT for the long form; burned-in captions only for Shorts**; the bottom 17 % of every frame stays clear                                        | Redundancy principle (verbatim on-screen text hurts learning); YouTube auto-translates uploaded captions                                                                                                                                                                            | Decided                               |
+| D12 | **Scratch voices are local Kokoro; final voices are a human-quality cast** (blue: the owner-approved ElevenLabs "D2" voice; orange: to cast)                                  | Human voices rate higher and carry the on-screen agent's benefit (Mayer and DaPra 2012), so the cast is human or the most natural voice available (playbook rule 14); the synthetic D2 is a trade-off against that evidence. The cue pipeline re-times the film from new recordings | Decided for blue; orange: § 12 item 1 |
+| D13 | **Web lesson = step deck + toys + predict + sung checkpoint + quiz**; explorer in two lanes (Theory, Voice)                                                                   | Ableton Learning Music, Ciechanowski, Brilliant, 3Blue1Brown lesson pages, The Pudding ([research/curriculum-benchmark.md](research/curriculum-benchmark.md) § 3)                                                                                                                   | Decided; public home: § 12 item 9     |
+| D14 | **Lesson CTAs go to `/exercises/<slug>` and named pages**; Lesson 1 goes to `/mirror`                                                                                         | Voice Mirror is free, needs no account and accepts octave matches, matching the lesson's own claim                                                                                                                                                                                  | Decided                               |
+| D15 | **Every claim has a line in the lesson's FACTS.md** and is checked against code, standards or primary research                                                                | The motion pipeline's honesty rule; the app's guided-voice claims rules                                                                                                                                                                                                             | Decided                               |
 
 ## 3. Pedagogy in one page
 
@@ -77,18 +86,25 @@ The [playbook](TEACHING-PLAYBOOK.md) has 25 rules; these shape every episode and
 - **Sound before symbol, concrete before abstract**: hear it, sing it, name it.
 - **One persistent object transforms into the next idea** (Lesson 1: line, spiral, piano).
 - **Label, don't transcribe**; words where and when the picture is; gold only for "the fit".
-- **No music under listening or explaining.**
+- **No music under listening or explaining**: the pad plays only in act transitions, silent under
+  narration and under every musical example.
 - **Mascots act; they don't decorate**: they leave during dense diagrams and come back to react.
-- **Retrieve at the end and again later**: three recap questions; the next episode opens with one
-  from the last.
+- **Retrieve at the end and again later**: three recap questions in the film, three or four on the
+  page; the next episode opens with one from the last, and the next page visit asks two from
+  earlier lessons again.
 - **Every voice is learning; no labels**; octave matches count; feedback describes the sound,
-  never the singer; "gentle, never push".
+  never the singer; "gentle, never push"; a comfort check before anything beyond a comfortable hum
+  (the playbook's house rules).
 
 ## 4. Formats
 
 ### 4.1 The YouTube episode
 
-Beat sheet for a 7:30 episode (scale proportionally; Lesson 1 already follows it):
+Beat sheet for a 7:30 episode (scale proportionally). Lesson 1 follows it with three deviations:
+no separate Promise beat (the title sting runs straight into Act 1; the promise is on the page),
+a reveal that settles orange's guess with a nuance ("Higher, yes. But together, they melt into one
+note.") rather than a refutation, and a single sung gap in Act 4. The Phase 1 re-voice adds a
+short spoken promise after the sting (Phase 1 Voices track).
 
 | Time      | Beat                      | Content                                                                                  |
 | --------- | ------------------------- | ---------------------------------------------------------------------------------------- |
@@ -97,17 +113,21 @@ Beat sheet for a 7:30 episode (scale proportionally; Lesson 1 already follows it
 | 0:34-1:00 | Promise                   | What you'll be able to hear or do by the end                                             |
 | 1:00-2:30 | Act 1: the concrete model | One physical or visual model built from scratch                                          |
 | 2:30-2:50 | Predict                   | "Before you listen, predict" with a visible pause                                        |
-| 2:50-4:30 | Act 2: the twist          | The reveal refutes orange's guess explicitly                                             |
+| 2:50-4:30 | Act 2: the twist          | The reveal settles orange's guess: refutes it, or shows why it is half right             |
 | 4:30-5:30 | Act 3: name it            | The term arrives now; connect it to the MercuryPitch pitch line                          |
 | 5:30-6:30 | Act 4: sing it            | Call and response with sung gaps; gentle; octave counts                                  |
 | 6:30-7:05 | Recap                     | Three quick questions, a beat to answer, the answer shown with the object that taught it |
 | 7:05-7:30 | Next and end screen       | The next episode's hook question; the practise link; a 5 to 20 s end screen              |
 
-Packaging: chapters (first at 00:00, at least 3, each at least 10 s) named as the beats; a title
-and thumbnail that state the hook question accurately ("legit bait"), tested with YouTube's Test &
-Compare (up to three variants); thumbnails at 3840x2160 from the stats site's album-cover template
-with Merc in place of the record; two Shorts per episode (the cold-open puzzle, 30 to 60 s, ending
-on the question; and a 9:16 sing-along), recomposed as sibling projects, never letterboxed.
+Packaging: chapters (first at 00:00, at least 3, each at least 10 s) named as the beats; a YouTube
+title of at most 100 characters (aim for about 60) that states the hook accurately and may shorten
+it, with the full hook in the thumbnail text, the first description line and the cold open
+("legit bait"); titles tested with YouTube's Test & Compare (up to three variants, one of them a
+search-style title in the audience's words, such as "how to match pitch"); a description and
+keywords from the per-episode template (Phase 1 Channel track); thumbnails at 3840x2160 from the
+stats site's album-cover template with Merc in place of the record; two Shorts per episode (the
+cold-open puzzle, 30 to 60 s, ending on the question; and a 9:16 sing-along), recomposed as
+sibling projects, never letterboxed.
 Release: the trailer and Lessons 1 to 3 together or on consecutive days, then a fixed weekly day.
 
 ### 4.2 The web lesson
@@ -118,32 +138,46 @@ sung checkpoint, the embedded episode.
 1. Header: lesson number, the hook question as the title, time, prerequisite chips, a one-line
    promise.
 2. Sound gate: one tap enables audio; the microphone is asked for only at the checkpoint.
-3. Cold-open toy, predict then reveal: orange's guess in a bubble; the learner taps a prediction;
+3. From Lesson 2 on, a warm-up retrieval: two questions from earlier lessons, asked again rather
+   than shown with their stored answers, which give the delayed score (§ 9).
+4. Cold-open toy, predict then reveal: orange's guess in a bubble; the learner taps a prediction;
    the sound and the reveal play.
-4. Four to six steps in a step deck (sticky visual, 50 to 120 words each, one "Try:" imperative,
+5. Four to six steps in a step deck (sticky visual, 50 to 120 words each, one "Try:" imperative,
    one "Notice:" line, N of M counter, play / pause / scrub / slow on every animation).
-5. A "common mix-up" card: the belief, why it seems right, the evidence, the better idea.
-6. The sung checkpoint: the learner's line against Merc's target band, octave-tolerant, generous
-   cents window, language about the sound.
-7. Quick check: three retrieval questions with one-line feedback.
-8. Playground: the main toy with every control.
-9. Watch the episode, with chapters mirroring the steps, captions and the transcript.
-10. Wrap: a three-line recap, a one-sentence challenge, the practise link, the next lesson's hook.
+6. A "common mix-up" card: the belief, why it seems right, the evidence, the better idea.
+7. The sung checkpoint: the learner's line against Merc's target band, octave-tolerant, generous
+   cents window, language about the sound. Required from Lesson 3 on. A theory lesson may instead
+   offer an unscored sing- or hum-along with the app link for the scored version (Lesson 1: hum
+   along with Merc, nothing listens; to be scored, sing it back on "ooh" in Voice Mirror).
+8. Quick check: three or four retrieval questions, each with three or four options, with one-line
+   feedback (Lesson 1 has four).
+9. Playground: the main toy with every control.
+10. Watch the episode, with chapters mirroring the steps, captions and the transcript.
+11. Wrap: a three-line recap, a one-sentence challenge, the practise link, the next lesson's hook.
+
+Lesson 1's page keeps this order with two changes: its step toys double as the Playground, and
+its Wrap comes before the episode (WEB-SPEC, which also lists its smaller departures). Every page
+freezes its idle loops and drifts under `prefers-reduced-motion` and offers a visible "Pause
+animations" toggle (WCAG 2.2.2).
 
 ### 4.3 The lesson explorer
 
 Two lanes, Theory and Voice, drawn from the topic graph (IDs T01..., S01...), with prerequisite
-edges, arcs ("Hear it", "Shape it"), node states (not started, in progress, done, recommended next)
-and a card per lesson (hook question, length, start). On phones a vertical two-lane list with
-prerequisite chips, not a zoomable graph. No account needed to read; progress in local storage
-until sign-in. Lesson 1's prototype is the published page in § 11.
+edges from CURRICULUM's lesson-to-lesson prerequisite table (every Season 1 prerequisite is in
+Season 1), arcs ("Hear it", "Shape it"), node states (not started, in progress, done, recommended
+next) and a card per lesson (hook question, length, start). On phones a vertical two-lane list
+with prerequisite chips, not a zoomable graph. No account needed to read; progress in local storage
+until sign-in, which needs the lessons on the app's origin (§ 12 item 9). Lesson 1's prototype is
+the preview page in § 11.
 
 ### 4.4 In the app
 
 - Home's existing "Learn" button opens `#/learn/<chapterId>` read-along chapters: the natural home
   for the lessons inside the app, once the existing chapters' errors are fixed (§ 7, Phase 1).
 - The Ascent's week cards already hold curated video links as plain data
-  (`src/features/path/path-content.ts`): voice lessons slot into their matching weeks.
+  (`src/features/path/path-content.ts`): voice lessons slot into their matching weeks, once weeks
+  2 and 3 ("Breath & Power", "Reach New Notes") stop promising breath support and a wider range
+  (Phase 1 App content).
 - Lesson pages and episodes link into drills with `/exercises/<slug>` (Phase 1 engineering).
 
 ## 5. Visual and sound language
@@ -154,13 +188,23 @@ until sign-in. Lesson 1's prototype is the published page in § 11.
   stats site), JetBrains Mono (kickers, readouts), Noto Music glyphs drawn as paths. All SIL OFL.
   Essential labels at least 48 px at 1080p; kickers at least 30 px; on-screen words never repeat a
   narrated sentence.
-- **Colour code, for the whole series:** blue `#58a6ff` = blue Merc's note; orange `#ff7448` =
-  orange Merc's note; gold `#ffd84d` = the fit (things that line up, the key relationship); violet
-  `#bc8cff` = a contrast case; chrome `#c3ccd6` = any other note; ink `#e6edf3` labels. Colour is
-  never the only carrier. For pitch-canvas concepts the colour-blind-checked set from the production
-  research applies (target amber `#f59e0b`, sung violet `#a78bfa`, in tune mint `#80ffca`, off
-  rose `#ff4d97`, tonic butter `#ffdf80`, wave cyan `#52c2cc`; worst-case CIEDE2000 distance 12.4
-  under all three simulated colour-blindness types), kept on diagrams, never on the hosts.
+- **Colour code, for explanatory diagrams across the series:** blue `#58a6ff` = blue Merc's note;
+  orange `#ff7448` = orange Merc's note; gold `#ffd84d` = the fit (things that line up, the key
+  relationship); violet = a contrast case, drawn as a dashed wave or bead in the darker `#8957e5`
+  (L\* 49, so it separates from blue's L\* 67 for protan and deutan viewers) with its text labels
+  in `#bc8cff` for 4.5:1 text contrast; chrome `#c3ccd6` = any other note; ink `#e6edf3` labels.
+  Colour is never the only carrier. The signal colours govern marks, labels and glows, not the
+  hosts' bodies: orange Merc's gold base is body colour, never a signal.
+- **Pitch-canvas scenes** (anything drawn as the app's pitch line) use the app's own canvas set, so
+  the lesson's line is the one the app shows: target amber `#f59e0b` and singer violet `#a78bfa`
+  (`PITCH_VISUAL_COLORS` in `src/features/stem-mixer/pitch-canvas-visuals.ts`), with the production
+  research's in tune mint `#80ffca`, off rose `#ff4d97`, tonic butter `#ffdf80` and wave cyan
+  `#52c2cc` (worst-case CIEDE2000 distance 12.4 under all three simulated colour-blindness types,
+  [research/production-research.md](research/production-research.md)). Merc's sung model note on
+  a pitch canvas is the amber target band, never gold or blue.
+- **Colour-blindness gate**, part of the measured quality bar: a Machado et al. (2009) simulation
+  (protan, deutan, tritan, severity 1.0) and CIEDE2000 over the full palette (series code,
+  pitch-canvas set, both Merc bodies), with the worst case recorded beside the canvas set's 12.4.
 - **Pitch is always height**; loudness is size, brightness or wave height; a pitch change is never
   shown as a size change.
 - **Motifs from the stats site** (all hand-built SVG, already seekable in the research snippets):
@@ -173,9 +217,10 @@ until sign-in. Lesson 1's prototype is the published page in § 11.
   on movement; a carried object lands on the same pixels either side of a cut; no still stretch
   longer than about 0.5 s (a diagram being explained keeps a travelling wave, a breathing glow or a
   slow drift).
-- **Sound:** the voice leads; musical examples at exact pitch with their visual twin; the pad only
-  in transitions, ducked to silence under examples and dense explanation; one soft whoosh per real
-  scene change; loudness about -16 LUFS integrated for this calm style, true peak at most -1 dBTP.
+- **Sound:** the voice leads; musical examples at exact pitch with their visual twin; the pad plays
+  only in act transitions and is silent under narration and under every musical example; one soft
+  whoosh per real scene change; loudness about -16 LUFS integrated for this calm style, true peak
+  at most -1 dBTP.
 
 ## 6. Production pipeline (summary)
 
@@ -197,51 +242,68 @@ Full detail and commands in [PRODUCTION-PIPELINE.md](PRODUCTION-PIPELINE.md). Pe
 8. **Scenes built in parallel** by several builders, each owning contiguous scenes and proving
    them with lab stills and clips before handing back.
 9. **Integrate and render**; a fresh critic per full-film round until SHIP (at most six rounds
-   before escalating); measured quality bar (holds, frame one, contrast, collisions, loudness,
+   before escalating); measured quality bar (holds, frame one, contrast, colour-blind separation,
+   collisions, loudness, the bed silent inside every spoken line, musical example and pause,
    determinism).
 10. **Audio**: the mix built from the same cues; a music-only version for checking effects.
-11. **Deliver**: 1080p60 master, captions (SRT and VTT), chapters, contact sheet, ledger, delivery
-    notes; Shorts and thumbnail; the web lesson goes live with the episode.
+11. **Deliver**: 1080p60 master, captions (SRT and VTT), chapters, contact sheet, ledger (written
+    after the critic rounds), delivery notes; Shorts and thumbnail; the web lesson goes live at its
+    public URL with the episode.
 
 **Measured on Lesson 1** (4-core CPU, no GPU): Kokoro speaks 5 minutes of script in about 80 s;
-Merc costs 0.4 to 1.0 s per frame at 300 to 640 px, about 1.5 to 2 hours for one film's 17
-performances; HyperFrames renders the composition at roughly 3 to 4 s of wall time per second of
-60 fps film. Updated numbers are in the Lesson 1 ledger.
+Merc's cost per frame by size is the measured table in PRODUCTION-PIPELINE (from a quarter of a
+second at 225 px to about a second at 480 px at `medium`, and up to four times that when the CPU is
+shared), about 1.5 hours for the film's 17 performances; HyperFrames renders the composition at
+roughly 3 to 4 s of wall time per second of 60 fps film. The Lesson 1 ledger, written after the
+critic rounds, will hold the final numbers.
 
 ## 7. Phases and roadmap
 
-### Phase 0: discovery and proof (done, October 2026)
+### Phase 0: discovery and proof (in progress, October 2026)
 
-- Seven research reports: Merc as a production asset, the stats site's motifs, brand and motion
-  pipeline, the app's existing teaching content and deep links, evidence-based pedagogy,
-  curriculum benchmarks, production stack.
+- Seven research reports ([research/](research/)): Merc as a production asset, the stats site's
+  motifs, brand and motion pipeline, the app's existing teaching content and deep links,
+  evidence-based pedagogy, curriculum benchmarks, production stack.
 - Curriculum (14 lessons and a trailer, topic graph, Seasons 2 and 3), playbook, host bible.
 - The Merc film pipeline: bundled read-only from `src/lib/merc`, orange look, capture, straight-alpha
   passes, performances from the cue sheet.
-- Lesson 1 end to end: script, facts, storyboard (two critic rounds), film, written lesson, web
-  lesson with explorer.
+- Lesson 1: script, facts, storyboard (two critic rounds), all 17 Merc passes, all 21 scenes built,
+  written lesson; the web lesson with explorer in build. Still to come: the full-film critic
+  rounds, the delivery render and the LEDGER.
+
+Exit: Lesson 1's delivery master and LEDGER exist; these two alone mark Phase 0 done. The web
+lesson's preview URL goes in § 11 once the preview is published; its public URL is the Phase 1
+Lesson host track's exit, not Phase 0's.
 
 ### Phase 1: foundation (about 3 weeks)
 
 Goal: everything Lesson 2 needs, so each later episode is production, not invention.
 
-| Track       | Work                                                                                                                                                                                                                                                                     | Exit criterion                             |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| Decisions   | The owner answers § 12                                                                                                                                                                                                                                                   | Recorded in DECISIONS                      |
-| Voices      | Cast orange; confirm D2's commercial terms; re-voice Lesson 1 with the cast; a pronunciation sheet (note names, hertz, "A four")                                                                                                                                         | Lesson 1 re-rendered with final voices     |
-| Film kit    | Promote `output/motion/lesson-01/tools` and `assets/lib` into a versioned kit (cue sheet, mixer, Merc passes and performances, root generator, lab, captions, scene kit); a home for durable film sources (§ 12)                                                         | Lesson 2 scaffolds in minutes              |
-| Merc        | `LOOKS.ember` constant; accent uniforms with owner approval of the shader hash; a `talk` state; `prepare(t)`; MASCOT.md update                                                                                                                                           | Orange is a first-class palette in the app |
-| Render      | A GPU render host (`--browser-gpu`) or a shared Merc frame cache                                                                                                                                                                                                         | A full delivery render in under an hour    |
-| Web kit     | A reusable toy kit: pitch canvas with target band, tone player, wave and interval ruler, keyboard strip, spiral, step deck, predict widget, retrieval quiz, sound gate                                                                                                   | Two lessons share it with no copy-paste    |
-| App         | Data-only `/exercises/<slug>` entries per lesson; `pattern` and scale-type on launches; `ear-drill`, `zen` and `learn` launch kinds; a `?lesson=` marker that skips First Light and records attribution; Voice Mirror's "you matched an octave lower: same note" message | Every Season 1 CTA opens its drill         |
-| App content | Fix the Learn chapters (band thresholds, "C minor's relative major is A major", "perfect pitch" wording) and card copy (Interval Trainer "above and below", Call & Response "rhythmic accuracy")                                                                         | No lesson contradicts the app              |
-| Channel     | Channel art, playlist, trailer script, end-screen template, thumbnail template, analytics plan (§ 9)                                                                                                                                                                     | Ready to publish                           |
+| Track            | Work                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Exit criterion                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Decisions        | The owner answers § 12                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Every § 12 item marked decided in § 12, the single register           |
+| Voices           | Cast orange: the two Voice Design candidates were unsaved previews with no guaranteed retention, and only their raw audio survives as reference, so plan a new Voice Design session or an actor audition; confirm D2's commercial terms; final singing voices: real or licensed sung "ooh" sets, or the synthesised demo-audio "ooh" (`src/lib/demo-audio.ts`) if the rights to the ElevenLabs-derived Echo samples are not confirmed (§ 12 item 1); re-voice Lesson 1 with the cast, changing "Hum it back" to "Sing it back, or hum along" and adding a short spoken promise after the title sting (§ 4.1); a pronunciation sheet (note names, hertz, "A four")                                                                                                                             | Lesson 1 re-rendered with final speaking and singing voices           |
+| Voice safety     | A vocal coach (§ 12 item 8) reviews Lessons 3 and 5: exercises, hold lengths, the comfort check before demanding segments and the referral line (playbook house rules, REQ-GVC-020 and 021); coach sign-off becomes a standing gate for every voice lesson (§ 7 timeline)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Coach sign-off on Lessons 3 and 5                                     |
+| Film kit         | Promote `output/motion/lesson-01/tools` and `assets/lib` into a versioned kit (cue sheet, mixer, Merc passes and performances, root generator, lab, captions, scene kit); the colour-blindness and bed-silence checks in the measured quality bar (§ 5, § 6); a home for durable film sources (§ 12 item 2)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Lesson 2 scaffolds in minutes                                         |
+| Merc             | `LOOKS.ember` constant; accent uniforms with owner approval of the shader hash (§ 12 item 10); a `talk` state; `prepare(t)`; MASCOT.md update                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | If item 10 says yes: orange is a first-class palette in the app       |
+| Render           | A GPU render host (`--browser-gpu`) or a shared Merc frame cache                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | A full delivery render in under an hour                               |
+| Web kit          | A reusable toy kit: pitch canvas with target band, tone player, wave and interval ruler, keyboard strip, spiral, step deck, predict widget, retrieval quiz, sound gate; in its contract, idle loops and drifts frozen under `prefers-reduced-motion` and a visible "Pause animations" toggle                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Two lessons share it with no copy-paste                               |
+| Lesson host      | The public home of the web lessons (§ 12 item 9; recommended a `mercurypitch.com/learn/NN` route in the app): the route, the toy kit's build target, the episode's player (§ 12 item 7: self-hosted HLS or a YouTube embed) and explorer progress synced on sign-in. The claude.ai artifact page stays the proof preview                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Lesson 1 served at its public URL; its CTAs carry `?lesson=01`        |
+| Lesson telemetry | An event schema (`lesson_id`, `question_id`, `first_try_correct`, `visit_index`, `consent`); an endpoint on the db-worker under an owner-approved payload exception (§ 12 item 11: the app's analytics are counts-only today, `src/lib/analytics.ts`); a privacy note; the delayed re-test at the next visit (§ 4.2 item 3); an A/B assignment mechanism for Phase 4                                                                                                                                                                                                                                                                                                                                                                                                                          | Lesson 1's page reports guess-corrected first-try scores per question |
+| App              | Data-only `/exercises/<slug>` entries per lesson; new launch fields: `intervals` (semitones and direction; Interval Trainer, Drone Intonation) and `durationSec` (Long Note, Pitch Hold), plus `pattern` and scale-type on `ExerciseLaunch` (`launch-override.ts` already exposes `launchPattern`, which the warm-up reads; `ExerciseLaunch` lacks it); fix `perfect-octave` so it drills an octave; an octave-folded scoring option for Pitch Hold and the other matching drills (or an explicit written-octave note in Lessons 3 and 9); `ear-drill` (accepting a bank subset), `zen` and `learn` launch kinds; a `?lesson=` marker that skips First Light and records attribution; Voice Mirror's "you matched an octave lower: same note" message. Estimated as code with tests, not data | Every Lesson 2 to 7 CTA opens its drill                               |
+| App content      | Fix the Learn chapters (band thresholds, "C minor's relative major is A major", "perfect pitch" wording) and card copy (Interval Trainer "above and below", Call & Response "rhythmic accuracy"); rewrite `src/features/path/path-content.ts` weeks 2 and 3 (breath "support" and "extend your range" copy and videos) against the playbook's claims rules, and until then drop the Ascent links from the Lesson 5 and 7 cards                                                                                                                                                                                                                                                                                                                                                                | No lesson contradicts the app                                         |
+| Channel          | Channel art, playlist, trailer script, end-screen template, thumbnail template; a per-episode description and keyword template covering the audience's search phrases ("how to match pitch", "how to sing in tune"); a search-style title among the Test & Compare variants; the YouTube side of the analytics plan (§ 9)                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Ready to publish                                                      |
 
 ### Phase 2: Arc A, "Hear it" (Lessons 2 to 7 and the trailer; about 7 weeks)
 
 One episode a week after the first two, each through the full pipeline and critic loop, each with
 its web lesson and two Shorts. Launch batch: trailer and Lessons 1 to 3 together; then weekly.
-Exit: seven episodes live, retrieval data on each page.
+Alongside it, an engineering track for Arc B's practise links: Chord Stacker triad chord types
+(maj, min) for Lesson 12 (today it has sevenths and a sixth only), Drone Intonation limited to the
+major and minor thirds for Lesson 10 (it already has both), and Interval Trainer given a minor
+third, which its fixed pool (M2, M3, P4, P5, M6, P8) lacks, then limited to Lesson 9's thirds,
+fifth, fourth and octave (both limits through the `intervals` field from Phase 1). Exit: seven
+episodes live, retrieval data on each page, and every Lesson 8 to 14 CTA opening its drill.
 
 ### Phase 3: Arc B, "Shape it" (Lessons 8 to 14; about 7 weeks)
 
@@ -252,8 +314,11 @@ domain or original). Exit: Season 1 complete; the explorer shows the whole graph
 
 Retrieval scores per question and per lesson (the learning metric); 30-second retention, average
 view percentage and click-through (engagement); lesson-to-app conversions and seven-day return
-(product). A/B tests: mascot presence in dense diagrams, feedback fading in the checkpoint, title
-and thumbnail variants. Re-cut any episode whose retrieval scores lag.
+(product). A/B tests, through the assignment mechanism from the Lesson telemetry track: mascot
+presence in dense diagrams, feedback fading in the checkpoint, title and thumbnail variants. When
+an episode's retrieval scores lag, re-cut it and replace it on the page's self-hosted player, and
+re-teach the point in the next cold open; on YouTube, upload a re-cut only as a new video, when
+retrieval lags badly.
 
 ### Phase 5: Season 2, "Read it, harmonise it"
 
@@ -263,73 +328,114 @@ twelve notes (see CURRICULUM § 5).
 
 ### Per-episode timeline (from Lesson 3 on, with the kits in place)
 
-| Day | Work                                                                                       | Gate                                                               |
-| --- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| 1   | Brief, facts, script v1; script critic; voice                                              | Facts complete; every orange line is a question or a sincere guess |
-| 2   | Storyboard and handoffs; critic and verification rounds; Merc performances start rendering | Storyboard SHIP                                                    |
-| 3-4 | Scenes built in parallel; lab stills and clips; integration                                | Every scene proven in its lab                                      |
-| 4-5 | Full-film critic loop; mix; captions; Shorts; thumbnail                                    | Film SHIP and measured quality bar                                 |
-| 5   | Web lesson from the toy kit; app-check at phone and desktop                                | Page QA passes; links open their drills                            |
-| 6   | Owner review; publish                                                                      |                                                                    |
+| Day | Work                                                                                       | Gate                                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| 1   | Brief, facts, script v1; script critic; voice                                              | Facts complete; every orange line is a question or a sincere guess; voice lessons: the vocal coach signs off the script |
+| 2   | Storyboard and handoffs; critic and verification rounds; Merc performances start rendering | Storyboard SHIP                                                                                                         |
+| 3-4 | Scenes built in parallel; lab stills and clips; integration                                | Every scene proven in its lab                                                                                           |
+| 4-5 | Full-film critic loop; mix; captions; Shorts; thumbnail                                    | Film SHIP and measured quality bar                                                                                      |
+| 5   | Web lesson from the toy kit; app-check at phone and desktop                                | Page QA passes; links open their drills                                                                                 |
+| 6   | Owner review; publish                                                                      | Owner approval; voice lessons: the vocal coach signs off the film and page                                              |
 
 ## 8. Roles
 
-| Role                                                        | Owns                                                                                   |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Series director (owner, with Claude as production director) | The brief, the bar, final approval                                                     |
-| Writer                                                      | Script and lesson copy, in the brand voice and the playbook                            |
-| Fact checker                                                | Every line of FACTS.md against code, standards or primary research                     |
-| Vocal coach                                                 | Voice lessons' exercises and safety copy (PRODUCT.md already expects a coach's review) |
-| Voice cast                                                  | Blue and orange                                                                        |
-| Motion builders                                             | Scenes, from the storyboard and the kit                                                |
-| Independent critic                                          | A fresh motion-critic per round; never the builder                                     |
-| Audio                                                       | The mix, the stings, the examples' timbres                                             |
-| Web builder                                                 | The lesson page from the toy kit                                                       |
-| QA                                                          | The app-check sweep at phone and desktop; captions; accessibility                      |
+| Role                                                        | Owns                                                                                                                            |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Series director (owner, with Claude as production director) | The brief, the bar, final approval                                                                                              |
+| Writer                                                      | Script and lesson copy, in the brand voice and the playbook                                                                     |
+| Fact checker                                                | Every line of FACTS.md against code, standards or primary research                                                              |
+| Vocal coach                                                 | Voice lessons' exercises and safety copy, signed off at the day-1 and day-6 gates (PRODUCT.md already expects a coach's review) |
+| Voice cast                                                  | Blue and orange                                                                                                                 |
+| Motion builders                                             | Scenes, from the storyboard and the kit                                                                                         |
+| Independent critic                                          | A fresh motion-critic per round; never the builder                                                                              |
+| Audio                                                       | The mix, the stings, the examples' timbres                                                                                      |
+| Web builder                                                 | The lesson page from the toy kit                                                                                                |
+| QA                                                          | The app-check sweep at phone and desktop; captions; accessibility                                                               |
 
 ## 9. Measurement
 
-| Kind       | Metric                                                                                      | Target for Season 1                                       |
-| ---------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Learning   | Share of first-try correct answers on the three page questions; again at the next visit     | 70 % first try; 80 % after review                         |
-| Engagement | YouTube viewers remaining at 30 s; average view percentage                                  | Above the channel median after five episodes              |
-| Product    | Lesson-page practise-link clicks; first sung note in the app within a day; seven-day return | Tracked from launch; targets set after four weeks of data |
-| Craft      | Critic rounds to SHIP; factual corrections after publishing                                 | Three or fewer; zero                                      |
+| Kind       | Metric                                                                                                                                                              | Target for Season 1                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Learning   | Share of first-try correct answers on the page's quick-check questions (three or four; Lesson 1 has four); again at the next visit, with the questions asked afresh | 70 % first try; 80 % after review; both guess-corrected   |
+| Engagement | YouTube viewers remaining at 30 s; average view percentage                                                                                                          | From episode 6 on, beat the median of episodes 1 to 5     |
+| Product    | Lesson-page practise-link clicks; first sung note in the app within a day; seven-day return                                                                         | Tracked from launch; targets set after four weeks of data |
+| Craft      | Critic rounds to SHIP; factual corrections after publishing                                                                                                         | Three or fewer; zero                                      |
+
+Each question has three or four options, so a blind guess scores a third or a quarter; scores are
+reported guess-corrected, (raw - 1/k) / (1 - 1/k) for k options. The learning metric is collected
+by the Phase 1 Lesson telemetry track, on the lesson host (§ 12 items 9 and 11); until both exist,
+quiz answers stay in the viewer's browser and nothing reaches the team.
 
 Judge lessons by retrieval, not by "that was so clear": fluency inflates perceived learning.
 
 ## 10. Risks
 
-| Risk                                                                                                    | Mitigation                                                                                    |
-| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| CPU-only rendering is slow (Merc about 1 s a frame)                                                     | GPU host in Phase 1; Merc performances cached; drafts at low quality                          |
-| Voice licensing (ElevenLabs plan terms undocumented; Kokoro trained partly on synthetic audio)          | Owner confirms terms; human actors as the fallback; keep the per-line manifest                |
-| Character drift (four Mercs in the repo)                                                                | The canon decision (D2) and the bible                                                         |
-| Claims errors in a teaching series                                                                      | FACTS.md per lesson, critic rounds that check truth, the playbook's claims rules              |
-| Content ID claims on melodies                                                                           | Public-domain or original tunes only; everything synthesised                                  |
-| Interactive pages are expensive and break over time                                                     | One shared toy kit; interactivity only where it explains                                      |
-| Premium positioning conflict (`docs/plans/premium.md`: pitch training never premium; safety never paid) | Lessons free as the top of the funnel; premium stays the Merc practice rooms (owner decision) |
-| First-time visitors from a lesson see onboarding first                                                  | The `?lesson=` marker in Phase 1, or embrace First Light for Lesson 1                         |
-| Builders produce uneven quality                                                                         | The shared kit, the build guide, handoff frames, and a critic that never saw the build        |
+| Risk                                                                                                                                                            | Mitigation                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CPU-only rendering is slow (Merc up to about a second a frame, more on a shared CPU: PRODUCTION-PIPELINE)                                                       | GPU host in Phase 1; Merc performances cached; drafts at low quality                                                                                                              |
+| Voice licensing (ElevenLabs plan terms undocumented; Kokoro trained partly on synthetic audio)                                                                  | Owner confirms terms; human actors as the fallback; keep the per-line manifest                                                                                                    |
+| Merc's sung notes in Lesson 1 are ElevenLabs-derived placeholders that the app withholds from its store build (`src/features/echo/merc-voice-set.ts`)           | Owner confirms the rights before any public release, or the public film switches to the synthesised demo-audio "ooh" (`src/lib/demo-audio.ts`); § 12 item 1, Phase 1 Voices track |
+| Orange's two Voice Design candidates are unsaved previews with no guaranteed retention                                                                          | Their raw audio is kept as a reference; a new Voice Design session or an actor audition in the Phase 1 Voices track                                                               |
+| Character drift (four Mercs in the repo)                                                                                                                        | The canon decision (D2) and the bible                                                                                                                                             |
+| Claims errors in a teaching series                                                                                                                              | FACTS.md per lesson, critic rounds that check truth, the playbook's claims rules                                                                                                  |
+| Content ID claims on melodies                                                                                                                                   | Public-domain or original tunes only; everything synthesised                                                                                                                      |
+| Interactive pages are expensive and break over time                                                                                                             | One shared toy kit; interactivity only where it explains                                                                                                                          |
+| Premium positioning conflict (`docs/plans/premium.md:48`: pitch training never premium; `docs/specs/guided-voice-check.ears.md` REQ-GVC-025: safety never paid) | Lessons free as the top of the funnel; whether premium stays the Merc practice rooms, which already conflict with `premium.md:3-8`, is § 12 item 3                                |
+| First-time visitors from a lesson see onboarding first                                                                                                          | The `?lesson=` marker in Phase 1, or embrace First Light for Lesson 1                                                                                                             |
+| Builders produce uneven quality                                                                                                                                 | The shared kit, the build guide, handoff frames, and a critic that never saw the build                                                                                            |
 
 ## 11. Lesson 1: what exists now
 
 - Durable sources in this repo: [`lessons/01-what-is-a-note/`](lessons/01-what-is-a-note/) (brief,
-  facts, script with timings, storyboard, handoffs, the written lesson, the ledger and decisions).
+  facts, script with timings and `script.json`, storyboard, handoffs, build guide, decisions,
+  captions, the written lesson and the web spec) and [`research/`](research/) (the seven reports
+  and the stats-site snippets). The LEDGER follows the critic rounds.
 - The film project: `output/motion/lesson-01/` (gitignored, per the motion pipeline's house rules;
-  its tools and scene kit are the seed of the Phase 1 film kit).
-- The web lesson and explorer: a published artifact page (link in the session report), with the
-  episode embedded.
+  its tools and scene kit are the seed of the Phase 1 film kit). All 17 Merc passes and all 21
+  scenes are built; the full-film critic rounds and the delivery render are still to come.
+- The web lesson and explorer: in build as a claude.ai artifact page, the proof preview only; not
+  yet published. Its public home is § 12 item 9.
 
 ## 12. Owner decisions
 
-1. Orange Merc's name, pronouns and voice; confirm the D2 voice's commercial terms.
-2. Where durable film sources live (compositions and tools): a private repository, the
-   `<user-dotfiles>/mercurypitch/` convention, or promoted into this repo as a kit.
-3. Free or premium: are the lessons the free top of the funnel?
-4. 60 fps with Merc on twos, or 30 fps throughout; 1080p or 4K delivery.
-5. British or American English for narration (the exercise locale is en-GB; the UI moved to US
-   spelling in 0.9.18).
-6. Whether the in-app lessons live in Learn chapters, the Ascent, or a new Lessons surface.
-7. Self-host the episode on the lesson page, or embed YouTube.
-8. A vocal coach to review the voice lessons before production.
+The single register of what still waits for the owner (the decisions already made are D1 to D15
+in § 2; a lesson's own choices stay in its DECISIONS.md). Each item is marked **Decided** or
+**Proposed**: a recommendation, or none yet, awaiting the owner's answer. When the owner answers,
+the item is marked decided here and the Phase 1 Decisions track closes when every item is.
+
+1. **Proposed, no recommendation yet.** Orange Merc's name, pronouns and voice; confirm the D2
+   voice's commercial terms. The same check covers Merc's sung notes: Lesson 1's are
+   ElevenLabs-derived placeholders that the app withholds from its store build
+   (`src/features/echo/merc-voice-set.ts`). Confirm their rights before any public release, or
+   switch the public film to the synthesised demo-audio "ooh" (`src/lib/demo-audio.ts`).
+2. **Proposed, no recommendation yet.** Where durable film sources live (compositions and tools):
+   a private repository, the `<user-dotfiles>/mercurypitch/` convention, or promoted into this repo
+   as a kit. (The lesson documents are already in `lessons/`.)
+3. **Proposed: the lessons are free**, the top of the funnel (`docs/plans/premium.md:48`: pitch
+   training never premium; `docs/specs/guided-voice-check.ears.md` REQ-GVC-025: safety never
+   paid). Still open: whether premium stays the Merc practice rooms, which already sit uneasily with
+   `premium.md:3-8` (everything that runs on the device is free forever).
+4. **Proposed, no recommendation yet.** 1080p or 4K delivery. (The frame rate is decided: D10.)
+5. **Proposed: American spelling**, to match the app's screens (0.9.18). British or American
+   English for narration and lesson copy (the exercise locale is en-GB). Drafts stay in British
+   English until this is decided.
+6. **Proposed: the Learn chapters** (`#/learn/<chapterId>`), the natural home for the lessons
+   inside the app once their errors are fixed, with voice lessons also linked from their matching
+   Ascent weeks (§ 4.4). Whether the in-app lessons live in Learn chapters, the Ascent, or a new
+   Lessons surface.
+7. **Proposed: answered together with item 9.** Self-host the episode on the lesson page (HLS), or
+   embed YouTube. The preview page's no-iframe rule binds only the preview, so the host decides
+   this.
+8. **Proposed, no recommendation yet.** Who the vocal coach is. (That a coach signs off every
+   voice lesson at the day-1 and day-6 gates is fixed: § 7.)
+9. **Proposed: a `mercurypitch.com/learn/NN` route in the app.** Where the public web lessons live.
+   The app's origin shares its analytics, its accounts (explorer progress on sign-in) and the
+   `?lesson=` marker; the claude.ai artifact page is the proof preview only.
+10. **Proposed, no recommendation yet.** Whether orange Merc becomes a first-class palette in the
+    app (MERC-BIBLE backlog items 1 and 2), including approval of the new pinned shader hash that
+    the accent uniforms need.
+11. **Proposed: yes.** A payload exception for lesson telemetry: anonymous per-question events
+    (`lesson_id`, `question_id`, `first_try_correct`, `visit_index`, `consent`) through the
+    db-worker, where the app's analytics carry counts only today (`src/lib/analytics.ts`).
+12. **Proposed, no recommendation yet.** Do-based or la-based minor solfège, decided before Lesson
+    10 is scripted (CURRICULUM Lesson 10; Season 2's sight-singing inherits it).
