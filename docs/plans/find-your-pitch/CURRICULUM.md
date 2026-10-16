@@ -10,9 +10,11 @@ to [MASTER-PLAN.md](MASTER-PLAN.md); every lesson follows the
    Gordon, Suzuki) has learners hear and sing before they name, and name before they read. The
    benchmark split is the same: notation-first syllabi (ABRSM, Trinity, musictheory.net, Open
    Music Theory, Coursera Edinburgh) against sound-first courses (Ableton Learning Music,
-   Hooktheory, 12tone's Building Blocks). MercuryPitch's own representation is a live pitch line,
-   the sound-first choice. **Season 1 teaches by ear and by pitch line; staff notation is Season 2.** Theory lessons may offer a "see it on the staff" toggle as an extra, never as a
-   requirement.
+   Hooktheory, 12tone's Building Blocks; see
+   [research/curriculum-benchmark.md](research/curriculum-benchmark.md)). MercuryPitch's own
+   representation is a live pitch line, the sound-first choice. **Season 1 teaches by ear and by
+   pitch line; staff notation is Season 2.** Theory lessons may offer a "see it on the staff"
+   toggle as an extra, never as a requirement.
 2. **Theory and voice alternate**, after two opening theory lessons, so each idea is sung soon
    after it is understood and each vocal skill has the theory it needs. Cross-links that justify
    the interleave: octave equivalence (L1) is what makes pitch matching forgiving (L3); cents (L2)
@@ -30,7 +32,12 @@ to [MASTER-PLAN.md](MASTER-PLAN.md); every lesson follows the
    the phrasing lesson that needs it.
 6. **No labels.** Hooks and copy never call a singer "tone deaf", wrong, bad or failed; voice
    lessons are non-diagnostic and carry the "comfortable, never push" rule
-   ([playbook rule 21](TEACHING-PLAYBOOK.md)).
+   ([playbook rule 21](TEACHING-PLAYBOOK.md)). From Lesson 3, a voice lesson may open with a 60 to
+   90 s gentle warm-up (sigh glides, an optional lip trill) at the vocal coach's discretion. Before
+   any segment beyond a comfortable hum (holds, sirens, range) it says "Sore, hoarse or unwell
+   today? Just listen along." (the playbook's house rules). Holds are 5, 10 or 15 s; 30 s is only
+   ever an optional advanced length with "breathe whenever you need", never a checkpoint. A vocal
+   coach signs off every voice lesson at the script and publish gates (MASTER-PLAN § 7).
 
 ## 2. Season 1: "Find Your Pitch" (14 lessons and a trailer)
 
@@ -39,97 +46,133 @@ breath, intervals, range. Arc B, **Shape it** (Lessons 8 to 14): rhythm, leaps, 
 registers, chords, vowels, a whole song.
 
 Target length 6 to 9 minutes; tiny topics 4 to 5; cap at 10 (3Blue1Brown's curriculum series
-runs 4:27 to 17:16, median 11:34; MOOC engagement medians sit at about 6 minutes). Lesson 1 is
-4:48.
+runs 4:27 to 17:16, median 11:34; MOOC engagement medians sit at about 6 minutes). Lesson 1 runs
+4:53 (293.2 s on its cue sheet).
 
-| #   | Track            | Title                                 | Topics                                | Hook question (the cold open)                                                                                                         |
-| --- | ---------------- | ------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | Trailer          | Find your pitch                       | all                                   | What if you could see every note you sing? (2 to 3 minutes: the promise and the map of all 14 hooks)                                  |
-| 1   | Theory           | What is a note? **(made)**            | T01, T02                              | If 440 Hz shakes the air twice as fast as 220 Hz, why do they sound like the same note?                                               |
-| 2   | Theory           | Twelve notes                          | T03, T04                              | Musicians only use seven letters, so where do the other five notes come from?                                                         |
-| 3   | Voice            | Match a note                          | S01, S05                              | In one large study most people said they couldn't copy a tune, yet only a small minority actually missed. So what is really going on? |
-| 4   | Theory           | The major scale and home              | T09, T10                              | Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?                                               |
-| 5   | Voice            | Breath and a steady note              | S02, S03, S04, S06                    | If the diaphragm is a breathing-in muscle, what are singers doing when they "sing from the diaphragm"?                                |
-| 6   | Theory           | Intervals: the distance between notes | T11, T12                              | Why can you start "Twinkle, Twinkle" on any note and it is still the same tune?                                                       |
-| 7   | Voice            | Slides, sirens and your range         | S07, S08                              | How many notes can your voice reach, and why is the comfortable middle worth more than the extremes?                                  |
-| 8   | Theory           | Beat, tempo and the backbeat          | T05, T06                              | Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?                                                    |
-| 9   | Voice            | Landing a leap                        | S09, S10                              | Why is jumping to a note so much harder than stepping to it?                                                                          |
-| 10  | Theory           | Major and minor                       | T14, T15 (natural minor), T19 (intro) | Which single note turns a bright major chord into a dark minor one?                                                                   |
-| 11  | Voice            | Registers and the break               | S12                                   | Why does your voice flip at roughly the same note every time you slide up?                                                            |
-| 12  | Theory           | Chords and the four-chord song        | T19, T20, T21                         | How can hundreds of songs share the same four chords and still sound different?                                                       |
-| 13  | Voice            | Resonance and vowels                  | T28, S13, S14                         | If "ee" and "ah" sung on the same note draw the same pitch line, what makes them sound different?                                     |
-| 14  | Voice and theory | Phrasing: sing a whole song           | S16, S17, T22 (light)                 | If you can hit every note of a song, what is still missing between correct and compelling?                                            |
+The hook is the cold open, not necessarily the YouTube title. A YouTube title has at most 100
+characters (aim for about 60) and may shorten the hook as long as it stays accurate; the full hook
+goes in the thumbnail text, the first line of the description and the cold open (MASTER-PLAN
+§ 4.1).
+
+| #   | Track            | Title                                 | Topics                 | Hook question (the cold open)                                                                                                                               |
+| --- | ---------------- | ------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Trailer          | Find your pitch                       | all                    | What if you could see every note you sing? (2 to 3 minutes: the promise and the map of all 14 hooks)                                                        |
+| 1   | Theory           | What is a note? **(in production)**   | T01, T02               | If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?                                                                 |
+| 2   | Theory           | Twelve notes                          | T03, T04               | Musicians only use seven letters, so where do the other five notes come from?                                                                               |
+| 3   | Voice            | Match a note                          | S01, S05               | Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going on? |
+| 4   | Theory           | The major scale and home              | T09, T10               | Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?                                                                     |
+| 5   | Voice            | Breath and a steady note              | S02, S03, S04, S06     | Singers are told to "support" a long note. If that doesn't mean pushing, what keeps it steady?                                                              |
+| 6   | Theory           | Intervals: the distance between notes | T11, T12               | Why can you start "Twinkle, Twinkle" on any note and it is still the same tune?                                                                             |
+| 7   | Voice            | Slides, sirens and your range         | S07, S08               | How many notes can your voice reach, and why is the comfortable middle worth more than the extremes?                                                        |
+| 8   | Theory           | Beat, tempo and the backbeat          | T05, T06               | Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?                                                                          |
+| 9   | Voice            | Landing a leap                        | S09, S10               | Why is jumping to a note so much harder than stepping to it?                                                                                                |
+| 10  | Theory           | Major and minor                       | T14, T15a, T19 (intro) | Which single note turns a bright major chord into a dark minor one?                                                                                         |
+| 11  | Voice            | Registers and the break               | S12                    | Why does your voice flip at roughly the same note every time you slide up?                                                                                  |
+| 12  | Theory           | Chords and the four-chord song        | T19, T20, T21          | How can hundreds of songs share the same four chords and still sound different?                                                                             |
+| 13  | Voice            | Resonance and vowels                  | T28, S13, S14          | If "ee" and "ah" sung on the same note draw the same pitch line, what makes them sound different?                                                           |
+| 14  | Voice and theory | Phrasing: sing a whole song           | S16, S17, T22 (light)  | If you can hit every note of a song, what is still missing between correct and compelling?                                                                  |
 
 ### 2.1 Lesson cards
 
 Each card is what a script writer needs before the first draft. "Misconception" is orange Merc's
 sincere wrong guess (playbook rule 3); "Signature" is the episode's persistent object and its
 transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" is the app link
-(see § 4 for what exists and what needs a small engineering change).
+(see § 4 for what exists and what needs engineering).
 
-**Lesson 1. What is a note?** (made: script, storyboard, film and web lesson; 4:48)
+**Lesson 1. What is a note?** (in production: script, storyboard, all 17 Merc passes and all 21
+scenes built; the full-film critic rounds and the delivery render are still to come, and the web
+lesson is in build; 4:53)
 
 - Objectives: say what makes a note higher (faster vibration, more hertz) and that loudness is
   something else; recognise that doubling the frequency gives the same note an octave up; read
   octave numbers (A3, A4, C4) and know they change at C.
-- Misconception: "A high note is just a loud note." "Twice as fast must be a different note."
+- Misconception: "A high note is just a loud note" (refuted). Orange's cold-open guess, "Same
+  note", is half right, so the reveal settles it rather than refuting it: "Higher, yes. But
+  together, they melt into one note."
 - Signature: the pitch line winds into a spiral; the spiral unrolls into the keyboard.
-- Checkpoint: Merc sings an A; hum it back in any octave.
-- Practise: `mercurypitch.com/mirror` (Voice Mirror's Match ignores octave errors,
+- Checkpoint: Merc sings an A; hum along with Merc in any octave (unscored). To be scored, sing it
+  back on "ooh" in Voice Mirror. The Phase 1 re-voice changes the film's "Hum it back" to "Sing it
+  back, or hum along".
+- Practise: `mercurypitch.com/mirror` (Voice Mirror's match scoring is octave-folded,
   `src/lib/mirror/metrics.ts:261`).
-- Facts: `output/motion/lesson-01/FACTS.md`, copied to `lessons/01-what-is-a-note/FACTS.md`.
+- Facts: [lessons/01-what-is-a-note/FACTS.md](lessons/01-what-is-a-note/FACTS.md).
 
 **Lesson 2. Twelve notes**
 
 - Objectives: find the twelve notes on a keyboard and on the spiral; tell a semitone from a whole
   tone by ear; know why one key has two names (C sharp, D flat); know a semitone is 100 cents, the
   unit MercuryPitch scores in.
-- Misconception: "Black keys are sharps and white keys are naturals." "There's no note between B
-  and C because the keyboard has no black key there."
-- Signature: the five "?" beads from Lesson 1's spiral light up; each semitone is a 2^(1/12) step
-  (a ratio of about 1.0595), so twelve equal steps multiply to exactly 2.
+- Misconception: "Black keys are sharps and white keys are naturals." "B to C must be a bigger
+  step, since there's no black key between them." (Refuted by: every neighbouring key, white or
+  black, is one semitone.)
+- Signature: the five "?" beads from Lesson 1's spiral light up; on screen, twelve equal steps make
+  an octave, each 100 cents. Writer's note (or a "Go deeper" drawer): each semitone is a 2^(1/12)
+  step (a ratio of about 1.0595), so twelve equal steps multiply to exactly 2.
 - Checkpoint: slide up one semitone from a held note and back.
-- Practise: Ear Lab Contour (tiers "Half steps" 100 cents and "Whole steps" 200 cents); needs an
-  `ear-drill` launch kind, until then `/ear-lab` plus "tap Contour".
+- Practise: Ear Lab Leap with only Minor 2nd and Major 2nd (`leap:m2`, `leap:M2` in
+  `src/lib/ear/banks.ts`); needs the `ear-drill` launch kind to accept a bank subset, until then
+  `/ear-lab`, then tap Leap. Contour (tiers "Half steps" and "Whole steps") only as an optional
+  warm-up for direction: it asks up, down or same, never semitone or tone.
 - Facts: 12-TET ratio; 100 cents per equal-tempered semitone (Ellis, 1885); keyboard layout;
   the app labels with sharps only.
 
 **Lesson 3. Match a note**
 
-- Objectives: understand that matching is a hear, try, compare, adjust loop; know an octave match
-  counts; get a first success at a slow pace in a comfortable range.
+- YouTube title: "Can you really be tone deaf?" (the full hook goes in the thumbnail, the
+  description's first line and the cold open).
+- Objectives: know how the voice makes pitch: the vocal folds vibrate, and faster, more tensed
+  folds give a higher note (a callback to Lesson 1); look after it: sing at about speaking volume,
+  drink water, rest when it feels tired, and stop if it feels scratchy or hoarse; understand that
+  matching is a hear, try, compare, adjust loop; know an octave match counts; get a first success
+  at a slow pace in a comfortable range.
 - Misconception: "Some people are just tone deaf." (Orange voices "I can't sing" once; blue
   answers with the evidence: congenital amusia is about 1.5 % of people; poor-pitch singing is
   mostly a mapping skill between ear and voice, and it improves with practice.)
 - Signature: the singer's line chasing Merc's target band, with the gap shrinking in cents.
-- Checkpoint: three notes, Merc first, viewer second, each slow and in the viewer's register.
-- Practise: `/mirror`; Pitch Hold (needs a slug).
+- Checkpoint: three notes, Merc first, viewer second, each slow and in the viewer's register,
+  after the optional warm-up (principle 6).
+- Practise: `/mirror` (octave-folded); Pitch Hold (needs a slug with `durationSec`). Pitch Hold
+  scores raw cents against the written octave, so it also needs the octave-folded option, or the
+  lesson says in writing that this drill scores the written octave (§ 4).
 - Facts: Pfordresher and Brown (2007); Peretz and Vuvan (2017); Dalla Bella et al. (2007);
-  Hutchins and Peretz (2012). Phrase study numbers as "in one large study".
+  Hutchins and Peretz (2012). Name what was asked and what was tested: "most" is a questionnaire
+  of 1,105 students (59 % said they couldn't imitate a melody accurately); the two singing
+  experiments (79 and 45 participants) found 13 % and 16 % missing by a semitone or more (the
+  abstract says 10 to 15 %).
 
 **Lesson 4. The major scale and home**
 
-- Objectives: build a major scale from the tone-tone-semitone pattern; feel the tonic as home;
-  name scale degrees with movable do.
+- Objectives: build a major scale from the tone-tone-semitone-tone-tone-tone-semitone pattern (two
+  tone-tone-semitone groups joined by a tone); feel the tonic as home; name scale degrees with
+  movable do.
 - Misconception: "A scale is a fixed set of notes that starts on C."
 - Signature: a staircase whose steps are uneven (two semitone steps) that you can slide to start
   on any note and still sound the same.
 - Checkpoint: sing do-re-mi-fa-so and back, then stop on ti and feel the pull.
 - Practise: Scale Runner at a beginner tempo (needs a data-only slug: `/exercises/<slug>` with
   `scale-major-c4`, low difficulty).
-- Facts: major-scale step pattern; stable and unstable degrees (Hooktheory I, ch. 3).
+- Facts: major-scale step pattern T-T-S-T-T-T-S (two T-T-S groups joined by a tone); stable and
+  unstable degrees (Hooktheory I, ch. 3).
 
 **Lesson 5. Breath and a steady note**
 
 - Objectives: breathe low and quietly; start a note cleanly (balanced onset); hold a note steadily
-  for a comfortable fixed length.
-- Misconception: "Sing from your diaphragm." (The diaphragm is a breathing-in muscle; "support"
-  has no agreed definition: Salomoni et al. 2016.)
+  for a comfortable fixed length (5, 10 or 15 s, principle 6).
+- Misconception: "Support means pushing or squeezing." Refute the harmful belief, not the anatomy:
+  the diaphragm mostly works on the in-breath, and at the start of a phrase it can gently "check"
+  the out-breath so the sound starts steady (inspiratory checking). Cue the effect (rule 24): a
+  low, quiet inhale and a steady, unforced flow. "Support" has no agreed definition (Salomoni et
+  al. 2016).
 - Signature: the pitch line of a held note settling from a wobble into a narrow band.
-- Checkpoint: hold one comfortable note for 5 seconds, then 10.
-- Practise: Long Note with a fixed 5 or 10 s timer; the Ascent "Breath and Power" week.
-- Facts: Hixon on respiratory function in singing; onset types (Arneson, Estill). Never rate
-  breath support (the app's guided-voice claims rules).
+- Checkpoint: hold one comfortable note for 5 seconds, then 10, after the "Sore, hoarse or unwell
+  today? Just listen along." line.
+- Practise: Long Note with a fixed 5 or 10 s length (needs the `durationSec` launch field; today
+  the length is the viewer's saved timer preference). No Ascent link until its "Breath & Power"
+  week is rewritten (§ 4).
+- Facts: Hixon on respiratory function in singing, including inspiratory checking; Leanderson,
+  Sundberg and von Euler (1987) on the diaphragm during singing; Sundberg's review of breathing in
+  singing; onset types (Arneson, Estill). Never rate breath support (the app's guided-voice claims
+  rules).
 
 **Lesson 6. Intervals: the distance between notes**
 
@@ -138,7 +181,8 @@ transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" i
 - Misconception: "A tune is a list of notes, so changing the notes changes the tune."
 - Signature: a tune's contour lifted off the chart and slid up and down while it keeps its shape.
 - Checkpoint: sing a short phrase starting on two different notes.
-- Practise: Interval Trainer (listen first); Ear Lab Leap (identify).
+- Practise: Interval Trainer (listen first; picking the anchored intervals needs the `intervals`
+  launch field, § 4); Ear Lab Leap (identify).
 - Facts: melody defined by intervals; song anchors per interval (choose public-domain tunes).
 
 **Lesson 7. Slides, sirens and your range**
@@ -148,9 +192,11 @@ transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" i
 - Misconception: "A good singer has the widest range."
 - Signature: the siren's glowing line sweeping the chart, with the comfortable band lit and the
   edges dimmed.
-- Checkpoint: one gentle siren up and down on "ng".
+- Checkpoint: one gentle siren up and down on "ng", after the "Sore, hoarse or unwell today?"
+  line.
 - Practise: Vocal Range Test (`/vocal-range-test`); the warm-up's lip trill (needs a `pattern`
-  slug); the Ascent "Reach New Notes" week.
+  slug). No Ascent link until its "Reach New Notes" week, which says "extend your range", is
+  rewritten (§ 4).
 - Facts: Titze's semi-occluded warm-ups (2006); voice-type ranges; SOVT evidence is modest. Never
   reward the widest span (the app's guided-voice rules).
 
@@ -170,9 +216,13 @@ transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" i
 - Objectives: land thirds, the fifth, the fourth and the octave in tune; use an arpeggio as a
   ladder.
 - Misconception: "You jump to the top note and hope."
-- Signature: the leap drawn as an arc whose landing zone is a gold band; slow leaps first.
+- Signature: the leap drawn as an arc whose landing zone is the target band (amber, the app's
+  pitch-canvas colour); slow leaps first.
 - Checkpoint: do-mi-so-do, slowly.
-- Practise: Interval Trainer (sing); Arpeggio Jumper; the Ascent "Tuning and Ear" week.
+- Practise: Interval Trainer (sing; needs the `intervals` launch field, and a minor third its
+  fixed pool lacks); Arpeggio Jumper; the Ascent "Tuning & Ear" week. Interval Trainer scores
+  raw cents against the written octave, so until the octave-folded option exists the lesson says
+  so in writing (§ 4).
 - Facts: RCM interval order; Kodály's sol-mi start.
 
 **Lesson 10. Major and minor**
@@ -183,8 +233,12 @@ transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" i
 - Signature: one bead (the third) sliding down one semitone and the whole chord's colour
   changing.
 - Checkpoint: sing do-mi-so, then do-me-so.
-- Practise: Drone Intonation (major and minor thirds against a drone); Ear Lab Stack.
+- Practise: Drone Intonation (major and minor thirds against a drone; needs the `intervals` launch
+  field to keep only its Major 3rd and Minor 3rd); Ear Lab Stack.
 - Facts: major and minor thirds differ by one semitone; the RCM Preparatory chord-quality test.
+- Open decision, before the script (MASTER-PLAN § 12 item 12): do-based minor (do-me-so, as
+  above) or la-based minor (la-do-mi, the Kodály choice). Season 2's movable-do sight-singing
+  (S11) inherits it.
 
 **Lesson 11. Registers and the break**
 
@@ -194,8 +248,8 @@ transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" i
   Henrich 2006.)
 - Signature: the siren's line crossing a shaded seam, with the seam narrowing over repetitions.
 - Checkpoint: a slow "ng" slide across your break, quietly.
-- Practise: siren and slide drills (needs slugs). The app does not detect registers; teach it
-  conceptually.
+- Practise: the Siren and Slide exercises (need slugs). The app does not detect registers; teach
+  it conceptually.
 - Facts: Henrich (2006); Arneson on register coordination. Never frame registers as a problem.
 
 **Lesson 12. Chords and the four-chord song**
@@ -204,7 +258,8 @@ transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" i
 - Misconception: "Songs with the same chords are the same song."
 - Signature: four chords as four rooms on the spiral; a melody walking through them.
 - Checkpoint: sing the root of each chord as the progression plays.
-- Practise: Chord Stacker (needs triads; today it has sevenths only), Play Along.
+- Practise: Chord Stacker (needs major and minor triads; today it has only maj7, min7, dom7, dim7
+  and maj6), Play Along.
 - Facts: Ableton Learning Music's 1-5-6-4 lesson; Roman numerals (Hooktheory I).
 
 **Lesson 13. Resonance and vowels**
@@ -222,7 +277,7 @@ transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" i
 **Lesson 14. Phrasing: sing a whole song**
 
 - Objectives: plan breaths at phrase ends; shape a phrase with dynamics without pushing; put the
-  season together in one song.
+  season together in one song; record yourself and listen back (S22).
 - Misconception: "If every note is in tune, the song is finished."
 - Signature: a whole song's pitch line with breath marks and a swell drawn in light.
 - Checkpoint: sing one phrase twice, the second time with a planned breath and a swell.
@@ -231,44 +286,46 @@ transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" i
 
 ## 3. Topic graph
 
-IDs are stable anchors for the lesson explorer. Prerequisites list the minimum.
+IDs are stable anchors for the lesson explorer. Prerequisites list the minimum. A Season 1 topic
+only ever needs Season 1 topics, which is why T15 is split into T15a and T15b.
 
 ### 3.1 Theory
 
-| ID  | Topic                                                                   | Prerequisites | Season         |
-| --- | ----------------------------------------------------------------------- | ------------- | -------------- |
-| T01 | Sound and pitch: vibration, frequency, hertz; high is not loud          | none          | 1              |
-| T02 | Octave and octave equivalence; seven letter names; octave numbers       | T01           | 1              |
-| T03 | Twelve notes: semitones, tones, sharps and flats, keyboard, enharmonics | T02           | 1              |
-| T04 | Cents and "in tune"                                                     | T03           | 1              |
-| T05 | Pulse, beat and tempo                                                   | none          | 1              |
-| T06 | Metre and bars; downbeat; backbeat                                      | T05           | 1              |
-| T07 | Note values, rests, dots, ties, subdivision                             | T06           | 2              |
-| T08 | Simple and compound metre; triplets; syncopation                        | T07           | 2              |
-| T09 | Major scale; tonic as home                                              | T03           | 1              |
-| T10 | Scale degrees and movable do                                            | T09           | 1              |
-| T11 | Melody: contour, steps and leaps, transposition                         | T10           | 1              |
-| T12 | Intervals by size and by sound                                          | T09           | 1              |
-| T13 | Interval quality: major, minor, perfect; tritone; inversion             | T12           | 2              |
-| T14 | Major and minor third; major and minor triads by ear                    | T12           | 1              |
-| T15 | Minor scales: natural, harmonic, melodic; relative keys                 | T09, T13      | 1 (natural), 2 |
-| T16 | Pentatonic and blues scales                                             | T09           | 2              |
-| T17 | Keys, key signatures, transposition                                     | T09           | 2              |
-| T18 | Circle of fifths                                                        | T17, T13      | 2              |
-| T19 | Triads: major, minor, diminished, augmented                             | T14           | 1              |
-| T20 | Diatonic chords, Roman numerals, function                               | T19, T10      | 1              |
-| T21 | Common progressions                                                     | T20           | 1              |
-| T22 | Phrases and cadences                                                    | T20, T06      | 1 (light), 2   |
-| T23 | Chord tones and non-chord tones                                         | T20, T11      | 2              |
-| T24 | Seventh chords                                                          | T19           | 2              |
-| T25 | Inversions and voicing                                                  | T19           | 2              |
-| T26 | Modes                                                                   | T15, T10      | 3              |
-| T27 | Secondary dominants, borrowed chords, modulation                        | T21, T26      | 3              |
-| T28 | Timbre, harmonics, overtones; spectrum                                  | T01           | 1              |
-| T29 | Tuning systems: why twelve, equal temperament                           | T04, T28      | 2              |
-| T30 | Staff notation: staff, clefs, ledger lines, grand staff                 | T03, T07      | 2              |
-| T31 | Song form                                                               | T22           | 2              |
-| T32 | Dynamics and articulation terms                                         | none          | 2              |
+| ID   | Topic                                                                   | Prerequisites | Season       |
+| ---- | ----------------------------------------------------------------------- | ------------- | ------------ |
+| T01  | Sound and pitch: vibration, frequency, hertz; high is not loud          | none          | 1            |
+| T02  | Octave and octave equivalence; seven letter names; octave numbers       | T01           | 1            |
+| T03  | Twelve notes: semitones, tones, sharps and flats, keyboard, enharmonics | T02           | 1            |
+| T04  | Cents and "in tune"                                                     | T03           | 1            |
+| T05  | Pulse, beat and tempo                                                   | none          | 1            |
+| T06  | Metre and bars; downbeat; backbeat                                      | T05           | 1            |
+| T07  | Note values, rests, dots, ties, subdivision                             | T06           | 2            |
+| T08  | Simple and compound metre; triplets; syncopation                        | T07           | 2            |
+| T09  | Major scale; tonic as home                                              | T03           | 1            |
+| T10  | Scale degrees and movable do                                            | T09           | 1            |
+| T11  | Melody: contour, steps and leaps, transposition                         | T10           | 1            |
+| T12  | Intervals by size and by sound                                          | T09           | 1            |
+| T13  | Interval quality: major, minor, perfect; tritone; inversion             | T12           | 2            |
+| T14  | Major and minor third; major and minor triads by ear                    | T12           | 1            |
+| T15a | Natural minor scale                                                     | T09, T14      | 1            |
+| T15b | Harmonic and melodic minor; relative keys                               | T15a, T13     | 2            |
+| T16  | Pentatonic and blues scales                                             | T09           | 2            |
+| T17  | Keys, key signatures, transposition                                     | T09           | 2            |
+| T18  | Circle of fifths                                                        | T17, T13      | 2            |
+| T19  | Triads: major, minor, diminished, augmented                             | T14           | 1            |
+| T20  | Diatonic chords, Roman numerals, function                               | T19, T10      | 1            |
+| T21  | Common progressions                                                     | T20           | 1            |
+| T22  | Phrases and cadences                                                    | T20, T06      | 1 (light), 2 |
+| T23  | Chord tones and non-chord tones                                         | T20, T11      | 2            |
+| T24  | Seventh chords                                                          | T19           | 2            |
+| T25  | Inversions and voicing                                                  | T19           | 2            |
+| T26  | Modes                                                                   | T15b, T10     | 3            |
+| T27  | Secondary dominants, borrowed chords, modulation                        | T21, T26      | 3            |
+| T28  | Timbre, harmonics, overtones; spectrum                                  | T01           | 1            |
+| T29  | Tuning systems: why twelve, equal temperament                           | T04, T28      | 2            |
+| T30  | Staff notation: staff, clefs, ledger lines, grand staff                 | T03, T07      | 2            |
+| T31  | Song form                                                               | T22           | 2            |
+| T32  | Dynamics and articulation terms                                         | none          | 2            |
 
 ### 3.2 Voice
 
@@ -295,51 +352,117 @@ IDs are stable anchors for the lesson explorer. Prerequisites list the minimum.
 | S19 | Vibrato                                                    | S06, S17      | 2                 |
 | S20 | Harmony singing                                            | S06, T13, T19 | 2                 |
 | S21 | Style and qualities (speech, twang, belt, falsetto)        | S12, S13, S17 | 3                 |
-| S22 | Practice habits, warm-up and cool-down, recording yourself | S01-S07       | 1 (woven through) |
+| S22 | Practice habits, warm-up and cool-down, recording yourself | S01           | 1 (woven through) |
+
+S22 is woven through from Lesson 3: the optional warm-up opener (principle 6), then recording
+yourself in Lesson 14.
+
+The Season 1 graph, generated from the two tables: every Season 1 topic and every prerequisite
+edge between them (T22 for its light Season 1 part). Season 2 and 3 topics are left out; no
+Season 1 topic points at one.
 
 ```mermaid
 graph LR
-  T01 --> T02 --> T03 --> T09 --> T10 --> T11
+  T01 --> T02
+  T02 --> T03
   T03 --> T04
-  T09 --> T12 --> T13
-  T12 --> T14 --> T19 --> T20 --> T21
-  T10 --> T20
-  T01 --> T28
   T05 --> T06
-  T01 --> S01 --> S02 --> S03 --> S04
-  T02 --> S05
-  S01 --> S05 --> S07 --> S08
-  S04 --> S06
-  T04 --> S06
-  S05 --> S09
-  T09 --> S09 --> S10
-  T12 --> S10
-  S07 --> S12
-  S08 --> S12 --> S13 --> S14
-  T28 --> S13
-  S03 --> S16
-  T06 --> S16
-  S06 --> S17
+  T03 --> T09
+  T09 --> T10
+  T10 --> T11
+  T09 --> T12
+  T12 --> T14
+  T09 & T14 --> T15a
+  T14 --> T19
+  T19 & T10 --> T20
+  T20 --> T21
+  T20 & T06 --> T22
+  T01 --> T28
+  T01 --> S01
+  S01 --> S02
+  S02 --> S03
+  S03 --> S04
+  S01 & T02 --> S05
+  S04 & S05 & T04 --> S06
+  S05 --> S07
+  S05 & S07 --> S08
+  S05 & T09 --> S09
+  S09 & T12 --> S10
+  S07 & S08 --> S12
+  S12 & T28 --> S13
+  S13 --> S14
+  S03 & S09 & T06 --> S16
+  S03 & S06 --> S17
+  S01 --> S22
 ```
+
+### 3.3 Lesson prerequisites (for the explorer)
+
+The explorer draws lessons, not topics. Each lesson needs the lessons that teach its topics'
+prerequisites; an edge already implied through another prerequisite is left out, so the explorer
+draws the fewest lines. Every prerequisite is an earlier Season 1 lesson.
+
+| Lesson                            | Needs       | Because                                                                               |
+| --------------------------------- | ----------- | ------------------------------------------------------------------------------------- |
+| 0 Find your pitch (trailer)       | none        | It previews every lesson                                                              |
+| 1 What is a note?                 | none        | T01 and T02 start the graph                                                           |
+| 2 Twelve notes                    | 1           | T03 needs T02                                                                         |
+| 3 Match a note                    | 1           | S01 needs T01; S05 needs T02                                                          |
+| 4 The major scale and home        | 2           | T09 needs T03                                                                         |
+| 5 Breath and a steady note        | 2, 3        | S06 needs T04 (2) and S05 (3); S02 needs S01 (3)                                      |
+| 6 Intervals                       | 4           | T11 needs T10; T12 needs T09                                                          |
+| 7 Slides, sirens and your range   | 3           | S07 and S08 need S05                                                                  |
+| 8 Beat, tempo and the backbeat    | none        | T05 has no prerequisite: rhythm starts fresh                                          |
+| 9 Landing a leap                  | 3, 6        | S09 needs S05 (3) and T09 (4, via 6); S10 needs T12 (6)                               |
+| 10 Major and minor                | 6           | T14 needs T12 (6); T15a needs T09 (4, via 6)                                          |
+| 11 Registers and the break        | 7           | S12 needs S07 and S08                                                                 |
+| 12 Chords and the four-chord song | 10          | T19 needs T14 (10); T20 needs T10 (4, via 10)                                         |
+| 13 Resonance and vowels           | 11          | S13 needs S12 (11); T28 needs T01 (1, via 11)                                         |
+| 14 Phrasing                       | 5, 8, 9, 12 | S16 needs S03 (5), T06 (8) and S09 (9); S17 needs S03 and S06 (5); T22 needs T20 (12) |
 
 ## 4. Practise links: what exists and what needs building
 
 The app can open these today: `/mirror`, `/vocal-range-test`, `/voice-type-test`,
 `/which-singer-has-my-vocal-range`, `/free-sing`, `/pitch-training`, `/ear-lab`, `/drum-night`,
 `/piano-night`, `/karaoke-night`, tab hashes (`#/exercises`, `#/path`, `#/singing`,
-`#/learn/<chapterId>`), and four exercise slugs (`/exercises/perfect-octave`,
-`/exercises/speed-scales`, and two that open tabs). Everything else needs one of these small
-changes (detail in the master plan, Phase 1):
+`#/learn/<chapterId>`), and three exercise slugs (`/exercises/speed-scales` and two that open
+tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's start note, so
+it does not drill an octave yet (item 3).
 
-1. Data-only slugs in `src/features/exercises/slug-map.ts` for each lesson's drill (beginner
-   tempo, comfortable durations).
-2. A `pattern` field on exercise launches (warm-up patterns such as lip trill and sirens) and a
-   scale-type field for Scale Runner.
-3. New launch kinds: `ear-drill`, `zen`, `learn`.
-4. A lesson marker (`?lesson=`) that skips First Light for visitors arriving from a lesson and
+Data alone is not enough. A slug launch carries only `exercise`, `notes`, `scaleId` and
+`difficulty` (`ExerciseLaunch` in `src/features/exercises/slug-map.ts`), and most drills read
+only the first note and the difficulty. Interval Trainer shuffles a fixed pool (M2, M3, P4, P5,
+M6, P8, no minor third), Drone Intonation shuffles its own intervals, and Long Note's length is
+the viewer's saved timer preference. Everything else therefore needs one of these changes
+(detail in MASTER-PLAN § 7: the Phase 1 App and App content tracks, and the Phase 2 engineering
+track for item 4 and for the Lesson 9 and 10 interval sets in item 2); items 2 to 7 are code with
+tests, estimated as such:
+
+1. Data-only slugs for drills that need only a start note, a scale or a difficulty (Scale Runner
+   at a beginner tempo, Pitch Hold's start note, Siren and Slide).
+2. New launch fields: `intervals` (semitones and direction) for Interval Trainer and Drone
+   Intonation (Lessons 6, 9 and 10; Lesson 9 also needs a minor third in Interval Trainer's pool),
+   and `durationSec` for Long Note and Pitch Hold (Lessons 3 and 5). A `pattern` field on slug
+   launches for warm-up patterns such as lip trill and sirens (`launch-override.ts` already
+   exposes `launchPattern`, which the warm-up reads; `ExerciseLaunch` lacks it), and a scale-type
+   field for Scale Runner.
+3. Fix `perfect-octave` so Interval Trainer honours the full note list and drills the octave.
+4. Chord Stacker triad chord types (major and minor) for Lesson 12.
+5. New launch kinds: `ear-drill` (accepting a bank subset, such as `leap:m2` and `leap:M2` for
+   Lesson 2), `zen`, `learn`.
+6. A lesson marker (`?lesson=`) that skips First Light for visitors arriving from a lesson and
    records attribution.
-5. An octave-tolerant option for pitch-matching drills, or an explicit note in each lesson that
-   drills score the written octave.
+7. An octave-folded scoring option for Pitch Hold and the other pitch-matching drills (Pitch Hold
+   scores raw cents against the written octave today), or an explicit written-octave note in
+   Lessons 3 and 9.
+8. A rewrite of the Ascent's weeks 2 and 3 in `src/features/path/path-content.ts` ("Breath &
+   Power" says "Build breath support"; "Reach New Notes" says "Extend your range"), focus, goals
+   and curated videos, checked against the playbook's claims rules (the Phase 1 App content
+   track). Until then Lessons 5 and 7 do not link the Ascent.
+
+Phase 1's App exit is every Lesson 2 to 7 link opening its drill. The Arc B items (the Lesson 9
+and 10 interval sets, Chord Stacker triads) are in the Phase 2 engineering track, and Phase 2's
+exit includes every Lesson 8 to 14 link opening its drill (MASTER-PLAN § 7).
 
 Gaps with no drill today (candidates for new content): straw phonation, register work, vowels,
 keyboard and note-naming drills, sharps and enharmonics, the circle of fifths, sung minor and
@@ -350,7 +473,7 @@ minor scale by ear.
 
 **Season 2, "Read it, harmonise it"** (12 to 14 lessons): the staff and clefs (T30), note values
 and rhythm reading (T07, T08), sight-singing with movable do (S11), interval quality and the
-tritone (T13), minor scales properly (T15), keys and the circle of fifths (T17, T18), harmony
+tritone (T13), minor scales properly (T15b), keys and the circle of fifths (T17, T18), harmony
 singing against a drone and a second voice (S20), vibrato (S19), agility and pentatonic runs (S18,
 T16), cadences and song form (T22, T31), seventh chords and inversions (T24, T25), why twelve notes
 (tuning, T29).

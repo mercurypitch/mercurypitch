@@ -118,8 +118,7 @@ back on "ooh", and counts a match in any octave. Free, no account:
 
 ## Quick check
 
-Each question has three or four answers, shown in a shuffled order, so a guess scores a third or a
-quarter, not half.
+Each question has three answers, shown in a shuffled order, so a guess scores a third, not half.
 
 1. What makes a note higher?
    - Faster swings (a higher frequency) **[correct]** · Feedback: "Yes. Speed is pitch; size is
