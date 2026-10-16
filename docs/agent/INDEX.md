@@ -170,7 +170,7 @@ These are the rules that break things when ignored.
 | File | LOC | What it is |
 |---|---|---|
 | [piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k | Piano Roll Editor — Canvas-based note editor |
-| [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.8k | Audio Engine — Web Audio API playback and microphone input |
+| [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.7k | Audio Engine — Web Audio API playback and microphone input |
 | [vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k | Vocal Analyzer — DSP utilities for vocal analysis features Phase 1: Intensity Mirroring, Breathiness Index, Slide Tracking |
 | [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 950 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
 | [uvr-api.ts](../../src/lib/uvr-api.ts) | 950 | UVR API Client - Frontend Integration |
@@ -184,12 +184,12 @@ These are the rules that break things when ignored.
 | [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 650 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 600 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
 | [preview-player.ts](../../src/lib/preview-player.ts) | 600 | Preview player — pop-free HTMLAudioElement playback HOW TO NOT POP, the house rules (see .claude/memory/ audio-pop-free-playback.md): A b... |
+| [demo-audio.ts](../../src/lib/demo-audio.ts) | 550 | Audible guided demos (glass plan §17.4, decision 18). |
 | [device-tier.ts](../../src/lib/device-tier.ts) | 550 | Device tier — one answer to "how much frame budget does this machine have?" TV browsers (Google TV / Android TV, Tizen, webOS, Fire TV) a... |
 | [mic-manager.ts](../../src/lib/mic-manager.ts) | 550 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 550 | Pitch Algorithm Tester — Compare pitch detection algorithms |
 | [runpod.ts](../../src/lib/runpod.ts) | 550 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 550 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
-| [demo-audio.ts](../../src/lib/demo-audio.ts) | 500 | Audible guided demos (glass plan §17.4, decision 18). |
 | [hash-router.ts](../../src/lib/hash-router.ts) | 500 | Hash Router — Client-side hash-based routing |
 | [scale-data.ts](../../src/lib/scale-data.ts) | 500 | Scale Data — Music theory utilities for MercuryPitch |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 500 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
@@ -384,7 +384,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.9k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.8k |
-| [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.8k |
+| [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.7k |
 | [src/features/guitar-night/GuitarNightScoreRoom.tsx](../../src/features/guitar-night/GuitarNightScoreRoom.tsx) | 2.6k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.5k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.5k |

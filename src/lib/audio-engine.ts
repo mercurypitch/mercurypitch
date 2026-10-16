@@ -10,6 +10,7 @@ import { drumVoiceForMidi } from './drum-lanes'
 import type { DrumVoiceId } from './drum-voices'
 import { triggerDrumVoice } from './drum-voices'
 import { createBassVoice, createGuitarVoice } from './guitar/guitar-synth'
+import { lowNoteOctaveLevel, lowNotePeakBoost } from './low-note-reinforcement'
 import { publishMicLevel, resetMicLevel } from './mic-level'
 import { micManager } from './mic-manager'
 import { UvrProcessor } from './uvr-processor'
@@ -191,56 +192,6 @@ export class AudioEngine {
   ): number {
     if (frequency === undefined || !(frequency > 0)) return base
     return Math.max(base, (AudioEngine.MIN_ENVELOPE_CYCLES * 5) / frequency)
-  }
-
-  /**
-   * The bottom octave needs help, and level alone cannot give it.
-   *
-   * A bare sine at D2 (73 Hz) puts all of its energy an octave below what a
-   * laptop or phone speaker can move, so it reads as "barely there" however
-   * far the gain is pushed — and the ear itself wants roughly 15 dB more at
-   * 75 Hz than at 440 Hz for the same loudness, which is far more headroom
-   * than the bus has. What actually carries a low note on a small speaker is
-   * its second harmonic: the octave sits in the reproducible band, and the
-   * ear still hears the pitch of the fundamental (the missing-fundamental
-   * effect), so the note reads louder without reading higher.
-   *
-   * Both knobs therefore fade in together across the same span and are
-   * exactly 1 and 0 at C3 upward — nothing above the bottom two octaves
-   * changes. The repo already leans on partials for this: the piano fallback
-   * synth pairs a triangle with an octave sine, and the mirror's tone player
-   * runs a partial series.
-   */
-  private static readonly LOW_NOTE_FADE_FROM_HZ = 130.81 // C3
-  private static readonly LOW_NOTE_FADE_FULL_HZ = 61.74 // B1
-  private static readonly LOW_NOTE_PEAK_BOOST = 1.3
-  private static readonly LOW_NOTE_OCTAVE_LEVEL = 0.5
-
-  /** 0 at C3 and above, 1 at B1 and below, linear in between. */
-  private static lowNoteFadeFor(frequency: number | undefined): number {
-    if (frequency === undefined || !(frequency > 0)) return 0
-    if (frequency >= AudioEngine.LOW_NOTE_FADE_FROM_HZ) return 0
-    if (frequency <= AudioEngine.LOW_NOTE_FADE_FULL_HZ) return 1
-    return (
-      (AudioEngine.LOW_NOTE_FADE_FROM_HZ - frequency) /
-      (AudioEngine.LOW_NOTE_FADE_FROM_HZ - AudioEngine.LOW_NOTE_FADE_FULL_HZ)
-    )
-  }
-
-  /** Envelope-peak multiplier for a low note (1 for everything else). */
-  private static lowNotePeakBoostFor(frequency: number | undefined): number {
-    return (
-      1 +
-      AudioEngine.lowNoteFadeFor(frequency) *
-        (AudioEngine.LOW_NOTE_PEAK_BOOST - 1)
-    )
-  }
-
-  /** Level of the octave-up partial, relative to the fundamental. */
-  private static lowNoteOctaveLevelFor(frequency: number | undefined): number {
-    return (
-      AudioEngine.lowNoteFadeFor(frequency) * AudioEngine.LOW_NOTE_OCTAVE_LEVEL
-    )
   }
 
   // BPM state (used for timing calculations)
@@ -1965,9 +1916,9 @@ export class AudioEngine {
         allOscillators.push(osc)
 
         // Bottom-octave reinforcement: an octave-up partial under the same
-        // envelope, fading in below C3 (see lowNoteOctaveLevelFor). It is
+        // envelope, fading in below C3 (low-note-reinforcement.ts). It is
         // what makes a D2 audible on a speaker that cannot move 73 Hz.
-        const octaveLevel = AudioEngine.lowNoteOctaveLevelFor(freq)
+        const octaveLevel = lowNoteOctaveLevel(freq)
         if (octaveLevel > 0) {
           const partial = ctx.createOscillator()
           partial.type = 'sine'
@@ -1982,7 +1933,7 @@ export class AudioEngine {
 
         this._scheduleSustainEnvelope(mainGain.gain, now, dur, {
           frequency: freq,
-          peak: 0.7 * AudioEngine.lowNotePeakBoostFor(freq),
+          peak: 0.7 * lowNotePeakBoost(freq),
           attack: 0.015,
           release: 0.05,
         })

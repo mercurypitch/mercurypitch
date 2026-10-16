@@ -93,6 +93,27 @@ function sung(flutter?: typeof LIP_FLUTTER) {
 }
 
 describe('createDemoSoundtrack', () => {
+  it('gives a low note its octave, in the tone and in the voice, and a higher one none', () => {
+    const oscillators = (
+      play: (track: ReturnType<typeof createDemoSoundtrack>) => void,
+    ): number => {
+      const fake = fakeContext()
+      const track = createDemoSoundtrack(fake.ctx, 0.12, undefined)
+      const before = fake.made.length
+      play(track)
+      return fake.made
+        .slice(before)
+        .filter((made) => made.kind === 'oscillator').length
+    }
+    // A2 sits below C3, where the octave fades in; C4 is above it.
+    expect(oscillators((track) => track.tone(45))).toBe(
+      oscillators((track) => track.tone(60)) + 1,
+    )
+    expect(oscillators((track) => track.sing(TAKE, 45))).toBeGreaterThan(
+      oscillators((track) => track.sing(TAKE, 60)),
+    )
+  })
+
   it("gives Lip roll's buzz the loudness its flutter takes away", () => {
     const { voice, destination } = sung(LIP_FLUTTER)
     expect(gainToSpeakers(voice, destination)).toBeCloseTo(

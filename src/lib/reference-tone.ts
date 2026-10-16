@@ -7,8 +7,11 @@
 // feature bundle.
 
 import { midiToFrequency } from '@/lib/frequency-to-note'
+import { lowNoteOctaveLevel, normalizedFundamental, } from '@/lib/low-note-reinforcement'
 
 const PIANO_PARTIALS = [0, 1, 0.55, 0.32, 0.2, 0.12, 0.07, 0.04]
+/** The fundamental's amplitude in the piano wave, as Web Audio plays it. */
+const PIANO_FUNDAMENTAL = normalizedFundamental(PIANO_PARTIALS)
 const waveCache = new WeakMap<AudioContext, PeriodicWave>()
 
 function pianoWave(audioContext: AudioContext): PeriodicWave {
@@ -82,6 +85,16 @@ export interface ReferenceTone {
   done: Promise<void>
 }
 
+export interface ReferenceToneOptions {
+  /**
+   * Below C3, a sine an octave up fades in under the note's own filter and
+   * envelope, at the classic engine's level relative to the note's
+   * fundamental (low-note-reinforcement.ts, which says what it measures
+   * as). The premium rooms ask for it.
+   */
+  readonly lowNoteOctave?: boolean
+}
+
 /**
  * Start a soft, piano-like reference tone that can be stopped part-way.
  * The onboarding's sound lane needs that: a new sound, or a take about to
@@ -92,6 +105,7 @@ export function startReferenceTone(
   midi: number,
   durationSec = 1,
   destination?: AudioNode,
+  options: ReferenceToneOptions = {},
 ): ReferenceTone {
   if (audioContext.state === 'suspended') {
     void audioContext.resume().catch(() => undefined)
@@ -113,8 +127,9 @@ export function startReferenceTone(
   const now = audioContext.currentTime
   const peak = 0.32
 
+  const frequency = midiToFrequency(midi)
   oscillator.setPeriodicWave(pianoWave(audioContext))
-  oscillator.frequency.value = midiToFrequency(midi)
+  oscillator.frequency.value = frequency
 
   filter.type = 'lowpass'
   filter.frequency.value = 3200
@@ -131,6 +146,21 @@ export function startReferenceTone(
   filter.connect(gain)
   gain.connect(destination ?? audioContext.destination)
 
+  // The low-note octave, if asked for (ReferenceToneOptions): through
+  // the same filter, so the note's envelope shapes it too.
+  const octaveLevel =
+    options.lowNoteOctave === true ? lowNoteOctaveLevel(frequency) : 0
+  const octave = octaveLevel > 0 ? audioContext.createOscillator() : null
+  const octaveGain = octave === null ? null : audioContext.createGain()
+  if (octave !== null && octaveGain !== null) {
+    octave.type = 'sine'
+    octave.frequency.value = frequency * 2
+    octaveGain.gain.value = octaveLevel * PIANO_FUNDAMENTAL
+    octave.connect(octaveGain)
+    octaveGain.connect(filter)
+  }
+  const voices = octave === null ? [oscillator] : [oscillator, octave]
+
   // Ended is not the same as settled. Settled means "over for the caller";
   // ended means the oscillator really stopped. A context iOS left
   // 'interrupted' or 'suspended' freezes its clock, so the note is still
@@ -143,12 +173,16 @@ export function startReferenceTone(
     ended = true
     clearTimeout(fallback)
     oscillator.disconnect()
+    octave?.disconnect()
+    octaveGain?.disconnect()
     filter.disconnect()
     gain.disconnect()
     settle()
   }
-  oscillator.start(now)
-  oscillator.stop(now + durationSec)
+  for (const voice of voices) {
+    voice.start(now)
+    voice.stop(now + durationSec)
+  }
 
   const stop = (): void => {
     if (stopped || ended) return
@@ -163,13 +197,15 @@ export function startReferenceTone(
         // plays. Its unrendered gain would read the default level, louder
         // than the note's peak, so there is nothing honest to anchor on.
         gain.gain.setValueAtTime(0, at)
-        oscillator.stop(at)
+        for (const voice of voices) voice.stop(at)
       } else {
         // Anchor where the envelope is, decay over five time constants of
         // the release, and stop only once the tail has gone quiet.
         gain.gain.setValueAtTime(gain.gain.value, at)
         gain.gain.setTargetAtTime(0, at, STOP_RELEASE_SEC / 5)
-        oscillator.stop(at + STOP_RELEASE_SEC + STOP_SLACK_SEC)
+        for (const voice of voices) {
+          voice.stop(at + STOP_RELEASE_SEC + STOP_SLACK_SEC)
+        }
       }
     } catch {
       // The context closed under us: nothing is sounding any more.
@@ -191,6 +227,13 @@ export function playReferenceTone(
   midi: number,
   durationSec = 1,
   destination?: AudioNode,
+  options?: ReferenceToneOptions,
 ): Promise<void> {
-  return startReferenceTone(audioContext, midi, durationSec, destination).done
+  return startReferenceTone(
+    audioContext,
+    midi,
+    durationSec,
+    destination,
+    options,
+  ).done
 }
