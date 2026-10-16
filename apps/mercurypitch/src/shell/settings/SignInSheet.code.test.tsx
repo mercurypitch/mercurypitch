@@ -31,6 +31,7 @@ vi.mock('@/db/services/voiceprint-service', () => ({
   buildVoiceprintHint: stand.hint,
 }))
 vi.mock('./account-fill', () => ({ markAccountFillDue: vi.fn() }))
+vi.mock('./voiceprint-ask', () => ({ askAfterSignIn: vi.fn() }))
 vi.mock('@/features/account/sign-in-methods', () => ({
   appleSignInOffered: () => false,
   nativeGoogleSignInOffered: () => false,

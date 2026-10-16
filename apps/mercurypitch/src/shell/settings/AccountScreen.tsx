@@ -39,6 +39,7 @@ import { askSettings } from './settings-alert'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 import { SettingsSwitch } from './SettingsSwitch'
 import { openSignIn } from './sign-in-state'
+import { VoiceprintAskNote } from './VoiceprintAsk'
 
 function NoAccount(): JSX.Element {
   // An account signed out on this phone gets its own card: the history is
@@ -281,6 +282,9 @@ function SignedIn(): JSX.Element {
         <Show when={!unreachable()}>
           <AccountFillNote />
         </Show>
+        {/* This phone's voiceprints the account could still add: the way
+            back for anyone who said Not now to the ask. */}
+        <VoiceprintAskNote />
         <IdentityCard />
         <Show when={unreachable()}>
           <button

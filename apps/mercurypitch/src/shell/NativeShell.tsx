@@ -49,6 +49,7 @@ import { AccountOfferSheet } from './settings/AccountOffer'
 import { SettingsAlert } from './settings/SettingsAlert'
 import { openSignIn } from './settings/sign-in-state'
 import { SignInSheet } from './settings/SignInSheet'
+import { VoiceprintAskSheet } from './settings/VoiceprintAsk'
 import { mirrorShellChrome } from './shell-attributes'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellCloudOffer } from './ShellCloudOffer'
@@ -426,6 +427,11 @@ export const NativeShell: Component = () => {
               Account screen's button, the offer and every in-app "Sign
               in". */}
           <SignInSheet />
+
+          {/* After a sign-in to an account that already existed: whether
+              this phone's voiceprints go to it (voiceprint-ask.ts). After
+              the sign-in sheet, so it rises over it as that one goes. */}
+          <VoiceprintAskSheet />
 
           {/* The question a Settings screen is asking, if any. After the
               sheet, so an alert asked over it is drawn over it. */}

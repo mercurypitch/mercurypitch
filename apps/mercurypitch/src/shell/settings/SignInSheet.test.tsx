@@ -29,6 +29,7 @@ const stand = vi.hoisted(() => ({
   adopt: vi.fn(async () => 0),
   hint: vi.fn((): unknown => undefined),
   fillDue: vi.fn(),
+  ask: vi.fn(),
   appleOffered: true,
   googleOffered: true,
   owed: null as string | null,
@@ -59,6 +60,7 @@ vi.mock('@/db/services/voiceprint-service', () => ({
   buildVoiceprintHint: stand.hint,
 }))
 vi.mock('./account-fill', () => ({ markAccountFillDue: stand.fillDue }))
+vi.mock('./voiceprint-ask', () => ({ askAfterSignIn: stand.ask }))
 vi.mock('./account-state', async (importOriginal) => ({
   ...(await importOriginal<typeof AccountState>()),
   refreshAccount: vi.fn(async () => undefined),
@@ -108,6 +110,7 @@ beforeEach(() => {
   stand.adopt.mockClear()
   stand.hint.mockReset()
   stand.fillDue.mockClear()
+  stand.ask.mockClear()
   stand.appleOffered = true
   stand.googleOffered = true
   stand.owed = null
@@ -203,9 +206,10 @@ describe("this phone's takes", () => {
 
     expect(stand.adopt).toHaveBeenCalledTimes(1)
     expect(stand.fillDue).not.toHaveBeenCalled()
+    expect(stand.ask).not.toHaveBeenCalled()
   })
 
-  it('stay unclaimed on a sign-in to an account that already existed (REQ-NAM-039)', async () => {
+  it('stay unclaimed on a sign-in to an account that already existed, which asks about them (REQ-NAM-039; owner, 16 Oct)', async () => {
     stand.google.mockResolvedValue(SESSION)
     openSignIn()
 
@@ -214,6 +218,7 @@ describe("this phone's takes", () => {
 
     expect(signInOpen()).toBe(false)
     expect(stand.adopt).not.toHaveBeenCalled()
+    expect(stand.ask).toHaveBeenCalledWith('user-1')
   })
 
   it('are named to the Apple sheet, for the first mail of an account made here', async () => {

@@ -36,6 +36,7 @@ const stand = vi.hoisted(() => ({
   adopt: vi.fn(async () => 0),
   hint: vi.fn((): unknown => undefined),
   fillDue: vi.fn(),
+  ask: vi.fn(),
   notify: vi.fn(),
   appleOffered: true,
   googleOffered: true,
@@ -80,6 +81,7 @@ vi.mock('@/stores/notifications-store', async (importOriginal) => ({
   showNotification: stand.notify,
 }))
 vi.mock('./account-fill', () => ({ markAccountFillDue: stand.fillDue }))
+vi.mock('./voiceprint-ask', () => ({ askAfterSignIn: stand.ask }))
 vi.mock('./account-state', async (importOriginal) => ({
   ...(await importOriginal<typeof AccountState>()),
   refreshAccount: vi.fn(async () => undefined),
@@ -162,6 +164,7 @@ beforeEach(() => {
   stand.adopt.mockClear()
   stand.hint.mockReset()
   stand.fillDue.mockClear()
+  stand.ask.mockClear()
   stand.notify.mockClear()
   stand.appleOffered = true
   stand.googleOffered = true
@@ -408,9 +411,10 @@ describe('the ways in', () => {
     expect(stand.notify).toHaveBeenCalledWith('Signed in', 'info')
     expect(stand.adopt).toHaveBeenCalledTimes(1)
     expect(stand.fillDue).not.toHaveBeenCalled()
+    expect(stand.ask).not.toHaveBeenCalled()
   })
 
-  it('a sign-in to an account that already existed takes nothing, and its history is announced (REQ-NAM-039, 043)', async () => {
+  it('a sign-in to an account that already existed takes nothing, asks about the takes, and its history is announced (REQ-NAM-039, 043)', async () => {
     stand.google.mockResolvedValue(SESSION)
     await open()
 
@@ -420,6 +424,7 @@ describe('the ways in', () => {
     expect(offerOpen()).toBe(false)
     expect(stand.adopt).not.toHaveBeenCalled()
     expect(stand.fillDue).toHaveBeenCalledWith('user-1')
+    expect(stand.ask).toHaveBeenCalledWith('user-1')
   })
 
   it('names the take to the Apple sheet, for the first mail of an account made here', async () => {

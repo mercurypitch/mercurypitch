@@ -184,6 +184,41 @@ export function fillLine(runs: number, voiceprints: number): string {
   return `${count(runs, 'run', 'runs')} and ${count(voiceprints, 'voiceprint', 'voiceprints')}.`
 }
 
+/**
+ * The ask after a sign-in to an account that already existed (owner, 16 Oct):
+ * the voiceprints made on this phone before signing in are not the
+ * account's until the singer says so, because a phone can be shared (D2).
+ * The web's Voice section asks the same, in the same words
+ * (VoiceSection.tsx), with the device in hand named.
+ */
+export const VOICEPRINT_ASK = {
+  keep: 'Keep on this account',
+  saving: 'Saving…',
+  notNow: 'Not now',
+} as const
+
+/** The ask's title: "Keep this voiceprint on your account?" */
+export function voiceprintAskTitle(count: number): string {
+  return count === 1
+    ? 'Keep this voiceprint on your account?'
+    : 'Keep these voiceprints on your account?'
+}
+
+/** Under the title, and the Account screen's note: what is not there yet. */
+export function voiceprintAskBody(count: number): string {
+  const here = thisDeviceLower()
+  return count === 1
+    ? `A voiceprint made on ${here} before signing in is not part of this account yet.`
+    : `${count} voiceprints made on ${here} before signing in are not part of this account yet.`
+}
+
+/** Said once they are kept: the web's words. */
+export function voiceprintsKept(count: number): string {
+  return count === 1
+    ? 'Voiceprint saved to your account.'
+    : `${count} voiceprints saved to your account.`
+}
+
 /** The Delete account screen (5a): the loss named before anything happens. */
 export const DELETE_ACCOUNT = {
   lead: 'Deleting cannot be undone. This is what happens.',
