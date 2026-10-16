@@ -11,7 +11,9 @@ import { describe, expect, it } from 'vitest'
 import type { MercState } from './constants'
 import type { MercVoice } from './sim'
 import { Sim, STEP } from './sim'
+import type { GlideMouth } from './sim-glide'
 import { RIDE, rideLean } from './sim-glide'
+import { TAU } from './sim-math'
 
 const hum = (midi: number, level = 0.6): MercVoice => ({
   voiced: true,
@@ -355,6 +357,84 @@ describe('Sim, with his rings off', () => {
     expect(most).toBe(0)
   })
 })
+
+describe.each(['hum', 'ride'] as const)(
+  "Sim, %s with a lip roll's mouth",
+  (state) => {
+    const withMouth = (
+      mouth: GlideMouth,
+      voice: (t: number) => MercVoice = () => hum(57),
+    ): Sim => {
+      const sim = simIn(state, voice)
+      sim.glideMouth = mouth
+      return sim
+    }
+
+    it('keeps the closed smile and no lips unless the room names another mouth', () => {
+      // Arrange
+      const sim = simIn(state, () => hum(57))
+
+      // Act
+      step(sim, 1)
+
+      // Assert
+      expect(sim.glideMouth).toBe('closed')
+      expect(sim.pose().mouth[3]).toBe(0)
+    })
+
+    it('buzzes his lips together while the voice sounds, the O shut, and smiles again once it stops', () => {
+      // Arrange
+      const sim = withMouth('buzz', (t) => (t < 1 ? hum(57) : SILENT))
+      step(sim, 0.9)
+      const during = sim.pose().mouth
+
+      // Act
+      step(sim, 0.7)
+
+      // Assert
+      expect(during[3]).toBeGreaterThan(0.9)
+      expect(during[1]).toBeLessThan(0.01)
+      expect(during[2]).toBeLessThan(0.01)
+      expect(sim.pose().mouth[3]).toBeLessThan(0.05)
+    })
+
+    it('flutters his lips eight times a second, and holds them still under reduced motion', () => {
+      // Arrange
+      const moving = withMouth('buzz')
+      const still = withMouth('buzz')
+      still.still = true
+      step(moving, 0.5)
+      step(still, 0.5)
+      const [m0, s0] = [moving.pose().ripple[2], still.pose().ripple[2]]
+
+      // Act
+      step(moving, 0.5)
+      step(still, 0.5)
+
+      // Assert: the shader ripples them on this phase.
+      expect(moving.pose().ripple[2] - m0).toBeCloseTo(TAU * 8 * 0.5, 6)
+      expect(still.pose().ripple[2]).toBe(s0)
+      expect(still.pose().mouth[3]).toBeGreaterThan(0.9)
+    })
+
+    it("opens as Long note's sing does, with the voice's level", () => {
+      // Arrange
+      const open = withMouth('open')
+      const sing = simIn('sing', () => hum(57))
+
+      // Act
+      step(open, 1)
+      step(sing, 1)
+
+      // Assert
+      const [o, g] = [open.pose().mouth, sing.pose().mouth]
+      expect(o[1]).toBeGreaterThan(0.5)
+      expect(o[1]).toBeCloseTo(g[1], 6)
+      expect(o[0]).toBeCloseTo(g[0], 6)
+      expect(o[3]).toBe(0)
+    })
+  },
+)
 
 describe('Sim, into and out of hum and ride', () => {
   it('rides while humming: the same face and rings, plus the lean', () => {

@@ -14,6 +14,7 @@ import type { JSX } from 'solid-js'
 import { createEffect, onCleanup, onMount, untrack } from 'solid-js'
 import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice, SparkleSide } from '@/lib/merc/sim'
+import type { GlideMouth } from '@/lib/merc/sim-glide'
 import type { MercStage } from '@/lib/merc/stage'
 import { prefersReducedMotion } from './reduced-motion'
 
@@ -42,6 +43,11 @@ export interface MercViewProps {
    * mount. Lip roll turns them off: its buzz is drawn where they would be.
    */
   rings?: boolean
+  /**
+   * His mouth while he hums or rides (default 'closed', the hum's smile);
+   * read once, at mount. Lip roll gives him a lip roll's buzzing lips.
+   */
+  mouth?: GlideMouth
   class?: string
   style?: JSX.CSSProperties
   /** The room's own id for him ("long-note-merc"). */
@@ -76,6 +82,7 @@ export function MercView(props: MercViewProps): JSX.Element {
         sparkles: untrack(() => props.sparkles),
         still: stillAtMount,
         rings: untrack(() => props.rings),
+        mouth: untrack(() => props.mouth),
       })
       if (stage.ok) frame = requestAnimationFrame(feed)
     })

@@ -26,6 +26,7 @@ import type { PostProgram, PostPrograms, RenderTargets, SceneProgram, } from './
 import { cameraFor, createPostPrograms, createRenderTargets, createSceneProgram, deleteRenderTargets, flat, lookUniforms, paletteUniforms, srgbToLin, } from './gl'
 import type { MercPose, MercVoice, MercVoiceSource, PoseBias, SimSnapshot, SparkleSide, } from './sim'
 import { Sim, STEP } from './sim'
+import type { GlideMouth } from './sim-glide'
 
 export interface MercMountOptions {
   /** Default 'high'. */
@@ -58,6 +59,8 @@ export interface MercMountOptions {
   still?: boolean
   /** `hum`'s and `ride`'s sound rings. Default true. */
   rings?: boolean
+  /** His mouth while he hums or rides (GlideMouth). Default 'closed'. */
+  glideMouth?: GlideMouth
   /** Called once if Merc stops drawing for good after mount. */
   onFailure?: (error: Error) => void
 }
@@ -151,6 +154,7 @@ export function mount(
   sim.sparkleSide = opts.sparkles ?? 'around'
   sim.still = opts.still ?? false
   sim.soundRings = opts.rings ?? true
+  sim.glideMouth = opts.glideMouth ?? 'closed'
 
   // ---------------------------------------------------------- GL resources
 

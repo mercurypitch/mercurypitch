@@ -89,7 +89,8 @@ vec3 applyFace(vec3 col, vec3 q, float pw) {
   // open the smile fades and its ends draw in to sit inside the O, so no
   // smile corners show beside an open mouth.
   float oo = smoothstep(0.0, 0.2, uMouth.y);
-  float sm = uMouth.x * (1.0 - oo) * (1.0 - uMouth.z);
+  float bz = uMouth.w;
+  float sm = uMouth.x * (1.0 - oo) * (1.0 - uMouth.z) * (1.0 - bz);
   if (sm > 0.01) {
     float ra = mix(0.26, 0.06, clamp(uMouth.x, 0.0, 1.0));
     float hc = mix(0.0512, 0.55 * (0.034 + 0.024 * uMouth.y), smoothstep(0.0, 0.06, uMouth.y));
@@ -98,6 +99,36 @@ vec3 applyFace(vec3 col, vec3 q, float pw) {
     p.y = -p.y;
     float d = sdArcStroke(p, ap, ra, 0.0135 * sw);
     cov = max(cov, smoothstep(aa, -aa, d) * clamp(sm * 1.5, 0.0, 1.0));
+  }
+  // A lip roll (uMouth.w): the lips together, buzzing. The smile gives way
+  // to closed lips, rose against the resin under a darker rim, a little
+  // wider than the smile so they never read as a pucker. On the resin's
+  // buzz phase (uRipple.z) they flap fuller and thinner and a ripple runs
+  // along their seam. The cheeks either side round out (sdBodyQ) and catch
+  // a soft light.
+  if (bz > 0.01) {
+    float on = clamp(bz * 1.5, 0.0, 1.0);
+    vec2 cp = vec2(abs(f.x) - 0.175, f.y - 0.34) / vec2(0.075, 0.06);
+    float ck = (1.0 - smoothstep(0.45, 1.0, length(cp))) * bz * front;
+    col = mix(col, col * 1.3 + vec3(0.07, 0.11, 0.15), ck * 0.4);
+    vec2 p = f - vec2(0.0, MOUTH_Y + 0.008);
+    float flap = 1.0 + 0.28 * bz * sin(uRipple.z);
+    float dl = sdEllipse2(p, vec2(0.066, 0.024 * flap));
+    vec3 lipCol = mix(vec3(0.34, 0.09, 0.3), ink, smoothstep(-0.008, 0.0, dl) * 0.55);
+    col = mix(col, lipCol, smoothstep(aa, -aa, dl) * on * front);
+    // The seam: a fine ink line, two waves of ripple along it, eased to
+    // nothing at the corners.
+    float hw = 0.05;
+    float x = clamp(p.x, -hw, hw);
+    float u = x / hw;
+    float env = 1.0 - u * u;
+    float k = 6.2832 / 0.05;
+    float ph = k * x - uRipple.z;
+    float amp = 0.005 * bz;
+    float yl = amp * env * sin(ph);
+    float slope = amp * (env * k * cos(ph) - 2.0 * u / hw * sin(ph));
+    float d = length(vec2(p.x - x, (p.y - yl) * inversesqrt(1.0 + slope * slope))) - 0.0075 * sw;
+    cov = max(cov, smoothstep(aa, -aa, d) * on);
   }
   vec3 inside = vec3(0.022, 0.005, 0.03);
   float hole = 0.0;

@@ -23,7 +23,7 @@ import type { Warp } from './rest-space'
 import { bendAt, placeEyes, restToWorldExact } from './rest-space'
 import type { Arcs, Fx } from './sim-choreo'
 import { choreo, DROP_Y0 } from './sim-choreo'
-import type { GlideSmooth } from './sim-glide'
+import type { GlideMouth, GlideSmooth } from './sim-glide'
 import { freshGlide, stepGlide } from './sim-glide'
 import type { Q3, Q4 } from './sim-math'
 import { clamp, smooth } from './sim-math'
@@ -210,6 +210,11 @@ export class Sim {
    * turns them off (Lip roll's buzz); everything else about the state stays.
    */
   soundRings = true
+  /**
+   * His mouth while he hums or rides (GlideMouth): the closed smile by
+   * default; Lip roll gives him a lip roll's buzzing lips, or `sing`'s O.
+   */
+  glideMouth: GlideMouth = 'closed'
 
   // Set by reset().
   state!: MercState
@@ -643,7 +648,7 @@ export class Sim {
         clamp(s.smile.x, 0, 1),
         clamp(s.mouthO.x, 0, 1),
         clamp(s.grin.x, 0, 1),
-        0,
+        clamp(s.buzz.x, 0, 1),
       ],
       color: [
         clamp(s.hue.x, -1, 1),

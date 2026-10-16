@@ -14,6 +14,7 @@
 
 import type { MercState } from './constants'
 import { SHAPE } from './constants'
+import type { GlideMouth } from './sim-glide'
 import { rideLean } from './sim-glide'
 import type { Q3, Q4 } from './sim-math'
 import { clamp, lerp, smooth, TAU } from './sim-math'
@@ -77,6 +78,8 @@ export interface ChoreoHost {
   readonly still: boolean
   /** `hum`'s sound rings are drawn (Sim.soundRings). */
   readonly soundRings: boolean
+  /** His mouth while he hums or rides (Sim.glideMouth). */
+  readonly glideMouth: GlideMouth
   splash(edge?: number, k?: number, n?: number, kx?: number): void
   sparkle(): void
   ring(strength: number, speed: number): void
@@ -562,6 +565,27 @@ function hum(c: Cue): void {
     X.arcSpeed = 0
     X.arcPhase = 0.5
   } else X.arcSpeed = 0.55 + 0.85 * level
+  humMouth(c)
+}
+
+/** How fast a lip roll's lips ripple: the resin's buzz phase, rad/s (8 Hz). */
+const LIP_FLUTTER = TAU * 8
+
+// His mouth while he hums (Sim.glideMouth); `closed` keeps the hum's smile.
+// `open` is `sing`'s O, opening with the voice's level. `buzz` keeps the
+// lips together and buzzes them while the voice sounds: the shader draws
+// them rippling on the resin's buzz phase, which holds still under reduced
+// motion, and the smile gives way to them.
+function humMouth(c: Cue): void {
+  const { T, X, sim } = c
+  const v = sim.vs
+  if (sim.glideMouth === 'open') {
+    T.mouthO = v.voiced * clamp(0.2 + v.level * 1.0, 0, 1)
+    T.smile = 1 - 0.7 * v.voiced
+  } else if (sim.glideMouth === 'buzz') {
+    T.buzz = v.env
+    X.rippleSpeed = sim.still ? 0 : LIP_FLUTTER
+  }
 }
 
 // One fan of rings from the front of his face, tilted with his lean: the

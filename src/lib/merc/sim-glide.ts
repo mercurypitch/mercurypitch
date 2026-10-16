@@ -17,6 +17,15 @@
 
 import { smooth } from './sim-math'
 
+/**
+ * His mouth while he hums or rides (Sim.glideMouth): `closed`, the hum's
+ * closed smile (Ng slides); `open`, `sing`'s O, opening with the voice's
+ * level as it does in Long note; `buzz`, a lip roll's: the lips together,
+ * flapping and rippling along their seam while the voice sounds, the
+ * cheeks a little full (Lip roll, whose buzz marks sit beside them).
+ */
+export type GlideMouth = 'closed' | 'open' | 'buzz'
+
 /** The glide reading, carried in the sim's smoothed voice. */
 export interface GlideSmooth {
   /** The sung pitch (fractional MIDI), eased over 60 ms. */

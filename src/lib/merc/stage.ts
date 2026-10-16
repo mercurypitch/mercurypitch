@@ -15,6 +15,7 @@ import type { MercQuality, MercState, MercView, MercViewName, } from './constant
 import type { MercRenderer } from './renderer'
 import { mount } from './renderer'
 import type { MercVoice, SparkleSide } from './sim'
+import type { GlideMouth } from './sim-glide'
 
 export interface MercStageOptions {
   /**
@@ -43,6 +44,11 @@ export interface MercStageOptions {
    * turns them off.
    */
   rings?: boolean
+  /**
+   * His mouth while he hums or rides (GlideMouth). Default 'closed'; Lip
+   * roll gives him a lip roll's buzzing lips.
+   */
+  mouth?: GlideMouth
   /** Called once, when Merc stops drawing for good (also during mount). */
   onFailure?: (reason: string) => void
 }
@@ -98,6 +104,7 @@ export function mountMercStage(
       sparkles: opts.sparkles,
       still: opts.still,
       rings: opts.rings,
+      glideMouth: opts.mouth,
       onFailure: report,
     })
   } catch (err) {

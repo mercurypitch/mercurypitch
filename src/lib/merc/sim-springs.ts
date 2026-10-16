@@ -42,6 +42,9 @@ export const SPRINGS = {
   dangle: [0, 3.5, 0.55],
   rx: [0, 2.2, 0.8],
   ry: [0, 3.5, 0.6],
+  // A lip roll's buzzing lips (GlideMouth `buzz`). Last, so every spring
+  // before it steps exactly as it did.
+  buzz: [0, 9, 0.85],
 } as const satisfies Record<string, readonly [number, number, number]>
 
 export type SpringName = keyof typeof SPRINGS
