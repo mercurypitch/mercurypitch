@@ -3,10 +3,10 @@
 // ============================================================
 //
 // Every sound the premium rooms make reaches the speakers through this one
-// gain: the glide rooms' tones (room-tones.ts, Ng slides' bridge-tones.ts),
-// the Hear tone (useExerciseCapture), Merc's call (echo/merc-call.ts and
-// merc-sampler.ts) and every demo (demo-kit/demo-sound.ts, and the count-in
-// notes of Lip roll's and Ng slides' demos). It is held at 1 and nothing
+// gain: the glide rooms' tones (room-tones.ts), the Hear tone
+// (useExerciseCapture), Merc's call (echo/merc-call.ts and merc-sampler.ts)
+// and every demo (demo-kit/demo-sound.ts, and the count-in notes of Lip
+// roll's and Ng slides' demos). It is held at 1 and nothing
 // automates it, so no room can leave another room's sound turned down. A
 // test build reads what the rooms send to the speakers off it
 // (`roomOutputReadings`, the Developer screen's Audio rows): a room that

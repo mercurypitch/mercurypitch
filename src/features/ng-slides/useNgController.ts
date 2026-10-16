@@ -3,8 +3,8 @@
 // ============================================================
 //
 // Owns the room's states (ng-machine.ts), the microphone and the audio
-// clock (useNgCapture.ts), the room's tones (bridge-tones.ts), the take
-// (ng-take.ts: the glide engine and everything it lights) and what
+// clock (useNgCapture.ts), the room's tones (room-kit room-tones.ts), the
+// take (ng-take.ts: the glide engine and everything it lights) and what
 // answers it: the bridge's scroll, Merc's place and state, his lines and
 // the chip.
 //
@@ -33,6 +33,7 @@ import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
+import { createRoomTones } from '@/components/room-kit/room-tones'
 import { createScreenAwake } from '@/components/room-kit/screen-awake'
 import { newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
@@ -59,7 +60,6 @@ import type { RideMoment } from './bridge-ride'
 import { introHum, RIDE_STATES, rideStep, rideTarget, rideX, } from './bridge-ride'
 import type { BridgeScroll } from './bridge-scroll'
 import { createBridgeScroll, INTRO_CAMERA } from './bridge-scroll'
-import { createBridgeTones } from './bridge-tones'
 import type { BridgeView } from './bridge-view'
 import type { NgFields, NgMoment } from './merc-lines'
 import { createNgLines } from './merc-lines'
@@ -115,7 +115,7 @@ interface Live {
 
 export function useNgController(): NgController {
   const capture = useNgCapture()
-  const tones = createBridgeTones()
+  const tones = createRoomTones()
   const lines = createNgLines()
   const voicePreset = untrack(vocalRangePreset)
 

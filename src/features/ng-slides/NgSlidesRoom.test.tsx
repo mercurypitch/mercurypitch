@@ -86,8 +86,8 @@ const heard = vi.hoisted(() => ({
   tones: [] as { midi: number; seconds: number; at: number }[],
   stops: 0,
 }))
-vi.mock('./bridge-tones', () => ({
-  createBridgeTones: () => ({
+vi.mock('@/components/room-kit/room-tones', () => ({
+  createRoomTones: () => ({
     play: (_ctx: AudioContext, midi: number, seconds: number) => {
       heard.tones.push({
         midi,

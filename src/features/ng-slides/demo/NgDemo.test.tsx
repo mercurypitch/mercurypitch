@@ -61,8 +61,8 @@ vi.mock('../useNgCapture', async () => {
 
 // The room's own tones: the demo plays none of them.
 const roomTones = vi.hoisted(() => ({ played: 0 }))
-vi.mock('../bridge-tones', () => ({
-  createBridgeTones: () => ({
+vi.mock('@/components/room-kit/room-tones', () => ({
+  createRoomTones: () => ({
     play: () => {
       roomTones.played += 1
     },

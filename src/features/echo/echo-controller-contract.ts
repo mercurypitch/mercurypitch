@@ -3,8 +3,8 @@
 // ============================================================
 //
 // The contract of useEchoController.ts, apart from its workings, so the
-// room, the demo (scripted-take.ts, demo/) and the tests can name it
-// without reading the run. useEchoController re-exports all of it.
+// room, the demo (demo/useEchoDemo.ts) and the tests can name it without
+// reading the run.
 
 import type { Accessor } from 'solid-js'
 import type { MercState } from '@/lib/merc/constants'

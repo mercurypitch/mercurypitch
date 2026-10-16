@@ -3,13 +3,13 @@
 // ============================================================
 //
 // Each take opens as a run does: the slide's root, as the room's count-in
-// plays it (bridge-tones.ts: the Hear button's tone, COUNT_IN_TONE_SEC),
-// then Merc's hum along the take, through the demo kit's soundtrack
-// (demo-kit/demo-sound.ts) with the `hum` timbre and the vibrato the
-// frames carry, so the voice heard is the voice the engine was fed. Skip,
-// the way out and the app going to the background stop both at once. The
-// kit's opening note stays silent: each take's count-in plays the root
-// itself.
+// plays it (room-kit room-tones.ts: the Hear button's tone,
+// COUNT_IN_TONE_SEC), then Merc's hum along the take, through the demo
+// kit's soundtrack (demo-kit/demo-sound.ts) with the `hum` timbre and the
+// vibrato the frames carry, so the voice heard is the voice the engine was
+// fed. Skip, the way out and the app going to the background stop both at
+// once. The kit's opening note stays silent: each take's count-in plays the
+// root itself.
 //
 // The hum is synthesised: nothing loads, so the demo has nothing to wait
 // for before it starts (the kit's `ready`).
