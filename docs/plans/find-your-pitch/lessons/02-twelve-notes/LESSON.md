@@ -1,7 +1,8 @@
 # Lesson 2: Twelve notes (written lesson)
 
-The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Drafted in British
-English, pending MASTER-PLAN § 12 decision 5 (the app's screens now use American spelling).
+The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
+English, as the owner decided on 16 October 2026 (MASTER-PLAN § 12 item 5, DECISIONS 75): British
+in general, with American wording where the owner prefers it; the app's screens stay American.
 Each step names its toy (the interactive visual it sits beside); the page spec is
 [WEB-SPEC.md](WEB-SPEC.md).
 
