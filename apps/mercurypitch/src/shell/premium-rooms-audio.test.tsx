@@ -13,12 +13,17 @@
 //   a gain left turned down, so the next note reaches the speaker quieter;
 //   a microphone opened with the phone's voice processing on.
 //
+// One more lives here since: a room's last note, which fades after the
+// room stops it, parked by the clock in the middle of its fade and heard on
+// the next room's first tap ("the way out").
+//
 // Only the browser is faked: the Web Audio graph and getUserMedia
 // (fake-web-audio.test-fixtures.ts), both keeping score. The controllers,
 // their demos, the capture kit, the mic manager and the audio lease are the
 // real ones.
 
 import { createRoot } from 'solid-js'
+import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FakeGainNode, FakeMedia } from './fake-web-audio.test-fixtures'
 import type { FakeNode } from './fake-web-audio.test-fixtures'
@@ -55,8 +60,11 @@ vi.mock('@irchiinnuss/mobile-runtime/asset-fetch', () => ({
   fetchAssetRead: () => Promise.reject(new Error('no assets in a test')),
 }))
 
-const { acquireSharedAudioContext, resetSharedAudioContext } =
-  await import('@irchiinnuss/audio-io')
+const {
+  acquireSharedAudioContext,
+  resetSharedAudioContext,
+  suspendSharedAudioContext,
+} = await import('@irchiinnuss/audio-io')
 const { registerNativeDevice } = await import('@/stores/native-shell-store')
 const { micManager } = await import('@/lib/mic-manager')
 const { releaseMicLock } = await import('@/lib/mic-lock')
@@ -528,6 +536,227 @@ describe('the room output', () => {
       expectSilentGraph()
     },
   )
+})
+
+describe('the way out: nothing of a room is heard in the next', () => {
+  /** Under this a sound is silent: -60 dB, as expectSilentGraph has it. */
+  const SILENT = 1e-3
+
+  /** The room after `name`, for the visit that follows it. */
+  const nextRoom = (name: RoomName): RoomName =>
+    ROOMS[(ROOMS.indexOf(name) + 1) % ROOMS.length]
+
+  /**
+   * The loudest of the sources made since `from` that have sounded for
+   * `heldFor` seconds, as the clock stands.
+   */
+  function loudestNow(from: number, heldFor: number): number {
+    const ctx = shared()
+    return Math.max(
+      0,
+      ...sourcesSince(from)
+        .filter(
+          (source) =>
+            source.soundingAt(ctx.currentTime) &&
+            ctx.currentTime - (source.startAt ?? Infinity) >= heldFor,
+        )
+        .map((source) => ctx.gainToDestination(source, ctx.currentTime)),
+    )
+  }
+
+  /**
+   * Runs the clocks until a note made since `from` is sounding, past its
+   * attack: the fake's gain reads a cancelled ramp as never begun, so a
+   * note stopped inside its first 20 ms would be measured releasing from
+   * silence, where a browser releases it from the level it had reached.
+   */
+  async function runUntilSounding(from: number): Promise<void> {
+    for (let ms = 0; ms < 8000; ms += FRAME_MS) {
+      if (loudestNow(from, 0.1) > 0.05) return
+      await run(FRAME_MS)
+    }
+    throw new Error('no note sounded')
+  }
+
+  /**
+   * What of `left` the clock plays once it starts again: from each
+   * source still armed when the clock next starts, the loudest it would
+   * reach the speakers from then on, in dB. Returns the listener's
+   * readout and the number of starts it saw.
+   */
+  function listenForTheRest(left: readonly FakeSourceNode[]): {
+    heard: string[]
+    starts: () => number
+  } {
+    const ctx = shared()
+    const heard: string[] = []
+    let starts = 0
+    ctx.addEventListener('statechange', () => {
+      if (ctx.state !== 'running') return
+      starts += 1
+      for (const source of left) {
+        if (source.ended || source.startAt === null) continue
+        const from = Math.max(ctx.currentTime, source.startAt)
+        const end = source.stopAt ?? from + 4
+        let peak = 0
+        for (let t = from; t <= end; t += 0.005) {
+          peak = Math.max(peak, ctx.gainToDestination(source, t))
+        }
+        if (peak > SILENT) {
+          heard.push(
+            `${source.kind} at ${(20 * Math.log10(peak)).toFixed(1)} dB`,
+          )
+        }
+      }
+    })
+    return { heard, starts: () => starts }
+  }
+
+  /** Leave `name` with a note sounding, park, and start a take next door. */
+  async function leaveMidNote(
+    name: RoomName,
+    play: (room: Mounted) => void,
+  ): Promise<{ heard: string[]; starts: number }> {
+    const room = mount(name)
+    await run(100)
+    const from = mark()
+    play(room)
+    await runUntilSounding(from)
+    room.dispose()
+    await run(LINGER_MS + 500)
+    expect(shared().state).toBe('suspended')
+    const left = sourcesSince(from)
+
+    const listened = listenForTheRest(left)
+    const next = mount(nextRoom(name))
+    await run(100)
+    next.start()
+    await run(3000)
+    next.dispose()
+    await run(LINGER_MS + 500)
+    expectSilentGraph()
+    return { heard: listened.heard, starts: listened.starts() }
+  }
+
+  it.each(ROOMS)(
+    '%s: a note left while it plays is over before the clock parks',
+    async (name) => {
+      const { heard, starts } = await leaveMidNote(name, (room) => room.start())
+      // The next room's take started the clock again.
+      expect(starts).toBeGreaterThan(0)
+      expect(heard).toEqual([])
+    },
+  )
+
+  it.each(ROOMS)(
+    "%s: the demo's note left while it plays is over before the clock parks",
+    async (name) => {
+      const { heard, starts } = await leaveMidNote(name, (room) => room.ask())
+      expect(starts).toBeGreaterThan(0)
+      expect(heard).toEqual([])
+    },
+  )
+
+  it('starts no note for a room that is gone, while its lease waits out the tail', async () => {
+    // Long note's Start plays its note once the clock has unlocked, an
+    // await later. The room is left before that answers, and its lease is
+    // still held for the tail, so the unlock succeeds.
+    const room = mount('long-note')
+    await run(100)
+    room.start()
+    room.dispose()
+    await run(LINGER_MS + 500)
+    expect(shared().state).toBe('suspended')
+    expect(sourcesSince(0).filter((source) => source.startAt !== null)).toEqual(
+      [],
+    )
+  })
+
+  describe('while the room is open', () => {
+    let hidden: MockInstance | null = null
+
+    const setPageHidden = (on: boolean): void => {
+      hidden ??= vi.spyOn(document, 'visibilityState', 'get')
+      hidden.mockReturnValue(on ? 'hidden' : 'visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+
+    afterEach(() => {
+      hidden?.mockRestore()
+      hidden = null
+    })
+
+    /**
+     * The clock as a phone has it after an earlier visit: made, so its
+     * page listener runs before the room's, and nobody holding it.
+     */
+    function afterAnEarlierVisit(): void {
+      const earlier = acquireSharedAudioContext('earlier-visit')
+      earlier.ensure()
+      earlier.release()
+    }
+
+    it.each(ROOMS.flatMap((name) => [`${name} take`, `${name} demo`]))(
+      '%s: the page hiding mid-note parks the clock after the release, and nothing comes back with it',
+      async (label) => {
+        const [name, what] = label.split(' ') as [RoomName, 'take' | 'demo']
+        afterAnEarlierVisit()
+        const room = mount(name)
+        await run(100)
+        const from = mark()
+        if (what === 'take') room.start()
+        else room.ask()
+        await runUntilSounding(from)
+        setPageHidden(true)
+        await run(1000)
+        expect(shared().state).toBe('suspended')
+
+        const listened = listenForTheRest(sourcesSince(from))
+        setPageHidden(false)
+        await run(500)
+        // The page brought the clock back: the room still holds it.
+        expect(listened.starts()).toBeGreaterThan(0)
+        expect(listened.heard).toEqual([])
+        room.dispose()
+        await run(LINGER_MS + 500)
+        expectSilentGraph()
+      },
+    )
+
+    it.each(ROOMS)(
+      '%s: the app leaving mid-note, then the page, leaves nothing for the next room',
+      async (name) => {
+        afterAnEarlierVisit()
+        const room = mount(name)
+        await run(100)
+        const from = mark()
+        room.start()
+        await runUntilSounding(from)
+        // The OS's word first, the WebView's after it, as a phone has them.
+        suspendSharedAudioContext()
+        setPageHidden(true)
+        await run(1000)
+        expect(shared().state).toBe('suspended')
+        // Back in the app, and out of the room: the clock stays parked
+        // until the next room's tap.
+        setPageHidden(false)
+        await run(100)
+        room.dispose()
+        await run(LINGER_MS + 500)
+
+        const listened = listenForTheRest(sourcesSince(from))
+        const next = mount(nextRoom(name))
+        await run(100)
+        next.start()
+        await run(3000)
+        expect(listened.starts()).toBeGreaterThan(0)
+        expect(listened.heard).toEqual([])
+        next.dispose()
+        await run(LINGER_MS + 500)
+        expectSilentGraph()
+      },
+    )
+  })
 })
 
 describe('H4: voice processing stays off', () => {

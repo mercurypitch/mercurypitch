@@ -423,6 +423,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** track the last voiced capture during correction and enforce both the original mismatch deadline and the independent dropout limit; alternating wrong and unvoiced frames must not renew grace.
 **See:** `packages/glass-game/src/core/melody-judge.ts` and `melody-judge.test.ts`.
 
+### Hold a shared-clock lease until its fade has played: `release()` never asks `prepareToSuspend`
+
+**Symptom:** on a phone, a premium room's first note opened with the end of the last room's note. In `premium-rooms-audio.test.tsx` it read -34 to -36.5 dB (a count-in or a call), and -11.8 dB for Long note, whose Hear tone nobody stopped.
+**Cause:** a room let go of its lease as its screen went, with its sound still fading over the house release (240 ms). The last lease out parks the clock after a fixed 120 ms (`RELEASE_GRACE_MS`) and never calls `prepareToSuspend`, which is asked only when the page hides or the app leaves the foreground (or a resume lands while either holds). The clock kept the rest of the fade for the next room's first tap. Passing `prepareToSuspend` alone changed nothing.
+**Rule:** keep the lease until what you stopped has played, as the glass owners do (they release in `finish()`, after the fade), and answer `prepareToSuspend` with the time left on it for parks that come meanwhile. In the room tests, stop a note after its attack: the fake gain reads a ramp cancelled in the middle as never begun, so a release taken from there starts at silence.
+**See:** `src/components/room-kit/useExerciseCapture.ts` (`ROOM_TAIL_MS`), `release` in `packages/audio-io/src/shared-audio-context.ts`, "the way out" in `apps/mercurypitch/src/shell/premium-rooms-audio.test.tsx`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
