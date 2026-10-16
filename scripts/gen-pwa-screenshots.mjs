@@ -904,11 +904,25 @@ for (const shot of SHOTS) {
     // notice, a future tour channel): no transient card belongs in a
     // product screenshot. The header's launch-promo pill goes too: it is a
     // campaign with an end date (src/components/billing/launch-promo.ts),
-    // and the install sheet outlives it.
+    // and the install sheet outlives it. So does the version in the
+    // header's badge, which dated each frame to the release it was shot on;
+    // the heart beside it stays, without the divider between them.
     await page.addStyleTag({
       content: `[class*="notificationContainer"],
-        [data-testid="header-promo-pill"] { display: none !important; }`,
+        [data-testid="header-promo-pill"],
+        [aria-label="Show the changelog"] { display: none !important; }
+        [aria-label="Show the changelog"] + a { border-left: none !important; }`,
     })
+    // The version's button is found by its name, so a renamed button would
+    // bring the version back without a word. A frame that shows it fails.
+    const version = `v${appVersion}`
+    if (
+      await page.evaluate((v) => document.body.innerText.includes(v), version)
+    ) {
+      throw new Error(
+        `the frame shows the app version (${version}); hide it with the style above`,
+      )
+    }
     const path = join(OUT, shot.file)
     await page.screenshot({ path })
     const { size } = statSync(path)
