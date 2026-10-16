@@ -186,10 +186,11 @@ export function cardFigure(
   if (fig === 'poster') {
     const img = document.createElement('img')
     img.src = poster
-    img.alt = 'A frame from the episode: 220 Hz and 440 Hz, times two'
+    img.alt =
+      'The title card: Find Your Pitch, Lesson 01, What is a note?, above a five-line staff'
     img.setAttribute('loading', 'lazy')
     const cap = document.createElement('figcaption')
-    cap.textContent = 'From the episode: the cold open'
+    cap.textContent = 'From the episode: the title card'
     f.append(img, cap)
   } else if (fig === 'metronome') {
     f.innerHTML = `${metronomeSVG()}<figcaption>The stats site's metronome, its arm on 2 and 4</figcaption>`
