@@ -1,57 +1,57 @@
 [
- {
-  "title": "The puzzle",
-  "start": 0.0,
-  "label": "00:00"
- },
- {
-  "title": "A note is something shaking",
-  "start": 25.62,
-  "label": "00:25"
- },
- {
-  "title": "Faster, not louder",
-  "start": 61.34,
-  "label": "01:01"
- },
- {
-  "title": "Twice as fast",
-  "start": 84.27,
-  "label": "01:24"
- },
- {
-  "title": "The simplest fit",
-  "start": 117.4,
-  "label": "01:57"
- },
- {
-  "title": "The octave ladder",
-  "start": 146.9,
-  "label": "02:26"
- },
- {
-  "title": "Pitch is a spiral",
-  "start": 164.64,
-  "label": "02:44"
- },
- {
-  "title": "Names, numbers and the piano",
-  "start": 193.98,
-  "label": "03:13"
- },
- {
-  "title": "Sing it",
-  "start": 217.78,
-  "label": "03:37"
- },
- {
-  "title": "Quick check",
-  "start": 256.74,
-  "label": "04:16"
- },
- {
-  "title": "Next time",
-  "start": 284.08,
-  "label": "04:44"
- }
+  {
+    "title": "The puzzle",
+    "start": 0.0,
+    "label": "00:00"
+  },
+  {
+    "title": "A note is something shaking",
+    "start": 25.62,
+    "label": "00:25"
+  },
+  {
+    "title": "Faster, not louder",
+    "start": 61.34,
+    "label": "01:01"
+  },
+  {
+    "title": "Twice as fast",
+    "start": 84.27,
+    "label": "01:24"
+  },
+  {
+    "title": "The simplest fit",
+    "start": 117.4,
+    "label": "01:57"
+  },
+  {
+    "title": "The octave ladder",
+    "start": 146.9,
+    "label": "02:26"
+  },
+  {
+    "title": "Pitch is a spiral",
+    "start": 164.64,
+    "label": "02:44"
+  },
+  {
+    "title": "Names, numbers and the piano",
+    "start": 193.98,
+    "label": "03:13"
+  },
+  {
+    "title": "Sing it",
+    "start": 217.78,
+    "label": "03:37"
+  },
+  {
+    "title": "Quick check",
+    "start": 256.74,
+    "label": "04:16"
+  },
+  {
+    "title": "Next time",
+    "start": 284.08,
+    "label": "04:44"
+  }
 ]

@@ -155,30 +155,30 @@ in captions). Every claim is in [FACTS.md](FACTS.md).
 
 ## Totals (estimated)
 
-| Measure                              | Value                                               |
-| ------------------------------------ | --------------------------------------------------- |
-| Running time                         | 6:36 (395.8 s)                                      |
-| Spoken lines                         | 67 (56 blue, 11 orange)                             |
-| Words                                | 750 (623 blue, 127 orange); 288.5 s of speech       |
-| Overall pace                         | 114 words a minute (Lesson 1: 119)                  |
-| Orange's hook question ends at       | 0:27.8 (playbook rule 1: within 30 s)               |
-| Dressed pauses                       | q0 1.8 s, predict 2.6 s, your turn 5.2 s, q1 to q3 1.8 s each |
+| Measure                        | Value                                                         |
+| ------------------------------ | ------------------------------------------------------------- |
+| Running time                   | 6:36 (395.8 s)                                                |
+| Spoken lines                   | 67 (56 blue, 11 orange)                                       |
+| Words                          | 750 (623 blue, 127 orange); 288.5 s of speech                 |
+| Overall pace                   | 114 words a minute (Lesson 1: 119)                            |
+| Orange's hook question ends at | 0:27.8 (playbook rule 1: within 30 s)                         |
+| Dressed pauses                 | q0 1.8 s, predict 2.6 s, your turn 5.2 s, q1 to q3 1.8 s each |
 
 ## Orange line audit
 
 Every orange line is a sincere question or a sincere wrong guess (playbook rules 2 and 4). None is
 filler, and none answers a quiz question.
 
-| Line | Text                                                                         | Kind                                                     | Answered or broken by                        |
-| ---- | ---------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------- |
-| o1   | And the five dim beads between the letters? Are those just gaps?             | Sincere wrong guess (the in-between notes aren't real)   | b3, then the first step heard (first-step)   |
-| o2   | Then where do the other five come from?                                      | Deep question: the hook                                  | b25 to b27, with the tiles (S10)             |
-| o3   | If we keep taking steps that small, how many until we're back at A?          | What-if question                                         | The climb (twelve) and b9                    |
-| o4   | And are all twelve steps the same size?                                      | Deep question                                            | b12 and the circle of twelve (S6)            |
-| o5   | No black key to step on? Then B to C must be a bigger jump than C to D.      | Sincere wrong guess (CURRICULUM misconception 2)         | Predict, bc-cd, neighbours, b19 to b23       |
-| o6   | So black keys are the sharps and flats, and white keys are the plain ones?   | Sincere wrong guess (CURRICULUM misconception 1)         | b32, the E-to-F step and b33 (E sharp is F)  |
-| o7   | Then which name is the right one?                                            | Deep question                                            | b34, b35                                     |
-| o8   | And how big is a semitone, exactly? Can you measure it?                      | Deep question                                            | b36 to b40, the cents glide                  |
-| o9   | How do I know I went up exactly one semitone, and not a little more?         | Deep question                                            | b43 and the cents readout                    |
-| o10  | And if a semitone is a hundred cents, how many cents is a tone?              | What-if question (transfer)                              | b52                                          |
-| o11  | So what's going on?                                                          | Deep question: Lesson 3's hook                           | Lesson 3                                     |
+| Line | Text                                                                       | Kind                                                   | Answered or broken by                       |
+| ---- | -------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------- |
+| o1   | And the five dim beads between the letters? Are those just gaps?           | Sincere wrong guess (the in-between notes aren't real) | b3, then the first step heard (first-step)  |
+| o2   | Then where do the other five come from?                                    | Deep question: the hook                                | b25 to b27, with the tiles (S10)            |
+| o3   | If we keep taking steps that small, how many until we're back at A?        | What-if question                                       | The climb (twelve) and b9                   |
+| o4   | And are all twelve steps the same size?                                    | Deep question                                          | b12 and the circle of twelve (S6)           |
+| o5   | No black key to step on? Then B to C must be a bigger jump than C to D.    | Sincere wrong guess (CURRICULUM misconception 2)       | Predict, bc-cd, neighbours, b19 to b23      |
+| o6   | So black keys are the sharps and flats, and white keys are the plain ones? | Sincere wrong guess (CURRICULUM misconception 1)       | b32, the E-to-F step and b33 (E sharp is F) |
+| o7   | Then which name is the right one?                                          | Deep question                                          | b34, b35                                    |
+| o8   | And how big is a semitone, exactly? Can you measure it?                    | Deep question                                          | b36 to b40, the cents glide                 |
+| o9   | How do I know I went up exactly one semitone, and not a little more?       | Deep question                                          | b43 and the cents readout                   |
+| o10  | And if a semitone is a hundred cents, how many cents is a tone?            | What-if question (transfer)                            | b52                                         |
+| o11  | So what's going on?                                                        | Deep question: Lesson 3's hook                         | Lesson 3                                    |
