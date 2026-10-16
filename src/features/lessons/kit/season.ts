@@ -1,0 +1,393 @@
+// ============================================================
+// Season 1 map — the lessons, their topics and what each builds on
+// ============================================================
+//
+// Pure data and graph helpers, no DOM. The explorer's graph, its phone list
+// and every card read these lists. EDGES is CURRICULUM § 3.3's prerequisite
+// table, which already leaves out every edge implied through another
+// prerequisite: "Builds on" names only the direct links, and the path
+// helpers walk the rest.
+//
+// Practise links are same-origin and carry the lesson that sent the viewer
+// (`?lesson=01`, before any hash route), so the app can tell where a session
+// came from. The printed address (`addr`) stays the public one.
+
+export const TOPICS = {
+  T01: 'Sound and pitch: vibration, frequency, hertz; high is not loud',
+  T02: 'Octave and octave equivalence; seven letter names; octave numbers',
+  T03: 'Twelve notes: semitones, tones, sharps and flats, keyboard',
+  T04: 'Cents and "in tune"',
+  T05: 'Pulse, beat and tempo',
+  T06: 'Metre and bars; downbeat; backbeat',
+  T09: 'Major scale; tonic as home',
+  T10: 'Scale degrees and movable do',
+  T11: 'Melody: contour, steps and leaps, transposition',
+  T12: 'Intervals by size and by sound',
+  T14: 'Major and minor third; major and minor triads by ear',
+  T15: 'Minor scales (natural, in Season 1)',
+  T19: 'Triads: major, minor, diminished, augmented',
+  T20: 'Diatonic chords, Roman numerals, function',
+  T21: 'Common progressions',
+  T22: 'Phrases and cadences (light)',
+  T28: 'Timbre, harmonics, overtones; spectrum',
+  S01: 'How the voice makes pitch; vocal health basics',
+  S02: 'Posture, alignment, tension release',
+  S03: 'Breath: low, quiet inhale; managed exhale',
+  S04: 'Onset and offset',
+  S05: 'Pitch matching; octave counts',
+  S06: 'Steady tone',
+  S07: 'Glides, sirens, lip trills, "ng"',
+  S08: 'Range and comfortable zone; voice types as labels',
+  S09: 'Singing steps: five-note scales, then the octave',
+  S10: 'Singing leaps: thirds, fifth, fourth, octave; arpeggios',
+  S12: 'Registers: chest, head, falsetto, mix; the break',
+  S13: 'Resonance and brightness',
+  S14: 'Vowels',
+  S16: 'Legato and phrasing; breath planning',
+  S17: 'Dynamics without pushing: messa di voce',
+} as const
+
+export type TopicId = keyof typeof TOPICS
+
+/** Theory above, voice below; the trailer and the finale sit between them. */
+export type Lane = 'theory' | 'voice' | 'both'
+
+/** Where a lesson sends the viewer to practise, as its CURRICULUM card gives it. */
+export interface Practise {
+  /** A drill that exists today. */
+  readonly link?: {
+    /** Same-origin, carrying `?lesson=NN`. */
+    readonly href: string
+    /** The address as the card prints it. */
+    readonly addr: string
+    readonly label: string
+    readonly note?: string
+  }
+  /** The deep link the lesson's own drill still needs. */
+  readonly needs?: string
+  /** Why the lesson has no drill at all. */
+  readonly none?: string
+}
+
+export interface Lesson {
+  /** 0 is the trailer; LESSONS[n].n === n. */
+  readonly n: number
+  readonly lane: Lane
+  readonly kind?: 'Trailer'
+  readonly title: string
+  /** The name on the map and in the links between cards. */
+  readonly short: string
+  readonly topics: readonly TopicId[]
+  /** Running time; a lesson without one reads as planned. */
+  readonly len?: string
+  /** Live on this site: watch and read. */
+  readonly ready?: boolean
+  /** The question the lesson opens with. */
+  readonly hook: string
+  /** The signature image. */
+  readonly sig: string
+  readonly pr: Practise
+  readonly fig?: 'poster' | 'metronome' | 'chladni'
+}
+
+export const LESSONS: readonly Lesson[] = [
+  {
+    n: 0,
+    lane: 'both',
+    kind: 'Trailer',
+    title: 'Find your pitch',
+    short: 'Trailer',
+    topics: [],
+    len: '2 to 3 min',
+    hook: 'What if you could see every note you sing?',
+    sig: 'The promise, and a map of all fourteen hooks.',
+    pr: { none: 'The trailer is the map; it has no drill of its own.' },
+  },
+  {
+    n: 1,
+    lane: 'theory',
+    title: 'What is a note?',
+    short: 'What is a note?',
+    topics: ['T01', 'T02'],
+    len: '4:57',
+    ready: true,
+    hook: 'If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?',
+    sig: 'The pitch line winds into a spiral; the spiral unrolls into the keyboard.',
+    pr: {
+      link: {
+        href: '/mirror?lesson=01',
+        addr: 'mercurypitch.com/mirror',
+        label: 'Voice Mirror',
+        note: 'counts a match in any octave',
+      },
+    },
+    fig: 'poster',
+  },
+  {
+    n: 2,
+    lane: 'theory',
+    title: 'Twelve notes',
+    short: 'Twelve notes',
+    topics: ['T03', 'T04'],
+    hook: 'Musicians only use seven letters, so where do the other five notes come from?',
+    sig: 'The five "?" beads from Lesson 1\'s spiral light up; twelve equal steps multiply to exactly 2.',
+    pr: {
+      needs:
+        'Ear Lab Leap with only minor and major 2nds (an ear-drill launch accepting a bank subset)',
+      link: {
+        href: '/ear-lab?lesson=02',
+        addr: 'mercurypitch.com/ear-lab',
+        label: 'Ear Lab',
+        note: 'for now, then tap Leap',
+      },
+    },
+  },
+  {
+    n: 3,
+    lane: 'voice',
+    title: 'Match a note',
+    short: 'Match a note',
+    topics: ['S01', 'S05'],
+    hook: "Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going on?",
+    sig: "The singer's line chasing Merc's target band, the gap shrinking in cents.",
+    pr: {
+      link: {
+        href: '/mirror?lesson=03',
+        addr: 'mercurypitch.com/mirror',
+        label: 'Voice Mirror',
+        note: 'Pitch Hold still needs a slug',
+      },
+    },
+  },
+  {
+    n: 4,
+    lane: 'theory',
+    title: 'The major scale and home',
+    short: 'Major scale',
+    topics: ['T09', 'T10'],
+    hook: 'Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?',
+    sig: 'A staircase with two uneven steps that slides to start on any note.',
+    pr: { needs: 'Scale Runner at a beginner tempo (a data-only slug)' },
+  },
+  {
+    n: 5,
+    lane: 'voice',
+    title: 'Breath and a steady note',
+    short: 'Steady note',
+    topics: ['S02', 'S03', 'S04', 'S06'],
+    hook: 'Singers are told to "support" a long note. If that doesn\'t mean pushing, what keeps it steady?',
+    sig: 'The pitch line of a held note settling from a wobble into a narrow band.',
+    pr: { needs: 'Long Note with a fixed 5 or 10 s length (durationSec)' },
+  },
+  {
+    n: 6,
+    lane: 'theory',
+    title: 'Intervals: the distance between notes',
+    short: 'Intervals',
+    topics: ['T11', 'T12'],
+    hook: 'Why can you start "Twinkle, Twinkle" on any note and it is still the same tune?',
+    sig: "A tune's contour lifted off the chart and slid up and down, keeping its shape.",
+    pr: {
+      needs:
+        'Interval Trainer with the anchored intervals (the intervals launch field)',
+      link: {
+        href: '/ear-lab?lesson=06',
+        addr: 'mercurypitch.com/ear-lab',
+        label: 'Ear Lab',
+        note: 'then tap Leap to name them',
+      },
+    },
+  },
+  {
+    n: 7,
+    lane: 'voice',
+    title: 'Slides, sirens and your range',
+    short: 'Your range',
+    topics: ['S07', 'S08'],
+    hook: 'How many notes can your voice reach, and why is the comfortable middle worth more than the extremes?',
+    sig: "A siren's line sweeping the chart, the comfortable band lit and the edges dimmed.",
+    pr: {
+      link: {
+        href: '/vocal-range-test?lesson=07',
+        addr: 'mercurypitch.com/vocal-range-test',
+        label: 'Vocal Range Test',
+      },
+    },
+  },
+  {
+    n: 8,
+    lane: 'theory',
+    title: 'Beat, tempo and the backbeat',
+    short: 'Beat and tempo',
+    topics: ['T05', 'T06'],
+    hook: 'Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?',
+    sig: 'A metronome whose arm becomes the beat grid of a step sequencer.',
+    pr: {
+      link: {
+        href: '/drum-night?lesson=08',
+        addr: 'mercurypitch.com/drum-night',
+        label: 'Drum Night',
+        note: 'Ear Lab Time needs an ear-drill link',
+      },
+    },
+    fig: 'metronome',
+  },
+  {
+    n: 9,
+    lane: 'voice',
+    title: 'Landing a leap',
+    short: 'Landing a leap',
+    topics: ['S09', 'S10'],
+    hook: 'Why is jumping to a note so much harder than stepping to it?',
+    sig: "The leap drawn as an arc whose landing zone is the target band (amber, the app's pitch-canvas colour); slow leaps first.",
+    pr: {
+      needs: 'Interval Trainer (sing) and Arpeggio Jumper',
+      link: {
+        href: '/?lesson=09#/path',
+        addr: 'mercurypitch.com/#/path',
+        label: 'The Ascent',
+        note: 'Tuning and Ear week',
+      },
+    },
+  },
+  {
+    n: 10,
+    lane: 'theory',
+    title: 'Major and minor',
+    short: 'Major and minor',
+    topics: ['T14', 'T15', 'T19'],
+    hook: 'Which single note turns a bright major chord into a dark minor one?',
+    sig: "One bead, the third, sliding down one semitone and the chord's colour changing.",
+    pr: { needs: 'Drone Intonation and Ear Lab Stack' },
+  },
+  {
+    n: 11,
+    lane: 'voice',
+    title: 'Registers and the break',
+    short: 'Registers',
+    topics: ['S12'],
+    hook: 'Why does your voice flip at roughly the same note every time you slide up?',
+    sig: "The siren's line crossing a shaded seam, the seam narrowing over repetitions.",
+    pr: { needs: 'siren and slide drills' },
+  },
+  {
+    n: 12,
+    lane: 'theory',
+    title: 'Chords and the four-chord song',
+    short: 'Chords',
+    topics: ['T19', 'T20', 'T21'],
+    hook: 'How can hundreds of songs share the same four chords and still sound different?',
+    sig: 'Four chords as four rooms on the spiral; a melody walking through them.',
+    pr: {
+      needs:
+        'Chord Stacker with major and minor triads (today it has only maj7, min7, dom7, dim7 and maj6)',
+    },
+  },
+  {
+    n: 13,
+    lane: 'voice',
+    title: 'Resonance and vowels',
+    short: 'Vowels',
+    topics: ['T28', 'S13', 'S14'],
+    hook: 'If "ee" and "ah" sung on the same note draw the same pitch line, what makes them sound different?',
+    sig: 'One pitch line over a harmonic spectrum whose peaks move as the vowel changes.',
+    pr: { needs: 'Long Note on vowels' },
+    fig: 'chladni',
+  },
+  {
+    n: 14,
+    lane: 'both',
+    title: 'Phrasing: sing a whole song',
+    short: 'Phrasing',
+    topics: ['S16', 'S17', 'T22'],
+    hook: 'If you can hit every note of a song, what is still missing between correct and compelling?',
+    sig: "A whole song's pitch line with breath marks and a swell drawn in light.",
+    pr: {
+      link: {
+        href: '/karaoke-night?lesson=14',
+        addr: 'mercurypitch.com/karaoke-night',
+        label: 'Karaoke Night',
+      },
+    },
+  },
+]
+
+/** A prerequisite: lesson `from` comes before lesson `to`. */
+export type Edge = readonly [from: number, to: number]
+
+export const EDGES: readonly Edge[] = [
+  [1, 2],
+  [1, 3],
+  [2, 4],
+  [2, 5],
+  [3, 5],
+  [4, 6],
+  [3, 7],
+  [3, 9],
+  [6, 9],
+  [6, 10],
+  [7, 11],
+  [10, 12],
+  [11, 13],
+  [5, 14],
+  [8, 14],
+  [9, 14],
+  [12, 14],
+]
+
+/** Each lesson's direct prerequisites, in EDGES order; absent for a lesson that needs none. */
+export const PREREQ: Readonly<Partial<Record<number, readonly number[]>>> =
+  EDGES.reduce<Partial<Record<number, number[]>>>((out, [a, b]) => {
+    ;(out[b] ??= []).push(a)
+    return out
+  }, {})
+
+/** The lessons that name `n` as a direct prerequisite, in lesson order. */
+export function unlocks(n: number): number[] {
+  return Object.keys(PREREQ)
+    .map(Number)
+    .filter((k) => PREREQ[k]?.includes(n) === true)
+}
+
+/** Every lesson `n` builds on, directly or through another lesson: its path in. */
+export function ancestors(n: number): Set<number> {
+  const out = new Set<number>()
+  const todo = [...(PREREQ[n] ?? [])]
+  while (todo.length > 0) {
+    const k = todo.pop()!
+    if (out.has(k)) continue
+    out.add(k)
+    todo.push(...(PREREQ[k] ?? []))
+  }
+  return out
+}
+
+/**
+ * An edge's part in a selected lesson's path: 'in' for its own
+ * prerequisites, 'out' for the lessons it opens, 'path' for an edge further
+ * back on its way in.
+ */
+export type EdgeRole = 'in' | 'out' | 'path'
+
+export interface LessonPath {
+  /** Every lesson the selected one builds on; their nodes take the 'anc' class. */
+  readonly ancestors: ReadonlySet<number>
+  /** One entry per EDGES item, in order: its role, or null for an edge off the path. */
+  readonly roles: readonly (EdgeRole | null)[]
+}
+
+/**
+ * What the explorer lights when lesson `n` is selected. Its own links lead;
+ * an edge with both ends among its ancestors (or itself) is on its path in;
+ * everything else stays faint, even a branch that leaves the path.
+ */
+export function lessonPath(n: number): LessonPath {
+  const before = ancestors(n)
+  const onPath = new Set([...before, n])
+  const roles = EDGES.map(([a, b]): EdgeRole | null => {
+    if (b === n) return 'in'
+    if (a === n) return 'out'
+    return onPath.has(a) && onPath.has(b) ? 'path' : null
+  })
+  return { ancestors: before, roles }
+}

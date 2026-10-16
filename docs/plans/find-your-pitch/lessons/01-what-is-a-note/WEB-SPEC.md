@@ -6,9 +6,9 @@ captions), and the **lesson explorer** for Season 1 (all lessons, Lesson 1 live,
 placeholders). A short **series blueprint** section closes it for the team. Copy is in
 [LESSON.md](LESSON.md); the curriculum is [../../CURRICULUM.md](../../CURRICULUM.md).
 
-It is built first as a claude.ai artifact page, which is the **proof preview** only (MASTER-PLAN
-§ 11). The public home of the web lessons is MASTER-PLAN § 12 item 9 (recommended: a
-`mercurypitch.com/learn/NN` route in the app), built in the Phase 1 Lesson host track.
+It was built first as a claude.ai artifact page, which is the **proof preview** only (MASTER-PLAN
+§ 11). Its public home is the app's `mercurypitch.com/learn/01` (MASTER-PLAN § 12 item 9), built
+in the Phase 1 Lesson host track.
 
 ## Look
 
@@ -140,26 +140,33 @@ in LESSON.md has none. The warm-up retrieval (item 3) starts with Lesson 2.
     Kokoro-82M, Apache 2.0, to be re-voiced; every musical example synthesised; Merc's sung notes
     in the film: development placeholders re-pitched from ElevenLabs takes); "Proof episode,
     October 2026".
-    Those sung notes (`src/features/echo/merc-voice-set.ts`) have their rights confirmed, or are
-    replaced, before any public release (MASTER-PLAN § 12 item 1).
+    The owner holds those sung notes' rights (`src/features/echo/merc-voice-set.ts`; MASTER-PLAN
+    § 12 item 1); a voice actor replaces them later.
 
 ## Video
 
-In the preview, published beside the page as HLS (`video/lesson-01.m3u8` plus segments) with a
-poster (`video/poster.jpg`) and captions (`video/lesson-01.en.vtt`). Play it with the native player
-where HLS is native (Safari), else hls.js from cdnjs (pinned version). Chapters come from
-`video/chapters.json` (inline them too, as a fallback). The HLS (1080p30) is cut from the delivery
-master by the film's `tools/web-video.sh`, and that master does not exist yet (MASTER-PLAN
-Phase 0); until it does, the section shows the chapters and the transcript with an "episode in
-production" note. On the public host the player is MASTER-PLAN § 12 item 7's answer (self-hosted
-HLS or a YouTube embed), decided together with the host.
+On the public page (`/learn/01`) the episode is an MP4 on R2 (MASTER-PLAN § 12 item 7): 1080p, and
+a 720p copy below 900 px, both cut from the delivery master. Their URLs are the lesson's film
+setting (`src/features/lessons/lesson-01/film.ts`); until the files are uploaded the setting is
+empty and the section shows the poster, the chapters and the transcript with "Film coming soon".
+Captions are the same-origin VTT in a `<track>`; the transcript is built from the same VTT text,
+and the chapters from the film's generated `chapters.json`, both copied beside the page module
+(`lesson-01/assets/`, from this folder's `captions/`). A chapter or transcript jump while playing dips the
+element's volume around the seek, so it does not click (iOS ignores element volume).
+
+The proof preview on the artifact host used HLS (`video/lesson-01.m3u8` plus segments) with hls.js,
+because the artifact host caps a file at 15 MB.
 
 ## Mercs
 
-The page loads the film's own Merc bundles, published beside it (`merc-blue.js`,
-`merc-orange.js`; each sets `window.MercLib` when loaded, so load one, keep its `mount`, then load
-the other). Live mode: `MercLib.mount(el, { transparent: true, quality: 'medium', size, view:
-'front', state: 'idle' })`, orange with `m.setLook(MercLib.WARM)`; turn them toward each other
+On the public page the Mercs are the app's own renderer (`src/lib/merc/renderer.ts`), loaded as
+its own chunk after first paint so the page reads and plays before it arrives: blue as shipped,
+orange with the warm look and the warm light (`src/features/lessons/kit/merc-warm.ts`: a gradient
+through `setLook`, and the shader's cool light constants swapped for amber through the renderer's
+`fragmentPatch`, so the approved shader text never changes). (The proof preview loaded the film's
+bundles, `merc-blue.js` and `merc-orange.js`, built by the film's `tools/build-merc.mjs` with the
+same swaps.) Live mode: `mount(el, { transparent: true, quality: 'medium', size, view: 'front',
+state: 'idle' })`, orange with `m.setLook(WARM_LOOK)`; turn them toward each other
 with `setPoseBias({ yaw: +-0.32, lookX: +-0.35 })`. While a tone plays, `setState('sing')` and
 `setVoice({ voiced: true, cents: 0, level: 0.75, steady: 0.95, midi: 57 })`; after, back to
 `idle` with `setVoice({ voiced: false, ... })`; on the reveal, orange `celebrate` for 1.6 s. One
@@ -173,10 +180,24 @@ still images (`merc-blue.png`, `merc-orange.png`).
 ## Contract (the proof preview on the artifact host)
 
 The claude.ai artifact page is the proof preview only. Its host rules (the wrapper tags, the
-script and stylesheet sources, no iframes) bind only the preview: in particular, its no-iframe
-rule does not decide MASTER-PLAN § 12 item 7, which is answered with the host (item 9). The
-layout, accessibility, sound, motion and storage rules bind the page wherever it lives, and carry
-into the Phase 1 toy kit's contract.
+script and stylesheet sources, no iframes) bind only the preview. The layout, accessibility,
+sound, motion and storage rules bind the page wherever it lives, and carry into the Phase 1 toy
+kit's contract.
+
+## On the app
+
+The public page is `learn/01.html`, a hand-written document like `delete-account.html`, served at
+`/learn/01` (`LESSON_01_PATH` in `vite.config.ts`; the service worker leaves it alone, and it is in
+the sitemap and `llms.txt`). Its module is `src/features/lessons/lesson-01/main.ts`; the parts
+every lesson shares are in `src/features/lessons/kit/` (the start of the Phase 1 toy kit). What
+changed from the preview, because the app's security policy allows scripts, styles and fonts from
+its own origin only, and because loading fonts from Google would hand every visitor's IP address
+to Google before any consent (`src/lib/self-hosted-fonts.ts`): no CDN at all; Inter and Outfit
+from the app's `@fontsource-variable` packages; Instrument Serif and JetBrains Mono as Latin WOFF2
+subsets beside the kit (`src/features/lessons/fonts/`, with their OFL texts); GSAP and
+ScrollTrigger replaced by Web Animations and IntersectionObserver with the same curves
+(`kit/reveal.ts`); the synthesised examples follow the house envelope rules
+(`.claude/memory/audio-pop-free-playback.md`). Its practise links carry `?lesson=01`.
 
 - No `<!doctype>`, `<html>`, `<head>`, `<body>` tags: the file is wrapped at publish. Start with
   `<title>Find Your Pitch</title>`, `<meta name="claude:viewport-fit-sides" content="cover">`, then

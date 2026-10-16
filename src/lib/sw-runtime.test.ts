@@ -227,7 +227,7 @@ describe('the standalone documents', () => {
       'utf8',
     )
     const redirects = [
-      ...config.matchAll(/const [A-Z_]+_PATH\s*=\s*'(\/[^']*)'/g),
+      ...config.matchAll(/const [A-Z0-9_]+_PATH\s*=\s*'(\/[^']*)'/g),
     ].map((match) => match[1])
     const paths = [...allEntryPaths(), ...redirects]
 

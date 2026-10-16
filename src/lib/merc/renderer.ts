@@ -63,6 +63,13 @@ export interface MercMountOptions {
   glideMouth?: GlideMouth
   /** Called once if Merc stops drawing for good after mount. */
   onFailure?: (error: Error) => void
+  /**
+   * Rewrites the scene shader's GLSL just before it compiles, for a page that
+   * needs other light than the shader's own cool blue (the lessons' orange
+   * Merc, src/features/lessons/kit/merc-warm.ts). The approved text itself
+   * never changes; scene-shader.test.ts still pins it.
+   */
+  fragmentPatch?: (source: string) => string
 }
 
 /** Tuning on top of the look: any LOOK entry, the palette's stops or feet, the rim. */
@@ -166,7 +173,7 @@ export function mount(
     if (vao === null) throw new Error('Vertex array allocation failed')
     const programs = new Map<MercQuality, SceneProgram>()
     try {
-      programs.set(quality, createSceneProgram(gl, quality))
+      programs.set(quality, createSceneProgram(gl, quality, opts.fragmentPatch))
       const post = createPostPrograms(gl)
       return { vao, programs, post, targets: null }
     } catch (err) {
@@ -188,7 +195,7 @@ export function mount(
   function sceneProgram(r: GlResources): SceneProgram {
     let prg = r.programs.get(quality)
     if (!prg) {
-      prg = createSceneProgram(gl, quality)
+      prg = createSceneProgram(gl, quality, opts.fragmentPatch)
       r.programs.set(quality, prg)
     }
     return prg
@@ -644,7 +651,7 @@ export function mount(
       if (!isMercQuality(name) || name === quality) return
       // Compile first, so a failure leaves the current quality drawing.
       if (res && !res.programs.has(name)) {
-        res.programs.set(name, createSceneProgram(gl, name))
+        res.programs.set(name, createSceneProgram(gl, name, opts.fragmentPatch))
       }
       quality = name
       invalidate()

@@ -1,0 +1,32 @@
+/* ============================================================
+   Lesson fonts — Instrument Serif and JetBrains Mono, self-hosted
+   ============================================================
+   Latin subsets of the OFL fonts (licences beside the files). Inter and
+   Outfit come from the app's own @fontsource-variable packages, imported by
+   each lesson's main module. Nothing loads from fonts.googleapis.com, which
+   would hand every visitor's IP address to Google before any consent
+   (src/lib/self-hosted-fonts.ts). */
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/instrument-serif-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/instrument-serif-latin-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('../fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2');
+}
