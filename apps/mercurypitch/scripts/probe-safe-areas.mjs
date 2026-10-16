@@ -512,8 +512,9 @@ async function signedOut(browser, args, frame, kit, results) {
             await go.measure('account-offer', '[data-testid="sheet-panel"]', {
               end: true,
             })
-            await page.locator('[data-testid="offer-sign-in"]').click()
-            await go.visible('[data-testid="signin-sheet"]')
+            // Keep's Use email opens the sign-in sheet on its email pane.
+            await page.locator('[data-testid="keep-email"]').click()
+            await go.visible('[data-testid="signin-sheet"][data-pane="email"]')
             await go.settle()
             await go.measure(
               'sign-in',
