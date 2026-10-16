@@ -140,11 +140,6 @@ export function bridgeImage(url: string): Promise<HTMLImageElement> {
   return loaded
 }
 
-/** Let the decoded images go: the room has left. */
-export function releaseBridgeImages(): void {
-  images.clear()
-}
-
 const dpr = (): number =>
   typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1
 

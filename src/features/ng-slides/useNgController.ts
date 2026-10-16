@@ -29,7 +29,6 @@
 // `script` (scripted-take.ts): frames in place of the mic, on the take's
 // own clock, and nothing played, felt, said or kept.
 
-import type { Accessor } from 'solid-js'
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
@@ -39,7 +38,6 @@ import { newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
-import type { GlidePath } from '@/lib/glide/glide-path'
 import { restToneDue, riddenSegmentAt, segmentAt, targetAt, } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import { NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
@@ -48,7 +46,6 @@ import { fitNgSlides } from '@/lib/glide/glide-targets'
 import { haptics } from '@/lib/haptics'
 import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, } from '@/lib/hold/hold-target'
 import { settleLiveNote } from '@/lib/hold/settle-note'
-import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice } from '@/lib/merc/sim'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -66,6 +63,8 @@ import { createBridgeTones } from './bridge-tones'
 import type { BridgeView } from './bridge-view'
 import type { NgFields, NgMoment } from './merc-lines'
 import { createNgLines } from './merc-lines'
+import type { NgController } from './ng-controller-contract'
+import { QUIET_LIMIT_SECONDS } from './ng-controller-contract'
 import type { NgEvent, NgState } from './ng-machine'
 import { initialNgState, isRunPhase, ngReducer } from './ng-machine'
 import type { NgPlan, NgSummary, SlideHeard } from './ng-run'
@@ -75,8 +74,6 @@ import { createNgTake } from './ng-take'
 import type { NgScript, ScriptedNgTake } from './scripted-take'
 import { CaptureError, useNgCapture } from './useNgCapture'
 
-/** Nobody hummed for this long during a run: it stops, the mic closes. */
-export const QUIET_LIMIT_SECONDS = 60
 /** Merc's happy face after an arch lights, ms. */
 const LOCK_FACE_MS = 600
 /** The room's own tone is not drawn as the voice for this long after it, s. */
@@ -95,46 +92,6 @@ const SILENT_VOICE: MercVoice = {
 /** The singer's own note, when the room can fit its slides to it. */
 function offerable(midi: number): boolean {
   return midi >= HOLD_TARGET_MIN_MIDI && midi <= HOLD_TARGET_MAX_MIDI
-}
-
-/** What the scene draws its lines from: the path, and the names' root. */
-export interface NgLines {
-  readonly path: GlidePath
-  readonly root: number | null
-}
-
-export interface NgController {
-  state: Accessor<NgState>
-  /** Merc's line in his bubble; '' for none. */
-  line: Accessor<string>
-  /** "Slide 2 of 5" during a run; null for none. */
-  chip: Accessor<string | null>
-  /**
-   * A slide is being sung (its up, top and down): the singer's turn in a
-   * run (ngMicState). False in the count-in, a landing, a breath and the
-   * demo.
-   */
-  sliding: Accessor<boolean>
-  /**
-   * How loud the singer is, 0..1, from the newest frame the run has read:
-   * the mic's ring follows it. Read every frame; deliberately not reactive.
-   */
-  micLevel: () => number
-  summary: Accessor<NgSummary | null>
-  mercState: Accessor<MercState>
-  /** Read by Merc's renderer every frame; deliberately not reactive. */
-  mercVoice: () => MercVoice
-  lines: Accessor<NgLines>
-  /** The pulled-back result is up. */
-  showResult: Accessor<boolean>
-  /** Start a run: from the intro, a result or a blocked mic. */
-  start: () => void
-  /** The mic button during a run: the run stops, nothing kept. */
-  stop: () => void
-  /** The scene the run draws on. */
-  attach: (view: BridgeView) => void
-  /** The demo's way in: its slides hummed through this room. */
-  script: NgScript
 }
 
 /** The run in progress: its plan, scroll, take and what it has played. */

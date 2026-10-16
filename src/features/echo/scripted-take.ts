@@ -33,7 +33,7 @@ import type { CallNote } from './early-singing'
 import type { EchoDemoPhase, EchoPhase, EchoState } from './echo-machine'
 import type { EchoSummary } from './echo-run'
 import { showResultOf } from './echo-run'
-import type { CallVoice } from './merc-call'
+import type { CallSchedule, CallVoice } from './merc-call'
 import type { SkyScene } from './sky-scene'
 
 /** A moment of a take the demo's tooltips can wait for. */
@@ -63,6 +63,13 @@ export interface ScriptedEchoTake extends TakeClock<EchoDemoMark> {
   readonly toResult: boolean
   /** Reduced motion: Merc moves without hopping. */
   readonly still: boolean
+}
+
+/** A call the demo's sound sings: the room has nothing of it to stop. */
+export const SCRIPTED_CALL: CallSchedule = {
+  onsets: [],
+  endAt: 0,
+  stop: () => undefined,
 }
 
 /** The demo's way into the room (the demo kit's DemoScript). */

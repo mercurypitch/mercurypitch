@@ -55,12 +55,12 @@ import { DEMO_COPY } from './demo/demo-cues'
 import { aimLipTip } from './demo/tip-targets'
 import type { LipDemo } from './demo/useLipDemo'
 import { useLipDemo } from './demo/useLipDemo'
+import type { LipController } from './lip-controller-contract'
 import { lipMicState } from './lip-machine'
 import type { LipSummary } from './lip-run'
 import { bestText, resultChips } from './lip-run'
 import { LipLevel } from './LipLevel'
 import styles from './LipRollRoom.module.css'
-import type { LipController } from './useLipController'
 import { useLipController } from './useLipController'
 
 export interface LipRollRoomProps {
