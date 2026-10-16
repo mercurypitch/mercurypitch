@@ -110,12 +110,13 @@ export const RoomVolumeHint: Component<RoomVolumeHintProps> = (props) => {
     ask()
 
     // A change can come with no word from the phone. iOS tells the app of
-    // the volume through the app's own audio session, which the system ends
-    // whenever it suspends the app and the app starts again only after a
-    // call (docs/agent/MISTAKES.md); developers report that an inactive
-    // session hears no change. Android says nothing when a stream is muted
-    // or unmuted without its level moving. So while the hint is up, and
-    // whenever the app comes back, the volume is read again.
+    // the volume through the app's own audio session, which stopped
+    // following the keys the moment a room opened on the owner's iPhone
+    // (docs/agent/MISTAKES.md); the plugin now reads the system's volume as
+    // well, and the reading goes by it once it has moved. Android says
+    // nothing when a stream is muted or unmuted without its level moving.
+    // So while the hint is up, and whenever the app comes back, the volume
+    // is read again.
     const inFront = (): boolean => document.visibilityState !== 'hidden'
     createEffect(() => {
       if (!hint().shown) return

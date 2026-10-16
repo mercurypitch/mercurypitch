@@ -102,12 +102,22 @@ function ports(value: unknown): AudioOutputPort[] {
  * The plugin's answer as a reading, or null where it does not say how loud
  * the phone is. The route is the first output's kind: a phone plays the
  * page's sound on one route at a time.
+ *
+ * An iPhone sends two volumes. `outputVolume` is the app's own session's,
+ * and it stopped following the volume keys the moment a room opened (build
+ * 880). `systemVolume` is the system's, off a volume view nobody sees
+ * (AudioOutputPlugin.swift), and counts once the plugin has seen it move,
+ * which a volume view that reads nothing never does. Until then the
+ * session's stands, as it always has; the readout shows both.
  */
 export function toAudioOutputReading(raw: unknown): AudioOutputReading | null {
   if (typeof raw !== 'object' || raw === null) return null
   const data = raw as RawOutput
-  const volume = finite(data.outputVolume)
-  if (volume === null) return null
+  const session = finite(data.outputVolume)
+  if (session === null) return null
+  const system =
+    data.systemVolumeLive === true ? finite(data.systemVolume) : null
+  const volume = system ?? session
   const outputs = ports(data.outputs)
   const first = outputs[0]
   const route: AudioRoute =
@@ -122,6 +132,7 @@ export function toAudioOutputReading(raw: unknown): AudioOutputReading | null {
   ]) {
     delete detail[key]
   }
+  if ('systemVolume' in data) detail.sessionVolume = session
   return {
     volume: Math.min(1, Math.max(0, volume)),
     step: finite(data.volumeStep),

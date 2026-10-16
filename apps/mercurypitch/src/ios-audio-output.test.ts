@@ -79,7 +79,51 @@ describe('the plugin', () => {
   })
 })
 
+// The app's session stopped following the volume keys the moment a room
+// opened (build 880): the system volume comes from a volume view as well,
+// and the interruptions and the route's reasons go into every report.
+describe('the second volume, and what the session went through', () => {
+  it('reads the system volume off a hidden volume view in a window', () => {
+    expect(PLUGIN).toContain('import MediaPlayer')
+    expect(PLUGIN).toContain('MPVolumeView(')
+    expect(PLUGIN).toContain('view.isHidden = true')
+    expect(PLUGIN).toContain('host.addSubview(view)')
+    expect(PLUGIN).toContain('$0 as? UISlider }.first?.value')
+  })
+
+  it('counts it only once it has been seen to move', () => {
+    expect(PLUGIN).toContain('systemVolumeMoved = true')
+    expect(PLUGIN).toContain('data["systemVolumeLive"] = systemVolumeMoved')
+  })
+
+  it('sends it under the names the JavaScript side reads', () => {
+    for (const key of ['systemVolume', 'systemVolumeLive']) {
+      expect(PLUGIN).toContain(`data["${key}"]`)
+      expect(JS_SIDE).toContain(`data.${key}`)
+    }
+  })
+
+  it('keeps the interruptions and how the app last made its session active', () => {
+    expect(PLUGIN).toContain('AVAudioSessionInterruptionTypeKey')
+    expect(PLUGIN).toContain('AVAudioSessionInterruptionReasonKey')
+    expect(PLUGIN).toContain('data["interrupted"] = interrupted')
+    expect(PLUGIN).toContain('data["lastInterruption"]')
+    expect(PLUGIN).toContain('data["activation"] = AudioSession.activation')
+    expect(KIT).toContain('public private(set) static var activation')
+  })
+
+  it('says why the route moved', () => {
+    expect(PLUGIN).toContain('AVAudioSessionRouteChangeReasonKey')
+    expect(PLUGIN).toContain('extra["routeReason"]')
+  })
+})
+
 describe('reading, never changing', () => {
+  it('never moves the volume slider, which would set the phone’s volume', () => {
+    expect(PLUGIN).not.toMatch(/\.value\s*=[^=]/u)
+    expect(PLUGIN).not.toContain('setValue')
+  })
+
   const setters = [
     'setCategory',
     'setActive',

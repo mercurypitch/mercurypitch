@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoomOutputReading } from '@/components/room-kit/room-output'
 import { audioDiagnosticEntries, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
 import type { NativeAudioOutput, NativeAudioOutputReading, } from '@/stores/native-shell-store'
-import { censusContexts, censusCounts, censusTracks, installAudioCensus, LEVEL_POLL_MS, resetAudioCensusForTests, SOUND_GAP_MS, watchRoomLevels, } from './audio-census'
+import { censusContexts, censusCounts, censusTracks, installAudioCensus, LEVEL_POLL_MS, OUTPUT_SETTLE_MS, resetAudioCensusForTests, SOUND_GAP_MS, watchRoomLevels, } from './audio-census'
 
 class FakeContext {
   state = 'suspended'
@@ -222,6 +222,117 @@ describe("the phone's output", () => {
       ports: 'Receiver',
       category: 'AVAudioSessionCategoryPlayAndRecord',
     })
+  })
+})
+
+// The owner's iPhone (build 880): the volume followed the keys after a fresh
+// launch and stopped the moment a room opened. A room's opening is a mic and
+// a context starting, so the output is read at each, and again once WebKit
+// has had a moment to switch its own session.
+describe("the phone's output as the rooms' audio starts and stops", () => {
+  const reading = (volume: number): NativeAudioOutputReading => ({
+    volume,
+    step: null,
+    steps: null,
+    route: 'speaker',
+    outputs: [{ type: 'Speaker', name: 'Speaker' }],
+    detail: { category: 'AVAudioSessionCategoryPlayAndRecord' },
+    reason: null,
+  })
+
+  const reads = (): Record<string, unknown>[] =>
+    audioDiagnosticEntries()
+      .filter((entry) => entry.source === 'output' && entry.event === 'read')
+      .map((entry) => entry.detail ?? {})
+
+  const flush = async (): Promise<void> => {
+    for (let i = 0; i < 4; i++) await Promise.resolve()
+  }
+
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  it('reads it as a mic opens and stops, and again once it settles', async () => {
+    const read = vi.fn(async () => reading(0.5))
+    install({ read, watch: () => () => undefined })
+    await flush()
+    expect(reads().map((detail) => detail.at)).toEqual(['launch'])
+
+    await win.navigator.mediaDevices.getUserMedia({ audio: true })
+    await flush()
+    expect(reads().map((detail) => detail.at)).toEqual([
+      'launch',
+      'mic 1 opened',
+    ])
+    await vi.advanceTimersByTimeAsync(OUTPUT_SETTLE_MS)
+    tracks[0].stop()
+    await flush()
+    expect(reads().map((detail) => detail.at)).toEqual([
+      'launch',
+      'mic 1 opened',
+      'mic 1 opened, settled',
+      'mic 1 stopped',
+    ])
+    expect(reads()[1]).toMatchObject({ volume: 0.5, route: 'speaker' })
+  })
+
+  it('reads it as a context starts and stops', async () => {
+    install({ read: async () => reading(1), watch: () => () => undefined })
+    const context = new win.AudioContext()
+    context.setState('running')
+    await flush()
+    context.setState('suspended')
+    await flush()
+    await vi.advanceTimersByTimeAsync(OUTPUT_SETTLE_MS)
+    expect(reads().map((detail) => detail.at)).toEqual([
+      'launch',
+      'context 1 running',
+      'context 1 suspended',
+      'context 1 running, settled',
+      'context 1 suspended, settled',
+    ])
+  })
+
+  it('reads nothing more without the phone’s output', async () => {
+    install()
+    await win.navigator.mediaDevices.getUserMedia({ audio: true })
+    await vi.advanceTimersByTimeAsync(OUTPUT_SETTLE_MS)
+    expect(reads()).toEqual([])
+  })
+
+  it('names the session type the page asked WebKit for, beside each reading', async () => {
+    const page = win as FakeWindow & {
+      navigator: { audioSession?: { type: string } }
+    }
+    page.navigator.audioSession = { type: 'auto' }
+    let send: (r: NativeAudioOutputReading) => void = () => undefined
+    install({
+      read: async () => reading(1),
+      watch: (handler) => {
+        send = handler
+        return () => undefined
+      },
+    })
+    await flush()
+    page.navigator.audioSession.type = 'playback'
+    send({ ...reading(0.25), reason: 'volume' })
+    const entries = audioDiagnosticEntries().filter(
+      (entry) => entry.source === 'output',
+    )
+    expect(entries.map((entry) => entry.detail?.pageSession)).toEqual([
+      'auto',
+      'playback',
+    ])
+  })
+
+  it('forgets a reading still to come when it is reset', async () => {
+    install({ read: async () => reading(1), watch: () => () => undefined })
+    await win.navigator.mediaDevices.getUserMedia({ audio: true })
+    await flush()
+    resetAudioDiagnosticsForTests()
+    resetAudioCensusForTests()
+    await vi.advanceTimersByTimeAsync(OUTPUT_SETTLE_MS)
+    expect(reads()).toEqual([])
   })
 })
 
