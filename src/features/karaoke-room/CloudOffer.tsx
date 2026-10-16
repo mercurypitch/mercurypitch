@@ -24,7 +24,9 @@
 // WHO IS ASKED WHAT (§4.3). Without an account, a text button under
 // Subscribe offers the free song an account brings; it hands over to the
 // account sheet the shell names (`onAccount`). A signed-in singer whose free
-// song is used is told when the next one comes, above the plan.
+// song is used is told when the next one comes, above the plan. After a
+// purchase on a phone without an account, Sign in opens the sign-in sheet
+// the shell names (`onSignIn`): the singer has paid, so it is no offer.
 //
 // MOTION (§4.4). About 1.2 s: the sheet rises, the art opens, the words and
 // the steps arrive in turn while the line between the steps draws, then the
@@ -187,11 +189,15 @@ export interface CloudOfferProps {
   /** The platform the app runs on ('ios', 'android'); Files is iOS's word. */
   readonly platform?: string
   /**
-   * Open the account sheet: the free account under Subscribe, and Sign in
-   * once a purchase is made. The shell names it; without one, the sign-in
-   * sheet every in-app "Sign in" opens.
+   * Open the account sheet for the free account under Subscribe. The shell
+   * names it; without one, the sign-in sheet every in-app "Sign in" opens.
    */
   readonly onAccount?: () => void
+  /**
+   * Sign in, once a purchase is made on a phone without an account. The
+   * shell names it; without one, the same sign-in sheet.
+   */
+  readonly onSignIn?: () => void
 }
 
 export function CloudOffer(props: CloudOfferProps): JSX.Element {
@@ -207,6 +213,12 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
     closeCloudOffer('done')
     if (props.onAccount === undefined) nativeShellApi()?.openSignIn?.()
     else props.onAccount()
+  }
+
+  const signInAfterPurchase = (): void => {
+    closeCloudOffer('done')
+    if (props.onSignIn === undefined) nativeShellApi()?.openSignIn?.()
+    else props.onSignIn()
   }
 
   // The latest ask for the price is the one that stands.
@@ -479,7 +491,7 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
                 <button
                   type="button"
                   class={styles.subscribe}
-                  onClick={openAccount}
+                  onClick={signInAfterPurchase}
                 >
                   Sign in
                 </button>

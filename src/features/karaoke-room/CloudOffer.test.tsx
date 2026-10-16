@@ -112,7 +112,11 @@ afterEach(() => {
 })
 
 function open(
-  props: { platform?: string; onAccount?: () => void } = {},
+  props: {
+    platform?: string
+    onAccount?: () => void
+    onSignIn?: () => void
+  } = {},
 ): Promise<HTMLElement> {
   render(() => <CloudOffer {...props} />)
   openCloudOffer('import')
@@ -332,10 +336,11 @@ describe('Subscribe', () => {
     }
   })
 
-  it('offers an account right after a first purchase on a phone without one', async () => {
+  it('offers sign-in, not the account offer, right after a first purchase on a phone without one', async () => {
     const onAccount = vi.fn()
+    const onSignIn = vi.fn()
     withStore(store({ subscribe: async () => Promise.resolve('purchased') }))
-    const offer = await open({ onAccount })
+    const offer = await open({ onAccount, onSignIn })
     await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
     // The webhook has granted the month by the time /me is asked again.
     server.next = subscriber
@@ -351,8 +356,28 @@ describe('Subscribe', () => {
       ),
     )
     fireEvent.click(within(bought).getByRole('button', { name: 'Sign in' }))
-    expect(onAccount).toHaveBeenCalledTimes(1)
+    // The singer has paid: Sign in is the sign-in sheet, never another offer.
+    expect(onSignIn).toHaveBeenCalledTimes(1)
+    expect(onAccount).not.toHaveBeenCalled()
     expect(cloudOffer()).toBeNull()
+  })
+
+  it('opens the sign-in sheet after a purchase when the shell names no other', async () => {
+    const openSignIn = vi.fn()
+    withStore(store({ subscribe: async () => Promise.resolve('purchased') }), {
+      openSignIn,
+    })
+    const offer = await open()
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+    server.next = subscriber
+
+    fireEvent.click(subscribeButton(offer))
+
+    const bought = await waitFor(() =>
+      screen.getByRole('dialog', { name: "You're subscribed" }),
+    )
+    fireEvent.click(within(bought).getByRole('button', { name: 'Sign in' }))
+    expect(openSignIn).toHaveBeenCalledTimes(1)
   })
 
   it('offers an account so the songs follow the singer to a new iPad', async () => {
@@ -401,8 +426,9 @@ describe('Subscribe', () => {
 describe('who is offered what', () => {
   it('offers a singer without an account the free song an account brings', async () => {
     const onAccount = vi.fn()
+    const onSignIn = vi.fn()
     withStore(store())
-    const offer = await open({ onAccount })
+    const offer = await open({ onAccount, onSignIn })
 
     fireEvent.click(
       within(offer).getByRole('button', {
@@ -411,6 +437,7 @@ describe('who is offered what', () => {
     )
 
     expect(onAccount).toHaveBeenCalledTimes(1)
+    expect(onSignIn).not.toHaveBeenCalled()
     expect(cloudOffer()).toBeNull()
   })
 

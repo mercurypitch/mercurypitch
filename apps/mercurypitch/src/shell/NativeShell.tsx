@@ -19,13 +19,11 @@
 // and the microphone; the shell only asks it to pause, resume, stop or park
 // (src/stores/native-shell-store.ts).
 
-import { Capacitor } from '@capacitor/core'
 import { openAppSettings } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import './shell.css'
-import { CloudOffer } from '@/features/karaoke-room/CloudOffer'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { KARAOKE_IMPORT, PREMIUM_EXERCISES } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
@@ -53,6 +51,7 @@ import { openSignIn } from './settings/sign-in-state'
 import { SignInSheet } from './settings/SignInSheet'
 import { mirrorShellChrome } from './shell-attributes'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
+import { ShellCloudOffer } from './ShellCloudOffer'
 import { ShellRoot } from './ShellRoot'
 import { ShellScreens } from './ShellScreens'
 import { Transport } from './Transport'
@@ -417,15 +416,11 @@ export const NativeShell: Component = () => {
           <AccountOfferSheet />
 
           {/* The Cloud offer (paywall B v2), opened by the Karaoke room's
-              Import, Settings and the onboarding. Its free account, and
-              Sign in after a purchase, close it and open Keep (S7b §3.5).
-              Stage 2: a plain conditional, so a store build folds it away. */}
-          {KARAOKE_IMPORT ? (
-            <CloudOffer
-              platform={Capacitor.getPlatform()}
-              onAccount={openKeep}
-            />
-          ) : null}
+              Import, Settings and the onboarding. Its free account opens
+              Keep, and Sign in after a purchase the sign-in sheet
+              (ShellCloudOffer). Stage 2: a plain conditional, so a store
+              build folds it away. */}
+          {KARAOKE_IMPORT ? <ShellCloudOffer /> : null}
 
           {/* The phone's one way in, over whatever asked for it: the
               Account screen's button, the offer and every in-app "Sign
