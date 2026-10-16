@@ -87,7 +87,7 @@ captions and the picture write them as on screen ("A4", "440").
 
 - `2:25.0` **BLUE MERC:** Go down an octave, to one hundred and ten.
 - `2:28.4` _Sound: ladder (4.4 s)._
-- `2:29.4` **BLUE MERC:** Then double, and double, and double. The same note, every time.
+- `2:29.4` **BLUE MERC:** Then double, and double, and double. The same letter, every time.
 - `2:34.2` **BLUE MERC:** The gaps in hertz keep doubling, but every jump sounds the same size. Your ear hears multiplying, not adding.
 
 ## s13-spiral: The line becomes a spiral (2:42.7)
@@ -100,8 +100,8 @@ captions and the picture write them as on screen ("A4", "440").
 - `2:53.3` **BLUE MERC:** Musicians name the notes on each turn with seven letters.
 - `2:57.5` _Sound: letters (4.8 s)._
 - `3:02.7` **ORANGE MERC:** Only seven notes?
-- `3:04.2` **BLUE MERC:** Seven letters.
-- `3:05.7` **BLUE MERC:** Twelve notes.
+- `3:04.3` **BLUE MERC:** Seven letters.
+- `3:05.8` **BLUE MERC:** Twelve notes.
 - `3:07.2` **BLUE MERC:** The other five are next time's story.
 
 ## s15-numbers: Octave numbers (3:10.2)
