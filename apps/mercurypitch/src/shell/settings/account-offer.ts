@@ -5,7 +5,7 @@
 // S6 decision 02, and the sheet S7b §3.5 calls Keep: once on this phone, a
 // beat after a take is kept in the Sing room, and whenever the singer asks
 // for it, from the Save your progress row in Settings or the Cloud offer's
-// "Get 1 free song with a free account" (S7b §5).
+// free account line (S7b §5, FREE_ACCOUNT_LINE).
 //
 // The sheet is the one unprompted ask after value (REQ-NAM-009, 010). It
 // never comes before a kept take, and it comes once on this phone: the flag

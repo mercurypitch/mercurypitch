@@ -8,7 +8,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
-import { ACCOUNT_OFFLINE, ACCOUNT_ROW, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, accountDeleted, accountPromises, DELETE_ACCOUNT, FILL_NOTE, keepFact, keepGiftLine, SIGN_OUT_QUESTION, signInEverywhere, STORAGE_COPY, takesLine, takesStayHere, TWO_STEP, } from './account-copy'
+import { ACCOUNT_OFFLINE, ACCOUNT_ROW, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, accountDeleted, accountPromises, DELETE_ACCOUNT, FILL_NOTE, KEEP, keepFact, keepGiftLine, SIGN_OUT_QUESTION, signInEverywhere, STORAGE_COPY, takesLine, takesStayHere, TWO_STEP, } from './account-copy'
 
 /** Every line in the module that names where the practice is kept. */
 function deviceLines(): string[] {
@@ -54,6 +54,12 @@ describe('account copy', () => {
     )
     expect(keepGiftLine(5, null)).toBe(
       'Launch gift for new accounts: 5 more songs',
+    )
+  })
+
+  it("names the confirmed email in Keep's free song row: the server gives the month's song to no other account", () => {
+    expect(KEEP.freeSong).toBe(
+      '1 free karaoke song a month with a confirmed email',
     )
   })
 

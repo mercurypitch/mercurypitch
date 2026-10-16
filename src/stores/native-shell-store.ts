@@ -159,9 +159,9 @@ export interface NativeShellApi {
   openSignIn?: () => void
   /**
    * Open Keep, the account offer (S7b §3.5): what an account keeps, then
-   * Apple, Google or email. For the Cloud offer's "Get 1 free song with a
-   * free account" and anything else that asks for a free account rather
-   * than a sign-in. The same shape as `openSignIn`. Optional, like it.
+   * Apple, Google or email. For the Cloud offer's free account line
+   * (FREE_ACCOUNT_LINE) and anything else that asks for a free account
+   * rather than a sign-in. The same shape as `openSignIn`. Optional, like it.
    */
   openKeep?: () => void
   /**

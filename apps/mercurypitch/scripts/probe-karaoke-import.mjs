@@ -1255,7 +1255,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       buttons: [
         'Not now',
         'Subscribe',
-        'Get 1 free song with a free account',
+        'Sign up and confirm your email for 1 free song a month',
         'Restore purchase',
       ],
       links: ['Terms', 'Privacy'],

@@ -53,8 +53,16 @@ import { awaitSubscription, CLOUD_NAME, freeSongUsed, KARAOKE_PLAN, karaokeSongs
 /** The sheet's name, and its title: what the singer gets (E3). */
 export const CLOUD_OFFER_TITLE = 'Sing your own songs'
 
-/** The line under Subscribe for a singer without an account (§4.3). */
-export const FREE_ACCOUNT_LINE = 'Get 1 free song with a free account'
+/**
+ * The line under Subscribe for a singer without an account (§4.3). It names
+ * the confirmed email because the server does: the month's free song goes
+ * only to an account with its email confirmed (getsFreeSong, db-worker
+ * songs-allowance.ts; owner, 16 Oct). Apple, Google and an emailed code
+ * confirm it as the account is made; a password account made on the web
+ * waits for its confirm link.
+ */
+export const FREE_ACCOUNT_LINE =
+  'Sign up and confirm your email for 1 free song a month'
 
 /** The renewal terms, as both stores ask (§4.2). */
 export const CLOUD_TERMS =

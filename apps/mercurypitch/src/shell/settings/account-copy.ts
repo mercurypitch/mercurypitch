@@ -65,8 +65,10 @@ export const KEEP = {
   /** Only with a voiceprint: creating the account adopts it. */
   voiceprintSaved: 'Your range and voiceprint, saved',
   everywhere: 'Your progress on every phone and the web',
-  /** Only in a build that splits songs (D5 and 15.1). */
-  freeSong: '1 free karaoke song every month',
+  /** Only in a build that splits songs (D5 and 15.1). Names the confirmed
+   *  email: the server gives the month's song to no other account
+   *  (getsFreeSong, db-worker songs-allowance.ts; owner, 16 Oct). */
+  freeSong: '1 free karaoke song a month with a confirmed email',
   /** With no range measured, while a range finder is there to run. */
   findRange: 'Find your range first. Takes 2 minutes.',
   apple: 'Continue with Apple',
