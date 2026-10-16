@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LedgerRow } from './songs-allowance'
-import { appSongs, freeSong, getsFreeSong, isSubscribed, periodGrant, periodsFor, REVIEW_ACCESS, refundReversal, refundReversedFirst, sandboxHeld, songAllowance, songMonth, songsSummary, subscriptionSongs, } from './songs-allowance'
+import { APP_GIFT, appSongs, freeSong, getsFreeSong, isSubscribed, periodGrant, periodsFor, REVIEW_ACCESS, refundReversal, refundReversedFirst, sandboxHeld, songAllowance, songMonth, songsSummary, subscriptionSongs, webCreditsAfterEach, } from './songs-allowance'
 
 const NOW = Date.parse('2026-09-27T12:00:00.000Z')
 
@@ -689,6 +689,7 @@ describe('the songs the app can spend', () => {
     expect(appSongs(rows, USER, NOW_MS, true)).toEqual({
       held: 16,
       review: 0,
+      gift: 0,
       free: 1,
       left: 17,
       freeKey: `free-song:${USER}:2026-09:0`,
@@ -711,6 +712,7 @@ describe('the songs the app can spend', () => {
       subscribed: false,
       left: 17,
       free: 1,
+      gift: 0,
       renewsAt: null,
       perPeriod: 20,
       cap: 50,
@@ -808,5 +810,89 @@ describe('the songs Play review access grants', () => {
     // Only a positive row of its own reason adds review songs.
     expect(subscriptionSongs([row(-3, REVIEW_ACCESS)]).review).toBe(0)
     expect(subscriptionSongs([row(3, 'promo')]).review).toBe(0)
+  })
+})
+
+describe("the songs the app's launch gift grants", () => {
+  // launch-offer.ts: a few songs for an account made in the native app while
+  // the launch gift runs, once per account and per address. Like review
+  // access's, they are the app's to spend after the subscription's, the web
+  // spends them only once its own credits run out, and the rollover cap
+  // never counts them.
+  const USER = 'user-gift'
+  const NOW_MS = Date.parse('2026-10-16T12:00:00.000Z')
+  let n = 0
+  const row = (
+    delta: number,
+    reason: string,
+    jobRef: string | null = null,
+  ): LedgerRow => {
+    n += 1
+    return { delta, reason, jobRef, idempotencyKey: `gift-key-${n}` }
+  }
+  const gift = (songs: number) => row(songs, APP_GIFT, 'promo-2026-q4')
+
+  it("are the app's to spend beside the free song, and no web credits", () => {
+    const rows = [row(5, 'promo', 'LAUNCH'), gift(5)]
+
+    expect(subscriptionSongs(rows)).toMatchObject({ held: 0, gift: 5 })
+    expect(appSongs(rows, USER, NOW_MS, true)).toMatchObject({
+      held: 0,
+      gift: 5,
+      free: 1,
+      left: 6,
+    })
+    expect(webCreditsAfterEach(rows)).toEqual([5, 5])
+  })
+
+  it("are spent after the subscription's songs and review access's", () => {
+    const songs = subscriptionSongs([
+      row(2, 'subscription', 'txn'),
+      row(1, REVIEW_ACCESS),
+      gift(5),
+      row(-4, 'uvr-job-app', 'job-1'),
+    ])
+
+    expect(songs).toMatchObject({ held: 0, review: 0, gift: 4 })
+  })
+
+  it('come back to the gift when the separation they paid for failed', () => {
+    const spent = [gift(5), row(-2, 'uvr-job-app', 'job-2')]
+    expect(subscriptionSongs(spent)).toMatchObject({ gift: 3 })
+
+    const refunded = [...spent, row(2, 'uvr-refund', 'job-2')]
+    expect(subscriptionSongs(refunded)).toMatchObject({ gift: 5 })
+  })
+
+  it('are the last the web spends, after its own credits', () => {
+    const rows = [row(3, 'promo', 'LAUNCH'), gift(5), row(-4, 'uvr-job', 'w')]
+
+    expect(subscriptionSongs(rows)).toMatchObject({ gift: 4 })
+    expect(webCreditsAfterEach(rows)).toEqual([3, 3, 0])
+  })
+
+  it('never count toward the rollover cap', () => {
+    const allowance = { perPeriod: 20, cap: 50 }
+    const songs = subscriptionSongs([
+      row(20, 'subscription', 'txn-1'),
+      row(20, 'subscription', 'txn-2'),
+      row(9, 'subscription', 'txn-3'),
+      gift(5),
+    ])
+
+    expect(periodGrant(songs.held, allowance)).toBe(1)
+  })
+
+  it('say so in /me from the app: the gift among the songs left', () => {
+    const app = appSongs([gift(5)], USER, NOW_MS, true)
+
+    expect(
+      songsSummary([], 5, { perPeriod: 20, cap: 50 }, NOW_MS, app),
+    ).toMatchObject({ left: 6, free: 1, gift: 5 })
+  })
+
+  it('are only ever a positive row of their own reason', () => {
+    expect(subscriptionSongs([row(-3, APP_GIFT)]).gift).toBe(0)
+    expect(subscriptionSongs([row(3, 'promo')]).gift).toBe(0)
   })
 })

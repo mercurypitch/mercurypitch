@@ -184,6 +184,12 @@
         "OFFER_FINISHER_DAYS": "14",
         "OFFER_BONUS_CREDITS": "30",
         "OFFER_PROMO_ID": "promo-2026-q4",
+        // The native app's launch gift (launch-offer.ts, S7b E6): an account
+        // made in the app gets this many songs of the app's own with its
+        // claim of the featured code, and GET /api/billing/promo/featured
+        // says so (`appGift`). A whole number from 1 to 10; unset, the gift
+        // is off. It ends with the featured code.
+        "APP_GIFT_SONGS": "5",
         // Retention periods (src/funnel-retention.ts), applied by the cron
         // every 6 hours. Whole numbers only: anything else, zero included,
         // means the default in src/lib/retention-periods.ts, and the cron
@@ -347,6 +353,10 @@
         "OFFER_FINISHER_DAYS": "14",
         "OFFER_BONUS_CREDITS": "30",
         "OFFER_PROMO_ID": "promo-2026-q4",
+        // The native app's launch gift: see the dev block. Deliberately not
+        // set here yet, so it is off on prod: the owner turns it on by adding
+        // "APP_GIFT_SONGS": "5" in a release, once the app that offers it is
+        // in the stores.
         // Retention periods: see the dev block. The privacy notice states
         // these numbers, so change it in the same release as them.
         "RETENTION_CLICK_ID_DAYS": "90",

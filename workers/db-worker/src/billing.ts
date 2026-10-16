@@ -49,6 +49,7 @@ import { debitAppSongs, giveFreeSongBack, readAppSongs, spenderOf, } from './app
 import { LedgerBusy } from './ledger'
 import type { FeaturedPromoRow } from './promo-rules'
 import { featuredPromoView } from './promo-rules'
+import { appGiftView } from './launch-offer'
 import { handlePromoRedeem, readPromoClaims } from './promo-claim'
 import { PURCHASE_RECORD } from './purchase-record'
 import { finisherCheckoutParams, grantFinisherBonus, readFinisherOffer, } from './launch-finisher'
@@ -1296,6 +1297,9 @@ async function handleFeaturedPromo(
               ...view,
               offer: finisherTerms(finisherConfig(env), row, now.getTime()),
             },
+      // What an account made in the native app gets with the claim, while
+      // the gift is on and the code is open (launch-offer.ts, S7b E6).
+      appGift: appGiftView(env, view),
     },
     { headers: { 'Cache-Control': 'public, max-age=60' } },
   )
