@@ -415,7 +415,7 @@
   margin-right: 6px;
 }
 .tx p .who.blue {
-  color: var(--blue);
+  color: var(--signal-blue);
 }
 .tx p .who.orange {
   color: var(--orange);
@@ -831,7 +831,7 @@
   width: 100%;
   height: 100%;
   filter: drop-shadow(
-    0 0 4px color-mix(in oklab, var(--blue) 55%, transparent)
+    0 0 4px color-mix(in oklab, var(--signal-blue) 55%, transparent)
   );
 }
 .ex-fig .plate::after {
@@ -1137,7 +1137,7 @@
   height: var(--h);
 }
 .phone i.toy {
-  background: color-mix(in srgb, var(--blue) 45%, transparent);
+  background: color-mix(in srgb, var(--signal-blue) 45%, transparent);
 }
 .phone i.sing {
   background: color-mix(in srgb, var(--orange) 50%, transparent);

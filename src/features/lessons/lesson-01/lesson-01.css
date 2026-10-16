@@ -38,7 +38,7 @@
   white-space: nowrap;
 }
 .hook .hz.b {
-  color: var(--blue);
+  color: var(--signal-blue);
 }
 .hook .hz.o {
   color: var(--orange);
@@ -119,7 +119,7 @@
     ),
     radial-gradient(
       40% 50% at 22% 92%,
-      color-mix(in srgb, var(--blue) 12%, transparent),
+      color-mix(in srgb, var(--signal-blue) 12%, transparent),
       transparent 70%
     ),
     radial-gradient(
@@ -189,7 +189,7 @@
   right: 30%;
 }
 .bubble.b {
-  --c: var(--blue);
+  --c: var(--signal-blue);
   grid-column: 1;
   grid-row: 2;
   justify-self: start;
@@ -267,7 +267,7 @@
   pointer-events: none;
 }
 .merc-blue .splash {
-  --c: color-mix(in srgb, var(--blue) 70%, transparent);
+  --c: color-mix(in srgb, var(--signal-blue) 70%, transparent);
 }
 .merc-orange .splash {
   --c: color-mix(in srgb, var(--orange) 70%, transparent);
