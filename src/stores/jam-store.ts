@@ -1946,10 +1946,12 @@ function beatsInFlight(fromPeerId: string): number {
 /**
  * Whether a message for the whole room came from the room's host.
  *
- * The song is the host's to set, and the DataChannel is an unauthenticated
- * relay: a guest's client can send a manifest as easily as the host's can,
- * and every peer, the host included, adopted it. A modified client could
- * move everyone's key, swap the words and hand out the parts.
+ * The song, the drill and the transport are the host's to set, and the
+ * DataChannel is an unauthenticated relay: a guest's client can send any of
+ * them as easily as the host's can. Every peer, the host included, adopted a
+ * manifest from anyone, so a modified client could move everyone's key, swap
+ * the words and hand out the parts; and every guest followed another guest's
+ * drill, play, pause and seek.
  *
  * The sender is the transport peer the service stamps, never anything the
  * message says about itself, and the host is the one the Durable Object
@@ -2928,7 +2930,10 @@ export function jamSongSeek(toSec: number): void {
  * this device obeys is exactly where two separate "the song stopped"
  * bugs lived.
  */
-export function applyRemoteMelody(msg: JamMelodyMessage): void {
+export function applyRemoteMelody(
+  msg: JamMelodyMessage,
+  fromPeerId: string,
+): void {
   // Same rule as transport: the host drives the room, so it never
   // adopts what a peer announces. Without this a guest broadcasting
   // its own melody set jamExercisePlaying(false) here -- the very
@@ -2936,6 +2941,16 @@ export function applyRemoteMelody(msg: JamMelodyMessage): void {
   // seconds in, with a 'recv melody' the only trace in the log.
   if (jamIsHost()) {
     console.info('[jam:store] ignoring melody from a peer (host drives)')
+    return
+  }
+  // A guest takes the host's alone: another guest's client can announce
+  // a drill too (see sentByJamHost).
+  if (!sentByJamHost(fromPeerId)) {
+    console.info(
+      '[jam:store] ignoring melody from',
+      fromPeerId,
+      '(host drives)',
+    )
     return
   }
   // And a melody means nothing to a room that is singing a song. One
@@ -2975,13 +2990,19 @@ export function applyRemoteMelody(msg: JamMelodyMessage): void {
 
 export function applyRemoteTransport(
   msg: JamPlaybackMessage,
-  fromPeerId = '',
+  fromPeerId: string,
 ): void {
   // Only the host drives the room. A guest's own drill timer finishing
   // used to broadcast a stop, which every peer obeyed -- so somebody
   // else's five-second scale ending killed the song the room was
   // singing. Transport is the host's, like the song and the tempo.
   if (jamIsHost()) return
+  // A guest obeys the host's alone: another guest's client can send a
+  // command too, and every other guest followed it (see sentByJamHost).
+  if (!sentByJamHost(fromPeerId)) {
+    console.info('[jam:store] ignoring transport from', fromPeerId)
+    return
+  }
   // And a command means nothing for a thing this device is not
   // running. Without the scope tag a bare drill 'stop' was applied to
   // whatever was playing, which is how a drill ending stopped a song.

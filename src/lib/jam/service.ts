@@ -904,7 +904,8 @@ export function createJamService(callbacks: JamCallbacks) {
             callbacks.onPitchMessage?.({ ...data, peerId })
             break
           case 'melody':
-            callbacks.onMelodyMessage?.(data)
+            // The transport peer, as for `song` below.
+            callbacks.onMelodyMessage?.(data, peerId)
             break
           case 'song':
             // The transport peer, as for `pitch`: the song is the host's to
