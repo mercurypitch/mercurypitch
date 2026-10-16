@@ -430,6 +430,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** keep the lease until what you stopped has played, as the glass owners do (they release in `finish()`, after the fade), and answer `prepareToSuspend` with the time left on it for parks that come meanwhile. In the room tests, stop a note after its attack: the fake gain reads a ramp cancelled in the middle as never begun, so a release taken from there starts at silence.
 **See:** `src/components/room-kit/useExerciseCapture.ts` (`ROOM_TAIL_MS`), `release` in `packages/audio-io/src/shared-audio-context.ts`, "the way out" in `apps/mercurypitch/src/shell/premium-rooms-audio.test.tsx`.
 
+### Read the phone's volume again while it matters: a pushed change can never come
+
+**Symptom:** on build 880 (iPhone) a premium room said "The volume is at zero. Turn it up." and kept saying it after the volume went up.
+**Cause:** from Apple's documentation, the code and developer reports (not yet seen in a device log). The plugin hears the volume by KVO on the app's own `AVAudioSession`, which developers report works only while that session is active; on iOS 18 and later `outputVolume` can also keep an old value. `AudioSession.configure()` activates the session at launch and after a call, but since iOS 10 the system ends it whenever it suspends the app, saying so only by an interruption that begins (`wasSuspended`) and never ends, and nothing may start it again (#923, above). Android has a smaller gap (AOSP `AudioService`): muting or unmuting a stream at the same level writes no setting, so the settings observer stays silent, and a muted stream reads as 0.
+**Rule:** do not treat a pushed reading as the last word. While a wrong reading would mislead, read again on a timer and when the app comes back, and drop an answer asked before a newer change.
+**See:** `apps/mercurypitch/src/shell/RoomVolumeHint.tsx`, `apps/mercurypitch/ios/App/App/AudioOutputPlugin.swift`, Apple's `AVAudioSession.interruptionNotification` and `InterruptionReason.appWasSuspended`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

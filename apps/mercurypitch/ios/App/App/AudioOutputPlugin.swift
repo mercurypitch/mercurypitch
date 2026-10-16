@@ -34,8 +34,14 @@ public class AudioOutputPlugin: CAPPlugin, CAPBridgedPlugin {
     private var observers: [NSObjectProtocol] = []
 
     override public func load() {
-        // The volume is observable while the app's session is active, which
-        // AudioSession.configure() makes it at launch and after a call.
+        // The volume is observable while the app's session is active.
+        // AudioSession.configure() makes it so at launch and after a call,
+        // but since iOS 10 the system ends the session whenever it suspends
+        // the app, and says so only by an interruption that begins and never
+        // ends. Developers report that from then on no change is heard, and
+        // that outputVolume can keep the value it had (iOS 18 and later).
+        // Nothing here starts the session again (see above), so the page
+        // reads again while it needs to know (RoomVolumeHint.tsx).
         volumeWatch = AVAudioSession.sharedInstance().observe(\.outputVolume, options: [.new]) { [weak self] _, _ in
             DispatchQueue.main.async {
                 self?.changed("volume")

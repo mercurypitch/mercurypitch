@@ -31,10 +31,15 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 // Android has no public broadcast for a volume change, but each stream's
 // volume is a system setting, so an observer on the settings hears every
 // press of the volume keys (a moment late: the system writes it after a
-// short delay). Where the sound goes is read off the devices connected, in
-// the order media prefers them: Bluetooth or a hearing aid, then a USB or
-// wired headset, then USB audio or HDMI, then the speaker; in a call-style
-// mode, the communication device (Android 12 on).
+// short delay). It does not hear a stream muted or unmuted with its level
+// left where it was: the system writes the level only, and a muted stream
+// reads as 0. The page reads again while it needs to know
+// (RoomVolumeHint.tsx).
+//
+// Where the sound goes is read off the devices connected, in the order
+// media prefers them: Bluetooth or a hearing aid, then a USB or wired
+// headset, then USB audio or HDMI, then the speaker; in a call-style mode,
+// the communication device (Android 12 on).
 //
 // Read only: nothing here changes the volume, the mode or the route.
 //

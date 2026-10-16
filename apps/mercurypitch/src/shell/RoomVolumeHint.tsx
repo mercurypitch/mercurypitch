@@ -5,8 +5,10 @@
 // A room's notes, demos and Merc's call play through the phone's volume, and
 // at the bottom of it they are gone: the room looks broken. The phone says
 // how loud it is (AudioOutput through NativeDeviceApi.audioOutput) when the
-// room opens and on every press of a volume key, and volume-hint.ts decides
-// from that whether this shows. It goes the moment the volume rises.
+// room opens and on a press of a volume key, and volume-hint.ts decides
+// from that whether this shows. It goes the moment the volume rises. A
+// press can come with no word from the phone, so while this is up, and
+// whenever the app comes back, it reads the volume again.
 //
 // ShellScreens mounts it over each premium room, so no room draws it and
 // none of them changes for it. It sits in the bar over the room's title,
@@ -15,7 +17,7 @@
 // the volume and nothing is registered to ask.
 
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import type { NativeAudioOutput, NativeAudioOutputReading, } from '@/stores/native-shell-store'
 import { nativeDeviceApi, pushedBarEnd } from '@/stores/native-shell-store'
 import { VolumeLowIcon, VolumeOffIcon } from './icons'
@@ -30,6 +32,9 @@ export const HINT_LOW = 'Turn the volume up to hear the notes.'
 
 /** The gap kept between the hint and the room's controls in the bar. */
 const GAP_PX = 8
+
+/** How often the volume is read again while the hint is up. */
+export const READ_AGAIN_MS = 500
 
 export interface RoomVolumeHintProps {
   /** The phone's output; the registered native device's when not given. */
@@ -79,18 +84,53 @@ export const RoomVolumeHint: Component<RoomVolumeHintProps> = (props) => {
   // eslint-disable-next-line solid/reactivity -- read once, on mount
   const output = props.output ?? nativeDeviceApi()?.audioOutput
   if (output !== undefined) {
-    let heard = false
+    let heard = 0
+    let asking = false
     let open = true
     const stop = output.watch((reading) => {
-      heard = true
+      heard += 1
       take(reading)
     })
-    // A change heard first is newer than this answer, which is then dropped.
-    void output.read().then((reading) => {
-      if (open && !heard && reading !== null) take(reading)
+    const ask = (): void => {
+      if (!open || asking) return
+      asking = true
+      const before = heard
+      output.read().then(
+        (reading) => {
+          asking = false
+          // A change heard meanwhile is newer than this answer, which is
+          // then dropped.
+          if (open && heard === before && reading !== null) take(reading)
+        },
+        () => {
+          asking = false
+        },
+      )
+    }
+    ask()
+
+    // A change can come with no word from the phone. iOS tells the app of
+    // the volume through the app's own audio session, which the system ends
+    // whenever it suspends the app and the app starts again only after a
+    // call (docs/agent/MISTAKES.md); developers report that an inactive
+    // session hears no change. Android says nothing when a stream is muted
+    // or unmuted without its level moving. So while the hint is up, and
+    // whenever the app comes back, the volume is read again.
+    const inFront = (): boolean => document.visibilityState !== 'hidden'
+    createEffect(() => {
+      if (!hint().shown) return
+      const timer = window.setInterval(() => {
+        if (inFront()) ask()
+      }, READ_AGAIN_MS)
+      onCleanup(() => window.clearInterval(timer))
     })
+    const back = (): void => {
+      if (inFront()) ask()
+    }
+    document.addEventListener('visibilitychange', back)
     onCleanup(() => {
       open = false
+      document.removeEventListener('visibilitychange', back)
       stop()
     })
   }
