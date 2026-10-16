@@ -573,6 +573,49 @@ export async function fetchFeaturedPromo(
   }
 }
 
+/**
+ * The native app's launch gift, while it runs (GET /api/billing/promo/featured,
+ * `appGift`; db-worker launch-offer.ts, S7b E6): the songs an account made in
+ * the app gets, and when the gift ends.
+ */
+export interface AppGift {
+  songs: number
+  /** When the gift ends (UTC); null when it has no end. */
+  endsAt: string | null
+}
+
+function isAppGift(value: unknown): value is AppGift {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<AppGift>
+  return (
+    typeof candidate.songs === 'number' &&
+    Number.isInteger(candidate.songs) &&
+    candidate.songs > 0 &&
+    (candidate.endsAt === null ||
+      (typeof candidate.endsAt === 'string' &&
+        Number.isFinite(Date.parse(candidate.endsAt))))
+  )
+}
+
+/**
+ * The app's launch gift, or null: none running, no API configured, an older
+ * db-worker, or an answer that does not read as one. Never throws: an offer
+ * that cannot be read is simply not made.
+ */
+export async function fetchAppGift(base?: string): Promise<AppGift | null> {
+  const b = apiBase(base)
+  if (b === '') return null
+  try {
+    const res = await fetch(`${b}/api/billing/promo/featured`)
+    if (!res.ok) return null
+    const body = (await res.json()) as { appGift?: unknown } | null
+    const gift = body?.appGift
+    return isAppGift(gift) ? gift : null
+  } catch {
+    return null
+  }
+}
+
 export interface RedeemPromoResponse {
   success: boolean
   code: string

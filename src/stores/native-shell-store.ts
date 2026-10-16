@@ -158,6 +158,13 @@ export interface NativeShellApi {
    */
   openSignIn?: () => void
   /**
+   * Open Keep, the account offer (S7b §3.5): what an account keeps, then
+   * Apple, Google or email. For the Cloud offer's "Get 1 free song with a
+   * free account" and anything else that asks for a free account rather
+   * than a sign-in. The same shape as `openSignIn`. Optional, like it.
+   */
+  openKeep?: () => void
+  /**
    * Push the Karaoke studio over the room: the old Karaoke tab, a library to
    * work on (plan S8 §11, decision D8 A). The room's Options reach it from
    * "Manage songs". Optional, like `openSignIn`: a room that finds no shell

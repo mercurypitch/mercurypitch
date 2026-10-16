@@ -22,19 +22,17 @@ import { GoogleMark } from '@/components/account/GoogleMark'
 import { Sheet } from '@/components/mobile/Sheet'
 import Turnstile from '@/components/shared/Turnstile'
 import type { AuthResponse } from '@/db/services/auth-service'
-import { adoptDeviceVoiceprints, buildVoiceprintHint, } from '@/db/services/voiceprint-service'
+import { buildVoiceprintHint } from '@/db/services/voiceprint-service'
 import { appleSignInOffered, nativeGoogleSignInOffered, } from '@/features/account/sign-in-methods'
 import { thisDeviceLower } from '@/lib/device-noun'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
-import { showNotification } from '@/stores/notifications-store'
 import { BackIcon, CloseIcon, MailIcon, WarnIcon } from '../icons'
 import { signInEverywhere } from './account-copy'
-import { markAccountFillDue } from './account-fill'
-import { refreshAccount } from './account-state'
 import { CodeBoxes } from './CodeBoxes'
 import type { SignInFlow, SignInPane } from './sign-in-flow'
 import { createSignInFlow } from './sign-in-flow'
-import { closeSignIn, registerSignInPaneBack, signInOpen, } from './sign-in-state'
+import { afterSignIn } from './sign-in-landing'
+import { closeSignIn, registerSignInPaneBack, signInOpen, takeSignInStartPane, } from './sign-in-state'
 
 const TITLES: Record<SignInPane, string> = {
   methods: 'Sign in',
@@ -52,8 +50,8 @@ export interface SignInSheetProps {
   onSignedIn?: (auth: AuthResponse) => void
 }
 
-/** The failure under the pane, when there is one. */
-function FailureLine(props: { flow: SignInFlow }): JSX.Element {
+/** The failure under the pane, when there is one. Keep shows it too. */
+export function FailureLine(props: { flow: SignInFlow }): JSX.Element {
   return (
     <Show when={props.flow.failure()} keyed>
       {(failure) =>
@@ -345,25 +343,23 @@ export function SignInSheet(props: SignInSheetProps) {
     signup: () => ({ voiceprintHint: buildVoiceprintHint() }),
     onSignedIn: (auth) => {
       closeSignIn()
-      showNotification('Signed in', 'info')
-      // An account made here takes this phone's unclaimed takes with it:
-      // making it is the consent (REQ-NAM-036, 037). Signing in to one that
-      // already existed takes nothing (REQ-NAM-039). Retag-first means a
-      // failed upload is carried by the next sync, so nothing waits on it.
-      if (auth.isNew) void adoptDeviceVoiceprints().catch(() => 0)
-      // An account that already existed brings its history: the Account
-      // screen says what arrived on the next visit (REQ-NAM-043).
-      else markAccountFillDue(auth.userId)
-      void refreshAccount()
+      // The takes and the history: sign-in-landing.ts, shared with Keep.
+      afterSignIn(auth)
       props.onSignedIn?.(auth)
     },
   })
 
-  // Every open starts on the ways in; a close strands nothing in flight.
+  // Every open starts on the ways in, or on the email pane when Keep's Use
+  // email asked for it; a close strands nothing in flight.
   createEffect(
     on(signInOpen, (open) => {
-      if (open) flow.start()
-      else flow.abandon()
+      if (!open) {
+        flow.abandon()
+        return
+      }
+      flow.start()
+      const asked = takeSignInStartPane()
+      if (asked !== null && flow.pane() === 'methods') flow.go(asked)
     }),
   )
 

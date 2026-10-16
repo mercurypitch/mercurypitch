@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as AuthService from '@/db/services/auth-service'
 import type { Pricing, PricingPlan } from '@/db/services/billing-service'
-import { fetchFeaturedPromo, fetchPricing, formatPrice, formatSupporterExpiry, formatTierPrice, isTierSoon, redeemPromoCode, startCheckout, stashExpectedCredits, supporterPlanId, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
+import { fetchAppGift, fetchFeaturedPromo, fetchPricing, formatPrice, formatSupporterExpiry, formatTierPrice, isTierSoon, redeemPromoCode, startCheckout, stashExpectedCredits, supporterPlanId, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
 import * as UserService from '@/db/services/user-service'
 import { UVR_MODEL_CREDIT_MULTIPLIERS } from '../../workers/db-worker/src/billing-core'
 
@@ -397,5 +397,51 @@ describe('redeemPromoCode', () => {
       creditsGranted: 50,
       newBalance: 150,
     })
+  })
+})
+
+describe('fetchAppGift', () => {
+  const GIFT = { songs: 5, endsAt: '2027-01-01T23:59:59.000Z' }
+
+  function answer(body: unknown, ok = true) {
+    return vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok,
+      status: ok ? 200 : 503,
+      json: () => Promise.resolve(body),
+    } as Response)
+  }
+
+  it('returns the app gift the featured answer carries', async () => {
+    const fetchSpy = answer({ promo: null, appGift: GIFT })
+    expect(await fetchAppGift('https://api.test')).toEqual(GIFT)
+    expect(fetchSpy.mock.calls[0]?.[0]).toBe(
+      'https://api.test/api/billing/promo/featured',
+    )
+  })
+
+  it('returns a gift that never ends', async () => {
+    answer({ appGift: { songs: 5, endsAt: null } })
+    expect(await fetchAppGift('https://api.test')).toEqual({
+      songs: 5,
+      endsAt: null,
+    })
+  })
+
+  it.each([
+    ['none running', { promo: null, appGift: null }],
+    ['an older db-worker', { promo: null }],
+    ['no songs', { appGift: { ...GIFT, songs: 0 } }],
+    ['a fraction of a song', { appGift: { ...GIFT, songs: 2.5 } }],
+    ['an end that does not parse', { appGift: { ...GIFT, endsAt: 'soon' } }],
+  ])('returns null for %s', async (_label, body) => {
+    answer(body)
+    expect(await fetchAppGift('https://api.test')).toBeNull()
+  })
+
+  it('returns null when the server fails or the network does', async () => {
+    answer({ appGift: GIFT }, false)
+    expect(await fetchAppGift('https://api.test')).toBeNull()
+    vi.spyOn(global, 'fetch').mockRejectedValue(new TypeError('offline'))
+    expect(await fetchAppGift('https://api.test')).toBeNull()
   })
 })

@@ -11,14 +11,14 @@ import { getVoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { setTheme, setThemeSource, stopThemeAutoWatch, } from '@/stores/theme-store'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
-import { ACCOUNT_OFFER, ACCOUNT_ROW, accountDeleted } from './account-copy'
+import { ACCOUNT_ROW, accountDeleted, KEEP } from './account-copy'
 import { dismissAccountDeletedNote, resumeAfterDeletion, } from './account-deletion'
-import { declineOffer, forgetAccountOffer, resetAccountOffer, } from './account-offer'
+import { forgetAccountOffer, offerOpen } from './account-offer'
 import { refreshAccount, resetAccountState } from './account-state'
 import type * as DeviceFactsModule from './device-facts'
 import type * as LevelCheckModule from './level-check'
 import { SettingsScreen } from './SettingsScreen'
-import { resetSignIn, signInOpen } from './sign-in-state'
+import { resetSignIn } from './sign-in-state'
 
 vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthMeService>()),
@@ -81,13 +81,6 @@ function row(id: string): HTMLElement | null {
   )
 }
 
-function card(): HTMLElement | null {
-  return (
-    view?.container.querySelector<HTMLElement>('[data-testid="offer-card"]') ??
-    null
-  )
-}
-
 afterEach(() => {
   view?.unmount()
   view = null
@@ -133,8 +126,7 @@ describe('Settings', () => {
     )
   })
 
-  it('offers sign-in on the Account row while nothing is signed in, once the card is folded', () => {
-    declineOffer()
+  it('offers sign-in on the Account row while nothing is signed in', () => {
     view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
 
     const account = row('account')?.textContent ?? ''
@@ -170,7 +162,7 @@ describe('Settings', () => {
     expect(account).toContain('Alex')
     expect(account).toContain('Signed in with Apple')
     expect(account).not.toContain(ACCOUNT_ROW.signedOutValue)
-    expect(card()).toBeNull()
+    expect(row('save-progress')).toBeNull()
   })
 
   it('says what the phone keeps on the Storage row, and pushes Storage from it', async () => {
@@ -315,7 +307,6 @@ describe('Settings', () => {
   })
 
   it('pushes Account from its row', () => {
-    declineOffer()
     const onPush = vi.fn()
     view = renderShell(() => <SettingsScreen onPush={onPush} />)
 
@@ -340,47 +331,52 @@ describe('Settings', () => {
     expect(onPush).toHaveBeenCalledWith('delete-account')
   })
 
-  it("offers an account as a card at the top, in the Account row's place, while there is none (2b)", () => {
+  it('puts Save your progress after this phone and before the rooms, a group of its own, while nothing is signed in (S7b §5)', () => {
     view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
 
-    const first =
-      view.container.querySelector('.mp-set__col')?.firstElementChild
+    const save = row('save-progress')
+    const order = [
+      ...document.querySelectorAll<HTMLElement>('[data-settings-row]'),
+    ].map((one) => one.dataset.settingsRow)
+    const group = [
+      ...(save
+        ?.closest('section')
+        ?.querySelectorAll<HTMLElement>('[data-settings-row]') ?? []),
+    ].map((one) => one.dataset.settingsRow)
 
-    expect(card()?.textContent).toContain(ACCOUNT_OFFER.title)
-    expect(first).toBe(card())
-    expect(row('account')).toBeNull()
+    expect(save?.textContent).toContain(KEEP.titleProgress)
+    expect(order.indexOf('save-progress')).toBe(order.indexOf('appearance') + 1)
+    expect(order.indexOf('save-progress')).toBeLessThan(
+      order.indexOf('rooms-sing'),
+    )
+    expect(group).toEqual(['save-progress'])
   })
 
-  it('folds the card into the Account row on Later, until the next launch', () => {
+  it('opens Keep from Save your progress', () => {
     view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
 
-    card()?.querySelector<HTMLElement>('[data-testid="offer-later"]')?.click()
-    const folded = row('account')?.textContent ?? ''
-    const cardAfterLater = card()
-    view.unmount()
-    resetAccountOffer()
-    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+    row('save-progress')?.click()
 
-    expect(cardAfterLater).toBeNull()
-    expect(folded).toContain(ACCOUNT_ROW.signedOutValue)
-    expect(card()).not.toBeNull()
+    expect(offerOpen()).toBe(true)
   })
 
-  it('opens the sign-in sheet from the card', () => {
+  it('has no Save your progress row while signed in', () => {
+    setAuthToken(token('apple'))
+    vi.mocked(readMe).mockResolvedValue({ status: 'unreachable' })
+
     view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
 
-    card()?.querySelector<HTMLElement>('[data-testid="offer-sign-in"]')?.click()
-
-    expect(signInOpen()).toBe(true)
+    expect(row('save-progress')).toBeNull()
+    expect(row('account')).not.toBeNull()
   })
 
-  it('holds the card back under the line after a deletion', () => {
+  it('holds Save your progress back under the line after a deletion', () => {
     sessionStorage.setItem('mp:account-deleted', '1')
     resumeAfterDeletion()
 
     view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
 
-    expect(card()).toBeNull()
+    expect(row('save-progress')).toBeNull()
     expect(row('account')).not.toBeNull()
     dismissAccountDeletedNote()
   })

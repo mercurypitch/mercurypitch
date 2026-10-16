@@ -279,12 +279,12 @@ export function performBack(host: BackHost): BackOutcome {
       else dismissKeepAlert()
       break
     case 'sheet':
-      // The sign-in and latency sheets open over More's screens, and the
-      // account offer over the Sing room, never beside the More sheet
-      // itself, so whichever is up is the one this press is for. The
-      // sign-in sheet steps back a pane before it closes; closing the
-      // latency sheet ends a run in flight; the account offer, which has no
-      // close button, takes Back as Later, and the Cloud offer as Not now.
+      // The sign-in and latency sheets open over More's screens, and Keep,
+      // the account offer, over the Sing room or Settings, never beside
+      // the More sheet itself, so whichever is up is the one this press is
+      // for. The sign-in sheet steps back a pane before it closes; closing
+      // the latency sheet ends a run in flight; Keep and the Cloud offer
+      // take Back as Not now.
       if (signInOpen()) signInBack()
       else if (latencySheetOpen()) closeLatencySheet()
       else if (cloudOfferUp()) closeCloudOffer('not-now')

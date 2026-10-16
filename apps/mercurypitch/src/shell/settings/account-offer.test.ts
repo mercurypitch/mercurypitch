@@ -1,13 +1,12 @@
 // ============================================================
-// The account offer: when it is asked, and when it is not
+// Keep, the account offer: when it is asked, and when it is not
 // ============================================================
 //
-// S6 decision 02, both halves: a sheet once, a beat after a take is kept in
-// the Sing room, and a card at the top of Settings until the singer says
-// Later. Never before value (REQ-NAM-009), one ask on this phone (010),
-// Later quiet until the app next starts (014), and Sign in is the sign-in
-// sheet itself (015). A phone signed in, or signed out of the account it
-// has, is not offered one.
+// S6 decision 02 and S7b §3.5: a sheet once, a beat after a take is kept in
+// the Sing room, never before value (REQ-NAM-009) and one ask on this phone
+// (010). Not now is quiet (014). A phone signed in, or signed out of the
+// account it has, is not asked unprompted; the Save your progress row and
+// the Cloud offer's free account open it for anyone signed out (S7b §5).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthService from '@/db/services/auth-service'
@@ -18,7 +17,7 @@ import type { SingTake } from '@/stores/sing-takes-store'
 import { clearSingTakes, keepSingTake, removeSingTake, SING_TAKES_KEPT, } from '@/stores/sing-takes-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { openMore, resetRunShell, runState } from '../run-shell-store'
-import { acceptOffer, declineOffer, forgetAccountOffer, installAccountOffer, OFFER_BEAT_MS, offerCardShown, offerIsFirstTake, offerOpen, resetAccountOffer, } from './account-offer'
+import { declineOffer, forgetAccountOffer, installAccountOffer, OFFER_BEAT_MS, offerOpen, openKeep, rangeFinder, registerRangeFinder, resetAccountOffer, } from './account-offer'
 import { resetSignIn, signInOpen } from './sign-in-state'
 
 const stand = vi.hoisted(() => ({ signedOutHere: false }))
@@ -104,7 +103,6 @@ describe('the sheet', () => {
 
     expect(atOnce).toBe(false)
     expect(offerOpen()).toBe(true)
-    expect(offerIsFirstTake()).toBe(true)
   })
 
   it('never comes before value: nothing kept, a take removed or all cleared ask nothing (REQ-NAM-009)', () => {
@@ -125,8 +123,7 @@ describe('the sheet', () => {
     install()
     keep()
     const first = offerOpen()
-    acceptOffer()
-    resetSignIn()
+    declineOffer()
 
     keep()
     const again = offerOpen()
@@ -145,23 +142,12 @@ describe('the sheet', () => {
     install()
     keep()
     const first = offerOpen()
-    acceptOffer()
-    resetSignIn()
+    declineOffer()
 
     keep()
 
     expect(first).toBe(true)
     expect(offerOpen()).toBe(false)
-  })
-
-  it("says the take is the first only over the phone's first", () => {
-    keepSingTake(take())
-    install()
-
-    keep()
-
-    expect(offerOpen()).toBe(true)
-    expect(offerIsFirstTake()).toBe(false)
   })
 
   it('counts a take kept at the cap, where the list stays the same length', () => {
@@ -263,55 +249,46 @@ describe('the sheet', () => {
   })
 })
 
-describe('the answers', () => {
-  it('Sign in closes the offer and opens the sign-in sheet in its place (REQ-NAM-015)', () => {
+describe('Not now, and the other ways in', () => {
+  it('Not now is quiet: the sheet goes, and nothing opens in its place (REQ-NAM-014)', () => {
     install()
     keep()
-
-    acceptOffer()
-
-    expect(offerOpen()).toBe(false)
-    expect(signInOpen()).toBe(true)
-  })
-
-  it('Later is quiet: the sheet goes, and the card folds until the next launch (REQ-NAM-014)', () => {
-    install()
-    keep()
-    const cardBefore = offerCardShown()
+    const up = offerOpen()
 
     declineOffer()
-    const cardAfter = offerCardShown()
-    resetAccountOffer()
 
+    expect(up).toBe(true)
     expect(offerOpen()).toBe(false)
     expect(signInOpen()).toBe(false)
-    expect(cardBefore).toBe(true)
-    expect(cardAfter).toBe(false)
-    expect(offerCardShown()).toBe(true)
   })
 
-  it('Later on the card holds the sheet back until the next launch', () => {
-    install()
-    declineOffer()
+  it('opens from Settings and the Cloud offer for anyone signed out, a phone signed out of its account too', () => {
+    stand.signedOutHere = true
 
-    keep()
-    const heldBack = offerOpen()
-    resetAccountOffer()
-    keep()
+    openKeep()
 
-    expect(heldBack).toBe(false)
     expect(offerOpen()).toBe(true)
   })
 
-  it('shows the card only on a phone with no account yet', () => {
-    const none = offerCardShown()
-    setAuthToken(token('google'))
-    const signedIn = offerCardShown()
-    setAuthToken(null)
-    stand.signedOutHere = true
+  it('counts an ask from Settings as the one ask: no sheet after the next Keep', () => {
+    openKeep()
+    declineOffer()
+    install()
 
-    expect(none).toBe(true)
-    expect(signedIn).toBe(false)
-    expect(offerCardShown()).toBe(false)
+    keep()
+
+    expect(offerOpen()).toBe(false)
+  })
+
+  it('offers a range finder only while one is registered', () => {
+    const none = rangeFinder()
+    const run = vi.fn()
+    const unregister = registerRangeFinder(run)
+    const registered = rangeFinder()
+    unregister()
+
+    expect(none).toBeNull()
+    expect(registered).toBe(run)
+    expect(rangeFinder()).toBeNull()
   })
 })

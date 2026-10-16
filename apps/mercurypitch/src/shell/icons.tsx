@@ -231,6 +231,14 @@ export const KaraokeIcon: Component<ShellIconProps> = (props) => (
   </svg>
 )
 
+/** A gift: the launch gift's songs (Keep, S7b E6). */
+export const GiftIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="4" y="9" width="16" height="11" rx="1.5" />
+    <path d="M3 9h18M12 9v11M12 9c-1.5-3.5-5.5-4-5.5-1.5S10 9 12 9zM12 9c1.5-3.5 5.5-4 5.5-1.5S14 9 12 9z" />
+  </svg>
+)
+
 /** Sign in / account. Drawn in the kit's style; the sprite has no person. */
 export const AccountIcon: Component<ShellIconProps> = (props) => (
   <svg {...base(props)}>

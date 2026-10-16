@@ -19,13 +19,11 @@
 // and the microphone; the shell only asks it to pause, resume, stop or park
 // (src/stores/native-shell-store.ts).
 
-import { Capacitor } from '@capacitor/core'
 import { openAppSettings } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import './shell.css'
-import { CloudOffer } from '@/features/karaoke-room/CloudOffer'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { KARAOKE_IMPORT, PREMIUM_EXERCISES } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
@@ -46,13 +44,14 @@ import { RoomHeader } from './RoomHeader'
 import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, pushSettingsSection, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
 import { resumeAfterDeletion } from './settings/account-deletion'
-import { installAccountOffer } from './settings/account-offer'
+import { installAccountOffer, openKeep } from './settings/account-offer'
 import { AccountOfferSheet } from './settings/AccountOffer'
 import { SettingsAlert } from './settings/SettingsAlert'
 import { openSignIn } from './settings/sign-in-state'
 import { SignInSheet } from './settings/SignInSheet'
 import { mirrorShellChrome } from './shell-attributes'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
+import { ShellCloudOffer } from './ShellCloudOffer'
 import { ShellRoot } from './ShellRoot'
 import { ShellScreens } from './ShellScreens'
 import { Transport } from './Transport'
@@ -180,6 +179,9 @@ export const NativeShell: Component = () => {
         openAppSettings: () => openAppSettings(),
         // Every in-app "Sign in" (ui-store's openAuthModal) lands here.
         openSignIn,
+        // Keep, the account offer, for whatever offers a free account: the
+        // Cloud offer's free song (S7b §5).
+        openKeep,
         // The Karaoke room's "Manage songs" (S8 §11, D8 A).
         openKaraokeStudio: () => {
           pushScreen('karaoke-studio')
@@ -408,20 +410,17 @@ export const NativeShell: Component = () => {
             onKeep={finishRun}
           />
 
-          {/* The account offer, over the Sing room after a Keep. Its Sign
-              in hands over to the sign-in sheet. */}
+          {/* Keep, the account offer: over the Sing room after a Keep, and
+              from Settings and the Cloud offer. Its Use email and a second
+              factor hand over to the sign-in sheet. */}
           <AccountOfferSheet />
 
           {/* The Cloud offer (paywall B v2), opened by the Karaoke room's
-              Import, Settings and the onboarding. Its free account hands
-              over to the sign-in sheet, which is drawn over it. Stage 2:
-              a plain conditional, so a store build folds it away. */}
-          {KARAOKE_IMPORT ? (
-            <CloudOffer
-              platform={Capacitor.getPlatform()}
-              onAccount={openSignIn}
-            />
-          ) : null}
+              Import, Settings and the onboarding. Its free account opens
+              Keep, and Sign in after a purchase the sign-in sheet
+              (ShellCloudOffer). Stage 2: a plain conditional, so a store
+              build folds it away. */}
+          {KARAOKE_IMPORT ? <ShellCloudOffer /> : null}
 
           {/* The phone's one way in, over whatever asked for it: the
               Account screen's button, the offer and every in-app "Sign

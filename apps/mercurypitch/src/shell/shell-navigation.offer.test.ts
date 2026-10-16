@@ -1,10 +1,10 @@
 // ============================================================
-// Back with the account offer up
+// Back with Keep, the account offer, up
 // ============================================================
 //
-// The offer rises over the Sing room a beat after a Keep (S6 2a). It has no
-// close button, so Back answers it the way Later does: the sheet goes
-// quietly, the room stays as it was, and nothing under it is popped.
+// Keep rises over the Sing room a beat after a Keep (S6 2a, S7b §3.5). Back
+// answers it the way Not now does: the sheet goes quietly, the room stays
+// as it was, and nothing under it is popped.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setAuthToken } from '@/db/services/user-service'
@@ -13,7 +13,7 @@ import { setPlaybackState } from '@/stores/playback-state-store'
 import { clearSingTakes, keepSingTake } from '@/stores/sing-takes-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { pushed, resetRunShell } from './run-shell-store'
-import { forgetAccountOffer, installAccountOffer, OFFER_BEAT_MS, offerCardShown, offerOpen, } from './settings/account-offer'
+import { forgetAccountOffer, installAccountOffer, OFFER_BEAT_MS, offerOpen, } from './settings/account-offer'
 import { resetSignIn, signInOpen } from './settings/sign-in-state'
 import { performBack, resolveBack } from './shell-navigation'
 
@@ -65,7 +65,7 @@ describe('Back with the account offer up', () => {
     expect(resolveBack(true)).toBe('sheet')
   })
 
-  it('answers Later, and leaves the room as it was', () => {
+  it('answers Not now, and leaves the room as it was', () => {
     raise()
     const back = host()
 
@@ -73,7 +73,6 @@ describe('Back with the account offer up', () => {
 
     expect(outcome).toBe('sheet')
     expect(offerOpen()).toBe(false)
-    expect(offerCardShown()).toBe(false)
     expect(signInOpen()).toBe(false)
     expect(pushed()).toBeNull()
     expect(back.back).not.toHaveBeenCalled()

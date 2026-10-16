@@ -1,28 +1,36 @@
 // ============================================================
-// The account offer — when it is asked, and when it is not
+// Keep, the account offer — when it is asked, and when it is not
 // ============================================================
 //
-// S6 decision 02, both halves (owner, 27 Sep): a sheet once, a beat after a
-// take is kept in the Sing room, and a card at the top of Settings until the
-// singer says Later.
+// S6 decision 02, and the sheet S7b §3.5 calls Keep: once on this phone, a
+// beat after a take is kept in the Sing room, and whenever the singer asks
+// for it, from the Save your progress row in Settings or the Cloud offer's
+// "Get 1 free song with a free account" (S7b §5).
 //
-// The sheet is the one ask after value (REQ-NAM-009, 010). It never comes
-// before a kept take, and it comes once on this phone: the flag that says it
-// came is kept, so a restart does not bring it back. It waits a beat, so the
-// take's own card has closed and handed focus back before it rises, and it
-// rises only in the Sing room, between runs, with nothing of the shell's
-// over the room. A take kept on the way out of the room leaves it for the
-// next Keep in there.
+// The sheet is the one unprompted ask after value (REQ-NAM-009, 010). It
+// never comes before a kept take, and it comes once on this phone: the flag
+// that says it came is kept, so a restart does not bring it back, and an ask
+// the singer opened counts as that one ask. It waits a beat, so the take's
+// own card has closed and handed focus back before it rises, and it rises
+// only in the Sing room, between runs, with nothing of the shell's over the
+// room. A take kept on the way out of the room leaves it for the next Keep
+// in there.
 //
-// Later is quiet (REQ-NAM-014): from the sheet or the card, it folds the
-// card into the Account row and holds the sheet back until the app next
-// starts. Back, the backdrop and a swipe answer the sheet the same way.
-// Sign in is the sign-in sheet itself, the same ways in as the Account
-// screen's button (REQ-NAM-015).
+// Not now is quiet (REQ-NAM-014): it closes the sheet, asks nothing and
+// opens nothing. Back, the backdrop and a swipe answer the sheet the same
+// way. The sheet's own ways in are the sign-in sheet's ceremonies
+// (AccountOffer.tsx).
 //
-// A phone that signed out of an account is not offered one: it has one, and
-// the Account screen already says how to come back (REQ-NAM-054).
+// A phone that signed out of an account is not asked unprompted: it has
+// one, and the Account screen already says how to come back (REQ-NAM-054).
+// It can still open Keep from Settings.
+//
+// The range finder: with no range measured, Keep's first row is "Find your
+// range first", which runs the range and comes back to this sheet (S7b
+// §3.2). The native app has no range capture yet, so nothing registers one
+// and the row is not drawn: no build offers what it lacks.
 
+import type { Accessor } from 'solid-js'
 import { createEffect, createRoot, createSignal, onCleanup, untrack, } from 'solid-js'
 import { needsSignIn } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
@@ -31,8 +39,9 @@ import type { SingTake } from '@/stores/sing-takes-store'
 import { singTakes } from '@/stores/sing-takes-store'
 import { countingIn, currentTab, runState, shellCovered, } from '../run-shell-store'
 import { accountSignedIn } from './account-state'
+import { loadAppGift } from './keep-gift'
 import { settingsAlertOpen } from './settings-alert'
-import { openSignIn, signInOpen } from './sign-in-state'
+import { signInOpen } from './sign-in-state'
 
 /** How long after a Keep the sheet rises: the take's card has gone by then. */
 export const OFFER_BEAT_MS = 400
@@ -40,17 +49,13 @@ export const OFFER_BEAT_MS = 400
 const SHOWN_KEY = 'mp:account-offer-shown'
 
 const [sheetOpen, setSheetOpen] = createSignal(false)
-const [firstTake, setFirstTake] = createSignal(false)
-const [declined, setDeclined] = createSignal(false)
+const [finder, setFinder] = createSignal<(() => void) | null>(null)
 
 /** Where storage is blocked, the session still remembers. */
 let shownThisSession = false
 
-/** Whether the offer's sheet is up. Reactive. */
+/** Whether Keep is up. Reactive. */
 export const offerOpen = sheetOpen
-
-/** Whether the take the sheet follows is the phone's first. Reactive. */
-export const offerIsFirstTake = firstTake
 
 /** No account on this phone yet: none signed in, and none signed out of. */
 function noAccountYet(): boolean {
@@ -78,22 +83,40 @@ function markShown(): void {
   }
 }
 
-/** The card at the top of Settings: no account yet, and no Later since launch. Reactive. */
-export function offerCardShown(): boolean {
-  return noAccountYet() && !declined()
+/**
+ * Open Keep: the Save your progress row, the Cloud offer's free account,
+ * and the sheet's own rise after a Keep. The same `() => void` shape as
+ * openSignIn, so either can be handed to a button.
+ */
+export function openKeep(): void {
+  markShown()
+  void loadAppGift()
+  setSheetOpen(true)
 }
 
-/** Later, from the sheet or the card; and Back, the backdrop or a swipe on the sheet. */
+/** Not now; and Back, the backdrop or a swipe on the sheet. */
 export function declineOffer(): void {
   setSheetOpen(false)
-  setDeclined(true)
 }
 
-/** Sign in, from the sheet or the card: the sign-in sheet, in its place. */
-export function acceptOffer(): void {
+/** Keep has done its part: signed in, or handed over to the sign-in sheet. */
+export function closeOffer(): void {
   setSheetOpen(false)
-  openSignIn()
 }
+
+/**
+ * Register what "Find your range first" runs. It runs the range, then opens
+ * Keep again (S7b §3.2). Registration returns its own unregister.
+ */
+export function registerRangeFinder(run: () => void): () => void {
+  setFinder(() => run)
+  return () => {
+    if (untrack(finder) === run) setFinder(null)
+  }
+}
+
+/** The registered range finder, or null while there is none. Reactive. */
+export const rangeFinder: Accessor<(() => void) | null> = finder
 
 /**
  * The Sing room, between runs, with nothing of the shell's over it. A run
@@ -115,7 +138,7 @@ function roomClear(): boolean {
 }
 
 function due(): boolean {
-  return noAccountYet() && !declined() && !shownBefore()
+  return noAccountYet() && !shownBefore()
 }
 
 /**
@@ -149,14 +172,14 @@ export function installAccountOffer(): () => void {
       const kept = keptOne(before, after)
       before = after
       if (!kept || !untrack(due)) return
-      const first = after.length === 1
+      // Asked now, so the gift's row is there when the sheet rises rather
+      // than arriving under the singer's thumb.
+      void loadAppGift()
       clearTimeout(beat)
       beat = setTimeout(() => {
         beat = undefined
         if (!due() || !roomClear()) return
-        markShown()
-        setFirstTake(first)
-        setSheetOpen(true)
+        openKeep()
       }, OFFER_BEAT_MS)
     })
 
@@ -167,11 +190,10 @@ export function installAccountOffer(): () => void {
   })
 }
 
-/** What a launch starts from, and tests: nothing open, nothing declined. */
+/** Tests: nothing open, no range finder, nothing remembered this session. */
 export function resetAccountOffer(): void {
   setSheetOpen(false)
-  setFirstTake(false)
-  setDeclined(false)
+  setFinder(null)
   shownThisSession = false
 }
 

@@ -768,11 +768,12 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     await visible('[data-testid="sing-take-sheet"]', runTimeoutMs)
     await settle(300)
     await measure('sing-take', '[data-testid="sing-take-sheet"]', { end: true })
-    // Kept, so the account offer rises over the room a beat later (S6 2a):
-    // on its side it sits in the middle, 560 wide, the room at both ends.
+    // Kept, so Keep, the account offer, rises over the room a beat later
+    // (S6 2a, S7b §3.5): on its side it sits in the middle, 560 wide, the
+    // room at both ends.
     await page.locator('[data-testid="sing-take-keep"]').click()
     await hidden('[data-testid="sing-take-sheet"]')
-    at = 'on the way to the account offer'
+    at = 'on the way to Keep'
     await visible('[data-testid="account-offer"]')
     await settle()
     const offer = '[data-testid="sheet-panel"]'
@@ -798,9 +799,10 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
         `landscape account offer: ${Math.round(placed.width)} px wide, centred, the room showing ${Math.round(placed.left)} px at each end`,
       )
     }
-    // Sign in, not Later, so Settings below still has the card to measure.
-    await page.locator('[data-testid="offer-sign-in"]').click()
-    await visible('[data-testid="signin-sheet"]')
+    // Use email hands over to the sign-in sheet's email pane, on its side.
+    await page.locator('[data-testid="keep-email"]').click()
+    await visible('[data-testid="signin-sheet"][data-pane="email"]')
+    await hidden('[data-testid="account-offer"]')
     await page.keyboard.press('Escape')
     await hidden('[data-testid="signin-sheet"]')
 

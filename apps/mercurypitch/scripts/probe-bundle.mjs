@@ -1462,48 +1462,24 @@ async function walkRun(page, ctx, steps) {
   )
   steps.push('room: Keep closes the card and the room rests')
 
-  // ── The account offer (S6 2a): a beat after the first Keep, once ──
+  // ── Keep, the account offer (S7b §3.5): a beat after the first Keep ──
   const offer = page.locator('[data-testid="account-offer"]')
-  await expectVisible(offer, 'the account offer after the first Keep')
+  await expectVisible(offer, 'Keep after the first Keep')
   await page.waitForTimeout(400)
-  // Its shape, not its words: the words live in the app's copy module,
-  // where the owner's answer on what an account includes will land.
-  const offerShape = await page.evaluate(() => {
-    const root = document.querySelector('[data-testid="account-offer"]')
-    const line = (selector) =>
-      root?.querySelector(selector)?.textContent?.trim() ?? ''
-    return {
-      label: line('.mp-offer__label'),
-      title: line('.mp-offer__title'),
-      promises: root?.querySelectorAll('.mp-set-promises li').length ?? 0,
-      caption: line('.mp-set__caption'),
-    }
-  })
-  const offerAnswersBox = await offerAnswers(
-    page,
-    '[data-testid="sheet-panel"]',
-  )
-  if (
-    offerShape.label === '' ||
-    offerShape.title === '' ||
-    offerShape.promises === 0 ||
-    offerShape.caption === '' ||
-    offerAnswersBox.close ||
-    !sameAnswers(offerAnswersBox)
-  ) {
-    throw new Error(
-      `the account offer: ${JSON.stringify({ ...offerShape, ...offerAnswersBox })}`,
-    )
+  // Its shape, not its words: the words live in the app's copy module.
+  const offerShape = await keepShape(page)
+  if (!keepShapeHolds(offerShape)) {
+    throw new Error(`Keep: ${JSON.stringify(offerShape)}`)
   }
   await shoot(page, ctx, 'room-account-offer')
-  await page.locator('[data-testid="offer-later"]').click()
-  await expectGone(offer, 'the account offer after Later')
+  await page.locator('[data-testid="keep-not-now"]').click()
+  await expectGone(offer, 'Keep after Not now')
   await expectVisible(
     page.locator('[data-testid="sing-capsule"]'),
-    'the capsule after Later',
+    'the capsule after Not now',
   )
   steps.push(
-    `offer: a beat after the first Keep, over the room, with the first-take line, ${offerShape.promises} promises, Sign in and Later ${Math.round(offerAnswersBox.signIn.width)} x ${Math.round(offerAnswersBox.signIn.height)} each and no close button; Later lands back in the room`,
+    `offer: Keep a beat after the first Keep, over the room: ${keepShapeLine(offerShape)}; Not now lands back in the room`,
   )
 
   // ── A second take: the history line is there now ──
@@ -4558,46 +4534,83 @@ async function walkAlleyScope(browser, args, frame) {
 }
 
 /**
- * The two answers of the account offer, measured: the same size, side by
- * side (REQ-NAM-012). `scope` is the sheet or the card they sit in.
+ * Keep, measured (S7b §3.5): its title, rows and fact line, its ways in, and
+ * Not now, which has to be the panel's first control, at its top right, a
+ * labelled 44 px target, with no close button beside it.
  */
-async function offerAnswers(page, scope) {
-  return page.evaluate((selector) => {
-    const root = document.querySelector(selector)
-    const box = (testId) => {
-      const node = root?.querySelector(`[data-testid="${testId}"]`)
-      if (!node) return null
-      const r = node.getBoundingClientRect()
-      return { x: r.x, y: r.y, width: r.width, height: r.height }
-    }
+async function keepShape(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('[data-testid="account-offer"]')
+    const panel = document.querySelector('[data-testid="sheet-panel"]')
+    const notNow = root?.querySelector('[data-testid="keep-not-now"]')
+    const box = notNow?.getBoundingClientRect()
+    const frame = panel?.getBoundingClientRect()
     return {
-      signIn: box('offer-sign-in'),
-      later: box('offer-later'),
-      close: root?.querySelector('[aria-label="Close"]') !== null,
+      variant: root?.getAttribute('data-variant') ?? null,
+      title: root?.querySelector('h2')?.textContent?.trim() ?? '',
+      rows: root?.querySelectorAll('.mp-keep__rows > li').length ?? 0,
+      fact: root?.querySelector('.mp-keep__fact')?.textContent?.trim() ?? '',
+      ways: [...(root?.querySelectorAll('.mp-keep__ways button') ?? [])].map(
+        (button) => button.getAttribute('data-testid'),
+      ),
+      notNow:
+        box && frame
+          ? {
+              label: notNow.textContent.trim(),
+              width: box.width,
+              height: box.height,
+              fromRight: frame.right - box.right,
+              fromTop: box.top - frame.top,
+            }
+          : null,
+      notNowFirst: notNow !== null && panel?.querySelector('button') === notNow,
+      // The last way in, whole, with nothing scrolled: no way in hides
+      // below the fold.
+      waysInView: (() => {
+        const ways = root?.querySelectorAll('.mp-keep__ways button')
+        const last = ways?.[ways.length - 1]?.getBoundingClientRect()
+        return (
+          last !== undefined &&
+          frame !== undefined &&
+          panel.scrollTop === 0 &&
+          last.bottom <= Math.min(frame.bottom, window.innerHeight)
+        )
+      })(),
+      close: panel?.querySelector('[aria-label="Close"]') !== null,
     }
-  }, scope)
+  })
 }
 
-/** Equal within a pixel, on one row, Sign in first. */
-function sameAnswers(answers) {
-  const { signIn, later } = answers
-  if (signIn === null || later === null) return false
+/** Everything Keep needs to be Keep, and Use email always among its ways. */
+function keepShapeHolds(shape) {
   return (
-    Math.abs(signIn.width - later.width) <= 1 &&
-    Math.abs(signIn.height - later.height) <= 1 &&
-    Math.abs(signIn.y - later.y) <= 1 &&
-    signIn.x < later.x
+    shape.title !== '' &&
+    shape.rows > 0 &&
+    shape.fact !== '' &&
+    shape.ways.at(-1) === 'keep-email' &&
+    shape.notNow !== null &&
+    shape.notNow.label !== '' &&
+    shape.notNow.height >= 44 &&
+    shape.notNow.fromRight < 40 &&
+    shape.notNowFirst &&
+    shape.waysInView &&
+    !shape.close
   )
 }
 
+function keepShapeLine(shape) {
+  return `"${shape.title}", ${shape.rows} rows, the fact line, ${shape.ways.join(', ')} all in view, and "${shape.notNow.label}" ${Math.round(shape.notNow.width)} x ${Math.round(shape.notNow.height)} at the top right with no close button`
+}
+
 /**
- * The native pass to the sign-in sheet and back (S6, steps 3 and 11): More,
- * then Settings, where a phone with no account yet finds the offer at the
- * top in the Account row's place, then its Sign in. The sheet is the phone's
- * way in, over the screen that asked: a code by email is always offered, and
- * the television's phone row and the passkey button never are (audit D2).
- * Back is the shell's own, the one Android's button presses: a pane, then
- * the sheet, then the screen under it, in that order.
+ * The native pass to the sign-in sheet and back (S6, steps 3 and 11; S7b
+ * §5): More, then Settings, where a phone with no account yet finds Save
+ * your progress after this phone's group. It opens Keep, whose Use email opens
+ * the sign-in sheet on its email pane. The sheet is the phone's way in, over
+ * the screen that asked: a code by email is always offered, and the
+ * television's phone row and the passkey button never are (audit D2). Back
+ * is the shell's own, the one Android's button presses: a pane, then the
+ * sheet, then the screen under it, in that order.
  */
 async function walkToSignIn(page, ctx, pushed, rail) {
   const steps = []
@@ -4611,36 +4624,50 @@ async function walkToSignIn(page, ctx, pushed, rail) {
   await page.locator('[data-more-item="settings"]').click()
   await visible('[data-testid="settings-screen"]')
 
-  // The offer, standing (2b): at the top, in the Account row's place.
-  await visible('[data-testid="offer-card"]')
-  const card = await page.evaluate(() => ({
-    first:
-      document
-        .querySelector('.mp-set__col')
-        ?.firstElementChild?.getAttribute('data-testid') ?? null,
-    accountRow:
-      document.querySelector('[data-settings-row="account"]') !== null,
-  }))
-  const cardAnswers = await offerAnswers(page, '[data-testid="offer-card"]')
-  if (
-    card.first !== 'offer-card' ||
-    card.accountRow ||
-    !sameAnswers(cardAnswers)
-  ) {
-    throw new Error(
-      `the offer card: ${JSON.stringify({ ...card, ...cardAnswers })}`,
-    )
+  // Save your progress (S7b §5): for a phone with no account, a group of
+  // its own after this phone's group, before Cloud where the build sells
+  // it, and before the rooms.
+  await visible('[data-settings-row="save-progress"]')
+  const order = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-settings-row]')].map((row) =>
+      row.getAttribute('data-settings-row'),
+    ),
+  )
+  const at = (id) => order.indexOf(id)
+  const placed =
+    at('save-progress') === at('appearance') + 1 &&
+    at('save-progress') < at('rooms-sing') &&
+    (at('cloud-status') === -1 || at('save-progress') < at('cloud-status'))
+  if (!placed) {
+    throw new Error(`Save your progress: ${JSON.stringify(order)}`)
   }
-  await shoot(page, ctx, 'settings-offer-card')
+  await shoot(page, ctx, 'settings-save-progress')
   steps.push(
-    `offer: the card tops Settings in the Account row's place, Sign in and Later ${Math.round(cardAnswers.signIn.width)} x ${Math.round(cardAnswers.signIn.height)} each`,
+    `offer: Save your progress after this phone's group${at('cloud-status') === -1 ? '' : ', before Cloud'}, before the rooms`,
   )
 
-  await page
-    .locator('[data-testid="offer-card"] [data-testid="offer-sign-in"]')
-    .click()
+  await page.locator('[data-settings-row="save-progress"]').click()
+  const keep = page.locator('[data-testid="account-offer"]')
+  await keep.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  await page.waitForTimeout(400)
+  const keepFromSettings = await keepShape(page)
+  if (!keepShapeHolds(keepFromSettings)) {
+    throw new Error(`Keep from Settings: ${JSON.stringify(keepFromSettings)}`)
+  }
+  await shoot(page, ctx, 'settings-keep')
+  steps.push(`offer: Keep over Settings: ${keepShapeLine(keepFromSettings)}`)
+
+  await page.locator('[data-testid="keep-email"]').click()
   const sheet = page.locator('[data-testid="signin-sheet"]')
-  await sheet.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  await visible('[data-testid="signin-sheet"][data-pane="email"]')
+  await visible('[data-testid="signin-email-input"]')
+  await page.waitForTimeout(300)
+  await shoot(page, ctx, 'signin-email')
+  await keep.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
+
+  // Back from the email pane is the sheet's own ways in.
+  const backs = [await pressBack(page)]
+  await visible('[data-testid="signin-sheet"][data-pane="methods"]')
   await page.waitForTimeout(400)
   await shoot(page, ctx, 'signin-sheet')
 
@@ -4665,20 +4692,16 @@ async function walkToSignIn(page, ctx, pushed, rail) {
     throw new Error(`the sign-in sheet: ${JSON.stringify(offered)}`)
   }
   steps.push(
-    `sign-in: the sheet over Settings, from the offer (${offered.ways.join(', ')}); no phone row, no passkey, no web dialog`,
+    `sign-in: Keep's Use email opened the sheet on its email pane over Settings; Back showed its ways (${offered.ways.join(', ')}); no phone row, no passkey, no web dialog`,
   )
 
-  await page.locator('[data-testid="signin-email"]').click()
-  await visible('[data-testid="signin-email-input"]')
-  await page.waitForTimeout(300)
-  await shoot(page, ctx, 'signin-email')
-
-  const backs = [await pressBack(page)]
-  await visible('[data-testid="signin-sheet"][data-pane="methods"]')
   backs.push(await pressBack(page))
   await sheet.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
-  // Sign in is not Later: the card is still there under the sheet.
-  await visible('[data-testid="offer-card"]')
+  // Keep handed over to the sheet: Settings is what is left under it.
+  await visible('[data-settings-row="save-progress"]')
+  if (await keep.count()) {
+    throw new Error('Keep came back under the sign-in sheet')
+  }
   backs.push(await pressBack(page))
   await pushed.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
   await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
@@ -4686,7 +4709,29 @@ async function walkToSignIn(page, ctx, pushed, rail) {
     throw new Error(`sign-in: Back went ${backs.join(', ')}`)
   }
   steps.push(
-    'sign-in: Back stepped the sheet to its first pane, closed it onto Settings with the offer still up, then popped Settings',
+    'sign-in: Back stepped the sheet from the email pane to its ways in, closed it onto Settings, then popped Settings',
+  )
+
+  // Keep opened from Settings is this phone's one ask (account-offer.ts), so
+  // the room's Keep after the first take would never come in this page. The
+  // walk checks the ask was counted, then forgets it the way a fresh install
+  // would and starts the app again, so the run half can see the room's Keep.
+  const asked = await page.evaluate(() =>
+    localStorage.getItem('mp:account-offer-shown'),
+  )
+  if (asked === null) {
+    throw new Error('Keep from Settings did not count as the one ask')
+  }
+  await page.evaluate(() => {
+    localStorage.removeItem('mp:account-offer-shown')
+  })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page
+    .locator('#root.loaded')
+    .waitFor({ state: 'attached', timeout: BOOT_TIMEOUT_MS })
+  await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  steps.push(
+    'offer: Keep from Settings counted as the one ask; forgotten, and the app started again for the room',
   )
   return steps
 }

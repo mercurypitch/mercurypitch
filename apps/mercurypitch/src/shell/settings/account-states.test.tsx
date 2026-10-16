@@ -5,14 +5,15 @@
 // S6 step 12. The four states the build list names, and the one a sign-out
 // leaves behind, each through the Settings root and the Account screen:
 //
-//   no token          no account yet: the offer tops Settings, and Account
-//                     says what one adds
+//   no token          no account yet: Save your progress in Settings,
+//                     the Account row, and Account says what one adds
 //   anonymous token   the same: the phone's own identity is not an account
 //   signed in         the name, how it signs in, and Delete account
 //   offline           still signed in (D1, REQ-NAM-049): the card the phone
 //                     kept, a note, and nothing that reads as signed out
-//   signed out here   the Account row with Sign in and no offer; Account
-//                     says Signed out (REQ-NAM-054)
+//   signed out here   Save your progress, and the Account row with Sign in
+//                     (S7b §5: for anyone signed out); Account says Signed
+//                     out (REQ-NAM-054)
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthMeService from '@/db/services/auth-me-service'
@@ -138,7 +139,7 @@ async function look(): Promise<Seen> {
   await settle()
   const root = view.container
   const settings = {
-    offer: root.querySelector('[data-testid="offer-card"]') !== null,
+    offer: root.querySelector('[data-settings-row="save-progress"]') !== null,
     accountRow:
       root.querySelector('[data-settings-row="account"]')?.textContent ?? null,
     deleteRow:
@@ -183,13 +184,13 @@ beforeEach(() => {
 afterEach(clean)
 
 describe('the account states', () => {
-  it('no account yet: the offer tops Settings, and Account says what one adds', async () => {
+  it('no account yet: Save your progress in Settings, and Account says what one adds', async () => {
     await enter('none')
 
     const seen = await look()
 
     expect(seen.offer).toBe(true)
-    expect(seen.accountRow).toBeNull()
+    expect(seen.accountRow).toContain(ACCOUNT_ROW.signedOutValue)
     expect(seen.deleteRow).toBe(false)
     expect(seen.account).toContain(ACCOUNT_SIGNED_OUT.title)
     for (const promise of accountPromises()) {
@@ -204,7 +205,7 @@ describe('the account states', () => {
     const seen = await look()
 
     expect(seen.offer).toBe(true)
-    expect(seen.accountRow).toBeNull()
+    expect(seen.accountRow).toContain(ACCOUNT_ROW.signedOutValue)
     expect(seen.deleteRow).toBe(false)
     expect(seen.account).toContain(ACCOUNT_SIGNED_OUT.title)
     expect(seen.signInButton).toBe(true)
@@ -242,12 +243,12 @@ describe('the account states', () => {
     expect(seen.signInButton).toBe(false)
   })
 
-  it('signed out here: the Account row with Sign in, no offer, and Signed out', async () => {
+  it('signed out here: Save your progress, the Account row with Sign in, and Signed out', async () => {
     await enter('signed-out-here')
 
     const seen = await look()
 
-    expect(seen.offer).toBe(false)
+    expect(seen.offer).toBe(true)
     expect(seen.accountRow).toContain(ACCOUNT_ROW.signedOutValue)
     expect(seen.deleteRow).toBe(false)
     expect(seen.account).toContain(ACCOUNT_SIGNED_OUT_HERE.title)
