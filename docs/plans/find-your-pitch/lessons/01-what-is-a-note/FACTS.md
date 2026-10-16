@@ -15,6 +15,7 @@
 9. Listeners hear notes an octave apart as having the same quality ("octave equivalence", the same chroma or note name) | Deutsch, _The Psychology of Music_, 3rd ed. (2013), ch. 7; Shepard (1982), Psychological Review 89(4) | said as "most people hear one note, just brighter"; octave equivalence is partly learned (Jacoby et al. 2019, Current Biology), so never "everyone" or "always"
 10. A non-2:1 pair (220 Hz and 277.18 Hz) does not line up every cycle; it is a different note (C#4) | 440 x 2^(-8/12) = 277.18 Hz | arithmetic
 11. Each doubling (110, 220, 440, 880 Hz) is heard as an equal step, while the hertz gaps double (110, 220, 440) | Weber-Fechner / logarithmic pitch perception; Moore ch. 6 | arithmetic plus textbook
+    11a. The sweep (S5) glides exponentially from 110 Hz to 880 Hz, f = 110 x 8^u for u from 0 to 1, and its readout shows the frequency sounding at that moment, so passing values such as 118, 233, 459 and 826 Hz are true readings, not claims | `tools/mix.py` `sweep()` (f = f0 \* (f1 / f0) \*\* (t / dur)); measured by builder B from the mix | code
 12. Pitch can be pictured as a spiral (helix): height plus a circle of note names that repeats every octave | Drobisch (1855); Shepard (1982) | historical model, shown as "more like a spiral"
 
 12c. Slowed 220x, a 220 Hz string swings once a second (220 / 220 = 1); at real speed, 220 swings fill one second | arithmetic | arithmetic
@@ -37,7 +38,7 @@
 ## Singing
 
 18. When two people sing the same tune together, they are often an octave apart (typical lower and higher voices) | Titze (1994): average speaking fundamental about 100-120 Hz for adult men, about 200-220 Hz for adult women, roughly an octave | said as "often", not "always"
-19. Matching a note an octave up or down still matches the note name, and Voice Mirror counts it | follows from 9 and 15; Voice Mirror's note-matching score ignores octave errors (`src/lib/mirror/metrics.ts:261`) | code (critic round 1 verified)
+19. Matching a note an octave up or down still matches the note name, and Voice Mirror counts it: its match score folds every error into one octave (`foldCents`), so a match counts in any octave. Shown on screen as "Voice Mirror counts any octave" (s17) | follows from 9 and 15; `src/lib/mirror/metrics.ts:261` ("Errors are octave-folded") and `src/lib/pitch-measurements` `foldCents` | code (critic round 1 verified; wording widened after critic 04)
 20. Sing gently; never push or strain | the app's guided-voice safety foundation (`src/lib/guided-voice`); MercuryPitch brand voice | owner rule
 
 ## Product
