@@ -176,7 +176,10 @@ const HomePage: Component = () => {
           {/* Learn and What's new sat in the sidebar, where four controls no
               longer fit a phone and neither had anything to do with the page
               you were on. Home is where you arrive, which is where "what is
-              this" and "what changed" belong. */}
+              this" and "what changed" belong. Lessons is the third door: the
+              Find Your Pitch lessons are their own documents (/learn/01, not
+              an app route), so it is a plain link and the visit leaves the
+              app, the way /delete-account does. */}
           <div class={styles.headActions}>
             <button
               type="button"
@@ -186,6 +189,14 @@ const HomePage: Component = () => {
             >
               Learn
             </button>
+            <a
+              class={styles.headAction}
+              href="/learn/01"
+              title="Find Your Pitch: free lessons on notes and singing"
+              data-testid="home-lessons"
+            >
+              Lessons
+            </a>
             <button
               type="button"
               class={`${styles.headAction} ${styles.headActionAccent}`}
