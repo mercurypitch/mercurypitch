@@ -127,7 +127,15 @@ session.
   ([research/production-research.md](research/production-research.md)). Pitch-canvas scenes use
   the app's canvas set; the series code governs explanatory diagrams (MASTER-PLAN § 5).
 - **Captions.** Upload the SRT; never burn full captions into the long form (redundancy). Keep the
-  bottom 17 % of every frame free of essential content.
+  bottom 17 % of every frame free of essential content. `tools/captions.py` holds the limits and
+  warns on a breach:
+  - at most 42 characters a line and two lines a caption;
+  - at most 20 characters a second, and at least 5/6 s on screen;
+  - the short speaker label ("BLUE:", "ORANGE:"), only when the speaker changes.
+- **Captions and chapters travel with the film.** A re-cut that re-times it (every re-voice does)
+  regenerates both, and the page's copies in `src/features/lessons/lesson-NN/assets/` change in
+  the same commit as the lesson's `captions/` folder and the new MP4s; `film-sync.test.ts` holds
+  the two copies equal.
 - **Parallel builders.** A build guide, a shared kit, exact handoff frames between builders, and
   scene files owned by one builder each. Lab renders per scene (`tools/lab.mjs`: a temporary
   project hosting one scene, with the soundtrack offset to it) prove each scene alone.

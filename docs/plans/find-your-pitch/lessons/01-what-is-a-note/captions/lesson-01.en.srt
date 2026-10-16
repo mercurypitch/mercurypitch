@@ -8,11 +8,11 @@
 
 3
 00:00:05,300 --> 00:00:06,457
-ORANGE MERC: Ha! Same note.
+ORANGE: Ha! Same note.
 
 4
-00:00:06,757 --> 00:00:07,523
-BLUE MERC: Is it?
+00:00:06,757 --> 00:00:07,590
+BLUE: Is it?
 
 5
 00:00:07,723 --> 00:00:11,393
@@ -24,12 +24,12 @@ Yours shook it 440.
 
 7
 00:00:14,393 --> 00:00:17,160
-ORANGE MERC: Twice as fast?
+ORANGE: Twice as fast?
 Then why do they sound the same?
 
 8
 00:00:17,560 --> 00:00:22,272
-BLUE MERC: Good question. To answer it,
+BLUE: Good question. To answer it,
 we need to know what a note really is.
 
 9
@@ -55,8 +55,8 @@ The vocal folds in your throat.
 
 14
 00:00:36,036 --> 00:00:40,229
-Pluck a string, and it swings back and forth,
-pushing on the air.
+Pluck a string, and it swings
+back and forth, pushing on the air.
 
 15
 00:00:40,529 --> 00:00:42,631
@@ -74,14 +74,15 @@ and you have the note's frequency.
 
 18
 00:00:52,892 --> 00:00:57,378
-At real speed, this string swings 220 times.
+At real speed,
+this string swings 220 times.
 
 19
 00:00:57,678 --> 00:01:00,841
 We measure it in hertz. Swings per second.
 
 20
-00:01:01,641 --> 00:01:03,743
+00:01:01,641 --> 00:01:03,710
 Slow swings make a low note.
 
 21
@@ -93,13 +94,13 @@ Slow swings make a low note.
 Fast swings make a high one.
 
 23
-00:01:08,820 --> 00:01:10,918
-ORANGE MERC:
-So a high note is just a loud note?
+00:01:08,820 --> 00:01:10,970
+ORANGE: So a high note
+is just a loud note?
 
 24
-00:01:11,218 --> 00:01:11,914
-BLUE MERC: No.
+00:01:11,218 --> 00:01:12,051
+BLUE: No.
 
 25
 00:01:12,214 --> 00:01:14,216
@@ -110,8 +111,9 @@ Loud is how far it swings.
 High is how fast.
 
 27
-00:01:16,802 --> 00:01:20,171
-MercuryPitch draws your voice the same way.
+00:01:16,802 --> 00:01:20,107
+MercuryPitch draws
+your voice the same way.
 
 28
 00:01:20,191 --> 00:01:23,816
@@ -169,7 +171,7 @@ That jump has a name.
 An octave.
 
 41
-00:01:57,396 --> 00:01:58,963
+00:01:57,396 --> 00:01:58,900
 Now look at the waves.
 
 42
@@ -183,12 +185,12 @@ They line up again, and again, forever.
 
 44
 00:02:07,724 --> 00:02:11,695
-ORANGE MERC: Like us walking together.
+ORANGE: Like us walking together.
 I take two steps for every one of yours.
 
 45
-00:02:11,995 --> 00:02:17,171
-BLUE MERC: And we land together, every time.
+00:02:11,995 --> 00:02:17,108
+BLUE: And we land together, every time.
 Two for one: the simplest fit there is.
 
 46
@@ -196,194 +198,190 @@ Two for one: the simplest fit there is.
 That's the octave.
 
 47
-00:02:19,222 --> 00:02:24,223
-Try 277 instead,
-and the peaks drift in and out of step.
+00:02:19,222 --> 00:02:26,395
+Try 277 instead, and the peaks drift in
+and out of step. That's a different note.
 
 48
-00:02:24,243 --> 00:02:26,395
-That's a different note.
-
-49
 00:02:26,895 --> 00:02:30,036
 Go down an octave, to 110.
 
-50
-00:02:30,286 --> 00:02:31,236
-[A at 110, 220, 440 and 880 Hz]
+49
+00:02:30,286 --> 00:02:31,203
+[A: 110 to 880 Hz]
 
-51
+50
 00:02:31,286 --> 00:02:35,615
 Then double, and double, and double.
 The same letter, every time.
 
-52
-00:02:36,065 --> 00:02:41,171
+51
+00:02:36,065 --> 00:02:41,108
 The gaps in hertz keep doubling,
 but every jump sounds the same size.
 
-53
+52
 00:02:41,191 --> 00:02:44,089
 Your ear hears multiplying, not adding.
 
-54
+53
 00:02:46,989 --> 00:02:51,439
 So pitch isn't really a straight line.
 It's more like a spiral.
 
-55
+54
 00:02:51,839 --> 00:02:56,548
 Go up an octave, and you come back round,
 right above where you started.
 
-56
+55
 00:02:57,148 --> 00:03:01,078
 Musicians name the notes on
 each turn with seven letters.
 
-57
+56
 00:03:01,278 --> 00:03:06,078
 [eight notes: A B C D E F G A]
 
-58
+57
 00:03:06,478 --> 00:03:07,754
-ORANGE MERC: Only seven notes?
+ORANGE: Only seven notes?
+
+58
+00:03:08,054 --> 00:03:09,204
+BLUE: Seven letters.
 
 59
-00:03:08,054 --> 00:03:09,204
-BLUE MERC: Seven letters.
-
-60
 00:03:09,554 --> 00:03:10,636
 Twelve notes.
 
-61
+60
 00:03:10,986 --> 00:03:13,382
 The other five are next time's story.
 
-62
+61
 00:03:13,982 --> 00:03:18,605
 A number tells you which turn you're on.
 Each new turn starts at C.
 
-63
+62
 00:03:19,005 --> 00:03:24,185
 So the A that orchestras
 tune to is A4. 440 Hz.
 
-64
+63
 00:03:24,485 --> 00:03:29,434
 Middle C on a piano is C4.
 Same letters, different turns.
 
-65
-00:03:30,434 --> 00:03:33,693
+64
+00:03:30,434 --> 00:03:33,629
 Unroll the spiral, and you get the piano.
 
-66
+65
 00:03:33,713 --> 00:03:37,231
-The same seven letters, octave after octave.
+The same seven letters,
+octave after octave.
 
-67
+66
 00:03:38,231 --> 00:03:43,589
 When two people sing the same tune,
 they're often an octave apart. Listen.
 
-68
+67
 00:03:43,889 --> 00:03:48,489
 [a tune, two voices an octave apart]
 
-69
+68
 00:03:48,839 --> 00:03:50,533
 Two voices, one tune.
 
-70
+69
 00:03:50,833 --> 00:03:55,096
 So when you match a note,
 an octave up or down still counts.
 
-71
+70
 00:03:55,596 --> 00:04:00,567
 Let's try. I'll sing an A.
 Hum it back, wherever it feels easy.
 
-72
+71
 00:04:00,967 --> 00:04:03,167
 [blue Merc sings an A]
 
-73
+72
 00:04:03,367 --> 00:04:06,767
 [your turn: hum an A]
 
-74
+73
 00:04:06,967 --> 00:04:08,967
-[orange Merc hums an A, an octave higher]
+[orange Merc hums an A, an octave up]
 
-75
-00:04:09,217 --> 00:04:11,260
-ORANGE MERC: I hummed it higher.
+74
+00:04:09,217 --> 00:04:11,417
+ORANGE: I hummed it higher.
 Does that count?
 
-76
+75
 00:04:11,560 --> 00:04:16,188
-BLUE MERC: Higher, but the same note.
+BLUE: Higher, but the same note.
 That counts. Keep it gentle. Never push.
 
-77
+76
 00:04:17,188 --> 00:04:18,134
 Quick check.
 
-78
+77
 00:04:18,434 --> 00:04:20,000
 What makes a note higher?
 
-79
+78
 00:04:20,300 --> 00:04:22,100
 [think]
 
-80
+79
 00:04:22,400 --> 00:04:25,179
 Faster swings. A higher frequency.
 
-81
+80
 00:04:25,779 --> 00:04:28,119
 Double the frequency, and you get?
 
-82
+81
 00:04:28,419 --> 00:04:30,219
 [think]
 
+82
+00:04:30,519 --> 00:04:32,369
+ORANGE: The same note, one octave up!
+
 83
-00:04:30,519 --> 00:04:32,343
-ORANGE MERC: The same note, one octave up!
+00:04:32,943 --> 00:04:35,736
+BLUE: And why do A3 and A4 share a letter?
 
 84
-00:04:32,943 --> 00:04:35,736
-BLUE MERC: And why do A3
-and A4 share a letter?
-
-85
 00:04:36,036 --> 00:04:37,836
 [think]
 
-86
+85
 00:04:38,136 --> 00:04:43,531
 Their waves fit two to one.
 Same spot on the spiral, one turn higher.
 
-87
+86
 00:04:44,531 --> 00:04:45,607
 Next time.
 
-88
+87
 00:04:45,907 --> 00:04:50,322
 Seven letters, but twelve notes.
 Where do the other five come from?
 
-89
-00:04:50,722 --> 00:04:51,540
-ORANGE MERC: See you there.
+88
+00:04:50,722 --> 00:04:51,822
+ORANGE: See you there.
 
-90
-00:04:51,840 --> 00:04:56,820
+89
+00:04:51,905 --> 00:04:56,757
 [chime]

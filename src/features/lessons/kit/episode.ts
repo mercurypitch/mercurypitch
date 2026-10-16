@@ -74,12 +74,13 @@ function cueOf(block: string): { at: number; body: string } | null {
   return body === '' ? null : { at, body }
 }
 
-/** "BLUE MERC" or "ORANGE MERC", as the speaker of a turn. */
+/** "BLUE" or "ORANGE" (or the older "BLUE MERC"), as the speaker of a turn. */
 const speakerOf = (label: string): Speaker =>
   label.startsWith('BLUE') ? 'blue' : 'orange'
 
 /**
- * Caption cues to paragraphs: "BLUE MERC:" or "ORANGE MERC:" starts a turn,
+ * Caption cues to paragraphs: "BLUE:" or "ORANGE:" starts a turn (captions cut
+ * before 17 October 2026 say "BLUE MERC:" and "ORANGE MERC:"),
  * an unlabelled cue carries on the current one, and a [bracketed] cue is a
  * sound of its own.
  */
@@ -94,7 +95,7 @@ function paragraphs(vtt: string): Paragraph[] {
       out.push({ at, text: body.slice(1, -1), who: null, sfx: true })
       continue
     }
-    const label = /^(BLUE MERC|ORANGE MERC):\s*/.exec(body)
+    const label = /^(BLUE|ORANGE)(?: MERC)?:\s*/.exec(body)
     if (label !== null) {
       who = speakerOf(label[1])
       out.push({ at, text: body.slice(label[0].length), who, sfx: false })
