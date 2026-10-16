@@ -8,7 +8,13 @@
 // section shows the poster, the chapters and the transcript with "Film coming
 // soon". The files must come from a host the site's media-src allows
 // (public/_headers: *.r2.dev or *.r2.cloudflarestorage.com); a custom media
-// domain needs adding there first, or the browser refuses the video.
+// domain needs adding there first, or the browser refuses the video. The plan
+// is media.mercurypitch.com, since r2.dev is rate-limited and for development.
+//
+// Captions and chapters travel with the film. A re-cut that re-times it (a
+// re-voice will) regenerates the film's captions and chapters, and both copies
+// change in the same commit as the MP4 URLs: assets/ here and the lesson's
+// captions/ folder in docs/plans. film-sync.test.ts holds the two copies equal.
 
 import chapters from './assets/chapters.json'
 import captionsText from './assets/lesson-01.en.vtt?raw'
