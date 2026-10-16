@@ -311,12 +311,23 @@ describe('who sings which line', () => {
 // this wrong and somebody's five-second scale stops the song, which is
 // exactly what happened.
 describe('transport is scoped, and the host drives it', () => {
+  // The room's host, as its Durable Object names it, for the cases where
+  // this device is a guest. A guest takes the room from nobody else.
+  const HOST = 'host-peer'
+
+  /** This device as a guest in HOST's room. */
+  const asGuest = () => {
+    store.setJamIsHost(false)
+    store.setJamHostPeerId(HOST)
+  }
+
   beforeEach(() => {
     store.clearJamSong()
     store.setJamError(null)
     store.setJamPeers([])
     store.setJamIsHost(true)
     store.setJamPeerId('me')
+    store.setJamHostPeerId('me')
   })
 
   it('R10: a send in flight blocks a second send and a song swap', () => {
@@ -338,11 +349,14 @@ describe('transport is scoped, and the host drives it', () => {
     store.selectJamSong(song())
     store.jamSongPlay(0)
     expect(store.jamExercisePlaying()).toBe(true)
-    store.applyRemoteMelody({
-      type: 'melody',
-      action: 'set',
-      melody: melody(),
-    })
+    store.applyRemoteMelody(
+      {
+        type: 'melody',
+        action: 'set',
+        melody: melody(),
+      },
+      'guest-peer',
+    )
     expect(store.jamExercisePlaying()).toBe(true)
     expect(store.jamSong()).not.toBeNull()
   })
@@ -350,12 +364,15 @@ describe('transport is scoped, and the host drives it', () => {
   it('a guest running a song ignores a melody too', () => {
     store.selectJamSong(song())
     store.jamSongPlay(0)
-    store.setJamIsHost(false)
-    store.applyRemoteMelody({
-      type: 'melody',
-      action: 'set',
-      melody: melody(),
-    })
+    asGuest()
+    store.applyRemoteMelody(
+      {
+        type: 'melody',
+        action: 'set',
+        melody: melody(),
+      },
+      HOST,
+    )
     expect(store.jamExercisePlaying()).toBe(true)
     expect(store.jamExerciseMelody()).toBeNull()
   })
@@ -367,41 +384,50 @@ describe('transport is scoped, and the host drives it', () => {
     store.selectJamSong(song())
     store.jamSongPlay(0)
     expect(store.jamExercisePlaying()).toBe(true)
-    store.setJamIsHost(false)
-    store.applyRemoteTransport({
-      type: 'playback',
-      action: 'stop',
-      scope: 'drill',
-      currentBeat: 0,
-      timestamp: 0,
-    })
+    asGuest()
+    store.applyRemoteTransport(
+      {
+        type: 'playback',
+        action: 'stop',
+        scope: 'drill',
+        currentBeat: 0,
+        timestamp: 0,
+      },
+      HOST,
+    )
     expect(store.jamExercisePlaying()).toBe(true)
   })
 
   it('a song command does not disturb a drill', () => {
     store.clearJamSong()
-    store.setJamIsHost(false)
+    asGuest()
     store.setJamExercisePlaying(true)
-    store.applyRemoteTransport({
-      type: 'playback',
-      action: 'stop',
-      scope: 'song',
-      positionSec: 0,
-      timestamp: 0,
-    })
+    store.applyRemoteTransport(
+      {
+        type: 'playback',
+        action: 'stop',
+        scope: 'song',
+        positionSec: 0,
+        timestamp: 0,
+      },
+      HOST,
+    )
     expect(store.jamExercisePlaying()).toBe(true)
   })
 
   it('a command with no scope is treated as a drill, for older clients', () => {
     store.clearJamSong()
-    store.setJamIsHost(false)
+    asGuest()
     store.setJamExercisePlaying(true)
-    store.applyRemoteTransport({
-      type: 'playback',
-      action: 'stop',
-      currentBeat: 0,
-      timestamp: 0,
-    })
+    store.applyRemoteTransport(
+      {
+        type: 'playback',
+        action: 'stop',
+        currentBeat: 0,
+        timestamp: 0,
+      },
+      HOST,
+    )
     expect(store.jamExercisePlaying()).toBe(false)
   })
 
@@ -491,15 +517,18 @@ describe('transport is scoped, and the host drives it', () => {
 
   it('a guest told to stop rewinds too', () => {
     store.selectJamSong(song())
-    store.setJamIsHost(false)
+    asGuest()
     const before = store.jamSongSeekRequest().token
-    store.applyRemoteTransport({
-      type: 'playback',
-      action: 'stop',
-      scope: 'song',
-      positionSec: 0,
-      timestamp: 0,
-    })
+    store.applyRemoteTransport(
+      {
+        type: 'playback',
+        action: 'stop',
+        scope: 'song',
+        positionSec: 0,
+        timestamp: 0,
+      },
+      HOST,
+    )
     expect(store.jamSongSeekRequest().token).toBe(before + 1)
     expect(store.jamExercisePlaying()).toBe(false)
   })
@@ -508,13 +537,16 @@ describe('transport is scoped, and the host drives it', () => {
     // It is the driver; obeying somebody else would make the room fight.
     store.selectJamSong(song())
     store.jamSongPlay(0)
-    store.applyRemoteTransport({
-      type: 'playback',
-      action: 'stop',
-      scope: 'song',
-      positionSec: 0,
-      timestamp: 0,
-    })
+    store.applyRemoteTransport(
+      {
+        type: 'playback',
+        action: 'stop',
+        scope: 'song',
+        positionSec: 0,
+        timestamp: 0,
+      },
+      'guest-peer',
+    )
     expect(store.jamExercisePlaying()).toBe(true)
   })
 })

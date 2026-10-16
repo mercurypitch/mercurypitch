@@ -387,7 +387,8 @@ export interface JamCallbacks {
   onIceCandidate?: (from: string, candidate: string) => void
   // DataChannel events
   onPitchMessage?: (msg: JamPitchMessage) => void
-  onMelodyMessage?: (msg: JamMelodyMessage) => void
+  /** fromPeerId is how the store tells the host's drill from anyone else's. */
+  onMelodyMessage?: (msg: JamMelodyMessage, fromPeerId: string) => void
   /** fromPeerId is how the store tells the host's song from anyone else's. */
   onSongMessage?: (msg: JamSongMessage, fromPeerId: string) => void
   /** Control frames for a stem transfer (offer / done / abort). */
@@ -400,7 +401,10 @@ export interface JamCallbacks {
    * bytes are the whole problem.
    */
   onSongFileChunk?: (chunk: ArrayBuffer, fromPeerId: string) => void
-  /** fromPeerId lets the store charge the message its own flight time. */
+  /**
+   * fromPeerId lets the store charge the message its own flight time, and
+   * obey the host's alone.
+   */
   onPlaybackMessage?: (msg: JamPlaybackMessage, fromPeerId: string) => void
   onVideoState?: (peerId: string, enabled: boolean) => void
   onBackgroundChanged?: (state: JamRoomBackgroundState) => void
