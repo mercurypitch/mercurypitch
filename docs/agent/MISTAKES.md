@@ -1814,6 +1814,23 @@ and watch the test fail before trusting it.
 **See:** `src/lib/room-google-return.test.ts`,
 `src/features/drum-night/main.test.tsx`
 
+### Format a stylesheet with Prettier before Vite sees it
+
+**Symptom:** a stylesheet brought in from outside the repo (dense, several
+declarations to a line, `@keyframes x { to { … } }` on one line) answered 500
+in dev with `[lightningcss] Unknown at rule: @keyframes`, pointing at a line
+with no `@keyframes` on it.
+**Cause:** `tools/css-legacy-fallbacks.ts` runs first (`enforce: 'pre'`) and
+works line by line: before a line with a `color-mix()` declaration it inserts
+a fallback line made of that line's text up to the declaration. In the repo's
+Prettier layout that text is indentation; on a dense line it is the selector
+and its opening brace, so every fallback opens a rule that never closes, and
+Lightning CSS reports the damage at a position in the rewritten text.
+**Rule:** run `pnpm exec prettier --write` on any stylesheet that did not start
+life in this repo before loading it, and read a Lightning CSS position after
+that plugin as approximate.
+**See:** `tools/css-legacy-fallbacks.ts`, `src/features/lessons/kit/lesson-sections.css`
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

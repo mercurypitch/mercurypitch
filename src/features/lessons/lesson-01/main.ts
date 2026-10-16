@@ -1,0 +1,101 @@
+// ============================================================
+// Lesson 1 page — "What is a note?", booted in reading order
+// ============================================================
+//
+// learn/01.html carries every word of the lesson; this module adds what the
+// markup cannot: the sound, the figure toys, the Mercs, the quiz, the
+// episode and the season map. The renderer for the Mercs loads last, as its
+// own chunk, so the page reads and plays before it arrives.
+
+import '@fontsource-variable/inter'
+import '@fontsource-variable/outfit'
+import '@/features/lessons/kit/lesson-fonts.css'
+import '@/features/lessons/kit/lesson-base.css'
+import '@/features/lessons/kit/lesson-sections.css'
+import './lesson-01.css'
+
+import { q } from '@/features/lessons/kit/dom'
+import { createEpisode } from '@/features/lessons/kit/episode'
+import { createExplorer } from '@/features/lessons/kit/explorer'
+import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
+import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
+import { initMercs } from '@/features/lessons/kit/merc-duo'
+import { Motion } from '@/features/lessons/kit/motion-switch'
+import {
+  engraveClefs,
+  initMasthead,
+  initMotionSwitch,
+  initSoundSwitch,
+} from '@/features/lessons/kit/page-chrome'
+import { createQuiz } from '@/features/lessons/kit/quiz'
+import { initReveals } from '@/features/lessons/kit/reveal'
+import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import vttUrl from './assets/lesson-01.en.vtt?url'
+import mercBlue from './assets/merc-blue.png'
+import mercOrange from './assets/merc-orange.png'
+import poster from './assets/poster.jpg'
+import { createBlueprint } from './blueprint'
+import { initEntrance } from './entrance'
+import { FILM_CAPTIONS_TEXT, FILM_CHAPTERS, FILM_SOURCES } from './film'
+import { initHero } from './hero'
+import { initPredict } from './predict'
+import { QUIZ_QUESTIONS } from './quiz-questions'
+import { initSing } from './sing'
+import { initDialToy } from './toy-dial'
+import { initLoudToy } from './toy-loud'
+import { initOctaveToy } from './toy-octave'
+import { initSpiralToy } from './toy-spiral'
+import { initStringToy } from './toy-string'
+import { initWords } from './words'
+
+initSoundSwitch()
+initMotionSwitch()
+Motion.init()
+
+initHero()
+initPredict()
+initWords()
+
+// six steps, five toys: the spiral (Fig. 5) unrolls into the keyboard for step 6
+const deck = createStepDeck({
+  toyFor: (step) => (step === 6 ? 5 : step),
+  after: { label: 'Sing it', selector: '#sing' },
+})
+initStringToy(deck)
+initDialToy(deck)
+initLoudToy(deck)
+initOctaveToy(deck)
+initSpiralToy(deck)
+deck.show(1)
+
+initSing({ blue: mercBlue, orange: mercOrange })
+createQuiz({
+  questions: QUIZ_QUESTIONS,
+  lesson: 1,
+  keys: { seed: 'fyp-l01-seed', record: 'fyp-l01-quiz-v3' },
+  deck,
+})
+const explorer = createExplorer({ poster })
+createEpisode({
+  film: FILM_SOURCES,
+  captions: vttUrl,
+  vtt: FILM_CAPTIONS_TEXT,
+  chapters: FILM_CHAPTERS,
+  onDuration: (len) => explorer.setLength(1, len),
+})
+createBlueprint()
+
+engraveClefs(G_CLEF_PATH)
+initMasthead({
+  words: '#lesson',
+  lesson: '#lesson',
+  sing: '#lesson',
+  check: '#lesson',
+  watch: '#watch',
+  explorer: '#explorer',
+  blueprint: '#blueprint',
+})
+initEntrance()
+initReveals()
+startFrameLoop()
+void initMercs(q('#heroStage'))

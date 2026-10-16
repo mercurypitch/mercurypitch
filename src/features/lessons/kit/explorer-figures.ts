@@ -187,7 +187,7 @@ export function cardFigure(
     const img = document.createElement('img')
     img.src = poster
     img.alt = 'A frame from the episode: 220 Hz and 440 Hz, times two'
-    img.loading = 'lazy'
+    img.setAttribute('loading', 'lazy')
     const cap = document.createElement('figcaption')
     cap.textContent = 'From the episode: the cold open'
     f.append(img, cap)
