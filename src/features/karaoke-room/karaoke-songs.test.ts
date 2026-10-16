@@ -32,7 +32,7 @@ vi.mock('@/db/services/auth-service', () => ({
 
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { KaraokeSongs } from './karaoke-songs'
-import { awaitSubscription, collectLine, confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsComeBackLine, songsLeftSentence, songsOnTheWay, songsOptionRow, STEMS_KEPT_DAYS, subscriptionStatusLine, } from './karaoke-songs'
+import { awaitSubscription, collectLine, confirmCostLine, freeSongUsed, importChip, importLine, karaokeSongs, nextFreeSongLine, nextFreeSongOn, noSongsLeftLine, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsOnTheWay, songsOptionRow, STEMS_KEPT_DAYS, subscriptionStatusLine, } from './karaoke-songs'
 
 const subscriber: KaraokeSongs = {
   left: 18,
@@ -59,7 +59,34 @@ describe('asking the server', () => {
 
     await refreshKaraokeSongs()
 
-    expect(karaokeSongs()).toEqual(subscriber)
+    expect(karaokeSongs()).toEqual({ ...subscriber, cap: 50 })
+  })
+
+  it("reads the month's free song where the server says, and nothing where it does not", async () => {
+    const signedIn = {
+      left: 1,
+      subscribed: false,
+      renewsAt: null,
+      perPeriod: 20,
+    }
+    billing.me = {
+      creditBalance: 0,
+      entitlements: [],
+      stripeConfigured: false,
+      songs: { ...signedIn, cap: 50, free: 1 },
+    }
+
+    await refreshKaraokeSongs()
+    expect(karaokeSongs().free).toBe(1)
+
+    billing.me = {
+      creditBalance: 0,
+      entitlements: [],
+      stripeConfigured: false,
+      songs: { ...signedIn, cap: 50 },
+    }
+    await refreshKaraokeSongs()
+    expect('free' in karaokeSongs()).toBe(false)
   })
 
   it('never reads the balance as songs: web credits are not the app’s', async () => {
@@ -100,10 +127,10 @@ describe('asking the server', () => {
 describe('the words', () => {
   it('say songs, never credits, anywhere', () => {
     const lines = [
-      songsLeftSentence(subscriber),
+      importChip(subscriber),
       importLine(subscriber),
       confirmCostLine(subscriber, 1),
-      songsComeBackLine(subscriber),
+      noSongsLeftLine(subscriber),
       subscriptionStatusLine(subscriber),
       JSON.stringify(songsOptionRow(subscriber)),
     ]
@@ -111,11 +138,9 @@ describe('the words', () => {
   })
 
   it("count a subscriber's month", () => {
-    expect(songsLeftSentence(subscriber)).toBe(
-      '18 of 20 songs left this month.',
-    )
+    expect(importChip(subscriber)).toBe('18 of 20 songs left')
     expect(importLine(subscriber)).toBe(
-      'Songs from Files: MP3, M4A, WAV or FLAC, up to 12 minutes. 18 of 20 songs left this month.',
+      'Songs from Files: MP3, M4A, WAV or FLAC, up to 12 minutes.',
     )
     expect(songsOptionRow(subscriber)).toEqual({
       label: 'Songs this month',
@@ -132,7 +157,7 @@ describe('the words', () => {
   it('count songs carried over past the month as a plain number', () => {
     const carried = { ...subscriber, left: 35 }
 
-    expect(songsLeftSentence(carried)).toBe('35 songs left.')
+    expect(importChip(carried)).toBe('35 songs left')
     expect(songsOptionRow(carried)).toEqual({
       label: 'Songs',
       value: '35 left',
@@ -145,14 +170,30 @@ describe('the words', () => {
   it('count an account without a subscription as its songs, not a month', () => {
     const dev = { left: 1, subscribed: false, renewsAt: null, perPeriod: 20 }
 
-    expect(songsLeftSentence(dev)).toBe('1 song left.')
+    expect(importChip(dev)).toBe('1 song left')
     expect(confirmCostLine(dev, 1)).toBe(
       'Uses 1 of your songs. 0 left after this.',
     )
   })
 
+  it("name a signed-in singer's free song of the month as that", () => {
+    const signedIn = {
+      left: 1,
+      subscribed: false,
+      renewsAt: null,
+      perPeriod: 20,
+      free: 1,
+    }
+
+    expect(importChip(signedIn)).toBe('Your free song this month')
+    // Review access on top of it is songs, plainly counted.
+    expect(importChip({ ...signedIn, left: 4 })).toBe('4 songs left')
+  })
+
   it('offer the subscription where nothing is left and nothing renews', () => {
     const none = { left: 0, subscribed: false, renewsAt: null, perPeriod: 20 }
+
+    expect(importChip(none)).toBeNull()
 
     expect(importLine(none)).toBe(
       'Any song from Files. Our server separates the voice from the music, and the song then lives on this phone. Part of the subscription.',
@@ -168,7 +209,7 @@ describe('the words', () => {
       perPeriod: 20,
     }
 
-    expect(songsLeftSentence(unknown)).toBeNull()
+    expect(importChip(unknown)).toBeNull()
     expect(songsOptionRow(unknown)).toBeNull()
     expect(importLine(unknown)).toBe(
       'Songs from Files: MP3, M4A, WAV or FLAC, up to 12 minutes.',
@@ -190,8 +231,8 @@ describe('the words', () => {
   })
 
   it('say when the songs come back, and how the subscription stands', () => {
-    expect(songsComeBackLine(subscriber)).toBe(
-      'Your 20 songs come back on 27 October.',
+    expect(noSongsLeftLine(subscriber)).toBe(
+      "You've used all your songs this month. 20 more on 27 October.",
     )
     expect(subscriptionStatusLine(subscriber)).toBe(
       'Subscribed, renews on 27 October',
@@ -199,9 +240,40 @@ describe('the words', () => {
     expect(subscriptionStatusLine({ ...subscriber, subscribed: false })).toBe(
       'Not subscribed',
     )
-    expect(songsComeBackLine({ ...subscriber, renewsAt: null })).toBe(
-      'Your 20 songs come back next month.',
+    expect(noSongsLeftLine({ ...subscriber, renewsAt: null })).toBe(
+      "You've used all your songs this month. 20 more next month.",
     )
+  })
+})
+
+describe('the next free song', () => {
+  it('comes on the 1st of next month', () => {
+    expect(nextFreeSongOn(new Date('2026-10-16T12:00:00.000Z'))).toBe(
+      '1 November',
+    )
+    expect(nextFreeSongOn(new Date('2026-12-31T12:00:00.000Z'))).toBe(
+      '1 January',
+    )
+    expect(nextFreeSongLine(new Date('2026-10-16T12:00:00.000Z'))).toBe(
+      'Your next free song comes on 1 November.',
+    )
+  })
+
+  it("follows the server's month, which is UTC's, wherever the phone is", () => {
+    // 31 October, 20:00 in California: November already, at the server.
+    expect(nextFreeSongOn(new Date('2026-11-01T04:00:00.000Z'))).toBe(
+      '1 December',
+    )
+  })
+
+  it('is used only by a signed-in singer without a subscription and none left', () => {
+    const none = { left: 0, subscribed: false, renewsAt: null, perPeriod: 20 }
+
+    expect(freeSongUsed(none, true)).toBe(true)
+    expect(freeSongUsed(none, false)).toBe(false)
+    expect(freeSongUsed({ ...none, left: 1 }, true)).toBe(false)
+    expect(freeSongUsed({ ...none, subscribed: true }, true)).toBe(false)
+    expect(freeSongUsed({ ...none, left: null }, true)).toBe(false)
   })
 })
 

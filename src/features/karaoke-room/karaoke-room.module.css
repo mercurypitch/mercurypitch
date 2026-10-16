@@ -552,6 +552,35 @@
   cursor: progress;
 }
 
+/* The label and the chip share a line while they fit. On a narrow phone
+   the chip goes under the label; the label's three words stay together. */
+.importText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.importLabel {
+  white-space: nowrap;
+}
+
+/* How many songs the tap has to use (S7b §4.3): shown only where Import
+   goes straight to Files. */
+.importChip {
+  flex: none;
+  max-width: 100%;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent, #b784ff) 24%, transparent);
+  color: var(--text-primary, #e6edf3);
+  font: 600 12px/16px var(--font-body, sans-serif);
+  white-space: nowrap;
+}
+
 .importGlyph {
   display: inline-flex;
   flex: none;
@@ -661,56 +690,6 @@
 
 .primaryButton:disabled {
   opacity: 0.6;
-}
-
-.paywallLines {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font: 400 15px/21px var(--font-body, sans-serif);
-  color: var(--text-primary, #e6edf3);
-}
-
-.paywallLines li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.paywallGlyph {
-  display: inline-flex;
-  flex: none;
-  width: 20px;
-  height: 20px;
-  margin-top: 1px;
-  color: var(--accent, #b784ff);
-}
-
-.paywallGlyph svg {
-  width: 20px;
-  height: 20px;
-}
-
-.paywallPrice {
-  margin: 4px 0 0;
-  font: 600 17px/22px var(--font-body, sans-serif);
-  color: var(--text-primary, #e6edf3);
-}
-
-.paywallLinks {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
-  margin: 0;
-  font: 400 13px/18px var(--font-body, sans-serif);
-}
-
-.paywallLinks a {
-  color: var(--text-secondary, #a8b3bf);
 }
 
 /* ── The queue and your songs (Stage 2, §6.4) ─────────────────

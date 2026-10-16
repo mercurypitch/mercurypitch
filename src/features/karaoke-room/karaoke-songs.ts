@@ -15,8 +15,8 @@
 // Subscribe goes through the shell (nativeShellApi().karaokeSubscription).
 
 import { createSignal } from 'solid-js'
-import { requireAuth } from '@/db/services/auth-service'
 import { fetchBillingMe } from '@/db/services/billing-service'
+import { ensureSingerIdentity } from '@/db/services/singer-identity'
 import { thisDeviceLower } from '@/lib/device-noun'
 import type { KaraokeRestoreOutcome } from '@/stores/native-shell-store'
 
@@ -27,6 +27,8 @@ import type { KaraokeRestoreOutcome } from '@/stores/native-shell-store'
  */
 export const KARAOKE_PLAN = Object.freeze({
   songsPerMonth: 20,
+  /** The most unused songs carry over to (owner, S7 D4: 50). */
+  carryOverCap: 50,
 })
 
 /** The subscription's name, in the stores and in the app (owner, S7 D2). */
@@ -57,6 +59,11 @@ export interface KaraokeSongs {
   readonly renewsAt: string | null
   /** Songs a month grants. */
   readonly perPeriod: number
+  /** The most songs carried over; absent until the server has said. */
+  readonly cap?: number
+  /** The month's free song among those left, 1 or 0, for a signed-in
+   *  singer (owner, S7 D5); absent where the server does not say. */
+  readonly free?: number
 }
 
 const UNKNOWN: KaraokeSongs = Object.freeze({
@@ -80,9 +87,7 @@ export const karaokeSongs = songs
 export async function refreshKaraokeSongs(
   options: { identify?: boolean } = {},
 ): Promise<KaraokeSongs> {
-  if (options.identify === true) {
-    await requireAuth().catch(() => false)
-  }
+  if (options.identify === true) await ensureSingerIdentity()
   const me = await fetchBillingMe()
   if (me === null) return songs()
   const next: KaraokeSongs =
@@ -93,6 +98,8 @@ export async function refreshKaraokeSongs(
           subscribed: me.songs.subscribed,
           renewsAt: me.songs.renewsAt,
           perPeriod: me.songs.perPeriod,
+          cap: me.songs.cap,
+          ...(me.songs.free === undefined ? {} : { free: me.songs.free }),
         }
   setSongs(next)
   return next
@@ -156,27 +163,28 @@ function withinMonth(state: KaraokeSongs): state is KaraokeSongs & {
 }
 
 /**
- * "18 of 20 songs left this month." Past the month's grant (songs carried
- * over) or without a subscription it is the plain count. Null while
- * nothing is known.
+ * The chip on the import row (S7b §4.3), where Import goes straight to
+ * Files: "14 of 20 songs left" within a subscriber's month, "Your free song
+ * this month" for a signed-in singer's one, and the plain count otherwise
+ * (songs carried over, review access). Null where Import opens the offer or
+ * the note instead, and while nothing is known.
  */
-export function songsLeftSentence(state: KaraokeSongs): string | null {
-  if (state.left === null) return null
-  if (withinMonth(state)) {
-    return `${state.left} of ${state.perPeriod} songs left this month.`
+export function importChip(state: KaraokeSongs): string | null {
+  const left = state.left
+  if (left === null || left === 0) return null
+  if (withinMonth(state)) return `${left} of ${state.perPeriod} songs left`
+  if (!state.subscribed && state.free === 1 && left === 1) {
+    return 'Your free song this month'
   }
-  if (state.left === 0) return 'No songs left.'
-  return `${state.left} ${plural(state.left, 'song', 'songs')} left.`
+  return `${left} ${plural(left, 'song', 'songs')} left`
 }
 
-/** The line under Import a song (mock 4b, 4c). */
+/** The line under Import a song (mock 4b, 4c); the songs left are its chip. */
 export function importLine(state: KaraokeSongs): string {
   if (state.left === 0 && !state.subscribed) {
     return `Any song from Files. Our server separates the voice from the music, and the song then lives on ${thisDeviceLower()}. Part of the subscription.`
   }
-  const sentence = songsLeftSentence(state)
-  const what = 'Songs from Files: MP3, M4A, WAV or FLAC, up to 12 minutes.'
-  return sentence === null ? what : `${what} ${sentence}`
+  return 'Songs from Files: MP3, M4A, WAV or FLAC, up to 12 minutes.'
 }
 
 /** The Options row: its label and its value, or null while nothing is known. */
@@ -214,12 +222,47 @@ export function formatRenewal(iso: string | null): string | null {
   return when.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })
 }
 
-/** The no-songs sheet's first line (plan §6.6, mock 8c). */
-export function songsComeBackLine(state: KaraokeSongs): string {
+/**
+ * What a subscriber with none left is told instead of the offer (S7b
+ * §4.3): the month is used, and when the next songs come. "Used" rather
+ * than the plan's "sung all 20": an imported song counts whether or not it
+ * was sung, and songs carried over make the month more than 20.
+ */
+export function noSongsLeftLine(state: KaraokeSongs): string {
   const on = formatRenewal(state.renewsAt)
-  return on === null
-    ? `Your ${state.perPeriod} songs come back next month.`
-    : `Your ${state.perPeriod} songs come back on ${on}.`
+  const more = `${state.perPeriod} more`
+  return `You've used all your songs this month. ${on === null ? `${more} next month.` : `${more} on ${on}.`}`
+}
+
+/**
+ * When a signed-in singer's next free song comes: the 1st of next month.
+ * The server counts the month in UTC (songMonth, db-worker
+ * songs-allowance.ts), so the date is read in UTC too and is the 1st
+ * wherever the phone is.
+ */
+export function nextFreeSongOn(now: Date = new Date()): string {
+  const next = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+  )
+  return next.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  })
+}
+
+/** The offer's line above the plan, once the month's free song is used. */
+export function nextFreeSongLine(now: Date = new Date()): string {
+  return `Your next free song comes on ${nextFreeSongOn(now)}.`
+}
+
+/**
+ * A signed-in singer without a subscription whose month's free song is
+ * used: the server counts it among the songs left (owner, S7 D5), so none
+ * left means it is spent.
+ */
+export function freeSongUsed(state: KaraokeSongs, account: boolean): boolean {
+  return account && !state.subscribed && state.left === 0
 }
 
 /** Settings, Karaoke: the subscription's status line (plan §9). */

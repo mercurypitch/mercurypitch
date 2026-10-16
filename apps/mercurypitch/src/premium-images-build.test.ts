@@ -12,7 +12,9 @@
 // request instead, for every picture in every premium room's folder, at
 // any depth (Echo's, Ng slides' and Lip roll's are in an art/ folder of
 // their own), and every voice file (Merc's sung "ooh" set for Echo's
-// calls, in its voice/ folder; vite.config.ts, PREMIUM_VOICES).
+// calls, in its voice/ folder; vite.config.ts, PREMIUM_VOICES). The Cloud
+// offer's art (src/features/karaoke-room/assets/) is Stage 2 and folds the
+// same way.
 
 import { readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -118,6 +120,31 @@ describe("the premium rooms' pictures in a native build", () => {
     const fold = await foldFor('dev')
     for (const { name, importer } of PICTURES) {
       expect(fold(`./${name}`, importer), name).toBeNull()
+    }
+  }, 60000)
+})
+
+describe("the Cloud offer's art in a native build", () => {
+  const dir = join(FEATURES, 'karaoke-room', 'assets')
+  const importer = join(FEATURES, 'karaoke-room', 'CloudOffer.tsx')
+  const art = picturesIn(dir)
+
+  it('has art to fold, so the checks below are not vacuous', () => {
+    expect(art).toContain('paywall-two-lights.webp')
+  })
+
+  it('resolves it to nothing in the store build', async () => {
+    const fold = await foldFor('production')
+    for (const name of art) {
+      const id = fold(`./assets/${name}`, importer)
+      expect(typeof id === 'string' && id.startsWith('\0'), name).toBe(true)
+    }
+  }, 60000)
+
+  it('leaves it to Vite in a build that imports songs', async () => {
+    const fold = await foldFor('dev')
+    for (const name of art) {
+      expect(fold(`./assets/${name}`, importer), name).toBeNull()
     }
   }, 60000)
 })

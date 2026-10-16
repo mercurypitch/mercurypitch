@@ -9,47 +9,42 @@
 // all of it, before anything is sent: what it uses, what goes where, and how
 // long to keep the app open. The queue does the rest.
 //
-// With no songs left the button shows the gate instead of the picker, from
-// what /me last said, so the picker still opens inside the tap that asked
-// for it: the paywall without a subscription (D5 A, a sheet over the room),
-// the date the songs come back with one. The server's own admission is the
-// last word either way; a refusal there reaches the same gate through the
-// queue (setImportGateHandler).
+// IMPORT ASKS BEFORE IT OPENS FILES (S7b §0 point 6, §4.3). What the tap
+// does is decided inside it, from what /me last said and the token on the
+// phone (import-gate.ts), so the picker still opens inside the tap that
+// asked for it. With songs to use, Files at once, and a chip that says how
+// many; a subscriber with none left is told when the next ones come; anyone
+// else meets the Cloud offer (CloudOffer.tsx, which the native shell draws
+// once). A fresh install opens the offer, not the picker: it holds no songs.
+// The server's own admission is the last word either way; a refusal there
+// reaches the same gate through the queue (setImportGateHandler).
+//
+// Before it offers the subscription the gate asks again (cloud-offer-store
+// askBeforeOffering): it makes the singer's identity, then asks the server
+// and the store, which knows of a purchase first. A subscriber whose songs
+// the server has not heard of yet is told they are coming (S7 §3.9, the more
+// generous of the two), and is never offered what they bought.
 //
 // Copy (owner, 27 and 28 Sep): songs, never credits; the singer is asked to
 // open the app within about a day to collect a song, which is what the
 // stems' R2 lifecycle keeps (collectLine, STEMS_KEPT_DAYS), and nothing
-// longer is promised. Subscribe fails closed where the build has no store
-// or the store has no product yet.
-//
-// The paywall is the one place the app offers Mercury Pitch Cloud (S7 D2,
-// D13: onboarding will offer this same sheet). It names the subscription,
-// its length and the store's own price in the singer's storefront, with
-// Restore purchases, Terms of Use and the Privacy Policy (App Store 3.1.2).
-// Subscribe is there to tap only with that price in view; a store that
-// could not say gets a Retry. After the store says yes, the songs arrive
-// when RevenueCat's webhook reaches the server, usually within seconds:
-// until then the room says they are on their way rather than showing the
-// paywall again. Before it offers the subscription at all it asks the
-// store, which knows of a purchase first: a subscriber whose songs the
-// server has not heard of yet is told they are coming (S7 §3.9, the more
-// generous of the two).
+// longer is promised.
 
-import type { Component, JSX } from 'solid-js'
+import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
-import { hasUpgradedAccount } from '@/db/services/auth-service'
-import { deviceNoun, thisDeviceLower } from '@/lib/device-noun'
-import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
+import { accountHeld, hasUpgradedAccount, hasValidToken, } from '@/db/services/auth-service'
+import { thisDeviceLower } from '@/lib/device-noun'
 import { balanceVersion } from '@/stores/billing-store'
-import type { KaraokeOffer } from '@/stores/native-shell-store'
-import { nativeShellApi } from '@/stores/native-shell-store'
+import { askBeforeOffering, openCloudOffer } from './cloud-offer-store'
+import type { ImportWho } from './import-gate'
+import { importAction, importState } from './import-gate'
 import type { ImportRefusal } from './karaoke-import-checks'
 import { checkImport, IMPORT_ACCEPT, songTitleOf, } from './karaoke-import-checks'
 import { duplicateOf, enqueueImports, setImportGateHandler, } from './karaoke-import-queue'
 import styles from './karaoke-room.module.css'
 import type { KaraokeSongs } from './karaoke-songs'
-import { awaitSubscription, CLOUD_NAME, collectLine, confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, restoreNote, songsComeBackLine, songsOnTheWay, } from './karaoke-songs'
+import { collectLine, confirmCostLine, importChip, importLine, karaokeSongs, noSongsLeftLine, refreshKaraokeSongs, songsOnTheWay, } from './karaoke-songs'
 
 /** A song left out of a confirm, and why. */
 interface LeftOut {
@@ -65,8 +60,6 @@ type ImportSheet =
     }
   | { readonly kind: 'refused'; readonly refusal: ImportRefusal }
   | { readonly kind: 'no-songs' }
-  | { readonly kind: 'paywall' }
-  | { readonly kind: 'subscribed' }
 
 /**
  * A phone's upload, for the estimate the confirm sheet gives. A guess on the
@@ -95,20 +88,6 @@ const PlusGlyph: Component = () => (
   </svg>
 )
 
-const CheckGlyph: Component = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.8"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M5.5 12.5l4 4 9-9" />
-  </svg>
-)
-
 const CloseGlyph: Component = () => (
   <svg
     viewBox="0 0 24 24"
@@ -122,43 +101,9 @@ const CloseGlyph: Component = () => (
   </svg>
 )
 
-/** The paywall's three lines, naming the device in hand. */
-function paywallLines(): readonly string[] {
-  const here = thisDeviceLower()
-  return [
-    `Any song from Files on ${here}`,
-    'Voice and music separated on our server',
-    `Your songs stay on ${here} and play offline`,
-  ]
-}
-
-/** The store's price for the paywall, asked for when it opens. */
-type Price =
-  | { readonly kind: 'asking' }
-  | { readonly kind: 'priced'; readonly offer: KaraokeOffer }
-  /** No store here, or none with a plan to sell yet. */
-  | { readonly kind: 'unavailable' }
-  /** The store could not say: Retry asks again. */
-  | { readonly kind: 'failed' }
-
-/** How long the gate waits for the store's word on a subscription before it
- *  offers one anyway. */
-const STORE_WORD_MS = 3_000
-
-/** Whether the store holds the subscription for this singer; false without
- *  a store, when it cannot say, or when it does not say in time. */
-async function storeHoldsSubscription(): Promise<boolean> {
-  const ask = nativeShellApi()?.karaokeSubscription?.storeSubscribed
-  if (ask === undefined) return false
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const late = new Promise<boolean>((resolve) => {
-    timer = setTimeout(() => resolve(false), STORE_WORD_MS)
-  })
-  try {
-    return await Promise.race([ask().catch(() => false), late])
-  } finally {
-    clearTimeout(timer)
-  }
+/** What the phone knows of the singer, read inside the tap. */
+function who(): ImportWho {
+  return { token: hasValidToken(), account: hasUpgradedAccount() }
 }
 
 export const KaraokeImport: Component = () => {
@@ -166,112 +111,73 @@ export const KaraokeImport: Component = () => {
   const [sheet, setSheet] = createSignal<ImportSheet | null>(null)
   const [checking, setChecking] = createSignal(false)
   const [sending, setSending] = createSignal(false)
-  const [note, setNote] = createSignal<string | null>(null)
-  const [price, setPrice] = createSignal<Price>({ kind: 'asking' })
-  const [askingStore, setAskingStore] = createSignal(false)
+  const [asking, setAsking] = createSignal(false)
 
   const close = (): void => {
     setSheet(null)
-    setNote(null)
   }
 
-  const waitForSongs = (): Promise<KaraokeSongs> =>
-    awaitSubscription(async () => refreshKaraokeSongs({ identify: true }))
+  const openPicker = (): void => {
+    if (input === undefined) return
+    input.value = ''
+    input.click()
+  }
 
-  // The latest gate opened is the one that decides, should two overlap.
-  let gates = 0
-  const openGate = (songs: KaraokeSongs): void => {
-    setNote(null)
-    if (songs.subscribed) {
-      setSheet({ kind: 'no-songs' })
-      return
-    }
+  // The latest offer asked for is the one that decides, should two overlap.
+  let offers = 0
+  /**
+   * The offer, once the server and the store have been asked. `refused`:
+   * the server has just turned a song away for want of songs (the queue).
+   */
+  const offer = (refused = false): void => {
     if (songsOnTheWay()) {
-      setSheet({ kind: 'subscribed' })
+      openCloudOffer('import', 'subscribed')
       return
     }
-    gates += 1
-    const gate = gates
-    setAskingStore(true)
-    void storeHoldsSubscription().then((held) => {
-      if (gate !== gates) return
-      setAskingStore(false)
-      if (!held) {
-        setSheet({ kind: 'paywall' })
+    offers += 1
+    const mine = offers
+    setAsking(true)
+    void askBeforeOffering().then(({ songs, storeHolds }) => {
+      if (mine !== offers) return
+      setAsking(false)
+      if (storeHolds) {
+        openCloudOffer('import', 'subscribed')
         return
       }
-      setSheet({ kind: 'subscribed' })
-      void waitForSongs()
+      // The server's fresh word decides again: songs to use after all, or a
+      // subscriber's month that is used.
+      switch (importAction(importState(songs, who()))) {
+        case 'files':
+          // Songs after all. A song the server turned away waits in the
+          // queue, which sends it again by itself. A tap's picker: outside
+          // the tap a phone may not open it, and then the next tap does,
+          // from what is known now.
+          if (!refused) openPicker()
+          return
+        case 'note':
+          setSheet({ kind: 'no-songs' })
+          return
+        case 'offer':
+          openCloudOffer('import')
+      }
     })
   }
 
-  // The paywall states the store's own price, asked for once it opens, and
-  // again on Retry; the latest answer is the one that stands.
-  let asks = 0
-  const askPrice = (): void => {
-    const ask = nativeShellApi()?.karaokeSubscription?.offer
-    if (ask === undefined) {
-      setPrice({ kind: 'unavailable' })
-      return
-    }
-    asks += 1
-    const mine = asks
-    setPrice({ kind: 'asking' })
-    void ask().then(
-      (found) => {
-        if (mine !== asks) return
-        setPrice(
-          found === null
-            ? { kind: 'unavailable' }
-            : { kind: 'priced', offer: found },
-        )
-      },
-      () => {
-        if (mine === asks) setPrice({ kind: 'failed' })
-      },
-    )
-  }
-  createEffect(
-    on(
-      () => sheet()?.kind === 'paywall',
-      (paywall) => {
-        if (paywall && price().kind !== 'priced') askPrice()
-      },
-    ),
-  )
-  const planLine = (): string => {
-    const month = `${karaokeSongs().perPeriod} songs a month`
-    const now = price()
-    return now.kind === 'priced' ? `${month} · ${now.offer.priceText}` : month
-  }
-  const priceLine = (): string | null => {
-    switch (price().kind) {
-      case 'unavailable':
-        return 'Subscriptions are not available yet.'
-      case 'failed':
-        return 'The price could not be loaded. Check the connection and try again.'
-      default:
-        return null
-    }
-  }
-  /** What the subscribed sheet says of the songs: here, or coming. */
-  const songsArrival = (): string => {
-    if (karaokeSongs().subscribed) {
-      return `${karaokeSongs().perPeriod} songs a month are yours.`
-    }
-    return songsOnTheWay()
-      ? 'Your songs are on their way. They arrive in a moment.'
-      : 'Your songs arrive within a few minutes.'
+  /** No songs left at the server's word: the note, or the offer. */
+  const openGate = (songs: KaraokeSongs): void => {
+    if (songs.subscribed) setSheet({ kind: 'no-songs' })
+    else offer(true)
   }
 
   onMount(() => {
     void refreshKaraokeSongs()
     onCleanup(setImportGateHandler(openGate))
   })
-  // A purchase, a refund or a finished song changes what is left.
+  // A purchase, a refund or a finished song changes what is left, and so
+  // does an account: signing in brings the month's free song.
   createEffect(
     on(
-      balanceVersion,
+      [balanceVersion, accountHeld],
       () => {
         void refreshKaraokeSongs()
       },
@@ -280,14 +186,16 @@ export const KaraokeImport: Component = () => {
   )
 
   const choose = (): void => {
-    const songs = karaokeSongs()
-    if (songs.left === 0) {
-      openGate(songs)
-      return
+    switch (importAction(importState(karaokeSongs(), who()))) {
+      case 'files':
+        openPicker()
+        return
+      case 'note':
+        setSheet({ kind: 'no-songs' })
+        return
+      case 'offer':
+        offer()
     }
-    if (input === undefined) return
-    input.value = ''
-    input.click()
   }
 
   const picked = async (files: readonly File[]): Promise<void> => {
@@ -343,55 +251,6 @@ export const KaraokeImport: Component = () => {
     }
   }
 
-  const subscribe = async (): Promise<void> => {
-    const api = nativeShellApi()?.karaokeSubscription
-    const outcome =
-      api === undefined
-        ? 'unavailable'
-        : await api.subscribe().catch(() => 'failed' as const)
-    switch (outcome) {
-      case 'purchased':
-        setNote(null)
-        setSheet({ kind: 'subscribed' })
-        await waitForSongs()
-        return
-      case 'pending':
-        setNote(
-          'The purchase is waiting for approval. The songs arrive once it is approved.',
-        )
-        return
-      case 'cancelled':
-        setNote(null)
-        return
-      case 'unavailable':
-        setNote('Subscriptions are not available yet.')
-        return
-      case 'failed':
-        setNote(
-          'The store could not complete the purchase. Try again in a moment.',
-        )
-    }
-  }
-
-  const restore = async (): Promise<void> => {
-    const api = nativeShellApi()?.karaokeSubscription
-    const outcome =
-      api === undefined
-        ? 'unavailable'
-        : await api.restore().catch(() => 'failed' as const)
-    if (outcome === 'restored') {
-      setNote(restoreNote(outcome))
-      const songs = await waitForSongs()
-      // The singer may have closed the paywall while the songs were asked
-      // for; nothing opens by itself.
-      if (sheet()?.kind !== 'paywall') return
-      if (songs.subscribed) close()
-      else setSheet({ kind: 'subscribed' })
-      return
-    }
-    setNote(restoreNote(outcome))
-  }
-
   const SheetHead: Component<{ title: string; closeLabel?: string }> = (
     head,
   ) => (
@@ -406,16 +265,6 @@ export const KaraokeImport: Component = () => {
         <CloseGlyph />
       </button>
     </div>
-  )
-
-  const Note = (): JSX.Element => (
-    <Show when={note()}>
-      {(text) => (
-        <p class={styles.sheetNote} role="status">
-          {text()}
-        </p>
-      )}
-    </Show>
   )
 
   const confirming = () => {
@@ -440,10 +289,6 @@ export const KaraokeImport: Component = () => {
         return open.refusal.title
       case 'no-songs':
         return 'No songs left this month'
-      case 'paywall':
-        return 'Sing your own songs'
-      case 'subscribed':
-        return "You're subscribed"
     }
   }
 
@@ -452,14 +297,29 @@ export const KaraokeImport: Component = () => {
       <button
         type="button"
         class={styles.importButton}
-        disabled={checking() || askingStore()}
-        aria-busy={checking() || askingStore() ? 'true' : undefined}
+        disabled={checking() || asking()}
+        aria-busy={checking() || asking() ? 'true' : undefined}
         onClick={choose}
       >
         <span class={styles.importGlyph} aria-hidden="true">
           <PlusGlyph />
         </span>
-        Import a song
+        <span class={styles.importText}>
+          <span class={styles.importLabel}>Import a song</span>
+          <Show when={importChip(karaokeSongs())}>
+            {(chip) => (
+              <>
+                {' '}
+                <span
+                  class={styles.importChip}
+                  data-testid="karaoke-import-chip"
+                >
+                  {chip()}
+                </span>
+              </>
+            )}
+          </Show>
+        </span>
       </button>
       <p class={styles.importLine}>{importLine(karaokeSongs())}</p>
       <input
@@ -559,9 +419,7 @@ export const KaraokeImport: Component = () => {
             </Match>
             <Match when={sheet()?.kind === 'no-songs'}>
               <SheetHead title="No songs left this month" />
-              <p class={styles.sheetText}>
-                {songsComeBackLine(karaokeSongs())}
-              </p>
+              <p class={styles.sheetText}>{noSongsLeftLine(karaokeSongs())}</p>
               <p class={styles.sheetText}>
                 The songs you imported stay on {thisDeviceLower()} and still
                 play.
@@ -573,90 +431,6 @@ export const KaraokeImport: Component = () => {
                   onClick={close}
                 >
                   OK
-                </button>
-              </div>
-            </Match>
-            <Match when={sheet()?.kind === 'paywall'}>
-              <SheetHead title="Sing your own songs" closeLabel="Later" />
-              <ul class={styles.paywallLines}>
-                <For each={paywallLines()}>
-                  {(line) => (
-                    <li>
-                      <span class={styles.paywallGlyph} aria-hidden="true">
-                        <CheckGlyph />
-                      </span>
-                      <span>{line}</span>
-                    </li>
-                  )}
-                </For>
-              </ul>
-              <p class={styles.paywallPrice}>{planLine()}</p>
-              <p class={styles.sheetText}>
-                {`${CLOUD_NAME}, monthly. Renews every month until you cancel. Cancel any time in Settings.`}
-              </p>
-              <Show when={priceLine()}>
-                {(line) => <p class={styles.sheetNote}>{line()}</p>}
-              </Show>
-              <Note />
-              <div class={styles.sheetActions}>
-                <button
-                  type="button"
-                  class={styles.primaryButton}
-                  disabled={price().kind !== 'priced'}
-                  onClick={() => void subscribe()}
-                >
-                  Subscribe
-                </button>
-                <Show when={price().kind === 'failed'}>
-                  <button
-                    type="button"
-                    class={styles.secondaryButton}
-                    onClick={askPrice}
-                  >
-                    Retry
-                  </button>
-                </Show>
-                <button
-                  type="button"
-                  class={styles.secondaryButton}
-                  onClick={() => void restore()}
-                >
-                  Restore purchases
-                </button>
-              </div>
-              <p class={styles.paywallLinks}>
-                <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
-                  Terms of Use
-                </a>
-                <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
-                  Privacy Policy
-                </a>
-              </p>
-            </Match>
-            <Match when={sheet()?.kind === 'subscribed'}>
-              <SheetHead title="You're subscribed" />
-              <p class={styles.sheetText}>
-                {`${songsArrival()}${hasUpgradedAccount() ? '' : ` Keep them with an account, so your subscription and your songs follow you to a new ${deviceNoun()}.`}`}
-              </p>
-              <div class={styles.sheetActions}>
-                <Show when={!hasUpgradedAccount()}>
-                  <button
-                    type="button"
-                    class={styles.primaryButton}
-                    onClick={() => {
-                      close()
-                      nativeShellApi()?.openSignIn?.()
-                    }}
-                  >
-                    Sign in
-                  </button>
-                </Show>
-                <button
-                  type="button"
-                  class={styles.secondaryButton}
-                  onClick={close}
-                >
-                  {hasUpgradedAccount() ? 'Done' : 'Later'}
                 </button>
               </div>
             </Match>

@@ -146,3 +146,32 @@ describe('the sheet handle', () => {
     expect(close).not.toHaveBeenCalled()
   })
 })
+
+describe('the sheet backdrop', () => {
+  it("carries the caller's scrim class beside its own, and closes on a tap", () => {
+    const close = vi.fn()
+    render(() => (
+      <Sheet
+        isOpen
+        close={close}
+        ariaLabel="Test sheet"
+        backdropClass="caller-scrim"
+      >
+        <p>body</p>
+      </Sheet>
+    ))
+    const backdrop = screen.getByRole('dialog').parentElement
+
+    expect(backdrop?.classList.contains('caller-scrim')).toBe(true)
+    expect(backdrop?.classList.length).toBe(2)
+    backdrop?.click()
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps to its own class when the caller names none', () => {
+    mount()
+    const backdrop = screen.getByRole('dialog').parentElement
+
+    expect(backdrop?.classList.length).toBe(1)
+  })
+})

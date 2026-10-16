@@ -67,6 +67,9 @@ interface SheetProps {
       'tall' pins the sheet at its max height. */
   snap?: 'content' | 'tall'
   class?: string
+  /** A class for the backdrop behind the panel: a sheet with its own scrim
+      (the Cloud offer's fade, S7b §4.4) draws it there. */
+  backdropClass?: string
   children: JSX.Element
 }
 
@@ -178,7 +181,10 @@ export const Sheet: Component<SheetProps> = (props) => {
       <Show when={props.isOpen}>
         <Portal mount={document.body}>
           <div
-            class={styles.backdrop}
+            classList={{
+              [styles.backdrop]: true,
+              [props.backdropClass ?? '']: props.backdropClass !== undefined,
+            }}
             style={portalSkin.style()}
             onClick={() => props.close()}
           >

@@ -1,0 +1,817 @@
+/* ============================================================
+   CloudOffer — paywall B v2, "The path" (plan S7b §4)
+   ============================================================
+
+   A night surface in every theme: the art is a dark stage whose fade ends on
+   Obsidian, so the sheet carries its own palette rather than the theme's.
+
+   The sheet is pinned at nearly the full height (`--sheet-max-h`), and the
+   deal (the plan, the price, Subscribe and what follows it) is held at its
+   foot by `margin-top: auto`. Whatever the store says on the status line, the
+   room above takes it, so Subscribe stays where it is (§4.3). */
+
+.night {
+  --sheet-bg: #0d1117;
+  --sheet-border: rgb(255 255 255 / 8%);
+  --sheet-handle: rgb(244 248 253 / 42%);
+  --cloud-bright: #f4f8fd;
+  --cloud-text: #e6edf3;
+  --cloud-soft: #c3ccd6;
+  --cloud-muted: #a8b3bf;
+  --cloud-signal: #58a6ff;
+  --cloud-voice: #f59e0b;
+  --cloud-music: #3b82f6;
+  /* White on this blue is 5.1:1; on Signal Blue it would be 2.6:1. */
+  --cloud-action: #2563eb;
+  --cloud-action-down: #1d4ed8;
+
+  /* The art sits at z-index -1, so the panel must be its stacking context.
+     The shared panel's frosted glass is invisible on an opaque night and
+     costs a blur layer under every frame of the rise, so it goes. */
+  isolation: isolate;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--cloud-text);
+  color-scheme: dark;
+}
+
+/* The sheet takes focus itself as it opens (Sheet.tsx); the dialog is the
+   context, not a control, so it draws no ring. Its controls do. */
+.night:focus,
+.night:focus-visible {
+  outline: none;
+}
+
+.panel {
+  --sheet-max-h: calc(100vh - var(--safe-top, 0px) - 8px);
+  --sheet-max-h: calc(100dvh - var(--safe-top, 0px) - 8px);
+
+  display: flex;
+  flex-direction: column;
+  /* The spring overshoots by 2%: the same night fills the gap it opens. */
+  box-shadow: 0 40px 0 #0d1117;
+}
+
+/* Neither the drag band nor the offer gives up height to the other. */
+.panel > * {
+  flex-shrink: 0;
+}
+
+/* On a phone the offer spans the panel's side padding and keeps it as its
+   own, so the art bleeds to the panel's edges without leaving the offer's
+   box: nothing in the sheet is wider than its box (readSideways in
+   scripts/probe-karaoke.mjs). */
+.offer {
+  position: relative;
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  margin-inline: calc(-1 * var(--sheet-gutter-left, 16px))
+    calc(-1 * var(--sheet-gutter-right, 16px));
+  padding-inline: var(--sheet-gutter-left, 16px) var(--sheet-gutter-right, 16px);
+}
+
+/* Top right, labelled, full contrast, there from the first frame (E1). It
+   sits over the art and the drag band, clear of the grabber in the middle. */
+.notNow {
+  position: absolute;
+  top: -22px;
+  right: 8px;
+  z-index: 2;
+  min-height: var(--touch-target, 44px);
+  padding: 0 14px;
+  border: none;
+  border-radius: 22px;
+  background: rgb(13 17 23 / 58%);
+  color: var(--cloud-bright);
+  font: 600 15px/20px var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+/* The art, from the panel's own top edge to just under the kicker. */
+.hero {
+  position: relative;
+  z-index: -1;
+  height: clamp(140px, 27vh, 280px);
+  height: clamp(140px, 27dvh, 280px);
+  margin: -28px calc(-1 * var(--sheet-gutter-right, 16px)) 0
+    calc(-1 * var(--sheet-gutter-left, 16px));
+  overflow: hidden;
+}
+
+/* The art ends in the panel's night, so the words below sit on it. */
+.hero::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(13 17 23 / 0%) 40%,
+    rgb(13 17 23 / 70%) 78%,
+    #0d1117 100%
+  );
+  content: '';
+}
+
+/* The bloom's mask lives on its own layer, so a wide panel's edge mask on
+   .hero and the opening one never fight over one property. */
+.heroBloom {
+  position: absolute;
+  inset: 0;
+}
+
+.heroArt {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0%;
+}
+
+.head {
+  position: relative;
+  margin-top: -36px;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--cloud-signal);
+  font: 700 12px/16px var(--font-body, sans-serif);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 4px 0 0;
+  color: var(--cloud-bright);
+  font: 700 30px/34px
+    var(--font-display, 'Outfit Variable', 'Outfit', 'Inter', sans-serif);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* The path: pick, split, sing. The strand between the steps is the song.
+   From 1 to 2 the voice and the music run braided; at 2 the voice leaves,
+   and the music goes on alone to 3. */
+.path {
+  margin: 18px 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  column-gap: 14px;
+  padding-bottom: 16px;
+}
+
+.step:last-child {
+  padding-bottom: 0;
+}
+
+.stepMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--cloud-soft);
+  border-radius: 50%;
+  background: #0d1117;
+  color: var(--cloud-bright);
+  font: 700 13px/1 var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The last step is where the song arrives: the music's own colour. White on
+   it is 5.1:1. */
+.step:last-child .stepMark {
+  border-color: var(--cloud-action);
+  background: var(--cloud-action);
+  box-shadow: 0 0 0 5px rgb(59 130 246 / 22%);
+}
+
+.strand {
+  position: absolute;
+  top: 30px;
+  bottom: 4px;
+  left: 5px;
+  width: 16px;
+  overflow: visible;
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.stepTitle {
+  color: var(--cloud-text);
+  font: 600 16px/21px var(--font-body, sans-serif);
+}
+
+.stepDetail {
+  color: var(--cloud-muted);
+  font: 400 13.5px/18px var(--font-body, sans-serif);
+}
+
+.deal {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+}
+
+.freeLine {
+  margin: 0 0 10px;
+  color: var(--cloud-text);
+  font: 500 14px/20px var(--font-body, sans-serif);
+}
+
+.plan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 72px;
+  padding: 12px 16px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 4%);
+}
+
+.planText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+}
+
+.planTitle {
+  color: var(--cloud-bright);
+  font: 600 16px/21px var(--font-body, sans-serif);
+}
+
+.planDetail {
+  color: var(--cloud-muted);
+  font: 400 13px/18px var(--font-body, sans-serif);
+}
+
+/* The price's own slot: the price, the wait for it, or Retry. It keeps its
+   size whichever it holds. */
+.priceSlot {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 84px;
+  min-height: 46px;
+  text-align: right;
+}
+
+.amount {
+  color: var(--cloud-bright);
+  font: 700 28px/32px
+    var(--font-display, 'Outfit Variable', 'Outfit', 'Inter', sans-serif);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.per {
+  color: var(--cloud-muted);
+  font: 400 12px/14px var(--font-body, sans-serif);
+}
+
+.asking {
+  display: block;
+  width: 76px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 8%);
+}
+
+.retry {
+  min-height: var(--touch-target, 44px);
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--cloud-signal);
+  font: 600 15px/20px var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+/* The store's word: none to sell, pending, failed, restored. Empty, it takes
+   no room; said, it takes room from above, never from Subscribe. */
+.status {
+  margin: 8px 0 0;
+  color: var(--cloud-soft);
+  font: 400 13px/18px var(--font-body, sans-serif);
+}
+
+.status:empty {
+  margin: 0;
+}
+
+.subscribe {
+  position: relative;
+  min-height: 56px;
+  margin-top: 12px;
+  overflow: hidden;
+  border: none;
+  border-radius: 16px;
+  background: var(--cloud-action);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 18%);
+  color: #fff;
+  font: 600 17px/22px var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.subscribe:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* The one light across Subscribe, once (§4.4). At rest it waits off the
+   button's left edge, clipped. */
+/* The light that crosses Subscribe once (§4.4). It travels inside the
+   button and fades at both ends, so it never makes the button wider than
+   its box. */
+.subscribe::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(
+    100deg,
+    rgb(255 255 255 / 0%) 0%,
+    rgb(255 255 255 / 28%) 50%,
+    rgb(255 255 255 / 0%) 100%
+  );
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+}
+
+.freeAccount {
+  min-height: var(--touch-target, 44px);
+  margin-top: 4px;
+  border: none;
+  background: none;
+  color: var(--cloud-signal);
+  font: 600 15px/20px var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+/* The renewal terms and the links: under the deal upright, under the path
+   on a phone on its side. */
+.fine {
+  display: flex;
+  flex-direction: column;
+}
+
+.terms {
+  margin: 4px 0 0;
+  color: var(--cloud-muted);
+  font: 400 12px/16px var(--font-body, sans-serif);
+  text-align: center;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin: 2px 0 0;
+  color: var(--cloud-muted);
+  font: 400 13px/18px var(--font-body, sans-serif);
+}
+
+.footer button,
+.footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target, 44px);
+  padding: 0 8px;
+  border: none;
+  background: none;
+  color: var(--cloud-soft);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.offer :focus-visible,
+.done :focus-visible {
+  outline: 2px solid var(--cloud-signal);
+  outline-offset: 2px;
+}
+
+/* ---- What follows a yes from the store ---------------------------- */
+
+.done {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+}
+
+.doneHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doneTitle {
+  margin: 0;
+  color: var(--cloud-bright);
+  font: 700 22px/28px
+    var(--font-display, 'Outfit Variable', 'Outfit', 'Inter', sans-serif);
+}
+
+/* The cross sits on the text's right edge and the target reaches left of
+   it, so the head is never wider than its box. */
+.doneClose {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  width: var(--touch-target, 44px);
+  height: var(--touch-target, 44px);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--cloud-soft);
+  cursor: pointer;
+}
+
+.doneClose svg {
+  width: 22px;
+  height: 22px;
+}
+
+.doneText {
+  margin: 0;
+  color: var(--cloud-text);
+  font: 400 15px/21px var(--font-body, sans-serif);
+}
+
+.doneActions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.doneActions .subscribe {
+  margin-top: 0;
+}
+
+.doneSecondary {
+  min-height: var(--touch-target, 44px);
+  border: none;
+  background: none;
+  color: var(--cloud-soft);
+  font: 600 15px/20px var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .notNow:hover {
+    background: rgb(13 17 23 / 78%);
+  }
+
+  .subscribe:hover:not(:disabled) {
+    background: var(--cloud-action-down);
+  }
+
+  .freeAccount:hover,
+  .retry:hover,
+  .footer button:hover,
+  .footer a:hover,
+  .doneSecondary:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+/* ---- The scrim: to 60% over 200 ms (§4.4) ------------------------- */
+
+.scrim {
+  --sheet-backdrop: transparent;
+
+  background: transparent;
+}
+
+.scrim::before {
+  position: absolute;
+  inset: 0;
+  background: rgb(1 4 9 / 60%);
+  content: '';
+  animation: cloudFade 200ms ease-out backwards;
+}
+
+/* ---- The opening, about 1.2 s (§4.4) -------------------------------
+
+   Transform, opacity and mask only, and `backwards` fill everywhere: once
+   an animation ends it lets go, so the sheet's own drag transform works. */
+
+.moving {
+  animation: cloudRise 420ms backwards;
+}
+
+.moving .heroBloom {
+  mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  mask-position: 50% 40%;
+  mask-repeat: no-repeat;
+  mask-size: 420% 420%;
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  -webkit-mask-position: 50% 40%;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 420% 420%;
+  animation: cloudBloom 600ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms backwards;
+}
+
+.moving .heroArt {
+  animation: cloudGrow 600ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms backwards;
+}
+
+.moving .head {
+  animation: cloudRiseIn 240ms ease-out 300ms backwards;
+}
+
+.moving .step {
+  animation: cloudRiseIn 240ms ease-out 420ms backwards;
+}
+
+.moving .step:nth-child(2) {
+  animation-delay: 540ms;
+}
+
+.moving .step:nth-child(3) {
+  animation-delay: 660ms;
+}
+
+.moving .strand {
+  mask-image: linear-gradient(#000, #000);
+  mask-position: 0 0;
+  mask-repeat: no-repeat;
+  mask-size: 100% 100%;
+  -webkit-mask-image: linear-gradient(#000, #000);
+  -webkit-mask-position: 0 0;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  animation: cloudDraw 180ms linear 460ms backwards;
+}
+
+.moving .step:nth-child(2) .strand {
+  animation-delay: 580ms;
+}
+
+.moving .freeLine,
+.moving .plan,
+.moving .status {
+  animation: cloudRiseIn 240ms ease-out 800ms backwards;
+}
+
+.moving .subscribe {
+  animation: cloudRiseIn 240ms ease-out 880ms backwards;
+}
+
+.moving .subscribe::after {
+  animation: cloudSweep 700ms ease-in-out 1200ms;
+}
+
+.moving .freeAccount,
+.moving .fine {
+  animation: cloudFade 240ms ease-out 880ms backwards;
+}
+
+/* Reduced motion: everything present, one 150 ms fade. */
+.still {
+  animation: cloudFade 150ms ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim::before {
+    animation-duration: 150ms;
+  }
+
+  .moving {
+    animation: cloudFade 150ms ease-out backwards;
+  }
+
+  .moving
+    :is(
+      .heroBloom,
+      .heroArt,
+      .head,
+      .step,
+      .strand,
+      .freeLine,
+      .plan,
+      .status,
+      .subscribe,
+      .freeAccount,
+      .fine
+    ),
+  .moving .subscribe::after {
+    animation: none;
+  }
+}
+
+@keyframes cloudFade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes cloudRise {
+  from {
+    transform: translateY(100%);
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+
+  72% {
+    transform: translateY(-2%);
+    animation-timing-function: ease-in-out;
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes cloudRiseIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@keyframes cloudBloom {
+  from {
+    mask-size: 40% 40%;
+    -webkit-mask-size: 40% 40%;
+  }
+}
+
+@keyframes cloudGrow {
+  from {
+    transform: scale(0.92);
+  }
+}
+
+@keyframes cloudDraw {
+  from {
+    mask-size: 100% 0%;
+    -webkit-mask-size: 100% 0%;
+  }
+}
+
+/* 150% of a band 40% wide: its right edge ends on the button's. */
+@keyframes cloudSweep {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+
+  20%,
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(150%);
+  }
+}
+
+/* ---- Other screens ------------------------------------------------- */
+
+/* A wide panel (an iPad): the art ends softly at the column's sides. */
+@media (min-width: 600px) {
+  .offer {
+    width: 100%;
+    max-width: 520px;
+    margin-inline: auto;
+    padding-inline: 0;
+  }
+
+  .notNow {
+    right: 0;
+  }
+
+  .hero {
+    margin-inline: 0;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 14%,
+      #000 86%,
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 14%,
+      #000 86%,
+      transparent
+    );
+  }
+}
+
+/* A short phone (an SE): less art, closer steps, the deal still in view. */
+@media (max-height: 740px) and (min-height: 501px) {
+  .hero {
+    height: clamp(104px, 17vh, 170px);
+    height: clamp(104px, 17dvh, 170px);
+  }
+
+  .title {
+    font-size: 26px;
+    line-height: 30px;
+  }
+
+  .path {
+    margin: 14px 0 12px;
+  }
+
+  .step {
+    padding-bottom: 12px;
+  }
+}
+
+/* Landscape on a phone: no art; the path and the fine print on the left, the
+   deal on the right, Subscribe without a scroll. The status line keeps two
+   lines' room here: the deal starts at the top, so nothing above Subscribe
+   may grow. */
+@media (max-height: 500px) {
+  .offer {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 28px;
+    max-width: 760px;
+  }
+
+  .hero {
+    display: none;
+  }
+
+  .head {
+    grid-row: 1;
+    grid-column: 1;
+    margin-top: 0;
+  }
+
+  .path {
+    grid-row: 2;
+    grid-column: 1;
+    margin-bottom: 8px;
+  }
+
+  .fine {
+    grid-row: 3;
+    grid-column: 1;
+    align-self: end;
+  }
+
+  .terms {
+    text-align: left;
+  }
+
+  .footer {
+    justify-content: flex-start;
+    margin-left: -8px;
+  }
+
+  .deal {
+    grid-row: 1 / span 3;
+    grid-column: 2;
+    margin-top: 0;
+    padding-top: 30px;
+  }
+
+  .status,
+  .status:empty {
+    min-height: 36px;
+    margin-top: 8px;
+  }
+}

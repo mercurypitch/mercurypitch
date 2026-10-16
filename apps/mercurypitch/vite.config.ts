@@ -72,6 +72,9 @@ const PURCHASE_POLICY = {
  * module missing from this list is a red check rather than a quiet leak.
  */
 const KARAOKE_STAGE_2 = [
+  '/src/features/karaoke-room/CloudOffer.tsx',
+  '/src/features/karaoke-room/cloud-offer-store.ts',
+  '/src/features/karaoke-room/import-gate.ts',
   '/src/features/karaoke-room/KaraokeImport.tsx',
   '/src/features/karaoke-room/KaraokeLibraryImports.tsx',
   '/src/features/karaoke-room/karaoke-import-checks.ts',
@@ -143,12 +146,14 @@ function isLaunchOffer(id: string): boolean {
  * modules before it tree-shakes them. Measured 2026-10-11, the store build
  * carried all five lantern plates (497 KB) with nothing naming them. So in
  * a build without the premium exercises they resolve to an empty module and
- * are never emitted, at any depth inside those folders. `assert-bundle.mjs`
- * STAGE 2 checks the bundle; src/premium-images-build.test.ts checks this
- * switch on every PR.
+ * are never emitted, at any depth inside those folders. The Cloud offer's
+ * art (src/features/karaoke-room/assets/) rides the same switch: the offer
+ * is Stage 2, and it would ride into the store build the same way.
+ * `assert-bundle.mjs` STAGE 2 checks the bundle;
+ * src/premium-images-build.test.ts checks this switch on every PR.
  */
 const PREMIUM_IMAGES =
-  /\/src\/features\/(?:long-note|echo|ng-slides|lip-roll)\/(?:[^/]+\/)*[^/]+\.webp$/u
+  /\/src\/features\/(?:(?:long-note|echo|ng-slides|lip-roll)\/(?:[^/]+\/)*[^/]+|karaoke-room\/assets\/[^/]+)\.webp$/u
 
 /**
  * The premium exercises' voices (Merc's sung "ooh" set for Echo's calls in

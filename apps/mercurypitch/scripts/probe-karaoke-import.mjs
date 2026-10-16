@@ -23,7 +23,8 @@
 //   - the room's options and Settings count the songs; Restore purchases
 //     and Subscribe fail closed, since no store is there yet (owner, 27 Sep);
 //   - the song's own menu removes it from this phone;
-//   - with no songs and no subscription, Import is the paywall.
+//   - with no songs and no subscription, Import is the Cloud offer (paywall
+//     B v2, S7b §4), with the free account under Subscribe.
 //
 // NO REAL HOST IS REACHED. The db-worker and the separation host the build
 // names (api-base.mjs) are answered here by a stand-in that keeps the little
@@ -873,13 +874,16 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     await settle()
     const arrived = await library()
     const mine = arrived.songs.find((song) => song.title === SONG)
-    const leftLine = `${baseLine} 17 of 20 songs left this month.`
+    // The songs left are the button's chip now (S7b §4.3); the line under
+    // it says only what can be imported.
+    const leftButton = 'Import a song 17 of 20 songs left'
     if (
       mine === undefined ||
       mine.group !== 'Your songs' ||
       !mine.fresh ||
       arrived.empty ||
-      arrived.line !== leftLine ||
+      arrived.button !== leftButton ||
+      arrived.line !== baseLine ||
       arrived.songs.filter((song) => song.fresh).length !== 1
     ) {
       throw new Error(`the song arrived as ${JSON.stringify(arrived)}`)
@@ -939,7 +943,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       )
     }
     steps.push(
-      `karaoke import: "${SONG}" arrives under ${mine.group}, marked new, the only new one; the line reads "17 of 20 songs left this month."; it cues and plays (${cue.elapsed}s to ${playing.elapsed}s) from the MP3 stems saved on the phone (${stemSizes.join(' and ')} bytes, 320 kb/s), streamed: neither decoded whole`,
+      `karaoke import: "${SONG}" arrives under ${mine.group}, marked new, the only new one; Import's chip reads "17 of 20 songs left"; it cues and plays (${cue.elapsed}s to ${playing.elapsed}s) from the MP3 stems saved on the phone (${stemSizes.join(' and ')} bytes, 320 kb/s), streamed: neither decoded whole`,
     )
 
     // ── Again, on a phone without AudioDecoder ────────────────
@@ -1168,7 +1172,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       `karaoke import: the song's one menu item, "Remove from this phone", removes it; "Songs you import appear here." is back`,
     )
 
-    // ── No songs, no subscription: the paywall ────────────────
+    // ── No songs, no subscription: the Cloud offer ────────────
     at = 'the paywall'
     state.songs = LAPSED
     await openLibrary()
@@ -1207,20 +1211,29 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     // line names the songs and no price at all (never one the store did not
     // give), the note says why, and Subscribe stays off: it is there to tap
     // only with a price in view (App Store 3.1.2).
+    // Paywall B v2 (S7b §4.2): the path in three numbered steps, the plan
+    // with the store's price beside it, and, for a phone with no account,
+    // the free account under Subscribe.
     const wantOffer = {
       title: 'Sing your own songs',
       items: [
-        'Any song from Files on this phone',
-        'Voice and music separated on our server',
-        'Your songs stay on this phone and play offline',
+        '1 Pick a song from Files MP3, M4A, WAV or FLAC, up to 12 minutes',
+        '2 Our servers take the voice out Keep it as a quiet guide, or switch it off',
+        '3 Sing it on this phone Saved here. Plays offline.',
       ],
       lines: [
-        '20 songs a month',
-        'Mercury Pitch Cloud, monthly. Renews every month until you cancel. Cancel any time in Settings.',
+        'Mercury Pitch Cloud',
+        '20 songs a month Unused songs carry over, up to 50',
         'Subscriptions are not available yet.',
+        'Renews every month until you cancel. Cancel any time in Settings.',
       ],
-      buttons: ['Later', 'Subscribe', 'Restore purchases'],
-      links: ['Terms of Use', 'Privacy Policy'],
+      buttons: [
+        'Not now',
+        'Subscribe',
+        'Get 1 free song with a free account',
+        'Restore purchase',
+      ],
+      links: ['Terms', 'Privacy'],
     }
     for (const key of Object.keys(wantOffer)) {
       if (JSON.stringify(offer[key]) !== JSON.stringify(wantOffer[key])) {
@@ -1255,13 +1268,13 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     await shoot(page, ctx, 'import-paywall')
     read.push(await sideways('the paywall', paywall))
     await page
-      .locator(`${paywall} button`, { hasText: /^Restore purchases$/u })
+      .locator(`${paywall} button`, { hasText: /^Restore purchase$/u })
       .tap()
     await visible(`${paywall} >> text=Purchases are not available yet.`)
-    await page.locator(`${paywall} button[aria-label="Later"]`).tap()
+    await page.locator(`${paywall} button`, { hasText: /^Not now$/u }).tap()
     await hidden(paywall)
     steps.push(
-      `karaoke import: with no songs and no subscription Import is the paywall, no picker: "${offer.lines[0]}" with no price the store did not give, Terms and Privacy; with no store "${offer.lines[2]}" and Subscribe off, Restore "Purchases are not available yet."`,
+      `karaoke import: with no songs and no subscription Import is the Cloud offer, no picker: "${offer.lines[1]}" with no price the store did not give, the free account under Subscribe, Terms and Privacy; with no store "${offer.lines[2]}" and Subscribe off, Restore purchase "Purchases are not available yet.", Not now closes it`,
     )
 
     const measured = read.filter((line) => line !== null)
