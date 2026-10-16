@@ -46,7 +46,7 @@ import { RoomHeader } from './RoomHeader'
 import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, pushSettingsSection, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
 import { resumeAfterDeletion } from './settings/account-deletion'
-import { installAccountOffer } from './settings/account-offer'
+import { installAccountOffer, openKeep } from './settings/account-offer'
 import { AccountOfferSheet } from './settings/AccountOffer'
 import { SettingsAlert } from './settings/SettingsAlert'
 import { openSignIn } from './settings/sign-in-state'
@@ -180,6 +180,9 @@ export const NativeShell: Component = () => {
         openAppSettings: () => openAppSettings(),
         // Every in-app "Sign in" (ui-store's openAuthModal) lands here.
         openSignIn,
+        // Keep, the account offer, for whatever offers a free account: the
+        // Cloud offer's free song (S7b §5).
+        openKeep,
         // The Karaoke room's "Manage songs" (S8 §11, D8 A).
         openKaraokeStudio: () => {
           pushScreen('karaoke-studio')
@@ -408,8 +411,9 @@ export const NativeShell: Component = () => {
             onKeep={finishRun}
           />
 
-          {/* The account offer, over the Sing room after a Keep. Its Sign
-              in hands over to the sign-in sheet. */}
+          {/* Keep, the account offer: over the Sing room after a Keep, and
+              from Settings and the Cloud offer. Its Use email and a second
+              factor hand over to the sign-in sheet. */}
           <AccountOfferSheet />
 
           {/* The Cloud offer (paywall B v2), opened by the Karaoke room's

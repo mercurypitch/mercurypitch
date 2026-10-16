@@ -48,17 +48,49 @@ export function takesStayHere(): string {
 }
 
 /**
- * The offer (S6 decision 02): a sheet once, after a take is kept in the Sing
- * room, and a card at the top of Settings until the singer says Later. Both
- * list accountPromises() and end on takesStayHere().
+ * Keep, the account offer (S7b §3.5 and §6; S6 decision 02): a sheet once,
+ * a beat after a take is kept in the Sing room, and whenever the Save your
+ * progress row in Settings or the Cloud offer's free account asks for it.
+ * Which rows it shows depends on what the phone holds and what the build
+ * sells (AccountOffer.tsx); the words are all here.
  */
-export const ACCOUNT_OFFER = {
-  /** Over the sheet's title, when the take just kept is the phone's first. */
-  firstTake: 'Your first take is kept',
-  title: 'Take your practice with you',
-  accept: 'Sign in',
-  decline: 'Later',
+export const KEEP = {
+  notNow: 'Not now',
+  /** The title over a measured range. */
+  titleVoiceprint: 'Keep your voiceprint',
+  /** The title with no range measured, and the Settings row's label. */
+  titleProgress: 'Save your progress',
+  /** Over the voiceprint card. */
+  voiceprintLabel: 'Your voiceprint',
+  /** Only with a voiceprint: creating the account adopts it. */
+  voiceprintSaved: 'Your range and voiceprint, saved',
+  everywhere: 'Your progress on every phone and the web',
+  /** Only in a build that splits songs (D5 and 15.1). */
+  freeSong: '1 free karaoke song every month',
+  /** With no range measured, while a range finder is there to run. */
+  findRange: 'Find your range first. Takes 2 minutes.',
+  apple: 'Continue with Apple',
+  google: 'Continue with Google',
+  email: 'Use email',
 } as const
+
+/** The one line of loss framing: true, specific, said once (S7b §3.5). */
+export function keepFact(): string {
+  return `Without an account, it stays on ${thisDeviceLower()} only.`
+}
+
+/**
+ * The launch gift's row, while the server says it runs: "Launch gift: 5 more
+ * songs, until 1 January". The count and the day are the server's
+ * (GET /api/billing/promo/featured, `appGift`), never written in here. The
+ * day is a plain fact, never a countdown (S7b §5).
+ */
+export function keepGiftLine(songs: number, until: string | null): string {
+  const more = songs === 1 ? '1 more song' : `${songs} more songs`
+  return until === null
+    ? `Launch gift: ${more}`
+    : `Launch gift: ${more}, until ${until}`
+}
 
 /** The Account row in Settings. */
 export const ACCOUNT_ROW = {

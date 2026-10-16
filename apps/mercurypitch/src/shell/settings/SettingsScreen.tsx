@@ -13,21 +13,19 @@
 // stack (`run-shell-store.ts`), so Back walks down it one level at a time.
 // The groups sit in one column upright and two on a phone on its side.
 //
-// With no account on the phone yet, the account offer sits at the top in the
-// Account row's place (2b), and Later folds it into the row until the app
-// next starts (account-offer.ts).
+// With nothing signed in, Save your progress sits over the Account row and
+// opens Keep, the account offer (S7b §5, account-offer.ts).
 
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
 import { thisDevice, thisDeviceLower } from '@/lib/device-noun'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { theme, themeSource } from '@/stores/theme-store'
-import { ContrastIcon, InfoIcon, KaraokeIcon, LockIcon, MicIcon, PhoneIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
-import { ACCOUNT_ROW } from './account-copy'
+import { ContrastIcon, InfoIcon, KaraokeIcon, LockIcon, MicIcon, PhoneIcon, ProgressIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
+import { ACCOUNT_ROW, KEEP } from './account-copy'
 import { accountDeletedNote, dismissAccountDeletedNote, } from './account-deletion'
-import { offerCardShown } from './account-offer'
+import { openKeep } from './account-offer'
 import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
-import { AccountOfferCard } from './AccountOffer'
 import { appearanceLabel } from './AppearanceScreen'
 import { CloudGroup } from './CloudGroup'
 import { deviceFacts, loadDeviceFacts } from './device-facts'
@@ -54,22 +52,30 @@ function microphoneValue(): string | undefined {
 }
 
 /**
- * The offer in the Account row's place, while there is no account yet and no
- * Later since launch. Not under the line after a deletion: the singer has
- * just chosen to have no account.
+ * Save your progress, for anyone signed out (S7b §5). Not under the line
+ * after a deletion: the singer has just chosen to have no account.
  */
-function offerCardHere(): boolean {
-  return offerCardShown() && accountDeletedNote() === null
+function saveProgressHere(): boolean {
+  return !accountSignedIn() && accountDeletedNote() === null
 }
 
 export interface SettingsScreenProps {
   onPush: (screen: SettingsSubScreen) => void
 }
 
-/** The Account row, and Delete account under it while there is one. */
+/** Save your progress while signed out, the Account row, and Delete account
+ *  under it while there is one. */
 function AccountGroup(props: SettingsScreenProps): JSX.Element {
   return (
     <SettingsGroup>
+      <Show when={saveProgressHere()}>
+        <SettingsRow
+          id="save-progress"
+          icon={<ProgressIcon />}
+          label={KEEP.titleProgress}
+          onPress={openKeep}
+        />
+      </Show>
       <SettingsRow
         id="account"
         icon={<AccountAvatar />}
@@ -125,12 +131,7 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
       </Show>
       <div class="mp-set__cols">
         <div class="mp-set__col">
-          <Show
-            when={offerCardHere()}
-            fallback={<AccountGroup onPush={props.onPush} />}
-          >
-            <AccountOfferCard />
-          </Show>
+          <AccountGroup onPush={props.onPush} />
           <SettingsGroup title={thisDevice()}>
             <SettingsRow
               id="microphone"

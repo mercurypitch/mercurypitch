@@ -98,6 +98,12 @@ export interface SignInFlowOptions {
    * the worker for its first mail. Read as each of those requests starts.
    */
   signup?: () => SignupContext
+  /**
+   * A surface with no code field of its own (Keep) takes a second factor
+   * owed here: it parks the ceremony and opens the sign-in sheet, which
+   * starts on its code pane. Absent, the flow's own twofa pane asks.
+   */
+  onSecondFactor?: (ceremony: string) => void
 }
 
 /** What a thrown request error means to the singer. */
@@ -151,6 +157,10 @@ export function createSignInFlow(options: SignInFlowOptions): SignInFlow {
   }
 
   function land(outcome: SignInOutcome): void {
+    if (isTwofaChallenge(outcome) && options.onSecondFactor !== undefined) {
+      options.onSecondFactor(outcome.ceremony)
+      return
+    }
     if (isTwofaChallenge(outcome)) {
       factorCeremony = outcome.ceremony
       setSecondFactor('')

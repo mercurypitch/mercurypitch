@@ -8,7 +8,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
-import { ACCOUNT_OFFLINE, ACCOUNT_ROW, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, accountDeleted, accountPromises, DELETE_ACCOUNT, FILL_NOTE, SIGN_OUT_QUESTION, signInEverywhere, STORAGE_COPY, takesLine, takesStayHere, TWO_STEP, } from './account-copy'
+import { ACCOUNT_OFFLINE, ACCOUNT_ROW, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, accountDeleted, accountPromises, DELETE_ACCOUNT, FILL_NOTE, keepFact, keepGiftLine, SIGN_OUT_QUESTION, signInEverywhere, STORAGE_COPY, takesLine, takesStayHere, TWO_STEP, } from './account-copy'
 
 /** Every line in the module that names where the practice is kept. */
 function deviceLines(): string[] {
@@ -28,6 +28,7 @@ function deviceLines(): string[] {
     DELETE_ACCOUNT.staysTitle,
     DELETE_ACCOUNT.stays.sub,
     accountDeleted(),
+    keepFact(),
     STORAGE_COPY.clearTakes,
     STORAGE_COPY.clearVoiceprints.account,
     STORAGE_COPY.clearVoiceprints.online,
@@ -41,6 +42,17 @@ describe('account copy', () => {
   afterEach(() => {
     restore?.()
     restore = null
+  })
+
+  it("says Keep's fact line and its gift line in the plan's words (S7b §3.5)", () => {
+    expect(keepFact()).toBe('Without an account, it stays on this phone only.')
+    expect(keepGiftLine(5, '1 January')).toBe(
+      'Launch gift: 5 more songs, until 1 January',
+    )
+    expect(keepGiftLine(1, '1 January')).toBe(
+      'Launch gift: 1 more song, until 1 January',
+    )
+    expect(keepGiftLine(5, null)).toBe('Launch gift: 5 more songs')
   })
 
   it('says "this phone" on a phone, as it always has', () => {

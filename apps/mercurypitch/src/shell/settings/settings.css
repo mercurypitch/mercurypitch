@@ -931,7 +931,7 @@
   font: 600 12px/16px var(--font-body, sans-serif);
 }
 
-/* ---------- the account offer (S6 2a, 2b) ---------- */
+/* ---------- Keep, the account offer (S7b §3.5) ---------- */
 
 .mp-offer {
   display: flex;
@@ -940,20 +940,7 @@
 }
 
 .mp-offer--sheet {
-  padding: 4px 4px 8px;
-}
-
-.mp-offer__head {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.mp-offer__label {
-  font: 500 11px/14px var(--font-body, sans-serif);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  padding: 0 4px 8px;
 }
 
 .mp-offer__title {
@@ -963,26 +950,99 @@
   color: var(--text-primary);
 }
 
-.mp-offer--card .mp-offer__title {
-  font-size: 20px;
-  line-height: 26px;
-}
-
-/* The sheet and the card frame the promises already. */
+/* The sheet frames the rows already. */
 .mp-set-promises--bare {
   margin: 0;
   padding: 0;
 }
 
-/* Sign in and Later: the same size, side by side (REQ-NAM-012). */
-.mp-offer__answers {
-  display: flex;
-  gap: 12px;
+.mp-keep {
+  gap: 14px;
 }
 
-.mp-offer__answers > .mp-set-button {
-  flex: 1 1 0;
+/* Not now: top right, a labelled text button at full contrast with a 44 px
+   target, there from the first frame. */
+.mp-keep__top {
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px -4px -6px 0;
+}
+
+.mp-keep__not-now {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--text-primary);
+  font: 600 16px/20px var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.mp-keep__not-now:active {
+  background: var(--bg-tertiary);
+}
+
+/* The singer's voiceprint, small. */
+.mp-keep__print {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  color: var(--accent);
+}
+
+.mp-keep__print-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
+}
+
+.mp-keep__print-label {
+  font: 500 12px/16px var(--font-body, sans-serif);
+  color: var(--text-muted);
+}
+
+.mp-keep__print-range {
+  font: 600 20px/26px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-keep__print-twin {
+  font: 400 14px/19px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* "Find your range first": a row that leads somewhere. */
+.mp-keep__find {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  margin: -10px 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: 600 16px/22px var(--font-body, sans-serif);
+  text-align: start;
+  cursor: pointer;
+}
+
+.mp-keep__find span {
+  flex: 1 1 auto;
+}
+
+.mp-keep__fact {
+  margin: 0;
+  font: 400 14px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary);
 }
 
 /* On its side the sheet sits in the middle, 560 wide, with the room showing

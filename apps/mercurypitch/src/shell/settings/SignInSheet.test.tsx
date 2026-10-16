@@ -18,7 +18,7 @@ import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { signInEverywhere } from './account-copy'
 import type * as AccountState from './account-state'
-import { openSignIn, resetSignIn, signInOpen } from './sign-in-state'
+import { openSignIn, openSignInByEmail, resetSignIn, signInOpen, } from './sign-in-state'
 import { SignInSheet } from './SignInSheet'
 
 const stand = vi.hoisted(() => ({
@@ -141,6 +141,17 @@ describe('the ways in', () => {
 
     expect(q('signin-apple')).toBeNull()
     expect(q('signin-google')).not.toBeNull()
+  })
+
+  it("opens on the email pane for Keep's Use email, and on the ways in after", () => {
+    openSignInByEmail()
+    const asked = pane()
+    resetSignIn()
+
+    openSignIn()
+
+    expect(asked).toBe('email')
+    expect(pane()).toBe('methods')
   })
 
   it('has no television row and no passkey button (D2)', () => {
