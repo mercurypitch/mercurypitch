@@ -4,7 +4,7 @@
 claims cite the source at `601436c3f` on the branch `claude/music-theory-tutorial-curriculum-cej8h7`
 (rebased on main, 16 Oct 2026) by `file:line`. Every cited line was re-read in round 1 at
 `cb22c656`, a commit from before the branch's rebase; its rebased twin is `971ea8bb`, and none of
-the cited files changed between `971ea8bb` and `601436c3f`, or since, up to `0e3a8c40d`. Web sources
+the cited files changed between `971ea8bb` and `601436c3f`, or since, up to `42bb9b53d`. Web sources
 were fetched on 16 Oct 2026.
 
 ## Tuning and arithmetic
@@ -35,7 +35,7 @@ were fetched on 16 Oct 2026.
 
 7. A4 = 440 Hz is the standard tuning reference, and the app's reference is fixed at it | ISO 16:1975 (Lesson 1 FACTS 16); `A4_FREQ = 440.0` (`src/lib/scale-data.ts:152`) | standard and code
 8. Octave numbers change at C: B3 is followed by C4 | scientific pitch notation (Lesson 1 FACTS 17a); `midiToNoteNameOctave` (`src/lib/note-utils.ts:37-40`) | standard and code
-9. Each example is synthesised in exact 12-TET from the table in 6, so every semitone the film plays is exactly 100 cents | Lesson 2's `tools/mix.py` (to be written, as Lesson 1's `hz()` and `tone()`) | by construction; measure in the critic round as Lesson 1 did (FACTS 12b)
+9. Each example is synthesised in exact 12-TET from the table in 6, so every semitone the film plays is exactly 100 cents | Lesson 2's `tools/mix.py` (to be written, as Lesson 1's `hz()` and `tone()`) | by construction; measure in the critic round as Lesson 1 did (Lesson 1 FACTS 12b)
 
 ## The keyboard, semitones and tones
 
@@ -75,6 +75,7 @@ were fetched on 16 Oct 2026.
 32. Ear Lab's Leap plays two notes and asks for the distance ("Two notes — name the interval"); its twelve answers, in a grid of six columns, are m2 (Minor 2nd, one semitone), M2 (Major 2nd, two semitones), m3, M3, P4, TT, P5, m6, M6, m7, M7 and P8 (Octave); each answer pad shows its label, then its name; each trial roves the lower note between C3 and A4 and plays the pair up or down at a coin flip; it is rated by Elo, and it mixes all twelve answers rather than drilling m2 and M2 alone; the Ear Lab dashboard opens it with one tap | `src/features/ear-lab/instruments.ts:131-138`; `src/lib/ear/banks.ts:36-109` (the twelve items in this order; `leap:m2` label "m2", name "Minor 2nd", payload 1; `leap:M2` label "M2", name "Major 2nd", payload 2); `src/lib/ear/drills.ts:180-186` (12 choices, `ELO_SCALE`); `src/features/ear-lab/LeapDrill.tsx:47-48` (root, direction), `:94` (prompt), `:97-102` (all twelve pads, `label` and `sub`, `columns={6}`); `src/features/ear-lab/IdentificationDrillView.tsx:251-254` and `src/features/ear-lab/EarStage.tsx:612-614` (each pad prints its label, then its name); `src/features/ear-lab/EarLabDashboard.tsx:121-122` (an instrument opens straight from the bench) | code; said as "In Ear Lab's Leap, listen for the semitone and the tone." (b52a), which claims no drill of those two alone; drawn in S15g as the twelve-pad grid with m2 and M2 lit and the other ten ghosted; the end card's legend "In Leap: m2 = semitone · M2 = tone"; the page's practice card says Leap mixes all twelve
 33. Today no link opens Leap, or limits it to m2 and M2: `/exercises/<slug>` launches only an exercise or a tab, and the existing slugs are perfect-octave, speed-scales, karaoke-duel and jam-relay; the Ear Lab opens a named drill only through `pendingEarDrill`, set by the Ascent's ear week | `src/features/exercises/slug-map.ts:24-44`, `:47-65`; `src/stores/ui-store.ts:541-548`; `src/pages/EarLabPage.tsx:59-68`; the `ear-drill` launch kind with a bank subset is planned (CURRICULUM § 4 item 5) | code and plan; so the film's end card shows /ear-lab and never a slug
 34. A subset launch must also change Leap's guess floor: the drill's `choices` count sets the Elo guess floor "so it must match what the UI actually renders" | `src/lib/ear/drills.ts:58-59`, `:180-186` | code (WEB-SPEC engineering note, not narrated)
+    34a. A run can be rated on its own track, apart from the drill's shared rating: the identification controller takes a `RunTrack` of `drillId`, `guessRate` and `updateItem` and records each answer of the run under that id, with that guess floor and that item rule; Echo's sung answers use `{ drillId: 'echo-sing', guessRate: 0, updateItem: false }`; the store keeps one rating per drill id and refines an item's difficulty only when `updateItem` is not false; a drill's guess floor is 1/choices | `src/features/ear-lab/use-identification-controller.ts:55-62` (`RunTrack`), `:69-71`, `:119-120`, `:170-178`; `src/features/ear-lab/EchoDrill.tsx:136-142`; `src/stores/ear-lab-store.ts:197-228`; `src/lib/ear/drills.ts:233-237` | code (DECISIONS 73 and WEB-SPEC's practice link, not narrated)
 35. Ear Lab Contour asks only whether the second of two tones went up, down or stayed; its gap tiers include 200 cents ("Whole steps") and 100 cents ("Half steps"), served by the rating, not chosen | `src/features/ear-lab/ContourDrill.tsx:26-30` (Up, Down, Same), `:51-57`, `:4-7`; `src/lib/ear/banks.ts:160-188` | code (page only, as an optional first drill)
     35a. Lesson 1's quick check has no question ids, and the kit's `QuizQuestion` has no id field; the recall check's two questions are Lesson 1's questions 2 and 4 word for word | `src/features/lessons/kit/quiz.ts:31-36`; `src/features/lessons/lesson-01/quiz-questions.ts:32-50`, `:73-90` | code (LESSON's "Recall from Lesson 1"; WEB-SPEC Toys 6)
 
@@ -89,7 +90,7 @@ were fetched on 16 Oct 2026.
 
 38. Starting on A3 or A4 suits every voice type the app knows: each of its six range presets (`VOCAL_RANGES`) contains A3 to A#3 or A4 to A#4 (bass E2–E4, baritone G2–G4, tenor C3–C5, alto F3–F5, mezzo-soprano A3–A5, soprano C4–C6); A4 is above the top of the bass and baritone presets, and A3 is the lowest note of the mezzo preset | `VOCAL_RANGES`, `src/stores/settings-store.ts:91-152`; the code's comment calls each preset's `lowMidi` to `highMidi` "the comfortable range: two octaves, the textbook one" (`:62`) | code; these are the app's presets, not anyone's measured comfort, so the film offers both As and lets the viewer choose: "Start on my A, or the A an octave up, whichever feels easy" (b42b)
 39. An octave up still counts as the same note | Lesson 1 FACTS 18 and 19 | carried
-40. Sing gently; never push; stop if anything feels uncomfortable | Lesson 1 FACTS 20; the playbook's house rules ("Discomfort overrides any result: 'Stop immediately if anything feels uncomfortable.'"); the app's house line "Stop immediately if anything feels uncomfortable." (`src/features/exercises/ExerciseShell.tsx:710-713`) | owner rule; said before the viewer sings: "Hum it quietly, or sing it on ooh. Never push, and stop if anything feels uncomfortable." (b42a). A quiet one-semitone slide on a hum or "ooh" is within "a comfortable hum", so the comfort-check line is not required (TEACHING-PLAYBOOK house rules: it precedes holds, sirens and range); the page carries the same safety line
+40. Sing gently; never push; stop if anything feels uncomfortable | Lesson 1 FACTS 20; the playbook's house rules ("Discomfort overrides any result: 'Stop immediately if anything feels uncomfortable.'"); the app's house line "Stop immediately if anything feels uncomfortable." (`src/features/exercises/ExerciseShell.tsx:710-713`) | owner rule; said before the viewer sings: "Hum it quietly, or sing it on ooh. Never push, and stop if anything feels uncomfortable." (b42a). A quiet one-semitone slide on a hum or "ooh" is within "a comfortable hum", so the comfort-check line is not required (TEACHING-PLAYBOOK house rules: it precedes holds, sirens and range); the page carries the same safety line. The owner approved this short form, without the house line's "immediately", for Lessons 1 and 2 on 16 October 2026 (DECISIONS 74)
 
 ## Sounds: the exact pitches of every example
 
@@ -127,9 +128,10 @@ Every example is synthesised in `tools/mix.py` at the frequencies in 6, with Les
   column the film's own label "CENTS ABOVE A3".
 - Only the lanes (S14) are labelled "How MercuryPitch draws your voice" (27), and the monitor
   "How MercuryPitch shows it" (30): house-style drawings, not screenshots. On the lanes, orange's
-  line and the "you are here" marker are drawn as the app draws a live voice (28). The title and
-  the marker leave the frame for the viewer's turn, where a plain amber cursor sweeps Merc's path
-  as a guide and nothing reads the viewer.
+  line and the "you are here" marker are drawn as the app draws a live voice (28). For the viewer's
+  turn every part of that drawing leaves (the title, the marker, orange's violet line and the
+  amber band), and the film's own plain guide replaces it: chrome lanes in the film's spelling and
+  Merc's path dashed, swept by a chrome cursor. Nothing reads the viewer.
 - S15g's grid is a house-style drawing of Leap's twelve answer pads with the app's own labels and
   names (32), m2 and M2 lit, the rest ghosted; not a screenshot.
 - The title card's five jumping notes and the title and end stings are Lesson 1's, unchanged

@@ -223,12 +223,18 @@ skips the reactions; the buttons and the reveal carry the moment.
   33). The page says so in the Wrap.
 - Needed (CURRICULUM § 4 item 5, Phase 1 App track): an `ear-drill` launch kind that accepts a bank
   subset, so `/exercises/semitone-or-tone` (proposed slug) opens Leap with only `leap:m2` and
-  `leap:M2`. Two details for that work, not decided here: the drill's `choices` count sets its Elo
-  guess floor and must match the two buttons shown (`src/lib/ear/drills.ts:58-59`), and whether a
-  two-item run should move the viewer's full Leap rating at all. The launch should also carry
-  `?lesson=02` so First Light steps aside (CURRICULUM § 4 item 6).
+  `leap:M2`. How such a run is rated is decided, pending this App track work (DECISIONS 73): it rates
+  on its own track id, never the shared Leap rating, which describes all twelve intervals; its guess
+  floor matches the pads it actually shows, 1/2 for two or 1/12 if all twelve show with ten dimmed
+  (the drill's `choices` count sets the floor and "must match what the UI actually renders",
+  `src/lib/ear/drills.ts:58-60`, `:233-237`); and it passes `updateItem: false`, so the items'
+  calibration stays as it is. The controller already supports this through `RunTrack`
+  (`src/features/ear-lab/use-identification-controller.ts:58-62`), the way Echo's sung answers rate
+  under `echo-sing` (`src/features/ear-lab/EchoDrill.tsx:136-142`; FACTS 34a). The launch should
+  also carry `?lesson=02` so First Light steps aside (CURRICULUM § 4 item 6).
 - When it ships, the Wrap, the footer, the explorer card and the YouTube description switch to the
-  slug; the film's end card keeps `/ear-lab`, which stays valid.
+  slug; the film's end card keeps `/ear-lab`, as the owner decided (DECISIONS 72), which stays
+  valid.
 
 ## Contract
 

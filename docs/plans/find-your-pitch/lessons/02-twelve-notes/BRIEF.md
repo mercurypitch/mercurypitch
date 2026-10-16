@@ -112,22 +112,26 @@ first."), holds A3, slides to A#3 and comes back; orange sings it an octave high
 know it was exactly one semitone; blue answers with the app's own reading (the monitor's name turns
 A4 to A#4 with the marker in the middle, then back: FACTS 30a). Only then is the viewer invited
 (rule 16: blue sings it, orange tries, the viewer is invited), with the safety said first: "Hum it
-quietly, or sing it on ooh. Never push, and stop if anything feels uncomfortable." They start from
-Merc's A or the A an octave up, "whichever feels easy" (each of the app's six range presets contains
-one of them, FACTS 38), in a 6.5 s guided pause. Nothing listens in the film: a plain ring timer, no
-microphone, and the Mercs wait rather than listen. A quiet one-semitone hum slide is within a
+quietly, or sing it on ooh. Never push, and stop if anything feels uncomfortable." (the short form,
+approved by the owner for both lessons, DECISIONS 74). They start from Merc's A or the A an octave
+up, "whichever feels easy" (each of the app's six range presets contains one of them, FACTS 38), in
+a 6.5 s guided pause. Nothing listens in the film: a plain ring timer, no microphone, the Mercs wait
+rather than listen, and nothing of the app's drawing stays on screen while the viewer sings (the
+film's own plain guide replaces it, DECISIONS 68). A quiet one-semitone hum slide is within a
 comfortable hum, so the comfort-check line is not needed (DECISIONS 25).
 
 ### Practice link
 
 Ear Lab Leap with only Minor 2nd and Major 2nd (`leap:m2`, `leap:M2`, `src/lib/ear/banks.ts:36-50`).
-Today no link opens it (FACTS 33): the film's end card shows mercurypitch.com/ear-lab, which works
-now and stays valid, and the page tells the viewer to tap Leap, where m2 is a semitone and M2 a
-tone; the film draws Leap's whole grid of twelve answers once (S15g), m2 and M2 lit and the other
-ten dim under "LISTEN FOR THESE TWO", as blue says "In Ear Lab's Leap, listen for the semitone and
-the tone." When the `ear-drill` launch kind accepts a bank subset (CURRICULUM § 4 item 5), the page
-and the YouTube description switch to the proposed `/exercises/semitone-or-tone`. Contour appears
-only on the page, as an optional first drill for direction: it never asks semitone or tone.
+Today no link opens it (FACTS 33): the film's end card shows mercurypitch.com/ear-lab (decided,
+DECISIONS 72), which works now and stays valid, and the page tells the viewer to tap Leap, where m2
+is a semitone and M2 a tone; the film draws Leap's whole grid of twelve answers once (S15g), m2 and
+M2 lit and the other ten dim under "LISTEN FOR THESE TWO", as blue says "In Ear Lab's Leap, listen
+for the semitone and the tone." When the `ear-drill` launch kind accepts a bank subset
+(CURRICULUM § 4 item 5), the page and the YouTube description switch to the proposed
+`/exercises/semitone-or-tone`, a launch that rates on its own track and leaves the shared Leap
+rating alone (DECISIONS 73). Contour appears only on the page, as an optional first drill for
+direction: it never asks semitone or tone.
 
 ### What must read with the sound off (captions on)
 
@@ -151,11 +155,12 @@ only on the page, as an optional first drill for direction: it never asks semito
   over the cents): the readout running 0 to 100, then "100 ¢"; "1200 ¢ = 1 octave"; the monitor's
   name flip at 50 ¢.
 - The slide drawn on the lanes; the app's "you are here" marker naming A4, A#4, A4 beside orange's
-  line, and the monitor's marker in the middle; then, with the app's title gone, "Your turn.",
-  "NEVER PUSH", "A3 or A4" and the amber cursor sweeping Merc's path.
+  line, and the monitor's marker in the middle; then, with nothing of the app's drawing left, "Your
+  turn.", "NEVER PUSH", "A3 or A4" and a chrome cursor sweeping the film's own plain guide.
 - The recap cards, each answered by the object that taught it; Leap's twelve answers, m2 and M2
   lit under "semitone" and "tone", with "LISTEN FOR THESE TWO".
-- "59 %" asked, "10–16 %" tested, "≥ 1 semitone off": the range the voice says.
+- "59 %" asked and "10–16 %" tested, side by side, with "≥ 1 semitone off": the range the voice
+  says.
 - The end card's address and the Leap line.
 
 ## Brand
@@ -163,13 +168,13 @@ only on the page, as an optional first drill for direction: it never asks semito
 - Name: MercuryPitch. Series: "Find Your Pitch".
 - Logo files: `assets/brand/mark.svg`, `assets/brand/lockup-horizontal.svg` (copied from
   `docs/branding/logo/meniscus2/`, the only canonical source).
-- Colours: as Lesson 1. Obsidian `#0d1117`, ink `#e6edf3`, ink-2 `#a8b3bf`, chrome `#c3ccd6`
-  (any other note), blue Merc's note `#58a6ff`, orange Merc's note `#ff7448`, gold `#ffd84d` for
-  the fit only, aqua `#2dd4bf` for the chapter cards' numerals (Lesson 1's). Pitch-canvas scenes
-  (S14, S16) take the app's canvas set: target amber `#f59e0b`, singer violet `#a78bfa`
-  (MASTER-PLAN § 5). Orange's wrong guesses are drawn dashed in ink-2 with a "?" in this lesson,
-  not in the series' violet contrast code, because the canvas's singer violet is orange's own
-  correct slide in S14 (DECISIONS 38).
+- Colours: as Lesson 1. Obsidian `#0d1117`, ink `#e6edf3`, ink-2 `#a8b3bf`, chrome `#c3ccd6` (any
+  other note), blue Merc's note `#58a6ff`, orange Merc's note `#ff7448`, gold `#ffd84d` for the fit
+  only, aqua `#2dd4bf` for the chapter cards' numerals (Lesson 1's). Pitch-canvas scenes (S14 until
+  the viewer's turn, and S16) take the app's canvas set: target amber `#f59e0b`, singer violet
+  `#a78bfa` (MASTER-PLAN § 5); the viewer's turn uses the film's own chrome guide. Orange's wrong
+  guesses are drawn dashed in ink-2 with a "?" in this lesson, not in the series' violet contrast
+  code, because the canvas's singer violet is orange's own correct slide in S14 (DECISIONS 38).
 - Fonts (local, SIL OFL 1.1, licences in `assets/fonts/`): Outfit, Inter, Instrument Serif italic,
   JetBrains Mono, and Noto Music for the ♯ and ♭ glyphs, drawn as paths.
 
@@ -225,8 +230,8 @@ materialising result) and the 3Blue1Brown habit of one object that transforms in
   little too high or low (the film keeps one meaning per word); any cents reading the app does not
   show (such as "+100 ¢" from a starting note on an app-labelled drawing); any claim or picture
   that the film or the app hears or checks the viewer's slide (no microphone, no listening ring, no
-  Merc listening to the viewer, and no drawing titled as MercuryPitch's, or the app's marker, over
-  the viewer's turn), that Leap scores singing, or that the pitch line "always" or
+  Merc listening to the viewer, and nothing of the app's drawing, neither its title, marker, singer
+  line nor target band, over the viewer's turn), that Leap scores singing, or that the pitch line "always" or
   "only" shows sharps.
 - A link that does not exist yet (no `/exercises/...` slug on screen).
 
