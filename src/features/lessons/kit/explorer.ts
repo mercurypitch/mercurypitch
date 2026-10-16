@@ -283,14 +283,9 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
       if (L.lane === 'both') {
         lab.style.top = `${p.y - 9}px`
         lab.style.width = '110px'
+        lab.style.left = `${L.n === 0 ? p.x + 30 : p.x - 30 - 110}px`
         lab.style.marginLeft = '0'
-        if (L.n === 0) {
-          lab.style.left = `${p.x + 30}px`
-          lab.classList.add('al')
-        } else {
-          lab.style.left = `${p.x - 30 - 110}px`
-          lab.classList.add('ar')
-        }
+        lab.classList.add(L.n === 0 ? 'al' : 'ar')
       } else {
         lab.style.top = `${L.lane === 'theory' ? p.y - 34 : p.y + 34}px`
         if (leans === 'ar') {

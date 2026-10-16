@@ -8,24 +8,32 @@
 // keyboard's controls and lets the spiral unroll; on a phone the unrolled
 // keyboard shows one octave at a time and pans. Taps are tested against the
 // hit lists the last frame drew, snapping to the nearest bead or key within
-// 22 px. The drawing itself is in toy-spiral-draw.ts.
+// 22 px. The helix, beads and keyboard are drawn in toy-spiral-draw.ts; the
+// two overlays that answer the viewer, the focus ring and the name tag, are
+// drawn here on top of that frame.
 
 import { clamp, q, qa, TAU } from '@/features/lessons/kit/dom'
 import { addDrawer, surface } from '@/features/lessons/kit/frame-loop'
 import { Motion, reducedMotion } from '@/features/lessons/kit/motion-switch'
-import { fmtHz, hz, nameOf, noteColor } from '@/features/lessons/kit/notes'
+import { COLOR, fmtHz, hz, nameOf, noteColor, rgba, } from '@/features/lessons/kit/notes'
 import type { Voice } from '@/features/lessons/kit/sound'
 import { playTone, Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
 import type { BeadHit, KeyHit } from './toy-spiral-draw'
-import { drawSpiral, LO, N, wIndex } from './toy-spiral-draw'
+import { drawSpiral, LO, N, roundedRect, WHITE } from './toy-spiral-draw'
 
 /** The phone keyboard's three windows, by pan / 7. */
 const WIN = ['A2 to A3', 'A3 to A4', 'A4 to A5']
 
 const say = (m: number): string =>
   `${nameOf(m) ?? 'A note without a letter of its own (Lesson 2)'}, ${fmtHz(hz(m))} hertz`
+
+/** A note's place counted in white keys; a black key sits half a key past the white below it. */
+function wIndex(s: number): number {
+  const wi = WHITE.indexOf(s)
+  return wi >= 0 ? wi : WHITE.indexOf(s - 1) + 0.5
+}
 
 export function initSpiralToy(deck: StepDeck): void {
   const canvas = q<HTMLCanvasElement>('#cvSpiral')
@@ -358,20 +366,59 @@ export function initSpiralToy(deck: StepDeck): void {
         const k = Math.round(yaw / TAU) * TAU
         yaw += (k - yaw) * Math.min(1, dt * 4)
       }
-      const drawn = drawSpiral(ctx, W, H, now, {
-        yaw,
-        u,
-        narrow,
-        pan,
-        focused,
-        sel,
-        step6,
-        hover,
-        tapLabel,
-        pulses,
-      })
+      const view = { yaw, u, narrow, pan, focused, sel, step6, pulses }
+      const drawn = drawSpiral(ctx, W, H, now, view)
       hits = drawn.hits
       keyHits = drawn.keyHits
+      drawOverlays(ctx, W, now)
     },
   })
+
+  function drawOverlays(
+    ctx: CanvasRenderingContext2D,
+    W: number,
+    now: number,
+  ): void {
+    // the keyboard's own focus on the spiral: an aqua ring round the selected bead
+    if (focused && u < 0.6) {
+      const h = hits.find((b) => b.s === sel)
+      if (h) {
+        ctx.strokeStyle = COLOR.aqua
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(h.x, h.y, h.r + 5, 0, TAU)
+        ctx.stroke()
+      }
+    }
+    // every bead carries its letter and number on hover, on tap, or under the keyboard's selection
+    const tipS =
+      hover ??
+      (tapLabel !== null && now - tapLabel.t < 1800
+        ? tapLabel.s
+        : focused
+          ? sel
+          : null)
+    const th = hits.find((h) => h.s === tipS)
+    if (th && u < 0.6) {
+      const m = LO + th.s
+      const txt = `${nameOf(m) ?? 'unnamed (Lesson 2)'} · ${fmtHz(hz(m))} Hz`
+      ctx.font = '600 14px Outfit, sans-serif'
+      const tw = ctx.measureText(txt).width + 20
+      let tx = th.x - tw / 2
+      let ty = th.y - th.r - 36
+      tx = clamp(tx, 6, W - tw - 6)
+      if (ty < 6) ty = th.y + th.r + 10
+      ctx.fillStyle = 'rgba(13,17,23,.92)'
+      ctx.strokeStyle = rgba(noteColor(m), 0.7)
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      roundedRect(ctx, tx, ty, tw, 26, 13)
+      ctx.fill()
+      ctx.stroke()
+      ctx.fillStyle = m === 57 || m === 69 ? noteColor(m) : COLOR.ink
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(txt, tx + tw / 2, ty + 13.5)
+    }
+  }
 }
