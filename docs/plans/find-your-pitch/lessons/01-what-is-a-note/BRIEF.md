@@ -67,8 +67,9 @@ staves, chrome and spectrum type, mono kickers, Instrument Serif italic.
 
 ## Audio
 
-- Music: none recorded. A quiet synthesised open-fifth pad in A (code), ducked to silence under
-  every listening example. Stings are synthesised chimes.
+- Music: none recorded. A quiet synthesised open-fifth pad in A (code), heard in act transitions
+  and under the dressed pauses (predict, hum, quiz) and silent under narration and every listening
+  example (playbook rule 12, coherence; updated after critic 03). Stings are synthesised chimes.
 - Sound effects: synthesised in code (soft band-limited whooshes); the "effects" that matter are
   the musical examples themselves.
 - Voiceover: yes, two characters (blue Merc teaches, orange Merc asks).

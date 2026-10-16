@@ -56,3 +56,16 @@ One line each, with the reason. Newest last.
     builder A, confirmed in the producer source, fix proved by a render).
 20. A container restart stopped every background job at 01:05. Files survived; the Merc queue was
     restarted from the first incomplete pass and every builder resumed from its transcript.
+21. Plan review (four lenses, adversarial verification): the reveal line b16a became "Higher, yes.
+    But together, they melt into one note." (played in sequence the octave plainly sounds higher;
+    only together do the tones fuse), and s17's on-screen claim became "counts any octave" (Voice
+    Mirror scores octave-folded and never asks for an A).
+22. Music bed: silent under narration and every example (coherence), but present in act
+    transitions and under the dressed pauses (predict, hum, quiz), so the mix never drops to
+    digital silence (critic 03). The brief is updated to match.
+23. Merc's celebration sparkles (the app's own) stay only on the end card; elsewhere they read as a
+    stock effect (critic 03). A build-time switch (`__mercSparkles`) turns them off per pass.
+24. Merc crown crescent: a one-frame black crescent at the top of a fast stretch (5 of 17 passes).
+    `merc-pass.mjs` re-renders a flagged frame at a nudged time; passes are written atomically.
+25. b21b re-worded to "The same letter, every time." (naming is always true; sounding the same is
+    the perception claim FACTS 9 never makes absolute).

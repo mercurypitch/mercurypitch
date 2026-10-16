@@ -111,14 +111,16 @@ session.
   the two-voice tune (s17) uses the app's synthesised "ooh" (`src/lib/demo-audio.ts`). Confirm the
   Echo samples' rights before any public release, or switch the public film to the synthesised
   "ooh" (MASTER-PLAN § 12 item 1). The bed is a quiet open-fifth pad in the key that plays only in
-  act transitions and is silent under narration and under every musical example. `mix.py` mutes it
-  around every spoken line, example, sung note and hum or predict window, merging windows closer
-  than 1.2 s so it never pumps between lines. In Lesson 1 the merge closes the short Act 2, 3 and 4
-  changes, so the bed sounds at the title-to-Act 1 change (22.6 to 25.8 s) and under the end card,
-  the film's last transition. `mix.py` mutes it around every `line`, `sound`, `sing` and `pause` cue, merging gaps under 1.2 s, so in Lesson 1 it sounds only under the title (22.5 to 26.0 s, measured from the bed stem). One soft whoosh per act change. A music-only render is not
+  act transitions and under the dressed pauses (predict, hum, quiz), so the film never drops to
+  digital silence (critic 03 found the mix silent in those pauses); its open fifth on the
+  lesson's note also supports the hum. It is silent under narration and under every musical
+  example: `mix.py` mutes it around every `line`, `sound` and `sing` cue, merging windows closer
+  than 1.2 s so it never pumps between lines. In Lesson 1 it sounds under the title (22.5 to 26.0
+  s), the predict pause, the hum pause and the three quiz pauses, measured from the bed stem. One soft whoosh per act change. A music-only render is not
   needed: the music-only mix muxed onto the same picture is identical by construction.
 - **Quality bar additions.** Two measured checks join the skill's quality bar. The bed is silent
-  inside every spoken line, musical example and pause (the bed stem's RMS is zero there); Lesson 1 passes (measured).
+  inside every spoken line and musical example (the bed stem's RMS is zero there); Lesson 1 passes
+  (measured).
   And a colour-blindness gate: a Machado et al. (2009) simulation (protan, deutan, tritan, severity
   1.0) and CIEDE2000 over the full palette (the series code, the pitch-canvas set, both Merc
   bodies), with the worst case recorded beside the canvas set's 12.4
