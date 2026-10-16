@@ -13,7 +13,6 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import './lesson-01.css'
-
 import { q } from '@/features/lessons/kit/dom'
 import { createEpisode } from '@/features/lessons/kit/episode'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -21,12 +20,7 @@ import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
 import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
-import {
-  engraveClefs,
-  initMasthead,
-  initMotionSwitch,
-  initSoundSwitch,
-} from '@/features/lessons/kit/page-chrome'
+import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'

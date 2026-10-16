@@ -13,21 +13,21 @@ claims cite the source at `99c8818` (main, 16 Oct 2026) by `file:line`. Web sour
 5. The hertz size of a semitone grows with pitch while its ratio stays the same: A3 to A#3 is 13.08 Hz, A4 to A#4 is 26.16 Hz; a semitone raises the frequency by about 5.95 % | 2 and 6 | arithmetic; web lesson Go deeper only
 6. Frequencies used, A4 = 440 Hz, f = 440 x 2^((m - 69) / 12) for MIDI note m (A4 = 69, C4 = 60), to two decimals | Wolfe (as 1): "By convention, A4 is often set at 440 Hz", "m for the note A4 is 69"; the same formula is the app's `midiToFreq` (`src/lib/scale-data.ts:151-157`) | computed from the formula and rounded to two decimals; all 37 rows re-checked by script; table below
 
-   | Note        | MIDI | Hz     | Note        | MIDI | Hz     | Note        | MIDI | Hz     |
-   | ----------- | ---- | ------ | ----------- | ---- | ------ | ----------- | ---- | ------ |
-   | A2          | 45   | 110.00 | A3          | 57   | 220.00 | A4          | 69   | 440.00 |
-   | A#2 / Bb2   | 46   | 116.54 | A#3 / Bb3   | 58   | 233.08 | A#4 / Bb4   | 70   | 466.16 |
-   | B2          | 47   | 123.47 | B3          | 59   | 246.94 | B4          | 71   | 493.88 |
-   | C3          | 48   | 130.81 | C4          | 60   | 261.63 | C5          | 72   | 523.25 |
-   | C#3 / Db3   | 49   | 138.59 | C#4 / Db4   | 61   | 277.18 | C#5 / Db5   | 73   | 554.37 |
-   | D3          | 50   | 146.83 | D4          | 62   | 293.66 | D5          | 74   | 587.33 |
-   | D#3 / Eb3   | 51   | 155.56 | D#4 / Eb4   | 63   | 311.13 | D#5 / Eb5   | 75   | 622.25 |
-   | E3          | 52   | 164.81 | E4          | 64   | 329.63 | E5          | 76   | 659.26 |
-   | F3          | 53   | 174.61 | F4          | 65   | 349.23 | F5          | 77   | 698.46 |
-   | F#3 / Gb3   | 54   | 185.00 | F#4 / Gb4   | 66   | 369.99 | F#5 / Gb5   | 78   | 739.99 |
-   | G3          | 55   | 196.00 | G4          | 67   | 392.00 | G5          | 79   | 783.99 |
-   | G#3 / Ab3   | 56   | 207.65 | G#4 / Ab4   | 68   | 415.30 | G#5 / Ab5   | 80   | 830.61 |
-   |             |      |        |             |      |        | A5          | 81   | 880.00 |
+   | Note      | MIDI | Hz     | Note      | MIDI | Hz     | Note      | MIDI | Hz     |
+   | --------- | ---- | ------ | --------- | ---- | ------ | --------- | ---- | ------ |
+   | A2        | 45   | 110.00 | A3        | 57   | 220.00 | A4        | 69   | 440.00 |
+   | A#2 / Bb2 | 46   | 116.54 | A#3 / Bb3 | 58   | 233.08 | A#4 / Bb4 | 70   | 466.16 |
+   | B2        | 47   | 123.47 | B3        | 59   | 246.94 | B4        | 71   | 493.88 |
+   | C3        | 48   | 130.81 | C4        | 60   | 261.63 | C5        | 72   | 523.25 |
+   | C#3 / Db3 | 49   | 138.59 | C#4 / Db4 | 61   | 277.18 | C#5 / Db5 | 73   | 554.37 |
+   | D3        | 50   | 146.83 | D4        | 62   | 293.66 | D5        | 74   | 587.33 |
+   | D#3 / Eb3 | 51   | 155.56 | D#4 / Eb4 | 63   | 311.13 | D#5 / Eb5 | 75   | 622.25 |
+   | E3        | 52   | 164.81 | E4        | 64   | 329.63 | E5        | 76   | 659.26 |
+   | F3        | 53   | 174.61 | F4        | 65   | 349.23 | F5        | 77   | 698.46 |
+   | F#3 / Gb3 | 54   | 185.00 | F#4 / Gb4 | 66   | 369.99 | F#5 / Gb5 | 78   | 739.99 |
+   | G3        | 55   | 196.00 | G4        | 67   | 392.00 | G5        | 79   | 783.99 |
+   | G#3 / Ab3 | 56   | 207.65 | G#4 / Ab4 | 68   | 415.30 | G#5 / Ab5 | 80   | 830.61 |
+   |           |      |        |           |      |        | A5        | 81   | 880.00 |
 
 7. A4 = 440 Hz is the standard tuning reference, and the app's reference is fixed at it | ISO 16:1975 (Lesson 1 FACTS 16); `A4_FREQ = 440.0` (`src/lib/scale-data.ts:152`) | standard and code
 8. Octave numbers change at C: B3 is followed by C4 | scientific pitch notation (Lesson 1 FACTS 17a); `midiToNoteNameOctave` (`src/lib/note-utils.ts:38-40`) | standard and code
@@ -75,7 +75,7 @@ claims cite the source at `99c8818` (main, 16 Oct 2026) by `file:line`. Web sour
 
 36. In a sample of 1,105 university students, 59 % said they could not imitate melodies by singing; in the two singing experiments, 10 of 79 participants (13 %) and 7 of 45 (16 %) sang a semitone or more off; the abstract says "10-15% of the participants imitated pitch at least one semitone off" | Pfordresher, P. Q. and Brown, S. (2007), "Poor-pitch singing in the absence of 'tone deafness'", Music Perception 25(2), 95–115, doi:10.1525/mp.2007.25.2.95: p. 95 (questionnaire), pp. 98 and 100 (Experiment 1: 79 participants; average note errors beyond +100 or -100 cents, "more than one semitone off pitch"), pp. 108 and 109 (Experiment 2: 45 participants; every pitch but the comfort pitch sung outside +-1 semitone, octave equivalents allowed) | full text fetched from the first author's site (acsu.buffalo.edu/~pqp/pdfs/Pfordresher&Brown_2007_MP.pdf) and read; said as the CURRICULUM's Lesson 3 hook: "Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six missed by a semitone or more" (b54, b55); on screen 59 %, 13 % and 16 %. The survey and the experiments are different groups, which is why the lines say "Asked" and "Tested"
 37. The same paper measures in cents "such that 100 cents = 1 semitone" | p. 100 | read; a second source for 22, not narrated
-37a. Singers also say "sharp" for a little too high and "flat" for a little too low | the same paper, p. 100: "negative values reflected undershooting ('flat'), positive values reflected overshooting ('sharp')" | read; the page's Go deeper only (the film keeps one meaning per word)
+    37a. Singers also say "sharp" for a little too high and "flat" for a little too low | the same paper, p. 100: "negative values reflected undershooting ('flat'), positive values reflected overshooting ('sharp')" | read; the page's Go deeper only (the film keeps one meaning per word)
 
 ## Singing and safety
 
