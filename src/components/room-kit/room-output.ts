@@ -17,8 +17,21 @@
 // life. On a phone that is the app's one shared context, which is never
 // closed (packages/audio-io); a browser's room closes its own context, and
 // its bus goes with it.
+//
+// In front of the bus, each room has a stage of its own (`openRoomStage`,
+// opened by useExerciseCapture with the room's clock). While a room's stage
+// is open, `roomOutput` hands it out, so everything the room starts goes
+// through it. Cutting the stage takes whatever of the room is still behind
+// it off the speakers at once. That is for sound the clock parked: a note
+// frozen on a parked clock plays its release when the clock next starts,
+// and that start belongs to the next tap, often in another room. A stage
+// is held at 1 like the bus, and it is cut by disconnecting it, never by
+// turning it down.
 
-/** The bus's gain. Never automated, and pinned after every room switch. */
+/**
+ * The bus's gain, and every room stage's. Never automated, and pinned after
+ * every room switch.
+ */
 export const ROOM_OUTPUT_GAIN = 1
 
 /** Samples the meter reads at a time: 43 ms at 48 kHz. */
@@ -30,6 +43,8 @@ const SILENCE_DB = -120
 interface Output {
   readonly bus: GainNode
   meter: AnalyserNode | null
+  /** The rooms' stages in front of the bus, newest last. */
+  readonly stages: GainNode[]
 }
 
 const outputs = new Map<BaseAudioContext, Output>()
@@ -41,21 +56,68 @@ function forgetClosed(): void {
   }
 }
 
-/** Where a room's sound goes on `ctx`: the room output, made on first use. */
-export function roomOutput(ctx: BaseAudioContext): AudioNode {
+/** The room output on `ctx`, made on first use. */
+function outputOn(ctx: BaseAudioContext): Output {
   const known = outputs.get(ctx)
-  if (known !== undefined) return known.bus
+  if (known !== undefined) return known
   forgetClosed()
   const bus = ctx.createGain()
   bus.gain.value = ROOM_OUTPUT_GAIN
   bus.connect(ctx.destination)
-  outputs.set(ctx, { bus, meter: null })
-  return bus
+  const output: Output = { bus, meter: null, stages: [] }
+  outputs.set(ctx, output)
+  return output
+}
+
+/**
+ * Where a room's sound goes on `ctx`: the newest room stage open there,
+ * else the room output itself.
+ */
+export function roomOutput(ctx: BaseAudioContext): AudioNode {
+  const { bus, stages } = outputOn(ctx)
+  return stages.length === 0 ? bus : stages[stages.length - 1]
+}
+
+/** A room's stage in front of the room output. */
+export interface RoomStage {
+  /**
+   * Off the speakers, with everything still behind it, at once. The room's
+   * next sound goes to the stage open before it, or to the bus. Safe to
+   * call more than once.
+   */
+  cut: () => void
+}
+
+/**
+ * Open a room's stage on `ctx`: until it is cut, `roomOutput(ctx)` hands it
+ * out, so the room's sound goes through it to the bus.
+ */
+export function openRoomStage(ctx: BaseAudioContext): RoomStage {
+  const output = outputOn(ctx)
+  const stage = ctx.createGain()
+  stage.gain.value = ROOM_OUTPUT_GAIN
+  stage.connect(output.bus)
+  output.stages.push(stage)
+  let cut = false
+  return {
+    cut: () => {
+      if (cut) return
+      cut = true
+      stage.disconnect()
+      const at = output.stages.indexOf(stage)
+      if (at !== -1) output.stages.splice(at, 1)
+    },
+  }
 }
 
 /** The room output on `ctx` if a room has made one there; null if not. */
 export function roomOutputIfMade(ctx: BaseAudioContext): AudioNode | null {
   return outputs.get(ctx)?.bus ?? null
+}
+
+/** The room stages open on `ctx`, oldest first; none if no room has one. */
+export function roomStagesOn(ctx: BaseAudioContext): readonly AudioNode[] {
+  return [...(outputs.get(ctx)?.stages ?? [])]
 }
 
 /** What one room output sends to the speakers, as a test build reads it. */

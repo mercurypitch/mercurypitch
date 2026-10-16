@@ -24,6 +24,16 @@
 // the next time it ran: the next room's first tap, which opened on the end
 // of this room's note. A park while the room is open (the page hiding, the
 // app leaving the foreground) waits out the same tail (`prepareToSuspend`).
+//
+// The room's sound goes through a stage of its own (room-output.ts), opened
+// with its clock. The app can leave the foreground with no page event at
+// all (Control Center, the notification shade): the room hears nothing,
+// its note is parked mid-sound, and it would play on, and then release,
+// the next time the clock starts. So once the room is gone its stage is
+// cut, after the tail, or at once if the clock is not running. A tap that
+// starts a parked clock again cuts the old stage as well, and the room
+// goes on with a new one: what the clock parked belongs to before the
+// park.
 
 import { onCleanup, untrack } from 'solid-js'
 import type { MicError } from '@/lib/mic-manager'
@@ -33,7 +43,8 @@ import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { ReferenceTone } from '@/lib/reference-tone'
 import { startReferenceTone } from '@/lib/reference-tone'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
-import { roomOutput } from './room-output'
+import type { RoomStage } from './room-output'
+import { openRoomStage, roomOutput } from './room-output'
 
 /**
  * How long a room's sound plays on once it is stopped, ms. Every sound a
@@ -103,6 +114,39 @@ export function useExerciseCapture(
     tones.clear()
   }
 
+  /** The room's stage in front of the room output, and the clock it is on. */
+  let stage: RoomStage | null = null
+  let staged: AudioContext | null = null
+  /** Stops watching the clock for a park during the tail. */
+  let unwatch = (): void => undefined
+
+  /** Everything of the room off the speakers: the stage is cut. */
+  const cutStage = (): void => {
+    unwatch()
+    unwatch = () => undefined
+    stage?.cut()
+    stage = null
+    staged = null
+  }
+
+  /**
+   * The screen is gone. Its stage stays for the tail, unless the clock is
+   * not running, or stops before the tail is over: a parked clock plays
+   * the rest later, at another room's first tap.
+   */
+  const cutStageAfterTail = (): void => {
+    const ctx = staged
+    if (ctx === null || ctx.state !== 'running') {
+      cutStage()
+      return
+    }
+    const parked = (): void => {
+      if (ctx.state !== 'running') cutStage()
+    }
+    ctx.addEventListener('statechange', parked)
+    unwatch = () => ctx.removeEventListener('statechange', parked)
+  }
+
   const lease = untrack(nativeDeviceApi)?.acquireAudio(owner, {
     // The clock is about to park. A room stops its sound from the page's
     // own event (its `leave`), the same moment, and the clock waits out the
@@ -131,6 +175,14 @@ export function useExerciseCapture(
     if (disposed) return null
     const ctx = context()
     if (ctx === null) return null
+    // The room's first clock opens its stage. A clock that is not running
+    // holds whatever it parked, and would play it on: this tap starts the
+    // room on a new stage instead.
+    if (ctx.state !== 'running' || staged !== ctx) {
+      cutStage()
+      stage = openRoomStage(ctx)
+      staged = ctx
+    }
     if (lease !== undefined) return (await lease.unlock()) ? ctx : null
     if (ctx.state === 'suspended') await ctx.resume().catch(() => undefined)
     return ctx.state === 'running' ? ctx : null
@@ -188,9 +240,14 @@ export function useExerciseCapture(
     // plays now. Keep the clock until it has.
     if (lease !== undefined) {
       tailEnds = Date.now() + ROOM_TAIL_MS
-      setTimeout(() => lease.release(), ROOM_TAIL_MS)
+      cutStageAfterTail()
+      setTimeout(() => {
+        cutStage()
+        lease.release()
+      }, ROOM_TAIL_MS)
     }
     if (ownContext !== null) {
+      cutStage()
       void ownContext.close().catch(() => undefined)
       ownContext = null
     }

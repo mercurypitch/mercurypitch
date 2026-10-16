@@ -47,8 +47,23 @@ vi.mock('@/lib/reference-tone', () => ({
     return note
   },
 }))
+// The room's stages in front of the room output: each one opened, and
+// whether it was cut.
+const stages = vi.hoisted(() => ({
+  opened: [] as { cut: () => void; isCut: boolean }[],
+}))
 vi.mock('@/components/room-kit/room-output', () => ({
   roomOutput: () => ({}),
+  openRoomStage: () => {
+    const stage = {
+      isCut: false,
+      cut: () => {
+        stage.isCut = true
+      },
+    }
+    stages.opened.push(stage)
+    return stage
+  },
 }))
 
 // The phone's audio lease, or none for a browser build.
@@ -81,7 +96,24 @@ const { ROOM_TAIL_MS } =
   await import('@/components/room-kit/useExerciseCapture')
 
 const stream = {} as MediaStream
-const context = { state: 'running' } as AudioContext
+/** The audio clock: its state, and who is listening for it to change. */
+const clock = {
+  state: 'running' as AudioContextState,
+  listeners: new Set<() => void>(),
+  addEventListener: (_type: string, listener: () => void) => {
+    clock.listeners.add(listener)
+  },
+  removeEventListener: (_type: string, listener: () => void) => {
+    clock.listeners.delete(listener)
+  },
+}
+const context = clock as unknown as AudioContext
+
+/** The clock parks, as the app leaving the foreground or the system does. */
+function park(): void {
+  clock.state = 'suspended'
+  for (const listener of [...clock.listeners]) listener()
+}
 
 function mount(): {
   capture: ReturnType<typeof useLongNoteCapture>
@@ -107,6 +139,9 @@ describe('useLongNoteCapture', () => {
     }
     device.options = undefined
     notes.started.length = 0
+    stages.opened.length = 0
+    clock.state = 'running'
+    clock.listeners.clear()
   })
 
   afterEach(() => {
@@ -234,6 +269,17 @@ describe('useLongNoteCapture', () => {
     await expect(capture.audio()).resolves.toBeNull()
     dispose()
   })
+  it('starts a parked clock on a new stage, and cuts the one the park held', async () => {
+    const { capture, dispose } = mount()
+    await capture.audio()
+    // The app left with the page still showing: the clock parked with the
+    // room's note in it, and the room heard nothing of it.
+    park()
+    await capture.audio()
+    expect(stages.opened.map((stage) => stage.isCut)).toEqual([true, false])
+    dispose()
+  })
+
   describe('the clock, once the room is left', () => {
     // A room's sound fades over the house release after the room stops it.
     // The last lease out parks the clock 120 ms later: let go at once, the
@@ -302,6 +348,41 @@ describe('useLongNoteCapture', () => {
       await playing
       expect(notes.started).toEqual([])
       dispose()
+    })
+
+    it("cuts the room's stage once the tail is over", async () => {
+      const { capture, dispose } = mount()
+      await capture.audio()
+      await capture.audio()
+      // One stage for the room while its clock runs.
+      expect(stages.opened).toHaveLength(1)
+      vi.useFakeTimers()
+      dispose()
+      vi.advanceTimersByTime(ROOM_TAIL_MS - 1)
+      expect(stages.opened[0].isCut).toBe(false)
+      vi.advanceTimersByTime(1)
+      expect(stages.opened[0].isCut).toBe(true)
+      expect(clock.listeners.size).toBe(0)
+    })
+
+    it('cuts the stage at once when the room goes with the clock parked', async () => {
+      const { capture, dispose } = mount()
+      await capture.audio()
+      park()
+      dispose()
+      expect(stages.opened[0].isCut).toBe(true)
+    })
+
+    it('cuts the stage when the clock parks inside the tail', async () => {
+      const { capture, dispose } = mount()
+      await capture.audio()
+      vi.useFakeTimers()
+      dispose()
+      vi.advanceTimersByTime(100)
+      expect(stages.opened[0].isCut).toBe(false)
+      park()
+      expect(stages.opened[0].isCut).toBe(true)
+      expect(clock.listeners.size).toBe(0)
     })
 
     it('unlocks nothing and plays nothing while the lease waits out the tail', async () => {
