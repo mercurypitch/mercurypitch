@@ -1941,7 +1941,7 @@ describe('songs of your own (Stage 2)', () => {
     expect(imports.played).toEqual(['karaoke-night-demo'])
   })
 
-  it("put the songs left in the options, which push Karaoke's settings", async () => {
+  it('put the songs left in the options, which open Settings, where Cloud keeps them', async () => {
     build.importing = true
     resetKaraokeSongsForTests({
       left: 18,
@@ -1961,7 +1961,7 @@ describe('songs of your own (Stage 2)', () => {
       })
       fireEvent.click(row)
 
-      expect(pushSettings).toHaveBeenCalledWith('karaoke')
+      expect(pushSettings).toHaveBeenCalledWith()
       expect(screen.queryByTestId('karaoke-options')).toBeNull()
     } finally {
       unregisterShell()

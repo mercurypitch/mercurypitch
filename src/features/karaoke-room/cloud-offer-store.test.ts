@@ -1,0 +1,216 @@
+// ============================================================
+// The Cloud offer's caps, and what is asked before it opens (S7 §3.9, §5)
+// ============================================================
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as Songs from './karaoke-songs'
+import type { KaraokeSongs } from './karaoke-songs'
+
+const identity = vi.hoisted(() => ({
+  order: [] as string[],
+  answer: Promise.resolve(true) as Promise<boolean>,
+}))
+vi.mock('@/db/services/singer-identity', () => ({
+  ensureSingerIdentity: vi.fn(async () => {
+    identity.order.push('identity')
+    return identity.answer
+  }),
+}))
+
+const server = vi.hoisted(() => ({ next: null as KaraokeSongs | null }))
+vi.mock('./karaoke-songs', async (importOriginal) => {
+  const actual = await importOriginal<typeof Songs>()
+  return {
+    ...actual,
+    refreshKaraokeSongs: vi.fn(async () => {
+      identity.order.push('server')
+      if (server.next !== null) actual.resetKaraokeSongsForTests(server.next)
+      return Promise.resolve(actual.karaokeSongs())
+    }),
+    awaitSubscription: vi.fn(async () =>
+      Promise.resolve(actual.karaokeSongs()),
+    ),
+  }
+})
+
+import { setMicActive } from '@/stores/mic-store'
+import { registerRunControls, registerShellApi, } from '@/stores/native-shell-store'
+import { askBeforeOffering, BEFORE_OFFER_MS, closeCloudOffer, cloudOffer, NOT_NOW_QUIET_MS, openCloudOffer, resetCloudOfferForTests, showCloudSubscribed, unaskedRefusal, } from './cloud-offer-store'
+import { resetKaraokeSongsForTests } from './karaoke-songs'
+
+const NOW = Date.UTC(2026, 9, 16, 12)
+const DAY_MS = 24 * 60 * 60 * 1000
+
+const free: KaraokeSongs = {
+  left: 0,
+  subscribed: false,
+  renewsAt: null,
+  perPeriod: 20,
+}
+
+beforeEach(() => {
+  resetCloudOfferForTests()
+  resetKaraokeSongsForTests(free)
+  identity.order = []
+  identity.answer = Promise.resolve(true)
+  server.next = null
+})
+
+afterEach(() => {
+  resetCloudOfferForTests()
+  setMicActive(false)
+  vi.useRealTimers()
+})
+
+describe('an offer the singer asked for', () => {
+  it('opens from Import and from See the plan, whatever came before', () => {
+    expect(openCloudOffer('onboarding', 'offer', NOW)).toBe(true)
+    closeCloudOffer('not-now', NOW)
+
+    expect(openCloudOffer('import', 'offer', NOW + 1)).toBe(true)
+    closeCloudOffer('not-now', NOW + 1)
+    expect(openCloudOffer('settings', 'offer', NOW + 2)).toBe(true)
+    expect(cloudOffer()).toEqual({ source: 'settings', view: 'offer' })
+  })
+})
+
+describe('an offer nobody asked for', () => {
+  it('opens once a session', () => {
+    expect(openCloudOffer('onboarding', 'offer', NOW)).toBe(true)
+    closeCloudOffer('done', NOW)
+
+    expect(unaskedRefusal(NOW + 1)).toBe('session')
+    expect(openCloudOffer('onboarding', 'offer', NOW + 1)).toBe(false)
+    expect(cloudOffer()).toBeNull()
+  })
+
+  it('stays away for 7 days after a Not now, from any offer', () => {
+    openCloudOffer('import', 'offer', NOW)
+    closeCloudOffer('not-now', NOW)
+
+    expect(unaskedRefusal(NOW + 6 * DAY_MS)).toBe('not-now')
+    expect(openCloudOffer('onboarding', 'offer', NOW + 6 * DAY_MS)).toBe(false)
+    expect(unaskedRefusal(NOW + NOT_NOW_QUIET_MS)).toBeNull()
+    expect(openCloudOffer('onboarding', 'offer', NOW + NOT_NOW_QUIET_MS)).toBe(
+      true,
+    )
+  })
+
+  it('remembers the Not now across a restart, on this phone', () => {
+    openCloudOffer('import', 'offer', NOW)
+    closeCloudOffer('not-now', NOW)
+
+    // A new session: nothing offered yet, the Not now still kept.
+    const kept = localStorage.getItem('mp:cloud-offer-not-now')
+    resetCloudOfferForTests()
+    if (kept !== null) localStorage.setItem('mp:cloud-offer-not-now', kept)
+
+    expect(unaskedRefusal(NOW + DAY_MS)).toBe('not-now')
+  })
+
+  it('takes a closing after a yes from the store as no Not now', () => {
+    openCloudOffer('import', 'offer', NOW)
+    showCloudSubscribed(false)
+    closeCloudOffer('not-now', NOW)
+
+    expect(unaskedRefusal(NOW + 1)).toBeNull()
+  })
+
+  it('never opens while the microphone is listening', () => {
+    setMicActive(true)
+
+    expect(unaskedRefusal(NOW)).toBe('singing')
+    expect(openCloudOffer('onboarding', 'offer', NOW)).toBe(false)
+  })
+
+  it('never opens while a song plays, or a run is paused or counting in', () => {
+    const run = { playing: true, paused: false, counting: false }
+    const unregister = registerRunControls({
+      tab: 'singing',
+      roomLabel: 'Sing',
+      isPlaying: () => run.playing,
+      isPaused: () => run.paused,
+      isCountingIn: () => run.counting,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(),
+    })
+    try {
+      expect(unaskedRefusal(NOW)).toBe('singing')
+      run.playing = false
+      run.paused = true
+      expect(unaskedRefusal(NOW)).toBe('singing')
+      run.paused = false
+      run.counting = true
+      expect(unaskedRefusal(NOW)).toBe('singing')
+      run.counting = false
+      expect(unaskedRefusal(NOW)).toBeNull()
+    } finally {
+      unregister()
+    }
+  })
+
+  it('never opens for a subscriber', () => {
+    resetKaraokeSongsForTests({ ...free, left: 12, subscribed: true })
+
+    expect(unaskedRefusal(NOW)).toBe('subscribed')
+    expect(openCloudOffer('onboarding', 'offer', NOW)).toBe(false)
+  })
+})
+
+describe('askBeforeOffering', () => {
+  it('makes the identity first, then asks the server and the store', async () => {
+    const storeSubscribed = vi.fn(async () => {
+      identity.order.push('store')
+      return Promise.resolve(true)
+    })
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      karaokeSubscription: {
+        subscribe: async () => Promise.resolve('cancelled' as const),
+        restore: async () => Promise.resolve('nothing' as const),
+        storeSubscribed,
+      },
+    })
+    server.next = { ...free, left: 1, free: 1 }
+    try {
+      const facts = await askBeforeOffering()
+
+      expect(identity.order[0]).toBe('identity')
+      expect(identity.order.slice(1).sort()).toEqual(['server', 'store'])
+      expect(facts.storeHolds).toBe(true)
+      expect(facts.songs.left).toBe(1)
+    } finally {
+      unregister()
+    }
+  })
+
+  it('answers within its bound with what is known, and no store', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    identity.answer = new Promise<boolean>(() => undefined)
+
+    const asking = askBeforeOffering()
+    await vi.advanceTimersByTimeAsync(BEFORE_OFFER_MS)
+
+    await expect(asking).resolves.toEqual({ songs: free, storeHolds: false })
+  })
+
+  it('takes a store that cannot say as holding nothing', async () => {
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      karaokeSubscription: {
+        subscribe: async () => Promise.resolve('cancelled' as const),
+        restore: async () => Promise.resolve('nothing' as const),
+        storeSubscribed: async () => Promise.reject(new Error('no store')),
+      },
+    })
+    try {
+      await expect(askBeforeOffering()).resolves.toMatchObject({
+        storeHolds: false,
+      })
+    } finally {
+      unregister()
+    }
+  })
+})

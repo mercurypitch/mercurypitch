@@ -1,13 +1,12 @@
 // ============================================================
-// Import a song: the button, the picker, and the sheets (plan S8 §6)
+// Import a song: the button, the gate, the picker and the sheets
 // ============================================================
 //
-// The button asks the phone's own picker for songs, checks each one, and
-// asks once before any is sent: what it uses, what is sent where, and how
-// long to keep the app open. Nothing is sent without that yes. With no songs
-// left it shows the gate instead of the picker: the paywall without a
-// subscription, the date the songs come back with one. Subscribe fails
-// closed until the store products exist.
+// Plan S8 §6 and S7b §4.3. The button asks before it opens Files: songs to
+// use open the picker at once, with a chip that says how many; a subscriber
+// with none left is told when the next ones come; anyone else meets the
+// Cloud offer (CloudOffer.test.tsx says what the offer itself does). What is
+// picked is checked, and the singer is asked once before any of it is sent.
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -85,16 +84,20 @@ vi.mock('./karaoke-songs', async (importOriginal) => {
   }
 })
 
-const auth = vi.hoisted(() => ({ registered: false }))
+const auth = vi.hoisted(() => ({ registered: false, token: true }))
 vi.mock('@/db/services/auth-service', () => ({
+  accountHeld: () => auth.registered,
   hasUpgradedAccount: () => auth.registered,
+  hasValidToken: () => auth.token,
+  requireAuth: async () => Promise.resolve(true),
 }))
 
-import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
+import { resetCloudOfferForTests } from './cloud-offer-store'
+import { CloudOffer } from './CloudOffer'
 import { IMPORT_ACCEPT } from './karaoke-import-checks'
-import { karaokeSongs, resetKaraokeSongsForTests, songsOnTheWay, } from './karaoke-songs'
+import { resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeImport } from './KaraokeImport'
 
 /** The store's price for the month's plan, as the offer states it. */
@@ -105,6 +108,14 @@ const subscriber: KaraokeSongs = {
   left: 18,
   subscribed: true,
   renewsAt: '2026-10-27T10:00:00.000Z',
+  perPeriod: 20,
+}
+
+/** Not subscribed, and nothing left to use. */
+const noSongs: KaraokeSongs = {
+  left: 0,
+  subscribed: false,
+  renewsAt: null,
   perPeriod: 20,
 }
 
@@ -123,7 +134,9 @@ beforeEach(() => {
   server.next = null
   server.hold = null
   auth.registered = false
+  auth.token = true
   resetKaraokeSongsForTests(subscriber)
+  resetCloudOfferForTests()
   clicks = vi
     .spyOn(HTMLInputElement.prototype, 'click')
     .mockImplementation(() => undefined)
@@ -132,10 +145,18 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   clicks.mockRestore()
+  resetCloudOfferForTests()
+  vi.useRealTimers()
 })
 
+/** The room's import row, and the offer the shell draws once. */
 function mount(): HTMLInputElement {
-  render(() => <KaraokeImport />)
+  render(() => (
+    <>
+      <KaraokeImport />
+      <CloudOffer />
+    </>
+  ))
   const input = screen.getByTestId('karaoke-import-input')
   if (!(input instanceof HTMLInputElement)) throw new Error('no picker')
   return input
@@ -150,85 +171,245 @@ async function sheet(name: string): Promise<HTMLElement> {
   return waitFor(() => screen.getByRole('dialog', { name }))
 }
 
+function importButton(): HTMLElement {
+  return screen.getByRole('button', { name: /^Import a song/u })
+}
+
 describe('the Import button', () => {
-  it("says what can be imported and what is left, and asks the phone's picker", () => {
+  it("says what can be imported and how many songs are left, and asks the phone's picker", () => {
     const input = mount()
 
     expect(
       screen.getByText(
-        'Songs from Files: MP3, M4A, WAV or FLAC, up to 12 minutes. 18 of 20 songs left this month.',
+        'Songs from Files: MP3, M4A, WAV or FLAC, up to 12 minutes.',
       ),
     ).toBeTruthy()
+    expect(screen.getByTestId('karaoke-import-chip').textContent).toBe(
+      '18 of 20 songs left',
+    )
     expect(input.type).toBe('file')
     expect(input.multiple).toBe(true)
     expect(input.accept).toBe(IMPORT_ACCEPT)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
+    fireEvent.click(importButton())
 
     expect(clicks).toHaveBeenCalledTimes(1)
   })
 
-  it('shows the paywall, not the picker, with no songs and no subscription', async () => {
-    resetKaraokeSongsForTests({
-      left: 0,
-      subscribed: false,
-      renewsAt: null,
-      perPeriod: 20,
-    })
+  it("opens Files for a signed-in singer's free song, and says it is that", () => {
+    auth.registered = true
+    resetKaraokeSongsForTests({ ...noSongs, left: 1, free: 1 })
     mount()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
-
-    const paywall = await sheet('Sing your own songs')
-    expect(clicks).not.toHaveBeenCalled()
-    // No store in this build: the plan, and no price of our own making.
-    expect(paywall.textContent).toContain('20 songs a month')
-    expect(paywall.textContent).not.toContain('€')
-    expect(paywall.textContent).toContain(
-      'Mercury Pitch Cloud, monthly. Renews every month until you cancel. Cancel any time in Settings.',
+    expect(screen.getByTestId('karaoke-import-chip').textContent).toBe(
+      'Your free song this month',
     )
-    for (const line of [
-      'Any song from Files on this phone',
-      'Voice and music separated on our server',
-      'Your songs stay on this phone and play offline',
-    ]) {
-      expect(within(paywall).getByText(line)).toBeTruthy()
-    }
-    expect(
-      within(paywall)
-        .getByRole('link', { name: 'Terms of Use' })
-        .getAttribute('href'),
-    ).toBe('https://about.mercurypitch.com/terms/')
-    expect(
-      within(paywall)
-        .getByRole('link', { name: 'Privacy Policy' })
-        .getAttribute('href'),
-    ).toBe('https://about.mercurypitch.com/privacy/')
-    expect(within(paywall).getByRole('button', { name: 'Later' })).toBeTruthy()
+    fireEvent.click(importButton())
+
+    expect(clicks).toHaveBeenCalledTimes(1)
   })
 
-  it('says when the songs come back, with none left this month', async () => {
+  it('opens the offer, not the picker, with no songs and no account', async () => {
+    resetKaraokeSongsForTests(noSongs)
+    mount()
+
+    expect(screen.queryByTestId('karaoke-import-chip')).toBeNull()
+    fireEvent.click(importButton())
+
+    const offer = await sheet('Sing your own songs')
+    expect(clicks).not.toHaveBeenCalled()
+    expect(
+      within(offer).getByRole('button', {
+        name: 'Get 1 free song with a free account',
+      }),
+    ).toBeTruthy()
+  })
+
+  it('opens the offer on a fresh install, where nothing is known yet', async () => {
+    auth.token = false
+    resetKaraokeSongsForTests({ ...noSongs, left: null })
+    mount()
+
+    fireEvent.click(importButton())
+
+    await sheet('Sing your own songs')
+    expect(clicks).not.toHaveBeenCalled()
+  })
+
+  it("offers a signed-in singer whose free song is used the plan, and the next song's date", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-16T12:00:00.000Z'))
+    auth.registered = true
+    resetKaraokeSongsForTests({ ...noSongs, free: 0 })
+    mount()
+
+    fireEvent.click(importButton())
+
+    const offer = await sheet('Sing your own songs')
+    expect(offer.textContent).toContain(
+      'Your next free song comes on 1 November.',
+    )
+    expect(clicks).not.toHaveBeenCalled()
+  })
+
+  it('tells a subscriber with none left when the next songs come, and offers nothing', async () => {
     resetKaraokeSongsForTests({ ...subscriber, left: 0 })
     mount()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
+    fireEvent.click(importButton())
 
     const used = await sheet('No songs left this month')
     expect(clicks).not.toHaveBeenCalled()
-    expect(used.textContent).toContain('Your 20 songs come back on 27 October.')
+    expect(used.textContent).toContain(
+      "You've used all your songs this month. 20 more on 27 October.",
+    )
     expect(used.textContent).toContain(
       'The songs you imported stay on this phone and still play.',
     )
+    expect(
+      screen.queryByRole('dialog', { name: 'Sing your own songs' }),
+    ).toBeNull()
+  })
+
+  it('opens Files after all when the server, asked again, has songs to use', async () => {
+    resetKaraokeSongsForTests(noSongs)
+    mount()
+    // Review access, say: songs the server gives a singer without Cloud.
+    server.next = { ...noSongs, left: 3 }
+
+    fireEvent.click(importButton())
+
+    await waitFor(() => expect(clicks).toHaveBeenCalledTimes(1))
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('opens the gate when the queue meets a refusal', async () => {
     mount()
+    server.next = noSongs
 
-    queue.gate?.({ left: 0, subscribed: false, renewsAt: null, perPeriod: 20 })
+    queue.gate?.(noSongs)
 
-    const paywall = await sheet('Sing your own songs')
-    expect(paywall.textContent).toContain('20 songs a month')
+    const offer = await sheet('Sing your own songs')
+    expect(offer.textContent).toContain('20 songs a month')
     expect(clicks).not.toHaveBeenCalled()
+  })
+})
+
+describe('a refusal at the server', () => {
+  it('opens no picker by itself when songs turn up: the queue sends the song again', async () => {
+    resetKaraokeSongsForTests(noSongs)
+    mount()
+    server.next = { ...noSongs, left: 3 }
+
+    queue.gate?.(noSongs)
+
+    await waitFor(() =>
+      expect(importButton().getAttribute('aria-busy')).toBeNull(),
+    )
+    expect(clicks).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+})
+
+describe('before the offer opens', () => {
+  // Review of PR 880, finding 5: a store subscriber whose songs the server
+  // has not heard of yet (the webhook slow, or failed) is never offered the
+  // subscription again. S7 §3.9: the more generous of server and store.
+  it('shows a subscriber the store knows the songs on their way, not the offer', async () => {
+    const storeSubscribed = vi.fn(async () => Promise.resolve(true))
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      karaokeSubscription: {
+        subscribe: vi.fn(async () => Promise.resolve('purchased' as const)),
+        restore: async () => Promise.resolve('nothing' as const),
+        offer: offered,
+        storeSubscribed,
+      },
+    })
+    let release = (): void => undefined
+    server.hold = new Promise((resolve) => {
+      release = resolve
+    })
+    try {
+      resetKaraokeSongsForTests(noSongs)
+      mount()
+      fireEvent.click(importButton())
+
+      const coming = await sheet("You're subscribed")
+      expect(coming.textContent).toContain('Your songs are on their way.')
+      expect(
+        screen.queryByRole('dialog', { name: 'Sing your own songs' }),
+      ).toBeNull()
+      expect(storeSubscribed).toHaveBeenCalledTimes(1)
+
+      // Import again before the webhook: not the offer a second time, and
+      // the store is not asked again.
+      fireEvent.click(within(coming).getByRole('button', { name: 'Close' }))
+      fireEvent.click(importButton())
+      const again = await sheet("You're subscribed")
+      expect(storeSubscribed).toHaveBeenCalledTimes(1)
+
+      server.next = { ...subscriber, left: 20 }
+      release()
+      await waitFor(() =>
+        expect(again.textContent).toContain('20 songs a month are yours.'),
+      )
+    } finally {
+      release()
+      unregister()
+    }
+  })
+
+  it('offers the subscription anyway when the store does not answer in time', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      karaokeSubscription: {
+        subscribe: async () => Promise.resolve('cancelled' as const),
+        restore: async () => Promise.resolve('nothing' as const),
+        offer: offered,
+        storeSubscribed: async () => new Promise<boolean>(() => undefined),
+      },
+    })
+    try {
+      resetKaraokeSongsForTests(noSongs)
+      mount()
+      fireEvent.click(importButton())
+      await vi.advanceTimersByTimeAsync(2_900)
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(importButton().getAttribute('aria-busy')).toBe('true')
+
+      await vi.advanceTimersByTimeAsync(200)
+      vi.useRealTimers()
+
+      await sheet('Sing your own songs')
+    } finally {
+      vi.useRealTimers()
+      unregister()
+    }
+  })
+
+  it('offers the subscription where the store holds none either', async () => {
+    const storeSubscribed = vi.fn(async () => Promise.resolve(false))
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      karaokeSubscription: {
+        subscribe: async () => Promise.resolve('cancelled' as const),
+        restore: async () => Promise.resolve('nothing' as const),
+        offer: offered,
+        storeSubscribed,
+      },
+    })
+    try {
+      resetKaraokeSongsForTests(noSongs)
+      mount()
+      fireEvent.click(importButton())
+
+      await sheet('Sing your own songs')
+      expect(storeSubscribed).toHaveBeenCalledTimes(1)
+    } finally {
+      unregister()
+    }
   })
 })
 
@@ -335,8 +516,8 @@ describe('the confirm sheet', () => {
 
   it('asks the server what is left before it asks the singer', async () => {
     const input = mount()
-    // The room last heard of 18; the month ran out since.
-    server.next = { left: 0, subscribed: false, renewsAt: null, perPeriod: 20 }
+    // The room last heard of 18; the subscription ended since.
+    server.next = noSongs
 
     pick(input, [song('Harbour Lights.mp3')])
 
@@ -400,458 +581,20 @@ describe('a song refused before anything is sent', () => {
   })
 })
 
-describe('the paywall', () => {
-  function openPaywall(): Promise<HTMLElement> {
-    resetKaraokeSongsForTests({
-      left: 0,
-      subscribed: false,
-      renewsAt: null,
-      perPeriod: 20,
-    })
-    mount()
-    fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
-    return sheet('Sing your own songs')
-  }
-
-  function subscribeButton(paywall: HTMLElement): HTMLButtonElement {
-    return within(paywall).getByRole('button', {
-      name: 'Subscribe',
-    }) as HTMLButtonElement
-  }
-
-  it('fails closed: no store, so no price, Subscribe stays off, Restore says so', async () => {
-    const paywall = await openPaywall()
-
-    await waitFor(() =>
-      expect(paywall.textContent).toContain(
-        'Subscriptions are not available yet.',
-      ),
-    )
-    expect(subscribeButton(paywall).disabled).toBe(true)
-
-    fireEvent.click(
-      within(paywall).getByRole('button', { name: 'Restore purchases' }),
-    )
-    await waitFor(() =>
-      expect(paywall.textContent).toContain('Purchases are not available yet.'),
-    )
-  })
-
-  // Review of PR 880, finding 6 (App Store 3.1.2): Subscribe is there to
-  // tap only with the store's price in view.
-  it('keeps Subscribe off until the store states its price', async () => {
-    let price = (_offer: typeof OFFER): void => undefined
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('cancelled' as const),
-        restore: async () => Promise.resolve('nothing' as const),
-        offer: async () =>
-          new Promise((resolve) => {
-            price = resolve
-          }),
-      },
-    })
-    try {
-      const paywall = await openPaywall()
-      expect(subscribeButton(paywall).disabled).toBe(true)
-
-      price(OFFER)
-
-      await waitFor(() => expect(subscribeButton(paywall).disabled).toBe(false))
-      expect(paywall.textContent).toContain('20 songs a month · €4.99')
-    } finally {
-      unregister()
-    }
-  })
-
-  it('keeps Subscribe off when the price cannot be had, and Retry asks again', async () => {
-    const offer = vi
-      .fn<() => Promise<typeof OFFER | null>>()
-      .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValueOnce(OFFER)
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('cancelled' as const),
-        restore: async () => Promise.resolve('nothing' as const),
-        offer,
-      },
-    })
-    try {
-      const paywall = await openPaywall()
-      await waitFor(() =>
-        expect(paywall.textContent).toContain(
-          'The price could not be loaded. Check the connection and try again.',
-        ),
-      )
-      expect(subscribeButton(paywall).disabled).toBe(true)
-
-      fireEvent.click(within(paywall).getByRole('button', { name: 'Retry' }))
-
-      await waitFor(() => expect(subscribeButton(paywall).disabled).toBe(false))
-      expect(paywall.textContent).toContain('20 songs a month · €4.99')
-      expect(offer).toHaveBeenCalledTimes(2)
-      expect(
-        within(paywall).queryByRole('button', { name: 'Retry' }),
-      ).toBeNull()
-    } finally {
-      unregister()
-    }
-  })
-
-  // Review of PR 880, finding 5: a store subscriber whose songs the server
-  // has not heard of yet (the webhook slow, or failed) is never offered the
-  // subscription again. S7 §3.9: the more generous of server and store.
-  it('shows a subscriber the store knows the songs on their way, not the offer', async () => {
-    const storeSubscribed = vi.fn(async () => Promise.resolve(true))
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: vi.fn(async () => Promise.resolve('purchased' as const)),
-        restore: async () => Promise.resolve('nothing' as const),
-        offer: offered,
-        storeSubscribed,
-      },
-    })
-    let release = (): void => undefined
-    server.hold = new Promise((resolve) => {
-      release = resolve
-    })
-    try {
-      resetKaraokeSongsForTests({
-        left: 0,
-        subscribed: false,
-        renewsAt: null,
-        perPeriod: 20,
-      })
-      mount()
-      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
-
-      const coming = await sheet("You're subscribed")
-      expect(coming.textContent).toContain('Your songs are on their way.')
-      expect(
-        screen.queryByRole('dialog', { name: 'Sing your own songs' }),
-      ).toBeNull()
-      expect(storeSubscribed).toHaveBeenCalledTimes(1)
-
-      server.next = subscriber
-      release()
-      await waitFor(() =>
-        expect(coming.textContent).toContain('20 songs a month are yours.'),
-      )
-    } finally {
-      release()
-      unregister()
-    }
-  })
-
-  it('offers the subscription anyway when the store does not answer in time', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('cancelled' as const),
-        restore: async () => Promise.resolve('nothing' as const),
-        offer: offered,
-        storeSubscribed: async () => new Promise<boolean>(() => undefined),
-      },
-    })
-    try {
-      resetKaraokeSongsForTests({
-        left: 0,
-        subscribed: false,
-        renewsAt: null,
-        perPeriod: 20,
-      })
-      mount()
-      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
-      await vi.advanceTimersByTimeAsync(2_900)
-      expect(screen.queryByRole('dialog')).toBeNull()
-
-      await vi.advanceTimersByTimeAsync(200)
-      vi.useRealTimers()
-
-      await sheet('Sing your own songs')
-    } finally {
-      vi.useRealTimers()
-      unregister()
-    }
-  })
-
-  it('offers the subscription where the store holds none either', async () => {
-    const storeSubscribed = vi.fn(async () => Promise.resolve(false))
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('cancelled' as const),
-        restore: async () => Promise.resolve('nothing' as const),
-        offer: offered,
-        storeSubscribed,
-      },
-    })
-    try {
-      await openPaywall()
-      expect(storeSubscribed).toHaveBeenCalledTimes(1)
-    } finally {
-      unregister()
-    }
-  })
-
-  it("states the store's own price, in the singer's storefront", async () => {
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('cancelled' as const),
-        restore: async () => Promise.resolve('nothing' as const),
-        offer: async () =>
-          Promise.resolve({ priceText: '$4.99', title: 'Cloud Monthly' }),
-      },
-    })
-    try {
-      const paywall = await openPaywall()
-
-      await waitFor(() =>
-        expect(paywall.textContent).toContain('20 songs a month · $4.99'),
-      )
-    } finally {
-      unregister()
-    }
-  })
-
-  it('says the songs are on their way until the server has heard', async () => {
-    let release = (): void => undefined
-    server.hold = new Promise((resolve) => {
-      release = resolve
-    })
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('purchased' as const),
-        restore: async () => Promise.resolve('nothing' as const),
-        offer: offered,
-      },
-    })
-    try {
-      const paywall = await openPaywall()
-      await waitFor(() => expect(subscribeButton(paywall).disabled).toBe(false))
-      fireEvent.click(
-        within(paywall).getByRole('button', { name: 'Subscribe' }),
-      )
-      const bought = await sheet("You're subscribed")
-      expect(bought.textContent).toContain('Your songs are on their way.')
-
-      // Import again before the webhook: not the paywall a second time.
-      fireEvent.click(within(bought).getByRole('button', { name: 'Close' }))
-      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
-      const again = await sheet("You're subscribed")
-      expect(
-        screen.queryByRole('dialog', { name: 'Sing your own songs' }),
-      ).toBeNull()
-
-      server.next = subscriber
-      release()
-      await waitFor(() =>
-        expect(again.textContent).toContain('20 songs a month are yours.'),
-      )
-    } finally {
-      release()
-      unregister()
-    }
-  })
-
-  it('offers an account right after a first purchase on a phone without one', async () => {
-    const openSignIn = vi.fn()
-    const api: KaraokeSubscriptionApi = {
-      subscribe: vi.fn(async () => Promise.resolve('purchased' as const)),
-      restore: vi.fn(async () => Promise.resolve('nothing' as const)),
-      offer: offered,
-    }
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      openSignIn,
-      karaokeSubscription: api,
-    })
-    try {
-      const paywall = await openPaywall()
-      await waitFor(() => expect(subscribeButton(paywall).disabled).toBe(false))
-      // The webhook has granted the month by the time /me is asked again.
-      server.next = subscriber
-
-      fireEvent.click(
-        within(paywall).getByRole('button', { name: 'Subscribe' }),
-      )
-
-      const offer = await sheet("You're subscribed")
-      expect(offer.textContent).toContain(
-        '20 songs a month are yours. Keep them with an account, so your subscription and your songs follow you to a new phone.',
-      )
-      fireEvent.click(within(offer).getByRole('button', { name: 'Sign in' }))
-      expect(openSignIn).toHaveBeenCalledTimes(1)
-    } finally {
-      unregister()
-    }
-  })
-
-  it('closes on a restore, with the songs asked for again', async () => {
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('cancelled' as const),
-        restore: async () => Promise.resolve('restored' as const),
-      },
-    })
-    try {
-      const paywall = await openPaywall()
-      server.next = subscriber
-
-      fireEvent.click(
-        within(paywall).getByRole('button', { name: 'Restore purchases' }),
-      )
-
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('dialog', { name: 'Sing your own songs' }),
-        ).toBeNull(),
-      )
-      expect(karaokeSongs().left).toBe(18)
-    } finally {
-      unregister()
-    }
-  })
-
-  it('says a restore at once, and leaves a sheet the singer closed closed', async () => {
-    let release = (): void => undefined
-    server.hold = new Promise((resolve) => {
-      release = resolve
-    })
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('cancelled' as const),
-        restore: async () => Promise.resolve('restored' as const),
-      },
-    })
-    try {
-      const paywall = await openPaywall()
-
-      fireEvent.click(
-        within(paywall).getByRole('button', { name: 'Restore purchases' }),
-      )
-      await waitFor(() =>
-        expect(paywall.textContent).toContain(
-          'Your Mercury Pitch Cloud subscription is restored.',
-        ),
-      )
-      fireEvent.click(within(paywall).getByRole('button', { name: 'Later' }))
-
-      // The server never hears within the wait; nothing opens by itself.
-      release()
-      await waitFor(() => expect(songsOnTheWay()).toBe(false))
-      expect(screen.queryByRole('dialog')).toBeNull()
-    } finally {
-      release()
-      unregister()
-    }
-  })
-
-  it('says a restore found nothing, where there was nothing', async () => {
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('cancelled' as const),
-        restore: async () => Promise.resolve('nothing' as const),
-      },
-    })
-    try {
-      const paywall = await openPaywall()
-
-      fireEvent.click(
-        within(paywall).getByRole('button', { name: 'Restore purchases' }),
-      )
-
-      await waitFor(() =>
-        expect(paywall.textContent).toContain(
-          'No Mercury Pitch Cloud subscription was found to restore.',
-        ),
-      )
-    } finally {
-      unregister()
-    }
-  })
-})
-
 describe('on an iPad', () => {
-  it('says the songs come from Files on this iPad and stay on it', async () => {
+  it('says the songs imported stay on this iPad', async () => {
     const restore = actAsIpad()
     try {
-      resetKaraokeSongsForTests({
-        left: 0,
-        subscribed: false,
-        renewsAt: null,
-        perPeriod: 20,
-      })
-      mount()
-      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
-      const paywall = await sheet('Sing your own songs')
-
-      for (const line of [
-        'Any song from Files on this iPad',
-        'Your songs stay on this iPad and play offline',
-      ]) {
-        expect(within(paywall).getByText(line)).toBeTruthy()
-      }
-      expect(paywall.textContent).not.toMatch(/\bphones?\b/iu)
-      cleanup()
-
       resetKaraokeSongsForTests({ ...subscriber, left: 0 })
       mount()
-      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
+      fireEvent.click(importButton())
+
       const used = await sheet('No songs left this month')
       expect(used.textContent).toContain(
         'The songs you imported stay on this iPad and still play.',
       )
+      expect(used.textContent).not.toMatch(/\bphones?\b/iu)
     } finally {
-      restore()
-    }
-  })
-
-  it('offers an account so the songs follow the singer to a new iPad', async () => {
-    const restore = actAsIpad()
-    const unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      openSignIn: vi.fn(),
-      karaokeSubscription: {
-        subscribe: vi.fn(async () => Promise.resolve('purchased' as const)),
-        restore: vi.fn(async () => Promise.resolve('nothing' as const)),
-        offer: offered,
-      },
-    })
-    try {
-      resetKaraokeSongsForTests({
-        left: 0,
-        subscribed: false,
-        renewsAt: null,
-        perPeriod: 20,
-      })
-      mount()
-      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
-      const paywall = await sheet('Sing your own songs')
-      const subscribe = (): HTMLButtonElement =>
-        within(paywall).getByRole('button', {
-          name: 'Subscribe',
-        }) as HTMLButtonElement
-      await waitFor(() => expect(subscribe().disabled).toBe(false))
-      server.next = subscriber
-
-      fireEvent.click(subscribe())
-
-      const offer = await sheet("You're subscribed")
-      expect(offer.textContent).toContain(
-        'Keep them with an account, so your subscription and your songs follow you to a new iPad.',
-      )
-    } finally {
-      unregister()
       restore()
     }
   })

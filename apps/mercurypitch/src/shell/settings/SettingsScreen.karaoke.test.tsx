@@ -1,10 +1,11 @@
 // ============================================================
-// Settings' Karaoke row, where songs can be imported (plan S8 §9, mock 9a)
+// Settings where songs can be imported: Cloud, then the Karaoke row
 // ============================================================
 //
-// A build with Import says what the Karaoke screen now holds, and the songs
-// left at a glance, as the server last said them. The store build's row is
-// pinned in SettingsScreen.test.tsx.
+// A build with Import has Mercury Pitch Cloud's standing group above the
+// rooms (S7b §5; CloudGroup.test.tsx says what it does), and the Karaoke
+// row says what its screen holds now: the songs on this phone and the
+// lyrics. The store build's rows are pinned in SettingsScreen.test.tsx.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthMeService from '@/db/services/auth-me-service'
@@ -52,8 +53,29 @@ afterEach(() => {
   view = null
 })
 
-describe("Settings' Karaoke row, in a build with Import", () => {
-  it('says what the screen holds, and the songs left', () => {
+describe('Settings, in a build with Import', () => {
+  it('puts Mercury Pitch Cloud above the rooms, with the songs left', () => {
+    resetKaraokeSongsForTests({
+      left: 17,
+      subscribed: true,
+      renewsAt: '2026-10-27T10:00:00.000Z',
+      perPeriod: 20,
+    })
+    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+    const groups = [...view.container.querySelectorAll('section')].map(
+      (group) => group.getAttribute('aria-label'),
+    )
+
+    expect(groups.indexOf('Mercury Pitch Cloud')).toBe(
+      groups.indexOf('Rooms') - 1,
+    )
+    expect(
+      view.container.querySelector('[data-settings-row="cloud-songs-left"]')
+        ?.textContent,
+    ).toBe('Songs this month17 of 20 left')
+  })
+
+  it("says what Karaoke's screen holds, with no count of its own, and pushes it", () => {
     resetKaraokeSongsForTests({
       left: 17,
       subscribed: true,
@@ -63,19 +85,9 @@ describe("Settings' Karaoke row, in a build with Import", () => {
     const onPush = vi.fn()
     view = renderShell(() => <SettingsScreen onPush={onPush} />)
 
-    expect(karaokeRow()?.textContent).toBe(
-      'KaraokeSubscription, songs on this phone, lyrics17 of 20 left',
-    )
+    expect(karaokeRow()?.textContent).toBe('KaraokeSongs on this phone, lyrics')
     karaokeRow()?.click()
     expect(onPush).toHaveBeenCalledWith('karaoke')
-  })
-
-  it('draws no count before the server has said one', () => {
-    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
-
-    expect(karaokeRow()?.textContent).toBe(
-      'KaraokeSubscription, songs on this phone, lyrics',
-    )
   })
 })
 
@@ -86,7 +98,7 @@ describe("Settings' Karaoke row, on an iPad", () => {
       view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
 
       expect(karaokeRow()?.textContent).toBe(
-        'KaraokeSubscription, songs on this iPad, lyrics',
+        'KaraokeSongs on this iPad, lyrics',
       )
     } finally {
       restore()

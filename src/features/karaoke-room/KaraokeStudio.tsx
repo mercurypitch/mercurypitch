@@ -34,6 +34,7 @@ import { TAB_SINGING } from '@/features/tabs/constants'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { getGroupsReactive, karaokeActiveGroupId, setKaraokeActiveGroupId, } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
+import { nativeShellApi } from '@/stores/native-shell-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openSettingsSection, setActiveTab } from '@/stores/ui-store'
 import styles from './karaoke-room.module.css'
@@ -214,7 +215,9 @@ export const KaraokeStudio: Component<KaraokeStudioProps> = (props) => {
                   aria-label={`${songs().label}: ${songs().value}`}
                   onClick={() => {
                     setOptionsOpen(false)
-                    openSettingsSection('karaoke')
+                    // The songs left are Mercury Pitch Cloud's, in Settings
+                    // itself (S7b §5), not Karaoke's own screen.
+                    nativeShellApi()?.pushSettings()
                   }}
                 >
                   <span>{songs().label}</span>

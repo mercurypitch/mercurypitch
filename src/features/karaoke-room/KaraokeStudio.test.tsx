@@ -315,7 +315,7 @@ describe('songs of your own (Stage 2)', () => {
     ).toEqual(['Guide', 'Settings'])
   })
 
-  it("say the songs left in the options, which open Karaoke's settings", () => {
+  it('say the songs left in the options, which open Settings, where Cloud keeps them', () => {
     build.importing = true
     resetKaraokeSongsForTests({
       left: 17,
@@ -343,7 +343,8 @@ describe('songs of your own (Stage 2)', () => {
         }),
       )
 
-      expect(pushSettings).toHaveBeenCalledWith('karaoke')
+      // Settings itself, where Mercury Pitch Cloud keeps the count.
+      expect(pushSettings).toHaveBeenCalledWith()
       expect(
         screen.queryByRole('dialog', { name: 'Studio options' }),
       ).toBeNull()

@@ -496,3 +496,10 @@ export const CardIcon: Component<ShellIconProps> = (props) => (
     <path d="M3 10h18M7 14.5h4" />
   </svg>
 )
+
+/** Mercury Pitch Cloud: a cloud, for the songs our servers separate. */
+export const CloudIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M7.5 18.5h9.5a4 4 0 0 0 .6-7.95A5.75 5.75 0 0 0 6.4 9.4a4.6 4.6 0 0 0 1.1 9.1z" />
+  </svg>
+)

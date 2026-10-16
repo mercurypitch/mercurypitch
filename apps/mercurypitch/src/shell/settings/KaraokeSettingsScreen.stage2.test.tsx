@@ -2,18 +2,16 @@
 // Settings, Karaoke, where songs can be imported (plan S8 §9, Stage 2)
 // ============================================================
 //
-// A build with Import adds two groups above the lyrics and playback: the
-// subscription (how it stands, the songs left, Manage where the store has a
-// page for it, Restore purchases) and the songs on this phone (how many, how
-// much space, and Remove imported songs after asking). The examples are part
-// of the app and stay. Restore fails closed until the store is real.
-// KaraokeSettingsScreen.test.tsx pins the store build, which has neither.
+// A build with Import adds the songs on this phone above the lyrics and
+// playback (how many, how much space, and Remove imported songs after
+// asking), and on Android Play's review access. The examples are part of the
+// app and stay. The subscription is Mercury Pitch Cloud's, in Settings
+// itself (CloudGroup.test.tsx). KaraokeSettingsScreen.test.tsx pins the store
+// build, which has none of it.
 
 import type * as CapacitorCore from '@capacitor/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ImportedSongs } from '@/features/karaoke-room/karaoke-imported-songs'
-import type * as Songs from '@/features/karaoke-room/karaoke-songs'
-import type { KaraokeSongs } from '@/features/karaoke-room/karaoke-songs'
 import type * as NativeBuild from '@/lib/native-build'
 
 vi.mock('@/lib/native-build', async (importOriginal) => ({
@@ -28,36 +26,6 @@ vi.mock('@capacitor/core', async (importOriginal) => {
   return {
     ...actual,
     Capacitor: { ...actual.Capacitor, getPlatform: () => device.platform },
-  }
-})
-
-const server = vi.hoisted(() => ({
-  next: null as KaraokeSongs | null,
-  asked: [] as ({ identify?: boolean } | undefined)[],
-  // The songs the server has after this many more asks, if it has not heard.
-  heardAfter: 0,
-}))
-vi.mock('@/features/karaoke-room/karaoke-songs', async (importOriginal) => {
-  const actual = await importOriginal<typeof Songs>()
-  return {
-    ...actual,
-    refreshKaraokeSongs: vi.fn(async (options?: { identify?: boolean }) => {
-      server.asked.push(options)
-      if (server.heardAfter > 0) server.heardAfter -= 1
-      else if (server.next !== null) {
-        actual.resetKaraokeSongsForTests(server.next)
-      }
-      return Promise.resolve(actual.karaokeSongs())
-    }),
-    // The webhook's few seconds, without the test waiting them.
-    awaitSubscription: async (
-      refresh: () => Promise<KaraokeSongs>,
-      options?: Parameters<typeof actual.awaitSubscription>[1],
-    ) =>
-      actual.awaitSubscription(refresh, {
-        ...options,
-        wait: async () => Promise.resolve(),
-      }),
   }
 })
 
@@ -85,9 +53,6 @@ vi.mock('@/features/karaoke-room/karaoke-imported-songs', async () => {
   }
 })
 
-import { resetKaraokeSongsForTests } from '@/features/karaoke-room/karaoke-songs'
-import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
-import { registerShellApi } from '@/stores/native-shell-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
@@ -95,43 +60,22 @@ import { KaraokeSettingsScreen } from './KaraokeSettingsScreen'
 import { confirmSettingsAlert, resetSettingsAlert } from './settings-alert'
 import { SettingsAlert } from './SettingsAlert'
 
-const subscriber: KaraokeSongs = {
-  left: 18,
-  subscribed: true,
-  renewsAt: '2026-10-27T10:00:00.000Z',
-  perPeriod: 20,
-}
-
 let view: RenderedShell | null = null
-let unregister: () => void = () => undefined
 
 beforeEach(() => {
   localStorage.clear()
   device.platform = 'web'
-  server.next = null
-  server.asked = []
-  server.heardAfter = 0
   phone.removals = 0
   phone.stuck = 0
   phone.set?.({ count: 0, bytes: 0 })
-  resetKaraokeSongsForTests(subscriber)
   resetSettingsAlert()
 })
 
 afterEach(() => {
   view?.unmount()
   view = null
-  unregister()
-  unregister = () => undefined
   resetSettingsAlert()
 })
-
-function withStore(api: KaraokeSubscriptionApi): void {
-  unregister = registerShellApi({
-    pushSettings: vi.fn(),
-    karaokeSubscription: api,
-  })
-}
 
 async function settle(): Promise<void> {
   for (let i = 0; i < 4; i += 1) {
@@ -161,25 +105,21 @@ const groups = (root: HTMLElement): (string | null)[] =>
   )
 
 describe('Settings, Karaoke, in a build with Import', () => {
-  it('puts the subscription and the songs on this phone above the lyrics and playback', async () => {
+  it('puts the songs on this phone above the lyrics and playback, and no subscription', async () => {
     const root = await mount()
 
-    expect(groups(root)).toEqual([
-      'Subscription',
-      'Songs on this phone',
-      'Lyrics',
-      'Playback',
-    ])
+    expect(groups(root)).toEqual(['Songs on this phone', 'Lyrics', 'Playback'])
+    expect(row(root, 'karaoke-subscription')).toBeNull()
+    expect(row(root, 'karaoke-restore')).toBeNull()
     expect(root.textContent).toContain(
       'The example songs are part of the app and stay.',
     )
   })
 
-  it('adds Play review access under the subscription on Android, and only there', async () => {
+  it('adds Play review access at the top on Android, and only there', async () => {
     device.platform = 'android'
     const android = await mount()
     expect(groups(android)).toEqual([
-      'Subscription',
       'App review',
       'Songs on this phone',
       'Lyrics',
@@ -191,168 +131,6 @@ describe('Settings, Karaoke, in a build with Import', () => {
     device.platform = 'ios'
     const ios = await mount()
     expect(row(ios, 'karaoke-review-access')).toBeNull()
-  })
-
-  it('says how the subscription stands, and the songs left', async () => {
-    const root = await mount()
-
-    expect(row(root, 'karaoke-subscription')?.textContent).toBe(
-      'Subscribed, renews on 27 October20 songs a month',
-    )
-    expect(row(root, 'karaoke-songs-left')?.textContent).toBe(
-      'Songs this month18 of 20 left',
-    )
-    expect(server.asked).toEqual([undefined])
-  })
-
-  it('says so when there is no subscription, and the songs an account has', async () => {
-    resetKaraokeSongsForTests({
-      left: 3,
-      subscribed: false,
-      renewsAt: null,
-      perPeriod: 20,
-    })
-    const root = await mount()
-
-    expect(row(root, 'karaoke-subscription')?.textContent).toBe(
-      'Not subscribed',
-    )
-    expect(row(root, 'karaoke-songs-left')?.textContent).toBe('Songs3 left')
-  })
-
-  it('draws no count while the server has not said one', async () => {
-    resetKaraokeSongsForTests({
-      left: null,
-      subscribed: false,
-      renewsAt: null,
-      perPeriod: 20,
-    })
-    const root = await mount()
-
-    expect(row(root, 'karaoke-songs-left')).toBeNull()
-  })
-
-  it('fails closed: Restore purchases is not available yet without a store', async () => {
-    const root = await mount()
-
-    row(root, 'karaoke-restore')?.click()
-    await settle()
-
-    expect(root.querySelector('[role="status"]')?.textContent).toBe(
-      'Purchases are not available yet.',
-    )
-  })
-
-  it('restores, and asks for the songs again', async () => {
-    withStore({
-      subscribe: async () => Promise.resolve('cancelled'),
-      restore: async () => Promise.resolve('restored'),
-    })
-    resetKaraokeSongsForTests({
-      left: 0,
-      subscribed: false,
-      renewsAt: null,
-      perPeriod: 20,
-    })
-    server.next = subscriber
-    const root = await mount()
-    server.asked = []
-
-    row(root, 'karaoke-restore')?.click()
-    await settle()
-
-    expect(root.querySelector('[role="status"]')?.textContent).toBe(
-      'Your Mercury Pitch Cloud subscription is restored.',
-    )
-    expect(server.asked).toEqual([{ identify: true }])
-    expect(row(root, 'karaoke-subscription')?.textContent).toContain(
-      'Subscribed, renews on 27 October',
-    )
-  })
-
-  it('keeps asking after a restore until the server has heard from the store', async () => {
-    withStore({
-      subscribe: async () => Promise.resolve('cancelled'),
-      restore: async () => Promise.resolve('restored'),
-    })
-    resetKaraokeSongsForTests({
-      left: 0,
-      subscribed: false,
-      renewsAt: null,
-      perPeriod: 20,
-    })
-    const root = await mount()
-    server.asked = []
-    server.next = subscriber
-    server.heardAfter = 2
-
-    row(root, 'karaoke-restore')?.click()
-    await settle()
-
-    expect(root.querySelector('[role="status"]')?.textContent).toBe(
-      'Your Mercury Pitch Cloud subscription is restored.',
-    )
-    expect(server.asked).toEqual([
-      { identify: true },
-      { identify: true },
-      { identify: true },
-    ])
-    expect(row(root, 'karaoke-subscription')?.textContent).toContain(
-      'Subscribed, renews on 27 October',
-    )
-  })
-
-  it('offers Manage subscription to a subscriber, where the store has a page for it', async () => {
-    const manage = vi.fn(async () => Promise.resolve('opened' as const))
-    withStore({
-      subscribe: async () => Promise.resolve('cancelled'),
-      restore: async () => Promise.resolve('nothing'),
-      manage,
-    })
-    const root = await mount()
-
-    row(root, 'karaoke-manage')?.click()
-    await settle()
-
-    expect(manage).toHaveBeenCalledTimes(1)
-    expect(root.querySelector('[role="status"]')).toBeNull()
-  })
-
-  it('says so when the store’s page could not be opened', async () => {
-    withStore({
-      subscribe: async () => Promise.resolve('cancelled'),
-      restore: async () => Promise.resolve('nothing'),
-      manage: async () => Promise.resolve('failed' as const),
-    })
-    const root = await mount()
-
-    row(root, 'karaoke-manage')?.click()
-    await settle()
-
-    expect(root.querySelector('[role="status"]')?.textContent).toBe(
-      'The subscription page could not be opened. Try again in a moment.',
-    )
-  })
-
-  it('offers no Manage subscription with no subscription, or no store page', async () => {
-    withStore({
-      subscribe: async () => Promise.resolve('cancelled'),
-      restore: async () => Promise.resolve('nothing'),
-      manage: vi.fn(async () => Promise.resolve('opened' as const)),
-    })
-    resetKaraokeSongsForTests({ ...subscriber, subscribed: false })
-    const unsubscribed = await mount()
-    expect(row(unsubscribed, 'karaoke-manage')).toBeNull()
-    view?.unmount()
-    unregister()
-
-    withStore({
-      subscribe: async () => Promise.resolve('cancelled'),
-      restore: async () => Promise.resolve('nothing'),
-    })
-    resetKaraokeSongsForTests(subscriber)
-    const noPage = await mount()
-    expect(row(noPage, 'karaoke-manage')).toBeNull()
   })
 
   it('counts the songs on this phone and the space they take', async () => {

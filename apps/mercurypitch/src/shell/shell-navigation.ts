@@ -17,9 +17,11 @@
 // fires a haptic: that belongs to the control that was pressed, so a
 // programmatic move (the pill, a back press) does not buzz.
 
+import { closeCloudOffer, cloudOfferOpen, } from '@/features/karaoke-room/cloud-offer-store'
 import type { ActiveTab, PracticeScope } from '@/features/tabs/constants'
 import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_PIANO, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
 import { navigateTo } from '@/lib/hash-router'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { nativeRunControls } from '@/stores/native-shell-store'
 import { canGoBack } from './history-depth'
 import { clearScreens, closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
@@ -166,6 +168,14 @@ export type BackOutcome =
   | 'history'
   | 'minimize'
 
+/**
+ * The Cloud offer's sheet, in a build that imports songs. A plain
+ * conditional on KARAOKE_IMPORT, so a store build folds the offer away.
+ */
+function cloudOfferUp(): boolean {
+  return KARAOKE_IMPORT ? cloudOfferOpen() : false
+}
+
 /** Everything the SHELL owns that outranks the room's own overlay. */
 function shellOverlayOpen(): boolean {
   return (
@@ -175,6 +185,7 @@ function shellOverlayOpen(): boolean {
     moreOpen() ||
     signInOpen() ||
     latencySheetOpen() ||
+    cloudOfferUp() ||
     offerOpen()
   )
 }
@@ -197,7 +208,13 @@ function shellOverlayOpen(): boolean {
 export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
   if (columnOpen()) return 'column'
   if (keepAlertOpen() || settingsAlertOpen()) return 'alert'
-  if (moreOpen() || signInOpen() || latencySheetOpen() || offerOpen()) {
+  if (
+    moreOpen() ||
+    signInOpen() ||
+    latencySheetOpen() ||
+    cloudOfferUp() ||
+    offerOpen()
+  ) {
     return 'sheet'
   }
   if (pushed() !== null) return 'pushed'
@@ -266,10 +283,11 @@ export function performBack(host: BackHost): BackOutcome {
       // account offer over the Sing room, never beside the More sheet
       // itself, so whichever is up is the one this press is for. The
       // sign-in sheet steps back a pane before it closes; closing the
-      // latency sheet ends a run in flight; the offer, which has no close
-      // button, takes Back as Later.
+      // latency sheet ends a run in flight; the account offer, which has no
+      // close button, takes Back as Later, and the Cloud offer as Not now.
       if (signInOpen()) signInBack()
       else if (latencySheetOpen()) closeLatencySheet()
+      else if (cloudOfferUp()) closeCloudOffer('not-now')
       else if (offerOpen()) declineOffer()
       else closeMore()
       break

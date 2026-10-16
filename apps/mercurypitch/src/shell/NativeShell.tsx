@@ -19,13 +19,15 @@
 // and the microphone; the shell only asks it to pause, resume, stop or park
 // (src/stores/native-shell-store.ts).
 
+import { Capacitor } from '@capacitor/core'
 import { openAppSettings } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import './shell.css'
+import { CloudOffer } from '@/features/karaoke-room/CloudOffer'
 import { TAB_HOME } from '@/features/tabs/constants'
-import { PREMIUM_EXERCISES } from '@/lib/native-build'
+import { KARAOKE_IMPORT, PREMIUM_EXERCISES } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
 import { practiceScope } from '@/stores/settings-store'
@@ -409,6 +411,17 @@ export const NativeShell: Component = () => {
           {/* The account offer, over the Sing room after a Keep. Its Sign
               in hands over to the sign-in sheet. */}
           <AccountOfferSheet />
+
+          {/* The Cloud offer (paywall B v2), opened by the Karaoke room's
+              Import, Settings and the onboarding. Its free account hands
+              over to the sign-in sheet, which is drawn over it. Stage 2:
+              a plain conditional, so a store build folds it away. */}
+          {KARAOKE_IMPORT ? (
+            <CloudOffer
+              platform={Capacitor.getPlatform()}
+              onAccount={openSignIn}
+            />
+          ) : null}
 
           {/* The phone's one way in, over whatever asked for it: the
               Account screen's button, the offer and every in-app "Sign

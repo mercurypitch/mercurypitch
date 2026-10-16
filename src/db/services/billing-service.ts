@@ -114,6 +114,10 @@ export interface BillingSongs {
   perPeriod: number
   /** The most songs a grant ever tops the balance up to. */
   cap: number
+  /** In the app: the month's free song among the songs left, 1 or 0
+   *  (db-worker songs-allowance.ts songsSummary). Absent on the web, and on
+   *  an older db-worker. */
+  free?: number
 }
 
 type BillingEntitlement = BillingMe['entitlements'][number]
@@ -130,7 +134,8 @@ function isBillingSongs(value: unknown): value is BillingSongs {
     isSongCount(candidate.left) &&
     (candidate.renewsAt === null || typeof candidate.renewsAt === 'string') &&
     isSongCount(candidate.perPeriod) &&
-    isSongCount(candidate.cap)
+    isSongCount(candidate.cap) &&
+    (candidate.free === undefined || isSongCount(candidate.free))
   )
 }
 

@@ -1,0 +1,226 @@
+// ============================================================
+// The Cloud offer's state: whether it is up, who asked, and its caps
+// ============================================================
+//
+// One offer, opened from several places (S7b §5): the Karaoke room's import
+// gate, Settings' "See the plan", and later the onboarding's beat 9. Each
+// opens the same sheet (CloudOffer.tsx, mounted once by the native shell), so
+// the caps live here, where every way in has to pass them.
+//
+// THE CAPS (S7 §5, kept by S7b §5) are for an offer the singer did not ask
+// for. A tap on Import or on "See the plan" is the singer's own question and
+// is always answered. An offer nobody asked for opens:
+//   - at most once a session;
+//   - never while a song plays, a run is paused mid-way or counting in, or
+//     the microphone is listening;
+//   - not for 7 days after a Not now, from any offer;
+//   - never for a subscriber.
+// No countdowns, struck-through prices or urgency words: that rule is the
+// copy's, and CloudOffer.test.tsx reads the sheet for it.
+//
+// BEFORE ANY OFFER (S7 §3.9, E11). `askBeforeOffering` makes the singer's
+// identity first (singer-identity.ts), then asks the server again and the
+// store whether it holds the subscription: the store knows of a purchase
+// before the server does, and a subscriber is never offered it again. It
+// answers within three seconds; past that the offer opens on what is known.
+
+import { createSignal } from 'solid-js'
+import { ensureSingerIdentity } from '@/db/services/singer-identity'
+import { micActive, singingCaptureActive } from '@/stores/mic-store'
+import { nativeRunControls, nativeShellApi } from '@/stores/native-shell-store'
+import type { KaraokeSongs } from './karaoke-songs'
+import { awaitSubscription, karaokeSongs, refreshKaraokeSongs, songsOnTheWay, } from './karaoke-songs'
+
+/** Where an offer was opened from. */
+export type CloudOfferSource = 'import' | 'settings' | 'onboarding'
+
+/** The offer itself, or what follows a yes from the store. */
+export type CloudOfferView = 'offer' | 'subscribed'
+
+/** Opened by the singer's own tap, so no cap applies. */
+const ASKED_FOR: Readonly<Record<CloudOfferSource, boolean>> = {
+  import: true,
+  settings: true,
+  onboarding: false,
+}
+
+/** After a Not now, no offer nobody asked for, for this long (S7 §5). */
+export const NOT_NOW_QUIET_MS = 7 * 24 * 60 * 60 * 1000
+
+/** How long the offer waits for the identity, the server and the store. */
+export const BEFORE_OFFER_MS = 3_000
+
+/** When the last Not now was said, on this phone; settings sync skips it. */
+const NOT_NOW_KEY = 'mp:cloud-offer-not-now'
+
+export interface CloudOfferState {
+  readonly source: CloudOfferSource
+  readonly view: CloudOfferView
+}
+
+const [current, setCurrent] = createSignal<CloudOfferState | null>(null)
+
+/** The offer that is up, or null. Reactive. */
+export const cloudOffer = current
+
+/** Whether the offer's sheet is up. Reactive. */
+export function cloudOfferOpen(): boolean {
+  return current() !== null
+}
+
+/** Offers nobody asked for, this session. */
+let unaskedThisSession = 0
+
+/** Where storage is blocked, the session still remembers a Not now. */
+let notNowThisSession: number | null = null
+
+function lastNotNow(): number | null {
+  try {
+    const raw = localStorage.getItem(NOT_NOW_KEY)
+    const at = raw === null ? Number.NaN : Number(raw)
+    if (Number.isFinite(at)) return at
+  } catch {
+    // Blocked storage: fall back to this session's.
+  }
+  return notNowThisSession
+}
+
+function rememberNotNow(at: number): void {
+  notNowThisSession = at
+  try {
+    localStorage.setItem(NOT_NOW_KEY, String(at))
+  } catch {
+    // Blocked storage: this session remembers.
+  }
+}
+
+/**
+ * The singer is singing, or about to: a song plays, a run is paused
+ * mid-way or counting in, or the microphone is listening.
+ */
+export function singingNow(): boolean {
+  const run = nativeRunControls()
+  return (
+    (run?.isPlaying() ?? false) ||
+    (run?.isPaused() ?? false) ||
+    (run?.isCountingIn?.() ?? false) ||
+    micActive() ||
+    singingCaptureActive()
+  )
+}
+
+/** Why an offer nobody asked for would not open now. */
+export type UnaskedRefusal = 'subscribed' | 'session' | 'not-now' | 'singing'
+
+/** Why an offer nobody asked for would not open now, or null when it may. */
+export function unaskedRefusal(
+  now: number = Date.now(),
+): UnaskedRefusal | null {
+  if (karaokeSongs().subscribed || songsOnTheWay()) return 'subscribed'
+  if (unaskedThisSession > 0) return 'session'
+  const quietFrom = lastNotNow()
+  if (quietFrom !== null && now - quietFrom < NOT_NOW_QUIET_MS) {
+    return 'not-now'
+  }
+  if (singingNow()) return 'singing'
+  return null
+}
+
+/** Ask the server until it has heard of the subscription the store sold. */
+function waitForSongs(): Promise<KaraokeSongs> {
+  return awaitSubscription(async () => refreshKaraokeSongs({ identify: true }))
+}
+
+/**
+ * Open the offer, or what follows a yes from the store. An offer nobody
+ * asked for passes the caps first and answers false when one holds it back.
+ */
+export function openCloudOffer(
+  source: CloudOfferSource,
+  view: CloudOfferView = 'offer',
+  now: number = Date.now(),
+): boolean {
+  if (view === 'offer' && !ASKED_FOR[source]) {
+    if (unaskedRefusal(now) !== null) return false
+    unaskedThisSession += 1
+  }
+  setCurrent({ source, view })
+  if (view === 'subscribed' && !karaokeSongs().subscribed) void waitForSongs()
+  return true
+}
+
+/**
+ * The store said yes while the offer was up: say what follows, and ask the
+ * server until it has heard. A caller that has already asked (a restore)
+ * passes `wait: false`.
+ */
+export function showCloudSubscribed(wait = true): void {
+  const open = current()
+  if (open === null) return
+  setCurrent({ source: open.source, view: 'subscribed' })
+  if (wait) void waitForSongs()
+}
+
+/**
+ * Close the offer. Not now (its button, Back, the backdrop, a swipe) keeps
+ * offers nobody asked for away for a week; anything else does not.
+ */
+export function closeCloudOffer(
+  how: 'not-now' | 'done',
+  now: number = Date.now(),
+): void {
+  const open = current()
+  setCurrent(null)
+  if (how === 'not-now' && open?.view === 'offer') rememberNotNow(now)
+}
+
+/** What is known just before an offer opens. */
+export interface OfferFacts {
+  /** What the server says now, or what was known before it. */
+  readonly songs: KaraokeSongs
+  /** The store holds the subscription for this singer. */
+  readonly storeHolds: boolean
+}
+
+/**
+ * Before an offer opens: the singer's identity (E11), the server's word on
+ * the songs, and the store's on the subscription. Within BEFORE_OFFER_MS;
+ * past that, what is known and no store, while the asks carry on.
+ */
+export async function askBeforeOffering(): Promise<OfferFacts> {
+  const ask = (async (): Promise<OfferFacts> => {
+    await ensureSingerIdentity()
+    const storeSubscribed =
+      nativeShellApi()?.karaokeSubscription?.storeSubscribed
+    const [songs, storeHolds] = await Promise.all([
+      refreshKaraokeSongs(),
+      storeSubscribed === undefined
+        ? Promise.resolve(false)
+        : storeSubscribed().catch(() => false),
+    ])
+    return { songs, storeHolds }
+  })()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<OfferFacts>((resolve) => {
+    timer = setTimeout(() => {
+      resolve({ songs: karaokeSongs(), storeHolds: false })
+    }, BEFORE_OFFER_MS)
+  })
+  try {
+    return await Promise.race([ask, late])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/** Tests: nothing open, nothing offered this session, no Not now kept. */
+export function resetCloudOfferForTests(): void {
+  setCurrent(null)
+  unaskedThisSession = 0
+  notNowThisSession = null
+  try {
+    localStorage.removeItem(NOT_NOW_KEY)
+  } catch {
+    // Nothing was kept.
+  }
+}
