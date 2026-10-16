@@ -25,8 +25,9 @@ Each step names its toy (the interactive visual it sits beside); the page spec i
 ## Warm-up from Lesson 1
 
 Two questions from last time, asked afresh (no earlier answers are shown). They are Lesson 1's
-quiz questions 2 and 4, under the same question ids, so they give the delayed score (MASTER-PLAN
-§ 9).
+quiz questions 2 and 4, word for word (FACTS 35a). Neither quiz has question ids yet, so the
+Lesson telemetry track gives both the same ids before these answers can count as the delayed score
+(MASTER-PLAN § 9).
 
 1. You double a note's frequency. What do you get?
    - The same note, one octave up **[correct]** · Feedback: "Exactly: two for one is an octave."
@@ -41,18 +42,20 @@ quiz questions 2 and 4, under the same question ids, so they give the delayed sc
 
 ## Cold open: predict
 
-Orange Merc: "Seven letters on the way round. And the five dim beads between them? Are those just
-gaps?"
-Blue Merc: "Tap one and find out."
+Orange Merc: "Seven letters on the way round, but twelve notes. Is there a hidden note between
+every two letters?"
+Blue Merc: "Count the steps and find out."
 
-**Predict before you listen.** The dim bead between A and B: a note of its own, or just a gap?
-[ A note of its own ] [ Just a gap ]
+**Predict before you listen.** Seven letters leave seven gaps on the way round. Does every gap
+hold one more note?
+[ Yes, every gap ] [ No, only some ]
 
-(After a choice, the play buttons unlock: Play A · Play the dim bead · Play B.)
+(After a choice, the play button unlocks: Play the climb, A3 up to A4, one step at a time.)
 
-Reveal (shown after the dim bead has played): It's a note, as real as A, exactly halfway between
-A and B. All five dim beads are notes like it: seven letters, but twelve notes. (On the spiral they
-do look like gaps, so it was a fair guess.)
+Reveal (shown after the climb has played): Twelve steps, not fourteen. If every gap held a note,
+seven letters and seven more notes would make fourteen. There are twelve, so only five of the gaps
+hold one, and two hold none. Which two, and why? That's this lesson's story. (The letters run in
+order like the alphabet, so one note per gap was a fair guess.)
 
 ## Four words you'll meet
 
@@ -64,23 +67,25 @@ do look like gaps, so it was a fair guess.)
 
 ## Step 1 of 6: The very next note
 
-Start on A and take the smallest step up you can. You land on the dim bead between A and B. That
-step is a semitone, the smallest step a piano has, and the bead isn't a gap at all: it's a note,
-one of the five with no letter of its own.
+Start on A and step up to the very next note. You land on the dim bead between A and B. That step
+is a semitone, the smallest step a piano has, and the bead is a real note, one of the five with no
+letter of its own.
 
 **Try:** tap A3, then the dim bead after it, then B3.
-**Notice:** the bead sits exactly halfway between A and B, so A to B is two of these small steps.
+**Notice:** to your ear, the bead sits halfway between A and B, so A to B is two of these small
+steps.
 
 _Toy: the spiral (Lesson 1's), its five dim beads now playable._
 
 ## Step 2 of 6: Twelve equal steps make an octave
 
 Keep taking semitone steps and count. From A3 you reach A4, one turn up the spiral, in twelve
-steps: seven letters, and five notes between them. Every step is the same size, so each one turns
-the spiral by the same amount. And twelve of them double the frequency, from 220 Hz to 440 Hz,
-which is exactly what an octave is.
+steps: seven letters, and five notes between them. In hertz each step is a little bigger than the
+last, but to your ear every step is the same size, so each one turns the spiral by the same amount.
+And twelve of them double the frequency, from 220 Hz to 440 Hz, which is exactly what an octave
+is.
 
-**Try:** press Climb and count the steps from A3 to A4. Then press Look down.
+**Try:** press Climb again and watch the five beads light. Then press Look down.
 **Notice:** from above, one turn is a ring of twelve beads, evenly spaced like the hours on a
 clock.
 
@@ -91,23 +96,25 @@ _Toy: the spiral, with Climb and Look down._
 Unroll the spiral and every bead lands on a key: seven white keys and five black ones in every
 octave. Now look at B and C. There's no black key between them.
 
-**Predict:** which step is bigger, B to C or C to D? [ B to C ] [ C to D ]
+**Predict:** which step is bigger, B to C or C to D, or are they the same?
+[ B to C ] [ The same ] [ C to D ]
 
 (After a choice: Play B to C · Play C to D.)
 
 Reveal: C to D is the bigger step, two semitones; B to C is one. E to F is one too.
 
-> **Common mix-up:** "B to C has no black key between them, so it must be a bigger step."
-> **Why it seems right:** the black keys look like stepping stones. C to D has one in the middle,
-> so B to C, with none, looks like one long stride.
+> **Common mix-up:** "B to C and C to D look the same distance apart, so they must be the same
+> step."
+> **Why it seems right:** on the keyboard every white key is drawn the same width, so B to C looks
+> just as far as C to D.
 > **The evidence:** listen. B to C is exactly as big as C to the black key above it, and half the
 > size of C to D.
 > **The better idea:** B and C are already neighbours, a semitone apart. Every neighbouring pair
 > of keys, white or black, is one semitone apart.
 
 **Try:** press Straighten to draw every key the same width.
-**Notice:** B and C touch, just like C and the black key above it. On a real keyboard the white
-keys are all one width, and that's what hides it.
+**Notice:** B and C touch, just like C and the black key above it. The keyboard draws every white
+key the same width, and that hides it.
 
 _Toy: the keyboard, with Unroll and Straighten._
 
@@ -144,10 +151,11 @@ _Toy: the tile row with the two-names toggle._
 
 ## Step 6 of 6: A hundred cents
 
-How big is a semitone, exactly? Musicians measure it in cents: every semitone is a hundred cents
-wide, so the twelve semitones of an octave make 1,200 cents, and a tone is 200. MercuryPitch
-measures in cents too: its Singing tab names the nearest note and shows how many cents you are
-above or below it. Fifty cents is halfway; past that, the next note is nearer.
+How big is a semitone, exactly? Musicians measure it in cents: in the tuning MercuryPitch uses,
+every semitone is a hundred cents wide, so the twelve semitones of an octave make 1,200 cents,
+and a tone is 200. MercuryPitch measures in cents too: its Singing tab names the nearest note and
+shows on a bar how far above or below it you are, up to 50 cents either way. Fifty cents is
+halfway; past that, the next note is nearer.
 
 **Try:** drag the marker slowly from A3 up to A♯3.
 **Notice:** at 50 cents the nearest note changes from A3 to A#3, just as MercuryPitch's monitor
@@ -169,7 +177,7 @@ _Toy: the semitone ruler with cents._
 
 ## Sing it
 
-Merc holds an A, slides up one semitone, and comes back.
+Merc holds an A, slides up one semitone, and comes back. Orange Merc sings it an octave up.
 
 **Your turn:** play Merc's slide, then do the same on a hum or an "ooh", starting on Merc's A or
 the A an octave up, whichever is comfortable. Keep it quiet and gentle, never push, and stop if

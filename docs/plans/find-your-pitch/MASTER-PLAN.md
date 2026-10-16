@@ -203,6 +203,11 @@ the preview page in § 11.
   `#52c2cc` (worst-case CIEDE2000 distance 12.4 under all three simulated colour-blindness types,
   [research/production-research.md](research/production-research.md)). Merc's sung model note on
   a pitch canvas is the amber target band, never gold or blue.
+- **One meaning for violet per film.** The singer's line on a pitch canvas is violet, and so is
+  the contrast case in the series code. In a film that has a pitch canvas, the contrast case (a
+  wrong guess, the case that does not fit) is drawn dashed in ink-2 `#a8b3bf` with a "?", so
+  violet only ever means the singer. Lesson 2 is the first film this applies to (its DECISIONS
+  38).
 - **Colour-blindness gate**, part of the measured quality bar: a Machado et al. (2009) simulation
   (protan, deutan, tritan, severity 1.0) and CIEDE2000 over the full palette (series code,
   pitch-canvas set, both Merc bodies), with the worst case recorded beside the canvas set's 12.4.
