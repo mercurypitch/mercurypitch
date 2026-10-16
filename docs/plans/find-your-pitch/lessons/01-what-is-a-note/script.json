@@ -241,6 +241,7 @@
       "id": "b13",
       "type": "line",
       "who": "blue",
+      "gap": 2.2,
       "text": "Now, back to our puzzle."
     },
     {
@@ -383,6 +384,7 @@
       "id": "b23",
       "type": "line",
       "who": "blue",
+      "gap": 2.2,
       "text": "So pitch isn't really a straight line. It's more like a spiral."
     },
     {

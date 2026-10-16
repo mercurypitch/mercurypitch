@@ -69,3 +69,10 @@ One line each, with the reason. Newest last.
     `merc-pass.mjs` re-renders a flagged frame at a nudged time; passes are written atomically.
 25. b21b re-worded to "The same letter, every time." (naming is always true; sounding the same is
     the perception claim FACTS 9 never makes absolute).
+26. Two-second chapter breaths after the act 2 and act 3 cards (lines b13 and b23 now start 2.2 s
+    after their act marks): the pad swells there without playing under narration, and each act
+    gets a real chapter moment (critic 04). The film is 4:57.
+27. Sparkles are off in every Merc pass, the end card included (critic 04 still read them as a
+    stock effect); scenes mark a celebration with one gold ring.
+28. Ticket-stub cards (perforation and stub column) became plain rounded cards: the critics read
+    the shape itself as a generated-video tell.
