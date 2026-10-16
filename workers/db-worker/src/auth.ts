@@ -32,7 +32,8 @@ import type { MailOrigins } from './email-layout'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 import { sendSignUpCode } from './email-sign-up-code'
 import { shouldTouchLastActive } from './last-active'
-import { claimLaunchGift } from './launch-offer'
+import type { SignUpFrom } from './launch-offer'
+import { claimLaunchGift, signUpFrom } from './launch-offer'
 import type { LoginCodeClaim } from './login-codes'
 import { adoptSignUpCodes, claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, NO_ACCOUNT_YET, } from './login-codes'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
@@ -201,6 +202,10 @@ export interface Env {
   OFFER_BONUS_CREDITS?: string
   /** The promo code whose claim starts the window. Default promo-2026-q4. */
   OFFER_PROMO_ID?: string
+  /** The native app's launch gift (launch-offer.ts, S7b E6): the songs an
+   *  account made in the app gets with its claim of the featured code, a
+   *  whole number from 1 to 10. Unset or anything else, the gift is off. */
+  APP_GIFT_SONGS?: string
   /** Retention periods for the cron's sweep (funnel-retention.ts), whole
    *  numbers set in every env block of wrangler.jsonc. Unset or not a whole
    *  number of at least 1 means the default (src/lib/retention-periods.ts).
@@ -2253,7 +2258,7 @@ async function finishSignUpCode(
     throw err
   }
   await adoptSignUpCodes(env.DB, email, userId, Date.now())
-  await claimLaunchGift(env, userId)
+  await claimLaunchGift(env, userId, { signUpFrom: signUpFrom(request) })
 
   const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
   await Promise.all([
@@ -2490,6 +2495,9 @@ export async function resolveFederatedUser(
   env: Env,
   /** For the welcome, sent only when this creates an account. */
   mail: SignupMail,
+  /** Where the request came from: an account made in the app gets the
+   *  app's launch gift (launch-offer.ts). */
+  from: SignUpFrom = 'web',
 ): Promise<{ row: UserRow; isNew: boolean }> {
   const provider = identity.provider
   // 1. Returning user of THIS provider: findLinkedAccount says what that
@@ -2580,7 +2588,7 @@ export async function resolveFederatedUser(
       // a board, or in the profile) stays. The password upgrade writes outright
       // because there the singer types the name on our own sign-up form.
       await replaceDefaultHandle(env.DB, anon.id, identity.name)
-      await claimLaunchGift(env, anon.id)
+      await claimLaunchGift(env, anon.id, { signUpFrom: from })
       await sendWelcomeEmail(env, storedEmail, mail)
       return {
         row: (await findUserById(env.DB, anon.id)) as UserRow,
@@ -2607,7 +2615,7 @@ export async function resolveFederatedUser(
     identity.name || defaultDisplayName(id),
     identity.picture ?? undefined,
   )
-  await claimLaunchGift(env, id)
+  await claimLaunchGift(env, id, { signUpFrom: from })
   await sendWelcomeEmail(env, storedEmail, mail)
   return { row: (await findUserById(env.DB, id)) as UserRow, isNew: true }
 }
@@ -2618,6 +2626,7 @@ async function resolveGoogleUser(
   deviceId: string | undefined,
   env: Env,
   mail: SignupMail,
+  from: SignUpFrom = 'web',
 ): Promise<{ row: UserRow; isNew: boolean }> {
   return resolveFederatedUser(
     {
@@ -2632,6 +2641,7 @@ async function resolveGoogleUser(
     deviceId,
     env,
     mail,
+    from,
   )
 }
 
@@ -2658,6 +2668,7 @@ async function handleGoogle(
     deviceId,
     env,
     signupMail(request, env, body),
+    signUpFrom(request),
   )
   // A Google identity is one factor, exactly like a password.
   const challenge = await twofaChallenge(env, row.id, 'google')
@@ -3664,7 +3675,7 @@ async function handleVerifyEmail(
   }
   // The link has just proved the inbox, which is all the launch gift asks
   // (launch-offer.ts), so it is claimed on that proof, ahead of the flag.
-  await claimLaunchGift(env, row.userId, row.email)
+  await claimLaunchGift(env, row.userId, { provenEmail: row.email })
   await env.DB.prepare(
     'UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?',
   )

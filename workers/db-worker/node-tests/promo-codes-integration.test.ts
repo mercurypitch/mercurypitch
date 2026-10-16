@@ -581,7 +581,9 @@ describe('Promo codes integration', () => {
 
     it('offers the featured code with only its code, credits, end and offer', async () => {
       // No launch offer runs in this suite (OFFER_START_AT unset), so it
-      // says there is none (launch-finisher-integration.test.ts has one).
+      // says there is none (launch-finisher-integration.test.ts has one),
+      // and no app gift either (APP_GIFT_SONGS unset; app-gift-integration
+      // .test.ts has one).
       expect(await featured()).toEqual({
         promo: {
           code: 'LAUNCH',
@@ -589,19 +591,20 @@ describe('Promo codes integration', () => {
           expiresAt: '2027-01-01T23:59:59.000Z',
           offer: null,
         },
+        appGift: null,
       })
     })
 
     it('offers nothing once the featured code has ended', async () => {
       vi.setSystemTime(new Date('2027-01-02T00:00:00.000Z'))
-      expect(await featured()).toEqual({ promo: null })
+      expect(await featured()).toEqual({ promo: null, appGift: null })
     })
 
     it('offers nothing while the featured code is switched off', async () => {
       sqlite
         .prepare("UPDATE promoCodes SET active = 0 WHERE code = 'LAUNCH'")
         .run()
-      expect(await featured()).toEqual({ promo: null })
+      expect(await featured()).toEqual({ promo: null, appGift: null })
     })
 
     it('offers nothing once the featured code is fully claimed', async () => {
@@ -610,7 +613,7 @@ describe('Promo codes integration', () => {
           "UPDATE promoCodes SET redemptionCount = 1000 WHERE code = 'LAUNCH'",
         )
         .run()
-      expect(await featured()).toEqual({ promo: null })
+      expect(await featured()).toEqual({ promo: null, appGift: null })
     })
 
     it('never offers an open code that is not featured', async () => {
@@ -618,7 +621,7 @@ describe('Promo codes integration', () => {
       sqlite
         .prepare("UPDATE promoCodes SET featured = 0 WHERE code = 'LAUNCH'")
         .run()
-      expect(await featured()).toEqual({ promo: null })
+      expect(await featured()).toEqual({ promo: null, appGift: null })
     })
   })
 
@@ -691,6 +694,7 @@ describe('Promo codes integration', () => {
           expiresAt: '2099-01-01T00:00:00.000Z',
           offer: null,
         },
+        appGift: null,
       })
     })
 

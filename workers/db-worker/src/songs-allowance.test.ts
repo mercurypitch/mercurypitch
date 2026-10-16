@@ -712,6 +712,7 @@ describe('the songs the app can spend', () => {
       subscribed: false,
       left: 17,
       free: 1,
+      gift: 0,
       renewsAt: null,
       perPeriod: 20,
       cap: 50,
@@ -887,7 +888,7 @@ describe("the songs the app's launch gift grants", () => {
 
     expect(
       songsSummary([], 5, { perPeriod: 20, cap: 50 }, NOW_MS, app),
-    ).toMatchObject({ left: 6, free: 1 })
+    ).toMatchObject({ left: 6, free: 1, gift: 5 })
   })
 
   it('are only ever a positive row of their own reason', () => {

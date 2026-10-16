@@ -672,6 +672,8 @@ export interface SongsSummary {
   left: number
   /** In the app: the month's free song among the songs left, 1 or 0. */
   free?: number
+  /** In the app: the launch gift's songs among the songs left. */
+  gift?: number
   /** When the period ends and the next songs arrive, while subscribed. */
   renewsAt: string | null
   perPeriod: number
@@ -686,7 +688,7 @@ export function songsSummary(
   balance: number,
   allowance: SongAllowance,
   nowMs: number,
-  app?: Pick<AppSongs, 'left' | 'free'>,
+  app?: Pick<AppSongs, 'left' | 'free' | 'gift'>,
 ): SongsSummary {
   const row = entitlements.find(
     (entitlement) => entitlement.feature === SONGS_ENTITLEMENT,
@@ -696,7 +698,7 @@ export function songsSummary(
   return {
     subscribed,
     left: app === undefined ? Math.max(0, balance) : app.left,
-    ...(app === undefined ? {} : { free: app.free }),
+    ...(app === undefined ? {} : { free: app.free, gift: app.gift }),
     renewsAt: subscribed ? endsAt : null,
     perPeriod: allowance.perPeriod,
     cap: allowance.cap,

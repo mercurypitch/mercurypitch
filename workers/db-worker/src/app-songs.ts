@@ -26,11 +26,11 @@
 // separation, a grant or a web debit written in between makes it read again.
 // Its row says it is the app's (APP_SEPARATION), and the ledger walk spends
 // such a debit from the subscription's songs, then review access's, then the
-// launch gift's; the write is only made while they cover it. The month's free song goes first,
-// as it does not carry over: its claim, and its email's record, are written
-// in the same transaction as the debit, and only if the debit was. A ledger
-// that keeps changing is answered with "try again" (LedgerBusy), and the
-// main worker does, once.
+// launch gift's; the write is only made while they cover it. The month's
+// free song goes first, as it does not carry over: its claim, and its
+// email's record, are written in the same transaction as the debit, and only
+// if the debit was. A ledger that keeps changing is answered with "try
+// again" (LedgerBusy), and the main worker does, once.
 
 import type { Env } from './auth'
 import { uvrDebitKey } from './billing-core'

@@ -7,7 +7,8 @@
 // the moment an account's email is confirmed. Both go through claimPromo, so a
 // claim is the same writes whichever way it came: the account's slot, the
 // campaign counter, the credits, and a record of the confirmed email
-// (migration 0057).
+// (migration 0057). An account made in the native app also gets the app's
+// launch gift with that claim, in the same writes (S7b E6).
 //
 // That last record is what deleting an account leaves behind. The slot and
 // the credits go with the account (USER_OWNED_TABLES in auth.ts), so without
@@ -25,6 +26,7 @@ import { creditBalance } from './billing-core'
 import { emailRecordCode } from './free-song-email'
 import type { PromoWindow } from './promo-rules'
 import { PROMO_REFUSALS, promoRefusal } from './promo-rules'
+import { APP_GIFT } from './songs-allowance'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -137,6 +139,11 @@ export function recordPromoEmail(
  * userId) drops a second slot for the same account the same way, and the
  * email record drops a slot for an address that claimed this code before.
  *
+ * `appGiftSongs`, when above 0, adds the native app's launch gift to the
+ * same batch (launch-offer.ts, S7b E6): songs of the app's own, written only
+ * with the slot, so every guard above holds for the gift too. Only the
+ * launch gift passes it; a typed code never does (App Review 3.1.1).
+ *
  * The caller has already checked that the code is open (promoRefusal); this
  * re-checks only what can change between that read and these writes.
  */
@@ -145,6 +152,7 @@ export async function claimPromo(
   promo: PromoRow,
   account: { userId: string; email: string },
   now: Date,
+  appGiftSongs = 0,
 ): Promise<ClaimOutcome> {
   const nowIso = now.toISOString()
   const emailHash = await promoEmailCode(env, promo.id, 'claim', account.email)
@@ -199,6 +207,24 @@ export async function claimPromo(
         { promoCodeId: promo.id, kind: 'claim', emailHash },
         nowIso,
         redeemed,
+        redemptionId,
+      ),
+    )
+  }
+  if (appGiftSongs > 0) {
+    statements.push(
+      env.DB.prepare(
+        `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+         SELECT ?, ?, ?, ?, ?, ?, ?
+          WHERE EXISTS (${redeemed})`,
+      ).bind(
+        crypto.randomUUID(),
+        nowIso,
+        account.userId,
+        appGiftSongs,
+        APP_GIFT,
+        promo.code,
+        `${APP_GIFT}:${promo.id}:${account.userId}`,
         redemptionId,
       ),
     )
