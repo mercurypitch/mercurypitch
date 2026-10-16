@@ -80,16 +80,17 @@ export function keepFact(): string {
 }
 
 /**
- * The launch gift's row, while the server says it runs: "Launch gift: 5 more
- * songs, until 1 January". The count and the day are the server's
- * (GET /api/billing/promo/featured, `appGift`), never written in here. The
- * day is a plain fact, never a countdown (S7b §5).
+ * The launch gift's row, while the server says it runs: "Launch gift for new
+ * accounts: 5 more songs, until 1 January". It names new accounts because
+ * only a new one gets it: signing in to an account that already exists gets
+ * no gift (db-worker launch-offer.ts). The count and the day are the
+ * server's (GET /api/billing/promo/featured, `appGift`), never written in
+ * here. The day is a plain fact, never a countdown (S7b §5).
  */
 export function keepGiftLine(songs: number, until: string | null): string {
   const more = songs === 1 ? '1 more song' : `${songs} more songs`
-  return until === null
-    ? `Launch gift: ${more}`
-    : `Launch gift: ${more}, until ${until}`
+  const gift = `Launch gift for new accounts: ${more}`
+  return until === null ? gift : `${gift}, until ${until}`
 }
 
 /** The Account row in Settings. */

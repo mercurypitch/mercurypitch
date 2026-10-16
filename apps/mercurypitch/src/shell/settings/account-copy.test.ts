@@ -44,15 +44,17 @@ describe('account copy', () => {
     restore = null
   })
 
-  it("says Keep's fact line and its gift line in the plan's words (S7b §3.5)", () => {
+  it("says Keep's fact line in the plan's words, and its gift line for new accounts only (S7b §3.5, E6)", () => {
     expect(keepFact()).toBe('Without an account, it stays on this phone only.')
     expect(keepGiftLine(5, '1 January')).toBe(
-      'Launch gift: 5 more songs, until 1 January',
+      'Launch gift for new accounts: 5 more songs, until 1 January',
     )
     expect(keepGiftLine(1, '1 January')).toBe(
-      'Launch gift: 1 more song, until 1 January',
+      'Launch gift for new accounts: 1 more song, until 1 January',
     )
-    expect(keepGiftLine(5, null)).toBe('Launch gift: 5 more songs')
+    expect(keepGiftLine(5, null)).toBe(
+      'Launch gift for new accounts: 5 more songs',
+    )
   })
 
   it('says "this phone" on a phone, as it always has', () => {

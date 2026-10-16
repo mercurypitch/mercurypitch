@@ -273,7 +273,7 @@ describe('what Keep says', () => {
     expect(rows()).toEqual([
       KEEP.everywhere,
       KEEP.freeSong,
-      'Launch gift: 5 more songs, until 1 January',
+      'Launch gift for new accounts: 5 more songs, until 1 January',
     ])
   })
 
