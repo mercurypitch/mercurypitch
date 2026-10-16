@@ -102,9 +102,9 @@ lesson is in build; 4:57)
 - Objectives: find the twelve notes on a keyboard and on the spiral; tell a semitone from a whole
   tone by ear; know why one key has two names (C sharp, D flat); know a semitone is 100 cents, the
   unit MercuryPitch scores in.
-- Misconception: "Black keys are sharps and white keys are naturals." "B to C must be a bigger
-  step, since there's no black key between them." (Refuted by: every neighbouring key, white or
-  black, is one semitone.)
+- Misconception: "Black keys are sharps and white keys are naturals." "B to C is the same step as
+  C to D: on the keyboard they look just as far apart." (Refuted by: every neighbouring key, white
+  or black, is one semitone, so B to C is half of C to D.)
 - Signature: the five "?" beads from Lesson 1's spiral light up; on screen, twelve equal steps make
   an octave, each 100 cents. Writer's note (or a "Go deeper" drawer): each semitone is a 2^(1/12)
   step (a ratio of about 1.0595), so twelve equal steps multiply to exactly 2.
@@ -114,7 +114,8 @@ lesson is in build; 4:57)
   `/ear-lab`, then tap Leap. Contour (tiers "Half steps" and "Whole steps") only as an optional
   warm-up for direction: it asks up, down or same, never semitone or tone.
 - Facts: 12-TET ratio; 100 cents per equal-tempered semitone (Ellis, 1885); keyboard layout;
-  the app labels with sharps only.
+  the app's pitch line labels notes with sharps only (its sheet-music view spells flats in flat
+  keys).
 
 **Lesson 3. Match a note**
 

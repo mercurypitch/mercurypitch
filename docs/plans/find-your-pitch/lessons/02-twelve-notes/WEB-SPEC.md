@@ -11,8 +11,8 @@ the kit, never to copy.
 Its public home is `mercurypitch.com/learn/02` (MASTER-PLAN § 12 item 9, decided 16 October
 2026): a hand-written document `learn/02.html` with its module in `src/features/lessons/lesson-02/`,
 built on the shared parts in `src/features/lessons/kit/`, the way Lesson 1's page (`learn/01.html`,
-`src/features/lessons/lesson-01/`, in build as this is written) is. A proof preview on the
-claude.ai artifact host is optional; if one is made, its host rules bind only the preview.
+`src/features/lessons/lesson-01/`, in build as this is written) is. A private proof preview page
+is optional; if one is made, its host rules bind only the preview.
 
 ## Look
 
@@ -32,7 +32,7 @@ everyone else the masthead's Pause animations toggle stops the same three (WCAG 
 The page anatomy (MASTER-PLAN § 4.2), with Lesson 1's departures kept: the step toys double as the
 Playground (item 9), the Wrap comes before the episode, and each "Common mix-up" card sits inside
 the step whose toy refutes it. New against Lesson 1: the warm-up retrieval (item 3) runs for the
-first time; the practise link sits in the Wrap, as the anatomy has it; the page has two mix-up
+first time; the practice link sits in the Wrap, as the anatomy has it; the page has two mix-up
 cards, one per concept (playbook rule 3); and there is no series blueprint section (Lesson 1's page
 carries it for the team), so the masthead's anchors are Lesson, Watch and Explorer.
 
@@ -42,9 +42,11 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
    Sound on) plus a prerequisite chip linking Lesson 1; the promise; the two Mercs live on the
    floor line either side of the spiral, which shows the lit A3 to A4 turn with its five dim beads.
 3. **Warm-up from Lesson 1**: two questions (see Toys, 6).
-4. **Cold open: predict**: orange's guess and blue's reply in speech bubbles, then the two-choice
-   predict (a note of its own, or just a gap); choosing unlocks Play A, Play the dim bead and Play
-   B on the hero spiral; after the dim bead plays, the reveal from LESSON.md.
+4. **Cold open: predict**: orange's guess ("Is there a hidden note between every two letters?")
+   and blue's reply in speech bubbles, then the two-choice predict (every gap holds a note, or only
+   some); choosing unlocks Play the climb on the hero spiral, which lights each bead as it sounds
+   and counts the steps; after the climb, the reveal from LESSON.md (twelve steps, not fourteen).
+   It leaves which gaps and why to steps 3 and 4, so step 3's predict is not given away.
 5. **Four words you'll meet**: semitone, tone, sharp and flat, cent, each with its one-line
    definition and a play button (A3 to A♯3; A3 to B3; C4 to C♯4; the 100-cent glide).
 6. **The steps**: Lesson 1's sticky stage and step deck ("N of 6", Previous and Next, the stage
@@ -52,7 +54,8 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
    one "Notice:" and its toy:
    1. The very next note: the spiral (Toys, 1).
    2. Twelve equal steps make an octave: the spiral with Climb and Look down.
-   3. B to C: the keyboard with Unroll and Straighten, the second predict, mix-up card 1.
+   3. B to C: the keyboard with Unroll and Straighten, the second predict (three choices),
+      mix-up card 1.
    4. Tones, and where the five come from: the tile row with Lift out the five; the Semitone or
       tone? game (Toys, 4).
    5. Two names for one key: the tile row with the two-names toggle (Toys, 3), mix-up card 2.
@@ -65,7 +68,7 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
    `l02-q4`. Answers stay in the viewer's browser (localStorage) until the Lesson telemetry track
    exists; then each first answer is a telemetry event behind consent (MASTER-PLAN Phase 1). A
    later visit asks them afresh, and Lesson 3's page will open with two of them.
-9. **Wrap**: the three recap lines, the challenge, the practise card (Leap, with today's caveat,
+9. **Wrap**: the three recap lines, the challenge, the practice card (Leap, with today's caveat,
    and Contour as an optional warm-up), the next lesson's hook on a card that opens Lesson 3 in the
    explorer. Free play unlocks here: every control of the step toys on one stage (playbook rule
    17: guided first, free play after).
@@ -75,8 +78,8 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
     from the film's captions and `chapters.json`. Until the files are uploaded the section shows the
     poster, the chapters and the transcript with "Film coming soon".
 11. **Lesson explorer**: Lesson 1's, with Lesson 2 as the current node; Lesson 2 marks done when its
-    quiz is finished; its card's practise link reads as LESSON.md's Wrap.
-12. **Footer**: Lesson 1's, with the practise link (`mercurypitch.com/ear-lab?lesson=02`) and the
+    quiz is finished; its card's practice link reads as LESSON.md's Wrap.
+12. **Footer**: Lesson 1's, with the practice link (`mercurypitch.com/ear-lab?lesson=02`) and the
     same credits (scratch voices to be re-voiced, every example synthesised, Merc's sung notes
     ElevenLabs-derived, whose rights the owner holds, MASTER-PLAN § 12 item 1).
 
@@ -90,7 +93,7 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
 | 4. Semitone or tone?         | The quiz's feedback lines (`kit/quiz.ts`) and the tone player (`kit/sound.ts`)                                                  | All new: a ten-round ear game, two answers                                                                             |
 | 5. Slide guide (Sing it)     | The Sing it card (`lesson-01/sing.ts`), Merc's synthesised "ooh", the hum-along ring                                            | Four lanes and Merc's amber path; the guide dot; the octave-up slide                                                   |
 | 6. Warm-up retrieval         | The quick-check component (`kit/quiz.ts`) and Lesson 1's questions 2 and 4 (`lesson-01/quiz-questions.ts`)                      | Its place at the top of the page, and asking by Lesson 1's ids                                                         |
-| 7. Predict widgets           | Lesson 1's predict widget (`lesson-01/predict.ts`: choice locks, play buttons unlock, a kind reveal), promoted into the kit     | Two of them: note or gap (cold open), B to C or C to D (step 3)                                                        |
+| 7. Predict widgets           | Lesson 1's predict widget (`lesson-01/predict.ts`: choice locks, play buttons unlock, a kind reveal), promoted into the kit     | Two of them: every gap or only some (cold open); B to C, the same, or C to D (step 3, three choices)                   |
 | 8. Go deeper drawer          | none                                                                                                                            | All new: a disclosure (`details`) for the ratio, the cent's origin and "sharp" meaning a little high                   |
 
 ### 1. Spiral and keyboard
@@ -119,8 +122,9 @@ One component with four states, so the object the film transforms is one object 
 - **Lift out the five** (step 4): the five dark tiles rise out of the row; the seven letters show
   five holes labelled "tone" and two touching pairs labelled "semitone"; press Drop back to return
   them, one by one, with "7 + 5 = 12".
-- **Predict** (step 3): the two-choice widget; choosing unlocks Play B to C and Play C to D; the
-  reveal (LESSON.md) never tells either choice it was wrong.
+- **Predict** (step 3): the predict widget with three choices (B to C, The same, C to D), because
+  the eye's guess, "the same", has to be one of them (DECISIONS 13); choosing unlocks Play B to C
+  and Play C to D; the reveal (LESSON.md) never tells any choice it was wrong.
 
 ### 2. Semitone ruler with cents
 
@@ -172,7 +176,9 @@ vertical (pitch is height).
   (Lesson 1's recipe: partials 1, .62, .38, .24, .14, .08, .045, .025 over a lowpass near 2.6 kHz,
   vibrato 5.5 Hz, +-14 cents, grown in over 0.35 s), with blue or orange Merc singing beside it
   (state `ride`). **Start the guide** counts in for one second, then a dot runs the path in 4.2 s
-  while a breathing ring waits. Nothing listens and nothing is scored: no microphone on this page.
+  while a breathing ring waits, with Merc's still in its centre as in Lesson 1's hum-along ring,
+  never a microphone icon (the film's fix too, DECISIONS 65). Nothing listens and nothing is
+  scored: no microphone on this page.
   Under reduced motion the path's segments light one after another instead of a travelling dot.
 - The safety line from LESSON.md sits under the buttons.
 
@@ -187,7 +193,8 @@ vertical (pitch is height).
 ### 7 and 8. Predicts and the Go deeper drawer
 
 - Both predicts are Lesson 1's widget: the choice locks, the play buttons unlock, the reveal plays
-  after the sound and never calls a choice wrong.
+  after the sound and never calls a choice wrong. The cold open's has two choices and step 3's
+  three; the widget takes any number from two to four, each at least 44 px tall.
 - The Go deeper drawer is a `details` disclosure, closed by default, under step 6's toy.
 
 ## Audio
@@ -202,12 +209,13 @@ Nothing autoplays. The page has no music bed.
 Lesson 1's setup: the app's own renderer (`src/lib/merc/renderer.ts`) through the kit
 (`kit/merc-duo.ts`), loaded after first paint, orange with the warm look and warm light
 (`kit/merc-warm.ts`), one WebGL context per Merc, `medium` quality on phones, turned toward each
-other, paused off screen; a still image if WebGL fails. Reactions: blue `sing` while A3 plays,
+other, paused off screen; a still image if WebGL fails, or if WebGL2 would run on the CPU (Lesson 1
+WEB-SPEC, Mercs). Reactions: blue `sing` while A3 plays,
 orange `sing` while A4 plays, `ride` during the slides, orange `celebrate` once after the
 cold-open reveal (no sparkles). Under `prefers-reduced-motion` or Pause animations each Merc holds a still frame and
 skips the reactions; the buttons and the reveal carry the moment.
 
-## Practise link: what exists and what needs engineering
+## Practice link: what exists and what needs engineering
 
 - Today: `mercurypitch.com/ear-lab` opens the Ear Lab bench; the viewer taps Leap, which offers all
   twelve intervals, plays each pair up or down, and roves the lower note from C3 to A4 (FACTS 32,
@@ -225,7 +233,7 @@ skips the reactions; the buttons and the reveal carry the moment.
 
 Lesson 1's contract, unchanged and binding, including what its page on the app changed from the
 preview (Lesson 1 WEB-SPEC, "On the app"): no CDN at all, self-hosted fonts, Web Animations in
-place of GSAP, and practise links that carry `?lesson=02`. Then the layout, accessibility, sound,
+place of GSAP, and practice links that carry `?lesson=02`. Then the layout, accessibility, sound,
 motion and storage rules: 16 px side gutters, no sideways scroll at 390 px, `min-width: 0` on text
 children, touch targets of at least 44 px, visible focus, a single dark theme with every colour a
 token and an explicit body background, sound only after a tap, localStorage only for per-viewer

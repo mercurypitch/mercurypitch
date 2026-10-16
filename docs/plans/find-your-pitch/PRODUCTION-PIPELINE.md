@@ -70,7 +70,7 @@ session.
   `cues.json`, never off typed seconds. A re-voiced line re-times the film: run steps 4 to 8 and
   10 again.
 - **Narration pacing.** Kokoro speaks fast at speed 1.0 (180 to 236 wpm); speeds 0.84 (blue) and
-  0.9 (orange) plus authored gaps give about 164 wpm while speaking and 119 overall. Long lines
+  0.9 (orange) plus authored gaps give about 164 wpm while speaking and 117 overall. Long lines
   are split into phrase events so the picture can land on a word.
 - **Merc.** Pre-render each performance once (`merc-pass.mjs`), from the cue sheet
   (`merc-shots.py`): he sings on his sung cues, talks on his lines (mouth from the line's loudness;
