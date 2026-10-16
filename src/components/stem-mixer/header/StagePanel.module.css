@@ -1,0 +1,111 @@
+/* StagePanel: the Stage popover, portalled to <body> with .mp-dark-stage
+   so it keeps the stage's dark palette in any app theme; z-index 9000 is
+   the app's popover layer. */
+
+.panel {
+  position: fixed;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  padding: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border-subtle, #30363d);
+  border-radius: 12px;
+  color: var(--text-primary, #e6edf3);
+  background: rgba(22, 27, 34, 0.98);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+}
+
+.caption {
+  margin: 0;
+  color: var(--text-muted, #8b949e);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.glass {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 12px;
+}
+
+/* The range draws its own track from the stage's tokens: a native one
+   paints its unfilled half in the browser's grey. */
+.slider {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 14px;
+  margin: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border: none;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent, #58a6ff) 0 var(--stage-glass-fill, 45%),
+    var(--bg-tertiary, #21262d) var(--stage-glass-fill, 45%) 100%
+  );
+}
+
+.slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: 2px solid var(--on-accent, #0d1117);
+  border-radius: 50%;
+  background: var(--accent, #58a6ff);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.slider::-moz-range-track {
+  height: 4px;
+  border: none;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent, #58a6ff) 0 var(--stage-glass-fill, 45%),
+    var(--bg-tertiary, #21262d) var(--stage-glass-fill, 45%) 100%
+  );
+}
+
+.slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--on-accent, #0d1117);
+  border-radius: 50%;
+  background: var(--accent, #58a6ff);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.slider:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .slider {
+    height: 44px;
+  }
+}

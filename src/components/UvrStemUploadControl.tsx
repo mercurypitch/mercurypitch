@@ -8,6 +8,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { createManualStemSession } from '@/db/services/manual-stem-service'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { showNotification } from '@/stores/notifications-store'
 import { Music, Voice, X } from './icons'
 
@@ -15,8 +16,6 @@ interface UvrStemUploadControlProps {
   onCreated?: (sessionId: string) => void
   disabled?: boolean
 }
-
-const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
 
 export const UvrStemUploadControl: Component<UvrStemUploadControlProps> = (
   props,
@@ -38,7 +37,8 @@ export const UvrStemUploadControl: Component<UvrStemUploadControlProps> = (
     const file = input.files?.[0] ?? null
     setter(file)
     // Default the song name from the first chosen file.
-    if (file && songName().trim() === '') setSongName(stripExt(file.name))
+    if (file && songName().trim() === '')
+      setSongName(stripAudioExtension(file.name))
     input.value = ''
   }
 

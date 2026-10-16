@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { documentScriptUrls, documentStylesheetUrls, FIRST_PAINT_BUDGETS_KB, FIRST_PAINT_CSS_BUDGETS_KB, firstPaintOf, judgeFirstPaint, measureFirstPaint, staticImportSpecifiers, } from './assert-first-paint-budgets.mjs'
+import { documentScriptUrls, documentStylesheetUrls, FIRST_PAINT_BUDGETS_KB, FIRST_PAINT_CSS_BUDGETS_KB, FIRST_PAINT_FORBIDDEN_SOURCES, firstPaintOf, judgeFirstPaint, measureFirstPaint, staticImportSpecifiers, } from './assert-first-paint-budgets.mjs'
 
 const KB = 1024
 
@@ -311,4 +311,109 @@ test('every page with a JS ceiling has a CSS ceiling', () => {
     Object.keys(FIRST_PAINT_CSS_BUDGETS_KB).sort(),
     Object.keys(FIRST_PAINT_BUDGETS_KB).sort(),
   )
+})
+
+// ---- Modules that only ever load on demand ----------------------------------
+
+// The engine as a pnpm build names it in a source map, relative to the chunk.
+const ENGINE_SOURCE =
+  '../../node_modules/.pnpm/signalsmith-stretch@1.3.2/node_modules/signalsmith-stretch/SignalsmithStretch.mjs'
+
+const built = (sources, file = 'assets/vendor-abc.js') => ({
+  bytes: KB,
+  chunks: [{ file, bytes: KB, sources }],
+})
+
+test('reads the modules each first-paint chunk was built from', async (t) => {
+  const dist = distWith(t, {
+    'room.html': { source: page('/assets/entry.js') },
+    'assets/entry.js': {
+      source: 'import"./leaf.js"\n//# sourceMappingURL=entry.js.map',
+    },
+    'assets/entry.js.map': {
+      source: JSON.stringify({
+        version: 3,
+        sources: ['../../src/room.tsx', ENGINE_SOURCE],
+      }),
+    },
+    'assets/leaf.js': { bytes: KB },
+  })
+
+  const result = await firstPaintOf(join(dist, 'room.html'), dist)
+
+  assert.deepEqual(
+    result.chunks.map((chunk) => [chunk.file, chunk.sources]),
+    [
+      ['assets/leaf.js', null],
+      ['assets/entry.js', ['../../src/room.tsx', ENGINE_SOURCE]],
+    ],
+  )
+})
+
+test('fails a page that downloads the key-change engine before first paint, whatever its budget', () => {
+  const problems = judgeFirstPaint(
+    new Map([['room.html', built(['../../src/room.tsx', ENGINE_SOURCE])]]),
+    { 'room.html': 5000 },
+    {},
+  )
+
+  assert.equal(problems.length, 1)
+  assert.match(problems[0], /room\.html downloads the key-change engine/)
+  assert.match(problems[0], /signalsmith-stretch/)
+  assert.match(problems[0], /assets\/vendor-abc\.js/)
+})
+
+test('passes a page that leaves the engine behind its dynamic import', () => {
+  assert.deepEqual(
+    judgeFirstPaint(
+      new Map([
+        [
+          'room.html',
+          built([
+            '../../src/lib/key-shift/pitch-shift-node.ts',
+            '../../src/room.tsx',
+          ]),
+        ],
+      ]),
+      { 'room.html': 5000 },
+      {},
+    ),
+    [],
+  )
+})
+
+test('a first-paint chunk with no source map cannot be cleared', () => {
+  const problems = judgeFirstPaint(
+    new Map([['room.html', built(null, 'assets/mystery-abc.js')]]),
+    { 'room.html': 5000 },
+    {},
+  )
+
+  assert.equal(problems.length, 1)
+  assert.match(problems[0], /room\.html/)
+  assert.match(problems[0], /assets\/mystery-abc\.js has no source map/)
+})
+
+test('a measurement taken without sources is left alone', () => {
+  assert.deepEqual(
+    judgeFirstPaint(
+      new Map([['room.html', weighed(300 * KB)]]),
+      { 'room.html': 300 },
+      {},
+    ),
+    [],
+  )
+})
+
+test('the key-change engine is on the on-demand list, and its wrapper is not', () => {
+  const hits = (source) =>
+    FIRST_PAINT_FORBIDDEN_SOURCES.filter((rule) => rule.pattern.test(source))
+
+  assert.equal(hits(ENGINE_SOURCE).length, 1)
+  assert.equal(
+    hits('../node_modules/signalsmith-stretch/SignalsmithStretch.mjs').length,
+    1,
+  )
+  assert.equal(hits('../../src/lib/key-shift/pitch-shift-node.ts').length, 0)
+  assert.equal(hits('../../src/workers/pitch-shift-live-input.ts').length, 0)
 })

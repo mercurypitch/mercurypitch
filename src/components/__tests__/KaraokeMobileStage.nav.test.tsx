@@ -9,7 +9,7 @@
 // controls to confirm they call through to the right props (REQ-ZEN-001/002,
 // REQ-ZEN-005, REQ-ZEN-006/007).
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { KaraokeMobileStageProps } from '@/components/KaraokeMobileStage'
 import { KaraokeMobileStage } from '@/components/KaraokeMobileStage'
@@ -64,7 +64,7 @@ function makeProps(
     playlistOverlayActive: () => false,
     onPlaylistStart: vi.fn(),
     onPlaylistSkip: vi.fn(),
-    // Present so the header autoplay toggle + song-list button render.
+    // Present so More's autoplay switch and the song-list button render.
     onPickSession: vi.fn(),
     ...over,
   }
@@ -145,6 +145,15 @@ describe('KaraokeMobileStage next button (REQ-ZEN-005)', () => {
 })
 
 describe('KaraokeMobileStage autoplay toggle (REQ-ZEN-006/007)', () => {
+  // Autoplay is a switch in More, with the stage's other options.
+  const autoplaySwitch = (): HTMLElement => {
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    return within(screen.getByRole('dialog', { name: 'More' })).getByRole(
+      'switch',
+      { name: 'Play the next song automatically' },
+    )
+  }
+
   it('reflects the off state and toggles on click', () => {
     const onToggleAutoplay = vi.fn()
     render(() =>
@@ -152,18 +161,15 @@ describe('KaraokeMobileStage autoplay toggle (REQ-ZEN-006/007)', () => {
         makeProps({ autoplayEnabled: () => false, onToggleAutoplay }),
       ),
     )
-    const toggle = screen.getByLabelText('Toggle autoplay')
-    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    const toggle = autoplaySwitch()
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
     fireEvent.click(toggle)
     expect(onToggleAutoplay).toHaveBeenCalledTimes(1)
   })
 
   it('reflects the on state', () => {
     render(() => KaraokeMobileStage(makeProps({ autoplayEnabled: () => true })))
-    expect(screen.getByLabelText('Toggle autoplay')).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(autoplaySwitch()).toHaveAttribute('aria-checked', 'true')
   })
 })
 

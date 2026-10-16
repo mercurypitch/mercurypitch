@@ -26,6 +26,7 @@ import { createSignal } from 'solid-js'
 import { currentAccountId, disconnectDrive, fetchDriveAccessToken, fetchDriveStatus, startDriveConnect, } from '@/db/services/auth-service'
 import { buildPortableBundle, BundleSourceError, importPortableBundle, } from '@/db/services/portable-bundle-service'
 import { sessionStemPresence } from '@/db/services/uvr-service'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import type { DriveClient, DriveSongFile } from '@/lib/drive/drive-client'
 import { createDriveClient, DriveAuthError, SONG_FILE_SUFFIX, } from '@/lib/drive/drive-client'
 import { platform } from '@/lib/platform'
@@ -254,7 +255,7 @@ function localSongs(): UvrSession[] {
 
 function titleOf(session: UvrSession): string {
   const name = session.originalFile?.name ?? ''
-  return name === '' ? 'Untitled song' : name.replace(/\.[^.]+$/, '')
+  return name === '' ? 'Untitled song' : stripAudioExtension(name)
 }
 
 function describe(error: unknown): string {

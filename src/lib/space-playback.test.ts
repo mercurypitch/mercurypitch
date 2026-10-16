@@ -3,7 +3,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { installSpacePlaybackToggle, isTypingTarget, } from '@/lib/space-playback'
+import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 
 function pressSpace(
   target: HTMLElement,
@@ -48,6 +48,38 @@ describe('isTypingTarget', () => {
       expect(isTypingTarget(el)).toBe(false)
     }
     expect(isTypingTarget(null)).toBe(false)
+  })
+})
+
+describe('isInsideOverlay', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('finds a control in a dialog, a menu or a listbox', () => {
+    for (const role of ['dialog', 'alertdialog', 'menu', 'listbox']) {
+      const overlay = document.createElement('div')
+      overlay.setAttribute('role', role)
+      const control = document.createElement('button')
+      overlay.append(control)
+      document.body.append(overlay)
+
+      expect(isInsideOverlay(control)).toBe(true)
+      expect(isInsideOverlay(overlay)).toBe(true)
+    }
+  })
+
+  it('leaves the page, and a target that is not an element, to the page', () => {
+    const group = document.createElement('div')
+    group.setAttribute('role', 'group')
+    const button = document.createElement('button')
+    group.append(button)
+    document.body.append(group)
+
+    expect(isInsideOverlay(button)).toBe(false)
+    expect(isInsideOverlay(document.body)).toBe(false)
+    expect(isInsideOverlay(window)).toBe(false)
+    expect(isInsideOverlay(null)).toBe(false)
   })
 })
 

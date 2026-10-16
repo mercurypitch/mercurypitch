@@ -2,6 +2,7 @@
 // tiny pure leaf so both studio components and the night page's runtime can
 // share the deep-link format.
 
+import { DEMO_SESSION_ID, isDemoSessionId, LEGACY_SLUG, } from '@/lib/example-session'
 import { parseSyncLinkHash } from '@/lib/room-code'
 
 export const KARAOKE_NIGHT_PATH = '/karaoke-night'
@@ -32,15 +33,45 @@ export function karaokeNightSessionUrl(
   options?: KaraokeNightLaunchOptions,
 ): string {
   let url = `${KARAOKE_NIGHT_PATH}?session=${encodeURIComponent(sessionId)}`
-  const startAtSec = options?.startAtSec
-  if (startAtSec !== undefined && Number.isFinite(startAtSec)) {
-    // Tenth-of-a-second resolution: plenty for "meet the singer", short
-    // enough to keep the URL tidy.
-    const rounded = Math.round(Math.max(0, startAtSec) * 10) / 10
-    url += `&t=${String(rounded)}`
-  }
+  url += startParam(options?.startAtSec)
   if (options?.autoplay === true) url += '&autoplay=1'
   return url
+}
+
+/** `&t=` for a start position, or nothing when there is none to give. */
+function startParam(startAtSec: number | undefined): string {
+  if (startAtSec === undefined || !Number.isFinite(startAtSec)) return ''
+  // Tenth-of-a-second resolution: plenty for "meet the singer", short
+  // enough to keep the URL tidy.
+  const rounded = Math.round(Math.max(0, startAtSec) * 10) / 10
+  return `&t=${String(rounded)}`
+}
+
+/**
+ * Where the studio mixer's "Open in Karaoke Night" goes: the song in the
+ * mixer, on the stage, paused at `startAtSec` (never autoplay, which a
+ * browser may refuse after a page load). The top of the song needs no
+ * position.
+ *
+ * An example goes by its song link (`?song=`), which stages the visitor's
+ * own copy of it: a vocal or lyrics they replaced come along. Any other song
+ * goes by its session id. The original demo's id names its legacy slug,
+ * which the page reads and rewrites to the song's link slug.
+ */
+export function mixerKaraokeNightUrl(
+  sessionId: string,
+  options: { startAtSec?: number } = {},
+): string {
+  const at = options.startAtSec
+  const start = at !== undefined && at > 0 ? startParam(at) : ''
+  if (!isDemoSessionId(sessionId)) {
+    return `${karaokeNightSessionUrl(sessionId)}${start}`
+  }
+  const slug =
+    sessionId === DEMO_SESSION_ID
+      ? LEGACY_SLUG
+      : sessionId.slice(DEMO_SESSION_ID.length + 1)
+  return `${karaokeNightSongUrl(slug)}${start}`
 }
 
 /**

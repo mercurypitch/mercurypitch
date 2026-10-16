@@ -1,6 +1,7 @@
 // ============================================================
 // Lyrics Service — fetch, parse, and sync lyrics
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
+import { stripAudioExtension } from './audio-file-name'
 import { IS_DEV } from './defaults'
 import { cappedEvenLineDuration } from './lyric-sung-end'
 import { interpolateSweepProgress } from './lyric-sweep'
@@ -14,8 +15,8 @@ export interface LrcLine {
 // ── Title Extraction ──────────────────────────────────────────
 
 export function extractTitle(filename: string): string {
-  // Remove extension
-  let title = filename.replace(/\.[^/.]+$/, '')
+  // Remove the audio extension; a dot in the title stays ("Mr. Brightside")
+  let title = stripAudioExtension(filename)
 
   // Remove common patterns
   title = title

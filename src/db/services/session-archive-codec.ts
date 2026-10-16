@@ -948,6 +948,7 @@ export interface ArchivedKaraokePlaylistItem {
   singerName?: string
   shuffleWithinGroup?: boolean
   vocalVolume?: number
+  keyShift?: number
 }
 
 export interface ArchivedKaraokePlaylist {
@@ -1025,6 +1026,18 @@ export function parseKaraokeArchiveManifest(
         if (volume > 1)
           throw new SessionArchiveError('playlist vocalVolume exceeds 1')
         parsed.vocalVolume = volume
+      }
+      if (item.keyShift !== undefined) {
+        const keyShift = finiteNumber(
+          item.keyShift,
+          'playlist keyShift',
+          -Infinity,
+        )
+        if (!Number.isInteger(keyShift) || Math.abs(keyShift) > 6)
+          throw new SessionArchiveError(
+            'playlist keyShift must be a whole number of semitones within ±6',
+          )
+        parsed.keyShift = keyShift
       }
       return parsed
     })

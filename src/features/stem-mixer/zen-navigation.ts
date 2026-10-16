@@ -153,6 +153,14 @@ export function playlistEndAction(
 export const ZEN_LYRICS_SIZES = ['smaller', 'current', 'bigger'] as const
 export type ZenLyricsSize = (typeof ZEN_LYRICS_SIZES)[number]
 
+/** What each preset is called wherever a singer picks one: the Karaoke
+    room's options and the phone stage's More. */
+export const ZEN_LYRICS_SIZE_LABELS: Record<ZenLyricsSize, string> = {
+  smaller: 'Small',
+  current: 'Medium',
+  bigger: 'Large',
+}
+
 /** Font multiplier applied to the zen lyrics lines for each preset. */
 export const ZEN_LYRICS_SCALE: Record<ZenLyricsSize, number> = {
   smaller: 0.85,

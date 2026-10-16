@@ -163,6 +163,23 @@
   align-self: center;
 }
 
+/* A touch screen has no hover to show the button by, so a tablet beside
+   the sidebar could never put it away. There it is always shown, at a
+   finger's size. */
+@media (hover: none), (pointer: coarse) {
+  .sidebarCollapseBtn {
+    min-width: 44px;
+    min-height: 44px;
+    opacity: 1;
+  }
+
+  /* Wide enough for the button. A phone's drawer resets this below. */
+  :global(.app-sidebar.collapsed) {
+    width: 52px;
+    min-width: 52px;
+  }
+}
+
 @media (max-width: 768px) {
   .sidebarCollapseBtn {
     display: none !important;

@@ -113,8 +113,11 @@ function fakeContext() {
 }
 
 let constructed = 0
+/** The contexts a mixer built for itself, in the order it built them. */
+let owned: ReturnType<typeof fakeContext>[] = []
 
 beforeEach(() => {
+  owned = []
   streams.opened = 0
   streams.decoder = true
   constructed = 0
@@ -130,13 +133,17 @@ beforeEach(() => {
   }))
   vi.stubGlobal('AudioContext', function AudioContextStub(): unknown {
     constructed += 1
-    return fakeContext()
+    const made = fakeContext()
+    owned.push(made)
+    return made
   })
 })
 
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
   vi.clearAllMocks()
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
 
@@ -269,11 +276,128 @@ describe('the mixer the Karaoke room hosts', () => {
     })
   })
 
+  it("hands the key to the room's options, and keeps it off the stage", async () => {
+    // The room's landscape column is 236-286 px wide and the key control
+    // needs about 324: in the room, the key is a row in Karaoke options.
+    const { host, controls } = hosting()
+    mountHosted(host)
+    await waitFor(() => {
+      expect(controls()).not.toBeNull()
+    })
+    const before = controls()!.key.value()
+
+    controls()!.key.onChange(2)
+
+    expect({
+      onStage: screen.queryByTestId('mobile-key-shift'),
+      before,
+      after: controls()!.key.value(),
+    }).toEqual({ onStage: null, before: 0, after: 2 })
+  })
+
   it("steps through the room's library, not the mixer's own", () => {
     const { host } = hosting()
     mountHosted(host)
     fireEvent.click(screen.getByLabelText('Next song'))
     expect(host.onNext).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ── A song left while it plays ───────────────────────────────────────────
+//
+// Next, Back and leaving the room all unmount the mixer mid-song. It fades its
+// stems out and lets its graph go once the fade has played: the context is the
+// room's, so the mixer never closes it. Every stem reaches the master through
+// the key graph's gains, key 0 included, so a key graph taken down by the
+// mixer's own cleanup, ahead of that timer, cut the fading stems off at once.
+type FakeGain = ReturnType<ReturnType<typeof fakeContext>['createGain']>
+
+/** The key graph's output and its three buses, among the gains a context made. */
+function keyGraphGains(context: ReturnType<typeof fakeContext>): FakeGain[] {
+  const gains = context.createGain.mock.results.map((made) => made.value)
+  const feeds = (from: FakeGain, to: FakeGain): boolean =>
+    from.connect.mock.calls.some(([target]) => target === to)
+  // The master is the first gain a mixer makes, and only the key graph's
+  // output feeds it; the buses feed the output.
+  const output = gains.find((gain) => feeds(gain, gains[0]))
+  if (output === undefined) throw new Error('no key graph on the context')
+  return [output, ...gains.filter((gain) => feeds(gain, output))]
+}
+
+const letGo = (gains: FakeGain[]): boolean[] =>
+  gains.map((gain) => gain.disconnect.mock.calls.length > 0)
+
+describe('a song left while it plays', () => {
+  beforeEach(() => {
+    // The silent clip a press of play starts, which jsdom cannot play.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+  })
+
+  it('keeps the key graph wired until the fade has played out', async () => {
+    const { host, lent, controls } = hosting()
+    const unmount = mountHosted(host)
+    await waitFor(() => {
+      expect(controls()?.loading()).toBe(false)
+    })
+    controls()!.play()
+    expect(controls()!.playing()).toBe(true)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    const graph = keyGraphGains(lent)
+    expect(graph).toHaveLength(4)
+
+    unmount()
+    const duringTheFade = letGo(graph)
+    vi.advanceTimersByTime(80)
+
+    expect({ duringTheFade, afterIt: letGo(graph) }).toEqual({
+      duringTheFade: [false, false, false, false],
+      afterIt: [true, true, true, true],
+    })
+    expect(lent.close).not.toHaveBeenCalled()
+  })
+
+  it('lets the key graph go at once when nothing was playing', async () => {
+    const { host, lent, controls } = hosting()
+    const unmount = mountHosted(host)
+    await waitFor(() => {
+      expect(controls()?.loading()).toBe(false)
+    })
+    const graph = keyGraphGains(lent)
+
+    unmount()
+
+    expect(letGo(graph)).toEqual([true, true, true, true])
+  })
+})
+
+describe('a mixer on a context of its own', () => {
+  // Nothing lends it one outside the room, so it closes the context on the
+  // way out. The nodes go with it; the key graph's timers do not, so the mixer
+  // lets the graph go itself.
+  it('closes the context and lets its key graph go', () => {
+    const { unmount } = render(() => (
+      <StemMixer
+        stems={{
+          vocal: '/karaoke/examples/goodbye-to-spring/vocal.m4a',
+          instrumental: '/karaoke/examples/goodbye-to-spring/instrumental.m4a',
+        }}
+        sessionId="own-context"
+        songTitle="Goodbye to Spring"
+        preset="performance"
+        showStageSettings={false}
+        practiceMode="full"
+        requestedStems={{ vocal: true, instrumental: true }}
+      />
+    ))
+    expect(owned).toHaveLength(1)
+    const graph = keyGraphGains(owned[0])
+
+    unmount()
+
+    expect({
+      closed: owned[0].close.mock.calls.length,
+      keyGraph: letGo(graph),
+    }).toEqual({ closed: 1, keyGraph: [true, true, true, true] })
   })
 })
 

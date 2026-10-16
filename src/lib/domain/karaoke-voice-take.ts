@@ -7,6 +7,7 @@
 
 import type { SaveVoiceTakeResult } from '@/db/services/voice-take-service'
 import { saveVoiceTake } from '@/db/services/voice-take-service'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import type { MicScore } from '@/lib/mic-scoring'
 import type { VoiceAtlasContourPayloadV1 } from '@/lib/voice-contour'
 
@@ -26,7 +27,7 @@ export function karaokeComparisonKey(sessionId: string): string {
 }
 
 export function karaokeThreadTitle(songTitle: string): string {
-  const withoutExtension = songTitle.replace(/\.[^.]+$/, '').trim()
+  const withoutExtension = stripAudioExtension(songTitle).trim()
   return withoutExtension === '' ? 'Karaoke take' : withoutExtension
 }
 

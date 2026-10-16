@@ -1,0 +1,82 @@
+/* MixerTimeline: elapsed, the slider, total. It fills whatever MixerRail
+   gives it; the rail decides when it drops to a line of its own. */
+
+.timeline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Tabular figures in a fixed floor that holds 59:59, so the slider's
+   length never moves while the song plays. Elapsed hugs the slider from
+   the left and the length from the right. */
+.time {
+  flex: none;
+  min-width: 34px;
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.elapsed {
+  color: var(--text-primary, #e6edf3);
+  text-align: right;
+}
+
+.total {
+  text-align: left;
+}
+
+.slider {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The mixer's palette on the shared rail: A and B in the colours the
+   waveform draws them in, the progress in the accent, a knob to grab.
+   Doubled to outrank the rail's own defaults on the same element. */
+.rail.rail {
+  --loop-range-track: color-mix(
+    in srgb,
+    var(--text-primary, #e6edf3) 18%,
+    transparent
+  );
+  --loop-range-progress: var(--accent, #58a6ff);
+  --loop-range-a: #58a6ff;
+  --loop-range-b: #ff7b72;
+  --loop-range-region: rgba(88, 166, 255, 0.14);
+  --loop-range-marker-font: 0.75rem;
+  --loop-range-lens-label-font: 0.75rem;
+  --loop-range-knob-size: 12px;
+  --loop-range-knob: var(--text-primary, #e6edf3);
+  /* As tall as Play, so the timeline adds no height to the rail on a
+     mouse; a finger keeps the rail's own 44 px. */
+  --loop-range-size: 32px;
+}
+
+@media (pointer: coarse) {
+  .rail.rail {
+    --loop-range-size: 44px;
+  }
+}
+
+/* An engine without color-mix() keeps the custom property but cannot use
+   it, and the track would vanish: the same tint as rgba (the default text
+   colour at 18%). */
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .rail.rail {
+    --loop-range-track: rgba(230, 237, 243, 0.18);
+  }
+}
+
+/* A loop that is off still shows where it is, but plainly not playing:
+   an outline with no fill, and the marks dimmed. */
+.rail[data-active='false'] {
+  --loop-range-region: transparent;
+  --loop-range-region-border-style: dashed;
+  --loop-range-marker-opacity: 0.55;
+}

@@ -97,6 +97,13 @@ export interface WalkthroughStep {
    * against isNarrow(), so a tour started at either width shows the right run.
    */
   viewport?: 'mobile' | 'desktop'
+  /**
+   * A control some hosts leave out (the mixer's Open in Karaoke Night is
+   * not drawn in the native app, the Karaoke room or Karaoke Night itself).
+   * The step drops out of the tour when its target is not on the page as the
+   * tour starts, rather than showing its words about nothing.
+   */
+  whenPresent?: boolean
 }
 export interface WalkthroughSection {
   id: string
@@ -1321,18 +1328,18 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="mixer.stems"]',
     placement: 'left',
     requiredTab: TAB_KARAOKE,
-    // Several tour targets only exist in the fixed-2col workspace (the stem
-    // controls are absent in the performance layout; the lyrics-panel action
-    // buttons and the pitch lane only render in fixed-2col) — so the tour
-    // standardizes on that layout up front. Clicking the layout button is
-    // idempotent (a direct set, not a toggle); the choice persists after the
-    // tour like any manual layout switch.
-    navigate: ['[data-tour="mixer.layout-fixed"]'],
+    // Several tour targets only exist in the fixed-2col workspace (the
+    // lyrics-panel action buttons and the pitch lane only render there), so
+    // the tour standardizes on that layout up front. The mixer switches to
+    // it itself as this tour starts (its tourRunning prop): the tour used to
+    // open the header's Layout menu and pick the row, and the menu flashed
+    // open over this step. The choice persists after the tour like any
+    // manual layout switch.
   },
   {
     title: 'Transport & seek',
     description:
-      'Play / pause (or hit Space) and scrub the timeline. Restart, layout, and focus-view controls live here too. Hands on the guitar? "Mercury, from the top" does the same thing out loud.',
+      'Play / pause (or hit Space) and drag the timeline, or step it with the arrow keys. The speed and key chips live here too, and the skip-back button plays from the start. Hands on the guitar? "Mercury, from the top" does the same thing out loud.',
     targetSelector: '[data-tour="mixer.transport"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
@@ -1340,8 +1347,8 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'A–B loop',
     description:
-      'Set a loop start and end (or press the A and B keys) to drill a tricky phrase over and over; L toggles the loop, S jumps to its start.',
-    targetSelector: '.sm-loop-icon-a',
+      'Set a loop start and end (or press the A and B keys) to drill a tricky phrase over and over, then drag their marks on the timeline to fine-tune. L toggles the loop, S jumps to its start.',
+    targetSelector: '[data-tour="mixer.loop"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
   },
@@ -1349,7 +1356,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     title: 'Playback speed',
     description:
       'Slow the whole mix down (to 0.5x) while you learn a part, then bring it back to full speed.',
-    targetSelector: '.sm-speed-select',
+    targetSelector: '[data-tour="mixer.speed"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
   },
@@ -1357,7 +1364,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     title: 'Sing along, get scored',
     description:
       'Enable the mic to compare your voice against the vocal line and monitor yourself over the track. After a scored run, replay the dry take and explicitly keep it in Hear Yourself; nothing is saved automatically.',
-    targetSelector: '.sm-mic-toggle-btn',
+    targetSelector: '[data-tour="mixer.mic"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
   },
@@ -1392,6 +1399,8 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="mixer.lyric-sync"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
+    // Drawn once the song has lyrics; without them the step drops out.
+    whenPresent: true,
   },
   {
     title: 'Organize & export',
@@ -1400,6 +1409,8 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="mixer.lyric-export"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
+    // Drawn once the song has lyrics; without them the step drops out.
+    whenPresent: true,
   },
   {
     title: 'See your pitch',
@@ -1432,6 +1443,15 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="mixer.focus"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Karaoke Night',
+    description:
+      'Sing this song on the Karaoke Night stage, in the key you set here. It opens paused, where you left off.',
+    targetSelector: '[data-tour="mixer.karaoke-night"]',
+    placement: 'bottom',
+    requiredTab: TAB_KARAOKE,
+    whenPresent: true,
   },
 ]
 
@@ -2116,10 +2136,28 @@ export function hasPageTour(tab: ActiveTab): boolean {
 }
 
 /** Start an arbitrary spotlight tour from a list of steps (no-op if empty). */
+/**
+ * True while the mixer's own tour runs. The studio host hands it to the
+ * mixer (StemMixer's tourRunning), which takes the layout the tour's steps
+ * point at, so the tour never has to open the Layout menu.
+ */
+export function stemMixerTourRunning(): boolean {
+  return (
+    walkthroughActive() &&
+    tourSteps().some((step) => STEM_MIXER_TOUR_STEPS.includes(step))
+  )
+}
+
 export function startTour(steps: WalkthroughStep[]): void {
   if (!TOURS_AVAILABLE) return
-  if (steps.length === 0) return
-  setTourSteps(steps)
+  const shown = steps.filter(
+    (step) =>
+      step.whenPresent !== true ||
+      (typeof document !== 'undefined' &&
+        document.querySelector(step.targetSelector) !== null),
+  )
+  if (shown.length === 0) return
+  setTourSteps(shown)
   setWalkthroughActive(true)
   setWalkthroughStep(0)
 }

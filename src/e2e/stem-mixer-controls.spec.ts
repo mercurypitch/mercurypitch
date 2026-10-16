@@ -377,9 +377,11 @@ test('switches songs directly from the Songs drawer @smoke', async ({
   // controls. This test is about the drawer's own list.
   await drawer.getByRole('button', { name: /Drawer navigation target/ }).click()
 
+  // The title is the song's own name, without the old "(session)" tag.
   await expect(
     page.getByRole('heading', {
-      name: 'Drawer navigation target (session)',
+      name: 'Drawer navigation target',
+      exact: true,
     }),
   ).toBeVisible()
 })
@@ -510,7 +512,7 @@ test('keeps the play-along role picker readable in dark and light themes @smoke'
   await expect(drawerRole).toBeEnabled()
   await assertReadableTheme(drawerRole, 'dark')
   await assertReadableTheme(drawerRole, 'light', 'dark')
-  await page.getByTitle('Karaoke focus mode').click()
+  await page.getByRole('button', { name: 'Focus mode', exact: true }).click()
   await expect(page.locator('.stem-mixer')).toHaveClass(/stem-mixer--focus/)
   await expect(drawerRole).toHaveCSS('background-color', 'rgb(28, 33, 40)')
   await assertReadablePalette(drawerRole, 'dark')
@@ -597,12 +599,13 @@ test('owns a dark stage skin in every app theme and fades its chrome to glass @s
     expect(palette.stagePrimary).toBe('#0d1117')
     expect(palette.stageText).toBe('#e6edf3')
     expect(palette.colorScheme).toBe('dark')
-    // The chrome paints the faded value, never the opaque source it came
+    // The panels paint the faded value, never the opaque source it came
     // from -- this is the stage-transparency slider actually reaching the
-    // panels rather than only the backdrop behind them.
-    expect(palette.headerBackground).toBe(palette.resolvedPrimary)
+    // panels rather than only the backdrop behind them. The header is a row
+    // of controls on the stage itself and draws no band of its own.
+    expect(palette.headerBackground).toBe('rgba(0, 0, 0, 0)')
     expect(palette.panelBackground).toBe(palette.resolvedPrimary)
-    expect(palette.headerBackground).not.toBe('rgb(13, 17, 23)')
+    expect(palette.panelBackground).not.toBe('rgb(13, 17, 23)')
     expect(palette.titleColor).toBe(palette.resolvedText)
     // The canvas draws light-on-dark ink, so it keeps the same dark plate in
     // every theme -- a step more opaque than the panels, still glass.
@@ -638,7 +641,7 @@ test('owns a dark stage skin in every app theme and fades its chrome to glass @s
     .locator('.sm-lyrics-version-backdrop')
     .click({ position: { x: 2, y: 2 } })
 
-  await page.getByTitle('Karaoke focus mode').click()
+  await page.getByRole('button', { name: 'Focus mode', exact: true }).click()
   await expect(mixer).toHaveClass(/stem-mixer--focus/)
   await expect(mixer).toHaveClass(/mp-dark-stage/)
   await expect(mixer).toHaveCSS('color-scheme', 'dark')
@@ -684,7 +687,7 @@ test('activates Pitch Studio from light with complete dark ownership @smoke', as
     renderedContrast(badgePalette.color, badgePalette.background),
   ).toBeGreaterThanOrEqual(4.5)
 
-  await page.getByTitle('Pitch Analysis & Settings').click()
+  await page.getByRole('button', { name: 'Pitch', exact: true }).click()
   const editNotes = page.getByRole('button', { name: 'Edit notes' })
   await expect(editNotes).toBeEnabled({ timeout: 15_000 })
   await editNotes.click()
@@ -713,13 +716,23 @@ test('activates Pitch Studio from light with complete dark ownership @smoke', as
   })
 })
 
+/** Where the timeline's playhead is, as a share of the song (0 to 1). */
+function playheadShare(page: Page): Promise<number> {
+  return page
+    .getByRole('slider', { name: 'Song position' })
+    .evaluate((element) => {
+      const input = element as HTMLInputElement
+      const max = Number(input.max)
+      return max > 0 ? Number(input.value) / max : 0
+    })
+}
+
 test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
   page,
 }) => {
+  // One name in every state; aria-pressed and data-state say which.
   const micButton = (target: import('@playwright/test').Page) =>
-    target.getByRole('button', {
-      name: /^(?:Enable|Disable|Retry) microphone$/,
-    })
+    target.getByRole('button', { name: 'Microphone', exact: true })
   const secondPage = await page.context().newPage()
   await secondPage.addInitScript(() => {
     ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
@@ -751,16 +764,16 @@ test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
   await handoff.getByRole('button', { name: 'Use it here' }).click()
 
   await expect(secondMic).toBeEnabled()
-  await expect(secondMic).not.toHaveClass(/sm-mic-toggle-btn--error/)
+  await expect(secondMic).not.toHaveAttribute('data-state', 'error')
   await secondMic.click()
   await expect(secondMic).toHaveAttribute('aria-pressed', 'true')
 
   // The tab that yielded must visibly become neutral/off. A handoff is
   // intentional, so presenting it as a red recording/error state is false.
   await expect(firstMic).toBeEnabled()
-  await expect(firstMic).toHaveAccessibleName('Enable microphone')
+  await expect(firstMic).toHaveAccessibleName('Microphone')
   await expect(firstMic).toHaveAttribute('aria-pressed', 'false')
-  await expect(firstMic).not.toHaveClass(/sm-mic-toggle-btn--(?:active|error)/)
+  await expect(firstMic).toHaveAttribute('data-state', 'off')
   await secondPage.close()
 })
 
@@ -789,27 +802,26 @@ test('maps a zoomed waveform context menu without seeking @smoke', async ({
   await page.mouse.move(targetX, targetY)
   await page.mouse.wheel(0, -100)
 
-  const progressWidth = () =>
-    page
-      .locator('.sm-progress-fill')
-      .evaluate((element) => parseFloat(getComputedStyle(element).width))
-  const before = await progressWidth()
+  const playhead = () => playheadShare(page)
+  const before = await playhead()
 
   await page.mouse.click(targetX, targetY, { button: 'right' })
-  const menu = page.locator('.sm-loop-menu')
+  const menu = page.getByTestId('loop-point-menu')
   await expect(menu).toBeVisible()
   await expect(menu).toContainText('Loop point at 0:00')
-  await expect.poll(progressWidth).toBeCloseTo(before, 1)
+  await expect.poll(playhead).toBeCloseTo(before, 2)
 
-  await menu.getByRole('button', { name: 'Set loop start here' }).click()
+  await menu.getByRole('menuitem', { name: 'Set loop start here' }).click()
+  await expect(menu).toBeHidden()
   await expect(
     page.getByRole('button', { name: 'Set loop start (A)' }),
-  ).toHaveClass(/sm-loop-btn--a-set/)
+  ).toHaveAttribute('data-set', 'true')
 
   await page.mouse.click(targetX, targetY, { button: 'right' })
-  await expect(
-    page.locator('.sm-loop-menu').getByRole('button', { name: 'Clear loop' }),
-  ).toBeVisible()
+  await expect(menu.getByRole('menuitem', { name: 'Clear loop' })).toBeVisible()
+  // The one closing rule: Escape takes the menu and nothing under it.
+  await page.keyboard.press('Escape')
+  await expect(menu).toBeHidden()
 })
 
 test('launches a full-band guitar role without doubling the backing @smoke', async ({
@@ -976,31 +988,14 @@ test('keeps seven-stem compact and expanded decks readable while scrolling @smok
   const waveformWidth = overviewBox.width - railWidth - 5
 
   await page.mouse.click(overviewBox.x + 8, overviewBox.y + 24)
-  await expect
-    .poll(async () =>
-      parseFloat(
-        await page
-          .locator('.sm-progress-fill')
-          .evaluate((element) => getComputedStyle(element).width),
-      ),
-    )
-    .toBeLessThan(2)
+  await expect.poll(() => playheadShare(page)).toBeLessThan(0.01)
 
   await page.mouse.click(
     overviewBox.x + railWidth + 1 + waveformWidth * 0.015,
     overviewBox.y + 24,
   )
   await expect
-    .poll(async () => {
-      const fill = page.locator('.sm-progress-fill')
-      const progress = page.locator('.sm-progress-bar')
-      const [fillBox, progressBox] = await Promise.all([
-        fill.boundingBox(),
-        progress.boundingBox(),
-      ])
-      if (fillBox === null || progressBox === null) return 0
-      return fillBox.width / progressBox.width
-    })
+    .poll(() => playheadShare(page))
     // The one-second fixture sits inside the mixer's default thirty-second
     // window, so 1.5% of the visible waveform lands at 0.45 seconds. Mapping
     // against the whole canvas would include the rail and clamp to the end.

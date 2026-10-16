@@ -17,6 +17,7 @@
 import { requestKaraokeAutoplay } from '@/features/stem-mixer/karaoke-launch-intent'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { isTabVisible, TAB_KARAOKE, tabLabel } from '@/features/tabs/constants'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { navigateTo } from '@/lib/hash-router'
 import { isNarrow } from '@/lib/use-viewport'
 import { getPlaylistsReactive, isPlaylistActive, jumpTo, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
@@ -120,7 +121,9 @@ export function createNavigationVoiceCommands(
               sessionId: pick.sessionId,
             })
           })
-          const name = pick.originalFile?.name.replace(/\.[a-z0-9]+$/i, '')
+          const file = pick.originalFile?.name
+          const name =
+            file === undefined ? undefined : stripAudioExtension(file)
           return name !== undefined && name !== ''
             ? `Random song: ${name}`
             : 'Random song'

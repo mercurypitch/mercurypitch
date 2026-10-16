@@ -4,6 +4,7 @@
   /* 44px of touch target around a 4px line: 8px of padding made it 20px.
      The negative margin keeps the layout height at 20px, so the bottom bar
      and the pills anchored above it stay where they were. */
+  position: relative;
   padding: 20px 0;
   margin: -12px 0;
   cursor: pointer;
@@ -24,4 +25,36 @@
   height: 100%;
   border-radius: inherit;
   background: var(--scrubber-fill, currentColor);
+}
+
+/* The A-B loop, drawn over the track's centre line. Takes no taps. */
+.loop {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.loopSpan {
+  position: absolute;
+  top: calc(var(--scrubber-height, 4px) / -2 - 2px);
+  height: calc(var(--scrubber-height, 4px) + 4px);
+  border-radius: 999px;
+  background: var(--scrubber-loop, rgba(201, 162, 255, 0.45));
+}
+
+.loopSpan[data-on='false'] {
+  opacity: 0.45;
+}
+
+.loopMark {
+  position: absolute;
+  top: -8px;
+  width: 2px;
+  height: 16px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--scrubber-loop-mark, #f4ecff);
 }

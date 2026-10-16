@@ -6,7 +6,6 @@ import type { Accessor, Component } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { UvrStemType } from '@/db/entities'
 import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
-import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
@@ -15,13 +14,14 @@ import { shouldPreloadWhisper } from '@/features/stem-mixer/eager-whisper'
 import { consumeKaraokeAutoplayIntent, isStandaloneKaraokeSurface, } from '@/features/stem-mixer/karaoke-launch-intent'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
-import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
+import { setStemVolume, stemMixHasSolo, stemTrackIsAudible, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
 import { createStemMixerVoiceCommands } from '@/features/stem-mixer/stem-mixer-voice-commands'
 import { analysableBuffer } from '@/features/stem-mixer/stem-peak-envelope'
 import type { StemStream } from '@/features/stem-mixer/stem-stream-source'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
+import { createFindMyKeyNotices, songMelody, useStemMixerKeyController, useStemMixerKeyView, } from '@/features/stem-mixer/useStemMixerKeyController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMelodyAuditionController } from '@/features/stem-mixer/useStemMixerMelodyAuditionController'
@@ -31,6 +31,7 @@ import { useStemMixerVocalLyricsController } from '@/features/stem-mixer/useStem
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { createBlobUrlOwner, revokeBlobUrl } from '@/lib/blob-url-owner'
 import { IS_DIAGNOSTIC_BUILD, PREMIUM_FEATURES } from '@/lib/defaults'
@@ -38,7 +39,10 @@ import { yourDevicePossessive } from '@/lib/device-noun'
 import { deviceClass } from '@/lib/device-tier'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
-import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
+import { mixerKaraokeNightUrl } from '@/lib/karaoke-night-link'
+import { transposePitchReadings } from '@/lib/key-shift/key-shift'
+import { isLocalSaveNavigationLocked, useLocalSaveNavigationLock, } from '@/lib/local-save-navigation-lock'
+import { hasPlayableLoop } from '@/lib/loop-gap'
 import { lyricGlance } from '@/lib/lyric-glance'
 import { lyricWindowScript } from '@/lib/lyric-window-script'
 import { extractTitle } from '@/lib/lyrics-service'
@@ -46,29 +50,40 @@ import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
+import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, emptyAlignmentResult, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentNotes, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
 import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/lib/use-karaoke-voice-capture-controller'
-import { isNarrow } from '@/lib/use-viewport'
+import { isPhoneStage } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
 import { isStemSplitActive, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
-import { showNotification } from '@/stores/notifications-store'
+import { karaokeKeyKeepDrums } from '@/stores/karaoke-settings-store'
+import { removeNotificationsByChannel, showNotification, } from '@/stores/notifications-store'
 import { activeTab, karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
-import { AlertTriangle, ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
+import { AlertTriangle, SkipBack, SkipForward, X } from './icons'
 import { KaraokeMobileStage } from './KaraokeMobileStage'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
+import type { KeyShiftBinding } from './key-shift/KeyShiftControl'
+import { VoiceTypePicker } from './key-shift/VoiceTypePicker'
+import type { KaraokeMoreBinding } from './mobile/KaraokeMoreSheet'
+import { karaokeNightReason } from './stem-mixer/header/karaoke-night'
+import type { MixerHeaderKaraokeNight, MixerHeaderPlaylist, MixerHeaderStage, } from './stem-mixer/header/MixerHeader'
+import { MixerHeader } from './stem-mixer/header/MixerHeader'
+import type { LoopPoint } from './stem-mixer/LoopPointMenu'
+import { LoopPointMenu } from './stem-mixer/LoopPointMenu'
 import type { StemMixerHosting } from './stem-mixer-hosting'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
@@ -115,6 +130,11 @@ interface StemMixerProps {
   autoPlay?: boolean
   /** Karaoke playlist mode: silence the vocal but keep it as scoring reference. */
   karaokeReferenceVocal?: boolean
+  /**
+   * A separation or an upload in this tab that leaving the page would stop.
+   * The studio passes it, so Open in Karaoke Night waits while it runs.
+   */
+  separationRunning?: () => boolean
   /** Rendering preset. 'studio' (default) is the full in-app toolset; the
    *  standalone karaoke page uses 'performance' — a clean stage without the
    *  pitch-analysis/edit tooling. */
@@ -127,6 +147,9 @@ interface StemMixerProps {
    *  removes the tour UI — and keeps the tour engine (app-store) out of
    *  standalone entry bundles. */
   onOfferTour?: (trigger: 'mount' | 'button') => void
+  /** True while the mixer's tour runs, from the same studio host: the mixer
+   *  takes the fixed layout its steps point at. */
+  tourRunning?: () => boolean
   /** Fires once per mount after ~30s of cumulative playback — the Karaoke
    *  Night page uses it as the demo-engagement funnel milestone. */
   onThirtySecondsPlayed?: () => void
@@ -177,6 +200,9 @@ interface StemTrack {
 }
 
 // ── Constants ──────────────────────────────────────────────────
+
+/** One refused-loop-point toast at a time, however often A or B is pressed. */
+const LOOP_POINT_CHANNEL = 'stem-mixer-loop-point'
 
 interface SmWindow {
   __smKeydown?: (e: KeyboardEvent) => void
@@ -473,19 +499,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const mic = useStemMixerMicController({
     getAudioCtx: () => audioCtxForMic.getAudioCtx(),
     ensureAudioCtx: () => audioCtxForMic.ensureAudioCtx(),
+    // The key shifter delays what the singer hears; judge them against it.
+    outputDelaySec: () => audio.keyShiftLatencySec(),
   })
   const scoreModalOpen = (): boolean => mic.showScore() && mic.score() !== null
 
   // Escape exits focus mode only when the score dialog is not the active
   // surface. The dialog owns Escape while open, closes itself, and restores
-  // focus to the control that launched it.
+  // focus to the control that launched it. The same goes for any dialog,
+  // menu or listbox: one press closes the top layer only. On window, so
+  // every document-level menu has had its turn and could claim the key with
+  // preventDefault.
   createEffect(() => {
     if (!karaokeFocus() || scoreModalOpen()) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !scoreModalOpen()) setKaraokeFocus(false)
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      if (scoreModalOpen() || isInsideOverlay(e.target)) return
+      setKaraokeFocus(false)
     }
-    document.addEventListener('keydown', handler)
-    onCleanup(() => document.removeEventListener('keydown', handler))
+    window.addEventListener('keydown', handler)
+    onCleanup(() => window.removeEventListener('keydown', handler))
   })
 
   let micGrantedReported = false
@@ -542,6 +575,35 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let setUserScrolledForAudio = (_v: boolean) => {}
   let lyricsMappingActiveForAudio = false
 
+  // ── Key controller ───────────────────────────────────────────
+  // The singer's key: this playlist entry's, else the song's own remembered
+  // one. The melody and the detection are Pitch Studio's, built further
+  // down: the melody is first read once the singer's range has been read,
+  // which is never before this component has finished setting up.
+  // Find my key's notices: toasts, or a line in the phone's key sheet while
+  // that is open, where a phone's toasts would sit over it.
+  const findKeyNotices = createFindMyKeyNotices({
+    show: showNotification,
+    remove: removeNotificationsByChannel,
+  })
+  const key = useStemMixerKeyController({
+    sessionId: () => props.sessionId,
+    queueEntry: () => {
+      const entry = playlist.isPlaylistActive() ? playlist.currentSong() : null
+      return entry?.sessionId === props.sessionId ? entry : null
+    },
+    playlistId: () =>
+      playlist.isPlaylistActive() ? playlist.activePlaylistId() : null,
+    melody: () => songMelody(pitchAnalysis.editableNotes(), midiNotes()),
+    // Quiet: find my key reports the outcome itself, as one message.
+    detectMelody: () =>
+      vocalIsStreamed() || analysableVocal() === null
+        ? null
+        : pitchAnalysis.runAnalysis({ quiet: true }),
+    notify: findKeyNotices.notify,
+    dismiss: findKeyNotices.dismiss,
+  })
+
   // ── Audio controller ─────────────────────────────────────────
   const audio = useStemMixerAudioController({
     vocal,
@@ -591,6 +653,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onPlaybackStopped: karaokeVoiceCapture.finishScoredPlayback,
     onPlaybackDiscarded: karaokeVoiceCapture.dismiss,
     onMicFrame: karaokeVoiceCapture.pushMicFrame,
+    keyShift: key.keyShift,
+    keepDrums: karaokeKeyKeepDrums,
+    // A muted guide vocal leaves its shifter disconnected, and costs nothing.
+    vocalAudible: () => {
+      const vocalTrack = tracks().find((track) => track.label === 'Vocal')
+      return (
+        vocalTrack !== undefined && stemTrackIsAudible(vocalTrack, anySoloed())
+      )
+    },
+    // Pitch Studio edits the song's own notes, so it plays the song's key.
+    keyShiftSuspended: () => pitchAnalysis.editMode(),
     showNotification,
     // The room streams whatever the user agent says (K9), on the one
     // context it lends (REQ-NRM-033).
@@ -688,19 +761,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     deviceClass: deviceClass(),
   })
 
-  // Phone-width viewports get the zen Apple-Music-style stage instead of the
-  // desktop mixer — same controllers, different presentation. Width-based
-  // (isNarrow, not isMobile) so touch laptops and wide tablets keep the full
-  // mixer. Reactive, so a rotation or resize swaps the presentation without
-  // losing playback (the audio engine lives in setup, not in either JSX tree).
+  // Phones get the zen Apple-Music-style stage instead of the desktop
+  // mixer — same controllers, different presentation. Narrow, or short and
+  // touch on its side (not isMobile) so touch laptops and wide tablets keep
+  // the full mixer. Reactive, so a rotation or resize swaps the presentation
+  // without losing playback (the audio engine lives in setup, not in either
+  // JSX tree).
   // Applies to EVERY preset now (mobile-native Phase 4): the in-app Karaoke
   // tab gets the same zen stage on phones as the standalone karaoke-night
   // page — the studio mixer is a desktop surface (decision D4).
   // karaokeZen() is the desktop opt-in — a wide-screen user can choose the
   // same clean lyrics stage the phone gets automatically.
   // Hosted by the Karaoke room it is zen at every width: an 852-wide phone
-  // on its side is not narrow, and got the desktop mixer (K6).
-  const zenStage = () => hosted !== undefined || isNarrow() || karaokeZen()
+  // on its side is not narrow, and got the desktop mixer (K6). Off the room,
+  // a phone on its side gets the stage too (owner decision 2, 2 October
+  // 2026): short and touch, which keeps tablets and touch laptops on the
+  // mixer. isPhoneStage asks both as one media query: as two, a turning
+  // phone was neither for a moment, and the desktop mixer mounted.
+  const phoneStage = isPhoneStage
+  const zenStage = () => hosted !== undefined || phoneStage() || karaokeZen()
 
   // ── "Why did the music get quiet?" ───────────────────────────
   // Opening a mic makes iOS switch the whole page to `playAndRecord` and
@@ -729,10 +808,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }),
   )
 
+  // The mixer tour points at the desktop mixer: on the phone stage it has
+  // nothing to show, and its toast sat over the scrubber. So it is offered
+  // the first time this mount shows the mixer, never on the stage, which
+  // also keeps the one-time offer for a screen that can take it. Not
+  // mid-playlist either, where the focus is singing, not learning the UI.
+  let tourOfferDone = false
+  createEffect(
+    on(zenStage, (zen) => {
+      if (zen || tourOfferDone) return
+      tourOfferDone = true
+      if (!untrack(playlist.isPlaylistActive)) props.onOfferTour?.('mount')
+    }),
+  )
+
   // The zen stage's Back: on a desktop-initiated zen it returns to the mixer
   // (keeping the song staged); otherwise it's the normal page-level back.
   const handleZenBack = (): void => {
-    if (karaokeZen() && !isNarrow()) {
+    if (karaokeZen() && !phoneStage()) {
       setKaraokeZen(false)
     } else {
       props.onBack?.()
@@ -801,18 +894,131 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Manual playlist transport (header controls). Pause first — without scoring —
   // so audio stops even when the action doesn't remount the mixer (skipping the
   // last song into the summary, or stopping the playlist).
-  const handlePlaylistPrev = () => {
+  //
+  // The song changes once the pause's fade has played, the key shifter's
+  // tail included (releaseLeft): a playlist's next entry, or the library's
+  // next song. Changed at once, the next entry's key re-routed the key graph
+  // while the old song still sounded through it, and the remount closed the
+  // clock under it: either cut the song off at full level, heard as a click.
+  // Each press still counts: two quick Skips skip two.
+  const songSwitches = new Set<ReturnType<typeof setTimeout>>()
+  onCleanup(() => {
+    for (const timer of songSwitches) clearTimeout(timer)
+    songSwitches.clear()
+  })
+  const fadeThenSwitch = (change: () => void): void => {
     audio.handlePause()
-    playlist.prev()
+    const fading = audio.releaseLeft()
+    if (fading <= 0) {
+      change()
+      return
+    }
+    const timer = setTimeout(() => {
+      songSwitches.delete(timer)
+      change()
+    }, fading)
+    songSwitches.add(timer)
   }
-  const handlePlaylistNext = () => {
-    audio.handlePause()
-    playlist.advance()
+  const handlePlaylistPrev = () => fadeThenSwitch(playlist.prev)
+  const handlePlaylistNext = () => fadeThenSwitch(playlist.advance)
+  const handlePlaylistStopAll = () => fadeThenSwitch(playlist.stopPlaylist)
+
+  // ── Header ───────────────────────────────────────────────────
+  // The playlist line under the title, while one runs.
+  const headerPlaylist = (): MixerHeaderPlaylist | null => {
+    if (!playlist.isPlaylistActive()) return null
+    const current = playlist.currentSong()
+    if (current === null || current === undefined) return null
+    const next = playlist.nextSong()
+    return {
+      singer: current.singerName,
+      song: current.songTitle,
+      next:
+        next === null || next === undefined
+          ? undefined
+          : { song: next.songTitle, singer: next.singerName },
+      canGoBack: playlist.currentIndex() !== 0,
+      onPrevious: handlePlaylistPrev,
+      onNext: handlePlaylistNext,
+      onStop: handlePlaylistStopAll,
+    }
   }
-  const handlePlaylistStopAll = () => {
-    audio.handlePause()
-    playlist.stopPlaylist()
+
+  const headerStage = (): MixerHeaderStage | undefined => {
+    if (props.showStageSettings === false) return undefined
+    return {
+      background,
+      // The performance stage keeps the room's own transparency.
+      transparency:
+        props.preset === 'performance'
+          ? undefined
+          : {
+              value: stageAlpha(),
+              min: KARAOKE_STAGE_ALPHA.min,
+              max: KARAOKE_STAGE_ALPHA.max,
+              step: KARAOKE_STAGE_ALPHA.step,
+              fillPercent: stageGlassFillPercent(),
+              onInput: updateStageAlpha,
+            },
+    }
   }
+
+  // Open in Karaoke Night: not where it has nothing to add. The native app
+  // has no Karaoke Night page, and a hosted mixer (the Karaoke room) and
+  // the performance stage (Karaoke Night itself) are already a stage.
+  const offersKaraokeNight = (): boolean =>
+    !IS_NATIVE_BUILD &&
+    props.preset !== 'performance' &&
+    hosted === undefined &&
+    !isStandaloneKaraokeSurface()
+  const headerKaraokeNight = (): MixerHeaderKaraokeNight | undefined => {
+    if (!offersKaraokeNight()) return undefined
+    return {
+      href: mixerKaraokeNightUrl(props.sessionId),
+      hrefNow: () =>
+        mixerKaraokeNightUrl(props.sessionId, {
+          startAtSec: audio.elapsed(),
+        }),
+      reason: karaokeNightReason({
+        playlistRunning: playlist.isPlaylistActive(),
+        separating: props.separationRunning?.() === true,
+        takeSaving: isLocalSaveNavigationLocked(),
+      }),
+      // The page load takes longer than the fade, so the song fades out
+      // under it rather than stopping mid-note when this page goes.
+      onLeave: () => {
+        if (audio.playing()) audio.handlePause()
+      },
+    }
+  }
+
+  // Share links are only useful once songs are cloud-synced across devices:
+  // gated behind the premium flag (off by default).
+  const shareSong = () => {
+    const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
+    // A blocked clipboard (iOS Safari, or any non-secure origin such as a
+    // LAN dev host) must not become an unhandled rejection, which
+    // AppErrorBoundary turns into the full-screen crash modal. Failing to
+    // copy a link is a message, not a crash.
+    void navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        setShareToast('Link copied')
+      })
+      .catch(() => {
+        setShareToast('Could not copy. Press and hold the link.')
+      })
+      .finally(() => {
+        setTimeout(() => setShareToast(''), 2500)
+      })
+  }
+  const headerShare = () =>
+    PREMIUM_FEATURES
+      ? {
+          label: shareToast() === '' ? 'Share' : shareToast(),
+          onShare: shareSong,
+        }
+      : undefined
 
   // ── Zen transport: unified song navigation ───────────────────
   // The zen stage's back/next controls span whichever context is active: an
@@ -867,7 +1073,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return
     }
     const id = prevSessionId(orderedLibraryIds(), props.sessionId)
-    if (id !== null) props.onPickSession?.(id)
+    const pick = props.onPickSession
+    if (id !== null && pick !== undefined) fadeThenSwitch(() => pick(id))
   }
 
   const goNextItem = (): void => {
@@ -880,7 +1087,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return
     }
     const id = nextSessionId(orderedLibraryIds(), props.sessionId)
-    if (id !== null) props.onPickSession?.(id)
+    const pick = props.onPickSession
+    if (id !== null && pick !== undefined) fadeThenSwitch(() => pick(id))
   }
 
   // The same retry the desktop card has carried all along. On a phone the
@@ -950,7 +1158,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const baseDocTitle = typeof document !== 'undefined' ? document.title : ''
   createEffect(() => {
     if (typeof document === 'undefined') return
-    const songName = (props.songTitle ?? '').replace(/\.[^.]+$/, '').trim()
+    const songName = stripAudioExtension(props.songTitle ?? '').trim()
     document.title =
       audio.playing() && songName ? `MercuryPitch — ${songName}` : baseDocTitle
   })
@@ -975,15 +1183,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }, 1000)
     onCleanup(() => clearInterval(engagementTimer))
   })
-
-  const handleSeek = (e: MouseEvent) => {
-    if (!audio.duration()) return
-    const bar = e.currentTarget as HTMLDivElement
-    const rect = bar.getBoundingClientRect()
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    const target = ratio * audio.duration()
-    audio.seekTo(target)
-  }
 
   // A tapped lyric line's seek: the pitch window moves with the song.
   const seekToWithWindow = (t: number): void => {
@@ -1203,47 +1402,49 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         audio.setLoopEnabled(true)
       }
     } else {
-      audio.setLoopEnd(0)
+      audio.setLoopEnd(null)
       audio.setLoopEnabled(false)
     }
   }
 
-  // Set an A or B loop point at an explicit time, keeping A < B (swaps when a
-  // point lands on the wrong side — the "renumerate" behaviour). Shared by the
-  // transport A/B buttons (playhead time) and the waveform right-click menu
-  // (clicked time). Setting B enables the loop; setting A alone just marks the
-  // start (drawn immediately by the canvas overlay).
-  const applyLoopPoint = (which: 'A' | 'B', time: number) => {
-    const t = Math.max(0, time)
-    if (which === 'A') {
-      const currentB = audio.loopEnd()
-      if (currentB > 0 && t > currentB) {
-        audio.setLoopEnd(t)
-        audio.setLoopStart(currentB)
-      } else {
-        audio.setLoopStart(t)
-      }
-    } else {
-      const currentA = audio.loopStart()
-      if (t < currentA) {
-        audio.setLoopStart(t)
-        audio.setLoopEnd(currentA)
-      } else {
-        audio.setLoopEnd(t)
-      }
-      audio.setLoopEnabled(true)
+  // Set an A or B loop point at an explicit time. Shared by the transport A/B
+  // buttons and the A/B keys (playhead time) and the waveform right-click
+  // menu (clicked time). A point on the wrong side of the other one, or
+  // within 0.1 s of it, is refused and the toast says why (loop-points.ts).
+  // Setting B enables the loop; setting A alone just marks the start (drawn
+  // immediately by the canvas overlay). A mark dragged or stepped along the
+  // timeline is a 'move': same rule, and the loop stays on or off.
+  const applyLoopPoint = (
+    which: 'A' | 'B',
+    time: number,
+    how: 'set' | 'move' = 'set',
+  ) => {
+    const reason = placeLoopPointAt(which, time, how)
+    if (reason !== null) {
+      showNotification(reason, 'warning', { channel: LOOP_POINT_CHANNEL })
     }
+  }
+  /** Place a point; why it was refused, or null once it is placed. */
+  const placeLoopPointAt = (
+    which: 'A' | 'B',
+    time: number,
+    how: 'set' | 'move' = 'set',
+  ): string | null => {
+    const result =
+      how === 'move'
+        ? audio.moveLoopPoint(which, time)
+        : audio.placeLoopPoint(which, time)
+    if (!result.placed) return result.reason
+    // A refusal still on screen no longer describes the loop.
+    removeNotificationsByChannel(LOOP_POINT_CHANNEL)
     canvas.queueCanvasRedraw()
+    return null
   }
 
   // Waveform/pitch-canvas right-click → a small loop menu at the clicked time
   // (mirrors the lyric-line right-click). The native context menu offered
   // nothing useful here.
-  const [loopMenu, setLoopMenu] = createSignal<{
-    x: number
-    y: number
-    time: number
-  } | null>(null)
+  const [loopMenu, setLoopMenu] = createSignal<LoopPoint | null>(null)
   const openLoopMenu = (e: MouseEvent) => {
     e.preventDefault()
     const targetCanvas = e.currentTarget as HTMLCanvasElement | null
@@ -1255,13 +1456,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         canvas.timelineTimeAtClientX(e.clientX, targetCanvas),
       ),
     )
-    setLoopMenu({ x: e.clientX, y: e.clientY, time })
+    setLoopMenu({ x: e.clientX, y: e.clientY, time, anchor: targetCanvas })
   }
   const clearLoopFromMenu = () => {
     audio.clearLoop()
     setLoopStartLyricIdx(null)
     setLoopEndLyricIdx(null)
     canvas.queueCanvasRedraw()
+  }
+
+  // The phone stage's More (KaraokeMoreSheet): the capsule's speed and loop.
+  // A refused point's reason goes back to the sheet, which shows it where
+  // the singer is looking; the toggle follows the L key's rule.
+  const phoneMore: KaraokeMoreBinding = {
+    speed: audio.speed,
+    onSpeed: audio.setSpeed,
+    loopStart: audio.loopStart,
+    loopEnd: audio.loopEnd,
+    loopOn: audio.loopEnabled,
+    onSetPoint: (which) => placeLoopPointAt(which, audio.elapsed()),
+    onToggleLoop: () => {
+      const ready = hasPlayableLoop(audio.loopStart(), audio.loopEnd())
+      audio.setLoopEnabled((on) => !on && ready)
+      canvas.queueCanvasRedraw()
+    },
+    onClearLoop: clearLoopFromMenu,
   }
 
   // ── What the analysers are allowed to read ─────────────────────
@@ -1295,11 +1514,41 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     sessionId: props.sessionId,
     vocalBuffer: () => analysableVocal(),
     sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
+    // The realtime history is kept as heard, so this joins it in that key.
+    // Untracked: a key change must not re-send it over a running history.
     setPitchHistory: (h) => {
-      audio.setPitchHistory(h)
+      audio.setPitchHistory(
+        transposePitchReadings(h, untrack(audio.effectiveShift)),
+      )
     },
     showNotification,
   })
+
+  // ── What the singer sees follows what they hear ────────────────
+  const keyView = useStemMixerKeyView({
+    key,
+    heardShift: audio.effectiveShift,
+    engineAvailable: audio.keyShiftAvailable,
+    editMode: pitchAnalysis.editMode,
+    detectedKey: pitchAnalysis.detectedKey,
+    notify: findKeyNotices.notify,
+  })
+  // The key controls hold find my key's notices while open and say them
+  // themselves: the phone's key sheet, and the rail's key panel.
+  const keyBinding: KeyShiftBinding = {
+    ...keyView.binding,
+    notice: findKeyNotices.notice,
+    holdNotices: findKeyNotices.hold,
+  }
+  const displayNotes = keyView.createShownNotes(pitchAnalysis.editableNotes)
+  const displayBaseNotes = keyView.createShownNotes(pitchAnalysis.baseNotes)
+  const displayMidiNotes = keyView.createShownNotes(midiNotes)
+  const displaySegmentedNotes = keyView.createShownNotes(
+    pitchAnalysis.offlineSegmentedNotes,
+  )
+  const displayOfflineHistory = keyView.createShownReadings(
+    pitchAnalysis.offlinePitchHistory,
+  )
 
   const closePitchTools = (): void => {
     pitchAnalysis.setPanelOpen(false)
@@ -1414,7 +1663,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       preferDenoised: useDenoised(),
       segmentedNotes,
       mergedNotes,
-      realtimePitchHistory: audio.getPitchHistory(),
+      // Kept as heard; the alignment works in the song's own key, and the
+      // glyphs are moved back for display.
+      realtimePitchHistory: transposePitchReadings(
+        audio.getPitchHistory(),
+        -untrack(audio.effectiveShift),
+      ),
     })
 
     if (merged.length === 0) {
@@ -1442,6 +1696,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     )
     return computeAlignment(merged, segments)
   })
+  const displayAlignedWords = keyView.createShownWords(
+    () => alignmentResult().alignedWords,
+  )
 
   const canvas = useStemMixerCanvasController({
     duration: audio.duration,
@@ -1452,18 +1709,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     vocal,
     getPitchHistory: () =>
       pitchAnalysis.pitchSourceMode() === 'offline'
-        ? pitchAnalysis.offlinePitchHistory()
+        ? displayOfflineHistory()
         : audio.getPitchHistory(),
     getMicPitchHistory: mic.getMicPitchHistory,
     micActive: mic.micActive,
     currentPitch: audio.currentPitch,
-    midiNotes,
+    midiNotes: displayMidiNotes,
     showNoteLabels,
     showLyricLabels,
     showMicLine,
     showUserNoteLabels,
     showScoreDiffBars,
-    alignedWords: () => alignmentResult().alignedWords,
+    alignedWords: displayAlignedWords,
     seekTo: audio.seekTo,
     setWindowStart: audio.setWindowStart,
     setWindowDuration: audio.setWindowDuration,
@@ -1484,8 +1741,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     },
     // Pitch edit mode
     editMode: pitchAnalysis.editMode,
-    editableNotes: pitchAnalysis.editableNotes,
-    baseNotes: pitchAnalysis.baseNotes,
+    editableNotes: displayNotes,
+    baseNotes: displayBaseNotes,
     pitchView: pitchAnalysis.pitchView,
     selectedNoteId: pitchAnalysis.selectedNoteId,
     onSelectNote: pitchAnalysis.setSelectedNoteId,
@@ -1587,7 +1844,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Melody audition synth ──────────────────────────────────────
   const melodyAudition = useStemMixerMelodyAuditionController({
     audio,
-    pitchAnalysis,
+    pitchAnalysis: { offlineSegmentedNotes: displaySegmentedNotes },
   })
   updateCurrentLineForAudio = updateCurrentLine
   setCurrentLineIdxForAudio = setCurrentLineIdx
@@ -1605,6 +1862,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       : {}),
   })
+  // The tour's targets live in the fixed two-column layout, so the mixer
+  // goes there itself as its tour starts. The tour used to open the Layout
+  // menu and pick the row, and the menu flashed open over its first step.
+  createEffect(
+    on(
+      () => props.tourRunning?.() === true,
+      (running) => {
+        if (running) layout.viewControls.onLayoutChange('fixed-2col')
+      },
+    ),
+  )
 
   // ── Derived helpers ───────────────────────────────────────────
   const showMidi = () =>
@@ -1907,6 +2175,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         activeTab() === TAB_KARAOKE || isStandaloneKaraokeSurface(),
       speed: audio.speed,
       setSpeed: audio.setSpeed,
+      keyShift: key.keyShift,
+      setKeyShift: key.setKeyShift,
+      findMyKey: key.findMyKey,
+      keyShiftDisabledReason: keyView.binding.disabledReason,
       loop: {
         enabled: audio.loopEnabled,
         setEnabled: audio.setLoopEnabled,
@@ -1933,12 +2205,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         random: () => {
           const entries = playlist.queue()
           if (entries.length === 0) return false
-          audio.handlePause()
           let index = Math.floor(Math.random() * entries.length)
           if (entries.length > 1 && index === playlist.currentIndex()) {
             index = (index + 1) % entries.length
           }
-          playlist.jumpTo(index)
+          fadeThenSwitch(() => playlist.jumpTo(index))
           return true
         },
       },
@@ -2119,6 +2390,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           untimedCount: lyricsLines().length,
           duration: audio.duration(),
         }),
+      key: keyBinding,
     })
 
     // Load cached data from IndexedDB in parallel:
@@ -2143,26 +2415,34 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     canvas.initObserver()
     canvas.queueCanvasRedraw()
 
-    // Offer the mixer tour once — but not mid-playlist, where the focus is
-    // singing, not learning the UI.
-    if (!playlist.isPlaylistActive()) {
-      props.onOfferTour?.('mount')
-    }
+    // The import and score dialogs, and any dialog, menu or listbox holding
+    // the focus, keep their own keys. Without this the score dialog's
+    // keep-or-close decision had Space restart playback and the letter
+    // shortcuts change the mixer behind it.
+    const layerAboveOwnsKeys = (target: EventTarget | null): boolean =>
+      props.importOpen?.() === true ||
+      scoreModalOpen() ||
+      isInsideOverlay(target)
 
-    // Keyboard shortcuts
+    // Space plays and pauses from anywhere on the mixer, as in every room
+    // (space-playback.ts): a focused button does not take it, a select or a
+    // text field does.
+    onCleanup(
+      installSpacePlaybackToggle({
+        toggle: () => {
+          if (audio.playing()) audio.handlePause()
+          else audio.handlePlay()
+        },
+        ownsSpace: () => !layerAboveOwnsKeys(document.activeElement),
+        enabled: () => !audio.loading() && audio.loadError() === '',
+      }),
+    )
+
+    // Letter shortcuts. Not while typing, and not in a modifier chord:
+    // Ctrl+S saves the page, it does not seek.
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (props.importOpen?.() === true) return
-      // The score dialog owns keyboard input while it is open. Without this
-      // guard Space restarted playback and letter shortcuts mutated the mixer
-      // behind the singer's keep-or-close decision.
-      if (scoreModalOpen()) return
-
-      // Ignore when typing in inputs
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      )
-        return
+      if (layerAboveOwnsKeys(e.target) || isTypingTarget(e.target)) return
+      if (e.ctrlKey || e.metaKey || e.altKey) return
 
       if (lrcGenMode() && lrcGenInputMode() === 'tap') {
         if (e.key === 'w' || e.key === 'W') {
@@ -2177,16 +2457,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       }
 
-      if (e.code === 'Space') {
-        e.preventDefault()
-        if (audio.loading() || audio.loadError()) return
-        if (audio.playing()) {
-          audio.handlePause()
-        } else {
-          audio.handlePlay()
-        }
-      }
-
       if (e.key === 'm' || e.key === 'M') {
         if (layout.workspaceLayout() === 'fixed-2col') {
           layout.setSidebarHidden((prev) => !prev)
@@ -2197,22 +2467,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       // L = toggle loop
       if (e.key === 'a' || e.key === 'A') {
         e.preventDefault()
-        audio.setLoopStart(audio.elapsed())
+        applyLoopPoint('A', audio.elapsed())
       }
       if (e.key === 'b' || e.key === 'B') {
         e.preventDefault()
-        audio.setLoopEnd(audio.elapsed())
-        audio.setLoopEnabled(true)
+        applyLoopPoint('B', audio.elapsed())
       }
       if (e.key === 's' || e.key === 'S') {
         e.preventDefault()
-        if (audio.loopEnabled() && audio.loopStart() > 0) {
-          audio.seekTo(audio.loopStart())
+        const loopStart = audio.loopStart()
+        if (audio.loopEnabled() && loopStart !== null) {
+          audio.seekTo(loopStart)
         }
       }
       if (e.key === 'l' || e.key === 'L') {
         e.preventDefault()
-        audio.setLoopEnabled((prev) => !prev)
+        const ready = hasPlayableLoop(audio.loopStart(), audio.loopEnd())
+        audio.setLoopEnabled((on) => !on && ready)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -2285,15 +2556,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // Zen note glyphs asked for notes with no analysis present — run the
   // denoised pipeline once; the alignment (and the glyphs) follow reactively.
+  //
+  // The stage is handed this only while calling it would start an analysis. A
+  // streamed vocal cannot be analysed on this device (phones stream), and once
+  // the analysis has its notes there is nothing left to ask for: a song with no
+  // word segments has no notes to draw, and a tap would do nothing.
+  const canFindZenNotes = (): boolean =>
+    !vocalIsStreamed() &&
+    pitchAnalysis.offlineSegmentedNotes().length === 0 &&
+    pitchAnalysis.offlineMergedNotes().length === 0
   const ensureZenNotes = () => {
     // Nobody asked for this one — the glyph toggle did — so it stays quiet
     // rather than toasting a limitation at a singer who was reaching for a
     // switch. The glyphs simply have nothing to draw.
-    if (vocalIsStreamed()) return
-    const hasNotes =
-      pitchAnalysis.offlineSegmentedNotes().length > 0 ||
-      pitchAnalysis.offlineMergedNotes().length > 0
-    if (!hasNotes && !pitchAnalysis.isAnalyzing()) {
+    if (canFindZenNotes() && !pitchAnalysis.isAnalyzing()) {
       void pitchAnalysis.runAnalysis()
     }
   }
@@ -2342,11 +2618,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
       return
     }
+    // The mixer's own context: closing it stops it at once, so a song left
+    // while it played closes it once that fade has played too. Closed under
+    // the fade, the song stopped mid-note.
     const ctx = audio.getAudioCtx()
-    if (ctx) {
-      ctx.close().catch(() => {
+    const close = (): void => {
+      ctx?.close().catch(() => {
         /* */
       })
+      // Closing takes the nodes with it, but not the key graph's timers.
+      audio.detachGraph()
+    }
+    const fading = audio.releaseLeft()
+    if (fading > 0) {
+      setTimeout(close, fading)
+    } else {
+      close()
     }
   })
 
@@ -2377,6 +2664,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  // "Find my key" opens it from either stage: for a first voice, and again
+  // with the song already at the fit, to try another or go back.
+  const voiceTypePicker = () => (
+    <VoiceTypePicker
+      open={key.voiceTypePickerOpen()}
+      fits={key.voiceTypePickerFit()}
+      current={key.pickedVoiceType()}
+      onPick={keyView.pickVoiceType}
+      onOriginalKey={key.backToOriginalKey}
+      onCancel={key.closeVoiceTypePicker}
+    />
+  )
+
   // ── Render ───────────────────────────────────────────────────
   return (
     <Show
@@ -2384,7 +2684,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       fallback={
         <>
           <KaraokeMobileStage
-            songTitle={props.songTitle}
+            songTitle={stripAudioExtension(props.songTitle)}
             hosted={hosted?.stage}
             onBack={handleZenBack}
             playing={audio.playing}
@@ -2437,8 +2737,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onSongPickerQuery={setSongPickerQuery}
             onSongPickerRefine={() => void handleSongPickerRefine()}
             onSongPick={(m) => void handleSongPick(m)}
-            alignedWords={() => alignmentResult().alignedWords}
-            onEnsureNotes={ensureZenNotes}
+            alignedWords={displayAlignedWords}
+            onEnsureNotes={canFindZenNotes() ? ensureZenNotes : undefined}
             notesAnalyzing={pitchAnalysis.isAnalyzing}
             notesProgress={pitchAnalysis.progress}
             micActive={mic.micActive}
@@ -2451,7 +2751,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onMusicLevel={audio.setMusicLevel}
             musicLevelRange={audio.musicLevelRange}
             micPitch={mic.micPitch}
-            ribbonNotes={pitchAnalysis.editableNotes}
+            ribbonNotes={displayNotes}
+            // Hosted, the key is a row in the room's options instead.
+            keyControl={hosted ? undefined : keyBinding}
+            more={hosted ? undefined : phoneMore}
           />
           <StemMixerScoreModal
             showScore={mic.showScore}
@@ -2462,6 +2765,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onKeepVoiceTake={handleKeepKaraokeVoiceTake}
             onClose={handleScoreClose}
           />
+          {voiceTypePicker()}
         </>
       }
     >
@@ -2491,239 +2795,41 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       >
         {/* Header */}
         <Show when={!karaokeFocus()}>
-          <div class="sm-header">
-            <div class="sm-header-left">
-              <Show when={props.onBack}>
-                <button
-                  class="sm-back-btn"
-                  onClick={() => props.onBack?.()}
-                  title="Back"
-                >
-                  <ChevronLeft />
-                </button>
-              </Show>
-              <div class="sm-header-titles">
-                <h2>{props.songTitle.replace(/\.[^.]+$/, '')} (session)</h2>
-                <Show
-                  when={playlist.isPlaylistActive() && playlist.currentSong()}
-                  fallback={
-                    <Show when={audio.duration() > 0}>
-                      <span class="sm-session-id">
-                        {canvas.formatTime(audio.duration())}
-                      </span>
-                    </Show>
-                  }
-                >
-                  <div class="sm-playlist-subtitle">
-                    <Show when={playlist.currentSong()!.singerName}>
-                      <span class="sm-playlist-singer">
-                        {playlist.currentSong()!.singerName}
-                      </span>
-                      <span class="sm-playlist-dot">·</span>
-                    </Show>
-                    <span>{playlist.currentSong()!.songTitle}</span>
-                    <Show when={playlist.nextSong()}>
-                      <span class="sm-playlist-next">
-                        · Next: {playlist.nextSong()!.songTitle}
-                        <Show when={playlist.nextSong()!.singerName}>
-                          {' '}
-                          ({playlist.nextSong()!.singerName})
-                        </Show>
-                      </span>
-                    </Show>
-                    <span class="sm-playlist-controls">
-                      <button
-                        class="sm-playlist-ctrl-btn"
-                        title="Previous song"
-                        disabled={playlist.currentIndex() === 0}
-                        onClick={handlePlaylistPrev}
-                      >
-                        <SkipBack />
-                      </button>
-                      <button
-                        class="sm-playlist-ctrl-btn"
-                        title="Skip to next song"
-                        onClick={handlePlaylistNext}
-                      >
-                        <SkipForward />
-                      </button>
-                      <button
-                        class="sm-playlist-ctrl-btn"
-                        title="Stop playlist"
-                        onClick={handlePlaylistStopAll}
-                      >
-                        <X />
-                      </button>
-                    </span>
-                  </div>
-                </Show>
-              </div>
-            </div>
-            <div
-              class="sm-header-actions"
-              style={{ display: 'flex', gap: '0.5rem' }}
-              data-tour="mixer.header"
-            >
-              <Show when={props.showStageSettings !== false}>
-                <Show when={props.preset !== 'performance'}>
-                  <label class="sm-stage-glass" title="Stage transparency">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"
-                      />
-                    </svg>
-                    <input
-                      type="range"
-                      class="sm-stage-glass-slider"
-                      min={KARAOKE_STAGE_ALPHA.min}
-                      max={KARAOKE_STAGE_ALPHA.max}
-                      step={KARAOKE_STAGE_ALPHA.step}
-                      value={stageAlpha()}
-                      // A custom track cannot read the input's own value, so
-                      // the filled share travels as a percentage — the same
-                      // arrangement the stem faders use with --stem-volume.
-                      style={{
-                        '--sm-stage-glass-fill': `${stageGlassFillPercent()}%`,
-                      }}
-                      aria-label="Stage transparency"
-                      onInput={(event) =>
-                        updateStageAlpha(Number(event.currentTarget.value))
-                      }
-                    />
-                  </label>
-                </Show>
-                <PremiumBackgroundPicker
-                  controller={background}
-                  label="Stage"
-                />
-              </Show>
-              <Show when={props.onOfferTour}>
-                <button
-                  class="sm-btn sm-btn-secondary"
-                  onClick={() => props.onOfferTour?.('button')}
-                  title="Take a guided tour of the mixer"
-                  style={{ gap: '0.4rem' }}
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14">
-                    <path
-                      fill="currentColor"
-                      d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
-                    />
-                  </svg>{' '}
-                  Tour
-                </button>
-              </Show>
-              <button
-                type="button"
-                class="sm-btn sm-btn-secondary"
-                data-tour="mixer.playlist"
-                classList={{ 'sm-btn--active': playlistSidebarOpen() }}
-                onClick={() => {
-                  const opening = !playlistSidebarOpen()
-                  if (opening) {
-                    closePitchTools()
-                    setPlaylistSidebarMounted(true)
-                  }
-                  setPlaylistSidebarOpen(opening)
-                }}
-                title="Open songs and playlists"
-                style={{ gap: '0.4rem' }}
-              >
-                <Music /> Songs
-              </button>
-              <button
-                type="button"
-                class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
-                classList={{ 'sm-btn--active': pitchAnalysis.panelOpen() }}
-                onClick={() => {
-                  const opening = !pitchAnalysis.panelOpen()
-                  if (opening) {
-                    setPlaylistSidebarOpen(false)
-                    pitchAnalysis.setEditMode(false)
-                    pitchAnalysis.setSelectedNoteId(null)
-                  }
-                  pitchAnalysis.setPanelOpen(opening)
-                }}
-                title="Pitch Analysis & Settings"
-                style={{ gap: '0.4rem' }}
-              >
-                <Settings /> Pitch
-              </button>
-              {/* Share links are only useful once songs are cloud-synced across
-                devices — gated behind the premium flag (off by default). */}
-              <Show when={PREMIUM_FEATURES}>
-                <button
-                  class="sm-share-btn"
-                  classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
-                  onClick={() => {
-                    const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
-                    // No catch here meant a blocked clipboard — iOS Safari,
-                    // or any non-secure origin such as a LAN dev host — became
-                    // an unhandled rejection, and AppErrorBoundary turns those
-                    // into the full-screen crash modal. Failing to copy a link
-                    // is a toast, not a crash.
-                    void navigator.clipboard
-                      .writeText(url)
-                      .then(() => {
-                        setShareToast('Link copied to clipboard!')
-                      })
-                      .catch(() => {
-                        setShareToast(
-                          'Could not copy — press and hold the link',
-                        )
-                      })
-                      .finally(() => {
-                        setTimeout(() => setShareToast(''), 2500)
-                      })
-                  }}
-                  title="Copy share link"
-                >
-                  <Share /> {shareToast() || 'Share'}
-                </button>
-              </Show>
-              <button
-                class="sm-btn sm-btn-secondary"
-                onClick={() => setKaraokeZen(true)}
-                title="Zen mode — the clean, lyrics-forward karaoke view (Back returns here)"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M4 7h16M4 12h16M4 17h9" />
-                </svg>
-                Zen
-              </button>
-              <button
-                class="sm-btn sm-btn-secondary"
-                data-tour="mixer.focus"
-                onClick={() => setKaraokeFocus((prev) => !prev)}
-                title={
-                  karaokeFocus()
-                    ? 'Exit karaoke mode (Esc)'
-                    : 'Karaoke focus mode'
-                }
-              >
-                {karaokeFocus() ? (
-                  <Minimize2 size={14} />
-                ) : (
-                  <Maximize2 size={14} />
-                )}
-              </button>
-            </div>
-          </div>
+          <MixerHeader
+            title={stripAudioExtension(props.songTitle)}
+            onBack={props.onBack}
+            playlist={headerPlaylist()}
+            songsOpen={playlistSidebarOpen()}
+            onToggleSongs={() => {
+              const opening = !playlistSidebarOpen()
+              if (opening) {
+                closePitchTools()
+                setPlaylistSidebarMounted(true)
+              }
+              setPlaylistSidebarOpen(opening)
+            }}
+            pitchOpen={pitchAnalysis.panelOpen()}
+            onTogglePitch={() => {
+              const opening = !pitchAnalysis.panelOpen()
+              if (opening) {
+                setPlaylistSidebarOpen(false)
+                pitchAnalysis.setEditMode(false)
+                pitchAnalysis.setSelectedNoteId(null)
+              }
+              pitchAnalysis.setPanelOpen(opening)
+            }}
+            stage={headerStage()}
+            view={layout.viewControls}
+            onZen={() => setKaraokeZen(true)}
+            onFocus={() => setKaraokeFocus(true)}
+            karaokeNight={headerKaraokeNight()}
+            onTour={
+              props.onOfferTour === undefined
+                ? undefined
+                : () => props.onOfferTour?.('button')
+            }
+            share={headerShare()}
+          />
         </Show>
 
         {/* Focus-mode now-playing bar — the header (with the playlist subtitle and
@@ -2838,12 +2944,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onRestart={audio.handleRestart}
             onPlay={audio.handlePlay}
             onPause={audio.handlePause}
-            onSeek={handleSeek}
-            workspaceLayout={layout.workspaceLayout}
-            setWorkspaceLayout={layout.setWorkspaceLayout}
-            sidebarHidden={layout.sidebarHidden}
-            setSidebarHidden={layout.setSidebarHidden}
-            onQueueRedraw={() => canvas.queueCanvasRedraw()}
+            onSeek={(seconds) => audio.seekTo(seconds)}
+            view={layout.viewControls}
             micActive={mic.micActive}
             micError={mic.micError}
             onToggleMic={() => void mic.toggleMic()}
@@ -2854,6 +2956,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             formatTime={canvas.formatTime}
             speed={audio.speed}
             onSpeedChange={audio.setSpeed}
+            keyControl={keyBinding}
             karaokeFocus={karaokeFocus}
             setKaraokeFocus={setKaraokeFocus}
             toolbarPosition={karaokeToolbarPosition}
@@ -2867,8 +2970,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             loopEnabled={audio.loopEnabled}
             loopStart={audio.loopStart}
             loopEnd={audio.loopEnd}
+            minimumLoopGap={audio.loopMinGap}
             onSetLoopA={() => applyLoopPoint('A', audio.elapsed())}
             onSetLoopB={() => applyLoopPoint('B', audio.elapsed())}
+            onMoveLoopPoint={(which, seconds) =>
+              applyLoopPoint(which, seconds, 'move')
+            }
             onClearLoop={() => {
               audio.clearLoop()
               setLoopStartLyricIdx(null)
@@ -2882,7 +2989,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           />
 
           <Show
-            when={audio.loopEnabled() && audio.loopEnd() > 0 && mic.micActive()}
+            when={
+              audio.loopEnabled() && audio.loopEnd() !== null && mic.micActive()
+            }
           >
             <LoopMetricsBar
               comparisonData={mic.iterationComparisonData}
@@ -3199,59 +3308,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onConfirm={confirm.accept}
           onCancel={confirm.cancel}
         />
-        <Show when={loopMenu()}>
-          {(menu) => (
-            <>
-              <div
-                class="sm-loop-menu-backdrop"
-                onPointerDown={() => setLoopMenu(null)}
-                onContextMenu={(e) => {
-                  e.preventDefault()
-                  setLoopMenu(null)
-                }}
-              />
-              <div
-                class="sm-loop-menu"
-                style={{ left: `${menu().x}px`, top: `${menu().y}px` }}
-              >
-                <div class="sm-loop-menu-time">
-                  Loop point at {canvas.formatTime(menu().time)}
-                </div>
-                <button
-                  class="sm-loop-menu-item"
-                  onClick={() => {
-                    applyLoopPoint('A', menu().time)
-                    setLoopMenu(null)
-                  }}
-                >
-                  <span class="sm-loop-menu-dot sm-loop-menu-dot--a">A</span>
-                  Set loop start here
-                </button>
-                <button
-                  class="sm-loop-menu-item"
-                  onClick={() => {
-                    applyLoopPoint('B', menu().time)
-                    setLoopMenu(null)
-                  }}
-                >
-                  <span class="sm-loop-menu-dot sm-loop-menu-dot--b">B</span>
-                  Set loop end here
-                </button>
-                <Show when={audio.loopStart() > 0 || audio.loopEnd() > 0}>
-                  <button
-                    class="sm-loop-menu-item sm-loop-menu-item--clear"
-                    onClick={() => {
-                      clearLoopFromMenu()
-                      setLoopMenu(null)
-                    }}
-                  >
-                    Clear loop
-                  </button>
-                </Show>
-              </div>
-            </>
-          )}
-        </Show>
+        <LoopPointMenu
+          point={loopMenu()}
+          formatTime={canvas.formatTime}
+          hasLoop={audio.loopStart() !== null || audio.loopEnd() !== null}
+          onSetA={(time) => applyLoopPoint('A', time)}
+          onSetB={(time) => applyLoopPoint('B', time)}
+          onClear={clearLoopFromMenu}
+          onClose={() => setLoopMenu(null)}
+        />
+        {voiceTypePicker()}
       </div>
     </Show>
   )
@@ -3391,168 +3457,10 @@ export const StemMixerStyles: string = `
     #161b22;
 }
 
-/* Header */
-.sm-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.875rem 1.25rem;
-  background: var(--bg-primary, #0d1117);
-  border-bottom: 1px solid var(--border, #30363d);
-  flex-shrink: 0;
-}
-
-/* The app sidebar leaves the full mixer with a tablet-sized content column
-   before the <=768px Zen stage takes over. Keep every action reachable in
-   that seam instead of letting the right side clip off-screen. */
-@media (max-width: 1100px) {
-  .sm-header {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.55rem;
-  }
-
-  .sm-header-left {
-    min-width: 0;
-  }
-
-  .sm-header-actions {
-    flex: 1 1 100%;
-    min-width: 0;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-}
-
-.sm-header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.sm-header-left h2 {
-  margin: 0;
-  font-size: 1.05rem;
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-stage-glass {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--fg-secondary, #8b949e);
-}
-
-.sm-stage-glass svg {
-  flex: none;
-}
-
-/* The only mixer slider that still wore the native appearance. A native range
-   paints its unfilled half in a hard-coded UA grey -- #3b3b3b under a dark
-   color-scheme -- which owes nothing to the stage palette and reads as a grey
-   plate on the glass, more or less visible depending on the backdrop behind
-   it. The stem faders and the pitch-analysis sliders already draw their own
-   track; this one now does too, from the same tokens. */
-.sm-stage-glass-slider {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  width: 88px;
-  height: 14px;
-  background: transparent;
-  border: none;
-  outline: none;
-  cursor: pointer;
-}
-
-/* WebKit track */
-.sm-stage-glass-slider::-webkit-slider-runnable-track {
-  height: 4px;
-  border: none;
-  border-radius: 2px;
-  background: linear-gradient(
-    to right,
-    var(--accent, #58a6ff) 0 var(--sm-stage-glass-fill, 45%),
-    var(--bg-tertiary, #21262d) var(--sm-stage-glass-fill, 45%) 100%
-  );
-}
-
-.sm-stage-glass-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  margin-top: -4px;
-  border-radius: 50%;
-  border: 2px solid var(--on-accent, #0d1117);
-  background: var(--accent, #58a6ff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-}
-
-/* Firefox track */
-.sm-stage-glass-slider::-moz-range-track {
-  height: 4px;
-  border: none;
-  border-radius: 2px;
-  background: linear-gradient(
-    to right,
-    var(--accent, #58a6ff) 0 var(--sm-stage-glass-fill, 45%),
-    var(--bg-tertiary, #21262d) var(--sm-stage-glass-fill, 45%) 100%
-  );
-}
-
-.sm-stage-glass-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid var(--on-accent, #0d1117);
-  background: var(--accent, #58a6ff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-}
-
-.sm-stage-glass-slider:focus-visible {
-  outline: 2px solid var(--accent, #58a6ff);
-  outline-offset: 2px;
-}
-
-.sm-session-id {
-  /* Flex child in a column — only as wide as its content, not stretched to the
-     song-title width above it. */
-  align-self: flex-start;
-  max-width: 100%;
-  font-size: 0.7rem;
-  color: var(--fg-tertiary, #484f58);
-  background: var(--bg-tertiary, #21262d);
-  padding: 0.15rem 0.5rem;
-  border-radius: 0.3rem;
-  font-family: monospace;
-}
-
-.sm-header-titles {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.sm-playlist-subtitle {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  font-size: 0.78rem;
-  color: var(--fg-tertiary, #768390);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/* The playlist line in focus mode's now-playing bar. */
 .sm-playlist-singer {
   font-weight: 600;
   color: #ffd166;
-}
-.sm-playlist-dot {
-  opacity: 0.6;
 }
 .sm-playlist-next {
   opacity: 0.7;
@@ -3654,71 +3562,6 @@ export const StemMixerStyles: string = `
   .sm-left-rail-wrap {
     animation: none;
   }
-}
-
-.sm-btn--active {
-  background: var(--accent, #58a6ff) !important;
-  color: var(--on-accent, #0d1117) !important;
-  border-color: var(--accent, #58a6ff) !important;
-}
-
-.sm-back-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-
-.sm-back-btn:hover {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-back-btn svg {
-  width: 0.9rem;
-  height: 0.9rem;
-}
-
-.sm-share-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--accent, #8b5cf6);
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.sm-share-btn:hover {
-  background: var(--bg-hover, #30363d);
-  border-color: var(--accent, #8b5cf6);
-}
-
-.sm-share-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-.sm-share-btn--copied {
-  color: var(--success, #3fb950);
-  border-color: var(--success, #3fb950);
-  background: rgba(63, 185, 80, 0.1);
 }
 
 /* Loading */
@@ -6949,475 +6792,6 @@ export const StemMixerStyles: string = `
   min-height: 22rem;
 }
 
-/* Column toggle */
-.sm-col-toggle {
-  display: flex;
-  gap: 2px;
-  background: var(--bg-tertiary, #21262d);
-  border-radius: 0.3rem;
-  padding: 2px;
-  margin: 0 0.5rem;
-}
-.sm-col-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.25rem;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0.2rem;
-  color: var(--fg-tertiary, #484f58);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.sm-col-btn:hover {
-  color: var(--fg-secondary, #8b949e);
-}
-.sm-col-active {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-.sm-col-active:hover {
-  color: var(--on-accent, #0d1117);
-}
-
-/* Transport */
-.sm-transport {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  background: var(--bg-primary, #0d1117);
-  border-top: 1px solid var(--border, #30363d);
-  flex-shrink: 0;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-
-.sm-transport-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
-/* Docked Toolbar Styles */
-
-.sm-transport--docked-top {
-  order: -1;
-}
-
-.sm-transport--docked-bottom {
-  order: 999;
-}
-
-.sm-transport--docked-left {
-  order: -1;
-}
-
-.sm-transport--docked-right {
-  order: 999;
-}
-
-.sm-transport--vertical {
-  flex-direction: column;
-  padding: 1.25rem 0.5rem;
-  border-top: none;
-  border-right: 1px solid var(--border, #30363d);
-}
-
-.sm-transport--vertical.sm-transport--docked-right {
-  border-right: none;
-  border-left: 1px solid var(--border, #30363d);
-}
-
-.sm-transport--vertical .sm-transport-controls {
-  flex-direction: column;
-}
-
-/* Only rendered in focus mode, on the glass pill — quiet grip like the
-   practice ControlOverlay's: no block background, just a soft hover tint. */
-.sm-transport-drag-handle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  margin: -0.375rem; /* Increase hit area without changing layout size */
-  cursor: grab;
-  color: var(--fg-muted, #8b949e);
-  background: transparent;
-  border-radius: 9px;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-  touch-action: none;
-  -webkit-touch-callout: none;
-}
-
-.sm-transport-drag-handle:hover {
-  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-transport-drag-handle:active {
-  cursor: grabbing;
-}
-.sm-transport-drag-handle--open {
-  background: color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent);
-  color: var(--accent, #58a6ff);
-}
-
-/* Click-to-dock compass — a gizmo of four direction arrows around a hub,
-   the current side highlighted. Faster than drag on desktop. */
-.sm-transport-dock {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.sm-dock-compass-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1001;
-}
-.sm-dock-compass {
-  position: absolute;
-  z-index: 1002;
-  display: grid;
-  grid-template-columns: repeat(3, 1.55rem);
-  grid-template-rows: repeat(3, 1.55rem);
-  place-items: center;
-  padding: 0.3rem;
-  background: var(--bg-secondary, #161b22);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.6rem;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
-  animation: sm-dock-compass-in 0.12s ease-out;
-}
-@keyframes sm-dock-compass-in {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-/* Position the popover away from whichever edge the bar is docked on, so it
-   opens toward the content, not off-screen. */
-.sm-dock-compass--bottom { bottom: calc(100% + 0.4rem); left: 0; }
-.sm-dock-compass--top { top: calc(100% + 0.4rem); left: 0; }
-.sm-dock-compass--left { left: calc(100% + 0.4rem); top: 0; }
-.sm-dock-compass--right { right: calc(100% + 0.4rem); top: 0; }
-.sm-dock-compass-btn {
-  grid-column: 2;
-  grid-row: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0.3rem;
-  color: var(--fg-secondary, #a8b3bf);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-.sm-dock-compass-btn--top { grid-row: 1; }
-.sm-dock-compass-btn--bottom { grid-row: 3; }
-.sm-dock-compass-btn--left { grid-column: 1; grid-row: 2; }
-.sm-dock-compass-btn--right { grid-column: 3; grid-row: 2; }
-.sm-dock-compass-btn:hover {
-  background: color-mix(in srgb, var(--accent, #58a6ff) 16%, transparent);
-  color: var(--fg-primary, #e6edf3);
-}
-.sm-dock-compass-btn--active {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-.sm-dock-compass-hub {
-  grid-column: 2;
-  grid-row: 2;
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 50%;
-  background: var(--border, #30363d);
-  pointer-events: none;
-}
-
-.sm-drag-overlay {
-  position: absolute;
-  background: var(--accent, #58a6ff);
-  opacity: 0.15;
-  pointer-events: none;
-  z-index: 1000;
-  transition: all 0.15s;
-}
-
-.sm-drag-overlay--top {
-  top: 0; left: 0; right: 0; height: 100px;
-}
-.sm-drag-overlay--bottom {
-  bottom: 0; left: 0; right: 0; height: 100px;
-}
-.sm-drag-overlay--left {
-  top: 0; bottom: 0; left: 0; width: 100px;
-}
-.sm-drag-overlay--right {
-  top: 0; bottom: 0; right: 0; width: 100px;
-}
-
-.sm-transport-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.sm-transport-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-/* Base loop icon styles */
-.sm-loop-icon circle {
-  fill: var(--bg-tertiary, #21262d);
-  stroke: var(--border, #30363d);
-  stroke-width: 1.5px;
-  transition: all 0.2s ease;
-}
-
-/* Hover effects */
-.sm-loop-icon-a:hover circle {
-  stroke: var(--accent, #58a6ff);
-  fill: rgba(88, 166, 255, 0.1);
-}
-.sm-loop-icon-a:hover text {
-  fill: var(--accent, #58a6ff);
-}
-.sm-icon-btn.sm-loop-icon-a text {
-  fill: var(--fg-secondary, #8b949e);
-  transition: all 0.2s ease;
-}
-
-.sm-loop-icon-b:hover circle {
-  stroke: #ff7b72;
-  fill: rgba(255, 123, 114, 0.1);
-}
-.sm-loop-icon-b:hover text {
-  fill: #ff7b72;
-}
-.sm-icon-btn.sm-loop-icon-b text {
-  fill: var(--fg-secondary, #8b949e);
-  transition: all 0.2s ease;
-}
-
-/* Active effects */
-.sm-loop-btn--a-set.sm-loop-icon-a text {
-  fill: #0d1117 !important;
-}
-.sm-loop-btn--a-set.sm-loop-icon-a circle {
-  fill: var(--accent, #58a6ff);
-  stroke: var(--accent, #58a6ff);
-}
-
-.sm-loop-btn--b-set.sm-loop-icon-b text {
-  fill: #0d1117 !important;
-}
-.sm-loop-btn--b-set.sm-loop-icon-b circle {
-  fill: #ff7b72;
-  stroke: #ff7b72;
-}
-
-.sm-icon-btn svg.sm-loop-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.sm-icon-btn svg {
-  width: 1.2rem;
-  height: 1.2rem;
-}
-
-.sm-transport-btn:hover:not(:disabled) {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-icon-btn {
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  color: var(--fg-secondary, #8b949e);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  transition: all 0.15s;
-}
-
-.sm-icon-btn:hover:not(:disabled) {
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-transport-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.sm-transport-play {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: var(--accent, #58a6ff);
-  border-color: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-  border-radius: 50%;
-}
-
-.sm-transport-play:hover:not(:disabled) {
-  opacity: 0.85;
-  color: var(--on-accent, #0d1117);
-}
-
-.sm-zoom-control {
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
-  margin: 0 0.5rem;
-}
-
-.sm-zoom-btn {
-  width: 1.35rem;
-  height: 1.35rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border-primary, #30363d);
-  color: var(--fg-secondary, #8b949e);
-  border-radius: 0.25rem;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  line-height: 1;
-  padding: 0;
-}
-
-.sm-zoom-btn:hover {
-  background: var(--bg-secondary, #161b22);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-zoom-value {
-  font-size: 0.65rem;
-  color: var(--fg-tertiary, #484f58);
-  font-family: monospace;
-  min-width: 28px;
-  text-align: center;
-}
-
-.sm-speed-select {
-  appearance: none;
-  -webkit-appearance: none;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.3rem;
-  color: var(--fg-secondary, #8b949e);
-  font-size: 0.65rem;
-  font-family: monospace;
-  padding: 0 0.4rem;
-  text-align: center;
-  text-align-last: center;
-  cursor: pointer;
-  margin: 0 0.3rem;
-  height: 1.75rem;
-}
-.sm-speed-select:hover {
-  border-color: var(--fg-tertiary, #484f58);
-}
-.sm-speed-select:focus {
-  outline: none;
-  border-color: var(--accent, #58a6ff);
-}
-
-.sm-progress-area {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.sm-time {
-  font-size: 0.7rem;
-  color: var(--fg-tertiary, #484f58);
-  font-family: monospace;
-  min-width: 32px;
-  flex-shrink: 0;
-}
-
-.sm-time:last-child {
-  text-align: right;
-}
-
-.sm-progress-bar {
-  flex: 1;
-  height: 0.35rem;
-  background: var(--bg-tertiary, #21262d);
-  border-radius: 0.2rem;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.sm-progress-bar:hover {
-  height: 0.5rem;
-}
-
-.sm-progress-fill {
-  height: 100%;
-  background: var(--accent, #58a6ff);
-  border-radius: 0.2rem;
-  transition: width 0.1s linear;
-}
-
-/* Loop range highlight on progress bar */
-.sm-progress-loop {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  background: rgba(88, 166, 255, 0.25);
-  border-left: 1px solid rgba(88, 166, 255, 0.5);
-  border-right: 1px solid rgba(88, 166, 255, 0.5);
-  pointer-events: none;
-}
-
-/* Loop A/B buttons */
-.sm-loop-btn--a-set {
-  color: var(--accent, #58a6ff) !important;
-}
-
-.sm-loop-btn--b-set {
-  color: #d2a8ff !important;
-}
-
-/* Loop toggle active state */
-.sm-loop-toggle--active {
-  color: var(--accent, #58a6ff) !important;
-}
-
 /* Loop metrics bar (appears above transport when loop is active) */
 .sm-loop-metrics {
   display: flex;
@@ -7439,126 +6813,14 @@ export const StemMixerStyles: string = `
   color: var(--accent, #58a6ff);
 }
 
-/* Mic toggle button */
-.sm-mic-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-  margin: 0 0.5rem;
-}
-
-.sm-mic-toggle-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-.sm-mic-toggle-btn:hover:not(:disabled) {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-mic-toggle-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.sm-mic-toggle-btn--active {
-  background: var(--accent, #58a6ff);
-  border-color: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-  animation: sm-mic-pulse 1.5s ease-in-out infinite;
-}
-
-.sm-mic-toggle-btn--active:hover:not(:disabled) {
-  opacity: 0.85;
-  color: var(--on-accent, #0d1117);
-}
-
-.sm-mic-toggle-btn--error {
-  background: var(--danger, #da3633);
-  border-color: var(--danger, #da3633);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-@keyframes sm-mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4); }
-  50% { box-shadow: 0 0 0 4px rgba(88, 166, 255, 0); }
-}
-
-/* Score modal overlay */
-/* Waveform/pitch right-click loop menu */
-.sm-loop-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 199;
-}
-.sm-loop-menu {
-  position: fixed;
-  z-index: 200;
-  min-width: 190px;
-  padding: 0.3rem;
-  background: var(--bg-secondary, #161b22);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  animation: sm-loop-menu-in 0.1s ease-out;
-}
+/* The lyrics version menu's entrance (.sm-lyrics-version-menu). It began as
+   the waveform loop menu's, which is LoopPointMenu now. */
 @keyframes sm-loop-menu-in {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
 }
-.sm-loop-menu-time {
-  padding: 0.35rem 0.55rem 0.45rem;
-  font-size: 0.7rem;
-  color: var(--fg-tertiary, #8b949e);
-  border-bottom: 1px solid var(--border, #30363d);
-  margin-bottom: 0.25rem;
-  font-variant-numeric: tabular-nums;
-}
-.sm-loop-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.45rem 0.55rem;
-  background: none;
-  border: none;
-  border-radius: 0.35rem;
-  color: var(--fg-primary, #e6edf3);
-  font-size: 0.82rem;
-  text-align: left;
-  cursor: pointer;
-}
-.sm-loop-menu-item:hover {
-  background: var(--bg-tertiary, #21262d);
-}
-.sm-loop-menu-item--clear {
-  color: var(--fg-secondary, #a8b3bf);
-}
-.sm-loop-menu-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.15rem;
-  height: 1.15rem;
-  border-radius: 50%;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--on-accent, #0d1117);
-  flex-shrink: 0;
-}
-.sm-loop-menu-dot--a { background: #58a6ff; }
-.sm-loop-menu-dot--b { background: #ff7b72; }
 
+/* Score modal overlay */
 .sm-mic-score-overlay {
   position: absolute;
   inset: 0;
@@ -7865,44 +7127,6 @@ export const StemMixerStyles: string = `
   opacity: 0;
 }
 
-/* Sidebar toggle button */
-.sm-sidebar-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-  margin: 0 0.5rem;
-}
-
-.sm-sidebar-toggle svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-.sm-sidebar-toggle:hover {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-sidebar-toggle--active {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-  border-color: var(--accent, #58a6ff);
-}
-
-.sm-sidebar-toggle--active:hover {
-  background: var(--accent-hover, #79c0ff);
-  color: var(--on-accent, #0d1117);
-}
-
 /* ── Lyrics finder: LRCLIB search picker (glass) ──────────────────
    Shared by the studio panel and the zen stage. Accent tracks the ambient
    theme (blue in the studio); the zen stage sets --lyf-accent to its purple.
@@ -7945,7 +7169,8 @@ export const StemMixerStyles: string = `
   min-width: 0;
   height: 44px;
   padding: 0 0.9rem;
-  font-size: 0.95rem;
+  /* 16 px: iOS zooms the page into any field set smaller on focus. */
+  font-size: 1rem;
   font-family: inherit;
   color: var(--fg-primary, #e6edf3);
   background: var(--lyf-surface);
@@ -8208,47 +7433,4 @@ export const StemMixerStyles: string = `
     transition: none;
   }
 }
-
-/* Standard Buttons */
-.sm-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.15s;
-}
-
-.sm-btn-secondary {
-  background: var(--bg-tertiary, #21262d);
-  border-color: var(--border, #30363d);
-  color: var(--fg-secondary, #8b949e);
-}
-
-.sm-btn-secondary:hover {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-pitch-debug-btn svg {
-  width: 0.8rem;
-  height: 0.8rem;
-}
-
-.sm-btn-primary {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-
-.sm-btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover, #79c0ff);
-}
-
-.sm-btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}`
+`

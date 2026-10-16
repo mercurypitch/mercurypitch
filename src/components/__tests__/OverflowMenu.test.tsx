@@ -200,6 +200,35 @@ describe('OverflowMenu', () => {
     ).toHaveLength(2)
   })
 
+  it('never opens with a divider above its first row', () => {
+    // A row list built to follow other rows (the mixer's layouts, which
+    // More in focus mode puts under the speeds) opens a menu of its own.
+    open([
+      {
+        key: 'fixed',
+        label: 'Fixed',
+        checked: true,
+        separatorBefore: true,
+        onSelect: noop,
+      },
+      { key: 'auto', label: 'Auto', checked: false, onSelect: noop },
+      {
+        key: 'sidebar',
+        label: 'Mixer sidebar',
+        checked: true,
+        checkType: 'checkbox',
+        separatorBefore: true,
+        onSelect: noop,
+      },
+    ])
+    const menu = screen.getByRole('menu')
+    expect(menu.firstElementChild).toHaveTextContent('Fixed')
+    // The divider between two of its own groups stays.
+    const separator = screen.getByRole('separator')
+    expect(separator.previousElementSibling).toHaveTextContent('Auto')
+    expect(separator.nextElementSibling).toHaveTextContent('Mixer sidebar')
+  })
+
   it('will not run a disabled row', () => {
     const hq = vi.fn()
     open([{ key: 'hq', label: 'HQ re-run', disabled: true, onSelect: hq }])
@@ -250,6 +279,55 @@ describe('OverflowMenu', () => {
     expect(
       screen.getByText('Replaces these stems with cloud HQ stems'),
     ).toBeInTheDocument()
+  })
+
+  it('closes when the window resizes, rather than hanging where the trigger was', () => {
+    open([{ key: 'send', label: 'Send to device', onSelect: noop }])
+
+    fireEvent(window, new Event('resize'))
+
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'More actions' }),
+    ).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('stays open while something else scrolls, and closes when its own page does', () => {
+    render(() => (
+      <>
+        <div data-testid="lyrics">words that scroll themselves</div>
+        <OverflowMenu
+          label="More actions"
+          items={[{ key: 'send', label: 'Send to device', onSelect: noop }]}
+        />
+      </>
+    ))
+    const trigger = screen.getByRole('button', { name: 'More actions' })
+    fireEvent.click(trigger)
+
+    fireEvent.scroll(screen.getByTestId('lyrics'))
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.scroll(document)
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('leaves an Escape that a layer above it already used', () => {
+    open([{ key: 'send', label: 'Send to device', onSelect: noop }])
+    const claim = (event: KeyboardEvent) => event.preventDefault()
+    document.body.addEventListener('keydown', claim)
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    document.body.removeEventListener('keydown', claim)
+
+    expect(
+      screen.getByRole('button', { name: 'More actions' }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('menu')).toHaveAttribute(
+      'aria-label',
+      'More actions',
+    )
   })
 
   it('announces itself as a menu, not a button that does something', () => {

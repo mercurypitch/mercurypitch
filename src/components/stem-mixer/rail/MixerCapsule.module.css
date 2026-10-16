@@ -1,0 +1,364 @@
+/* MixerCapsule: the rail's controls in groups split by hairlines, in two
+   parts (left and right) that MixerRail's grid places either side of the
+   timeline, by their data-rail-part. The rail draws the glass bar; the
+   parts add no box of their own, so there is no box inside a box.
+
+   Custom properties set its size and look, so a host changes them without
+   reaching into the capsule. Each has its default where it is read.
+     --mixer-control-size    every button and chip's height (28px; 44px on
+                             a coarse pointer)
+     --mixer-control-radius  their corners (8px; 12px on a coarse pointer)
+     --mixer-group-gap       between controls in a group (2px; 4px)
+   The chips read the first two. */
+
+.capsule {
+  --mixer-control-bg: transparent;
+  --mixer-loop-a: #58a6ff;
+  --mixer-loop-b: #ff7b72;
+
+  display: flex;
+  flex: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+}
+
+.right {
+  gap: var(--mixer-group-gap, 2px);
+}
+
+/* Inside a host that draws the box (the focus pill): the same, and clear
+   at rest, as the pill's glass had them. */
+.capsule[data-bare='true'] {
+  --mixer-control-bg: transparent;
+}
+
+.group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--mixer-group-gap, 2px);
+}
+
+.divider {
+  display: block;
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 6px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--text-primary, #e6edf3) 14%, transparent);
+}
+
+/* The chip's wrapper exists for the tour to point at; it adds no box. */
+.slot {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+
+.btn {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--mixer-control-size, 28px);
+  height: var(--mixer-control-size, 28px);
+  padding: 0;
+  border: none;
+  border-radius: var(--mixer-control-radius, 8px);
+  color: var(--text-secondary, #a8b3bf);
+  background: var(--mixer-control-bg);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .btn:hover:not([aria-disabled='true']) {
+    color: var(--text-primary, #e6edf3);
+    background: color-mix(
+      in srgb,
+      var(--text-primary, #e6edf3) 12%,
+      transparent
+    );
+  }
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+/* Waiting, not disabled: it still takes a press, which says why. */
+.btn[aria-disabled='true'] {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+/* Play is the one filled control: the thing to find first. */
+.play {
+  width: calc(var(--mixer-control-size, 28px) + 4px);
+  height: calc(var(--mixer-control-size, 28px) + 4px);
+  border-radius: 50%;
+  color: var(--on-accent, #0d1117);
+  background: var(--accent, #58a6ff);
+}
+
+.play svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+@media (hover: hover) {
+  .play:hover:not([aria-disabled='true']) {
+    color: var(--on-accent, #0d1117);
+    background: var(--accent-hover, #79b8ff);
+  }
+}
+
+/* Stop reads as stop when the square is solid. */
+.stop svg {
+  fill: currentColor;
+}
+
+/* An on toggle (Loop, Hear my voice) in the accent. */
+.toggle[aria-pressed='true'] {
+  color: var(--accent, #58a6ff);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+}
+
+/* ── A and B ───────────────────────────────────────────────────────── */
+
+/* A ring with the letter in it; set, it fills in the colour the timeline
+   and the waveform draw that mark in. */
+.markGlyph {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  /* The rail's floor for text, letters in a ring included. */
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mark[data-mark='a'] {
+  --mark-colour: var(--mixer-loop-a);
+}
+
+.mark[data-mark='b'] {
+  --mark-colour: var(--mixer-loop-b);
+}
+
+@media (hover: hover) {
+  .mark:hover {
+    color: var(--mark-colour);
+  }
+}
+
+.mark[data-set='true'] {
+  color: var(--mark-colour);
+}
+
+.mark[data-set='true'] .markGlyph {
+  border-color: var(--mark-colour);
+  color: #0d1117;
+  background: var(--mark-colour);
+}
+
+/* ── Mic ───────────────────────────────────────────────────────────── */
+
+.mic[data-state='on'] {
+  color: var(--on-accent, #0d1117);
+  background: var(--accent, #58a6ff);
+  animation: micPulse 1.5s ease-in-out infinite;
+}
+
+@media (hover: hover) {
+  .mic[data-state='on']:hover {
+    color: var(--on-accent, #0d1117);
+    background: var(--accent-hover, #79b8ff);
+  }
+}
+
+.mic[data-state='error'] {
+  color: var(--danger, #ff7b72);
+  background: color-mix(in srgb, var(--danger, #ff7b72) 18%, transparent);
+}
+
+/* Still red under the pointer that pressed it, while its reason shows. */
+@media (hover: hover) {
+  .mic[data-state='error']:hover {
+    color: var(--danger, #ff7b72);
+    background: color-mix(in srgb, var(--danger, #ff7b72) 26%, transparent);
+  }
+}
+
+/* A blocked mic carries a mark of its own, so the red is not the only sign. */
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  color: #0d1117;
+  background: var(--danger, #ff7b72);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 12px;
+  text-align: center;
+}
+
+.mic[data-state='error'] .badge {
+  display: block;
+}
+
+@keyframes micPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(88, 166, 255, 0);
+  }
+}
+
+/* ── More ──────────────────────────────────────────────────────────── */
+
+/* The doubled class outranks OverflowMenu's own 44 px trigger floor,
+   which is meant for card lists, whatever order the sheets load in. */
+.more.more {
+  flex: none;
+  width: var(--mixer-control-size, 28px);
+  min-width: 0;
+  height: var(--mixer-control-size, 28px);
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--mixer-control-radius, 8px);
+  color: var(--text-secondary, #a8b3bf);
+  background: var(--mixer-control-bg);
+}
+
+/* Under the pointer and while its menu is open, the tint the buttons beside
+   it take, not the menu's own solid hover: on the glass a solid fill reads
+   as a box. Doubled and qualified to outrank OverflowMenu's trigger
+   states. */
+@media (hover: hover) {
+  .more.more:hover:not(:disabled) {
+    border: none;
+    color: var(--text-primary, #e6edf3);
+    background: color-mix(
+      in srgb,
+      var(--text-primary, #e6edf3) 12%,
+      transparent
+    );
+  }
+}
+
+.more.more[aria-expanded='true'] {
+  border: none;
+  color: var(--text-primary, #e6edf3);
+  background: color-mix(in srgb, var(--text-primary, #e6edf3) 16%, transparent);
+}
+
+.more.more:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+/* Speed is in More and is not 1x: a dot says More holds something set. */
+.moreSlot[data-dot='true']::after {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, #58a6ff);
+  pointer-events: none;
+  content: '';
+}
+
+/* In focus mode More also holds the dock, the layout and the stage
+   panels: more rows than a short window has room for, so it scrolls
+   rather than running off the bottom (8 px clear, as popovers are). */
+.morePanel.morePanel {
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.morePanel > * {
+  flex-shrink: 0;
+}
+
+/* ── Docked to a side edge ─────────────────────────────────────────────
+   Each group is a row and the groups stack: thirteen controls in one
+   column would need about 400 px at 28 px, more than a phone on its side
+   has. */
+
+.capsule[data-vertical='true'] {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.capsule[data-vertical='true'] .divider {
+  align-self: stretch;
+  width: auto;
+  height: 1px;
+  margin: 2px 0;
+}
+
+/* A finger needs 44 px, and the play button a little more. */
+@media (pointer: coarse) {
+  .capsule {
+    --mixer-control-size: 44px;
+    --mixer-control-radius: 12px;
+    --mixer-group-gap: 4px;
+  }
+
+  .btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .markGlyph {
+    width: 20px;
+    height: 20px;
+  }
+
+  .moreSlot[data-dot='true']::after {
+    top: 8px;
+    right: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic[data-state='on'] {
+    animation: none;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.4);
+  }
+
+  .btn {
+    transition: none;
+  }
+}

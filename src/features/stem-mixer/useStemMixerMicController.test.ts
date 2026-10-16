@@ -18,6 +18,8 @@ const micManager = {
   acquire: vi.fn(),
   release: vi.fn(),
   getStream: vi.fn(() => null as MediaStream | null),
+  getResolvedDevice: vi.fn(() => null as string | null),
+  getPreferredDevice: vi.fn(() => null as string | null),
   subscribe: vi.fn((listener: (state: MicState) => void) => {
     listeners.add(listener)
     listener(managerState)
@@ -69,6 +71,29 @@ describe('useStemMixerMicController', () => {
     micManager.acquire.mockReset()
     micManager.release.mockReset()
     micManager.getStream.mockReturnValue(null)
+  })
+
+  it('judges the singer against what the key shifter let them hear', () => {
+    const root = createRoot((dispose) => ({
+      controller: useStemMixerMicController({
+        getAudioCtx: () => ({}) as AudioContext,
+        ensureAudioCtx: () => ({}) as AudioContext,
+        outputDelaySec: () => 0.12,
+      }),
+      dispose,
+    }))
+
+    // Half a second of matching frames at 30 Hz.
+    for (let frame = 0; frame <= 15; frame++)
+      root.controller.pushComparison(frame / 30, 440, 440)
+
+    const points = root.controller.comparisonData()
+    expect(points.length).toBeGreaterThan(0)
+    // Each frame is judged against the song 0.12 s earlier...
+    expect(points.at(-1)?.time).toBeCloseTo(15 / 30 - 0.12, 9)
+    // ...and nothing before the song had reached the speakers.
+    expect(points[0].time).toBeGreaterThanOrEqual(0)
+    root.dispose()
   })
 
   it('clears a stale cross-tab error after a successful microphone handoff', async () => {

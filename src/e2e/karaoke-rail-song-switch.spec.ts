@@ -143,15 +143,17 @@ test('a rail tap lands on that song, and the next tap swaps the audio with it', 
   await railRow('Rail Song Two').click()
   await expect(page).toHaveURL(/#\/karaoke\/session\/[^/]+\/mixer$/)
   const header = page.locator('.sm-header')
+  // The song's length is said once, at the end of the timeline.
+  const length = page.getByTestId('mixer-time-total')
   await expect(header).toContainText('Rail Song Two', { timeout: 15_000 })
-  await expect(header).toContainText('0:02', { timeout: 15_000 })
+  await expect(length).toHaveText('0:02', { timeout: 15_000 })
 
   // The switch under test: a second rail tap from INSIDE the mixer.
   await railRow('Rail Song Four').click()
   await expect(header).toContainText('Rail Song Four', { timeout: 15_000 })
   // The duration can only come from the newly decoded audio — the stale
   // mixer kept the old song's 0:02 here.
-  await expect(header).toContainText('0:04', { timeout: 15_000 })
+  await expect(length).toHaveText('0:04', { timeout: 15_000 })
 
   const aftermath = await page.evaluate(() => {
     const win = window as unknown as Record<string, unknown>

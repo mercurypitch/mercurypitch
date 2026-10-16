@@ -1,0 +1,78 @@
+/* SpeedChip: the speed on a chip the rail's height, at a fixed width, so
+   the rail does not move when the speed changes. The doubled class
+   outranks OverflowMenu's own trigger sizing (a 44px floor meant for card
+   lists), whatever order the two stylesheets load in.
+
+   It reads the rail's size and corners (MixerCapsule.module.css). The
+   stage is dark in every theme, so its tints are plain rgba. */
+
+.chip.chip {
+  gap: 4px;
+  /* "0.75x" and the chevron. */
+  width: 56px;
+  min-width: 0;
+  height: var(--mixer-control-size, 28px);
+  min-height: 0;
+  padding: 0 6px 0 8px;
+  border: none;
+  border-radius: var(--mixer-control-radius, 8px);
+  color: var(--text-secondary, #a8b3bf);
+  background: rgba(230, 237, 243, 0.06);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Under the pointer, the tint the rail's buttons take, not the menu
+   trigger's solid hover, which on the glass reads as a box. Qualified to
+   outrank OverflowMenu's trigger states. */
+@media (hover: hover) {
+  .chip.chip:hover:not(:disabled) {
+    border: none;
+    color: var(--text-primary, #e6edf3);
+    background: rgba(230, 237, 243, 0.12);
+  }
+}
+
+/* Not 1x: the chip says so in the accent, so a slowed song is never a
+   surprise. */
+.chip.changed.changed {
+  color: var(--accent, #58a6ff);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+}
+
+.chip.chip[aria-expanded='true'] {
+  border: none;
+  box-shadow: inset 0 0 0 1px rgba(88, 166, 255, 0.5);
+}
+
+.chip.chip:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+.chip svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  opacity: 0.75;
+}
+
+.value {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+/* A short list: as wide as its rows need, not the menu default. */
+.panel.panel {
+  min-width: 7.5rem;
+}
+
+@media (pointer: coarse) {
+  .chip.chip {
+    width: 64px;
+  }
+}

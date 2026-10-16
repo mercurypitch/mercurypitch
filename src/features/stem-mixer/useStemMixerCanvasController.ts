@@ -16,6 +16,7 @@ import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import type { WaveformPeakCache } from '@/lib/waveform-peak-cache'
 import { buildWaveformPeakCache, queryWaveformPeakRange, } from '@/lib/waveform-peak-cache'
 import { liveWaveformDisplayGain, liveWaveformLaneLayout, liveWaveformPeak, liveWaveformSample, } from './live-waveform-visuals'
+import { LOOP_MIN_GAP } from './loop-points'
 import type { WordMarker } from './overview-mapping'
 import { clampOverviewWindow, columnSampleRange, nearestMarker, timeToX, visibleMarkers, } from './overview-mapping'
 import type { PitchCanvasScale } from './pitch-canvas-visuals'
@@ -57,12 +58,12 @@ export interface StemMixerCanvasDeps {
   setWindowStart: Setter<number>
   setWindowDuration: Setter<number>
   PITCH_WINDOW_FILL_RATIO: number
-  // Loop
+  // Loop: A and B in seconds, null until set
   loopEnabled: Accessor<boolean>
-  loopStart: Accessor<number>
-  loopEnd: Accessor<number>
-  setLoopStart: Setter<number>
-  setLoopEnd: Setter<number>
+  loopStart: Accessor<number | null>
+  loopEnd: Accessor<number | null>
+  setLoopStart: Setter<number | null>
+  setLoopEnd: Setter<number | null>
   // Touch callbacks
   onCanvasVerticalPinch?: (canvasId: string, deltaY: number) => void
   // Pitch edit mode
@@ -405,9 +406,9 @@ export const useStemMixerCanvasController = (
       // soon as A is set — waiting for B (the old `loopEnd() > 0` gate) meant
       // clicking A showed nothing until B closed the region. A alone draws a
       // single marker; A+B draws the shaded region plus both boundaries.
-      if (ti === 0 && (deps.loopStart() > 0 || deps.loopEnd() > 0)) {
-        const ls = deps.loopStart()
-        const le = deps.loopEnd()
+      const ls = deps.loopStart()
+      const le = deps.loopEnd()
+      if (ti === 0 && (ls !== null || le !== null)) {
         const xOf = (t: number) =>
           waveformStartX + timeToX(t, win, waveformWidth)
         const drawMarker = (t: number, color: string, label: string) => {
@@ -426,8 +427,8 @@ export const useStemMixerCanvasController = (
         }
 
         // Region shade only once both ends exist.
-        if (le > 0) {
-          const lx1 = xOf(ls)
+        if (le !== null) {
+          const lx1 = xOf(ls ?? 0)
           const lx2 = xOf(le)
           if (lx2 > waveformStartX && lx1 < waveformEndX) {
             ctx.fillStyle = 'rgba(88, 166, 255, 0.08)'
@@ -438,15 +439,15 @@ export const useStemMixerCanvasController = (
         // Boundary lines: the enabled A+B loop keeps its bright markers; an
         // A-only (or not-yet-enabled) selection shows dimmer "pending" ones so
         // the click registers visually without implying an active loop.
-        const active = deps.loopEnabled() && le > 0
-        if (ls > 0) {
+        const active = deps.loopEnabled() && le !== null
+        if (ls !== null) {
           drawMarker(
             ls,
             active ? 'rgba(88,166,255,0.9)' : 'rgba(88,166,255,0.5)',
             'A',
           )
         }
-        if (le > 0) {
+        if (le !== null) {
           drawMarker(
             le,
             active ? 'rgba(255,123,114,0.9)' : 'rgba(255,123,114,0.5)',
@@ -1289,7 +1290,6 @@ export const useStemMixerCanvasController = (
   // ── Loop marker drag state (mutable refs — no rendering) ─────
 
   const LOOP_HIT_PX = 8 // pixel tolerance for hit-testing markers
-  const LOOP_MIN_GAP = 0.1 // minimum seconds between A and B
   let loopDragTarget: 'A' | 'B' | null = null
 
   let mousePanActive = false
@@ -1365,18 +1365,19 @@ export const useStemMixerCanvasController = (
     clientX: number,
     canvas: HTMLCanvasElement,
   ): 'A' | 'B' | null => {
-    if (deps.loopEnd() <= 0) return null
+    const loopEnd = deps.loopEnd()
+    if (loopEnd === null) return null
     const rect = canvas.getBoundingClientRect()
     const winStart = deps.windowStart()
     const winDur = deps.windowDuration()
     const { waveformStartX, waveformWidth } = liveWaveformLaneLayout(rect.width)
 
     const axPx =
-      ((deps.loopStart() - winStart) / winDur) * waveformWidth +
+      (((deps.loopStart() ?? 0) - winStart) / winDur) * waveformWidth +
       waveformStartX +
       rect.left
     const bxPx =
-      ((deps.loopEnd() - winStart) / winDur) * waveformWidth +
+      ((loopEnd - winStart) / winDur) * waveformWidth +
       waveformStartX +
       rect.left
 
@@ -1558,20 +1559,23 @@ export const useStemMixerCanvasController = (
       e.preventDefault()
       const time = clientXToTime(e.clientX, canvas)
       const clamped = Math.max(0, Math.min(deps.duration(), time))
+      // A drag starts on a set B (getLoopMarkerAtX), and B comes with an A.
+      const loopStart = deps.loopStart() ?? 0
+      const loopEnd = deps.loopEnd() ?? deps.duration()
 
       if (loopDragTarget === 'A') {
-        if (clamped > deps.loopEnd() - LOOP_MIN_GAP) {
+        if (clamped > loopEnd - LOOP_MIN_GAP) {
           // Cross over: old B becomes A, and we are now dragging B
-          deps.setLoopStart(deps.loopEnd() - LOOP_MIN_GAP)
+          deps.setLoopStart(loopEnd - LOOP_MIN_GAP)
           deps.setLoopEnd(clamped + LOOP_MIN_GAP)
           loopDragTarget = 'B'
         } else {
           deps.setLoopStart(clamped)
         }
       } else {
-        if (clamped < deps.loopStart() + LOOP_MIN_GAP) {
+        if (clamped < loopStart + LOOP_MIN_GAP) {
           // Cross over: old A becomes B, and we are now dragging A
-          deps.setLoopEnd(deps.loopStart() + LOOP_MIN_GAP)
+          deps.setLoopEnd(loopStart + LOOP_MIN_GAP)
           deps.setLoopStart(Math.max(0, clamped - LOOP_MIN_GAP))
           loopDragTarget = 'A'
         } else {
@@ -1607,7 +1611,7 @@ export const useStemMixerCanvasController = (
       const isOverview = isOverviewCanvas(canvas)
       if (isOverview && getWordMarkerAtX(e.clientX, canvas) !== null) {
         canvas.style.cursor = 'ew-resize'
-      } else if (isOverview && deps.loopEnabled() && deps.loopEnd() > 0) {
+      } else if (isOverview && deps.loopEnabled() && deps.loopEnd() !== null) {
         const hit = getLoopMarkerAtX(e.clientX, canvas)
         canvas.style.cursor = hit ? 'ew-resize' : 'pointer'
       } else {

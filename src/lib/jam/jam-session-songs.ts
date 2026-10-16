@@ -32,6 +32,7 @@ export interface JamLyricChoice {
   /** The one the mixer last had selected. */
   active: boolean
 }
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import type { UvrSession } from '@/stores/uvr-store'
 
 /**
@@ -338,9 +339,7 @@ export function jammableSessionRows(
 ): JamSessionRow[] {
   return jammableSessions(sessions).map((session) => ({
     session,
-    title: (session.originalFile?.name ?? 'Untitled')
-      .replace(/\.[^.]+$/, '')
-      .trim(),
+    title: stripAudioExtension(session.originalFile?.name ?? 'Untitled').trim(),
     durationSec: session.stemMeta?.instrumental?.duration ?? 0,
   }))
 }

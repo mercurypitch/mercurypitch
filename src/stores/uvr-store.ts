@@ -1066,6 +1066,26 @@ export async function pruneOrphanedCompletedSessions(): Promise<number> {
 
 // ── Public API (synchronous reads, fire-and-forget DB writes) ──────
 
+/**
+ * A session this tab is separating or saving that leaving the page would
+ * lose: a local job (gone on reload, see reconcileInterruptedSessions), an
+ * upload, or stems still being written. A server job whose id was kept is
+ * not: the next load re-attaches to it.
+ */
+export function sessionLostOnLeave(
+  session: Pick<UvrSession, 'status' | 'processingMode' | 'apiSessionId'>,
+): boolean {
+  if (session.status === 'finalizing') return true
+  const recoverableServer =
+    session.processingMode === 'server' &&
+    session.apiSessionId !== undefined &&
+    session.apiSessionId !== ''
+  return (
+    (session.status === 'processing' || session.status === 'uploading') &&
+    !recoverableServer
+  )
+}
+
 /** Get all sessions (reactive -- reads sessionsVersion to track dependency) */
 export function getAllUvrSessionsReactive(): UvrSession[] {
   sessionsVersion() // track signal dependency

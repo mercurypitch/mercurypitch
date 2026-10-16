@@ -1,0 +1,74 @@
+/* Layered on ConfirmDialog.module.css's overlay and dialog. */
+
+/* Over the popover layer (9000): the key panel that opens the picker stays
+   up under its shade. */
+.overlay {
+  z-index: 10000;
+}
+
+.dialog {
+  max-width: 420px;
+}
+
+.voices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.voice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--bg-tertiary);
+  color: var(--fg-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.voice:hover {
+  background: var(--bg-hover);
+}
+
+/* The voice the song was fitted to, when the picker opens again. */
+.voice[aria-current='true'] {
+  border-color: var(--accent, #58a6ff);
+  box-shadow: inset 0 0 0 1px var(--accent, #58a6ff);
+}
+
+/* Three ways out (Voice Mirror, the song's own key, Cancel) do not fit one
+   line on a phone. */
+.actions {
+  flex-wrap: wrap;
+}
+
+.voice:focus-visible,
+.measure:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+.voiceName {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.voiceRange {
+  font-size: 0.72rem;
+  color: var(--fg-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.measure {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  margin-right: auto;
+  text-decoration: none;
+}

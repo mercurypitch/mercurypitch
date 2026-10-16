@@ -1,0 +1,316 @@
+/* MixerHeader: the mixer's top row, on the stage itself (the playback rail
+   under it is the one glass bar). The header is the size container its
+   words fold by; header-fold.ts folds the view controls into the View menu.
+
+   Sizes follow the rail's: 28 px controls on a mouse, 44 px on a coarse
+   pointer, 8 and 12 px corners, 2 and 4 px between neighbours. The stage
+   is dark in every theme, so its tints are plain rgba. */
+
+.header {
+  --hdr-size: 28px;
+  --hdr-radius: 8px;
+  --hdr-gap: 2px;
+
+  container: mixer-header / inline-size;
+
+  position: relative;
+  z-index: 6;
+  flex-shrink: 0;
+  padding: 8px 16px 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: calc(var(--hdr-size) + 16px);
+  min-width: 0;
+}
+
+/* ── The song ───────────────────────────────────────────────────────── */
+
+.titles {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.title {
+  overflow: hidden;
+  margin: 0;
+  color: var(--text-primary, #e6edf3);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  /* The stage behind it is a photograph: a soft shadow keeps the words off
+     its bright patches without drawing a band. */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+}
+
+.sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.singer {
+  color: var(--text-primary, #e6edf3);
+  font-weight: 500;
+}
+
+.song {
+  flex: none;
+}
+
+.next {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlistControls {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.playlistControls button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary, #a8b3bf);
+  background: rgba(230, 237, 243, 0.06);
+  cursor: pointer;
+}
+
+.playlistControls button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.playlistControls button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--hdr-gap);
+}
+
+.divider {
+  display: block;
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 6px;
+  background: rgba(230, 237, 243, 0.14);
+}
+
+.slot {
+  display: inline-flex;
+}
+
+/* A header button: an icon, and a word while there is room. Doubled where
+   it sits on a shared control (the menu trigger, the link) to outrank that
+   control's own sizing, whatever order the sheets load in. */
+.hb,
+.hb.hb {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: var(--hdr-size);
+  height: var(--hdr-size);
+  min-height: 0;
+  padding: 0 10px 0 8px;
+  border: none;
+  border-radius: var(--hdr-radius);
+  color: var(--text-secondary, #a8b3bf);
+  background: rgba(230, 237, 243, 0.06);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.hb svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+@media (hover: hover) {
+  .hb.hb:hover:not([aria-disabled='true']) {
+    color: var(--text-primary, #e6edf3);
+    background: rgba(230, 237, 243, 0.12);
+  }
+}
+
+.hb.hb[aria-pressed='true'],
+.hb.hb[aria-expanded='true'] {
+  color: var(--accent, #58a6ff);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+}
+
+.hb.hb:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+.icon.icon {
+  width: var(--hdr-size);
+  padding: 0;
+}
+
+.back.back {
+  width: var(--hdr-size);
+  padding: 0;
+  border-radius: 50%;
+}
+
+/* Layout and View: the layout's own picture and a chevron. */
+.menu.menu {
+  gap: 2px;
+  padding: 0 6px;
+}
+
+.menu.menu svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.8;
+}
+
+.layoutIcon {
+  display: inline-flex;
+}
+
+.layoutIcon svg,
+.menu.menu .layoutIcon svg {
+  width: 16px;
+  height: 16px;
+  opacity: 1;
+}
+
+.menuPanel.menuPanel {
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Open in Karaoke Night: the one way off this page, so it is drawn as a
+   way out, an outline in the accent, rather than as one more tool. */
+.kn.kn {
+  color: var(--accent, #58a6ff);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(88, 166, 255, 0.5);
+}
+
+@media (hover: hover) {
+  .kn.kn:hover:not([aria-disabled='true']) {
+    color: var(--accent, #58a6ff);
+    background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+  }
+}
+
+.kn.kn[aria-disabled='true'] {
+  color: var(--text-muted, #8b949e);
+  box-shadow: inset 0 0 0 1px rgba(230, 237, 243, 0.14);
+  cursor: not-allowed;
+}
+
+.out {
+  display: inline-flex;
+}
+
+.out svg,
+.kn.kn .out svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ── Short of room ───────────────────────────────────────────────────
+   Words go first; the buttons keep their names (aria-label). */
+
+@container mixer-header (max-width: 999px) {
+  .word.word {
+    width: var(--hdr-size);
+    padding: 0;
+  }
+
+  .word .label {
+    display: none;
+  }
+}
+
+/* Folded (header-fold.ts): Karaoke Night keeps only its curtains. */
+.header[data-folded='true'] .kn.kn {
+  width: var(--hdr-size);
+  padding: 0;
+}
+
+.header[data-folded='true'] .kn .label,
+.header[data-folded='true'] .kn .out {
+  display: none;
+}
+
+/* A finger: 44 px squares, and no words beside them. */
+@media (pointer: coarse) {
+  .header {
+    --hdr-size: 44px;
+    --hdr-radius: 12px;
+    --hdr-gap: 4px;
+  }
+
+  .word.word {
+    width: var(--hdr-size);
+    padding: 0;
+  }
+
+  .word .label {
+    display: none;
+  }
+
+  .hb svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hb {
+    transition: none;
+  }
+}

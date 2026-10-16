@@ -1,4 +1,5 @@
 import { encodeAudioBufferToMonoPcmWav } from '@/lib/audio-buffer-wav'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 
 const OUTPUT_SAMPLE_RATE = 44_100
 
@@ -81,7 +82,7 @@ export async function decodeGuidedExerciseAudio(
 }
 
 function clipName(name: string, durationMs: number): string {
-  const stem = name.replace(/\.[^.]+$/, '').trim() || 'example-audio'
+  const stem = stripAudioExtension(name).trim() || 'example-audio'
   const seconds = (durationMs / 1000)
     .toFixed(durationMs % 1000 === 0 ? 0 : 1)
     .replace('.', 'p')

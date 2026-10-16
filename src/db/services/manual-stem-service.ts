@@ -8,6 +8,7 @@
 // other separated session.
 
 import { deleteStemBlobs, hydrateStemUrls, saveStemBlob, } from '@/db/services/uvr-service'
+import { stripAudioExtension } from '@/lib/audio-file-name'
 import { completeUvrSession, getUvrSession, setUvrSessionProvider, startUvrSession, } from '@/stores/app-store'
 
 type StemType = 'vocal' | 'instrumental'
@@ -46,7 +47,7 @@ export async function createManualStemSession(
   if (stems.length === 0) return null
 
   const first = stems[0].file
-  const name = input.songName.trim() || first.name.replace(/\.[^.]+$/, '')
+  const name = input.songName.trim() || stripAudioExtension(first.name)
   const sessionId = startUvrSession(
     name,
     first.size,

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const STEM_DENOISE_KEY = 'pitchperfect_stem_denoise'
 const AUTO_INDEX_KEY = 'pitchperfect_karaoke_auto_index_shazam'
+const KEEP_DRUMS_KEY = 'pitchperfect_karaoke_key_keep_drums'
 
 /** The store reads localStorage at import time, so each case needs a fresh one. */
 const loadStore = async () => {
@@ -43,5 +44,15 @@ describe('karaoke settings store', () => {
 
     const reloaded = await loadStore()
     expect(reloaded.karaokeAutoIndexShazam()).toBe(false)
+  })
+
+  it('keeps the drums out of a key change unless told otherwise', async () => {
+    const store = await loadStore()
+    expect(store.karaokeKeyKeepDrums()).toBe(true)
+
+    store.setKaraokeKeyKeepDrums(false)
+    expect(localStorage.getItem(KEEP_DRUMS_KEY)).toBe('false')
+    const reloaded = await loadStore()
+    expect(reloaded.karaokeKeyKeepDrums()).toBe(false)
   })
 })
