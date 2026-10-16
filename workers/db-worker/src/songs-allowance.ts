@@ -23,10 +23,11 @@
 // the web are not spendable in the app in V1), plus the one free song a
 // month of a signed-in singer without the subscription (S7 D5), which is
 // never a credit: appSongs() below, and app-songs.ts for the requests that
-// spend them. Songs granted for Play's review (review-access.ts) are the
-// app's to spend too: after the subscription's, and never counted by the
-// cap. The web touches them as it does the subscription's songs, only once
-// its own credits run out.
+// spend them. Songs granted for Play's review (review-access.ts) and the
+// app's launch gift (launch-offer.ts, S7b E6) are the app's to spend too:
+// after the subscription's, and never counted by the cap. The web touches
+// them as it does the subscription's songs, only once its own credits run
+// out.
 
 /** The RevenueCat entitlement the subscription unlocks, and the server's
  *  `entitlements.feature` that mirrors it (plan S7 §3.9). */
@@ -121,6 +122,13 @@ export const FREE_SONG_BACK = 'free-song-back'
  *  account (review-access.ts). */
 export const REVIEW_ACCESS = 'review-access'
 
+/** The ledger reason of the native app's launch gift: songs for an account
+ *  made in the app while the launch gift runs, written with its claim of the
+ *  featured promo code, so once per account and per address
+ *  (launch-offer.ts, S7b E6). The app's to spend after review access's, and
+ *  never counted by the cap. Never a code anybody types: App Review 3.1.1. */
+export const APP_GIFT = 'app-gift'
+
 /** A creditLedger row, as the songs walk reads it. */
 export interface LedgerRow {
   delta: number
@@ -153,10 +161,13 @@ export interface SubscriptionSongs {
   periods: PeriodSongs[]
   /** Review access's songs not yet spent: the app's, never capped. */
   review: number
+  /** The launch gift's songs not yet spent: the app's, never capped. */
+  gift: number
 }
 
-/** Where a separation's songs came from: a period, or review access's. */
-type Source = PeriodSongs | 'review'
+/** Where a separation's songs came from: a period, review access's, or the
+ *  launch gift's. */
+type Source = PeriodSongs | 'review' | 'gift'
 
 /** The walk's state: every period so far, and what each separation took. */
 interface SongsWalk {
@@ -165,12 +176,13 @@ interface SongsWalk {
   balance: number
   periods: PeriodSongs[]
   review: number
+  gift: number
   /** Per separation job, what it spent from where. */
   takenBy: Map<string, Array<[Source, number]>>
 }
 
 /** Spends `songs` from the periods, the oldest first, then from review
- *  access's; says what each gave. */
+ *  access's, then from the launch gift's; says what each gave. */
 function spendSongs(walk: SongsWalk, songs: number): Array<[Source, number]> {
   const taken: Array<[Source, number]> = []
   let owed = songs
@@ -187,7 +199,13 @@ function spendSongs(walk: SongsWalk, songs: number): Array<[Source, number]> {
   const fromReview = Math.min(walk.review, Math.max(0, owed))
   if (fromReview > 0) {
     walk.review -= fromReview
+    owed -= fromReview
     taken.push(['review', fromReview])
+  }
+  const fromGift = Math.min(walk.gift, Math.max(0, owed))
+  if (fromGift > 0) {
+    walk.gift -= fromGift
+    taken.push(['gift', fromGift])
   }
   return taken
 }
@@ -198,7 +216,10 @@ function spendOnTheWeb(
   walk: SongsWalk,
   songs: number,
 ): Array<[Source, number]> {
-  const credits = Math.max(0, walk.balance - walk.held - walk.review)
+  const credits = Math.max(
+    0,
+    walk.balance - walk.held - walk.review - walk.gift,
+  )
   return spendSongs(walk, Math.max(0, songs - credits))
 }
 
@@ -236,6 +257,8 @@ function giveBack(walk: SongsWalk, row: LedgerRow, songs: number): void {
     const give = Math.min(spent, back)
     if (source === 'review') {
       walk.review += give
+    } else if (source === 'gift') {
+      walk.gift += give
     } else {
       source.left += give
       walk.held += give
@@ -290,7 +313,8 @@ function isSandbox(row: LedgerRow): boolean {
 }
 
 /** A row that adds songs: a period's grant, a reversed refund's, review
- *  access's, or a separation's refund. Other credits are the singer's own. */
+ *  access's, the launch gift's, or a separation's refund. Other credits are
+ *  the singer's own. */
 function readCredit(walk: SongsWalk, row: LedgerRow, delta: number): void {
   if (isPeriodGrant(row)) {
     walk.periods.push({
@@ -306,6 +330,8 @@ function readCredit(walk: SongsWalk, row: LedgerRow, delta: number): void {
     restorePeriod(walk, row, delta)
   } else if (row.reason === REVIEW_ACCESS) {
     walk.review += delta
+  } else if (row.reason === APP_GIFT) {
+    walk.gift += delta
   } else if (row.reason === SEPARATION_REFUND) {
     giveBack(walk, row, delta)
   }
@@ -364,29 +390,39 @@ export function subscriptionSongs(
     balance: 0,
     periods: [],
     review: 0,
+    gift: 0,
     takenBy: new Map(),
   }
   for (const row of rows) readRow(walk, row)
-  return { held: walk.held, periods: walk.periods, review: walk.review }
+  return {
+    held: walk.held,
+    periods: walk.periods,
+    review: walk.review,
+    gift: walk.gift,
+  }
 }
 
 /** The web's own credits after each row, walking the ledger the same way:
- *  the balance so far less the subscription's songs and review access's,
- *  never below zero. withdrawal-rules.ts counts a pack's unused credits
- *  from it, a row at a time. */
+ *  the balance so far less the subscription's songs, review access's and the
+ *  launch gift's, never below zero. withdrawal-rules.ts counts a pack's
+ *  unused credits from it, a row at a time. */
 export function webCreditsAfterEach(rows: readonly LedgerRow[]): number[] {
   const walk: SongsWalk = {
     held: 0,
     balance: 0,
     periods: [],
     review: 0,
+    gift: 0,
     takenBy: new Map(),
   }
   return rows.map((row) => {
     readRow(walk, row)
     return Math.max(
       0,
-      walk.balance - Math.max(0, walk.held) - Math.max(0, walk.review),
+      walk.balance -
+        Math.max(0, walk.held) -
+        Math.max(0, walk.review) -
+        Math.max(0, walk.gift),
     )
   })
 }
@@ -588,16 +624,19 @@ export function freeSong(
 }
 
 /** The songs the native app can spend: the subscription's, review
- *  access's, and the month's free song. Credits bought on the web, promo
- *  credits and testing allowances are not among them (owner, S7 D9). */
+ *  access's, the launch gift's, and the month's free song. Credits bought on
+ *  the web, promo credits and testing allowances are not among them (owner,
+ *  S7 D9). */
 export interface AppSongs {
   /** Subscription songs not yet spent. */
   held: number
   /** Review access's songs not yet spent. */
   review: number
+  /** The launch gift's songs not yet spent. */
+  gift: number
   /** The month's free song, while it is there: 1, else 0. */
   free: number
-  /** What the app can spend: all three together. */
+  /** What the app can spend: all four together. */
   left: number
   /** The key the free song's claim is written under, if the app spends it. */
   freeKey: string
@@ -613,12 +652,14 @@ export function appSongs(
   const songs = subscriptionSongs(rows)
   const held = Math.max(0, songs.held)
   const review = Math.max(0, songs.review)
+  const gift = Math.max(0, songs.gift)
   const free = freeSong(rows, userId, songMonth(nowMs), monthly, emailHad)
   return {
     held,
     review,
+    gift,
     free: free.left,
-    left: held + review + free.left,
+    left: held + review + gift + free.left,
     freeKey: free.nextKey,
   }
 }

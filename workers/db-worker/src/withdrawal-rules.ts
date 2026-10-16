@@ -58,7 +58,7 @@
 // Croatia is never shut out before their own midnight. The mails and the
 // Terms still say 14 days.
 
-import { APP_SEPARATION, REVIEW_ACCESS, SEPARATION_REFUND, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND_REVERSED, SUBSCRIPTION_SANDBOX, SUBSCRIPTION_SANDBOX_MOVED_IN, WEB_SEPARATION, webCreditsAfterEach, } from './songs-allowance'
+import { APP_GIFT, APP_SEPARATION, REVIEW_ACCESS, SEPARATION_REFUND, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND_REVERSED, SUBSCRIPTION_SANDBOX, SUBSCRIPTION_SANDBOX_MOVED_IN, WEB_SEPARATION, webCreditsAfterEach, } from './songs-allowance'
 import type { ChargeState } from './stripe-charge'
 import { anyDisputeHolds, refundBarredByDispute } from './stripe-charge'
 import { PACK_PURCHASE, PURCHASE_DISPUTE, PURCHASE_REFUND, WITHDRAWAL_BONUS, WITHDRAWAL_PAID, } from './stripe-payments'
@@ -126,6 +126,7 @@ const APP_SONGS: ReadonlySet<string | null> = new Set([
   SUBSCRIPTION_SANDBOX_MOVED_IN,
   SUBSCRIPTION_REFUND_REVERSED,
   REVIEW_ACCESS,
+  APP_GIFT,
 ])
 
 /** A pack being counted: its two pools, as they stand so far. */
