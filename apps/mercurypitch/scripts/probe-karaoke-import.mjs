@@ -20,7 +20,7 @@
 //     guard may be. The stems are MP3 as the deployed handler writes them
 //     (owner, 28 Sep: no new RunPod image), made from a take in the
 //     repository;
-//   - the room's options and Settings count the songs; Restore purchases
+//   - the room's options and Settings count the songs; Restore purchase
 //     and Subscribe fail closed, since no store is there yet (owner, 27 Sep);
 //   - the song's own menu removes it from this phone;
 //   - with no songs and no subscription, Import is the Cloud offer (paywall
@@ -1092,43 +1092,68 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       )
     }
     await songsRow.tap()
-    at = 'Settings, Karaoke'
-    await visible('[data-testid="karaoke-settings-screen"]')
+    // The songs left are Mercury Pitch Cloud's, in Settings itself (S7b
+    // §5): the row opens Settings, where the Cloud group stands above the
+    // rooms; the songs on this phone are still Karaoke's own screen's.
+    at = 'Settings, Mercury Pitch Cloud'
+    await visible('[data-testid="settings-screen"]')
     await settle(600)
     const settingsRows = await page.evaluate(readSettingsRows, [
-      'karaoke-subscription',
-      'karaoke-songs-left',
-      'karaoke-manage',
-      'karaoke-restore',
-      'karaoke-imported-songs',
-      'karaoke-remove-imported',
+      'cloud-status',
+      'cloud-songs-left',
+      'cloud-plan',
+      'cloud-manage',
+      'cloud-restore',
     ])
     const wantRows = {
-      'karaoke-subscription':
-        /^Subscribed, renews on 27 October \| 20 songs a month$/u,
-      'karaoke-songs-left': /^Songs this month \| 17 of 20 left$/u,
-      'karaoke-manage': null,
-      'karaoke-restore': /^Restore purchases$/u,
-      'karaoke-imported-songs':
-        /^Imported songs \| 1 song · \d+(\.\d)? (KB|MB)$/u,
-      'karaoke-remove-imported': /^Remove imported songs$/u,
+      'cloud-status': /^Subscribed, renews on 27 October \| 20 songs a month$/u,
+      'cloud-songs-left': /^Songs this month \| 17 of 20 left$/u,
+      'cloud-plan': null,
+      'cloud-manage': null,
+      'cloud-restore': /^Restore purchase$/u,
     }
     for (const [id, want] of Object.entries(wantRows)) {
       const row = settingsRows[id]
       if (want === null ? row !== null : row === null || !want.test(row)) {
-        throw new Error(`Settings, Karaoke: ${id} reads ${JSON.stringify(row)}`)
+        throw new Error(`Settings, Cloud: ${id} reads ${JSON.stringify(row)}`)
       }
     }
-    await page.locator('[data-settings-row="karaoke-restore"]').tap()
+    await page.locator('[data-settings-row="cloud-restore"]').tap()
     await visible('text=Purchases are not available yet.')
     const settingsScreen =
-      '[data-testid="shell-pushed"]:has([data-testid="karaoke-settings-screen"])'
+      '[data-testid="shell-pushed"]:has([data-testid="settings-screen"])'
     said(
-      'Settings, Karaoke',
+      'Settings, Mercury Pitch Cloud',
       (await page.locator(settingsScreen).textContent()) ?? '',
     )
     await shoot(page, ctx, 'import-settings')
-    read.push(await sideways('Settings, Karaoke', settingsScreen))
+    read.push(await sideways('Settings, Mercury Pitch Cloud', settingsScreen))
+    at = 'Settings, Karaoke'
+    await page.locator('[data-settings-row="rooms-karaoke"]').tap()
+    await visible('[data-testid="karaoke-settings-screen"]')
+    await settle(600)
+    const karaokeRows = await page.evaluate(readSettingsRows, [
+      'karaoke-imported-songs',
+      'karaoke-remove-imported',
+    ])
+    const wantKaraoke = {
+      'karaoke-imported-songs':
+        /^Imported songs \| 1 song · \d+(\.\d)? (KB|MB)$/u,
+      'karaoke-remove-imported': /^Remove imported songs$/u,
+    }
+    for (const [id, want] of Object.entries(wantKaraoke)) {
+      const row = karaokeRows[id]
+      if (row === null || !want.test(row)) {
+        throw new Error(`Settings, Karaoke: ${id} reads ${JSON.stringify(row)}`)
+      }
+    }
+    const karaokeScreen =
+      '[data-testid="shell-pushed"]:has([data-testid="karaoke-settings-screen"])'
+    said(
+      'Settings, Karaoke',
+      (await page.locator(karaokeScreen).textContent()) ?? '',
+    )
+    read.push(await sideways('Settings, Karaoke', karaokeScreen))
     for (let back = 0; back < 3; back += 1) {
       const pushed = page.locator('[data-testid="shell-pushed-back"]')
       if ((await pushed.count()) === 0) break
@@ -1137,7 +1162,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     }
     await visible('[data-testid="karaoke-room"]')
     steps.push(
-      `karaoke import: the options say "Songs this month: 17 of 20 left" and open Settings, Karaoke: "${settingsRows['karaoke-subscription']}", "${settingsRows['karaoke-imported-songs']}", no Manage without a store; Restore purchases says "Purchases are not available yet."`,
+      `karaoke import: the options say "Songs this month: 17 of 20 left" and open Settings, where Mercury Pitch Cloud says "${settingsRows['cloud-status']}", "${settingsRows['cloud-songs-left']}", no See the plan for a subscriber, no Manage without a store, and Restore purchase says "Purchases are not available yet."; Settings, Karaoke keeps "${karaokeRows['karaoke-imported-songs']}"`,
     )
 
     // ── Removed from this phone ──────────────────────────────

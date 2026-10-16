@@ -19,7 +19,6 @@
 
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
-import { karaokeSongs, songsOptionRow, } from '@/features/karaoke-room/karaoke-songs'
 import { thisDevice, thisDeviceLower } from '@/lib/device-noun'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { theme, themeSource } from '@/stores/theme-store'
@@ -30,6 +29,7 @@ import { offerCardShown } from './account-offer'
 import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
 import { AccountOfferCard } from './AccountOffer'
 import { appearanceLabel } from './AppearanceScreen'
+import { CloudGroup } from './CloudGroup'
 import { deviceFacts, loadDeviceFacts } from './device-facts'
 import { knownInput } from './level-check'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
@@ -175,6 +175,10 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
           </SettingsGroup>
         </div>
         <div class="mp-set__col">
+          {/* Mercury Pitch Cloud, in a build that sells it: how it stands,
+              the songs left, the plan, Manage and Restore (S7b §5). A plain
+              conditional, so a store build folds it away (CloudGroup). */}
+          {KARAOKE_IMPORT ? <CloudGroup /> : null}
           {/* The rooms keep their own options behind their own gear. Sing's
               row only says where; Karaoke's opens the two of its settings a
               singer may look for here (plan S8 §9). */}
@@ -185,22 +189,17 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
               label="Sing"
               sub="Its options are behind the room's gear"
             />
-            {/* A build that imports songs has the subscription and the
-                songs on this device there too, and the songs left show here
-                at a glance (mock 9a), as /me last said them. */}
+            {/* A build that imports songs has the songs on this device
+                there too; the subscription and the songs left are Cloud's,
+                in the group above. */}
             <SettingsRow
               id="rooms-karaoke"
               icon={<KaraokeIcon />}
               label="Karaoke"
               sub={
                 KARAOKE_IMPORT
-                  ? `Subscription, songs on ${thisDeviceLower()}, lyrics`
+                  ? `Songs on ${thisDeviceLower()}, lyrics`
                   : 'Text size and the next song'
-              }
-              value={
-                KARAOKE_IMPORT
-                  ? songsOptionRow(karaokeSongs())?.value
-                  : undefined
               }
               onPress={() => {
                 props.onPush('karaoke')

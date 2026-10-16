@@ -749,7 +749,9 @@ export const KaraokeRoomStage: Component = () => {
         songsRow={() =>
           KARAOKE_IMPORT ? songsOptionRow(karaokeSongs()) : null
         }
-        onSongs={() => nativeShellApi()?.pushSettings('karaoke')}
+        // The songs left are Mercury Pitch Cloud's, in Settings itself
+        // (S7b §5), not Karaoke's own screen.
+        onSongs={() => nativeShellApi()?.pushSettings()}
         onManageSongs={
           nativeShellApi()?.openKaraokeStudio === undefined
             ? undefined

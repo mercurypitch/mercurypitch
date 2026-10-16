@@ -199,6 +199,7 @@ const KARAOKE_STAGE_2 = [
   ['karaoke-room-imports', 'the import queue'],
   ['Remove imported songs', 'Settings and Storage for imported songs'],
   ['Songs this month', 'the songs left, in the room and in Settings'],
+  ['See the plan', "Settings' Mercury Pitch Cloud group"],
   ['RevenueCatUI', "the store's paywall and subscription pages (RevenueCat)"],
   // The premium exercises ride the same subscription and the same switch
   // (PREMIUM_EXERCISES, src/lib/native-build.ts): in every build that

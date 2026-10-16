@@ -12,8 +12,9 @@
 // An iPhone's window opens only for a song that keeps playing in the
 // background (useKaraokePictureInPicture.ts), and its row says so.
 //
-// A build that imports songs (Stage 2) adds two groups above them, the
-// subscription and the songs on this phone (KaraokeSongsGroups.tsx).
+// A build that imports songs (Stage 2) adds the songs on this phone above
+// them, and on Android Play's review access (KaraokeSongsGroups.tsx). The
+// subscription is Mercury Pitch Cloud's, in Settings itself (CloudGroup.tsx).
 
 import { Capacitor } from '@capacitor/core'
 import type { JSX } from 'solid-js'
@@ -26,7 +27,7 @@ import { SettingsChoice, SettingsGroup, SettingsRow } from './SettingsList'
 import { SettingsSwitch } from './SettingsSwitch'
 
 /**
- * Stage 2's two groups. A plain conditional on the constant, which a store
+ * Stage 2's groups. A plain conditional on the constant, which a store
  * build folds to nothing, so KaraokeSongsGroups and all it reaches drop out
  * of that bundle (a `<Show when={KARAOKE_IMPORT}>` would keep its children).
  */
