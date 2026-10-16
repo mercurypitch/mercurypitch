@@ -16,11 +16,18 @@
 // wave lit, his happy face; the result, idle, or a cheer on a new best.
 
 import type { MercState } from '@/lib/merc/constants'
-import type { MercVoice } from '@/lib/merc/sim'
 import type { GlideMouth } from '@/lib/merc/sim-glide'
 import { PLAYHEAD_X, WAVE } from './bay-geometry'
 import { ABOVE_CREST_W, MERC_INTRO_X, pitchY, UNDER_ROOT_W, zoomAt, } from './bay-layout'
 import type { BayScroll } from './bay-scroll'
+
+// His feet's easing and his own sound at the intro: every glide room's.
+export {
+  INTRO_HUM_LEVEL,
+  introHum,
+  RIDE_TAU_SEC,
+  rideStep,
+} from '@/components/room-kit/glide/glide-ride'
 
 /** What the run is doing, as Merc's choreography sees it. */
 export type RideMoment =
@@ -53,9 +60,6 @@ export const RIDE_STATES: Readonly<Record<RideMoment, MercState>> = {
  */
 export const LIP_MOUTH: GlideMouth = 'buzz'
 
-/** His feet's smoothing toward the voice, s (a time constant). */
-export const RIDE_TAU_SEC = 0.08
-
 /**
  * Where his feet go for this frame (world y): on the voice while it
  * sounds, on the path (or the root, in a breath) while it does not.
@@ -72,13 +76,6 @@ export function rideTarget(
     WAVE.rootY + UNDER_ROOT_W,
     Math.max(WAVE.crestY - ABOVE_CREST_W, y),
   )
-}
-
-/** One step of his feet toward `target`, `dt` seconds on. */
-export function rideStep(current: number, target: number, dt: number): number {
-  if (!(dt > 0)) return current
-  const k = 1 - Math.exp(-dt / RIDE_TAU_SEC)
-  return current + (target - current) * k
 }
 
 /**
@@ -103,21 +100,4 @@ export function rideX(t: number, countIn: number): number {
 export function rideXOn(scroll: BayScroll, t: number): number {
   const ahead = scroll.at(t) - scroll.camera(t)
   return rideX(t, scroll.countIn) + zoomAt(scroll.zoom(t)).sx * ahead
-}
-
-/** How strongly he buzzes on his own at the intro, 0..1. */
-export const INTRO_HUM_LEVEL = 0.45
-
-/**
- * His own buzz at the intro, on the first wave's root: a picture of what
- * to do (nothing sounds).
- */
-export function introHum(root: number): MercVoice {
-  return {
-    voiced: true,
-    cents: 0,
-    level: INTRO_HUM_LEVEL,
-    steady: 1,
-    midi: root,
-  }
 }
