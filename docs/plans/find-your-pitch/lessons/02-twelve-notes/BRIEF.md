@@ -151,8 +151,8 @@ direction: it never asks semitone or tone.
 - "♯ = up a semitone", "♭ = down a semitone", C♯ and D♭ on one key; "black = sharps?", the
   pills "black key" and "white key", the check on "white key" and "E♯ = F".
 - "C#4" in the house-style labels, under "How MercuryPitch's pitch line labels notes".
-- The cents ruler, labelled as the film's own ("PITCH-LINE NAMES" over the names, "CENTS ABOVE A3"
-  over the cents): the readout running 0 to 100, then "100 ¢"; "1200 ¢ = 1 octave"; the monitor's
+- The cents ruler and its magnifier inset, labelled as the film's own ("PITCH-LINE NAMES" over the
+  names, "CENTS ABOVE A3" over the cents): the readout running 0 to 100, then "100 ¢"; "1200 ¢ = 1 octave"; the monitor's
   name flip at 50 ¢.
 - The slide drawn on the lanes; the app's "you are here" marker naming A4, A#4, A4 beside orange's
   line, and the monitor's marker in the middle; then, with nothing of the app's drawing left, "Your
