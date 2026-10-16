@@ -5,6 +5,37 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.19] - 2026-10-16
+
+Karaoke songs can now change key, and the mixer has a new playback rail.
+
+### Added
+
+- **Change a song's key.** The key chip beside Speed moves a karaoke song
+  up or down, at the same tempo.
+- **Find my key** picks a key from your voice range.
+- **Jam song rooms share one key**, set by the host.
+
+### Changed
+
+- **A new playback rail in the mixer**, with a timeline you can drag. Layout
+  and the sidebar toggle are in the header now.
+- **Speed keeps the key.** Slowing a song down no longer lowers its pitch.
+- **A phone held sideways gets the phone stage.**
+- **Long note's mic shows when it listens.** It waits through the cue note
+  and lights up when it's your turn.
+
+### Fixed
+
+- **A loop with B before A no longer freezes playback.**
+- **The separator no longer hangs when the graphics card stops
+  answering**; it moves to the CPU.
+- **Smaller things.** "Mr. Brightside" keeps its full title, menus close
+  the same way everywhere, a TV remote's arrows move between rows, and a
+  browser that can't use a microphone says so instead of showing an error.
+  The sidebar can be put away on a touch screen, and the mixer's
+  confirmations no longer let the backdrop through.
+
 ## [0.9.18] - 2026-10-15
 
 The launch gift now says what using it earns, and the cookie banner no

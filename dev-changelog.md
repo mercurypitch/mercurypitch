@@ -9,6 +9,217 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.19] - 2026-10-16
+
+146 commits since `v0.9.18` (13b4150bd) before this release PR, on 14
+first-parent entries: the merges of #857 (116 commits), #1034 (6), #1033 (6),
+#1028 (3) and #1035 (1), the squash commits of #1031, #856, #1029 and #1008,
+and the commits of #890 (4) and #1030 (1) rebased onto `main`. Every commit
+came through a PR.
+
+On the web, the release is the key change and the mixer's playback rail
+(#857), a separator that moves to the CPU when the graphics card stops
+answering (#1031), Long note's mic states (#1028), a TV remote's D-pad and a
+browser with no microphone (#890), and new install screenshots (#856).
+#1035 is mostly for the phone app, but on the web it stops Long note's note
+when the room is left. #1033 and #1034 change the premium rooms, which reach
+no web build, and #1008's mail layout has been live since 15 October.
+
+### Release steps (prod)
+
+1. **No migration, secret or worker variable.** Nothing under
+   `workers/db-worker/migrations` and nothing in
+   `workers/db-worker/wrangler.jsonc` changed since `v0.9.18`. The one worker
+   change is #1008's mail layout (`workers/db-worker/src/email-layout.ts`),
+   live in production since run 38778660613 on 15 October; the tag's
+   `deploy-db-prod` deploys it again unchanged.
+2. **Walk the tours on `main` before the tag** (Release Tours, prod-upd step
+   4). The baseline is 0 misses.
+3. **Push the tag `v0.9.19`.** `pnpm run og:versions` on this PR stamped 13
+   cards with no change.
+
+### Web: change a song's key, and the mixer's playback rail (#857)
+
+- **The key.** A chip beside Speed ("Key +2") opens a stepper: lower, raise,
+  Back to original key, and Find my key. The range is -6..+6; the backing
+  stays clean within ±4, and beyond that the control warns rather than
+  refuses. Signalsmith Stretch (MIT) runs as an AudioWorklet, bundled from
+  npm and served from our own origin; its main-thread half loads when a
+  song's key first changes.
+- **Speed keeps the key, and a key change keeps the speed.** Every stem
+  reaches the master through the key graph, key 0 included, and the shifter
+  runs at key - 12·log2(speed) (`stem-key-control.ts`). In 0.9.18 the
+  sources' `playbackRate` moved the pitch with the speed.
+- **Find my key** uses the singer's voiceprint range, else their voice type
+  in Settings, and otherwise asks. Asked again once the song fits, it opens
+  the voice picker again and offers Back to original key.
+- **Remembered** per song on this device, and per playlist entry for that
+  entry's singer. The entry's key wins, and entry keys travel in the session
+  archive. Drums keep their own pitch by default (Settings > Key Change >
+  Leave drums unshifted).
+- **Jam song rooms.** Only the host sets the room's key, sent once the host
+  stops pressing; every peer shifts its own backing and guide vocal. A
+  device that cannot shift says so and plays the original key.
+- **Voice control:** "key up", "key down", "original key" and "find my key".
+- **The rail** is new components in `src/components/stem-mixer/rail/`
+  (`MixerRail`, `MixerCapsule`, `SpeedChip`, `KeyChip`, `MixerTimeline` on
+  the shared `LoopRangeRail`), each with its own CSS module and props only.
+  `StemMixerTransport.tsx` is a thin adapter, and the rail's CSS left the
+  `StemMixer.tsx` template string. No control changes width with its state.
+- **The timeline is a range input.** Tab reaches it, the arrow keys seek, it
+  reads "0:15 of 0:30", and the A and B marks drag. That closes BUGS.md's
+  click-only seek bar.
+- **Loops.** B on or before A (closer than 0.1 s) is refused with a reason.
+  It used to freeze playback by seeking back to A every frame.
+- **One closing rule for floating panels** (`src/lib/use-popover-layer.ts`):
+  a press outside, Escape (one layer at a time), a scroll that could move the
+  trigger, or a resize.
+- **Layout and the sidebar toggle** moved from the rail to the mixer header.
+  Below 1000 px of header on a touch screen (600 on a mouse) they fold into
+  one View menu.
+- **Phones.** A phone held sideways (coarse pointer, landscape, at most 500 px
+  tall: `isShortTouchLandscape`) gets the phone stage in two columns. Its More
+  sheet (`KaraokeMoreSheet.tsx`) holds text size, the notes over the lyrics,
+  autoplay, speed and the A/B loop.
+- **The app's Karaoke room.** The key moved into Karaoke options > Playing,
+  and "Measure my range" is hidden in the app, which has no Voice Mirror.
+- **After the owner's tablet test on 16 October:** Find my key asks again,
+  with Back to original key; the key picker is solid; no menu opens on a
+  divider; the tour moves to the fixed two-column layout without flashing the
+  layout menu; the reason lines under Loop and Hear my voice are solid; a
+  file's extension is stripped without cutting "Mr. Brightside" to "Mr"
+  (`stripAudioExtension`, `src/lib/audio-file-name.ts`); the lyrics tour
+  steps are skipped for a song without lyrics.
+- **A narrow rail folds controls into More** (`rail-fold.ts`), one at a time:
+  Speed below 860 px of rail on a mouse and 640 on a touch screen, then Key
+  below 406 and 574, then Play from the start below 332 and 486. More's Key
+  row opens the same panel (`KeyPanel`), hung from More. On an 800 x 1280
+  tablet beside the app's sidebar the rail is 466 px, and the controls need
+  486 even with Key in More.
+- **The app sidebar's collapse button** showed only on hover, so a tablet
+  could never put the sidebar away. On a touch screen it is always shown, at
+  44 px, and the collapsed sidebar is 52 px wide to hold it.
+- **ConfirmDialog stands on a solid ground.** Raised from the mixer it took
+  the stage's glass (`#161b22` at 45%), so its text fell to 3.7:1 over a
+  bright backdrop. The same colour now sits on `#0d1117`: 8.9:1. Not
+  `light-dark()`: Lightning CSS polyfills it for the TV targets (Chrome 79)
+  with variables the portal skin's inline `color-scheme` never sets, and the
+  dialog came out transparent. `dark-stage-surfaces.spec.ts` now checks the
+  ground is opaque, since its contrast helper reads no alpha.
+- **Merged with a merge commit.** GitHub refused the rebase merge twice ("This
+  branch can't be rebased"), the second time with the branch already on top
+  of `main`, where a rebase is a fast-forward. A merge commit keeps the 116
+  commits with their branch SHAs.
+- **Not verified:** listening on real devices at ±2, ±4 and ±6, and Jam
+  between two real devices (PR previews mock Jam signalling).
+- **Known limitations:** with the key moved, the melody audition leads what
+  is heard by the shifter's latency (about 120-140 ms); a key change made
+  while paused leaves the offline contour in the old key until it is sent
+  again; the realtime-fallback alignment uses the key at compute time; on a
+  phone, where the vocal streams, Find my key names a key only for a song
+  with stored notes; TV browsers (Chrome 79) do not compact the rail, which
+  has no container queries there.
+
+### Web: the separator moves to the CPU when the graphics card stops answering (#1031)
+
+- Chrome's GPU watchdog ended the owner's GPU process twice on 15 October,
+  mid-setup. `vocal-separator.worker.ts` fell back to WASM only when
+  `InferenceSession.create` threw. A hang never settled, so the panel sat at
+  "Loading the separator..." for good.
+- The worker posts `gpu-start` after the download, and hands ORT an adapter
+  whose `requestDevice` is wrapped to post `gpu-lost`
+  (`ort.env.webgpu.adapter`, in the JSEP build). The main thread allows 60 s
+  of GPU setup (`GPU_SETUP_LIMIT_MS`) and limits nothing after it.
+- On a loss or the limit it replaces the worker, starts on the CPU and says
+  "The graphics card didn't answer in time, so the separator switched to the
+  CPU. It's slower, but it will finish."; the page then keeps the CPU
+  (`gpuUnavailable`). A loss mid-run waits 20 s for the worker's `provider`
+  message (`GPU_LOST_GRACE_MS`), then fails the run with a retry that runs on
+  the CPU. Messages from a replaced worker are ignored.
+- The notice goes through `showUvrModelNotice` (uvr-store), so lib imports no
+  store. Eight tests in `vocal-separator-gpu-fallback.test.ts`.
+
+### Web: the rooms' mic says when it listens (#1028)
+
+- One mic control in the room kit (`MicButton`,
+  `src/components/room-kit/mic-state.ts`) with four states: ready (closed; a
+  tap starts a take, and the only state that moves by itself), wait (open,
+  not your turn), sing (open, your turn; the ring follows the voice) and done
+  (closed, at a result). Each room names the state from its own phases.
+- On the web this reaches Long note, which waits through the cue note and the
+  mic opening and sings while it listens for the note and the hold. Echo, Lip
+  roll and Ng slides are premium rooms, which reach no web build.
+
+### Web: a TV remote's D-pad, and a browser with no microphone (#890)
+
+- Up and Down stepped the playback speed on every tab but Karaoke and
+  cancelled their default. On a TV they are the remote's D-pad, the only way
+  focus moves between rows; there (`isTvDevice()`, or `?device=tv`) the speed
+  keys now leave them to the page.
+- Where a page has no `navigator.mediaDevices` (an insecure origin, some
+  embedded views, some TV browsers), the singer read "Cannot read properties
+  of undefined". It is classified as no-device now: "This browser cannot use
+  a microphone."
+- `docs/plans/tv-apps-and-phone-mic.md` plans store apps, the remote and the
+  phone as the microphone, and stale plan and code records were brought up to
+  date.
+
+### Web: install screenshots from demo data (#856)
+
+- The PWA install screenshots were regenerated from demo data. Found after the
+  merge: the Path screenshot says "Day 3 of 7" on the map and "Day 4 of 7" on
+  the card.
+
+### Mail: wordmark v2 (#1008)
+
+- New mail points at `/email/wordmark-v2-2x.png`, which shipped with
+  v0.9.18's static deploy. Merged and deployed to the prod mail worker after
+  that tag (run 38778660613).
+
+### Tooling: app-check (#1029)
+
+- A skill (`.claude/skills/app-check`) that walks the app in a browser and
+  measures what the owner would check by hand: layouts and features, with a
+  release's own cases read from `scripts/release-<version>.mjs`.
+
+### Rooms: the clock waits for a room's last note (#1035)
+
+- The four rooms (Echo, Lip roll, Ng slides, Long note) take the app's one
+  AudioContext through `useExerciseCapture`. In the phone app, a room gave
+  its lease back the moment its screen went, while its sound still faded
+  over the house release (180 ms of decay, 60 ms more before the source
+  stops). The last lease out parks the clock 120 ms later, so the clock kept
+  the rest of the fade for the next room's first tap. The lease now outlives
+  the screen by `ROOM_TAIL_MS` (250 ms) and answers `prepareToSuspend` with
+  what is left of that tail.
+- On the web there is no lease (`nativeDeviceApi` is the native shell's), so
+  what changes there is the room's own notes. `playTone` keeps a handle
+  (`startReferenceTone` in place of `playReferenceTone`), and `release()`
+  (the room left, or a start given up) stops a note still sounding over the
+  house release. Before, nothing stopped it, and Long note's note played on
+  to its end after the room was left. A note asked for while the clock
+  unlocks is dropped when the room was released in the meantime.
+- Tests in `useLongNoteCapture.test.ts` and the phone app's
+  `premium-rooms-audio.test.tsx`. MISTAKES.md records the trap: a lease's
+  `release()` never asks `prepareToSuspend`, so answering it alone fixes
+  nothing.
+
+### Native only (#1033, #1034)
+
+- **#1033:** Lip roll's demo buzz at the rooms' loudness, every room sound
+  through one output held at gain 1, a hint in the bar while the phone's
+  volume is low, and an `AudioOutput` plugin for the Developer screen's Audio
+  section. Its web build is byte-identical to its base.
+- **#1034:** a light at the point of contact while the voice is on the note
+  in Lip roll and Ng slides, each arch's top note named under its crest, a
+  stop between arches, and the moon's drift to storyboard screens 2 and 3.
+
+### Repo
+
+- `.github/FUNDING.yml` (#1030).
+- This release PR points `docs/plans/tv-apps-and-phone-mic.md` at today's
+  lines and closes BUGS.md's seek bar entry.
+
 ## [0.9.18] - 2026-10-15
 
 117 commits since `v0.9.17` (543f43c6c) before this release PR: PRs #908,
