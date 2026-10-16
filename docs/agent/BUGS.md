@@ -319,7 +319,7 @@ Fix: divide by `this.bufferSize`, and restrict the peak search to the
 | medium   | `workers/db-worker/src/billing.ts:925`                               | Stripe checkout grants credits without checking payment_status                                                              | possible   | **FIXED**                                  |
 | medium   | `workers/db-worker/src/index.ts:218`                                 | where[] filters accept any column, turning masked/private columns into a query oracle                                       | certain    | **FIXED**                                  |
 | low      | `src/components/PitchCanvas.tsx:989`                                 | Target-pitch tolerance band on the practice canvas is 0.1 cents wide, so it renders as zero pixels                          | likely     | reported                                   |
-| low      | `src/components/StemMixerTransport.tsx:603`                          | Stem-mixer transport seek bar is a click-only div with no role, tabindex or keyboard handler                                | certain    | reported                                   |
+| low      | `src/components/StemMixerTransport.tsx:603`                          | Stem-mixer transport seek bar is a click-only div with no role, tabindex or keyboard handler                                | certain    | **FIXED**                                  |
 | low      | `src/features/editor/useEditorController.ts:35`                      | Editor share handler leaves a clipboard rejection unhandled and gives no failure feedback                                   | certain    | reported                                   |
 | low      | `src/features/stem-mixer/useStemMixerCanvasController.ts:151`        | setCanvasRef's teardown branch is unreachable — canvases are never unobserved and their listeners never removed             | likely     | reported                                   |
 | low      | `src/features/stem-mixer/useStemMixerPitchAnalysisController.ts:242` | parseInt(noteName.slice(-1)) \|\| 4 mangles octave 0, negative octaves and octave 10                                        | likely     | reported                                   |
@@ -840,13 +840,18 @@ The result is a boolean oracle over every hidden column of every publicly-readab
 
 ### [low] Stem-mixer transport seek bar is a click-only div with no role, tabindex or keyboard handler
 
-`src/components/StemMixerTransport.tsx:603` — confidence: certain — status: reported
+`src/components/StemMixerTransport.tsx:603` — confidence: certain — status: FIXED
 
 The progress/seek bar is a bare `<div>` whose only interaction is `onClick`. It has no `role="slider"`, no `tabindex`, no `aria-valuenow`/`aria-valuemin`/`aria-valuemax`, and no `onKeyDown`, so it is invisible to assistive technology and cannot be reached or operated from the keyboard at all. Seeking is the primary transport interaction on this surface and there is no keyboard-reachable alternative in the same control group. This is a WCAG 2.1.1 (Keyboard) failure, not a cosmetic nit — contrast with MicLevelMeter.tsx:113-118, which does give its bar `role="meter"` plus the full aria-value set.
 
 **Failure scenario.** A keyboard-only or screen-reader user in the stem mixer tabs through the transport: play/pause and the other buttons receive focus, the progress bar is skipped entirely. They can start and stop playback but can never move the playhead, and a screen reader announces nothing about the current position.
 
 **Suggested fix.** Give the bar `role="slider"`, `tabindex="0"`, `aria-label="Seek"`, `aria-valuemin={0}`, `aria-valuemax={props.duration()}`, `aria-valuenow={props.elapsed()}` and an `onKeyDown` that seeks on ArrowLeft/ArrowRight/Home/End.
+
+**Fixed** by #857, which replaced the bar with the playback rail's timeline
+(`src/components/stem-mixer/rail/MixerTimeline.tsx`). Its slider is
+`LoopRangeRail` (`src/components/shared/LoopRangeRail.tsx`), a range input:
+a tab stop that the arrow keys seek, read out as "0:15 of 0:30".
 
 ### [low] Editor share handler leaves a clipboard rejection unhandled and gives no failure feedback
 
