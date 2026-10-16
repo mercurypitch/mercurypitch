@@ -31,7 +31,7 @@ import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FakeGainNode, FakeMedia } from './fake-web-audio.test-fixtures'
 import type { FakeNode } from './fake-web-audio.test-fixtures'
-import { FakeAudioContext, FakeSourceNode, installFakeMedia, } from './fake-web-audio.test-fixtures'
+import { FakeAnalyserNode, FakeAudioContext, FakeSourceNode, installFakeMedia, } from './fake-web-audio.test-fixtures'
 
 vi.mock('@/lib/haptics', () => ({
   haptics: {
@@ -40,8 +40,12 @@ vi.mock('@/lib/haptics', () => ({
     selection: () => undefined,
   },
 }))
+// Every result a room keeps, counted: a take that ends early keeps none.
+const history = vi.hoisted(() => ({ kept: 0 }))
 vi.mock('@/stores/exercise-history-store', () => ({
-  recordExerciseResult: () => undefined,
+  recordExerciseResult: () => {
+    history.kept += 1
+  },
 }))
 vi.mock('@/db/services/voiceprint-service', () => ({
   loadLocalVoiceprints: () => [],
@@ -66,6 +70,7 @@ vi.mock('@irchiinnuss/mobile-runtime/asset-fetch', () => ({
 
 const {
   acquireSharedAudioContext,
+  holdSharedAudioContextInBackground,
   resetSharedAudioContext,
   suspendSharedAudioContext,
 } = await import('@irchiinnuss/audio-io')
@@ -172,7 +177,45 @@ interface Mounted {
   stop: () => void
   /** The room's "?": its demo from the start. */
   ask: () => void
+  /** What the singer sees of the room and its demo now. */
+  seen: () => Seen
   dispose: () => void
+}
+
+/** What the singer sees: the room's phase and words, and its demo's. */
+interface Seen {
+  readonly phase: string
+  readonly line: string
+  readonly chip: string | null
+  readonly result: boolean
+  readonly demo: string
+  readonly demoTake: string | null
+  readonly said: string
+}
+
+/** The parts of a room and its demo that `Seen` reads. */
+interface Shown {
+  state: () => { phase: string }
+  line: () => string
+  chip: () => string | null
+  summary: () => unknown
+}
+interface ShownDemo {
+  mode: () => string
+  take: () => string | null
+  said: () => string
+}
+
+function seenOf(room: Shown, demo: ShownDemo): () => Seen {
+  return () => ({
+    phase: room.state().phase,
+    line: room.line(),
+    chip: room.chip(),
+    result: room.summary() !== null,
+    demo: demo.mode(),
+    demoTake: demo.take(),
+    said: demo.said(),
+  })
 }
 
 /** A room as its screen mounts it: the controller and, with it, its demo. */
@@ -182,22 +225,26 @@ function mount(room: RoomName): Mounted {
       case 'lip-roll': {
         const c = useLipController()
         const demo = useLipDemo(c)
-        return { start: c.start, stop: c.stop, ask: demo.ask, dispose }
+        const seen = seenOf(c, demo)
+        return { start: c.start, stop: c.stop, ask: demo.ask, seen, dispose }
       }
       case 'ng-slides': {
         const c = useNgController()
         const demo = useNgDemo(c)
-        return { start: c.start, stop: c.stop, ask: demo.ask, dispose }
+        const seen = seenOf(c, demo)
+        return { start: c.start, stop: c.stop, ask: demo.ask, seen, dispose }
       }
       case 'echo': {
         const c = useEchoController()
         const demo = useEchoDemo(c)
-        return { start: c.start, stop: c.stop, ask: demo.ask, dispose }
+        const seen = seenOf(c, demo)
+        return { start: c.start, stop: c.stop, ask: demo.ask, seen, dispose }
       }
       case 'long-note': {
         const c = useLongNoteController()
         const demo = useLongNoteDemo(c)
-        return { start: c.start, stop: c.stop, ask: demo.ask, dispose }
+        const seen = seenOf(c, demo)
+        return { start: c.start, stop: c.stop, ask: demo.ask, seen, dispose }
       }
     }
   })
@@ -336,7 +383,7 @@ beforeEach(async () => {
     micStopsOtherApps: true,
     acquireAudio: (owner, options) => acquireSharedAudioContext(owner, options),
     keepAwake: () => undefined,
-    holdAudioInBackground: () => () => undefined,
+    holdAudioInBackground: (owner) => holdSharedAudioContextInBackground(owner),
     nowPlaying: () => undefined,
     onMediaAction: () => () => undefined,
     pictureInPictureAutoEnter: () => undefined,
@@ -349,6 +396,7 @@ beforeEach(async () => {
   ngStore.rememberNgNote(52)
   echoStore.rememberEchoRoot(52)
   rememberLongNote(57)
+  history.kept = 0
   lipStore.markLipDemoSeen()
   ngStore.markNgDemoSeen()
   echoStore.markEchoDemoSeen()
@@ -864,8 +912,10 @@ describe('the way out: nothing of a room is heard in the next', () => {
 
     describe('the app leaving with the page still showing', () => {
       // Control Center and the notification shade send the app to the
-      // background with the OS's word alone. The page never hides, so the
-      // room hears nothing, and its note stays where the clock parked it.
+      // background with the OS's word alone. The page never hides: the room
+      // hears of it from its clock, which asks before it parks (room-kit
+      // app-leave.ts), and whatever still sounds stays where the clock
+      // parked it.
 
       /** `what` in `name` with a note sounding, then the clock parked. */
       async function parkMidNote(
@@ -932,8 +982,8 @@ describe('the way out: nothing of a room is heard in the next', () => {
         async (name) => {
           const usual = await usualLevel(name)
           const { room, from } = await parkMidNote(name, 'take')
-          // Still in the room: Stop stops the note on the parked clock,
-          // and Start sets the clock going again.
+          // Still in the room: the park ended the take, so Stop has nothing
+          // left to stop, and Start sets the clock going again.
           room.stop()
           await run(500)
           const { heard, level } = await heardAfter(from, room.start)
@@ -946,6 +996,279 @@ describe('the way out: nothing of a room is heard in the next', () => {
           expectSilentGraph()
         },
       )
+
+      describe('a park ends the take, as the page hiding does', () => {
+        // Owner, 16 Oct 2026: a take or a demo ends when Control Center or
+        // the notification shade comes down, as it ends when the page
+        // hides: the same line, nothing kept, and nothing heard until the
+        // singer's next tap, which starts on a fresh stage.
+
+        const TAKES_AND_DEMOS = ROOMS.flatMap((name) => [
+          `${name} take`,
+          `${name} demo`,
+        ])
+        const split = (label: string): [RoomName, 'take' | 'demo'] =>
+          label.split(' ') as [RoomName, 'take' | 'demo']
+
+        /** Merc's line for a run the singer left (Lip roll, Ng, Echo). */
+        const LEFT_LINE =
+          'That run stopped when you left. Tap the mic to start again.'
+        /** Long note's, for a hold the singer left. */
+        const LEFT_HOLD_LINE =
+          'The note stopped when you left. Tap the mic to go again.'
+
+        let random: MockInstance | null = null
+        /** A microphone prompt still up, answered before the mic is let go. */
+        let prompted: { allow: () => void } | null = null
+        beforeEach(() => {
+          // Merc picks among a moment's lines at random: one pick for every
+          // way out, so the lines they leave can be compared.
+          random = vi.spyOn(Math, 'random').mockReturnValue(0)
+        })
+        afterEach(() => {
+          random?.mockRestore()
+          random = null
+          prompted?.allow()
+          prompted = null
+        })
+
+        /** The clock's starts from now on. */
+        function clockStarts(): () => number {
+          const ctx = shared()
+          let starts = 0
+          ctx.addEventListener('statechange', () => {
+            if (ctx.state === 'running') starts += 1
+          })
+          return () => starts
+        }
+
+        /** Sounds made since `from` that were started at all. */
+        const startedSince = (from: number): FakeSourceNode[] =>
+          sourcesSince(from).filter((source) => source.startAt !== null)
+
+        /**
+         * What `what` in `name` shows once `leave` has ended it, mid-note
+         * or (`inTheTap`) before the tap's clock has answered; `back` then
+         * puts the app in front again.
+         */
+        async function endedBy(
+          name: RoomName,
+          what: 'take' | 'demo',
+          leave: () => void,
+          back: () => void,
+          inTheTap = false,
+        ): Promise<Seen> {
+          afterAnEarlierVisit()
+          const room = mount(name)
+          await run(100)
+          const from = mark()
+          if (what === 'take') room.start()
+          else room.ask()
+          if (!inTheTap) await runUntilSounding(from)
+          leave()
+          await run(1000)
+          const seen = room.seen()
+          back()
+          await run(100)
+          room.dispose()
+          await run(LINGER_MS + 500)
+          return seen
+        }
+
+        const pageHide = (
+          name: RoomName,
+          what: 'take' | 'demo',
+          inTheTap = false,
+        ) =>
+          endedBy(
+            name,
+            what,
+            () => setPageHidden(true),
+            () => setPageHidden(false),
+            inTheTap,
+          )
+
+        it.each(TAKES_AND_DEMOS)(
+          '%s: Control Center mid-note ends it as the page hiding does, and nothing sounds until a tap',
+          async (label) => {
+            const [name, what] = split(label)
+            const hidden = await pageHide(name, what)
+            // A take is dropped, a demo offers itself again.
+            expect(hidden.phase).toBe('intro')
+            expect(hidden.result).toBe(false)
+            if (what === 'demo') expect(hidden.demo).toBe('card')
+            else if (name !== 'long-note') expect(hidden.line).toBe(LEFT_LINE)
+            const usual = await usualLevel(name)
+            history.kept = 0
+
+            const { room, from } = await parkMidNote(name, what)
+            expect(room.seen()).toEqual(hidden)
+            expect(history.kept).toBe(0)
+            // A minute and more behind Control Center: the clock stays
+            // parked, and nothing is started for when it next runs.
+            const later = mark()
+            const starts = clockStarts()
+            await run(65_000)
+            expect(starts()).toBe(0)
+            expect(startedSince(later)).toEqual([])
+            expect(room.seen()).toEqual(hidden)
+            // Back in the room, a tap: the new take on a fresh stage, as
+            // loud as ever, with nothing of the note the park cut off.
+            const { heard, level } = await heardAfter(from, room.start)
+            expect(heard).toEqual([])
+            expect(level.peak).toBeCloseTo(usual.peak, 6)
+            expect(level.held).toBeCloseTo(usual.held, 6)
+            room.dispose()
+            await run(LINGER_MS + 500)
+            expectSilentGraph()
+          },
+        )
+
+        it.each(TAKES_AND_DEMOS)(
+          '%s: Control Center inside the tap ends it as the page hiding does, with the clock left parked',
+          async (label) => {
+            const [name, what] = split(label)
+            const hidden = await pageHide(name, what, true)
+            afterAnEarlierVisit()
+            const room = mount(name)
+            await run(100)
+            const from = mark()
+            if (what === 'take') room.start()
+            else room.ask()
+            // Down before the tap's clock has answered.
+            suspendSharedAudioContext()
+            const starts = clockStarts()
+            await run(1000)
+            expect(shared().state).toBe('suspended')
+            expect(room.seen()).toEqual(hidden)
+            await run(65_000)
+            expect(starts()).toBe(0)
+            expect(startedSince(from)).toEqual([])
+            room.dispose()
+            await run(LINGER_MS + 500)
+            expectSilentGraph()
+          },
+        )
+
+        it('long-note: Control Center mid-hold drops the hold as the page hiding does, and keeps nothing', async () => {
+          // The singer holds A3, the room's note: the mic hears 220 Hz.
+          const voice = vi
+            .spyOn(FakeAnalyserNode.prototype, 'getFloatTimeDomainData')
+            .mockImplementation(function (this: FakeAnalyserNode, buffer) {
+              const rate = 48_000
+              for (let i = 0; i < buffer.length; i++) {
+                buffer[i] = 0.3 * Math.sin((2 * Math.PI * 220 * i) / rate)
+              }
+            })
+          const holdThenLeave = async (
+            leave: () => void,
+            back: () => void,
+          ): Promise<Seen> => {
+            afterAnEarlierVisit()
+            const room = mount('long-note')
+            await run(100)
+            room.start()
+            for (let ms = 0; ms < 10_000; ms += FRAME_MS) {
+              if (room.seen().phase === 'hold') break
+              await run(FRAME_MS)
+            }
+            expect(room.seen().phase).toBe('hold')
+            await run(2000)
+            leave()
+            await run(1000)
+            const seen = room.seen()
+            back()
+            await run(100)
+            room.dispose()
+            await run(LINGER_MS + 500)
+            return seen
+          }
+          const hidden = await holdThenLeave(
+            () => setPageHidden(true),
+            () => setPageHidden(false),
+          )
+          expect(hidden.line).toBe(LEFT_HOLD_LINE)
+          expect(hidden.phase).toBe('intro')
+          history.kept = 0
+          const parked = await holdThenLeave(
+            () => suspendSharedAudioContext(),
+            () => undefined,
+          )
+          voice.mockRestore()
+          expect(parked).toEqual(hidden)
+          expect(history.kept).toBe(0)
+        })
+
+        /**
+         * The first Start's microphone prompt: getUserMedia waits for the
+         * singer's answer.
+         */
+        function promptForTheMic(): { up: () => boolean; allow: () => void } {
+          const devices = navigator.mediaDevices
+          const real = devices.getUserMedia.bind(devices)
+          let answer: (() => void) | null = null
+          devices.getUserMedia = (constraints) =>
+            new Promise((resolve) => {
+              answer = () => {
+                resolve(real(constraints))
+              }
+            })
+          const prompt = {
+            up: () => answer !== null,
+            allow: () => {
+              devices.getUserMedia = real
+              answer?.()
+              answer = null
+              prompted = null
+            },
+          }
+          prompted = prompt
+          return prompt
+        }
+
+        it.each(ROOMS)(
+          "%s: the first Start's microphone prompt is not the app leaving: the take goes on, heard as usual",
+          async (name) => {
+            const usual = await usualLevel(name)
+            const room = mount(name)
+            await run(100)
+            const prompt = promptForTheMic()
+            const from = mark()
+            let held = 0
+            const listen = async (ms: number): Promise<void> => {
+              for (let t = 0; t < ms; t += FRAME_MS) {
+                await run(FRAME_MS)
+                if (held === 0) held = loudestNow(from, HELD_SEC)
+              }
+            }
+            room.start()
+            for (let ms = 0; ms < 5000 && !prompt.up(); ms += FRAME_MS) {
+              await listen(FRAME_MS)
+            }
+            expect(prompt.up()).toBe(true)
+            // iOS's alert takes the app out of the foreground, and the
+            // shell parks the clock on that word as for Control Center.
+            suspendSharedAudioContext()
+            await listen(2000)
+            expect(shared().state).toBe('running')
+            expect(room.seen().phase).toBe('starting')
+            prompt.allow()
+            await listen(3000)
+            expect(room.seen().phase).not.toBe('intro')
+            expect(loudestSince(from)).toBeCloseTo(usual.peak, 6)
+            expect(held).toBeCloseTo(usual.held, 6)
+            // With the prompt answered the hold has gone: Control Center
+            // ends this take as any other.
+            suspendSharedAudioContext()
+            await run(1000)
+            expect(shared().state).toBe('suspended')
+            expect(room.seen().phase).toBe('intro')
+            room.dispose()
+            await run(LINGER_MS + 500)
+            expectSilentGraph()
+          },
+        )
+      })
     })
 
     it.each(ROOMS)(

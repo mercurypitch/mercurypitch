@@ -27,13 +27,21 @@
 //
 // The room's sound goes through a stage of its own (room-output.ts), opened
 // with its clock. The app can leave the foreground with no page event at
-// all (Control Center, the notification shade): the room hears nothing,
-// its note is parked mid-sound, and it would play on, and then release,
-// the next time the clock starts. So once the room is gone its stage is
-// cut, after the tail, or at once if the clock is not running. A tap that
-// starts a parked clock again cuts the old stage as well, and the room
-// goes on with a new one: what the clock parked belongs to before the
-// park.
+// all (Control Center, the notification shade): its note is parked
+// mid-sound, and it would play on, and then release, the next time the
+// clock starts. So once the room is gone its stage is cut, after the tail,
+// or at once if the clock is not running. A tap that starts a parked clock
+// again cuts the old stage as well, and the room goes on with a new one:
+// what the clock parked belongs to before the park.
+//
+// The park is the only word a room gets of that leaving, and the lease
+// passes it on (app-leave.ts): the room and its demo end as they do when
+// the page hides. Except while the mic opens. The first Start asks iOS for
+// the microphone, and its alert takes the app out of the foreground with
+// the singer still in the room, which the shell cannot tell from Control
+// Center. So the clock is held through every opening (`holdAudioInBackground`):
+// a park asked for meanwhile is not made, and the take goes on once the
+// singer answers.
 
 import { onCleanup, untrack } from 'solid-js'
 import type { MicError } from '@/lib/mic-manager'
@@ -41,10 +49,11 @@ import { micManager } from '@/lib/mic-manager'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { ReferenceTone } from '@/lib/reference-tone'
-import { startReferenceTone } from '@/lib/reference-tone'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
+import { announceAppLeave } from './app-leave'
 import type { RoomStage } from './room-output'
-import { openRoomStage, roomOutput } from './room-output'
+import { openRoomStage } from './room-output'
+import { startRoomTone } from './room-tones'
 
 /**
  * How long a room's sound plays on once it is stopped, ms. Every sound a
@@ -147,13 +156,19 @@ export function useExerciseCapture(
     unwatch = () => ctx.removeEventListener('statechange', parked)
   }
 
-  const lease = untrack(nativeDeviceApi)?.acquireAudio(owner, {
-    // The clock is about to park. A room stops its sound from the page's
-    // own event (its `leave`), the same moment, and the clock waits out the
-    // release. Once the screen is gone, what is left of its tail.
-    prepareToSuspend: () =>
-      disposed ? Math.max(0, tailEnds - Date.now()) : ROOM_TAIL_MS,
+  const device = untrack(nativeDeviceApi)
+  const lease = device?.acquireAudio(owner, {
+    // The clock is about to park: the room ends what it plays, as when the
+    // page hides, and the clock waits out the release. Once the screen is
+    // gone, what is left of its tail.
+    prepareToSuspend: () => {
+      if (disposed) return Math.max(0, tailEnds - Date.now())
+      announceAppLeave()
+      return ROOM_TAIL_MS
+    },
   })
+  /** Lets go of the clock held through the mic's opening, if it is held. */
+  let letGoOfTheClock = (): void => undefined
   let ownContext: AudioContext | null = null
   let f0: F0Stream | null = null
   /** The acquisition in flight, and the release count it began under. */
@@ -190,6 +205,7 @@ export function useExerciseCapture(
 
   const release = (): void => {
     generation += 1
+    letGoOfTheClock()
     f0?.dispose()
     f0 = null
     micManager.release(owner)
@@ -210,6 +226,13 @@ export function useExerciseCapture(
     if (mine !== generation) return
     if (ctx === null) throw new CaptureError('unavailable', room)
     let stream: MediaStream
+    // The permission alert may come up now: no park while it does.
+    const letGo =
+      lease === undefined ? null : device?.holdAudioInBackground(owner)
+    letGoOfTheClock = () => {
+      letGoOfTheClock = () => undefined
+      letGo?.()
+    }
     try {
       stream = await micManager.acquire(owner)
     } catch (error) {
@@ -219,6 +242,8 @@ export function useExerciseCapture(
           : 'unavailable',
         room,
       )
+    } finally {
+      if (mine === generation) letGoOfTheClock()
     }
     if (mine !== generation) {
       micManager.release(owner)
@@ -279,9 +304,8 @@ export function useExerciseCapture(
       // Released while the clock unlocked (a start given up, or the room
       // left): no note.
       if (ctx === null || mine !== generation) return
-      const tone = startReferenceTone(ctx, midi, seconds, roomOutput(ctx), {
-        lowNoteOctave: true,
-      })
+      const tone = startRoomTone(ctx, midi, seconds)
+      if (tone === null) return
       tones.add(tone)
       await tone.done
       tones.delete(tone)

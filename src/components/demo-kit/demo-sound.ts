@@ -5,17 +5,18 @@
 // On the room's own audio clock (the one its Hear button and its mic use),
 // through one bus of the demo's own, so Skip, the way out and the app going
 // to the background can close all of it at once, pop-free. The note plays
-// exactly as the Hear button plays it (reference-tone.ts).
+// exactly as the Hear button plays it (room-kit room-tones.ts), and never
+// on a clock the app parked.
 //
 // A take's clock starts `lead` seconds after it is sung: the voice is
 // scheduled that far ahead, less the speaker's own latency, so it is heard
 // when the screen shows it.
 
 import { roomOutput } from '@/components/room-kit/room-output'
+import { startRoomTone } from '@/components/room-kit/room-tones'
 import type { DemoSound, VoiceContourOptions } from '@/lib/demo-audio'
 import { flutterMakeup, playVoiceContour } from '@/lib/demo-audio'
 import { midiToFrequency } from '@/lib/frequency-to-note'
-import { playReferenceTone } from '@/lib/reference-tone'
 import type { DemoVoicePoint } from './demo-plan'
 
 /** The house close (src/lib/preview-player.ts), seconds. */
@@ -77,11 +78,7 @@ export function createDemoSoundtrack<Take extends SungDemoTake>(
   return {
     lead,
     tone: (midi) => {
-      if (!stopped) {
-        void playReferenceTone(ctx, midi, TONE_SECONDS, bus, {
-          lowNoteOctave: true,
-        })
-      }
+      if (!stopped) startRoomTone(ctx, midi, TONE_SECONDS, bus)
     },
     sing: (take, midi) => {
       if (stopped) return

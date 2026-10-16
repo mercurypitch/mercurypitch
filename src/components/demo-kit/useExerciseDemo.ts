@@ -22,6 +22,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
+import { onAppLeave } from '@/components/room-kit/app-leave'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import type { DemoBeats, DemoCue, DemoMark, DemoTakeId, DemoTakeShape, TakeClock, } from './demo-plan'
 import { takeClock } from './demo-plan'
@@ -199,6 +200,8 @@ export function useExerciseDemo<
   let generation = 0
   /** Bumped by every request for sound: older answers are dropped. */
   let request = 0
+  /** The app left with the page showing, and no tap since. */
+  let away = false
   let sound: DemoSoundtrack<Take> | null = null
   let plan: ReturnType<typeof config.plan> | null = null
   /** The tooltips already cued this run: each shows once. */
@@ -296,9 +299,10 @@ export function useExerciseDemo<
     halt()
     setAutoPending(false)
     // The sound answered while the app was in the background (a first
-    // visit's wait, or a Watch): no demo behind the singer's back. It
-    // offers itself again, unseen, as a hide mid-demo leaves it.
-    if (document.visibilityState === 'hidden') {
+    // visit's wait, or a Watch), or once it had left with the page still
+    // showing (`away`): no demo behind the singer's back. It offers itself
+    // again, unseen, as a hide mid-demo leaves it.
+    if (document.visibilityState === 'hidden' || away) {
       setMode('card')
       return
     }
@@ -351,6 +355,8 @@ export function useExerciseDemo<
   }
 
   const ask = (): void => {
+    // A tap: the singer is here.
+    away = false
     const mine = ++request
     void soundNow().then(
       (ctx) => {
@@ -428,8 +434,7 @@ export function useExerciseDemo<
 
   // The app went to the background: the demo stops where it is and offers
   // itself again; it has not been seen.
-  const onVisibility = (): void => {
-    if (document.visibilityState !== 'hidden') return
+  const leaveWithTheApp = (): void => {
     const playing = untrack(mode) === 'playing'
     if (!playing && autoTimer === undefined) return
     cancelAuto()
@@ -440,7 +445,17 @@ export function useExerciseDemo<
     setRun(null)
     setMode('card')
   }
+  const onVisibility = (): void => {
+    if (document.visibilityState === 'hidden') leaveWithTheApp()
+  }
   document.addEventListener('visibilitychange', onVisibility)
+  // Or it went with the page still showing (Control Center, the
+  // notification shade): the same, and a demo asked for in the tap just
+  // before does not start while the singer is away (`begin`).
+  const stopAppLeave = onAppLeave(() => {
+    away = true
+    leaveWithTheApp()
+  })
 
   onCleanup(() => {
     alive = false
@@ -448,6 +463,7 @@ export function useExerciseDemo<
     clearTimeout(audioWait)
     halt()
     document.removeEventListener('visibilitychange', onVisibility)
+    stopAppLeave()
   })
 
   return {

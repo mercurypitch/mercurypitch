@@ -18,7 +18,7 @@ interface Node {
   connections: unknown[]
 }
 
-function fakeContext() {
+function fakeContext(state: AudioContextState = 'running') {
   const made: Node[] = []
   const param = (value: number) => ({
     value,
@@ -44,6 +44,7 @@ function fakeContext() {
   }
   const destination = { kind: 'destination', connections: [] }
   const ctx = {
+    state,
     currentTime: 3,
     destination,
     createGain: () => node('gain', { gain: param(1) }),
@@ -143,5 +144,13 @@ describe('createDemoSoundtrack', () => {
     const tone = fake.made.slice(before).filter((n) => n.kind === 'gain')
     expect(tone).toHaveLength(1)
     expect(gainToSpeakers(tone[0], fake.destination)).toBe(1)
+  })
+
+  it('plays no note on a clock the app parked', () => {
+    const fake = fakeContext('suspended')
+    const track = createDemoSoundtrack(fake.ctx, 0.12, undefined)
+    const before = fake.made.length
+    track.tone(57)
+    expect(fake.made.slice(before)).toEqual([])
   })
 })
