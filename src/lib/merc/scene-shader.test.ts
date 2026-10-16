@@ -47,17 +47,18 @@ describe('fragSource', () => {
 // The pass 4 study's shader text, as the owner approved it, hashed from
 // merc-sdf.js. A change here changes how Merc looks. If that is the intent,
 // render the before and after, get the new look approved, then update the
-// hash; never update it just to make this test pass.
+// hash; never update it just to make this test pass. 16 Oct: a lip roll's
+// lips added (uMouth.w); while it is 0 every room draws as it did.
 describe('approved shader text', () => {
   const APPROVED: Record<string, string> = {
     'frag low':
-      'e63ce0c4738c467a6cd1cc1b83b81f070592d26ff79d154dbfab491f62ad32cb',
+      '667d959eb6db1b4be14bfcefd537a9010806d0d9103bd299c47cadd22975020f',
     'frag medium':
-      '28e5f49881814c0c06485a65795ab89779ae7f5e7c0b9e19b4d24902c079bee5',
+      'fbff42da41df85bbdcc11fe616b06ec4e30da2b1c0dae270d7bcd19a7998db06',
     'frag high':
-      '8b24980f079b99ac18f65ce0465c81c56cc2c738096b304bcf474057589234f1',
+      '169340af862515af3d72e34c34357cb10b32ef7c0c00f00689b5668306cc8a17',
     'frag ultra':
-      '7bc827f293cf31fb089c5f536636a7622fd42c7314918c408975d1cdb9025d3e',
+      'f1757848aa378e209c67b7be6e49ee01ee4f1f2307bf985bfe1ea0388272ace1',
     VERT: '5e5cb7d301ae948a9e99926a0e5e040c73c9bb146c8875e1e91c6e34d71f50af',
     POST_DOWN:
       '0e261618781791184a851201fbd76cb167a7b97abfcdd89f3a7395b8e4ce6857',
