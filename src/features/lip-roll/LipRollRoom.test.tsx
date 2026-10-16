@@ -27,6 +27,7 @@ import { setExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type * as ArtModule from './bay-art'
 import { INTRO, PLAYHEAD_X } from './bay-geometry'
+import { LIP_MOUTH } from './bay-ride'
 import type * as WavesModule from './bay-waves'
 import type { LipPlan } from './lip-run'
 import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC, planLipRun } from './lip-run'
@@ -144,9 +145,14 @@ vi.mock('./bay-art', async () => {
 
 // Merc's renderer needs WebGL: a stand-in that draws nothing, and keeps
 // what it was asked for.
-const stage = vi.hoisted(() => ({ opts: [] as { rings?: boolean }[] }))
+const stage = vi.hoisted(() => ({
+  opts: [] as { rings?: boolean; mouth?: string }[],
+}))
 vi.mock('@/lib/merc/stage', () => ({
-  mountMercStage: (_host: HTMLElement, opts: { rings?: boolean } = {}) => {
+  mountMercStage: (
+    _host: HTMLElement,
+    opts: { rings?: boolean; mouth?: string } = {},
+  ) => {
     stage.opts.push(opts)
     return {
       ok: true,
@@ -481,6 +487,14 @@ describe('the intro', () => {
     expect(stage.opts).toHaveLength(1)
     expect(stage.opts[0].rings).toBe(false)
     expect(screen.getByTestId('lip-buzz').dataset.on).toBe('true')
+  })
+
+  it("gives Merc a lip roll's mouth: his lips together, buzzing", async () => {
+    render(() => <LipRollRoom onDone={() => undefined} />)
+    await vi.waitFor(() => expect(stage.opts).toHaveLength(1))
+
+    expect(stage.opts[0].mouth).toBe(LIP_MOUTH)
+    expect(LIP_MOUTH).toBe('buzz')
   })
 })
 

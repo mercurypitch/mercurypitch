@@ -50,6 +50,7 @@ import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHea
 import { WAVE } from './bay-geometry'
 import type { BayLayout } from './bay-layout'
 import { layoutBay, MERC_INTRO_X, mercBoxAt, zoomAt } from './bay-layout'
+import { LIP_MOUTH } from './bay-ride'
 import { BayScene } from './BayScene'
 import { DEMO_COPY } from './demo/demo-cues'
 import { aimLipTip } from './demo/tip-targets'
@@ -263,6 +264,7 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
                 state={room.mercState}
                 voice={room.mercVoice}
                 rings={false}
+                mouth={LIP_MOUTH}
                 sparkles="left"
                 testId="lip-merc"
               />

@@ -17,6 +17,7 @@
 
 import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice } from '@/lib/merc/sim'
+import type { GlideMouth } from '@/lib/merc/sim-glide'
 import { PLAYHEAD_X, WAVE } from './bay-geometry'
 import { ABOVE_CREST_W, MERC_INTRO_X, pitchY, UNDER_ROOT_W, zoomAt, } from './bay-layout'
 import type { BayScroll } from './bay-scroll'
@@ -43,6 +44,14 @@ export const RIDE_STATES: Readonly<Record<RideMoment, MercState>> = {
   result: 'idle',
   resultBest: 'celebrate',
 }
+
+/**
+ * His mouth while he buzzes, at the intro and on the waves. `buzz`: a lip
+ * roll's, the lips together, flapping and rippling along their seam, the
+ * cheeks a little full. `open` would give him Long note's singing O
+ * instead, opening with the voice's level.
+ */
+export const LIP_MOUTH: GlideMouth = 'buzz'
 
 /** His feet's smoothing toward the voice, s (a time constant). */
 export const RIDE_TAU_SEC = 0.08
