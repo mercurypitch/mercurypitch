@@ -108,9 +108,9 @@ session.
 - **Audio.** Every musical example is synthesised at its exact frequency in `mix.py`. Merc's sung
   notes are the app's Echo "ooh" set: ElevenLabs takes re-pitched onto exact contours, development
   placeholders that the app withholds from its store build (`src/features/echo/merc-voice-set.ts`);
-  the two-voice tune (s17) uses the app's synthesised "ooh" (`src/lib/demo-audio.ts`). Confirm the
-  Echo samples' rights before any public release, or switch the public film to the synthesised
-  "ooh" (MASTER-PLAN § 12 item 1). The bed is a quiet open-fifth pad in the key that plays only in
+  the two-voice tune (s17) uses the app's synthesised "ooh" (`src/lib/demo-audio.ts`). The owner
+  holds the Echo samples' rights, so they stay until a voice actor replaces them (MASTER-PLAN § 12
+  item 1). The bed is a quiet open-fifth pad in the key that plays only in
   act transitions and under the dressed pauses (predict, hum, quiz), so the film never drops to
   digital silence (critic 03 found the mix silent in those pauses); its open fifth on the
   lesson's note also supports the hum. It is silent under narration and under every musical
@@ -181,13 +181,12 @@ in Voice Mirror), quick check (four questions), Wrap, the episode with chapters 
 the lesson explorer (Season 1 and the trailer; Lesson 1 ready, the rest planned).
 
 Where it lives: Lesson 1's page is built as a claude.ai artifact page, the proof preview only, and
-the no-iframe rule in its contract (WEB-SPEC) binds only that preview. The public lessons live
-where MASTER-PLAN § 12 item 9 puts them (recommended: a `mercurypitch.com/learn/NN` route in the
-app, on the same origin as the app's analytics, accounts and `?lesson=` marker), built by the
-Phase 1 Lesson host track, whose exit is Lesson 1 served at its public URL with CTAs carrying
-`?lesson=01`. The episode's player there, self-hosted HLS or a YouTube embed (§ 12 item 7), is
-decided with the host. Until the Lesson telemetry track exists, quiz answers stay in the viewer's
-browser.
+the no-iframe rule in its contract (WEB-SPEC) binds only that preview. The public lessons live at
+`mercurypitch.com/learn/NN` (MASTER-PLAN § 12 item 9), on the same origin as the app's analytics,
+accounts and `?lesson=` marker, built by the Phase 1 Lesson host track, whose exit is Lesson 1
+served at its public URL with CTAs carrying `?lesson=01`. The episode plays there from R2 (§ 12
+item 7): an MP4 at 1080p and a 720p copy for phones, cut from the delivery master. Until the
+Lesson telemetry track exists, quiz answers stay in the viewer's browser.
 
 Checks before publishing: phone (390 px) and desktop widths in light and dark, keyboard focus, no
 sideways scroll, every audio button user-initiated, and motion. Under `prefers-reduced-motion` the
