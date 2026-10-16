@@ -88,7 +88,7 @@ claims cite the source at `99c8818` (main, 16 Oct 2026) by `file:line`. Web sour
 Every example is synthesised in `tools/mix.py` at the frequencies in 6, with Lesson 1's soft
 `tone()` timbre unless noted. Times are seconds from the sound's cue.
 
-41. `sing-blue-a3`, `sing-orange-a4`: Merc's Echo "ooh" placeholders, A3 and A4, measured 220.0 and 439.6 Hz | Lesson 1 FACTS 12b; `src/features/echo/merc-voice-set.ts:1-20`, `:50-62` | measured in Lesson 1; development placeholders (MASTER-PLAN § 12 item 1)
+41. `sing-blue-a3`, `sing-orange-a4`: Merc's Echo "ooh" samples, A3 and A4, measured 220.0 and 439.6 Hz | Lesson 1 FACTS 12b; `src/features/echo/merc-voice-set.ts:1-20`, `:50-62` | measured in Lesson 1; ElevenLabs-derived takes whose rights the owner holds, so they stay until a voice actor replaces them (MASTER-PLAN § 12 item 1, decided 16 October 2026)
 42. `first-step` (2.0 s): A3 220.00 at 0.00 for 0.85 s; A#3 233.08 at 1.00 for 0.95 s | 6 | by construction
 43. `climb` (6.0 s): the thirteen notes of 16, onset 0.42 k for k = 0 to 12, each 0.40 s, the last (A4 440.00) 0.90 s | 6, 16 | by construction
 44. `unroll` (3.0 s): a run up every key from A2 to A5 (37 notes, 0.05 s apart from 0.15 s, each 0.30 s), then a soft chime on A3 and A4 together at 2.0 s | 6 | by construction
@@ -118,8 +118,8 @@ Every example is synthesised in `tools/mix.py` at the frequencies in 6, with Les
 
 ## Labels
 
-- The narration voices and Merc's sung notes are scratch and placeholder audio, as in Lesson 1;
-  the final cut carries no generated imagery, so no "concept" label is needed on screen.
+- The narration voices are scratch audio and Merc's sung notes the owner-held Echo set, as in
+  Lesson 1; the final cut carries no generated imagery, so no "concept" label is needed on screen.
 
 ## Unsupported, so left out of the script and the page
 

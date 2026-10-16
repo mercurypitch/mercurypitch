@@ -156,8 +156,8 @@ on the page, as an optional warm-up for direction: it never asks semitone or ton
 - `assets/voice/*.wav` - scratch narration, local Kokoro-82M (Apache-2.0): blue `am_michael` at
   0.84, orange `af_heart` at 0.9, as Lesson 1. To be re-voiced with the final cast.
 - Merc's sung A3 and A4 in the cold open: `src/features/echo/voice/echo-merc-ooh-57-A3.mp3`,
-  `-69-A4.mp3` (development placeholders, `src/features/echo/merc-voice-set.ts`; MASTER-PLAN § 12
-  item 1).
+  `-69-A4.mp3` (ElevenLabs-derived, `src/features/echo/merc-voice-set.ts`; the owner holds their
+  rights, so they stay until a voice actor replaces them: MASTER-PLAN § 12 item 1).
 - Merc's two sung slides: the synthesised "ooh" (`src/lib/demo-audio.ts` timbre, Lesson 1's
   `voice_tone()`), following the cents contour in FACTS 50 and 51.
 - Every other example is synthesised at its exact frequency by `tools/mix.py` (FACTS 41 to 53).
@@ -198,6 +198,8 @@ habit of one object that transforms into the next idea (spiral, keyboard, tiles,
 - Teaching film, not a launch film: Lesson 1's adapted pacing (4 to 8 layout changes a minute, a
   visual event every 2 to 5 s tied to its word, dressed holds while a diagram is explained) and its
   two-second chapter breaths after the act 2 and act 3 cards.
-- Production state: planning documents only. Nothing in `output/motion/lesson-02/` exists yet;
+- Production state: planning documents only. Nothing in `output/motion/lesson-02/` exists yet (the
+  working folder, gitignored; the film's sources then move to the private repository, MASTER-PLAN
+  § 12 item 2);
   `tools/mix.py` needs Lesson 2's sounds (FACTS 42 to 52) and `tools/merc-shots.py` the slide
   special case (STORYBOARD, Merc passes).

@@ -161,7 +161,7 @@ in captions). Every claim is in [FACTS.md](FACTS.md).
 | Spoken lines                         | 67 (56 blue, 11 orange)                             |
 | Words                                | 750 (623 blue, 127 orange); 288.5 s of speech       |
 | Overall pace                         | 114 words a minute (Lesson 1: 119)                  |
-| Hook question answered by orange by  | 0:27.8 (playbook rule 1: within 30 s)               |
+| Orange's hook question ends at       | 0:27.8 (playbook rule 1: within 30 s)               |
 | Dressed pauses                       | q0 1.8 s, predict 2.6 s, your turn 5.2 s, q1 to q3 1.8 s each |
 
 ## Orange line audit
