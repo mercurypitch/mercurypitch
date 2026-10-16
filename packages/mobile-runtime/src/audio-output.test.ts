@@ -139,6 +139,70 @@ describe('toAudioOutputReading', () => {
   })
 })
 
+// iOS sends two volumes: the app's session's, which stopped following the
+// keys once a room opened (build 880), and the system's, off a volume view
+// nobody sees, which counts once it has been seen to move.
+describe("an iPhone's two volumes", () => {
+  it('takes the system’s once the volume view has moved', () => {
+    const reading = toAudioOutputReading({
+      ...IOS_SPEAKER,
+      outputVolume: 0,
+      systemVolume: 0.5,
+      systemVolumeLive: true,
+    })
+    expect(reading?.volume).toBe(0.5)
+    expect(reading?.detail).toMatchObject({
+      sessionVolume: 0,
+      systemVolume: 0.5,
+      systemVolumeLive: true,
+    })
+  })
+
+  it('keeps the session’s until the volume view has moved', () => {
+    const reading = toAudioOutputReading({
+      ...IOS_SPEAKER,
+      outputVolume: 0.25,
+      systemVolume: 0,
+      systemVolumeLive: false,
+    })
+    expect(reading?.volume).toBe(0.25)
+    expect(reading?.detail).toMatchObject({ sessionVolume: 0.25 })
+  })
+
+  it.each([Number.NaN, '0.5', null])(
+    'keeps the session’s over a system volume of %s',
+    (systemVolume) => {
+      expect(
+        toAudioOutputReading({
+          ...IOS_SPEAKER,
+          outputVolume: 0.25,
+          systemVolume,
+          systemVolumeLive: true,
+        })?.volume,
+      ).toBe(0.25)
+    },
+  )
+
+  it('holds the system’s to 0..1 as well', () => {
+    expect(
+      toAudioOutputReading({
+        ...IOS_SPEAKER,
+        systemVolume: 1.5,
+        systemVolumeLive: true,
+      })?.volume,
+    ).toBe(1)
+  })
+
+  it('names no session volume on a phone that sends one volume', () => {
+    expect(toAudioOutputReading(IOS_SPEAKER)?.detail).not.toHaveProperty(
+      'sessionVolume',
+    )
+    expect(toAudioOutputReading(ANDROID_HEADSET)?.detail).not.toHaveProperty(
+      'sessionVolume',
+    )
+  })
+})
+
 describe('readAudioOutput', () => {
   it('reads nothing on the web, and registers no plugin', async () => {
     expect(await readAudioOutput()).toBeNull()

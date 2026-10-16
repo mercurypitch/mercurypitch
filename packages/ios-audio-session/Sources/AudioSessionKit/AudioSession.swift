@@ -61,6 +61,12 @@ public enum AudioSession {
     ]
     private static var isRoutingToSpeaker = false
 
+    /// How the app last made its session active, and whether iOS agreed, in
+    /// words for a test build's readout. AVAudioSession has no property that
+    /// says whether a session is active; this and the interruptions a reader
+    /// hears (AudioOutputPlugin.swift in Mercury Pitch) are the nearest.
+    public private(set) static var activation = "not activated yet"
+
     private static func categoryNeedsRepair(_ session: AVAudioSession) -> Bool {
         let hasDesiredOptions =
             session.categoryOptions.intersection(desiredOptions) == desiredOptions
@@ -144,7 +150,9 @@ public enum AudioSession {
         applyIfNeeded(session)
         do {
             try session.setActive(true)
+            activation = "activated at launch"
         } catch {
+            activation = "activation refused at launch: \(error.localizedDescription)"
             NSLog("[AudioSession] setActive failed: \(error.localizedDescription)")
         }
         routeToSpeakerIfNeeded()
@@ -181,7 +189,9 @@ public enum AudioSession {
                 let session = AVAudioSession.sharedInstance()
                 applyIfNeeded(session)
                 try session.setActive(true)
+                activation = "activated again after an interruption"
             } catch {
+                activation = "activation refused after an interruption: \(error.localizedDescription)"
                 NSLog("[AudioSession] reactivate failed: \(error.localizedDescription)")
             }
             routeToSpeakerIfNeeded()

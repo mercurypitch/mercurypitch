@@ -37,12 +37,24 @@ export function outputLine(reading: Reading, native: boolean): string {
   return ports === '' ? route : `${route} · ${ports}`
 }
 
-/** The volume, Android's steps, and whether the rooms count it as low. */
+/**
+ * The volume, Android's steps, and whether the rooms count it as low. An
+ * iPhone's two readings follow: the system's (a volume view nobody sees),
+ * which counts once it has moved, and the app's session's.
+ */
 export function volumeLine(reading: Reading): string {
   if (reading === null) return 'not read'
   const parts = [reading.volume.toFixed(2)]
   if (reading.step !== null && reading.steps !== null) {
     parts.push(`step ${String(reading.step)} of ${String(reading.steps)}`)
+  }
+  const d = reading.detail
+  if (typeof d.systemVolume === 'number') {
+    const still = d.systemVolumeLive === true ? '' : ', not seen to move yet'
+    parts.push(`system ${d.systemVolume.toFixed(2)}${still}`)
+  }
+  if (typeof d.sessionVolume === 'number') {
+    parts.push(`session ${d.sessionVolume.toFixed(2)}`)
   }
   if (isLowVolume(reading)) parts.push('low: the rooms ask for more')
   return parts.join(' · ')
@@ -53,8 +65,10 @@ const word = (value: unknown, prefix: string): string =>
 
 /**
  * iOS: the app's own session, category, mode and options (WebKit plays
- * from a session of its own, which no app can read). Android: the audio
- * mode and the stream the page plays on.
+ * from a session of its own, which no app can read), how the app last made
+ * it active, and an interruption iOS reported: from one that began and has
+ * not ended, the session is not active, which iOS has no property to say.
+ * Android: the audio mode and the stream the page plays on.
  */
 export function sessionLine(reading: Reading): string {
   if (reading === null) return 'not read'
@@ -64,7 +78,20 @@ export function sessionLine(reading: Reading): string {
       Array.isArray(d.options) && d.options.length > 0
         ? d.options.join(', ')
         : 'no options'
-    return `${word(d.category, 'AVAudioSessionCategory')} · ${word(d.mode, 'AVAudioSessionMode')} · ${options}`
+    const parts = [
+      word(d.category, 'AVAudioSessionCategory'),
+      word(d.mode, 'AVAudioSessionMode'),
+      options,
+    ]
+    if (typeof d.activation === 'string') parts.push(d.activation)
+    if (typeof d.lastInterruption === 'string') {
+      parts.push(
+        d.interrupted === true
+          ? `interrupted (${d.lastInterruption})`
+          : `last interruption ${d.lastInterruption}`,
+      )
+    }
+    return parts.join(' · ')
   }
   if (typeof d.stream === 'string') {
     const parts = [`mode ${String(d.mode)}`, `${d.stream} stream`]

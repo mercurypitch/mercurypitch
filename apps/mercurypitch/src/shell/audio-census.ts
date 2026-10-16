@@ -16,6 +16,15 @@
 // report carries the timeline; the Developer screen's Audio rows read the
 // live state from here.
 //
+// AROUND EACH START AND STOP. On the owner's iPhone the volume followed the
+// keys after a fresh launch and stopped the moment a room opened (build
+// 880, 16 Oct). A room opening is a mic and a context starting, and WebKit
+// switches its own session as they do: so the output is read as each mic
+// opens and stops and as each context changes state, and once more
+// OUTPUT_SETTLE_MS later, beside the session type the page asked WebKit for
+// (`navigator.audioSession.type`, read and never set). The report then
+// shows the app's session, the route and both volumes before and after.
+//
 // TRANSPARENT. The constructor is wrapped in a Proxy whose construct trap
 // builds the real context and returns it: `instanceof`, the prototype and
 // every method are the platform's. getUserMedia is wrapped on the one
@@ -91,6 +100,8 @@ export const SOUND_FLOOR_DB = -60
 export const SOUND_GAP_MS = 1000
 /** How often the rooms' output is read. */
 export const LEVEL_POLL_MS = 100
+/** The output is read again this long after a mic or a context changes. */
+export const OUTPUT_SETTLE_MS = 1000
 
 const census: AudioReport = audioReporter('census')
 const outputReport: AudioReport = audioReporter('output')
@@ -102,6 +113,11 @@ let contextsClosed = 0
 let tracksOpened = 0
 let tracksEnded = 0
 let installed = new WeakSet<object>()
+/** The phone's output and the page's window, once installed with them. */
+let outputSource: NativeAudioOutput | null = null
+let pageWindow: Window | null = null
+/** Second readings still to come, dropped on a reset. */
+let settling: ReturnType<typeof setTimeout>[] = []
 
 /** Held weakly where the platform can, so the census keeps nothing alive. */
 function weakly<T extends object>(value: T): { deref: () => T | undefined } {
@@ -130,6 +146,7 @@ function noteContext(context: BaseAudioContext, options: unknown): void {
   })
   context.addEventListener('statechange', () => {
     census('context-state', { n: entry.n, state: context.state })
+    readOutputAround(`context ${String(entry.n)} ${context.state}`)
     if (context.state === 'closed') closeContext(entry)
   })
 }
@@ -150,6 +167,9 @@ function finishTrack(
   tracksEnded += 1
   tracks = tracks.filter((known) => known !== entry)
   census(event, { n: entry.n })
+  readOutputAround(
+    `mic ${String(entry.n)} ${event === 'mic-stopped' ? 'stopped' : 'ended'}`,
+  )
 }
 
 function noteTrack(track: MediaStreamTrack): void {
@@ -166,6 +186,7 @@ function noteTrack(track: MediaStreamTrack): void {
     rate: settings.sampleRate ?? 'unset',
     channels: settings.channelCount ?? 'unset',
   })
+  readOutputAround(`mic ${String(entry.n)} opened`)
   const stop = track.stop.bind(track)
   track.stop = () => {
     stop()
@@ -229,11 +250,54 @@ export function describeOutput(
   return detail
 }
 
+/**
+ * WebKit's session for the page as the page asked for it (Safari 16.4):
+ * 'auto' unless something set it. Its state is not exposed in a shipping
+ * WebKit, and is named only where it is.
+ */
+function pageSession(): Record<string, unknown> {
+  const navigator = pageWindow?.navigator as
+    | { audioSession?: { type?: unknown; state?: unknown } }
+    | undefined
+  const session = navigator?.audioSession
+  if (session === undefined) return {}
+  return {
+    pageSession: typeof session.type === 'string' ? session.type : 'unknown',
+    ...(typeof session.state === 'string'
+      ? { pageSessionState: session.state }
+      : {}),
+  }
+}
+
+/** One reading of the output into the record, marked with when it was. */
+function readOutput(output: NativeAudioOutput, at: string): void {
+  void output
+    .read()
+    .then((reading) => {
+      if (reading === null) return
+      outputReport('read', { at, ...describeOutput(reading), ...pageSession() })
+    })
+    .catch(() => undefined)
+}
+
+/** The output now, and once more after WebKit has had time to switch. */
+function readOutputAround(at: string): void {
+  const output = outputSource
+  if (output === null) return
+  readOutput(output, at)
+  const later = setTimeout(() => {
+    settling = settling.filter((timer) => timer !== later)
+    readOutput(output, `${at}, settled`)
+  }, OUTPUT_SETTLE_MS)
+  settling.push(later)
+}
+
 function watchOutput(output: NativeAudioOutput): void {
-  void output.read().then((reading) => {
-    if (reading !== null) outputReport('read', describeOutput(reading))
-  })
-  output.watch((reading) => outputReport('change', describeOutput(reading)))
+  outputSource = output
+  readOutput(output, 'launch')
+  output.watch((reading) =>
+    outputReport('change', { ...describeOutput(reading), ...pageSession() }),
+  )
 }
 
 interface Sound {
@@ -296,6 +360,7 @@ export function installAudioCensus(options: AudioCensusOptions = {}): void {
   const win = options.win ?? window
   if (installed.has(win)) return
   installed.add(win)
+  pageWindow = win
   wrapConstructor(win, 'AudioContext')
   const holder = win as unknown as Record<string, unknown>
   if (holder.webkitAudioContext !== holder.AudioContext) {
@@ -348,4 +413,8 @@ export function resetAudioCensusForTests(): void {
   tracksOpened = 0
   tracksEnded = 0
   installed = new WeakSet<object>()
+  outputSource = null
+  pageWindow = null
+  for (const timer of settling) clearTimeout(timer)
+  settling = []
 }

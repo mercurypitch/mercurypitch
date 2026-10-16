@@ -64,6 +64,59 @@ describe('the phone rows', () => {
     )
   })
 
+  it('gives an iPhone’s system volume beside its session’s', () => {
+    const live: NativeAudioOutputReading = {
+      ...IPHONE,
+      volume: 0.5,
+      detail: {
+        ...IPHONE.detail,
+        systemVolume: 0.5,
+        systemVolumeLive: true,
+        sessionVolume: 0,
+      },
+    }
+    expect(volumeLine(live)).toBe('0.50 · system 0.50 · session 0.00')
+    const still: NativeAudioOutputReading = {
+      ...IPHONE,
+      volume: 0.75,
+      detail: {
+        ...IPHONE.detail,
+        systemVolume: 0,
+        systemVolumeLive: false,
+        sessionVolume: 0.75,
+      },
+    }
+    expect(volumeLine(still)).toBe(
+      '0.75 · system 0.00, not seen to move yet · session 0.75',
+    )
+  })
+
+  it('says how the app last made its session active, and any interruption', () => {
+    const cut: NativeAudioOutputReading = {
+      ...IPHONE,
+      detail: {
+        ...IPHONE.detail,
+        activation: 'activated at launch',
+        interrupted: true,
+        lastInterruption: 'began: default',
+      },
+    }
+    expect(sessionLine(cut)).toBe(
+      'PlayAndRecord · VoiceChat · mixWithOthers, allowBluetoothHFP · activated at launch · interrupted (began: default)',
+    )
+    const back: NativeAudioOutputReading = {
+      ...cut,
+      detail: {
+        ...cut.detail,
+        interrupted: false,
+        lastInterruption: 'ended: resume',
+      },
+    }
+    expect(sessionLine(back)).toBe(
+      'PlayAndRecord · VoiceChat · mixWithOthers, allowBluetoothHFP · activated at launch · last interruption ended: resume',
+    )
+  })
+
   it('reads an iPhone’s session without its prefixes', () => {
     expect(sessionLine(IPHONE)).toBe(
       'PlayAndRecord · VoiceChat · mixWithOthers, allowBluetoothHFP',

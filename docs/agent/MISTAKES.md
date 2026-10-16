@@ -430,6 +430,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** keep the lease until what you stopped has played, as the glass owners do (they release in `finish()`, after the fade), and answer `prepareToSuspend` with the time left on it for parks that come meanwhile. In the room tests, stop a note after its attack: the fake gain reads a ramp cancelled in the middle as never begun, so a release taken from there starts at silence.
 **See:** `src/components/room-kit/useExerciseCapture.ts` (`ROOM_TAIL_MS`), `release` in `packages/audio-io/src/shared-audio-context.ts`, "the way out" in `apps/mercurypitch/src/shell/premium-rooms-audio.test.tsx`.
 
+### Read the phone's volume again while it matters: a pushed change can never come
+
+**Symptom:** on build 880 (iPhone) a premium room said "The volume is at zero. Turn it up." and kept saying it after the volume went up. The owner then watched the Developer screen's Volume row follow the keys after a fresh launch, stop the moment a room opened, and read 0 until the app was killed.
+**Cause:** the plugin heard only the app's own `AVAudioSession`, by KVO on `outputVolume`. A room's sound plays from WebKit's own session, in its GPU process. Opening the mic switches that session to play-and-record, which a WebKit engineer describes as switching "to the VC level" ([WebKit bug 236219](https://bugs.webkit.org/show_bug.cgi?id=236219)), and WebKit's main branch keeps play-and-record while its audio plays after the mic closes (`MediaSessionManagerCocoa::updateSessionState`). From then on the keys can move a volume the app's session does not report. iOS can also end the app's session on a suspension, saying so only by an interruption that never ends, and on iOS 18 and later `outputVolume` can keep an old value. Which of these the owner's phone did is not yet in a device log; a test build's census now records it. Android has a smaller gap (AOSP `AudioService`): muting or unmuting a stream at the same level writes no setting, so the settings observer stays silent, and a muted stream reads as 0.
+**Rule:** do not take a pushed reading as the last word on the volume. While a wrong reading would mislead, read again on a timer and when the app comes back, and drop an answer asked before a newer change. On iOS read the system volume as well, off a hidden `MPVolumeView`'s slider counted once it has moved, and never by changing a session.
+**See:** `apps/mercurypitch/src/shell/RoomVolumeHint.tsx`, `apps/mercurypitch/ios/App/App/AudioOutputPlugin.swift`, `packages/mobile-runtime/src/audio-output.ts`, `apps/mercurypitch/src/shell/audio-census.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
