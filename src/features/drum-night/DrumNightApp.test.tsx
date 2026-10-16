@@ -206,9 +206,19 @@ async function settleMicrotasks(): Promise<void> {
   await Promise.resolve()
 }
 
-function openDrummerSeatKit(): HTMLElement {
+/**
+ * Switch to Drummer Seat view and wait for its kit.
+ *
+ * The seat view is lazy, and Solid lets go of a lazy component's resource
+ * with the owner that loaded it, so the next mount waits for it again. Read
+ * straight after the click, the kit was there only if an earlier test had
+ * happened to leave the component loaded: run alone, or in another order,
+ * the test found no kit (MISTAKES.md, "Await a lazy control after every
+ * remount").
+ */
+async function openDrummerSeatKit(): Promise<HTMLElement> {
   fireEvent.click(screen.getByRole('button', { name: 'Drummer Seat view' }))
-  return screen.getByRole('group', {
+  return await screen.findByRole('group', {
     name: 'Playable photographed drum kit',
   })
 }
@@ -1097,9 +1107,10 @@ async function recordOnePreparedHit(clock: TestClock): Promise<void> {
       'true',
     ),
   )
+  const seatKit = await openDrummerSeatKit()
   clock.advanceTo(clock.nowMs() + 250)
   dispatchPointerDown(
-    within(openDrummerSeatKit()).getByRole('button', {
+    within(seatKit).getByRole('button', {
       name: /Play Acoustic snare/i,
     }),
     { button: 0, isPrimary: true, pressure: 0.7 },
@@ -2174,9 +2185,10 @@ describe('DrumNightApp', () => {
         'true',
       ),
     )
+    const seatKit = await openDrummerSeatKit()
     clock.advanceTo(clock.nowMs() + 250)
     dispatchPointerDown(
-      within(openDrummerSeatKit()).getByRole('button', {
+      within(seatKit).getByRole('button', {
         name: /Play Acoustic snare/i,
       }),
       { button: 0, isPrimary: true, pressure: 0.8 },
@@ -2343,9 +2355,10 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
     await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalled())
 
+    const seatKit = await openDrummerSeatKit()
     clock.advanceTo(clock.nowMs() + 250)
     dispatchPointerDown(
-      within(openDrummerSeatKit()).getByRole('button', {
+      within(seatKit).getByRole('button', {
         name: /Play Acoustic snare/i,
       }),
       { button: 0, isPrimary: true, pressure: 0.7 },
@@ -2389,9 +2402,10 @@ describe('DrumNightApp', () => {
     await waitFor(() => expect(takeCapture.dismiss).toHaveBeenCalled())
 
     for (let index = 0; index < 2; index += 1) {
+      const seatKit = await openDrummerSeatKit()
       clock.advanceTo(clock.nowMs() + 250)
       dispatchPointerDown(
-        within(openDrummerSeatKit()).getByRole('button', {
+        within(seatKit).getByRole('button', {
           name: /Play Acoustic snare/i,
         }),
         { button: 0, isPrimary: true, pressure: 0.7 },
@@ -2482,9 +2496,10 @@ describe('DrumNightApp', () => {
         'true',
       ),
     )
+    const seatKit = await openDrummerSeatKit()
     clock.advanceTo(clock.nowMs() + 250)
     dispatchPointerDown(
-      within(openDrummerSeatKit()).getByRole('button', {
+      within(seatKit).getByRole('button', {
         name: /Play Acoustic snare/i,
       }),
       { button: 0, isPrimary: true, pressure: 0.8 },
@@ -2631,7 +2646,7 @@ describe('DrumNightApp', () => {
 
   it('starts sound from pointer and keyboard strikes and uses Space for one transport', async () => {
     const room = renderRoom()
-    const touchKit = openDrummerSeatKit()
+    const touchKit = await openDrummerSeatKit()
     const snare = within(touchKit).getByRole('button', {
       name: /Play Acoustic snare/i,
     })
@@ -4486,7 +4501,7 @@ describe('DrumNightApp', () => {
       '/drum-night/drummer-seat-portrait.webp',
     )
     expect(
-      screen.getByRole('heading', { name: 'Playable drummer’s seat' }),
+      await screen.findByRole('heading', { name: 'Playable drummer’s seat' }),
     ).toBeInTheDocument()
     expect(createScoreIndex).toHaveBeenCalledOnce()
 
@@ -5019,9 +5034,10 @@ describe('DrumNightApp', () => {
         name: 'Clear A B practice loop',
       }),
     ).toBeVisible()
+    const seatKit = await openDrummerSeatKit()
     clock.advanceTo(4_000)
     dispatchPointerDown(
-      within(openDrummerSeatKit()).getByRole('button', {
+      within(seatKit).getByRole('button', {
         name: /Play Acoustic snare/i,
       }),
       { button: 0, isPrimary: true, pressure: 0.7 },
@@ -5097,7 +5113,7 @@ describe('DrumNightApp', () => {
       ).not.toHaveLength(0),
     )
 
-    const snare = within(openDrummerSeatKit()).getByRole('button', {
+    const snare = within(await openDrummerSeatKit()).getByRole('button', {
       name: /Play Acoustic snare/i,
     })
     for (let index = 1; index <= 5; index += 1) {
@@ -5171,7 +5187,7 @@ describe('DrumNightApp', () => {
       ).not.toHaveLength(0),
     )
 
-    const snare = within(openDrummerSeatKit()).getByRole('button', {
+    const snare = within(await openDrummerSeatKit()).getByRole('button', {
       name: /Play Acoustic snare/i,
     })
     clock.advanceTo(550)
