@@ -10,9 +10,11 @@
 //   wave k      up, top and down: the camera moves at one constant speed,
 //               the wave's span over its time, so x is linear in time
 //               wherever the voice is judged (L0 5.2)
-//   landing     the landing and the breath after it cover the landing
-//   + breath    (LANDING_W) in their time: the scroll eases down from the
-//               wave speed, crawls, and eases back up before the next wave
+//   landing     the landing and the rest after it cover the landing
+//   + rest      (LANDING_W) in their time: the scroll slows to a stand
+//               over the landing, stands through the pause and the next
+//               root's tone, and eases back up before the next wave
+//               (room-kit glide-gap.ts)
 //   count-in    from the intro at rest to the first wave's foot at the
 //               wave speed. The intro shows screen 1: the first crest at
 //               INTRO.crestX, the world squeezed to wave A's size; the
@@ -30,6 +32,8 @@
 // arithmetic on the glide path's own times (src/lib/glide), so the wave
 // under the playhead is always the wave the engine judges.
 
+import type { ArchGap } from '@/components/room-kit/glide-gap'
+import { archGapAt, easedDistance as eased, planArchGap, } from '@/components/room-kit/glide-gap'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { INTRO, LANDING_W, PERIOD_W, PLAYHEAD_X, WAVE } from './bay-geometry'
 
@@ -40,17 +44,6 @@ export function crestX(k: number): number {
 
 /** The camera on the intro: screen 1's first crest at INTRO.crestX. */
 export const INTRO_CAMERA = -(INTRO.crestX - PLAYHEAD_X) / INTRO.sx
-
-/** At most this share of a landing and breath goes to each change of speed. */
-const RAMP_SHARE = 0.16
-/** The ramps leave the crawl at least this share of the landing to cover. */
-const CRAWL_FLOOR = 0.2
-
-/** The integral of smoothstep from 0 to x, x in [0, 1]. */
-function eased(x: number): number {
-  const s = x <= 0 ? 0 : x >= 1 ? 1 : x
-  return s * s * s - (s * s * s * s) / 2
-}
 
 const smoothstep = (x: number): number => {
   const s = x <= 0 ? 0 : x >= 1 ? 1 : x
@@ -76,35 +69,6 @@ export interface BayScroll {
   readonly countIn: number
 }
 
-interface Gap {
-  readonly from: number
-  readonly to: number
-  readonly x0: number
-  readonly ramp: number
-  readonly crawl: number
-}
-
-/** A landing and breath: from one wave's end to the next wave's start. */
-function gapOf(from: number, to: number, x0: number, v: number): Gap {
-  const span = to - from
-  const ramp =
-    Math.min(RAMP_SHARE, ((1 - CRAWL_FLOOR) * LANDING_W) / (v * span)) * span
-  const crawl = (LANDING_W - ramp * v) / (span - ramp)
-  return { from, to, x0, ramp, crawl }
-}
-
-/** Distance into a gap after `tau` seconds of it. */
-function inGap(gap: Gap, v: number, tau: number): number {
-  const { ramp: r, crawl: c } = gap
-  const span = gap.to - gap.from
-  if (tau <= r) return v * tau + (c - v) * r * eased(tau / r)
-  const p1 = (r * (v + c)) / 2
-  if (tau <= span - r) return p1 + c * (tau - r)
-  const sigma = tau - (span - r)
-  const p2 = p1 + c * (span - 2 * r)
-  return p2 + c * sigma + (v - c) * r * eased(sigma / r)
-}
-
 /** The count-in: a cubic from rest at the intro to the foot at speed v. */
 function countInAt(s: number, from: number, to: number, slope: number): number {
   const s2 = s * s
@@ -122,9 +86,19 @@ export function createBayScroll(
   const first = waves[0]
   const sung = first.end - first.start
   const v = (2 * WAVE.a) / sung
-  const gaps: Gap[] = []
+  const gaps: ArchGap[] = []
   for (let k = 0; k + 1 < waves.length; k++) {
-    gaps.push(gapOf(waves[k].end, waves[k + 1].start, crestX(k) + WAVE.a, v))
+    const wave = waves[k]
+    gaps.push(
+      planArchGap(
+        wave.end,
+        wave.landingEnd,
+        waves[k + 1].start,
+        crestX(k) + WAVE.a,
+        LANDING_W,
+        v,
+      ),
+    )
   }
   const last = waves[waves.length - 1]
   const settle = Math.max(1e-3, last.landingEnd - last.end)
@@ -144,10 +118,8 @@ export function createBayScroll(
       if (t <= wave.end) {
         return crestX(k) - WAVE.a + v * Math.max(0, t - wave.start)
       }
-      const gap = gaps[k] as Gap | undefined
-      if (gap !== undefined && t < gap.to) {
-        return gap.x0 + inGap(gap, v, t - gap.from)
-      }
+      const gap = gaps[k] as ArchGap | undefined
+      if (gap !== undefined && t < gap.to) return archGapAt(gap, t)
     }
     const tau = Math.min(settle, t - last.end)
     return finalX + v * (tau - settle * eased(tau / settle))

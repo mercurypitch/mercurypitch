@@ -8,8 +8,10 @@
 // file (sync-lip-art.mjs) and the room's code does not change:
 //
 //   bay-back     drawn: the sky's band colours read off storyboard screen
-//                1, the moon at its measured place and size, the cliffs as
-//                dark shapes, the horizon, the far sea and its moonlight
+//                1, the cliffs as dark shapes, the horizon, the far sea
+//                and its moonlight (the moon is its own plate)
+//   moon         drawn: the moon and its halo at screen 1's measured size,
+//                on a clear ground, centred in its frame
 //   wave-lit     Gemini's lip_wave_lit_a, stretched to wave B's height and
 //                width, its glow graded zone by zone to screen 2's six
 //                height zones (L0 2.3), cut along its water's edge
@@ -639,7 +641,7 @@ function profile(rng, x0, x1, topAt, roughness, horizon, taper = 0.09) {
 }
 
 /**
- * The bay-back: sky, moon and halo, thin clouds, the cliffs (screen 1's
+ * The bay-back: sky, thin clouds, the cliffs (screen 1's
  * profiles: a headland under 0.21 W, low land to 0.44 W, open sea to 0.88
  * W, a headland past it; further right, as the bay scrolls, low cliffs and
  * a second headland), the horizon's bright line, the far sea with its
@@ -662,16 +664,14 @@ export function bayBackSvg(frame, px, bay) {
     const y = top + 0.02 + rng() * (0.36 - top)
     body += `<circle cx="${fmt(c.X(x))}" cy="${fmt(c.Y(y))}" r="${fmt(c.L(0.0012 + rng() * 0.0016))}" fill="#c8d4f0" opacity="${fmt(0.25 + rng() * 0.45)}"/>`
   }
-  // The moon's halo, then the moon.
-  body += `<circle cx="${fmt(c.X(moon.cx))}" cy="${fmt(c.Y(moon.cy))}" r="${fmt(c.L(moon.halo * 2.2))}" fill="url(#halo)"/>`
-  // Thin clouds across the moon's band.
+  // Thin clouds across the moon's band (the moon is its own plate,
+  // moonSvg, drawn over this one by the room).
   for (let i = 0; i < 14; i++) {
     const x = frame.left + rng() * frame.width
     const y = 0.33 + rng() * 0.32
     const rx = 0.08 + rng() * 0.16
     body += `<ellipse cx="${fmt(c.X(x))}" cy="${fmt(c.Y(y))}" rx="${fmt(c.L(rx))}" ry="${fmt(c.L(rx * (0.12 + rng() * 0.1)))}" fill="#3a4f78" opacity="${fmt(0.16 + rng() * 0.16)}" filter="url(#soft)"/>`
   }
-  body += `<circle cx="${fmt(c.X(moon.cx))}" cy="${fmt(c.Y(moon.cy))}" r="${fmt(c.L(moon.d / 2))}" fill="url(#moon)"/>`
   // The cliffs: dark land standing on the horizon.
   const land = (points, fill) => {
     const d = [
@@ -765,10 +765,31 @@ export function bayBackSvg(frame, px, bay) {
   const defs = [
     `<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">${stops(c, SKY, top, horizon)}</linearGradient>`,
     `<linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">${stops(c, FAR_SEA, horizon, bottom)}</linearGradient>`,
-    `<radialGradient id="halo"><stop offset="0%" stop-color="#9fb0d8" stop-opacity="0.5"/><stop offset="45%" stop-color="#5a6f9e" stop-opacity="0.22"/><stop offset="100%" stop-color="#2a4168" stop-opacity="0"/></radialGradient>`,
-    `<radialGradient id="moon" cx="45%" cy="42%"><stop offset="0%" stop-color="#eef1f8"/><stop offset="70%" stop-color="${moon.core}"/><stop offset="100%" stop-color="#a9b6d2"/></radialGradient>`,
     `<filter id="soft" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="${fmt(c.L(0.012))}"/></filter>`,
     `<filter id="soft2" x="0" y="-200%" width="100%" height="500%"><feGaussianBlur stdDeviation="${fmt(c.L(0.002))}"/></filter>`,
+  ].join('')
+  return svgDoc(c, body, defs)
+}
+
+/** The moon's halo reaches this far, over the halo radius L0 measured. */
+export const MOON_HALO_SPREAD = 2.2
+
+/**
+ * The moon: its halo, then its disc, at screen 1's measured size and
+ * colour, centred in `frame` (MOON_HALO_SPREAD halo radii each way), on a
+ * clear ground. The room slides it with the sky and shrinks it a little
+ * in the run (bay-sky.ts), so it is a plate of its own.
+ */
+export function moonSvg(frame, px, moon) {
+  const c = canvas(frame, px)
+  const cx = frame.left + frame.width / 2
+  const cy = frame.top + frame.height / 2
+  const body =
+    `<circle cx="${fmt(c.X(cx))}" cy="${fmt(c.Y(cy))}" r="${fmt(c.L(moon.halo * MOON_HALO_SPREAD))}" fill="url(#halo)"/>` +
+    `<circle cx="${fmt(c.X(cx))}" cy="${fmt(c.Y(cy))}" r="${fmt(c.L(moon.d / 2))}" fill="url(#moon)"/>`
+  const defs = [
+    `<radialGradient id="halo"><stop offset="0%" stop-color="#9fb0d8" stop-opacity="0.5"/><stop offset="45%" stop-color="#5a6f9e" stop-opacity="0.22"/><stop offset="100%" stop-color="#2a4168" stop-opacity="0"/></radialGradient>`,
+    `<radialGradient id="moon" cx="45%" cy="42%"><stop offset="0%" stop-color="#eef1f8"/><stop offset="70%" stop-color="${moon.core}"/><stop offset="100%" stop-color="#a9b6d2"/></radialGradient>`,
   ].join('')
   return svgDoc(c, body, defs)
 }

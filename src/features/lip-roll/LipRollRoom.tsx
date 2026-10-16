@@ -252,6 +252,7 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
           <BayScene
             layout={l()}
             path={room.path()}
+            named={room.named()}
             reduced={reduced}
             showResult={room.showResult()}
             still={props.still}

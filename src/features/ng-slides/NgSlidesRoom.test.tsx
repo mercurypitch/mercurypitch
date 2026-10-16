@@ -11,6 +11,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CREST_NOTE } from '@/components/room-kit/CrestNote'
 import mic from '@/components/room-kit/RoomControls.module.css'
 import { tone } from '@/lib/glass/test-frames'
 import type { GlidePath } from '@/lib/glide/glide-path'
@@ -25,6 +26,7 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type * as ArtModule from './bridge-art'
+import { PLAYHEAD_X, TARGET_LINE } from './bridge-geometry'
 import type * as GlassModule from './bridge-glass'
 import type { LitStrip } from './bridge-reveal'
 import { NG_LINES } from './merc-lines'
@@ -265,6 +267,8 @@ interface Seen {
   /** The mic's state, and its ring's scale (NaN when it is not drawn). */
   readonly mic: string | undefined
   readonly ring: number
+  /** The contact light: its state, and its centre, px. */
+  readonly light: { state?: string; x: number; y: number }
 }
 
 /** The mic's ring as drawn now: its scale, NaN with none written. */
@@ -274,6 +278,17 @@ function ringScale(): number {
     (ring as HTMLElement | null)?.style.transform ?? '',
   )
   return scale === null ? Number.NaN : Number(scale[1])
+}
+
+/** The contact light's state and centre (its box's translate plus half). */
+function lightNow(): Seen['light'] {
+  const el = screen.getByTestId('ng-contact')
+  const at = /translate3d\(([-\d.]+)px,([-\d.]+)px/u.exec(el.style.transform)
+  return {
+    state: el.dataset.state,
+    x: Number(at?.[1] ?? Number.NaN) + Number.parseFloat(el.style.width) / 2,
+    y: Number(at?.[2] ?? Number.NaN) + Number.parseFloat(el.style.height) / 2,
+  }
 }
 
 /**
@@ -302,6 +317,7 @@ function play(
       bubble: bubble(),
       mic: screen.queryByTestId('ng-mic')?.dataset.state,
       ring: ringScale(),
+      light: lightNow(),
     })
     if (phase() !== 'run') break
   }
@@ -419,6 +435,40 @@ describe('the intro', () => {
   })
 })
 
+describe('the note names', () => {
+  it("names each arch's top under the middle of its apex", () => {
+    render(() => <NgSlidesRoom onDone={() => undefined} />)
+    const plan = planFor('learning', 45)
+
+    const tops = screen.getAllByTestId('ng-top-name')
+    expect(tops.map((n) => n.textContent)).toEqual(
+      plan.path.arches.map((a) => midiToNoteNameOctave(a.topMidi)),
+    )
+    const lines = screen.getAllByTestId('ng-target')
+    tops.forEach((name, k) => {
+      // The target line's middle point: the middle of the arch's top.
+      const points = (lines[k].getAttribute('d') ?? '')
+        .split(/[ML]/u)
+        .filter((p) => p !== '')
+        .map((p) => p.split(' ').map(Number))
+      const [x, y] = points[(points.length - 1) / 2]
+      expect(Number(name.getAttribute('x'))).toBeCloseTo(x, 0)
+      expect(Number(name.getAttribute('y')) - y).toBeCloseTo(
+        (CREST_NOTE.belowW - TARGET_LINE.offset) * 390,
+        0,
+      )
+    })
+  })
+
+  it("names nothing while the slides are only the room's guess", () => {
+    kept.note = null
+    render(() => <NgSlidesRoom onDone={() => undefined} />)
+
+    expect(screen.queryAllByTestId('ng-top-name')).toEqual([])
+    expect(screen.queryByTestId('ng-root-name')).toBeNull()
+  })
+})
+
 describe('a run sung on the line', () => {
   it('counts in on the root, plays each breath its root once, and lights every arch', async () => {
     const plan = planFor('learning', 45)
@@ -519,6 +569,51 @@ describe('a run sung on the line', () => {
   })
 })
 
+describe('the contact light', () => {
+  it.each(['learning', 'singer', 'professional'] as const)(
+    "is lit inside the %s band and dim outside it, on the target at Merc's feet",
+    async (level) => {
+      setExerciseLevel(level)
+      const plan = planFor(level, 45)
+      const { bandCents } = NG_SLIDES_LEVELS[level]
+      const odd = (t: number) =>
+        plan.path.arches.some(
+          (a) => a.index % 2 === 1 && t >= a.start && t <= a.landingEnd,
+        )
+      // Inside the band on slides 1, 3 and 5, outside it on 2 and 4: read
+      // at each top's middle, where the path is flat and the lag
+      // allowance cannot help.
+      const voice = offset(follow(plan.path), (t) =>
+        odd(t) ? 1.5 * bandCents : 0.8 * bandCents,
+      )
+      await startRun()
+      const seen = play(windowFrames(plan, voice), plan)
+
+      const lines = screen.getAllByTestId('ng-target')
+      for (const [k, arch] of plan.path.arches.entries()) {
+        const top = seen.find((s) => s.t >= (arch.topStart + arch.topEnd) / 2)
+        expect(top?.light.state).toBe(k % 2 === 1 ? 'off' : 'on')
+        // On the target line's middle (less the line's own offset), at
+        // the playhead.
+        const points = (lines[k].getAttribute('d') ?? '')
+          .split(/[ML]/u)
+          .filter((p) => p !== '')
+          .map((p) => p.split(' ').map(Number))
+        const lineY = points[(points.length - 1) / 2][1]
+        expect(top?.light.y).toBeCloseTo(lineY - TARGET_LINE.offset * 390, 0)
+        expect(top?.light.x).toBeCloseTo(PLAYHEAD_X * 390, 0)
+      }
+      const judged = (t: number) =>
+        plan.path.arches.some((a) => t > a.start - 0.1 && t < a.end + 0.1)
+      for (const s of seen) {
+        if (s.phase === 'run' && !judged(s.t)) {
+          expect(s.light.state).toBe('hidden')
+        }
+      }
+    },
+  )
+})
+
 describe('stopping', () => {
   it('drops the take: nothing kept, the mic closed, the bridge back at the start', async () => {
     const plan = planFor('learning', 45)
@@ -577,6 +672,15 @@ describe('the levels', () => {
       const seen = play(frames, plan)
 
       expect(heard.tones.slice(1)).toHaveLength(breathTones)
+      // Each root after its rest's pause, never while the singer lands.
+      const pause = NG_SLIDES_LEVELS[level].pauseSec
+      heard.tones.slice(1).forEach((played, k) => {
+        const due = plan.path.arches[k].landingEnd + pause
+        expect(played.at - plan.countIn).toBeGreaterThanOrEqual(due - 1e-9)
+        expect(played.at - plan.countIn).toBeLessThan(
+          due + STEP_MS / 1000 + 1e-9,
+        )
+      })
       // The path is the level's: the result comes as its last landing ends.
       const end = seen.find((s) => s.phase === 'result')
       expect(end?.t).toBeGreaterThanOrEqual(plan.path.duration - 1e-9)
@@ -692,4 +796,44 @@ describe('the mic through a run', () => {
     expect(voiced.every((s) => s.mic === 'sing' && s.ring > 1.2)).toBe(true)
     expect(hushed.every((s) => s.mic === 'sing' && s.ring < 1.05)).toBe(true)
   })
+})
+
+describe('the mic and the contact light', () => {
+  it.each(['learning', 'singer', 'professional'] as const)(
+    'at %s, wait and no light through each stop between slides, and the light only while the mic says sing',
+    async (level) => {
+      setExerciseLevel(level)
+      const plan = planFor(level, 45)
+      const { pauseSec } = NG_SLIDES_LEVELS[level]
+      await startRun()
+
+      const seen = play(windowFrames(plan, follow(plan.path)), plan)
+
+      const run = seen.filter((s) => s.phase === 'run')
+      // Each stop: the slide's landing, the pause, then the rest of the
+      // rest, up to the next slide.
+      for (const [k, arch] of plan.path.arches.slice(0, -1).entries()) {
+        const next = plan.path.arches[k + 1]
+        const stop = run.filter((s) => s.t >= arch.end && s.t < next.start)
+        const pause = stop.filter(
+          (s) => s.t >= arch.landingEnd && s.t < arch.landingEnd + pauseSec,
+        )
+        expect(stop.length).toBeGreaterThan(0)
+        expect(pause.length > 0).toBe(pauseSec > 0)
+        expect(
+          stop.every((s) => s.mic === 'wait' && s.light.state === 'hidden'),
+        ).toBe(true)
+      }
+      // Frame by frame, the light shows exactly while the mic says sing,
+      // its last instant included (the take hands the engine every frame
+      // sung by the screen's time).
+      const apart = run.filter(
+        (s) => (s.light.state !== 'hidden') !== (s.mic === 'sing'),
+      )
+      expect(apart).toEqual([])
+      expect(run.some((s) => s.mic === 'sing' && s.light.state === 'on')).toBe(
+        true,
+      )
+    },
+  )
 })

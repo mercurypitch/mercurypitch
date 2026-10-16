@@ -7,6 +7,7 @@ import { lipRollPath } from '@/lib/glide/glide-path'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
 import { INTRO, LANDING_W, PERIOD_W, PLAYHEAD_X, WAVE } from './bay-geometry'
 import { createBayScroll, crestX, holdCamera, INTRO_CAMERA } from './bay-scroll'
+import { BREATH_TONE_SEC } from './lip-run'
 
 const ROOTS = [48, 50, 52]
 const COUNT_IN = 2.5
@@ -72,6 +73,28 @@ describe('the camera between waves', () => {
           expect(x).toBeGreaterThanOrEqual(previous - 1e-12)
           previous = x
         }
+      }
+    },
+  )
+})
+
+describe('the bay stops between waves', () => {
+  it.each(levels)(
+    'stands still from the landing through the pause and the next root (%s)',
+    (_, preset) => {
+      const path = lipRollPath(ROOTS, 12, preset)
+      const scroll = createBayScroll(path, COUNT_IN)
+      for (let k = 0; k + 1 < path.arches.length; k++) {
+        const landed = path.arches[k].landingEnd
+        // The pause, then the tone where the level plays one; at least
+        // half a second where it plays none.
+        const tone = preset.playsNextRoot ? BREATH_TONE_SEC : 0
+        const until = Math.max(landed + preset.pauseSec + tone, landed + 0.5)
+        const x = scroll.at(landed)
+        for (let t = landed; t <= until + 1e-9; t += 0.05) {
+          expect(scroll.at(t)).toBe(x)
+        }
+        expect(scroll.at(path.arches[k + 1].start)).toBeGreaterThan(x)
       }
     },
   )

@@ -34,7 +34,7 @@
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { bayBackSvg, bubbleSvg, copyImage, cropRows, gradeUnlit, litZoneReport, renderSvg, resultEnvelope, resultImage, seaFrontSvg, waveG, waveLitImage, writeWebp, } from './lip-art/stand-ins.mjs'
+import { bayBackSvg, bubbleSvg, copyImage, cropRows, gradeUnlit, litZoneReport, MOON_HALO_SPREAD, moonSvg, renderSvg, resultEnvelope, resultImage, seaFrontSvg, waveG, waveLitImage, writeWebp, } from './lip-art/stand-ins.mjs'
 
 const ROOT = process.cwd()
 const SOURCE = process.argv[2]
@@ -121,6 +121,12 @@ const bay = {
     halo: SPEC.bay['1'].moon.halo_radius_W,
     core: SPEC.bay['1'].moon.core_hex,
   },
+  // Where screens 2 and 3 put the moon: the run's sky aims for them.
+  moonScreens: ['2', '3'].map((s) => ({
+    cx: SPEC.bay[s].moon.cx,
+    cy: SPEC.bay[s].moon.cy_W,
+    d: SPEC.bay[s].moon.diameter_W,
+  })),
 }
 
 const RV = SPEC.result_view
@@ -151,6 +157,14 @@ const BAY_BACK = {
   top: -0.14,
   width: BP['bay-back'].frame.width,
   height: r4(BP['bay-back'].frame.height + 0.14),
+}
+/** The moon: its halo's reach each way about screen 1's moon (moonSvg). */
+const MOON_R = r4(bay.moon.halo * MOON_HALO_SPREAD)
+const MOON = {
+  left: r4(bay.moon.cx - MOON_R),
+  top: r4(bay.moon.cy - MOON_R),
+  width: r4(2 * MOON_R),
+  height: r4(2 * MOON_R),
 }
 const WAVE_FRAME = BP['wave-unlit'].frame_about_crest
 const SEA_FRONT = BP['sea-front'].frame
@@ -221,6 +235,13 @@ const PLATES = [
     frame: BAY_BACK,
     widths: [645],
     make: async (f, px) => renderSvg(bayBackSvg(f, px, bay)),
+  },
+  {
+    name: 'moon',
+    frame: MOON,
+    widths: [645],
+    alpha: true,
+    make: async (f, px) => renderSvg(moonSvg(f, px, bay.moon)),
   },
   {
     name: 'wave-lit',
@@ -402,12 +423,12 @@ function geometryTs(synced, bubble) {
     `  waterEdge: ${dots.waterEdge},`,
     '} as const',
     '',
-    '/** The bay-back: its horizon on the intro (screen 1) and in the run (screens 2 and 3), its parallax. */',
+    "/** The bay-back's horizon on the intro (screen 1) and in the run (screens 2 and 3); the moon on screen 1, and on screens 2 and 3. */",
     'export const BAY = {',
     `  horizon: ${bay.horizon},`,
     `  horizonRun: ${bay.horizonRun},`,
-    '  parallax: 0.25,',
     `  moon: { cx: ${bay.moon.cx}, cy: ${bay.moon.cy}, d: ${bay.moon.d} },`,
+    `  moonScreens: [${bay.moonScreens.map((m) => `{ cx: ${m.cx}, cy: ${m.cy}, d: ${m.d} }`).join(', ')}],`,
     '} as const',
     '',
     '/** The pulled-back view (screen 4): three waves across the bay. */',

@@ -32,6 +32,20 @@ export interface BridgeFrame {
   readonly trace: readonly TraceSample[]
   /** Merc's feet: world-independent x (W of the screen) and storyboard y. */
   readonly merc: { readonly x: number; readonly feetY: number }
+  /**
+   * The contact light at Merc's x (room-kit ContactLight): the target's
+   * storyboard y now, and the voice on it. Null where nothing is judged
+   * (the count-in, a landing, a rest) and in the demo's takes.
+   */
+  readonly contact: BridgeContact | null
+}
+
+/** Where the voice meets the path now, for the contact light. */
+export interface BridgeContact {
+  /** The target's storyboard y (W). */
+  readonly y: number
+  /** The engine has the voice on the path. */
+  readonly on: boolean
 }
 
 export interface BridgeView {

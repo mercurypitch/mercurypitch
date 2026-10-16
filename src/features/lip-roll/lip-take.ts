@@ -22,13 +22,13 @@ import { createGlideState, tickGlide } from '@/lib/glide/glide-engine'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
 import { computeGlideResult } from '@/lib/glide/glide-metrics'
 import type { GlidePath } from '@/lib/glide/glide-path'
-import { segmentAt } from '@/lib/glide/glide-path'
+import { segmentAt, targetAt } from '@/lib/glide/glide-path'
 import type { GlidePreset } from '@/lib/glide/glide-presets'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { PLAYHEAD_X } from './bay-geometry'
 import { pitchY } from './bay-layout'
 import type { BayScroll } from './bay-scroll'
-import type { TraceSample } from './bay-view'
+import type { BayContact, TraceSample } from './bay-view'
 import type { WaveHeard } from './lip-run'
 import { waveHeard } from './lip-run'
 
@@ -69,6 +69,11 @@ export interface LipTake {
   rootAt: (t: number) => number
   /** The voice sounds now, and is drawn (not the room's own tone). */
   readonly voiced: () => boolean
+  /**
+   * The contact light at screen time `t`: the target's world y and the
+   * engine's onPath, while its last frame is in a wave's sung part.
+   */
+  contact: (t: number) => BayContact | null
 }
 
 export function createLipTake(deps: LipTakeDeps): LipTake {
@@ -164,5 +169,10 @@ export function createLipTake(deps: LipTakeDeps): LipTake {
     waveAt,
     rootAt,
     voiced: () => lastVoiced,
+    contact: (t) => {
+      const target = state.arch < 0 ? null : targetAt(path, t)
+      if (target === null) return null
+      return { y: pitchY(target, rootAt(t), semitonesAt(t)), on: state.onPath }
+    },
   }
 }

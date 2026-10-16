@@ -4,14 +4,24 @@
 //
 // L0 5.4's layers, back to front:
 //
-//   bay-back     sky, moon, cliffs, the far sea: one plate, scrolled at a
-//                quarter of the waves' speed (BAY.parallax), its horizon
-//                moved from screen 1's to screens 2 and 3's with the zoom
+//   bay-back     sky, cliffs, the far sea: one plate, slid with the camera
+//                (bay-sky.ts), its horizon moved from screen 1's to
+//                screens 2 and 3's with the zoom; the moon, a plate of its
+//                own in the same box, shrinks and rises with the zoom
 //   waves        each wave's unlit water, and a canvas for each wave
 //                lighting (bay-waves.ts); drawn normally, opaque water
+//   contact      where the voice meets the path now (room-kit
+//                ContactLight), on the water under the dots at Merc's x:
+//                an aura of the lit wave's colours round him while the
+//                voice is on the path, a small moon-grey mark off it
 //   dots         the target: pale dots along each crest (an SVG path per
 //                wave from the glide path's own targetAt, dashed to dots),
-//                and the foam's sparkles on a crest once its top is lit
+//                the foam's sparkles on a crest once its top is lit; over
+//                them each wave's top note under its crest (room-kit
+//                CrestNote), each name a small layer of its own, a div
+//                moved by transform: a zoom neither lays out nor repaints
+//                text (a transform inside the SVG would relay its text);
+//                the names leave as the take pulls back at the result
 //   ribbon       the voice (GlideRibbon), fixed to the screen
 //   bubbles      what the voice sheds while it sounds (bay-bubbles.ts)
 //   Merc         his canvas, moved by transform, with the buzz beside his
@@ -29,8 +39,11 @@
 // arrive (STAND-INS.md).
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { createPictureSet } from '@/components/room-kit/canvas-picture'
+import type { ContactLightApi, ContactPalette, } from '@/components/room-kit/ContactLight'
+import { ContactLight } from '@/components/room-kit/ContactLight'
+import { CREST_NOTE, CrestNote, crestNoteFontPx, } from '@/components/room-kit/CrestNote'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import type { GlideRibbonApi, StrokePoint, } from '@/components/room-kit/GlideRibbon'
 import { GlideRibbon } from '@/components/room-kit/GlideRibbon'
@@ -39,13 +52,14 @@ import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
 import { createResultBand } from '@/components/room-kit/result-band'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { targetAt } from '@/lib/glide/glide-path'
-import { BAY_PLATE, bayArt, bayImage, BUBBLE_URL, RESULT_PLATE, } from './bay-art'
+import { BAY_PLATE, bayArt, bayImage, BUBBLE_URL, MOON_URL, RESULT_PLATE, } from './bay-art'
 import { createBubbleStream } from './bay-bubbles'
 import { BAY, DOTS, PLATES, PLAYHEAD_X, RESULT_ASPECT, RESULT_VIEW, WAVE, } from './bay-geometry'
 import type { BayLayout, MercBox, Zoom } from './bay-layout'
-import { frameY, horizonAt, MERC_INTRO_X, mercBoxAt, mercResultBox, pitchY, waveG, worldXOf, yOf, zoomAt, } from './bay-layout'
+import { frameY, horizonAt, MERC_INTRO_X, mercBoxAt, mercResultBox, pitchY, waveG, worldXOf, xOf, yOf, zoomAt, } from './bay-layout'
 import { crestX, INTRO_CAMERA } from './bay-scroll'
-import type { BayView, TraceSample } from './bay-view'
+import { moonPose, skyTravel } from './bay-sky'
+import type { BayContact, BayView, TraceSample } from './bay-view'
 import type { WaveImages } from './bay-waves'
 import { createBayWaves } from './bay-waves'
 import { BuzzMarks } from './BuzzMarks'
@@ -66,11 +80,25 @@ const SPARKLES_U = [-0.3, -0.17, -0.05, 0.08, 0.2, 0.32]
 const SPARKLE_OVER_W = 0.008
 /** Bubbles' canvas resolution, at most. */
 const BUBBLE_DPR = 2
+/**
+ * The contact light: an aura round Merc's body (about 0.3 W wide, the line
+ * through its middle) in the lit wave's colours (wave-lit: lavender at the
+ * crest, blue, cyan at the foot); a smaller glow hid behind him. Off, a
+ * small moon-grey mark on the target.
+ */
+const CONTACT = { rxW: 0.3, ryW: 0.27 } as const
+const CONTACT_PALETTE: ContactPalette = {
+  on: 'radial-gradient(closest-side, rgba(200, 238, 255, 0.7), rgba(140, 205, 255, 0.62) 44%, rgba(96, 175, 254, 0.46) 60%, rgba(99, 87, 238, 0.2) 80%, rgba(99, 87, 238, 0) 100%)',
+  off: 'radial-gradient(closest-side, rgba(214, 222, 238, 0.42), rgba(195, 204, 224, 0.22) 22%, rgba(195, 204, 224, 0.08) 40%, rgba(195, 204, 224, 0) 54%)',
+  ring: 'radial-gradient(closest-side, rgba(200, 238, 255, 0) 56%, rgba(200, 238, 255, 0.85) 70%, rgba(96, 175, 254, 0.35) 80%, rgba(96, 175, 254, 0) 92%)',
+}
 
 export interface BaySceneProps {
   layout: BayLayout
   /** The glide path whose targets the dots follow. */
   path: GlidePath
+  /** The waves' notes are the singer's, not the room's guess: name their tops. */
+  named: boolean
   /** Reduced motion: the bay's parallax stops, no bubbles, the buzz holds still. */
   reduced: boolean
   /** The pulled-back result is showing. */
@@ -146,6 +174,7 @@ function strokesOf(
 export function BayScene(props: BaySceneProps): JSX.Element {
   let rootEl: HTMLDivElement | undefined
   let bay: HTMLDivElement | undefined
+  let moonEl: HTMLImageElement | undefined
   let waveLayer: HTMLDivElement | undefined
   let frontLayer: HTMLDivElement | undefined
   let dotsLayer: HTMLDivElement | undefined
@@ -155,17 +184,24 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   let resultLit: HTMLCanvasElement | undefined
   let resultHolder: HTMLDivElement | undefined
   let ribbon: GlideRibbonApi | null = null
+  let contact: ContactLightApi | null = null
   let bayPlate: Plate | null = null
   let resultPlate: Plate | null = null
   let bubbleImage: HTMLImageElement | null = null
   const waveHolders: HTMLDivElement[] = []
   const dotPaths: SVGPathElement[] = []
   const sparkleGroups: SVGGElement[] = []
+  const topNames: HTMLDivElement[] = []
   const [resultReady, setResultReady] = createSignal(false)
 
   const dpr = (): number => window.devicePixelRatio || 1
   const art = createMemo(() => bayArt(dpr()))
   const unit = (): number => props.layout.unit
+  /** A top name's own box, px: the name and its halo, centred in it. */
+  const nameBox = (): { w: number; h: number } => {
+    const size = crestNoteFontPx(unit())
+    return { w: Math.ceil(size * 4), h: Math.ceil(size * 2) }
+  }
   const bubbles = createBubbleStream()
 
   // The waves' two pictures, decoded off the main thread once a visit and
@@ -203,6 +239,14 @@ export function BayScene(props: BaySceneProps): JSX.Element {
         )
         .join('')
       dotPaths[k]?.setAttribute('d', d)
+      const name = topNames[k] as HTMLDivElement | undefined
+      if (name !== undefined) {
+        const y = WAVE.crestY + CREST_NOTE.belowW
+        const box = nameBox()
+        const nx = localX(layout, zoom, crestX(k)) - box.w / 2
+        const ny = yOf(layout, frameY(zoom, y)) - box.h / 2
+        name.style.transform = `translate3d(${nx.toFixed(1)}px,${ny.toFixed(1)}px,0)`
+      }
       const group = sparkleGroups[k] as SVGGElement | undefined
       if (group === undefined) continue
       SPARKLES_U.forEach((u, i) => {
@@ -257,12 +301,22 @@ export function BayScene(props: BaySceneProps): JSX.Element {
     }
     if (bay !== undefined) {
       const back = PLATES.back.frame
-      const travel = props.reduced ? 0 : (camera - INTRO_CAMERA) * BAY.parallax
+      const travel = props.reduced ? 0 : skyTravel(camera)
       const bx = back.left * layout.width - travel * u
       const by =
         yOf(layout, horizonAt(z)) - (BAY.horizon - back.top) * layout.width
       bay.style.transform = `translate3d(${bx.toFixed(2)}px,${by.toFixed(2)}px,0)`
     }
+    placeMoon(z)
+  }
+
+  /** The moon's own shrink and rise, written only while the zoom moves. */
+  let moonZoom = Number.NaN
+  const placeMoon = (z: number): void => {
+    if (moonEl === undefined || z === moonZoom) return
+    moonZoom = z
+    const pose = moonPose(z)
+    moonEl.style.transform = `translate3d(0,${(pose.dy * unit()).toFixed(2)}px,0) scale(${pose.scale.toFixed(4)})`
   }
 
   /** His canvas keeps one size (a resize reallocates its GL buffers): scaled. */
@@ -353,6 +407,16 @@ export function BayScene(props: BaySceneProps): JSX.Element {
       }),
     )
 
+  /** The contact light at Merc's x, on the target under the frame's zoom. */
+  const showContact = (at: BayContact | null, x: number): void => {
+    if (at === null) {
+      contact?.show(0, 0, 'hidden')
+      return
+    }
+    const y = yOf(props.layout, frameY(zoomNow, at.y))
+    contact?.show(xOf(props.layout, x), y, at.on ? 'on' : 'off')
+  }
+
   /** The last frame, for a ribbon that mounts after it. */
   let lastTrace: readonly TraceSample[] | null = null
 
@@ -369,6 +433,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
       const head = f.voiced ? (f.trace.at(-1) ?? null) : null
       drawBubbles(head, zoomNow, f.camera)
       placeMerc(mercBoxAt(props.layout, zoomNow, f.merc.x, f.merc.feetY))
+      showContact(f.contact, f.merc.x)
       setBuzz(f.voiced)
     },
     reset: (at) => {
@@ -377,6 +442,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
       clearBubbles()
       lastTrace = null
       ribbon?.draw([], ribbonScale())
+      contact?.reset()
       moveTo(at, 0)
       placeMerc(mercBoxAt(props.layout, zoomNow, MERC_INTRO_X, WAVE.rootY))
       setBuzz(true)
@@ -391,6 +457,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
       }
       setBuzz(false)
       clearBubbles()
+      contact?.reset()
       void paintResult(lit).finally(() => {
         setResultReady(true)
         // A frame later, so his float to screen 4's place is a transition.
@@ -452,6 +519,16 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   const waveFrame = PLATES['wave-unlit'].frame
   const front = PLATES['sea-front'].frame
   const back = PLATES.back.frame
+  /** The moon's box in the bay-back's (both on screen 1's frame). */
+  const moonBox = (): JSX.CSSProperties => {
+    const f = PLATES.moon.frame
+    return {
+      left: `${((f.left - back.left) * unit()).toFixed(1)}px`,
+      top: `${((f.top - back.top) * unit()).toFixed(1)}px`,
+      width: `${(f.width * unit()).toFixed(1)}px`,
+      height: `${(f.height * unit()).toFixed(1)}px`,
+    }
+  }
   const waveBox = (k: number) =>
     worldBox(
       crestX(k) + waveFrame.left,
@@ -525,7 +602,16 @@ export function BayScene(props: BaySceneProps): JSX.Element {
             height: `${(back.height * props.layout.width).toFixed(1)}px`,
           }}
           data-testid="lip-bay"
-        />
+        >
+          <img
+            ref={moonEl}
+            class={styles.moon}
+            src={MOON_URL}
+            alt=""
+            style={moonBox()}
+            data-testid="lip-moon"
+          />
+        </div>
         <div ref={waveLayer} class={styles.world} data-testid="lip-waves">
           <For each={wavesList}>
             {(k) => (
@@ -540,6 +626,14 @@ export function BayScene(props: BaySceneProps): JSX.Element {
             )}
           </For>
         </div>
+        <ContactLight
+          rx={CONTACT.rxW * unit()}
+          ry={CONTACT.ryW * unit()}
+          palette={CONTACT_PALETTE}
+          reduced={props.reduced}
+          testId="lip-contact"
+          onReady={(api) => (contact = api)}
+        />
         <div ref={dotsLayer} class={styles.world} data-testid="lip-dots">
           <svg
             class={styles.dots}
@@ -582,6 +676,38 @@ export function BayScene(props: BaySceneProps): JSX.Element {
               )}
             </For>
           </svg>
+          <For each={wavesList}>
+            {(k) => (
+              <Show when={props.named ? props.path.arches[k] : undefined}>
+                {(wave) => (
+                  <div
+                    ref={(el) => {
+                      topNames[k] = el
+                      dotsZoom = Number.NaN
+                      placeDots(zoomNow)
+                    }}
+                    class={styles.name}
+                  >
+                    <svg
+                      width={nameBox().w}
+                      height={nameBox().h}
+                      viewBox={`0 0 ${nameBox().w} ${nameBox().h}`}
+                      aria-hidden="true"
+                    >
+                      <CrestNote
+                        x={nameBox().w / 2}
+                        y={nameBox().h / 2}
+                        midi={wave().topMidi}
+                        unit={unit()}
+                        fill={DOTS.colour}
+                        testId="lip-top-name"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </Show>
+            )}
+          </For>
         </div>
         <GlideRibbon
           width={props.layout.width}

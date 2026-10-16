@@ -19,12 +19,14 @@
 // the scene (BayScene.tsx), and with only the files downloaded ahead a
 // 33 ms frame came back into wave 1 in 3 of 15 measured runs, against
 // none in 9 with this hold (2026-10-15). The bay-back is a plate
-// (plate-loader.ts), decoded while the screen pushes in.
+// (plate-loader.ts), decoded while the screen pushes in; the moon, an
+// image in its box (bay-sky.ts), is decoded and kept as the waves are.
 
 import type { PlateSpec } from '@/components/room-kit/plate-loader'
 import { preloadPlate } from '@/components/room-kit/plate-loader'
 import bayBack from './art/bay-back.webp'
 import bubble from './art/bay-bubble.webp'
+import moon from './art/bay-moon.webp'
 import result860 from './art/bay-result-860.webp'
 import result1290 from './art/bay-result-1290.webp'
 import resultLit860 from './art/bay-result-lit-860.webp'
@@ -71,7 +73,10 @@ export function bayArt(dpr: number): BayArt {
 /** One glass bubble, drawn along the voice. */
 export const BUBBLE_URL = bubble
 
-/** The sky, the moon, the cliffs and the far sea: one plate, a quarter of the waves' speed. */
+/** The moon and its halo, slid with the sky and shrunk in the run. */
+export const MOON_URL = moon
+
+/** The sky, the cliffs and the far sea: one plate, slid with the camera (bay-sky.ts). */
 export const BAY_PLATE: PlateSpec = {
   key: 'lip-bay-back',
   candidates: [
@@ -125,14 +130,15 @@ const dpr = (): number =>
   typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1
 
 /**
- * On the tap that opens the room: the bay-back's decode, the waves' and
- * the bubble's loads. The result's pictures wait for the last wave.
+ * On the tap that opens the room: the bay-back's decode, the waves', the
+ * bubble's and the moon's loads. The result's pictures wait for the last
+ * wave.
  */
 export function preloadLipArt(): void {
   preloadPlate(BAY_PLATE)
   if (typeof Image === 'undefined') return
   const art = bayArt(dpr())
-  for (const url of [art.waveUnlit, art.waveLit, BUBBLE_URL]) {
+  for (const url of [art.waveUnlit, art.waveLit, BUBBLE_URL, MOON_URL]) {
     if (url !== '') void bayImage(url).catch(() => undefined)
   }
 }

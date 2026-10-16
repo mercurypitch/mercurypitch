@@ -83,6 +83,7 @@ export function fixtureController(scene: LipFixtureScene): LipController {
     mercState: () => scene.mercState,
     mercVoice: voice,
     path: () => PATH,
+    named: () => true,
     showResult: () => scene.summary !== null,
     start: () => undefined,
     stop: () => undefined,
@@ -111,6 +112,8 @@ export function fixtureController(scene: LipFixtureScene): LipController {
         trace: scene.trace,
         merc: scene.merc,
         voiced: scene.voiced,
+        // The storyboard's frames: no contact light.
+        contact: null,
       })
     },
   }

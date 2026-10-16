@@ -18,6 +18,14 @@
 //   is a third of the lag at every level: singers trail a moving target
 //   far more often than they lead it.
 // - Lip roll's Pro top asks for the same 200 ms on the crest as Ng's.
+//
+// The pause (owner, 15 Oct 2026: "stop merc, wait 1s or so, and then play
+// next note") is a second of stillness after each landing at the levels
+// that play the next root, so the root is not heard while a trailing
+// voice is still landing. The breath after it keeps its length, so the
+// time from the root's tone to the next arch is what it was. Professional
+// plays no root: its rest is the breath alone, the world still stands in
+// it (room-kit glide-gap.ts).
 
 import type { ArchTiming } from './glide-path'
 
@@ -61,6 +69,7 @@ export const NG_SLIDES_LEVELS = {
     topSec: 0.5,
     downSec: 1.5,
     landingSec: 0.5,
+    pauseSec: 1.0,
     breathSec: 1.6,
     bandCents: 80,
     lagMs: 300,
@@ -76,6 +85,7 @@ export const NG_SLIDES_LEVELS = {
     topSec: 0.4,
     downSec: 1.2,
     landingSec: 0.4,
+    pauseSec: 1.0,
     breathSec: 1.3,
     bandCents: 55,
     lagMs: 200,
@@ -91,6 +101,7 @@ export const NG_SLIDES_LEVELS = {
     topSec: 0.3,
     downSec: 0.9,
     landingSec: 0.3,
+    pauseSec: 0,
     breathSec: 1.0,
     bandCents: 35,
     lagMs: 120,
@@ -120,6 +131,7 @@ export const LIP_ROLL_LEVELS = {
     topSec: 0.4,
     downSec: 2.4,
     landingSec: 0.4,
+    pauseSec: 1.0,
     breathSec: 1.8,
     bandCents: 100,
     lagMs: 350,
@@ -135,6 +147,7 @@ export const LIP_ROLL_LEVELS = {
     topSec: 0.3,
     downSec: 2.0,
     landingSec: 0.3,
+    pauseSec: 1.0,
     breathSec: 1.5,
     bandCents: 70,
     lagMs: 250,
@@ -150,6 +163,7 @@ export const LIP_ROLL_LEVELS = {
     topSec: 0.2,
     downSec: 1.6,
     landingSec: 0.2,
+    pauseSec: 0,
     breathSec: 1.2,
     bandCents: 50,
     lagMs: 150,

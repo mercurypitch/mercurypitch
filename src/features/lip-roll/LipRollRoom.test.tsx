@@ -11,6 +11,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CREST_NOTE } from '@/components/room-kit/CrestNote'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import mic from '@/components/room-kit/RoomControls.module.css'
 import { tone } from '@/lib/glass/test-frames'
@@ -25,6 +26,7 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type * as ArtModule from './bay-art'
+import { INTRO, PLAYHEAD_X } from './bay-geometry'
 import type * as WavesModule from './bay-waves'
 import type { LipPlan } from './lip-run'
 import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC, planLipRun } from './lip-run'
@@ -269,6 +271,8 @@ interface Seen {
   /** The mic's state, and its ring's scale (NaN when it is not drawn). */
   readonly mic: string | undefined
   readonly ring: number
+  /** The contact light: its state, and its centre, px. */
+  readonly light: { state?: string; x: number; y: number }
 }
 
 /** The mic's ring as drawn now: its scale, NaN with none written. */
@@ -278,6 +282,17 @@ function ringScale(): number {
     (ring as HTMLElement | null)?.style.transform ?? '',
   )
   return scale === null ? Number.NaN : Number(scale[1])
+}
+
+/** The contact light's state and centre (its box's translate plus half). */
+function lightNow(): Seen['light'] {
+  const el = screen.getByTestId('lip-contact')
+  const at = /translate3d\(([-\d.]+)px,([-\d.]+)px/u.exec(el.style.transform)
+  return {
+    state: el.dataset.state,
+    x: Number(at?.[1] ?? Number.NaN) + Number.parseFloat(el.style.width) / 2,
+    y: Number(at?.[2] ?? Number.NaN) + Number.parseFloat(el.style.height) / 2,
+  }
 }
 
 /**
@@ -306,6 +321,7 @@ function play(
       bubble: bubble(),
       mic: screen.queryByTestId('lip-mic')?.dataset.state,
       ring: ringScale(),
+      light: lightNow(),
     })
     if (phase() !== 'run') break
   }
@@ -418,6 +434,44 @@ describe('the intro', () => {
     expect(chip()).toBeNull()
     // The kept note's fit names the first wave's top.
     expect(bubble()).toContain('C4')
+  })
+
+  it("names each wave's top under the middle of its crest, as Merc's line does", () => {
+    render(() => <LipRollRoom onDone={() => undefined} />)
+
+    const names = screen.getAllByTestId('lip-top-name')
+    expect(names.map((n) => n.textContent)).toEqual(['C4', 'C4', 'C4'])
+    const crests = screen.getAllByTestId('lip-target')
+    names.forEach((name, k) => {
+      // The dotted crest's middle point: the middle of the wave's top.
+      const points = (crests[k].getAttribute('d') ?? '')
+        .split(/[ML]/u)
+        .filter((p) => p !== '')
+        .map((p) => p.split(' ').map(Number))
+      const [x, y] = points[(points.length - 1) / 2]
+      // Each name is centred in a small layer of its own, moved by
+      // transform: the layer's offset plus half its box is the name's centre.
+      const box = name.parentElement as Element
+      const layer = box.parentElement as HTMLElement
+      const [tx, ty] = layer.style.transform
+        .match(/-?[\d.]+(?=px)/gu)
+        ?.map(Number) ?? [Number.NaN, Number.NaN]
+      const cx = tx + Number(box.getAttribute('width')) / 2
+      const cy = ty + Number(box.getAttribute('height')) / 2
+      expect(Number(name.getAttribute('x'))).toBe(
+        Number(box.getAttribute('width')) / 2,
+      )
+      expect(cx).toBeCloseTo(x, 0)
+      // Under it, by the name's offset at the intro's zoom (wave A).
+      expect(cy - y).toBeCloseTo(INTRO.sy * CREST_NOTE.belowW * 390, 0)
+    })
+  })
+
+  it("names no tops while the waves are only the room's guess", () => {
+    kept.note = null
+    render(() => <LipRollRoom onDone={() => undefined} />)
+
+    expect(screen.queryAllByTestId('lip-top-name')).toEqual([])
   })
 
   it("turns Merc's sound rings off for the whole room: the buzz is drawn beside him", async () => {
@@ -533,6 +587,87 @@ describe('a run sung on the dots', () => {
   })
 })
 
+describe('the contact light', () => {
+  it.each(['learning', 'singer', 'professional'] as const)(
+    "is lit inside the %s band and dim outside it, on the target at Merc's x",
+    async (level) => {
+      setExerciseLevel(level)
+      const plan = planFor(level, 52)
+      const { bandCents } = LIP_ROLL_LEVELS[level]
+      const [, second] = plan.path.arches
+      // Inside the band on the first and last waves, outside it on the
+      // second: read at each top's middle, where the path is flat and the
+      // lag allowance cannot help.
+      const voice = offset(follow(plan.path), (t) =>
+        t >= second.start && t <= second.landingEnd
+          ? 1.5 * bandCents
+          : 0.8 * bandCents,
+      )
+      await startRun()
+      const seen = play(windowFrames(plan, voice), plan)
+
+      const crests = screen.getAllByTestId('lip-target')
+      for (const [k, wave] of plan.path.arches.entries()) {
+        const top = seen.find((s) => s.t >= (wave.topStart + wave.topEnd) / 2)
+        expect(top?.light.state).toBe(k === 1 ? 'off' : 'on')
+        // On the dotted crest's middle, at the playhead.
+        const points = (crests[k].getAttribute('d') ?? '')
+          .split(/[ML]/u)
+          .filter((p) => p !== '')
+          .map((p) => p.split(' ').map(Number))
+        expect(top?.light.y).toBeCloseTo(points[(points.length - 1) / 2][1], 0)
+        expect(top?.light.x).toBeCloseTo(PLAYHEAD_X * 390, 0)
+      }
+      // Nothing outside the sung parts: the count-in, landings and rests.
+      const judged = (t: number) =>
+        plan.path.arches.some((a) => t > a.start - 0.1 && t < a.end + 0.1)
+      for (const s of seen) {
+        if (s.phase === 'run' && !judged(s.t)) {
+          expect(s.light.state).toBe('hidden')
+        }
+      }
+    },
+  )
+
+  it('rings once as the voice comes back onto the path, and not with reduced motion', async () => {
+    const rings: unknown[] = []
+    Element.prototype.animate = vi.fn((frames: unknown) => {
+      rings.push(frames)
+      return {} as Animation
+    })
+    setExerciseLevel('singer')
+    const plan = planFor('singer', 52)
+    const [first] = plan.path.arches
+    const offAt = first.start + 0.5
+    // Off by a third of an octave for half a second, then back on.
+    const voice = offset(follow(plan.path), (t) =>
+      t >= offAt && t < offAt + 0.5 ? 400 : 0,
+    )
+    await startRun()
+    play(windowFrames(plan, voice), plan, plan.countIn + first.end)
+
+    expect(rings).toHaveLength(1)
+    expect(screen.getByTestId('lip-contact').dataset.catches).toBe('1')
+    cleanup()
+
+    // Reduced motion: the colour changes, no ring runs.
+    rings.length = 0
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+    fake.frames = []
+    await startRun()
+    const seen = play(windowFrames(plan, voice), plan, plan.countIn + first.end)
+
+    expect(rings).toHaveLength(0)
+    expect(seen.some((s) => s.light.state === 'off')).toBe(true)
+    // Read inside the wave: from its end on, the mic waits and the light is out.
+    expect(seen.filter((s) => s.t < first.end).at(-1)?.light.state).toBe('on')
+  })
+})
+
 describe('stopping', () => {
   it('drops the take: nothing kept, the mic closed, the bay back at the start', async () => {
     const plan = planFor('learning', 52)
@@ -591,6 +726,15 @@ describe('the levels', () => {
       const seen = play(frames, plan)
 
       expect(heard.tones.slice(1)).toHaveLength(breathTones)
+      // Each root after its rest's pause, never while the singer lands.
+      const pause = LIP_ROLL_LEVELS[level].pauseSec
+      heard.tones.slice(1).forEach((played, k) => {
+        const due = plan.path.arches[k].landingEnd + pause
+        expect(played.at - plan.countIn).toBeGreaterThanOrEqual(due - 1e-9)
+        expect(played.at - plan.countIn).toBeLessThan(
+          due + STEP_MS / 1000 + 1e-9,
+        )
+      })
       // The path is the level's: the result comes as its last landing ends.
       const end = seen.find((s) => s.phase === 'result')
       expect(end?.t).toBeGreaterThanOrEqual(plan.path.duration - 1e-9)
@@ -707,4 +851,44 @@ describe('the mic through a run', () => {
     expect(sung.every((s) => s.mic === 'sing' && s.ring > 1.2)).toBe(true)
     expect(hushed.every((s) => s.mic === 'sing' && s.ring < 1.05)).toBe(true)
   })
+})
+
+describe('the mic and the contact light', () => {
+  it.each(['learning', 'singer', 'professional'] as const)(
+    'at %s, wait and no light through each stop between waves, and the light only while the mic says sing',
+    async (level) => {
+      setExerciseLevel(level)
+      const plan = planFor(level, 52)
+      const { pauseSec } = LIP_ROLL_LEVELS[level]
+      await startRun()
+
+      const seen = play(windowFrames(plan, follow(plan.path)), plan)
+
+      const run = seen.filter((s) => s.phase === 'run')
+      // Each stop: the wave's landing, the pause, then the rest of the
+      // rest, up to the next wave.
+      for (const [k, arch] of plan.path.arches.slice(0, -1).entries()) {
+        const next = plan.path.arches[k + 1]
+        const stop = run.filter((s) => s.t >= arch.end && s.t < next.start)
+        const pause = stop.filter(
+          (s) => s.t >= arch.landingEnd && s.t < arch.landingEnd + pauseSec,
+        )
+        expect(stop.length).toBeGreaterThan(0)
+        expect(pause.length > 0).toBe(pauseSec > 0)
+        expect(
+          stop.every((s) => s.mic === 'wait' && s.light.state === 'hidden'),
+        ).toBe(true)
+      }
+      // Frame by frame, the light shows exactly while the mic says sing,
+      // its last instant included (the take hands the engine every frame
+      // sung by the screen's time).
+      const apart = run.filter(
+        (s) => (s.light.state !== 'hidden') !== (s.mic === 'sing'),
+      )
+      expect(apart).toEqual([])
+      expect(run.some((s) => s.mic === 'sing' && s.light.state === 'on')).toBe(
+        true,
+      )
+    },
+  )
 })

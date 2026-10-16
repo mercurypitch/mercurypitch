@@ -12,8 +12,9 @@
 // kept, the singer sings an easy note first (settle-note.ts) and the waves
 // are fitted to it. Then the count-in (the first root's tone, a breath
 // while the bay rolls in and the camera zooms from screen 1's wave to the
-// run's) and the three waves; the next root plays in each breath where the
-// level says so (`playsNextRoot`). After the last landing, the result:
+// run's) and the three waves. Between waves the bay stops: a pause, then
+// the next root plays where the level says so (`playsNextRoot`), then the
+// next wave rolls in. After the last landing, the result:
 // the run is kept and the view pulls back. Stopping, a minute with no
 // voice and leaving the app all drop the run: nothing is kept.
 //
@@ -42,7 +43,7 @@ import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
 import type { GlidePath } from '@/lib/glide/glide-path'
-import { segmentAt, targetAt } from '@/lib/glide/glide-path'
+import { restToneDue, riddenSegmentAt, segmentAt, targetAt, } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
 import type { GlideTargets } from '@/lib/glide/glide-targets'
@@ -123,6 +124,8 @@ export interface LipController {
   mercVoice: () => MercVoice
   /** The path the scene draws its dots from. */
   path: Accessor<GlidePath>
+  /** The waves are not the room's guess: their tops are named. */
+  named: Accessor<boolean>
   /** The pulled-back result is up. */
   showResult: Accessor<boolean>
   /** Start a run: from the intro, a result or a blocked mic. */
@@ -328,15 +331,12 @@ export function useLipController(): LipController {
     lastVoiceAt = performance.now()
   }
 
-  /** The breath's tone: the next root, once, where the level plays it. */
+  /** The next root's tone, after the rest's pause, where the level plays it. */
   const breathTone = (run: Live, t: number): void => {
-    if (!run.preset.playsNextRoot || audio === null) return
-    if (run.scripted !== null) return
-    const segment = segmentAt(run.plan.path, t)
-    if (segment === null || segment.phase !== 'breath') return
-    if (run.played.has(segment.arch)) return
-    run.played.add(segment.arch)
-    tones.play(audio, run.plan.roots[segment.arch], BREATH_TONE_SEC)
+    if (audio === null || run.scripted !== null) return
+    const arch = restToneDue(run.plan.path, run.preset, t, run.played)
+    if (arch === null) return
+    tones.play(audio, run.plan.roots[arch], BREATH_TONE_SEC)
     run.take.mute(t + BREATH_TONE_SEC + TONE_TAIL_SEC)
   }
 
@@ -351,13 +351,10 @@ export function useLipController(): LipController {
     // He is hushed once, as each wave starts, so a line said as a wave
     // ends stays up even when the screen's clock is a hair behind the
     // frames'.
-    const segment = t < 0 ? null : segmentAt(run.plan.path, t)
-    const riding =
-      segment !== null &&
-      segment.phase !== 'breath' &&
-      segment.phase !== 'landing'
-    if (riding && segment.arch > run.hushed) {
-      run.hushed = segment.arch
+    const ridden = riddenSegmentAt(run.plan.path, t)
+    const riding = ridden !== null
+    if (ridden !== null && ridden.arch > run.hushed) {
+      run.hushed = ridden.arch
       if (untrack(line) !== '') setLine('')
     }
     if (untrack(ridingWave) !== riding) setRidingWave(riding)
@@ -413,6 +410,12 @@ export function useLipController(): LipController {
       trace: run.take.trace,
       merc: { x: rideXOn(run.scroll, t), feetY: run.feetY },
       voiced: run.take.voiced(),
+      // Only in the singer's turn, as the mic shows it: the engine judges
+      // an arch's last instant, the mic gives it to the landing.
+      contact:
+        scripted === null && riddenSegmentAt(run.plan.path, t) !== null
+          ? run.take.contact(t)
+          : null,
     })
     breathTone(run, t)
     showWave(run, t)
@@ -813,6 +816,7 @@ export function useLipController(): LipController {
     // At the intro he buzzes on his own; in a run he follows the singer.
     mercVoice: () => (moment === 'intro' ? introVoice : voice),
     path: () => scenePlan().path,
+    named: () => scenePlan().source !== 'preset',
     showResult,
     start,
     stop,

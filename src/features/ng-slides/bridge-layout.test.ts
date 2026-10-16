@@ -3,8 +3,9 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { CREST_NOTE, crestNoteFontPx } from '@/components/room-kit/CrestNote'
 import { MERC_FEET } from '@/components/room-kit/MercView'
-import { ARCH, NOTE_NAMES } from './bridge-geometry'
+import { ARCH } from './bridge-geometry'
 import { archG, cropTop, layoutBridge, MERC_SIZE_W, mercBoxAt, pitchY, yOf, } from './bridge-layout'
 
 /** The room's chip and mic on a phone: safe areas as an iPhone's. */
@@ -48,12 +49,13 @@ describe('the frame rule', () => {
 describe.each(PHONES)('on a %s phone', (_, phone) => {
   const layout = layoutBridge(phone)
 
-  it('keeps the top note and Merc on the apex under the chip', () => {
+  it('keeps Merc on the apex under the chip, and the top note under the apex', () => {
     const merc = mercBoxAt(layout, 0.35, ARCH.apexY)
-    const label = yOf(layout, ARCH.apexY + NOTE_NAMES.top.dy - 0.032)
+    const half = crestNoteFontPx(layout.unit) / 2
+    const name = yOf(layout, ARCH.apexY + CREST_NOTE.belowW) - half
 
     expect(merc.top).toBeGreaterThanOrEqual(phone.chipBottom)
-    expect(label).toBeGreaterThanOrEqual(phone.chipBottom)
+    expect(name).toBeGreaterThan(yOf(layout, ARCH.apexY))
   })
 
   it('keeps Merc on the deck clear of the controls', () => {

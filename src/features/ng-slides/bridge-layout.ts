@@ -5,15 +5,16 @@
 // The world keeps its size and place in W units (the room's width); the
 // storyboard frame (aspect 2.578) is taller than any phone, and its extra
 // height is cropped equally from the sky and the water (ng-geometry.json,
-// frame.rule). On a short phone (375 x 667, 360 x 640) that would put the
-// first arch's top note and Merc's head under the chip, so the world comes
-// down until both clear it; and if Merc standing on the deck would then
-// reach the mic, he is drawn smaller. Nothing here is a guess at the phone:
+// frame.rule). On a short phone (375 x 667, 360 x 640) that would put
+// Merc's head under the chip at the top of a slide, so the world comes
+// down until it clears it (each arch's top note sits under its apex, below
+// his feet); and if Merc standing on the deck would then reach the mic, he
+// is drawn smaller. Nothing here is a guess at the phone:
 // the room measures the chip's bottom and the controls' top and hands
 // them in.
 
 import { MERC_FEET } from '@/components/room-kit/MercView'
-import { ARCH, NOTE_NAMES, STORYBOARD_ASPECT } from './bridge-geometry'
+import { ARCH, STORYBOARD_ASPECT } from './bridge-geometry'
 
 /** Merc's canvas on the bridge, square, W (his body is about half of it). */
 export const MERC_SIZE_W = 0.36
@@ -27,8 +28,6 @@ export const MERC_INTRO_X = 0.21
 export const MERC_RESULT = { x: 0.89, feetH: 0.535, sizeW: 0.2 } as const
 /** Px kept between the chip and what is drawn under it. */
 const CLEAR_PX = 4
-/** The note names' half height over their centre, W (cap height and ascent). */
-const LABEL_HALF_W = 0.032
 
 export interface BridgeBox {
   readonly width: number
@@ -63,13 +62,11 @@ export function layoutBridge(box: BridgeBox): BridgeLayout {
   const unit = box.width
   const plain = cropTop(box.height / box.width)
   const mercSize = MERC_SIZE_W * unit
-  // At the top of a slide Merc's feet are on the apex; the top note's name
-  // sits over it. Both stay under the chip.
+  // At the top of a slide Merc's feet are on the apex: he stays under the
+  // chip.
   const apexPx = (ARCH.apexY - plain) * unit
   const mercTop = apexPx - mercSize * MERC_FEET
-  const labelTop =
-    (ARCH.apexY + NOTE_NAMES.top.dy - LABEL_HALF_W - plain) * unit
-  const short = box.chipBottom + CLEAR_PX - Math.min(mercTop, labelTop)
+  const short = box.chipBottom + CLEAR_PX - mercTop
   const top = short > 0 ? plain - short / unit : plain
   // On the deck his canvas must not reach the controls.
   const deckPx = (ARCH.deckY - top) * unit

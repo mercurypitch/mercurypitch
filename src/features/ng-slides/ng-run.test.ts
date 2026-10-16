@@ -29,6 +29,7 @@ vi.mock('@/stores/ng-slides-store', () => ({
 }))
 
 const {
+  BREATH_TONE_SEC,
   bestText,
   introLine,
   jumpsText,
@@ -80,6 +81,45 @@ const result = (over: Partial<GlideResult> = {}): GlideResult => ({
   topsReached: null,
   topTendencyCents: null,
   ...over,
+})
+
+describe('the pacing between slides (owner, 15 Oct 2026)', () => {
+  // Seconds from a slide's landing to the next slide: a pause, the next
+  // root's tone where the level plays one, then the rest of the breath;
+  // and the whole run with its count-in.
+  it.each([
+    [
+      'learning',
+      { pause: 1.0, tone: 0.7, afterTone: 0.9, rest: 2.6, run: 33.0 },
+    ],
+    ['singer', { pause: 1.0, tone: 0.7, afterTone: 0.6, rest: 2.3, run: 27.5 }],
+    [
+      'professional',
+      { pause: 0, tone: 0, afterTone: 1.0, rest: 1.0, run: 18.0 },
+    ],
+  ] as const)(
+    '%s: stops, waits, plays the next root, then rolls on',
+    (level, want) => {
+      const preset = NG_SLIDES_LEVELS[level]
+      const plan = planNgRun(
+        { roots: [45, 46, 47, 48, 49], semitones: 7, source: 'settled' },
+        preset,
+      )
+      const { arches } = plan.path
+      for (let k = 0; k + 1 < arches.length; k++) {
+        expect(arches[k + 1].start - arches[k].landingEnd).toBeCloseTo(
+          want.rest,
+          9,
+        )
+      }
+      expect(preset.pauseSec).toBe(want.pause)
+      expect(preset.playsNextRoot ? BREATH_TONE_SEC : 0).toBe(want.tone)
+      expect(want.rest - want.pause - want.tone).toBeCloseTo(want.afterTone, 9)
+      // From the tone to the next slide: the breath, as it was before.
+      expect(want.tone + want.afterTone).toBeCloseTo(preset.breathSec, 9)
+      expect(plan.countIn + plan.path.duration).toBeCloseTo(want.run, 9)
+    },
+  )
 })
 
 describe('the plan', () => {

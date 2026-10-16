@@ -3,10 +3,11 @@
 // ============================================================
 //
 // A run is a row of arches. Each arch is an up glide, a short top, a down
-// glide and a short landing on the root; a breath sits between arches. The
-// arch's sung part (up, top and down) is what the engine judges; the
-// landing gives a trailing voice a root to arrive on, and the breath is
-// never judged.
+// glide and a short landing on the root; a rest sits between arches: a
+// pause, then the breath (where the room plays the next root, if the level
+// does). The rest is one segment, phase 'breath'. The arch's sung part (up,
+// top and down) is what the engine judges; the landing gives a trailing
+// voice a root to arrive on, and the rest is never judged.
 //
 // The arch's shape is the room's drawing: the bridge's rim was measured as
 // y = deck - h * g(|x - x_c| / a), with g flat for u <= f and
@@ -77,6 +78,12 @@ export interface ArchTiming {
   readonly topSec: number
   readonly downSec: number
   readonly landingSec: number
+  /**
+   * Silence after a landing, before the breath: the room stands still and
+   * plays nothing, so the next root's tone is heard as the next arch's.
+   */
+  readonly pauseSec: number
+  /** The breath before the next arch (the count-in ends with one too). */
   readonly breathSec: number
 }
 
@@ -145,6 +152,23 @@ export function targetAt(path: GlidePath, t: number): number | null {
 }
 
 /**
+ * The segment the singer rides at `t` (an arch's up, top or down), or null
+ * in the count-in, a landing and a rest. The rooms' mic says sing and their
+ * contact light shows only then. An arch's end belongs to its landing.
+ */
+export function riddenSegmentAt(
+  path: GlidePath,
+  t: number,
+): GlideSegment | null {
+  const segment = segmentAt(path, t)
+  return segment !== null &&
+    segment.phase !== 'breath' &&
+    segment.phase !== 'landing'
+    ? segment
+    : null
+}
+
+/**
  * The arch whose sung part (up, top and down) holds `t`, or -1. The
  * landing and the breath belong to none: they are not judged.
  */
@@ -159,8 +183,9 @@ export function judgedArchAt(path: GlidePath, t: number): number {
 
 /**
  * A row of arches on `roots`, each rising `semitones` and back, eased as
- * the room draws them. A breath separates arches; none comes before the
- * first or after the last. The first arch starts at `startAt`.
+ * the room draws them. A rest (the pause and the breath) separates
+ * arches; none comes before the first or after the last. The first arch
+ * starts at `startAt`.
  */
 export function buildArchPath(
   roots: readonly number[],
@@ -174,8 +199,9 @@ export function buildArchPath(
   roots.forEach((root, arch) => {
     const top = root + semitones
     if (arch > 0) {
-      segments.push(rest(arch, t, t + timing.breathSec, root))
-      t += timing.breathSec
+      const restSec = timing.pauseSec + timing.breathSec
+      segments.push(rest(arch, t, t + restSec, root))
+      t += restSec
     }
     const start = t
     const topStart = start + timing.upSec
@@ -201,6 +227,27 @@ export function buildArchPath(
     t = landingEnd
   })
   return { segments, arches, duration: t }
+}
+
+/**
+ * The arch whose root a room plays at `t`, or null: in a rest, once its
+ * pause is over, at a level that plays the next root, and only once a
+ * rest (`played` keeps the arches already played, and gains this one).
+ */
+export function restToneDue(
+  path: GlidePath,
+  timing: Pick<ArchTiming, 'pauseSec'> & { readonly playsNextRoot: boolean },
+  t: number,
+  played: Set<number>,
+): number | null {
+  if (!timing.playsNextRoot) return null
+  const segment = segmentAt(path, t)
+  if (segment === null || segment.phase !== 'breath') return null
+  if (t < segment.start + timing.pauseSec || played.has(segment.arch)) {
+    return null
+  }
+  played.add(segment.arch)
+  return segment.arch
 }
 
 function rest(
