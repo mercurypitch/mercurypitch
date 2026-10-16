@@ -16,15 +16,33 @@
 // after that release starts an acquisition of its own, once the old one has
 // handed back what it got. Once the screen is gone, `acquire` opens nothing
 // at all.
+//
+// The lease outlives the screen by the room's tail (ROOM_TAIL_MS). A room
+// stops its sound on the way out, and the sound fades over the house
+// release. Let go at once, the last lease out parked the clock 120 ms
+// later, in the middle of the fade, and the clock kept the rest of it for
+// the next time it ran: the next room's first tap, which opened on the end
+// of this room's note. A park while the room is open (the page hiding, the
+// app leaving the foreground) waits out the same tail (`prepareToSuspend`).
 
 import { onCleanup, untrack } from 'solid-js'
 import type { MicError } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
-import { playReferenceTone } from '@/lib/reference-tone'
+import type { ReferenceTone } from '@/lib/reference-tone'
+import { startReferenceTone } from '@/lib/reference-tone'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { roomOutput } from './room-output'
+
+/**
+ * How long a room's sound plays on once it is stopped, ms. Every sound a
+ * room makes closes on the house release: 180 ms of decay, and 60 ms more
+ * before its source stops (reference-tone.ts, demo-audio.ts,
+ * merc-sampler.ts). The last 10 ms are the audio clock's margin, up to the
+ * 250 ms the shared clock grants a park.
+ */
+export const ROOM_TAIL_MS = 250
 
 export type CaptureFailure = 'denied' | 'unavailable'
 
@@ -41,7 +59,10 @@ export class CaptureError extends Error {
 export interface ExerciseCapture {
   /** Unlock audio and open the mic. Rejects with a CaptureError. */
   acquire: () => Promise<void>
-  /** Hand the mic back. Safe when nothing is held. */
+  /**
+   * Hand the mic back, and stop a note of `playTone` still sounding (it
+   * closes on its release). Safe when nothing is held.
+   */
   release: () => void
   held: () => boolean
   /** Start a take: clears the frames and zeroes their clock. */
@@ -71,13 +92,29 @@ export function useExerciseCapture(
   owner: string,
   room: string,
 ): ExerciseCapture {
-  const lease = untrack(nativeDeviceApi)?.acquireAudio(owner)
+  /** The room's own notes still sounding (`playTone`). */
+  const tones = new Set<ReferenceTone>()
+  let disposed = false
+  /** Once the screen is gone: when its tail is over, wall clock ms. */
+  let tailEnds = 0
+
+  const stopTones = (): void => {
+    for (const tone of tones) tone.stop()
+    tones.clear()
+  }
+
+  const lease = untrack(nativeDeviceApi)?.acquireAudio(owner, {
+    // The clock is about to park. A room stops its sound from the page's
+    // own event (its `leave`), the same moment, and the clock waits out the
+    // release. Once the screen is gone, what is left of its tail.
+    prepareToSuspend: () =>
+      disposed ? Math.max(0, tailEnds - Date.now()) : ROOM_TAIL_MS,
+  })
   let ownContext: AudioContext | null = null
   let f0: F0Stream | null = null
   /** The acquisition in flight, and the release count it began under. */
   let acquiring: { generation: number; done: Promise<void> } | null = null
   let generation = 0
-  let disposed = false
 
   const context = (): AudioContext | null => {
     if (lease !== undefined) return lease.ensure()
@@ -89,6 +126,9 @@ export function useExerciseCapture(
 
   /** The clock, running; null when there is none or it would not start. */
   const unlock = async (): Promise<AudioContext | null> => {
+    // A lease kept for the tail starts nothing: unlocking would resume a
+    // clock the app asked to park.
+    if (disposed) return null
     const ctx = context()
     if (ctx === null) return null
     if (lease !== undefined) return (await lease.unlock()) ? ctx : null
@@ -101,6 +141,9 @@ export function useExerciseCapture(
     f0?.dispose()
     f0 = null
     micManager.release(owner)
+    // A start given up takes its note with it: Long note's plays before
+    // the mic opens.
+    stopTones()
   }
 
   /**
@@ -141,7 +184,12 @@ export function useExerciseCapture(
   onCleanup(() => {
     disposed = true
     release()
-    lease?.release()
+    // The room's own clean-ups ran first and stopped its sound; its tail
+    // plays now. Keep the clock until it has.
+    if (lease !== undefined) {
+      tailEnds = Date.now() + ROOM_TAIL_MS
+      setTimeout(() => lease.release(), ROOM_TAIL_MS)
+    }
     if (ownContext !== null) {
       void ownContext.close().catch(() => undefined)
       ownContext = null
@@ -169,9 +217,15 @@ export function useExerciseCapture(
     peekFrames: () => f0?.peekFrames() ?? [],
     takeFrames: () => f0?.takeFrames() ?? [],
     playTone: async (midi, seconds = 1.1) => {
+      const mine = generation
       const ctx = await unlock()
-      if (ctx === null) return
-      await playReferenceTone(ctx, midi, seconds, roomOutput(ctx))
+      // Released while the clock unlocked (a start given up, or the room
+      // left): no note.
+      if (ctx === null || mine !== generation) return
+      const tone = startReferenceTone(ctx, midi, seconds, roomOutput(ctx))
+      tones.add(tone)
+      await tone.done
+      tones.delete(tone)
     },
     audio: () => (disposed ? Promise.resolve(null) : unlock()),
   }
