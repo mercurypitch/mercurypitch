@@ -427,8 +427,10 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    Lessons surface.
 7. **Decided (16 October 2026): self-hosted on R2.** The page plays its own copy of the episode, an
    MP4 at 1080p with a 720p copy for phones, from the R2 bucket the site's security policy already
-   allows (`media-src` in `public/_headers`); a re-cut replaces the file in place. The channel can
-   carry its own upload, but the lesson page does not embed it.
+   allows (`media-src` in `public/_headers`); a re-cut replaces the file in place. For now: once
+   the channel is live and the episodes do well, the page may switch to YouTube links instead
+   (which would need `youtube-nocookie.com` in the policy's `frame-src`). The film files are never
+   committed (renders stay out of git, and the asset layer serves no file over 25 MiB).
 8. **Proposed, no recommendation yet.** Who the vocal coach is. (That a coach signs off every
    voice lesson at the day-1 and day-6 gates is fixed: § 7.)
 9. **Decided (16 October 2026): `mercurypitch.com/learn/NN`.** The public web lessons are the
