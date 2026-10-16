@@ -1,0 +1,641 @@
+{
+  "title": "Find Your Pitch, Lesson 1: What is a note?",
+  "voices": {
+    "blue": {
+      "voice": "am_michael",
+      "speed": 0.84
+    },
+    "orange": {
+      "voice": "af_heart",
+      "speed": 0.9
+    }
+  },
+  "gap": 0.3,
+  "events": [
+    {
+      "id": "open",
+      "type": "mark",
+      "gap": 0.6
+    },
+    {
+      "id": "sing-blue-a3",
+      "type": "sing",
+      "who": "blue",
+      "note": "A3",
+      "dur": 1.9
+    },
+    {
+      "id": "sing-orange-a4",
+      "type": "sing",
+      "who": "orange",
+      "note": "A4",
+      "dur": 1.9,
+      "gap": 0.35
+    },
+    {
+      "id": "o1",
+      "type": "line",
+      "who": "orange",
+      "text": "Ha! Same note.",
+      "gap": 0.25
+    },
+    {
+      "id": "b1a",
+      "type": "line",
+      "who": "blue",
+      "text": "Is it?"
+    },
+    {
+      "id": "b1b",
+      "type": "line",
+      "who": "blue",
+      "text": "Mine shook the air two hundred and twenty times a second.",
+      "gap": 0.2
+    },
+    {
+      "id": "b2",
+      "type": "line",
+      "who": "blue",
+      "text": "Yours shook it four hundred and forty.",
+      "gap": 0.25
+    },
+    {
+      "id": "o2",
+      "type": "line",
+      "who": "orange",
+      "text": "Twice as fast? Then why do they sound the same?"
+    },
+    {
+      "id": "b3",
+      "type": "line",
+      "who": "blue",
+      "text": "Good question. To answer it, we need to know what a note really is.",
+      "gap": 0.4
+    },
+    {
+      "id": "title",
+      "type": "sting",
+      "dur": 3.2,
+      "gap": 0.2
+    },
+    {
+      "id": "act1",
+      "type": "mark",
+      "gap": 0.1
+    },
+    {
+      "id": "b4",
+      "type": "line",
+      "who": "blue",
+      "text": "Every note you have ever heard starts with something shaking."
+    },
+    {
+      "id": "b5a",
+      "type": "line",
+      "who": "blue",
+      "text": "A guitar string.",
+      "gap": 0.35
+    },
+    {
+      "id": "b5b",
+      "type": "line",
+      "who": "blue",
+      "text": "A speaker.",
+      "gap": 0.3
+    },
+    {
+      "id": "b5c",
+      "type": "line",
+      "who": "blue",
+      "text": "The vocal folds in your throat.",
+      "gap": 0.3
+    },
+    {
+      "id": "pluck",
+      "type": "sound",
+      "sound": "pluck",
+      "dur": 2.4,
+      "gap": 0.35
+    },
+    {
+      "id": "b6",
+      "type": "line",
+      "who": "blue",
+      "text": "Pluck a string, and it swings back and forth, pushing on the air.",
+      "with": "pluck",
+      "offset": 0.5
+    },
+    {
+      "id": "b6s",
+      "type": "line",
+      "who": "blue",
+      "text": "Here it is, slowed right down.",
+      "gap": 0.3
+    },
+    {
+      "id": "b7",
+      "type": "line",
+      "who": "blue",
+      "text": "Each push travels outward as a wave, all the way to your ear.",
+      "gap": 0.4
+    },
+    {
+      "id": "b8",
+      "type": "line",
+      "who": "blue",
+      "text": "Count the swings in one second, and you have the note's frequency.",
+      "gap": 0.4
+    },
+    {
+      "id": "b9a",
+      "type": "line",
+      "who": "blue",
+      "text": "At real speed, this string swings two hundred and twenty times.",
+      "gap": 0.6
+    },
+    {
+      "id": "b9b",
+      "type": "line",
+      "who": "blue",
+      "text": "We measure it in hertz. Swings per second.",
+      "gap": 0.3
+    },
+    {
+      "id": "sweep",
+      "type": "sound",
+      "sound": "sweep",
+      "dur": 4.6,
+      "gap": 0.5
+    },
+    {
+      "id": "b10a",
+      "type": "line",
+      "who": "blue",
+      "text": "Slow swings make a low note.",
+      "with": "sweep",
+      "offset": 0.3
+    },
+    {
+      "id": "b10b",
+      "type": "line",
+      "who": "blue",
+      "text": "Fast swings make a high one.",
+      "gap": 0.3
+    },
+    {
+      "id": "o3",
+      "type": "line",
+      "who": "orange",
+      "text": "So a high note is just a loud note?",
+      "gap": 0.6
+    },
+    {
+      "id": "b11a",
+      "type": "line",
+      "who": "blue",
+      "text": "No."
+    },
+    {
+      "id": "louder",
+      "type": "sound",
+      "sound": "louder",
+      "dur": 1.6,
+      "gap": 0.3
+    },
+    {
+      "id": "b11b",
+      "type": "line",
+      "who": "blue",
+      "text": "Loud is how far it swings.",
+      "with": "louder",
+      "offset": 0.0
+    },
+    {
+      "id": "higher",
+      "type": "sound",
+      "sound": "higher",
+      "dur": 1.5,
+      "gap": 0.35
+    },
+    {
+      "id": "b11c",
+      "type": "line",
+      "who": "blue",
+      "text": "High is how fast.",
+      "with": "higher",
+      "offset": 0.1
+    },
+    {
+      "id": "b12",
+      "type": "line",
+      "who": "blue",
+      "text": "MercuryPitch draws your voice the same way. As you sing, a line climbs when you go higher.",
+      "gap": 0.7
+    },
+    {
+      "id": "act2",
+      "type": "mark",
+      "gap": 0.6
+    },
+    {
+      "id": "b13",
+      "type": "line",
+      "who": "blue",
+      "text": "Now, back to our puzzle."
+    },
+    {
+      "id": "b14a",
+      "type": "line",
+      "who": "blue",
+      "text": "Here is two hundred and twenty.",
+      "gap": 0.35
+    },
+    {
+      "id": "b14b",
+      "type": "line",
+      "who": "blue",
+      "text": "And here is four hundred and forty.",
+      "gap": 0.3
+    },
+    {
+      "id": "b14c",
+      "type": "line",
+      "who": "blue",
+      "text": "Exactly twice as fast.",
+      "gap": 0.3
+    },
+    {
+      "id": "b15",
+      "type": "line",
+      "who": "blue",
+      "text": "Before you listen, predict. Two different notes, or the same one?",
+      "gap": 0.5
+    },
+    {
+      "id": "predict",
+      "type": "pause",
+      "dur": 2.6
+    },
+    {
+      "id": "listen",
+      "type": "sound",
+      "sound": "octave-listen",
+      "dur": 5.4,
+      "gap": 0.2
+    },
+    {
+      "id": "b16a",
+      "type": "line",
+      "who": "blue",
+      "text": "Most people hear one note, just brighter.",
+      "gap": 0.5
+    },
+    {
+      "id": "b16b",
+      "type": "line",
+      "who": "blue",
+      "text": "That jump has a name.",
+      "gap": 0.35
+    },
+    {
+      "id": "b16c",
+      "type": "line",
+      "who": "blue",
+      "text": "An octave.",
+      "gap": 0.35
+    },
+    {
+      "id": "b17",
+      "type": "line",
+      "who": "blue",
+      "text": "Now look at the waves. Every second peak of the fast one lands right on a peak of the slow one.",
+      "gap": 0.8
+    },
+    {
+      "id": "b18",
+      "type": "line",
+      "who": "blue",
+      "text": "They line up again, and again, forever."
+    },
+    {
+      "id": "o4",
+      "type": "line",
+      "who": "orange",
+      "text": "Like us walking together. I take two steps for every one of yours.",
+      "gap": 0.5
+    },
+    {
+      "id": "b19",
+      "type": "line",
+      "who": "blue",
+      "text": "And we land together, every time. Two for one: the simplest fit there is. That's the octave."
+    },
+    {
+      "id": "drift",
+      "type": "sound",
+      "sound": "drift",
+      "dur": 3.6,
+      "gap": 0.45
+    },
+    {
+      "id": "b20",
+      "type": "line",
+      "who": "blue",
+      "text": "Try two hundred and seventy seven instead, and the peaks drift in and out of step. That's a different note.",
+      "with": "drift",
+      "offset": 0.3
+    },
+    {
+      "id": "b21a",
+      "type": "line",
+      "who": "blue",
+      "text": "Go down an octave, to one hundred and ten.",
+      "gap": 0.5
+    },
+    {
+      "id": "ladder",
+      "type": "sound",
+      "sound": "ladder",
+      "dur": 4.4,
+      "gap": 0.25
+    },
+    {
+      "id": "b21b",
+      "type": "line",
+      "who": "blue",
+      "text": "Then double, and double, and double. The same note, every time.",
+      "with": "ladder",
+      "offset": 1.0
+    },
+    {
+      "id": "b22",
+      "type": "line",
+      "who": "blue",
+      "text": "The gaps in hertz keep doubling, but every jump sounds the same size. Your ear hears multiplying, not adding.",
+      "gap": 0.45
+    },
+    {
+      "id": "act3",
+      "type": "mark",
+      "gap": 0.7
+    },
+    {
+      "id": "b23",
+      "type": "line",
+      "who": "blue",
+      "text": "So pitch isn't really a straight line. It's more like a spiral."
+    },
+    {
+      "id": "b24",
+      "type": "line",
+      "who": "blue",
+      "text": "Go up an octave, and you come back round, right above where you started.",
+      "gap": 0.4
+    },
+    {
+      "id": "b25",
+      "type": "line",
+      "who": "blue",
+      "text": "Musicians name the notes on each turn with seven letters.",
+      "gap": 0.6
+    },
+    {
+      "id": "letters",
+      "type": "sound",
+      "sound": "letters",
+      "dur": 4.8,
+      "gap": 0.2
+    },
+    {
+      "id": "o5",
+      "type": "line",
+      "who": "orange",
+      "text": "Only seven notes?",
+      "gap": 0.4
+    },
+    {
+      "id": "b26a",
+      "type": "line",
+      "who": "blue",
+      "text": "Seven letters."
+    },
+    {
+      "id": "b26b",
+      "type": "line",
+      "who": "blue",
+      "text": "Twelve notes.",
+      "gap": 0.35
+    },
+    {
+      "id": "b26c",
+      "type": "line",
+      "who": "blue",
+      "text": "The other five are next time's story.",
+      "gap": 0.35
+    },
+    {
+      "id": "b27a",
+      "type": "line",
+      "who": "blue",
+      "text": "A number tells you which turn you're on. Each new turn starts at C.",
+      "gap": 0.6
+    },
+    {
+      "id": "b27b",
+      "type": "line",
+      "who": "blue",
+      "text": "So the A that orchestras tune to is A four. Four hundred and forty hertz.",
+      "gap": 0.4
+    },
+    {
+      "id": "b28",
+      "type": "line",
+      "who": "blue",
+      "text": "Middle C on a piano is C four. Same letters, different turns."
+    },
+    {
+      "id": "unroll",
+      "type": "sound",
+      "sound": "unroll",
+      "dur": 3.0,
+      "gap": 0.4
+    },
+    {
+      "id": "b29",
+      "type": "line",
+      "who": "blue",
+      "text": "Unroll the spiral, and you get the piano. The same seven letters, octave after octave.",
+      "with": "unroll",
+      "offset": 0.6
+    },
+    {
+      "id": "act4",
+      "type": "mark",
+      "gap": 0.7
+    },
+    {
+      "id": "b30",
+      "type": "line",
+      "who": "blue",
+      "text": "When two people sing the same tune, they're often an octave apart. Listen."
+    },
+    {
+      "id": "tune",
+      "type": "sound",
+      "sound": "tune",
+      "dur": 4.6,
+      "gap": 0.3
+    },
+    {
+      "id": "b30b",
+      "type": "line",
+      "who": "blue",
+      "text": "Two voices, one tune.",
+      "gap": 0.35
+    },
+    {
+      "id": "b31",
+      "type": "line",
+      "who": "blue",
+      "text": "So when you match a note, an octave up or down still counts."
+    },
+    {
+      "id": "b32",
+      "type": "line",
+      "who": "blue",
+      "text": "Let's try. I'll sing an A. Hum it back, wherever it feels easy.",
+      "gap": 0.5
+    },
+    {
+      "id": "sing-blue-a3-2",
+      "type": "sing",
+      "who": "blue",
+      "note": "A3",
+      "dur": 2.2,
+      "gap": 0.4
+    },
+    {
+      "id": "hum",
+      "type": "pause",
+      "dur": 3.4,
+      "gap": 0.2
+    },
+    {
+      "id": "hum-orange-a4",
+      "type": "sing",
+      "who": "orange",
+      "note": "A4",
+      "dur": 2.0,
+      "gap": 0.2
+    },
+    {
+      "id": "o6",
+      "type": "line",
+      "who": "orange",
+      "text": "I hummed it higher. Does that count?",
+      "gap": 0.25
+    },
+    {
+      "id": "b33",
+      "type": "line",
+      "who": "blue",
+      "text": "Higher, but the same note. That counts. Keep it gentle. Never push."
+    },
+    {
+      "id": "recap",
+      "type": "mark",
+      "gap": 0.7
+    },
+    {
+      "id": "b34",
+      "type": "line",
+      "who": "blue",
+      "text": "Quick check."
+    },
+    {
+      "id": "b35",
+      "type": "line",
+      "who": "blue",
+      "text": "What makes a note higher?",
+      "gap": 0.3
+    },
+    {
+      "id": "q1",
+      "type": "pause",
+      "dur": 1.8
+    },
+    {
+      "id": "b36",
+      "type": "line",
+      "who": "blue",
+      "text": "Faster swings. A higher frequency."
+    },
+    {
+      "id": "b37",
+      "type": "line",
+      "who": "blue",
+      "text": "Double the frequency, and you get?",
+      "gap": 0.6
+    },
+    {
+      "id": "q2",
+      "type": "pause",
+      "dur": 1.8
+    },
+    {
+      "id": "o7",
+      "type": "line",
+      "who": "orange",
+      "text": "The same note, one octave up!"
+    },
+    {
+      "id": "b38",
+      "type": "line",
+      "who": "blue",
+      "text": "And why do A three and A four share a letter?",
+      "gap": 0.6
+    },
+    {
+      "id": "q3",
+      "type": "pause",
+      "dur": 1.8
+    },
+    {
+      "id": "b39",
+      "type": "line",
+      "who": "blue",
+      "text": "Their waves fit two to one. Same spot on the spiral, one turn higher."
+    },
+    {
+      "id": "next",
+      "type": "mark",
+      "gap": 0.7
+    },
+    {
+      "id": "b40a",
+      "type": "line",
+      "who": "blue",
+      "text": "Next time."
+    },
+    {
+      "id": "b40b",
+      "type": "line",
+      "who": "blue",
+      "text": "Seven letters, but twelve notes. Where do the other five come from?",
+      "gap": 0.3
+    },
+    {
+      "id": "o8",
+      "type": "line",
+      "who": "orange",
+      "text": "See you there.",
+      "gap": 0.4
+    },
+    {
+      "id": "end",
+      "type": "sting",
+      "dur": 5.0,
+      "gap": 0.3
+    }
+  ]
+}
