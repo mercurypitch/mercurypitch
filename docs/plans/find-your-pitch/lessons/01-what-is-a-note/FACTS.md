@@ -20,6 +20,7 @@
 12c. Slowed 220x, a 220 Hz string swings once a second (220 / 220 = 1); at real speed, 220 swings fill one second | arithmetic | arithmetic
 12d. The HIGHER example steps 220 Hz to 330 Hz at the same loudness (a higher pitch, frequency ratio 3:2) | tools/mix.py 'higher' | measured
 12e. A 2:1 pair is the simplest whole-number fit: every slow peak meets every second fast peak. Other whole-number pairs also realign: 3:1 meets on every slow peak too (every third fast peak), at a different note name (E5 over A3); 5:4 meets every fourth slow peak. So meeting on every slow peak is not unique to 2:1; being the simplest fit is | arithmetic (review round, plan lens: music teaching) | said as "the simplest fit there is", never "lines up = same note"; the web toy labels 3:1 as "fits too: a different note"
+12f. Played one after the other, 440 Hz sounds higher than 220 Hz; played together they fuse into one sound, because 440 Hz is the second harmonic of 220 Hz and the pair forms one harmonic series | Bregman, Auditory Scene Analysis (1990), harmonicity and fusion; arithmetic (440 = 2 x 220) | said as "Higher, yes. But together, they melt into one note." (b16a); never "most people hear one note"
 
 ## Naming
 

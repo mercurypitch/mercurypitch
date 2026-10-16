@@ -35,7 +35,9 @@ The MercuryPitch "listening room", as in the film and the stats site (dev.stats.
    reflective floor line with the living staff vibrating behind; between them a short pitch rail
    with the two beads (A at 220, A at 440). The **predict widget**: "Two different notes, or the
    same one?" with two choices; choosing unlocks Play 220 Hz (blue sings), Play 440 Hz (orange
-   sings), Play both; after a play, the reveal line ("Most people hear one note, just brighter").
+   sings), Play both; after Play both, the reveal from LESSON.md ("One after the other, 440 sounds
+   higher. Played together, they melt into one sound..."), which never tells either choice it was
+   wrong.
 3. **Three words you'll meet**: pitch, hertz, octave, each with a one-line definition and a play
    button.
 4. **The steps**: a sticky visual stage (desktop: stage left or right, step text scrolling beside

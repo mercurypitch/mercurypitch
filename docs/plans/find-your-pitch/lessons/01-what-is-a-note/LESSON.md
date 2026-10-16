@@ -10,8 +10,8 @@ Each step names its toy (the interactive visual it sits beside); the page spec i
 ## Header
 
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 01
-- Title (the hook question): **If 440 Hz shakes the air twice as fast as 220 Hz, why do they
-  sound like the same note?**
+- Title (the hook question): **If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians
+  call them the same note?**
 - Meta: 10 minutes · no theory needed · sound on
 - Promise: By the end you'll know what a note really is, why notes come back an octave higher,
   and how to read names like A4 and C4.
@@ -22,16 +22,17 @@ Each step names its toy (the interactive visual it sits beside); the page spec i
 
 ## Cold open: predict
 
-Orange Merc: "We sang the same note!"
-Blue Merc: "Did we? Mine shook the air 220 times a second. Yours, 440."
+Orange Merc: "Ha! Same note."
+Blue Merc: "Is it? Mine shook the air 220 times a second. Yours shook it 440."
 
 **Predict before you listen.** Two different notes, or the same one?
 [ Different ] [ Same note ]
 
 (After a choice, the two play buttons unlock: Play 220 Hz · Play 440 Hz · Play both.)
 
-Reveal: Most people hear one note, just brighter. Hold on to that: by the end of this lesson
-you'll know why.
+Reveal (shown after Play both, so it describes what was heard): One after the other, 440 sounds
+higher. Played together, they melt into one sound. Alike enough that music gives them one name:
+by the end of this lesson you'll know why. (Whichever you chose, you heard something real.)
 
 ## Three words you'll meet
 
