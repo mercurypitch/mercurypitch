@@ -1,0 +1,236 @@
+# Lesson 2: Twelve notes (written lesson)
+
+The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Drafted in British
+English, pending MASTER-PLAN § 12 decision 5 (the app's screens now use American spelling).
+Each step names its toy (the interactive visual it sits beside); the page spec is
+[WEB-SPEC.md](WEB-SPEC.md).
+
+---
+
+## Header
+
+- Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 02
+- Title (the hook question): **Musicians only use seven letters, so where do the other five notes
+  come from?**
+- Meta: 10 minutes · after Lesson 1 · sound on
+- Prerequisite chip: Lesson 1, What is a note?
+- Promise: By the end you'll find all twelve notes on a keyboard, tell a semitone from a tone by
+  ear, know why one key has two names, and know what a cent is.
+
+## Sound gate
+
+> This lesson is about small steps in sound. Tap to turn it on: nothing plays until you press a
+> play button.
+
+## Warm-up from Lesson 1
+
+Two questions from last time, asked afresh (no earlier answers are shown). They are Lesson 1's
+quiz questions 2 and 4, under the same question ids, so they give the delayed score (MASTER-PLAN
+§ 9).
+
+1. You double a note's frequency. What do you get?
+   - The same note, one octave up **[correct]** · Feedback: "Exactly: two for one is an octave."
+   - A completely different note · Feedback: "It's higher, but it keeps its name: two for one is
+     the octave, the same note one level up."
+   - The same note, twice as loud · Feedback: "Frequency is how fast, not how loud. Twice as fast
+     is an octave higher."
+2. Which note comes right after B3?
+   - C4 **[correct]** · Feedback: "Yes: the number goes up at C."
+   - C3 · Feedback: "Close: the letter is C, but the number goes up at C, so it's C4."
+   - A4 · Feedback: "After B comes C, and the number goes up there: C4."
+
+## Cold open: predict
+
+Orange Merc: "Seven letters on the way round. And the five dim beads between them? Are those just
+gaps?"
+Blue Merc: "Tap one and find out."
+
+**Predict before you listen.** The dim bead between A and B: a note of its own, or just a gap?
+[ A note of its own ] [ Just a gap ]
+
+(After a choice, the play buttons unlock: Play A · Play the dim bead · Play B.)
+
+Reveal (shown after the dim bead has played): It's a note, as real as A, exactly halfway between
+A and B. All five dim beads are notes like it: seven letters, but twelve notes. (On the spiral they
+do look like gaps, so it was a fair guess.)
+
+## Four words you'll meet
+
+- **Semitone**, or half step: the smallest step on a piano, from one key to the very next.
+  [Play: A to A♯]
+- **Tone**, or whole step: two semitones. [Play: A to B]
+- **Sharp ♯ and flat ♭**: one semitone up, and one semitone down. [Play: C to C♯]
+- **Cent**: a hundredth of a semitone. [Play: a slow glide of 100 cents]
+
+## Step 1 of 6: The very next note
+
+Start on A and take the smallest step up you can. You land on the dim bead between A and B. That
+step is a semitone, the smallest step a piano has, and the bead isn't a gap at all: it's a note,
+one of the five with no letter of its own.
+
+**Try:** tap A3, then the dim bead after it, then B3.
+**Notice:** the bead sits exactly halfway between A and B, so A to B is two of these small steps.
+
+_Toy: the spiral (Lesson 1's), its five dim beads now playable._
+
+## Step 2 of 6: Twelve equal steps make an octave
+
+Keep taking semitone steps and count. From A3 you reach A4, one turn up the spiral, in twelve
+steps: seven letters, and five notes between them. Every step is the same size, so each one turns
+the spiral by the same amount. And twelve of them double the frequency, from 220 Hz to 440 Hz,
+which is exactly what an octave is.
+
+**Try:** press Climb and count the steps from A3 to A4. Then press Look down.
+**Notice:** from above, one turn is a ring of twelve beads, evenly spaced like the hours on a
+clock.
+
+_Toy: the spiral, with Climb and Look down._
+
+## Step 3 of 6: B to C
+
+Unroll the spiral and every bead lands on a key: seven white keys and five black ones in every
+octave. Now look at B and C. There's no black key between them.
+
+**Predict:** which step is bigger, B to C or C to D? [ B to C ] [ C to D ]
+
+(After a choice: Play B to C · Play C to D.)
+
+Reveal: C to D is the bigger step, two semitones; B to C is one. E to F is one too.
+
+> **Common mix-up:** "B to C has no black key between them, so it must be a bigger step."
+> **Why it seems right:** the black keys look like stepping stones. C to D has one in the middle,
+> so B to C, with none, looks like one long stride.
+> **The evidence:** listen. B to C is exactly as big as C to the black key above it, and half the
+> size of C to D.
+> **The better idea:** B and C are already neighbours, a semitone apart. Every neighbouring pair
+> of keys, white or black, is one semitone apart.
+
+**Try:** press Straighten to draw every key the same width.
+**Notice:** B and C touch, just like C and the black key above it. On a real keyboard the white
+keys are all one width, and that's what hides it.
+
+_Toy: the keyboard, with Unroll and Straighten._
+
+## Step 4 of 6: Tones, and where the five come from
+
+Two semitones make a tone, or whole step, like C to D with the black key between them. Now the
+opening question has its answer. Five pairs of neighbouring letters (A–B, C–D, D–E, F–G, G–A) are
+a tone apart, and each of those gaps holds one note. B–C and E–F are only a semitone apart, so
+there's no gap to fill. Seven letters plus five: twelve notes.
+
+**Try:** press Lift out the five. Then play ten rounds of Semitone or tone?
+**Notice:** a tone always skips over one key; a semitone never skips any.
+
+_Toys: the tile row, with Lift out the five; the Semitone or tone? ear game._
+
+## Step 5 of 6: Two names for one key
+
+The five need names, and they borrow them from their neighbours. A sharp (♯) means one semitone
+up; a flat (♭) means one semitone down. So the key just above C is C♯, and the key just below D
+is D♭: the same key, two names. Musicians call that enharmonic. Both names are right; which one
+is written depends on the music around it. MercuryPitch's pitch line shows the sharp names, like
+C#4.
+
+> **Common mix-up:** "The black keys are the sharps and flats; the white keys are the plain notes."
+> **Why it seems right:** every black key does carry a sharp name and a flat name.
+> **The evidence:** one semitone up from E is F, a white key, so E♯ is F.
+> **The better idea:** a sharp or a flat is a direction, one semitone up or down, not a colour. It
+> can land on any key.
+
+**Try:** switch the names between sharps, flats and both. Then tap E and press Sharp.
+**Notice:** one semitone up from E lands on F, a white key: E♯ is just another name for F.
+
+_Toy: the tile row with the two-names toggle._
+
+## Step 6 of 6: A hundred cents
+
+How big is a semitone, exactly? Musicians measure it in cents: every semitone is a hundred cents
+wide, so the twelve semitones of an octave make 1,200 cents, and a tone is 200. MercuryPitch
+measures in cents too: its Singing tab names the nearest note and shows how many cents you are
+above or below it. Fifty cents is halfway; past that, the next note is nearer.
+
+**Try:** drag the marker slowly from A3 up to A♯3.
+**Notice:** at 50 cents the nearest note changes from A3 to A#3, just as MercuryPitch's monitor
+does.
+
+_Toy: the semitone ruler with cents._
+
+> **Go deeper**
+>
+> - **Why twelve equal steps make exactly two.** Each semitone multiplies the frequency by the
+>   same number, the twelfth root of 2, about 1.0595. Twelve of those multiply to exactly 2: an
+>   octave. So the gap in hertz grows as you go up (A3 to A♯3 is 13.08 Hz, A4 to A♯4 is 26.16 Hz),
+>   while every semitone is still 100 cents. Your ear hears multiplying, not adding (Lesson 1).
+> - **Where the cent comes from.** The cent comes from Alexander Ellis, who used it in 1885 to
+>   compare the scales of different musical cultures. One cent multiplies the frequency by about
+>   1.000578.
+> - **A second meaning.** Singers also say a note is "sharp" when it's a little too high and "flat"
+>   when it's a little too low: the same directions, much smaller distances.
+
+## Sing it
+
+Merc holds an A, slides up one semitone, and comes back.
+
+**Your turn:** play Merc's slide, then do the same on a hum or an "ooh", starting on Merc's A or
+the A an octave up, whichever is comfortable. Keep it quiet and gentle, never push, and stop if
+anything feels uncomfortable.
+
+[ Play Merc's slide ] [ Play it an octave up ] [ Start the guide ]
+
+The guide runs once after Merc's slide: follow the dot up one lane and back. Nothing listens here
+and nothing is scored. It's just for you.
+
+## Quick check
+
+Each question has three answers, shown in a shuffled order, so a guess scores a third, not half.
+
+1. How many semitones make an octave?
+   - 12 **[correct]** · Feedback: "Yes: seven letters and five notes between them, twelve equal
+     steps."
+   - 7 · Feedback: "Seven is the number of letters. Five more notes sit between them: twelve
+     semitones in all."
+   - 8 · Feedback: "From A to A there are eight letters, counting both As, but five more notes sit
+     between them: the octave is twelve semitone steps."
+2. Play the step: E, then F. How big is it? [Play]
+   - One semitone **[correct]** · Feedback: "Right: E and F are neighbours, with no black key
+     between them."
+   - One tone · Feedback: "They're both white keys, but nothing sits between them: E to F is one
+     semitone, like B to C."
+   - No step: it's the same note · Feedback: "Listen again: F is higher. It's the smallest step a
+     piano has, one semitone."
+3. Why does the black key between C and D have two names?
+   - It's one semitone up from C and one semitone down from D **[correct]** · Feedback: "Yes: it
+     takes a name from each neighbour, C♯ from below and D♭ from above."
+   - It's two different notes that share one key · Feedback: "It's one note: C♯ and D♭ sound
+     exactly the same on a piano, two names for one key."
+   - Black keys have two names and white keys never do · Feedback: "White keys can have two names
+     too: one semitone up from E is F, so E♯ is F."
+4. How many cents are in one semitone?
+   - 100 **[correct]** · Feedback: "Yes: a hundred cents to a semitone, 1,200 to an octave."
+   - 12 · Feedback: "Twelve is the number of semitones in an octave. Each one is a hundred cents."
+   - 1,200 · Feedback: "That's a whole octave: twelve semitones of a hundred cents each."
+
+## Wrap
+
+- Seven letters and five notes in the gaps: twelve notes, twelve equal semitones to the octave.
+- A semitone is one key to the very next, white or black; a tone is two. B–C and E–F are
+  semitones.
+- One key can have two names, like C♯ and D♭; a semitone is 100 cents, the unit MercuryPitch
+  measures in.
+
+**One-sentence challenge:** explain to a friend, in one sentence, why there's no black key between
+B and C.
+
+**Practise it:** in MercuryPitch's Ear Lab, Leap plays two notes, going up or down, and asks for
+the distance. There a semitone is called a minor 2nd (m2) and a tone a major 2nd (M2). Leap mixes
+all twelve distances today, so listen for those two. Free: **mercurypitch.com/ear-lab**, then tap
+Leap. To warm up first, Contour asks only whether the second note went up, down or stayed.
+
+_[Editorial: when the `ear-drill` launch kind with a bank subset ships (CURRICULUM § 4 item 5),
+replace the Leap sentences with: "Leap plays two notes, going up or down; say whether the step was
+a semitone (m2) or a tone (M2). Free: mercurypitch.com/exercises/semitone-or-tone" (proposed
+slug, DECISIONS 31). On the public host every link carries `?lesson=02`.]_
+
+**Next lesson:** Lesson 3, Match a note. "Asked, most of 1,105 students said they couldn't copy a
+tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going
+on?"
