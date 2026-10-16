@@ -388,7 +388,8 @@ export interface JamCallbacks {
   // DataChannel events
   onPitchMessage?: (msg: JamPitchMessage) => void
   onMelodyMessage?: (msg: JamMelodyMessage) => void
-  onSongMessage?: (msg: JamSongMessage) => void
+  /** fromPeerId is how the store tells the host's song from anyone else's. */
+  onSongMessage?: (msg: JamSongMessage, fromPeerId: string) => void
   /** Control frames for a stem transfer (offer / done / abort). */
   onSongFileMessage?: (msg: JamSongFileMessage, fromPeerId: string) => void
   /** A peer telling us whether it can hear the song (see JamSongHaveMessage). */
