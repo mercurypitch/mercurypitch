@@ -30,6 +30,7 @@
 // own clock, and nothing played, felt, said or kept.
 
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { onAppLeave } from '@/components/room-kit/app-leave'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
@@ -547,7 +548,8 @@ export function useNgController(): NgController {
       alive && phase() === 'starting' && untrack(state).run === run
     void capture
       .acquire()
-      .then(() => capture.audio())
+      // A take the app's leaving dropped meanwhile unlocks nothing.
+      .then(() => (stands() ? capture.audio() : null))
       .then(
         (ctx) => {
           if (!stands()) return
@@ -635,6 +637,8 @@ export function useNgController(): NgController {
     if (document.visibilityState === 'hidden') leave()
   }
   document.addEventListener('visibilitychange', onVisibility)
+  // Or with the page still showing: the clock's park (room-kit app-leave.ts).
+  const stopAppLeave = onAppLeave(leave)
 
   // The screen stays on, and the rail out of reach, while a run is on;
   // the screen stays on while the demo plays too (its own say: not on its
@@ -729,6 +733,7 @@ export function useNgController(): NgController {
     for (const id of timers) clearTimeout(id)
     timers.clear()
     document.removeEventListener('visibilitychange', onVisibility)
+    stopAppLeave()
     unregisterIndicator()
     awake.set(false)
     setExerciseFocus(false)

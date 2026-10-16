@@ -80,7 +80,10 @@ export function installNativeShell(
   // Karaoke, "Keep playing in the background") holds the clock, and this
   // suspension waits until the hold lets go (packages/audio-io). A song that
   // stops here pauses with its fade first (`prepareToSuspend`): a clock
-  // stopped mid-note cuts it off with a buzz.
+  // stopped mid-note cuts it off with a buzz. A premium room's take or demo
+  // ends here as it does when the page hides (room-kit app-leave.ts), except
+  // while the room's mic opens: iOS's permission alert sends this same event,
+  // so the room holds the clock until the singer answers.
   //
   // COMING BACK IS NOT WIRED HERE, and it is not always the next tap either.
   // `packages/audio-io` follows the page as well: a WebView the OS takes away

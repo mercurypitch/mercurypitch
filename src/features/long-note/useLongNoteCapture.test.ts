@@ -66,7 +66,8 @@ vi.mock('@/components/room-kit/room-output', () => ({
   },
 }))
 
-// The phone's audio lease, or none for a browser build.
+// The phone's audio lease, or none for a browser build, and the holds on
+// the clock against a park (each one's owner, and whether it was let go).
 const device = vi.hoisted(() => ({
   lease: null as null | {
     ensure: () => AudioContext | null
@@ -74,6 +75,7 @@ const device = vi.hoisted(() => ({
     release: () => void
   },
   options: undefined as undefined | { prepareToSuspend?: () => number },
+  holds: [] as { owner: string; letGo: number }[],
 }))
 vi.mock('@/stores/native-shell-store', () => ({
   nativeDeviceApi: () =>
@@ -87,11 +89,19 @@ vi.mock('@/stores/native-shell-store', () => ({
             device.options = options
             return device.lease
           },
+          holdAudioInBackground: (owner: string) => {
+            const hold = { owner, letGo: 0 }
+            device.holds.push(hold)
+            return () => {
+              hold.letGo += 1
+            }
+          },
         },
 }))
 
-const { CaptureError, useLongNoteCapture } =
+const { CaptureError, LONG_NOTE_AUDIO_OWNER, useLongNoteCapture } =
   await import('./useLongNoteCapture')
+const { onAppLeave } = await import('@/components/room-kit/app-leave')
 const { ROOM_TAIL_MS } =
   await import('@/components/room-kit/useExerciseCapture')
 
@@ -138,6 +148,7 @@ describe('useLongNoteCapture', () => {
       release: () => undefined,
     }
     device.options = undefined
+    device.holds.length = 0
     notes.started.length = 0
     stages.opened.length = 0
     clock.state = 'running'
@@ -272,12 +283,84 @@ describe('useLongNoteCapture', () => {
   it('starts a parked clock on a new stage, and cuts the one the park held', async () => {
     const { capture, dispose } = mount()
     await capture.audio()
-    // The app left with the page still showing: the clock parked with the
-    // room's note in it, and the room heard nothing of it.
+    // The clock parked with the room's note in it, without asking the room
+    // first: the system can park it on its own.
     park()
     await capture.audio()
     expect(stages.opened.map((stage) => stage.isCut)).toEqual([true, false])
     dispose()
+  })
+
+  describe('the clock while the mic opens', () => {
+    // The first Start asks iOS for the microphone. Its alert takes the app
+    // out of the foreground with the singer still in the room, and the
+    // shell cannot tell that from Control Center: a park then would end
+    // the take the singer is starting. So the room holds the clock against
+    // a park through every opening, and only through it.
+
+    /** An opening whose prompt is up until `answer` is called. */
+    function prompting(): (answer: () => Promise<MediaStream>) => void {
+      let settle: (stream: Promise<MediaStream>) => void = () => undefined
+      mic.acquire.mockReturnValueOnce(
+        new Promise<MediaStream>((resolve) => {
+          settle = resolve
+        }),
+      )
+      return (answer) => settle(answer())
+    }
+
+    it('holds the clock from before the prompt until the singer answers', async () => {
+      const answer = prompting()
+      const { capture, dispose } = mount()
+      const opening = capture.acquire()
+      await vi.waitFor(() => expect(mic.acquire).toHaveBeenCalledTimes(1))
+      expect(device.holds).toEqual([{ owner: LONG_NOTE_AUDIO_OWNER, letGo: 0 }])
+      answer(() => Promise.resolve(stream))
+      await opening
+      expect(device.holds).toEqual([{ owner: LONG_NOTE_AUDIO_OWNER, letGo: 1 }])
+      // Let go once: the mic going back later lets go of nothing more.
+      capture.release()
+      dispose()
+      expect(device.holds[0].letGo).toBe(1)
+    })
+
+    it('lets go when the singer refuses the mic', async () => {
+      const answer = prompting()
+      const { capture, dispose } = mount()
+      const opening = capture.acquire()
+      await vi.waitFor(() => expect(mic.acquire).toHaveBeenCalledTimes(1))
+      answer(() => Promise.reject({ kind: 'permission-denied' }))
+      await expect(opening).rejects.toMatchObject({ failure: 'denied' })
+      expect(device.holds).toEqual([{ owner: LONG_NOTE_AUDIO_OWNER, letGo: 1 }])
+      dispose()
+    })
+
+    it('lets go at once when the room gives the opening up', async () => {
+      const answer = prompting()
+      const { capture, dispose } = mount()
+      const opening = capture.acquire()
+      await vi.waitFor(() => expect(mic.acquire).toHaveBeenCalledTimes(1))
+      // The page hid with the prompt up: the room let its start go.
+      capture.release()
+      expect(device.holds[0].letGo).toBe(1)
+      answer(() => Promise.resolve(stream))
+      await opening
+      expect(device.holds[0].letGo).toBe(1)
+      dispose()
+    })
+
+    it("holds nothing for a mic that is open, or a clock that won't start", async () => {
+      const { capture, dispose } = mount()
+      await capture.acquire()
+      await capture.acquire()
+      expect(device.holds).toHaveLength(1)
+      dispose()
+      device.lease = { ...device.lease!, unlock: () => Promise.resolve(false) }
+      const next = mount()
+      await expect(next.capture.acquire()).rejects.toBeInstanceOf(CaptureError)
+      expect(device.holds).toHaveLength(1)
+      next.dispose()
+    })
   })
 
   describe('the clock, once the room is left', () => {
@@ -309,6 +392,20 @@ describe('useLongNoteCapture', () => {
       expect(prepare?.()).toBe(ROOM_TAIL_MS - 100)
       vi.advanceTimersByTime(ROOM_TAIL_MS)
       expect(prepare?.()).toBe(0)
+    })
+
+    it('tells the room the app is leaving while it is open, and not once it is gone', () => {
+      vi.useFakeTimers()
+      const left = vi.fn()
+      const stop = onAppLeave(left)
+      const { dispose } = mount()
+      const prepare = device.options?.prepareToSuspend
+      prepare?.()
+      expect(left).toHaveBeenCalledTimes(1)
+      dispose()
+      prepare?.()
+      expect(left).toHaveBeenCalledTimes(1)
+      stop()
     })
 
     it('plays the note with its low-note octave', async () => {
@@ -346,6 +443,20 @@ describe('useLongNoteCapture', () => {
       capture.release()
       unlocked(true)
       await playing
+      expect(notes.started).toEqual([])
+      dispose()
+    })
+
+    it('plays no note on a clock that parked while it unlocked', async () => {
+      device.lease = {
+        ...device.lease!,
+        unlock: () => {
+          park()
+          return Promise.resolve(true)
+        },
+      }
+      const { capture, dispose } = mount()
+      await capture.playTone(57)
       expect(notes.started).toEqual([])
       dispose()
     })

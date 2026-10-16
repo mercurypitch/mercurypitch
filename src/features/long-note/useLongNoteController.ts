@@ -22,6 +22,7 @@
 // `script` (scripted-take.ts): frames in place of the mic, nothing kept.
 
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { onAppLeave } from '@/components/room-kit/app-leave'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
@@ -648,6 +649,8 @@ export function useLongNoteController(): LongNoteController {
     if (document.visibilityState === 'hidden') leave()
   }
   document.addEventListener('visibilitychange', onVisibility)
+  // Or with the page still showing: the clock's park (room-kit app-leave.ts).
+  const stopAppLeave = onAppLeave(leave)
 
   // The screen stays on while the singer's take listens, and while the
   // demo plays (its own say: not on its end card).
@@ -745,6 +748,7 @@ export function useLongNoteController(): LongNoteController {
   onCleanup(() => {
     alive = false
     document.removeEventListener('visibilitychange', onVisibility)
+    stopAppLeave()
     unregisterIndicator()
     if (loop !== 0) cancelAnimationFrame(loop)
     lantern.stop()
