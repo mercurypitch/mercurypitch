@@ -547,7 +547,11 @@ describe('the web', () => {
 describe('the month’s free song', () => {
   it('is one song a month for a signed-in singer, from the app', async () => {
     const token = await signedInToken()
-    expect((await me(token, IOS)).songs).toMatchObject({ left: 1, free: 1 })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      left: 1,
+      free: 1,
+      monthly: true,
+    })
 
     const first = await debit(token, 'rp_gpu_free-1', { origin: IOS })
     const second = await debit(token, 'rp_gpu_free-2', { origin: IOS })
@@ -555,7 +559,12 @@ describe('the month’s free song', () => {
     expect(first.status).toBe(200)
     expect(await first.json()).toMatchObject({ debited: 1, balance: 0 })
     expect(second.status).toBe(402)
-    expect((await me(token, IOS)).songs).toMatchObject({ left: 0, free: 0 })
+    // Spent, and another one next month: the app may say when it comes.
+    expect((await me(token, IOS)).songs).toMatchObject({
+      left: 0,
+      free: 0,
+      monthly: true,
+    })
     expect(rows('free-song')).toEqual([{ delta: 0, jobRef: 'rp_gpu_free-1' }])
     expect(balance()).toBe(0)
   })
@@ -563,7 +572,11 @@ describe('the month’s free song', () => {
   it('is none for an anonymous singer', async () => {
     const token = await anonymousToken()
 
-    expect((await me(token, IOS)).songs).toMatchObject({ left: 0, free: 0 })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      left: 0,
+      free: 0,
+      monthly: false,
+    })
     expect((await debit(token, 'rp_gpu_anon', { origin: IOS })).status).toBe(
       402,
     )
@@ -580,19 +593,33 @@ describe('the month’s free song', () => {
       )
       .run(DEVICE)
 
-    expect((await me(token, IOS)).songs).toMatchObject({ left: 0, free: 0 })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      left: 0,
+      free: 0,
+      monthly: false,
+    })
   })
 
   it('is none for an account whose email is not confirmed yet', async () => {
     const token = await signedInToken({ confirmed: false })
-    expect((await me(token, IOS)).songs).toMatchObject({ left: 0, free: 0 })
+    // None left, as for a singer who spent it, but none to come either:
+    // the app must not promise one next month.
+    expect((await me(token, IOS)).songs).toMatchObject({
+      left: 0,
+      free: 0,
+      monthly: false,
+    })
     expect(
       (await debit(token, 'rp_gpu_unconfirmed', { origin: IOS })).status,
     ).toBe(402)
 
     confirmTheEmail()
 
-    expect((await me(token, IOS)).songs).toMatchObject({ left: 1, free: 1 })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      left: 1,
+      free: 1,
+      monthly: true,
+    })
   })
 
   // Owner, 28 Sep: a subscriber has the month's songs, and sees 20, not 21.
@@ -604,6 +631,7 @@ describe('the month’s free song', () => {
       subscribed: true,
       left: 20,
       free: 0,
+      monthly: false,
     })
     await debit(token, 'rp_gpu_subscriber', { origin: IOS })
     expect(rows('free-song')).toEqual([])
@@ -758,7 +786,9 @@ describe('the month’s free song', () => {
   it('is never a credit on the web', async () => {
     const token = await signedInToken()
 
-    expect((await me(token)).creditBalance).toBe(0)
+    const web = await me(token)
+    expect(web.creditBalance).toBe(0)
+    expect(web.songs).not.toHaveProperty('monthly')
     expect((await debit(token, 'rp_gpu_web-free')).status).toBe(402)
     expect(rows('free-song')).toEqual([])
   })
@@ -767,7 +797,11 @@ describe('the month’s free song', () => {
     env = { ...env, FREE_MONTHLY_SONG: 'off' }
     const token = await signedInToken()
 
-    expect((await me(token, IOS)).songs).toMatchObject({ left: 0, free: 0 })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      left: 0,
+      free: 0,
+      monthly: false,
+    })
     expect((await debit(token, 'rp_gpu_off', { origin: IOS })).status).toBe(402)
   })
 })

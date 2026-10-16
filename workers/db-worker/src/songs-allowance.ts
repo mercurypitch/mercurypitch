@@ -640,6 +640,9 @@ export interface AppSongs {
   left: number
   /** The key the free song's claim is written under, if the app spends it. */
   freeKey: string
+  /** Whether this singer gets a free song each month at all (getsFreeSong,
+   *  and the free song not switched off), spent or not. */
+  monthly: boolean
 }
 
 export function appSongs(
@@ -661,6 +664,7 @@ export function appSongs(
     free: free.left,
     left: held + review + gift + free.left,
     freeKey: free.nextKey,
+    monthly,
   }
 }
 
@@ -674,6 +678,9 @@ export interface SongsSummary {
   free?: number
   /** In the app: the launch gift's songs among the songs left. */
   gift?: number
+  /** In the app: whether the singer gets a free song each month at all, so
+   *  that none left can be told apart from none to come (appSongs). */
+  monthly?: boolean
   /** When the period ends and the next songs arrive, while subscribed. */
   renewsAt: string | null
   perPeriod: number
@@ -688,7 +695,7 @@ export function songsSummary(
   balance: number,
   allowance: SongAllowance,
   nowMs: number,
-  app?: Pick<AppSongs, 'left' | 'free' | 'gift'>,
+  app?: Pick<AppSongs, 'left' | 'free' | 'gift' | 'monthly'>,
 ): SongsSummary {
   const row = entitlements.find(
     (entitlement) => entitlement.feature === SONGS_ENTITLEMENT,
@@ -698,7 +705,9 @@ export function songsSummary(
   return {
     subscribed,
     left: app === undefined ? Math.max(0, balance) : app.left,
-    ...(app === undefined ? {} : { free: app.free, gift: app.gift }),
+    ...(app === undefined
+      ? {}
+      : { free: app.free, gift: app.gift, monthly: app.monthly }),
     renewsAt: subscribed ? endsAt : null,
     perPeriod: allowance.perPeriod,
     cap: allowance.cap,
