@@ -419,9 +419,13 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    the app withholds from its store build, `src/features/echo/merc-voice-set.ts`): they stay for
    now, and a voice actor replaces them later (Phase 1 Voices track). Still open: orange Merc's
    name and pronouns.
-2. **Decided (16 October 2026): a private repository.** The owner moves the film project and the
-   lesson's working files there; until then they travel as the archive the director sends at each
-   milestone. (The lesson documents stay in this repo, in `lessons/`.)
+2. **Decided (16 October 2026): a private repository.** It is `disjoint-colliders`, package
+   `packages/learn` (17 October 2026). The film sources go there; source media (the Merc passes,
+   the voice takes) goes to a private R2 bucket listed in a `media.json` manifest, never into git.
+   Until each lesson moves, its working files travel as the archive the director sends at each
+   milestone. (The lesson documents stay in this repo, in `lessons/`.) The film tools become a
+   shared, versioned film kit vendored into that repository with a drift check; until then tool
+   changes stay small and are logged in the film's `tools/CHANGES.md`.
 3. **Proposed: the lessons are free**, the top of the funnel (`docs/plans/premium.md:48`: pitch
    training never premium; `docs/specs/guided-voice-check.ears.md` REQ-GVC-025: safety never
    paid). Still open: whether premium stays the Merc practice rooms, which already sit uneasily with
@@ -437,10 +441,13 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    Lessons surface.
 7. **Decided (16 October 2026): self-hosted on R2.** The page plays its own copy of the episode, an
    MP4 at 1080p with a 720p copy for phones, from the R2 bucket the site's security policy already
-   allows (`media-src` in `public/_headers`); a re-cut replaces the file in place. For now: once
-   the channel is live and the episodes do well, the page may switch to YouTube links instead
-   (which would need `youtube-nocookie.com` in the policy's `frame-src`). The film files are never
-   committed (renders stay out of git, and the asset layer serves no file over 25 MiB).
+   allows (`media-src` in `public/_headers`); a re-cut replaces the file in place. Updated 17
+   October 2026: the web encodes go to R2 on a custom domain (planned: `media.mercurypitch.com`),
+   because Cloudflare rate-limits `r2.dev` and meant it for development; `media-src` gains that
+   domain when it exists. In the app, a lesson film plays from those MP4s in the app's own player,
+   with a "Watch on YouTube" link and no YouTube embed: iOS WebViews send no Referer, so YouTube
+   embeds fail with Error 153, and the app's COEP header blocks YouTube iframes. The film files are
+   never committed (renders stay out of git, and the asset layer serves no file over 25 MiB).
 8. **Proposed, no recommendation yet.** Who the vocal coach is. (That a coach signs off every
    voice lesson at the day-1 and day-6 gates is fixed: § 7.)
 9. **Decided (16 October 2026): `mercurypitch.com/learn/NN`.** The public web lessons are the
