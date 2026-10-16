@@ -9,7 +9,7 @@ audience: 'Adult and teen beginners who sing or want to, with no theory beyond L
 destination: youtube, landing-page
 aspect: 1920x1080
 sizes: 1920x1080
-length: about 6m54s (estimated at 2.6 words a second; cues.json total once voiced)
+length: about 6m50s (estimated at 2.6 words a second; cues.json total once voiced)
 fps: 60
 language: en-GB
 project_dir: output/motion/lesson-02
@@ -20,17 +20,18 @@ project_dir: output/motion/lesson-02
 ## Intent
 
 - What the video is for: Lesson 2 of "Find Your Pitch", MercuryPitch's music theory and singing
-  series, and its second theory lesson (topics T03, twelve notes, and T04, cents). It answers the
-  question Lesson 1's film ends on and embeds in the Lesson 2 web page.
+  series, and its second theory lesson (topics T03, twelve notes, and the cents half of T04; T04's
+  "in tune" moves to Lesson 3, DECISIONS 62). It answers the question Lesson 1's film ends on and
+  embeds in the Lesson 2 web page.
 - Who is watching: beginners who have seen Lesson 1 or know what an octave is, many of whom think
   the black keys are a mystery, or that they "can't sing". They want to understand, not memorise
   jargon. Most watch with the sound on (this is about hearing small steps), but the picture must
   still carry every idea with the sound off and captions on.
-- What they should do at the end: answer the recap in their head, then practise telling a
-  semitone from a tone in MercuryPitch's Ear Lab. Spoken at the end of the recap: "Practise telling
-  semitones from tones in Ear Lab." On screen: "Practise it free: mercurypitch.com/ear-lab", with
-  "In Leap: m2 = semitone · M2 = tone". Next-episode tease: Lesson 3's hook, ending on orange's
-  "So what's going on?"
+- What they should do at the end: answer the recap in their head, then listen for semitones and
+  tones in MercuryPitch's Ear Lab, in its Leap drill. Spoken at the end of the recap: "In Ear Lab's
+  Leap, listen for the semitone and the tone." On screen: Leap's twelve answers with m2 and M2 lit,
+  then "Practise it free: mercurypitch.com/ear-lab", with "In Leap: m2 = semitone · M2 = tone".
+  Next-episode tease: Lesson 3's hook, ending on orange's "So what's going on?"
 
 ## Teaching
 
@@ -43,8 +44,8 @@ project_dir: output/motion/lesson-02
 
 ### Hook
 
-The cold open re-asks the question Lesson 1's film closes on, after a warm-up retrieval from Lesson
-1 (playbook rule 18). Orange guesses "Is there a hidden note between every two letters?"; blue:
+The cold open re-asks the question Lesson 1's film closes on, after a recall question from Lesson 1
+(playbook rule 18). Orange guesses "Is there a hidden note between every two letters?"; blue:
 "Seven letters, but twelve notes." Orange: "Then where do the other five come from?" (done by
 about 0:24; rule 1). The web page's title is the curriculum's wording: "Musicians only use seven
 letters, so where do the other five notes come from?" YouTube title variants for Test & Compare
@@ -54,13 +55,14 @@ words, "Why is there no black key between B and C?" (42).
 
 ### Length target
 
-About 6:30 (6:00 to 7:00); the estimate is 6:54. Reason: T03 alone carries five ideas (semitones,
-tones, the keyboard, sharps and flats, two names), T04 adds cents, and the film refutes two
-misconceptions, each with a predict, then ends on a sung checkpoint and a four-question recap.
-That sits inside the series' 6 to 9 minutes (MASTER-PLAN D6), near the MOOC engagement median of
-about 6 minutes, and about two minutes longer than Lesson 1 (4:57), which had one refutation and a
-single sung gap. Nothing is cut to hit a number: each act is one idea (rule 8), and the round 1
-critics' fixes cost about 18 s net. If the voiced cut runs past 7:00, DECISIONS 56 lists what goes
+6:00 to 7:00; the estimate is 6:50 at 2.6 words a second, and about 6:36 at Lesson 1's measured
+2.73. Reason: T03 alone carries five ideas (semitones, tones, the keyboard, sharps and flats, two
+names), T04 adds cents, and the film refutes two misconceptions, each with a predict, then ends on a
+sung checkpoint and a four-question recap. That sits inside the series' 6 to 9 minutes (MASTER-PLAN
+D6), near the MOOC engagement median of about 6 minutes, and about two minutes longer than Lesson 1
+(4:57), which had one refutation and a single sung gap. Nothing is cut to hit a number: each act is
+one idea (rule 8); the round 1 critics' fixes cost about 18 s net, and round 2 took back 4 s with
+three trims that cost no teaching. If the voiced cut runs past 7:00, DECISIONS 56 lists what goes
 first.
 
 ### Misconceptions (orange voices them sincerely; a demonstration breaks them)
@@ -105,36 +107,39 @@ octave, on every object.
 
 ### Checkpoint (sung)
 
-Slide up one semitone from a held note, and back. Blue holds A3, slides to A#3 and comes back;
-orange sings it an octave higher and asks how to know it was exactly one semitone; blue answers
-with the app's own reading (the monitor's name turns A4 to A#4 with the marker in the middle, then
-back: FACTS 30a). Only then is the viewer invited (rule 16: blue sings it, orange tries, the viewer
-is invited), with the safety said first: "Hum it quietly, or sing it on ooh. Never push, and stop
-if anything feels uncomfortable." They start from Merc's A or the A an octave up, "whichever feels
-easy" (each of the app's six range presets contains one of them, FACTS 38), in a 6.5 s guided
-pause. Nothing listens in the film: a plain ring timer, no microphone, and the Mercs wait rather
-than listen. A quiet one-semitone hum slide is within a comfortable hum, so the comfort-check line
-is not needed (DECISIONS 25).
+Slide up one semitone from a held note, and back. Blue announces it as a demonstration ("Listen
+first."), holds A3, slides to A#3 and comes back; orange sings it an octave higher and asks how to
+know it was exactly one semitone; blue answers with the app's own reading (the monitor's name turns
+A4 to A#4 with the marker in the middle, then back: FACTS 30a). Only then is the viewer invited
+(rule 16: blue sings it, orange tries, the viewer is invited), with the safety said first: "Hum it
+quietly, or sing it on ooh. Never push, and stop if anything feels uncomfortable." They start from
+Merc's A or the A an octave up, "whichever feels easy" (each of the app's six range presets contains
+one of them, FACTS 38), in a 6.5 s guided pause. Nothing listens in the film: a plain ring timer, no
+microphone, and the Mercs wait rather than listen. A quiet one-semitone hum slide is within a
+comfortable hum, so the comfort-check line is not needed (DECISIONS 25).
 
 ### Practice link
 
 Ear Lab Leap with only Minor 2nd and Major 2nd (`leap:m2`, `leap:M2`, `src/lib/ear/banks.ts:36-50`).
 Today no link opens it (FACTS 33): the film's end card shows mercurypitch.com/ear-lab, which works
 now and stays valid, and the page tells the viewer to tap Leap, where m2 is a semitone and M2 a
-tone; the film shows Leap's two buttons once (S15g) as blue names Ear Lab. When the `ear-drill`
-launch kind accepts a bank subset (CURRICULUM § 4 item 5), the page and the YouTube description
-switch to the proposed `/exercises/semitone-or-tone`. Contour appears only on the page, as an
-optional warm-up for direction: it never asks semitone or tone.
+tone; the film draws Leap's whole grid of twelve answers once (S15g), m2 and M2 lit and the other
+ten dim under "LISTEN FOR THESE TWO", as blue says "In Ear Lab's Leap, listen for the semitone and
+the tone." When the `ear-drill` launch kind accepts a bank subset (CURRICULUM § 4 item 5), the page
+and the YouTube description switch to the proposed `/exercises/semitone-or-tone`. Contour appears
+only on the page, as an optional first drill for direction: it never asks semitone or tone.
 
 ### What must read with the sound off (captions on)
 
-- The warm-up: "FROM LESSON 01", then "× 2" in gold and "octave" between the two stacked A beads.
+- The recall question: "FROM LESSON 01", then "× 2" in gold and "octave" between the two stacked
+  A beads.
 - Orange's guess: a dashed "?" ring in each of the seven letter gaps; then "7 letters", "12
   notes" and "the other five?".
-- The five beads lighting one by one, the counter reaching 12, "220 Hz" becoming "440 Hz".
+- The five beads lighting one by one, the counter reaching 12, and the climb's readout running from
+  "220 Hz" to "440 Hz"; then the bracket over A3 to G♯4 with "7 letters", "+ 5" and "= 12 notes".
 - "+13 Hz" and "+25 Hz" on the climb's first and last steps; then the ring of twelve, its equal
-  wedges, and the word "semitone".
-- "7 white + 5 black" over one octave of the keyboard.
+  wedges, and the word "semitone" full-frame.
+- "7 white + 5 black" over one octave of the keyboard, and only that octave in the close-up.
 - The predict: orange's dashed arc drawn as tall as C to D, the three pills over the lit pairs,
   then a check on "C to D", with step bars of 1 and 2.
 - The equal tiles: B3 and C4 touching; a "1" under every pair of neighbours; "tone = 2 semitones".
@@ -142,13 +147,15 @@ optional warm-up for direction: it never asks semitone or tone.
 - "♯ = up a semitone", "♭ = down a semitone", C♯ and D♭ on one key; "black = sharps?", the
   pills "black key" and "white key", the check on "white key" and "E♯ = F".
 - "C#4" in the house-style labels, under "How MercuryPitch's pitch line labels notes".
-- The cents ruler: the readout running 0 to 100, then "100 ¢"; "1200 ¢ = 1 octave"; the monitor's
+- The cents ruler, labelled as the film's own ("PITCH-LINE NAMES" over the names, "CENTS ABOVE A3"
+  over the cents): the readout running 0 to 100, then "100 ¢"; "1200 ¢ = 1 octave"; the monitor's
   name flip at 50 ¢.
-- The slide drawn on the lanes; orange's line headed A4, A#4, A4 and the monitor's marker in the
-  middle; "Your turn.", "NEVER PUSH" and "A3 or A4".
-- The recap cards, each answered by the object that taught it; Leap's two buttons beside
-  "semitone" and "tone".
-- "59 %" asked, "13 % · 16 %" tested, "≥ 1 semitone off".
+- The slide drawn on the lanes; the app's "you are here" marker naming A4, A#4, A4 beside orange's
+  line, and the monitor's marker in the middle; then, with the app's title gone, "Your turn.",
+  "NEVER PUSH", "A3 or A4" and the amber cursor sweeping Merc's path.
+- The recap cards, each answered by the object that taught it; Leap's twelve answers, m2 and M2
+  lit under "semitone" and "tone", with "LISTEN FOR THESE TWO".
+- "59 %" asked, "10–16 %" tested, "≥ 1 semitone off": the range the voice says.
 - The end card's address and the Leap line.
 
 ## Brand
@@ -218,7 +225,8 @@ materialising result) and the 3Blue1Brown habit of one object that transforms in
   little too high or low (the film keeps one meaning per word); any cents reading the app does not
   show (such as "+100 ¢" from a starting note on an app-labelled drawing); any claim or picture
   that the film or the app hears or checks the viewer's slide (no microphone, no listening ring, no
-  Merc listening to the viewer), that Leap scores singing, or that the pitch line "always" or
+  Merc listening to the viewer, and no drawing titled as MercuryPitch's, or the app's marker, over
+  the viewer's turn), that Leap scores singing, or that the pitch line "always" or
   "only" shows sharps.
 - A link that does not exist yet (no `/exercises/...` slug on screen).
 
@@ -227,7 +235,8 @@ materialising result) and the 3Blue1Brown habit of one object that transforms in
 - Teaching film, not a launch film: Lesson 1's adapted pacing (4 to 8 layout changes a minute, a
   visual event every 2 to 5 s tied to its word, dressed holds while a diagram is explained) and its
   two-second chapter breaths, now after the act 2, act 3 and act 4 marks, each with Lesson 1's
-  chapter card (numeral and title) handing over to the act's kicker.
+  chapter card (numeral and title) handing over to the act's kicker; no card covers the object it
+  introduces, and every kicker leaves on a named cue.
 - Production state: planning documents only. Nothing in `output/motion/lesson-02/` exists yet but
   the critics' reports and the ledger (the working folder, gitignored; the film's sources then move
   to the private repository, MASTER-PLAN § 12 item 2); `tools/mix.py` needs Lesson 2's sounds

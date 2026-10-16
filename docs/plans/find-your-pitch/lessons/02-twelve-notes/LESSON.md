@@ -22,7 +22,7 @@ Each step names its toy (the interactive visual it sits beside); the page spec i
 > This lesson is about small steps in sound. Tap to turn it on: nothing plays until you press a
 > play button.
 
-## Warm-up from Lesson 1
+## Recall from Lesson 1
 
 Two questions from last time, asked afresh (no earlier answers are shown). They are Lesson 1's
 quiz questions 2 and 4, word for word (FACTS 35a). Neither quiz has question ids yet, so the
@@ -42,8 +42,7 @@ Lesson telemetry track gives both the same ids before these answers can count as
 
 ## Cold open: predict
 
-Orange Merc: "Seven letters on the way round, but twelve notes. Is there a hidden note between
-every two letters?"
+Orange Merc: "Seven letters on the way round. Is there a hidden note between every two letters?"
 Blue Merc: "Count the steps and find out."
 
 **Predict before you listen.** Seven letters leave seven gaps on the way round. Does every gap
@@ -63,7 +62,7 @@ order like the alphabet, so one note per gap was a fair guess.)
   [Play: A to A♯]
 - **Tone**, or whole step: two semitones. [Play: A to B]
 - **Sharp ♯ and flat ♭**: one semitone up, and one semitone down. [Play: C to C♯]
-- **Cent**: a hundredth of a semitone. [Play: a slow glide of 100 cents]
+- **Cent**: a hundredth of an equal semitone. [Play: a slow glide of 100 cents]
 
 ## Step 1 of 6: The very next note
 
@@ -185,8 +184,8 @@ anything feels uncomfortable.
 
 [ Play Merc's slide ] [ Play it an octave up ] [ Start the guide ]
 
-The guide runs once after Merc's slide: follow the dot up one lane and back. Nothing listens here
-and nothing is scored. It's just for you.
+The guide runs once after Merc's slide: a line sweeps along Merc's path, so follow it up one lane
+and back. Nothing listens here and nothing is scored. It's just for you.
 
 ## Quick check
 
@@ -214,7 +213,8 @@ Each question has three answers, shown in a shuffled order, so a guess scores a 
    - Black keys have two names and white keys never do · Feedback: "White keys can have two names
      too: one semitone up from E is F, so E♯ is F."
 4. How many cents are in one semitone?
-   - 100 **[correct]** · Feedback: "Yes: a hundred cents to a semitone, 1,200 to an octave."
+   - 100 **[correct]** · Feedback: "Yes: a hundred cents to an equal semitone, 1,200 to an
+     octave."
    - 12 · Feedback: "Twelve is the number of semitones in an octave. Each one is a hundred cents."
    - 1,200 · Feedback: "That's a whole octave: twelve semitones of a hundred cents each."
 
@@ -223,8 +223,8 @@ Each question has three answers, shown in a shuffled order, so a guess scores a 
 - Seven letters and five notes in the gaps: twelve notes, twelve equal semitones to the octave.
 - A semitone is one key to the very next, white or black; a tone is two. B–C and E–F are
   semitones.
-- One key can have two names, like C♯ and D♭; a semitone is 100 cents, the unit MercuryPitch
-  measures in.
+- One key can have two names, like C♯ and D♭; an equal semitone is 100 cents, the unit
+  MercuryPitch measures in.
 
 **One-sentence challenge:** explain to a friend, in one sentence, why there's no black key between
 B and C.
@@ -232,7 +232,8 @@ B and C.
 **Practise it:** in MercuryPitch's Ear Lab, Leap plays two notes, going up or down, and asks for
 the distance. There a semitone is called a minor 2nd (m2) and a tone a major 2nd (M2). Leap mixes
 all twelve distances today, so listen for those two. Free: **mercurypitch.com/ear-lab**, then tap
-Leap. To warm up first, Contour asks only whether the second note went up, down or stayed.
+Leap. For an easier first drill, Contour asks only whether the second note went up, down or
+stayed.
 
 _[Editorial: when the `ear-drill` launch kind with a bank subset ships (CURRICULUM § 4 item 5),
 replace the Leap sentences with: "Leap plays two notes, going up or down; say whether the step was
