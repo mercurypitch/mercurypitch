@@ -12,17 +12,20 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthService from '@/db/services/auth-service'
+import type * as BillingService from '@/db/services/billing-service'
 import type * as VoiceprintService from '@/db/services/voiceprint-service'
 import type * as NativeSignIn from '@/features/account/native-sign-in'
 import { NativeSignInError } from '@/features/account/native-sign-in'
 import { resetKaraokeSongsForTests } from '@/features/karaoke-room/karaoke-songs'
+import type * as NativeBuild from '@/lib/native-build'
+import type * as Notifications from '@/stores/notifications-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { KEEP, keepFact } from './account-copy'
 import { forgetAccountOffer, offerOpen, openKeep, registerRangeFinder, } from './account-offer'
-import { AccountOfferSheet } from './AccountOffer'
 import type * as AccountState from './account-state'
+import { AccountOfferSheet } from './AccountOffer'
 import { resetAppGift } from './keep-gift'
 import { resetSignIn, signInOpen } from './sign-in-state'
 import { SignInSheet } from './SignInSheet'
@@ -63,17 +66,17 @@ vi.mock('@/db/services/voiceprint-service', async (importOriginal) => ({
   loadLocalVoiceprints: () => stand.prints,
 }))
 vi.mock('@/db/services/billing-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/db/services/billing-service')>()),
+  ...(await importOriginal<typeof BillingService>()),
   fetchAppGift: () => Promise.resolve(stand.gift),
 }))
 vi.mock('@/lib/native-build', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/native-build')>()),
+  ...(await importOriginal<typeof NativeBuild>()),
   get KARAOKE_IMPORT() {
     return stand.importing
   },
 }))
 vi.mock('@/stores/notifications-store', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/stores/notifications-store')>()),
+  ...(await importOriginal<typeof Notifications>()),
   showNotification: stand.notify,
 }))
 vi.mock('./account-fill', () => ({ markAccountFillDue: stand.fillDue }))

@@ -7,11 +7,13 @@
 // the day, and a build without Import asks nothing.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as BillingService from '@/db/services/billing-service'
+import type * as NativeBuild from '@/lib/native-build'
 import { liveAppGift, loadAppGift, resetAppGift } from './keep-gift'
 
 const build = vi.hoisted(() => ({ importing: true }))
 vi.mock('@/lib/native-build', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/native-build')>()),
+  ...(await importOriginal<typeof NativeBuild>()),
   get KARAOKE_IMPORT() {
     return build.importing
   },
@@ -22,7 +24,7 @@ const server = vi.hoisted(() => ({
   asked: 0,
 }))
 vi.mock('@/db/services/billing-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/db/services/billing-service')>()),
+  ...(await importOriginal<typeof BillingService>()),
   fetchAppGift: () => {
     server.asked += 1
     return Promise.resolve(server.answers.shift() ?? null)
