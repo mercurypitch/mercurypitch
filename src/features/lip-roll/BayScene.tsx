@@ -26,7 +26,9 @@
 //   bubbles      what the voice sheds while it sounds (bay-bubbles.ts)
 //   Merc         his canvas, moved by transform, with the buzz beside his
 //                mouth (BuzzMarks.tsx)
-//   sea-front    the near sea and its foam, over Merc
+//   dots ahead   the dots on his front half, drawn again over him
+//                (DotsAhead.tsx)
+//   sea-front    the near sea and its foam, over Merc and the dots
 //   result       the pulled-back bay, lit once from the take
 //
 // The waves and the sea-front share one transform a frame: the camera,
@@ -51,22 +53,21 @@ import type { Plate } from '@/components/room-kit/plate-loader'
 import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
 import { createResultBand } from '@/components/room-kit/result-band'
 import type { GlidePath } from '@/lib/glide/glide-path'
-import { targetAt } from '@/lib/glide/glide-path'
 import { BAY_PLATE, bayArt, bayImage, BUBBLE_URL, MOON_URL, RESULT_PLATE, } from './bay-art'
 import { createBubbleStream } from './bay-bubbles'
 import { BAY, DOTS, PLATES, PLAYHEAD_X, RESULT_ASPECT, RESULT_VIEW, WAVE, } from './bay-geometry'
 import type { BayLayout, MercBox, Zoom } from './bay-layout'
-import { frameY, horizonAt, MERC_INTRO_X, mercBoxAt, mercResultBox, pitchY, RIBBON_REFERENCE_W, RIBBON_WIDEN, waveG, worldXOf, xOf, yOf, zoomAt, } from './bay-layout'
+import { crestLine, DOTS_MARGIN, frameY, horizonAt, localX, MERC_INTRO_X, mercBoxAt, mercResultBox, RIBBON_REFERENCE_W, RIBBON_WIDEN, waveG, worldXOf, xOf, yOf, zoomAt, } from './bay-layout'
 import { crestX, INTRO_CAMERA } from './bay-scroll'
 import { moonPose, skyTravel } from './bay-sky'
 import type { BayContact, BayView, TraceSample } from './bay-view'
 import type { WaveImages } from './bay-waves'
 import { createBayWaves } from './bay-waves'
 import { BuzzMarks } from './BuzzMarks'
+import type { DotsAheadApi } from './DotsAhead'
+import { dotPathIds, DotsAhead } from './DotsAhead'
 import styles from './LipRollRoom.module.css'
 
-/** The dots' SVG runs this far past the first and last waves, W. */
-const DOTS_MARGIN = 1.6
 const WAVES = 3
 /** The sea-front's tiles, by world X (one W wide each). */
 const FRONT_TILES = [-2, -1, 0, 1, 2, 3, 4]
@@ -120,28 +121,6 @@ async function imagesDecoded(root: HTMLElement): Promise<void> {
   )
 }
 
-/** Wave k's crest line as the path draws it, in world X and world y. */
-function crestLine(path: GlidePath, k: number): [number, number][] {
-  const wave = path.arches[k] as (typeof path.arches)[number] | undefined
-  if (wave === undefined) return []
-  const steps = 96
-  const semitones = wave.topMidi - wave.rootMidi
-  const out: [number, number][] = []
-  for (let i = 0; i <= steps; i++) {
-    const t = wave.start + ((wave.end - wave.start) * i) / steps
-    const midi = targetAt(path, t) ?? wave.rootMidi
-    out.push([
-      crestX(k) - WAVE.a + (2 * WAVE.a * i) / steps,
-      pitchY(midi, wave.rootMidi, semitones),
-    ])
-  }
-  return out
-}
-
-/** Where the dots' layer puts world X under a zoom, before its translate. */
-const localX = (layout: BayLayout, zoom: Zoom, x: number): number =>
-  (zoom.sx * x + DOTS_MARGIN) * layout.unit
-
 /** The voice's samples on screen, as strokes in px, broken at its gaps. */
 function strokesOf(
   trace: readonly TraceSample[],
@@ -176,6 +155,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   let frontLayer: HTMLDivElement | undefined
   let dotsLayer: HTMLDivElement | undefined
   let mercEl: HTMLDivElement | undefined
+  let ahead: DotsAheadApi | undefined
   let buzz: SVGSVGElement | undefined
   let bubbleCanvas: HTMLCanvasElement | undefined
   let resultLit: HTMLCanvasElement | undefined
@@ -187,6 +167,8 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   let bubbleImage: HTMLImageElement | null = null
   const waveHolders: HTMLDivElement[] = []
   const dotPaths: SVGPathElement[] = []
+  /** Each wave's dotted path, by id: DotsAhead draws them again over Merc. */
+  const dotIds = dotPathIds(WAVES)
   const sparkleGroups: SVGGElement[] = []
   const topNames: HTMLDivElement[] = []
   const [resultReady, setResultReady] = createSignal(false)
@@ -277,6 +259,8 @@ export function BayScene(props: BaySceneProps): JSX.Element {
   let camera = INTRO_CAMERA
   let zoomNow = zoomAt(0)
   let zoomK = 0
+  /** The dots layer's translate as written, px: the copy over Merc's. */
+  let dotsX = 0
   const moveTo = (next: number, z: number): void => {
     camera = next
     zoomK = z
@@ -295,6 +279,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
       const dx =
         PLAYHEAD_X * layout.width - (zoom.sx * camera + DOTS_MARGIN) * u
       dotsLayer.style.transform = `translate3d(${dx.toFixed(2)}px,0,0)`
+      dotsX = Number(dx.toFixed(2))
     }
     if (bay !== undefined) {
       const back = PLATES.back.frame
@@ -321,6 +306,11 @@ export function BayScene(props: BaySceneProps): JSX.Element {
     if (mercEl === undefined) return
     const k = box.size / props.layout.mercSize
     mercEl.style.transform = `translate3d(${box.left.toFixed(1)}px,${box.top.toFixed(1)}px,0) scale(${k.toFixed(3)})`
+  }
+  /** Merc at his box, and the dots ahead of him over him (DotsAhead.tsx). */
+  const placeRider = (box: MercBox): void => {
+    placeMerc(box)
+    ahead?.place(box, dotsX)
   }
   const setBuzz = (on: boolean): void => {
     if (buzz !== undefined && buzz.dataset.on !== String(on)) {
@@ -429,7 +419,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
       )
       const head = f.voiced ? (f.trace.at(-1) ?? null) : null
       drawBubbles(head, zoomNow, f.camera)
-      placeMerc(mercBoxAt(props.layout, zoomNow, f.merc.x, f.merc.feetY))
+      placeRider(mercBoxAt(props.layout, zoomNow, f.merc.x, f.merc.feetY))
       showContact(f.contact, f.merc.x)
       setBuzz(f.voiced)
     },
@@ -441,7 +431,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
       ribbon?.draw([], ribbonScale())
       contact?.reset()
       moveTo(at, 0)
-      placeMerc(mercBoxAt(props.layout, zoomNow, MERC_INTRO_X, WAVE.rootY))
+      placeRider(mercBoxAt(props.layout, zoomNow, MERC_INTRO_X, WAVE.rootY))
       setBuzz(true)
       setResultReady(false)
     },
@@ -476,7 +466,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
       )
     }
     moveTo(camera, zoomK)
-    placeMerc(mercBoxAt(props.layout, zoomNow, MERC_INTRO_X, WAVE.rootY))
+    placeRider(mercBoxAt(props.layout, zoomNow, MERC_INTRO_X, WAVE.rootY))
     setBuzz(true)
     props.onReady(view)
     if (props.onSettled !== undefined && rootEl !== undefined) {
@@ -646,6 +636,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
                 <>
                   <path
                     ref={(el) => (dotPaths[k] = el)}
+                    id={dotIds[k]}
                     fill="none"
                     stroke={DOTS.colour}
                     stroke-width={dotPx().toFixed(2)}
@@ -778,6 +769,13 @@ export function BayScene(props: BaySceneProps): JSX.Element {
         <BuzzMarks ref={(el) => (buzz = el)} />
       </div>
       <div class={styles.takeFront}>
+        <DotsAhead
+          ids={dotIds}
+          mercSize={props.layout.mercSize}
+          width={dotsWidth()}
+          height={props.layout.height}
+          onReady={(api) => (ahead = api)}
+        />
         <div ref={frontLayer} class={styles.world} data-testid="lip-front">
           <For each={FRONT_TILES}>
             {(j) => (

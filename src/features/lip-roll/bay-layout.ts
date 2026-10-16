@@ -20,7 +20,10 @@
 
 import { MERC_FEET } from '@/components/room-kit/MercView'
 import { CORE } from '@/components/room-kit/ribbon'
+import type { GlidePath } from '@/lib/glide/glide-path'
+import { targetAt } from '@/lib/glide/glide-path'
 import { BAY, INTRO, PLAYHEAD_X, RESULT_ASPECT, WAVE } from './bay-geometry'
+import { crestX } from './bay-scroll'
 
 /** Merc's canvas in the bay, square, W (his body is about 0.30 W wide in it). */
 export const MERC_SIZE_W = 0.48
@@ -195,6 +198,31 @@ export function waveG(u: number, f: number): number {
 export function pitchY(midi: number, root: number, semitones: number): number {
   return WAVE.rootY - (WAVE.h * (midi - root)) / Math.max(1, semitones)
 }
+
+/** The dots' SVG runs this far past the first and last waves, W. */
+export const DOTS_MARGIN = 1.6
+
+/** Wave k's crest line as the path draws it, in world X and world y. */
+export function crestLine(path: GlidePath, k: number): [number, number][] {
+  const wave = path.arches[k] as (typeof path.arches)[number] | undefined
+  if (wave === undefined) return []
+  const steps = 96
+  const semitones = wave.topMidi - wave.rootMidi
+  const out: [number, number][] = []
+  for (let i = 0; i <= steps; i++) {
+    const t = wave.start + ((wave.end - wave.start) * i) / steps
+    const midi = targetAt(path, t) ?? wave.rootMidi
+    out.push([
+      crestX(k) - WAVE.a + (2 * WAVE.a * i) / steps,
+      pitchY(midi, wave.rootMidi, semitones),
+    ])
+  }
+  return out
+}
+
+/** Where the dots' layer puts world X under a zoom, before its translate. */
+export const localX = (layout: BayLayout, zoom: Zoom, x: number): number =>
+  (zoom.sx * x + DOTS_MARGIN) * layout.unit
 
 export interface MercBox {
   readonly left: number
