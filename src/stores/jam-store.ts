@@ -1943,6 +1943,24 @@ function beatsInFlight(fromPeerId: string): number {
   return (jamExerciseBpm() / 60) * (oneWayMs / 1000)
 }
 
+/**
+ * Whether a message for the whole room came from the room's host.
+ *
+ * The song is the host's to set, and the DataChannel is an unauthenticated
+ * relay: a guest's client can send a manifest as easily as the host's can,
+ * and every peer, the host included, adopted it. A modified client could
+ * move everyone's key, swap the words and hand out the parts.
+ *
+ * The sender is the transport peer the service stamps, never anything the
+ * message says about itself, and the host is the one the Durable Object
+ * names. It names a new host before it announces that peer, so a host's
+ * first message cannot arrive ahead of its name. A room whose host has left
+ * takes these from nobody.
+ */
+function sentByJamHost(fromPeerId: string): boolean {
+  return fromPeerId === jamHostPeerId()
+}
+
 export function initJam() {
   if (jamService) return
   watchVisibilityForSongHave()
@@ -2107,7 +2125,15 @@ export function initJam() {
       // is how a peer ended up playing alone while the host sat stopped.
       if (msg.have) announceSongTransport()
     },
-    onSongMessage: (msg) => {
+    onSongMessage: (msg, fromPeerId) => {
+      if (!sentByJamHost(fromPeerId)) {
+        console.info(
+          '[jam:store] ignoring a song from',
+          fromPeerId,
+          '(host sets it)',
+        )
+        return
+      }
       if (msg.action === 'clear' || msg.song === undefined) {
         setJamExercisePlaying(false, 'the host cleared the song')
         setJamExercisePaused(false)

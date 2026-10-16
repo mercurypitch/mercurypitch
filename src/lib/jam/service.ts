@@ -907,7 +907,9 @@ export function createJamService(callbacks: JamCallbacks) {
             callbacks.onMelodyMessage?.(data)
             break
           case 'song':
-            callbacks.onSongMessage?.(data)
+            // The transport peer, as for `pitch`: the song is the host's to
+            // set, and only the channel can say who sent it.
+            callbacks.onSongMessage?.(data, peerId)
             break
           case 'song-file':
             callbacks.onSongFileMessage?.(data, peerId)
