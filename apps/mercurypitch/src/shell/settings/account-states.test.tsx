@@ -5,13 +5,13 @@
 // S6 step 12. The four states the build list names, and the one a sign-out
 // leaves behind, each through the Settings root and the Account screen:
 //
-//   no token          no account yet: Save your progress tops Settings,
-//                     over the Account row, and Account says what one adds
+//   no token          no account yet: Save your progress in Settings,
+//                     the Account row, and Account says what one adds
 //   anonymous token   the same: the phone's own identity is not an account
 //   signed in         the name, how it signs in, and Delete account
 //   offline           still signed in (D1, REQ-NAM-049): the card the phone
 //                     kept, a note, and nothing that reads as signed out
-//   signed out here   Save your progress over the Account row with Sign in
+//   signed out here   Save your progress, and the Account row with Sign in
 //                     (S7b §5: for anyone signed out); Account says Signed
 //                     out (REQ-NAM-054)
 
@@ -184,7 +184,7 @@ beforeEach(() => {
 afterEach(clean)
 
 describe('the account states', () => {
-  it('no account yet: Save your progress tops Settings, and Account says what one adds', async () => {
+  it('no account yet: Save your progress in Settings, and Account says what one adds', async () => {
     await enter('none')
 
     const seen = await look()

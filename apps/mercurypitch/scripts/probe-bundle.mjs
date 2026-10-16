@@ -4605,7 +4605,7 @@ function keepShapeLine(shape) {
 /**
  * The native pass to the sign-in sheet and back (S6, steps 3 and 11; S7b
  * §5): More, then Settings, where a phone with no account yet finds Save
- * your progress over the Account row. It opens Keep, whose Use email opens
+ * your progress after this phone's group. It opens Keep, whose Use email opens
  * the sign-in sheet on its email pane. The sheet is the phone's way in, over
  * the screen that asked: a code by email is always offered, and the
  * television's phone row and the passkey button never are (audit D2). Back
@@ -4624,22 +4624,27 @@ async function walkToSignIn(page, ctx, pushed, rail) {
   await page.locator('[data-more-item="settings"]').click()
   await visible('[data-testid="settings-screen"]')
 
-  // Save your progress (S7b §5): first in the account group, over the
-  // Account row, for a phone with no account.
+  // Save your progress (S7b §5): for a phone with no account, a group of
+  // its own after this phone's group, before Cloud where the build sells
+  // it, and before the rooms.
   await visible('[data-settings-row="save-progress"]')
   const order = await page.evaluate(() =>
-    [
-      ...(document
-        .querySelector('[data-settings-row="save-progress"]')
-        ?.closest('section')
-        ?.querySelectorAll('[data-settings-row]') ?? []),
-    ].map((row) => row.getAttribute('data-settings-row')),
+    [...document.querySelectorAll('[data-settings-row]')].map((row) =>
+      row.getAttribute('data-settings-row'),
+    ),
   )
-  if (order[0] !== 'save-progress' || order[1] !== 'account') {
+  const at = (id) => order.indexOf(id)
+  const placed =
+    at('save-progress') === at('appearance') + 1 &&
+    at('save-progress') < at('rooms-sing') &&
+    (at('cloud-status') === -1 || at('save-progress') < at('cloud-status'))
+  if (!placed) {
     throw new Error(`Save your progress: ${JSON.stringify(order)}`)
   }
   await shoot(page, ctx, 'settings-save-progress')
-  steps.push('offer: Save your progress tops Settings, over the Account row')
+  steps.push(
+    `offer: Save your progress after this phone's group${at('cloud-status') === -1 ? '' : ', before Cloud'}, before the rooms`,
+  )
 
   await page.locator('[data-settings-row="save-progress"]').click()
   const keep = page.locator('[data-testid="account-offer"]')
