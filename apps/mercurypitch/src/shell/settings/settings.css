@@ -324,9 +324,10 @@
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--red) 40%, transparent);
 }
 
+/* 44 px, the tap target every Settings control keeps (owner, 2 Oct). */
 .mp-set-button--small {
   width: auto;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 16px;
   font-size: 15px;
 }
