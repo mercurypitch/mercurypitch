@@ -8,32 +8,36 @@
 // keyboard's controls and lets the spiral unroll; on a phone the unrolled
 // keyboard shows one octave at a time and pans. Taps are tested against the
 // hit lists the last frame drew, snapping to the nearest bead or key within
-// 22 px. The helix, beads and keyboard are drawn in toy-spiral-draw.ts; the
-// two overlays that answer the viewer, the focus ring and the name tag, are
-// drawn here on top of that frame.
+// 22 px. The drawing is in toy-spiral-draw.ts and toy-spiral-keys.ts.
 
 import { clamp, q, qa, TAU } from '@/features/lessons/kit/dom'
 import { addDrawer, surface } from '@/features/lessons/kit/frame-loop'
 import { Motion, reducedMotion } from '@/features/lessons/kit/motion-switch'
-import { COLOR, fmtHz, hz, nameOf, noteColor, rgba, } from '@/features/lessons/kit/notes'
+import { fmtHz, hz, nameOf, noteColor } from '@/features/lessons/kit/notes'
 import type { Voice } from '@/features/lessons/kit/sound'
 import { playTone, Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
-import type { BeadHit, KeyHit } from './toy-spiral-draw'
-import { drawSpiral, LO, N, roundedRect, WHITE } from './toy-spiral-draw'
+import type { BeadHit } from './toy-spiral-draw'
+import { drawOverlays, drawSpiral } from './toy-spiral-draw'
+import type { KeyHit } from './toy-spiral-keys'
+import { LO, N, wIndex } from './toy-spiral-keys'
 
 /** The phone keyboard's three windows, by pan / 7. */
 const WIN = ['A2 to A3', 'A3 to A4', 'A4 to A5']
 
+/** How far each key moves the selection, in semitones. */
+const STEP_KEYS: ReadonlyMap<string, number> = new Map([
+  ['ArrowUp', 1],
+  ['ArrowRight', 1],
+  ['ArrowDown', -1],
+  ['ArrowLeft', -1],
+  ['PageUp', 12],
+  ['PageDown', -12],
+])
+
 const say = (m: number): string =>
   `${nameOf(m) ?? 'A note without a letter of its own (Lesson 2)'}, ${fmtHz(hz(m))} hertz`
-
-/** A note's place counted in white keys; a black key sits half a key past the white below it. */
-function wIndex(s: number): number {
-  const wi = WHITE.indexOf(s)
-  return wi >= 0 ? wi : WHITE.indexOf(s - 1) + 0.5
-}
 
 export function initSpiralToy(deck: StepDeck): void {
   const canvas = q<HTMLCanvasElement>('#cvSpiral')
@@ -233,41 +237,35 @@ export function initSpiralToy(deck: StepDeck): void {
       vel = dx * 0.011 * 60
     }
   })
-  const up = (e: PointerEvent): void => {
-    if (!dragging) return
-    dragging = false
-    if (moved > 6) return
-    const r = canvas.getBoundingClientRect()
-    const x = e.clientX - r.left
-    const y = e.clientY - r.top
-    if (u > 0.6) {
-      let k = keyHits.find(
-        (kh) =>
-          x >= kh.x &&
-          x <= kh.x + kh.w &&
-          y >= kh.y - 10 &&
-          y <= kh.y + kh.h + 10,
+
+  // the key under a tap, or failing that the nearest within 22 px
+  function keyAt(x: number, y: number): KeyHit | undefined {
+    const under = keyHits.find(
+      (kh) =>
+        x >= kh.x &&
+        x <= kh.x + kh.w &&
+        y >= kh.y - 10 &&
+        y <= kh.y + kh.h + 10,
+    )
+    if (under) return under
+    let best: KeyHit | undefined
+    let bd = 22
+    for (const kk of keyHits) {
+      const d = Math.hypot(
+        clamp(x, kk.x, kk.x + kk.w) - x,
+        clamp(y, kk.y, kk.y + kk.h) - y,
       )
-      if (!k) {
-        let bd = 22
-        for (const kk of keyHits) {
-          const d = Math.hypot(
-            clamp(x, kk.x, kk.x + kk.w) - x,
-            clamp(y, kk.y, kk.y + kk.h) - y,
-          )
-          if (d < bd) {
-            bd = d
-            k = kk
-          }
-        }
+      if (d < bd) {
+        bd = d
+        best = kk
       }
-      if (k) {
-        setSel(k.s)
-        void play(LO + k.s)
-      }
-      return
     }
-    let best: BeadHit | null = null
+    return best
+  }
+
+  // the bead under a tap: the nearest within reach, the side facing the viewer winning a near tie
+  function beadAt(x: number, y: number): BeadHit | undefined {
+    let best: BeadHit | undefined
     let bd = 1e9
     for (const h of hits) {
       const d = Math.hypot(h.x - x, h.y - y)
@@ -276,9 +274,21 @@ export function initSpiralToy(deck: StepDeck): void {
         best = h
       }
     }
-    if (best) {
-      setSel(best.s)
-      void play(LO + best.s)
+    return best
+  }
+
+  const up = (e: PointerEvent): void => {
+    if (!dragging) return
+    dragging = false
+    if (moved > 6) return
+    const r = canvas.getBoundingClientRect()
+    const x = e.clientX - r.left
+    const y = e.clientY - r.top
+    // unrolled, a tap plays a key; otherwise a bead
+    const target = u > 0.6 ? keyAt(x, y) : beadAt(x, y)
+    if (target) {
+      setSel(target.s)
+      void play(LO + target.s)
     }
   }
   canvas.addEventListener('pointerup', up)
@@ -309,16 +319,7 @@ export function initSpiralToy(deck: StepDeck): void {
       e.preventDefault()
       return
     }
-    const d =
-      k === 'ArrowUp' || k === 'ArrowRight'
-        ? 1
-        : k === 'ArrowDown' || k === 'ArrowLeft'
-          ? -1
-          : k === 'PageUp'
-            ? 12
-            : k === 'PageDown'
-              ? -12
-              : 0
+    const d = STEP_KEYS.get(k) ?? 0
     if (d !== 0) {
       setSel(sel + d)
       e.preventDefault()
@@ -370,55 +371,7 @@ export function initSpiralToy(deck: StepDeck): void {
       const drawn = drawSpiral(ctx, W, H, now, view)
       hits = drawn.hits
       keyHits = drawn.keyHits
-      drawOverlays(ctx, W, now)
+      drawOverlays(ctx, W, now, hits, { u, focused, sel, hover, tapLabel })
     },
   })
-
-  function drawOverlays(
-    ctx: CanvasRenderingContext2D,
-    W: number,
-    now: number,
-  ): void {
-    // the keyboard's own focus on the spiral: an aqua ring round the selected bead
-    if (focused && u < 0.6) {
-      const h = hits.find((b) => b.s === sel)
-      if (h) {
-        ctx.strokeStyle = COLOR.aqua
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.arc(h.x, h.y, h.r + 5, 0, TAU)
-        ctx.stroke()
-      }
-    }
-    // every bead carries its letter and number on hover, on tap, or under the keyboard's selection
-    const tipS =
-      hover ??
-      (tapLabel !== null && now - tapLabel.t < 1800
-        ? tapLabel.s
-        : focused
-          ? sel
-          : null)
-    const th = hits.find((h) => h.s === tipS)
-    if (th && u < 0.6) {
-      const m = LO + th.s
-      const txt = `${nameOf(m) ?? 'unnamed (Lesson 2)'} · ${fmtHz(hz(m))} Hz`
-      ctx.font = '600 14px Outfit, sans-serif'
-      const tw = ctx.measureText(txt).width + 20
-      let tx = th.x - tw / 2
-      let ty = th.y - th.r - 36
-      tx = clamp(tx, 6, W - tw - 6)
-      if (ty < 6) ty = th.y + th.r + 10
-      ctx.fillStyle = 'rgba(13,17,23,.92)'
-      ctx.strokeStyle = rgba(noteColor(m), 0.7)
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      roundedRect(ctx, tx, ty, tw, 26, 13)
-      ctx.fill()
-      ctx.stroke()
-      ctx.fillStyle = m === 57 || m === 69 ? noteColor(m) : COLOR.ink
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(txt, tx + tw / 2, ty + 13.5)
-    }
-  }
 }

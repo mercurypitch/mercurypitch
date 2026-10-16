@@ -10,11 +10,14 @@
 //
 // Cards are markup strings, which is safe only because every value they
 // interpolate is defined in season.ts or here; the poster URL, which comes
-// from the page, is set as a property instead.
+// from the page, is set as a property instead. The map's stateless pieces
+// (lanes, arcs, edges, labels and their painters) are in explorer-graph.ts.
 
 import { clamp, q, qa, svg } from './dom'
 import type { PlateFigure } from './explorer-figures'
 import { cardFigure, plateFigure, pluckString } from './explorer-figures'
+import type { Look, Pos } from './explorer-graph'
+import { addArcs, addEdges, addLaneBands, labelLeans, LANE_Y, nodeLabel, paintLabel, paintNode, paintRow, } from './explorer-graph'
 import { addDrawer, watch } from './frame-loop'
 import { reducedMotion } from './motion-switch'
 import { Done } from './progress'
@@ -38,19 +41,7 @@ export interface Explorer {
 type Status = 'done' | 'ready' | 'planned'
 type LaneFilter = 'all' | Exclude<Lane, 'both'>
 
-const LANE_Y: Record<Lane, number> = { theory: 128, both: 210, voice: 292 }
-const LANE_BANDS: readonly (readonly [Lane, string, string])[] = [
-  ['theory', 'Theory', '7 lessons'],
-  ['voice', 'Voice', '6 lessons + 14'],
-]
-const ARCS: readonly (readonly [string, string, number, number])[] = [
-  ['Hear it', 'Lessons 1 to 7', 1, 7],
-  ['Shape it', 'Lessons 8 to 14', 8, 14],
-]
-
 const pad = (n: number): string => String(n).padStart(2, '0')
-const check = (px: number): string =>
-  `<svg class="ico" style="width:${px}px;height:${px}px" aria-hidden="true"><use href="#i-check"/></svg>`
 
 function laneName(L: Lesson): string {
   if (L.lane === 'both') return L.n === 0 ? 'Trailer' : 'Voice and theory'
@@ -182,6 +173,31 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     pluckString(el)
   }
 
+  /** A map node: a tap selects its lesson, Left and Right step along the season. */
+  function addNode(L: Lesson, p: Pos): void {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'node'
+    b.style.left = `${p.x}px`
+    b.style.top = `${p.y}px`
+    b.textContent = String(L.n)
+    b.setAttribute(
+      'aria-label',
+      `${L.n === 0 ? 'Trailer' : `Lesson ${L.n}`}: ${L.title}`,
+    )
+    b.addEventListener('click', () => select(L.n, true))
+    b.addEventListener('keydown', (e) => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+      if (d === 0) return
+      e.preventDefault()
+      const next = clamp(L.n + d, 0, LESSONS.length - 1)
+      nodes.get(next)?.focus()
+      select(next, false)
+    })
+    graph.appendChild(b)
+    nodes.set(L.n, b)
+  }
+
   function layoutGraph(): void {
     if (narrow.matches) return
     graph.textContent = ''
@@ -195,111 +211,17 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
       { class: 'edges', viewBox: `0 0 ${W} ${GH}` },
       graph,
     )
-    for (const [k, name, sub] of LANE_BANDS) {
-      const band = document.createElement('div')
-      band.className = 'lane'
-      band.style.top = `${LANE_Y[k] - 37}px`
-      graph.appendChild(band)
-      const l = document.createElement('div')
-      l.className = 'lane-lbl'
-      l.style.top = `${LANE_Y[k] - 18}px`
-      l.innerHTML = `<b>${name}</b>${sub}`
-      graph.appendChild(l)
-    }
-    for (const [t, s, a, b] of ARCS) {
-      const arc = document.createElement('div')
-      arc.className = 'arc'
-      arc.style.left = `${X(a) - colW * 0.42}px`
-      arc.style.width = `${X(b) - X(a) + colW * 0.84}px`
-      arc.innerHTML = `<span>${t}<small>${s}</small></span>`
-      graph.appendChild(arc)
-    }
-    const pos = (n: number): { x: number; y: number } => ({
-      x: X(n),
-      y: LANE_Y[LESSONS[n].lane],
-    })
-    // every edge runs in the gutter between the lanes: a lane's own edges bow
-    // into it (theory down, voice up, deeper for longer spans), and an edge
-    // between lanes leaves and arrives vertically, so none crosses a label
-    edgeEls = EDGES.map(([a, b]) => {
-      const p = pos(a)
-      const to = pos(b)
-      const la = LESSONS[a].lane
-      let d: string
-      if (la === LESSONS[b].lane && la !== 'both') {
-        const hh = Math.min(84, 36 + 8 * (b - a)) * (la === 'theory' ? 1 : -1)
-        d = `M${p.x} ${p.y} C${p.x + colW * 0.35} ${p.y + hh} ${to.x - colW * 0.35} ${to.y + hh} ${to.x} ${to.y}`
-      } else {
-        const my = (p.y + to.y) / 2
-        d = `M${p.x} ${p.y} C${p.x} ${my} ${to.x} ${my} ${to.x} ${to.y}`
-      }
-      return svg('path', { class: 'edge', d }, edgesSvg)
-    })
+    addLaneBands(graph)
+    addArcs(graph, X, colW)
+    const pos = (n: number): Pos => ({ x: X(n), y: LANE_Y[LESSONS[n].lane] })
+    edgeEls = addEdges(edgesSvg, pos, colW)
     nodes = new Map()
     labels = new Map()
-    // labels sit outside the gutter: theory above, voice below, the trailer
-    // and Lesson 14 beside their nodes; neighbours a column apart (1 and 2)
-    // lean away from each other instead of wrapping into one another
-    const lean = new Map<number, 'ar' | 'al'>()
-    for (const k of ['theory', 'voice'] as const) {
-      const ns = LESSONS.filter((L) => L.lane === k)
-        .map((L) => L.n)
-        .sort((a, b) => a - b)
-      for (let i = 1; i < ns.length; i++) {
-        if (ns[i] - ns[i - 1] < 2) {
-          lean.set(ns[i - 1], 'ar')
-          lean.set(ns[i], 'al')
-        }
-      }
-    }
+    const lean = labelLeans()
     for (const L of LESSONS) {
       const p = pos(L.n)
-      const b = document.createElement('button')
-      b.type = 'button'
-      b.className = 'node'
-      b.style.left = `${p.x}px`
-      b.style.top = `${p.y}px`
-      b.textContent = String(L.n)
-      b.setAttribute(
-        'aria-label',
-        `${L.n === 0 ? 'Trailer' : `Lesson ${L.n}`}: ${L.title}`,
-      )
-      b.addEventListener('click', () => select(L.n, true))
-      b.addEventListener('keydown', (e) => {
-        const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
-        if (d === 0) return
-        e.preventDefault()
-        const next = clamp(L.n + d, 0, LESSONS.length - 1)
-        nodes.get(next)?.focus()
-        select(next, false)
-      })
-      graph.appendChild(b)
-      nodes.set(L.n, b)
-      const lab = document.createElement('div')
-      const w = 150
-      const leans = lean.get(L.n)
-      lab.className = `nlabel${L.lane === 'theory' ? ' up' : ''}${leans === undefined ? '' : ` ${leans}`}`
-      lab.style.width = `${w}px`
-      if (L.lane === 'both') {
-        lab.style.top = `${p.y - 9}px`
-        lab.style.width = '110px'
-        lab.style.left = `${L.n === 0 ? p.x + 30 : p.x - 30 - 110}px`
-        lab.style.marginLeft = '0'
-        lab.classList.add(L.n === 0 ? 'al' : 'ar')
-      } else {
-        lab.style.top = `${L.lane === 'theory' ? p.y - 34 : p.y + 34}px`
-        if (leans === 'ar') {
-          lab.style.left = `${p.x + 18 - w}px`
-          lab.style.marginLeft = '0'
-        } else if (leans === 'al') {
-          lab.style.left = `${p.x - 18}px`
-          lab.style.marginLeft = '0'
-        } else {
-          lab.style.left = `${p.x}px`
-          lab.style.marginLeft = `${-w / 2}px`
-        }
-      }
-      lab.textContent = L.short
+      addNode(L, p)
+      const lab = nodeLabel(L, p, lean.get(L.n))
       graph.appendChild(lab)
       labels.set(L.n, lab)
     }
@@ -349,27 +271,15 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     const open = list.querySelector('.ex-detail') !== null
     for (const L of LESSONS) {
       const st = status(L)
-      const on = matches(L)
-      const stClass = st === 'planned' ? '' : ` ${st}`
-      const node = nodes.get(L.n)
-      if (node !== undefined) {
-        node.className = `node${stClass}${L.n === sel ? ' sel' : ''}${ancestors.has(L.n) ? ' anc' : ''}${on ? '' : ' dim'}`
-        node.setAttribute('aria-pressed', String(L.n === sel))
-        if (st === 'done') node.innerHTML = check(18)
-        else node.textContent = String(L.n)
+      const look: Look = {
+        done: st === 'done',
+        stClass: st === 'planned' ? '' : ` ${st}`,
+        on: matches(L),
+        selected: L.n === sel,
       }
-      const label = labels.get(L.n)
-      if (label !== undefined) {
-        label.classList.remove('sel', 'dim')
-        if (L.n === sel) label.classList.add('sel')
-        if (!on) label.classList.add('dim')
-      }
-      const row = list.querySelector(`[data-n="${L.n}"] .it`)
-      if (row !== null) {
-        row.className = `it${stClass}${on ? '' : ' dim'}`
-        row.setAttribute('aria-expanded', String(L.n === sel && open))
-        q('.nb', row).innerHTML = st === 'done' ? check(16) : String(L.n)
-      }
+      paintNode(nodes.get(L.n), L.n, look, ancestors.has(L.n))
+      paintLabel(labels.get(L.n), look)
+      paintRow(list.querySelector(`[data-n="${L.n}"] .it`), L.n, look, open)
     }
     edgeEls.forEach((el, i) => {
       const [a, b] = EDGES[i]

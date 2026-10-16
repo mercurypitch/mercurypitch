@@ -59,6 +59,26 @@ function cueSeconds(stamp: string): number {
 }
 
 /**
+ * A caption block as its start time and its text on one line; null for a
+ * block that is not a cue (the header, a NOTE) or a cue with no text.
+ */
+function cueOf(block: string): { at: number; body: string } | null {
+  const lines = block.split('\n').filter((l) => l !== '')
+  const ti = lines.findIndex((l) => l.includes('-->'))
+  if (ti < 0) return null
+  const at = cueSeconds(lines[ti].split('-->')[0].trim())
+  const body = lines
+    .slice(ti + 1)
+    .join(' ')
+    .trim()
+  return body === '' ? null : { at, body }
+}
+
+/** "BLUE MERC" or "ORANGE MERC", as the speaker of a turn. */
+const speakerOf = (label: string): Speaker =>
+  label.startsWith('BLUE') ? 'blue' : 'orange'
+
+/**
  * Caption cues to paragraphs: "BLUE MERC:" or "ORANGE MERC:" starts a turn,
  * an unlabelled cue carries on the current one, and a [bracketed] cue is a
  * sound of its own.
@@ -67,24 +87,17 @@ function paragraphs(vtt: string): Paragraph[] {
   const out: Paragraph[] = []
   let who: Speaker | null = null
   for (const block of vtt.replace(/\r/g, '').split(/\n\n+/)) {
-    const lines = block.split('\n').filter((l) => l !== '')
-    const ti = lines.findIndex((l) => l.includes('-->'))
-    if (ti < 0) continue
-    const at = cueSeconds(lines[ti].split('-->')[0].trim())
-    let body = lines
-      .slice(ti + 1)
-      .join(' ')
-      .trim()
-    if (body === '') continue
+    const cue = cueOf(block)
+    if (cue === null) continue
+    const { at, body } = cue
     if (/^\[.*\]$/.test(body)) {
       out.push({ at, text: body.slice(1, -1), who: null, sfx: true })
       continue
     }
     const label = /^(BLUE MERC|ORANGE MERC):\s*/.exec(body)
     if (label !== null) {
-      who = label[1].startsWith('BLUE') ? 'blue' : 'orange'
-      body = body.slice(label[0].length)
-      out.push({ at, text: body, who, sfx: false })
+      who = speakerOf(label[1])
+      out.push({ at, text: body.slice(label[0].length), who, sfx: false })
       continue
     }
     const last = out.at(-1)

@@ -65,6 +65,11 @@ export function field(
   return out
 }
 
+/** The plate's edges reflect a grain back in: -0.1 lands at 0.1, 1.1 at 0.9. */
+function reflect(v: number): number {
+  return v < 0 ? -v : v > 1 ? 2 - v : v
+}
+
 /** Sand on the plate: positions 0..1 and a fade-in alpha per grain. */
 export class Grains {
   readonly capacity: number
@@ -116,13 +121,10 @@ export class Grains {
         vy *= r / v
       }
       const jit = Math.min(jmax, (e * Math.abs(h.u)) / Math.sqrt(M))
-      let X = this.x[i] + vx + (rnd() - 0.5) * jit
-      let Y = this.y[i] + vy + (rnd() - 0.5) * jit
-      // the plate's edges reflect a grain back in
-      X = X < 0 ? -X : X > 1 ? 2 - X : X
-      Y = Y < 0 ? -Y : Y > 1 ? 2 - Y : Y
-      this.x[i] = X
-      this.y[i] = Y
+      const X = this.x[i] + vx + (rnd() - 0.5) * jit
+      const Y = this.y[i] + vy + (rnd() - 0.5) * jit
+      this.x[i] = reflect(X)
+      this.y[i] = reflect(Y)
       if (this.alpha[i] < 1) {
         this.alpha[i] = Math.min(1, this.alpha[i] + 1.6 * dt)
       }
