@@ -56,7 +56,7 @@ import { BAY_PLATE, bayArt, bayImage, BUBBLE_URL, MOON_URL, RESULT_PLATE, } from
 import { createBubbleStream } from './bay-bubbles'
 import { BAY, DOTS, PLATES, PLAYHEAD_X, RESULT_ASPECT, RESULT_VIEW, WAVE, } from './bay-geometry'
 import type { BayLayout, MercBox, Zoom } from './bay-layout'
-import { frameY, horizonAt, MERC_INTRO_X, mercBoxAt, mercResultBox, pitchY, waveG, worldXOf, xOf, yOf, zoomAt, } from './bay-layout'
+import { frameY, horizonAt, MERC_INTRO_X, mercBoxAt, mercResultBox, pitchY, RIBBON_REFERENCE_W, RIBBON_WIDEN, waveG, worldXOf, xOf, yOf, zoomAt, } from './bay-layout'
 import { crestX, INTRO_CAMERA } from './bay-scroll'
 import { moonPose, skyTravel } from './bay-sky'
 import type { BayContact, BayView, TraceSample } from './bay-view'
@@ -65,9 +65,6 @@ import { createBayWaves } from './bay-waves'
 import { BuzzMarks } from './BuzzMarks'
 import styles from './LipRollRoom.module.css'
 
-/** The ribbon: the shared look, a little wider, as on the bridge. */
-const RIBBON_REFERENCE_W = 390
-const RIBBON_WIDEN = 1.15
 /** The dots' SVG runs this far past the first and last waves, W. */
 const DOTS_MARGIN = 1.6
 const WAVES = 3
