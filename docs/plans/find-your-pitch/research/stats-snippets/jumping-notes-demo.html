@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jumping Notes Demo</title>
+    <!-- Serve this folder over http (module imports and fetch do not work from file://).
+     Everything on screen is a pure function of the timeline's time: scrub, and every frame repeats. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+      :root {
+        --obsidian: #0d1117;
+        --card-bg: #12171e;
+        --ink: #e6edf3;
+        --ink-3: #848d97;
+        --blue: #58a6ff;
+        --orange: #ff9a4d;
+        --aqua: #2dd4bf;
+        --f-serif: 'Instrument Serif', Georgia, serif;
+        --f-mono: 'JetBrains Mono', ui-monospace, monospace;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: var(--obsidian);
+        color: var(--ink);
+        font:
+          15px/1.5 Inter,
+          system-ui,
+          sans-serif;
+      }
+      .stage {
+        width: min(100% - 32px, 1100px);
+      }
+      .kicker {
+        font: 500 11.5px/1 var(--f-mono);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+      h1 {
+        font: 400 italic clamp(28px, 4vw, 44px)/1.1 var(--f-serif);
+        margin: 10px 0 18px;
+      }
+      svg {
+        width: 100%;
+        height: auto;
+        display: block;
+        background: var(--card-bg);
+        border-radius: 22px;
+      }
+      input[type='range'] {
+        width: 100%;
+        margin-top: 16px;
+        accent-color: var(--aqua);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="kicker">Lesson 1 · the staff</div>
+      <h1>Higher on the staff means higher in pitch</h1>
+      <svg
+        id="s"
+        viewBox="0 0 1100 300"
+        role="img"
+        aria-label="Two notes hop between lines and spaces of a treble staff"
+      ></svg>
+      <input
+        id="scrub"
+        type="range"
+        min="0"
+        max="1000"
+        value="0"
+        aria-label="Scrub the animation"
+      />
+    </div>
+    <script type="module">
+      import { staff, clef, note, jump, stepOf, barline, } from './staff-engraving.js'
+      const GLYPHS = await (await fetch('./noto-music-glyph-paths.json')).json()
+      const svg = document.getElementById('s'),
+        s = 18,
+        yb = 200
+      staff(svg, { x0: 30, x1: 1070, yb, s, color: 'rgba(195,204,214,.42)' })
+      clef(svg, GLYPHS, { kind: 'treble', x: 46, yb, s })
+      barline(svg, { x: 1050, yb, s, final: true })
+      const blue = note(svg, {
+        x: 330,
+        yb,
+        k: stepOf('C4'),
+        s,
+        color: '#58a6ff',
+      })
+      const orange = note(svg, {
+        x: 640,
+        yb,
+        k: stepOf('G4'),
+        s,
+        color: '#ff9a4d',
+      })
+      const tl = gsap.timeline({ paused: true })
+      // a scale walk for blue, an answer from orange: in a lesson these cue on the voice-over's words
+      ;['D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'].forEach((p, i) =>
+        tl.add(jump(blue, p, { hop: 1.2, dur: 0.42 }), 0.2 + i * 0.48),
+      )
+      tl.add(jump(orange, 'G5', { hop: 2.6 }), 3.8)
+        .add(jump(orange, 'C6', { hop: 1.6 }), 4.6)
+        .add(jump(blue, 'C4', { hop: 3.4, dur: 0.8 }), 5.2)
+      const scrub = document.getElementById('scrub')
+      scrub.addEventListener('input', () =>
+        tl.seek((scrub.value / 1000) * tl.duration(), false),
+      )
+      // autoplay once, then hand the playhead to the scrubber
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) tl.play()
+      else tl.seek(tl.duration())
+      tl.eventCallback('onUpdate', () => {
+        scrub.value = Math.round(tl.progress() * 1000)
+      })
+    </script>
+  </body>
+</html>

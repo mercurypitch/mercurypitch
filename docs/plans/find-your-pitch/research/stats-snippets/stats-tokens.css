@@ -1,0 +1,686 @@
+/* ==========================================================================================
+   STATS-KIT DESIGN TOKENS AND SIGNATURE CSS, copied from
+     https://dev.stats.maff.app/kit/styles.8518bd74.css   (report pages)
+     https://dev.stats.maff.app/_astro/picker.Dmx7ti59.css (the picker / Chladni landing page)
+     https://dev.stats.maff.app/kit/fonts.be0a576e.css    (all families SIL OFL 1.1)
+   Trimmed to the parts a lesson page or a HyperFrames composition would reuse. The original
+   selectors are kept so the source is easy to find again.
+   ========================================================================================== */
+
+/* ---------------------------------------------------------------- fonts (self-hosted woff2) */
+/* Files downloaded to scratchpad/stats/: fonts__instrument-serif-{regular,italic}.woff2,
+   fonts__inter-latin-var.woff2 (wght 100-900), fonts__outfit-latin-var.woff2 (wght 100-900),
+   fonts__jetbrains-mono-latin-var.woff2 (wght 400-800), kit__fonts__noto-music-normal-music.*.woff2 */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/instrument-serif-italic.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/instrument-serif-regular.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url(/fonts/inter-latin-var.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url(/fonts/jetbrains-mono-latin-var.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 200 700;
+  font-display: swap;
+  src: url(/fonts/outfit-latin-var.woff2) format('woff2');
+}
+/* the music subset only covers the musical symbols block, so text never falls into it */
+@font-face {
+  font-family: 'Noto Music';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/kit/fonts/noto-music-normal-music.20881b15.woff2) format('woff2');
+  unicode-range: U+25CC, U+2669-266F, U+1D000-1D0F5, U+1D100-1D245;
+}
+
+/* ---------------------------------------------------------------- report tokens */
+:root {
+  /* Surface */
+  --obsidian: #0d1117;
+  --panel: #161b22;
+  --raised: #21262d;
+  --card-bg: #12171e;
+  --hair: #30363d;
+  --ink: #e6edf3;
+  --ink-2: #a8b3bf;
+  --ink-3: #848d97;
+  /* Signal */
+  --blue: #58a6ff;
+  --aqua: #2dd4bf;
+  --violet: #bc8cff;
+  --green: #3fb950;
+  --amber: #d29922;
+  --red: #f85149;
+  --rose: #ff7b72;
+  /* Quicksilver chrome (the MercuryPitch wordmark's "Mercury") */
+  --chrome-100: #f4f8fd;
+  --chrome-300: #c3ccd6;
+  --chrome-500: #8a97a6;
+  --chrome-700: #5b6b7b;
+  --chrome-900: #1b2430;
+  /* Brass */
+  --brass: #e3b341;
+  --brass-2: #f2cc60;
+  --grad-spectrum: linear-gradient(
+    120deg,
+    var(--blue) 0%,
+    var(--aqua) 50%,
+    var(--violet) 100%
+  );
+  --grad-chrome: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    color-mix(in srgb, var(--chrome-100) 50%, var(--chrome-300)) 28%,
+    var(--chrome-500) 56%,
+    var(--ink) 76%,
+    color-mix(in srgb, var(--chrome-300) 60%, var(--chrome-500)) 100%
+  );
+  --grad-card: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--card-bg) 97%, #fff) 0%,
+    var(--card-bg) 100%
+  );
+  --grad-rim: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--chrome-300) 34%, transparent),
+    color-mix(in srgb, var(--chrome-300) 6%, transparent) 36%,
+    color-mix(in srgb, var(--blue) 18%, transparent) 70%,
+    color-mix(in srgb, var(--violet) 26%, transparent)
+  );
+  /* Type */
+  --f-display:
+    'Outfit', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-ui:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --f-serif: 'Instrument Serif', ui-serif, Georgia, 'Times New Roman', serif;
+  --f-music:
+    'Noto Music', 'Segoe UI Symbol', 'Apple Symbols', 'Noto Sans Symbols 2',
+    'DejaVu Sans', serif;
+  /* Shape & motion */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-xl: 30px;
+  --gap: 22px;
+  --maxw: 1240px;
+  --ease: cubic-bezier(
+    0.2,
+    0.8,
+    0.2,
+    1
+  ); /* the one easing curve used everywhere (an expo-out feel) */
+}
+/* Themes the kit ships, set by overriding tokens on :root (inline <style> per report):
+   Lumen Apeiron  --obsidian #080a0e --blue #73d9ff --aqua #ff7448 --violet #a3e635 --brass #f3a64b
+                  --grad-spectrum: linear-gradient(120deg, #ff7448 0%, #f3a64b 48%, #73d9ff 100%)
+   Token Circles  --obsidian #0a0e1c --blue #6e9bff --aqua #14b8a6 --violet #a5b4fc --brass #f0a860
+                  --grad-spectrum: linear-gradient(120deg, #93b4ff 0%, #6e9bff 45%, #f0a860 100%)
+   Both pair a cold blue with a warm orange: a ready-made precedent for blue Merc / orange Merc. */
+
+/* ---------------------------------------------------------------- the ground: glow + faint staves */
+body {
+  margin: 0;
+  color: var(--ink);
+  background-color: var(--obsidian);
+  font: 400 15px/1.55 var(--f-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background-image:
+    radial-gradient(
+      70% 46% at 50% -6%,
+      color-mix(in srgb, var(--blue) 16%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      36% 36% at 92% 10%,
+      color-mix(in srgb, var(--violet) 10%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      30% 30% at 6% 30%,
+      color-mix(in srgb, var(--aqua) 6%, transparent),
+      transparent 62%
+    ),
+    /* a five-line staff (lines 9 px apart, 3.2% chrome) repeated every 168 px down the whole page */
+    repeating-linear-gradient(
+        180deg,
+        rgba(195, 204, 214, 0.032) 0 1px,
+        transparent 1px 9px,
+        rgba(195, 204, 214, 0.032) 9px 10px,
+        transparent 10px 18px,
+        rgba(195, 204, 214, 0.032) 18px 19px,
+        transparent 19px 27px,
+        rgba(195, 204, 214, 0.032) 27px 28px,
+        transparent 28px 36px,
+        rgba(195, 204, 214, 0.032) 36px 37px,
+        transparent 37px 168px
+      );
+}
+/* No film grain or SVG noise anywhere on the site: texture comes from the faint staves, the vinyl
+   grooves, the fretboard's 1.8% grain lines and the picker plate's 1.4% brushed-metal stripes. */
+
+/* ---------------------------------------------------------------- type scale */
+.kicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  font: 500 11.5px/1 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.wordmark {
+  font: 600 clamp(54px, 11.5vw, 156px)/0.88 var(--f-display);
+  letter-spacing: -0.045em;
+  margin: 26px 0 16px;
+}
+.wordmark .m {
+  background: var(--grad-chrome);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.wordmark .p {
+  background: var(--grad-spectrum);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.tagline {
+  font: 400 italic clamp(22px, 2.7vw, 36px)/1.18 var(--f-serif);
+  color: var(--chrome-300);
+  max-width: 900px;
+  margin: 0;
+  text-wrap: balance;
+}
+.tagline em {
+  font-style: normal;
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 0.8em;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.lede {
+  color: var(--ink-2);
+  max-width: 760px;
+  margin: 18px 0 0;
+  font-size: 15px;
+}
+
+/* a movement (section) head: outlined numeral, serif tempo marking, display title, decorative staff */
+.mv-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 28px;
+  align-items: end;
+  margin-bottom: 26px;
+}
+.mv-num {
+  grid-row: span 3;
+  font: 200 124px/0.78 var(--f-display);
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1.2px
+    color-mix(in srgb, var(--chrome-300) 42%, transparent);
+}
+.mv-tempo {
+  font: italic 400 23px/1.1 var(--f-serif);
+  color: var(--aqua);
+}
+.mv-tempo span {
+  color: var(--ink-3);
+  font-size: 17px;
+}
+.mv-title {
+  font: 600 clamp(32px, 4vw, 46px)/1.04 var(--f-display);
+  letter-spacing: -0.025em;
+  margin: 2px 0 0;
+}
+.mv-lede {
+  color: var(--ink-2);
+  max-width: 780px;
+  margin: 8px 0 0;
+}
+.mv-staff {
+  position: relative;
+  height: 37px;
+  margin: 0 0 30px;
+  background: repeating-linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--chrome-300) 20%, transparent) 0 1px,
+    transparent 1px 9px
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 6%,
+    #000 94%,
+    transparent 100%
+  );
+}
+.mv-staff::before {
+  content: '\1D11E';
+  position: absolute;
+  left: 7%;
+  top: -17px;
+  font: 400 58px/1 var(--f-music);
+  color: color-mix(in srgb, var(--chrome-300) 55%, transparent);
+}
+.mv-staff::after {
+  content: '';
+  position: absolute;
+  right: 6%;
+  top: 0;
+  width: 9px;
+  height: 37px; /* a final double barline */
+  border-left: 1px solid color-mix(in srgb, var(--chrome-300) 45%, transparent);
+  border-right: 4px solid color-mix(in srgb, var(--chrome-300) 45%, transparent);
+}
+/* Live defect (shots/mv-staff-masked.png vs shots/mv-staff-unmasked.png): mask-image clips to the
+   element's border box, so the 58 px clef, which overflows the 37 px staff above and below, shows
+   only its middle loop on every movement head. Fix: put the lines and the mask on a ::before layer
+   that is exactly the staff, and move the clef to its own element (or ::after) outside the mask,
+   or draw it with staff-engraving.js clef() at s = 9. */
+
+.eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  font: 500 10.5px/1.2 var(--f-mono);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.eyebrow .fig {
+  color: var(--aqua);
+}
+.eyebrow .tempo {
+  font: italic 400 14px/1 var(--f-serif);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--chrome-500);
+}
+.card h3 {
+  font: 600 25px/1.12 var(--f-display);
+  letter-spacing: -0.015em;
+  margin: 9px 0 5px;
+  text-wrap: balance;
+}
+/* Instrument Serif italic sets a narrow word space; give it a little more */
+.serif,
+.tagline,
+.mv-tempo,
+.eyebrow .tempo {
+  word-spacing: 0.1em;
+}
+
+/* ---------------------------------------------------------------- cards and their reveal */
+.card {
+  position: relative;
+  border-radius: var(--r-lg);
+  padding: 22px 24px 18px;
+  background:
+    var(--grad-card) padding-box,
+    var(--grad-rim) border-box;
+  border: 1px solid transparent; /* gradient hairline rim */
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.045) inset,
+    0 28px 70px -36px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.7s var(--ease),
+    transform 0.7s var(--ease);
+}
+.card.in {
+  opacity: 1;
+  transform: none;
+} /* added by an IntersectionObserver (stage.js observe()) */
+.card.flash {
+  animation: flash 2.2s var(--ease) 1;
+} /* a deep-linked card pulses an aqua ring once */
+@keyframes flash {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--aqua) 0%, transparent),
+      0 28px 70px -36px rgba(0, 0, 0, 0.85);
+  }
+  20% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--aqua) 55%, transparent),
+      0 28px 70px -36px rgba(0, 0, 0, 0.85);
+  }
+}
+.reading {
+  margin: 14px 0 0;
+  padding-top: 11px;
+  border-top: 1px dashed color-mix(in srgb, var(--ink-3) 35%, transparent);
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+.reading .k {
+  font-family: var(--f-music);
+  color: var(--aqua);
+  margin-right: 6px;
+  vertical-align: 1px;
+} /* a music glyph as the bullet */
+
+/* ---------------------------------------------------------------- controls */
+.chip i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 10px currentColor;
+} /* glowing dot */
+.btn.primary {
+  color: #071018;
+  background: var(--grad-spectrum);
+  border-color: transparent;
+  font-weight: 600;
+}
+.sound-switch .wave {
+  opacity: 0;
+}
+.sound-switch[aria-pressed='true'] {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--aqua) 65%, transparent);
+  background: color-mix(in srgb, var(--aqua) 12%, transparent);
+}
+.sound-switch[aria-pressed='true'] .wave {
+  opacity: 1;
+}
+.sound-switch[aria-pressed='true'] .mute {
+  opacity: 0;
+}
+/* markup: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+     <path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="wave" d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/><path class="mute" d="M16 10l4 4M20 10l-4 4"/></svg> */
+
+/* ---------------------------------------------------------------- SVG vocabulary */
+.viz .t-mono {
+  fill: var(--ink-3);
+  font: 500 10px var(--f-mono);
+  letter-spacing: 0.04em;
+}
+.viz .t-num {
+  fill: var(--ink);
+  font: 600 13px var(--f-display);
+  font-variant-numeric: tabular-nums;
+}
+.viz .t-big {
+  fill: var(--ink);
+  font: 600 52px var(--f-display);
+  letter-spacing: -0.03em;
+}
+.viz .t-serif {
+  fill: var(--chrome-300);
+  font: italic 400 16px var(--f-serif);
+}
+.viz .t-music {
+  font-family: var(--f-music);
+}
+.viz .staff {
+  stroke: color-mix(in srgb, var(--chrome-300) 26%, transparent);
+  stroke-width: 1;
+}
+.viz .ledger {
+  stroke: color-mix(in srgb, var(--chrome-300) 45%, transparent);
+  stroke-width: 1;
+}
+.viz .barline {
+  stroke: color-mix(in srgb, var(--chrome-300) 42%, transparent);
+  stroke-width: 1;
+}
+.viz .ink {
+  stroke: color-mix(in srgb, var(--chrome-300) 78%, transparent);
+  stroke-width: 1.1;
+  fill: none;
+}
+.viz .beam {
+  fill: color-mix(in srgb, var(--chrome-300) 82%, transparent);
+}
+.viz .tsig {
+  font: 700 17.5px var(--f-display);
+  fill: var(--ink);
+}
+.viz .msr {
+  font: italic 400 12px var(--f-serif);
+  fill: var(--ink-3);
+} /* bar numbers */
+.viz .reh {
+  font: 600 10px var(--f-mono);
+  letter-spacing: 0.06em;
+  fill: var(--ink);
+} /* rehearsal marks (boxed months) */
+.viz .tagmark {
+  font: italic 400 13px var(--f-serif);
+  fill: var(--aqua);
+}
+.viz .dyn {
+  font: italic 700 19px var(--f-serif);
+  fill: var(--chrome-300);
+} /* pp / ff dynamics */
+.viz .note.playing ellipse,
+.viz .note.playing path.head {
+  filter: url(#glow);
+  stroke: #fff;
+  stroke-width: 1.4;
+} /* playhead lights a note */
+.viz .halo {
+  paint-order: stroke;
+  stroke: var(--card-bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+} /* label over a busy chart */
+.viz .spin {
+  transform-origin: 320px 320px;
+  animation: spin 140s linear infinite;
+} /* the vinyl */
+.chart:hover .viz .spin {
+  animation-play-state: paused;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.metro .arm {
+  transform-origin: 85px 186px;
+  animation: tick 2.14s ease-in-out infinite alternate;
+} /* JS sets animation-duration = 60 / bpm */
+@keyframes tick {
+  from {
+    transform: rotate(-24deg);
+  }
+  to {
+    transform: rotate(24deg);
+  }
+}
+
+/* ---------------------------------------------------------------- picker: the plate and the programme */
+@property --accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #58a6ff;
+} /* animatable accent */
+@property --accent-2 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #bc8cff;
+}
+.picker {
+  --night: #06080c;
+  transition:
+    --accent 0.9s ease,
+    --accent-2 0.9s ease;
+  background:
+    radial-gradient(
+      70% 50% at 50% 42%,
+      color-mix(in oklab, var(--accent) 15%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      50% 40% at 85% 100%,
+      color-mix(in oklab, var(--accent-2) 9%, transparent),
+      transparent 70%
+    ),
+    var(--night);
+}
+.plate {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 3px;
+  cursor: pointer;
+  background:
+    radial-gradient(
+      90% 90% at 42% 34%,
+      rgba(255, 255, 255, 0.06),
+      transparent 62%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.014) 0 1px,
+      transparent 1px 3px
+    ),
+    /* brushed metal */ linear-gradient(158deg, #1b222c, #10151c 60%, #0b0f14);
+  box-shadow:
+    inset 0 1px #ffffff14,
+    inset 0 -1px #0000008c,
+    0 0 0 1px #ffffff0d,
+    0 60px 90px -40px #000000e6,
+    0 0 120px -30px color-mix(in oklab, var(--accent) 35%, transparent);
+  transform: perspective(1600px) rotateX(var(--tilt-x, 0deg))
+    rotateY(var(--tilt-y, 0deg)); /* JS: +/-3.5deg from the pointer */
+  transition:
+    transform 0.7s var(--ease),
+    box-shadow 0.9s ease;
+}
+.plate::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%; /* the centre bolt */
+  background: radial-gradient(circle at 35% 30%, #8a95a3, #2a313b 62%, #161b22);
+  box-shadow:
+    0 0 0 3px #00000059,
+    0 1px 3px #000000b3;
+}
+.plate::before {
+  content: '';
+  position: absolute;
+  top: 6%;
+  bottom: 6%;
+  right: -2px;
+  width: 3px;
+  border-radius: 3px;
+  opacity: 0; /* the violin bow along the edge */
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklab, var(--accent) 80%, white) 45%,
+    transparent
+  );
+}
+.plate[data-bowing]::before {
+  animation: bow 0.9s var(--ease);
+}
+@keyframes bow {
+  0% {
+    opacity: 0;
+    transform: translateY(-28%) scaleY(0.35);
+  }
+  30% {
+    opacity: 0.95;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(28%) scaleY(1);
+  }
+}
+.plate canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(
+    0 0 5px color-mix(in oklab, var(--accent) 55%, transparent)
+  );
+}
+.piece-name {
+  font-family: var(--f-serif);
+  font-size: clamp(2.5rem, 1.5rem + 3.4vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.012em;
+  opacity: 0.38;
+  transition: opacity 0.4s ease;
+}
+.piece-key {
+  font-family: var(--f-serif), var(--f-music);
+  font-style: italic;
+  font-size: clamp(1.05rem, 0.9rem + 0.5vw, 1.4rem);
+  color: var(--ink-2);
+  opacity: 0.7;
+}
+.piece-link:hover .piece-name,
+.piece[data-selected] .piece-name,
+.piece[data-selected] .piece-key {
+  opacity: 1;
+}
+.is-opening .masthead,
+.is-opening .intro,
+.is-opening .programme {
+  opacity: 0;
+  transition: opacity 0.26s ease;
+} /* before the burst */
+.is-opening .plate {
+  transform: scale(1.035);
+  transition: transform 0.3s ease-in;
+}
+/* cross-document navigation is a plain root cross-fade: @view-transition { navigation: auto; } placed in
+   an inline <style> first in <head>, plus <script type="speculationrules"> prerendering the report pages. */
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .viz .spin,
+  .metro .arm,
+  .plate[data-bowing]::before {
+    animation: none;
+  }
+}
