@@ -31,7 +31,7 @@ export const CALL_LEAD_SECONDS = 0.35
 /** After the singer's settled note, a breath before the first call, s. */
 export const SETTLED_LEAD_SECONDS = 0.9
 /** Nobody sang for this long during a run: the run stops, the mic closes. */
-export const QUIET_LIMIT_SECONDS = 60
+export { QUIET_LIMIT_SECONDS } from '@/components/room-kit/room-constants'
 
 /** The chip while the singer sings the phrase back. */
 export const YOUR_TURN = 'Your turn'

@@ -41,13 +41,15 @@
 // through this same room, by `script`: frames in place of the mic, on the
 // take's own clock, and nothing played, felt, said or kept.
 
-import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
-import { onAppLeave } from '@/components/room-kit/app-leave'
+import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
+import { createQuietWatch, WALL_CLOCK } from '@/components/room-kit/quiet-watch'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
+import { offerable, QUIET_LIMIT_SECONDS, SILENT_VOICE, } from '@/components/room-kit/room-constants'
+import { createRoomLife } from '@/components/room-kit/room-life'
 import { createRoomTones } from '@/components/room-kit/room-tones'
-import { createScreenAwake } from '@/components/room-kit/screen-awake'
 import { CaptureError } from '@/components/room-kit/useExerciseCapture'
 import { newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
@@ -56,19 +58,16 @@ import { restToneDue, riddenSegmentAt, segmentAt, targetAt, } from '@/lib/glide/
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import type { GlideTargets } from '@/lib/glide/glide-targets'
 import { haptics } from '@/lib/haptics'
-import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, } from '@/lib/hold/hold-target'
 import { settleLiveNote } from '@/lib/hold/settle-note'
 import type { MercVoice } from '@/lib/merc/sim'
-import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
-import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { GlideCoreMoment, GlideLineFields } from './glide-lines'
 import type { GlideMoment } from './glide-ride'
 import { introHum, rideStep } from './glide-ride'
 import type { GlidePlan, GlideRoom, GlideRoomSetup, GlideRoomTypes, GlideRun, GlideView, } from './glide-room-contract'
-import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC, QUIET_LIMIT_SECONDS, } from './glide-room-contract'
+import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC } from './glide-room-contract'
 import type { GlideRoomEvent, GlideRoomState } from './glide-room-machine'
 import { glideRoomReducer, initialGlideRoomState, isRunPhase, } from './glide-room-machine'
 import { createGlideTake } from './glide-take'
@@ -79,19 +78,6 @@ const LOCK_FACE_MS = 600
 const TONE_TAIL_SEC = 0.25
 /** The path is ended by the room this long after its end, if no frame did. */
 const END_GRACE_SEC = 0.5
-
-const SILENT_VOICE: MercVoice = {
-  voiced: false,
-  cents: 0,
-  level: 0,
-  steady: 0,
-  midi: 57,
-}
-
-/** The singer's own note, when the room can fit its arches to it. */
-function offerable(midi: number): boolean {
-  return midi >= HOLD_TARGET_MIN_MIDI && midi <= HOLD_TARGET_MAX_MIDI
-}
 
 /** The run in progress: its plan, scroll, take and what it has played. */
 interface Live<R extends GlideRoomTypes> extends GlideRun<R> {
@@ -169,21 +155,15 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   }
 
   // ── Timers that belong to the screen ───────────────────────
-  let alive = true
-  const timers = new Set<ReturnType<typeof setTimeout>>()
-  const later = (ms: number, fn: () => void): void => {
-    const id = setTimeout(() => {
-      timers.delete(id)
-      if (alive) fn()
-    }, ms)
-    timers.add(id)
-  }
+  // The screen's life (room-kit room-life.ts): its timers from here, its
+  // watch once the room's leave and stop exist.
+  const life = createRoomLife()
 
   // ── Merc ───────────────────────────────────────────────────
   /** The singer's voice for him, during a run (hearMerc). */
   let voice: MercVoice = SILENT_VOICE
   const merc = createMercMoves({
-    later,
+    later: life.later,
     still: prefersReducedMotion,
     afterCheer: () => 'idle',
   })
@@ -202,8 +182,6 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   let live: Live<R> | null = null
   let windowStartedAt = 0
   let processed = 0
-  let loop = 0
-  let lastVoiceAt = 0
   /** How loud the newest frame is, 0..1, for the mic's ring. */
   let loudness = 0
   let settling = false
@@ -225,13 +203,15 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     processed = 0
   }
 
-  const startLoop = (): void => {
-    if (loop === 0) loop = requestAnimationFrame(tick)
-  }
-  const stopLoop = (): void => {
-    if (loop !== 0) cancelAnimationFrame(loop)
-    loop = 0
-  }
+  const loop = createFrameLoop(screenFrame, {
+    alive: life.alive,
+    running: () => live !== null || settling,
+  })
+  /** A minute with no voice during a run, on the wall clock. */
+  const quiet = createQuietWatch({
+    limitSeconds: QUIET_LIMIT_SECONDS,
+    clock: WALL_CLOCK,
+  })
 
   /** The chip's arch: the count-in and a breath lead into theirs. */
   const archOf = (run: Live<R>, t: number): number =>
@@ -286,7 +266,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
       steady: 1 - Math.min(1, Math.abs(cents) / run.preset.bandCents),
       midi,
     }
-    lastVoiceAt = performance.now()
+    quiet.heard()
   }
 
   /** The next root's tone, after the rest's pause, where the level plays it. */
@@ -323,15 +303,11 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     }
   }
 
-  function tick(): void {
-    loop = 0
-    if (!alive) return
+  /** One screen frame while a run or its settle is on (frame-loop.ts). */
+  function screenFrame(): void {
     const run = live
     if (run !== null) runFrame(run)
     else if (settling) settleFrame()
-    if (alive && (live !== null || settling) && loop === 0) {
-      loop = requestAnimationFrame(tick)
-    }
   }
 
   function runFrame(run: Live<R>): void {
@@ -388,7 +364,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     processed = frames.length
     const heard = settleLiveNote(frames)
     const last = frames[frames.length - 1]
-    if (last.conf > 0.5 && last.f0 > 0) lastVoiceAt = performance.now()
+    if (last.conf > 0.5 && last.f0 > 0) quiet.heard()
     const midi = heard === null ? null : Math.round(heard)
     if (midi === null || !offerable(midi)) {
       restIfQuiet()
@@ -464,7 +440,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
         say('listen', { note: midiToNoteNameOctave(plan.roots[0]) })
       }
     }
-    startLoop()
+    loop.start()
   }
 
   /** The run's result: kept, shown, and the mic closed. */
@@ -474,7 +450,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
       return
     }
     live = null
-    stopLoop()
+    loop.stop()
     tones.stop()
     capture.release()
     const kept = setup.run.keep(run.level, result, run.settled)
@@ -512,7 +488,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
    */
   function finishScripted(): void {
     live = null
-    stopLoop()
+    loop.stop()
     voice = SILENT_VOICE
     const face = faceUntil - performance.now()
     if (face <= 0) {
@@ -520,7 +496,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
       return
     }
     setMoment('lit')
-    later(face, () => {
+    life.later(face, () => {
       if (demoOn() && live === null && moment === 'lit') {
         setMoment('breath')
       }
@@ -529,7 +505,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
 
   /** A minute with no voice during a run: it stops, and the mic closes. */
   function restIfQuiet(): void {
-    if (performance.now() - lastVoiceAt <= QUIET_LIMIT_SECONDS * 1000) return
+    if (!quiet.quiet()) return
     dropRun('rest')
     say('rest')
   }
@@ -538,7 +514,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   function dropRun(type: 'stop' | 'rest' | 'leave'): void {
     live = null
     settling = false
-    stopLoop()
+    loop.stop()
     tones.stop()
     capture.release()
     voice = SILENT_VOICE
@@ -557,7 +533,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   const openMic = (): void => {
     const { run } = untrack(state)
     const stands = (): boolean =>
-      alive && phase() === 'starting' && untrack(state).run === run
+      life.alive() && phase() === 'starting' && untrack(state).run === run
     void capture
       .acquire()
       // A take the app's leaving dropped meanwhile unlocks nothing.
@@ -571,7 +547,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
             return
           }
           audio = ctx
-          lastVoiceAt = performance.now()
+          quiet.heard()
           const fit = knownFit()
           const rooted = fit.source !== 'preset'
           dispatch({ type: 'mic-ready', run, rooted })
@@ -580,7 +556,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
             openWindow()
             settling = true
             setMoment('countIn')
-            startLoop()
+            loop.start()
           }
           // The page went away while the microphone opened.
           if (document.visibilityState === 'hidden') leave()
@@ -638,43 +614,36 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   onMount(() => {
     sayIntro()
     // He drops in, then sings at the first root on his own.
-    later(1100, () => {
+    life.later(1100, () => {
       if (untrack(merc.state) === 'drop' && moment === 'intro') {
         merc.set(states.intro)
       }
     })
   })
 
-  const onVisibility = (): void => {
-    if (document.visibilityState === 'hidden') leave()
-  }
-  document.addEventListener('visibilitychange', onVisibility)
-  // Or with the page still showing: the clock's park (room-kit app-leave.ts).
-  const stopAppLeave = onAppLeave(leave)
-
+  // Leaving the page, or the app, drops a run (room-kit room-life.ts).
   // The screen stays on, and the rail out of reach, while a run is on;
   // the screen stays on while the demo plays too (its own say: not on its
   // card or its end), but the rail stays: a demo can be left at any time.
-  const awake = createScreenAwake()
-  createEffect(() => {
-    const running = isRunPhase(state().phase) && !scriptActive()
-    awake.set(scriptActive() ? demoPlaying() : running)
-    setExerciseFocus(running)
-  })
-
   // The app's mic watchdog: the icon is on while the run hears the
   // singer, and a microphone that died under it stops the run.
-  const unregisterIndicator = registerMicIndicator(
-    setup.exercise,
-    () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
-    stop,
-  )
+  life.watch({
+    leave,
+    listening: () => isRunPhase(state().phase) && !scriptActive(),
+    demo: { on: scriptActive, playing: demoPlaying },
+    holdsFocus: true,
+    mic: {
+      exercise: setup.exercise,
+      on: () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
+      died: stop,
+    },
+  })
 
   // ── The demo's way in ──────────────────────────────────────
   /** No take, no result, an empty world; Merc back at the first root. */
   const clearForScript = (): void => {
     live = null
-    stopLoop()
+    loop.stop()
     tones.stop()
     voice = SILENT_VOICE
     faceUntil = 0
@@ -738,18 +707,11 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   }
 
   onCleanup(() => {
-    alive = false
     live = null
     settling = false
-    stopLoop()
+    loop.stop()
     tones.stop()
-    for (const id of timers) clearTimeout(id)
-    timers.clear()
-    document.removeEventListener('visibilitychange', onVisibility)
-    stopAppLeave()
-    unregisterIndicator()
-    awake.set(false)
-    setExerciseFocus(false)
+    life.dispose()
   })
 
   return {

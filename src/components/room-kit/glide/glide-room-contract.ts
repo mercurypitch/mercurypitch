@@ -31,8 +31,6 @@ import type { GlideRideStates } from './glide-ride'
 import type { GlideRoomState } from './glide-room-machine'
 import type { GlideContact, GlideScroll, GlideTake, GlideTakeDeps, GlideTraceSample, } from './glide-take'
 
-/** Nobody sang for this long during a run: it stops, the mic closes. */
-export const QUIET_LIMIT_SECONDS = 60
 /** The count-in's tone: the first root, s. */
 export const COUNT_IN_TONE_SEC = 1
 /** A breath's tone: the next root, s (levels that play it). */
