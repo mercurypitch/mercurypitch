@@ -459,6 +459,7 @@
   "workers/db-worker/node-tests/premium-background-migration.test.ts",
   "workers/db-worker/node-tests/promo-codes-read-integration.test.ts",
   "workers/db-worker/node-tests/query-oracle-integration.test.ts",
+  "workers/db-worker/node-tests/ratelimit-ipv6-integration.test.ts",
   "workers/db-worker/node-tests/score-visibility-integration.test.ts",
   "workers/db-worker/node-tests/sign-up-races-integration.test.ts",
   "workers/db-worker/node-tests/signup-mail-integration.test.ts",
