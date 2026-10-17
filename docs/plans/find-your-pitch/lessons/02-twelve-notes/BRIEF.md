@@ -135,12 +135,13 @@ direction: it never asks semitone or tone.
 
 ### What must read with the sound off (captions on)
 
-- The recall question: "FROM LESSON 01", then "× 2" in gold and "octave" between the two stacked
-  A beads.
+- The recall question: "FROM LESSON 01", then a gold bracket joining the two stacked A beads, with
+  "× 2" in gold and "octave" beside the spiral.
 - Orange's guess: a dashed "?" ring in each of the seven letter gaps; then "7 letters", "12
   notes" and "the other five?".
 - The five beads lighting one by one, the counter reaching 12, and the climb's readout running from
-  "220 Hz" to "440 Hz"; then the bracket over A3 to G♯4 with "7 letters", "+ 5" and "= 12 notes".
+  "220 Hz" to "440 Hz"; then the turn glowing from A3 to G♯4, one step short of A4, with "7
+  letters", "+ 5" and "= 12 notes".
 - "+13 Hz" and "+25 Hz" on the climb's first and last steps; then the ring of twelve, its equal
   wedges, and the word "semitone" full-frame.
 - "7 white + 5 black" over one octave of the keyboard, and only that octave in the close-up.
