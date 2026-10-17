@@ -6,8 +6,9 @@
 // room): a cyan core with a bright middle over a violet glow where the
 // voice is on the path, amber where it is off. In a glide room it is drawn
 // where the voice was sung, so it scrolls away with the world, and it
-// breaks where the voice stopped. Ng slides' BridgeRibbon.tsx made shared:
-// the room hands in its own class and test ids.
+// breaks where the voice stopped. Both glide rooms draw it (Lip roll's
+// BayScene.tsx, Ng slides' BridgeScene.tsx); each hands in its own class
+// and test ids.
 //
 // Two canvases over the room, fixed to the screen: the core at the
 // screen's DPR, the glow small and blurred by the compositor (GLOW_RES,

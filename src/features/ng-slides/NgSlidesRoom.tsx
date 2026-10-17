@@ -35,6 +35,7 @@ import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, onMo
 import { DemoLayer } from '@/components/demo-kit/DemoLayer'
 import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
+import { LevelControl } from '@/components/room-kit/LevelControl'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
@@ -42,6 +43,7 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
+import type { ExerciseLevel } from '@/stores/exercise-level'
 import { ARCH } from './bridge-geometry'
 import type { BridgeLayout } from './bridge-layout'
 import { layoutBridge, yOf } from './bridge-layout'
@@ -54,7 +56,6 @@ import type { NgController } from './ng-controller-contract'
 import { ngMicState } from './ng-machine'
 import type { NgSummary } from './ng-run'
 import { bestText, jumpsText, topsText } from './ng-run'
-import { NgLevel } from './NgLevel'
 import styles from './NgSlidesRoom.module.css'
 import { useNgController } from './useNgController'
 
@@ -96,6 +97,22 @@ const cssPx = (style: CSSStyleDeclaration, name: string): number => {
 
 /** What the mic says at rest: a tap starts a run. */
 const START_LABEL = 'Start: hum the slides over the bridge'
+
+/**
+ * The level pill's lines (the room kit's LevelControl, in the bar beside
+ * "?"): what each level asks of a slide. Ng slides reads the level as its
+ * slides' rules (NG_SLIDES_LEVELS, DESIGN-ng-slides.md 3): how fast each
+ * slide goes, how close to the line the voice must stay, whether the next
+ * note plays in the breath, and whether the top must land in tune.
+ */
+const NG_LEVEL_LINES: Record<ExerciseLevel, string> = {
+  learning:
+    'Slow slides with plenty of room around the line. The next note plays in every breath.',
+  singer:
+    'Steady slides, closer to the line. The next note still plays in every breath.',
+  professional:
+    'Quick slides, close to the line, and no notes in the breaths. Each top must land in tune.',
+}
 
 /** "84%": the result's big number is the share of the bridge lit. */
 export function litText(summary: NgSummary): string {
@@ -292,7 +309,7 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
 
       <RoomBarEnd>
         <Show when={showLevel()}>
-          <NgLevel />
+          <LevelControl lines={NG_LEVEL_LINES} testId="ng-level" />
         </Show>
         <Show when={demo?.canAsk() === true}>
           <RoomAsk

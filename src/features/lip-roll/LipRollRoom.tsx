@@ -40,6 +40,7 @@ import { DemoLayer } from '@/components/demo-kit/DemoLayer'
 import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
 import type { Rect } from '@/components/demo-kit/tip-place'
 import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
+import { LevelControl } from '@/components/room-kit/LevelControl'
 import { MercView } from '@/components/room-kit/MercView'
 import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
@@ -47,6 +48,7 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
+import type { ExerciseLevel } from '@/stores/exercise-level'
 import { WAVE } from './bay-geometry'
 import type { BayLayout } from './bay-layout'
 import { layoutBay, MERC_INTRO_X, mercBoxAt, zoomAt } from './bay-layout'
@@ -60,7 +62,6 @@ import type { LipController } from './lip-controller-contract'
 import { lipMicState } from './lip-machine'
 import type { LipSummary } from './lip-run'
 import { bestText, resultChips } from './lip-run'
-import { LipLevel } from './LipLevel'
 import styles from './LipRollRoom.module.css'
 import { useLipController } from './useLipController'
 
@@ -107,6 +108,22 @@ const cssPx = (style: CSSStyleDeclaration, name: string): number => {
 
 /** What the mic says at rest: a tap starts a run. */
 const START_LABEL = 'Start: buzz your lips over the waves'
+
+/**
+ * The level pill's lines (the room kit's LevelControl, in the bar beside
+ * "?"): what each level asks of a wave. Lip roll reads the level as its
+ * waves' rules (LIP_ROLL_LEVELS, DESIGN-lip-roll.md 3): how fast each wave
+ * goes, how close to the dots the voice must stay, whether the next note
+ * plays in the breath, and whether the top must be reached.
+ */
+const LIP_LEVEL_LINES: Record<ExerciseLevel, string> = {
+  learning:
+    'Slow waves with plenty of room around the dots. The next note plays in every breath.',
+  singer:
+    'Steady waves, closer to the dots. The next note still plays in every breath.',
+  professional:
+    'Quick waves, close to the dots, and no notes in the breaths. Each wave must reach its top in tune.',
+}
 
 /** "88%": the result's big number is the share of the waves lit. */
 export function litText(summary: LipSummary): string {
@@ -316,7 +333,7 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
 
       <RoomBarEnd>
         <Show when={showLevel()}>
-          <LipLevel />
+          <LevelControl lines={LIP_LEVEL_LINES} testId="lip-level" />
         </Show>
         <Show when={demo?.canAsk() === true}>
           <RoomAsk

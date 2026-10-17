@@ -16,14 +16,14 @@
 
 import type { GlideKept, GlidePlan, } from '@/components/room-kit/glide/glide-room-contract'
 import { COUNT_IN_TONE_SEC } from '@/components/room-kit/glide/glide-room-contract'
+import type { GlideArchHeard, GlideRecords, } from '@/components/room-kit/glide/glide-run'
+import { countNear, glideArchHeard, keepGlideRun, missedTop, noteName, timingVerdict, } from '@/components/room-kit/glide/glide-run'
 import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import type { GlideState } from '@/lib/glide/glide-engine'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
 import { ngSlidesPath } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import type { GlideTargets } from '@/lib/glide/glide-targets'
-import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { ngBest, recordNgBest, rememberNgNote } from '@/stores/ng-slides-store'
 import type { NgFields, NgMoment } from './merc-lines'
 
@@ -32,6 +32,8 @@ export {
   BREATH_TONE_SEC,
   COUNT_IN_TONE_SEC,
 } from '@/components/room-kit/glide/glide-room-contract'
+// The best's chip, as every glide room words it.
+export { bestText } from '@/components/room-kit/glide/glide-run'
 
 /** A slide this near fully lit is a clean one. */
 const CLEAN_SHARE = 0.95
@@ -49,8 +51,6 @@ export function planNgRun(fit: GlideTargets, preset: GlidePreset): NgPlan {
   }
 }
 
-const name = (midi: number): string => midiToNoteNameOctave(Math.round(midi))
-
 /** The line a run opens with, before the first slide. */
 export function introLine(plan: NgPlan | null): {
   moment: NgMoment
@@ -59,23 +59,13 @@ export function introLine(plan: NgPlan | null): {
   if (plan === null || plan.source === 'preset') {
     return { moment: 'introAny', fields: {} }
   }
-  return { moment: 'intro', fields: { top: name(plan.roots[0] + 7) } }
+  return { moment: 'intro', fields: { top: noteName(plan.roots[0] + 7) } }
 }
 
 /** One slide as the engine heard it, for its line. */
-export interface SlideHeard {
+export interface SlideHeard extends GlideArchHeard {
   readonly arch: number
-  readonly coverage: number
-  readonly lit: boolean
-  readonly voiced: boolean
-  /** The note it jumped near, MIDI, if it jumped. */
-  readonly jumpNote: number | null
   readonly broke: boolean
-  /** The top's reading against its note, cents; null where not judged. */
-  readonly topCents: number | null
-  readonly topReached: boolean | null
-  /** The voice's mean lag over the slide, s (- ahead); null if none. */
-  readonly lagSec: number | null
 }
 
 /** What the engine knows of slide `arch` at its end. */
@@ -87,34 +77,11 @@ export function slideHeard(
   lag: { sum: number; count: number },
   preset: GlidePreset,
 ): SlideHeard {
-  const jump = state.jumps.find((j) => j.arch === arch)
-  const count = state.topCount[arch]
   return {
     arch,
-    coverage,
-    lit,
-    voiced: state.archVoiced[arch] === 1,
-    jumpNote: jump === undefined ? null : jump.fromMidi,
+    ...glideArchHeard(state, arch, coverage, lit, lag, preset),
     broke: state.breaks.some((b) => b.arch === arch),
-    topCents:
-      preset.top === null || count === 0 ? null : state.topSum[arch] / count,
-    topReached: preset.top === null ? null : state.topReached[arch] === 1,
-    lagSec: lag.count > 0 ? lag.sum / lag.count : null,
   }
-}
-
-/** The timing's verdict: behind or ahead by over half the allowance. */
-function timing(heard: SlideHeard, preset: GlidePreset): NgMoment | null {
-  if (heard.lagSec === null) return null
-  if (heard.lagSec > preset.lagMs / 2000) return 'behind'
-  if (heard.lagSec < -preset.leadMs / 2000) return 'ahead'
-  return null
-}
-
-/** The top at Pro: short of it or past it, when it was not reached. */
-function topVerdict(heard: SlideHeard): NgMoment | null {
-  if (heard.topReached !== false || heard.topCents === null) return null
-  return heard.topCents < 0 ? 'topFlat' : 'topSharp'
 }
 
 /**
@@ -127,15 +94,20 @@ export function slideLine(
   next: number,
   top: number,
 ): { moment: NgMoment; fields: NgFields } {
-  const nextNote = { note: name(next) }
+  const nextNote = { note: noteName(next) }
   if (!heard.voiced) return { moment: 'silent', fields: nextNote }
   if (heard.jumpNote !== null) {
-    return { moment: 'jump', fields: { note: name(heard.jumpNote) } }
+    return { moment: 'jump', fields: { note: noteName(heard.jumpNote) } }
   }
   if (heard.broke) return { moment: 'break', fields: {} }
-  const atTop = topVerdict(heard)
-  if (atTop !== null) return { moment: atTop, fields: { top: name(top) } }
-  const late = timing(heard, preset)
+  const atTop = missedTop(heard)
+  if (atTop !== null) {
+    return {
+      moment: atTop === 'under' ? 'topFlat' : 'topSharp',
+      fields: { top: noteName(top) },
+    }
+  }
+  const late = timingVerdict(heard, preset)
   if (late !== null) return { moment: late, fields: {} }
   if (heard.lit) {
     return {
@@ -189,10 +161,7 @@ export function summarize(
 /** "No jumps", "1 jump near E3", "3 jumps near E3". */
 export function jumpsText(summary: NgSummary): string {
   if (summary.jumps === 0) return 'No jumps'
-  const count = summary.jumps === 1 ? '1 jump' : `${summary.jumps} jumps`
-  return summary.jumpNote === null
-    ? count
-    : `${count} near ${name(summary.jumpNote)}`
+  return countNear(summary.jumps, 'jump', summary.jumpNote)
 }
 
 /** "Tops 4 of 5" at Pro; null at a level that does not judge the top. */
@@ -200,13 +169,6 @@ export function topsText(summary: NgSummary): string | null {
   return summary.tops === null
     ? null
     : `Tops ${summary.tops} of ${summary.slides}`
-}
-
-/** "New best" or "Best 84%"; null on a first run that lit nothing. */
-export function bestText(summary: NgSummary): string | null {
-  if (summary.improved) return 'New best'
-  const best = Math.max(summary.previousBest ?? 0, summary.litPct)
-  return best > 0 ? `Best ${best}%` : null
 }
 
 /** Merc's line at the result, most useful first. */
@@ -223,7 +185,7 @@ export function resultLine(
   if (clean) return { moment: 'resultClean', fields: {} }
   if (summary.improved) return { moment: 'newBest', fields: pct }
   if (result.flipNote !== null) {
-    return { moment: 'resultFlip', fields: { note: name(result.flipNote) } }
+    return { moment: 'resultFlip', fields: { note: noteName(result.flipNote) } }
   }
   const tops = result.topTendencyCents
   if (preset.top !== null && tops !== null && tops < -preset.top.tolCents) {
@@ -233,6 +195,15 @@ export function resultLine(
     return { moment: 'resultLate', fields: {} }
   }
   return { moment: 'result', fields: pct }
+}
+
+/** Where an Ng slides run is kept: the history's row, and the bridge's records. */
+const RECORDS: GlideRecords = {
+  exercise: EXERCISE_NG_SLIDES_BRIDGE,
+  archesLitKey: 'archesLit',
+  rememberNote: (midi) => rememberNgNote(midi),
+  best: (level) => ngBest(level),
+  recordBest: (level, run) => recordNgBest(level, run),
 }
 
 /**
@@ -245,35 +216,5 @@ export function keepNgRun(
   settled: number | null,
   now: number = Date.now(),
 ): GlideKept {
-  const lit = Math.round(result.litShare * 100)
-  recordExerciseResult({
-    type: EXERCISE_NG_SLIDES_BRIDGE,
-    score: lit,
-    metrics: {
-      lit,
-      archesLit: result.archesLit,
-      jumps: result.jumps.length,
-      breaks: result.breaks.length,
-      ...(result.topsReached === null ? {} : { tops: result.topsReached }),
-      ...(result.meanLagMs === null
-        ? {}
-        : { lagMs: Math.round(result.meanLagMs) }),
-    },
-    completedAt: now,
-  })
-  if (settled !== null) rememberNgNote(Math.round(settled))
-  // A run that lit nothing is kept in the history, not as a best.
-  if (lit === 0) {
-    return { improved: false, previousBest: ngBest(level)?.lit ?? null }
-  }
-  const outcome = recordNgBest(level, {
-    lit,
-    arches: result.archesLit,
-    jumps: result.jumps.length,
-    at: now,
-  })
-  return {
-    improved: outcome.improved,
-    previousBest: outcome.previous?.lit ?? null,
-  }
+  return keepGlideRun(RECORDS, level, result, settled, now)
 }

@@ -2,69 +2,25 @@
 // The Ng slides demo's sound: the count-in's note, then Merc's hum
 // ============================================================
 //
-// Each take opens as a run does: the slide's root, as the room's count-in
-// plays it (room-kit room-tones.ts: the Hear button's tone,
-// COUNT_IN_TONE_SEC), then Merc's hum along the take, through the demo
-// kit's soundtrack (demo-kit/demo-sound.ts) with the `hum` timbre and the
-// vibrato the frames carry, so the voice heard is the voice the engine was
-// fed. Skip, the way out and the app going to the background stop both at
-// once. The kit's opening note stays silent: each take's count-in plays the
-// root itself.
-//
-// The hum is synthesised: nothing loads, so the demo has nothing to wait
-// for before it starts (the kit's `ready`).
+// The glide rooms' demo sound (room-kit glide/glide-demo-sound.ts): each
+// take opens with the slide's root, as the room's count-in plays it, then
+// Merc's hum along the take, with the `hum` timbre and the vibrato the
+// frames carry, so the voice heard is the voice the engine was fed.
 
 import type { DemoSoundtrack } from '@/components/demo-kit/demo-sound'
-import { createDemoSoundtrack, outputLatency, } from '@/components/demo-kit/demo-sound'
-import { startRoomTone } from '@/components/room-kit/room-tones'
-import type { ReferenceTone } from '@/lib/reference-tone'
-import { COUNT_IN_TONE_SEC } from '../ng-run'
+import type { GlideDemoVoice } from '@/components/room-kit/glide/glide-demo-sound'
+import { createGlideDemoSound } from '@/components/room-kit/glide/glide-demo-sound'
 import type { NgDemoTake } from './demo-script'
 import { DEMO_VIBRATO } from './demo-script'
 
 export type NgDemoSound = DemoSoundtrack<NgDemoTake>
 
+/** Merc's hum. */
+const HUM: GlideDemoVoice = { vibrato: DEMO_VIBRATO, timbre: 'hum' }
+
 export function createDemoSound(
   ctx: AudioContext,
   minLead: number,
 ): NgDemoSound {
-  const hum = createDemoSoundtrack<NgDemoTake>(
-    ctx,
-    minLead,
-    DEMO_VIBRATO,
-    'hum',
-  )
-  const latency = outputLatency(ctx)
-  const tones = new Set<ReferenceTone>()
-  const timers = new Set<ReturnType<typeof setTimeout>>()
-  let stopped = false
-  return {
-    lead: hum.lead,
-    tone: () => undefined,
-    sing: (take, midi) => {
-      if (stopped) return
-      // Heard as the take's clock reads zero, as the room's count-in is.
-      const wait = Math.max(0, hum.lead - latency) * 1000
-      const id = setTimeout(() => {
-        timers.delete(id)
-        if (stopped) return
-        // None behind Control Center: the clock stays parked (room-tones.ts).
-        const tone = startRoomTone(ctx, take.root, COUNT_IN_TONE_SEC)
-        if (tone === null) return
-        tones.add(tone)
-        void tone.done.then(() => tones.delete(tone))
-      }, wait)
-      timers.add(id)
-      hum.sing(take, midi)
-    },
-    stop: () => {
-      if (stopped) return
-      stopped = true
-      for (const id of timers) clearTimeout(id)
-      timers.clear()
-      for (const tone of tones) tone.stop()
-      tones.clear()
-      hum.stop()
-    },
-  }
+  return createGlideDemoSound<NgDemoTake>(ctx, minLead, HUM)
 }

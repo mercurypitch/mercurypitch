@@ -17,14 +17,14 @@
 
 import type { GlideKept, GlidePlan, } from '@/components/room-kit/glide/glide-room-contract'
 import { COUNT_IN_TONE_SEC } from '@/components/room-kit/glide/glide-room-contract'
+import type { GlideArchHeard, GlideRecords, } from '@/components/room-kit/glide/glide-run'
+import { countNear, glideArchHeard, keepGlideRun, missedTop, noteName, timingVerdict, } from '@/components/room-kit/glide/glide-run'
 import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import type { GlideState } from '@/lib/glide/glide-engine'
 import type { GlideNote, GlideResult } from '@/lib/glide/glide-metrics'
 import { lipRollPath } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import type { GlideTargets } from '@/lib/glide/glide-targets'
-import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { lipBest, recordLipBest, rememberLipNote, } from '@/stores/lip-roll-store'
 import type { LipFields, LipMoment } from './merc-lines'
 
@@ -33,6 +33,8 @@ export {
   BREATH_TONE_SEC,
   COUNT_IN_TONE_SEC,
 } from '@/components/room-kit/glide/glide-room-contract'
+// The best's chip, as every glide room words it.
+export { bestText } from '@/components/room-kit/glide/glide-run'
 
 /** A wave this near fully lit is a clean one. */
 const CLEAN_SHARE = 0.95
@@ -55,8 +57,6 @@ export function planLipRun(fit: GlideTargets, preset: GlidePreset): LipPlan {
   }
 }
 
-const name = (midi: number): string => midiToNoteNameOctave(Math.round(midi))
-
 /** The line a run opens with, before the first wave. */
 export function introLine(plan: LipPlan | null): {
   moment: LipMoment
@@ -67,25 +67,15 @@ export function introLine(plan: LipPlan | null): {
   }
   return {
     moment: 'intro',
-    fields: { top: name(plan.roots[0] + plan.semitones) },
+    fields: { top: noteName(plan.roots[0] + plan.semitones) },
   }
 }
 
 /** One wave as the engine heard it, for its line. */
-export interface WaveHeard {
+export interface WaveHeard extends GlideArchHeard {
   readonly wave: number
-  readonly coverage: number
-  readonly lit: boolean
-  readonly voiced: boolean
-  /** The note it jumped near, MIDI, if it jumped. */
-  readonly jumpNote: number | null
   /** The path's note where the sound stopped, MIDI, if it broke. */
   readonly breakNote: number | null
-  /** The top's reading against its note, cents; null where not judged. */
-  readonly topCents: number | null
-  readonly topReached: boolean | null
-  /** The voice's mean lag over the wave, s (- ahead); null if none. */
-  readonly lagSec: number | null
 }
 
 /** What the engine knows of wave `wave` at its end. */
@@ -97,35 +87,12 @@ export function waveHeard(
   lag: { sum: number; count: number },
   preset: GlidePreset,
 ): WaveHeard {
-  const jump = state.jumps.find((j) => j.arch === wave)
   const broke = state.breaks.find((b) => b.arch === wave)
-  const count = state.topCount[wave]
   return {
     wave,
-    coverage,
-    lit,
-    voiced: state.archVoiced[wave] === 1,
-    jumpNote: jump === undefined ? null : jump.fromMidi,
+    ...glideArchHeard(state, wave, coverage, lit, lag, preset),
     breakNote: broke === undefined ? null : broke.midi,
-    topCents:
-      preset.top === null || count === 0 ? null : state.topSum[wave] / count,
-    topReached: preset.top === null ? null : state.topReached[wave] === 1,
-    lagSec: lag.count > 0 ? lag.sum / lag.count : null,
   }
-}
-
-/** The timing's verdict: behind or ahead by over half the allowance. */
-function timing(heard: WaveHeard, preset: GlidePreset): LipMoment | null {
-  if (heard.lagSec === null) return null
-  if (heard.lagSec > preset.lagMs / 2000) return 'behind'
-  if (heard.lagSec < -preset.leadMs / 2000) return 'ahead'
-  return null
-}
-
-/** The top at Pro: short of it or past it, when it was not reached. */
-function topVerdict(heard: WaveHeard): LipMoment | null {
-  if (heard.topReached !== false || heard.topCents === null) return null
-  return heard.topCents < 0 ? 'shortTop' : 'pastTop'
 }
 
 /**
@@ -140,14 +107,19 @@ export function waveLine(
 ): { moment: LipMoment; fields: LipFields } {
   if (!heard.voiced) return { moment: 'tip', fields: {} }
   if (heard.jumpNote !== null) {
-    return { moment: 'jump', fields: { note: name(heard.jumpNote) } }
+    return { moment: 'jump', fields: { note: noteName(heard.jumpNote) } }
   }
   if (heard.breakNote !== null) {
-    return { moment: 'break', fields: { note: name(heard.breakNote) } }
+    return { moment: 'break', fields: { note: noteName(heard.breakNote) } }
   }
-  const atTop = topVerdict(heard)
-  if (atTop !== null) return { moment: atTop, fields: { top: name(top) } }
-  const late = timing(heard, preset)
+  const atTop = missedTop(heard)
+  if (atTop !== null) {
+    return {
+      moment: atTop === 'under' ? 'shortTop' : 'pastTop',
+      fields: { top: noteName(top) },
+    }
+  }
+  const late = timingVerdict(heard, preset)
   if (late !== null) return { moment: late, fields: {} }
   if (heard.lit) {
     return {
@@ -155,7 +127,7 @@ export function waveLine(
       fields: {},
     }
   }
-  return { moment: 'breath', fields: { note: name(next) } }
+  return { moment: 'breath', fields: { note: noteName(next) } }
 }
 
 /** A run's numbers, as its result shows them. */
@@ -218,19 +190,13 @@ export function summarize(
 /** "No breaks", "1 break near G3", "2 breaks near G3". */
 export function breaksText(summary: LipSummary): string {
   if (summary.breaks === 0) return 'No breaks'
-  const count = summary.breaks === 1 ? '1 break' : `${summary.breaks} breaks`
-  return summary.breakNote === null
-    ? count
-    : `${count} near ${name(summary.breakNote)}`
+  return countNear(summary.breaks, 'break', summary.breakNote)
 }
 
 /** "1 jump near E4", "3 jumps near E4"; null with none. */
 export function jumpsText(summary: LipSummary): string | null {
   if (summary.jumps === 0) return null
-  const count = summary.jumps === 1 ? '1 jump' : `${summary.jumps} jumps`
-  return summary.jumpNote === null
-    ? count
-    : `${count} near ${name(summary.jumpNote)}`
+  return countNear(summary.jumps, 'jump', summary.jumpNote)
 }
 
 /** "Tops 2 of 3" at Pro; null at a level that does not judge the top. */
@@ -250,13 +216,6 @@ export function resultChips(summary: LipSummary): string[] {
   )
 }
 
-/** "New best" or "Best 84%"; null on a first run that lit nothing. */
-export function bestText(summary: LipSummary): string | null {
-  if (summary.improved) return 'New best'
-  const best = Math.max(summary.previousBest ?? 0, summary.litPct)
-  return best > 0 ? `Best ${best}%` : null
-}
-
 /** Merc's line at the result, most useful first. */
 export function resultLine(
   result: GlideResult,
@@ -271,13 +230,13 @@ export function resultLine(
   if (clean) return { moment: 'resultClean', fields: {} }
   if (summary.improved) return { moment: 'newBest', fields: pct }
   if (result.flipNote !== null) {
-    return { moment: 'resultFlip', fields: { note: name(result.flipNote) } }
+    return { moment: 'resultFlip', fields: { note: noteName(result.flipNote) } }
   }
   if (summary.breaks >= TIP_OO_BREAKS) return { moment: 'tipOo', fields: {} }
   if (summary.breakNote !== null) {
     return {
       moment: 'resultBreaks',
-      fields: { note: name(summary.breakNote) },
+      fields: { note: noteName(summary.breakNote) },
     }
   }
   const tops = result.topTendencyCents
@@ -285,6 +244,15 @@ export function resultLine(
     return { moment: 'resultShort', fields: {} }
   }
   return { moment: 'result', fields: pct }
+}
+
+/** Where a Lip roll run is kept: the history's row, and the bay's records. */
+const RECORDS: GlideRecords = {
+  exercise: EXERCISE_LIP_ROLL_BAY,
+  archesLitKey: 'wavesLit',
+  rememberNote: (midi) => rememberLipNote(midi),
+  best: (level) => lipBest(level),
+  recordBest: (level, run) => recordLipBest(level, run),
 }
 
 /**
@@ -297,35 +265,5 @@ export function keepLipRun(
   settled: number | null,
   now: number = Date.now(),
 ): GlideKept {
-  const lit = Math.round(result.litShare * 100)
-  recordExerciseResult({
-    type: EXERCISE_LIP_ROLL_BAY,
-    score: lit,
-    metrics: {
-      lit,
-      wavesLit: result.archesLit,
-      jumps: result.jumps.length,
-      breaks: result.breaks.length,
-      ...(result.topsReached === null ? {} : { tops: result.topsReached }),
-      ...(result.meanLagMs === null
-        ? {}
-        : { lagMs: Math.round(result.meanLagMs) }),
-    },
-    completedAt: now,
-  })
-  if (settled !== null) rememberLipNote(Math.round(settled))
-  // A run that lit nothing is kept in the history, not as a best.
-  if (lit === 0) {
-    return { improved: false, previousBest: lipBest(level)?.lit ?? null }
-  }
-  const outcome = recordLipBest(level, {
-    lit,
-    arches: result.archesLit,
-    jumps: result.jumps.length,
-    at: now,
-  })
-  return {
-    improved: outcome.improved,
-    previousBest: outcome.previous?.lit ?? null,
-  }
+  return keepGlideRun(RECORDS, level, result, settled, now)
 }
