@@ -72,7 +72,7 @@ describe('an unlisted build', () => {
     expect(text).not.toContain('/glass-game')
     expect(text).not.toContain('Glassworks')
     expect(text).toContain(
-      '- [Karaoke Night](https://mercurypitch.com/karaoke-night): Turn a song you',
+      '- [Karaoke Night](https://mercurypitch.com/karaoke-night): Sing one of the',
     )
     expect(text).toContain(
       '- [Break Glass](https://mercurypitch.com/glass): A sixty-second challenge that',
