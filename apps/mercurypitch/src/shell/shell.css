@@ -61,12 +61,14 @@
    Lantern's note label.
 
    The prefixed spellings are the ones that work here. iOS WebViews honour
-   only `-webkit-user-select` (caniuse: "requires prefix" through iOS 26.5),
-   and this bundle's build adds no prefixes, so an unprefixed rule alone is
-   ignored on an iPhone. Both properties inherit in WebKit, which is why one
-   rule on the document reaches the More sheet and the Keep alert that
-   portal to <body>. The tap highlight is already transparent on html and
-   body (app.css); it is restated so this block is the whole baseline. */
+   only `-webkit-user-select` (caniuse: "requires prefix" through iOS 26.5).
+   The build's CSS target (vite.config.ts) adds that prefix to `user-select`,
+   but nothing adds the callout or the drag, and the dev server prefixes
+   nothing, so this block spells each one out. Both properties inherit in
+   WebKit, which is why one rule on the document reaches the More sheet and
+   the Keep alert that portal to <body>. The tap highlight is already
+   transparent on html and body (app.css); it is restated so this block is
+   the whole baseline. */
 :root[data-native-shell] {
   -webkit-user-select: none;
   user-select: none;

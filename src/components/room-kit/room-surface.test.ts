@@ -5,10 +5,11 @@
 // On an iPhone, a tap on the Ng bridge's picture and on the Lantern's note
 // label selected them (TestFlight, 17 Oct). The rooms said `user-select:
 // none` in places, unprefixed, and iOS honours only `-webkit-user-select`;
-// the native build adds no prefixes. The fix is one shared rule
-// (RoomSurface.module.css) that every room puts on its root, and
-// draggable={false} on the rooms' pictures. These read the sources, because
-// jsdom neither applies CSS modules nor knows what WebKit honours.
+// the native build added no prefixes then (it has a CSS target since). The
+// fix is one shared rule (RoomSurface.module.css) that every room puts on
+// its root, and draggable={false} on the rooms' pictures. These read the
+// sources, because jsdom neither applies CSS modules nor knows what WebKit
+// honours.
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'

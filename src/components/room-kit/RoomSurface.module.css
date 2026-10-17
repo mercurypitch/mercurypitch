@@ -6,9 +6,10 @@
    Each property is written prefixed AND unprefixed on purpose. Safari and
    every iOS WebView honour only `-webkit-user-select` (caniuse: "requires
    prefix" through Safari 26.5; WebKit 26.4 reports
-   CSS.supports('user-select', 'none') as false), and the native app's build
-   adds no prefixes of its own. An unprefixed rule alone is what let the Ng
-   bridge and the Lantern's note label select on an iPhone.
+   CSS.supports('user-select', 'none') as false). The builds add that prefix
+   now (the native one since its CSS target, vite.config.ts), but a dev
+   server does not. An unprefixed rule alone, before that target, is what let
+   the Ng bridge and the Lantern's note label select on an iPhone.
 
    Both properties inherit in WebKit, so one rule on the root reaches every
    picture, canvas and label inside the room. */
