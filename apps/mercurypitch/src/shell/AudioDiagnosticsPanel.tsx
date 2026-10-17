@@ -29,6 +29,10 @@
 // open (audio-census.ts), who holds the shared clock, and the rooms' one
 // output (room-output.ts). audio-readout.ts words each of them.
 //
+// On top, "One volume in rooms" (room-volume-switch.ts): a premium room
+// keeps one iOS session, and so one volume, for its whole visit
+// (room-visit.ts). On by default; off to compare.
+//
 // Registered by the native entry alone, behind VITE_PORTABLE_CONSOLE and
 // through a dynamic import (main.tsx), so a store build carries none of it.
 
@@ -44,6 +48,9 @@ import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { ambient } from '../alley/RoomsAlley'
 import { censusContexts, censusCounts, censusTracks } from './audio-census'
 import { contextsLine, hardwareLine, leasesLine, outputLine, roomOutputLine, sessionLine, tracksLine, volumeLine, } from './audio-readout'
+import { oneVolumeInRooms, setOneVolumeInRooms } from './room-volume-switch'
+import { SettingsGroup, SettingsRow } from './settings/SettingsList'
+import { SettingsSwitch } from './settings/SettingsSwitch'
 import { playTestTone } from './test-tone'
 import { orientationRow, safeInsetsRow } from './viewport-diagnostics'
 
@@ -240,6 +247,21 @@ export const AudioDiagnosticsPanel: Component = () => {
 
   return (
     <div class="mp-dev__audio" data-testid="dev-audio">
+      <SettingsGroup>
+        <SettingsRow
+          id="dev-one-volume-in-rooms"
+          label="One volume in rooms"
+          sub="A premium room uses iOS's call volume from the door to the way out, so the level no longer changes as the mic opens and closes. Turn it off to compare. Takes effect in the next room you open."
+          accessory={
+            <SettingsSwitch
+              checked={oneVolumeInRooms()}
+              label="One volume in rooms"
+              testId="dev-one-volume-in-rooms"
+              onChange={setOneVolumeInRooms}
+            />
+          }
+        />
+      </SettingsGroup>
       <dl class="mp-dev__readout">
         <Index each={rows()}>
           {(row) => (
