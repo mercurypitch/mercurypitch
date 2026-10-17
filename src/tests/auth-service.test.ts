@@ -1077,6 +1077,39 @@ describe('logout', () => {
     expect(await requireAuth()).toBe(true)
     expect(fetchMock).toHaveBeenCalledOnce()
   })
+
+  // The content-studio admin key is an org-wide credential kept in
+  // localStorage. Nothing cleared it on sign-out, so the next person on a
+  // shared browser (or any script on the origin) still held it and the
+  // studio re-unlocked for them on mount.
+  it('forgets the content-studio admin key', async () => {
+    localStorage.setItem('pitchperfect_admin_key', 'k-123')
+    localStorage.setItem('pitchperfect_theme', 'dusk')
+    setAuthToken(makeToken(3600, 'password'))
+
+    logout()
+    // Cleared through weekly-service's own setter, loaded lazily so the
+    // studio stays out of first paint: settle that import before looking.
+    await vi.dynamicImportSettled()
+    await vi.waitFor(() =>
+      expect(localStorage.getItem('pitchperfect_admin_key')).toBeNull(),
+    )
+    const { getAdminKey } = await import('@/features/challenges/weekly-service')
+    expect(getAdminKey()).toBe('')
+    // Only the credential goes; an ordinary preference is left alone.
+    expect(localStorage.getItem('pitchperfect_theme')).toBe('dusk')
+    localStorage.removeItem('pitchperfect_theme')
+  })
+
+  it('clears it even when nobody was signed in', async () => {
+    localStorage.setItem('pitchperfect_admin_key', 'k-456')
+
+    expect(() => logout()).not.toThrow()
+    await vi.dynamicImportSettled()
+    await vi.waitFor(() =>
+      expect(localStorage.getItem('pitchperfect_admin_key')).toBeNull(),
+    )
+  })
 })
 
 describe('login and register', () => {
