@@ -264,44 +264,40 @@ describe('openRoomMic: a note first', () => {
   })
 })
 
-describe('openRoomMic: a room that takes late answers', () => {
-  it('hears an answer for a start that no longer stands, for its machine to drop', async () => {
-    const r = room({ tone: 57, lateAnswers: true })
+describe('openRoomMic: a room with no clock', () => {
+  it('drops a refusal for a start the singer has gone back from', async () => {
+    const r = room()
     r.open()
     r.setState({ phase: 'intro', run: 1 })
-    r.tones[0].resolve()
+
+    r.mics[0].reject(new CaptureError('denied', 'Test'))
     await settle()
 
-    const refused = room({ lateAnswers: true })
-    refused.open()
-    refused.setState({ phase: 'intro', run: 1 })
-    refused.mics[0].reject(new CaptureError('denied', 'Test'))
-    await settle()
-
-    // No mic after the note: the step itself still waits on the start.
-    expect(r.log).toEqual(['tone 57', 'open 1'])
-    expect(refused.log).toEqual(['mic', 'fail 1 denied'])
+    expect(r.log).toEqual(['mic'])
   })
 
-  it('hears a late answer under its own start, not the newer one', async () => {
-    const r = room({ lateAnswers: true })
+  it('answers only the newer of two starts', async () => {
+    const r = room()
     r.open()
     r.setState({ phase: 'starting', run: 2 })
+    r.open()
+
+    r.mics[1].resolve()
+    await settle()
     r.mics[0].resolve()
     await settle()
-    // The machine drops a `mic-ready` for start 1 while start 2 opens; under
-    // start 2's number it would take it.
-    expect(r.log).toEqual(['mic', 'open 1'])
+
+    expect(r.log).toEqual(['mic', 'mic', 'open 2'])
   })
 
   it('hears nothing once its screen has gone', async () => {
-    const r = room({ lateAnswers: true })
+    const r = room()
     r.open()
     r.end()
     r.mics[0].resolve()
     await settle()
 
-    const refused = room({ lateAnswers: true })
+    const refused = room()
     refused.open()
     refused.end()
     refused.mics[0].reject(new CaptureError('denied', 'Test'))

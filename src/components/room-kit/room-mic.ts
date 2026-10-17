@@ -23,10 +23,10 @@
 //
 // Then the room hears how it went: `onOpen`, or `onFail` with the reason
 // (a CaptureError's, else 'unavailable'). An answer for a start that no
-// longer stands is dropped, unless the room takes late answers: Long note
-// does, and its machine drops a late `mic-ready` or `mic-failed`
-// (long-note-machine.ts). If the page went away while the mic opened, the
-// room hears that too, once it has opened (`onHidden`).
+// longer stands is dropped: a browser's permission prompt does not block
+// the page, so by the time it is answered the singer may have stopped,
+// started again or played the demo. If the page went away while the mic
+// opened, the room hears that too, once it has opened (`onHidden`).
 //
 // The steps are `then`s on one another, with no await between. When an
 // answer lands among the room's other promises is part of how a start
@@ -59,11 +59,6 @@ export interface RoomMicStart {
   /** The audio clock too, once the mic is open: the room plays on it. */
   readonly clock?: boolean
   /**
-   * The room hears an answer for a start that no longer stands too, while
-   * its screen lives, and its machine drops it (Long note).
-   */
-  readonly lateAnswers?: boolean
-  /**
    * The mic is open for start `run`. `clock` is the running audio clock
    * when the room asked for it, else null.
    */
@@ -90,11 +85,7 @@ export function openRoomMic(start: RoomMicStart): void {
     start.alive() &&
     untrack(start.state).phase === 'starting' &&
     untrack(start.state).run === run
-  const answer = answers(
-    start,
-    run,
-    start.lateAnswers === true ? start.alive : stands,
-  )
+  const answer = answers(start, run, stands)
   // The note first, then the mic while the start stands; with no note, the
   // mic inside the tap.
   const tone = start.tone ?? null
@@ -114,8 +105,8 @@ export function openRoomMic(start: RoomMicStart): void {
     .then(answer.clocked, answer.refused)
 }
 
-/** What one start does with each answer, when the room hears it (`heard`). */
-function answers(start: RoomMicStart, run: number, heard: () => boolean) {
+/** What one start does with each answer, while the start stands. */
+function answers(start: RoomMicStart, run: number, stands: () => boolean) {
   const open = (clock: AudioContext | null): void => {
     start.onOpen(run, clock)
     // The page went away while the microphone opened.
@@ -126,17 +117,17 @@ function answers(start: RoomMicStart, run: number, heard: () => boolean) {
   return {
     /** The mic is open, for a room that asked for no clock. */
     open: (): void => {
-      if (heard()) open(null)
+      if (stands()) open(null)
     },
     /** The mic is open and the clock answered: running, or null. */
     clocked: (clock: AudioContext | null): void => {
-      if (!heard()) return
+      if (!stands()) return
       if (clock === null) start.onFail(run, 'unavailable')
       else open(clock)
     },
     /** A step refused: the note, the mic or the clock. */
     refused: (error: unknown): void => {
-      if (heard()) start.onFail(run, captureFailure(error))
+      if (stands()) start.onFail(run, captureFailure(error))
     },
   }
 }
