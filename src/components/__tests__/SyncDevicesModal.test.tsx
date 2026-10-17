@@ -337,10 +337,16 @@ describe('closing, and what it must not do', () => {
     expect(sync.startSyncSend).not.toHaveBeenCalled()
   })
 
-  it('a scanned code joins when there is nothing to lose', () => {
+  it('a code from a link waits for a tap, then connects', () => {
+    // Opening a sync link must not connect on its own — connecting announces
+    // this device and its song hashes and opens it to pushed songs. The code
+    // is pre-filled; the pairing waits for a deliberate Connect.
     state.syncState = 'idle'
     sync.takeSyncCodeToJoin.mockReturnValueOnce('ABCD2345')
     render(() => <SyncDevicesModal onClose={() => {}} />)
+    expect(sync.startSyncSend).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /Connect/ }))
     expect(sync.startSyncSend).toHaveBeenCalledWith('ABCD2345')
   })
 

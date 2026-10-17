@@ -1036,6 +1036,12 @@ function handleIncomingOffer(manifest: unknown): void {
   const p = peer
   const from = activePeerId
   if (p === null || from === null) return
+  // Only a device that chose to RECEIVE imports a song a peer pushes. A
+  // device that is sending (or never picked a role) dropping the offer is
+  // what stops a pushed-song attack from landing on the wrong side; a
+  // legitimate transfer only ever offers to the receiver, so this never
+  // fires in one.
+  if (syncRole() !== 'receive') return
   if (!isReadableManifest(manifest)) {
     // A manifest this build cannot read — newer app on the other side.
     p.sendControl(from, {
