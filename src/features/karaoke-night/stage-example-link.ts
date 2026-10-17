@@ -57,7 +57,7 @@ export async function exampleSongFromLink(
         return {
           sessionId,
           title:
-            row.originalFile?.name ?? `${manifest.title} — ${manifest.artist}`,
+            row.originalFile?.name ?? `${manifest.title} · ${manifest.artist}`,
           stems: { vocal: outputs?.vocal, instrumental: outputs?.instrumental },
           ...launchFields,
         }
@@ -76,7 +76,7 @@ export async function exampleSongFromLink(
   }
   return {
     sessionId,
-    title: `${manifest.title} — ${manifest.artist}`,
+    title: `${manifest.title} · ${manifest.artist}`,
     stems: manifest.stems,
     ...launchFields,
   }

@@ -58,7 +58,7 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
         (outputs?.instrumental ?? '') === ''
       ) {
         showNotification(
-          "This song's audio isn't on this device anymore — process it again to sing it.",
+          "This song's audio isn't on this device anymore. Process it again to sing it.",
           'warning',
         )
         return

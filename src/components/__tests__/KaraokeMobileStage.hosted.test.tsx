@@ -144,9 +144,10 @@ describe('the zen stage, hosted by the Karaoke room', () => {
     renderInRoom(makeProps({ hosted: hosting() }))
     expect(screen.getByLabelText('Play')).toBeTruthy()
     expect(screen.getByLabelText('Next song')).toBeTruthy()
+    // Its hover title is plain words, no em dash (0.9.19 clips).
     expect(
       screen.getByLabelText('Toggle guide vocals (drag to set their level)'),
-    ).toBeTruthy()
+    ).toHaveAttribute('title', 'Mute the vocals and sing it')
     expect(screen.getByTestId('karaoke-lyrics').textContent).toContain(
       'Goodbye',
     )

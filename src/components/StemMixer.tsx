@@ -1165,7 +1165,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (typeof document === 'undefined') return
     const songName = stripAudioExtension(props.songTitle ?? '').trim()
     document.title =
-      audio.playing() && songName ? `MercuryPitch — ${songName}` : baseDocTitle
+      audio.playing() && songName ? `${songName} | MercuryPitch` : baseDocTitle
   })
   onCleanup(() => {
     if (typeof document !== 'undefined') document.title = baseDocTitle
@@ -2084,12 +2084,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const { linesSynced } = applyAutoWordSync(detectVocalOnsets(buf))
       if (linesSynced > 0) {
         showNotification(
-          `Word sync drafted for ${linesSynced} lines — words now light up as they're sung`,
+          `Word sync drafted for ${linesSynced} lines. Words now light up as they're sung`,
           'success',
         )
       } else {
         showNotification(
-          'Auto word-sync needs line-timed lyrics — load an LRC or run LRC Gen first',
+          'Auto word-sync needs line-timed lyrics. Load an LRC or run LRC Gen first',
           'warning',
         )
       }
@@ -2100,7 +2100,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       confirm.request({
         title: 'Replace word timings?',
         message:
-          'Auto word-sync will replace the existing word timings for this song — including any you tapped by hand. This cannot be undone.',
+          'Auto word-sync will replace the existing word timings for this song, including any you tapped by hand. This cannot be undone.',
         confirmLabel: 'Replace',
         confirmIcon: <AlertTriangle />,
         onConfirm: runSync,
@@ -2292,7 +2292,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const url = await getStemBlobUrl(props.sessionId, part)
       if (url === null) {
         showNotification(
-          "That stem isn't on this device anymore — run the full-band split again to bring it back.",
+          "That stem isn't on this device anymore. Run the full-band split again to bring it back.",
           'warning',
         )
         return
@@ -2307,7 +2307,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         // failed add's blob until unmount. Repeated retries are the case that
         // matters: each one mints another.
         revokeBlobUrl(url)
-        showNotification("Couldn't load that stem — try again.", 'error')
+        showNotification("Couldn't load that stem. Try again.", 'error')
         return
       }
       stemUrlOwner.own(url)
