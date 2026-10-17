@@ -145,14 +145,12 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
       !jamSignalingIsMocked()
     )
       void startSyncReceive()
-    // A scanned code is a complete one, so there is nothing left to ask.
-    // Same idle guard as the receive branch above, and for the same
-    // reason: a session now outlives this dialog, so a QR scanned while
-    // one is running behind the corner chip would switch rooms under a
-    // still-connected peer — the new device is then discarded by
-    // first-device-wins and the old transfer dies with the room.
-    if (scanned !== null && syncState() === 'idle' && !jamSignalingIsMocked())
-      join()
+    // A code from a link or QR pre-fills the field and lands on the send
+    // screen, but it does NOT connect on its own: connecting announces this
+    // device (its label, free space and the hashes of its songs) to the
+    // room and opens it to songs the peer pushes. Opening a URL is not
+    // consent to any of that, so the pairing waits for a deliberate tap on
+    // Connect — which a real QR scan is one tap away from anyway.
   })
 
   const enterReceive = (): void => {
