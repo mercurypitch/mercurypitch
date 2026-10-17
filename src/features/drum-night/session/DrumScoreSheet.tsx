@@ -344,8 +344,20 @@ function currentBarNumber(score: DrumScoreDocument, beat: number): number {
   return low + 1
 }
 
-function tempoCopy(score: DrumScoreDocument): string {
-  return `${score.bpm} BPM opening · ${score.tempoChangeCount} ${score.tempoChangeCount === 1 ? 'tempo change' : 'tempo changes'}`
+const count = (n: number, one: string, many: string): string =>
+  `${n} ${n === 1 ? one : many}`
+
+/**
+ * The score's line under its title, in a player's words: how many hits, how
+ * many bars they fill (the bars drawn below, which cover the last hit and its
+ * written length), and the tempo it starts at.
+ */
+function scoreSummaryCopy(score: DrumScoreDocument): string {
+  const tempo =
+    score.tempoChangeCount === 0
+      ? `${score.bpm} BPM`
+      : `${score.bpm} BPM, then ${count(score.tempoChangeCount, 'tempo change', 'tempo changes')}`
+  return `${count(score.hitCount, 'hit', 'hits')} · ${count(score.bars.length, 'bar', 'bars')} · ${tempo}`
 }
 
 function omissionCopy(
@@ -629,11 +641,7 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                       <span class={styles.viewKicker}>Percussion score</span>
                       <h2 id={titleId}>{currentScore.title}</h2>
                     </div>
-                    <p>
-                      {currentScore.hitCount} mapped hits · authored attack span{' '}
-                      {currentScore.durationBeats.toFixed(2)} quarter-note beats
-                      · {tempoCopy(currentScore)}
-                    </p>
+                    <p>{scoreSummaryCopy(currentScore)}</p>
                   </header>
 
                   <figure class={styles.scoreFigure}>

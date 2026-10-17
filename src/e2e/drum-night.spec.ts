@@ -1646,7 +1646,7 @@ test('hot-edits a playing A B groove with pointer and keyboard without restartin
   await page.getByRole('button', { name: 'Score view' }).click()
   await expect(
     page
-      .getByText(/29 mapped hits · authored attack span/)
+      .getByText(/^29 hits · 2 bars · 84 BPM$/)
       .filter({ visible: true })
       .first(),
   ).toBeVisible()
