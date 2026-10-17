@@ -4933,12 +4933,34 @@ describe('DrumNightApp', () => {
       ),
     )
     const note = screen.getByRole('note')
+    // Ends with a full stop, like every other line on the note.
     await waitFor(() =>
-      expect(note).toHaveTextContent(
-        'Some hits used a backup synth sound because the kit’s samples were not ready.',
+      expect(note.textContent).toBe(
+        'The score is playing. Some hits used a backup synth sound because the kit’s samples were not ready.',
       ),
     )
     expect(note).not.toHaveTextContent(/fallback/i)
+  })
+
+  it('says only that the score is playing when every hit has its sound', async () => {
+    const clock = new TestClock()
+    const ready = readySessionFixture({ title: 'Clean Truth' })
+    renderRoom({
+      clock,
+      importSession: importSessionHarness(ready),
+    })
+    // Mercury Synth: the harness's synth-voiced hits are the kit itself.
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Play Clean Truth' })[0],
+    )
+
+    await waitFor(() =>
+      expect(screen.getByRole('note').textContent).toBe(
+        'The score is playing.',
+      ),
+    )
   })
 
   it('moves the shared timeline from full song through A waiting, active, and clear', async () => {

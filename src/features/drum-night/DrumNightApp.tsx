@@ -1290,17 +1290,15 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         'Some hits used a backup synth sound because the kit’s samples were not ready',
       )
     }
-    const fidelityCopy =
-      fidelity.length === 0
-        ? 'Every hit in the score has a sound.'
-        : `${fidelity.join('. ')}.`
+    // Nothing to report says nothing: the note is then its first sentence.
+    const fidelityCopy = fidelity.length === 0 ? '' : ` ${fidelity.join('. ')}.`
     if (snapshot.status === 'playing') {
-      return `The score is playing. ${fidelityCopy}`
+      return `The score is playing.${fidelityCopy}`
     }
     if (snapshot.status === 'waiting-for-audio') {
-      return `The score is waiting for sound. Press Play or strike a pad, then keep playing. ${fidelityCopy}`
+      return `The score is waiting for sound. Press Play or strike a pad, then keep playing.${fidelityCopy}`
     }
-    return `The score is ready. ${fidelityCopy}`
+    return `The score is ready.${fidelityCopy}`
   })
   /** Scheduler counts that only help a developer, kept off the visible note:
    *  hits queued for a later pass, synth-voiced attacks, unreported routes. */
