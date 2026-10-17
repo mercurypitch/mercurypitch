@@ -49,8 +49,8 @@ import { createQuietWatch, WALL_CLOCK } from '@/components/room-kit/quiet-watch'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { offerable, QUIET_LIMIT_SECONDS, SILENT_VOICE, } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
+import { openRoomMic } from '@/components/room-kit/room-mic'
 import { createRoomTones } from '@/components/room-kit/room-tones'
-import { CaptureError } from '@/components/room-kit/useExerciseCapture'
 import { newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
@@ -530,48 +530,36 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   }
 
   // ── What the singer does ───────────────────────────────────
+  /**
+   * The mic opens inside the tap, then the clock the room's tones play on
+   * (room-kit room-mic.ts); the run, or its settle, starts once both have.
+   */
   const openMic = (): void => {
-    const { run } = untrack(state)
-    const stands = (): boolean =>
-      life.alive() && phase() === 'starting' && untrack(state).run === run
-    void capture
-      .acquire()
-      // A take the app's leaving dropped meanwhile unlocks nothing.
-      .then(() => (stands() ? capture.audio() : null))
-      .then(
-        (ctx) => {
-          if (!stands()) return
-          if (ctx === null) {
-            dispatch({ type: 'mic-failed', run, block: 'unavailable' })
-            setMoment('intro')
-            return
-          }
-          audio = ctx
-          quiet.heard()
-          const fit = knownFit()
-          const rooted = fit.source !== 'preset'
-          dispatch({ type: 'mic-ready', run, rooted })
-          if (rooted) begin(fit, null)
-          else {
-            openWindow()
-            settling = true
-            setMoment('countIn')
-            loop.start()
-          }
-          // The page went away while the microphone opened.
-          if (document.visibilityState === 'hidden') leave()
-        },
-        (error: unknown) => {
-          if (!stands()) return
-          dispatch({
-            type: 'mic-failed',
-            run,
-            block:
-              error instanceof CaptureError ? error.failure : 'unavailable',
-          })
-          setMoment('intro')
-        },
-      )
+    openRoomMic({
+      capture,
+      alive: life.alive,
+      state,
+      clock: true,
+      onOpen: (run, ctx) => {
+        audio = ctx
+        quiet.heard()
+        const fit = knownFit()
+        const rooted = fit.source !== 'preset'
+        dispatch({ type: 'mic-ready', run, rooted })
+        if (rooted) begin(fit, null)
+        else {
+          openWindow()
+          settling = true
+          setMoment('countIn')
+          loop.start()
+        }
+      },
+      onFail: (run, block) => {
+        dispatch({ type: 'mic-failed', run, block })
+        setMoment('intro')
+      },
+      onHidden: leave,
+    })
   }
 
   const start = (): void => {
