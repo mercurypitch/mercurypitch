@@ -740,7 +740,7 @@ export function coachDrumSession(
     meanAbsoluteVelocityOffset !== null &&
     meanAbsoluteVelocityOffset >= VELOCITY_CENTRED_WINDOW
   ) {
-    observation = `Timing stayed centered; captured velocities differed from the authored accents by ${Math.round(meanAbsoluteVelocityOffset)} on average.`
+    observation = `Timing stayed centered; hits were about ${Math.round(meanAbsoluteVelocityOffset)} velocity points (of 127) off the written accents.`
   } else {
     observation = `Matched attacks stayed within ${Math.round(meanAbsoluteTimingOffsetMs)} ms of the authored grid on average.`
   }

@@ -40,11 +40,9 @@ export function DrumKitWorkspace(props: DrumKitWorkspaceProps) {
       if (!snapshot.fallbackReady) {
         return 'Audio start failed · retry from this control'
       }
-      const progress =
-        snapshot.plannedSamples > 0
-          ? `${snapshot.preparedSamples} of ${snapshot.plannedSamples} core samples ready · `
-          : ''
-      return `${progress}sample warm-up stopped · synth fallback active`
+      return snapshot.plannedSamples > 0
+        ? `Only ${snapshot.preparedSamples} of ${snapshot.plannedSamples} samples loaded · a backup synth sound plays for the rest`
+        : 'The kit’s samples did not load · a backup synth sound plays instead'
     }
     if (manifest.engine === 'synth') {
       return snapshot.fallbackReady
@@ -52,7 +50,7 @@ export function DrumKitWorkspace(props: DrumKitWorkspaceProps) {
         : 'Selected · activates on your first action'
     }
     if (snapshot.status === 'loading') {
-      return `Loading ${snapshot.preparedSamples} of ${snapshot.plannedSamples} core samples · synth fallback active`
+      return `Loading samples: ${snapshot.preparedSamples} of ${snapshot.plannedSamples} · a backup synth sound plays until they are ready`
     }
     if (snapshot.sampledReady || snapshot.status === 'ready') {
       const coreCopy =
@@ -60,12 +58,12 @@ export function DrumKitWorkspace(props: DrumKitWorkspaceProps) {
           ? `${snapshot.loadedSamples} samples ready`
           : 'Sample preparation complete'
       if (snapshot.sampleStatus === 'fallback') {
-        return `${coreCopy} · some kit articulations use Mercury Synth because their samples did not pass quality calibration`
+        return `${coreCopy} · a few sounds play Mercury Synth because their samples did not pass our quality check`
       }
       if (snapshot.sampleStatus === 'reduced') {
-        return `${coreCopy} · some kit articulations have reduced sample coverage; Mercury Synth covers unavailable sounds`
+        return `${coreCopy} · some sounds have fewer samples, and Mercury Synth plays the missing ones`
       }
-      return `${coreCopy} · per-hit synth fallback remains available`
+      return coreCopy
     }
     return 'Selected · samples warm after your first audio action'
   })
@@ -87,8 +85,8 @@ export function DrumKitWorkspace(props: DrumKitWorkspaceProps) {
         <span>Sound and mapping</span>
         <h3>{props.selectedKit().name}</h3>
         <p>
-          {props.selectedKit().character}. Each sampled flavor loads only after
-          an audio action and falls back per strike.
+          {props.selectedKit().character}. Sampled kits load on your first tap
+          or Play; a backup synth plays until then.
         </p>
         <div
           class={styles.kitLoadStatus}

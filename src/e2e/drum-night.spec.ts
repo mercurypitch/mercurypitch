@@ -1276,7 +1276,7 @@ test('plays a real prepared groove and changes its authored variation @smoke', a
     .toBeGreaterThan(0)
   const oscillatorBaseline = (await boundaryCounts(page)).oscillator
   await page
-    .getByRole('button', { name: /^Play First Pocket — Funk take clock$/ })
+    .getByRole('button', { name: /^Play First Pocket — Funk$/ })
     .filter({ visible: true })
     .click()
 
@@ -1504,7 +1504,7 @@ test('hot-edits a playing A B groove with pointer and keyboard without restartin
 
   await page.getByRole('button', { name: 'Count-in: 4 audible beats' }).click()
   await page
-    .getByRole('button', { name: /^Play First Pocket take clock$/ })
+    .getByRole('button', { name: /^Play First Pocket$/ })
     .filter({ visible: true })
     .click()
   await expect(shell).toHaveAttribute('data-playing', 'true')
@@ -1615,7 +1615,7 @@ test('hot-edits a playing A B groove with pointer and keyboard without restartin
     }),
   ).toBeVisible()
   await expect(
-    page.getByText(/Built-in groove · 29 mapped hits · 84 BPM take clock/),
+    page.getByText(/Built-in groove · 29 hits · 84 BPM/),
   ).toBeVisible()
   await expect(shell).toHaveAttribute('data-playing', 'true')
 
@@ -1816,7 +1816,7 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
   )
 
   const play = page
-    .getByRole('button', { name: /^Play .* take clock$/ })
+    .getByRole('button', { name: 'Play e2e-pocket', exact: true })
     .filter({ visible: true })
   await play.click()
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
@@ -1825,8 +1825,7 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
   )
   await expect(
     page.getByRole('status').filter({
-      hasText:
-        'e2e-pocket is starting on the shared take clock with take events armed.',
+      hasText: 'e2e-pocket is starting, recording your hits.',
     }),
   ).toBeAttached()
 
@@ -1962,9 +1961,7 @@ test('keeps a mixed authored MIDI on one Score, mixer, and timeline clock @smoke
   ).toBeVisible()
   expect(playerLoads).toEqual([])
   await page.getByRole('button', { name: 'Close rack drawer' }).click()
-  await page
-    .getByRole('button', { name: /^Play mixed-band take clock$/ })
-    .click()
+  await page.getByRole('button', { name: /^Play mixed-band$/ }).click()
   await expect
     .poll(() =>
       page.evaluate(
@@ -2057,7 +2054,7 @@ test('keeps a saved two-stem source metadata-only until Play hydrates its audio 
   expect(await stemPayloadReads(page)).toBe(0)
 
   await page
-    .getByRole('button', { name: 'Play two-stem-drive.wav song clock' })
+    .getByRole('button', { name: 'Play two-stem-drive.wav', exact: true })
     .filter({ visible: true })
     .first()
     .click()
@@ -2137,7 +2134,7 @@ test('hydrates only reconstructed Source Drums and Backing after an inert full-m
 
   await page.getByRole('button', { name: 'Close rack drawer' }).click()
   await page
-    .getByRole('button', { name: 'Play full-band-room.wav song clock' })
+    .getByRole('button', { name: 'Play full-band-room.wav', exact: true })
     .filter({ visible: true })
     .first()
     .click()
@@ -2233,7 +2230,7 @@ test('sets, moves, clears, and scrubs the authored A B loop with a real pointer 
     page.getByRole('button', { name: 'Count-in: off' }),
   ).toBeVisible()
   await page
-    .getByRole('button', { name: 'Play First Pocket take clock' })
+    .getByRole('button', { name: 'Play First Pocket', exact: true })
     .filter({ visible: true })
     .click()
   await expect(shell).toHaveAttribute('data-playing', 'true')
@@ -2619,7 +2616,7 @@ test('recomposes for phone and short landscape without overflow or clipped prima
       const visiblePlay = [...document.querySelectorAll<HTMLElement>('button')]
         .filter(visible)
         .find((button) =>
-          /^(?:Play|Pause) .+ take clock$/.test(
+          /^(?:Play|Pause) First Pocket$/.test(
             button.getAttribute('aria-label') ?? '',
           ),
         )
@@ -3349,7 +3346,7 @@ test('retains failed take evidence through retry and clears only a confirmed dis
     .locator('[aria-label="Pocket Console drum kit"]')
     .getByRole('button', { name: /^Acoustic snare, key/i })
   const play = page
-    .getByRole('button', { name: /^Play First Pocket take clock$/ })
+    .getByRole('button', { name: /^Play First Pocket$/ })
     .filter({ visible: true })
   await clickWithRealMouse(page, play)
   await expect(shell).toHaveAttribute('data-playing', 'true')
@@ -3357,7 +3354,7 @@ test('retains failed take evidence through retry and clears only a confirmed dis
   await clickWithRealMouse(
     page,
     page
-      .getByRole('button', { name: /^Pause First Pocket take clock$/ })
+      .getByRole('button', { name: /^Pause First Pocket$/ })
       .filter({ visible: true }),
   )
 
@@ -3401,14 +3398,14 @@ test('retains failed take evidence through retry and clears only a confirmed dis
   await clickWithRealMouse(
     page,
     page
-      .getByRole('button', { name: /^Play First Pocket take clock$/ })
+      .getByRole('button', { name: /^Play First Pocket$/ })
       .filter({ visible: true }),
   )
   await clickWithRealMouse(page, photoSnare)
   await clickWithRealMouse(
     page,
     page
-      .getByRole('button', { name: /^Pause First Pocket take clock$/ })
+      .getByRole('button', { name: /^Pause First Pocket$/ })
       .filter({ visible: true }),
   )
   await expect(

@@ -429,7 +429,7 @@ function PocketStage(props: PocketStageProps): JSX.Element {
       const meter = props.meter()
       return `Bar ${meter.barNumber} · ${meter.numerator}/${meter.denominator} · beat ${meter.pulseIndex + 1}`
     }
-    if (state.phase === 'paused') return 'Paused on the shared take clock'
+    if (state.phase === 'paused') return 'Paused · press Play to continue'
     return props.imported
       ? 'Press Play to follow this two-bar song window'
       : 'Press Play to hear and follow the two-bar phrase'
@@ -897,9 +897,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     if (snapshot.status === 'waiting-for-audio')
       return 'Press Play to arm audio'
     if (snapshot.status === 'count-in') return 'Sounding the count-in'
-    if (snapshot.status === 'playing') return 'Following the take clock'
+    if (snapshot.status === 'playing') return 'On the beat'
     if (snapshot.status === 'error') return 'Audio unavailable'
-    return 'Ready on the shared clock'
+    return 'Ready'
   })
   const feelStyleLabel = createMemo(
     () =>
@@ -1186,9 +1186,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     if (state === 'saved') return 'Saved on this device'
     return 'Not saved · retry'
   })
-  const transportClockLabel = createMemo(() =>
-    usingStemBacking() ? 'song clock' : 'take clock',
-  )
   const roomLabel = createMemo(
     () =>
       getBackgroundDefinition(background.resolved().id)?.label ??
@@ -1202,7 +1199,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           ? 'Separated source audio'
           : 'Two-stem source audio'
       const duration = stemPlayAlongSnapshot().durationSeconds
-      return `${source} · ${duration > 0 ? formatSessionTime(duration) : 'loads on Play'} · shared song clock`
+      return `${source} · ${duration > 0 ? formatSessionTime(duration) : 'loads on Play'}`
     }
     const document = readySession()
     const source =
@@ -1211,7 +1208,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         : document.sourceFormat === 'guitar-pro'
           ? 'Guitar Pro'
           : 'Built-in groove'
-    return `${source} · ${document.hitCount} mapped hits · ${formatTempoBpm(transport().tempoBpm)} BPM take clock`
+    return `${source} · ${document.hitCount} ${document.hitCount === 1 ? 'hit' : 'hits'} · ${formatTempoBpm(transport().tempoBpm)} BPM`
   })
   const sessionImportCopy = createMemo(() => {
     const state = sessionState()
@@ -1267,11 +1264,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         `${snapshot.capacityOmittedOccurrenceCount} delayed ${snapshot.capacityOmittedOccurrenceCount === 1 ? 'hit missed' : 'hits missed'} the bounded scheduling window and stayed silent`,
       )
     }
-    if (snapshot.deferredOccurrenceCount > 0) {
-      fidelity.push(
-        `${snapshot.deferredOccurrenceCount} in-range ${snapshot.deferredOccurrenceCount === 1 ? 'hit is' : 'hits are'} waiting for a later bounded scheduling pass`,
-      )
-    }
     if (snapshot.omittedTempoChangeCount > 0) {
       fidelity.push(
         `${snapshot.omittedTempoChangeCount} source tempo ${snapshot.omittedTempoChangeCount === 1 ? 'change was' : 'changes were'} omitted from the bounded playback map`,
@@ -1287,27 +1279,50 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         `${silentTriggerCount} scheduled ${silentTriggerCount === 1 ? 'attack was' : 'attacks were'} silent because the active kit reported an unmapped or dropped route`,
       )
     }
-    if (snapshot.triggerCounts.synthFallback > 0) {
+    // A sampled kit that had to voice a hit with the synth means a sample
+    // was not ready, which the player hears. On Mercury Synth that sound is
+    // the kit the player chose, so there is nothing to tell them.
+    if (
+      snapshot.triggerCounts.synthFallback > 0 &&
+      selectedKit().engine === 'sampled'
+    ) {
       fidelity.push(
-        `${snapshot.triggerCounts.synthFallback} ${snapshot.triggerCounts.synthFallback === 1 ? 'attack is' : 'attacks are'} using synth fallback`,
-      )
-    }
-    if (snapshot.triggerCounts.unreported > 0) {
-      fidelity.push(
-        `${snapshot.triggerCounts.unreported} scheduled ${snapshot.triggerCounts.unreported === 1 ? 'attack has' : 'attacks have'} no routing report from the player`,
+        'Some hits used a backup synth sound because the kit’s samples were not ready',
       )
     }
     const fidelityCopy =
       fidelity.length === 0
-        ? 'All indexed source hits use supported General MIDI articulations.'
+        ? 'Every hit in the score has a sound.'
         : `${fidelity.join('. ')}.`
     if (snapshot.status === 'playing') {
-      return `Authored percussion is on the shared take clock. ${fidelityCopy}`
+      return `The score is playing. ${fidelityCopy}`
     }
     if (snapshot.status === 'waiting-for-audio') {
-      return `Authored playback is waiting for active drum audio. Press Play or strike a pad, then continue the take. ${fidelityCopy}`
+      return `The score is waiting for sound. Press Play or strike a pad, then keep playing. ${fidelityCopy}`
     }
-    return `Authored percussion is ready on the shared take clock. ${fidelityCopy}`
+    return `The score is ready. ${fidelityCopy}`
+  })
+  /** Scheduler counts that only help a developer, kept off the visible note:
+   *  hits queued for a later pass, synth-voiced attacks, unreported routes. */
+  const authoredPlaybackDiagnostics = createMemo(() => {
+    const snapshot = schedulerSnapshot()
+    const detail: string[] = []
+    if (snapshot.deferredOccurrenceCount > 0) {
+      detail.push(
+        `${snapshot.deferredOccurrenceCount} in-range ${snapshot.deferredOccurrenceCount === 1 ? 'hit is' : 'hits are'} waiting for a later bounded scheduling pass`,
+      )
+    }
+    if (snapshot.triggerCounts.synthFallback > 0) {
+      detail.push(
+        `${snapshot.triggerCounts.synthFallback} ${snapshot.triggerCounts.synthFallback === 1 ? 'attack' : 'attacks'} used synth fallback`,
+      )
+    }
+    if (snapshot.triggerCounts.unreported > 0) {
+      detail.push(
+        `${snapshot.triggerCounts.unreported} scheduled ${snapshot.triggerCounts.unreported === 1 ? 'attack has' : 'attacks have'} no routing report from the player`,
+      )
+    }
+    return detail.length === 0 ? undefined : `${detail.join('. ')}.`
   })
   const stageCopy = createMemo(() => {
     if (usingStemBacking()) {
@@ -2633,9 +2648,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           setView('score')
           setDrawerOpen(false)
           updateUrl('score', null)
-          showToast(
-            `${attempt.state.document.title} is ready. The score now follows the shared take clock.`,
-          )
+          showToast(`${attempt.state.document.title} is ready to play along.`)
           return
         }
         showToast(
@@ -2809,8 +2822,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     }
     announceOnly(
       usingStemBacking()
-        ? `${sessionTitle()} is preparing on the shared song clock.`
-        : `${sessionTitle()} is starting on the shared take clock${recordingChoiceMade() && !transport().recording ? '.' : ' with take events armed.'}`,
+        ? `${sessionTitle()} is loading.`
+        : `${sessionTitle()} is starting${recordingChoiceMade() && !transport().recording ? '.' : ', recording your hits.'}`,
     )
     setPlayRequestPending(true)
     const selectedSource = selectedBackingSource()
@@ -3040,8 +3053,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     clickController.enable(enabled)
     showToast(
       enabled
-        ? 'Click enabled. It will join the shared clock when audio starts.'
-        : 'Click muted. The authored groove and take clock keep running.',
+        ? 'Click on. It joins in when the sound starts.'
+        : 'Click muted. The groove keeps playing.',
     )
   }
 
@@ -3979,6 +3992,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     <p
                       class={styles.authoredPlaybackNotice}
                       data-status={schedulerSnapshot().status}
+                      data-diagnostics={authoredPlaybackDiagnostics()}
                       role="note"
                     >
                       {authoredPlaybackCopy()}
@@ -4886,7 +4900,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               type="button"
               disabled={transport().phase === 'stopped'}
               onClick={stopTake}
-              aria-label={`Stop and return the ${transportClockLabel()} to ${usingStemBacking() ? 'the start' : 'beat one'}`}
+              aria-label={`Stop and go back to ${usingStemBacking() ? 'the start' : 'beat one'}`}
             >
               <Square />
             </button>
@@ -4898,7 +4912,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               aria-label={
                 playLoadingShown()
                   ? `Loading ${sessionTitle()} audio`
-                  : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`
+                  : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()}`
               }
             >
               <Show
@@ -4972,7 +4986,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             aria-label={
               playLoadingShown()
                 ? `Loading ${sessionTitle()} audio`
-                : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`
+                : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()}`
             }
           >
             <Show
