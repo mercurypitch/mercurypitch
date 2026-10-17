@@ -23,8 +23,12 @@ import { createEffect, createRoot, createSignal, on } from 'solid-js'
 import type { UnlockItem } from '@/lib/unlock-copy'
 import { unlockSummary } from '@/lib/unlock-copy'
 import { isNarrow } from '@/lib/use-viewport'
+import type { ClaimedUnlock } from './unlock-claims'
+import { currentClaim, resetUnlockClaims } from './unlock-claims'
 
 export type { UnlockItem } from '@/lib/unlock-copy'
+export type { ClaimedUnlock } from './unlock-claims'
+export { claimUnlocks, onUnlockShown, unlockShown } from './unlock-claims'
 
 export interface NotificationAction {
   label: string
@@ -291,7 +295,7 @@ export function showNotification(
   const unlock = opts?.unlock
 
   if (unlock !== undefined) {
-    const claim = claims.at(-1)
+    const claim = currentClaim()
     if (claim !== undefined) {
       claim({ message, type, unlock })
       return
@@ -393,60 +397,9 @@ function mergeUnlock(unlock: UnlockItem): boolean {
   return true
 }
 
-// ── Claims: a room that shows its own unlocks ─────────────────
-
-/** An unlock, as it was announced, handed to the room that claimed it. */
-export interface ClaimedUnlock {
-  readonly message: string
-  readonly type: Notification['type']
-  readonly unlock: UnlockItem
-}
-
-const claims: Array<(claimed: ClaimedUnlock) => void> = []
-
-/**
- * Take every unlock announced from now on, until the returned release is
- * called. The latest claim wins; releasing it hands unlocks back to the one
- * before, or to the notices.
- *
- * A grant pass that is still in flight when its room is left lands after
- * the release, and so raises a notice like any other: nothing is lost by
- * leaving early.
- */
-export function claimUnlocks(
-  receive: (claimed: ClaimedUnlock) => void,
-): () => void {
-  claims.push(receive)
-  return () => {
-    const at = claims.lastIndexOf(receive)
-    if (at >= 0) claims.splice(at, 1)
-  }
-}
-
-/** Announce an unlock the claim held and never showed, as a notice. */
+/** Announce an unlock a room's claim held and never showed, as a notice. */
 export function announceUnclaimed(claimed: ClaimedUnlock): void {
   showNotification(claimed.message, claimed.type, { unlock: claimed.unlock })
-}
-
-// ── Unlocks on screen: a tap you can feel ─────────────────────
-
-const unlockListeners = new Set<() => void>()
-
-/**
- * Call `listener` whenever an unlock reaches the screen, in a pill or in a
- * room's chip. The native shell answers with a light haptic; `src/` cannot
- * reach the device's haptics itself (native-shell-store.ts explains why).
- */
-export function onUnlockShown(listener: () => void): () => void {
-  unlockListeners.add(listener)
-  return () => {
-    unlockListeners.delete(listener)
-  }
-}
-
-/** Something just put an unlock on screen. */
-export function unlockShown(): void {
-  for (const listener of unlockListeners) listener()
 }
 
 /** Show a notification with an action button (e.g. "Undo"). */
@@ -519,8 +472,7 @@ export function resetNotifications(): void {
   timers.clear()
   deadlines.clear()
   waiting.length = 0
-  claims.length = 0
-  unlockListeners.clear()
+  resetUnlockClaims()
   setPresenter('toast')
   setNotifications([])
 }

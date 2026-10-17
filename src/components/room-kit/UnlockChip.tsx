@@ -55,7 +55,7 @@ export function UnlockChip(props: UnlockChipProps): JSX.Element {
   const unlocks = createRoomUnlocks(() => props.atResult)
   const [open, setOpen] = createSignal(false)
   const items = unlocks.items
-  const listId = `${props.testId}-list`
+  const listId = (): string => `${props.testId}-list`
 
   // A fresh set starts folded.
   createEffect(
@@ -88,7 +88,7 @@ export function UnlockChip(props: UnlockChipProps): JSX.Element {
             type="button"
             class={`${styles.chip} ${styles.button}`}
             aria-expanded={open()}
-            aria-controls={listId}
+            aria-controls={listId()}
             data-testid={`${props.testId}-chip`}
             onClick={() => setOpen((was) => !was)}
           >
@@ -104,7 +104,7 @@ export function UnlockChip(props: UnlockChipProps): JSX.Element {
           </button>
           <Show when={open()}>
             <ul
-              id={listId}
+              id={listId()}
               class={styles.list}
               data-testid={`${props.testId}-list`}
             >

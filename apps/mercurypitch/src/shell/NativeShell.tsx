@@ -28,7 +28,7 @@ import { TAB_HOME } from '@/features/tabs/constants'
 import { KARAOKE_IMPORT, PREMIUM_EXERCISES } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
-import { onUnlockShown, setNotificationPresenter, } from '@/stores/notifications-store'
+import { onUnlockShown, setNotificationPresenter, showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { practiceScope } from '@/stores/settings-store'
 import { RoomsAlley } from '../alley/RoomsAlley'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
@@ -224,6 +224,12 @@ export const NativeShell: Component = () => {
     // `exposeForE2E` writes nothing unless `window.E2E_TEST_MODE` is set, so
     // a shipped build carries the call and not the global.
     exposeForE2E('mpShellBack', () => performBack(shellBackHost()))
+    // Notices, raised the way the app raises them, for the walk that checks
+    // where the pill lands (scripts/probe-notices.mjs). Gated the same way.
+    exposeForE2E('mpNotices', {
+      show: showNotification,
+      showAction: showActionNotification,
+    })
 
     // Escape closes the column, which is the only thing on this surface that
     // traps a keyboard user.

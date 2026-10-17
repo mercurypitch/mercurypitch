@@ -31,7 +31,7 @@
 // phone, appearance, Karaoke, About, Developer); the account signed out and
 // signed in, its name and devices, deleting it; the sign-in sheet down to its
 // code pane; Piano and Guitar; Karaoke with its library, options and studio,
-// playing; a toast; and the refused microphone's way back.
+// playing; a notice; and the refused microphone's way back.
 //
 // A surface this walk cannot reach is a finding of its own, not a pass: the
 // page is loaded afresh and the next section still runs, so one broken door
@@ -813,15 +813,15 @@ async function signedIn(browser, args, frame, kit, results) {
               '[data-testid="account-screen"]',
               'account-signed-in',
             )
-            // A toast: the relay address copied, or why it was not.
+            // A notice: the relay address copied, or why it was not. The
+            // native shell draws it as its pill under the status bar
+            // (NoticePill.tsx), once it has found its place.
             await go.toTop()
             await page.locator('[data-testid="account-copy-address"]').click()
-            const toasts = '[role="region"][aria-label="Notifications"]'
-            await go.visible(
-              `${toasts} [role="status"], ${toasts} [role="alert"]`,
-            )
+            const pill = '[data-testid="notice-pill"].is-placed'
+            await go.visible(pill)
             await go.settle()
-            await go.measure('toast', toasts)
+            await go.measure('toast', pill)
             await go.row(
               'account-name',
               '[data-testid="account-name-screen"]',
