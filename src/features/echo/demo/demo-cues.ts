@@ -16,6 +16,7 @@
 
 import type { DemoCue as KitDemoCue, DemoMark as KitDemoMark, DemoTimeline, } from '@/components/demo-kit/demo-plan'
 import { planDemo } from '@/components/demo-kit/demo-plan'
+import { DEMO_WORDS } from '@/components/demo-kit/demo-words'
 import type { EchoDemoMark, EchoDemoTake } from './demo-script'
 import { demoTake } from './demo-script'
 
@@ -103,24 +104,12 @@ export const DEMO_BEATS = {
   afterOn: 4.4,
 } as const
 
-/** The demo's words. No em dashes; "practice", never "practise". */
-export const DEMO_COPY = {
-  watch: 'Watch me first.',
-  off: 'Not like this',
-  on: 'Like this',
-  skip: 'Skip',
-  ask: 'How it works',
-  cardTitle: 'See how it works',
-  cardLine: 'Merc sings it first. Turn your sound on.',
-  watchButton: 'Watch',
-  notNow: 'Not now',
-  endTitle: 'Your turn',
-  tryIt: 'Try it',
-  again: 'Watch again',
-  // Merc's own line says what comes first: his phrase, or the singer's
-  // easy note when the room has no root yet.
-  micHint: 'Tap the mic to start.',
-} as const
+/**
+ * The demo's words: the kit's (demo-kit demo-words.ts), its mic hint too.
+ * Merc's own line says what comes first: his phrase, or the singer's easy
+ * note when the room has no root yet.
+ */
+export const DEMO_COPY = DEMO_WORDS
 
 /** A tooltip's words: what the voice did, and what to do about it. */
 export function demoCueText(id: DemoCueId): string {

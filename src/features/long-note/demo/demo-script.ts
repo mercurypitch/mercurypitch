@@ -26,14 +26,18 @@
 // them, and so do Merc's hop and cheers.
 
 import type { DemoEvent as KitDemoEvent, DemoTakeId, DemoTakeShape, DemoVoicePoint, FastStretch, } from '@/components/demo-kit/demo-plan'
-import { midiToFrequency } from '@/lib/frequency-to-note'
+import type { DemoSegment as Segment } from '@/components/demo-kit/demo-segments'
+import { eventAt, segmentTracker, segmentVoice, } from '@/components/demo-kit/demo-segments'
+import { FRAME_SECONDS } from '@/components/demo-kit/demo-voice'
 import type { HoldEventType, HoldPreset } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
-import { seeded } from '@/lib/mirror/demo-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 
 export type { DemoTakeId, DemoVoicePoint, FastStretch }
+
+// Merc's loudness as the tracker hears it (the demo kit's voice).
+export { rmsForLevel } from '@/components/demo-kit/demo-voice'
 
 export type DemoEvent = KitDemoEvent<HoldEventType>
 
@@ -63,12 +67,6 @@ export const DEMO_VIBRATO = {
 /** Engine seconds per wall second in take 2's fast-forwards. */
 export const DEMO_FAST_RATE = 4
 
-const FRAME_SECONDS = 1 / 60
-const VOICE_STEP = 0.025
-const CONF = 0.92
-const SILENT_RMS = 0.001
-/** Pitch-tracker grain on the frames, cents (not in the synth). */
-const JITTER_CENTS = 1.2
 /** Take 2 starts its first fast-forward this long after the lock. */
 const FAST_AFTER_LOCK = 1.8
 /**
@@ -84,16 +82,6 @@ const STEP_OUT_SECONDS = 0.8
 const RELEASE_AFTER_BRIM = 0.35
 /** Frames kept past the end of the note. */
 const TAIL = 0.1
-
-type Segment =
-  | { readonly kind: 'rest'; readonly until: number }
-  | {
-      readonly kind: 'sing'
-      readonly until: number
-      /** Off the note, from and to, eased between. */
-      readonly cents: readonly [number, number]
-      readonly level: readonly [number, number]
-    }
 
 /**
  * Take 1, not like this: a breath, a scoop up onto the note, two seconds on
@@ -119,93 +107,6 @@ function onSegments(releaseAt: number): readonly Segment[] {
   ]
 }
 
-const smooth = (k: number): number => k * k * (3 - 2 * k)
-
-interface Sung {
-  /** Off the note, cents, before wander and vibrato. */
-  cents: number
-  level: number
-  /** When this run of singing began; null in a rest. */
-  onset: number | null
-}
-
-/** The script at one engine time. */
-function sample(segments: readonly Segment[], t: number): Sung {
-  let from = 0
-  let onset: number | null = null
-  for (const segment of segments) {
-    if (segment.kind === 'rest') onset = null
-    else onset ??= from
-    if (t < segment.until) {
-      if (segment.kind === 'rest') return { cents: 0, level: 0, onset: null }
-      const k = smooth(Math.min(1, (t - from) / (segment.until - from)))
-      return {
-        cents: segment.cents[0] + (segment.cents[1] - segment.cents[0]) * k,
-        level: segment.level[0] + (segment.level[1] - segment.level[0]) * k,
-        onset,
-      }
-    }
-    from = segment.until
-  }
-  return { cents: 0, level: 0, onset: null }
-}
-
-/** A slow, seeded wander of a few cents: a voice is never a sine. */
-function wanderFor(seed: number): (t: number) => number {
-  const rand = seeded(seed)
-  const parts = [1.3, 0.8, 0.5].map((amp) => ({
-    amp,
-    hz: 0.25 + rand() * 0.55,
-    phase: rand() * Math.PI * 2,
-  }))
-  return (t) =>
-    parts.reduce(
-      (sum, p) => sum + p.amp * Math.sin(2 * Math.PI * p.hz * t + p.phase),
-      0,
-    )
-}
-
-/** The vibrato's swing at time t of a run that began at `onset`. */
-export function demoVibratoCents(t: number, onset: number): number {
-  const grown = Math.min(1, Math.max(0, (t - onset) / DEMO_VIBRATO.rampSec))
-  return (
-    DEMO_VIBRATO.cents * grown * Math.sin(2 * Math.PI * DEMO_VIBRATO.hz * t)
-  )
-}
-
-/** Merc's 0..1 loudness as an RMS level (the inverse of levelFromRms). */
-export function rmsForLevel(level: number): number {
-  return Math.pow(10, (level * 40 - 50) / 20)
-}
-
-/**
- * A take's voice as the pitch tracker hears it: the frame at engine time
- * t of the script `segments`, on the take's own seeded wander and grain.
- * Called once a frame, in order: the grain is a sequence.
- */
-function trackerFor(
-  note: number,
-  seed: number,
-): (segments: readonly Segment[], t: number) => PitchFrame {
-  const wander = wanderFor(seed)
-  const grain = seeded(seed + 7)
-  return (segments, t) => {
-    const sung = sample(segments, t)
-    if (sung.onset === null || sung.level <= 0) {
-      return { t, f0: 0, conf: 0, rms: SILENT_RMS }
-    }
-    const jitter = (grain() - 0.5 + (grain() - 0.5)) * JITTER_CENTS
-    const cents =
-      sung.cents + wander(t) + demoVibratoCents(t, sung.onset) + jitter
-    return {
-      t,
-      f0: midiToFrequency(note + cents / 100),
-      conf: CONF,
-      rms: rmsForLevel(sung.level),
-    }
-  }
-}
-
 /** The longest a take may run before its note must have ended. */
 const LONGEST_TAKE = 60
 
@@ -229,7 +130,7 @@ function singTake(
   seed: number,
   rewrite: (event: DemoEvent) => readonly Segment[] | null = () => null,
 ): SungTake {
-  const frameAt = trackerFor(note, seed)
+  const frameAt = segmentTracker(note, seed, DEMO_VIBRATO)
   let script = segments
   let state = createHoldState()
   let previous: PitchFrame | null = null
@@ -293,37 +194,6 @@ function clocks(
   }
 }
 
-function eventAt(events: readonly DemoEvent[], type: HoldEventType): number {
-  const event = events.find((e) => e.type === type)
-  if (event === undefined) {
-    throw new Error(`Long note demo: the script never reaches '${type}'`)
-  }
-  return event.at
-}
-
-function voiceFor(
-  segments: readonly Segment[],
-  seed: number,
-  clock: Pick<DemoTake, 'engineAt'>,
-  length: number,
-): DemoVoicePoint[] {
-  const wander = wanderFor(seed)
-  const points: DemoVoicePoint[] = []
-  const count = Math.ceil(length / VOICE_STEP)
-  for (let i = 0; i <= count; i++) {
-    const w = i * VOICE_STEP
-    const e = clock.engineAt(w)
-    const sung = sample(segments, e)
-    const voiced = sung.onset !== null && sung.level > 0
-    points.push({
-      t: w,
-      cents: voiced ? sung.cents + wander(e) : 0,
-      level: voiced ? sung.level : 0,
-    })
-  }
-  return points
-}
-
 function buildTake(
   id: DemoTakeId,
   sung: SungTake,
@@ -331,7 +201,7 @@ function buildTake(
   fast: DemoTake['fast'],
 ): DemoTake {
   const clock = clocks(fast)
-  const length = clock.wallAt(eventAt(sung.events, 'end'))
+  const length = clock.wallAt(eventAt(sung.events, 'end', 'Long note'))
   return {
     id,
     preset: DEMO_PRESET,
@@ -339,7 +209,7 @@ function buildTake(
     events: sung.events,
     fast,
     ...clock,
-    voice: voiceFor(sung.segments, seed, clock, length),
+    voice: segmentVoice(sung.segments, seed, length, clock.engineAt),
     length,
   }
 }
@@ -366,9 +236,9 @@ function onTake(note: number): DemoTake {
     (event) =>
       event.type === 'brim' ? onSegments(event.at + RELEASE_AFTER_BRIM) : null,
   )
-  const lock = eventAt(sung.events, 'lock')
-  const goal = eventAt(sung.events, 'goal')
-  const brim = eventAt(sung.events, 'brim')
+  const lock = eventAt(sung.events, 'lock', 'Long note')
+  const goal = eventAt(sung.events, 'goal', 'Long note')
+  const brim = eventAt(sung.events, 'brim', 'Long note')
   return buildTake('on', sung, ON_SEED, [
     { from: lock + FAST_AFTER_LOCK, to: goal },
     { from: goal + STEP_OUT_SECONDS, to: brim },

@@ -11,6 +11,7 @@
 
 import type { DemoCue, DemoTakeId, DemoTakeShape, DemoTimeline, } from '@/components/demo-kit/demo-plan'
 import { planDemo } from '@/components/demo-kit/demo-plan'
+import { DEMO_WORDS } from '@/components/demo-kit/demo-words'
 import type { GlideDemoMark } from './glide-room-contract'
 
 /** The least time a tooltip stays up, s: two short lines, read aloud. */
@@ -30,22 +31,8 @@ export const GLIDE_DEMO_BEATS = {
   afterOn: 2.4,
 } as const
 
-/** The demo's words. No em dashes; "practice", never "practise". */
-export const GLIDE_DEMO_COPY = {
-  watch: 'Watch me first.',
-  off: 'Not like this',
-  on: 'Like this',
-  skip: 'Skip',
-  ask: 'How it works',
-  cardTitle: 'See how it works',
-  cardLine: 'Merc sings it first. Turn your sound on.',
-  watchButton: 'Watch',
-  notNow: 'Not now',
-  endTitle: 'Your turn',
-  tryIt: 'Try it',
-  again: 'Watch again',
-  micHint: 'Tap the mic to start.',
-} as const
+/** The demo's words: the kit's (demo-kit demo-words.ts). */
+export const GLIDE_DEMO_COPY = DEMO_WORDS
 
 /** A glide demo's take: its frames and the engine's events for them. */
 export type GlideDemoTake = DemoTakeShape<GlideDemoMark>
