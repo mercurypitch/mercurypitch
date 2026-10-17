@@ -301,7 +301,7 @@ describe('handleRunpodRequest — process', () => {
     expect(sent.input.audio_s3_key).toBeUndefined()
   })
 
-  it('passes audio_url through instead of inlining base64', async () => {
+  it('ignores a client-supplied audio_url and inlines the file (no SSRF)', async () => {
     const spy = mockFetchOnce({ id: 'job-4' })
     const { request, url } = processReq('/api/uvr/process', {
       headers: { 'x-uvr-provider': 'runpod' },
@@ -313,8 +313,9 @@ describe('handleRunpodRequest — process', () => {
     const sent = JSON.parse(spy.mock.calls[0][1]?.body as string) as {
       input: { audio_url?: string; audio_base64?: string }
     }
-    expect(sent.input.audio_url).toBe('https://r2.test/song.mp3')
-    expect(sent.input.audio_base64).toBeUndefined()
+    // The GPU worker must never be handed a caller-chosen URL to fetch.
+    expect(sent.input.audio_url).toBeUndefined()
+    expect(sent.input.audio_base64).toBeDefined()
   })
 
   it('answers busy, try again, when RunPod returns no job id', async () => {
