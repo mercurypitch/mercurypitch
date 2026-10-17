@@ -192,7 +192,12 @@
   border: none;
   border-radius: 0.8rem;
 
+  /* Small, but read at a glance in both themes: the digit is 4.5:1 or more
+     against the pill, and the ring outlines the pill on a dark page, where
+     the pill alone is the page's own colour. It was drawn at 0.55 opacity,
+     which left the count at 3.6:1 on a dark page and 2.4:1 on a light one. */
   background: rgba(10, 12, 18, 0.82);
+  box-shadow: 0 0 0 1px rgba(143, 188, 187, 0.45);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   color: #8fbcbb;
@@ -201,9 +206,5 @@
   line-height: 1.6rem;
   text-align: center;
 
-  opacity: 0.55;
   cursor: pointer;
-}
-.handle:active {
-  opacity: 1;
 }

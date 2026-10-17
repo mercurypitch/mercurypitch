@@ -15,7 +15,7 @@ import type { AuthSession } from '@/db/services/auth-sessions-service'
 import { fetchSessions, revokeSession, } from '@/db/services/auth-sessions-service'
 import { thisDevice } from '@/lib/device-noun'
 import { showNotification } from '@/stores/notifications-store'
-import { PhoneIcon, WarnIcon } from '../icons'
+import { ComputerIcon, PhoneIcon, WarnIcon } from '../icons'
 import { SettingsGroup } from './SettingsList'
 
 /** "today", "yesterday", "3 days ago": precision nobody needs is noise. */
@@ -30,6 +30,17 @@ export function lastUsed(stamp: string, now = Date.now()): string {
   if (days < 30) return `${days} days ago`
   const months = Math.round(days / 30)
   return months === 1 ? 'a month ago' : `${months} months ago`
+}
+
+/**
+ * A session the server named for a computer. The worker's `deviceLabel`
+ * ends every label with its platform ("Chrome on Mac", or "Linux" alone),
+ * and it tests Android before Linux, so an Android phone never reads as a
+ * computer here. Everything else (iPhone, iPad, Android, an unknown device)
+ * keeps the phone.
+ */
+export function onComputer(label: string): boolean {
+  return /(?:^|\son\s)(?:Mac|Windows|ChromeOS|Linux)$/u.test(label)
 }
 
 /** This phone first, then the rest in the server's order (most recent). */
@@ -107,8 +118,18 @@ export function DevicesScreen(): JSX.Element {
             <For each={list()}>
               {(session) => (
                 <div class="mp-set-row" data-device={session.id}>
-                  <span class="mp-set-row__icon">
-                    <PhoneIcon />
+                  <span
+                    class="mp-set-row__icon"
+                    data-device-icon={
+                      onComputer(session.label) ? 'computer' : 'phone'
+                    }
+                  >
+                    <Show
+                      when={onComputer(session.label)}
+                      fallback={<PhoneIcon />}
+                    >
+                      <ComputerIcon />
+                    </Show>
                   </span>
                   <span class="mp-set-row__label">
                     {session.current ? thisDevice() : session.label}
