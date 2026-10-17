@@ -11,6 +11,7 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { earInfoOpen, resetEarLabStore } from '@/stores/ear-lab-store'
+import { notifications, resetNotifications, showActionNotification, showNotification, TOUR_OFFER_CHANNEL, } from '@/stores/notifications-store'
 import { PlayPad } from './EarStage'
 import { HairlineDrill } from './HairlineDrill'
 import { HomeDrill } from './HomeDrill'
@@ -441,6 +442,45 @@ describe("the run's reserve", () => {
     // Drawn from an attribute: none of it is in the document's text.
     expect(held.textContent).toBe('')
     expect(console.textContent).not.toContain('The gap widens.')
+  })
+})
+
+describe("the bench's tour offer", () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    localStorage.clear()
+    resetEarLabStore()
+    resetNotifications()
+  })
+
+  afterEach(() => {
+    cleanup()
+    resetNotifications()
+  })
+
+  it('goes when a drill opens, and other toasts stay', () => {
+    // What usePageTourOffer shows on a first visit to the bench.
+    showActionNotification(
+      'New to Ear Lab? Take a quick tour.',
+      'info',
+      { label: 'Start tour', onClick: () => undefined },
+      { channel: TOUR_OFFER_CHANNEL },
+    )
+    showNotification('Saved to the Field Book', 'success')
+    expect(notifications().map((n) => n.message)).toContain(
+      'New to Ear Lab? Take a quick tour.',
+    )
+
+    const Engine = withEngine(fakeEngine())
+    render(() => (
+      <Engine>
+        <HairlineDrill onBack={() => undefined} />
+      </Engine>
+    ))
+
+    const left = notifications().map((n) => n.message)
+    expect(left).not.toContain('New to Ear Lab? Take a quick tour.')
+    expect(left).toContain('Saved to the Field Book')
   })
 })
 

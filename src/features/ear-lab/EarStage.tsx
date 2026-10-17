@@ -20,6 +20,7 @@ import { createEffect, createSignal, For, onCleanup, onMount, Show, useContext, 
 import { EngineContext } from '@/contexts/EngineContext'
 import { activateAudioPlayback, unlockAudio } from '@/lib/audio-unlock'
 import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
+import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from '@/stores/notifications-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
 import styles from './EarStage.module.css'
 import { InstrumentCard } from './InstrumentCard'
@@ -216,6 +217,12 @@ export function EarStage(props: EarStageProps): JSX.Element {
   let consoleEl: HTMLDivElement | undefined
   const reserve = (): StageReserve | null => props.reserve?.() ?? null
   const keyHint = (): string | undefined => formatKeyHint(props.keys?.() ?? [])
+
+  // A first visit offers the bench's tour in a toast that stays ten
+  // seconds, and on a phone toasts sit at the foot of the screen, over the
+  // answer pads. The tour walks the bench, which the stage has replaced, so
+  // opening a drill retires the offer. The guide control still starts it.
+  onMount(() => removeNotificationsByChannel(TOUR_OFFER_CHANNEL))
 
   // Every keydown, registered or not, so a keyup can tell a key the
   // browser took from one pressed before the pads armed. A keyup with
