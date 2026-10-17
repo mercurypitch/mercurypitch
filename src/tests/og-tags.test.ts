@@ -96,7 +96,7 @@ describe('initDefaultOGTags', () => {
       expect(getMetaContent(attr, key), key).toBe(shipped(attr, key))
     }
     expect(getMetaContent('property', 'og:title')).toBe(
-      'See Your Voice, Sing Karaoke, Improve Every Take | MercuryPitch',
+      'MercuryPitch: See Your Voice, Sing Karaoke, Improve Every Take',
     )
   })
 

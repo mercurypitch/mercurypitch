@@ -7,7 +7,7 @@ import { OG_IMAGE_VERSIONS } from '@/seo/og-image-versions'
 // The app sets these on boot, over the tags index.html shipped, so the two
 // must agree (src/tests/og-tags.test.ts reads index.html to check).
 const OG_TITLE =
-  'See Your Voice, Sing Karaoke, Improve Every Take | MercuryPitch'
+  'MercuryPitch: See Your Voice, Sing Karaoke, Improve Every Take'
 const OG_DESC =
   'Train your vocal pitch with real-time audio feedback, piano roll visualization, and accuracy scoring.'
 // Stamped like index.html's: social caches key a card by its URL, and the
