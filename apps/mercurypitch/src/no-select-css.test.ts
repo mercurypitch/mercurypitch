@@ -5,14 +5,17 @@
 // shell/shell.css turns text selection, the iOS long-press callout and image
 // dragging off for the whole document, and text fields turn selection back
 // on. The rooms said `user-select: none` unprefixed, and an iPhone honours
-// only `-webkit-user-select`: this bundle's build adds no vendor prefixes
-// (vite.config.ts sets no CSS target), so an unprefixed rule never reached
-// iOS (TestFlight report, 17 Oct). Here rather than beside shell.css,
-// because src/shell/ runs under jsdom, which gives no file URL to read from.
+// only `-webkit-user-select`: this bundle's build added no vendor prefixes
+// then, so an unprefixed rule never reached iOS (TestFlight report, 17 Oct).
+// The build has a CSS target now (NATIVE_CSS_TARGET in vite.config.ts,
+// native-css-target.test.ts) and adds the prefix itself; the sources still
+// say it, because they are what this suite can read. Here rather than
+// beside shell.css, because src/shell/ runs under jsdom, which gives no file
+// URL to read from.
 //
 // The last block is the guard that matters most: with selection off for the
 // document, any place that wants it back must say so in the prefixed
-// spelling too, or it stays unselectable on an iPhone.
+// spelling too, so an iPhone gets it back whatever the build's target says.
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
