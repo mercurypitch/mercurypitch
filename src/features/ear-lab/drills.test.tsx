@@ -318,6 +318,59 @@ describe('Hairline', () => {
     expect(plate().textContent).toContain('Trial 2')
   })
 
+  // The coin flip decides which tone is the higher: below 0.5 it is the
+  // first. Pinning Math.random pins the answer, so each verdict is known.
+  it.each([
+    {
+      flip: 0.25,
+      pick: 0,
+      verdict: /^Right\. The first was higher by \d+\.\d¢\.$/,
+    },
+    {
+      flip: 0.75,
+      pick: 1,
+      verdict: /^Right\. The second was higher by \d+\.\d¢\.$/,
+    },
+    {
+      flip: 0.25,
+      pick: 1,
+      verdict: /^The first was higher by \d+\.\d¢\. The gap widens\.$/,
+    },
+    {
+      flip: 0.75,
+      pick: 0,
+      verdict: /^The second was higher by \d+\.\d¢\. The gap widens\.$/,
+    },
+  ])(
+    'says which tone was higher and by how many cents, in plain sentences (flip $flip, pad $pick)',
+    async ({ flip, pick, verdict }) => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(flip)
+      try {
+        render(() => (
+          <Stage>
+            <HairlineDrill onBack={vi.fn()} />
+          </Stage>
+        ))
+        fireEvent.click(screen.getByRole('button', { name: /Practice run/ }))
+        await armHairline()
+        fireEvent.click(armedPads()[pick])
+        expect(status()).toMatch(verdict)
+      } finally {
+        random.mockRestore()
+      }
+    },
+  )
+
+  it('asks its question in plain sentences, with no dash on the stage', () => {
+    render(() => (
+      <Stage>
+        <HairlineDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    expect(status()).toBe('Two tones. Which one was higher?')
+    expect(document.body.textContent).not.toContain('—')
+  })
+
   it('parks a threshold run the same way, Next sounding the next pair', async () => {
     setEarAutoAdvance(false)
     render(() => (

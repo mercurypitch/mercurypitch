@@ -314,8 +314,8 @@ export function ThresholdDrillView(
               value="—"
               note={
                 calibrating()
-                  ? 'Stopped before the tracks could finish — a calibration only counts when all three run to the end, so nothing was marked.'
-                  : 'Stopped before the staircase turned — nothing to read yet, and nothing marked.'
+                  ? 'Stopped before the tracks could finish. A calibration only counts when all three run to the end, so nothing was marked.'
+                  : 'Stopped before the staircase turned. Nothing to read yet, and nothing marked.'
               }
               onAgain={() => start(again())}
               againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
@@ -345,7 +345,7 @@ export function ThresholdDrillView(
                 note={
                   <Show
                     when={marked() !== undefined}
-                    fallback="Practice run — the glass is not marked. A sealed calibration marks it."
+                    fallback="Practice run: the glass is not marked. A sealed calibration marks it."
                   >
                     Etched on the glass as{' '}
                     <b>
@@ -384,7 +384,7 @@ export function ThresholdDrillView(
                   )}
                 </Show>
                 <Show when={reading().provisional && marked() === undefined}>
-                  <PlateBadge>Provisional — short run</PlateBadge>
+                  <PlateBadge>Provisional · short run</PlateBadge>
                 </Show>
                 <Show when={props.run.grade()}>
                   {(grade) => (
