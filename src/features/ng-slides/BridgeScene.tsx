@@ -21,7 +21,7 @@
 //                glide path's own targetAt), the first arch's root name and
 //                each arch's top note under its apex (room-kit CrestNote);
 //                the names leave as the take pulls back at the result
-//   ribbon       the voice (BridgeRibbon.tsx), fixed to the screen
+//   ribbon       the voice (room-kit GlideRibbon.tsx), fixed to the screen
 //   near bank    the corners' frame, fixed (F2), and the light at the top
 //   result       the pulled-back bridge, lit once from the take
 //   Merc         his canvas, moved by transform
@@ -37,6 +37,8 @@ import { createPictureSet } from '@/components/room-kit/canvas-picture'
 import type { ContactLightApi, ContactPalette, } from '@/components/room-kit/ContactLight'
 import { ContactLight } from '@/components/room-kit/ContactLight'
 import { CREST_NOTE, CrestNote } from '@/components/room-kit/CrestNote'
+import type { GlideRibbonApi, StrokePoint, } from '@/components/room-kit/GlideRibbon'
+import { GlideRibbon } from '@/components/room-kit/GlideRibbon'
 import type { Plate } from '@/components/room-kit/plate-loader'
 import { claimPlate, releasePlate } from '@/components/room-kit/plate-loader'
 import { createResultBand } from '@/components/room-kit/result-band'
@@ -50,8 +52,6 @@ import type { BridgeLayout, MercBox } from './bridge-layout'
 import { MERC_INTRO_X, mercBoxAt, mercResultBox, pitchY, yOf, } from './bridge-layout'
 import { apexX, INTRO_CAMERA } from './bridge-scroll'
 import type { BridgeContact, BridgeView, TraceSample } from './bridge-view'
-import type { BridgeRibbonApi, StrokePoint } from './BridgeRibbon'
-import { BridgeRibbon } from './BridgeRibbon'
 import styles from './NgSlidesRoom.module.css'
 
 /** The river's left edge on the intro, W of the screen. */
@@ -161,7 +161,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
   let mercEl: HTMLDivElement | undefined
   let resultLit: HTMLCanvasElement | undefined
   let resultHolder: HTMLDivElement | undefined
-  let ribbon: BridgeRibbonApi | null = null
+  let ribbon: GlideRibbonApi | null = null
   let contact: ContactLightApi | null = null
   let riverPlate: Plate | null = null
   let resultPlate: Plate | null = null
@@ -544,10 +544,13 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
             </Show>
           </svg>
         </div>
-        <BridgeRibbon
+        <GlideRibbon
           width={props.layout.width}
           height={props.layout.height}
           scale={ribbonScale()}
+          class={styles.ribbon}
+          testId="ng-ribbon"
+          glowTestId="ng-ribbon-glow"
           onReady={(api) => {
             ribbon = api
             // The scene's first frame can come before the ribbon mounts.
