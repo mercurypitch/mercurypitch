@@ -32,8 +32,8 @@ const SHARE_URL =
  *  whether the glass actually broke. */
 export function glassShareText(shattered: boolean): string {
   return shattered
-    ? `I shattered it — ${SHARE_URL}`
-    : `The glass is still standing… for now — ${SHARE_URL}`
+    ? `I shattered it: ${SHARE_URL}`
+    : `The glass is still standing… for now. ${SHARE_URL}`
 }
 
 export interface ShatterCardInput {
@@ -145,9 +145,9 @@ export function renderShatterCard(
   ctx.fillText(
     shattered
       ? input.shatterRep === 1
-        ? 'SHATTERED — FIRST TRY'
+        ? 'SHATTERED, FIRST TRY'
         : `SHATTERED ON REP ${input.shatterRep}`
-      : 'THE GLASS HELD — THIS TIME',
+      : 'THE GLASS HELD, THIS TIME',
     cx,
     textTop,
   )

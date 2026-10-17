@@ -104,7 +104,7 @@ export const FxRackPanel: Component<{
             }
           >
             <p class="glass-fx-confirm">
-              Speakers would feed back — headphones only.
+              Speakers would feed back. Headphones only.
             </p>
             <div class="glass-fx-confirm-actions">
               <button
