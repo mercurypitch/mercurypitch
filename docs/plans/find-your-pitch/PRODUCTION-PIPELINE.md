@@ -139,6 +139,22 @@ session.
   - at most 42 characters a line and two lines a caption;
   - at most 20 characters a second, and at least 5/6 s on screen;
   - the short speaker label ("BLUE:", "ORANGE:"), only when the speaker changes.
+- **Voices.** The scratch voice is local Kokoro; the final voices are the owner's ElevenLabs
+  voices, Blue as D2 ("Merc V1 Gentle Whimsical D2") and Orange as "Orange Merc", Eleven v3, one
+  take a line (October 2026: 133 lines for both lessons, 6,743 credits). The director's tools are
+  in `output/motion/voice-elevenlabs/`:
+  - every request names its line ("Lesson N line ID") so `ledger_sync.py` rebuilds the ledger from
+    the session, and `fetch.py` downloads the takes within their two-hour links;
+  - a local Whisper checks each take against the script; it hears number words as digits and
+    "cents" as "sense", so a mismatch is a prompt to listen, not a verdict;
+  - `import.py` writes each line's WAV at Kokoro's edges and loudness, its envelope and, where the
+    lesson keys words, its word times, and keeps the Kokoro takes in `assets/voice-kokoro/`;
+  - then `tools/cues.py --no-tts` re-times the film; a line listed in `_elevenlabs.json` is never
+    re-spoken;
+  - the two voices live in different ElevenLabs workspaces, and the connector reaches one at a
+    time;
+  - a voiced film runs longer than its Kokoro estimate (Lesson 2: 6:33 scratch, 7:11 voiced at
+    2.43 words a second); the owner allows up to 10 minutes.
 - **Captions and chapters travel with the film.** A re-cut that re-times it (every re-voice does)
   regenerates both, and the page's copies in `src/features/lessons/lesson-NN/assets/` change in
   the same commit as the lesson's `captions/` folder and the new MP4s; `film-sync.test.ts` holds
@@ -157,8 +173,11 @@ session.
    both, with or without `--no-proxy`. Check a pass before blaming the renderer: `ffprobe` must
    show the tag `alpha_mode=1` (it reports `pix_fmt=yuv420p` even for a good alpha VP9), and a
    frame decoded with `-c:v libvpx-vp9` must have transparent corners.
-3. A missing video file does not break `snapshot` or `render`: build scenes before their Merc
-   passes exist.
+3. A missing video file breaks `check` and `render` on HyperFrames 0.8.97
+   (`missing_local_asset`), which it did not on earlier versions. Build scenes before their Merc
+   passes exist all the same: lab renders set `HF_VIDEO_EXTRACTION_FAILURE_MODE=observe` and
+   `HF_VIDEO_COVERAGE_THRESHOLD=0`, and the root `check` reaches 0 errors only once every pass
+   exists.
 4. HyperFrames finds videos by parsing the HTML before any script runs (the producer's
    `parseVideoElements`), and reads their timing from the static `data-start`, `data-duration` and
    `data-media-start`. A `<video>` created by a script plays in the browser preview and renders as
@@ -182,7 +201,10 @@ session.
     renderer bug itself is in `src/lib/merc` and in the app too (MERC-BIBLE backlog).
 11. A cloud container can restart mid-production and stop every background process (renders,
     builders). Files survive. Keep long jobs resumable: one output file per Merc pass, written only
-    when complete, so a restarted queue needs only the passes that are missing or empty.
+    when complete, so a restarted queue needs only the passes that are missing or empty. A
+    session's own background commands are also stopped after two hours, and a long Merc
+    performance (Lesson 2's m14 duo, 7,499 frames at size 520) takes longer than that: start render
+    queues detached (`setsid nohup`), skipping every pass whose WebM is newer than its shot file.
 12. Dimmed text fails contrast. Ghosting a diagram by lowering the opacity of the whole group
     takes its labels under 4.5:1 (Lesson 1's quiz and dimmed panels, 2.2 to 3.4:1, found only in
     its fifth film round; Lesson 2's ghosted pads, found on its storyboard). Dim strokes and fills,
@@ -206,6 +228,24 @@ session.
     longer depends on where the project lives.
 17. A bed muted to exactly zero around speech leaves digital silence between lines: a room tone
     under the whole film keeps the soundtrack alive (§ 3, Audio).
+18. An ElevenLabs take can end with a lone click after up to two seconds of silence (2 of 133).
+    Trimming at the last sample above 1 % of the peak keeps the silence; `import.py` treats a blip
+    under 60 ms, 0.3 s or more from the speech, as no sound.
+19. Whisper's word times are not good enough to time picture. On Lesson 1's scratch takes,
+    against Kokoro's own phoneme times, Whisper small.en's word starts were about 0.19 s early
+    with as much spread again, even after calibration on the envelope; Lesson 2's word anchors sat
+    about 0.2 s before their words until this was found. Forced alignment of the script's own
+    words (`voice-elevenlabs/ctc_align.py`, wav2vec2-base-960h as ONNX) plus the same calibration
+    matches to 5 ms for the median word and 60 ms for nine in ten.
+20. A film timed as "a cue plus seconds" does not follow a re-voice. Lesson 1's scenes held 300
+    times inside lines, measured on the scratch voice; with the final voices a third of them would
+    have landed 0.2 s or more off their words. `voice-elevenlabs/resync.py` moved 109 numbers,
+    keeping each time's distance from the nearest word start, after a read of every long sum (a
+    fade's length must not stretch). Lesson 2 keys every time inside a line to a word (`word()`),
+    and followed both its re-voices without a hand edit: key every time inside a line to a word.
+21. A re-voice can leave a line too short for a caption of its own (Lesson 1's "Is it?", 0.58 s,
+    under the 5/6 s minimum). `captions.py` lets the next caption start up to 0.1 s late, and
+    joins a too-short line to the same speaker's next line when they fit together.
 
 ## 5. The web lesson
 
