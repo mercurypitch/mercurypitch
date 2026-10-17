@@ -403,7 +403,6 @@ async function startRunpodJob(
     )
   }
   const outputFormat = coerceFormString(form.get('output_format'))
-  const audioUrl = coerceFormString(form.get('audio_url'))
   const stems = parseStems(form.get('stems'))
 
   // ── Second-pass fields (splitting a stem into its parts) ─────
@@ -480,7 +479,6 @@ async function startRunpodJob(
   // Hard cap first, whatever the transport.
   if (
     reuseKey === undefined &&
-    audioUrl === undefined &&
     file !== null &&
     file.size > RUNPOD_MAX_UPLOAD_BYTES
   ) {
@@ -492,18 +490,20 @@ async function startRunpodJob(
     )
   }
 
-  // Three input transports, cheapest first:
+  // Two input transports, cheapest first:
   //   ≤7 MB  → inline base64 in the job payload (no R2 round-trip)
   //   >7 MB  → stream to R2 under `input/`, pass the key (handler downloads
   //            it with its own S3 creds — no public URL)
-  //   audioUrl provided by the caller → pass through untouched
+  // A caller never names a URL for the GPU worker to fetch: that would turn
+  // a signed-in request into a worker-side fetch of a caller-chosen host
+  // (SSRF). Only an uploaded file or a reused R2 key is accepted.
   let audioBase64: string | undefined
   let audioS3Key: string | undefined
-  let via = 'audio_url'
+  let via = 'inline'
   if (reuseKey !== undefined) {
     audioS3Key = reuseKey.key
     via = 'reuse'
-  } else if (audioUrl === undefined && file !== null) {
+  } else if (file !== null) {
     if (file.size <= RUNPOD_MAX_INLINE_BYTES) {
       audioBase64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()))
       via = 'inline'
@@ -536,7 +536,6 @@ async function startRunpodJob(
     model,
     output_format: outputFormat,
     stems,
-    audioUrl,
     audioBase64,
     audioS3Key,
     sourceStem,

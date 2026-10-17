@@ -158,29 +158,24 @@ describe('buildJobInput', () => {
     expect(input.stems).toEqual(['vocal', 'instrumental'])
     expect(input.filename).toBe('input')
     expect(input.audio_base64).toBe('AAAA')
-    expect(input.audio_url).toBeUndefined()
   })
 
-  it('prefers a url over base64 and upper-cases the format', () => {
+  it('upper-cases the output format', () => {
     const input = buildJobInput({
-      audioUrl: 'https://r2.test/song.mp3',
       audioBase64: 'AAAA',
       output_format: 'wav',
       filename: 'song.mp3',
     })
-    expect(input.audio_url).toBe('https://r2.test/song.mp3')
-    expect(input.audio_base64).toBeUndefined()
+    expect(input.audio_base64).toBe('AAAA')
     expect(input.output_format).toBe('WAV')
   })
 
-  it('prefers an S3 key over url and base64', () => {
+  it('prefers an S3 key over base64', () => {
     const input = buildJobInput({
       audioS3Key: 'input/abc.mp3',
-      audioUrl: 'https://r2.test/song.mp3',
       audioBase64: 'AAAA',
     })
     expect(input.audio_s3_key).toBe('input/abc.mp3')
-    expect(input.audio_url).toBeUndefined()
     expect(input.audio_base64).toBeUndefined()
   })
 

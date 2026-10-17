@@ -8,8 +8,10 @@
 #
 # Job contract (RunPod `input` object):
 #   {
-#     "audio_url":     "<https url the worker fetches>",   # preferred
-#     "audio_base64":  "<base64 audio>",                   # fallback (small files)
+#     "audio_s3_key":  "<R2 object key, worker-set>",      # large files
+#     "audio_base64":  "<base64 audio>",                   # small files
+#     "audio_url":     "<https url>",  # refused unless its host is in
+#                                      # RUNPOD_AUDIO_URL_ALLOWED_HOSTS (SSRF)
 #     "filename":      "song.mp3",
 #     "model":         "roformer",                         # optional registry name
 #     "output_format": "FLAC",                             # WAV | MP3 | FLAC
@@ -652,6 +654,26 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
         if key.startswith("input/") and os.path.getsize(local_path) > MAX_INPUT_BYTES:
             raise ValueError(f"Input exceeds {MAX_INPUT_BYTES // (1024 * 1024)} MB cap")
     elif audio_url:
+        # A URL input makes THIS GPU worker fetch a caller-named host, so it
+        # is refused unless an operator has explicitly allowlisted the host
+        # (RUNPOD_AUDIO_URL_ALLOWED_HOSTS, comma-separated). The app's worker
+        # never sends audio_url — uploads travel as base64 or an R2 key — so
+        # by default there is no worker-side fetch of an external URL at all.
+        from urllib.parse import urlparse
+
+        parsed = urlparse(str(audio_url))
+        allowed_hosts = {
+            h.strip().lower()
+            for h in os.environ.get("RUNPOD_AUDIO_URL_ALLOWED_HOSTS", "").split(",")
+            if h.strip()
+        }
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname is None
+            or parsed.hostname.lower() not in allowed_hosts
+        ):
+            raise ValueError("audio_url is not permitted")
+
         import requests
 
         with requests.get(audio_url, stream=True, timeout=120) as resp:
@@ -675,7 +697,7 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
             fh.write(raw)
     else:
         raise ValueError(
-            "Job input requires 'audio_url', 'audio_base64', or 'audio_s3_key'"
+            "Job input requires 'audio_base64' or 'audio_s3_key'"
         )
 
     if os.path.getsize(local_path) == 0:
