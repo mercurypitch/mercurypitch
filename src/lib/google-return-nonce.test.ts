@@ -146,6 +146,10 @@ describe('readGoogleReturn', () => {
       ok: false,
       error: 'declined',
     })
+    // The live path: a sealed grant for the app to finish with /drive/finish.
+    expect(readGoogleReturn('#gdrive_pending=SEALED.blob', T0)?.drive).toEqual({
+      pending: 'SEALED.blob',
+    })
   })
 
   it('leaves an ordinary route alone', () => {

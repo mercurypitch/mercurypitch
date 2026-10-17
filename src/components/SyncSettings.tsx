@@ -25,7 +25,7 @@ import type { Component } from 'solid-js'
 import { createSignal, For, onMount, Show } from 'solid-js'
 import { storageEstimate } from '@/db/durable-write'
 import { isStoragePersisted, requestPersistentStorage, } from '@/db/persistent-storage'
-import { accountHeld, takeDriveConnectResult } from '@/db/services/auth-service'
+import { accountHeld, finishDriveConnect, takeDriveConnectResult, } from '@/db/services/auth-service'
 import { readLibraryManifests, syncLibraryList, } from '@/db/services/song-manifest-service'
 import { isStandalone, needsIosInstallHint } from '@/lib/pwa-install'
 import { backUpToDrive, connectDrive, disconnectDriveSync, driveBusy, driveEmail, driveError, driveFolderId, driveJob, driveJobFailures, driveJobStopping, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
@@ -106,32 +106,49 @@ export const SyncSettings: Component = () => {
   onMount(() => {
     void refresh()
     if (!accountHeld()) return
+    void resolveConnectReturn()
+  })
+
+  /**
+   * Finish and report a connect-Drive redirect.
+   *
+   * The worker now hands the grant back sealed (it cannot store it in the
+   * callback — see finishDriveConnect), so a `pending` result is committed
+   * here with an authenticated call before its outcome is known. `ok`/`error`
+   * cover a callback that answered the old way.
+   */
+  async function resolveConnectReturn(): Promise<void> {
+    let result = takeDriveConnectResult()
+    if (result !== null && 'pending' in result) {
+      result = await finishDriveConnect(result.pending)
+    }
     // A connect attempt that came back refused left its reason in the
-    // redirect; without this the page would simply still say
+    // redirect; without surfacing it the page would simply still say
     // "not connected" and the button would look broken.
-    const connectResult = takeDriveConnectResult()
-    if (connectResult !== null && !connectResult.ok) {
+    if (result !== null && 'ok' in result && !result.ok) {
       setConnectRefusal(
-        CONNECT_REFUSALS[connectResult.error] ??
+        CONNECT_REFUSALS[result.error] ??
           'Google Drive could not be connected.',
       )
     }
     // Caught, not merely voided: an unhandled rejection here would leave
     // driveState at 'unknown' forever with nothing on screen saying why.
-    void refreshDriveStatus()
-      .then(() => {
-        if (driveState() !== 'connected') return
-        // Straight into the comparison whenever Drive is connected: the
-        // check is one folder listing, and the section should open with
-        // answers, not another button. A scan already held from this
-        // session stays — except on the way back from a fresh connect,
-        // where the person pressed a button expecting to see their songs.
-        if (driveScan() === null || connectResult?.ok === true) {
-          void scanDrive()
-        }
-      })
-      .catch(() => setConnectRefusal('Could not check your Google Drive.'))
-  })
+    try {
+      await refreshDriveStatus()
+      if (driveState() !== 'connected') return
+      // Straight into the comparison whenever Drive is connected: the
+      // check is one folder listing, and the section should open with
+      // answers, not another button. A scan already held from this
+      // session stays — except on the way back from a fresh connect,
+      // where the person pressed a button expecting to see their songs.
+      const freshConnect = result !== null && 'ok' in result && result.ok
+      if (driveScan() === null || freshConnect) {
+        void scanDrive()
+      }
+    } catch {
+      setConnectRefusal('Could not check your Google Drive.')
+    }
+  }
 
   /**
    * Ask the browser to keep the library.

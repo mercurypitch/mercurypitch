@@ -1966,15 +1966,68 @@ describe('Google Drive connect and tokens', () => {
     return { db, env, sessionToken, location, userId }
   }
 
+  /** Commit the sealed grant the callback handed back, as the starter would. */
+  async function finishDrive(
+    env: Env,
+    sessionToken: string,
+    location: string,
+  ): Promise<Response | null> {
+    const hash = new URL(location).hash.replace(/^#/, '')
+    const pending = new URLSearchParams(hash).get('gdrive_pending') as string
+    return handleAuth(
+      new Request('https://api.test/api/auth/drive/finish', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pending }),
+      }),
+      env,
+      '/api/auth/drive/finish',
+      respond,
+    )
+  }
+
   it('keeps the refresh token from a drive-scoped redirect, sealed', async () => {
-    const { db, location, userId } = await connectDrive()
-    expect(location).toContain('#gdrive=1')
+    const { db, env, sessionToken, location, userId } = await connectDrive()
+    // The callback stores nothing — it hands back a sealed grant for the
+    // account that started the connect to commit.
+    expect(location).toContain('#gdrive_pending=')
+    expect(db.driveTokens.get(userId)).toBeUndefined()
+
+    const finish = await finishDrive(env, sessionToken, location)
+    expect(finish?.status).toBe(200)
     const row = db.driveTokens.get(userId)
     expect(row).toBeDefined()
     // Sealed at rest: what the database holds must not be what Google
     // issued, or a leaked copy of the database IS Drive access.
     expect(row!.refreshToken).not.toBe('google-refresh-token')
     expect(row!.email).toBe('drive-user@example.com')
+  })
+
+  it('refuses to commit a grant for a different account', async () => {
+    const { db, env, location, userId } = await connectDrive()
+    // A second account completing (or replaying) the grant cannot attach the
+    // Drive: finish is bound to the account that started the connect.
+    const registered = await handleAuth(
+      new Request('https://api.test/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'outsider@example.com',
+          password: 'secret123',
+        }),
+      }),
+      env,
+      '/api/auth/register',
+      respond,
+    )
+    const outsiderToken = ((await registered?.json()) as { token: string })
+      .token
+    const finish = await finishDrive(env, outsiderToken, location)
+    expect(finish?.status).toBe(403)
+    expect(db.driveTokens.get(userId)).toBeUndefined()
   })
 
   it('reports declined when the user unticks the Drive box', async () => {
@@ -1986,7 +2039,7 @@ describe('Google Drive connect and tokens', () => {
   })
 
   it('connecting a Drive never changes who you are signed in as', async () => {
-    const { db, location, userId } = await connectDrive()
+    const { db, env, sessionToken, location, userId } = await connectDrive()
 
     // No session in the fragment: a connect pass is not a sign-in. Handing
     // one back is how picking a personal Gmail at the consent screen would
@@ -2003,6 +2056,7 @@ describe('Google Drive connect and tokens', () => {
     // The grant belongs to the account that ASKED, whichever Google
     // account holds the Drive -- keeping songs in a different Google
     // account is the normal case, not a mistake to correct.
+    await finishDrive(env, sessionToken, location)
     expect(db.driveTokens.get(userId)).toBeDefined()
     expect(db.driveTokens.get(userId)!.email).toBe('drive-user@example.com')
   })
@@ -2032,7 +2086,8 @@ describe('Google Drive connect and tokens', () => {
   })
 
   it('answers status, mints access tokens, and disconnects', async () => {
-    const { env, sessionToken, userId, db } = await connectDrive()
+    const { env, sessionToken, userId, db, location } = await connectDrive()
+    await finishDrive(env, sessionToken, location)
 
     const status = await handleAuth(
       new Request('https://api.test/api/auth/drive/status', {
@@ -2091,7 +2146,8 @@ describe('Google Drive connect and tokens', () => {
   })
 
   it('drops the row and says reconnect when Google revokes the grant', async () => {
-    const { env, sessionToken, userId, db } = await connectDrive()
+    const { env, sessionToken, userId, db, location } = await connectDrive()
+    await finishDrive(env, sessionToken, location)
     vi.stubGlobal(
       'fetch',
       vi.fn(
@@ -2143,7 +2199,8 @@ describe('Google Drive connect and tokens', () => {
    * BEFORE the erasure that USER_OWNED_TABLES performs.
    */
   it('hands the Drive grant back to Google when the account is deleted', async () => {
-    const { db, env, sessionToken, userId } = await connectDrive()
+    const { db, env, sessionToken, userId, location } = await connectDrive()
+    await finishDrive(env, sessionToken, location)
     expect(db.driveTokens.get(userId)).toBeDefined()
 
     const calls: { url: string; token: string | null }[] = []

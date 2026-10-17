@@ -99,8 +99,19 @@ function claimGoogleReturn(returned: string | null, now: number): boolean {
   }
 }
 
-/** A connect-Drive pass's outcome, as the settings page reads it. */
-type DriveReturn = { ok: true } | { ok: false; error: string }
+/**
+ * A connect-Drive pass's outcome, as the settings page reads it.
+ *
+ * `pending` is the live path: the worker no longer stores the grant in the
+ * callback (that runs in whichever browser finished Google's consent, which
+ * need not be the one that started it). It hands back a sealed grant for the
+ * app to commit with an authenticated POST /drive/finish. `ok`/`error` remain
+ * for a callback that answered the old way (a build mid-deploy).
+ */
+type DriveReturn =
+  | { ok: true }
+  | { ok: false; error: string }
+  | { pending: string }
 
 /** What a Google return may change, once a planted link has been ruled out. */
 export interface GoogleReturn {
@@ -121,6 +132,8 @@ function present(value: string | null): string | null {
 
 function readDrive(params: URLSearchParams): DriveReturn | null {
   if (params.get('gdrive') === '1') return { ok: true }
+  const pending = present(params.get('gdrive_pending'))
+  if (pending !== null) return { pending }
   const error = present(params.get('gdrive_error'))
   return error === null ? null : { ok: false, error }
 }

@@ -3007,6 +3007,79 @@ async function handleDriveStart(
   return respond({ url: googleAuthUrl(env, url, state, true) })
 }
 
+/**
+ * POST /api/auth/drive/finish (Bearer) — commit a sealed Drive grant.
+ *
+ * The connect callback stores nothing; it hands back a grant sealed to the
+ * account that started it (pendingDriveGrant). This is where the refresh
+ * token is finally stored, and it is stored ONLY for a caller whose own
+ * session matches the account the grant was started for. The browser that
+ * completed Google's consent may belong to someone else — their session will
+ * not match, so they cannot attach their Drive to the starter's account, and
+ * a grant for another account that reaches the wrong browser is refused here
+ * rather than stored.
+ */
+async function handleDriveFinish(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+
+  const body = (await request.json().catch(() => ({}))) as { pending?: unknown }
+  const sealed = typeof body.pending === 'string' ? body.pending : ''
+  if (sealed === '') {
+    return respond({ error: 'Missing grant' }, { status: 400 })
+  }
+
+  const DEAD_GRANT = { error: 'This Drive grant is invalid or has expired' }
+  const opened = await openDriveToken(env.JWT_SECRET as string, sealed)
+  if (opened === null) return respond(DEAD_GRANT, { status: 400 })
+  let payload: PendingDriveGrant
+  try {
+    payload = JSON.parse(opened) as PendingDriveGrant
+  } catch {
+    return respond(DEAD_GRANT, { status: 400 })
+  }
+  if (
+    payload.v !== 1 ||
+    typeof payload.uid !== 'string' ||
+    typeof payload.refresh !== 'string' ||
+    typeof payload.exp !== 'number' ||
+    payload.exp < Date.now()
+  ) {
+    return respond(DEAD_GRANT, { status: 400 })
+  }
+  // The binding. A grant started by one account can be committed only by that
+  // account — proven by the bearer token on THIS request, not by anything the
+  // redirect carried. Connecting a Drive still cannot move the token onto a
+  // different account than the one that asked for it.
+  if (payload.uid !== auth.userId) {
+    return respond(
+      { error: 'This Drive grant was started by a different account' },
+      { status: 403 },
+    )
+  }
+
+  try {
+    await storeDriveToken(
+      env,
+      auth.userId,
+      payload.refresh,
+      payload.scope || DRIVE_SCOPE,
+      payload.email ?? null,
+    )
+  } catch (error) {
+    console.error('[drive/finish] store failed:', error)
+    return respond(
+      { error: 'Could not store the Drive grant' },
+      { status: 500 },
+    )
+  }
+  return respond({ ok: true })
+}
+
 async function handleGoogleCallback(
   request: Request,
   env: Env,
@@ -3104,9 +3177,13 @@ async function handleGoogleCallback(
   // would create an empty account, mint its session, and quietly move
   // them into it, taking their library and credits out from under them.
   if (state.drive === true && typeof state.uid === 'string') {
-    return redirect(
-      `${state.returnTo}#${await keepDriveGrant(env, state.uid, tokenData, claims.email ?? null)}`,
+    const pending = await pendingDriveGrant(
+      env,
+      state.uid,
+      tokenData,
+      claims.email ?? null,
     )
+    return redirect(`${state.returnTo}#${pending}`)
   }
 
   let resolved: { row: UserRow; isNew: boolean }
@@ -3159,9 +3236,39 @@ async function handleGoogleCallback(
  * named: silently landing on "connected" with no usable key is the one
  * result that would look fine and then fail on the first backup.
  */
-async function keepDriveGrant(
+/** How long a sealed Drive grant stays claimable after consent. Short on
+ *  purpose: it rides back in a URL fragment for the initiating browser to
+ *  finish, and even before the uid check below a leaked blob is worthless
+ *  once this elapses. */
+const DRIVE_PENDING_TTL_MS = 5 * 60 * 1000
+
+interface PendingDriveGrant {
+  v: 1
+  /** The account that STARTED the connect — the only one allowed to finish. */
+  uid: string
+  refresh: string
+  scope: string
+  email: string | null
+  exp: number
+}
+
+/**
+ * Turn a completed Drive consent into a sealed, short-lived grant the
+ * INITIATING account finishes with its own session — nothing is stored here.
+ *
+ * This callback runs in whichever browser completed Google's consent, which
+ * need not be the one that started the connect: a signed-in user can hand the
+ * consent URL to someone else, and storing the returned refresh token against
+ * `state.uid` here would attach that someone's Drive to the starter's account
+ * (they would then read the app's files in a Drive that is not theirs). So the
+ * token is never stored on this path. It is sealed (AES-GCM) together with the
+ * account the connect was started for and handed back in the fragment; POST
+ * /drive/finish stores it only for a caller whose own bearer token proves it
+ * IS that account.
+ */
+async function pendingDriveGrant(
   env: Env,
-  userId: string,
+  uid: string,
   tokenData: { refresh_token?: string; scope?: string },
   email: string | null,
 ): Promise<string> {
@@ -3175,16 +3282,21 @@ async function keepDriveGrant(
     return 'gdrive_error=no_refresh_token'
   }
   try {
-    await storeDriveToken(
-      env,
-      userId,
-      tokenData.refresh_token,
-      tokenData.scope ?? DRIVE_SCOPE,
+    const payload: PendingDriveGrant = {
+      v: 1,
+      uid,
+      refresh: tokenData.refresh_token,
+      scope: tokenData.scope ?? DRIVE_SCOPE,
       email,
+      exp: Date.now() + DRIVE_PENDING_TTL_MS,
+    }
+    const sealed = await sealDriveToken(
+      env.JWT_SECRET as string,
+      JSON.stringify(payload),
     )
-    return 'gdrive=1'
+    return `gdrive_pending=${encodeURIComponent(sealed)}`
   } catch (error) {
-    console.error('[google-callback] drive token store failed:', error)
+    console.error('[google-callback] drive grant seal failed:', error)
     return 'gdrive_error=store_failed'
   }
 }
@@ -4450,6 +4562,9 @@ export async function handleAuth(
   }
   if (route === 'drive/token') {
     return handleDriveToken(request, env, respond)
+  }
+  if (route === 'drive/finish') {
+    return handleDriveFinish(request, env, respond)
   }
 
   const body = await parseBody(request)
