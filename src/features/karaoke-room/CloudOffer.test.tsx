@@ -465,6 +465,52 @@ describe('Subscribe', () => {
     // Closing what follows a yes is no Not now.
     expect(localStorage.getItem('mp:cloud-offer-not-now')).toBeNull()
   })
+
+  // TestFlight build 919: bought signed out, signed in to an account that
+  // already existed, then Subscribe. The store had the subscription for this
+  // phone; Subscribe brings it to the account, and buys nothing.
+  it("says what follows a yes once Subscribe brought this phone's own purchase to the account", async () => {
+    auth.account = true
+    withStore(store({ subscribe: async () => Promise.resolve('moved') }))
+    const offer = await open()
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+    server.next = subscriber
+
+    fireEvent.click(subscribeButton(offer))
+
+    const moved = await waitFor(() =>
+      screen.getByRole('dialog', { name: "You're subscribed" }),
+    )
+    await waitFor(() =>
+      expect(moved.textContent).toContain('20 songs a month are yours.'),
+    )
+  })
+
+  // Owner rule D2: a phone can be shared, so a subscription another account
+  // owns never moves by itself. Subscribe says so, and where to move it.
+  it('says plainly that another account has the subscription, and names Restore purchase', async () => {
+    auth.account = true
+    withStore(
+      store({ subscribe: async () => Promise.resolve('held-elsewhere') }),
+    )
+    const offer = await open()
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+
+    fireEvent.click(subscribeButton(offer))
+
+    await waitFor(() =>
+      expect(statusLine(offer)).toBe(
+        "You're already subscribed, on another account. Tap Restore purchase to move it here.",
+      ),
+    )
+    expect(screen.queryByRole('dialog', { name: "You're subscribed" })).toBe(
+      null,
+    )
+    expect(subscribeButton(offer).disabled).toBe(false)
+    expect(
+      within(offer).getByRole('button', { name: 'Restore purchase' }),
+    ).toBeTruthy()
+  })
 })
 
 describe('who is offered what', () => {

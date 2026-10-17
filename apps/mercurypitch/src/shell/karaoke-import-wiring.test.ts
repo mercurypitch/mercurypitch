@@ -5,7 +5,9 @@
 // A build with Import (every dev-target build: TestFlight, the probe, the
 // tests) runs the queue that sends imported songs for as long as the shell
 // does, and hands the room a subscription that fails closed until the store
-// is real. A build without it (the store build) gets neither.
+// is real. A build without it (the store build) gets neither. And the note
+// of a purchase made signed out is settled on every change of session, so an
+// account made of the phone in place keeps what it bought where it is.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as NativeBuild from '@/lib/native-build'
@@ -28,21 +30,41 @@ vi.mock('@/features/karaoke-room/karaoke-import-queue', () => ({
   },
 }))
 
-const auth = vi.hoisted(() => ({ asked: 0 }))
+/** The session the phone holds: its provider and its account's id. */
+const auth = vi.hoisted(() => ({
+  asked: 0,
+  provider: null as string | null,
+  account: null as string | null,
+}))
 vi.mock('@/db/services/auth-service', () => ({
   requireAuth: vi.fn(async () => {
     auth.asked += 1
     return Promise.resolve(true)
   }),
+  isRegisteredProvider: (provider: string | null | undefined) =>
+    provider != null && provider !== 'anonymous',
+  storedTokenProvider: () => auth.provider,
+  currentAccountId: () => auth.account,
 }))
 
+import { setAuthToken } from '@/db/services/user-service'
 import { installKaraokeImport } from './karaoke-import-wiring'
+import { SIGNED_OUT_PURCHASE_KEY } from './karaoke-subscription'
+
+/** This phone's device id: its anonymous identity's id too. */
+const PHONE = '0a0a0a0a-0000-4000-8000-00000000000a'
+/** An account that already existed. */
+const ACCOUNT = '0b0b0b0b-0000-4000-8000-00000000000b'
 
 beforeEach(() => {
   build.importing = false
   queue.starts = 0
   queue.stops = 0
   auth.asked = 0
+  auth.provider = 'anonymous'
+  auth.account = PHONE
+  localStorage.clear()
+  localStorage.setItem('mp:userId', PHONE)
 })
 
 describe('the shell in a build without Import', () => {
@@ -77,5 +99,39 @@ describe('the shell in a build with Import', () => {
     expect(subscription?.manage).toBeUndefined()
     // No identity is made for a store that is not there.
     expect(auth.asked).toBe(0)
+  })
+})
+
+describe('the note of a purchase made signed out', () => {
+  it('goes once the phone becomes an account itself, on the change of session', async () => {
+    build.importing = true
+    localStorage.setItem(SIGNED_OUT_PURCHASE_KEY, PHONE)
+    const wiring = installKaraokeImport()
+    await Promise.resolve()
+    expect(localStorage.getItem(SIGNED_OUT_PURCHASE_KEY)).toBe(PHONE)
+
+    // Made in place: the account keeps the phone's id, and already has
+    // what it bought. No later sign-in may take it anywhere.
+    auth.provider = 'apple'
+    auth.account = PHONE
+    setAuthToken('in-place')
+    await Promise.resolve()
+
+    expect(localStorage.getItem(SIGNED_OUT_PURCHASE_KEY)).toBeNull()
+    wiring.stop()
+  })
+
+  it('stays for a sign-in to another account, whose carry it is', async () => {
+    build.importing = true
+    localStorage.setItem(SIGNED_OUT_PURCHASE_KEY, PHONE)
+    const wiring = installKaraokeImport()
+
+    auth.provider = 'apple'
+    auth.account = ACCOUNT
+    setAuthToken('existing')
+    await Promise.resolve()
+
+    expect(localStorage.getItem(SIGNED_OUT_PURCHASE_KEY)).toBe(PHONE)
+    wiring.stop()
   })
 })

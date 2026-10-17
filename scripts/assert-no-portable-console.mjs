@@ -57,11 +57,14 @@ const storeBinary = args.includes(STORE_BINARY_FLAG)
  * registers on it, by the test id each one's markup carries: the screen
  * (apps/mercurypitch/src/shell/DeveloperScreen.tsx), native sign-in
  * (src/features/account/NativeSignInPanel.tsx), the audio record
- * (AudioDiagnosticsPanel.tsx) and the Karaoke audio switches
- * (KaraokeAudioPanel.tsx). Nothing the web imports reaches any of them.
- * And the audio census the native entry installs beside them
+ * (AudioDiagnosticsPanel.tsx), the Karaoke audio switches
+ * (KaraokeAudioPanel.tsx) and the Cloud subscription's timings
+ * (SubscriptionTimingPanel.tsx). Nothing the web imports reaches any of
+ * them. And the audio census the native entry installs beside them
  * (apps/mercurypitch/src/shell/audio-census.ts), by the event it records
- * for each mic track.
+ * for each mic track, and the subscription's timer
+ * (apps/mercurypitch/src/shell/subscription-timing.ts), by the line it
+ * writes to the console for each flow.
  */
 const FINGERPRINTS = [
   'MercuryPitch portable console',
@@ -77,6 +80,8 @@ const FINGERPRINTS = [
   'dev-audio-report',
   'dev-karaoke-audio',
   'mic-opened',
+  'dev-cloud-timings',
+  '[subscription] ',
 ]
 
 /**

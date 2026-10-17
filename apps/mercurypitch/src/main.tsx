@@ -94,6 +94,7 @@ import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { registerDeveloperSection } from '@/lib/developer-sections'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
 import { nativeDeviceApi, registerNativeDevice, } from '@/stores/native-shell-store'
 import { initTheme } from '@/stores/theme-store'
@@ -186,6 +187,21 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       render: () => <Panel />,
     })
   })
+  // How long each step of a Subscribe, a Restore purchase and a sign-in's
+  // carry took, and the wait for the songs after the store's yes: Subscribe
+  // took close to a minute on TestFlight build 919, and nothing said where.
+  // Only in a build with the subscription (KARAOKE_IMPORT). Same gate, same
+  // reason.
+  if (KARAOKE_IMPORT) {
+    void import('./shell/SubscriptionTimingPanel').then((module) => {
+      const Panel = module.SubscriptionTimingPanel
+      registerDeveloperSection({
+        id: 'cloud-timings',
+        title: 'Cloud subscription',
+        render: () => <Panel />,
+      })
+    })
+  }
   // The console's own off switch: minimised it still leaves its dot on every
   // screen, which is in the shot when a test build is recorded for a store
   // (owner, 3 Oct). Same gate, same reason.

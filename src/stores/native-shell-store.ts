@@ -189,13 +189,28 @@ export interface NativeShellApi {
   karaokeSubscription?: KaraokeSubscriptionApi
 }
 
-/** How a Subscribe ended. Only `purchased` changes anything. */
+/**
+ * How a Subscribe ended. `purchased` and `moved` give the account the songs.
+ * `moved`: the store already held this phone's own purchase, made signed
+ * out, and it went to the account instead of being bought again.
+ * `held-elsewhere`: the store account already pays for the subscription,
+ * filed under another account, and it stays there (owner rule D2).
+ */
 export type KaraokeSubscribeOutcome =
   | 'purchased'
+  | 'moved'
+  | 'held-elsewhere'
   | 'pending'
   | 'cancelled'
   | 'unavailable'
   | 'failed'
+
+/**
+ * What a sign-in did with a subscription this phone bought signed out:
+ * moved it to the account, found nothing of this phone's to move, or could
+ * not ask the store (and asks again at the next Subscribe or sign-in).
+ */
+export type KaraokeCarryOutcome = 'moved' | 'nothing' | 'unavailable' | 'failed'
 
 /** How a Restore purchases ended. */
 export type KaraokeRestoreOutcome =
@@ -227,6 +242,12 @@ export interface KaraokeSubscriptionApi {
    *  a purchase before the server does. False without a store, or when it
    *  cannot say. */
   storeSubscribed?: () => Promise<boolean>
+  /**
+   * After a sign-in: a subscription this phone bought while signed out goes
+   * to the account now signed in, through the store, so its renewals follow
+   * (karaoke-subscription.ts). Never one another account owns.
+   */
+  carryToAccount?: () => Promise<KaraokeCarryOutcome>
 }
 
 /**

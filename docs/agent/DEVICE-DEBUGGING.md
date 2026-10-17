@@ -189,6 +189,19 @@ because the carrier was not the sound that started last
 ([`carrier-in-front.ts`](../../packages/mobile-runtime/src/carrier-in-front.ts)).
 A press the room did hear moves the bar, and the next `bar at` line says where.
 
+The Cloud subscription keeps its own record on a test build
+([`subscription-timing.ts`](../../apps/mercurypitch/src/shell/subscription-timing.ts)):
+every Subscribe, Restore purchase and carry after a sign-in, timed by store
+step (`initialize`, `identify`, `logIn`, `getOfferings`, `getCustomer`,
+`purchase`, `restore`), then how long after the store's yes the app heard
+that the server had the songs. Each flow is one `[subscription]` line, and
+the Developer screen's Cloud subscription section lists the last eight, with
+Copy timings. "no songs ... after the store's yes" means the app stopped
+asking (about half a minute of asking) before RevenueCat's webhook reached
+the server, and Settings says Not subscribed until something asks again. A
+store build carries none of it (`assert-no-portable-console.mjs
+--store-binary`).
+
 ## A crash only in a Play build
 
 The Android build Play installs is shrunk and renamed by R8
