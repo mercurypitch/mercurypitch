@@ -38,8 +38,13 @@ const auth = vi.hoisted(() => ({
   startDriveConnect: vi.fn(() => Promise.resolve({ ok: true })),
 }))
 vi.mock('@/db/services/auth-service', () => ({
-  ...auth,
   currentAccountId: () => auth.account,
+}))
+vi.mock('@/db/services/drive-connect-service', () => ({
+  fetchDriveAccessToken: auth.fetchDriveAccessToken,
+  fetchDriveStatus: auth.fetchDriveStatus,
+  disconnectDrive: auth.disconnectDrive,
+  startDriveConnect: auth.startDriveConnect,
 }))
 
 const sessions = vi.hoisted(() => {
