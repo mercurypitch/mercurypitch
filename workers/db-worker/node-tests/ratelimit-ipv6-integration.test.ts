@@ -18,9 +18,11 @@ import type { Env } from '../src/auth'
 import worker from '../src/index'
 import { applyMigrations, SqliteD1Database } from './sqlite-d1'
 
-/** The limits in auth.ts this file relies on (per key, per minute). */
+/** The limits in auth.ts this file relies on (per key, per window). */
 const MIRROR_EVENT_LIMIT = 60
 const CRUD_WRITE_LIMIT = 120
+const LOGIN_LIMIT = 10
+const REGISTER_LIMIT = 5
 
 let sqlite: DatabaseSync
 let env: Env
@@ -62,6 +64,33 @@ function anonymousWrite(ip: string): Promise<Response> {
     env,
     {} as ExecutionContext,
   )
+}
+
+/**
+ * POST /api/auth/<route> from `ip`. The auth routes key their own limiter on
+ * the address (a login cannot be bucketed by the user it has not proven), and
+ * that key must be the same /64 bucket as everywhere else.
+ */
+function authPost(
+  route: string,
+  body: (call: number) => Record<string, string>,
+): (ip: string) => Promise<Response> {
+  let call = 0
+  return (ip: string) => {
+    call += 1
+    return worker.fetch(
+      new Request(`https://api.test/api/auth/${route}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': ip,
+        },
+        body: JSON.stringify(body(call)),
+      }),
+      env,
+      {} as ExecutionContext,
+    )
+  }
 }
 
 /** Spend the whole budget from `ip`, asserting every call is `status`. */
@@ -134,5 +163,47 @@ describe('the generic write limiter (rateLimitSubject)', () => {
 
     // And a different /64 is still let through to the (401) handler.
     expect((await anonymousWrite('2001:db8:9:a::1')).status).toBe(401)
+  })
+})
+
+describe('the auth route limiters', () => {
+  it('login shares one budget across a /64', async () => {
+    // Every attempt is a wrong password for an account that does not exist
+    // (401), and every one of them spends the address budget: the limiter
+    // runs before the handler, and only a CORRECT login clears it. A fresh
+    // address per call keeps the separate per-email limiter out of the way,
+    // so what trips below is the address bucket and nothing else.
+    const login = authPost('login', (n) => ({
+      email: `nobody-${n}@example.com`,
+      password: 'wrong-password-1',
+    }))
+    await exhaust(login, '2001:db8:7:7::1', LOGIN_LIMIT, 401)
+
+    const sibling = await login('2001:db8:7:7::2')
+    expect(sibling.status).toBe(429)
+    expect(sibling.headers.get('Retry-After')).not.toBeNull()
+
+    // The neighbouring /64 still gets to the handler.
+    expect((await login('2001:db8:7:8::1')).status).toBe(401)
+  })
+
+  it('register shares one budget across a /64', async () => {
+    // Each call registers a fresh address, so every one is a real sign-up
+    // (200) until the /64 is spent; the next address in it gets 429.
+    const register = authPost('register', (n) => ({
+      email: `tenant-${n}@example.com`,
+      password: 'Longenough1',
+      displayName: 'Tenant',
+    }))
+    await exhaust(register, '2001:db8:8:8::1', REGISTER_LIMIT, 200)
+
+    const sibling = await register('2001:db8:8:8::ffff')
+    expect(sibling.status).toBe(429)
+    expect(sibling.headers.get('Retry-After')).not.toBeNull()
+    // And no account was created for the refused call.
+    const rows = sqlite
+      .prepare('SELECT COUNT(*) AS n FROM users WHERE email LIKE ?')
+      .get('tenant-%@example.com') as { n: number }
+    expect(rows.n).toBe(REGISTER_LIMIT)
   })
 })
