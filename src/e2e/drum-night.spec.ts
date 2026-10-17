@@ -1081,6 +1081,49 @@ test('keeps the voice pill off every control, and in the corner once the rail is
   }
 })
 
+test('keeps every kit name clear of its size in the kit drawer @smoke', async ({
+  page,
+}) => {
+  // 1440 px lays the catalog out in 150 px columns, the narrowest it gets.
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/drum-night?drawer=kit', { waitUntil: 'domcontentloaded' })
+    const catalog = page.getByRole('radiogroup', { name: 'Drum sound' })
+    await expect(catalog.locator(':scope > button').first()).toBeVisible()
+
+    const kits = await catalog.evaluate((group) =>
+      [...group.querySelectorAll(':scope > button')].map((button) => {
+        const name = button.querySelector('strong')
+        const size = button.querySelector('b')
+        if (name === null || size === null) return null
+        // The name's ink, not its box: a text range measures what is drawn.
+        const range = document.createRange()
+        range.selectNodeContents(name)
+        const ink = range.getBoundingClientRect()
+        const box = size.getBoundingClientRect()
+        const across =
+          Math.min(ink.right, box.right) - Math.max(ink.left, box.left)
+        const down =
+          Math.min(ink.bottom, box.bottom) - Math.max(ink.top, box.top)
+        return {
+          kit: `${name.textContent} (${size.textContent})`,
+          clash: across > 0 && down > 0,
+        }
+      }),
+    )
+    const sized = kits.filter((kit) => kit !== null)
+    expect(sized.length, 'the catalog listed no kits').toBeGreaterThan(1)
+    // At 150 px "Muldjord" ran 1 px into "4.4 MB encoded".
+    expect(
+      sized.filter((kit) => kit.clash).map((kit) => kit.kit),
+      JSON.stringify(viewport),
+    ).toEqual([])
+  }
+})
+
 test('keeps the Songs play-along panel full-width without responsive overflow @smoke', async ({
   page,
 }, testInfo) => {

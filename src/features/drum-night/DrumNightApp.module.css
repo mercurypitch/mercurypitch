@@ -1575,7 +1575,10 @@
 
 .kitCatalog > button > span {
   display: grid;
-  min-width: 0;
+  /* No narrower than its longest word. At 0, a 150 px button squeezed the
+     name out of its column, and "Muldjord" ran into its size at 1440x900.
+     The size wraps to a second line instead (below). */
+  min-width: min-content;
   flex: 1;
   gap: 5px;
 }
@@ -1593,11 +1596,11 @@
 }
 
 .kitCatalog b {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   color: var(--amber);
   font-size: 9px;
   font-weight: 700;
-  white-space: nowrap;
+  text-align: right;
 }
 
 .selectionMark {
