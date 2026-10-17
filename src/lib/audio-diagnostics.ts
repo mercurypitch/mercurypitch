@@ -28,9 +28,18 @@
 // Nothing here imports a store or a feature. A module that makes sound is
 // handed `audioReporter(source)` as a dep (the alley's ambient is), which
 // keeps it testable and keeps this file out of its graph.
+//
+// FOR A SCENARIO TEST (owner, 17 Oct: "add some good console logging so I
+// can test different scenarios and send logs"). Each line starts with the
+// phone's own clock, so a tester's "it went quiet at 21:31" finds its
+// place, and the report says the day before its first line and wherever
+// the day changes. A test build keeps the newest entries across a restart
+// (apps/mercurypitch audio-log-store.ts): `adoptAudioDiagnostics` puts the
+// last launch's in front, and `clearAudioDiagnostics` starts a scenario
+// clean. Subscribers are told which of the three happened.
 
 /** Newest kept; older ones fall off, so a long session stays small. */
-export const MAX_AUDIO_ENTRIES = 200
+export const MAX_AUDIO_ENTRIES = 1000
 
 export interface AudioDiagnosticEntry {
   /** Milliseconds since the first entry. */
@@ -54,7 +63,13 @@ export type AudioReport = (
   failed?: boolean,
 ) => void
 
-type Listener = () => void
+/** What changed in the record: one entry, all of them gone, or older ones put in front. */
+export type AudioDiagnosticChange =
+  | { readonly kind: 'entry'; readonly entry: AudioDiagnosticEntry }
+  | { readonly kind: 'cleared' }
+  | { readonly kind: 'adopted'; readonly count: number }
+
+type Listener = (change: AudioDiagnosticChange) => void
 
 const listeners = new Set<Listener>()
 let entries: AudioDiagnosticEntry[] = []
@@ -68,10 +83,10 @@ function visibility(): string {
   }
 }
 
-function notify(): void {
+function notify(change: AudioDiagnosticChange): void {
   for (const listener of [...listeners]) {
     try {
-      listener()
+      listener(change)
     } catch {
       // One bad subscriber must not stop the panel updating.
     }
@@ -103,7 +118,26 @@ export function recordAudioDiagnostic(
   const line = `[audio] ${formatAudioDiagnostic(entry)}`
   if (failed) console.warn(line)
   else console.info(line)
-  notify()
+  notify({ kind: 'entry', entry })
+}
+
+/** Forget every entry, so a scenario starts clean. */
+export function clearAudioDiagnostics(): void {
+  entries = []
+  origin = 0
+  notify({ kind: 'cleared' })
+}
+
+/**
+ * Put entries from before this launch in front of this launch's own, and
+ * keep the newest MAX_AUDIO_ENTRIES of them all.
+ */
+export function adoptAudioDiagnostics(
+  older: readonly AudioDiagnosticEntry[],
+): void {
+  if (older.length === 0) return
+  entries = [...older, ...entries].slice(-MAX_AUDIO_ENTRIES)
+  notify({ kind: 'adopted', count: older.length })
 }
 
 /** A reporter bound to one source, for a module that takes one as a dep. */
@@ -149,31 +183,84 @@ function formatValue(value: unknown): string {
   return String(value)
 }
 
-/** One line: elapsed, source, event, detail, and the page's visibility. */
+/** A value kept as it is where JSON keeps it, and as its words where not. */
+function plainValue(value: unknown): unknown {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value)) ||
+    value === null
+  ) {
+    return value
+  }
+  return formatValue(value)
+}
+
+/** The entry with every detail a string, number, boolean or null: storable. */
+export function plainAudioDiagnostic(
+  entry: AudioDiagnosticEntry,
+): AudioDiagnosticEntry {
+  const detail: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(entry.detail)) {
+    detail[key] = plainValue(value)
+  }
+  return { ...entry, detail }
+}
+
+const two = (n: number): string => String(n).padStart(2, '0')
+
+/** The phone's own clock at an entry: 21:31:05.120. */
+function clockOf(date: Date): string {
+  const ms = String(date.getMilliseconds()).padStart(3, '0')
+  return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}.${ms}`
+}
+
+/** The phone's own day: 2026-10-17. */
+function dayOf(date: Date): string {
+  return `${String(date.getFullYear())}-${two(date.getMonth() + 1)}-${two(date.getDate())}`
+}
+
+/** One line: the time, source, event, detail, and [hidden] if the page was. */
 export function formatAudioDiagnostic(entry: AudioDiagnosticEntry): string {
-  const seconds = (entry.at / 1000).toFixed(2).padStart(7, ' ')
   const detail = Object.entries(entry.detail)
     .map(([key, value]) => `${key}=${formatValue(value)}`)
     .join(' ')
-  return `${seconds}s ${entry.source} ${entry.event}${
+  const behind = entry.visibility === 'visible' ? '' : ` [${entry.visibility}]`
+  return `${clockOf(new Date(entry.wall))} ${entry.source} ${entry.event}${
     detail === '' ? '' : ` ${detail}`
-  } [${entry.visibility}]`
+  }${behind}`
 }
 
 /**
- * The whole record as text, headed with the device, for the Copy button.
- * `live` is whatever the caller can see right now (the panel's rows).
+ * The whole record as text, for Copy and Share. `head` first (the device,
+ * the session and the switches, as the caller sees them now), then when,
+ * the browser and the count, then `live` (the panel's rows), then the
+ * entries, oldest first, with the day before the first and at each change
+ * of day.
  */
-export function formatAudioDiagnostics(live: readonly string[] = []): string {
+export function formatAudioDiagnostics(
+  head: readonly string[] = [],
+  live: readonly string[] = [],
+): string {
+  const now = new Date()
   const header = [
     'MercuryPitch audio diagnostics',
-    `when: ${new Date().toISOString()}`,
+    ...head,
+    `when: ${dayOf(now)} ${clockOf(now)} (${now.toISOString()})`,
     `agent: ${typeof navigator === 'undefined' ? 'unknown' : navigator.userAgent}`,
     `entries: ${entries.length}${entries.length === MAX_AUDIO_ENTRIES ? ' (oldest dropped)' : ''}`,
     ...live,
     '',
   ]
-  return [...header, ...entries.map(formatAudioDiagnostic)].join('\n')
+  const lines: string[] = []
+  let day = ''
+  for (const entry of entries) {
+    const today = dayOf(new Date(entry.wall))
+    if (today !== day) lines.push(`-- ${today} --`)
+    day = today
+    lines.push(formatAudioDiagnostic(entry))
+  }
+  return [...header, ...lines].join('\n')
 }
 
 /** Test seam: forget every entry and subscriber. */

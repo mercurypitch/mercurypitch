@@ -215,15 +215,20 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
   })
   // Every context and mic track the page makes, every change to where the
   // phone sends its sound, and each sound the rooms send: the record a room
-  // that went quiet is read from (audio-census.ts). Same gate, same reason.
+  // that went quiet is read from (audio-census.ts). With it, the steps of a
+  // scenario the census does not count, a room entered and left, the
+  // page's session type, the volume notice, a demo, the app behind and
+  // back (audio-record.ts), and the newest entries kept across a restart
+  // (audio-log-store.ts), put back first. Same gate, same reason.
   void Promise.all([
     import('./shell/audio-census'),
+    import('./shell/audio-record'),
+    import('./shell/audio-log-store'),
     import('@/components/room-kit/room-output'),
-  ]).then(([census, rooms]) => {
-    census.installAudioCensus({
-      output: nativeDeviceApi()?.audioOutput,
-      roomLevels: rooms.roomOutputReadings,
-    })
+  ]).then(([census, record, kept, rooms]) => {
+    kept.keepAudioLogAcrossLaunches()
+    census.installAudioCensus({ output: nativeDeviceApi()?.audioOutput })
+    record.installAudioRecord({ roomLevels: rooms.roomOutputReadings })
   })
   // And whether the web view was ever turned: a line in the same record at
   // launch and for every change after it, so the copied report says so even

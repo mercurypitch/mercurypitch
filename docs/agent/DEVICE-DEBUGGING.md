@@ -164,6 +164,34 @@ starting and stopping, interruptions and routes, each with the time iOS said it
 plays in its own process, so "another app's sound" right after a play or a
 pause of ours is the song itself.
 
+A test build adds what a premium room's sound goes through, so the owner can
+walk a scenario (a room, the mic, AirPods, a call, the lock screen) and send
+the report: More > Developer > Audio, then Copy report or Share report, and
+Clear log before the next scenario. Each line starts with the phone's clock
+(the report says the day), the newest 1000 are kept in memory and the newest
+500 across a restart ([`audio-log-store.ts`](../../apps/mercurypitch/src/shell/audio-log-store.ts)),
+and the report opens with the app's version and build, the phone, iOS, the
+app's session, the outputs, the page's session type and "One volume in
+rooms". Sources: [`audio-census.ts`](../../apps/mercurypitch/src/shell/audio-census.ts)
+and [`audio-record.ts`](../../apps/mercurypitch/src/shell/audio-record.ts).
+
+| Source    | Lines                                                                                                                                                                                                                                                 |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `room`    | `enter`, `leave`: the room, the switch (`oneVolume`) and what the visit asked WebKit for (`asks`), and on leaving how long it lasted                                                                                                                  |
+| `session` | `set`, `restore`, `kept`, `refused`: every change to `navigator.audioSession.type`, who asked, from and to, what WebKit kept where that differs (`reads`), and who holds it after. `state`: WebKit's word on the page's session, as it gives one      |
+| `census`  | `mic-opened`, `mic-stopped`, `mic-ended`, `context-made`, `context-state`, and `room-sound` with each sound's peak and RMS (`cut=true`: still sounding as the room closed)                                                                            |
+| `output`  | `read at=...`, now and once `settled` a second later, at each mic, context, room, app and session step; `change reason=...` for a key, a route (`routeReason`, `previousOutputs`) or an interruption (`lastInterruption`, `wasSuspended`, `appState`) |
+| `notice`  | `shown`, `hidden`: the words, the cause, and the reading that decided it (`volume`, `known`, `system`, `live`, `settled`, `session`)                                                                                                                  |
+| `demo`    | `card`, `playing`, `end`, `idle`: each turn of the open room's demo                                                                                                                                                                                   |
+| `app`     | `launch`, `background`, `foreground`                                                                                                                                                                                                                  |
+| `log`     | `restored`: where the last launch's lines end. `cleared`: Clear log                                                                                                                                                                                   |
+
+Reading one: a `systemVolume` that differs between an `output read` and its
+`settled` line, beside a `session set` or a `mic-opened`, is WebKit moving the
+sound to another of iOS's stored volumes. `known=session` means the volume was
+the app's session alone, which the notice never calls zero
+([`volume-hint.ts`](../../apps/mercurypitch/src/shell/volume-hint.ts)).
+
 The iOS lock screen's carrier
 ([`webkit-now-playing.ts`](../../packages/mobile-runtime/src/webkit-now-playing.ts))
 writes `[now playing]` lines, and the lyrics window `[lyrics window]` ones:
