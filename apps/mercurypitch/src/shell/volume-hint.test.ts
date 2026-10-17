@@ -15,8 +15,10 @@ import { isLowVolume, LOW_VOLUME_AT, nextVolumeHint, VOLUME_HINT_START, } from '
 const reading = (
   volume: number,
   route: NativeAudioOutputReading['route'] = 'speaker',
+  volumeKnown: NativeAudioOutputReading['volumeKnown'] = 'live',
 ): NativeAudioOutputReading => ({
   volume,
+  volumeKnown,
   step: null,
   steps: null,
   route,
@@ -98,5 +100,44 @@ describe('nextVolumeHint', () => {
     expect(
       run(reading(0.125, 'speaker'), reading(0.125, 'headphones')).shown,
     ).toBe(false)
+  })
+})
+
+// An iPhone's own session can read 0 while the room plays out loud: it
+// stopped following the keys once a room opened (build 880), and on iOS 18
+// and later it can read 0 at first or keep an old value. The hint still
+// asks for the volume to go up, but says "zero" only from a reading that
+// follows the keys, or from two readings that agree.
+describe('saying zero', () => {
+  it('says zero from a reading that follows the keys', () => {
+    expect(run(reading(0, 'speaker', 'live')).silent).toBe(true)
+    expect(run(reading(0, 'headphones', 'live')).silent).toBe(true)
+  })
+
+  it('says zero when the session and a settled volume view agree', () => {
+    expect(run(reading(0, 'speaker', 'agreed')).silent).toBe(true)
+  })
+
+  it("never says zero from the session's reading alone", () => {
+    const hint = run(reading(0, 'speaker', 'session'))
+    expect(hint.shown).toBe(true)
+    expect(hint.silent).toBe(false)
+  })
+
+  it('keeps the same lines for showing, whatever the reading is', () => {
+    for (const known of ['live', 'agreed', 'session'] as const) {
+      expect(run(reading(0.25, 'speaker', known)).shown).toBe(true)
+      expect(run(reading(5 / 16, 'speaker', known)).shown).toBe(false)
+      expect(run(reading(0.0625, 'bluetooth', known)).shown).toBe(false)
+      expect(run(reading(0, 'bluetooth', known)).shown).toBe(true)
+    }
+  })
+
+  it('says zero once a reading that follows the keys confirms it', () => {
+    const stale = run(reading(0, 'speaker', 'session'))
+    expect(stale.silent).toBe(false)
+    expect(nextVolumeHint(stale, reading(0, 'speaker', 'live')).silent).toBe(
+      true,
+    )
   })
 })

@@ -339,6 +339,13 @@ export type NativeAudioRoute =
 export interface NativeAudioOutputReading {
   /** 0 to 1. */
   readonly volume: number
+  /**
+   * How far `volume` can be taken at its word: 'live' follows the volume
+   * keys, 'agreed' is an iPhone's two readings saying the same, 'session'
+   * is an iPhone's own session alone, which can read 0 while the room plays
+   * out loud (packages/mobile-runtime audio-output.ts says when each is).
+   */
+  readonly volumeKnown: 'live' | 'agreed' | 'session'
   /** Android: the volume in the phone's own steps, and how many there are. */
   readonly step: number | null
   readonly steps: number | null

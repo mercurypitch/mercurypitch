@@ -11,6 +11,7 @@ import { contextsLine, hardwareLine, leasesLine, outputLine, roomOutputLine, ses
 
 const IPHONE: NativeAudioOutputReading = {
   volume: 1,
+  volumeKnown: 'session',
   step: null,
   steps: null,
   route: 'receiver',
@@ -30,6 +31,7 @@ const IPHONE: NativeAudioOutputReading = {
 
 const ANDROID: NativeAudioOutputReading = {
   volume: 0.2,
+  volumeKnown: 'live',
   step: 3,
   steps: 15,
   route: 'speaker',
