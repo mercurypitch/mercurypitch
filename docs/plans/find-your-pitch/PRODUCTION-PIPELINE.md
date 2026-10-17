@@ -73,8 +73,9 @@ session.
   0.9 (orange) plus authored gaps give about 164 wpm while speaking and 117 overall. Long lines
   are split into phrase events so the picture can land on a word.
 - **Merc.** Pre-render each performance once (`merc-pass.mjs`), from the cue sheet
-  (`merc-shots.py`): he sings on his sung cues, talks on his lines (mouth from the line's loudness;
-  sound arcs off), listens while the other speaks. Each performance is ONE straight-alpha VP9 WebM
+  (`merc-shots.py`): he sings on his sung cues (full sound arcs), talks on his lines (mouth from the line's loudness,
+  arcs at half strength), and idles, turned towards the speaker, while the other Merc speaks or
+  sings. Only the Merc making the sound shows arcs (trap 14). Each performance is ONE straight-alpha VP9 WebM
   (`<id>-merc.webm`) with alpha = max(A, R, G, B) over his premultiplied colour, so his bloom and
   floor light survive and he composites correctly in any moved, scaled or faded layer; each scene
   holds static `<video data-merc>` tags timed by `tools/merc-tags.py` (trap 4). Always force
@@ -104,20 +105,26 @@ session.
   CPU, not the container restart before m10: m14, m17, m18, m18-duo, m19 and m21 ran after the same
   restart at the solo speeds above.
 
-- **Frame rate.** 60 fps master; Merc at 30 fps (each frame shown twice: animation on twos).
+- **Frame rate.** 60 fps master, and Merc at 60 fps too: passes on twos read as a stutter beside
+  the 60 fps picture (Lesson 1, critic 05). `merc-shots.py` snaps every pass to the film's frame
+  grid and `merc-tags.py` times the tags in whole frames, so film frame n shows pass frame n - P
+  exactly, across cuts too. The closing passes run a little past their scene, so the hosts never
+  drop out on the film's last frame (trap 15).
 - **Audio.** Every musical example is synthesised at its exact frequency in `mix.py`. Merc's sung
   notes are the app's Echo "ooh" set: ElevenLabs takes re-pitched onto exact contours, development
   placeholders that the app withholds from its store build (`src/features/echo/merc-voice-set.ts`);
   the two-voice tune (s17) uses the app's synthesised "ooh" (`src/lib/demo-audio.ts`). The owner
   holds the Echo samples' rights, so they stay until a voice actor replaces them (MASTER-PLAN § 12
   item 1). The bed is a quiet open-fifth pad in the key that plays only in
-  act transitions and under the dressed pauses (predict, hum, quiz), so the film never drops to
-  digital silence (critic 03 found the mix silent in those pauses); its open fifth on the
-  lesson's note also supports the hum. It is silent under narration and under every musical
+  act transitions and under the dressed pauses (predict, hum, quiz), where critic 03 found the mix
+  silent; its open fifth on the lesson's note also supports the hum. It is silent under narration and under every musical
   example: `mix.py` mutes it around every `line`, `sound` and `sing` cue, merging windows closer
   than 1.2 s so it never pumps between lines. In Lesson 1 it sounds under the title (22.5 to 26.0
-  s), the predict pause, the hum pause and the three quiz pauses, measured from the bed stem. One soft whoosh per act change. A music-only render is not
-  needed: the music-only mix muxed onto the same picture is identical by construction.
+  s), the predict pause, the hum pause and the three quiz pauses, measured from the bed stem. One soft whoosh per act change. Muting the bed left
+  digital silence between lines (78 stretches in Lesson 1's rc-04, critic 06), so a room tone runs
+  under the whole film in both mixes: pink noise from 150 to 3000 Hz at -55 LUFS, 37 LU under the
+  voice and pitchless (trap 17). A music-only render is not needed: the music-only mix muxed onto
+  the same picture is identical by construction.
 - **Quality bar additions.** Two measured checks join the skill's quality bar. The bed is silent
   inside every spoken line and musical example (the bed stem's RMS is zero there); Lesson 1 passes
   (measured).
@@ -140,7 +147,7 @@ session.
   scene files owned by one builder each. Lab renders per scene (`tools/lab.mjs`: a temporary
   project hosting one scene, with the soundtrack offset to it) prove each scene alone.
 
-## 4. Traps found on Lesson 1
+## 4. Traps found on Lessons 1 and 2
 
 1. CSS `url('../fonts/...')` in a stylesheet fails HyperFrames' lint
    (`invalid_parent_traversal_in_asset_path`): inline the `@font-face` rules in the root with
@@ -176,6 +183,29 @@ session.
 11. A cloud container can restart mid-production and stop every background process (renders,
     builders). Files survive. Keep long jobs resumable: one output file per Merc pass, written only
     when complete, so a restarted queue needs only the passes that are missing or empty.
+12. Dimmed text fails contrast. Ghosting a diagram by lowering the opacity of the whole group
+    takes its labels under 4.5:1 (Lesson 1's quiz and dimmed panels, 2.2 to 3.4:1, found only in
+    its fifth film round; Lesson 2's ghosted pads, found on its storyboard). Dim strokes and fills,
+    never labels: every settled label stays at 4.5:1 or better, or is hidden while its group is dim.
+13. measure.py does not see small motion. A 2 % drift measures as a hold for much of its length,
+    and a glow or halo pulse registers for only 0.1 to 0.4 s of its 0.75 s (Lesson 2, storyboard
+    critics 07 and 08, measured on mock clips). Count motion as measure.py registers it: a tile
+    or key scaling 5 %, a bar or large label scaling 15 to 20 %, an echo ring, a large lit area,
+    or a camera move by its speed (at least about 8 px a second). Give a long diagram stretch a
+    lead move, such as a 120 to 150 px pan under the pulses (motion principle 3), and check a
+    mock or lab clip with measure.py before building on a guess. Budget about 1.8 s of holds per
+    30 s for a clip with no Merc in it.
+14. A host who listens can look as if he is talking. The `listen` state draws arcs at Merc's side
+    and closes one eye, and with the sound off the listener read as the speaker (Lesson 1, critics
+    05 and 06). Only the Merc making the sound shows arcs.
+15. A pass that ends with its scene drops out of the film's last frame, the one an embed holds
+    when it stops (Lesson 1, critic 06). Run the closing passes past the end.
+16. esbuild looks for a `tsconfig.json` above each file it bundles. The generated entry file sits
+    in the film project, so the Merc bundle came out with a leading `"use strict";` inside the
+    repository and without it anywhere else. `build-merc.mjs` names the tsconfig, so the bundle no
+    longer depends on where the project lives.
+17. A bed muted to exactly zero around speech leaves digital silence between lines: a room tone
+    under the whole film keeps the soundtrack alive (§ 3, Audio).
 
 ## 5. The web lesson
 
