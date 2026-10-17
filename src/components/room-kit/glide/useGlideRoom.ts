@@ -50,6 +50,7 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { offerable, QUIET_LIMIT_SECONDS, SILENT_VOICE, } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
 import { openRoomMic } from '@/components/room-kit/room-mic'
+import { createRoomScript } from '@/components/room-kit/room-script'
 import { createRoomTones } from '@/components/room-kit/room-tones'
 import { newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
@@ -645,14 +646,15 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     merc.stopCheering()
   }
 
-  const script: GlideRoom<R>['script'] = {
+  // In and out on the room kit's terms (room-script.ts); the moves are
+  // the core's own.
+  const script: GlideRoom<R>['script'] = createRoomScript({
     active: scriptActive,
+    phase,
     audio: () => capture.audio(),
     // The arches the singer would sing now: the demo sings the first one.
     note: () => untrack(scenePlan).roots[0],
     enter: (text) => {
-      const from = phase()
-      if (!demoOn() && from !== 'intro' && from !== 'result') return false
       clearForScript()
       batch(() => {
         setScriptActive(true)
@@ -661,10 +663,8 @@ export function useGlideRoom<R extends GlideRoomTypes>(
         dispatch({ type: 'demo', phase: 'intro' })
       })
       setMoment('breath')
-      return true
     },
     play: (take) => {
-      if (!demoOn()) return
       clearForScript()
       batch(() => {
         setLine('')
@@ -675,13 +675,11 @@ export function useGlideRoom<R extends GlideRoomTypes>(
       startRun(take.plan, take.preset, null, take)
     },
     rest: () => {
-      if (!demoOn()) return
       clearForScript()
       dispatch({ type: 'demo', phase: 'intro' })
       setMoment('breath')
     },
     leave: () => {
-      if (!demoOn()) return
       clearForScript()
       batch(() => {
         setScriptActive(false)
@@ -692,7 +690,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
       setMoment('intro')
     },
     playing: setDemoPlaying,
-  }
+  })
 
   onCleanup(() => {
     live = null
