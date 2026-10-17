@@ -33,6 +33,13 @@
   display: grid;
   min-width: 320px;
   grid-template-columns: 76px minmax(0, 1fr);
+  /* The floating voice pill's corner is the foot of the rail, where the Kit
+     button is, and right of the rail the room's own controls fill the
+     bottom row: the pill covered the Kit button. Lift it into the rail's
+     empty middle instead, clear of the Kit button and its margins
+     (.railKit: 68 px, and 7 px either side). Where the rail is hidden the
+     pill returns to the corner. */
+  --voice-pill-inset-bottom: calc(68px + 2 * 7px);
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
   overflow: hidden;
@@ -3086,8 +3093,19 @@
   }
 }
 
+/* Too short for the rail's middle to hold the pill. At 844x390 the rail is
+   taller than the screen and its Kit button runs past the bottom edge, and
+   a pill lifted clear of it landed on Groove and Songs instead. It keeps
+   the corner there. */
+@media (max-height: 520px) {
+  .shell {
+    --voice-pill-inset-bottom: 0px;
+  }
+}
+
 @media (max-width: 720px) {
   .shell {
+    --voice-pill-inset-bottom: 0px;
     display: block;
     height: 100dvh;
     overscroll-behavior: none;

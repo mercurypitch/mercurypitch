@@ -1010,6 +1010,77 @@ test('switches and closes the desktop rail workbench with URL and aria state in 
   await expect(page).not.toHaveURL(/drawer=/)
 })
 
+test('keeps the voice pill off every control, and in the corner once the rail is hidden @smoke', async ({
+  page,
+}) => {
+  // 76 px rail, 68 px rail, no rail.
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 820, height: 800 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('drum-night-shell')).toBeVisible()
+    // The pill loads on a visitor's first gesture.
+    await page.mouse.move(viewport.width / 2, viewport.height / 2)
+    const pill = page.getByTestId('voice-control-pill')
+    await expect(pill).toBeVisible()
+
+    const placed = await pill.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      const rail = document.querySelector('[aria-label="Drum Night sections"]')
+      const railBox = rail?.getBoundingClientRect()
+      const covered = [
+        ...document.querySelectorAll(
+          'button, a, input, select, [role="button"], [role="radio"]',
+        ),
+      ]
+        .filter((other) => !element.contains(other))
+        .filter(
+          (other) => other.closest('[inert], [aria-hidden="true"]') === null,
+        )
+        .filter((other) => {
+          const r = other.getBoundingClientRect()
+          return (
+            r.width > 0 &&
+            r.height > 0 &&
+            r.left < box.right &&
+            r.right > box.left &&
+            r.top < box.bottom &&
+            r.bottom > box.top
+          )
+        })
+        .map(
+          (other) =>
+            other.getAttribute('aria-label') ??
+            other.textContent?.trim() ??
+            other.tagName,
+        )
+      return {
+        left: box.left,
+        right: box.right,
+        railRight:
+          railBox !== undefined && railBox.width > 0 ? railBox.right : null,
+        covered,
+      }
+    })
+
+    if (placed.railRight === null) {
+      // No rail: the pill keeps its corner.
+      expect(placed.left, JSON.stringify(viewport)).toBeLessThan(20)
+    } else {
+      // The rail's foot is its Kit button, which the pill covered, and right
+      // of the rail the room's Count-in and click fill the bottom row. The
+      // pill stays in the rail, above the Kit button.
+      expect(placed.right, JSON.stringify(viewport)).toBeLessThanOrEqual(
+        placed.railRight,
+      )
+      expect(placed.covered, JSON.stringify(viewport)).toEqual([])
+    }
+  }
+})
+
 test('keeps the Songs play-along panel full-width without responsive overflow @smoke', async ({
   page,
 }, testInfo) => {
