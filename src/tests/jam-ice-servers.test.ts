@@ -24,14 +24,27 @@ describe('getIceServers', () => {
       },
     ]
     const servers = await getIceServers(
-      vi.fn().mockResolvedValue(ok({ iceServers: minted })),
+      undefined,
+      vi.fn().mockResolvedValue(ok({ iceServers: minted, source: 'turn' })),
     )
     expect(servers).toHaveLength(2)
     expect(servers).toEqual(minted)
   })
 
+  it('names the room so the worker can mint for a live room only', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        ok({ iceServers: [{ urls: ['turn:y'] }], source: 'turn' }),
+      )
+    await getIceServers('ABCDEFGH', fetchImpl)
+    const calledUrl = String(fetchImpl.mock.calls[0]?.[0])
+    expect(calledUrl).toContain('/ice?room=ABCDEFGH')
+  })
+
   it('falls back to STUN on a non-200', async () => {
     const servers = await getIceServers(
+      undefined,
       vi.fn().mockResolvedValue({ ok: false, status: 500 } as Response),
     )
     expect(servers).toEqual(FALLBACK_ICE_SERVERS)
@@ -40,6 +53,7 @@ describe('getIceServers', () => {
   it('falls back to STUN when the fetch rejects', async () => {
     // Offline, DNS failure, or the abort timeout firing.
     const servers = await getIceServers(
+      undefined,
       vi.fn().mockRejectedValue(new Error('offline')),
     )
     expect(servers).toEqual(FALLBACK_ICE_SERVERS)
@@ -48,13 +62,17 @@ describe('getIceServers', () => {
   it('falls back to STUN on a body that is not what we expect', async () => {
     for (const body of [{}, { iceServers: [] }, { iceServers: 'nope' }, null]) {
       resetIceServers()
-      const servers = await getIceServers(vi.fn().mockResolvedValue(ok(body)))
+      const servers = await getIceServers(
+        undefined,
+        vi.fn().mockResolvedValue(ok(body)),
+      )
       expect(servers).toEqual(FALLBACK_ICE_SERVERS)
     }
   })
 
   it('falls back to STUN when the body will not parse', async () => {
     const servers = await getIceServers(
+      undefined,
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => {
@@ -75,22 +93,48 @@ describe('getIceServers', () => {
     expect(urls.some((u) => u.includes('openrelay'))).toBe(false)
   })
 
-  it('fetches once per session and reuses the result', async () => {
+  it('caches a relay result once per session and reuses it', async () => {
     const fetchImpl = vi
       .fn()
-      .mockResolvedValue(ok({ iceServers: [{ urls: ['stun:x'] }] }))
-    await getIceServers(fetchImpl)
-    await getIceServers(fetchImpl)
+      .mockResolvedValue(
+        ok({ iceServers: [{ urls: ['turn:x'] }], source: 'turn' }),
+      )
+    await getIceServers(undefined, fetchImpl)
+    await getIceServers(undefined, fetchImpl)
     expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not cache a STUN result, so a later attempt can still get TURN', async () => {
+    // Before the local peer is in the room the worker answers STUN; that must
+    // not condemn the whole session to STUN once the room goes live.
+    const stun = vi
+      .fn()
+      .mockResolvedValue(
+        ok({ iceServers: [{ urls: ['stun:x'] }], source: 'stun' }),
+      )
+    await getIceServers(undefined, stun)
+    const turn = vi
+      .fn()
+      .mockResolvedValue(
+        ok({ iceServers: [{ urls: ['turn:y'] }], source: 'turn' }),
+      )
+    const servers = await getIceServers('ABCDEFGH', turn)
+    expect(turn).toHaveBeenCalledTimes(1)
+    expect(servers).toEqual([{ urls: ['turn:y'] }])
   })
 
   it('does not cache a fallback, so a later attempt can still get TURN', async () => {
     // A failed mint at join time must not condemn the whole session to STUN.
-    await getIceServers(vi.fn().mockRejectedValue(new Error('offline')))
+    await getIceServers(
+      undefined,
+      vi.fn().mockRejectedValue(new Error('offline')),
+    )
     const fetchImpl = vi
       .fn()
-      .mockResolvedValue(ok({ iceServers: [{ urls: ['turn:y'] }] }))
-    const servers = await getIceServers(fetchImpl)
+      .mockResolvedValue(
+        ok({ iceServers: [{ urls: ['turn:y'] }], source: 'turn' }),
+      )
+    const servers = await getIceServers(undefined, fetchImpl)
     expect(fetchImpl).toHaveBeenCalledTimes(1)
     expect(servers).toEqual([{ urls: ['turn:y'] }])
   })

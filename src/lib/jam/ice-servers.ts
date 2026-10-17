@@ -48,20 +48,32 @@ let cached: RTCIceServer[] | null = null
  * written to degrade rather than to be correct.
  */
 export async function getIceServers(
+  roomId?: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<RTCIceServer[]> {
   if (cached !== null) return cached
 
   try {
+    // The worker only mints TURN for a room that has a live peer, so name the
+    // room. Without it (or before the local peer is in the room) the worker
+    // answers STUN, which is why a STUN result is NOT cached below — the next
+    // call, once the room is live, can still get relay credentials.
+    const endpoint =
+      roomId !== undefined && roomId !== ''
+        ? `${ICE_ENDPOINT}?room=${encodeURIComponent(roomId)}`
+        : ICE_ENDPOINT
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
-    const res = await fetchImpl(ICE_ENDPOINT, {
+    const res = await fetchImpl(endpoint, {
       method: 'POST',
       signal: controller.signal,
     }).finally(() => clearTimeout(timer))
 
     if (!res.ok) return FALLBACK_ICE_SERVERS
-    const body = (await res.json()) as { iceServers?: unknown }
+    const body = (await res.json()) as {
+      iceServers?: unknown
+      source?: unknown
+    }
     const servers = body.iceServers
     // The real response carries TWO entries -- a STUN group and a TURN
     // group -- so the whole array is kept. Taking the first would drop
@@ -69,8 +81,10 @@ export async function getIceServers(
     if (!Array.isArray(servers) || servers.length === 0) {
       return FALLBACK_ICE_SERVERS
     }
-    cached = servers as RTCIceServer[]
-    return cached
+    // Only a relay result is worth caching for the session; a STUN answer
+    // means the room was not live yet, so let a later call try again.
+    if (body.source === 'turn') cached = servers as RTCIceServer[]
+    return servers as RTCIceServer[]
   } catch {
     // Offline, aborted, or a body that would not parse.
     return FALLBACK_ICE_SERVERS

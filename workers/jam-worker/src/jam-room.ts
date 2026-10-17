@@ -276,6 +276,22 @@ export class JamRoom extends DurableObject<JamEnv> {
       })
     }
 
+    // Is anyone actually in this room? The ICE route asks before it mints
+    // TURN credentials, so relay spend is tied to live rooms instead of
+    // handed to anyone who can POST. `this.peers` was just rebuilt from the
+    // live hibernatable sockets in hydrate(), so its size is the current
+    // established-peer count.
+    if (request.method === 'POST' && url.pathname === '/internal/room-active') {
+      const peers = this.peers.size
+      return new Response(JSON.stringify({ active: peers > 0, peers }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'private, no-store',
+        },
+      })
+    }
+
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('WebSocket upgrade required', { status: 426 })
     }
@@ -305,11 +321,7 @@ export class JamRoom extends DurableObject<JamEnv> {
     this.hydrate()
 
     if (typeof message !== 'string') {
-      this.rejectSocket(
-        ws,
-        'Binary signaling messages are not supported',
-        1003,
-      )
+      this.rejectSocket(ws, 'Binary signaling messages are not supported', 1003)
       return
     }
     if (
@@ -744,10 +756,7 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   // ── Message relay ─────────────────────────────────────────────────
 
-  private relayToPeer(
-    sender: WebSocket,
-    msg: RelayMessage,
-  ): void {
+  private relayToPeer(sender: WebSocket, msg: RelayMessage): void {
     const peer = this.peers.get(msg.target)
     if (peer?.ws.readyState !== 1) return
     const senderId = this.wsToPeerId.get(sender)

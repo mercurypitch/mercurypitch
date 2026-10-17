@@ -138,7 +138,10 @@ export function createJamService(callbacks: JamCallbacks) {
     if (disposed) return
     localDisplayName = displayName
     openLocalStream()
-    if (!previewMode) iceServers = await getIceServers()
+    // No ICE fetch here: the room does not exist until signaling creates it,
+    // and the worker only mints TURN for a live room. ensureIceServers() runs
+    // just before the first peer connection is built, by which point the host
+    // is in the room — see initiateNewPeer / handleOffer.
     signaling.createRoom(displayName)
   }
 
@@ -146,8 +149,21 @@ export function createJamService(callbacks: JamCallbacks) {
     if (disposed) return
     localDisplayName = displayName
     openLocalStream()
-    if (!previewMode) iceServers = await getIceServers()
+    // The host is already in the room, so this can pre-warm relay credentials
+    // for the id we are about to join; ensureIceServers() re-checks at PC build.
+    if (!previewMode) iceServers = await getIceServers(roomId)
     signaling.connect(roomId, displayName)
+  }
+
+  /**
+   * Load the room's ICE servers just before a peer connection is built. By
+   * now the local peer is established, so the worker's "is the room live?"
+   * check passes and TURN can be minted; getIceServers caches a relay result
+   * for the session and no-ops on repeat.
+   */
+  async function ensureIceServers(): Promise<void> {
+    if (previewMode) return
+    iceServers = await getIceServers(signaling.getRoomId() ?? undefined)
   }
 
   function leaveRoom(): void {
@@ -561,6 +577,9 @@ export function createJamService(callbacks: JamCallbacks) {
   async function initiateNewPeer(peer: JamPeer): Promise<void> {
     if (disposed || peerConnections.has(peer.id)) return
 
+    await ensureIceServers()
+    if (disposed || peerConnections.has(peer.id)) return
+
     console.info('[jam:service] initiating connection to', peer.id)
     const pc = new RTCPeerConnection({ iceServers: iceServers })
 
@@ -579,6 +598,11 @@ export function createJamService(callbacks: JamCallbacks) {
     if (disposed) return
 
     let pc = peerConnections.get(from)
+    if (!pc) {
+      await ensureIceServers()
+      if (disposed) return
+      pc = peerConnections.get(from)
+    }
     if (!pc) {
       pc = new RTCPeerConnection({ iceServers: iceServers })
       addLocalTracks(pc)
