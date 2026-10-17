@@ -183,16 +183,28 @@ export const NoticePill: Component = () => {
     const controls = tappableBoxes(pill)
     const input = {
       viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
       safeTop: area.top,
       safeLeft: area.left,
       safeRight: window.innerWidth - area.right,
+      safeBottom: window.innerHeight - area.bottom,
       controls,
     }
-    // Twice: the width decides how the text wraps, and so the height the
-    // band is measured with.
-    let next = placePill({ ...input, pillHeight: pill.offsetHeight })
+    // The width decides how the text wraps, and so the height the band is
+    // measured with. The tallest height seen is the one placed with, so a
+    // place is never chosen for a pill shorter than the one drawn there,
+    // and the loop ends: the height can only grow, up to three times.
+    let tallest = pill.offsetHeight
+    let next = placePill({ ...input, pillHeight: tallest })
+    for (let pass = 0; pass < 3; pass += 1) {
+      pill.style.width = `${next.width}px`
+      if (pill.offsetHeight <= tallest) break
+      tallest = pill.offsetHeight
+      next = placePill({ ...input, pillHeight: tallest })
+    }
+    // Written here as well as through the signal below: an unchanged place
+    // leaves the signal alone, and the width must not stay at a trial value.
     pill.style.width = `${next.width}px`
-    next = placePill({ ...input, pillHeight: pill.offsetHeight })
     const was = place()
     if (
       was === null ||

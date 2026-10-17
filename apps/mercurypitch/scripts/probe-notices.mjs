@@ -473,6 +473,7 @@ function verbs(page, args, frame, kit, results) {
     if (
       safe !== null &&
       (read.pill.top < safe.top ||
+        read.pill.bottom > safe.bottom + 0.5 ||
         read.pill.left < safe.left - 0.5 ||
         read.pill.right > safe.right + 0.5)
     ) {
@@ -761,13 +762,40 @@ async function waitPhase(page, room, test, what, timeout) {
  * waits, so it is never "stable" by Playwright's measure and a click waits
  * out its whole timeout.
  */
-async function tapMic(page, room) {
+async function tapMic(page, room, { optional = false } = {}) {
   const box = await page
     .locator(`[data-testid="${room.prefix}-mic"]`)
-    .boundingBox()
-  if (box === null) throw new Error('no mic button on screen')
+    .boundingBox({ timeout: optional ? 2000 : 10_000 })
+    .catch(() => null)
+  if (box === null) {
+    if (optional) return
+    throw new Error('no mic button on screen')
+  }
   await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
 }
+
+/**
+ * Announce the unlocks inside a take, and say whether the take was still
+ * under way on both sides of the announcement: read in one turn of the
+ * page, so the answer cannot be stale.
+ */
+const unlockMidTake = (page, room) =>
+  page.evaluate(
+    ([root, unlocks, phases]) => {
+      const el = document.querySelector(`[data-testid="${root}"]`)
+      const before = el?.getAttribute('data-phase') ?? null
+      for (const u of unlocks) {
+        window.mpNotices.show(`Badge unlocked: ${u.name}`, 'success', {
+          unlock: u,
+        })
+      }
+      const after = el?.getAttribute('data-phase') ?? null
+      return phases.includes(before) && phases.includes(after)
+        ? null
+        : `${before} to ${after}`
+    },
+    [room.root, UNLOCKS, [...TAKE_PHASES]],
+  )
 
 async function startTake(go, room) {
   const { page } = go
@@ -854,10 +882,25 @@ async function roomSteps(go, room, results, where, { pills }, at) {
 
   // A take to its result.
   step('a take to its result')
-  await openRoom(go, room)
-  await startTake(go, room)
-  await go.settle(1500)
-  for (const unlock of UNLOCKS) await go.unlock(unlock)
+  // Long note can end a take on its own within a second or two (the fake
+  // voice moves off the note), so the take is tried again until the
+  // unlocks land inside one.
+  let missed = null
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await openRoom(go, room)
+    await startTake(go, room)
+    await go.settle(600)
+    missed = await unlockMidTake(page, room)
+    if (missed === null) break
+    await page.locator('[data-testid="shell-pushed-back"]').click()
+    await go.hidden(`[data-testid="${room.root}"]`)
+    // Those unlocks were the room's and are now the pill's: clear them.
+    const left = page.locator('[data-testid="notice-pill-body"]')
+    if ((await left.count()) > 0) await left.first().click()
+    await go.hidden(PILL).catch(() => undefined)
+  }
+  if (missed !== null)
+    throw new Error(`no take held still for the unlocks (${missed})`)
   await go.settle(400)
   if ((await page.locator(chip).count()) > 0)
     results.failures.push(`${where}: the chip showed before the result`)
@@ -876,7 +919,8 @@ async function roomSteps(go, room, results, where, { pills }, at) {
     // It may have ended on its own: the fake voice moves off the note.
     if ((await phaseOf(page, room)) === 'hold') {
       await go.settle(2500)
-      if ((await phaseOf(page, room)) === 'hold') await tapMic(page, room)
+      if ((await phaseOf(page, room)) === 'hold')
+        await tapMic(page, room, { optional: true })
     }
   }
   await waitPhase(

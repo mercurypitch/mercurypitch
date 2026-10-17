@@ -1164,9 +1164,9 @@
 .mp-notice-safe {
   position: fixed;
   top: var(--safe-top);
-  left: var(--safe-left);
   right: var(--safe-right);
-  height: 0;
+  bottom: var(--safe-bottom);
+  left: var(--safe-left);
   visibility: hidden;
   pointer-events: none;
 }

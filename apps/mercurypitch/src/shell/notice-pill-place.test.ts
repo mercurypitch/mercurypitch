@@ -28,6 +28,8 @@ describe('placePill', () => {
     const controls = [control(12, 51), control(334, 51)]
     const place = placePill({
       viewportWidth: 390,
+      viewportHeight: 844,
+      safeBottom: 0,
       safeTop: 47,
       safeLeft: 0,
       safeRight: 0,
@@ -47,6 +49,8 @@ describe('placePill', () => {
   it('stops at its tablet width on a wide header', () => {
     const place = placePill({
       viewportWidth: 1024,
+      viewportHeight: 1366,
+      safeBottom: 0,
       safeTop: 24,
       safeLeft: 0,
       safeRight: 0,
@@ -66,6 +70,8 @@ describe('placePill', () => {
     ]
     const place = placePill({
       viewportWidth: 390,
+      viewportHeight: 844,
+      safeBottom: 0,
       safeTop: 47,
       safeLeft: 0,
       safeRight: 0,
@@ -88,6 +94,8 @@ describe('placePill', () => {
     ]
     const place = placePill({
       viewportWidth: 390,
+      viewportHeight: 844,
+      safeBottom: 0,
       safeTop: 47,
       safeLeft: 0,
       safeRight: 0,
@@ -105,6 +113,8 @@ describe('placePill', () => {
     const controls = [control(150, 51, 90, 44), control(40, 103, 310, 36)]
     const place = placePill({
       viewportWidth: 390,
+      viewportHeight: 844,
+      safeBottom: 0,
       safeTop: 47,
       safeLeft: 0,
       safeRight: 0,
@@ -120,6 +130,8 @@ describe('placePill', () => {
   it('keeps inside the side insets of a phone on its side', () => {
     const place = placePill({
       viewportWidth: 844,
+      viewportHeight: 390,
+      safeBottom: 0,
       safeTop: 0,
       safeLeft: 47,
       safeRight: 47,
@@ -134,6 +146,8 @@ describe('placePill', () => {
   it('ignores a control well below the band', () => {
     const place = placePill({
       viewportWidth: 390,
+      viewportHeight: 844,
+      safeBottom: 0,
       safeTop: 47,
       safeLeft: 0,
       safeRight: 0,
@@ -141,5 +155,52 @@ describe('placePill', () => {
       controls: [control(100, 400, 190, 44)],
     })
     expect(place.docked).toBe('top')
+  })
+
+  it('never steps below the bottom of the safe area', () => {
+    // A column of full-width rows down a short screen.
+    const controls = [0, 1, 2, 3, 4, 5].map((row) =>
+      control(12, 4 + row * 56, 366, 48),
+    )
+    const place = placePill({
+      viewportWidth: 390,
+      viewportHeight: 360,
+      safeTop: 0,
+      safeLeft: 0,
+      safeRight: 0,
+      safeBottom: 20,
+      pillHeight: 44,
+      controls,
+    })
+    expect(place.top + 44).toBeLessThanOrEqual(360 - 20)
+  })
+
+  it('takes the widest gap when every band is blocked across the middle', () => {
+    // Karaoke on a phone's side: the room chip mid-header, then rows of
+    // controls that cross the centre all the way down.
+    const controls = [
+      control(47, 4),
+      control(340, 4, 165, 44),
+      control(753, 4),
+      control(47, 52, 286, 46),
+      control(300, 104, 300, 40),
+      control(100, 152, 700, 40),
+      control(47, 200, 750, 40),
+    ]
+    const place = placePill({
+      viewportWidth: 844,
+      viewportHeight: 390,
+      safeTop: 0,
+      safeLeft: 47,
+      safeRight: 47,
+      safeBottom: 21,
+      pillHeight: 44,
+      controls,
+    })
+    expect(place.top + 44).toBeLessThanOrEqual(390)
+    expect(place.width).toBeGreaterThanOrEqual(200)
+    for (const box of controls) {
+      expect(overlaps(pillBox(place, 44), box)).toBe(false)
+    }
   })
 })
