@@ -640,24 +640,24 @@ behaviour that was expected.
 
 ## 5. Merge order
 
-Each PR is rebased onto `main` before it merges, CI must be green on the rebased
-head, and the nine merge one at a time in this order:
+Every PR was merged as a rebase merge (its commits kept, authored by the
+repository owner, no tool attribution) once its PR Gate was green on a head
+rebased onto that day's `main`. The order they landed in:
 
-1. #1069 stem separation (worker edge and handler; no overlap with the rest)
-2. #1070 analytics fragment (`consent.ts` only)
-3. #1075 sync link (sync modal and store)
-4. #1073 rate limits (`auth.ts` limiters, `index.ts` mirror event, four modules)
-5. #1076 profiles (`index.ts` scopeRead; rebased over #1073's `index.ts` change)
-6. #1072 pre-account reclaim (`auth.ts` email-code verify; rebased over #1073)
-7. #1074 jam TURN gate (jam worker, jam client, `docs/agent/INDEX.md`)
+1. #1075 sync link (sync modal and store)
+2. #1069 stem separation (worker edge and handler)
+3. #1070 analytics fragment (`consent.ts` only)
+4. #1076 profiles (`index.ts` scopeRead)
+5. #1072 pre-account reclaim (`auth.ts` email-code verify)
+6. #1074 jam TURN gate (jam worker, jam client)
+7. #1073 rate limits (`auth.ts` limiters, `index.ts` mirror event, four modules)
 8. #1078 Drive finalize (`auth.ts` Drive routes; moves the Drive client calls out
    of `auth-service.ts`, which is what brings that file back under the 1500-line
-   ratchet)
-9. #1071 admin key on logout (`auth-service.ts`; must follow #1078, or the ratchet
-   stays red on file size)
+   ratchet). It needed a second rebase after #1073 landed; only the generated
+   `docs/agent/INDEX.md` conflicted and was regenerated.
+9. #1071 admin key on logout (`auth-service.ts`; rebased after #1078 so the
+   file-size ratchet is green)
 10. this document
-
-The commits are authored by the repository owner and carry no tool attribution.
 
 ## 6. Before `/prod-upd`
 
