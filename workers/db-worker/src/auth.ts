@@ -966,7 +966,36 @@ export function rateLimitSubject(
   auth: { userId: string } | null,
 ): string {
   if (auth) return `user:${auth.userId}`
-  return request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  return ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
+}
+
+/**
+ * The rate-limit key for a network path, bucketing IPv6 to its /64.
+ *
+ * A single IPv6 allocation is a whole /64 — a cloud VM, and often a home
+ * connection, gets 2^64 addresses it can pick freely. Keying a limit on the
+ * full address lets one such tenant mint a fresh budget per request by
+ * walking its own range, which defeats every per-IP limit for anonymous
+ * callers. Bucketing to the /64 ties the budget to the allocation instead.
+ * IPv4 is returned unchanged (one address is one host). The result is only
+ * ever a limiter key, never stored or shown, so a non-canonical form is fine
+ * as long as it is stable.
+ */
+export function ipRateLimitKey(ip: string | null): string {
+  if (ip === null || ip === '') return '127.0.0.1'
+  // Strip any zone id, then only act on IPv6 (an IPv4 address has no colon).
+  const addr = ip.split('%')[0]
+  if (!addr.includes(':')) return addr
+  // Expand a single "::" so the first four hextets are positional.
+  const [headRaw, tailRaw] = addr.split('::')
+  const head = headRaw === '' ? [] : headRaw.split(':')
+  const tail = tailRaw === undefined || tailRaw === '' ? [] : tailRaw.split(':')
+  const gap = 8 - head.length - tail.length
+  const groups =
+    gap > 0
+      ? [...head, ...Array<string>(gap).fill('0'), ...tail]
+      : [...head, ...tail]
+  return `v6:${groups.slice(0, 4).join(':')}::/64`
 }
 
 /** The 429 every limiter in this file answers with. */

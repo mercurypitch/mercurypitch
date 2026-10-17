@@ -484,6 +484,7 @@
   "workers/db-worker/src/funnel-events.test.ts",
   "workers/db-worker/src/grants.test.ts",
   "workers/db-worker/src/guided-exercises.test.ts",
+  "workers/db-worker/src/ip-rate-limit-key.test.ts",
   "workers/db-worker/src/moderation.test.ts",
   "workers/db-worker/src/premium-background-admin.test.ts",
   "workers/db-worker/src/premium-backgrounds.test.ts",
