@@ -17,7 +17,7 @@
 import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse, } from '@simplewebauthn/server'
 import type { AuthenticationResponseJSON, RegistrationResponseJSON, } from '@simplewebauthn/server'
 import type { Env } from './auth'
-import { checkRateLimit, getAuth, issueSessionFor, sessionOrigin, verifyAccountPassword, } from './auth'
+import { checkRateLimit, getAuth, ipRateLimitKey, issueSessionFor, sessionOrigin, verifyAccountPassword, } from './auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import { deletePasskey, expectedOrigins, findPasskey, listPasskeys, MAX_PASSKEYS_PER_USER, passkeyName, passkeysConfigured, passkeySummary, rpIdFor, savePasskey, SUDO_WINDOW_MS, touchPasskey, transportsOf, } from './passkeys'
 import { verifySecondFactor } from './twofa-routes'
@@ -306,7 +306,7 @@ async function handleLoginOptions(
   // A roomier bucket than verify, deliberately: conditional UI fires one of
   // these per sign-in screen load, so a school or an office behind one address
   // burns them without anybody having clicked anything.
-  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
   const rl = await checkRateLimit(env.DB, ip, 'passkey-options')
   if (!rl.allowed) return tooMany(respond, rl)
 
@@ -329,7 +329,7 @@ async function handleLoginVerify(
   env: Env,
   respond: Respond,
 ): Promise<Response> {
-  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
   const rl = await checkRateLimit(env.DB, ip, 'passkey-verify')
   if (!rl.allowed) return tooMany(respond, rl)
 
