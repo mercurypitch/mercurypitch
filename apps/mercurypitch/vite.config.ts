@@ -167,6 +167,36 @@ const PREMIUM_IMAGES =
 const PREMIUM_VOICES =
   /\/src\/features\/(?:long-note|echo|ng-slides|lip-roll)\/(?:[^/]+\/)*[^/]+\.mp3$/u
 
+/**
+ * The browsers this bundle's CSS is written for: the iOS floor, and nothing
+ * else.
+ *
+ * The app runs on iOS 16 and up (IPHONEOS_DEPLOYMENT_TARGET 16.0 in
+ * ios/App/App.xcodeproj/project.pbxproj, `.iOS(.v16)` in
+ * ios/App/CapApp-SPM/Package.swift). Before Safari 18, WebKit honours only
+ * `-webkit-backdrop-filter`, and every WebKit honours only
+ * `-webkit-user-select`, so a stylesheet that says them unprefixed draws no
+ * glass blur on iOS 16 and 17 and selects text it was told not to. Without a
+ * CSS target this build adds no prefixes at all (the web build's Lightning
+ * CSS has its own Safari targets and does). With this one, esbuild adds them
+ * as it minifies. Measured 17 Oct 2026 against the build without it, the
+ * test build gained 83 `-webkit-backdrop-filter` and 29
+ * `-webkit-user-select: none`, the store build 83 and 25, and nothing else
+ * changed: after it, every rule with either property also has the prefixed
+ * one. The owner accepted the blur's GPU cost on those phones (17 Oct).
+ *
+ * Chrome and Android are left out on purpose. Their WebView updates through
+ * the Play Store whatever the device (minSdk 29), and naming an old Chrome
+ * here rewrites CSS that already works there: measured the same day,
+ * `chrome74` lowered `inset` into four properties in 198 rules, and
+ * `chrome60` rewrote 1,556 colours and shadows.
+ *
+ * Three places name the iOS floor and none reads another: this list, the
+ * pbxproj and Package.swift. Raise them together;
+ * src/native-css-target.test.ts fails when they disagree.
+ */
+const NATIVE_CSS_TARGET = ['safari16', 'ios16']
+
 /** What every premium picture or voice is in a build without them. */
 const FOLDED_IMAGE = '\0mercurypitch:folded-premium-image'
 
@@ -367,6 +397,9 @@ export default defineConfig(({ mode, command }) => {
 
     build: {
       target: 'es2022',
+      // The CSS is written for the oldest WebView this app runs in, not for
+      // whatever the JS target implies: NATIVE_CSS_TARGET, above.
+      cssTarget: NATIVE_CSS_TARGET,
       rollupOptions: {
         // Exactly one HTML document. The web build emits an entry page per SEO
         // route; none of them belong in a bundle that ships inside an app, and
