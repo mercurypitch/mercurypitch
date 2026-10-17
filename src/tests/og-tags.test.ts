@@ -2,8 +2,14 @@
 // OG Tags Tests
 // ============================================================
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { initDefaultOGTags, resetToDefaultOGTags, setMelodyOGTags, } from '@/lib/og-tags'
+import { OG_IMAGE_VERSIONS } from '@/seo/og-image-versions'
+
+/** The share card's URL, stamped with its version as index.html carries it. */
+const STAMPED_CARD = `https://mercurypitch.com/og-image.png?v=${OG_IMAGE_VERSIONS['og-image.png']}`
 
 function getMeta(attr: string, value: string): HTMLMetaElement | null {
   return document.head.querySelector(`meta[${attr}="${value}"]`)
@@ -40,11 +46,9 @@ describe('initDefaultOGTags', () => {
     )
   })
 
-  it('sets og:image to favicon', () => {
+  it('sets og:image to the stamped share card', () => {
     initDefaultOGTags()
-    expect(getMetaContent('property', 'og:image')).toBe(
-      'https://mercurypitch.com/og-image.png',
-    )
+    expect(getMetaContent('property', 'og:image')).toBe(STAMPED_CARD)
   })
 
   it('sets og:site_name to MercuryPitch', () => {
@@ -69,8 +73,30 @@ describe('initDefaultOGTags', () => {
 
   it('sets twitter:image matching og:image', () => {
     initDefaultOGTags()
-    expect(getMetaContent('name', 'twitter:image')).toBe(
-      'https://mercurypitch.com/og-image.png',
+    expect(getMetaContent('name', 'twitter:image')).toBe(STAMPED_CARD)
+  })
+
+  // The app sets these on boot, over what index.html shipped. An unstamped
+  // card URL sent social caches back to the old banded card, and the title
+  // carried an em dash index.html no longer does (0.9.19 clip review).
+  it('says what index.html says about the card and the title', () => {
+    const html = new DOMParser().parseFromString(
+      readFileSync(resolve(process.cwd(), 'index.html'), 'utf8'),
+      'text/html',
+    )
+    const shipped = (attr: string, key: string): string | null | undefined =>
+      html.head.querySelector(`meta[${attr}="${key}"]`)?.getAttribute('content')
+    initDefaultOGTags()
+    for (const [attr, key] of [
+      ['property', 'og:image'],
+      ['name', 'twitter:image'],
+      ['property', 'og:title'],
+      ['name', 'twitter:title'],
+    ] as const) {
+      expect(getMetaContent(attr, key), key).toBe(shipped(attr, key))
+    }
+    expect(getMetaContent('property', 'og:title')).toBe(
+      'See Your Voice, Sing Karaoke, Improve Every Take | MercuryPitch',
     )
   })
 
@@ -107,28 +133,28 @@ describe('setMelodyOGTags', () => {
   it('updates og:description with full metadata', () => {
     setMelodyOGTags({ noteCount: 20, bpm: 140, key: 'Am' })
     expect(getMetaContent('property', 'og:description')).toBe(
-      'A 20-note melody at 140 BPM in Am — practice it on MercuryPitch.',
+      'A 20-note melody at 140 BPM in Am. Practice it on MercuryPitch.',
     )
   })
 
   it('updates og:description without optional fields', () => {
     setMelodyOGTags({ noteCount: 5 })
     expect(getMetaContent('property', 'og:description')).toBe(
-      'A 5-note melody — practice it on MercuryPitch.',
+      'A 5-note melody. Practice it on MercuryPitch.',
     )
   })
 
   it('updates og:description with BPM but no key', () => {
     setMelodyOGTags({ noteCount: 8, bpm: 100 })
     expect(getMetaContent('property', 'og:description')).toBe(
-      'A 8-note melody at 100 BPM — practice it on MercuryPitch.',
+      'A 8-note melody at 100 BPM. Practice it on MercuryPitch.',
     )
   })
 
   it('updates og:description with key but no BPM', () => {
     setMelodyOGTags({ noteCount: 12, key: 'Dm' })
     expect(getMetaContent('property', 'og:description')).toBe(
-      'A 12-note melody in Dm — practice it on MercuryPitch.',
+      'A 12-note melody in Dm. Practice it on MercuryPitch.',
     )
   })
 
@@ -151,16 +177,14 @@ describe('setMelodyOGTags', () => {
   it('updates twitter:description to match melody description', () => {
     setMelodyOGTags({ noteCount: 7, bpm: 110 })
     expect(getMetaContent('name', 'twitter:description')).toBe(
-      'A 7-note melody at 110 BPM — practice it on MercuryPitch.',
+      'A 7-note melody at 110 BPM. Practice it on MercuryPitch.',
     )
   })
 
   it('does not change og:type or og:image or og:site_name', () => {
     setMelodyOGTags({ noteCount: 3 })
     expect(getMetaContent('property', 'og:type')).toBe('website')
-    expect(getMetaContent('property', 'og:image')).toBe(
-      'https://mercurypitch.com/og-image.png',
-    )
+    expect(getMetaContent('property', 'og:image')).toBe(STAMPED_CARD)
     expect(getMetaContent('property', 'og:site_name')).toBe('MercuryPitch')
   })
 })

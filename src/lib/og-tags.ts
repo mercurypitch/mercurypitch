@@ -2,10 +2,17 @@
 // OG Tags — Dynamic Open Graph meta tag management
 // ============================================================
 
-const OG_TITLE = 'MercuryPitch — Vocal Pitch Training with Real-Time Feedback'
+import { OG_IMAGE_VERSIONS } from '@/seo/og-image-versions'
+
+// The app sets these on boot, over the tags index.html shipped, so the two
+// must agree (src/tests/og-tags.test.ts reads index.html to check).
+const OG_TITLE =
+  'See Your Voice, Sing Karaoke, Improve Every Take | MercuryPitch'
 const OG_DESC =
   'Train your vocal pitch with real-time audio feedback, piano roll visualization, and accuracy scoring.'
-const OG_IMAGE = 'https://mercurypitch.com/og-image.png'
+// Stamped like index.html's: social caches key a card by its URL, and the
+// bare URL is the one they still hold the old, letterboxed card under.
+const OG_IMAGE = `https://mercurypitch.com/og-image.png?v=${OG_IMAGE_VERSIONS['og-image.png']}`
 const OG_URL = 'https://mercurypitch.com/'
 const SITE_NAME = 'MercuryPitch'
 
@@ -53,8 +60,7 @@ export function setMelodyOGTags(meta: MelodyOGMeta): void {
   if (meta.bpm !== null && meta.bpm !== undefined)
     parts.push(`at ${meta.bpm} BPM`)
   if (meta.key !== null && meta.key !== undefined) parts.push(`in ${meta.key}`)
-  parts.push('— practice it on MercuryPitch.')
-  const description = parts.join(' ')
+  const description = `${parts.join(' ')}. Practice it on MercuryPitch.`
 
   const url = window.location.href
 
