@@ -100,10 +100,10 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
       title="Hairline"
       drillId="hairline"
       measures="Resolution · cents"
-      description="Two tones; pick the higher one. The gap keeps shrinking toward the finest difference your ear still resolves — that number, in cents, is your reading. It falls as you improve, and there is no ceiling to park at."
-      prompt="Two tones — which one was higher?"
+      description="Two tones; pick the higher one. The gap keeps shrinking toward the finest difference your ear still resolves. That number, in cents, is your reading. It falls as you improve, and there is no ceiling to park at."
+      prompt="Two tones. Which one was higher?"
       listenHint="Listen…"
-      answerHint="Which tone was higher — the first, or the second?"
+      answerHint="Which tone was higher, the first or the second?"
       levelCaption="Gap"
       levelLabel={gap}
       formatValue={(value) => value.toFixed(1)}
@@ -143,7 +143,7 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
       ]}
       revealLine={() =>
         run.lastCorrect() === true
-          ? `Right — the ${higherWord()} was higher by ${gap()}.`
+          ? `Right. The ${higherWord()} was higher by ${gap()}.`
           : `The ${higherWord()} was higher by ${gap()}. The gap widens.`
       }
       onBack={props.onBack}

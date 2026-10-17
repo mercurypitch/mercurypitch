@@ -325,7 +325,7 @@ export function EarStage(props: EarStageProps): JSX.Element {
                   role="status"
                   data-testid="ear-stage-swallowed"
                 >
-                  The browser took that key — an extension such as Vimium binds
+                  The browser took that key. An extension such as Vimium binds
                   the digits. Exclude mercurypitch.com in it, or tap the pads.
                 </p>
               </Show>
