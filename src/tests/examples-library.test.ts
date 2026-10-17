@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
 import { demoSessionId } from '@/features/karaoke-night/demo-song'
-import { exampleAttribution, exampleSessionFrom, examplesToSeed, reconcileExampleGroup, } from '@/features/karaoke-night/examples-library'
+import { exampleAttribution, exampleRowsToRename, exampleSessionFrom, examplesToSeed, reconcileExampleGroup, } from '@/features/karaoke-night/examples-library'
 
 function manifest(
   slug: string,
@@ -97,7 +97,7 @@ describe('exampleSessionFrom', () => {
 
   it('names the row so the list reads as a song', () => {
     expect(exampleSessionFrom(JOSEPHINE, 0).originalFile?.name).toBe(
-      'Josh Woodward — josephine',
+      'Josh Woodward · josephine',
     )
   })
 
@@ -183,6 +183,51 @@ describe('reconcileExampleGroup', () => {
     expect(
       reconcileExampleGroup([JOSEPHINE, SPRING], present, [], new Set()),
     ).toEqual([])
+  })
+})
+
+describe('exampleRowsToRename', () => {
+  // Rows seeded before the middle dot were named "Artist — Title".
+  const named = (song: DemoSongManifest, name: string) => {
+    const row = exampleSessionFrom(song, 0)
+    return { ...row, originalFile: { ...row.originalFile!, name } }
+  }
+
+  it('renames a row that still has the old default name', () => {
+    expect(
+      exampleRowsToRename(
+        [JOSEPHINE, SPRING],
+        [named(JOSEPHINE, 'Josh Woodward — josephine')],
+      ),
+    ).toEqual([
+      {
+        sessionId: demoSessionId('josephine'),
+        from: 'Josh Woodward — josephine',
+        to: 'Josh Woodward · josephine',
+      },
+    ])
+  })
+
+  it('never renames a row whose name the visitor changed, by even a character', () => {
+    for (const name of [
+      'Josephine, the slow one',
+      'Josh Woodward — josephine (live)',
+      'Josh Woodward — Josephine',
+      'Josh Woodward · josephine',
+    ]) {
+      expect(
+        exampleRowsToRename([JOSEPHINE], [named(JOSEPHINE, name)]),
+      ).toEqual([])
+    }
+  })
+
+  it("leaves the visitor's own song alone, even one called the same", () => {
+    const own = {
+      ...named(JOSEPHINE, 'Josh Woodward — josephine'),
+      sessionId: 'my-own-song',
+      provider: undefined,
+    }
+    expect(exampleRowsToRename([JOSEPHINE], [own])).toEqual([])
   })
 })
 

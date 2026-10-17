@@ -87,7 +87,7 @@ describe('exampleSongFromLink', () => {
 
     expect(song).toEqual({
       sessionId: EXAMPLE_ID,
-      title: 'Josh Woodward — Nothing in the Dark',
+      title: 'Josh Woodward · Nothing in the Dark',
       stems: corpus.example.stems,
       autoPlay: false,
       initialSeekSec: undefined,

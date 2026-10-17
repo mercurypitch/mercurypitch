@@ -37,6 +37,7 @@ vi.mock('@/lib/defaults', async (importOriginal) => ({
 interface BundledSong {
   slug: string
   title: string
+  artist: string
   lyricsText: string
   durationSec: number
   stems: { vocal: string; instrumental: string }
@@ -202,6 +203,30 @@ describe('a first launch with no network', () => {
     )
     expect(row?.outputs?.vocal).toBe(bundle.songs[2].stems.vocal)
     expect(row?.outputs?.instrumental).toBe(bundle.songs[2].stems.instrumental)
+  })
+
+  it('renames only the rows that still have the old em-dash name', async () => {
+    const { seed, store } = await freshApp()
+    const [first, second] = bundle.songs
+    const row = (index: number, name: string) => ({
+      sessionId: IDS[index],
+      status: 'completed' as const,
+      progress: 100,
+      originalFile: { name, size: 0, mimeType: 'audio/mpeg' },
+      provider: 'examples',
+      createdAt: Date.UTC(2020, 0, 1),
+    })
+    await store.importUvrSessionDurable(
+      row(0, `${first.artist} — ${first.title}`),
+    )
+    await store.importUvrSessionDurable(row(1, 'Sung at the wedding'))
+    await seed.seedExamplesLibrary()
+
+    const nameOf = (index: number) =>
+      store.getUvrSession(IDS[index])?.originalFile?.name
+    expect(nameOf(0)).toBe(`${first.artist} · ${first.title}`)
+    expect(nameOf(1)).toBe('Sung at the wedding')
+    expect(second.title).not.toBe('Sung at the wedding')
   })
 
   it("leaves a visitor's own song alone, even one with the same file names", async () => {
