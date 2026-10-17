@@ -3100,10 +3100,10 @@
 }
 
 /* On a touch screen the 32px button keeps its look but takes taps across
-   46x46: a transparent box 7px beyond its border above, below and to the
-   left, and 14px further left in place of the right side (`inset` measures
-   from the padding box, 1px inside the border). 44 is the floor; the spare
-   pixel a side keeps it there when the card lands on a fractional position.
+   46x46: a transparent box 7px beyond its border above and below, 14px
+   beyond it on the left and none on the right (`inset` measures from the
+   padding box, 1px inside the border). 44 is the floor; the 2 spare pixels
+   keep it there when the card lands on a fractional position.
    The button is flush with the header's right edge, so a box reaching past
    that edge made the header, its top row and the button itself scroll
    sideways by 7-8px; growing left instead keeps the target inside the card.
