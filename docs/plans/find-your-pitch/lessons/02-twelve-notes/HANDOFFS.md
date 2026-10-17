@@ -2,9 +2,10 @@
 
 The last frame of scene N and the first frame of scene N+1 must show every carried object on the
 same pixels (within 2 px). Values marked **(provisional)** are starting values: the two builders on
-either side of a handoff confirm them in a lab still, then this file is updated and the mark
-removed before either scene is built further. Unmarked values are carried from Lesson 1 or follow
-from arithmetic and are fixed now. Times are the estimates in SCRIPT.md (storyboard v10).
+either side of a handoff confirm them in a lab still, then this file is updated and the mark removed
+before either scene is built further. Unmarked values are carried from Lesson 1 or follow from
+arithmetic and are fixed now. Times are the estimates in SCRIPT.md (storyboard v11, approved for
+build).
 
 Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 to S13, [E] S14,
 [F] S15 to S17.
@@ -16,13 +17,15 @@ Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 
 - Easing names are GSAP's: `power1` is quadratic, `power2` cubic, `power3` quartic. Evaluate a
   curve that spans a cut with GSAP's own function on both sides, never a hand-written polynomial.
 - A push of scale `s` about `(cx, cy)` maps `x' = cx + s (x - cx)`, `y' = cy + s (y - cy)` on the
-  mid layer; every push below names its scale, its centre, its span and its curve. A tilt moves
-  every layer (far, mid, near, top) by the same amount, so it reads as a turn of the camera, not a
-  pedestal; only pushes, pulls and dollies use the layers' parallax factors. An arc travels the
-  camera round its subject: the far layer slides with the camera's travel and the near layer against
-  it (in S5b and S5c about 4 and 10 px per degree, keeping the spiral at frame centre); a turntable
-  turn rotates the object while the camera and every layer hold (S1e, and the spiral's slow turn
-  through S1 to S3).
+  mid layer; every push below names its scale, its centre, its span and its curve. A tilt or a pan
+  moves every layer (far, mid, near, top) by the same amount, so it reads as a turn of the camera,
+  not a pedestal or a truck; that holds for the two pans made by moving a push's centre (S9a to S9b,
+  S10e), whose shift every layer takes equally. Only pushes, pulls, dollies and S11b's truck use the
+  layers' parallax factors (far 0.25, mid 1, near 1.6). Labels fixed to the frame (the kickers,
+  S10e's "7 + 5 = 12") hold through every camera move. An arc travels the camera round its subject:
+  the far layer slides with the camera's travel and the near layer against it (in S5b and S5c about
+  4 and 10 px per degree, keeping the spiral at frame centre); a turntable turn rotates the object
+  while the camera and every layer hold (S1e, and the spiral's slow turn through S1 to S3).
 - Text and marks fade in over 0.2 s from their cue and out over 0.2 s from their exit cue unless a
   line below says otherwise; nothing lands where something else is still leaving. A counted pulse
   (STORYBOARD § Type, from critic 08's measured mocks) moves edges or a large area: a tile or key
@@ -39,8 +42,9 @@ Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 
   camera move never shifts or scales them. A Merc's body is about 0.53 of its shown size wide and
   0.64 of it tall, standing on its feet point (measured on Lesson 1's frames).
 - Beads: `L.bead(svg, { r: 22, color })` (r 12 on the S13 ruler). Chrome `#c3ccd6`; a dim bead is
-  chrome at 35 % opacity with a "?" glyph (Lesson 1's S14c); a lit bead is chrome at 100 % with a
-  soft glow (16 px).
+  chrome at 35 % opacity with a "?" glyph (Lesson 1's S14c), the glyph drawn in ink at full, 6.7:1
+  on the bead's dim fill, since only fills and strokes dim (STORYBOARD § Type); a lit bead is chrome
+  at 100 % with a soft glow (16 px).
 - Orange's guesses: a dashed ink-2 `#a8b3bf` stroke (dash 10, gap 8, 3 px) with a "?" in JetBrains
   Mono 30 px, ink-2 (S1e's rings, S8b's arc, S12a's outlines). A ring round a dim bead uses the
   bead's own "?"; a ring round empty space carries its "?" at its centre.
@@ -103,7 +107,8 @@ A rest frame, so the crane down in S7a starts from stillness.
   A4 bead drawn exactly over the blue A3 bead, a 3 px blue rim showing round it.
 - The twelve gold wedges at 0 (dimmed by 95.0); "semitone" (its 300 px full-frame moment over, then
   settled at 120 px right of the ring, baseline y 800 from x 1330) and "HALF STEP" (baseline y 850)
-  gone by 95.0; the "+13 Hz" and "+25 Hz" labels gone since S6b.
+  gone by 95.0; the "+13 Hz" and "+25 Hz" labels gone since S6b, and the lit turn's seven letters
+  with them (on "To your ear, no"), so the ring carries no label.
 - No kicker. No Mercs.
 
 ## Inside C: S7 -> S8, the one-octave close-up (fixed)
@@ -150,13 +155,15 @@ this frame:
   following its key. From 143.1 the close-up pans as its lead move: the push's centre moves from
   (580, 317) to (455, 317) on the S8 frame, `sine.inOut`, 143.1 to 159.0, which slides everything on
   the keys 150 px right on screen at 2.2x (the B3/C4 join from x 808 to about x 955 by 157.6) and
-  nothing at 1x; the labels, bars and outlines ride their keys. The two one-notch bars stand from y
-  270 to y 190, over the B3/C4 join (x 808) and over C4/C♯4 (x 1036, midway between their centres).
+  nothing at 1x; every layer, the far staves and the near dust included, takes the same shift, so it
+  reads as a pan, not a truck; the labels, bars and outlines ride their keys. The two one-notch bars
+  stand from y 270 to y 190, over the B3/C4 join (x 808) and over C4/C♯4 (x 1036, midway between
+  their centres).
 - S9c pulls back to the S8 frame (1x), 157.6 to 159.0, `power2.inOut`, over the pan's last 1.4 s; at
   1x the moved centre no longer shifts anything, so S9d starts exactly on that frame. As S9d's lead
-  move the frame then pans 120 px, the keys sliding left on screen, `sine.inOut`, 159.0 to 162.4,
-  waits while the keys glide, and pans home, `sine.inOut`, 163.4 to 168.1, so the tile row is at
-  home, at 1x, from 168.1; the tile positions below are given at home.
+  move the frame then pans 120 px, every layer by the same amount, the keys sliding left on screen,
+  `sine.inOut`, 159.0 to 162.4, waits while the keys glide, and pans home, `sine.inOut`, 163.4 to
+  168.1, so the tile row is at home, at 1x, from 168.1; the tile positions below are given at home.
 
 ## Inside C: S9d and S10, keys to tiles (fixed geometry, provisional timing)
 
@@ -187,21 +194,26 @@ scale 1.05 as their brackets turn gold (166.0); on "apart" all thirteen tiles sc
 - "7 + 5 = 12" (Outfit 72 px, 280 px wide) sits in the top layer at the top right, right-aligned at
   x 1800, baseline y 150 (glyphs from about y 97), from the last tile's landing in S10d until
   195.19, fading out over 194.99 to 195.19.
-- S10e: one 2.0x push that carries (840, 560) to the frame's centre (x' = 960 + 2 (x - 840), y' =
-  560 + 2 (y - 560)), 190.0 to 190.9, `power2.inOut`, and holds both pairs: B3 to F4 fill x 128 to
-  1792, the tiles from y 280 to 840, their labels at baseline y 792, the B-C join at x 360 and the
-  E-F join at x 1560. It holds until the pull out back to 1x, 194.39 to 195.19, `power2.inOut`,
-  which lands at rest exactly on the cut. The twelve "1" brackets fade out early in the push, 190.0
-  to 190.4, and back in late in the pull out, 194.8 to 195.19, so none shows in the caption band (at
-  2x they would sit at y 920, their labels at 1020).
+- S10e: one 2.0x push about (720, 560), which carries (840, 560) to x 960 (x' = 720 + 2 (x - 720) =
+  960 + 2 (x - 840), y' = 560 + 2 (y - 560)), 190.0 to 190.9, `power2.inOut`, framing both pairs: B3
+  to F4 fill x 128 to 1792, the tiles from y 280 to 840, their labels at baseline y 792, the B-C
+  join at x 360 and the E-F join at x 1560. Then, as the lead move, the push's centre moves from
+  (720, 560) to (840, 560), `sine.inOut`, 190.9 to 195.19: a 120 px pan from B-C toward E-F, which
+  every layer takes equally, sliding the tiles, rings and labels left on screen at 2x (110 px by
+  194.39: the B-C join to x 250, the E-F join to x 1450) and nothing at 1x. The pull out back to 1x,
+  194.39 to 195.19, `power2.inOut`, runs under the pan's last 0.8 s, so the pan resolves at 1x and
+  the row lands at rest exactly on the cut, at home. The twelve "1" brackets fade out early in the
+  push, 190.0 to 190.4, and back in late in the pull out, 194.8 to 195.19, so none shows in the
+  caption band (at 2x they would sit at y 920, their labels at 1020).
 - S10e's labels sit above the tiles, on the dark ground: over each join the dashed "?" ring (64 px
   across, centred on y 220) and then "semitone" (Outfit 48 px, 199 px wide) in its place, centred on
-  the join at baseline y 252 (B-C x 260 to 460, E-F x 1460 to 1660), clear of "7 + 5 = 12" (which
-  ends at y 150). Each ring clears before its label lands: B-C's ring 190.6 to 191.2 (cued once its
-  join has nearly settled), its label from 191.2; E-F's ring draws itself on over 191.56 to 191.96
-  and clears 192.3 to 192.5, its label from 192.5. On "no gap" the two tiles at each join scale 1.05
-  together, B-C at 193.1 and E-F at 193.5. Both labels hold until the pull out begins and are gone
-  by 194.59.
+  the join at baseline y 252 (B-C x 260 to 460, E-F x 1460 to 1660 at the push's landing; the rings
+  and labels ride the pan with their joins, so by 194.39 B-C's label spans x 150 to 350 and E-F's x
+  1350 to 1550), clear of "7 + 5 = 12" (which ends at y 150 and holds at the top right). Each ring
+  clears before its label lands: B-C's ring 190.6 to 191.2 (cued once its join has nearly settled),
+  its label from 191.2; E-F's ring draws itself on over 191.56 to 191.96 and clears 192.3 to 192.5,
+  its label from 192.5. On "no gap" the two tiles at each join scale 1.05 together, B-C at 193.1 and
+  E-F at 193.5. Both labels hold until the pull out begins and are gone by 194.59.
 
 ## C to D: S10 -> S11 at act3 - 0.15 (est. 195.19)
 
@@ -217,16 +229,20 @@ scale 1.05 as their brackets turn gold (166.0); on "apart" all thirteen tiles sc
 - S11b to S11d, the close-up the object makes: the camera stays at 1x. The C4, C♯4 and D4 tiles lift
   out of the row onto a nearer layer and come forward to 2.4x, centred on the frame, 202.2 to 203.8,
   `power2.inOut`: x 538 to 1382, y 224 to 896, their labels at baseline y 838. The rest of the row
-  stays in place behind them at 30 % with a 6 px blur, its ends showing either side. The ♯ glyph
-  (160 px) sits over the lifted C4 tile from x 622 and the ♭ over the lifted D4 tile from x 1242,
-  both at y 50 to 210, their mono labels beside them; the act 3 kicker ends at x 419. Each arrow
-  fades once it has written its name. Once the tiles have come forward the camera pans as the lead
-  move, still at 1x: 120 px from C4's side toward D4's, `sine.inOut`, 203.8 to 216.3, the lifted
-  tiles (and the glyphs, labels and names on their layer) sliding 120 px left on screen and the
-  dimmed row behind about 75 px (parallax), then home again as the tiles settle, 216.3 to 217.5; at
-  the end of the pan the lifted tiles span x 418 to 1262, and the ♯ glyph has never come nearer the
-  kicker than 80 px. From 216.3 to 217.5 (`power2.inOut`) the three settle back into their slots,
-  the row returns to full, the gold ring fades, and the whole row eases up 80 px to y 340 to 620.
+  stays in place behind them at 30 % with a 6 px blur, its ends showing either side; its labels (the
+  white tiles' names, the four "?" marks and the brackets' "1"s) fade out as it dims, 202.2 to
+  202.6, and the white tiles' names fade back in as it reaches full, 217.3 to 217.5, because labels
+  never dim (STORYBOARD § Type). The ♯ glyph (160 px) sits over the lifted C4 tile from x 622 and
+  the ♭ over the lifted D4 tile from x 1242, both at y 50 to 210, their mono labels beside them; the
+  act 3 kicker ends at x 419. Each arrow fades once it has written its name. Once the tiles have
+  come forward the camera trucks as the lead move, still at 1x: 120 px from C4's side toward D4's,
+  `sine.inOut`, 203.8 to 216.3, each layer sliding left at its own factor, so the lifted tiles on
+  the near layer (with the glyphs, labels and names on it) move 120 px on screen, the dimmed row on
+  the mid layer 75 px and the far staves about 19 px, a truck, not a pan; then home again as the
+  tiles settle, 216.3 to 217.5; at the end of the truck the lifted tiles span x 418 to 1262, and the
+  ♯ glyph has never come nearer the kicker than 80 px. From 216.3 to 217.5 (`power2.inOut`) the
+  three settle back into their slots, the row returns to full, the gold ring fades, and the whole
+  row eases up 80 px to y 340 to 620.
 - A dark tile's two names stack in its lower half, the sharp name above the flat one: at home the
   sharp name's baseline is y 630 and the flat name's y 676, the white tiles' label row. A white
   tile's second name goes above its letter the same way: "E♯" on the F tile at baseline y 630 at
@@ -237,16 +253,16 @@ scale 1.05 as their brackets turn gold (166.0); on "apart" all thirteen tiles sc
 - S12b and S12c: Orange ducks out right, 224.6 to 225.0; then the camera tilts up instead of pushing
   in, every layer easing down the same 160 px, 225.0 to 226.2, `power2.inOut`: the row at y 500 to
   780, E♯ (when written) at baseline 710 and F's label at 756, all at 1x. From 226.2 the camera pans
-  150 px right as the lead move, `sine.inOut`, to 241.2, the row and everything that rides it (the
-  predict row, the arrow, its label and "E♯ = F") sliding 150 px left on screen, so E4 and F4 come
-  near frame centre; the positions below are at 226.2, before the pan. Above the row: the predict
-  row ("Predict." from x 777, the pills "black key" and "white key" from x 1063 and 1293, y 300 to
-  380), the "+1 semitone" arrow just above the tiles (y 480, from x 1080 to the F4 centre at x
-  1200), its label from x 1030 at baseline y 462, and "E♯ = F" centred on x 1200 at baseline y 250,
-  leaving at 241.2. S12c tilts back down (every layer by the same 160 px) and pans home the 150 px,
-  241.2 to 242.2, and only then does Orange peek back in at the same feet (242.2 to 242.6; m12b).
-  "BOTH" (mono 34 px) is centred on x 720, baseline y 310, above the C♯/D♭ tile, until Orange's hop
-  begins (249.32). E♯ and the arrow fade at 249.4.
+  150 px right as the lead move, every layer by the same amount, as in the tilts, `sine.inOut`, to
+  241.2, the row and everything that rides it (the predict row, the arrow, its label and "E♯ = F")
+  sliding 150 px left on screen, so E4 and F4 come near frame centre; the positions below are at
+  226.2, before the pan. Above the row: the predict row ("Predict." from x 777, the pills "black
+  key" and "white key" from x 1063 and 1293, y 300 to 380), the "+1 semitone" arrow just above the
+  tiles (y 480, from x 1080 to the F4 centre at x 1200), its label from x 1030 at baseline y 462,
+  and "E♯ = F" centred on x 1200 at baseline y 250, leaving at 241.2. S12c tilts back down (every
+  layer by the same 160 px) and pans home the 150 px, 241.2 to 242.2, and only then does Orange peek
+  back in at the same feet (242.2 to 242.6; m12b). "BOTH" (mono 34 px) is centred on x 720, baseline
+  y 310, above the C♯/D♭ tile, until Orange's hop begins (249.32). E♯ and the arrow fade at 249.4.
 - S12e: Orange's hop out runs 249.32 to 249.92 (a 0.15 s crouch, then a 0.41 s arc, off frame by
   249.88), and its pass ends at 249.97; only then does the row slide down 200 px to y 540 to 820
   (250.0 to 250.8, `power2.inOut`); the panel slides in above it, at y 200 to 480 (250.3 to 251.1),
@@ -313,8 +329,9 @@ scale 1.05 as their brackets turn gold (166.0); on "apart" all thirteen tiles sc
   556); it leaves as the inset closes (276.7).
 - S13e's cents labels climb the ruler's right side, one every 0.14 s from 276.9 to 278.6 (JetBrains
   Mono 30 px, left-aligned at x 604): 0, 100 ... 1200; the gold bracket draws up from 0 to 1200 at x
-  736, 24 px right of the longest label, 278.6 to 280.5; "1200 ¢ = 1 octave" lands beside it from x
-  756 at 280.55, and the two beads scale 1.2 together and send echo rings at 280.9.
+  736, 24 px right of the longest label, 278.6 to 280.5; "1200 ¢ = 1 octave" (Outfit 96 px, 731 px
+  wide) lands beside it, from x 756 to 1487 at baseline y 525, its figures centred on the bracket's
+  middle (y 490), at 280.55, and the two beads scale 1.2 together and send echo rings at 280.9.
 - S13f: the bracket, its label and both beads leave, 281.8 to 282.0; then the monitor slides in from
   the right, 282.0 to 282.5, drawn 1.4x its base size in a box from x 900 to 1614 and y 232 to 708
   (188 px right of the longest cents label, which ends at x 712), and slides out right, 289.5 to
@@ -376,25 +393,26 @@ from that rest frame by drawing the lanes:
   has gone: the title, the marker, orange's violet line, the amber band, the app-style lane labels
   and the chip fade out, 320.3 to 320.6; then the film's own plain guide fades in on the same lanes,
   320.6 to 320.9, and "Your turn." lands from 320.7 where the title was: four thin chrome lines (2
-  px, 50 %), labelled in the film's spelling with the Noto Music glyph (G♯3, A3, A♯3, B3,
-  right-aligned at x 540, each with its octave-up name ghosted beside it), and Merc's path as a
-  dashed chrome line (3 px, dash 10, gap 8).
+  px, 50 %), labelled in the film's spelling with the Noto Music glyph, JetBrains Mono 30 px in
+  ink-2 (G♯3, A3, A♯3, B3, right-aligned at x 540; 8.9:1 on the ground), each with its octave-up
+  name beside it in ink at 55 % (5.4:1), and Merc's path as a dashed chrome line (3 px, dash 10, gap
+  8).
 - The your-turn cursor: a vertical chrome line (4 px, 100 %, soft glow) spanning the four lanes,
   waiting at x 560 from 335.26, then sweeping to x 1360 from 336.26 to 340.46 in step with Merc's
   path (A held 1.2 s, up 0.5, A♯ held 1.0, down 0.5, A held 1.0). Nothing rides the path.
 - Before it, on b42b's "Slide up a semitone, and back", one soft chrome highlight (a 60 px glow)
   runs once along Merc's dashed path while Blue speaks: along A3 from 332.55, up to A♯3 332.9 to
   333.3, along A♯3, down 334.1 to 334.5, fading at the path's end by 334.9. Earlier in b42b the A3
-  label brightens on "Start on my A" (327.6), the ghosted A4 beside it as the chip lands (329.1),
-  and both together on "whichever feels easy" (331.4).
+  label brightens to ink on "Start on my A" (327.6), the A4 beside it to ink as the chip lands
+  (329.1), and both glow together on "whichever feels easy" (331.4).
 
 ## E to F: S14 -> S15 at recap - 0.15 (est. 342.31)
 
 - The plain guide at 20 % (since 341.89): its four chrome lanes from x 560 to 1360 at the four
-  heights above, their labels and Merc's dashed path, fading out by 343.0, before card 1 lands;
-  nothing of the app's drawing (gone since 320.6); "Your turn.", the safety labels, the chip, the
-  cursor and the ring timer gone (by 341.96, fading from 341.76 as the pause ends); the monitor gone
-  since 320.3.
+  heights above and Merc's dashed path, fading out by 343.0, before card 1 lands; its labels faded
+  out 341.89 to 342.09 rather than dim; nothing of the app's drawing (gone since 320.6); "Your
+  turn.", the safety labels, the chip, the cursor and the ring timer gone (by 341.96, fading from
+  341.76 as the pause ends); the monitor gone since 320.3.
 - The Mercs are mid-move on one curve that spans the cut (S14g to S15a): from feet (230, 860) and
   (1690, 860) at 341.89 to (170, 860) and (1750, 860) at 343.09, shown size 420 to 300 (scale 0.808
   to 0.577 of the 520 render), `power3.inOut` (provisional). The pass is the same on both sides
