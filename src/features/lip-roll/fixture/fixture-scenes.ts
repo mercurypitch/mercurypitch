@@ -18,12 +18,11 @@
 // draws both at the playhead (0.35 W). Screen 3 is the demo's "not like
 // this" take (PR 12): the voice holds flat while the crest rises away.
 
-import type { MercState } from '@/lib/merc/constants'
+import type { GlideFixtureScene } from '@/components/room-kit/glide/glide-fixture'
 import { WAVE } from '../bay-geometry'
 import { MERC_INTRO_X, MERC_SINK_W, waveG } from '../bay-layout'
 import { crestX, INTRO_CAMERA } from '../bay-scroll'
 import type { TraceSample } from '../bay-view'
-import type { LipPhase } from '../lip-machine'
 import type { LipSummary } from '../lip-run'
 
 /** The first wave's root in every fixture: C3. */
@@ -31,29 +30,18 @@ export const FIXTURE_ROOT = 48
 
 type Ranges = readonly (readonly [number, number])[]
 
-export interface LipFixtureScene {
-  readonly phase: LipPhase
-  /** World X under the playhead. */
-  readonly camera: number
+/**
+ * A storyboard screen of the bay, pinned. What Merc hears on the way up a
+ * wave rises 6 semitones a second (LipFixture.tsx).
+ */
+export interface LipFixtureScene extends GlideFixtureScene<LipSummary> {
   /** The camera's zoom: 0 the intro's (wave A), 1 the run's (wave B). */
   readonly zoom: number
-  /** Each wave's lit ranges, in its u. */
-  readonly lit: readonly Ranges[]
   readonly trace: readonly TraceSample[]
   /** Merc: x of the screen (W) and the world y he rides. */
   readonly merc: { readonly x: number; readonly feetY: number }
-  readonly mercState: MercState
-  /**
-   * What he hears: nothing, his own buzz (the intro), or a voice on its
-   * way up a wave (6 semitones a second, so `ride` leans him).
-   */
-  readonly voice: 'silent' | 'hum' | 'rise'
   /** The voice sounds: bubbles and the buzz beside his mouth. */
   readonly voiced: boolean
-  readonly chip: string | null
-  /** Merc's line, as the room would say it. */
-  readonly line: string
-  readonly summary: LipSummary | null
 }
 
 /** The camera that puts wave k's crest at screen x `crest` (W), at zoom 1. */

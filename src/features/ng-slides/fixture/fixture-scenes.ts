@@ -16,12 +16,11 @@
 // take, drawn across the whole arch; the room draws a voice only up to
 // the playhead, so the live demo (demo/) shows the arch as it scrolls by.
 
-import type { MercState } from '@/lib/merc/constants'
+import type { GlideFixtureScene } from '@/components/room-kit/glide/glide-fixture'
 import { ARCH, STORYBOARD_ASPECT } from '../bridge-geometry'
 import { archG, MERC_INTRO_X } from '../bridge-layout'
 import { apexX, INTRO_CAMERA } from '../bridge-scroll'
 import type { TraceSample } from '../bridge-view'
-import type { NgPhase } from '../ng-machine'
 import type { NgSummary } from '../ng-run'
 
 /** The first slide's root in every fixture: A2, as screen 1 names it. */
@@ -29,27 +28,17 @@ export const FIXTURE_ROOT = 45
 
 type Ranges = readonly (readonly [number, number])[]
 
-export interface NgFixtureScene {
-  readonly phase: NgPhase
-  /** World X under the playhead. */
-  readonly camera: number
-  /** Each arch's lit ranges, in its u. */
-  readonly lit: readonly Ranges[]
+/**
+ * A storyboard screen of the bridge, pinned. What Merc hears on the way up
+ * a slide rises 5 semitones a second, so `ride` leans him as on screen 2
+ * (NgFixture.tsx).
+ */
+export interface NgFixtureScene extends GlideFixtureScene<NgSummary> {
   readonly trace: readonly TraceSample[]
   /** Merc's feet: x of the screen (W) and storyboard y (W). */
   readonly merc: { readonly x: number; readonly feetY: number }
-  readonly mercState: MercState
-  /**
-   * What he hears: nothing, his own hum (the intro), or a voice on its way
-   * up a slide (5 semitones a second, so `ride` leans him as on screen 2).
-   */
-  readonly voice: 'silent' | 'hum' | 'rise'
-  readonly chip: string | null
-  /** Merc's line moment's first line, as the room would say it. */
-  readonly line: string
   /** The note names on the first arch. */
   readonly names: boolean
-  readonly summary: NgSummary | null
 }
 
 const H = STORYBOARD_ASPECT

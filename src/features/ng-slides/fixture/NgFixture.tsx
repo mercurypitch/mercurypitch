@@ -15,48 +15,17 @@
 // which is set once every picture is decoded and every canvas painted.
 
 import type { JSX } from 'solid-js'
-import { createSignal } from 'solid-js'
-import type { LitStrip } from '@/components/room-kit/glide-reveal'
+import { createFixtureReady, glideFixtureController, } from '@/components/room-kit/glide/glide-fixture'
 import { ngSlidesPath } from '@/lib/glide/glide-path'
 import { NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
-import type { MercVoice } from '@/lib/merc/sim'
 import { bridgeArt, bridgeImage, REFLECTION_ART } from '../bridge-art'
-import { introHum } from '../bridge-ride'
-import type { NgController } from '../ng-controller-contract'
+import type { NgController, NgTypes } from '../ng-controller-contract'
 import { NgSlidesRoom } from '../NgSlidesRoom'
 import type { NgFixtureName, NgFixtureScene } from './fixture-scenes'
 import { FIXTURE_ROOT, FIXTURE_SCENES } from './fixture-scenes'
 
 export function isFixtureName(name: string | null): name is NgFixtureName {
   return name !== null && Object.hasOwn(FIXTURE_SCENES, name)
-}
-
-const SILENT: MercVoice = {
-  voiced: false,
-  cents: 0,
-  level: 0,
-  steady: 1,
-  midi: 57,
-}
-
-/** Screen 2's voice: on its way up a slide, so `ride` leans him. */
-const RISE_ST_PER_SEC = 5
-
-function voiceOf(kind: NgFixtureScene['voice']): () => MercVoice {
-  if (kind === 'hum') {
-    const hum = introHum(FIXTURE_ROOT)
-    return () => hum
-  }
-  if (kind === 'rise') {
-    return () => ({
-      voiced: true,
-      cents: 0,
-      level: 0.6,
-      steady: 1,
-      midi: FIXTURE_ROOT + (RISE_ST_PER_SEC * performance.now()) / 1000,
-    })
-  }
-  return () => SILENT
 }
 
 const PATH = ngSlidesPath(
@@ -66,52 +35,23 @@ const PATH = ngSlidesPath(
 
 /** A run that is only ever this one frame. */
 export function fixtureController(scene: NgFixtureScene): NgController {
-  const strips: LitStrip[] = scene.lit.flatMap((ranges, arch) =>
-    ranges.map(([from, to]) => ({ arch, from, to })),
-  )
-  const voice = voiceOf(scene.voice)
-  return {
-    state: () => ({ phase: scene.phase, run: 0, block: null }),
-    line: () => scene.line,
-    chip: () => scene.chip,
-    // A pinned slide is being sung, and the mic's ring holds at the
-    // pinned voice's loudness.
-    singing: () => scene.phase === 'run',
-    micLevel: () => voice().level,
-    summary: () => scene.summary,
-    mercState: () => scene.mercState,
-    mercVoice: voice,
-    lines: () => ({ path: PATH, root: scene.names ? FIXTURE_ROOT : null }),
-    showResult: () => scene.summary !== null,
-    start: () => undefined,
-    stop: () => undefined,
-    // A fixture has no demo (NgSlidesRoom: another's run has none).
-    script: {
-      active: () => false,
-      audio: () => Promise.resolve(null),
-      note: () => FIXTURE_ROOT,
-      enter: () => false,
-      play: () => undefined,
-      rest: () => undefined,
-      leave: () => undefined,
-      playing: () => undefined,
-    },
-    attach: (view) => {
-      view.reset(scene.camera)
-      if (scene.summary !== null) {
-        view.result(scene.lit)
-        return
-      }
-      view.frame({
-        camera: scene.camera,
-        strips,
-        trace: scene.trace,
-        merc: scene.merc,
-        // The storyboard's frames: no contact light.
-        contact: null,
-      })
-    },
-  }
+  return glideFixtureController<NgTypes, NgFixtureScene>(scene, {
+    root: FIXTURE_ROOT,
+    // Screen 2's voice: on its way up a slide, so `ride` leans him.
+    riseStPerSec: 5,
+    lines: (pinned) => ({
+      path: PATH,
+      root: pinned.names ? FIXTURE_ROOT : null,
+    }),
+    frame: (pinned, strips) => ({
+      camera: pinned.camera,
+      strips,
+      trace: pinned.trace,
+      merc: pinned.merc,
+      // The storyboard's frames: no contact light.
+      contact: null,
+    }),
+  })
 }
 
 /** The pictures the canvases copy from: decoded, so they have painted. */
@@ -133,14 +73,9 @@ export interface NgFixtureProps {
 }
 
 export function NgFixture(props: NgFixtureProps): JSX.Element {
-  const [ready, setReady] = createSignal(false)
+  const { ready, settled } = createFixtureReady(canvasesPainted)
   // eslint-disable-next-line solid/reactivity -- a fixture is one frame
   const controller = fixtureController(FIXTURE_SCENES[props.name])
-  const settled = (): void => {
-    void canvasesPainted().then(() =>
-      requestAnimationFrame(() => requestAnimationFrame(() => setReady(true))),
-    )
-  }
   return (
     <div
       style={{

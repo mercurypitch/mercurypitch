@@ -15,48 +15,17 @@
 // which is set once every picture is decoded and every canvas painted.
 
 import type { JSX } from 'solid-js'
-import { createSignal } from 'solid-js'
-import type { LitStrip } from '@/components/room-kit/glide-reveal'
+import { createFixtureReady, glideFixtureController, } from '@/components/room-kit/glide/glide-fixture'
 import { lipRollPath } from '@/lib/glide/glide-path'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
-import type { MercVoice } from '@/lib/merc/sim'
 import { bayArt, bayImage, BUBBLE_URL } from '../bay-art'
-import { introHum } from '../bay-ride'
-import type { LipController } from '../lip-controller-contract'
+import type { LipController, LipTypes } from '../lip-controller-contract'
 import { LipRollRoom } from '../LipRollRoom'
 import type { LipFixtureName, LipFixtureScene } from './fixture-scenes'
 import { FIXTURE_ROOT, FIXTURE_SCENES } from './fixture-scenes'
 
 export function isFixtureName(name: string | null): name is LipFixtureName {
   return name !== null && Object.hasOwn(FIXTURE_SCENES, name)
-}
-
-const SILENT: MercVoice = {
-  voiced: false,
-  cents: 0,
-  level: 0,
-  steady: 1,
-  midi: 57,
-}
-
-/** Screen 2's voice: on its way up a wave, so `ride` leans him. */
-const RISE_ST_PER_SEC = 6
-
-function voiceOf(kind: LipFixtureScene['voice']): () => MercVoice {
-  if (kind === 'hum') {
-    const hum = introHum(FIXTURE_ROOT)
-    return () => hum
-  }
-  if (kind === 'rise') {
-    return () => ({
-      voiced: true,
-      cents: 0,
-      level: 0.6,
-      steady: 1,
-      midi: FIXTURE_ROOT + (RISE_ST_PER_SEC * performance.now()) / 1000,
-    })
-  }
-  return () => SILENT
 }
 
 const PATH = lipRollPath(
@@ -67,54 +36,24 @@ const PATH = lipRollPath(
 
 /** A run that is only ever this one frame. */
 export function fixtureController(scene: LipFixtureScene): LipController {
-  const strips: LitStrip[] = scene.lit.flatMap((ranges, arch) =>
-    ranges.map(([from, to]) => ({ arch, from, to })),
-  )
-  const voice = voiceOf(scene.voice)
   return {
-    state: () => ({ phase: scene.phase, run: 0, block: null }),
-    line: () => scene.line,
-    chip: () => scene.chip,
-    // A pinned wave is being ridden, and the mic's ring holds at the
-    // pinned voice's loudness.
-    singing: () => scene.phase === 'run',
-    micLevel: () => voice().level,
-    summary: () => scene.summary,
-    mercState: () => scene.mercState,
-    mercVoice: voice,
-    lines: () => ({ path: PATH, root: FIXTURE_ROOT }),
-    showResult: () => scene.summary !== null,
-    start: () => undefined,
-    stop: () => undefined,
-    // A fixture has no demo (LipRollRoom: another's run has none).
-    script: {
-      active: () => false,
-      audio: () => Promise.resolve(null),
-      note: () => FIXTURE_ROOT,
-      enter: () => false,
-      play: () => undefined,
-      rest: () => undefined,
-      leave: () => undefined,
-      playing: () => undefined,
-    },
-    mercAhead: () => [],
-    attach: (view) => {
-      view.reset(scene.camera)
-      if (scene.summary !== null) {
-        view.result(scene.lit)
-        return
-      }
-      view.frame({
-        camera: scene.camera,
-        zoom: scene.zoom,
+    ...glideFixtureController<LipTypes, LipFixtureScene>(scene, {
+      root: FIXTURE_ROOT,
+      // Screen 2's voice: on its way up a wave, so `ride` leans him.
+      riseStPerSec: 6,
+      lines: () => ({ path: PATH, root: FIXTURE_ROOT }),
+      frame: (pinned, strips) => ({
+        camera: pinned.camera,
+        zoom: pinned.zoom,
         strips,
-        trace: scene.trace,
-        merc: scene.merc,
-        voiced: scene.voiced,
+        trace: pinned.trace,
+        merc: pinned.merc,
+        voiced: pinned.voiced,
         // The storyboard's frames: no contact light.
         contact: null,
-      })
-    },
+      }),
+    }),
+    mercAhead: () => [],
   }
 }
 
@@ -133,14 +72,9 @@ export interface LipFixtureProps {
 }
 
 export function LipFixture(props: LipFixtureProps): JSX.Element {
-  const [ready, setReady] = createSignal(false)
+  const { ready, settled } = createFixtureReady(canvasesPainted)
   // eslint-disable-next-line solid/reactivity -- a fixture is one frame
   const controller = fixtureController(FIXTURE_SCENES[props.name])
-  const settled = (): void => {
-    void canvasesPainted().then(() =>
-      requestAnimationFrame(() => requestAnimationFrame(() => setReady(true))),
-    )
-  }
   return (
     <div
       style={{
