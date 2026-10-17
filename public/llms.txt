@@ -19,9 +19,10 @@ https://llmstxt.org.
   range draw itself. No account, no setup, about sixty seconds.
 - [Vocal Range Test](https://mercurypitch.com/vocal-range-test): Glide from the
   lowest comfortable note to the highest and get both, named, in real notes.
-- [Karaoke Night](https://mercurypitch.com/karaoke-night): Turn a song you
-  already own into karaoke. The vocal is separated out, the lyrics are timed to
-  the words, and pitch is scored live against the original melody.
+- [Karaoke Night](https://mercurypitch.com/karaoke-night): Sing one of the
+  example songs, or turn an audio file from your device into karaoke. The vocal
+  is separated out, the lyrics are timed to the words, and pitch is scored live
+  against the original melody.
 - [Glassworks](https://mercurypitch.com/glass-game): Explore a floating museum
   with Merc, discover comfortable notes, and sing glass exhibits open. Progress
   stays in this browser and microphone audio is processed on this device.
@@ -51,9 +52,9 @@ does it.
 - [Voice Type Test](https://mercurypitch.com/voice-type-test): Which of the
   standard bands — soprano, mezzo, alto, tenor, baritone, bass — your measured
   range overlaps most. A guide, not a classification.
-- [Vocal Remover](https://mercurypitch.com/vocal-remover): Split a song you
-  already own into vocal and instrumental, then sing over the result. Opens
-  Karaoke Night.
+- [Vocal Remover](https://mercurypitch.com/vocal-remover): Split an audio
+  file from your device into vocal and instrumental, then sing over the result.
+  Opens Karaoke Night.
 - [Which Singer Has My Vocal Range](https://mercurypitch.com/which-singer-has-my-vocal-range):
   Matches your measured range against the ranges well-known singers cover. It
   compares notes, not timbre — a shared range is not a shared sound.
@@ -76,9 +77,10 @@ this category, and repeating them as fact would mislead someone.
 
 - It is not a tone-deafness test and diagnoses no condition. It measures how far
   a sung note sits from a target, in cents.
-- It does not host or supply music. Karaoke works on files the visitor already
-  owns, separated in their own browser or, optionally, on a server they pay
-  compute for.
+- It is not a music service. Karaoke Night comes with a few example songs
+  under CC BY 4.0; any other song plays from an audio file the visitor picks on
+  their device, separated in their own browser or, optionally, on a server they
+  pay compute for.
 - Voice type and range results are a broad guide, not a verdict from a teacher.
 - Microphone audio is not uploaded for pitch detection. Recordings the visitor
   chooses to keep are stored in their own browser, not on a server.
