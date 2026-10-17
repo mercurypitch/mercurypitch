@@ -60,6 +60,8 @@ interface EarStageProps {
    *  as the instrument card; no card without a description. */
   measures?: string
   description?: string
+  /** Lines of the description the card shows before More (3). */
+  descriptionLines?: number
   /** The card's name when the bar says something else (the ritual
    *  bars "Calibration" over Hairline's plate). */
   cardName?: string
@@ -287,6 +289,7 @@ export function EarStage(props: EarStageProps): JSX.Element {
                     name={props.cardName ?? props.name}
                     measures={props.measures}
                     description={description()}
+                    lines={props.descriptionLines}
                   />
                 )}
               </Show>

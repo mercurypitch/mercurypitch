@@ -88,7 +88,9 @@
 
 .textClamped {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  /* `--card-lines` is a drill's own count (InstrumentCard's `lines`): only
+     the drill knows how far down its instrument starts. */
+  -webkit-line-clamp: var(--card-lines, 3);
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

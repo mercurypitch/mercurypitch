@@ -278,6 +278,60 @@ describe('the instrument card', () => {
     )
   })
 
+  it("gives Hairline's paragraph five lines before More, since its ruler starts low", () => {
+    mount()
+    const text = screen.getByText(/Two tones; pick the higher one/)
+    expect(text.style.getPropertyValue('--card-lines')).toBe('5')
+  })
+
+  /** Lays the paragraph out as a desk would: it shows `shown` lines
+   *  of the `needed` its text takes. jsdom lays nothing out. */
+  function layParagraph(shown: number, needed: number): () => void {
+    const line = 18
+    const proto = HTMLParagraphElement.prototype
+    Object.defineProperty(proto, 'clientHeight', {
+      configurable: true,
+      get: () => shown * line,
+    })
+    Object.defineProperty(proto, 'scrollHeight', {
+      configurable: true,
+      get: () => needed * line,
+    })
+    return () => {
+      delete (proto as { clientHeight?: number }).clientHeight
+      delete (proto as { scrollHeight?: number }).scrollHeight
+    }
+  }
+
+  it('drops More where five lines hold the whole paragraph', async () => {
+    const restore = layParagraph(5, 5)
+    try {
+      mount()
+      const text = screen.getByText(/Two tones; pick the higher one/)
+      await waitFor(() =>
+        expect(screen.queryByRole('button', { name: 'More' })).toBeNull(),
+      )
+      expect(text.style.getPropertyValue('--card-lines')).toBe('5')
+    } finally {
+      restore()
+    }
+  })
+
+  it('keeps three lines and More where five would still cut the paragraph', async () => {
+    // A narrower desk: the card is 228px wide and the text needs six.
+    const restore = layParagraph(5, 6)
+    try {
+      mount()
+      const text = screen.getByText(/Two tones; pick the higher one/)
+      await waitFor(() =>
+        expect(text.style.getPropertyValue('--card-lines')).toBe(''),
+      )
+      expect(screen.getByRole('button', { name: 'More' })).toBeTruthy()
+    } finally {
+      restore()
+    }
+  })
+
   it('More unfolds the text, and the drill remembers it', () => {
     const first = mount()
     fireEvent.click(screen.getByRole('button', { name: 'More' }))
