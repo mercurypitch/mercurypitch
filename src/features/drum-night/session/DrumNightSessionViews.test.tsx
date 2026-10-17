@@ -471,7 +471,7 @@ describe('DrumScoreSheet', () => {
       <DrumScoreSheet session={() => session} playheadBeat={() => 0} />
     ))
 
-    expect(screen.getByText(/4 mapped hits/)).toBeVisible()
+    expect(screen.getByText(/^4 hits · 1 bar · /)).toBeVisible()
     expect(
       screen.getByText(
         '2 unsupported source events were reported but not mapped, drawn, or substituted.',
@@ -513,11 +513,10 @@ describe('DrumScoreSheet', () => {
       <DrumScoreSheet session={() => session} playheadBeat={() => 1} />
     ))
 
+    // A player's words: the hits, the bars they fill, the tempo they start at.
     expect(
-      screen.getByText(
-        /1 mapped hits · authored attack span 1.50 quarter-note beats/,
-      ),
-    ).toHaveTextContent('120 BPM opening · 1 tempo change')
+      screen.getByText('1 hit · 1 bar · 120 BPM, then 1 tempo change'),
+    ).toBeVisible()
     expect(
       screen.getByRole('list', { name: 'Meter in displayed score' }),
     ).toHaveTextContent('Bar 1 · 6/8')
