@@ -101,7 +101,7 @@ describe('coachDrumSession', () => {
     expect(result.meanTimingOffsetMs).toBe(0)
     expect(result.meanAbsoluteVelocityOffset).toBe(46)
     expect(result.observation).toContain(
-      'captured velocities differed from the authored accents',
+      'Timing stayed centered; hits were about 46 velocity points (of 127) off the written accents.',
     )
     expect(result.recovery?.focus).toBe('dynamics')
   })

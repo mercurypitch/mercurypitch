@@ -1098,7 +1098,7 @@ async function recordOnePreparedHit(clock: TestClock): Promise<void> {
   )
   fireEvent.click(
     screen.getAllByRole('button', {
-      name: 'Play First Pocket take clock',
+      name: 'Play First Pocket',
     })[0],
   )
   await waitFor(() =>
@@ -1531,7 +1531,7 @@ describe('DrumNightApp', () => {
     expect(timeline).toHaveAttribute('data-loop-state', 'active')
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play First Pocket take clock',
+        name: 'Play First Pocket',
       })[0],
     )
     await waitFor(() =>
@@ -1697,7 +1697,7 @@ describe('DrumNightApp', () => {
     )
     await waitFor(() =>
       expect(
-        screen.getByText(/Built-in groove · 29 mapped hits/),
+        screen.getByText(/Built-in groove · 29 hits · 84 BPM/),
       ).toBeVisible(),
     )
     fireEvent.click(screen.getByRole('button', { name: 'Close rack drawer' }))
@@ -1706,7 +1706,7 @@ describe('DrumNightApp', () => {
     )
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play First Pocket take clock',
+        name: 'Play First Pocket',
       })[0],
     )
 
@@ -2172,7 +2172,7 @@ describe('DrumNightApp', () => {
     expect(screen.getByRole('button', { name: 'Count-in: off' })).toBeVisible()
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play First Pocket take clock',
+        name: 'Play First Pocket',
       })[0],
     )
     await waitFor(() =>
@@ -2237,7 +2237,7 @@ describe('DrumNightApp', () => {
     expect(replaySummary.id).not.toBe(durableSummary.id)
 
     const play = screen.getAllByRole('button', {
-      name: 'Play First Pocket take clock',
+      name: 'Play First Pocket',
     })[0]!
     fireEvent.click(play)
     expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
@@ -2487,7 +2487,7 @@ describe('DrumNightApp', () => {
     expect(takeEvents).toHaveAttribute('aria-pressed', 'false')
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play First Pocket take clock',
+        name: 'Play First Pocket',
       })[0],
     )
     await waitFor(() =>
@@ -2686,14 +2686,12 @@ describe('DrumNightApp', () => {
     await waitFor(() =>
       expect(
         screen.getAllByRole('button', {
-          name: 'Pause First Pocket take clock',
+          name: 'Pause First Pocket',
         }),
       ).not.toHaveLength(0),
     )
     expect(
-      screen.getByText(
-        'First Pocket is starting on the shared take clock with take events armed.',
-      ),
+      screen.getByText('First Pocket is starting, recording your hits.'),
     ).toHaveAttribute('data-visible', 'false')
     expect(room.requestAccess).not.toHaveBeenCalled()
   })
@@ -2754,7 +2752,9 @@ describe('DrumNightApp', () => {
       preparedSamples: 2,
     })
     expect(
-      within(drawer).getByText(/Loading 2 of 5 core samples/i),
+      within(drawer).getByText(
+        /Loading samples: 2 of 5 · a backup synth sound plays until they are ready/i,
+      ),
     ).toBeVisible()
 
     room.player.updateSnapshot({
@@ -2765,14 +2765,14 @@ describe('DrumNightApp', () => {
     })
     expect(
       within(drawer).getByText(
-        /some kit articulations use Mercury Synth because their samples did not pass quality calibration/i,
+        /a few sounds play Mercury Synth because their samples did not pass our quality check/i,
       ),
     ).toBeVisible()
 
     room.player.updateSnapshot({ sampleStatus: 'reduced' })
     expect(
       within(drawer).getByText(
-        /some kit articulations have reduced sample coverage/i,
+        /some sounds have fewer samples, and Mercury Synth plays the missing ones/i,
       ),
     ).toBeVisible()
 
@@ -2784,7 +2784,7 @@ describe('DrumNightApp', () => {
     })
     expect(
       within(drawer).getByText(
-        /Sample preparation complete · some kit articulations use Mercury Synth because their samples did not pass quality calibration/i,
+        /Sample preparation complete · a few sounds play Mercury Synth because their samples did not pass our quality check/i,
       ),
     ).toBeVisible()
 
@@ -2795,7 +2795,7 @@ describe('DrumNightApp', () => {
     })
     expect(
       within(drawer).getByText(
-        /2 of 5 core samples ready · sample warm-up stopped/i,
+        /Only 2 of 5 samples loaded · a backup synth sound plays for the rest/i,
       ),
     ).toBeVisible()
     fireEvent.click(within(drawer).getByRole('button', { name: 'Retry Live' }))
@@ -2884,7 +2884,7 @@ describe('DrumNightApp', () => {
     )
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play First Pocket take clock',
+        name: 'Play First Pocket',
       })[0],
     )
     await waitFor(() => expect(room.player.activate).toHaveBeenCalledOnce())
@@ -3275,7 +3275,7 @@ describe('DrumNightApp', () => {
 
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Night Drive song clock',
+        name: 'Play Night Drive',
       })[0],
     )
 
@@ -3323,7 +3323,7 @@ describe('DrumNightApp', () => {
     await waitFor(() => expect(catalog.openSession).toHaveBeenCalledOnce())
 
     const playButtons = await screen.findAllByRole('button', {
-      name: 'Play Slow Open song clock',
+      name: 'Play Slow Open',
     })
     expect(playButtons).toHaveLength(2)
     fireEvent.click(playButtons[0])
@@ -3347,7 +3347,7 @@ describe('DrumNightApp', () => {
       ).toHaveLength(0),
     )
     expect(
-      screen.getAllByRole('button', { name: 'Play Slow Open song clock' }),
+      screen.getAllByRole('button', { name: 'Play Slow Open' }),
     ).toHaveLength(2)
   })
 
@@ -4081,13 +4081,13 @@ describe('DrumNightApp', () => {
     fireEvent.click(markB)
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play First Pocket take clock',
+        name: 'Play First Pocket',
       })[0],
     )
     await waitFor(() =>
       expect(
         screen.getAllByRole('button', {
-          name: 'Pause First Pocket take clock',
+          name: 'Pause First Pocket',
         }),
       ).not.toHaveLength(0),
     )
@@ -4105,7 +4105,7 @@ describe('DrumNightApp', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/Built-in groove · 29 mapped hits/),
+        screen.getByText(/Built-in groove · 29 hits · 84 BPM/),
       ).toBeVisible(),
     )
     expect(editor).toHaveAttribute('data-dirty', 'true')
@@ -4113,7 +4113,7 @@ describe('DrumNightApp', () => {
     expect(seek).toHaveValue(positionBeforeEdit)
     expect(
       screen.getAllByRole('button', {
-        name: 'Pause First Pocket take clock',
+        name: 'Pause First Pocket',
       }),
     ).not.toHaveLength(0)
     expect(room.session.contextForGesture).toHaveBeenCalledTimes(1)
@@ -4134,7 +4134,7 @@ describe('DrumNightApp', () => {
     const room = renderRoom({ activationResults: [false, true] })
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play First Pocket take clock',
+        name: 'Play First Pocket',
       })[0],
     )
 
@@ -4644,13 +4644,13 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByText('Count-in').closest('button')!)
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Long Form Pocket take clock',
+        name: 'Play Long Form Pocket',
       })[0],
     )
     await waitFor(() =>
       expect(
         screen.getAllByRole('button', {
-          name: 'Pause Long Form Pocket take clock',
+          name: 'Pause Long Form Pocket',
         }),
       ).not.toHaveLength(0),
     )
@@ -4697,13 +4697,13 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByText('Count-in').closest('button')!)
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Six Eight Study take clock',
+        name: 'Play Six Eight Study',
       })[0],
     )
     await waitFor(() =>
       expect(
         screen.getAllByRole('button', {
-          name: 'Pause Six Eight Study take clock',
+          name: 'Pause Six Eight Study',
         }),
       ).not.toHaveLength(0),
     )
@@ -4761,7 +4761,7 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByText('Count-in').closest('button')!)
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Prewarm Study take clock',
+        name: 'Play Prewarm Study',
       })[0],
     )
 
@@ -4798,7 +4798,7 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByText('Count-in').closest('button')!)
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play First Import take clock',
+        name: 'Play First Import',
       })[0],
     )
     await waitFor(() => expect(room.player.player.prewarm).toHaveBeenCalled())
@@ -4861,7 +4861,7 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByText('Count-in').closest('button')!)
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Dense Scheduler Truth take clock',
+        name: 'Play Dense Scheduler Truth',
       })[0],
     )
 
@@ -4877,17 +4877,27 @@ describe('DrumNightApp', () => {
       '2 unsupported source hits stay silent',
     )
     expect(playbackTruth).toHaveTextContent('2 simultaneous hits are silent')
-    expect(playbackTruth).toHaveTextContent(/in-range hits are waiting/i)
+    // Hits queued for a later scheduling pass only help a developer: they
+    // stay on the note's data attribute, out of the player's view.
+    expect(playbackTruth).not.toHaveTextContent(/in-range hits are waiting/i)
+    expect(playbackTruth.getAttribute('data-diagnostics')).toMatch(
+      /in-range hits are waiting/i,
+    )
     expect(playbackTruth).toHaveTextContent(
       /source tempo changes were omitted from the bounded playback map/i,
     )
     expect(playbackTruth).toHaveTextContent(
       /source tempo value was clamped to the supported 40–280 BPM range/i,
     )
-    expect(playbackTruth).toHaveTextContent(/attacks are using synth fallback/i)
+    // Mercury Synth is the sound the player chose, so its hits are not a
+    // fallback to report; the count stays with the developer detail.
+    expect(playbackTruth).not.toHaveTextContent(/synth/i)
+    expect(playbackTruth.getAttribute('data-diagnostics')).toMatch(
+      /attacks used synth fallback/i,
+    )
     expect(
       screen.getByText(
-        'Dense Scheduler Truth is starting on the shared take clock with take events armed.',
+        'Dense Scheduler Truth is starting, recording your hits.',
       ),
     ).toBeInTheDocument()
 
@@ -4897,6 +4907,38 @@ describe('DrumNightApp', () => {
         /delayed hits missed the bounded scheduling window and stayed silent/i,
       ),
     )
+  })
+
+  it('tells a sampled kit that a backup synth sound covered hits whose samples were not ready', async () => {
+    const clock = new TestClock()
+    const ready = readySessionFixture({ title: 'Sampled Truth' })
+    const room = renderRoom({
+      clock,
+      importSession: importSessionHarness(ready),
+    })
+    // The harness reports every hit as a synth fallback; on a sampled kit
+    // that is a sample that was not ready, which the player can hear.
+    room.player.updateSnapshot({ selectedKitId: 'classic-gm' })
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Play Sampled Truth' })[0],
+    )
+
+    await waitFor(() =>
+      expect(room.player.trigger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sourceId: expect.stringMatching(/^authored:/),
+        }),
+      ),
+    )
+    const note = screen.getByRole('note')
+    await waitFor(() =>
+      expect(note).toHaveTextContent(
+        'Some hits used a backup synth sound because the kit’s samples were not ready.',
+      ),
+    )
+    expect(note).not.toHaveTextContent(/fallback/i)
   })
 
   it('moves the shared timeline from full song through A waiting, active, and clear', async () => {
@@ -5094,7 +5136,7 @@ describe('DrumNightApp', () => {
     ).not.toBeInTheDocument()
     expect(
       screen.getAllByRole('button', {
-        name: 'Pause First Pocket take clock',
+        name: 'Pause First Pocket',
       }),
     ).not.toHaveLength(0)
   })
@@ -5105,11 +5147,11 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByText('Count-in').closest('button')!)
     fireEvent.click(screen.getByText('Take events').closest('button')!)
     fireEvent.click(
-      screen.getAllByRole('button', { name: /Play .* take clock/i })[0],
+      screen.getAllByRole('button', { name: 'Play First Pocket' })[0],
     )
     await waitFor(() =>
       expect(
-        screen.getAllByRole('button', { name: /Pause .* take clock/i }),
+        screen.getAllByRole('button', { name: 'Pause First Pocket' }),
       ).not.toHaveLength(0),
     )
 
@@ -5144,13 +5186,13 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByText('Count-in').closest('button')!)
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Waiting Pocket take clock',
+        name: 'Play Waiting Pocket',
       })[0],
     )
 
     await waitFor(() =>
       expect(screen.getByRole('note')).toHaveTextContent(
-        'Authored playback is waiting for active drum audio',
+        'The score is waiting for sound. Press Play or strike a pad',
       ),
     )
   })
@@ -5176,13 +5218,13 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByText('Take events').closest('button')!)
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Recovery Study take clock',
+        name: 'Play Recovery Study',
       })[0],
     )
     await waitFor(() =>
       expect(
         screen.getAllByRole('button', {
-          name: 'Pause Recovery Study take clock',
+          name: 'Pause Recovery Study',
         }),
       ).not.toHaveLength(0),
     )
@@ -5435,13 +5477,13 @@ describe('Drum Night phone take rail', () => {
     ).toBeInTheDocument()
     expect(
       within(phoneNav()).getByRole('button', {
-        name: 'Pause First Pocket take clock',
+        name: 'Pause First Pocket',
       }),
     ).toBeInTheDocument()
 
     fireEvent.click(
       within(phoneNav()).getByRole('button', {
-        name: 'Pause First Pocket take clock',
+        name: 'Pause First Pocket',
       }),
     )
 
@@ -5449,7 +5491,7 @@ describe('Drum Night phone take rail', () => {
     // Finish, so a paused take can always be resumed.
     expect(
       within(phoneNav()).getByRole('button', {
-        name: 'Play First Pocket take clock',
+        name: 'Play First Pocket',
       }),
     ).toBeInTheDocument()
     expect(
@@ -5472,7 +5514,7 @@ describe('Drum Night phone take rail', () => {
 
     expect(
       within(phoneNav()).getByRole('button', {
-        name: 'Play First Pocket take clock',
+        name: 'Play First Pocket',
       }),
     ).toBeInTheDocument()
     expect(within(phoneNav()).getAllByRole('button')).toHaveLength(5)
