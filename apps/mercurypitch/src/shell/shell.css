@@ -920,8 +920,11 @@
 
 /* The Audio section (AudioDiagnosticsPanel): live readings, a label and a
    value on one line where they fit and wrapped where they do not, then the
-   copied report, selectable because it is the clipboard's fallback. */
-.mp-dev__audio {
+   copied report, selectable because it is the clipboard's fallback. The
+   Cloud subscription's timings (SubscriptionTimingPanel) are laid out the
+   same way. */
+.mp-dev__audio,
+.mp-dev__timings {
   display: flex;
   flex-direction: column;
   gap: 8px;

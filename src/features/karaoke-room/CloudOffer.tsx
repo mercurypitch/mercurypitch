@@ -31,6 +31,11 @@
 // purchase on a phone without an account, Sign in opens the sign-in sheet
 // the shell names (`onSignIn`): the singer has paid, so it is no offer.
 //
+// SUBSCRIBE WHEN THE STORE HAS IT (TestFlight build 919). A purchase this
+// phone made signed out goes to the account signed in now, and the sheet
+// says what follows a yes (`moved`). One filed under another account stays
+// there, and the status line says so and names Restore purchase.
+//
 // MOTION (§4.4). About 1.2 s: the sheet rises, the art opens, the words and
 // the steps arrive in turn while the line between the steps draws, then the
 // plan, then Subscribe, and one light sweeps across it once. Transform and
@@ -71,6 +76,15 @@ export const FREE_ACCOUNT_LINE =
 /** The renewal terms, as both stores ask (§4.2). */
 export const CLOUD_TERMS =
   'Renews every month until you cancel. Cancel any time in Settings.'
+
+/**
+ * Subscribe found the store account already paying for the subscription,
+ * filed under another account. It never moves by itself, since a phone can
+ * be shared (owner rule D2): Restore purchase, in this sheet's footer, is
+ * the way to move it.
+ */
+export const HELD_ELSEWHERE_LINE =
+  "You're already subscribed, on another account. Tap Restore purchase to move it here."
 
 /** One step of the path: what happens, then the detail it needs. */
 export interface CloudStep {
@@ -309,7 +323,11 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
     setBuying(false)
     switch (outcome) {
       case 'purchased':
+      case 'moved':
         showCloudSubscribed()
+        return
+      case 'held-elsewhere':
+        setNote(HELD_ELSEWHERE_LINE)
         return
       case 'pending':
         setNote(

@@ -204,6 +204,19 @@ const KARAOKE_STAGE_2 = [
   ['Songs this month', 'the songs left, in the room and in Settings'],
   ['See the plan', "Settings' Mercury Pitch Cloud group"],
   ['RevenueCatUI', "the store's paywall and subscription pages (RevenueCat)"],
+  // A purchase made signed out goes to the account signed in to after it,
+  // by the note the phone keeps of it, and the Cloud offer says so when the
+  // store's subscription is another account's (karaoke-subscription.ts,
+  // TestFlight build 919).
+  ['mp:cloud-signed-out-purchase', 'the note of a purchase made signed out'],
+  [
+    'subscription is on this account now',
+    'the line a subscription carried to the account gets',
+  ],
+  [
+    'Tap Restore purchase to move it here',
+    "the Cloud offer's line for another account's subscription",
+  ],
   // The premium exercises ride the same subscription and the same switch
   // (PREMIUM_EXERCISES, src/lib/native-build.ts): in every build that
   // imports songs, and not in the store build until the V1 flip.

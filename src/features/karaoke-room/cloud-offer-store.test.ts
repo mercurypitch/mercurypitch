@@ -3,6 +3,7 @@
 // ============================================================
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as Notifications from '@/stores/notifications-store'
 import type * as Songs from './karaoke-songs'
 import type { KaraokeSongs } from './karaoke-songs'
 
@@ -33,10 +34,19 @@ vi.mock('./karaoke-songs', async (importOriginal) => {
   }
 })
 
+const said = vi.hoisted(() => ({ lines: [] as string[] }))
+vi.mock('@/stores/notifications-store', async (importOriginal) => ({
+  ...(await importOriginal<typeof Notifications>()),
+  showNotification: vi.fn((line: string) => {
+    said.lines.push(line)
+  }),
+}))
+
 import { setMicActive } from '@/stores/mic-store'
+import type { KaraokeCarryOutcome } from '@/stores/native-shell-store'
 import { registerRunControls, registerShellApi, } from '@/stores/native-shell-store'
-import { askBeforeOffering, BEFORE_OFFER_MS, closeCloudOffer, cloudOffer, NOT_NOW_QUIET_MS, openCloudOffer, resetCloudOfferForTests, showCloudSubscribed, unaskedRefusal, } from './cloud-offer-store'
-import { resetKaraokeSongsForTests } from './karaoke-songs'
+import { askBeforeOffering, BEFORE_OFFER_MS, CARRIED_LINE, closeCloudOffer, cloudOffer, NOT_NOW_QUIET_MS, openCloudOffer, resetCloudOfferForTests, settleCloudAfterSignIn, showCloudSubscribed, unaskedRefusal, } from './cloud-offer-store'
+import { awaitSubscription, resetKaraokeSongsForTests } from './karaoke-songs'
 
 const NOW = Date.UTC(2026, 9, 16, 12)
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -54,6 +64,8 @@ beforeEach(() => {
   identity.order = []
   identity.answer = Promise.resolve(true)
   server.next = null
+  said.lines = []
+  vi.mocked(awaitSubscription).mockClear()
 })
 
 afterEach(() => {
@@ -212,5 +224,64 @@ describe('askBeforeOffering', () => {
     } finally {
       unregister()
     }
+  })
+})
+
+describe('after a sign-in', () => {
+  /** A store whose carry answers `carried`, or fails with it. */
+  function store(carried: () => Promise<KaraokeCarryOutcome>): () => void {
+    return registerShellApi({
+      pushSettings: vi.fn(),
+      karaokeSubscription: {
+        subscribe: async () => Promise.resolve('cancelled' as const),
+        restore: async () => Promise.resolve('nothing' as const),
+        carryToAccount: carried,
+      },
+    })
+  }
+
+  it('says the subscription came along, and waits for the songs', async () => {
+    const unregister = store(async () => Promise.resolve('moved'))
+    try {
+      await expect(settleCloudAfterSignIn()).resolves.toBe('moved')
+    } finally {
+      unregister()
+    }
+
+    expect(said.lines).toEqual([CARRIED_LINE])
+    expect(CARRIED_LINE).toBe(
+      'Your Mercury Pitch Cloud subscription is on this account now.',
+    )
+    expect(awaitSubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it("asks the server for the account's songs when nothing came along", async () => {
+    const unregister = store(async () => Promise.resolve('nothing'))
+    try {
+      await expect(settleCloudAfterSignIn()).resolves.toBe('nothing')
+    } finally {
+      unregister()
+    }
+
+    expect(said.lines).toEqual([])
+    expect(identity.order).toEqual(['server'])
+  })
+
+  it('still asks the server when the store fails', async () => {
+    const unregister = store(async () => Promise.reject(new Error('offline')))
+    try {
+      await expect(settleCloudAfterSignIn()).resolves.toBe('failed')
+    } finally {
+      unregister()
+    }
+
+    expect(said.lines).toEqual([])
+    expect(identity.order).toEqual(['server'])
+  })
+
+  it('asks the server alone on a phone without a store', async () => {
+    await expect(settleCloudAfterSignIn()).resolves.toBe('nothing')
+
+    expect(identity.order).toEqual(['server'])
   })
 })

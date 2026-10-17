@@ -83,6 +83,7 @@ const KARAOKE_STAGE_2 = [
   '/src/features/karaoke-room/karaoke-review-access.ts',
   '/src/features/karaoke-room/karaoke-songs.ts',
   '/apps/mercurypitch/src/shell/karaoke-subscription.ts',
+  '/apps/mercurypitch/src/shell/subscription-timing.ts',
   '/apps/mercurypitch/src/shell/settings/CloudGroup.tsx',
   '/apps/mercurypitch/src/shell/settings/KaraokeReviewAccess.tsx',
   '/apps/mercurypitch/src/shell/settings/KaraokeSongsGroups.tsx',

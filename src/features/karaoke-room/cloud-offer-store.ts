@@ -23,13 +23,21 @@
 // store whether it holds the subscription: the store knows of a purchase
 // before the server does, and a subscriber is never offered it again. It
 // answers within three seconds; past that the offer opens on what is known.
+//
+// AFTER A SIGN-IN (TestFlight build 919). `settleCloudAfterSignIn` runs at
+// the end of every way in (sign-in-landing.ts): a purchase this phone made
+// signed out goes to the account through the store (karaoke-subscription.ts
+// carryToAccount), and the server is asked again either way, so Settings
+// and the room show the account as it now is, without a restart.
 
 import { createSignal } from 'solid-js'
 import { ensureSingerIdentity } from '@/db/services/singer-identity'
 import { micActive, singingCaptureActive } from '@/stores/mic-store'
+import type { KaraokeCarryOutcome } from '@/stores/native-shell-store'
 import { nativeRunControls, nativeShellApi } from '@/stores/native-shell-store'
+import { showNotification } from '@/stores/notifications-store'
 import type { KaraokeSongs } from './karaoke-songs'
-import { awaitSubscription, karaokeSongs, refreshKaraokeSongs, songsOnTheWay, } from './karaoke-songs'
+import { awaitSubscription, CLOUD_NAME, karaokeSongs, refreshKaraokeSongs, songsOnTheWay, } from './karaoke-songs'
 
 /** Where an offer was opened from. */
 export type CloudOfferSource = 'import' | 'settings' | 'onboarding'
@@ -211,6 +219,30 @@ export async function askBeforeOffering(): Promise<OfferFacts> {
   } finally {
     clearTimeout(timer)
   }
+}
+
+/** Said once a sign-in has brought this phone's purchase to the account. */
+export const CARRIED_LINE = `Your ${CLOUD_NAME} subscription is on this account now.`
+
+/**
+ * After a sign-in: a subscription this phone bought signed out goes to the
+ * account, and the server is asked again, until it has heard of the move.
+ * Without a store (or one that has nothing of this phone's) it only asks
+ * the server, so what Settings shows is the account's, not the phone's.
+ */
+export async function settleCloudAfterSignIn(): Promise<KaraokeCarryOutcome> {
+  const carry = nativeShellApi()?.karaokeSubscription?.carryToAccount
+  const carried =
+    carry === undefined
+      ? 'nothing'
+      : await carry().catch(() => 'failed' as const)
+  if (carried === 'moved') {
+    showNotification(CARRIED_LINE, 'success')
+    await waitForSongs()
+  } else {
+    await refreshKaraokeSongs()
+  }
+  return carried
 }
 
 /** Tests: nothing open, nothing offered this session, no Not now kept. */
