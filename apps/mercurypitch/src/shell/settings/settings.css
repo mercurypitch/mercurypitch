@@ -691,6 +691,21 @@
   grid-area: fresh;
 }
 
+/* A size is short and always read whole ("13.4 MB", "0 MB"): it never
+   shrinks, and the label beside it wraps instead. The shared row lets a
+   value give way with an ellipsis, which is right for a name or an address
+   and cut these to "13.4 ..." and "0 ...". */
+.mp-storage__kept .mp-set-row__value {
+  flex-shrink: 0;
+}
+
+/* Clear and Remove share one width, so the size beside each one ends on
+   the same line. 6.2em is Remove at the button's 15px (92px); Clear grows
+   to it. Models has no button, so its size stays at the row's end. */
+.mp-storage__kept .mp-set-button--small {
+  min-width: 6.2em;
+}
+
 @media (orientation: landscape) and (min-width: 640px) {
   .mp-storage {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
