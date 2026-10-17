@@ -4,7 +4,7 @@ The last frame of scene N and the first frame of scene N+1 must show every carri
 same pixels (within 2 px). Values marked **(provisional)** are starting values: the two builders on
 either side of a handoff confirm them in a lab still, then this file is updated and the mark
 removed before either scene is built further. Unmarked values are carried from Lesson 1 or follow
-from arithmetic and are fixed now. Times are the estimates in SCRIPT.md (storyboard v8).
+from arithmetic and are fixed now. Times are the estimates in SCRIPT.md (storyboard v9).
 
 Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 to S13, [E] S14,
 [F] S15 to S17.
@@ -24,9 +24,14 @@ Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 
   turn rotates the object while the camera and every layer hold (S1e, and the spiral's slow turn
   through S1 to S3).
 - Text and marks fade in over 0.2 s from their cue and out over 0.2 s from their exit cue unless a
-  line below says otherwise; nothing lands where something else is still leaving. A glow or a pulse
-  on a word, or a key or tile lighting with its note, rises over 0.15 s and falls back over 0.6 s
-  unless the storyboard row holds it.
+  line below says otherwise; nothing lands where something else is still leaving. A counted pulse
+  (STORYBOARD § Type, from critic 08's measured mocks) moves edges or a large area: a tile or key
+  scales 1.05, a bar grows 15 % in height, a label of 64 px or more scales 1.2, each about its own
+  centre, up over 0.15 s and back over 0.6 s (`power2.out`, then `sine.inOut`); a bead scales 1.2 or
+  sends an echo ring, a 2 px chrome ring growing from its edge to three times its radius as it fades
+  over 0.5 s; a dark tile lights to 60 % chrome, or a key face at 2x or more brightens by 20 luma; a
+  long pulse comes back over 0.8 s. Glows, halos, edge flashes and a white key or tile lit at 1x are
+  accents and never stand in for motion.
 - Merc entrances and exits each have a start and an end; a pass ends 0.05 s after its exit ends.
 - The Mercs ride the near layer only in S1; everywhere else they are placed in screen space, so a
   camera move never shifts or scales them. A Merc's body is about 0.53 of its shown size wide and
@@ -150,8 +155,9 @@ Every key of the octave glides to its tile (the keys outside it have been at 0 s
 The timing (S9d): on b23's "every key the same width" each key glides to its tile over 1.1 s,
 `power2.inOut`, starting left to right 0.035 s apart (A3 at 162.15, A4 at 162.57), all landed by
 163.7; on "Neighbours, white or black" the twelve "1" brackets appear left to right, one every 0.13
-s (164.07 to 165.6), the three step bars shrinking into theirs; on "always" the B-C and E-F brackets
-flash gold (166.0); on "apart" all twelve pulse together (167.15). Tiles:
+s (164.07 to 165.6), the three step bars shrinking into theirs; on "always" the B-C and E-F pairs
+scale 1.05 as their brackets turn gold (166.0); on "apart" all thirteen tiles scale 1.05 together
+(167.15). Before the glide the kicker types on (161.38 to 161.9). Tiles:
 
 - 13 tiles, 112 px wide, 8 px gaps, centres x = 240 + 120 i (A3 240, A♯3 360, B3 480, C4 600, C♯4
   720, D4 840, D♯4 960, E4 1080, F4 1200, F♯4 1320, G4 1440, G♯4 1560, A4 1680), so the row runs from
@@ -184,8 +190,8 @@ flash gold (166.0); on "apart" all twelve pulse together (167.15). Tiles:
   the join at baseline y 252 (B-C x 260 to 460, E-F x 1460 to 1660), clear of "7 + 5 = 12" (which
   ends at y 150). Each ring clears before its label lands: B-C's ring 190.6 to 191.2 (cued once its
   join has nearly settled), its label from 191.2; E-F's ring 191.56 to 192.5 (in on "E"), its label
-  from 192.5. On "no gap" each join flashes once, B-C at 193.1 and E-F at 193.5. Both labels hold
-  until the pull out begins and are gone by 194.59.
+  from 192.5. On "no gap" the two tiles at each join scale 1.05 together, B-C at 193.1 and E-F at
+  193.5. Both labels hold until the pull out begins and are gone by 194.59.
 
 ## C to D: S10 -> S11 at act3 - 0.15 (est. 195.19)
 
@@ -267,26 +273,27 @@ flash gold (166.0); on "apart" all twelve pulse together (167.15). Tiles:
   ruler's top tick, A4 at y 160, and the orange bead on it (top at y 148).
 - S13b to S13e hold the camera, the ruler and its labels still at 1x, so nothing on the ruler moves
   while the column labels are up and no clip is needed; once open, only the inset moves: it drifts 2
-  % in and back out about its own centre (980, 500), 263.9 to 276.7, `sine.inOut`. On b36's "Let's
-  measure it" the ruler's ticks light once, A3 up to A4 (260.8 to 261.5), and the A3 to A♯3
-  segment's glow rises from "Listen" (261.5 to 262.7), before the inset grows.
+  % in and back out about its own centre (980, 500), 262.7 to 276.7, `sine.inOut`, as texture. On
+  b36's "Let's measure it" an echo ring climbs the ruler, each tick sending one in turn, A3 up to A4
+  (260.8 to 261.5); the inset grows on "Listen", and its arrow (on "up", 264.21 to 264.98) retracts
+  265.4 to 265.9.
 - The magnifier (S13b to S13e), an object move instead of a push: the A3 to A♯3 segment glows, and
   two fine chrome leader lines run from its two ticks' outer ends, (584, 765) and (584, 820), to the
-  inset's left corners, (760, 150) and (760, 850). The inset grows out of the segment, 262.7 to
-  263.9, `power2.out`, and closes back into it, 276.7 to 277.5, `power2.in`: a dark rounded panel
-  (`#161b22` at 90 %, `#30363d` rim, corner radius 16) from x 760 to 1200 and y 150 to 850, showing
-  the segment at 10.9x: its own line at x 860 from y 170 to 830, A3 at y 790 and A♯3 at y 190 (600
-  px per semitone), the names "A3" and "A#3" right-aligned at x 840, a tick every 10 cents (60 px
-  apart, 860 to 884) labelled 0, 50 and 100, later with "¢" (left-aligned at x 900). The glide's
-  chrome bead runs up the inset's line; nothing moves on the ruler but the segment's glow. The
-  ruler's own cents column stays empty while the inset is open, so the upper leader line crosses
-  nothing.
+  inset's left corners, (760, 150) and (760, 850). The inset grows out of the segment on "Listen",
+  261.52 to 262.7, `power2.out`, its 10-cent ticks filling in turn 262.7 to 263.4, and closes back
+  into it, 276.7 to 277.5, `power2.in`: a dark rounded panel (`#161b22` at 90 %, `#30363d` rim,
+  corner radius 16) from x 760 to 1200 and y 150 to 850, showing the segment at 10.9x: its own line
+  at x 860 from y 170 to 830, A3 at y 790 and A♯3 at y 190 (600 px per semitone), the names "A3" and
+  "A#3" right-aligned at x 840, a tick every 10 cents (60 px apart, 860 to 884) labelled 0, 50 and
+  100, later with "¢" (left-aligned at x 900). The glide's chrome bead runs up the inset's line;
+  nothing moves on the ruler but the segment's glow. The ruler's own cents column stays empty while
+  the inset is open, so the upper leader line crosses nothing.
 - S13c's readout is fixed right of the inset, Outfit 96 px left-aligned at x 1260, baseline y 500,
   with the frequency under it (mono 34 px, baseline y 556); it leaves as the inset closes (276.7).
 - S13e's cents labels climb the ruler's right side, one every 0.14 s from 276.9 to 278.6 (JetBrains
   Mono 30 px, left-aligned at x 604): 0, 100 ... 1200; the gold bracket draws up from 0 to 1200 at x
   736, 24 px right of the longest label, 278.6 to 280.5; "1200 ¢ = 1 octave" lands beside it from x
-  756 at 280.55, and the two beads pulse together at 280.9.
+  756 at 280.55, and the two beads scale 1.2 together and send echo rings at 280.9.
 - S13f: the bracket, its label and both beads leave, 281.8 to 282.0; then the monitor slides in from
   the right, 282.0 to 282.5, drawn 1.4x its base size in a box from x 900 to 1614 and y 232 to 708
   (188 px right of the longest cents label, which ends at x 712), and slides out right, 289.5 to
