@@ -906,3 +906,105 @@ describe('the mic and the contact light', () => {
     },
   )
 })
+
+describe('the dots ahead of Merc', () => {
+  /** An element's translate3d, px (a bare 0 has no unit). */
+  const translateOf = (el: Element): [number, number] => {
+    const at = /translate3d\(([-\d.]+)(?:px)?,([-\d.]+)(?:px)?,/u.exec(
+      (el as HTMLElement).style.transform,
+    )
+    return [Number(at?.[1] ?? Number.NaN), Number(at?.[2] ?? Number.NaN)]
+  }
+  /** Painted over `under`: the scene sets no z-index, so document order. */
+  const over = (top: Node, under: Node): boolean =>
+    (under.compareDocumentPosition(top) & Node.DOCUMENT_POSITION_FOLLOWING) !==
+    0
+
+  /** His box, the window over his front half, and where the copy lands. */
+  function aheadNow() {
+    // His box: the layer his renderer's host sits in.
+    const box = screen.getByTestId('lip-merc').parentElement as HTMLElement
+    const ahead = screen.getByTestId('lip-dots-ahead')
+    const [left, top] = translateOf(box)
+    const [x, y] = translateOf(ahead)
+    const [ix, iy] = translateOf(ahead.firstElementChild as Element)
+    const [dx, dy] = translateOf(screen.getByTestId('lip-dots'))
+    return {
+      size: Number.parseFloat(box.style.width),
+      left,
+      top,
+      x,
+      y,
+      w: Number.parseFloat(ahead.style.width),
+      h: Number.parseFloat(ahead.style.height),
+      copy: [x + ix, y + iy],
+      dots: [dx, dy],
+    }
+  }
+
+  /** The window on his box's front half, and the copy on the dots. */
+  function expectOverHisFront(): ReturnType<typeof aheadNow> {
+    const at = aheadNow()
+    expect(at.x).toBeCloseTo(at.left + at.size / 2, 0)
+    expect(at.y).toBeCloseTo(at.top, 0)
+    expect(at.w).toBeCloseTo(at.size / 2, 0)
+    expect(at.h).toBeCloseTo(at.size, 0)
+    expect(at.copy[0]).toBeCloseTo(at.dots[0], 2)
+    expect(at.copy[1]).toBeCloseTo(at.dots[1], 2)
+    return at
+  }
+
+  it('draws the dots over Merc and under the near sea, the voice still over the dots', () => {
+    render(() => <LipRollRoom onDone={() => undefined} />)
+
+    const dots = screen.getByTestId('lip-dots')
+    const ribbon = screen.getByTestId('lip-ribbon')
+    const merc = screen.getByTestId('lip-merc')
+    const ahead = screen.getByTestId('lip-dots-ahead')
+    const front = screen.getByTestId('lip-front')
+    expect(over(ribbon, dots)).toBe(true)
+    expect(over(merc, ribbon)).toBe(true)
+    expect(over(ahead, merc)).toBe(true)
+    expect(over(front, ahead)).toBe(true)
+    // Pulled back and faded with the take at the result, as the near sea.
+    expect(ahead.parentElement).toBe(front.parentElement)
+    // Only the dots: each wave's dotted path drawn again, nothing else.
+    const crests = screen.getAllByTestId('lip-target')
+    expect(new Set(crests.map((c) => c.id)).size).toBe(3)
+    expect(
+      [...ahead.querySelectorAll('use')].map((u) => u.getAttribute('href')),
+    ).toEqual(crests.map((c) => `#${c.id}`))
+    expect(ahead.querySelectorAll('path, text').length).toBe(0)
+    // At the intro, where he stands on the first root.
+    expectOverHisFront()
+  })
+
+  it('keeps them over his front through a climb, each dot on its own', async () => {
+    const plan = planFor('learning', 52)
+    const [first] = plan.path.arches
+    await startRun()
+    play(
+      windowFrames(plan, follow(plan.path)),
+      plan,
+      plan.countIn + (first.start + first.topStart) / 2,
+    )
+    expect(phase()).toBe('run')
+
+    const at = expectOverHisFront()
+    // The climb's next dots run through the window, well ahead of him.
+    const points = (
+      screen.getAllByTestId('lip-target')[0].getAttribute('d') ?? ''
+    )
+      .split(/[ML]/u)
+      .filter((p) => p !== '')
+      .map((p) => p.split(' ').map(Number))
+    const ahead = points.filter(([px, py]) => {
+      const x = px + at.dots[0]
+      const y = py + at.dots[1]
+      return (
+        x > at.x + at.w / 4 && x <= at.x + at.w && y >= at.y && y <= at.y + at.h
+      )
+    })
+    expect(ahead.length).toBeGreaterThan(0)
+  })
+})

@@ -95,7 +95,7 @@ These are the rules that break things when ignored.
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.9k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
-| `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 4.6k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
+| `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 4.7k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.0k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 4.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
