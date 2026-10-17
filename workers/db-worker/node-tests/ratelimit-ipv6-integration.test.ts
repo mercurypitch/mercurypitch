@@ -113,6 +113,9 @@ beforeEach(() => {
   env = {
     DB: new SqliteD1Database(sqlite) as unknown as D1Database,
     JWT_SECRET: 'ratelimit-ipv6-integration-secret',
+    // The passkey routes answer 503 unless a relying party is configured;
+    // the limiter under test sits behind that gate.
+    PASSKEY_RP_ID: 'localhost',
     ALLOWED_ORIGINS: 'http://localhost',
   }
 })
