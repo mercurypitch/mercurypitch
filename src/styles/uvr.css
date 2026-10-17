@@ -3100,11 +3100,15 @@
 }
 
 /* On a touch screen the 32px button keeps its look but takes taps across
-   46x46: a transparent box 7px beyond its border on every side (8px from
-   the padding box, which is where `inset` measures from). 44 is the floor;
-   the spare pixel a side keeps it there when the card lands on a fractional
-   position. It is the only control in the header row, so the extra 7px
-   lands on nothing else. */
+   46x46: a transparent box 7px beyond its border above, below and to the
+   left, and 14px further left in place of the right side (`inset` measures
+   from the padding box, 1px inside the border). 44 is the floor; the spare
+   pixel a side keeps it there when the card lands on a fractional position.
+   The button is flush with the header's right edge, so a box reaching past
+   that edge made the header, its top row and the button itself scroll
+   sideways by 7-8px; growing left instead keeps the target inside the card.
+   It is the only control in the header row, so the extra width lands on
+   nothing else. */
 @media (pointer: coarse) {
   .session-header-actions .session-result-more {
     position: relative;
@@ -3113,7 +3117,7 @@
   .session-header-actions .session-result-more::after {
     content: '';
     position: absolute;
-    inset: -8px;
+    inset: -8px 0 -8px -15px;
   }
 }
 
