@@ -594,21 +594,38 @@ export function createJamService(callbacks: JamCallbacks) {
     peerConnections.set(peer.id, pc)
   }
 
+  /**
+   * The peer connection for `from`, building one if none exists yet.
+   *
+   * Building waits for the room's ICE servers first (ensureIceServers), and
+   * a concurrent builder may win during that wait, so the map is read again
+   * after it. `existed` is false only for a connection built right here:
+   * handleOffer runs its glare check only on one that was already there.
+   * Null when the service was disposed while waiting.
+   */
+  async function ensurePeerConnection(
+    from: string,
+  ): Promise<{ pc: RTCPeerConnection; existed: boolean } | null> {
+    const found = peerConnections.get(from)
+    if (found) return { pc: found, existed: true }
+    await ensureIceServers()
+    if (disposed) return null
+    const raced = peerConnections.get(from)
+    if (raced) return { pc: raced, existed: true }
+    const pc = new RTCPeerConnection({ iceServers: iceServers })
+    addLocalTracks(pc)
+    setupPeerHandlers(pc, from)
+    peerConnections.set(from, pc)
+    return { pc, existed: false }
+  }
+
   async function handleOffer(from: string, sdp: string): Promise<void> {
     if (disposed) return
 
-    let pc = peerConnections.get(from)
-    if (!pc) {
-      await ensureIceServers()
-      if (disposed) return
-      pc = peerConnections.get(from)
-    }
-    if (!pc) {
-      pc = new RTCPeerConnection({ iceServers: iceServers })
-      addLocalTracks(pc)
-      setupPeerHandlers(pc, from)
-      peerConnections.set(from, pc)
-    } else if (pc.signalingState === 'have-local-offer') {
+    const got = await ensurePeerConnection(from)
+    if (got === null) return
+    const { pc, existed } = got
+    if (existed && pc.signalingState === 'have-local-offer') {
       // Glare detection — both peers sent offers at the same time.
       // The "polite" peer (lexicographically smaller ID) rolls back and
       // accepts the incoming offer. The "impolite" peer ignores it.
