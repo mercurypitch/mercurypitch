@@ -403,7 +403,7 @@ export function initConsent(): void {
  * `page_location` is the one path that would carry a fragment-borne token off
  * the device — this is what we hand it instead.
  */
-function locationWithoutFragment(): string {
+export function locationWithoutFragment(): string {
   const { origin, pathname, search } = window.location
   return `${origin}${pathname}${search}`
 }
