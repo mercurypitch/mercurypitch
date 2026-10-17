@@ -24,10 +24,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
-import { badgeArtIcons, badgeArtSrc } from '@/lib/badge-art'
 import { MERCURY_PRESSING_PLATE_URLS } from '@/features/progress/share-card'
 import type { BackgroundDefinition, PublicBackgroundSource, } from '@/lib/backgrounds/background-catalog'
 import { defaultBackground, listBackgrounds, } from '@/lib/backgrounds/background-catalog'
+import { badgeArtIcons, badgeArtSrc } from '@/lib/badge-art'
 // @ts-expect-error -- a plain .mjs manifest with no types, on purpose: the
 // same file is read by a Vite config, by a bare-node build script that runs
 // before any install, and by this test.
