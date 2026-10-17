@@ -175,6 +175,32 @@ describe('placePill', () => {
     expect(place.top + 44).toBeLessThanOrEqual(360 - 20)
   })
 
+  it('lies over a list with no clear band at its widest, letting taps through', () => {
+    // The song picker on a phone: a dialog's header, then rows from edge to
+    // edge all the way down, and a three-line notice with an action.
+    const controls = [
+      control(321, 90, 44, 44),
+      ...Array.from({ length: 10 }, (_, row) =>
+        control(25, 148 + row * 64, 340, 60),
+      ),
+    ]
+    const place = placePill({
+      viewportWidth: 390,
+      viewportHeight: 844,
+      safeTop: 47,
+      safeLeft: 0,
+      safeRight: 0,
+      safeBottom: 34,
+      pillHeight: 100,
+      controls,
+    })
+    expect(place.docked).toBe('over')
+    expect(place.top).toBe(47 + PILL_TOP_GAP)
+    // As wide as the screen allows, so as short as it can be.
+    expect(place.width).toBe(390 - 24)
+    expect(place.left).toBe(12)
+  })
+
   it('takes the widest gap when every band is blocked across the middle', () => {
     // Karaoke on a phone's side: the room chip mid-header, then rows of
     // controls that cross the centre all the way down.

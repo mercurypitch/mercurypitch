@@ -1241,6 +1241,13 @@
   animation: none;
 }
 
+/* No clear place was left (notice-pill-place.ts, step 4): the pill lies over
+   controls, so every tap goes through it to them until it finds one. */
+.mp-notice-pill--over,
+.mp-notice-pill--over * {
+  pointer-events: none;
+}
+
 .mp-notice-pill.is-leaving {
   opacity: 0;
   transform: translateY(calc(var(--mp-lift, 16px) * -1));

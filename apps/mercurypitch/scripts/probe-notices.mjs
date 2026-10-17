@@ -297,7 +297,11 @@ function readPill() {
     userSelect:
       getComputedStyle(pill).webkitUserSelect ||
       getComputedStyle(pill).userSelect,
-    docked: pill.classList.contains('mp-notice-pill--below') ? 'below' : 'top',
+    docked: pill.classList.contains('mp-notice-pill--below')
+      ? 'below'
+      : pill.classList.contains('mp-notice-pill--over')
+        ? 'over'
+        : 'top',
   }
 }
 
@@ -624,6 +628,63 @@ async function shellSurfaces(browser, args, frame, kit, results) {
         await go.visible('[data-testid="sing-room"]')
         await go.settle(600)
         await go.screenCheck('sing', 'pill-sing')
+      },
+    ],
+    [
+      // A list of rows from edge to edge, under a dialog's header: the pill
+      // has no clear band here, and it must still let every row be tapped.
+      'the song picker',
+      async () => {
+        await go.rail('stage')
+        await go.visible('[data-testid="sing-room"]')
+        // The walk's own case: the mic nudge (three lines and an action) is
+        // up when the picker opens. No band is clear of its rows, so the
+        // pill lies over them and must let every one be tapped.
+        await page.evaluate(() =>
+          window.mpNotices.showAction(
+            'Your mic is off. Enable it so your practice is heard and scored. You can always toggle it with the mic button.',
+            'info',
+            { label: 'Enable mic', onClick: () => {} },
+            { durationMs: 5000 },
+          ),
+        )
+        await page.locator('[data-testid="shell-room-gear"]').click()
+        await page.locator('[data-testid="sing-options-song"]').click()
+        await go.visible('.fn-modal-content')
+        await go.visible(PLACED)
+        await go.settle(600)
+        const rows = await page.evaluate((sel) => {
+          const pill = document.querySelector(sel)
+          const blocked = []
+          let seen = 0
+          for (const row of document.querySelectorAll('.fn-modal-item')) {
+            const r = row.getBoundingClientRect()
+            const list = row.closest('.fn-modal-list')?.getBoundingClientRect()
+            const y = r.top + r.height / 2
+            if (list && (y < list.top || y > list.bottom)) continue
+            seen += 1
+            const hit = document.elementFromPoint(r.left + r.width / 2, y)
+            if (hit === null || !row.contains(hit))
+              blocked.push(row.textContent.trim().slice(0, 40))
+          }
+          return {
+            seen,
+            blocked,
+            over: pill?.classList.contains('mp-notice-pill--over') ?? false,
+          }
+        }, PLACED)
+        if (rows.blocked.length > 0)
+          results.failures.push(
+            `song picker: the pill blocks ${rows.blocked.join(' | ')}`,
+          )
+        results.notes.push(
+          `song picker under a long notice: ${rows.seen} rows, ${rows.blocked.length} blocked${rows.over ? ', the pill lets taps through' : ''}`,
+        )
+        await go.shot('pill-song-picker-over')
+        await page.waitForSelector(PILL, { state: 'detached', timeout: 15000 })
+        await go.screenCheck('song-picker', 'pill-song-picker')
+        await page.locator('.fn-modal-close').first().click()
+        await go.hidden('.fn-modal-content')
       },
     ],
     [
@@ -1047,6 +1108,7 @@ export async function walkNotices(browser, args, frame, kit) {
     hits: [],
     chips: [],
     screens: [],
+    notes: [],
   }
   // `--notice-rooms-only` skips the shell's surfaces.
   if (args.noticeRoomsOnly !== true)
@@ -1060,6 +1122,7 @@ export async function walkNotices(browser, args, frame, kit) {
   steps.push(
     `${where}: ${results.hits.length} pills on ${results.screens.length} screens, ${covered} covering a control; docked ${results.hits.filter((h) => h.docked === 'top').length} under the status bar, ${results.hits.filter((h) => h.docked === 'below').length} below a header; widths ${Math.min(...results.hits.map((h) => h.width))} to ${Math.max(...results.hits.map((h) => h.width))} px; ${results.hits.reduce((n, h) => n + h.reachable, 0)} controls hit-tested, ${results.hits.reduce((n, h) => n + h.header, 0)} of them in the header band; lowest contrast ${Math.min(...results.hits.flatMap((h) => h.contrast))}:1`,
   )
+  for (const note of results.notes) steps.push(`${where}: ${note}`)
   for (const chip of results.chips) {
     steps.push(
       `${where}: ${chip.room} chip at the result "${chip.text}", ${chip.listed} listed, then "${chip.after}" (${chip.height} px)${chip.otherPills.length > 0 ? `; other pills: ${chip.otherPills.join(' | ')}` : ''}`,

@@ -21,9 +21,12 @@
 //   3. Failing that in every band (a phone on its side in the Karaoke room
 //      has a control across the middle of every row), the widest gap in a
 //      band, top down, with the pill centred in that gap.
-//   4. Failing even that, the header's row at the least width: a notice
-//      that cannot be seen is worse than one that covers a control, and
-//      the walk (scripts/probe-notices.mjs) reports it.
+//   4. Failing even that (a dialog's list of rows from edge to edge), the
+//      header's row at the widest the screen allows, so the pill is as short
+//      as it can be, docked 'over': it lets every tap through to what is
+//      under it (NoticePill.tsx) until a re-measure finds it a clear place.
+//      A notice that cannot be seen is worse than one that covers a row,
+//      but a row that cannot be tapped is worse than both.
 //
 // Pure, so the rule can be tested without a layout: the pill measures the
 // screen (its own height and every control a tap could reach) and asks.
@@ -54,8 +57,11 @@ export interface PillPlace {
   readonly top: number
   readonly left: number
   readonly width: number
-  /** In the header's row, or stepped down below a control in its way. */
-  readonly docked: 'top' | 'below'
+  /**
+   * In the header's row, stepped down below a control in its way, or over
+   * controls because no clear place was left (it then lets taps through).
+   */
+  readonly docked: 'top' | 'below' | 'over'
 }
 
 /** From the status bar to the pill's top edge. */
@@ -169,11 +175,14 @@ export function placePill(input: PillPlaceInput): PillPlace {
     if (gap !== null) return { top: band.top, ...gap, docked: docked(band.top) }
   }
 
-  // 4. Seen, if nothing else: the header's row at the least width.
+  // 4. Seen, if nothing else: the header's row, as wide and so as short as
+  // the screen allows, and letting taps through.
+  const { min, max } = span(input)
+  const width = Math.min(PILL_MAX_WIDTH, Math.floor(max - min))
   return {
     top: firstTop,
-    left: Math.round(centre - PILL_MIN_WIDTH / 2),
-    width: PILL_MIN_WIDTH,
-    docked: 'top',
+    left: Math.round(min + (max - min - width) / 2),
+    width,
+    docked: 'over',
   }
 }

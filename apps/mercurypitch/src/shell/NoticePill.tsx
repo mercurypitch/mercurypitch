@@ -139,7 +139,7 @@ export const NoticePill: Component = () => {
     top: number
     left: number
     width: number
-    docked: 'top' | 'below'
+    docked: 'top' | 'below' | 'over'
   } | null>(null)
   const [drag, setDrag] = createSignal(0)
   let pill: HTMLDivElement | undefined
@@ -210,7 +210,8 @@ export const NoticePill: Component = () => {
       was === null ||
       was.top !== next.top ||
       was.left !== next.left ||
-      was.width !== next.width
+      was.width !== next.width ||
+      was.docked !== next.docked
     ) {
       setPlace(next)
     }
@@ -288,6 +289,7 @@ export const NoticePill: Component = () => {
                   'is-leaving': leaving(),
                   'is-dragging': drag() !== 0,
                   'mp-notice-pill--below': place()?.docked === 'below',
+                  'mp-notice-pill--over': place()?.docked === 'over',
                 }}
                 role={notice().type === 'error' ? 'alert' : undefined}
                 style={{
