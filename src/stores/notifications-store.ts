@@ -6,9 +6,25 @@
 // `channel` for any toast a user could trigger repeatedly (tour offers, save
 // confirmations): showing a channelled toast clears the previous one on that
 // channel, so a category can never stack up the screen.
+//
+// UNLOCKS ARE A KIND OF THEIR OWN. The grant engine passes `unlock` with
+// each badge or achievement it announces, and that one option is what lets
+// the native app route them (owner, 17 Oct 2026: two of them stacked at the
+// bottom of a room and covered its controls):
+//
+//   - a room that holds a claim (`claimUnlocks`) takes them for the chip
+//     under its result, and no toast is raised at all;
+//   - under the native shell's pill (`setNotificationPresenter('pill')`),
+//     unlocks from the same moment merge into one notice, and only one
+//     notice is on screen at a time;
+//   - on the web nothing changes: one toast each, worded by the caller.
 
 import { createEffect, createRoot, createSignal, on } from 'solid-js'
+import type { UnlockItem } from '@/lib/unlock-copy'
+import { unlockSummary } from '@/lib/unlock-copy'
 import { isNarrow } from '@/lib/use-viewport'
+
+export type { UnlockItem } from '@/lib/unlock-copy'
 
 export interface NotificationAction {
   label: string
@@ -56,6 +72,14 @@ export interface Notification {
    * randomised phrase and the toast would rewrite itself mid-read.
    */
   groupSummarise?: (parts: string[]) => string
+  /**
+   * The badges and achievements this notice announces, in the order they
+   * were earned. Present only on an unlock (`NotificationOptions.unlock`);
+   * under the pill, unlocks from the same moment gather here.
+   */
+  unlocks?: readonly UnlockItem[]
+  /** When the first unlock of the set arrived; see `UNLOCK_MOMENT_MS`. */
+  unlockAt?: number
 }
 
 /** Shared channel for the one-at-a-time "take a tour" offer toasts. */
@@ -85,6 +109,12 @@ export interface NotificationOptions {
    * writes the single line they become.
    */
   group?: { key: string; summarise: (parts: string[]) => string }
+  /**
+   * This notice announces a badge or an achievement. The message is still
+   * the caller's, and it is what the web shows; the native shell's pill and
+   * a room's chip word it themselves (unlock-copy.ts). See the header.
+   */
+  unlock?: UnlockItem
 }
 
 const DEFAULT_DURATION_MS: Record<Notification['type'], number> = {
@@ -97,9 +127,39 @@ const DEFAULT_DURATION_MS: Record<Notification['type'], number> = {
 /** A phone shows this many toasts at once; the rest wait their turn. */
 const MAX_VISIBLE_NARROW = 2
 
-/** The app's own phone breakpoint, reactive; false where there is no DOM. */
-function narrowViewport(): boolean {
-  return isNarrow()
+/**
+ * Who draws the notices. `toast` is the web's stack (Notifications.tsx);
+ * `pill` is the native shell's one-at-a-time pill under the status bar,
+ * which the shell selects while it is mounted.
+ */
+export type NotificationPresenter = 'toast' | 'pill'
+
+const [presenter, setPresenter] = createSignal<NotificationPresenter>('toast')
+
+export const notificationPresenter = presenter
+
+/**
+ * Unlocks that arrive this close to the first of a set are the same moment,
+ * and merge into its pill. One completion grants everything it earned in a
+ * single pass, and a challenge's reward badge follows its pass by one
+ * request, so a few seconds holds a whole set and nothing from a later take.
+ */
+export const UNLOCK_MOMENT_MS = 3000
+
+/** How many notices may be on screen at once, where they are drawn now. */
+function visibleCap(): number {
+  if (presenter() === 'pill') return 1
+  return isNarrow() ? MAX_VISIBLE_NARROW : Number.POSITIVE_INFINITY
+}
+
+/**
+ * Choose who draws the notices. Narrowing to the pill hands every notice
+ * past the first back to the queue, in order, the same way a rotation does.
+ */
+export function setNotificationPresenter(next: NotificationPresenter): void {
+  setPresenter(next)
+  evictOverflow()
+  admitWaiting()
 }
 
 // The cap has to hold across a rotation, in BOTH directions. Widening past
@@ -159,8 +219,7 @@ function dropVisible(id: number): void {
  * the clock does not come back only to flash.
  */
 function evictOverflow(): void {
-  if (!narrowViewport()) return
-  const overflow = notifications().slice(MAX_VISIBLE_NARROW)
+  const overflow = notifications().slice(visibleCap())
   if (overflow.length === 0) return
   const requeued = overflow.map((notif) => {
     const left = (deadlines.get(notif.id) ?? 0) - Date.now()
@@ -171,10 +230,7 @@ function evictOverflow(): void {
 }
 
 function admitWaiting(): void {
-  while (
-    waiting.length > 0 &&
-    (!narrowViewport() || notifications().length < MAX_VISIBLE_NARROW)
-  ) {
+  while (waiting.length > 0 && notifications().length < visibleCap()) {
     const next = waiting.shift()!
     setNotifications((list) => [...list, next.notif])
     scheduleRemoval(next.notif.id, next.durationMs)
@@ -189,7 +245,7 @@ function pushNotification(notif: Notification, durationMs: number): void {
     for (const stale of notifications().filter((n) => n.channel === channel))
       dropVisible(stale.id)
   }
-  if (narrowViewport() && notifications().length >= MAX_VISIBLE_NARROW) {
+  if (notifications().length >= visibleCap()) {
     waiting.push({ notif, durationMs })
     return
   }
@@ -232,6 +288,16 @@ export function showNotification(
 ): void {
   const duration = opts?.durationMs ?? DEFAULT_DURATION_MS[type]
   const group = opts?.group
+  const unlock = opts?.unlock
+
+  if (unlock !== undefined) {
+    const claim = claims.at(-1)
+    if (claim !== undefined) {
+      claim({ message, type, unlock })
+      return
+    }
+    if (presenter() === 'pill' && mergeUnlock(unlock)) return
+  }
 
   if (group !== undefined) {
     const queued = waiting.find((w) => w.notif.groupKey === group.key)
@@ -268,10 +334,15 @@ export function showNotification(
   }
 
   const id = ++_notifId
+  // The pill words an unlock itself, the same way it words a merged set.
+  const text =
+    unlock !== undefined && presenter() === 'pill'
+      ? unlockSummary([unlock])
+      : message
   pushNotification(
     {
       id,
-      message: group === undefined ? message : group.summarise([message]),
+      message: group === undefined ? text : group.summarise([text]),
       type,
       channel: opts?.channel,
       // Spread-guarded so an absent option stays absent rather than becoming
@@ -284,9 +355,98 @@ export function showNotification(
             groupParts: [message],
             groupSummarise: group.summarise,
           }),
+      ...(unlock === undefined
+        ? {}
+        : { unlocks: [unlock], unlockAt: Date.now() }),
     },
     duration,
   )
+}
+
+/**
+ * Fold an unlock into the pill notice of the same moment, waiting or on
+ * screen, and say whether there was one. A notice on screen is rewritten in
+ * place and kept at least long enough to read again.
+ */
+function mergeUnlock(unlock: UnlockItem): boolean {
+  const now = Date.now()
+  const sameMoment = (notif: Notification): boolean =>
+    notif.unlocks !== undefined &&
+    now - (notif.unlockAt ?? 0) < UNLOCK_MOMENT_MS
+  const merged = (notif: Notification): Notification => {
+    const unlocks = [...(notif.unlocks ?? []), unlock]
+    return { ...notif, unlocks, message: unlockSummary(unlocks) }
+  }
+
+  const queued = waiting.find((w) => sameMoment(w.notif))
+  if (queued !== undefined) {
+    queued.notif = merged(queued.notif)
+    return true
+  }
+  const live = notifications().find(sameMoment)
+  if (live === undefined) return false
+  setNotifications((list) =>
+    list.map((n) => (n.id === live.id ? merged(n) : n)),
+  )
+  const left = (deadlines.get(live.id) ?? 0) - now
+  scheduleRemoval(live.id, Math.max(left, MIN_ON_SCREEN_MS))
+  return true
+}
+
+// ── Claims: a room that shows its own unlocks ─────────────────
+
+/** An unlock, as it was announced, handed to the room that claimed it. */
+export interface ClaimedUnlock {
+  readonly message: string
+  readonly type: Notification['type']
+  readonly unlock: UnlockItem
+}
+
+const claims: Array<(claimed: ClaimedUnlock) => void> = []
+
+/**
+ * Take every unlock announced from now on, until the returned release is
+ * called. The latest claim wins; releasing it hands unlocks back to the one
+ * before, or to the notices.
+ *
+ * A grant pass that is still in flight when its room is left lands after
+ * the release, and so raises a notice like any other: nothing is lost by
+ * leaving early.
+ */
+export function claimUnlocks(
+  receive: (claimed: ClaimedUnlock) => void,
+): () => void {
+  claims.push(receive)
+  return () => {
+    const at = claims.lastIndexOf(receive)
+    if (at >= 0) claims.splice(at, 1)
+  }
+}
+
+/** Announce an unlock the claim held and never showed, as a notice. */
+export function announceUnclaimed(claimed: ClaimedUnlock): void {
+  showNotification(claimed.message, claimed.type, { unlock: claimed.unlock })
+}
+
+// ── Unlocks on screen: a tap you can feel ─────────────────────
+
+const unlockListeners = new Set<() => void>()
+
+/**
+ * Call `listener` whenever an unlock reaches the screen, in a pill or in a
+ * room's chip. The native shell answers with a light haptic; `src/` cannot
+ * reach the device's haptics itself (native-shell-store.ts explains why).
+ */
+export function onUnlockShown(listener: () => void): () => void {
+  unlockListeners.add(listener)
+  return () => {
+    unlockListeners.delete(listener)
+  }
+}
+
+/** Something just put an unlock on screen. */
+export function unlockShown(): void {
+  for (const listener of unlockListeners) listener()
 }
 
 /** Show a notification with an action button (e.g. "Undo"). */
@@ -359,6 +519,9 @@ export function resetNotifications(): void {
   timers.clear()
   deadlines.clear()
   waiting.length = 0
+  claims.length = 0
+  unlockListeners.clear()
+  setPresenter('toast')
   setNotifications([])
 }
 

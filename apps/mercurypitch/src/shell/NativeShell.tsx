@@ -19,7 +19,7 @@
 // and the microphone; the shell only asks it to pause, resume, stop or park
 // (src/stores/native-shell-store.ts).
 
-import { openAppSettings } from '@irchiinnuss/mobile-runtime/platform'
+import { hapticTap, openAppSettings, } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
@@ -28,6 +28,7 @@ import { TAB_HOME } from '@/features/tabs/constants'
 import { KARAOKE_IMPORT, PREMIUM_EXERCISES } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
+import { onUnlockShown, setNotificationPresenter, } from '@/stores/notifications-store'
 import { practiceScope } from '@/stores/settings-store'
 import { RoomsAlley } from '../alley/RoomsAlley'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
@@ -37,6 +38,7 @@ import { installHistoryDepth } from './history-depth'
 import { installKaraokeImport } from './karaoke-import-wiring'
 import { KeepAlert } from './KeepAlert'
 import { MoreSheet } from './MoreSheet'
+import { NoticePill } from './NoticePill'
 import { installPortraitLock } from './portrait-lock'
 import { installPremiumExercises } from './premium-exercise-wiring'
 import { Rail } from './Rail'
@@ -140,6 +142,19 @@ export const NativeShell: Component = () => {
 
   onMount(() => {
     document.documentElement.setAttribute('data-native-shell', '')
+
+    // Notices are the shell's pill here, one at a time under the status
+    // bar, not the web's toasts (NoticePill.tsx). An unlock that reaches
+    // the screen, in the pill or in a room's chip, is a light tap too.
+    setNotificationPresenter('pill')
+    onCleanup(() => {
+      setNotificationPresenter('toast')
+    })
+    onCleanup(
+      onUnlockShown(() => {
+        void hapticTap()
+      }),
+    )
 
     // Before the back handler: `canGoBack()` is meaningless until the boot
     // entry has been stamped.
@@ -436,6 +451,9 @@ export const NativeShell: Component = () => {
           {/* The question a Settings screen is asking, if any. After the
               sheet, so an alert asked over it is drawn over it. */}
           <SettingsAlert />
+
+          {/* Last, so a notice is drawn over every sheet it lands on. */}
+          <NoticePill />
         </ShellRoot>
       </Portal>
     </>

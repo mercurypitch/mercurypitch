@@ -44,6 +44,7 @@ import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
 import surface from '@/components/room-kit/RoomSurface.module.css'
+import { UnlockChip } from '@/components/room-kit/UnlockChip'
 import { DEMO_COPY } from './demo/demo-cues'
 import { aimEchoTip } from './demo/tip-targets'
 import { useEchoDemo } from './demo/useEchoDemo'
@@ -353,6 +354,10 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
             </div>
           </Match>
         </Switch>
+        <UnlockChip
+          atResult={phase() === 'result' && !demoBusy()}
+          testId="echo-unlock"
+        />
       </div>
 
       <RoomBarEnd>
