@@ -858,6 +858,29 @@ const unlockMidTake = (page, room) =>
     [room.root, UNLOCKS, [...TAKE_PHASES]],
   )
 
+/**
+ * Announce the fallback unlock and tap Back in the same turn, if the take is
+ * still under way on both sides of the announcement; else the phase seen.
+ */
+const leaveMidTake = (page, room) =>
+  page.evaluate(
+    ([root, unlock, phases]) => {
+      const el = document.querySelector(`[data-testid="${root}"]`)
+      const before = el?.getAttribute('data-phase') ?? null
+      if (!phases.includes(before)) return `${before}`
+      window.mpNotices.show(`Badge unlocked: ${unlock.name}`, 'success', {
+        unlock,
+      })
+      const after = el?.getAttribute('data-phase') ?? null
+      if (!phases.includes(after)) return `${before} to ${after}`
+      if (document.querySelector('[data-unlock="on"]') !== null)
+        return 'an unlock raised a notice mid-take'
+      document.querySelector('[data-testid="shell-pushed-back"]')?.click()
+      return null
+    },
+    [room.root, FALLBACK, [...TAKE_PHASES]],
+  )
+
 async function startTake(go, room) {
   const { page } = go
   await tapMic(page, room)
@@ -925,12 +948,20 @@ async function roomSteps(go, room, results, where, { pills }, at) {
 
   // Walked out of mid-take: the unlock it held becomes the pill outside.
   step('a take left early')
-  await startTake(go, room)
-  await go.unlock(FALLBACK)
-  await go.settle(300)
-  if ((await unlockNotices(page)).length > 0)
-    results.failures.push(`${where}: an unlock raised a notice mid-take`)
-  await page.locator('[data-testid="shell-pushed-back"]').click()
+  // A take can reach its result on its own between an unlock and a tap on
+  // Back (Long note's lantern fills on an iPad's timing), and then the chip
+  // has shown the unlock and leaving rightly says nothing. So the unlock,
+  // the check that the take is still under way and Back are one turn of
+  // the page, tried again in a fresh take if the take had ended.
+  let leftAt = null
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await startTake(go, room)
+    leftAt = await leaveMidTake(page, room)
+    if (leftAt === null) break
+    if (leftAt.startsWith('an unlock')) throw new Error(leftAt)
+  }
+  if (leftAt !== null)
+    throw new Error(`no take was still under way to leave (${leftAt})`)
   await go.hidden(`[data-testid="${room.root}"]`)
   // The pill shows one notice at a time. A notice the room raised before it
   // was left (the run's save failing against the stand-in, say) is ahead of
@@ -980,7 +1011,18 @@ async function roomSteps(go, room, results, where, { pills }, at) {
   if (missed !== null)
     throw new Error(`no take held still for the unlocks (${missed})`)
   await go.settle(400)
-  if ((await page.locator(chip).count()) > 0)
+  // Read with the phase in one turn: a take that reached its result inside
+  // the settle has every right to its chip.
+  const early = await page.evaluate(
+    ([root, sel, phases]) => {
+      const phase = document
+        .querySelector(`[data-testid="${root}"]`)
+        ?.getAttribute('data-phase')
+      return phases.includes(phase) && document.querySelector(sel) !== null
+    },
+    [room.root, chip, [...TAKE_PHASES]],
+  )
+  if (early)
     results.failures.push(`${where}: the chip showed before the result`)
   if ((await unlockNotices(page)).length > 0)
     results.failures.push(`${where}: an unlock raised a notice during the take`)
