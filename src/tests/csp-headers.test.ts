@@ -68,6 +68,16 @@ describe('Content-Security-Policy', () => {
     expect(allows(directive('frame-src'), origin)).toBe(true)
   })
 
+  it('lets Cloudflare Web Analytics load its beacon (owner, 17 Oct)', () => {
+    // Cloudflare injects the beacon into every page it serves. While the
+    // policy blocked it, it logged a console error and counted nothing.
+    expect(
+      allows(directive('script-src'), 'https://static.cloudflareinsights.com'),
+    ).toBe(true)
+    // It reports to /cdn-cgi/rum on the page's own host.
+    expect(directive('connect-src')).toContain("'self'")
+  })
+
   it('still refuses to be framed by anybody', () => {
     expect(directive('frame-ancestors')).toEqual(["'none'"])
   })
