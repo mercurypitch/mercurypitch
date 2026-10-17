@@ -2189,12 +2189,32 @@ async function handleEmailCodeVerify(
   // Reading the code proved the inbox. That is the same thing the verification
   // link proves, so a pending "confirm your address" is resolved here.
   if (row.emailVerified !== 1) {
-    await env.DB.prepare(
-      'UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?',
-    )
-      .bind(nowIso(), row.id)
-      .run()
+    // Until this moment nobody had proven they own this address, yet the
+    // account may already carry a password, passkeys and live sessions set by
+    // whoever registered it first — who was never asked to prove the mailbox.
+    // A stranger could register someone else's address and keep a working
+    // first factor, and the real owner signing in with a mailed code would
+    // land in the stranger's account. So proving the inbox revokes the
+    // FIRST-factor credentials that predate the proof — the password, every
+    // session, and every passkey — and bumps tokenVersion so old tokens stop
+    // verifying. TOTP/recovery are deliberately KEPT: they are a SECOND
+    // factor, so a mailed code must still be challenged against them below
+    // ("a 2FA account still owes a code") — dropping them here would turn an
+    // inbox proof into a 2FA downgrade. The owner gets a fresh session with
+    // the bumped tokenVersion and can set a password via the reset link.
+    const now = nowIso()
+    await env.DB.batch([
+      env.DB.prepare(
+        'UPDATE users SET emailVerified = 1, passwordHash = NULL, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
+      ).bind(now, row.id),
+      env.DB.prepare('DELETE FROM authSessions WHERE userId = ?').bind(row.id),
+      env.DB.prepare('DELETE FROM webauthnCredentials WHERE userId = ?').bind(
+        row.id,
+      ),
+    ])
     row.emailVerified = 1
+    row.passwordHash = null
+    row.tokenVersion = (row.tokenVersion ?? 1) + 1
     await claimLaunchGift(env, row.id)
   }
 

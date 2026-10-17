@@ -455,6 +455,7 @@
   "workers/db-worker/node-tests/login-codes-sign-up-integration.test.ts",
   "workers/db-worker/node-tests/natural-keys-migration.test.ts",
   "workers/db-worker/node-tests/passkey-integration.test.ts",
+  "workers/db-worker/node-tests/pre-account-takeover-integration.test.ts",
   "workers/db-worker/node-tests/premium-background-migration.test.ts",
   "workers/db-worker/node-tests/promo-codes-read-integration.test.ts",
   "workers/db-worker/node-tests/query-oracle-integration.test.ts",
