@@ -392,6 +392,58 @@ describe('the question as the headline', () => {
   })
 })
 
+describe("the run's reserve", () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    localStorage.clear()
+    resetEarLabStore()
+  })
+
+  afterEach(() => cleanup())
+
+  /** What the console keeps room for, as the stylesheet will draw it. */
+  const reserved = (root: Element) =>
+    [...root.querySelectorAll('[data-reserve]')].map((element) =>
+      element.getAttribute('data-reserve'),
+    )
+
+  it('holds the verdict and the question at their longest from the first question, unseen and unread', async () => {
+    const Engine = withEngine(fakeEngine())
+    render(() => (
+      <Engine>
+        <HairlineDrill onBack={() => undefined} />
+      </Engine>
+    ))
+    const console = screen.getByTestId('ear-stage-console')
+    // Nothing is held on the bench.
+    expect(screen.queryByTestId('ear-stage-last-call-reserve')).toBeNull()
+    expect(reserved(console)).toEqual([])
+
+    fireEvent.click(pad('Practice run'))
+    await waitFor(() => expect(pad('The first').disabled).toBe(false), {
+      timeout: 3000,
+    })
+
+    // No verdict yet, and its slot is already held, by the longer line:
+    // the one a wrong answer gets, at the gap the run starts on.
+    expect(screen.queryByTestId('ear-stage-last-call')).toBeNull()
+    const held = screen.getByTestId('ear-stage-last-call-reserve')
+    expect(held.getAttribute('aria-hidden')).toBe('true')
+    expect(reserved(held)).toEqual([
+      'Last call · Trial 1',
+      'The second was higher by 50.0¢. The gap widens.',
+      expect.stringMatching(/^Gap /),
+    ])
+    // The question line holds the hint it shows while the pads are armed.
+    expect(reserved(console)).toContainEqual(
+      expect.stringMatching(/^Which tone was higher/),
+    )
+    // Drawn from an attribute: none of it is in the document's text.
+    expect(held.textContent).toBe('')
+    expect(console.textContent).not.toContain('The gap widens.')
+  })
+})
+
 describe('keys by code', () => {
   beforeEach(() => {
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()

@@ -488,6 +488,39 @@
   color: var(--stage-muted);
 }
 
+/* ── The run's reserve: room kept for the console's longest lines ── */
+
+/* While a run is on, the stage lays the longest question and the longest
+   verdict out unseen in the slots they will fill (EarStage `reserve`).
+   Each slot stacks the real line and its reserve in one cell, so it is as
+   tall as the longer of the two: the console is as tall at the first
+   question as at the verdict, and the instrument centred above it stays
+   put. On a phone it rose 12.5px for a two-line question and about 41px
+   when the first verdict arrived. */
+.questionSlot,
+.lastCallSlot {
+  display: grid;
+}
+
+.lastCallSlot {
+  grid-column: 1 / -1;
+}
+
+.questionSlot > *,
+.lastCallSlot > * {
+  grid-area: 1 / 1 / 2 / 2;
+}
+
+.reserved {
+  visibility: hidden;
+}
+
+/* The text comes from an attribute, so it is not in the document's text:
+   nothing reads it twice, and no query finds it. */
+.reserved[data-reserve]::before {
+  content: attr(data-reserve);
+}
+
 /* ── The tap pad: the rhythm seam's one input ────────────────── */
 
 .tapPad {
@@ -1088,6 +1121,14 @@
   }
 
   .playPad kbd {
+    display: none;
+  }
+
+  /* The room a run's lamp holds for the Next pad's icon (PlayPad
+     heldKeycap and a hidden icon): on a phone the pad is one row on the
+     44px floor in every phase, so there is nothing to hold, and an unseen
+     icon would push the label off centre. */
+  .playPad > .reserved {
     display: none;
   }
 
