@@ -1289,18 +1289,18 @@ export const GlassApp: Component = () => {
   /** The artifact's live coaching line — precise, encouraging, never shaming. */
   const liveCoach = (): string => {
     const off = live().offCents
-    if (off === null) return 'Take a breath — the glass is listening.'
+    if (off === null) return 'Take a breath. The glass is listening.'
     if (Math.abs(off) <= GLASS_CONFIG.target.tolCents) {
       return live().resonance > 0.55
         ? 'Locked. Keep pouring into it.'
-        : 'There — hold it steady.'
+        : 'There. Hold it steady.'
     }
     if (Math.abs(off) > 140) {
       return off < 0
         ? 'Slide up to the gold line.'
         : 'Come down to the gold line.'
     }
-    return `You're ${Math.abs(Math.round(off))}¢ ${off < 0 ? 'flat' : 'sharp'} — ease ${off < 0 ? 'up' : 'off'}.`
+    return `You're ${Math.abs(Math.round(off))}¢ ${off < 0 ? 'flat' : 'sharp'}. Ease ${off < 0 ? 'up' : 'off'}.`
   }
 
   // The coach feeds off a ~30 Hz loop; throttle the visible text so the
@@ -1369,7 +1369,7 @@ export const GlassApp: Component = () => {
     if (outcome === 'dismissed') return
     trackGlass('glass_card_shared')
     setShareStatus(
-      outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
+      outcome === 'shared' ? 'Shared!' : 'Saved. Post it anywhere.',
     )
   }
 
@@ -1430,11 +1430,11 @@ export const GlassApp: Component = () => {
           <section class="glass-panel glass-panel-wide glass-panel-clear">
             <h2>Find your ceiling</h2>
             <p>
-              Slide low to high, like the siren — the glass tunes itself to you.
+              Slide low to high, like the siren. The glass tunes itself to you.
             </p>
             <Show when={calRetry()}>
               <p class="glass-dim">
-                We could not hear enough of a glide — one more try, a little
+                We could not hear enough of a glide. One more try, a little
                 longer and louder.
               </p>
             </Show>
@@ -1484,7 +1484,7 @@ export const GlassApp: Component = () => {
           <section class="glass-panel">
             <h2>We couldn't hear enough</h2>
             <p class="glass-dim">
-              A quieter room — or singing a little louder — usually fixes it.
+              A quieter room, or singing a little louder, usually fixes it.
             </p>
             <div class="glass-actions">
               <button class="glass-cta" onClick={() => resetAll()}>
@@ -1498,13 +1498,13 @@ export const GlassApp: Component = () => {
           <section class="glass-panel">
             <p class="glass-dim glass-announce-eyebrow">
               <Show when={session().usedFallback}>
-                We mapped what we heard —{' '}
+                We mapped what we heard:{' '}
               </Show>
               this glass rings at
             </p>
             <div class="glass-note-hero">{targetLabel()}</div>
             <p>
-              Land it, hold it, pour into it — every close call weakens the
+              Land it, hold it, pour into it. Every close call weakens the
               glass.
             </p>
             <div class="glass-actions">
@@ -1526,7 +1526,7 @@ export const GlassApp: Component = () => {
                 reflow the stage below it on phones. */}
             <p class="glass-dim glass-subline">
               {session().rep > GLASS_CONFIG.reps.restNudgeAfterReps
-                ? 'Rest your voice a moment — steadier beats louder.'
+                ? 'Rest your voice a moment. Steadier beats louder.'
                 : `Reach ${targetLabel()} and hold it steady.`}
             </p>
             <Show
@@ -1586,7 +1586,7 @@ export const GlassApp: Component = () => {
             <TrustInfo />
             <h2>That was you</h2>
             <p class="glass-dim glass-subline">
-              Getting used to your voice IS the exercise — shape the room with
+              Getting used to your voice IS the exercise. Shape the room with
               the sliders.
             </p>
             <div class="glass-stagegrid">
@@ -1828,7 +1828,7 @@ const TrustInfo: Component = () => {
       </button>
       <Show when={open()}>
         <div class="glass-info-pop" role="note">
-          Private by design: your audio never leaves this device — analysis runs
+          Private by design: your audio never leaves this device. Analysis runs
           in your browser. Unkept takes are gone when you leave; a take enters
           local Hear Yourself history only when you choose Keep. Your numbers
           stay on device.
@@ -1969,7 +1969,7 @@ const MicPanel: Component<{
         </div>
       </Show>
       <Show when={props.error === null && props.checking}>
-        <p class="glass-dim">Checking your microphone — say "ahh"…</p>
+        <p class="glass-dim">Checking your microphone. Say "ahh"…</p>
         <LevelBar level={props.level} />
         <Show when={props.activeLabel !== ''}>
           <p class="glass-dim glass-mic-hearing">
@@ -1994,8 +1994,8 @@ const MicPanel: Component<{
               <strong>{props.activeLabel}</strong>
             ) : (
               'a default input'
-            )}{' '}
-            — if that's not the mic in front of you, switch it here and test
+            )}
+            . If that's not the mic in front of you, switch it here and test
             again.
           </p>
         </Show>
@@ -2058,7 +2058,7 @@ const ResultsPanel: Component<{
     }
     const gain = Math.round((1 - b.meanAbsCents / a.meanAbsCents) * 100)
     return gain > 0
-      ? `${gain}% tighter than rep 1 — the reps did their job.`
+      ? `${gain}% tighter than rep 1. The reps did their job.`
       : null
   }
   const target = (): string =>
@@ -2074,12 +2074,12 @@ const ResultsPanel: Component<{
       aria-busy={props.saveInFlight}
     >
       <p class="glass-dim glass-announce-eyebrow">
-        {shattered() ? 'the glass gave way' : 'the glass held — this time'}
+        {shattered() ? 'the glass gave way' : 'the glass held, this time'}
       </p>
       <h2>
         {shattered()
           ? props.session.shatterRep === 1
-            ? 'Shattered — first try'
+            ? 'Shattered, first try'
             : `Shattered on rep ${props.session.shatterRep}`
           : `${target()} is still waiting for you`}
       </h2>
@@ -2123,7 +2123,7 @@ const ResultsPanel: Component<{
       </Show>
       <Show when={!shattered()}>
         <p class="glass-dim">
-          The damage is real — but a new session starts a fresh glass.
+          The damage is real, but a new session starts a fresh glass.
         </p>
       </Show>
       <div class="glass-actions">
@@ -2225,8 +2225,8 @@ const Landing: Component<{
     <h1>Break glass with your voice</h1>
     <p class="glass-lead">
       This mirror rings at a note near the top of <em>your</em> range. Land it,
-      hold it, and the resonance builds until the glass gives way — real
-      fracture physics, live in your browser.
+      hold it, and the resonance builds until the glass gives way. Real fracture
+      physics, live in your browser.
     </p>
     <div class="glass-actions">
       <button class="glass-cta" onClick={() => props.onStart()}>
@@ -2237,8 +2237,8 @@ const Landing: Component<{
       How it works
     </button>
     <p class="glass-trust">
-      Your audio never leaves this device — takes are recorded on-device and
-      gone when you leave unless you explicitly Keep one in local voice history.
+      Your audio never leaves this device. Takes are recorded on-device and gone
+      when you leave unless you explicitly Keep one in local voice history.
     </p>
   </section>
 )
@@ -2270,8 +2270,8 @@ const HowItWillWork: Component<{
           <h3>Sing, then hear yourself</h3>
           <p>
             Your voice dances in the mirror as you reach for the gold line.
-            After each take it plays back to you — getting used to your own
-            voice is the exercise.
+            After each take it plays back to you. Getting used to your own voice
+            is the exercise.
           </p>
         </div>
       </li>
@@ -2283,7 +2283,7 @@ const HowItWillWork: Component<{
           <h3>Shatter it</h3>
           <p>
             Every near-miss leaves a real crack. Hold the note and the glass
-            bursts into a hundred shards — persistence always wins.
+            bursts into a hundred shards. Persistence always wins.
           </p>
         </div>
       </li>
