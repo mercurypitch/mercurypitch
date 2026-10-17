@@ -90,4 +90,58 @@ test.describe('Ear Lab', () => {
       )
     expect(clamp).toBe('3')
   })
+
+  test("brings More back when the desk narrows under Hairline's card", async ({
+    page,
+  }) => {
+    // Opened where five lines hold the paragraph, then narrowed to where it
+    // needs six (or an iPad Pro turned from 1366 to 1024): the card read it
+    // once and stayed cut at five, with an ellipsis and no More.
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await openNavTab(page, 'tab-ear-lab')
+    await page
+      .locator('[data-tour="ear.drills"] button', { hasText: 'Hairline' })
+      .first()
+      .click()
+    const card = page.getByTestId('ear-instrument-card')
+    const more = card.getByRole('button', { name: 'More' })
+    const clamp = () =>
+      card
+        .locator('p')
+        .evaluate((element) =>
+          getComputedStyle(element).getPropertyValue('-webkit-line-clamp'),
+        )
+    await expect(card).toBeVisible()
+    await expect(more).toHaveCount(0)
+
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await expect(more).toBeVisible()
+    expect(await clamp()).toBe('3')
+
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await expect(more).toHaveCount(0)
+    expect(await clamp()).toBe('5')
+  })
+
+  test("offers More again when Less folds Hairline's card left open", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await openNavTab(page, 'tab-ear-lab')
+    const hairline = page
+      .locator('[data-tour="ear.drills"] button', { hasText: 'Hairline' })
+      .first()
+    await hairline.click()
+    const card = page.getByTestId('ear-instrument-card')
+    await card.getByRole('button', { name: 'More' }).click()
+    await expect(card).toHaveAttribute('data-open', 'true')
+
+    // The drill remembers the card open, so it comes back unfolded.
+    await page.getByRole('button', { name: 'Back to the bench' }).click()
+    await hairline.click()
+    await expect(card).toHaveAttribute('data-open', 'true')
+    await card.getByRole('button', { name: 'Less' }).click()
+    await expect(card).toHaveAttribute('data-open', 'false')
+    await expect(card.getByRole('button', { name: 'More' })).toBeVisible()
+  })
 })
