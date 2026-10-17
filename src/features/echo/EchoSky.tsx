@@ -340,6 +340,7 @@ function SkyStar(props: SkyStarProps): JSX.Element {
       }}
     >
       <img
+        draggable={false}
         class={styles.sprite}
         src={art().halo}
         alt=""
@@ -349,6 +350,7 @@ function SkyStar(props: SkyStarProps): JSX.Element {
         when={props.star.mix < 1 || props.star.tint === 'base'}
         fallback={
           <img
+            draggable={false}
             class={styles.sprite}
             src={art().tints[props.star.tint]}
             alt=""
@@ -357,6 +359,7 @@ function SkyStar(props: SkyStarProps): JSX.Element {
         }
       >
         <img
+          draggable={false}
           class={styles.sprite}
           src={art().tints.base}
           alt=""
@@ -364,6 +367,7 @@ function SkyStar(props: SkyStarProps): JSX.Element {
         />
         <Show when={props.star.tint !== 'base' && props.star.mix > 0}>
           <img
+            draggable={false}
             class={styles.sprite}
             src={art().tints[props.star.tint]}
             alt=""

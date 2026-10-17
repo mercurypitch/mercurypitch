@@ -1,0 +1,38 @@
+/* The surface every exercise room opts into on its root element (Echo, Long
+   note, Lip roll, Ng slides). A room is a picture you sing at, not a page
+   you read: a tap on Merc, the bridge or the Lantern's note must not select
+   it, and a long press must not raise the image callout or start a drag.
+
+   Each property is written prefixed AND unprefixed on purpose. Safari and
+   every iOS WebView honour only `-webkit-user-select` (caniuse: "requires
+   prefix" through Safari 26.5; WebKit 26.4 reports
+   CSS.supports('user-select', 'none') as false), and the native app's build
+   adds no prefixes of its own. An unprefixed rule alone is what let the Ng
+   bridge and the Lantern's note label select on an iPhone.
+
+   Both properties inherit in WebKit, so one rule on the root reaches every
+   picture, canvas and label inside the room. */
+.surface {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Dragging is not inherited, so the pictures get it themselves. The rooms'
+   <img> elements also say draggable={false}; this covers the plates and any
+   picture added from script. */
+.surface img {
+  -webkit-user-drag: none;
+}
+
+/* A text field inside a room still has to take a caret and typing. WebKit
+   can refuse typing in a field whose ancestor says
+   `-webkit-user-select: none`, so the field says otherwise. */
+.surface input,
+.surface textarea,
+.surface [contenteditable]:not([contenteditable='false']) {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}

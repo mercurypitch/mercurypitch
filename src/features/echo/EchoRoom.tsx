@@ -43,6 +43,7 @@ import { micLabel as labelFor } from '@/components/room-kit/mic-state'
 import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
+import surface from '@/components/room-kit/RoomSurface.module.css'
 import { DEMO_COPY } from './demo/demo-cues'
 import { aimEchoTip } from './demo/tip-targets'
 import { useEchoDemo } from './demo/useEchoDemo'
@@ -281,7 +282,7 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
   return (
     <div
       ref={rootEl}
-      class={`${styles.room} mp-dark-stage`}
+      class={`${styles.room} ${surface.surface} mp-dark-stage`}
       data-phase={phase()}
       data-demo={demo.mode()}
       data-testid="echo-room"

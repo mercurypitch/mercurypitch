@@ -85,7 +85,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Copied by hand, so one tap selects all of it. Prefixed too: iOS honours
+     only -webkit-user-select, and the native app turns selection and the
+     long-press callout off for the whole document (shell.css). */
+  -webkit-user-select: all;
   user-select: all;
+  -webkit-touch-callout: default;
 }
 
 .link {
