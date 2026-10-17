@@ -10,7 +10,7 @@ import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { earInfoOpen, resetEarLabStore } from '@/stores/ear-lab-store'
+import { earInfoOpen, resetEarLabStore, setEarInfoOpen, } from '@/stores/ear-lab-store'
 import { notifications, resetNotifications, showActionNotification, showNotification, TOUR_OFFER_CHANNEL, } from '@/stores/notifications-store'
 import { PlayPad } from './EarStage'
 import { HairlineDrill } from './HairlineDrill'
@@ -285,51 +285,164 @@ describe('the instrument card', () => {
     expect(text.style.getPropertyValue('--card-lines')).toBe('5')
   })
 
-  /** Lays the paragraph out as a desk would: it shows `shown` lines
-   *  of the `needed` its text takes. jsdom lays nothing out. */
-  function layParagraph(shown: number, needed: number): () => void {
+  /** Lays the paragraph out as a desk would, in lines of 18px: its text
+   *  needs `needed` of them. jsdom lays nothing out and never calls a
+   *  ResizeObserver, so `resize` stands in for the browser telling the
+   *  card that the paragraph's box changed (a new width, a rotation). */
+  function layParagraph(needed: number) {
     const line = 18
+    let lines = needed
+    const observers: ResizeObserverCallback[] = []
+    const disconnect = vi.fn()
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          observers.push(callback)
+        }
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {
+          disconnect()
+        }
+      },
+    )
     const proto = HTMLParagraphElement.prototype
+    // What shows: the clamp's lines while the card is folded, all of it
+    // when open. scrollHeight is the whole text either way.
     Object.defineProperty(proto, 'clientHeight', {
       configurable: true,
-      get: () => shown * line,
+      get(this: HTMLElement): number {
+        const clamp = this.className.includes('textClamped')
+          ? Number(this.style.getPropertyValue('--card-lines') || 3)
+          : lines
+        return Math.min(lines, clamp) * line
+      },
     })
     Object.defineProperty(proto, 'scrollHeight', {
       configurable: true,
-      get: () => needed * line,
+      get: () => lines * line,
     })
-    return () => {
-      delete (proto as { clientHeight?: number }).clientHeight
-      delete (proto as { scrollHeight?: number }).scrollHeight
+    const text = (): HTMLElement =>
+      screen.getByText(/Two tones; pick the higher one/)
+    return {
+      text,
+      disconnect,
+      /** Lays the text out again, now needing `next` lines, and waits
+       *  out the frame the card takes to read it. */
+      async resize(next: number = lines): Promise<void> {
+        lines = next
+        text().style.lineHeight = `${line}px`
+        for (const observer of observers) observer([], {} as ResizeObserver)
+        await new Promise((resolve) => setTimeout(resolve, 80))
+      },
+      /** The text needs `next` lines without its box changing size. */
+      reflow(next: number): void {
+        lines = next
+      },
+      restore(): void {
+        delete (proto as { clientHeight?: number }).clientHeight
+        delete (proto as { scrollHeight?: number }).scrollHeight
+      },
     }
   }
 
   it('drops More where five lines hold the whole paragraph', async () => {
-    const restore = layParagraph(5, 5)
+    const desk = layParagraph(5)
     try {
       mount()
-      const text = screen.getByText(/Two tones; pick the higher one/)
-      await waitFor(() =>
-        expect(screen.queryByRole('button', { name: 'More' })).toBeNull(),
-      )
-      expect(text.style.getPropertyValue('--card-lines')).toBe('5')
+      await desk.resize()
+      expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
+      expect(desk.text().style.getPropertyValue('--card-lines')).toBe('5')
     } finally {
-      restore()
+      desk.restore()
     }
   })
 
   it('keeps three lines and More where five would still cut the paragraph', async () => {
     // A narrower desk: the card is 228px wide and the text needs six.
-    const restore = layParagraph(5, 6)
+    const desk = layParagraph(6)
     try {
       mount()
-      const text = screen.getByText(/Two tones; pick the higher one/)
+      await desk.resize()
+      expect(desk.text().style.getPropertyValue('--card-lines')).toBe('')
+      expect(screen.getByRole('button', { name: 'More' })).toBeTruthy()
+    } finally {
+      desk.restore()
+    }
+  })
+
+  it('brings More back when the desk narrows after the card was laid out', async () => {
+    // Opened at 1440, where five lines hold it, then narrowed to 1024 (or
+    // an iPad Pro turned from 1366 to 1024), where it needs six.
+    const desk = layParagraph(5)
+    try {
+      mount()
+      await desk.resize()
+      expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
+      await desk.resize(6)
+      expect(screen.getByRole('button', { name: 'More' })).toBeTruthy()
+      expect(desk.text().style.getPropertyValue('--card-lines')).toBe('')
+      await desk.resize(5)
+      expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
+      expect(desk.text().style.getPropertyValue('--card-lines')).toBe('5')
+    } finally {
+      desk.restore()
+    }
+  })
+
+  it('reads the text again once the fonts are in', async () => {
+    let fontsIn = (): void => undefined
+    const ready = new Promise<void>((resolve) => {
+      fontsIn = resolve
+    })
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: { ready },
+    })
+    const desk = layParagraph(5)
+    try {
+      mount()
+      await desk.resize()
+      expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
+      // The web font sets wider than the fallback: six lines now, in a box
+      // the clamp keeps at five, so nothing tells the observer.
+      desk.reflow(6)
+      fontsIn()
       await waitFor(() =>
-        expect(text.style.getPropertyValue('--card-lines')).toBe(''),
+        expect(screen.getByRole('button', { name: 'More' })).toBeTruthy(),
+      )
+    } finally {
+      desk.restore()
+      delete (document as { fonts?: unknown }).fonts
+    }
+  })
+
+  it('offers More again when Less folds a card that was left open', async () => {
+    const desk = layParagraph(6)
+    try {
+      setEarInfoOpen('hairline', true)
+      mount()
+      await desk.resize()
+      fireEvent.click(screen.getByRole('button', { name: 'Less' }))
+      expect(screen.getByTestId('ear-instrument-card').dataset.open).toBe(
+        'false',
       )
       expect(screen.getByRole('button', { name: 'More' })).toBeTruthy()
     } finally {
-      restore()
+      desk.restore()
+    }
+  })
+
+  it('stops watching the paragraph when the card goes', () => {
+    const desk = layParagraph(5)
+    try {
+      const view = mount()
+      expect(desk.disconnect).not.toHaveBeenCalled()
+      view.unmount()
+      expect(desk.disconnect).toHaveBeenCalled()
+    } finally {
+      desk.restore()
     }
   })
 
