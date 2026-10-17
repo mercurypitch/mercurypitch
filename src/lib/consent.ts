@@ -397,6 +397,17 @@ export function initConsent(): void {
   loadTag()
 }
 
+/**
+ * The current page URL with the hash fragment stripped. Fragments are never
+ * sent in a Referer header, so gtag reading `location.href` for
+ * `page_location` is the one path that would carry a fragment-borne token off
+ * the device — this is what we hand it instead.
+ */
+function locationWithoutFragment(): string {
+  const { origin, pathname, search } = window.location
+  return `${origin}${pathname}${search}`
+}
+
 function loadTag(): void {
   if (IS_TEST) return
   // One gtag.js load configures every product on the shared dataLayer, all
@@ -405,11 +416,22 @@ function loadTag(): void {
   const primary =
     GOOGLE_ADS_TAG_ID !== '' ? GOOGLE_ADS_TAG_ID : GA4_MEASUREMENT_ID
   if (primary === '') return
-  if (GOOGLE_ADS_TAG_ID !== '') pushGtag('config', GOOGLE_ADS_TAG_ID)
+  // Pin page_location to the URL WITHOUT its hash. The app is hash-routed, so
+  // a one-time credential can sit in location.hash while the tag loads — a
+  // password-reset token (#/reset-password?token=…) or the Google redirect
+  // JWT (#gauth=…). gtag's default page_location is the full href, which would
+  // ship that secret to Google; the fragment carries no analytics value here
+  // (routes are tracked as GA4 events), so drop it from every config.
+  const pageLocation = { page_location: locationWithoutFragment() }
+  if (GOOGLE_ADS_TAG_ID !== '')
+    pushGtag('config', GOOGLE_ADS_TAG_ID, pageLocation)
   // traffic_type is GA4's, not Ads' — only the analytics config carries it,
   // and only on a browser we marked as ours.
   if (GA4_MEASUREMENT_ID !== '') {
-    pushGtag('config', GA4_MEASUREMENT_ID, ga4TrafficParams())
+    pushGtag('config', GA4_MEASUREMENT_ID, {
+      ...pageLocation,
+      ...ga4TrafficParams(),
+    })
   }
   const script = document.createElement('script')
   script.async = true
