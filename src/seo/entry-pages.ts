@@ -193,7 +193,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     description:
       'Upload any song, the vocals lift away, and you sing with synced lyrics and live pitch scoring — right in your browser. Try the example song free.',
     og: {
-      title: 'Karaoke Night — Turn Any Song You Own Into Karaoke',
+      title: 'Karaoke Night: Turn any song into karaoke',
       description:
         'The vocals lift away and you sing with synced lyrics and live pitch scoring. In your browser — try the example song free.',
       image: ogImage('karaoke-og.png'),
@@ -201,7 +201,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'MercuryPitch Karaoke Night — turn any song into karaoke on a theater stage, with the demo song Goodbye to Spring ready to sing.',
     },
     twitter: {
-      title: 'Karaoke Night — Turn Any Song You Own Into Karaoke',
+      title: 'Karaoke Night: Turn any song into karaoke',
       description:
         'Vocal removal + synced lyrics + live pitch scoring, in your browser. Try the example song free.',
     },
@@ -600,7 +600,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
       {
         q: 'What can I use it on?',
-        a: 'Music you already own. MercuryPitch does not host, supply or download music, and there is no catalog to search — you bring the file. What you do with the result is subject to the rights on the original recording.',
+        a: 'Music you already own. Apart from the few example songs in Karaoke Night, MercuryPitch does not host, supply or download music, and there is no catalog to search: you bring the file. What you do with the result is subject to the rights on the original recording.',
       },
     ],
     noscript:
