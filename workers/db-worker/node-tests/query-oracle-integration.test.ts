@@ -113,79 +113,40 @@ afterEach(() => {
   sqlite.close()
 })
 
-describe('probing a profile column the mask hides', () => {
-  it('does not answer a consent question the response refused to', async () => {
-    // THE REGRESSION. Pre-fix this returned the victim's row (they opted in)
-    // and `[]` for the singer who did not — a consent bit, unauthenticated.
+describe('a profile is not a public directory', () => {
+  // userProfiles is access 'owner': one profile is public BY ID, but the table
+  // is not listable by an unauthenticated caller. A listful would be every
+  // account's real name and photo — federated sign-up seeds both — so the
+  // consent/streak/friend-code oracles are closed outright by refusing the
+  // list, a stronger guarantee than rejecting one hidden column at a time.
+  it('refuses an unauthenticated list, however it is filtered or sorted', async () => {
+    expect(await idsOrStatus('/api/userProfiles')).toBe(401)
+    expect(await idsOrStatus(`/api/userProfiles?where[id]=${VICTIM}`)).toBe(401)
     expect(
       await idsOrStatus(
         `/api/userProfiles?where[id]=${VICTIM}&where[leaderboardOptIn]=1`,
       ),
-    ).toBe(400)
-    expect(
-      await idsOrStatus(
-        `/api/userProfiles?where[id]=${OTHER}&where[leaderboardOptIn]=1`,
-      ),
-    ).toBe(400)
-  })
-
-  it('does not let a streak be recovered one guess at a time', async () => {
-    for (const streak of [3, 9, 40]) {
-      expect(
-        await idsOrStatus(
-          `/api/userProfiles?where[id]=${VICTIM}&where[currentStreak]=${streak}`,
-        ),
-      ).toBe(400)
-    }
-    expect(
-      await idsOrStatus(`/api/userProfiles?where[lastPracticeDate]=2026-08-08`),
-    ).toBe(400)
-  })
-
-  it('closes the membership test against the friend-code space', async () => {
-    // `/count` is the cleaner oracle — a number rather than a row — and it is
-    // the one that bypassed the friend-redeem rate limit entirely.
+    ).toBe(401)
     expect(
       await idsOrStatus(`/api/userProfiles?where[friendCode]=${FRIEND_CODE}`),
-    ).toBe(400)
-
-    const counted = await get(
-      `/api/userProfiles/count?where[friendCode]=${FRIEND_CODE}`,
-    )
-    expect(counted.status).toBe(400)
-  })
-
-  it('refuses to sort by a hidden column, which is the same oracle', async () => {
-    // Paginating a sort recovers the value without ever reading it: the top
-    // row of `orderBy=currentStreak&orderDir=desc` names the longest streak in
-    // the deployment. Only the filter half had been considered.
+    ).toBe(401)
     expect(
       await idsOrStatus('/api/userProfiles?orderBy=currentStreak&limit=1'),
-    ).toBe(400)
-    expect(await idsOrStatus('/api/userProfiles?orderBy=friendCode')).toBe(400)
-
-    // And it says so as a sort, not as a filter. A request carrying no filter
-    // at all told to stop filtering sends the client looking in the wrong
-    // place for a parameter it never sent.
-    const response = await get('/api/userProfiles?orderBy=currentStreak')
-    await expect(response.json()).resolves.toEqual({
-      error: 'Cannot sort by "currentStreak"',
-    })
+    ).toBe(401)
   })
 
-  it('refuses rather than quietly dropping the filter', async () => {
-    // Ignoring it would widen the result set and still look like the query
-    // succeeded — the caller would act on rows it never asked for.
-    const response = await get(`/api/userProfiles?where[currentStreak]=9`)
-    expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toEqual({
-      error: 'Cannot filter on "currentStreak"',
-    })
+  it('refuses an unauthenticated count the same way', async () => {
+    expect((await get('/api/userProfiles/count')).status).toBe(401)
+    expect(
+      (await get(`/api/userProfiles/count?where[friendCode]=${FRIEND_CODE}`))
+        .status,
+    ).toBe(401)
   })
 
-  it('still keeps stripePriceId unprobeable', async () => {
-    // The privateCols half, which was already closed — pinned here so the two
-    // policies cannot drift apart.
+  it('still keeps stripePriceId unprobeable on a table that IS public', async () => {
+    // pricingPlans is public-read, so the column mask (privateCols) is still
+    // the only thing between a caller and the live Stripe price id. The
+    // hidden-column oracle guard stays in force for tables like it.
     const response = await get(
       '/api/pricingPlans?where[stripePriceId]=price_live_x',
     )
@@ -194,23 +155,12 @@ describe('probing a profile column the mask hides', () => {
 })
 
 describe('the reads that must keep working', () => {
-  it('filters and sorts on public identity', async () => {
-    expect(await idsOrStatus(`/api/userProfiles?where[id]=${VICTIM}`)).toEqual([
-      VICTIM,
-    ])
-    expect(
-      await idsOrStatus('/api/userProfiles?where[displayName]=Other Singer'),
-    ).toEqual([OTHER])
-    expect(
-      await idsOrStatus('/api/userProfiles?orderBy=displayName&orderDir=desc'),
-    ).toEqual([VICTIM, OTHER])
-  })
-
-  it('still masks what it returns', async () => {
-    // The projection is the other half and must not have been traded away for
-    // the filter rule.
-    const response = await get(`/api/userProfiles?where[id]=${VICTIM}`)
-    const [row] = (await response.json()) as Array<Record<string, unknown>>
+  it('serves a single profile by id to anyone, masked to public identity', async () => {
+    // The community card: a profile is still fetchable by id without a token,
+    // projected to public columns. This is the read that replaces listing.
+    const response = await get(`/api/userProfiles/${VICTIM}`)
+    expect(response.status).toBe(200)
+    const row = (await response.json()) as Record<string, unknown>
 
     expect(Object.keys(row).sort()).toEqual([
       'avatarUrl',
@@ -223,6 +173,50 @@ describe('the reads that must keep working', () => {
     ])
     expect(row.friendCode).toBeUndefined()
     expect(row.currentStreak).toBeUndefined()
+  })
+
+  it('still lets the studio list and sort the whole table', async () => {
+    // Admins edit these rows, so the admin key keeps full list access.
+    const response = await get(
+      '/api/userProfiles?orderBy=displayName&orderDir=desc',
+      { 'X-Admin-Key': ADMIN_KEY },
+    )
+    expect(response.status).toBe(200)
+    const ids = ((await response.json()) as Array<{ id: string }>).map(
+      (r) => r.id,
+    )
+    expect(ids).toEqual([VICTIM, OTHER])
+  })
+
+  it('lets a signed-in singer list only their own row', async () => {
+    // Not admin, so the list is scoped to the caller's id — their own profile
+    // comes back and no one else's, whatever limit they ask for.
+    const registered = await worker.fetch(
+      new Request('https://api.test/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'self@example.com',
+          password: 'secret123',
+          displayName: 'Self',
+        }),
+      }),
+      env,
+      {} as ExecutionContext,
+    )
+    const { token, userId } = (await registered.json()) as {
+      token: string
+      userId: string
+    }
+    const response = await get('/api/userProfiles?limit=1000', {
+      Authorization: `Bearer ${token}`,
+    })
+    expect(response.status).toBe(200)
+    const ids = ((await response.json()) as Array<{ id: string }>).map(
+      (r) => r.id,
+    )
+    expect(ids).toEqual([userId])
+    expect(ids).not.toContain(VICTIM)
   })
 
   it('lets an admin filter on anything, having nothing hidden to probe', async () => {

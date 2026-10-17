@@ -308,6 +308,7 @@ function scopeRead(
   def: TableDef,
   q: ListQuery,
   auth: AuthUser | null,
+  admin: boolean,
 ): { clause?: string; binds?: SqlValue[] } | Response {
   switch (def.access) {
     case 'user': {
@@ -324,8 +325,23 @@ function scopeRead(
         }
       return { clause: '"isPublic" = 1', binds: [] }
     }
+    case 'owner': {
+      // A profile is public BY ID (handleGetById masks it to public columns),
+      // which is how a community card is shown. A LIST is different: it is a
+      // directory of every account, and federated sign-up seeds a person's
+      // real name and photo into these columns — so a listful would hand an
+      // unauthenticated caller every user's real identity, including people
+      // who never joined any public surface. The studio (admin) lists freely;
+      // everyone else may list only their own row, and an anonymous caller
+      // not at all.
+      if (admin) return {}
+      if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+      q.filters = q.filters.filter(([col]) => col !== 'id')
+      q.filters.push(['id', auth.userId])
+      return {}
+    }
     default:
-      return {} // admin / public-user / owner: public reads
+      return {} // admin / public-user: public reads
   }
 }
 
@@ -500,7 +516,7 @@ async function handleList(
   const q = parseListQuery(url, listLimitDefault(def))
   if (!q) return respond({ error: 'Invalid query' }, { status: 400 })
 
-  const scope = scopeRead(def, q, auth)
+  const scope = scopeRead(def, q, auth, admin)
   if (scope instanceof Response) return scope
 
   const columnError = await validateReadColumns(entity, def, q, env, admin)
