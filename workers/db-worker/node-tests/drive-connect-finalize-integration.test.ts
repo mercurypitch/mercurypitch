@@ -187,4 +187,48 @@ describe('connect-Drive finalize binding', () => {
     const junk = await finish(alice.token, 'not-a-sealed-grant')
     expect(junk.status).toBe(400)
   })
+
+  it('refuses a grant older than DRIVE_PENDING_TTL_MS', async () => {
+    const alice = await register('late@example.com')
+    const pending = await pendingGrantFrom(await startStateFor(alice.token))
+
+    // Only the clock moves, and only once the grant exists: its expiry was
+    // stamped at consent time, so this is the starter finishing too late,
+    // not a grant born expired. Date alone is faked so nothing on the
+    // request path that waits on a real timer can stall.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(Date.now() + 6 * 60 * 1000)
+      const late = await finish(alice.token, pending)
+      expect(late.status).toBe(400)
+      expect(((await late.json()) as { error: string }).error).toMatch(
+        /expired/,
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(driveRows(alice.userId)).toBe(0)
+  })
+
+  it('refuses a tampered grant and stores nothing', async () => {
+    const alice = await register('tamper@example.com')
+    const pending = await pendingGrantFrom(await startStateFor(alice.token))
+
+    // One character flipped in the middle of the ciphertext, to another
+    // character the encoding accepts: the seal must reject it outright, not
+    // open a grant with a bit changed.
+    const mid = Math.floor(pending.length / 2)
+    const flipped = pending[mid] === 'A' ? 'B' : 'A'
+    const tampered = pending.slice(0, mid) + flipped + pending.slice(mid + 1)
+    expect(tampered).not.toBe(pending)
+
+    const res = await finish(alice.token, tampered)
+    expect(res.status).toBe(400)
+    expect(driveRows(alice.userId)).toBe(0)
+
+    // The control: the untouched grant still finishes, so the refusal above
+    // was the tamper and not a grant that was never good.
+    expect((await finish(alice.token, pending)).status).toBe(200)
+    expect(driveRows(alice.userId)).toBe(1)
+  })
 })

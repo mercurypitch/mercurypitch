@@ -34,10 +34,30 @@ vi.mock('@/db/persistent-storage', () => ({
   isStoragePersisted: () => Promise.resolve(true),
   requestPersistentStorage: () => Promise.resolve(true),
 }))
-const auth = vi.hoisted(() => ({ held: false }))
+type ConnectResult =
+  | { ok: true }
+  | { ok: false; error: string }
+  | { pending: string }
+const auth = vi.hoisted(() => ({
+  held: false,
+  connectResult: null as ConnectResult | null,
+}))
 vi.mock('@/db/services/auth-service', () => ({
   accountHeld: () => auth.held,
-  takeDriveConnectResult: () => null,
+  // One-shot, like the real stash: taken once, then gone.
+  takeDriveConnectResult: () => {
+    const result = auth.connectResult
+    auth.connectResult = null
+    return result
+  },
+}))
+const driveConnect = vi.hoisted(() => ({
+  finishDriveConnect: vi.fn(
+    (_pending: string): Promise<ConnectResult> => Promise.resolve({ ok: true }),
+  ),
+}))
+vi.mock('@/db/services/drive-connect-service', () => ({
+  finishDriveConnect: driveConnect.finishDriveConnect,
 }))
 vi.mock('@/db/services/song-manifest-service', () => ({
   syncLibraryList: () => Promise.resolve([]),
@@ -86,6 +106,8 @@ beforeEach(() => {
   uvr.sessions = []
   uvr.readyPromise = Promise.resolve()
   auth.held = false
+  auth.connectResult = null
+  driveConnect.finishDriveConnect.mockReset()
   drive.state = 'unknown'
   drive.scan = null
   drive.job = null
@@ -217,6 +239,88 @@ describe('the Drive section', () => {
     const button = screen.getByText('Restore 1 song') as HTMLButtonElement
     fireEvent.click(button)
     expect(drive.restoreFromDrive).toHaveBeenCalledWith(['h-2'])
+  })
+
+  // The connect callback now hands the grant back sealed instead of storing
+  // it (it runs in whichever browser finished Google's consent). The page
+  // commits it with finishDriveConnect before it reads the Drive status, so
+  // what it then shows is the state the commit produced.
+  it('finishes a pending Drive grant before deciding what to show', async () => {
+    auth.held = true
+    drive.state = 'connected'
+    // A comparison already held: only a fresh connect scans past it.
+    drive.scan = { inDrive: 3, here: 3, toBackUp: [], toRestore: [] }
+    auth.connectResult = { pending: 'SEALED' }
+    driveConnect.finishDriveConnect.mockResolvedValueOnce({ ok: true })
+
+    render(() => <SyncSettings />)
+
+    await waitFor(() => expect(drive.scanDrive).toHaveBeenCalledTimes(1))
+    expect(driveConnect.finishDriveConnect).toHaveBeenCalledTimes(1)
+    expect(driveConnect.finishDriveConnect).toHaveBeenCalledWith('SEALED')
+    // Committed first, then asked: the status read waited for the finish.
+    const finishedAt =
+      driveConnect.finishDriveConnect.mock.invocationCallOrder[0]
+    const refreshedAt = drive.refreshDriveStatus.mock.invocationCallOrder[0]
+    expect(finishedAt).toBeLessThan(refreshedAt as number)
+  })
+
+  it('shows the refusal when finishing the grant fails', async () => {
+    auth.held = true
+    // Nothing was stored, so the status the page then reads is this one.
+    drive.state = 'disconnected'
+    auth.connectResult = { pending: 'SEALED' }
+    driveConnect.finishDriveConnect.mockResolvedValueOnce({
+      ok: false,
+      error: 'finish_failed',
+    })
+
+    render(() => <SyncSettings />)
+
+    expect(
+      await screen.findByText('Google Drive could not be connected.'),
+    ).toBeTruthy()
+    expect(driveConnect.finishDriveConnect).toHaveBeenCalledTimes(1)
+    expect(driveConnect.finishDriveConnect).toHaveBeenCalledWith('SEALED')
+    await waitFor(() =>
+      expect(drive.refreshDriveStatus).toHaveBeenCalledTimes(1),
+    )
+    expect(drive.scanDrive).not.toHaveBeenCalled()
+  })
+
+  it('does not take a failed finish for a fresh connect', async () => {
+    // A Drive is already connected and compared; a second connect whose
+    // grant could not be committed must leave that comparison alone.
+    auth.held = true
+    drive.state = 'connected'
+    drive.scan = { inDrive: 3, here: 3, toBackUp: [], toRestore: [] }
+    auth.connectResult = { pending: 'SEALED' }
+    driveConnect.finishDriveConnect.mockResolvedValueOnce({
+      ok: false,
+      error: 'finish_failed',
+    })
+
+    render(() => <SyncSettings />)
+
+    await waitFor(() =>
+      expect(drive.refreshDriveStatus).toHaveBeenCalledTimes(1),
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(driveConnect.finishDriveConnect).toHaveBeenCalledTimes(1)
+    expect(drive.scanDrive).not.toHaveBeenCalled()
+  })
+
+  it('names a declined consent, with no grant to finish', async () => {
+    auth.held = true
+    drive.state = 'disconnected'
+    auth.connectResult = { ok: false, error: 'declined' }
+
+    render(() => <SyncSettings />)
+
+    expect(
+      await screen.findByText('Google Drive access was not granted.'),
+    ).toBeTruthy()
+    expect(driveConnect.finishDriveConnect).not.toHaveBeenCalled()
   })
 })
 

@@ -17,7 +17,8 @@ vi.mock('@/stores/notifications-store', () => ({
 
 import { accountKnownHere } from '@/db/services/account-known'
 import type { AuthResponse } from '@/db/services/auth-service'
-import { consumeGoogleRedirect, deleteAccount, fetchMe, googleSignInUrl, googleTwofaPending, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, refreshSession, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, googleSignInUrl, googleTwofaPending, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, refreshSession, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
+import { finishDriveConnect, startDriveConnect, } from '@/db/services/drive-connect-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { beginGoogleReturn } from '@/lib/google-return-nonce'
@@ -969,6 +970,85 @@ describe('Drive connect redirect', () => {
 
     expect(takeDriveConnectResult()).toEqual({ ok: true })
     expect(takeDriveConnectResult()).toBeNull()
+  })
+
+  // The live path: the worker no longer stores the grant in the callback,
+  // so what comes back is a sealed grant for finishDriveConnect to commit.
+  // It takes the same tail as a success -- route restored, stash spent --
+  // and is no more a sign-in than a success is.
+  it('records a pending grant from a #gdrive_pending return, one-shot', () => {
+    localStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    history.replaceState(null, '', '/#gdrive_pending=SEALED.blob')
+
+    consumeGoogleRedirect()
+
+    expect(takeDriveConnectResult()).toEqual({ pending: 'SEALED.blob' })
+    expect(takeDriveConnectResult()).toBeNull()
+    expect(takeGoogleRedirectResult()).toBeNull()
+    expect(window.location.hash).toBe('#/settings/sync')
+    expect(localStorage.getItem('mp:gauthReturnHash')).toBeNull()
+  })
+})
+
+// Committing the sealed grant. The worker binds it to the account whose
+// bearer token makes this call, so the request has to carry the session and
+// the grant -- and every way the commit can fail comes back as a reason the
+// settings page can show, never as a thrown error.
+describe('finishDriveConnect', () => {
+  it('does not call the worker while signed out', async () => {
+    setAuthToken(null)
+    const fetchMock = mockFetchOnce(200, { ok: true })
+
+    expect(await finishDriveConnect('SEALED')).toEqual({
+      ok: false,
+      error: 'signed_out',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('commits the grant with an authenticated POST to /drive/finish', async () => {
+    setAuthToken(makeToken(3600, 'password'))
+    const token = getAuthToken()
+    const fetchMock = mockFetchOnce(200, { ok: true })
+
+    expect(await finishDriveConnect('SEALED')).toEqual({ ok: true })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ]
+    expect(url).toBe('http://api.test/api/auth/drive/finish')
+    expect(init.method).toBe('POST')
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      `Bearer ${token}`,
+    )
+    expect(JSON.parse(init.body as string)).toEqual({ pending: 'SEALED' })
+  })
+
+  it('reports a grant the worker refuses as finish_failed', async () => {
+    setAuthToken(makeToken(3600, 'password'))
+    mockFetchOnce(403, {
+      error: 'This Drive grant was started by a different account',
+    })
+
+    expect(await finishDriveConnect('SEALED')).toEqual({
+      ok: false,
+      error: 'finish_failed',
+    })
+  })
+
+  it('reports a network failure as offline', async () => {
+    setAuthToken(makeToken(3600, 'password'))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))),
+    )
+
+    expect(await finishDriveConnect('SEALED')).toEqual({
+      ok: false,
+      error: 'offline',
+    })
   })
 })
 

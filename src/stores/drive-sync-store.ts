@@ -23,7 +23,8 @@
 // See docs/plans/device-sync.md (Phase 4).
 
 import { createSignal } from 'solid-js'
-import { currentAccountId, disconnectDrive, fetchDriveAccessToken, fetchDriveStatus, startDriveConnect, } from '@/db/services/auth-service'
+import { currentAccountId } from '@/db/services/auth-service'
+import { disconnectDrive, fetchDriveAccessToken, fetchDriveStatus, startDriveConnect, } from '@/db/services/drive-connect-service'
 import { buildPortableBundle, BundleSourceError, importPortableBundle, } from '@/db/services/portable-bundle-service'
 import { sessionStemPresence } from '@/db/services/uvr-service'
 import { stripAudioExtension } from '@/lib/audio-file-name'

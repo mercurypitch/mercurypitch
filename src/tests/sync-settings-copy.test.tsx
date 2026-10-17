@@ -22,6 +22,9 @@ vi.mock('@/db/services/auth-service', () => ({
   accountHeld: () => false,
   takeDriveConnectResult: () => null,
 }))
+vi.mock('@/db/services/drive-connect-service', () => ({
+  finishDriveConnect: async () => ({ ok: true }),
+}))
 vi.mock('@/db/services/song-manifest-service', () => ({
   readLibraryManifests: async () => [],
   syncLibraryList: async () => ({ here: 0, known: 0 }),
