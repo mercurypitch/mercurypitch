@@ -199,10 +199,9 @@ describe('the standings a cohort-mate sees', () => {
     expect((await call('GET', `/api/userProfiles/${row!.userId}`)).status).toBe(
       404,
     )
-    const profiles = (await (
-      await call('GET', '/api/userProfiles?limit=1000')
-    ).json()) as Array<{ id: string }>
-    expect(profiles.some((p) => p.id === row!.userId)).toBe(false)
+    // And there is no public directory to harvest the id from: an
+    // unauthenticated list of profiles is refused outright.
+    expect((await call('GET', '/api/userProfiles?limit=1000')).status).toBe(401)
   })
 
   it('still names the caller, and anyone who opted in', async () => {
