@@ -21,22 +21,23 @@
 // The "how it works" demo sings its takes through this same room, by
 // `script` (scripted-take.ts): frames in place of the mic, nothing kept.
 
-import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
-import { onAppLeave } from '@/components/room-kit/app-leave'
+import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
+import { createQuietWatch, secondsClock, } from '@/components/room-kit/quiet-watch'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
-import { createScreenAwake } from '@/components/room-kit/screen-awake'
+import { offerable, QUIET_LIMIT_SECONDS, } from '@/components/room-kit/room-constants'
+import { createRoomLife } from '@/components/room-kit/room-life'
 import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import { computeHoldResult } from '@/lib/hold/hold-metrics'
-import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, nudgeTarget, } from '@/lib/hold/hold-target'
+import { nudgeTarget } from '@/lib/hold/hold-target'
 import { loadHoldTarget } from '@/lib/hold/load-hold-target'
 import { settledRunStart, settleLiveNote } from '@/lib/hold/settle-note'
 import type { MercVoice } from '@/lib/merc/sim'
-import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseFocus } from '@/stores/native-shell-store'
@@ -69,15 +70,8 @@ export type {
 const MAX_HOLD_SECONDS = 90
 /** Merc dozes off when nobody sings for this long. */
 const SLEEP_AFTER_SECONDS = 25
-/** Nobody sang for this long while the room listened: the mic closes. */
-const QUIET_LIMIT_SECONDS = 60
 /** The halo at the goal, of the brim's full shine. */
 export const GOAL_SHINE = 0.5
-
-/** The singer's own note, when the room can offer it. */
-function offerable(midi: number): boolean {
-  return midi >= HOLD_TARGET_MIN_MIDI && midi <= HOLD_TARGET_MAX_MIDI
-}
 
 export function useLongNoteController(): LongNoteController {
   const capture = useLongNoteCapture()
@@ -122,15 +116,9 @@ export function useLongNoteController(): LongNoteController {
   }
 
   // ── Timers that belong to the screen ───────────────────────
-  let alive = true
-  const timers = new Set<ReturnType<typeof setTimeout>>()
-  const later = (ms: number, fn: () => void): void => {
-    const id = setTimeout(() => {
-      timers.delete(id)
-      if (alive) fn()
-    }, ms)
-    timers.add(id)
-  }
+  // The screen's life (room-kit room-life.ts): its timers from here, its
+  // watch once the room's leave and stop exist.
+  const life = createRoomLife()
 
   // ── Merc ───────────────────────────────────────────────────
   let voice: MercVoice = {
@@ -159,16 +147,17 @@ export function useLongNoteController(): LongNoteController {
     LANTERN_LEVELS,
     () => windowOpen || scriptActive(),
   )
-  /** The last voice the listen heard, on now()'s clock. */
-  let heardAt = 0
-  let loop = 0
+  const loop = createFrameLoop(screenFrame, {
+    alive: life.alive,
+    running: () => windowOpen,
+  })
   const chips = createChipFollower()
   let asleep = false
   /** The singer's own note was just named: the first lock says so. */
   let foundPending = false
   // Merc's state and place; after a cheer he sings along with the voice.
   const merc = createMercMoves({
-    later,
+    later: life.later,
     still: () => scripted?.still === true || prefersReducedMotion(),
     afterCheer: () => {
       if (!windowOpen) return null
@@ -184,6 +173,14 @@ export function useLongNoteController(): LongNoteController {
       ? (performance.now() - windowStartedAt) / 1000
       : scripted.now()
   }
+  /**
+   * A minute with no voice while the room listens, on the take's own clock
+   * (now(), the one its frames are dated on), not the wall's.
+   */
+  const quiet = createQuietWatch({
+    limitSeconds: QUIET_LIMIT_SECONDS,
+    clock: secondsClock(now),
+  })
 
   const clearChip = (): void => {
     chips.reset()
@@ -201,7 +198,8 @@ export function useLongNoteController(): LongNoteController {
     if (scripted === null) capture.startWindow()
     level.take(scripted?.preset)
     windowStartedAt = performance.now()
-    heardAt = 0
+    // The take's start counts as heard: its quiet minute starts here.
+    quiet.heard(0)
     engine = createHoldState()
     processed = 0
     heardFrom = 0
@@ -216,7 +214,7 @@ export function useLongNoteController(): LongNoteController {
       clearChip()
     })
     windowOpen = true
-    if (loop === 0) loop = requestAnimationFrame(tick)
+    loop.start()
   }
 
   const closeWindow = (): PitchFrame[] => {
@@ -444,30 +442,29 @@ export function useLongNoteController(): LongNoteController {
   /** A minute with no voice while the room listens: the mic closes. */
   const restIfQuiet = (): void => {
     if (untrack(state).phase !== 'listen') return
-    if (voice.voiced) heardAt = now()
-    else if (now() - heardAt > QUIET_LIMIT_SECONDS) {
+    if (voice.voiced) quiet.heard()
+    else if (quiet.quiet()) {
       cancel()
       say('rest')
     }
   }
 
-  function tick(): void {
-    loop = 0
-    if (!alive) return
+  /**
+   * One screen frame while the take is open (frame-loop.ts). A false start
+   * in it opens the next take, and with it the next frame.
+   */
+  function screenFrame(): void {
     const { phase, targetMidi } = untrack(state)
-    if (windowOpen && (phase === 'listen' || phase === 'hold')) {
-      if (scripted !== null) {
-        follow(scripted.frames(), scripted.targetMidi)
-      } else {
-        const frames = capture.peekFrames()
-        loudness = newestLevel(frames)
-        if (targetMidi === null) findNote(frames)
-        else follow(frames, targetMidi)
-        restIfQuiet()
-      }
+    if (phase !== 'listen' && phase !== 'hold') return
+    if (scripted !== null) {
+      follow(scripted.frames(), scripted.targetMidi)
+    } else {
+      const frames = capture.peekFrames()
+      loudness = newestLevel(frames)
+      if (targetMidi === null) findNote(frames)
+      else follow(frames, targetMidi)
+      restIfQuiet()
     }
-    // A false start inside this tick may already have scheduled the next.
-    if (alive && windowOpen && loop === 0) loop = requestAnimationFrame(tick)
   }
 
   // ── What the singer does ───────────────────────────────────
@@ -489,7 +486,9 @@ export function useLongNoteController(): LongNoteController {
     // only if this start still stands: the singer may have left the room,
     // or the app (stopListening), while it played.
     const stands = (): boolean =>
-      alive && untrack(state).phase === 'starting' && untrack(state).run === run
+      life.alive() &&
+      untrack(state).phase === 'starting' &&
+      untrack(state).run === run
     const opened =
       targetMidi === null
         ? capture.acquire()
@@ -498,7 +497,7 @@ export function useLongNoteController(): LongNoteController {
             .then(() => (stands() ? capture.acquire() : undefined))
     void opened.then(
       () => {
-        if (!alive) return
+        if (!life.alive()) return
         dispatch({ type: 'mic-ready', run })
         if (untrack(state).phase !== 'listen') return
         beginListening(moment)
@@ -506,7 +505,7 @@ export function useLongNoteController(): LongNoteController {
         if (document.visibilityState === 'hidden') stopListening()
       },
       (error: unknown) => {
-        if (!alive) return
+        if (!life.alive()) return
         dispatch({
           type: 'mic-failed',
           run,
@@ -603,7 +602,7 @@ export function useLongNoteController(): LongNoteController {
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
     sayIntro()
-    later(1100, () => {
+    life.later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
     })
   })
@@ -643,35 +642,29 @@ export function useLongNoteController(): LongNoteController {
     merc.put('idle', 'beside')
   }
 
-  // The clock stops with the page, so frames that resumed later would also
-  // count the gap as held.
-  const onVisibility = (): void => {
-    if (document.visibilityState === 'hidden') leave()
-  }
-  document.addEventListener('visibilitychange', onVisibility)
-  // Or with the page still showing: the clock's park (room-kit app-leave.ts).
-  const stopAppLeave = onAppLeave(leave)
-
-  // The screen stays on while the singer's take listens, and while the
-  // demo plays (its own say: not on its end card).
-  const awake = createScreenAwake()
-  createEffect(() => {
-    const { phase } = state()
-    awake.set(
-      scriptActive() ? demoPlaying() : phase === 'listen' || phase === 'hold',
-    )
-  })
-
-  // The app's mic watchdog: the icon is on while the room listens, and a
-  // microphone that died under it ends the take the same way.
-  const unregisterIndicator = registerMicIndicator(
-    'long-note-lantern',
-    () => {
-      const phase = untrack(state).phase
-      return !demoOn() && (phase === 'listen' || phase === 'hold')
+  // Leaving the page, or the app, ends the take (room-kit room-life.ts):
+  // the clock stops with the page, so frames that resumed later would also
+  // count the gap as held. The screen stays on while the singer's take
+  // listens, and while the demo plays (its own say: not on its end card);
+  // the rail is this room's own (enterHold). The app's mic watchdog: the
+  // icon is on while the room listens, and a microphone that died under it
+  // ends the take the same way.
+  life.watch({
+    leave,
+    listening: () => {
+      const { phase } = state()
+      return phase === 'listen' || phase === 'hold'
     },
-    stopListening,
-  )
+    demo: { on: scriptActive, playing: demoPlaying },
+    mic: {
+      exercise: 'long-note-lantern',
+      on: () => {
+        const phase = untrack(state).phase
+        return !demoOn() && (phase === 'listen' || phase === 'hold')
+      },
+      died: stopListening,
+    },
+  })
 
   // ── The demo's way in ──────────────────────────────────────
   /** What the lantern shows right now, to ease on from. */
@@ -746,17 +739,11 @@ export function useLongNoteController(): LongNoteController {
   }
 
   onCleanup(() => {
-    alive = false
-    document.removeEventListener('visibilitychange', onVisibility)
-    stopAppLeave()
-    unregisterIndicator()
-    if (loop !== 0) cancelAnimationFrame(loop)
+    loop.stop()
     lantern.stop()
-    for (const id of timers) clearTimeout(id)
-    timers.clear()
     windowOpen = false
     setExerciseFocus(false)
-    awake.set(false)
+    life.dispose()
   })
 
   return {

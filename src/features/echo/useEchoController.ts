@@ -31,20 +31,20 @@
 // `script` (scripted-take.ts): frames in place of the mic, Merc's call on
 // the take's own clock, and nothing kept, said or felt.
 
-import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
-import { onAppLeave } from '@/components/room-kit/app-leave'
+import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves, HOP_MS } from '@/components/room-kit/merc-moves'
+import { createQuietWatch, WALL_CLOCK } from '@/components/room-kit/quiet-watch'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
-import { createScreenAwake } from '@/components/room-kit/screen-awake'
+import { offerable, QUIET_LIMIT_SECONDS, SILENT_VOICE, } from '@/components/room-kit/room-constants'
+import { createRoomLife } from '@/components/room-kit/room-life'
 import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_ECHO_STARS } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
-import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, } from '@/lib/hold/hold-target'
 import { settleLiveNote } from '@/lib/hold/settle-note'
 import type { MercVoice } from '@/lib/merc/sim'
-import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { EchoPhrase } from '@/lib/sequence/phrase-bank'
@@ -56,13 +56,12 @@ import type { PhraseTake } from '@/lib/sequence/sequence-metrics'
 import { sequenceMetrics } from '@/lib/sequence/sequence-metrics'
 import { rememberedEchoRoot } from '@/stores/echo-store'
 import type { ExerciseLevel } from '@/stores/exercise-level'
-import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { CallNote, EarlyWatch } from './early-singing'
 import { centsOff, NO_EARLY, pitchOf, watchEarly } from './early-singing'
 import { preloadEchoResult } from './echo-art'
 import type { EchoController, EchoControllerOptions, EchoSummary, } from './echo-controller-contract'
-import { CALL_LEAD_SECONDS, DEMO_PHRASE_SHOW_MS, PHRASE_SHOW_MS, QUIET_LIMIT_SECONDS, SETTLED_LEAD_SECONDS, YOUR_TURN, } from './echo-controller-contract'
+import { CALL_LEAD_SECONDS, DEMO_PHRASE_SHOW_MS, PHRASE_SHOW_MS, SETTLED_LEAD_SECONDS, YOUR_TURN, } from './echo-controller-contract'
 import type { PlatePoint } from './echo-geometry'
 import type { EchoEvent, EchoState } from './echo-machine'
 import { echoReducer, initialEchoState, isRunPhase } from './echo-machine'
@@ -93,19 +92,6 @@ const ECHO_LEVEL_IDS: Readonly<Record<ExerciseLevel, EchoLevelId>> = {
   learning: 'learning',
   singer: 'singer',
   professional: 'professional',
-}
-
-const SILENT_VOICE: MercVoice = {
-  voiced: false,
-  cents: 0,
-  level: 0,
-  steady: 0,
-  midi: 57,
-}
-
-/** The singer's own note, when the room can start its phrases there. */
-function offerable(midi: number): boolean {
-  return midi >= HOLD_TARGET_MIN_MIDI && midi <= HOLD_TARGET_MAX_MIDI
 }
 
 export function useEchoController(
@@ -152,20 +138,14 @@ export function useEchoController(
   }
 
   // ── Timers that belong to the screen ───────────────────────
-  let alive = true
-  const timers = new Set<ReturnType<typeof setTimeout>>()
-  const later = (ms: number, fn: () => void): void => {
-    const id = setTimeout(() => {
-      timers.delete(id)
-      if (alive) fn()
-    }, ms)
-    timers.add(id)
-  }
+  // The screen's life (room-kit room-life.ts): its timers from here, its
+  // watch once the room's leave and stop exist.
+  const life = createRoomLife()
 
   // ── Merc ───────────────────────────────────────────────────
   let voice: MercVoice = SILENT_VOICE
   const merc = createMercMoves({
-    later,
+    later: life.later,
     still: prefersReducedMotion,
     afterCheer: () => (isRunPhase(phase()) && !demoOn() ? 'listen' : 'idle'),
   })
@@ -175,7 +155,7 @@ export function useEchoController(
     face += 1
     const mine = face
     merc.mood('lock')
-    later(LOCK_FACE_MS, () => {
+    life.later(LOCK_FACE_MS, () => {
       if (mine === face && phase() === 'response') merc.mood('listen')
     })
   }
@@ -191,8 +171,6 @@ export function useEchoController(
   let windowStartedAt = 0
   /** The capture loop runs: a call, a response or the settle is heard. */
   let listening = false
-  let loop = 0
-  let lastVoiceAt = 0
   /** How loud the newest frame is, 0..1, for the mic's ring. */
   let loudness = 0
   /** Voice over the call, off Merc's note: shown once per call. */
@@ -244,16 +222,24 @@ export function useEchoController(
     )
   }
 
+  const loop = createFrameLoop(screenFrame, {
+    alive: life.alive,
+    running: () => listening,
+  })
   const startLoop = (): void => {
     listening = true
-    if (loop === 0) loop = requestAnimationFrame(tick)
+    loop.start()
   }
   const stopLoop = (): void => {
     listening = false
     loudness = 0
-    if (loop !== 0) cancelAnimationFrame(loop)
-    loop = 0
+    loop.stop()
   }
+  /** A minute with no voice during a run, on the wall clock. */
+  const quiet = createQuietWatch({
+    limitSeconds: QUIET_LIMIT_SECONDS,
+    clock: WALL_CLOCK,
+  })
 
   /** Open a capture window: the frames' clock starts now. */
   const openWindow = (): void => {
@@ -406,7 +392,7 @@ export function useEchoController(
     const pitch = pitchOf(frame)
     if (pitch === null) voice = { ...voice, voiced: false, level: 0 }
     else {
-      lastVoiceAt = performance.now()
+      quiet.heard()
       hearVoice(frame, pitch)
     }
     if (phase() === 'call') noteEarly(frame, pitch)
@@ -435,7 +421,7 @@ export function useEchoController(
     processed = frames.length
     const pitch = pitchOf(frames[frames.length - 1])
     if (pitch !== null) {
-      lastVoiceAt = performance.now()
+      quiet.heard()
       voice = { ...SILENT_VOICE, voiced: true, level: 0.6, midi: pitch }
     }
     const heard = settleLiveNote(frames)
@@ -462,14 +448,13 @@ export function useEchoController(
 
   /** A minute with no voice during a run: it stops, and the mic closes. */
   const restIfQuiet = (): void => {
-    if (performance.now() - lastVoiceAt <= QUIET_LIMIT_SECONDS * 1000) return
+    if (!quiet.quiet()) return
     dropRun('rest')
     say('rest')
   }
 
-  function tick(): void {
-    loop = 0
-    if (!alive || !listening) return
+  /** One screen frame while the room listens (frame-loop.ts). */
+  function screenFrame(): void {
     if (scripted !== null) follow(scripted.frames())
     else {
       const frames = capture.peekFrames()
@@ -478,7 +463,6 @@ export function useEchoController(
       else follow(frames)
       if (listening) restIfQuiet()
     }
-    if (alive && listening && loop === 0) loop = requestAnimationFrame(tick)
   }
 
   /** The run's five phrases around the window's root, at the run's level. */
@@ -513,14 +497,14 @@ export function useEchoController(
       if (demoTake === null) haptics.success()
       const still = demoTake?.still === true || prefersReducedMotion()
       merc.set(still ? 'lock' : 'hop')
-      later(HOP_MS, () => {
+      life.later(HOP_MS, () => {
         if (phase() === 'between') merc.set('idle')
       })
     } else {
       merc.set('idle')
     }
     if (demoTake === null) {
-      later(PHRASE_SHOW_MS, nextPhrase)
+      life.later(PHRASE_SHOW_MS, nextPhrase)
       return
     }
     demo.phraseEnded(demoTake, take)
@@ -587,7 +571,7 @@ export function useEchoController(
   const openMic = (): void => {
     const { run } = untrack(state)
     const stands = (): boolean =>
-      alive && phase() === 'starting' && untrack(state).run === run
+      life.alive() && phase() === 'starting' && untrack(state).run === run
     void capture
       .acquire()
       // A take the app's leaving dropped meanwhile unlocks nothing.
@@ -601,7 +585,7 @@ export function useEchoController(
             return
           }
           audio = ctx
-          lastVoiceAt = performance.now()
+          quiet.heard()
           const window = knownWindow()
           const rooted = window.source !== 'preset'
           dispatch({ type: 'mic-ready', run, rooted })
@@ -678,37 +662,28 @@ export function useEchoController(
     // Merc's voice loads as the singer comes in, before the first call.
     if (options.voice === undefined) void preloadMercVoice()
     sayIntro()
-    later(1100, () => {
+    life.later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
     })
   })
 
-  // The clock stops with the page, and a run must not go on without the
-  // singer hearing it.
-  const onVisibility = (): void => {
-    if (document.visibilityState === 'hidden') leave()
-  }
-  document.addEventListener('visibilitychange', onVisibility)
-  // Or with the page still showing: the clock's park (room-kit app-leave.ts).
-  const stopAppLeave = onAppLeave(leave)
-
+  // Leaving the page, or the app, drops a run (room-kit room-life.ts).
   // The screen stays on, and the rail out of reach, while a run is on;
   // the screen stays on while the demo plays too (its own say: not on its
   // card or its end), but the rail stays: a demo can be left at any time.
-  const awake = createScreenAwake()
-  createEffect(() => {
-    const running = isRunPhase(state().phase) && !scriptActive()
-    awake.set(scriptActive() ? demoPlaying() : running)
-    setExerciseFocus(running)
-  })
-
   // The app's mic watchdog: the icon is on while the run hears the
   // singer, and a microphone that died under it stops the run.
-  const unregisterIndicator = registerMicIndicator(
-    EXERCISE_ECHO_STARS,
-    () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
-    stop,
-  )
+  life.watch({
+    leave,
+    listening: () => isRunPhase(state().phase) && !scriptActive(),
+    demo: { on: scriptActive, playing: demoPlaying },
+    holdsFocus: true,
+    mic: {
+      exercise: EXERCISE_ECHO_STARS,
+      on: () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
+      died: stop,
+    },
+  })
 
   // ── The demo's way in (scripted-take.ts) ───────────────────
   const demo = createScriptedRoom(
@@ -750,23 +725,16 @@ export function useEchoController(
       scene: setScene,
       merc: merc.set,
       cheer: merc.cheer,
-      later,
+      later: life.later,
       mark,
     },
     DEMO_PHRASE_SHOW_MS,
   )
 
   onCleanup(() => {
-    alive = false
     stopLoop()
     call?.sound.stop()
-    for (const id of timers) clearTimeout(id)
-    timers.clear()
-    document.removeEventListener('visibilitychange', onVisibility)
-    stopAppLeave()
-    unregisterIndicator()
-    awake.set(false)
-    setExerciseFocus(false)
+    life.dispose()
   })
 
   return {
