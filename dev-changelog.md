@@ -9,6 +9,393 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.20] - 2026-10-18
+
+158 commits since `v0.9.19` (d6f4a945e) before this release PR, from 43 PRs,
+on 87 first-parent entries. 25 PRs came in as merge commits: #1037 to #1066
+(#1050 11 commits, #1058 8, #1046 5, #1055 4, #1047, #1049 and #1060 3 each,
+#1037, #1040, #1051, #1053, #1059, #1061, #1064 and #1066 2 each, and #1038,
+#1039, #1041, #1044, #1052, #1054, #1056, #1057 and #1063 1 each) and #1077
+(9). The other 18 were rebased onto `main`: #1032 (6), #1042 (4), #1043 (2),
+#1045 (1), #1062 (3), #1065 (1), #1067 (13), #1069 (2), #1070 (2), #1071 (2),
+#1072 (2), #1073 (5), #1074 (2), #1075 (2), #1076 (2), #1078 (3), #1079 (8)
+and #1080 (2). Every commit came through a PR. #1035 and #1036 are in
+`v0.9.19`: #1036 is its release commit, and #1035 merged before it.
+
+On the web, the release is:
+
+- #1067's copy fixes: Karaoke Night, Ear Lab's Hairline, Glass and Drum Night
+  without em dashes or scheduler words, and a share card that fills its frame.
+- #1079's layout fixes: Drum Night's voice pill and kit drawer, and Hairline's
+  card, instrument and tour offer.
+- #1032's review fixes to the key change, #1042's host-only Jam room messages,
+  #1043's install screenshots, #1059's song card menu and #1062's Karaoke
+  Night share titles and llms.txt.
+- The October security review, #1069 to #1078, with its test scope in #1080.
+  Two of the nine change what a person sees: a sync link waits for Connect
+  (#1075), and a Google Drive connection is finished in the app on the
+  account that started it (#1078). #1072 also changes a rare case: a code
+  sign-in that confirms an inbox removes a password, sessions and passkeys
+  set on that address before it was proven.
+- #1065, the CSP's allowance for Cloudflare's Web Analytics beacon.
+
+The rest is the native app: the four premium rooms (Echo, Long note, Lip roll,
+Ng slides), the Cloud offer and the accounts around it, Settings, the native
+CSS and #1077's notices. The rooms are compiled in only where
+`PREMIUM_EXERCISES` is true (`src/lib/native-build.ts`: it equals
+`KARAOKE_IMPORT`, which needs `IS_NATIVE_BUILD`), and they mount only from
+`apps/mercurypitch`. A `build:tours` web build of 1d9ca6fd5 carries none of
+their lines ("That run stopped when you left", "Start on a note that feels
+easy", "Merc sings a phrase"). #1049 and #1053 answer only the app
+differently.
+
+### Release steps (prod)
+
+1. **No migration.** Nothing under `workers/db-worker/migrations` changed
+   since `v0.9.19`; the newest file is still `0070_natural_keys.sql`. The
+   pre-flight in `docs/integration-2026-07-release-handoff.md` section 7 has
+   nothing to apply. `auth_ratelimit` rows keyed by a raw IPv6 address
+   (before #1073) are never read again and expire within 24 hours.
+2. **No Google OAuth secret put** (prod-upd step 6). `GOOGLE_CLIENT_ID` did
+   not change in any block of `workers/db-worker/wrangler.jsonc`. The file's
+   one change since `v0.9.19` is #1049's: `APP_GIFT_SONGS: "5"` in the dev
+   block, and a comment in the prod block saying it is left unset there.
+   Nothing changed in the Jam worker's config.
+3. **Worker code, no new variable or secret.** The tag's `deploy-db-prod`
+   job deploys the DB worker with #1049, #1053, #1072, #1073, #1076 and #1078,
+   and the Jam worker with #1074. The app's own worker (`src/worker.ts`)
+   carries #1069's UVR bridge change. With `APP_GIFT_SONGS` unset on prod,
+   the launch gift is off and `GET /api/billing/promo/featured` answers
+   `appGift: null`. `RUNPOD_AUDIO_URL_ALLOWED_HOSTS` stays unset.
+   `runpod/handler.py`'s guard reaches RunPod only when its image is rebuilt;
+   no workflow here deploys it.
+4. **#1076 is a contract change:** `GET /api/userProfiles` (list and count)
+   is 401 without a token and returns only the caller's own row with one. A
+   profile by id stays public. No reader in this repository uses the
+   anonymous list.
+5. **Dev walk and tours.** `docs/security-review-2026-10-testing.md`
+   section 4 is the dev walk for the nine fixes, and section 6 the gate
+   before `/prod-upd`. Then walk the tours on `main` (Release Tours,
+   prod-upd step 3b); the baseline is 0 misses.
+6. **Push the tag `v0.9.20`.** `pnpm run og:versions` on this PR stamped 13
+   cards with no change: #1067 committed `og-image.png` at `?v=fca3ba4d`
+   with its stamp, and the other 12 did not move.
+7. **After the tag:** the analytics `page_location` check (section 3.2 of
+   the security doc) on mercurypitch.com, and `source` on prod's
+   `POST /api/jam/ice` for a live room, which must be `turn` where the prod
+   TURN key is set. Run the Jam two-peer check before TURN is turned on
+   anywhere: the client now fetches ICE as it builds a peer connection.
+
+### Web: plain words in four rooms, and a share card without bands (#1067)
+
+From the 0.9.19 clips on the irchiinnuss room page. One commit per fix, then
+eight after review.
+
+- **Karaoke Night.** Title and artist meet at a middle dot: the stage title
+  reads `Violet Light · MercuryPitch Demo`, and the tab title while playing
+  (the shared `StemMixer`) `Violet Light · MercuryPitch Demo | MercuryPitch`.
+  Every em dash on the landing, the rail, the phone stage and the stem
+  mixer's toasts became a full stop, colon or comma. Example rows are named
+  `${artist} · ${title}`; seeding renames a row only while its name is
+  exactly the old `${artist} — ${title}` default, on web and native.
+  `parseArtistTitle` (`src/lib/lyrics-service.ts`) now splits at the middle
+  dot first, so lyrics lookups for those rows get an artist again.
+- **Ear Lab Hairline.** Prompts and verdicts read as sentences ("Right. The
+  first was higher by 50.0¢.", "Two tones. Which one was higher?"). The `—`
+  placeholder for a reading not taken stays.
+- **Glass.** Coach lines, the landing, How it works, results, the share text
+  and the card headline ("SHATTERED, FIRST TRY"). The three `—`
+  placeholders and two console logs stay.
+- **Drum Night.** The session line is `Built-in groove · 29 hits · 84 BPM`;
+  the score note is "The score is playing." and names the backup synth only
+  when a sampled kit fell back (on Mercury Synth every hit is the synth by
+  design); the score subtitle counts hits and the bars the sheet draws
+  (`29 hits · 2 bars · 84 BPM`); kit status, coaching, the guide and the
+  Play and Stop names lose "take clock", "authored" and "articulations". The
+  scheduler's counts moved to `data-diagnostics` on the note.
+- **The share card.** `public/og-image.png` was the key visual's 2.4:1 art
+  inside its own letterbox, with 65 near-black rows top and bottom.
+  `scripts/generate-og-image.mjs` now renders it from
+  `assets/og-backdrops/cosmic-terminator.jpg` (the art band, cut losslessly
+  from the master) at 1200 x 630 with no band rows: `?v=411005dd` to
+  `?v=fca3ba4d`. Its alt text describes what the card shows.
+  `src/seo/og-image-frame.test.ts` fails on the old card.
+- **Share tags on boot** (`src/lib/og-tags.ts`) use the stamped card,
+  index.html's descriptions and the title `MercuryPitch: See Your Voice, Sing
+Karaoke, Improve Every Take` (index.html's `og:title` and `twitter:title`
+  changed to match). A shared melody's description takes "An" before 8, 11,
+  18, 80 and 800.
+
+### Web: Drum Night's voice pill and kit drawer, and Hairline's card, instrument and tour offer (#1079)
+
+- **f. The voice pill clears Kit.** It sat on Drum Night's rail Kit button
+  (1554 px² at 1440 x 900). A new `--voice-pill-inset-bottom` in
+  `VoiceControlHud.module.css` (0 by default, so no other room moves) lifts
+  it 82 px above Kit where the rail shows and the screen is over 520 px tall;
+  from 721 to 768 px wide it takes the absent tab bar back out. Still as on
+  main: the hi-hat pad on a phone, and Kit on screens 520 px tall or less.
+- **g. Hairline's card shows its whole paragraph** where five lines hold it
+  (1440 x 900, 1280 x 800), with no More. `descriptionLines` on
+  `ThresholdDrillView`, through `EarStage` to `InstrumentCard`'s `lines`;
+  three stays the default. The card re-measures on a ResizeObserver and
+  after `document.fonts.ready`, where it used to measure once in `onMount`.
+- **h. The instrument holds still from question to verdict** (it moved 25.8
+  to 44.6 px in a practice run). A run hands `EarStage` a reserve: the
+  question line's sentences and a verdict of the run's starting length,
+  laid out unseen from a `data-reserve` attribute, so screen readers read
+  the console as before. The cost: it moves once, as Practice run starts.
+- **i-1. Opening a drill retires the Ear Lab tour offer**, which sat over
+  Hairline's pads for about 5 s on a phone.
+- **i-2. A kit's name no longer runs into its size** in Drum Night's drawer:
+  the name's column is never narrower than its longest word, and the size
+  wraps.
+
+### Web: the October security review (#1069 to #1078, #1080)
+
+- **#1069:** the UVR bridge (`src/lib/runpod-bridge.ts`, `runpod.ts`) no
+  longer reads a client's `audio_url`, so a signed-in caller cannot make the
+  GPU worker fetch a host of their choosing. `runpod/handler.py` refuses
+  `audio_url` unless its host is in `RUNPOD_AUDIO_URL_ALLOWED_HOSTS`. Its
+  pytest is not in CI.
+- **#1070:** gtag's `page_location` is `origin + pathname + search`, so a
+  reset token or Google redirect JWT in the hash no longer reaches Ads or
+  GA4.
+- **#1071:** sign-out clears the content studio's admin key from
+  `localStorage`.
+- **#1072:** a mailed code that confirms an unverified account clears its
+  `passwordHash`, deletes its sessions and passkeys and bumps
+  `tokenVersion`. TOTP and recovery codes stay, so a second factor is still
+  owed. Open: the confirm-link then Google or Apple variant.
+- **#1073:** anonymous rate limits key an IPv6 address by its /64
+  (`ipRateLimitKey`), across `rateLimitSubject`, the auth limiters, passkey,
+  Apple, newsletter and review access.
+- **#1074:** `POST /api/jam/ice` mints TURN only for `?room=<id>` whose
+  JamRoom reports a live peer (`/internal/room-active`), and answers STUN
+  otherwise. The client asks just before it builds a peer connection.
+- **#1075:** a `#/sync:CODE` link fills in the code and waits for Connect,
+  and a device that is not receiving drops a pushed song.
+- **#1076:** the list and count of an `owner` table (`userProfiles`) are no
+  longer public; see release step 4.
+- **#1078:** the connect-Drive callback seals the refresh token with the
+  starting account (`#gdrive_pending=`, 5 minutes), and
+  `POST /api/auth/drive/finish` stores it only for that account. The Drive
+  client calls moved to `src/db/services/drive-connect-service.ts`.
+- **#1080:** `docs/security-review-2026-10-testing.md`, the test scope and
+  release gate. Its PR body carries a tool attribution line; the commits do
+  not.
+
+### Web: share titles, llms.txt and the CSP (#1062, #1065)
+
+- **#1062:** Karaoke Night's `og:title` and `twitter:title` read "Karaoke
+  Night: Turn any song into karaoke", the approved card's kicker and
+  headline. `public/llms.txt` and the Vocal Remover FAQ say Karaoke Night
+  ships a few example songs under CC BY 4.0.
+- **#1065:** `script-src` in `public/_headers` allows
+  `https://static.cloudflareinsights.com`, which Cloudflare's injected
+  beacon needs; it reports to `/cdn-cgi/rum` under `connect-src 'self'`.
+
+### Web: review fixes for the key change (#1032)
+
+Five findings from #857's review, one commit each, then the agent index.
+
+- **Set A and Set B in the phone's More keep the focus (row 11).** Each row
+  was rebuilt when its point moved, which dropped keyboard and screen-reader
+  focus to the page. `KaraokeMoreSheet.tsx` reads the point inside the row's
+  text.
+- **The voice picker keeps its keys (row 9).** A press on the picker's words
+  left the focus on the page, where Space played the song, A, B, L, S and M
+  changed the mixer, and focus mode's Escape left focus mode with the picker
+  up. `StemMixer.tsx` puts the picker in the keyboard gates beside the score
+  dialog, and `VoiceTypePicker.tsx` takes the focus itself
+  (`tabindex="-1"`).
+- **`use-focus-trap.ts`: the root is not one of its own stops.** From a
+  dialog that holds the focus, Tab goes to the first stop and Shift+Tab to the
+  last, where Shift+Tab used to leave for the page. That holds for every
+  dialog that can take the focus.
+- **Find my key keeps a key moved while it worked (row 10).**
+  `useStemMixerKeyController.ts` notes the key when a fit is asked for; if it
+  moved by the time the fit lands (after the range read or the melody), the
+  fit is said, not applied, and a second press moves to it.
+- **While a song loads (row 7).** The notes row needs an analysable vocal
+  (`analysableVocal()`, the analysis's own test); a tap used to toast "No
+  vocal stem loaded". A new `'loading'` result says the song is still loading
+  where it will be decoded. Where it streams (`streamsStems`, from
+  `useStemMixerAudioController.ts`: a phone, the app's hosted room) the plain
+  "cannot be found on this device" comes at once.
+- **The app's Karaoke room (row 8)**, native only: `KaraokeRoomOptions.tsx`
+  holds Find my key's notices for every song that arrives under the open
+  sheet, not only the one it opened on.
+- Left for later in #1032: row 13 (the spoken loop range's reply) as #857
+  decided. Row 14 is #1042.
+- Known limitation: with the focus on the page behind the picker and the key
+  panel open under it, the first Escape closes the key panel and the picker
+  stays.
+
+### Web: a Jam room's song, drill and transport come only from its host (#1042)
+
+- Row 14 from #857's review, and the same gap in the room's two other
+  host-only messages. Every peer adopted any song manifest (the room's key,
+  its words and the parts), and every guest followed any guest's drill and
+  transport; the host already ignored guests' drill and transport. A modified
+  guest client could move everyone's key (clamped to ±6), swap the words and
+  parts, or play, pause, seek and stop the song for the other guests.
+- `src/lib/jam/service.ts` hands song and drill messages to the store with
+  their sender, the peer whose channel they came in on, as pitch, transport
+  and song-file messages already were. `jam-store.ts`'s `sentByJamHost`
+  compares it with `jamHostPeerId()`, the host the room's Durable Object
+  names. `applyRemoteTransport`'s sender is no longer optional.
+- No race with a change of host: the Durable Object sends `host-changed`
+  before `peer-joined`, and a joining guest learns the host in `room-joined`.
+  A room whose host left takes these messages from nobody. What a peer sends
+  is unchanged, so older clients are unaffected.
+- Tests: `src/tests/jam-room-host-messages.test.ts` and
+  `src/lib/jam/service-message-sender.test.ts` (new). Two browsers on a local
+  Jam worker with real signaling passed the drill run and a 13-check room-key
+  run. Not verified: real phones in a room on dev.
+
+### Web: install screenshots (#1043)
+
+- `public/screenshots/karaoke-narrow.png` re-shot with the phone stage as
+  #857 left it, and `home-wide.png` without the version.
+  `scripts/gen-pwa-screenshots.mjs` hides the version's button (found by
+  `aria-label="Show the changelog"`) as it hides the launch-promo pill, and
+  fails a frame whose text still shows `v<version>`.
+- The karaoke frame's typeface is the shooting machine's `system-ui` (Inter
+  here); pinning it is not done.
+
+### Web: the song card's menu stays inside the card (#1059)
+
+- On `(pointer: coarse)`, the 32 px More button's `::after` (`inset: -8px`)
+  ran 7 px past the card's right edge, so `.session-header`, its top row and
+  its actions were each 7 px wider than their box. It is now
+  `inset: -8px 0 -8px -15px`: the tap area is still 46 x 46 and the button
+  still draws at 32 x 32. Measured on the web Karaoke studio at 390 x 844 and
+  1440 x 900, both themes.
+- `probe-bundle.mjs` on the native bundle went from 305 ok and 4 FAIL to 387
+  ok and 0 FAIL, since the karaoke and landscape walks stop at their first
+  failure.
+
+### Server: the app's launch gift, off on prod (#1049), and the free song's truth (#1053)
+
+- **#1049.** An account made in the native app while the featured promo runs
+  gets `APP_GIFT_SONGS` songs of the app's own: a `creditLedger` row with
+  reason `app-gift`, written in the same D1 batch as the promo claim and only
+  if the claim lands. `signUpFrom(request)` reads the app's origins
+  (`capacitor://localhost`, `https://localhost`) for a sign-up code, Apple,
+  Google and Apple's upgrade of the phone's anonymous identity; never a web
+  sign-up, a sign-in to an existing account or a typed code. The app spends it
+  after the month's free song, the subscription and review access. No schema
+  change: `creditLedger.reason` has no CHECK. Open with the owner: whether it
+  adds to the web's 5 LAUNCH credits or replaces them, and that the origin is
+  the client's word (bounded by the per-address claim, Turnstile, the
+  provider tokens and the promo's cap).
+- **#1053.** The app's `/api/billing/me` songs answer adds `monthly`
+  (`getsFreeSong`, and the free song not switched off), so the app promises
+  a next free song only to an account that gets one. The web's answer is
+  unchanged.
+
+### Native: the premium rooms
+
+- **#1037:** `RoomVolumeHint` reads the volume again every 500 ms while its
+  hint is up and on return to the page; `AudioOutputPlugin.swift` also reads
+  the system volume off a hidden `MPVolumeView` and trusts it once it has
+  moved. A test build's audio census records the session, both volumes,
+  interruptions and route reasons around every mic and context start and
+  stop. Not yet run on a phone.
+- **#1038:** a soft octave under the rooms' low notes, at the classic
+  exercises' curve, moved to `src/lib/low-note-reinforcement.ts`. The classic
+  engine (`audio-engine.ts`, on the web) calls the same functions and its
+  sound does not change; `reference-tone.ts` and `demo-audio.ts` take it as
+  an option, off by default. On a modelled phone speaker it lifts the low
+  notes by 0.0 to 0.2 dB, so it is not the fix for #1033's 14 dB.
+- **#1040:** each room plays through a stage of its own in front of
+  `roomOutput`, cut when the room goes (after its tail) and when a tap starts
+  a parked clock, so a note parked by Control Center no longer plays at the
+  next tap (-11.8 to -22.0 dB before, nothing above -60 dB after).
+- **#1044:** a take or demo ends when Control Center or the notification
+  shade comes down, as on a page hide (owner's rule, 16 Oct). The lease passes
+  the park on through `room-kit/app-leave.ts`; the first Start's microphone
+  prompt holds the clock against a park; `startRoomTone` plays nothing on a
+  clock that is not running. iOS only: Android's shade does not park.
+- **#1046:** Lip roll's Merc buzzes his lips (`LIP_MOUTH` `'buzz'`) and
+  stands with his feet on the voice's line (`MERC_SINK_W`). The shader hash
+  in `scene-shader.test.ts` was re-pinned with it.
+- **#1056:** on a climb, the next dots show over Merc through a window on his
+  front half (`DotsAhead.tsx`).
+- **#1063:** the rooms' roots share `room-kit/RoomSurface.module.css` and
+  every room picture is `draggable={false}`; the native shell turns off
+  selection, the callout and the tap highlight, with fields opted back in.
+  Places that keep selection on purpose (the account email, the friend, jam
+  invite, sync and two-factor codes, the developer report, the portable
+  console) now also spell `-webkit-user-select`. The web's Lightning CSS
+  target already added that prefix.
+
+### Native: the Cloud offer, Keep and accounts
+
+- **#1047:** paywall B v2 (`CloudOffer.tsx`), the gate in front of Import a
+  song (`import-gate.ts`), and a Mercury Pitch Cloud group in Settings
+  (`CloudGroup.tsx`), all behind `KARAOKE_STAGE_2` and `PREMIUM_IMAGES`, so
+  the store build carries none of it.
+- **#1050:** Keep v2, the free-account offer, replaces the account offer
+  sheet, and Settings gets Save your progress; `openKeep` is on the native
+  shell API. The gift row reads #1049's `appGift`.
+- **#1051:** the free song lines name the confirmed email. **#1053** (client
+  half): "Your next free song comes on <day>." only when `monthly` is true or
+  absent.
+- **#1052:** after a sign-in to an existing account, the app asks before it
+  adds this phone's voiceprints (rule D2).
+- **#1057:** a subscription bought signed out follows the sign-in with no
+  Restore tap (`settleCloudAfterSignIn`, RevenueCat `logIn` and `restore`,
+  then its TRANSFER webhook), and never moves another account's. Test builds
+  time each subscription step; `scripts/assert-no-portable-console.mjs`, which
+  also runs in the web build, now fingerprints that panel and its
+  `[subscription]` log.
+
+### Native: Settings and CSS
+
+- **#1054:** Settings' small buttons are 44 px tall.
+- **#1060:** Storage keeps its sizes whole, Devices draws a computer
+  (`ComputerIcon`) for Mac, Windows, ChromeOS and Linux sessions, and the
+  portable console's count reads at 9.32:1 in dark (dev builds only).
+- **#1066:** `build.cssTarget: ['safari16', 'ios16']` for the native build
+  (`NATIVE_CSS_TARGET`), so 83 glass rules gain `-webkit-backdrop-filter` and
+  blur on iOS 16 and 17 (owner accepted the GPU cost, 17 Oct).
+  `src/native-css-target.test.ts` fails when the floor in the config, the
+  pbxproj and `Package.swift` disagree.
+
+### Native: notices (#1077)
+
+- In the native app, an unlock in a premium room goes to one chip under the
+  take's result (`room-kit/UnlockChip.tsx`, `unlock-claims.ts`), and every
+  other notice shows as one pill under the status bar
+  (`apps/mercurypitch/src/shell/NoticePill.tsx`, placed by
+  `notice-pill-place.ts`). `App.tsx` does not mount `<Notifications />` under
+  `IS_NATIVE_BUILD`. The web keeps its toasts and their words.
+
+### Refactors (no behaviour change)
+
+- **#1039:** the Echo, Lip roll and Ng slides controllers back under 800
+  lines (`size.filesOver800` 136 to 133, baseline re-frozen).
+- **#1041:** Ng slides plays through `room-kit/room-tones.ts`;
+  `bridge-tones.ts` is deleted.
+- **#1055:** one glide-room core for Lip roll and Ng slides,
+  `src/components/room-kit/glide/` (`useGlideRoom`).
+- **#1058:** the glide rooms' remaining file pairs folded into room-kit and
+  `src/stores/glide-room-store.ts`.
+- **#1061:** one room life, frame loop and quiet watch for Echo, Long note
+  and the glide core (`room-life.ts`, `frame-loop.ts`, `quiet-watch.ts`,
+  `room-constants.ts`).
+- **#1064:** one mic opening for the three (`room-kit/room-mic.ts`). Found,
+  not fixed: Long note takes late mic answers, so a late success can begin
+  listening again over the demo's take, and a late refusal sets Merc idle.
+  The fix (guard with `stands()`) changes behaviour and belongs in its own PR.
+
+### Tests
+
+- **#1045:** `DrumNightApp.test.tsx` awaits the lazy Drummer Seat kit before
+  striking it; 22 tests had flaked on CI. 15 other tests in the file still
+  fail when run alone.
+
 ## [0.9.19] - 2026-10-16
 
 146 commits since `v0.9.18` (13b4150bd) before this release PR, on 14

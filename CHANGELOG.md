@@ -5,6 +5,48 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.20] - 2026-10-18
+
+Karaoke Night, Hairline, Glass and Drum Night now say things in plain words,
+and Find my key keeps the key you set.
+
+### Changed
+
+- **Find my key keeps the key you set.** Move the key while it is still
+  working and your key stays; it names the key it found instead. Press it
+  again to go there.
+- **Plainer words.** Karaoke Night's title bar and song names use a middle
+  dot ("Josh Woodward · Goodbye to Spring"), Hairline and Glass speak in
+  short sentences ("Take a breath. The glass is listening."), and Drum
+  Night's readouts and score subtitle say what you hear ("29 hits · 2 bars ·
+  84 BPM").
+- **A new share card.** A shared MercuryPitch link shows the logo and the
+  planet across the whole card, with no black bands.
+- **A sync link or QR code waits for you.** It fills in the code, and
+  nothing connects until you press Connect.
+- **New install screenshots.** The karaoke one shows the phone stage as it
+  looks now.
+
+### Fixed
+
+- **Hairline holds still.** The instrument stays put from question to
+  answer, the card shows its whole paragraph on a wide screen, and the Ear
+  Lab tour offer goes away once you open a drill.
+- **Drum Night's voice pill clears the Kit button** and the rest of the rail,
+  and the kit drawer's names no longer run into their sizes.
+- **A Jam room follows only its host** for the song, its key, the drill, and
+  play, pause and stop.
+- **Safer accounts.** Google Drive connects only to the account that
+  started the connection, and confirming your inbox with an emailed code
+  shuts out anyone who registered your address before you.
+- **Find my key and the voice picker.** On a computer, Find my key says when
+  a song is still loading, More waits for the song's vocal before it offers
+  the notes, and a click on "Which is your voice?" no longer lets Space start
+  the song behind it.
+- **Smaller things.** Shift+Tab stays inside a dialog, Set A and Set B in a
+  phone's More keep the focus on the button you pressed, and on a touch
+  screen the menu button on a karaoke song card stays inside the card.
+
 ## [0.9.19] - 2026-10-16
 
 Karaoke songs can now change key, and the mixer has a new playback rail.
