@@ -871,8 +871,25 @@ async function roomSteps(go, room, results, where, { pills }, at) {
     results.failures.push(`${where}: an unlock raised a notice mid-take`)
   await page.locator('[data-testid="shell-pushed-back"]').click()
   await go.hidden(`[data-testid="${room.root}"]`)
-  await go.visible(PLACED)
-  const fallback = await page.locator(PILL).first().textContent()
+  // The pill shows one notice at a time. A notice the room raised before it
+  // was left (the run's save failing against the stand-in, say) is ahead of
+  // the fallback in the queue: tap it away, and expect the unlock next.
+  let fallback = ''
+  const skipped = []
+  for (let turn = 0; turn < 3; turn++) {
+    await go.visible(PLACED)
+    const pill = page.locator(PLACED).first()
+    fallback = (await pill.textContent()) ?? ''
+    if ((await pill.getAttribute('data-unlock')) === 'on') break
+    skipped.push(fallback)
+    await page.locator('[data-testid="notice-pill-body"]').first().click()
+    // The next notice can follow within the exit animation: wait for this
+    // one to go, not for the screen to be empty.
+    await page.waitForFunction(
+      ([sel, was]) => document.querySelector(sel)?.textContent !== was,
+      [PLACED, fallback],
+    )
+  }
   if (fallback !== `New badge: ${FALLBACK.name}`)
     results.failures.push(
       `${where}: after leaving, the pill reads "${fallback}"`,
@@ -982,7 +999,7 @@ async function roomSteps(go, room, results, where, { pills }, at) {
     after: later,
     listed: names.length,
     height: chipBox === null ? null : Math.round(chipBox.height),
-    otherPills: others,
+    otherPills: [...skipped, ...others],
   })
   await page.locator('[data-testid="shell-pushed-back"]').click()
   await go.hidden(`[data-testid="${room.root}"]`)
