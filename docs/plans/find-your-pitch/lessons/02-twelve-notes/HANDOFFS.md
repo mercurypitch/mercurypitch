@@ -4,7 +4,7 @@ The last frame of scene N and the first frame of scene N+1 must show every carri
 same pixels (within 2 px). Values marked **(provisional)** are starting values: the two builders on
 either side of a handoff confirm them in a lab still, then this file is updated and the mark
 removed before either scene is built further. Unmarked values are carried from Lesson 1 or follow
-from arithmetic and are fixed now. Times are the estimates in SCRIPT.md (storyboard v7).
+from arithmetic and are fixed now. Times are the estimates in SCRIPT.md (storyboard v8).
 
 Builder groups (STORYBOARD): [A] S1 to S3, [B] S4 to S6, [C] S7 to S10, [D] S11 to S13, [E] S14,
 [F] S15 to S17.
@@ -123,12 +123,14 @@ this frame:
 ## Inside C: S8 and S9, arcs, pills and bars (provisional)
 
 - S8b's arcs: chrome from the C4 centre (752.73) to the D4 centre (890.91), dashed ink-2 from the B3
-  centre (614.54) to the C4 centre, both with their apex 70 px above the key tops (y 230).
+  centre (614.54) to the C4 centre, both with their apex 70 px above the key tops (y 230). They draw
+  in the order Orange says them: the chrome arc on "C to D" (115.51 to 116.1), the dashed one on
+  "the same step" (117.44 to 118.0).
 - S8c's pills (Outfit 44 px, 60 px tall): "B to C" centred at (614, 180), "C to D" at (890, 180),
   "The same" at (752, 90); "Predict." at the top right (baseline y 200 from x 1180), "WHICH STEP IS
   BIGGER?" under it (378 px). The keyboard is never dimmed.
 - S8d's bars: over B3 and C4 at x 683.64, over C4 and D4 at x 821.82, standing from y 290: one notch
-  to y 210, two notches to y 130.
+  to y 210, two notches to y 130, each growing up from y 290 (130.9 to 131.5 and 132.8 to 133.6).
 - S8e's pills: the same three at 0.7 scale in one row at the top right, right-aligned at x 1800,
   centred on y 180, where "Predict." was; nothing in the kicker lane.
 - S8c's slow push (6 %) and S8e's (4 % more) are both about (752, 300), so S9a starts from the S8
@@ -145,7 +147,11 @@ this frame:
 ## Inside C: S9d and S10, keys to tiles (fixed geometry, provisional timing)
 
 Every key of the octave glides to its tile (the keys outside it have been at 0 since S7b's push).
-Tiles:
+The timing (S9d): on b23's "every key the same width" each key glides to its tile over 1.1 s,
+`power2.inOut`, starting left to right 0.035 s apart (A3 at 162.15, A4 at 162.57), all landed by
+163.7; on "Neighbours, white or black" the twelve "1" brackets appear left to right, one every 0.13
+s (164.07 to 165.6), the three step bars shrinking into theirs; on "always" the B-C and E-F brackets
+flash gold (166.0); on "apart" all twelve pulse together (167.15). Tiles:
 
 - 13 tiles, 112 px wide, 8 px gaps, centres x = 240 + 120 i (A3 240, A♯3 360, B3 480, C4 600, C♯4
   720, D4 840, D♯4 960, E4 1080, F4 1200, F♯4 1320, G4 1440, G♯4 1560, A4 1680), so the row runs from
@@ -164,29 +170,31 @@ Tiles:
   tile (x 184); its hop out left runs 183.6 to 184.2. S10b's 3 % push is about (720, 410) and has
   eased back to 1x by 177.5, before Orange peeks in, so the A3 tile never reaches Orange.
 - "7 + 5 = 12" (Outfit 72 px, 280 px wide) sits in the top layer at the top right, right-aligned at
-  x 1800, baseline y 150 (glyphs from about y 97), from the last tile's landing in S10d until 195.0.
+  x 1800, baseline y 150 (glyphs from about y 97), from the last tile's landing in S10d until
+  195.19, fading out over 194.99 to 195.19.
 - S10e: one 2.0x push that carries (840, 560) to the frame's centre (x' = 960 + 2 (x - 840), y' =
   560 + 2 (y - 560)), 190.0 to 190.9, `power2.inOut`, and holds both pairs: B3 to F4 fill x 128 to
   1792, the tiles from y 280 to 840, their labels at baseline y 792, the B-C join at x 360 and the
-  E-F join at x 1560. It holds until the pull out back to 1x, 194.2 to 195.0, `power2.inOut`. The
-  twelve "1" brackets fade out early in the push, 190.0 to 190.4, and back in late in the pull out,
-  194.6 to 195.0, so none shows in the caption band (at 2x they would sit at y 920, their labels at
-  1020).
+  E-F join at x 1560. It holds until the pull out back to 1x, 194.39 to 195.19, `power2.inOut`,
+  which lands at rest exactly on the cut. The twelve "1" brackets fade out early in the push, 190.0
+  to 190.4, and back in late in the pull out, 194.8 to 195.19, so none shows in the caption band (at
+  2x they would sit at y 920, their labels at 1020).
 - S10e's labels sit above the tiles, on the dark ground: over each join the dashed "?" ring (64 px
   across, centred on y 220) and then "semitone" (Outfit 48 px, 199 px wide) in its place, centred on
   the join at baseline y 252 (B-C x 260 to 460, E-F x 1460 to 1660), clear of "7 + 5 = 12" (which
   ends at y 150). Each ring clears before its label lands: B-C's ring 190.6 to 191.2 (cued once its
-  join has nearly settled), its label from 191.2; E-F's ring 191.9 to 192.5, its label from 192.5.
-  On "no gap" each join flashes once, B-C at 193.1 and E-F at 193.5. Both labels hold until the pull
-  out begins and are gone by 194.4.
+  join has nearly settled), its label from 191.2; E-F's ring 191.56 to 192.5 (in on "E"), its label
+  from 192.5. On "no gap" each join flashes once, B-C at 193.1 and E-F at 193.5. Both labels hold
+  until the pull out begins and are gone by 194.59.
 
 ## C to D: S10 -> S11 at act3 - 0.15 (est. 195.19)
 
 - The tile row at home exactly as in "Inside C: S9d and S10", every tile in its slot, the five dark
-  tiles with no label, the twelve "1" brackets under the row in chrome, back at full by 195.0.
+  tiles with no label, the twelve "1" brackets under the row in chrome, back at full by 195.19.
 - "tone", "semitone", "= 2 semitones", "WHOLE STEP", the returning "?" rings and "7 + 5 = 12" all
-  gone (cleared by 195.0).
-- Camera at rest (scale 1) since 195.0. No Mercs (Orange's hop out ended at 184.2). No kicker.
+  gone (cleared by 195.19).
+- Camera at rest (scale 1): the pull out lands exactly on the cut (195.19). No Mercs (Orange's hop
+  out ended at 184.2). No kicker.
 
 ## Inside D: S11 and S12, the tile framings (provisional)
 
@@ -286,13 +294,15 @@ Tiles:
   monitor's marker, 55 px on the ruler per 100 ¢ on the bar; the marker sits at (cents + 50) / 100
   of the bar's width (FACTS 30). Keyframes, each move `sine.inOut` except the glide, which is linear
   in cents as the sound was: 0 ¢, "A3", 220.0 Hz, at rest to 283.0; +15 ¢ (bead y 811.75, marker at
-  65 %, 221.9 Hz) at 283.6; 0 ¢ at 284.2; -15 ¢ (y 828.25, 35 %, 218.1 Hz) at 284.8; 0 ¢ at 285.4,
+  65 %, 221.9 Hz) at 284.0; 0 ¢ at 284.9; -15 ¢ (y 828.25, 35 %, 218.1 Hz) at 285.9; 0 ¢ at 286.8,
   the name "A3" throughout; "A3" pulses at 285.3 and the bar's -50 and +50 labels at 286.05; the
   glide from 0 ¢ at 287.17 to 50 ¢ (y 792.5, the marker at the bar's right end, 226.4 Hz) at 288.3,
   where the segment's 50 ¢ point flashes, the name flips to "A#3" and the marker jumps to the left
-  end; on to 100 ¢ (A♯3, y 765, the marker centred, 233.1 Hz) at 289.4; at rest to 289.5. Nothing
-  holds still for longer than 0.5 s (the longest rest is the first, 282.5 to 283.0). The cents
-  labels and that bead leave at 289.9, as S13f's push begins.
+  end; on to 100 ¢ (A♯3, y 765, the marker centred, 233.1 Hz) at 289.4; at rest to 289.5. The bead
+  and the marker rest only 282.5 to 283.0, 286.8 to 287.17 and 289.4 to 289.5; v7's quicker nudges
+  left them resting from 285.4 to 287.17, with only the two pulses. The marker is drawn in ink at
+  every reading, never the app's green (within 10 cents), yellow (sharp) or blue (flat) (FACTS 30).
+  The cents labels and that bead leave at 289.9, as S13f's push begins.
 
 ## D to E: S13 -> S14 at b41 (est. 291.90)
 
@@ -317,13 +327,16 @@ from that rest frame by drawing the lanes:
   (320.3), 50 px above the ruler line's top (B3, y 200). The chips "one octave up" (S14c) and then
   "A3 or A4" (S14f) sit above the lane labels, right-aligned at x 540, baseline y 110: 40 px above
   the title's baseline, so neither reads as part of the title.
-- The app's "you are here" marker, drawn as the app draws it (FACTS 28): a dot with a soft glow 14
-  px inside the canvas's left edge (x 574) at the singer's current height, a faint dashed guide
-  running right from it, and a dark pill from 25 px in (x 585) naming the note. It leaves with the
-  title.
+- The app's "you are here" marker, drawn where and as the app draws it (FACTS 28), in the film's
+  canvas colours: a white dot with a soft violet glow, the singer's colour, never the app's default
+  green (which reads as in tune, Lesson 3's idea) nor its sing room's blue (blue Merc's note in this
+  film), 14 px inside the canvas's left edge (x 574) at the singer's current height, a faint dashed
+  guide running right from it, and a dark pill from 25 px in (x 585) naming the note. It leaves with
+  the title.
 - The monitor in S14d and S14e, its base drawing at 0.8 scale (S13f showed it at 1.4): a box from x
   1400 to 1820 and y 160 to 440, 30 px of padding round its 360 px title, above Orange (body from y
-  591). It slides in 306.4 to 306.8 and out 319.9 to 320.3.
+  591). It slides in 306.4 to 306.8 and out 319.9 to 320.3. Its marker is drawn in ink at every
+  reading, as in S13f (FACTS 30).
 - S14c's lane labels change out, then in: the A3 set fades out 301.8 to 302.0 and "G#4 A4 A#4 B4"
   fades in 302.0 to 302.2.
 - S14d's push: 2 % about the marker (574, 520), 306.4 to 307.4, `power2.inOut`, so the lanes end at
