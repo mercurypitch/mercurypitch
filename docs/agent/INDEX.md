@@ -95,12 +95,12 @@ These are the rules that break things when ignored.
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.9k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
-| `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 4.7k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
+| `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 4.2k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.0k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
-| `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 4.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 3.9k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
+| `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.3k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 2.0k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
@@ -232,8 +232,7 @@ These are the rules that break things when ignored.
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
 | [echo-store.ts](../../src/stores/echo-store.ts) | 150 | Echo's records: the best at each level, the singer's root, the demo seen The live table of Echo's bests (its shape, its ordering and how... |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
-| [lip-roll-store.ts](../../src/stores/lip-roll-store.ts) | 150 | Lip roll's records: the best at each level, the singer's easy note The live table of Lip roll's bests (its shape, its ordering and how a... |
-| [ng-slides-store.ts](../../src/stores/ng-slides-store.ts) | 150 | Ng slides' records: the best at each level, the singer's easy note The live table of Ng slides' bests (its shape, its ordering and how a... |
+| [glide-room-store.ts](../../src/stores/glide-room-store.ts) | 150 | A glide room's records: its bests, the easy note, the demo seen What each glide room keeps, made once for both (Lip roll's lip-roll-store... |
 | [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 150 | Practice Timer Store — the voice-rest clock Off by default. |
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 150 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
 | [sync-ui-store.ts](../../src/stores/sync-ui-store.ts) | 150 | ── Sync UI state Whether the sync dialog is showing, whether a session is alive behind it, and — in the words the surfaces say out loud —... |
@@ -248,6 +247,8 @@ These are the rules that break things when ignored.
 | [exercise-level.ts](../../src/stores/exercise-level.ts) | 50 | Exercise level — how strictly the premium exercises hear a voice The level is the accuracy tier Settings already has: Learning, Singer or... |
 | [karaoke-key-store.ts](../../src/stores/karaoke-key-store.ts) | 50 | Karaoke key store — the key each song was last sung in A per-song key shift (semitones, −6..+6), remembered on this device so a song come... |
 | [karaoke-settings-store.ts](../../src/stores/karaoke-settings-store.ts) | 50 | Karaoke Settings Store — the preferences the Karaoke tab actually honours These used to live behind the cogwheel in the Karaoke tab heade... |
+| [lip-roll-store.ts](../../src/stores/lip-roll-store.ts) | 50 | Lip roll's records: the best at each level, the singer's easy note The glide rooms' records (glide-room-store.ts) under Lip roll's keys:... |
+| [ng-slides-store.ts](../../src/stores/ng-slides-store.ts) | 50 | Ng slides' records: the best at each level, the singer's easy note The glide rooms' records (glide-room-store.ts) under Ng slides' keys:... |
 | [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 50 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
 | [playback-store.ts](../../src/stores/playback-store.ts) | 50 | Playback Store — Transport and playback state |
 | [promo-store.ts](../../src/stores/promo-store.ts) | 50 | promo-store — the promo code the app offers with one click The server decides which code is featured and whether it is open (GET /api/bil... |
