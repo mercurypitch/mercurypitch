@@ -9,7 +9,7 @@ audience: 'Adult and teen beginners who sing or want to, with no theory beyond L
 destination: youtube, landing-page
 aspect: 1920x1080
 sizes: 1920x1080
-length: about 6m50s (estimated at 2.6 words a second; cues.json total once voiced)
+length: 7m11s voiced (cues.json total 431.08 s); the owner allows up to 10 minutes (17 October 2026)
 fps: 60
 language: en-GB
 project_dir: output/motion/lesson-02
@@ -63,7 +63,8 @@ D6), near the MOOC engagement median of about 6 minutes, and about two minutes l
 (4:57), which had one refutation and a single sung gap. Nothing is cut to hit a number: each act is
 one idea (rule 8); the round 1 critics' fixes cost about 18 s net, and round 2 took back 4 s with
 three trims that cost no teaching. If the voiced cut runs past 7:00, DECISIONS 56 lists what goes
-first.
+first. Voiced with the owner's ElevenLabs voices (17 October 2026), it runs 7:11, at 2.43 words a
+second; the owner allows up to 10 minutes, so nothing is cut.
 
 ### Misconceptions (orange voices them sincerely; a demonstration breaks them)
 
