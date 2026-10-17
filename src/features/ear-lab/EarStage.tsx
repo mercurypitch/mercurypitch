@@ -47,6 +47,14 @@ export interface LastCall {
   label?: string
 }
 
+/** What a run's console keeps room for, from its first question on. */
+export interface StageReserve {
+  /** Every sentence the question line can show in this run. */
+  lines: readonly string[]
+  /** A verdict at its longest, for the Last call plate's slot. */
+  lastCall: LastCall
+}
+
 interface EarStageProps {
   /** DOM hook (tests, the audit): data-ear-drill. */
   drillId: string
@@ -80,6 +88,11 @@ interface EarStageProps {
   lastCall?: () => LastCall | null
   /** The pads are armed: the Last call plate's rail ticks brass. */
   armed?: () => boolean
+  /** Set while a run is on: the console's longest lines. The stage lays
+   *  them out unseen in the slots they will fill, and keeps the key
+   *  hint's row, so the console is as tall at the first question as at
+   *  the verdict and the instrument above it stays put. */
+  reserve?: () => StageReserve | null
   onBack: () => void
   backLabel?: string
   keys?: () => StageKey[]
@@ -111,6 +124,24 @@ interface StageBarProps {
   /** The right-hand control: Stop while a run can be stopped, the
    *  report's range control. */
   aside?: JSX.Element
+}
+
+function lastCallKicker(call: LastCall): string {
+  return call.label === undefined ? 'Last call' : `Last call · ${call.label}`
+}
+
+/** Text that takes its place in the layout and is never seen or read:
+ *  the stylesheet draws it from an attribute, so it is not in the
+ *  document's text either. A span, so no paragraph margin comes with it;
+ *  every slot it sits in lays it out as a block. */
+function Reserved(props: { class: string; text: string }): JSX.Element {
+  return (
+    <span
+      class={`${props.class} ${styles.reserved}`}
+      aria-hidden="true"
+      data-reserve={props.text}
+    />
+  )
 }
 
 /** The drill bar — back, identity, the live line, one control. Shared
@@ -183,6 +214,8 @@ export function AutoAdvanceSwitch(props: AutoAdvanceSwitchProps): JSX.Element {
 
 export function EarStage(props: EarStageProps): JSX.Element {
   let consoleEl: HTMLDivElement | undefined
+  const reserve = (): StageReserve | null => props.reserve?.() ?? null
+  const keyHint = (): string | undefined => formatKeyHint(props.keys?.() ?? [])
 
   // Every keydown, registered or not, so a keyup can tell a key the
   // browser took from one pressed before the pads armed. A keyup with
@@ -307,14 +340,26 @@ export function EarStage(props: EarStageProps): JSX.Element {
                   [styles.headlineWrong]: props.tone === 'wrong',
                 }}
               >
-                <p
-                  class={styles.question}
-                  aria-live="polite"
-                  data-testid="ear-stage-status"
+                <div class={styles.questionSlot}>
+                  <p
+                    class={styles.question}
+                    aria-live="polite"
+                    data-testid="ear-stage-status"
+                  >
+                    {props.status}
+                  </p>
+                  <For each={reserve()?.lines ?? []}>
+                    {(line) => <Reserved class={styles.question} text={line} />}
+                  </For>
+                </div>
+                <Show
+                  when={keyHint()}
+                  fallback={
+                    <Show when={reserve()}>
+                      <Reserved class={styles.keyHint} text={'\u00a0'} />
+                    </Show>
+                  }
                 >
-                  {props.status}
-                </p>
-                <Show when={formatKeyHint(props.keys?.() ?? [])}>
                   {(hint) => (
                     <p class={styles.keyHint} data-testid="ear-stage-keys">
                       {hint()}
@@ -333,40 +378,69 @@ export function EarStage(props: EarStageProps): JSX.Element {
                 </p>
               </Show>
               {props.console()}
-              <Show when={props.lastCall?.()}>
-                {(call) => (
-                  <aside
-                    class={styles.lastCall}
-                    classList={{
-                      [styles.lastCallRight]: call().correct,
-                      [styles.lastCallWrong]: !call().correct,
-                      [styles.lastCallArmed]: props.armed?.() === true,
-                    }}
-                    data-testid="ear-stage-last-call"
-                    data-verdict={call().correct ? 'right' : 'wrong'}
-                    data-armed={props.armed?.() === true ? 'true' : 'false'}
-                  >
-                    <span class={styles.lastCallMark} aria-hidden="true">
-                      <Show
-                        when={call().correct}
-                        fallback={<IconClose size={13} />}
+              <Show when={props.lastCall?.() ?? reserve()}>
+                <div class={styles.lastCallSlot}>
+                  <Show when={reserve()}>
+                    {(held) => (
+                      <aside
+                        class={`${styles.lastCall} ${styles.reserved}`}
+                        aria-hidden="true"
+                        data-testid="ear-stage-last-call-reserve"
                       >
-                        <IconCheck size={13} />
-                      </Show>
-                    </span>
-                    <span class={styles.lastCallKicker}>
-                      {call().label === undefined
-                        ? 'Last call'
-                        : `Last call · ${call().label}`}
-                    </span>
-                    <p class={styles.lastCallLine}>{call().line}</p>
-                    <Show when={call().consequence}>
-                      {(consequence) => (
-                        <p class={styles.lastCallNote}>{consequence()}</p>
-                      )}
-                    </Show>
-                  </aside>
-                )}
+                        <span class={styles.lastCallMark} />
+                        <Reserved
+                          class={styles.lastCallKicker}
+                          text={lastCallKicker(held().lastCall)}
+                        />
+                        <Reserved
+                          class={styles.lastCallLine}
+                          text={held().lastCall.line}
+                        />
+                        <Show when={held().lastCall.consequence}>
+                          {(consequence) => (
+                            <Reserved
+                              class={styles.lastCallNote}
+                              text={consequence()}
+                            />
+                          )}
+                        </Show>
+                      </aside>
+                    )}
+                  </Show>
+                  <Show when={props.lastCall?.()}>
+                    {(call) => (
+                      <aside
+                        class={styles.lastCall}
+                        classList={{
+                          [styles.lastCallRight]: call().correct,
+                          [styles.lastCallWrong]: !call().correct,
+                          [styles.lastCallArmed]: props.armed?.() === true,
+                        }}
+                        data-testid="ear-stage-last-call"
+                        data-verdict={call().correct ? 'right' : 'wrong'}
+                        data-armed={props.armed?.() === true ? 'true' : 'false'}
+                      >
+                        <span class={styles.lastCallMark} aria-hidden="true">
+                          <Show
+                            when={call().correct}
+                            fallback={<IconClose size={13} />}
+                          >
+                            <IconCheck size={13} />
+                          </Show>
+                        </span>
+                        <span class={styles.lastCallKicker}>
+                          {lastCallKicker(call())}
+                        </span>
+                        <p class={styles.lastCallLine}>{call().line}</p>
+                        <Show when={call().consequence}>
+                          {(consequence) => (
+                            <p class={styles.lastCallNote}>{consequence()}</p>
+                          )}
+                        </Show>
+                      </aside>
+                    )}
+                  </Show>
+                </div>
               </Show>
             </div>
           </>
@@ -391,6 +465,9 @@ interface PlayPadProps {
   disabled?: boolean
   onClick?: () => void
   icon?: JSX.Element
+  /** A keycap to keep room for without showing: a run's lamp holds the
+   *  height of the Next pad it turns into, which shows one. */
+  heldKeycap?: string
 }
 
 /** The lead pad of a console: Begin, Practice, Calibrate — or, once a
@@ -434,6 +511,15 @@ export function PlayPad(props: PlayPadProps): JSX.Element {
       </Show>
       <Show when={props.keycap}>
         <kbd>{props.keycap}</kbd>
+      </Show>
+      <Show when={props.heldKeycap}>
+        {(keycap) => (
+          <kbd
+            class={styles.reserved}
+            aria-hidden="true"
+            data-reserve={keycap()}
+          />
+        )}
       </Show>
     </button>
   )

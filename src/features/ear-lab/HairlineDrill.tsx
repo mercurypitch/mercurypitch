@@ -113,6 +113,14 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
       formatValue={(value) => value.toFixed(1)}
       unitLabel="cents"
       unitShort="¢"
+      // The longer verdict, a wrong answer, at the starting gap: the
+      // console keeps room for it from the first question. Not at the
+      // widest gap: at 375x553 a 200.0¢ verdict takes a second line, and
+      // room held for that from the first question lifts the loupe's
+      // readout under the "About Hairline" bar for the whole run. A run
+      // that widens to three figures makes that room when its first such
+      // trial starts.
+      revealReserve={`The second was higher by ${drill.staircase.start.toFixed(1)}¢. The gap widens.`}
       latestValue={() => latestThresholdReading('hairline')?.value ?? null}
       ritual={props.ritual}
       run={run}

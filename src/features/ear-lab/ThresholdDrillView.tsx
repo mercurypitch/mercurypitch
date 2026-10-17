@@ -15,11 +15,11 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { Show } from 'solid-js'
+import { createEffect, createSignal, Show, untrack } from 'solid-js'
 import { calibrationDueAt } from '@/lib/ear/calibration'
 import { useArmingCue } from './arming-cue'
 import { IconPlay, IconSeal } from './ear-icons'
-import type { StageKey } from './EarStage'
+import type { StageKey, StageReserve } from './EarStage'
 import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, TurnsStrip, } from './EarStage'
 import styles from './EarStage.module.css'
 import { dateLabel } from './instruments'
@@ -74,6 +74,10 @@ interface ThresholdDrillViewProps {
   keys: () => StageKey[]
   /** The reveal sentence: what was true, and which way the level moves. */
   revealLine: () => string
+  /** A reveal sentence the console keeps room for from the first
+   *  question: the drill's longer form, at the level a run starts on.
+   *  Any longer one the run says after that widens the room then. */
+  revealReserve?: string
   /** Starts a run; the run's start unless the drill has to acquire
    *  something (a microphone) first. */
   onStart?: (mode: ThresholdRunMode) => void
@@ -158,13 +162,43 @@ export function ThresholdDrillView(
   /** "Gap 12.0¢ → 9.5¢": where this track's level goes next. */
   const consequence = (): string | undefined => {
     const next = props.run.nextLevel()
-    if (next === null) return undefined
+    return next === null ? undefined : levelMove(next)
+  }
+  const levelMove = (next: number): string => {
     const track = calibrating()
       ? `Track ${TRACK_NAMES[props.run.activeTrack()] ?? ''} · `
       : ''
     const unit = props.unitShort
     return `${track}${props.levelCaption} ${props.formatValue(props.run.level())}${unit} → ${props.formatValue(next)}${unit}`
   }
+
+  // Room for the console at its tallest from the first question on: the
+  // question line's sentences, and a verdict under the pads. The longest
+  // verdict so far stands in for the next one: from the first question
+  // the drill's own (revealReserve) or the one this trial would get, and
+  // any longer one the run says after that.
+  const [longestReveal, setLongestReveal] = createSignal('')
+  createEffect(() => {
+    if (!running()) {
+      setLongestReveal(props.revealReserve ?? '')
+      return
+    }
+    const line = props.revealLine()
+    if (line.length > untrack(longestReveal).length) setLongestReveal(line)
+  })
+  const reserve = (): StageReserve | null =>
+    running()
+      ? {
+          lines: [props.listenHint, props.answerHint, longestReveal()],
+          lastCall: {
+            correct: false,
+            line: longestReveal(),
+            consequence: consequence() ?? levelMove(props.run.level()),
+            // The verdict it stands in for is the next one.
+            label: `Trial ${props.run.trials() + 1}`,
+          },
+        }
+      : null
 
   useArmingCue(() => phase() === 'answer')
 
@@ -205,6 +239,7 @@ export function ThresholdDrillView(
       backLabel={props.backLabel}
       onStop={running() ? () => props.run.stop() : undefined}
       lastCall={lastCall}
+      reserve={reserve}
       armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
       instrument={() => (
@@ -295,6 +330,11 @@ export function ThresholdDrillView(
                       ? 'Next'
                       : 'Listening'
                 }
+                // The parked Next pad's icon and keycap, held unseen: on a
+                // desk they made the pad, and with it the console, 2 to 6
+                // px taller each time a run parked on a verdict.
+                icon={<IconPlay size={20} class={styles.reserved} />}
+                heldKeycap="Space"
               />
             }
           >
