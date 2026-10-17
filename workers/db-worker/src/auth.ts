@@ -1979,7 +1979,7 @@ async function handleLogin(
   }
   // Correct credentials must not spend the budget that exists to stop people
   // guessing them — see clearRateLimit. Failures still accumulate.
-  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
   await Promise.all([
     clearRateLimit(env.DB, ip, 'login'),
     clearRateLimit(env.DB, emailSubject, 'login-email'),
@@ -2227,7 +2227,7 @@ async function handleEmailCodeVerify(
     await claimLaunchGift(env, row.id)
   }
 
-  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
   await Promise.all([
     clearRateLimit(env.DB, ip, 'email-code/verify'),
     clearRateLimit(
@@ -2289,7 +2289,7 @@ async function finishSignUpCode(
   await adoptSignUpCodes(env.DB, email, userId, Date.now())
   await claimLaunchGift(env, userId, { signUpFrom: signUpFrom(request) })
 
-  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
   await Promise.all([
     clearRateLimit(env.DB, ip, 'email-code/verify'),
     clearRateLimit(env.DB, `email:${email}`, 'email-code-address'),
@@ -4297,7 +4297,7 @@ export async function handleAuth(
     return handleMe(request, env, respond)
   }
   if (route === 'me' && request.method === 'DELETE') {
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
     const rl = await checkRateLimit(env.DB, ip, 'delete-account')
     if (!rl.allowed) {
       return respond(
@@ -4316,13 +4316,13 @@ export async function handleAuth(
     return handleLogout(request, env, respond)
   }
   if (route === 'sessions' && request.method === 'GET') {
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
     const rl = await checkRateLimit(env.DB, ip, 'sessions')
     if (!rl.allowed) return tooMany(respond, rl)
     return handleListSessions(request, env, respond)
   }
   if (route.startsWith('sessions/') && request.method === 'DELETE') {
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
     const rl = await checkRateLimit(env.DB, ip, 'sessions')
     if (!rl.allowed) return tooMany(respond, rl)
     return handleRevokeSession(
@@ -4343,7 +4343,7 @@ export async function handleAuth(
     // `resolveGoogleUser` can create a user, which makes this the one
     // user-creating route that would otherwise have no cap at all. A real
     // code exchange is required, so the limit only has to bound a loop.
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
     const rl = await checkRateLimit(env.DB, ip, 'google-callback')
     if (!rl.allowed) return tooMany(respond, rl)
     return handleGoogleCallback(request, env)
@@ -4355,13 +4355,13 @@ export async function handleAuth(
     return handleDriveDisconnect(request, env, respond)
   }
   if (route === 'device/pending' && request.method === 'GET') {
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
     const rl = await checkRateLimit(env.DB, ip, 'device-pending')
     if (!rl.allowed) return tooMany(respond, rl)
     return handleDeviceLinkPending(request, env, respond)
   }
   if (route === 'verify-email' && request.method === 'GET') {
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
     const rl = await checkRateLimit(env.DB, ip, 'verify-email')
     if (!rl.allowed) {
       return respond(
@@ -4377,7 +4377,7 @@ export async function handleAuth(
     return handleVerifyEmail(request, env)
   }
   if (route === 'reset-password' && request.method === 'GET') {
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
     const rl = await checkRateLimit(env.DB, ip, 'reset-password')
     if (!rl.allowed) {
       return respond(
@@ -4397,7 +4397,7 @@ export async function handleAuth(
   }
 
   // Rate limiting on auth POST endpoints
-  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
   const rl = await checkRateLimit(env.DB, ip, route)
   if (!rl.allowed) return tooMany(respond, rl)
 
