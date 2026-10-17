@@ -49,6 +49,7 @@ import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
 import surface from '@/components/room-kit/RoomSurface.module.css'
+import { UnlockChip } from '@/components/room-kit/UnlockChip'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { WAVE } from './bay-geometry'
 import type { BayLayout } from './bay-layout'
@@ -330,6 +331,10 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
             </div>
           </Match>
         </Switch>
+        <UnlockChip
+          atResult={phase() === 'result' && !demoBusy()}
+          testId="lip-unlock"
+        />
       </div>
 
       <RoomBarEnd>

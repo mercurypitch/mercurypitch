@@ -281,7 +281,7 @@ export const NATIVE_ASSETS = [
   {
     glob: 'badges/*.webp',
     reason:
-      "Every badge and achievement medallion, 192px: built from the row's icon (badgeArtSrc in src/features/challenges/badge-art.ts) for the milestone strip (src/features/progress/progress-view-model.ts) and the cabinet (src/features/progress/cabinet-view.ts). The seed's definitions name all 46, earned or not.",
+      "Every badge and achievement medallion, 192px: built from the row's icon (badgeArtSrc in src/lib/badge-art.ts) for the milestone strip (src/features/progress/progress-view-model.ts) and the cabinet (src/features/progress/cabinet-view.ts). The seed's definitions name all 46, earned or not.",
   },
   ...[1, 2, 3, 4, 5, 6].map((rank) => ({
     glob: `leagues/l${rank}.webp`,

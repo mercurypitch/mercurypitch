@@ -90,8 +90,8 @@ These are the rules that break things when ignored.
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 5.6k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 5.2k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
-| `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 5.0k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
+| `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 4.9k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.9k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
@@ -217,10 +217,10 @@ These are the rules that break things when ignored.
 | [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 600 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 600 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 550 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
+| [notifications-store.ts](../../src/stores/notifications-store.ts) | 500 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
 | [session-store.ts](../../src/stores/session-store.ts) | 500 | Session Store — Unified session management with localStorage |
 | [jam-diagnostics-store.ts](../../src/stores/jam-diagnostics-store.ts) | 400 | ── Jam diagnostics store The numbers behind the Jam network panel, and the loop that collects them. |
 | [launch-gift-store.ts](../../src/stores/launch-gift-store.ts) | 400 | launch-gift-store — the launch gift, as this browser sees it The server claims the featured promo code the moment an account's email is c... |
-| [notifications-store.ts](../../src/stores/notifications-store.ts) | 350 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
 | [jam-pitch-provision-store.ts](../../src/stores/jam-pitch-provision-store.ts) | 300 | ── Working out a room song's pitch line A song that has never been opened in the stem mixer has no stored analysis, so `sessionSongNotes`... |
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 300 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 300 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
@@ -254,6 +254,7 @@ These are the rules that break things when ignored.
 | [promo-store.ts](../../src/stores/promo-store.ts) | 50 | promo-store — the promo code the app offers with one click The server decides which code is featured and whether it is open (GET /api/bil... |
 | [settings-section.ts](../../src/stores/settings-section.ts) | 50 | Settings sections — the web Settings panel's sub-tabs, by name A module of its own so the native shell bridge (native-shell-store.ts) can... |
 | [transport-store.ts](../../src/stores/transport-store.ts) | 50 | Transport Store — persisted tempo, count-in and playback speed Every setter clamps to a musically valid range (bpm 40-280, speed 0.25-2.0x). |
+| [unlock-claims.ts](../../src/stores/unlock-claims.ts) | 50 | Unlock claims: a room that shows its own badges, and the tap you feel The notifications store's half of routing an unlock (its header exp... |
 | [usage-store.ts](../../src/stores/usage-store.ts) | 50 | Usage store — lightweight cumulative "has really used the app" tracking Persists two coarse signals across sessions: - usageMs: foregroun... |
 | [uvr-upload-queue-store.ts](../../src/stores/uvr-upload-queue-store.ts) | 50 | UVR Upload Queue Store — app-lifetime holder for the stem-upload queue |
 

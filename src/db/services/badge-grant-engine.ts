@@ -409,7 +409,9 @@ export async function grantBadgeByRef(
     if (isBadgePending(badge.id)) return
 
     queueBadge(badge.id, new Date().toISOString())
-    showNotification(`Badge unlocked: ${badge.name}`, 'success')
+    showNotification(`Badge unlocked: ${badge.name}`, 'success', {
+      unlock: { kind: 'badge', name: badge.name, icon: badge.icon },
+    })
   } catch {
     // Signed out or transient failure — ignore.
   }
@@ -457,7 +459,9 @@ export async function checkAndGrantBadges(
         if (!isBadgeEarned(badge, stats, earnedBadgeIds, badges)) continue
         earnedBadgeIds.add(badge.id)
         queueBadge(badge.id, now)
-        showNotification(`Badge unlocked: ${badge.name}`, 'success')
+        showNotification(`Badge unlocked: ${badge.name}`, 'success', {
+          unlock: { kind: 'badge', name: badge.name, icon: badge.icon },
+        })
       }
     }
 
@@ -512,7 +516,9 @@ export async function checkAndGrantBadges(
         ...(result.unlocked ? { unlockedAt: now } : {}),
       })
       if (result.unlocked) {
-        showNotification(`Achievement unlocked: ${ach.name}`, 'success')
+        showNotification(`Achievement unlocked: ${ach.name}`, 'success', {
+          unlock: { kind: 'achievement', name: ach.name, icon: ach.icon },
+        })
       }
     }
   } catch {

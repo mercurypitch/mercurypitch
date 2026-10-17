@@ -1,0 +1,144 @@
+/* The badges a take earned, under the room's result (UnlockChip.tsx).
+
+   A room's stage is always dark (`mp-dark-stage`), so the chip is drawn for
+   that and not for the theme: a near-opaque plum plate under light text, so
+   the words read over any part of the room's art. The gold edge is the one
+   thing that says "earned" before the words do. */
+
+.region {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Text in a room is read, never selected: a long press on the chip must
+     not raise the copy menu over the result. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(320px, calc(100vw - 32px));
+  min-height: 36px;
+  margin-top: 10px;
+  padding: 4px 14px 4px 5px;
+  border: 1px solid rgba(240, 196, 92, 0.55);
+  border-radius: 999px;
+  background: rgba(34, 24, 58, 0.88);
+  color: #f6f0ff;
+  font: 600 14px/1.2 var(--font-body, sans-serif);
+  animation: unlockIn 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.button {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.button:focus-visible {
+  outline: 2px solid #f0c45c;
+  outline-offset: 2px;
+}
+
+.text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.art,
+.disc {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.disc {
+  background: radial-gradient(circle at 35% 30%, #ffe7a6, #c8902c 70%);
+}
+
+.chevron {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  margin-left: -2px;
+  transition: transform 160ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: min(320px, calc(100vw - 32px));
+  margin: 6px 0 0;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid rgba(240, 196, 92, 0.3);
+  border-radius: 14px;
+  background: rgba(34, 24, 58, 0.92);
+  color: #f6f0ff;
+  font: 500 14px/1.2 var(--font-body, sans-serif);
+  list-style: none;
+  animation: unlockListIn 200ms ease-out both;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+@keyframes unlockIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes unlockListIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes unlockFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A short phone: the head is tighter, and so is the gap above the chip. */
+@media (max-height: 700px) {
+  .chip {
+    margin-top: 6px;
+  }
+}
+
+/* Less motion: it fades in where it is, and the chevron flips at once. */
+@media (prefers-reduced-motion: reduce) {
+  .chip {
+    animation-name: unlockFade;
+  }
+
+  .chevron {
+    transition: none;
+  }
+}

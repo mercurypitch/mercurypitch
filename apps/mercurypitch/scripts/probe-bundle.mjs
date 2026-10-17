@@ -54,6 +54,12 @@
 // prints the stage's height; `--baseline` prints only that, for comparing
 // a build without the row. `--exercises-only` walks that alone.
 //
+// NOTICES (probe-notices.mjs): the pill under the status bar raised on every
+// surface, on the owner's iPhone and iPad sizes upright and on their sides,
+// hit-tested against every control a tap can reach; and in each premium
+// room, unlocks announced during a take shown in the chip at its result,
+// with no pill. `--notices-only` walks that alone.
+//
 // PROGRESS WITH A RECORD ON IT (probe-progress.mjs): signed in, the worker
 // answering with badges, achievements, a league and a voiceprint, scrolled
 // to its end and shared from; then the Leaderboard its league card opens,
@@ -73,6 +79,7 @@ import { chromium } from '@playwright/test'
 import { walkKaraoke, walkKaraokeNoDecoder } from './probe-karaoke.mjs'
 import { importTarget, walkKaraokeImport } from './probe-karaoke-import.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
+import { NOTICE_FRAMES, walkNotices } from './probe-notices.mjs'
 import { walkLeaderboard, walkProgress } from './probe-progress.mjs'
 import { EXERCISE_FRAMES, EXERCISE_LANDSCAPE_FRAMES, walkExerciseEntry, } from './probe-exercise-entry.mjs'
 import { walkRoomHandover } from './probe-room-handover.mjs'
@@ -128,6 +135,11 @@ function parseArgs(argv) {
     safeAreasOnly: false,
     progressOnly: false,
     exercisesOnly: false,
+    noticesOnly: false,
+    noticeLog: null,
+    noticeFrame: null,
+    noticeRoom: null,
+    noticeRoomsOnly: false,
     baseline: false,
     dist: null,
   }
@@ -144,6 +156,11 @@ function parseArgs(argv) {
     else if (flag === '--safe-areas-only') args.safeAreasOnly = true
     else if (flag === '--progress-only') args.progressOnly = true
     else if (flag === '--exercises-only') args.exercisesOnly = true
+    else if (flag === '--notices-only') args.noticesOnly = true
+    else if (flag === '--notice-log') args.noticeLog = argv[(i += 1)]
+    else if (flag === '--notice-frame') args.noticeFrame = argv[(i += 1)]
+    else if (flag === '--notice-room') args.noticeRoom = argv[(i += 1)]
+    else if (flag === '--notice-rooms-only') args.noticeRoomsOnly = true
     else if (flag === '--baseline') args.baseline = true
     else if (flag === '--dist') args.dist = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
@@ -5090,6 +5107,17 @@ async function main() {
     }
   }
 
+  /** The notice pill on every surface, and each room's chip, on one frame. */
+  const walkNoticesFrame = async (frame) => {
+    try {
+      const result = await walkNotices(browser, args, frame, kit)
+      steps.push(...result.steps)
+      failures.push(...result.failures)
+    } catch (error) {
+      failures.push(`[${frame.name}] notices: ${error.message}`)
+    }
+  }
+
   /** Sing and Karaoke, one after the other, on one frame. */
   const walkHandoverFrame = async (frame) => {
     try {
@@ -5135,12 +5163,21 @@ async function main() {
       : []) {
       await walkExercisesFrame(frame)
     }
+    // `--notice-frame 390` walks only the frames whose name holds it.
+    const noticeFrames = NOTICE_FRAMES.filter(
+      (frame) =>
+        args.noticeFrame === null || frame.name.includes(args.noticeFrame),
+    )
+    for (const frame of args.noticesOnly ? noticeFrames : []) {
+      await walkNoticesFrame(frame)
+    }
     for (const frame of args.landscapeOnly ||
     args.karaokeOnly ||
     args.handoverOnly ||
     args.safeAreasOnly ||
     args.progressOnly ||
-    args.exercisesOnly
+    args.exercisesOnly ||
+    args.noticesOnly
       ? []
       : FRAMES) {
       const result = await walkFrame(browser, args, frame)
@@ -5192,7 +5229,8 @@ async function main() {
       !args.handoverOnly &&
       !args.safeAreasOnly &&
       !args.progressOnly &&
-      !args.exercisesOnly
+      !args.exercisesOnly &&
+      !args.noticesOnly
     ) {
       for (const frame of LANDSCAPE_FRAMES) {
         try {
@@ -5233,6 +5271,9 @@ async function main() {
         : [...EXERCISE_FRAMES, ...EXERCISE_LANDSCAPE_FRAMES]) {
         await walkExercisesFrame(frame)
       }
+      for (const frame of args.landscapeOnly ? [] : NOTICE_FRAMES) {
+        await walkNoticesFrame(frame)
+      }
     }
   } finally {
     await browser.close()
@@ -5258,7 +5299,9 @@ async function main() {
             ? `Progress only, ${FRAMES.length} frames`
             : args.exercisesOnly
               ? `the way in to the exercises only, ${EXERCISE_FRAMES.length} frames and ${EXERCISE_LANDSCAPE_FRAMES.length} sideways${args.baseline ? ', the stage only' : ''}`
-              : `${FRAMES.length} frames`
+              : args.noticesOnly
+                ? `notices only, ${NOTICE_FRAMES.map((f) => f.name).join(', ')}`
+                : `${FRAMES.length} frames`
   console.log(`\nprobe-bundle: every step passed (${args.theme}, ${scope}).`)
 }
 

@@ -17,13 +17,13 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { badgeArtSrc } from '@/features/challenges/badge-art'
 import type { ProfileSession } from '@/features/community/profile-model'
 import { accuracySeries, profileStats, scoreSeries, sparklinePoints, trend, } from '@/features/community/profile-model'
 import { legendTierSrc } from '@/features/mirror/LegendCaricature'
 import type { ProgressRun } from '@/features/progress/run-kinds'
 import { bestScore, recentAverageScore } from '@/features/progress/run-kinds'
 import { RunKindPills } from '@/features/progress/RunKindPills'
+import { badgeArtSrc } from '@/lib/badge-art'
 import styles from './ProfileView.module.css'
 
 export interface ProfileViewProps {

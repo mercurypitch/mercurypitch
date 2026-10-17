@@ -1156,3 +1156,212 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ---------- the notice pill (NoticePill.tsx) ---------- */
+
+/* The safe area, as a box the pill can measure: `env()` cannot be read
+   from script, but a fixed element placed by it can. */
+.mp-notice-safe {
+  position: fixed;
+  top: var(--safe-top);
+  right: var(--safe-right);
+  bottom: var(--safe-bottom);
+  left: var(--safe-left);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.mp-notice {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: var(--z-toast, 20000);
+  pointer-events: none;
+}
+
+/* One notice, opaque on purpose: it can land over a room's art or a
+   Settings row, and its words have to read over either in both themes.
+   Hidden until it has measured the screen and found its place
+   (notice-pill-place.ts), so it never flashes over a control first. */
+.mp-notice-pill {
+  --notice-accent: var(--accent, #58a6ff);
+  position: fixed;
+  top: calc(var(--safe-top) + 6px);
+  left: 12px;
+  width: min(420px, calc(100vw - 24px));
+  z-index: var(--z-toast, 20000);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px;
+  border: 1px solid
+    color-mix(in srgb, var(--notice-accent) 45%, var(--border, #30363d));
+  border-radius: 22px;
+  background: var(--bg-secondary, #161b22);
+  color: var(--text-primary, #f0f6fc);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+  visibility: hidden;
+  transform: translateY(var(--mp-notice-drag, 0px));
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+.mp-notice-pill--success {
+  --notice-accent: var(--green, #3fb950);
+}
+
+.mp-notice-pill--warning {
+  --notice-accent: var(--yellow, #d29922);
+}
+
+.mp-notice-pill--error {
+  --notice-accent: var(--red, #f85149);
+}
+
+/* An unlock wears the medallion's gold. */
+.mp-notice-pill[data-unlock='on'] {
+  --notice-accent: #d9a53a;
+}
+
+/* It drops from the status bar; with less motion the lift is zero
+   (`.mp-shell.mp-reduced`), so it only fades. `backwards`, not `both`: a
+   filled end state would pin the transform and the swipe could not move it. */
+.mp-notice-pill.is-placed {
+  visibility: visible;
+  animation: mp-notice-in var(--mp-in, 280ms) var(--mp-ease, ease-out) backwards;
+}
+
+.mp-notice-pill.is-dragging {
+  animation: none;
+}
+
+/* No clear place was left (notice-pill-place.ts, step 4): the pill lies over
+   controls, so every tap goes through it to them until it finds one. */
+.mp-notice-pill--over,
+.mp-notice-pill--over * {
+  pointer-events: none;
+}
+
+.mp-notice-pill.is-leaving {
+  opacity: 0;
+  transform: translateY(calc(var(--mp-lift, 16px) * -1));
+  transition:
+    opacity 180ms var(--mp-ease, ease-in),
+    transform 180ms var(--mp-ease, ease-in);
+  pointer-events: none;
+}
+
+@keyframes mp-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--mp-lift, 16px) * -1));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The whole pill is the dismiss: a tap, or a swipe up. */
+.mp-notice-pill__body {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 2px 12px 2px 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font: 600 14px/1.25 var(--font-body, sans-serif);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mp-notice-pill__body:focus-visible,
+.mp-notice-pill__action:focus-visible {
+  outline: 2px solid var(--notice-accent);
+  outline-offset: 2px;
+  border-radius: 18px;
+}
+
+.mp-notice-pill__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--notice-accent);
+}
+
+.mp-notice-pill__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mp-notice-pill__art {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.mp-notice-pill__words {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mp-notice-pill__text {
+  overflow-wrap: anywhere;
+}
+
+.mp-notice-pill__title {
+  margin-right: 6px;
+  color: var(--notice-accent);
+}
+
+.mp-notice-pill__names {
+  overflow: hidden;
+  color: var(--text-secondary, #8b949e);
+  font: 500 13px/1.25 var(--font-body, sans-serif);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-notice-pill__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+
+/* A notice that carries an action keeps it as a real control: 44 px. */
+.mp-notice-pill__action {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--notice-accent) 50%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--notice-accent) 14%, transparent);
+  color: var(--text-primary, #f0f6fc);
+  font: 650 14px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.mp-notice-pill__action--quiet {
+  padding: 0 10px;
+  border-color: transparent;
+  background: none;
+  color: var(--text-secondary, #8b949e);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}

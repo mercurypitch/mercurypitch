@@ -4,8 +4,8 @@
 // ============================================================
 
 import type { SessionSource, UserActivity, UserActivityKind, } from '@/db/entities'
-import { badgeArtSrc } from '@/features/challenges/badge-art'
 import { legendTierSrc } from '@/features/mirror/LegendCaricature'
+import { badgeArtSrc } from '@/lib/badge-art'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { buildCabinet } from './cabinet-view'
 import type { ProgressActivityWeek, ProgressCoverageLabel, ProgressHistoryItem, ProgressModel, ProgressOneMoment, ProgressScorePoint, } from './model'
