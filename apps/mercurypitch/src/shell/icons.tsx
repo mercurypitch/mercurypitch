@@ -296,6 +296,14 @@ export const PhoneIcon: Component<ShellIconProps> = (props) => (
   </svg>
 )
 
+/** A computer: a session on a Mac, a Windows or Linux PC, a Chromebook. */
+export const ComputerIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="3" y="4" width="18" height="12.5" rx="2" />
+    <path d="M12 16.5V20M8.5 20h7" />
+  </svg>
+)
+
 /** Something needs attention, and nothing is lost. */
 export const WarnIcon: Component<ShellIconProps> = (props) => (
   <svg {...base(props)}>

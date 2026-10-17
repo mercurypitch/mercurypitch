@@ -13,7 +13,7 @@ import type { AuthSession } from '@/db/services/auth-sessions-service'
 import { fetchSessions, revokeSession, } from '@/db/services/auth-sessions-service'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
-import { DevicesScreen } from './DevicesScreen'
+import { DevicesScreen, onComputer } from './DevicesScreen'
 
 vi.mock('@/db/services/auth-sessions-service', () => ({
   fetchSessions: vi.fn(),
@@ -78,6 +78,27 @@ describe('the Devices screen', () => {
     expect(second?.textContent).toContain('Chrome on Mac')
   })
 
+  it('draws a computer for a session on a computer, and a phone for a phone', async () => {
+    fetchMock.mockResolvedValue([
+      session('s-1', 'Safari on iPhone', true),
+      session('s-2', 'Chrome on Mac', false),
+      session('s-3', 'Firefox on Linux', false),
+      session('s-4', 'Chrome on Android', false),
+      session('s-5', 'Edge on Windows', false),
+    ])
+    view = renderShell(() => <DevicesScreen />)
+    await settle()
+
+    const glyph = (row: HTMLElement | undefined): string =>
+      row?.querySelector('.mp-set-row__icon svg')?.innerHTML ?? ''
+    const [iphone, mac, linux, android, windows] = devices()
+    // The same drawing for the two phones, another one for the computers.
+    expect(glyph(android)).toBe(glyph(iphone))
+    expect(glyph(mac)).not.toBe(glyph(iphone))
+    expect(glyph(linux)).toBe(glyph(mac))
+    expect(glyph(windows)).toBe(glyph(mac))
+  })
+
   it('signs another device out, and drops it from the list', async () => {
     fetchMock.mockResolvedValueOnce([
       session('s-1', 'Safari on iPhone', true),
@@ -109,5 +130,20 @@ describe('the Devices screen', () => {
 
     expect(said).toContain('Could not load your devices.')
     expect(devices()).toHaveLength(1)
+  })
+})
+
+describe('onComputer', () => {
+  it('reads the platform the worker ends every label with', () => {
+    expect(onComputer('Chrome on Mac')).toBe(true)
+    expect(onComputer('Edge on Windows')).toBe(true)
+    expect(onComputer('Chrome on ChromeOS')).toBe(true)
+    expect(onComputer('Firefox on Linux')).toBe(true)
+    expect(onComputer('Linux')).toBe(true)
+    expect(onComputer('Safari on iPhone')).toBe(false)
+    expect(onComputer('Safari on iPad')).toBe(false)
+    expect(onComputer('Chrome on Android')).toBe(false)
+    expect(onComputer('Unknown device')).toBe(false)
+    expect(onComputer('Chrome')).toBe(false)
   })
 })
