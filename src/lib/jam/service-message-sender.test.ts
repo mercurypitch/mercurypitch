@@ -31,6 +31,8 @@ const signalingStub = {
   sendSignal: vi.fn(),
   broadcast: vi.fn(),
   getPeerId: () => ME,
+  // ensureIceServers keys the just-in-time ICE fetch to the live room.
+  getRoomId: () => 'ABCDEFGH',
 }
 
 vi.mock('./signaling', () => ({
@@ -107,7 +109,7 @@ const callbacks = {
 
 let service: ReturnType<typeof createJamService>
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks()
   built.length = 0
   vi.stubGlobal('RTCPeerConnection', FakePeerConnection)
@@ -116,6 +118,10 @@ beforeEach(() => {
   // with its own channel.
   signalingCallbacks?.onPeerJoined(peer('peer-a'))
   signalingCallbacks?.onPeerJoined(peer('peer-b'))
+  // A peer connection is built only after the room's ICE servers are
+  // fetched just in time (keyed to the live room), so the two stand-ins
+  // appear a tick after the join; wait for them before delivering on them.
+  await vi.waitFor(() => expect(built).toHaveLength(2))
 })
 
 afterEach(() => {

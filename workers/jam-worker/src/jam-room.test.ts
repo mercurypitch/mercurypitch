@@ -815,3 +815,53 @@ describe('JamRoom signaling and ownership lifecycle', () => {
     expect(ctx.storage.values.size).toBe(0)
   })
 })
+
+describe('/internal/room-active', () => {
+  // The ICE route asks this before minting TURN credentials, so what it
+  // counts has to be exactly the established peers: nobody for an empty
+  // room, and never a socket that has already departed.
+  const ask = (ctx: FakeContext): Promise<Response> =>
+    room(ctx).fetch(
+      new Request('https://jam-room.internal/internal/room-active', {
+        method: 'POST',
+        headers: { 'X-Jam-Room-Id': 'ABCDEFGH' },
+      }),
+    )
+
+  it('reports an empty room as inactive', async () => {
+    const ctx = new FakeContext()
+    const response = await ask(ctx)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(await response.json()).toEqual({ active: false, peers: 0 })
+  })
+
+  it('counts the established peers', async () => {
+    const ctx = new FakeContext()
+    ctx.sockets = [
+      socket('established', 'peer-1'),
+      socket('established', 'peer-2'),
+    ]
+    const response = await ask(ctx)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ active: true, peers: 2 })
+  })
+
+  it('does not count a socket that has departed', async () => {
+    const ctx = new FakeContext()
+    ctx.sockets = [
+      socket('established', 'peer-1'),
+      socket('departed', 'peer-2'),
+    ]
+    expect(await (await ask(ctx)).json()).toEqual({ active: true, peers: 1 })
+  })
+
+  it('does not count a socket that never got a peer id', async () => {
+    // A connection that opened but never completed its create/join handshake
+    // has no peerId; it is not a peer the room would relay to, so it must
+    // not unlock TURN minting either.
+    const ctx = new FakeContext()
+    ctx.sockets = [socket('join')]
+    expect(await (await ask(ctx)).json()).toEqual({ active: false, peers: 0 })
+  })
+})

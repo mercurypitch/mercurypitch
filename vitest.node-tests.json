@@ -494,6 +494,7 @@
   "workers/db-worker/src/tables.test.ts",
   "workers/db-worker/src/turnstile.test.ts",
   "workers/jam-worker/src/host-verification.test.ts",
+  "workers/jam-worker/src/index.test.ts",
   "workers/jam-worker/src/jam-room.test.ts",
   "workers/jam-worker/src/room-activity.test.ts",
   "workers/jam-worker/src/room-ownership.test.ts",
