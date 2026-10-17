@@ -1,3 +1,26 @@
 {
-  "model": "claude-opus-5"
+  "model": "claude-opus-5",
+  "permissions": {
+    "allow": [
+      "mcp__ElevenLabs__creative_list_voices",
+      "mcp__ElevenLabs__creative_generate_speech",
+      "mcp__ElevenLabs__creative_get_flow_run_status",
+      "mcp__ElevenLabs__creative_create_flow",
+      "mcp__ElevenLabs__creative_get_flow",
+      "mcp__ElevenLabs__creative_add_flow_node",
+      "mcp__ElevenLabs__creative_update_node",
+      "mcp__ElevenLabs__creative_run_flow_nodes",
+      "mcp__ElevenLabs__creative_get_model_schema",
+      "mcp__ElevenLabs__creative_design_voice",
+      "mcp__ElevenLabs__creative_save_designed_voice",
+      "mcp__ElevenLabs__creative_transcribe_audio",
+      "mcp__ElevenLabs__get_more_tools",
+      "mcp__Claude_Docs__read",
+      "mcp__Claude_Docs__query",
+      "mcp__Claude_Docs__guide",
+      "mcp__Claude_Docs__update",
+      "mcp__Claude_Docs__batch",
+      "mcp__Claude_Docs__create"
+    ]
+  }
 }
