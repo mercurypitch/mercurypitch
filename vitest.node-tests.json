@@ -448,6 +448,7 @@
   "workers/db-worker/node-tests/challenge-progress-client-integration.test.ts",
   "workers/db-worker/node-tests/client-api-integration.test.ts",
   "workers/db-worker/node-tests/column-names-integration.test.ts",
+  "workers/db-worker/node-tests/drive-connect-finalize-integration.test.ts",
   "workers/db-worker/node-tests/google-return-nonce-integration.test.ts",
   "workers/db-worker/node-tests/guided-exercise-example-clip-integration.test.ts",
   "workers/db-worker/node-tests/league-integration.test.ts",

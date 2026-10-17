@@ -970,7 +970,10 @@ export function takeGoogleAccountCreated(): boolean {
 // it for short-lived access tokens and talks to googleapis.com itself,
 // so song audio still never touches our servers.
 
-export type DriveConnectResult = { ok: true } | { ok: false; error: string }
+export type DriveConnectResult =
+  | { ok: true }
+  | { ok: false; error: string }
+  | { pending: string }
 
 let driveConnectResult: DriveConnectResult | null = null
 
@@ -979,6 +982,37 @@ export function takeDriveConnectResult(): DriveConnectResult | null {
   const result = driveConnectResult
   driveConnectResult = null
   return result
+}
+
+/**
+ * Commit a sealed Drive grant from a connect redirect.
+ *
+ * The callback hands back the grant rather than storing it, because that
+ * callback runs in whichever browser finished Google's consent — which may
+ * not be the one that started the connect. This authenticated POST is what
+ * ties the grant to the signed-in account: the worker stores it only when
+ * this account is the one the connect was started for, so a grant that landed
+ * in the wrong browser cannot attach a Drive to someone else's account.
+ */
+export async function finishDriveConnect(
+  pending: string,
+): Promise<DriveConnectResult> {
+  const token = getAuthToken()
+  if (token == null || token === '') return { ok: false, error: 'signed_out' }
+  let res: Response
+  try {
+    res = await fetch(`${requireBaseUrl()}/api/auth/drive/finish`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ pending }),
+    })
+  } catch {
+    return { ok: false, error: 'offline' }
+  }
+  return res.ok ? { ok: true } : { ok: false, error: 'finish_failed' }
 }
 
 /**
