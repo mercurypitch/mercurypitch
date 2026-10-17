@@ -4,15 +4,14 @@
 //
 // The glide rooms (Ng slides' bridge, Lip roll's bay) draw an arch's lit
 // picture over its unlit one through a mask of vertical strips, one strip
-// per moment the voice was on the path, and light never drains. This is
-// Ng slides' bridge-reveal.ts made shared; Ng's room still keeps its own
-// copy until it is pointed here. The strips are the engine's own coverage: each
-// captured frame credits the arch the time between it and the frame before
-// while the voice follows the path (glide-engine.ts creditArches, at most
-// MAX_CREDIT_SEC a frame), and this credits the same stretch of the same
-// arch as a strip. Inside a slide x is linear in time (bridge-scroll.ts),
-// so the share of an arch's width that is lit is its coverage, exactly:
-// what the singer sees lit is what the result counts.
+// per moment the voice was on the path, and light never drains. The
+// strips are the engine's own coverage: each captured frame credits the
+// arch the time between it and the frame before while the voice follows
+// the path (glide-engine.ts creditArches, at most MAX_CREDIT_SEC a frame),
+// and this credits the same stretch of the same arch as a strip. Inside a
+// slide x is linear in time (bridge-scroll.ts), so the share of an arch's
+// width that is lit is its coverage, exactly: what the singer sees lit is
+// what the result counts.
 //
 // A strip is a range of u, the arch's own coordinate: -1 at its left foot,
 // 0 at the apex, 1 at its right foot (u = (X - X_k) / a).

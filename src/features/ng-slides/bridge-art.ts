@@ -13,9 +13,9 @@
 // The arch's sprites come in two widths: a phone at DPR 2 or under takes
 // the 860 px-per-W files, a DPR 3 phone the 1290 ones, as Echo's plates
 // do. The glass and its reflection are drawn into canvases strip by strip
-// (bridge-reveal.ts), so they are loaded as images and decoded before the
-// first strip; the river-back is a plate (plate-loader.ts), decoded while
-// the screen pushes in.
+// (room-kit glide-reveal.ts), so they are loaded as images and decoded
+// before the first strip; the river-back is a plate (plate-loader.ts),
+// decoded while the screen pushes in.
 
 import type { PlateSpec } from '@/components/room-kit/plate-loader'
 import { preloadPlate } from '@/components/room-kit/plate-loader'

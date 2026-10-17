@@ -11,8 +11,9 @@
 // what the voice did and what to do about it. Merc speaks between slides
 // only, never while the singer slides.
 
+import type { GlideLineFields, GlideLines, } from '@/components/room-kit/glide/glide-lines'
+import { createGlideLines } from '@/components/room-kit/glide/glide-lines'
 import type { MercLine } from '@/components/room-kit/line-selector'
-import { createLineSelector } from '@/components/room-kit/line-selector'
 
 export type NgMoment =
   | 'intro'
@@ -132,23 +133,10 @@ export const NG_LINES: Readonly<Record<NgMoment, readonly MercLine[]>> = {
 }
 
 /** What a line's placeholders become. */
-export interface NgFields {
-  readonly note?: string
-  readonly top?: string
-  readonly pct?: string
-}
+export type NgFields = GlideLineFields
 
-export interface NgLines {
-  next: (moment: NgMoment, fields?: NgFields) => string
-}
+export type NgLines = GlideLines<NgMoment>
 
 export function createNgLines(random: () => number = Math.random): NgLines {
-  const selector = createLineSelector(NG_LINES, random)
-  return {
-    next: (moment, fields = {}) =>
-      selector
-        .next(moment, fields.note ?? '{note}')
-        .replaceAll('{top}', fields.top ?? '{top}')
-        .replaceAll('{pct}', fields.pct ?? '{pct}'),
-  }
+  return createGlideLines(NG_LINES, random)
 }

@@ -32,10 +32,10 @@
 // Pure and seeded: the same root always gives the same frames, events and
 // timings. A take's clock is the room's capture window: it reads zero as
 // the count-in starts, and the path's clock is it less the count-in. The
-// room plays these frames through its own take (ng-take.ts, by the demo's
-// scripted take), so every tooltip is cued by a moment that really
-// happened there, and the tests replay the same frames through tickGlide
-// to prove what each tooltip says.
+// room plays these frames through its own take (room-kit glide-take.ts,
+// by the demo's scripted take), so every tooltip is cued by a moment that
+// really happened there, and the tests replay the same frames through
+// tickGlide to prove what each tooltip says.
 
 import type { DemoEvent as KitDemoEvent, DemoTakeId, DemoTakeShape, DemoVoicePoint, } from '@/components/demo-kit/demo-plan'
 import { midiToFrequency } from '@/lib/frequency-to-note'
@@ -232,7 +232,7 @@ function buildTake(
       }
     }
     frames.push(frame)
-    // The room's take ticks each frame on the path's clock (ng-take.ts).
+    // The room's take ticks each frame on the path's clock (glide-take.ts).
     tickGlide(state, { ...frame, t: tau }, path, DEMO_PRESET)
     for (const event of state.events) {
       events.push({ type: event.type, at: t })

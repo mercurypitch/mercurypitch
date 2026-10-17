@@ -77,13 +77,12 @@ export function fixtureController(scene: LipFixtureScene): LipController {
     chip: () => scene.chip,
     // A pinned wave is being ridden, and the mic's ring holds at the
     // pinned voice's loudness.
-    riding: () => scene.phase === 'run',
+    singing: () => scene.phase === 'run',
     micLevel: () => voice().level,
     summary: () => scene.summary,
     mercState: () => scene.mercState,
     mercVoice: voice,
-    path: () => PATH,
-    named: () => true,
+    lines: () => ({ path: PATH, root: FIXTURE_ROOT }),
     showResult: () => scene.summary !== null,
     start: () => undefined,
     stop: () => undefined,

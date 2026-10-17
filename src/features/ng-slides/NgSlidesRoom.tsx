@@ -175,7 +175,7 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
     (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
   /** The mic: ready, waiting through a count-in or a breath, or hearing a slide. */
   const micState = (): MicState =>
-    ngMicState(room.state().phase, room.sliding(), scripted())
+    ngMicState(room.state().phase, room.singing(), scripted())
 
   /**
    * What a screen reader hears, from one polite region there from the

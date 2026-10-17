@@ -16,11 +16,11 @@
 
 import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
+import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import { ngSlidesPath } from '@/lib/glide/glide-path'
 import { NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
 import type { MercVoice } from '@/lib/merc/sim'
 import { bridgeArt, bridgeImage, REFLECTION_ART } from '../bridge-art'
-import type { LitStrip } from '../bridge-reveal'
 import { introHum } from '../bridge-ride'
 import type { NgController } from '../ng-controller-contract'
 import { NgSlidesRoom } from '../NgSlidesRoom'
@@ -76,7 +76,7 @@ export function fixtureController(scene: NgFixtureScene): NgController {
     chip: () => scene.chip,
     // A pinned slide is being sung, and the mic's ring holds at the
     // pinned voice's loudness.
-    sliding: () => scene.phase === 'run',
+    singing: () => scene.phase === 'run',
     micLevel: () => voice().level,
     summary: () => scene.summary,
     mercState: () => scene.mercState,

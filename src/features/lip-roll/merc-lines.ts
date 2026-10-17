@@ -12,8 +12,9 @@
 // not the lips, so no line claims to hear the buzz. Merc speaks between
 // waves only, never while the singer rides one.
 
+import type { GlideLineFields, GlideLines, } from '@/components/room-kit/glide/glide-lines'
+import { createGlideLines } from '@/components/room-kit/glide/glide-lines'
 import type { MercLine } from '@/components/room-kit/line-selector'
-import { createLineSelector } from '@/components/room-kit/line-selector'
 
 export type LipMoment =
   | 'intro'
@@ -143,23 +144,10 @@ export const LIP_LINES: Readonly<Record<LipMoment, readonly MercLine[]>> = {
 }
 
 /** What a line's placeholders become. */
-export interface LipFields {
-  readonly note?: string
-  readonly top?: string
-  readonly pct?: string
-}
+export type LipFields = GlideLineFields
 
-export interface LipLines {
-  next: (moment: LipMoment, fields?: LipFields) => string
-}
+export type LipLines = GlideLines<LipMoment>
 
 export function createLipLines(random: () => number = Math.random): LipLines {
-  const selector = createLineSelector(LIP_LINES, random)
-  return {
-    next: (moment, fields = {}) =>
-      selector
-        .next(moment, fields.note ?? '{note}')
-        .replaceAll('{top}', fields.top ?? '{top}')
-        .replaceAll('{pct}', fields.pct ?? '{pct}'),
-  }
+  return createGlideLines(LIP_LINES, random)
 }

@@ -30,7 +30,7 @@ export interface AheadTake {
   readonly path: GlidePath
   readonly countIn: number
   readonly scroll: BayScroll
-  /** The wave a path time is on (lip-take.ts waveAt). */
+  /** The wave a path time is on (room-kit glide/glide-take.ts archAt). */
   readonly waveAt: (t: number) => number
   /** The take's whole voice on its own clock (count-in included). */
   readonly voice: readonly DemoVoicePoint[]

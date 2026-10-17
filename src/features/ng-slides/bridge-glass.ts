@@ -27,8 +27,8 @@
 
 import type { CanvasPicture } from '@/components/room-kit/canvas-picture'
 import { pictureSize } from '@/components/room-kit/canvas-picture'
+import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import { ARCH, PLATES } from './bridge-geometry'
-import type { LitStrip } from './bridge-reveal'
 
 /** The arch sprites' frame, about the apex column (W). */
 const FRAME = PLATES['glass-unlit'].frame
