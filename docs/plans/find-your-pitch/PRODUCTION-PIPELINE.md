@@ -205,6 +205,8 @@ session.
     session's own background commands are also stopped after two hours, and a long Merc
     performance (Lesson 2's m14 duo, 7,499 frames at size 520) takes longer than that: start render
     queues detached (`setsid nohup`), skipping every pass whose WebM is newer than its shot file.
+    A detached `hyperframes render` cancels itself within seconds (`render_cancelled_parent_exited`:
+    it watches every ancestor process it saw at start) unless `HYPERFRAMES_RENDER_DETACHED=1` is set.
 12. Dimmed text fails contrast. Ghosting a diagram by lowering the opacity of the whole group
     takes its labels under 4.5:1 (Lesson 1's quiz and dimmed panels, 2.2 to 3.4:1, found only in
     its fifth film round; Lesson 2's ghosted pads, found on its storyboard). Dim strokes and fills,
@@ -246,6 +248,10 @@ session.
 21. A re-voice can leave a line too short for a caption of its own (Lesson 1's "Is it?", 0.58 s,
     under the 5/6 s minimum). `captions.py` lets the next caption start up to 0.1 s late, and
     joins a too-short line to the same speaker's next line when they fit together.
+22. A re-time can move a moment `check` passed before onto its sample times. Lesson 1's recap deck,
+    fanned so each ticket covers part of the next, failed layout (`content_overlap`) only at rc-07.
+    Mark layering that is meant with `data-layout-allow-overlap` on each text block involved; it is
+    not inherited, so a wrapper does not cover its children.
 
 ## 5. The web lesson
 
