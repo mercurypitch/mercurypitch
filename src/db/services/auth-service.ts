@@ -1296,6 +1296,14 @@ export function logout(): void {
   serverVerifiedToken = null
   authChanged()
 
+  // The content-studio admin key is not account state, but it is an
+  // org-wide credential kept in localStorage — it must not outlive a
+  // sign-out on a shared or borrowed browser. Cleared through its own
+  // setter, lazily, so the studio feature code stays out of first paint.
+  void import('@/features/challenges/weekly-service').then((m) => {
+    m.setAdminKey('')
+  })
+
   // Tell the server this DEVICE is done. It deletes the session row named by
   // the token and leaves the account's other devices signed in — signing out
   // on a phone used to sign out the laptop and the television with it. To end
