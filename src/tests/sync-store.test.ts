@@ -88,7 +88,7 @@ vi.mock('@/db/persistent-storage', () => ({
   requestPersistentStorage: () => Promise.resolve(true),
 }))
 
-import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerLabel, syncPeerRoom, syncPeerSongs, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncPeerLabel, syncPeerRoom, syncPeerSongs, syncQueue, syncRole, syncState, syncTransfers, } from '@/stores/sync-store'
 import { closeSyncModal, openSyncModal, syncSummary, syncSummaryLabel, } from '@/stores/sync-ui-store'
 import type { UvrSession } from '@/stores/uvr-store'
 
@@ -253,21 +253,22 @@ describe('what the far device said about itself', () => {
   })
 })
 
+/** The smallest manifest `isReadableManifest` will accept. */
+const manifest = {
+  format: 'mercurypitch-song',
+  version: 1,
+  song: { fileHash: 'hash-2', title: 'Far Song', quality: 'portable' },
+  parts: [{ id: 'stem:vocal', bytes: 100, sha256: 'abc', mime: 'audio/mp4' }],
+}
+
+/** The far device announcing it is packing `manifest`'s song. */
+const preparing = {
+  type: 'sync-preparing',
+  fileHash: 'hash-2',
+  title: 'Far Song',
+}
+
 describe('telling the receiver a song is being packed', () => {
-  /** The smallest manifest `isReadableManifest` will accept. */
-  const manifest = {
-    format: 'mercurypitch-song',
-    version: 1,
-    song: { fileHash: 'hash-2', title: 'Far Song', quality: 'portable' },
-    parts: [{ id: 'stem:vocal', bytes: 100, sha256: 'abc', mime: 'audio/mp4' }],
-  }
-
-  const preparing = {
-    type: 'sync-preparing',
-    fileHash: 'hash-2',
-    title: 'Far Song',
-  }
-
   it('announces before it starts packing, not after', async () => {
     uvr.session = bigSong
     let announcedFirst = false
@@ -370,6 +371,69 @@ describe('telling the receiver a song is being packed', () => {
     // closing it by hand it waits for ever.
     expect(syncTransfers()[0]?.status).toBe('failed')
     expect(syncTransfers()[0]?.message).toContain('left')
+  })
+})
+
+describe('a song pushed at a device that is not receiving', () => {
+  // The allowed branch is pinned next door, in 'telling the receiver a song
+  // is being packed': "replaces that row with the transfer rather than
+  // adding a second" drives these SAME two frames at a RECEIVING device and
+  // sees the row reach 'transferring'. These are the other two roles.
+
+  it('a sending device drops a song pushed at it', async () => {
+    await startSyncSend('ABCD2345')
+    expect(peerMock.joinRoom).toHaveBeenCalledWith(
+      'ABCD2345',
+      expect.any(String),
+    )
+    expect(syncRole()).toBe('send')
+    peerMock.handlers?.onChannelReady('peer-1', 'Computer')
+
+    // The "being packed" row is a courtesy and is not role-gated; it is the
+    // OFFER that would start an import, and that is what must be dropped.
+    peerMock.handlers?.onControl('peer-1', preparing)
+    const framesBefore = framesSent().length
+    peerMock.handlers?.onControl('peer-1', { type: 'sync-offer', manifest })
+
+    // Nothing started: the courtesy row never advances, the offer added no
+    // row of its own, and the guard answered with silence: no sync-failed,
+    // nothing on the wire at all.
+    expect(syncTransfers()).toHaveLength(1)
+    expect(syncTransfers()[0]?.status).toBe('preparing')
+    expect(syncTransfers().some((t) => t.status === 'transferring')).toBe(false)
+    expect(framesSent()).toHaveLength(framesBefore)
+    expect(framesSent().some((m) => m.type === 'sync-failed')).toBe(false)
+    expect(bundle.importPortableBundle).not.toHaveBeenCalled()
+    expect(syncRole()).toBe('send')
+  })
+
+  it('the offer alone leaves nothing behind on a sending device', async () => {
+    await startSyncSend('ABCD2345')
+    peerMock.handlers?.onChannelReady('peer-1', 'Computer')
+    const framesBefore = framesSent().length
+
+    peerMock.handlers?.onControl('peer-1', { type: 'sync-offer', manifest })
+
+    expect(syncTransfers()).toEqual([])
+    expect(framesSent()).toHaveLength(framesBefore)
+    expect(bundle.importPortableBundle).not.toHaveBeenCalled()
+  })
+
+  it('a device with no role drops it too', async () => {
+    await connect()
+    stopSync()
+    expect(syncRole()).toBeNull()
+    expect(syncTransfers()).toEqual([])
+
+    // The store has let go of the peer, but a channel that has not noticed
+    // yet can still hand a frame up. Nothing may import, and nothing throws.
+    expect(() =>
+      peerMock.handlers?.onControl('peer-1', { type: 'sync-offer', manifest }),
+    ).not.toThrow()
+
+    expect(syncTransfers()).toEqual([])
+    expect(framesSent().some((m) => m.type === 'sync-failed')).toBe(false)
+    expect(bundle.importPortableBundle).not.toHaveBeenCalled()
   })
 })
 

@@ -350,6 +350,32 @@ describe('closing, and what it must not do', () => {
     expect(sync.startSyncSend).toHaveBeenCalledWith('ABCD2345')
   })
 
+  it('a code from a link pre-fills the field, with Connect ready to press', () => {
+    state.syncState = 'idle'
+    sync.takeSyncCodeToJoin.mockReturnValueOnce('ABCD2345')
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+
+    const input = screen.getByTestId('sync-join-input') as HTMLInputElement
+    const connect = screen.getByTestId('sync-join-submit') as HTMLButtonElement
+    expect(input.value).toBe('ABCD2345')
+    expect(connect.disabled).toBe(false)
+    // Pre-filled is all it is: nothing connected on the way in.
+    expect(sync.startSyncSend).not.toHaveBeenCalled()
+  })
+
+  it('an incomplete code keeps Connect disabled', () => {
+    state.syncState = 'idle'
+    sync.takeSyncCodeToJoin.mockReturnValueOnce('ABC')
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+
+    const input = screen.getByTestId('sync-join-input') as HTMLInputElement
+    const connect = screen.getByTestId('sync-join-submit') as HTMLButtonElement
+    expect(input.value).toBe('ABC')
+    expect(connect.disabled).toBe(true)
+    fireEvent.click(connect)
+    expect(sync.startSyncSend).not.toHaveBeenCalled()
+  })
+
   it('the song the dialog was opened for goes through the queue', () => {
     state.sessions = [song()]
     render(() => <SyncDevicesModal onClose={() => {}} initialSessionId="s1" />)
