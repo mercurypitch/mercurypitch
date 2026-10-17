@@ -39,9 +39,10 @@ vi.mock('@/features/karaoke-night/demo-song', async (importOriginal) => {
   }
 })
 
+import type { UvrSessionRecord } from '@/db/entities'
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
 import { demoSessionId } from '@/features/karaoke-night/demo-song'
-import { EXAMPLES_GROUP_NAME } from '@/features/karaoke-night/examples-library'
+import { EXAMPLES_GROUP_NAME, exampleSessionFrom, } from '@/features/karaoke-night/examples-library'
 import { exampleCreditFor, resetExamplesSeedForTests, seedExamplesLibrary, } from '@/features/karaoke-night/seed-examples'
 import { getAllUvrSessions, getGroups, importUvrSessionDurable, initGroupStore, initSessionStore, } from '@/stores/uvr-store'
 
@@ -164,6 +165,48 @@ describe('seedExamplesLibrary', () => {
     expect(
       getGroups().find((g) => g.name === EXAMPLES_GROUP_NAME)?.sessionIds,
     ).not.toContain('my-own-song')
+  })
+
+  describe('rows named before the middle dot', () => {
+    const nameOf = (id: string) =>
+      getAllUvrSessions().find((s) => s.sessionId === id)?.originalFile?.name
+    const storedName = async (id: string) => {
+      const records = await adapter
+        .getRepository<UvrSessionRecord>('uvrSessions')
+        .findAll({})
+      return records.find((r) => r.appSessionId === id)?.originalFileName
+    }
+    const seedRowNamed = async (slug: string, name: string) => {
+      const song = manifest(slug)
+      manifests.current = [song]
+      const row = exampleSessionFrom(song, 0)
+      await importUvrSessionDurable({
+        ...row,
+        originalFile: { ...row.originalFile!, name },
+      })
+      return demoSessionId(slug)
+    }
+
+    it('renames a row that still has the old default name, on disk too', async () => {
+      const id = await seedRowNamed(
+        'old-default',
+        'Josh Woodward — old-default',
+      )
+      await seedExamplesLibrary()
+
+      expect(nameOf(id)).toBe('Josh Woodward · old-default')
+      await vi.waitFor(async () =>
+        expect(await storedName(id)).toBe('Josh Woodward · old-default'),
+      )
+    })
+
+    it('never renames a row the visitor gave a name of their own', async () => {
+      const id = await seedRowNamed('their-name', 'Their favourite')
+      await seedExamplesLibrary()
+
+      expect(nameOf(id)).toBe('Their favourite')
+      expect(await storedName(id)).toBe('Their favourite')
+    })
   })
 
   it('seeds the lyrics through the path that protects an edited copy', async () => {

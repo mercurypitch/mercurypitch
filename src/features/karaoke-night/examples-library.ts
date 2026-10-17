@@ -23,7 +23,7 @@
 //
 // Plan: docs/plans/lrc-mapper-studio-plan.md (Phase 7).
 
-import { demoSessionId, EXAMPLE_PROVIDER } from '@/lib/example-session'
+import { demoSessionId, EXAMPLE_PROVIDER, isExampleSession, } from '@/lib/example-session'
 import type { UvrSession } from '@/stores/uvr-store'
 import type { BundledExample } from './bundled-examples'
 import type { DemoSongManifest } from './demo-song'
@@ -46,6 +46,40 @@ export { EXAMPLE_PROVIDER, isExampleSession } from '@/lib/example-session'
 const EXAMPLES_EPOCH_MS = Date.UTC(2020, 0, 1)
 const ONE_DAY_MS = 86_400_000
 
+/** What an example's row is called: artist, then title, as the list reads. */
+export function exampleRowName(manifest: DemoSongManifest): string {
+  return `${manifest.artist} · ${manifest.title}`
+}
+
+/** The name example rows were seeded with before the middle dot. */
+function emDashRowName(manifest: DemoSongManifest): string {
+  return `${manifest.artist} — ${manifest.title}`
+}
+
+/**
+ * The example rows still called by the old default name, and what each is
+ * called now.
+ *
+ * Only a name that is exactly the old default moves. Any other name, even one
+ * a character away, is the visitor's or an archive's, and stays as it is.
+ */
+export function exampleRowsToRename(
+  manifests: readonly DemoSongManifest[],
+  sessions: readonly UvrSession[],
+): { sessionId: string; from: string; to: string }[] {
+  const rows = new Map(sessions.map((session) => [session.sessionId, session]))
+  const renames: { sessionId: string; from: string; to: string }[] = []
+  for (const manifest of manifests) {
+    const row = rows.get(demoSessionId(manifest.slug))
+    if (row === undefined || !isExampleSession(row)) continue
+    const from = emDashRowName(manifest)
+    const to = exampleRowName(manifest)
+    if (row.originalFile?.name !== from || from === to) continue
+    renames.push({ sessionId: row.sessionId, from, to })
+  }
+  return renames
+}
+
 /**
  * The session row for one manifest.
  *
@@ -62,7 +96,7 @@ export function exampleSessionFrom(
     status: 'completed',
     progress: 100,
     originalFile: {
-      name: `${manifest.artist} — ${manifest.title}`,
+      name: exampleRowName(manifest),
       size: 0,
       mimeType: 'audio/mpeg',
     },

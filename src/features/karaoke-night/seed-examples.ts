@@ -17,12 +17,12 @@ import { createSignal } from 'solid-js'
 import { hydrateStemUrls, listStemTypesStrict } from '@/db/services/uvr-service'
 import { IS_DEV } from '@/lib/defaults'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
-import { addSessionToGroup, createGroup, getAllUvrSessions, getGroups, getUvrSession, importUvrSessionDurable, restoreUvrSessionOutputs, updateUvrSessionOutputs, } from '@/stores/uvr-store'
+import { addSessionToGroup, createGroup, getAllUvrSessions, getGroups, getUvrSession, importUvrSessionDurable, renameUvrSessionFile, restoreUvrSessionOutputs, updateUvrSessionOutputs, } from '@/stores/uvr-store'
 import type { BundledExample } from './bundled-examples'
 import { loadBundledExamples } from './bundled-examples'
 import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, loadDemoSongs, loadDemoSongsFromApi, seedDemoLyrics, } from './demo-song'
-import { exampleAttribution, EXAMPLES_GROUP_NAME, exampleSessionFrom, examplesToSeed, isExampleSession, mergeExampleManifests, reconcileExampleGroup, } from './examples-library'
+import { exampleAttribution, exampleRowsToRename, EXAMPLES_GROUP_NAME, exampleSessionFrom, examplesToSeed, isExampleSession, mergeExampleManifests, reconcileExampleGroup, } from './examples-library'
 
 /**
  * The web seed, once per page. A promise rather than a flag so a second
@@ -91,6 +91,8 @@ async function seedWebExamples(): Promise<void> {
         newlySeeded.add(session.sessionId)
       }
     }
+
+    renameEmDashRows(manifests)
 
     // Session records deliberately omit runtime outputs. Keeping the row
     // through the boot prune must also restore the URLs that make it sing.
@@ -262,8 +264,23 @@ async function seedManifests(
       newlySeeded.add(session.sessionId)
     }
   }
+  renameEmDashRows(manifests)
   for (const manifest of manifests) await seedDemoLyrics(manifest)
   await ensureExamplesGroup(manifests, existing, newlySeeded)
+}
+
+/**
+ * Rows seeded before the list used a middle dot are called "Artist — Title".
+ * Each one still called exactly that takes the new name; the store checks the
+ * name again as it writes, so a rename the visitor made in between wins.
+ */
+function renameEmDashRows(manifests: readonly DemoSongManifest[]): void {
+  for (const { sessionId, from, to } of exampleRowsToRename(
+    manifests,
+    getAllUvrSessions(),
+  )) {
+    renameUvrSessionFile(sessionId, from, to)
+  }
 }
 
 async function ensureExamplesGroup(

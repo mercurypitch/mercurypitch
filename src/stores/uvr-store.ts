@@ -1694,6 +1694,29 @@ export function updateUvrSessionOutputs(
   }
 }
 
+/** Rename a row (its file name) while it is still called `from`, in the
+ * cache and on disk. A name changed in the meantime wins: nothing is written. */
+export function renameUvrSessionFile(
+  sessionId: string,
+  from: string,
+  to: string,
+): boolean {
+  const current = getUvrSession(sessionId)
+  if (
+    current?.originalFile === undefined ||
+    current.originalFile.name !== from ||
+    deletedSessionIds.has(sessionId)
+  )
+    return false
+  const renamed: UvrSession = {
+    ...current,
+    originalFile: { ...current.originalFile, name: to },
+  }
+  upsertSessionInCache(renamed)
+  setCurrentSessionIfActive(renamed)
+  return true
+}
+
 /** Restore runtime URLs without rewriting durable metadata. A pending read
  * must not resurrect a deleted row or replace stems edited while it waited. */
 export function restoreUvrSessionOutputs(

@@ -240,7 +240,7 @@ describe('UvrSessionResult Component', () => {
         <UvrSessionResult {...defaultProps} sessionId={example.sessionId} />
       ))
 
-      expect(screen.getByText('Josh Woodward — Josephine')).toBeInTheDocument()
+      expect(screen.getByText('Josh Woodward · Josephine')).toBeInTheDocument()
       expect(screen.queryByText('Created')).toBeNull()
       // Nor the sort key itself, in any date format.
       expect(document.body.textContent).not.toMatch(/2020/)
