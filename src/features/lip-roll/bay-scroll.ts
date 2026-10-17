@@ -2,38 +2,28 @@
 // The bay's scroll: where the camera is, and how close, at each moment
 // ============================================================
 //
-// Time is the distance along the bay (DESIGN-lip-roll.md 1): the playhead
-// stays at PLAYHEAD_X of the screen and the waves move under it. The
-// camera is the world X under the playhead, in W units of wave B; wave
-// k's crest is at k * PERIOD_W.
-//
-//   wave k      up, top and down: the camera moves at one constant speed,
-//               the wave's span over its time, so x is linear in time
-//               wherever the voice is judged (L0 5.2)
-//   landing     the landing and the rest after it cover the landing
-//   + rest      (LANDING_W) in their time: the scroll slows to a stand
-//               over the landing, stands through the pause and the next
-//               root's tone, and eases back up before the next wave
-//               (room-kit glide-gap.ts)
-//   count-in    from the intro at rest to the first wave's foot at the
-//               wave speed. The intro shows screen 1: the first crest at
-//               INTRO.crestX, the world squeezed to wave A's size; the
-//               count-in zooms in to wave B's (`zoom`, 0 to 1, eased, flat
-//               at both ends) while it rolls the bay back a little and in
-//   end         after the last wave, the scroll comes to rest over its
-//               landing
+// The glide rooms' scroll (room-kit glide/glide-scroll.ts) on the bay
+// (DESIGN-lip-roll.md 1): the playhead stays at PLAYHEAD_X of the screen
+// and the waves move under it. The camera is the world X under the
+// playhead, in W units of wave B; wave k's crest is at k * PERIOD_W.
+// During a wave the camera moves at one constant speed, so x is linear in
+// time wherever the voice is judged (L0 5.2); a landing and its rest cover
+// LANDING_W. The intro shows screen 1: the first crest at INTRO.crestX,
+// the world squeezed to wave A's size; the count-in zooms in to wave B's
+// (`zoom`, 0 to 1, eased, flat at both ends) while it rolls the bay back a
+// little and in.
 //
 // `at` is where in the bay a moment is sung; `camera` is what the screen
 // shows, the same unless a hold stops it (holdCamera: the demo's one wave,
 // kept in view while its tooltips are read). Under a held camera the
 // voice and Merc ride on past the playhead, across the screen.
 //
-// Ng slides' bridge-scroll.ts with the bay's period and the zoom. Pure
-// arithmetic on the glide path's own times (src/lib/glide), so the wave
-// under the playhead is always the wave the engine judges.
+// Pure arithmetic on the glide path's own times (src/lib/glide), so the
+// wave under the playhead is always the wave the engine judges.
 
-import type { ArchGap } from '@/components/room-kit/glide-gap'
-import { archGapAt, easedDistance as eased, planArchGap, } from '@/components/room-kit/glide-gap'
+import type { GlideScrollGeometry } from '@/components/room-kit/glide/glide-scroll'
+import { createGlideScroll } from '@/components/room-kit/glide/glide-scroll'
+import { easedDistance as eased } from '@/components/room-kit/glide-gap'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { INTRO, LANDING_W, PERIOD_W, PLAYHEAD_X, WAVE } from './bay-geometry'
 
@@ -44,6 +34,14 @@ export function crestX(k: number): number {
 
 /** The camera on the intro: screen 1's first crest at INTRO.crestX. */
 export const INTRO_CAMERA = -(INTRO.crestX - PLAYHEAD_X) / INTRO.sx
+
+/** The bay, as its scroll reads it. */
+const BAY: GlideScrollGeometry = {
+  a: WAVE.a,
+  period: PERIOD_W,
+  landingW: LANDING_W,
+  introCamera: INTRO_CAMERA,
+}
 
 const smoothstep = (x: number): number => {
   const s = x <= 0 ? 0 : x >= 1 ? 1 : x
@@ -69,78 +67,22 @@ export interface BayScroll {
   readonly countIn: number
 }
 
-/** The count-in: a cubic from rest at the intro to the foot at speed v. */
-function countInAt(s: number, from: number, to: number, slope: number): number {
-  const s2 = s * s
-  const s3 = s2 * s
-  return (
-    from * (2 * s3 - 3 * s2 + 1) + to * (3 * s2 - 2 * s3) + slope * (s3 - s2)
-  )
-}
-
 export function createBayScroll(
   path: GlidePath,
   countInSec: number,
 ): BayScroll {
-  const waves = path.arches
-  const first = waves[0]
-  const sung = first.end - first.start
-  const v = (2 * WAVE.a) / sung
-  const gaps: ArchGap[] = []
-  for (let k = 0; k + 1 < waves.length; k++) {
-    const wave = waves[k]
-    gaps.push(
-      planArchGap(
-        wave.end,
-        wave.landingEnd,
-        waves[k + 1].start,
-        crestX(k) + WAVE.a,
-        LANDING_W,
-        v,
-      ),
-    )
-  }
-  const last = waves[waves.length - 1]
-  const settle = Math.max(1e-3, last.landingEnd - last.end)
-  const finalX = crestX(waves.length - 1) + WAVE.a
-  const restX = finalX + (v * settle) / 2
-  const footX = crestX(0) - WAVE.a
-  const lead = countInSec + first.start
-
-  const at = (t: number): number => {
-    if (t <= -countInSec) return INTRO_CAMERA
-    if (t < first.start) {
-      const s = (t + countInSec) / lead
-      return countInAt(s, INTRO_CAMERA, footX, v * lead)
-    }
-    for (let k = 0; k < waves.length; k++) {
-      const wave = waves[k]
-      if (t <= wave.end) {
-        return crestX(k) - WAVE.a + v * Math.max(0, t - wave.start)
-      }
-      const gap = gaps[k] as ArchGap | undefined
-      if (gap !== undefined && t < gap.to) return archGapAt(gap, t)
-    }
-    const tau = Math.min(settle, t - last.end)
-    return finalX + v * (tau - settle * eased(tau / settle))
-  }
-
+  const scroll = createGlideScroll(path, countInSec, BAY)
+  const lead = scroll.lead
   const zoom = (t: number): number =>
     lead <= 0 ? 1 : smoothstep((t + countInSec) / lead)
-
-  // The count-in's dip below the foot: its lowest point, sampled.
-  let min = Math.min(INTRO_CAMERA, footX)
-  for (let i = 1; i < 64; i++) {
-    min = Math.min(min, at(-countInSec + (i / 64) * lead))
-  }
   return {
-    at,
-    camera: at,
+    at: scroll.at,
+    camera: scroll.camera,
     zoom,
-    waveSpeed: v,
-    min,
-    max: restX,
-    countIn: countInSec,
+    waveSpeed: scroll.speed,
+    min: scroll.min,
+    max: scroll.max,
+    countIn: scroll.countIn,
   }
 }
 
