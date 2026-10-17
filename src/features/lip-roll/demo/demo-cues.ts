@@ -17,10 +17,19 @@
 // the same table out on the script's own replay, which is what the tests
 // check and what the progress bar runs on.
 
-import type { DemoCue as KitDemoCue, DemoMark as KitDemoMark, DemoTimeline, } from '@/components/demo-kit/demo-plan'
-import { planDemo } from '@/components/demo-kit/demo-plan'
+import type { DemoCue as KitDemoCue, DemoMark as KitDemoMark, } from '@/components/demo-kit/demo-plan'
+import type { GlideDemoPlan } from '@/components/room-kit/glide/glide-demo'
+import { planGlideDemo } from '@/components/room-kit/glide/glide-demo'
 import type { LipDemoMark, LipDemoTake } from './demo-script'
 import { demoTake } from './demo-script'
+
+// The glide rooms' beats, words and reading time (room-kit
+// glide/glide-demo.ts), under this demo's names.
+export {
+  GLIDE_DEMO_BEATS as DEMO_BEATS,
+  GLIDE_DEMO_COPY as DEMO_COPY,
+  GLIDE_TIP_READ_SECONDS as TIP_READ_SECONDS,
+} from '@/components/room-kit/glide/glide-demo'
 
 /**
  * What a tooltip points at: the wave's top, the water just sung behind the
@@ -33,9 +42,6 @@ export type DemoCueId = 'short' | 'break' | 'ride' | 'turn' | 'score'
 export type DemoMark = KitDemoMark<LipDemoMark>
 
 export type DemoCue = KitDemoCue<DemoCueId, LipDemoMark, DemoTarget>
-
-/** The least time a tooltip stays up, s: Echo's and Ng slides' rule. */
-export const TIP_READ_SECONDS = 1.8
 
 /** One tooltip at a time; each stays until the next beat clears it. */
 export const DEMO_CUES: readonly DemoCue[] = [
@@ -82,37 +88,6 @@ export const DEMO_CUES: readonly DemoCue[] = [
   },
 ]
 
-/** The beats between the takes, wall seconds: Ng slides' own. */
-export const DEMO_BEATS = {
-  /** Merc's "Watch me first", before take 1. */
-  intro: 0.9,
-  /** From a take's start to its clock's zero: the sound's head start. */
-  lead: 0.12,
-  /** Take 1's end to the reset: the dark top, and the break's read. */
-  afterOff: 1.6,
-  /** The bay empties and the pill turns. */
-  reset: 0.5,
-  /** Take 2's end to the end card: the lit wave, and the score's read. */
-  afterOn: 2.4,
-} as const
-
-/** The demo's words. No em dashes; "practice", never "practise". */
-export const DEMO_COPY = {
-  watch: 'Watch me first.',
-  off: 'Not like this',
-  on: 'Like this',
-  skip: 'Skip',
-  ask: 'How it works',
-  cardTitle: 'See how it works',
-  cardLine: 'Merc sings it first. Turn your sound on.',
-  watchButton: 'Watch',
-  notNow: 'Not now',
-  endTitle: 'Your turn',
-  tryIt: 'Try it',
-  again: 'Watch again',
-  micHint: 'Tap the mic to start.',
-} as const
-
 /** A tooltip's words: what the voice did, and what it does to the light. */
 export function demoCueText(id: DemoCueId): string {
   switch (id) {
@@ -129,16 +104,9 @@ export function demoCueText(id: DemoCueId): string {
   }
 }
 
-export type LipDemoPlan = DemoTimeline<DemoCueId, LipDemoTake> & {
-  readonly note: number
-}
+export type LipDemoPlan = GlideDemoPlan<DemoCueId, LipDemoTake>
 
 /** The whole demo on one wall clock, as the script plays it. */
 export function planLipDemo(root: number): LipDemoPlan {
-  const off = demoTake('off', root)
-  const on = demoTake('on', root)
-  return {
-    note: root,
-    ...planDemo('Lip roll', { off, on }, DEMO_CUES, DEMO_BEATS),
-  }
+  return planGlideDemo('Lip roll', root, demoTake, DEMO_CUES)
 }
