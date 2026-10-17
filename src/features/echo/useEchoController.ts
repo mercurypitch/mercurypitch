@@ -39,6 +39,7 @@ import { createQuietWatch, WALL_CLOCK } from '@/components/room-kit/quiet-watch'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { offerable, QUIET_LIMIT_SECONDS, SILENT_VOICE, } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
+import { openRoomMic } from '@/components/room-kit/room-mic'
 import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_ECHO_STARS } from '@/lib/domain/exercise-contracts'
@@ -78,7 +79,7 @@ import { createScriptedRoom, SCRIPTED_CALL } from './scripted-take'
 import { phrasePlaces } from './sky-layout'
 import type { SkyScene } from './sky-scene'
 import { EMPTY_SCENE } from './sky-scene'
-import { CaptureError, useEchoCapture } from './useEchoCapture'
+import { useEchoCapture } from './useEchoCapture'
 import type { VoicePoint, VoiceSample } from './voice-path'
 import { voicePath } from './voice-path'
 
@@ -567,50 +568,37 @@ export function useEchoController(
   }
 
   // ── What the singer does ───────────────────────────────────
-  /** The mic opens inside the tap; the run starts once it has. */
+  /**
+   * The mic opens inside the tap, then the clock Merc's call plays on
+   * (room-kit room-mic.ts); the run starts once both have.
+   */
   const openMic = (): void => {
-    const { run } = untrack(state)
-    const stands = (): boolean =>
-      life.alive() && phase() === 'starting' && untrack(state).run === run
-    void capture
-      .acquire()
-      // A take the app's leaving dropped meanwhile unlocks nothing.
-      .then(() => (stands() ? capture.audio() : null))
-      .then(
-        (ctx) => {
-          if (!stands()) return
-          if (ctx === null) {
-            dispatch({ type: 'mic-failed', run, block: 'unavailable' })
-            merc.set('idle')
-            return
-          }
-          audio = ctx
-          quiet.heard()
-          const window = knownWindow()
-          const rooted = window.source !== 'preset'
-          dispatch({ type: 'mic-ready', run, rooted })
-          if (rooted) {
-            plan(window)
-            callPhrase()
-          } else {
-            openWindow()
-            merc.set('listen')
-            startLoop()
-          }
-          // The page went away while the microphone opened.
-          if (document.visibilityState === 'hidden') leave()
-        },
-        (error: unknown) => {
-          if (!stands()) return
-          dispatch({
-            type: 'mic-failed',
-            run,
-            block:
-              error instanceof CaptureError ? error.failure : 'unavailable',
-          })
-          merc.set('idle')
-        },
-      )
+    openRoomMic({
+      capture,
+      alive: life.alive,
+      state,
+      clock: true,
+      onOpen: (run, ctx) => {
+        audio = ctx
+        quiet.heard()
+        const window = knownWindow()
+        const rooted = window.source !== 'preset'
+        dispatch({ type: 'mic-ready', run, rooted })
+        if (rooted) {
+          plan(window)
+          callPhrase()
+        } else {
+          openWindow()
+          merc.set('listen')
+          startLoop()
+        }
+      },
+      onFail: (run, block) => {
+        dispatch({ type: 'mic-failed', run, block })
+        merc.set('idle')
+      },
+      onHidden: leave,
+    })
   }
 
   const start = (): void => {

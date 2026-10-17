@@ -29,6 +29,7 @@ import { createQuietWatch, secondsClock, } from '@/components/room-kit/quiet-wat
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { offerable, QUIET_LIMIT_SECONDS, } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
+import { openRoomMic } from '@/components/room-kit/room-mic'
 import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
@@ -53,7 +54,7 @@ import type { LongNoteMoment } from './merc-lines'
 import { createMercLineSelector } from './merc-lines'
 import { rememberedLongNote } from './remembered-note'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
-import { CaptureError, useLongNoteCapture } from './useLongNoteCapture'
+import { useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
 
 export type { MercPlace } from '@/components/room-kit/merc-moves'
@@ -475,45 +476,35 @@ export function useLongNoteController(): LongNoteController {
   }
 
   /**
-   * The note first, then the microphone: iOS changes the audio session when
-   * the mic opens, and the note should not be clipped by it. The tone also
-   * ends before the take opens, so the mic never hears it as the singer's
-   * own note. With no note yet there is nothing to play.
+   * The note first, then the microphone (room-kit room-mic.ts): iOS changes
+   * the audio session when the mic opens, and the note should not be
+   * clipped by it. The tone also ends before the take opens, so the mic
+   * never hears it as the singer's own note. With no note yet there is
+   * nothing to play, and the mic opens inside the tap itself.
    */
   const openMic = (moment: LongNoteMoment | null): void => {
-    const { run, targetMidi } = untrack(state)
-    // Nothing to play: open the mic inside the tap itself. After a tone,
-    // only if this start still stands: the singer may have left the room,
-    // or the app (stopListening), while it played.
-    const stands = (): boolean =>
-      life.alive() &&
-      untrack(state).phase === 'starting' &&
-      untrack(state).run === run
-    const opened =
-      targetMidi === null
-        ? capture.acquire()
-        : capture
-            .playTone(targetMidi)
-            .then(() => (stands() ? capture.acquire() : undefined))
-    void opened.then(
-      () => {
-        if (!life.alive()) return
+    openRoomMic({
+      capture,
+      alive: life.alive,
+      state,
+      tone: untrack(state).targetMidi,
+      // Every answer while the screen lives: the machine drops one for a
+      // start that no longer stands (the singer left the room, or the
+      // app, while the note played or the mic opened), and only a take
+      // that listens goes on.
+      lateAnswers: true,
+      onOpen: (run) => {
         dispatch({ type: 'mic-ready', run })
         if (untrack(state).phase !== 'listen') return
         beginListening(moment)
         // The page went away while the microphone opened.
         if (document.visibilityState === 'hidden') stopListening()
       },
-      (error: unknown) => {
-        if (!life.alive()) return
-        dispatch({
-          type: 'mic-failed',
-          run,
-          block: error instanceof CaptureError ? error.failure : 'unavailable',
-        })
+      onFail: (run, block) => {
+        dispatch({ type: 'mic-failed', run, block })
         merc.set('idle')
       },
-    )
+    })
   }
 
   const start = (): void => {
