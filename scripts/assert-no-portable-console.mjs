@@ -76,6 +76,7 @@ const FINGERPRINTS = [
   'mp:dev-karaoke-decode-past-guard',
   'mp:dev-karaoke-last-song-path',
   'mp:dev-one-volume-in-rooms',
+  'mp:dev-audio-log',
   'shell-developer',
   'native-signin-result',
   'dev-audio-report',

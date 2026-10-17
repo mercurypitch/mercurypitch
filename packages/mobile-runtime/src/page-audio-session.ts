@@ -84,7 +84,7 @@ function pageSession(): PageAudioSession | null {
 }
 
 function tell(change: Omit<PageAudioSessionChange, 'holders'>): void {
-  const holders = claims.map((claim) => claim.who).reverse()
+  const holders = pageAudioSessionHolders()
   for (const listener of [...listeners]) {
     try {
       listener({ ...change, holders })
@@ -158,6 +158,11 @@ export function claimPageAudioSession(
 /** The type the page reads now; null where it has no audio session. */
 export function pageAudioSessionType(): string | null {
   return pageSession()?.type ?? null
+}
+
+/** Who holds the type now, newest first: empty while nobody does. */
+export function pageAudioSessionHolders(): readonly string[] {
+  return claims.map((claim) => claim.who).reverse()
 }
 
 /** Every change made here. Returns the unsubscribe. */

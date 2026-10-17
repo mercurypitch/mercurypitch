@@ -7,7 +7,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PageAudioSessionChange } from './page-audio-session'
-import { claimPageAudioSession, onPageAudioSessionChange, pageAudioSessionType, resetPageAudioSessionForTests, } from './page-audio-session'
+import { claimPageAudioSession, onPageAudioSessionChange, pageAudioSessionHolders, pageAudioSessionType, resetPageAudioSessionForTests, } from './page-audio-session'
 
 interface FakeSession {
   type: string
@@ -194,6 +194,7 @@ describe('two claims', () => {
     vi.stubGlobal('navigator', { audioSession: session })
     const room = claimPageAudioSession('room echo', 'play-and-record')
     const nowPlaying = claimPageAudioSession('now playing', 'playback')
+    expect(pageAudioSessionHolders()).toEqual(['now playing', 'room echo'])
     nowPlaying?.()
     room?.()
     expect(changes.map((c) => c.holders)).toEqual([
@@ -202,6 +203,7 @@ describe('two claims', () => {
       ['room echo'],
       [],
     ])
+    expect(pageAudioSessionHolders()).toEqual([])
   })
 
   it('reads the page’s own type afresh once every claim has gone', () => {
