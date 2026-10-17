@@ -147,7 +147,25 @@ describe('setMelodyOGTags', () => {
   it('updates og:description with BPM but no key', () => {
     setMelodyOGTags({ noteCount: 8, bpm: 100 })
     expect(getMetaContent('property', 'og:description')).toBe(
-      'A 8-note melody at 100 BPM. Practice it on MercuryPitch.',
+      'An 8-note melody at 100 BPM. Practice it on MercuryPitch.',
+    )
+  })
+
+  // By how the number is said: eight, eleven, eighteen, eighty and eight
+  // hundred start on a vowel; one, sixteen and one hundred ten do not.
+  it.each([
+    [8, 'An 8-note'],
+    [11, 'An 11-note'],
+    [18, 'An 18-note'],
+    [80, 'An 80-note'],
+    [800, 'An 800-note'],
+    [1, 'A 1-note'],
+    [16, 'A 16-note'],
+    [110, 'A 110-note'],
+  ])('says "%s" notes with the right article', (noteCount, opening) => {
+    setMelodyOGTags({ noteCount })
+    expect(getMetaContent('property', 'og:description')).toBe(
+      `${opening} melody. Practice it on MercuryPitch.`,
     )
   })
 

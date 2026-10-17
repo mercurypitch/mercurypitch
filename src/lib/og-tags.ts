@@ -49,6 +49,17 @@ export interface MelodyOGMeta {
   key?: string
 }
 
+/** "An 8-note", "A 16-note": the article goes by how the number is said.
+ *  It starts on a vowel for eight, eighty and eight hundred (any number
+ *  written with a leading 8), and for eleven and eighteen, also when they
+ *  lead a larger number ("eleven thousand"). */
+function articleFor(count: number): 'A' | 'An' {
+  const digits = String(Math.trunc(Math.abs(count)))
+  // The digits said before the first "thousand" or "million".
+  const lead = digits.slice(0, ((digits.length - 1) % 3) + 1)
+  return digits.startsWith('8') || lead === '11' || lead === '18' ? 'An' : 'A'
+}
+
 /** Update OG tags for a shared melody. */
 export function setMelodyOGTags(meta: MelodyOGMeta): void {
   const title =
@@ -56,7 +67,9 @@ export function setMelodyOGTags(meta: MelodyOGMeta): void {
       ? `Melody in ${meta.key} shared on MercuryPitch`
       : 'Melody shared on MercuryPitch'
 
-  const parts: string[] = [`A ${meta.noteCount}-note melody`]
+  const parts: string[] = [
+    `${articleFor(meta.noteCount)} ${meta.noteCount}-note melody`,
+  ]
   if (meta.bpm !== null && meta.bpm !== undefined)
     parts.push(`at ${meta.bpm} BPM`)
   if (meta.key !== null && meta.key !== undefined) parts.push(`in ${meta.key}`)
