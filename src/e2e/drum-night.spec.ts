@@ -1013,10 +1013,15 @@ test('switches and closes the desktop rail workbench with URL and aria state in 
 test('keeps the voice pill off every control, and in the corner once the rail is hidden @smoke', async ({
   page,
 }) => {
-  // 76 px rail, 68 px rail, no rail.
+  // 76 px rail, 68 px rail, no rail. From 721 to 768 px the rail stands
+  // under the pill's phone rule, which lifted it over a tab bar this page
+  // does not have and onto Groove at 530 and 540 px tall.
   for (const viewport of [
     { width: 1440, height: 900 },
     { width: 820, height: 800 },
+    { width: 768, height: 800 },
+    { width: 768, height: 540 },
+    { width: 721, height: 530 },
     { width: 390, height: 844 },
   ]) {
     await page.setViewportSize(viewport)
@@ -1057,11 +1062,16 @@ test('keeps the voice pill off every control, and in the corner once the rail is
             other.textContent?.trim() ??
             other.tagName,
         )
+      const kit = [...(rail?.querySelectorAll('button') ?? [])].find(
+        (button) => button.textContent?.trim() === 'Kit',
+      )
       return {
         left: box.left,
         right: box.right,
+        bottom: box.bottom,
         railRight:
           railBox !== undefined && railBox.width > 0 ? railBox.right : null,
+        kitTop: kit?.getBoundingClientRect().top ?? null,
         covered,
       }
     })
@@ -1077,6 +1087,12 @@ test('keeps the voice pill off every control, and in the corner once the rail is
         placed.railRight,
       )
       expect(placed.covered, JSON.stringify(viewport)).toEqual([])
+      // Just above it, at every width the rail stands: 19 px clear on a
+      // desk, where the band's tab bar had left 70.6.
+      expect(placed.kitTop, JSON.stringify(viewport)).not.toBeNull()
+      const clear = (placed.kitTop ?? 0) - placed.bottom
+      expect(clear, JSON.stringify(viewport)).toBeGreaterThanOrEqual(0)
+      expect(clear, JSON.stringify(viewport)).toBeLessThan(24)
     }
   }
 })

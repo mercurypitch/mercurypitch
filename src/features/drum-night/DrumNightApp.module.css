@@ -3096,6 +3096,20 @@
   }
 }
 
+/* From 721 to 768 px the rail still stands, but the pill's phone rule
+   (VoiceControlHud, max-width 768px) adds the app's tab bar under this
+   inset, and this room is a page of its own with no tab bar: the pill rose
+   to 145.6 px instead of 94 and covered Groove at 521-542 px tall (13 px of
+   it at 721x530). Here the inset takes that tab bar back out, so the pill
+   sits just above the Kit button as it does on a wider desk. */
+@media (min-width: 721px) and (max-width: 768px) and (min-height: 521px) {
+  .shell {
+    --voice-pill-inset-bottom: calc(
+      68px + 2 * 7px + var(--safe-bottom, 0px) - var(--tabbar-total, 54px)
+    );
+  }
+}
+
 /* Too short for the rail's middle to hold the pill. At 844x390 the rail is
    taller than the screen and its Kit button runs past the bottom edge, and
    a pill lifted clear of it landed on Groove and Songs instead. It keeps
