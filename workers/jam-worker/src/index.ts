@@ -9,7 +9,8 @@
 
 import type { JamRoom } from './jam-room'
 import type { TurnEnv } from './turn'
-import { mintIceServers } from './turn'
+import { mintIceServers, STUN_ONLY } from './turn'
+import { roomHasActivePeers } from './room-activity-core'
 import { isJamRoomId, normalizeJamRoomId, withJamConnectionContext, } from './signaling-intent'
 export { JamHostVerifier } from './host-verification'
 export { JamRoom } from './jam-room'
@@ -147,11 +148,18 @@ export default {
     }
 
     // ── REST: ICE servers ─────────────────────────────────────────
-    // POST on purpose: the Origin gate above covers POST, so this reuses the
-    // existing abuse control rather than inventing a second one. Minting is
-    // once per session, so the cost of a method nobody can trigger from a
-    // bare link is nil.
+    // POST on purpose: the Origin gate above covers POST, so first-party-only
+    // is already enforced. On top of that, TURN credentials are minted ONLY
+    // for a room that actually has a peer in it (the `?room=` id, checked
+    // against its Durable Object) — otherwise relay spend, billed to our
+    // Cloudflare key, could be run up by anyone who can POST. No/unknown/empty
+    // room degrades to STUN rather than erroring, so a direct-only room still
+    // works and this endpoint can never stop people jamming.
     if (url.pathname === '/api/jam/ice' && request.method === 'POST') {
+      const roomId = normalizeJamRoomId(url.searchParams.get('room') ?? '')
+      if (!(await roomHasActivePeers(env, roomId))) {
+        return respond({ iceServers: STUN_ONLY, source: 'stun' })
+      }
       const { iceServers, source } = await mintIceServers(env)
       return respond({ iceServers, source })
     }
