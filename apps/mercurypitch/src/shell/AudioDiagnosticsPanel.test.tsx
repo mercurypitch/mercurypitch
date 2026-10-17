@@ -220,6 +220,24 @@ describe('the Audio section', () => {
     expect(window.getSelection()?.toString()).toBe(report)
   })
 
+  it('has "One volume in rooms", on until turned off, and keeps an off on the phone', async () => {
+    localStorage.clear()
+    await openPanel()
+    const { ONE_VOLUME_KEY, oneVolumeInRooms } =
+      await import('./room-volume-switch')
+    const toggle = button('dev-one-volume-in-rooms')
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+
+    toggle.click()
+    expect(toggle.getAttribute('aria-checked')).toBe('false')
+    expect(oneVolumeInRooms()).toBe(false)
+    expect(localStorage.getItem(ONE_VOLUME_KEY)).toBe('0')
+
+    toggle.click()
+    expect(oneVolumeInRooms()).toBe(true)
+    expect(localStorage.getItem(ONE_VOLUME_KEY)).toBeNull()
+  })
+
   it('says Copied when the clipboard takes it', async () => {
     const writeText = vi.fn(async () => undefined)
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })

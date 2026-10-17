@@ -61,6 +61,7 @@ import type { InFrontHost } from './carrier-in-front'
 import { keepInFront } from './carrier-in-front'
 import type { SilenceKind } from './carrier-silence'
 import { silenceBlob } from './carrier-silence'
+import { claimPageAudioSession } from './page-audio-session'
 import { watchTheSamePlace } from './same-place-twice'
 import type { PressGuardHost } from './waited-presses'
 import { guardPresses } from './waited-presses'
@@ -565,24 +566,12 @@ function pageAudioSession(): PageAudioSession | null {
  * the sound, or refuses, which leaves the carrier paused.
  * Left asked for, it would make Web Audio a Now Playing item of its own,
  * whose buttons pause the clock instead of reaching the room (see the
- * header), so it goes back at once.
+ * header), so it goes back at once. Asked through the page's one owner of
+ * the type (page-audio-session.ts), so a room's claim standing meanwhile
+ * gets its own type back, and the page's once that has gone.
  */
 function askForPlayback(): (() => void) | null {
-  const audioSession = pageAudioSession()
-  if (audioSession === null) return null
-  const before = audioSession.type
-  try {
-    audioSession.type = 'playback'
-  } catch {
-    return null
-  }
-  return () => {
-    try {
-      audioSession.type = before
-    } catch {
-      // Left as it is: WebKit drops it for a page that goes away.
-    }
-  }
+  return claimPageAudioSession('now playing', 'playback')
 }
 
 export interface TakeTheSoundOptions {

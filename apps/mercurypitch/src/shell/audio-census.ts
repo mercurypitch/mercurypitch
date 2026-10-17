@@ -22,7 +22,8 @@
 // switches its own session as they do: so the output is read as each mic
 // opens and stops and as each context changes state, and once more
 // OUTPUT_SETTLE_MS later, beside the session type the page asked WebKit for
-// (`navigator.audioSession.type`, read and never set). The report then
+// (`navigator.audioSession.type`: read here, and set only through
+// page-audio-session.ts in packages/mobile-runtime). The report then
 // shows the app's session, the route and both volumes before and after.
 //
 // TRANSPARENT. The constructor is wrapped in a Proxy whose construct trap
