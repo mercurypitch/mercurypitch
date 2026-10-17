@@ -73,10 +73,14 @@ carries it for the team), so the masthead's anchors are Lesson, Watch and Explor
    explorer. Free play unlocks here: every control of the step toys on one stage (playbook rule 17:
    guided first, free play after).
 10. **Watch the episode**: the kit's episode section (`kit/episode.ts`): the film as an MP4 on R2,
-    1080p with a 720p copy for phones (MASTER-PLAN § 12 item 7, decided), its URLs in
-    `lesson-02/film.ts`; captions as a same-origin VTT track, the transcript and the chapters built
-    from the film's captions and `chapters.json`. Until the files are uploaded the section shows the
-    poster, the chapters and the transcript with "Film coming soon".
+    1080p with a 720p copy for phones, served from R2's custom domain (planned:
+    `media.mercurypitch.com`, which `media-src` must list first), not `r2.dev` (MASTER-PLAN § 12
+    item 7, updated 17 October 2026), its URLs in `lesson-02/film.ts`; captions as a same-origin VTT
+    track, the transcript and the chapters built from the film's captions and `chapters.json`, which
+    travel with the film: a re-cut that re-times it changes them in the same commit as the MP4s, as
+    Lesson 1's page does. Once the episode is on YouTube the section adds a "Watch on YouTube" link;
+    there is no YouTube embed. Until the files are uploaded the section shows the poster, the
+    chapters and the transcript with "Film coming soon".
 11. **Lesson explorer**: Lesson 1's, with Lesson 2 as the current node; Lesson 2 marks done when its
     quiz is finished; its card's practice link reads as LESSON.md's Wrap.
 12. **Footer**: Lesson 1's, with the practice link (`mercurypitch.com/ear-lab?lesson=02`) and the
