@@ -303,7 +303,7 @@ export function KaraokeNightApp() {
       await seedDemoLyrics(demoSong)
       setActiveSong({
         sessionId,
-        title: `${demoSong.title} — ${demoSong.artist}`,
+        title: `${demoSong.title} · ${demoSong.artist}`,
         stems: demoSong.stems,
         autoPlay: launch?.autoplay === true,
         initialSeekSec: launch?.startAtSec ?? undefined,
@@ -475,7 +475,7 @@ export function KaraokeNightApp() {
       setSongWithUrl(
         {
           sessionId: demoSessionId(md.slug),
-          title: `${md.title} — ${md.artist}`,
+          title: `${md.title} · ${md.artist}`,
           stems: md.stems,
           autoPlay: true,
         },
@@ -569,7 +569,7 @@ export function KaraokeNightApp() {
             <button
               class="kn-focus-toggle"
               classList={{ 'kn-focus-toggle--active': karaokeFocus() }}
-              title="Focus mode — just the stage and a floating control bar (Esc exits)"
+              title="Focus mode: just the stage and a floating control bar (Esc exits)"
               aria-label="Toggle focus mode"
               aria-pressed={karaokeFocus()}
               onClick={() => setKaraokeFocus((v) => !v)}
@@ -615,7 +615,7 @@ export function KaraokeNightApp() {
                 : activeSong()?.sessionId,
             )}
             aria-label="Open the full MercuryPitch app"
-            title="Open the full MercuryPitch app — exercises, analysis and your progress"
+            title="Open the full MercuryPitch app: exercises, analysis and your progress"
             onClick={() => trackKaraoke('karaoke_cta_studio')}
           >
             <svg
@@ -861,7 +861,7 @@ export function KaraokeNightApp() {
               <div class="kn-hero">
                 <h1>Your stage is set</h1>
                 <p>
-                  Start with our ready-to-sing song, or add one you own — the
+                  Start with our ready-to-sing song, or add one you own. The
                   vocals lift away, the lyrics light up line by line, and every
                   note you sing is scored live.
                 </p>
@@ -962,7 +962,7 @@ export function KaraokeNightApp() {
               <For each={credits()}>
                 {(d) => (
                   <p class="kn-attribution">
-                    <span class="kn-attribution-song">{d.title} — </span>
+                    <span class="kn-attribution-song">{d.title} · </span>
                     <a
                       href={d.attribution.url}
                       target="_blank"
@@ -985,7 +985,7 @@ export function KaraokeNightApp() {
         </Show>
         <nav class="kn-footer-links">
           <a href="/" onClick={() => trackKaraoke('karaoke_cta_studio')}>
-            MercuryPitch — the full studio
+            MercuryPitch: the full studio
           </a>
           <a href="/mirror">Voice Mirror</a>
           <a

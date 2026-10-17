@@ -879,7 +879,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       {/* Analysis running for the note labels — quiet inline status. */}
       <Show when={(noteGlyphsOn() || micOn()) && props.notesAnalyzing?.()}>
         <p class={styles.notesHint}>
-          Reading the vocal to find the notes —{' '}
+          Reading the vocal to find the notes:{' '}
           {Math.round(props.notesProgress?.() ?? 0)}%
         </p>
       </Show>
@@ -929,7 +929,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                     <>
                       <p>No synced lyrics for this song yet.</p>
                       <p class={styles.noLyricsSub}>
-                        The music still plays — sing it your way.
+                        The music still plays. Sing it your way.
                       </p>
                       <Show when={props.onUploadLyrics}>
                         <button
@@ -1100,7 +1100,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         onTap={pillTapToggle}
         onLevel={pillSetLevel}
         title={
-          vocalsOff() ? 'Bring the vocals back' : 'Sing it — mute the vocals'
+          vocalsOff() ? 'Bring the vocals back' : 'Mute the vocals and sing it'
         }
         ariaLabel="Toggle guide vocals (drag to set their level)"
       >
@@ -1149,7 +1149,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                 aria-pressed={micOn()}
                 title={
                   micOn()
-                    ? 'Mic is live — the ribbon follows your pitch. Tap to turn it off.'
+                    ? 'Mic is live: the ribbon follows your pitch. Tap to turn it off.'
                     : 'Sing with the mic and watch your pitch ride the notes'
                 }
                 aria-label="Toggle your microphone"
@@ -1432,7 +1432,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
             }
           >
             <p class={styles.sheetEmpty}>
-              Nothing else here yet — go back to add a song.
+              Nothing else here yet. Go back to add a song.
             </p>
           </Show>
         </Sheet>

@@ -230,7 +230,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
       ) {
         // A silent no-op here reads as a dead button — say why.
         showNotification(
-          "This song's audio isn't on this device anymore — process it again to sing it.",
+          "This song's audio isn't on this device anymore. Process it again to sing it.",
           'warning',
         )
         return
@@ -305,7 +305,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
       if (import.meta.env.DEV)
         console.warn('[KaraokeNight] separation failed:', err)
       const message =
-        err instanceof Error ? err.message : 'Separation failed — try again.'
+        err instanceof Error ? err.message : 'Separation failed. Try again.'
       setErrorUvrSession(sessionId, message)
       setUploadError(message)
     }
@@ -530,24 +530,24 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
               fallback={
                 <Show
                   when={(uploadSession()?.progress ?? 0) > 0}
-                  fallback="Warming up the separator — the first run downloads its model…"
+                  fallback="Warming up the separator. The first run downloads its model…"
                 >
-                  {Math.round(uploadSession()?.progress ?? 0)}% — separating on
-                  this device.
+                  {Math.round(uploadSession()?.progress ?? 0)}% done, separating
+                  on this device.
                 </Show>
               }
             >
               <Show
                 when={uploadSession()?.phase === 'queued'}
-                fallback={`${Math.round(uploadSession()?.progress ?? 0)}% — separating in studio quality.`}
+                fallback={`${Math.round(uploadSession()?.progress ?? 0)}% done, separating in studio quality.`}
               >
-                Warming up the studio — your song starts in a moment…
+                Warming up the studio. Your song starts in a moment…
               </Show>
             </Show>
           </p>
           <Show when={effectiveMode() !== 'server'}>
             <p class="kn-progress-warn">
-              Separation is an intensive workload — for smooth karaoke, let it
+              Separation is an intensive workload. For smooth karaoke, let it
               finish before you sing.
             </p>
           </Show>

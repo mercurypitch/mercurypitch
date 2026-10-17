@@ -55,9 +55,9 @@ describe('mic-lock', () => {
   // What the blocked tab shows the singer is the holder's document title —
   // the label they can actually find in their tab strip.
   it('records the tab title as the holder label', () => {
-    document.title = 'MercuryPitch — Bohemian Rhapsody'
+    document.title = 'Bohemian Rhapsody | MercuryPitch'
     claimMicLock()
-    expect(readMicLock()?.label).toBe('MercuryPitch — Bohemian Rhapsody')
+    expect(readMicLock()?.label).toBe('Bohemian Rhapsody | MercuryPitch')
   })
 
   it('releasing frees the lock', () => {
