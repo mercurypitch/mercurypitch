@@ -9,7 +9,10 @@ import { OG_IMAGE_VERSIONS } from '@/seo/og-image-versions'
 const OG_TITLE =
   'MercuryPitch: See Your Voice, Sing Karaoke, Improve Every Take'
 const OG_DESC =
-  'Train your vocal pitch with real-time audio feedback, piano roll visualization, and accuracy scoring.'
+  'Meet your voice in Voice Mirror, turn songs you own into Karaoke Night stages, and improve every take with live pitch feedback.'
+// index.html gives X the shorter line.
+const TWITTER_DESC =
+  'Meet your voice, turn songs you own into Karaoke Night stages, and improve every take with live pitch feedback.'
 // Stamped like index.html's: social caches key a card by its URL, and the
 // bare URL is the one they still hold the old, letterboxed card under.
 const OG_IMAGE = `https://mercurypitch.com/og-image.png?v=${OG_IMAGE_VERSIONS['og-image.png']}`
@@ -39,7 +42,7 @@ export function initDefaultOGTags(): void {
   setMeta('og:site_name', SITE_NAME)
   setMeta('twitter:card', 'summary_large_image', true)
   setMeta('twitter:title', OG_TITLE, true)
-  setMeta('twitter:description', OG_DESC, true)
+  setMeta('twitter:description', TWITTER_DESC, true)
   setMeta('twitter:image', OG_IMAGE, true)
 }
 
@@ -90,5 +93,5 @@ export function resetToDefaultOGTags(): void {
   setMeta('og:description', OG_DESC)
   setMeta('og:url', OG_URL)
   setMeta('twitter:title', OG_TITLE, true)
-  setMeta('twitter:description', OG_DESC, true)
+  setMeta('twitter:description', TWITTER_DESC, true)
 }

@@ -77,9 +77,10 @@ describe('initDefaultOGTags', () => {
   })
 
   // The app sets these on boot, over what index.html shipped. An unstamped
-  // card URL sent social caches back to the old banded card, and the title
-  // carried an em dash index.html no longer does (0.9.19 clip review).
-  it('says what index.html says about the card and the title', () => {
+  // card URL sent social caches back to the old banded card, the title
+  // carried an em dash index.html no longer does, and the description was
+  // an older line than index.html's (0.9.19 clip review).
+  it('says what index.html says about the card, the title and the description', () => {
     const html = new DOMParser().parseFromString(
       readFileSync(resolve(process.cwd(), 'index.html'), 'utf8'),
       'text/html',
@@ -92,6 +93,8 @@ describe('initDefaultOGTags', () => {
       ['name', 'twitter:image'],
       ['property', 'og:title'],
       ['name', 'twitter:title'],
+      ['property', 'og:description'],
+      ['name', 'twitter:description'],
     ] as const) {
       expect(getMetaContent(attr, key), key).toBe(shipped(attr, key))
     }
