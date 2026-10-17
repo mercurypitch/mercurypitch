@@ -202,6 +202,21 @@ describe('the standings a cohort-mate sees', () => {
     // And there is no public directory to harvest the id from: an
     // unauthenticated list of profiles is refused outright.
     expect((await call('GET', '/api/userProfiles?limit=1000')).status).toBe(401)
+    // The same list as a signed-in cohort-mate is scoped to themselves: their
+    // own row comes back, and the hidden person's id still does not.
+    const own = await call(
+      'GET',
+      '/api/userProfiles?limit=1000',
+      undefined,
+      viewer.token,
+    )
+    expect(own.status).toBe(200)
+    const ownIds = ((await own.json()) as Array<{ id: string }>).map(
+      (p) => p.id,
+    )
+    expect(ownIds).toEqual([viewer.userId])
+    expect(ownIds).not.toContain(hidden.userId)
+    expect(ownIds).not.toContain(row!.userId)
   })
 
   it('still names the caller, and anyone who opted in', async () => {

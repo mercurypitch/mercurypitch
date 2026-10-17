@@ -83,6 +83,28 @@ async function idsOrStatus(path: string): Promise<string[] | number> {
   return ((await response.json()) as Array<{ id: string }>).map((r) => r.id)
 }
 
+/** Register a password account and hand back its session, for the signed-in
+ *  cases. The seeded VICTIM and OTHER stay as the "someone else" to probe. */
+async function signIn(
+  email: string,
+): Promise<{ token: string; userId: string }> {
+  const registered = await worker.fetch(
+    new Request('https://api.test/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password: 'secret123',
+        displayName: 'Singer',
+      }),
+    }),
+    env,
+    {} as ExecutionContext,
+  )
+  expect(registered.status).toBe(200)
+  return (await registered.json()) as { token: string; userId: string }
+}
+
 beforeEach(() => {
   sqlite = new DatabaseSync(':memory:')
   sqlite.exec('PRAGMA foreign_keys = ON')
@@ -217,6 +239,71 @@ describe('the reads that must keep working', () => {
     )
     expect(ids).toEqual([userId])
     expect(ids).not.toContain(VICTIM)
+  })
+
+  it('cannot be widened back to another user with where[id]', async () => {
+    // The forced own-id filter REPLACES whatever `where[id]` the caller sent,
+    // so naming somebody else returns the caller's own row, never theirs —
+    // and naming yourself is simply the same row again.
+    const { token, userId } = await signIn('prober@example.com')
+    const spoofed = await get(`/api/userProfiles?where[id]=${VICTIM}`, {
+      Authorization: `Bearer ${token}`,
+    })
+    expect(spoofed.status).toBe(200)
+    const spoofedIds = ((await spoofed.json()) as Array<{ id: string }>).map(
+      (r) => r.id,
+    )
+    expect(spoofedIds).toEqual([userId])
+    expect(spoofedIds).not.toContain(VICTIM)
+
+    const own = await get(`/api/userProfiles?where[id]=${userId}`, {
+      Authorization: `Bearer ${token}`,
+    })
+    expect(own.status).toBe(200)
+    expect(
+      ((await own.json()) as Array<{ id: string }>).map((r) => r.id),
+    ).toEqual([userId])
+  })
+
+  it('counts only itself', async () => {
+    // `/count` is the cleaner oracle — a number rather than a row — so it is
+    // pinned the same way: the forced own-id filter wins, and the count
+    // never says whether VICTIM exists.
+    const { token } = await signIn('counter@example.com')
+    const plain = await get('/api/userProfiles/count', {
+      Authorization: `Bearer ${token}`,
+    })
+    expect(plain.status).toBe(200)
+    await expect(plain.json()).resolves.toEqual({ count: 1 })
+
+    const spoofed = await get(`/api/userProfiles/count?where[id]=${VICTIM}`, {
+      Authorization: `Bearer ${token}`,
+    })
+    expect(spoofed.status).toBe(200)
+    await expect(spoofed.json()).resolves.toEqual({ count: 1 })
+  })
+
+  it('a hidden column still cannot be filtered on by a signed-in caller', async () => {
+    // hiddenReadColumn exempts only `access: 'user'`; an owner table keeps
+    // the guard for a signed-in non-admin, so the mask cannot be turned into
+    // a filter even over the caller's own row.
+    const { token } = await signIn('streaker@example.com')
+    const response = await get('/api/userProfiles?where[currentStreak]=9', {
+      Authorization: `Bearer ${token}`,
+    })
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Cannot filter on "currentStreak"',
+    })
+  })
+
+  it('an admin key with a bad value is not an admin', async () => {
+    // A wrong key must fall back to "anonymous" (refused), not to a public
+    // read of the whole table.
+    const response = await get('/api/userProfiles?limit=1000', {
+      'X-Admin-Key': 'wrong',
+    })
+    expect(response.status).toBe(401)
   })
 
   it('lets an admin filter on anything, having nothing hidden to probe', async () => {
