@@ -1,3 +1,7 @@
+# Cloudflare Web Analytics (owner, 17 Oct 2026): Cloudflare injects its beacon,
+# https://static.cloudflareinsights.com/beacon.min.js/<version>, into every HTML
+# page it serves, so script-src allows that host. On a proxied site the beacon
+# reports to /cdn-cgi/rum on the same host, which connect-src 'self' covers.
 /*
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: credentialless
@@ -5,7 +9,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(self), microphone=(self)
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self' https://googleads.g.doubleclick.net https://www.googletagmanager.com https://www.google.com; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://www.googletagmanager.com; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https://*.r2.cloudflarestorage.com https://*.r2.dev; worker-src 'self' blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://td.doubleclick.net https://www.googletagmanager.com https://googleads.g.doubleclick.net https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self' https://googleads.g.doubleclick.net https://www.googletagmanager.com https://www.google.com; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google.com https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://www.googletagmanager.com; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https://*.r2.cloudflarestorage.com https://*.r2.dev; worker-src 'self' blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://td.doubleclick.net https://www.googletagmanager.com https://googleads.g.doubleclick.net https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
 
 # Everything Vite emits into /assets/ carries a content hash in its filename,
 # so the URL changes whenever the bytes do and the response can never go stale.
