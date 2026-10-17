@@ -19,7 +19,7 @@ import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import { handleAccountNoticeRoute } from './account-notices'
 import { handleConfirmReminderRoute } from './confirm-reminders'
 import type { AuthUser, Env } from './auth'
-import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
+import { checkRateLimit, getAuth, handleAuth, ipRateLimitKey, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
 import { sweepExpiredSessions } from './auth-sessions'
 import { APPLE_NOTIFICATIONS_PATH, handleAppleRoute } from './apple-routes'
 import { handleEmailPreview } from './email-preview'
@@ -1302,7 +1302,7 @@ async function handleMirrorEvent(
   request: Request,
   env: Env,
 ): Promise<Response> {
-  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
   const rl = await checkRateLimit(env.DB, ip, 'mirror-event')
   if (!rl.allowed) {
     return respond(
