@@ -191,6 +191,18 @@ describe('Artist/Title Parsing', () => {
     expect(emDash.artist).toBe('Artist')
     expect(emDash.title).toBe('Title')
   })
+
+  it('reads the middle dot the app names its own rows with', () => {
+    const row = parseArtistTitle('Josh Woodward · Goodbye to Spring')
+    expect(row.artist).toBe('Josh Woodward')
+    expect(row.title).toBe('Goodbye to Spring')
+  })
+
+  it('splits at the middle dot before a dash inside the title', () => {
+    const row = parseArtistTitle('Ada Lane · North Road - Part 2')
+    expect(row.artist).toBe('Ada Lane')
+    expect(row.title).toBe('North Road - Part 2')
+  })
 })
 
 // ── REQ-UV-033: Line Syncing ─────────────────────────────────

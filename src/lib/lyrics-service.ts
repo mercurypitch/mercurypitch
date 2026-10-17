@@ -47,6 +47,16 @@ export function parseArtistTitle(input: string): {
 } {
   const cleaned = extractTitle(input)
 
+  // "Artist · Title": how the app names a song itself (Karaoke Night's
+  // example rows), so it is read before a dash, which a title can hold.
+  const dotMatch = cleaned.match(/^(.+?)\s+·\s+(.+)$/)
+  if (dotMatch) {
+    return {
+      artist: dotMatch[1].trim(),
+      title: dotMatch[2].trim(),
+    }
+  }
+
   // Try "Artist - Title" pattern
   const dashMatch = cleaned.match(/^(.+?)\s*[-–—]\s*(.+)$/)
   if (dashMatch) {
