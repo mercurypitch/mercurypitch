@@ -24,7 +24,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import { AlertTriangle, CheckCircle, XCircle } from '@/components/icons'
-import { badgeArtSrc } from '@/features/challenges/badge-art'
+import { badgeArtSrc } from '@/lib/badge-art'
 import { unlockNames } from '@/lib/unlock-copy'
 import type { Notification } from '@/stores/notifications-store'
 import { notifications, removeNotification, unlockShown, } from '@/stores/notifications-store'

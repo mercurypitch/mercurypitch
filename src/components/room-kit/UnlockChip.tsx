@@ -18,7 +18,7 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { ChevronDown } from '@/components/icons'
-import { badgeArtSrc } from '@/features/challenges/badge-art'
+import { badgeArtSrc } from '@/lib/badge-art'
 import type { UnlockItem } from '@/lib/unlock-copy'
 import { unlockSummary } from '@/lib/unlock-copy'
 import { createRoomUnlocks } from './room-unlocks'

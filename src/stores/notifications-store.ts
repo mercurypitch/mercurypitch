@@ -285,6 +285,58 @@ function scheduleRemoval(id: number, inMs: number): void {
   )
 }
 
+/**
+ * An unlock that never becomes a notice of its own, and whether it was one:
+ * a room's claim takes it, or the pill folds it into the set of its moment.
+ */
+function routedUnlock(
+  message: string,
+  type: Notification['type'],
+  unlock: UnlockItem,
+): boolean {
+  const claim = currentClaim()
+  if (claim !== undefined) {
+    claim({ message, type, unlock })
+    return true
+  }
+  return presenter() === 'pill' && mergeUnlock(unlock)
+}
+
+/** Fold a grouped arrival into a live or waiting toast; true when it did. */
+function foldedIntoGroup(
+  message: string,
+  group: NonNullable<NotificationOptions['group']>,
+): boolean {
+  const queued = waiting.find((w) => w.notif.groupKey === group.key)
+  if (queued !== undefined) {
+    const parts = [
+      ...(queued.notif.groupParts ?? [queued.notif.message]),
+      message,
+    ]
+    const write = queued.notif.groupSummarise ?? group.summarise
+    queued.notif = {
+      ...queued.notif,
+      message: write(parts),
+      groupParts: parts,
+    }
+    return true
+  }
+  const live = notifications().find((n) => n.groupKey === group.key)
+  if (live === undefined) return false
+  const parts = [...(live.groupParts ?? [live.message]), message]
+  // The FIRST summariser, not this call's: a randomised phrase must
+  // not be re-rolled halfway through somebody reading it.
+  const write = live.groupSummarise ?? group.summarise
+  setNotifications((list) =>
+    list.map((n) =>
+      n.id === live.id ? { ...n, message: write(parts), groupParts: parts } : n,
+    ),
+  )
+  const left = (deadlines.get(live.id) ?? 0) - Date.now()
+  scheduleRemoval(live.id, Math.max(left, MIN_ON_SCREEN_MS))
+  return true
+}
+
 export function showNotification(
   message: string,
   type: Notification['type'] = 'info',
@@ -294,48 +346,8 @@ export function showNotification(
   const group = opts?.group
   const unlock = opts?.unlock
 
-  if (unlock !== undefined) {
-    const claim = currentClaim()
-    if (claim !== undefined) {
-      claim({ message, type, unlock })
-      return
-    }
-    if (presenter() === 'pill' && mergeUnlock(unlock)) return
-  }
-
-  if (group !== undefined) {
-    const queued = waiting.find((w) => w.notif.groupKey === group.key)
-    if (queued !== undefined) {
-      const parts = [
-        ...(queued.notif.groupParts ?? [queued.notif.message]),
-        message,
-      ]
-      const write = queued.notif.groupSummarise ?? group.summarise
-      queued.notif = {
-        ...queued.notif,
-        message: write(parts),
-        groupParts: parts,
-      }
-      return
-    }
-    const live = notifications().find((n) => n.groupKey === group.key)
-    if (live !== undefined) {
-      const parts = [...(live.groupParts ?? [live.message]), message]
-      // The FIRST summariser, not this call's: a randomised phrase must
-      // not be re-rolled halfway through somebody reading it.
-      const write = live.groupSummarise ?? group.summarise
-      setNotifications((list) =>
-        list.map((n) =>
-          n.id === live.id
-            ? { ...n, message: write(parts), groupParts: parts }
-            : n,
-        ),
-      )
-      const left = (deadlines.get(live.id) ?? 0) - Date.now()
-      scheduleRemoval(live.id, Math.max(left, MIN_ON_SCREEN_MS))
-      return
-    }
-  }
+  if (unlock !== undefined && routedUnlock(message, type, unlock)) return
+  if (group !== undefined && foldedIntoGroup(message, group)) return
 
   const id = ++_notifId
   // The pill words an unlock itself, the same way it words a merged set.

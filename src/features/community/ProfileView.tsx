@@ -17,7 +17,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { badgeArtSrc } from '@/features/challenges/badge-art'
+import { badgeArtSrc } from '@/lib/badge-art'
 import type { ProfileSession } from '@/features/community/profile-model'
 import { accuracySeries, profileStats, scoreSeries, sparklinePoints, trend, } from '@/features/community/profile-model'
 import { legendTierSrc } from '@/features/mirror/LegendCaricature'

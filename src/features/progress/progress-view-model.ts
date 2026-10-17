@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { SessionSource, UserActivity, UserActivityKind, } from '@/db/entities'
-import { badgeArtSrc } from '@/features/challenges/badge-art'
+import { badgeArtSrc } from '@/lib/badge-art'
 import { legendTierSrc } from '@/features/mirror/LegendCaricature'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { buildCabinet } from './cabinet-view'

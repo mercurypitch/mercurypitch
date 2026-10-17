@@ -10,12 +10,12 @@
 // is where callers find it.
 
 import type { UnlockItem } from '@/lib/unlock-copy'
-import type { Notification } from './notifications-store'
 
 /** An unlock, as it was announced, handed to the room that claimed it. */
 export interface ClaimedUnlock {
   readonly message: string
-  readonly type: Notification['type']
+  /** The notice's type, as `Notification['type']` (no import: a cycle). */
+  readonly type: 'info' | 'success' | 'warning' | 'error'
   readonly unlock: UnlockItem
 }
 

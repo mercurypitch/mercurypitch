@@ -10,7 +10,7 @@
 // when the grids left the Challenges tab.
 
 import type { AchievementCategory } from '@/db/entities'
-import { badgeArtSrc } from '@/features/challenges/badge-art'
+import { badgeArtSrc } from '@/lib/badge-art'
 import type { ProgressAchievementStanding, ProgressBadgeStanding, ProgressModel, ProgressRecognitionSummary, } from './model'
 import type { ProgressAchievementRowView, ProgressAchievementShelfView, ProgressBadgeTileView, ProgressCabinetView, } from './ProgressPage'
 
