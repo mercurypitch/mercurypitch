@@ -102,7 +102,11 @@ const PUSHED = '[data-testid="shell-pushed"]'
 const MAX_WIDTH = 420
 const MIN_CONTRAST = 4.5
 
-/** The grant engine's own call, as the app makes it. */
+/**
+ * The grant engine's own call, as the app makes it. The pill checks also
+ * pass a minute's `durationMs`, so a loaded machine cannot time a notice out
+ * between raising it and measuring it.
+ */
 const UNLOCKS = [
   { kind: 'badge', name: 'Steady Hold', icon: 'leaf' },
   { kind: 'badge', name: 'Night Owl', icon: 'moon' },
@@ -404,15 +408,20 @@ function verbs(page, args, frame, kit, results) {
           for (const unlock of unlocks) {
             notices.show(`Badge unlocked: ${unlock.name}`, 'success', {
               unlock,
+              durationMs: 60_000,
             })
           }
         } else if (what === 'action') {
-          notices.showAction('New to Piano? Take a quick tour.', 'info', {
-            label: 'Start tour',
-            onClick: () => undefined,
-          })
+          notices.showAction(
+            'New to Piano? Take a quick tour.',
+            'info',
+            { label: 'Start tour', onClick: () => undefined },
+            { durationMs: 60_000 },
+          )
         } else {
-          notices.show('Saved to your library', 'success')
+          notices.show('Saved to your library', 'success', {
+            durationMs: 60_000,
+          })
         }
       },
       [kind, UNLOCKS],
@@ -434,7 +443,21 @@ function verbs(page, args, frame, kit, results) {
   ) => {
     await raise(kind)
     await visible(PLACED)
-    await settle(450)
+    // Measured where it rests: after its drop from the status bar, which a
+    // loaded machine can stretch well past its 280 ms.
+    await page.evaluate(() =>
+      Promise.race([
+        Promise.all(
+          (
+            document
+              .querySelector('[data-testid="notice-pill"]')
+              ?.getAnimations() ?? []
+          ).map((a) => a.finished.catch(() => undefined)),
+        ),
+        new Promise((done) => setTimeout(done, 3000)),
+      ]),
+    )
+    await settle(300)
     const read = await page.evaluate(readPill)
     const where = `${screen} (${kind})`
     if (read.error !== undefined) {
@@ -846,12 +869,15 @@ async function roomSteps(go, room, results, where, { pills }, at) {
     await waitPhase(
       page,
       room,
-      (phase) => phase === 'hold',
+      (phase) => phase === 'hold' || phase === 'result',
       'the voice never held the note',
       30_000,
     )
-    await go.settle(2500)
-    await tapMic(page, room)
+    // It may have ended on its own: the fake voice moves off the note.
+    if ((await phaseOf(page, room)) === 'hold') {
+      await go.settle(2500)
+      if ((await phaseOf(page, room)) === 'hold') await tapMic(page, room)
+    }
   }
   await waitPhase(
     page,
