@@ -10,10 +10,15 @@ import type { NativeAudioOutput, NativeAudioOutputReading, NativeDeviceApi, } fr
 import { registerNativeDevice, registerPushedBarEnd, } from '@/stores/native-shell-store'
 import type { RenderedShell } from './render-for-test'
 import { renderShell } from './render-for-test'
-import { HINT_LOW, HINT_SILENT, READ_AGAIN_MS, RoomVolumeHint, } from './RoomVolumeHint'
+import type { MicWatch, RoomVolumeNotice } from './RoomVolumeHint'
+import { HINT_LOW, HINT_SILENT, onRoomVolumeNotice, READ_AGAIN_MS, RoomVolumeHint, SETTLE_MS, } from './RoomVolumeHint'
 
-const reading = (volume: number): NativeAudioOutputReading => ({
+const reading = (
+  volume: number,
+  volumeKnown: NativeAudioOutputReading['volumeKnown'] = 'live',
+): NativeAudioOutputReading => ({
   volume,
+  volumeKnown,
   step: null,
   steps: null,
   route: 'speaker',
@@ -33,13 +38,17 @@ interface FakePhone extends NativeAudioOutput {
 
 /**
  * A phone at `first` (null: no reading at all) that answers a read with the
- * volume as it is when asked, and sends what `send` is given.
+ * volume as it is when asked, and sends what `send` is given. `known` is how
+ * far its readings can be taken at their word.
  */
-function phone(first: number | null): FakePhone {
+function phone(
+  first: number | null,
+  known: NativeAudioOutputReading['volumeKnown'] = 'live',
+): FakePhone {
   let handler: ((r: NativeAudioOutputReading) => void) | null = null
   let stopped = false
   let now = first
-  const read = vi.fn(async () => (now === null ? null : reading(now)))
+  const read = vi.fn(async () => (now === null ? null : reading(now, known)))
   return {
     read,
     watch: vi.fn((next: (r: NativeAudioOutputReading) => void) => {
@@ -50,13 +59,35 @@ function phone(first: number | null): FakePhone {
     }),
     send: (volume) => {
       now = volume
-      handler?.(reading(volume))
+      handler?.(reading(volume, known))
     },
     turn: (volume) => {
       now = volume
     },
     stopped: () => stopped,
     reads: () => read.mock.calls.length,
+  }
+}
+
+interface FakeMic {
+  readonly watch: MicWatch
+  /** The page's mic opens (true) or closes (false). */
+  set: (open: boolean) => void
+  watching: () => boolean
+}
+
+/** The page's microphone, which the rooms open and close. */
+function mic(): FakeMic {
+  let handler: ((open: boolean) => void) | null = null
+  return {
+    watch: (next) => {
+      handler = next
+      return () => {
+        handler = null
+      }
+    },
+    set: (open) => handler?.(open),
+    watching: () => handler !== null,
   }
 }
 
@@ -199,6 +230,8 @@ describe('RoomVolumeHint', () => {
       await settle()
       output.send(0.5)
       expect(hint()).toBeNull()
+      // The one read the room's opening is owed once WebKit has settled.
+      await vi.advanceTimersByTimeAsync(SETTLE_MS)
       const asked = output.reads()
 
       await vi.advanceTimersByTimeAsync(READ_AGAIN_MS * 10)
@@ -294,6 +327,128 @@ describe('RoomVolumeHint', () => {
       await vi.advanceTimersByTimeAsync(READ_AGAIN_MS * 4)
       expect(output.reads()).toBe(asked)
     })
+  })
+
+  // An iPhone's own session can read 0 while the room plays out loud (build
+  // 880): from that reading alone the hint claims no number.
+  it("never says zero from the iPhone session's reading alone", async () => {
+    const output = phone(0, 'session')
+    view = renderShell(() => <RoomVolumeHint output={output} />)
+    await settle()
+    expect(hint()?.textContent).toBe(HINT_LOW)
+    expect(hint()?.dataset.silent).toBe('false')
+  })
+
+  it('says zero once a reading taken at its word confirms it', async () => {
+    const output = phone(0, 'session')
+    view = renderShell(() => <RoomVolumeHint output={output} />)
+    await settle()
+    vi.mocked(output.read).mockResolvedValue(reading(0, 'agreed'))
+    pageShown(true)
+    await settle()
+    expect(hint()?.textContent).toBe(HINT_SILENT)
+    Reflect.deleteProperty(document, 'visibilityState')
+  })
+
+  // Opening the mic moves WebKit's session, and with it the volume iOS
+  // plays the room at (WebKit bug 236219). The phone may say nothing.
+  describe('when WebKit may have moved the sound to another volume', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+      Reflect.deleteProperty(document, 'visibilityState')
+    })
+
+    it('reads again once the room has settled', async () => {
+      vi.useFakeTimers()
+      const output = phone(0.5)
+      view = renderShell(() => (
+        <RoomVolumeHint output={output} mic={mic().watch} />
+      ))
+      await settle()
+      expect(hint()).toBeNull()
+
+      // WebKit switched as the room opened, after the first read.
+      output.turn(0)
+      await vi.advanceTimersByTimeAsync(SETTLE_MS)
+      expect(hint()?.textContent).toBe(HINT_SILENT)
+    })
+
+    it('reads again as the mic opens and as it closes, at once and once settled', async () => {
+      vi.useFakeTimers()
+      const output = phone(0.5)
+      const page = mic()
+      view = renderShell(() => (
+        <RoomVolumeHint output={output} mic={page.watch} />
+      ))
+      await settle()
+      await vi.advanceTimersByTimeAsync(SETTLE_MS)
+      const asked = output.reads()
+
+      page.set(true)
+      await settle()
+      expect(output.reads()).toBe(asked + 1)
+      output.turn(0.125)
+      await vi.advanceTimersByTimeAsync(SETTLE_MS)
+      expect(output.reads()).toBe(asked + 2)
+      expect(hint()?.textContent).toBe(HINT_LOW)
+
+      output.send(0.5)
+      page.set(false)
+      await settle()
+      expect(output.reads()).toBe(asked + 3)
+      await vi.advanceTimersByTimeAsync(SETTLE_MS)
+      expect(output.reads()).toBe(asked + 4)
+      expect(hint()).toBeNull()
+    })
+
+    it('does not read once settled while the app is behind another one', async () => {
+      vi.useFakeTimers()
+      const output = phone(0.5)
+      const page = mic()
+      view = renderShell(() => (
+        <RoomVolumeHint output={output} mic={page.watch} />
+      ))
+      await settle()
+      pageShown(false)
+      const asked = output.reads()
+      await vi.advanceTimersByTimeAsync(SETTLE_MS * 2)
+      expect(output.reads()).toBe(asked)
+    })
+
+    it('stops hearing the mic, and reads nothing more, when the room closes', async () => {
+      vi.useFakeTimers()
+      const output = phone(0.5)
+      const page = mic()
+      view = renderShell(() => (
+        <RoomVolumeHint output={output} mic={page.watch} />
+      ))
+      await settle()
+      page.set(true)
+      expect(page.watching()).toBe(true)
+      view.unmount()
+      view = null
+      expect(page.watching()).toBe(false)
+      const asked = output.reads()
+      await vi.advanceTimersByTimeAsync(SETTLE_MS * 2)
+      expect(output.reads()).toBe(asked)
+    })
+  })
+
+  it('tells its listeners each change to what it shows, with the reading behind it', async () => {
+    const heard: RoomVolumeNotice[] = []
+    cleanups.push(onRoomVolumeNotice((notice) => heard.push(notice)))
+    const output = phone(0)
+    view = renderShell(() => <RoomVolumeHint output={output} />)
+    await settle()
+    output.send(0)
+    output.send(0.0625)
+    output.send(0.5)
+
+    expect(heard.map((n) => [n.text, n.reading.volume, n.cause])).toEqual([
+      [HINT_SILENT, 0, 'room open'],
+      [null, 0.0625, 'change: unnamed'],
+    ])
+    expect(heard[0]?.reading.volumeKnown).toBe('live')
   })
 
   it("ends where the room's controls in the bar begin", async () => {

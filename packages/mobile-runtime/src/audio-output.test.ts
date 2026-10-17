@@ -203,6 +203,70 @@ describe("an iPhone's two volumes", () => {
   })
 })
 
+// The hint says "zero" only from a volume it can take at its word: one that
+// follows the keys, or two readings that agree. An iPhone's own session can
+// read 0 while the room plays out loud (build 880).
+describe('how far the volume can be taken at its word', () => {
+  it('trusts Android’s stream volume, which follows the keys', () => {
+    expect(toAudioOutputReading(ANDROID_HEADSET)?.volumeKnown).toBe('live')
+  })
+
+  it('trusts an iPhone’s volume view once it has been seen to move', () => {
+    const reading = toAudioOutputReading({
+      ...IOS_SPEAKER,
+      outputVolume: 0,
+      systemVolume: 0,
+      systemVolumeLive: true,
+      systemVolumeSettled: true,
+    })
+    expect(reading?.volume).toBe(0)
+    expect(reading?.volumeKnown).toBe('live')
+  })
+
+  it('takes the session at its word when a settled volume view agrees', () => {
+    const reading = toAudioOutputReading({
+      ...IOS_SPEAKER,
+      outputVolume: 0,
+      systemVolume: 0,
+      systemVolumeLive: false,
+      systemVolumeSettled: true,
+    })
+    expect(reading?.volume).toBe(0)
+    expect(reading?.volumeKnown).toBe('agreed')
+  })
+
+  it('does not when the volume view disagrees', () => {
+    const reading = toAudioOutputReading({
+      ...IOS_SPEAKER,
+      outputVolume: 0,
+      systemVolume: 0.5,
+      systemVolumeLive: false,
+      systemVolumeSettled: true,
+    })
+    expect(reading?.volume).toBe(0)
+    expect(reading?.volumeKnown).toBe('session')
+  })
+
+  it('does not while the volume view may still be filling', () => {
+    // A volume view fills its slider a moment after it reaches a window, and
+    // reads 0 until then: two zeros then are not two readings.
+    const reading = toAudioOutputReading({
+      ...IOS_SPEAKER,
+      outputVolume: 0,
+      systemVolume: 0,
+      systemVolumeLive: false,
+      systemVolumeSettled: false,
+    })
+    expect(reading?.volumeKnown).toBe('session')
+  })
+
+  it('does not with the session’s reading alone', () => {
+    expect(
+      toAudioOutputReading({ ...IOS_SPEAKER, outputVolume: 0 })?.volumeKnown,
+    ).toBe('session')
+  })
+})
+
 describe('readAudioOutput', () => {
   it('reads nothing on the web, and registers no plugin', async () => {
     expect(await readAudioOutput()).toBeNull()
