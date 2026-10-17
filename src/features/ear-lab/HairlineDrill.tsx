@@ -99,6 +99,10 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
     <ThresholdDrillView
       title="Hairline"
       drillId="hairline"
+      // The ruler starts low enough for the whole paragraph, which needs
+      // five lines at 1280 px and wider; three cut it at "readi…". On a
+      // narrower desk five would still cut it, and the card keeps three.
+      descriptionLines={5}
       measures="Resolution · cents"
       description="Two tones; pick the higher one. The gap keeps shrinking toward the finest difference your ear still resolves. That number, in cents, is your reading. It falls as you improve, and there is no ceiling to park at."
       prompt="Two tones. Which one was higher?"

@@ -44,4 +44,50 @@ test.describe('Ear Lab', () => {
     await page.getByText('Back to the bench').click()
     await expect(bench).toBeVisible()
   })
+
+  test("shows Hairline's whole paragraph on the instrument card at a desk", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await openNavTab(page, 'tab-ear-lab')
+    await page
+      .locator('[data-tour="ear.drills"] button', { hasText: 'Hairline' })
+      .first()
+      .click()
+    const card = page.getByTestId('ear-instrument-card')
+    await expect(card).toBeVisible()
+    await expect(card).toHaveAttribute('data-open', 'false')
+
+    // Three lines cut it at "is your readi…".
+    const text = card.locator('p')
+    await expect(text).toContainText('there is no ceiling to park at.')
+    const cut = await text.evaluate(
+      (element) => element.scrollHeight > element.clientHeight + 1,
+    )
+    expect(cut, 'the card still cuts the paragraph short').toBe(false)
+    // Nothing is left to unfold.
+    await expect(card.getByRole('button', { name: 'More' })).toHaveCount(0)
+  })
+
+  test("keeps three lines and More where five would still cut Hairline's paragraph", async ({
+    page,
+  }) => {
+    // The card is 228px wide here, and the paragraph needs six lines: five
+    // would only hang the card lower over the instrument.
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await openNavTab(page, 'tab-ear-lab')
+    await page
+      .locator('[data-tour="ear.drills"] button', { hasText: 'Hairline' })
+      .first()
+      .click()
+    const card = page.getByTestId('ear-instrument-card')
+    await expect(card).toBeVisible()
+    await expect(card.getByRole('button', { name: 'More' })).toBeVisible()
+    const clamp = await card
+      .locator('p')
+      .evaluate((element) =>
+        getComputedStyle(element).getPropertyValue('-webkit-line-clamp'),
+      )
+    expect(clamp).toBe('3')
+  })
 })

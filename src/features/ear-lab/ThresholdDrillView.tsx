@@ -42,6 +42,8 @@ interface ThresholdDrillViewProps {
   measures: string
   /** One paragraph for the idle console. */
   description: string
+  /** Lines of that paragraph the instrument card shows before More. */
+  descriptionLines?: number
   /** Under the description at idle: a drill's link to its sound. */
   idleAside?: JSX.Element
   /** The task in one line, shown at idle. */
@@ -183,6 +185,7 @@ export function ThresholdDrillView(
       cardName={props.title}
       measures={props.measures}
       description={props.description}
+      descriptionLines={props.descriptionLines}
       mode={mode()}
       progress={progress()}
       progressAside={
