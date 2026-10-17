@@ -23,7 +23,7 @@
 import type { Env } from './auth'
 import { signUpFrom } from './launch-offer'
 import { appleClientIds, appleSigninSecrets, exchangeAppleAuthorizationCode, parseAppleServerEvent, revokeAndForgetAppleGrant, storeAppleRefreshToken, verifyAppleIdentityToken, verifyAppleJwt, } from './apple-auth'
-import { checkRateLimit, claimedDevice, issueSessionFor, resolveFederatedUser, sessionOrigin, signupMail, twofaChallenge, } from './auth'
+import { checkRateLimit, claimedDevice, ipRateLimitKey, issueSessionFor, resolveFederatedUser, sessionOrigin, signupMail, twofaChallenge, } from './auth'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -98,7 +98,7 @@ export async function handleAppleRoute(
     return respond({ error: 'JWT_SECRET not configured' }, { status: 500 })
   }
 
-  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const ip = ipRateLimitKey(request.headers.get('CF-Connecting-IP'))
   const bucket = pathname === SIGN_IN_PATH ? 'apple' : 'apple/notifications'
   const rl = await checkRateLimit(env.DB, ip, bucket)
   if (!rl.allowed) return tooMany(respond, rl)

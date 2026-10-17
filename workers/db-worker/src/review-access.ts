@@ -43,7 +43,7 @@
 import { reviewUnlockDigestInput } from '../../../packages/purchase-kit/src/review-unlock'
 import { readAppSongs } from './app-songs'
 import type { Env } from './auth'
-import { checkRateLimit, getAuth, timingSafeEqual } from './auth'
+import { checkRateLimit, getAuth, ipRateLimitKey, timingSafeEqual, } from './auth'
 import { REVIEW_ACCESS } from './songs-allowance'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
@@ -138,7 +138,7 @@ export async function handleReviewAccess(
   if (!account.allowed) return tooMany(respond, account.retryAfter)
   const address = await checkRateLimit(
     env.DB,
-    request.headers.get('CF-Connecting-IP') ?? '127.0.0.1',
+    ipRateLimitKey(request.headers.get('CF-Connecting-IP')),
     'review-access-ip',
   )
   if (!address.allowed) return tooMany(respond, address.retryAfter)

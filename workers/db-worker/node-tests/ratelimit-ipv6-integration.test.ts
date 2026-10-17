@@ -23,6 +23,7 @@ const MIRROR_EVENT_LIMIT = 60
 const CRUD_WRITE_LIMIT = 120
 const LOGIN_LIMIT = 10
 const REGISTER_LIMIT = 5
+const PASSKEY_VERIFY_LIMIT = 20
 
 let sqlite: DatabaseSync
 let env: Env
@@ -205,5 +206,19 @@ describe('the auth route limiters', () => {
       .prepare('SELECT COUNT(*) AS n FROM users WHERE email LIKE ?')
       .get('tenant-%@example.com') as { n: number }
     expect(rows.n).toBe(REGISTER_LIMIT)
+  })
+
+  it('passkey sign-in shares one budget across a /64 (own module, same key)', async () => {
+    // The passkey routes keep their own limiter in passkey-routes.ts; what is
+    // pinned here is that it keys on the same /64 bucket as auth.ts. A body
+    // with no ceremony is refused (401) after the limiter has counted it.
+    const verify = authPost('passkey/login/verify', () => ({}))
+    await exhaust(verify, '2001:db8:6:6::1', PASSKEY_VERIFY_LIMIT, 401)
+
+    const sibling = await verify('2001:db8:6:6::2')
+    expect(sibling.status).toBe(429)
+    expect(sibling.headers.get('Retry-After')).not.toBeNull()
+
+    expect((await verify('2001:db8:6:7::1')).status).toBe(401)
   })
 })

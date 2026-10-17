@@ -23,7 +23,7 @@
 // way — this file imports auth.ts, never the reverse.
 
 import type { Env } from './auth'
-import { b64urlEncode, checkRateLimit, getAuth } from './auth'
+import { b64urlEncode, checkRateLimit, getAuth, ipRateLimitKey } from './auth'
 import type { NewsletterItem } from './email'
 import { renderNewsletterIssue, sendNewsletterIssue } from './email'
 import type { NewsletterConsent } from './newsletter-consent'
@@ -439,7 +439,7 @@ export async function handleNewsletterRoute(
 
     const rl = await checkRateLimit(
       env.DB,
-      request.headers.get('CF-Connecting-IP') ?? '127.0.0.1',
+      ipRateLimitKey(request.headers.get('CF-Connecting-IP')),
       'newsletter-preference',
     )
     if (!rl.allowed) {
@@ -484,7 +484,7 @@ export async function handleNewsletterRoute(
 
     const rl = await checkRateLimit(
       env.DB,
-      request.headers.get('CF-Connecting-IP') ?? '127.0.0.1',
+      ipRateLimitKey(request.headers.get('CF-Connecting-IP')),
       'newsletter-unsubscribe',
     )
     if (!rl.allowed) {
