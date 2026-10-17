@@ -38,14 +38,12 @@
 // tickGlide to prove what each tooltip says.
 
 import type { DemoEvent as KitDemoEvent, DemoTakeId, DemoTakeShape, DemoVoicePoint, } from '@/components/demo-kit/demo-plan'
-import { midiToFrequency } from '@/lib/frequency-to-note'
-import { createGlideState, tickGlide } from '@/lib/glide/glide-engine'
-import type { GlidePath } from '@/lib/glide/glide-path'
-import { NG_SLIDE_SEMITONES, targetAt } from '@/lib/glide/glide-path'
+import { ONE_CLOCK } from '@/components/demo-kit/demo-plan'
+import type { GlideDemoScript } from '@/components/room-kit/glide/glide-demo-take'
+import { attack, pathCents, singGlideDemo, } from '@/components/room-kit/glide/glide-demo-take'
+import { NG_SLIDE_SEMITONES } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import { NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
-import { seeded } from '@/lib/mirror/demo-frames'
-import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { NgPlan } from '../ng-run'
 import { planNgRun } from '../ng-run'
 import type { NgDemoMark } from '../scripted-take'
@@ -83,47 +81,15 @@ export const OFF_STEPS = { third: 1.0, fifth: 1.75 } as const
 export const OFF_GAP = { from: 2.6, to: 3.1 } as const
 /** Take 2 trails the line by this much, s: well inside Beginner's lag. */
 export const ON_LAG_SEC = 0.08
-/** Each run of humming opens from this far under its note, cents. */
-const ATTACK_CENTS = -25
-const ATTACK_SEC = 0.08
-
-const FRAME_SECONDS = 1 / 60
-const VOICE_STEP = 0.025
-const CONF = 0.92
-const SILENT_RMS = 0.001
 /** Merc's hum, a little under a sung note's loudness. */
 const HUM_LEVEL = 0.7
-/** Pitch-tracker grain on the frames, cents (not in the synth). */
-const JITTER_CENTS = 1.2
-
-/** What Merc hums at a path time: cents above the root, and when it began. */
-interface Hum {
-  readonly cents: number
-  /** When this run of humming began, path seconds. */
-  readonly onset: number
-}
-
-/** A take's hum: path seconds to cents above the root, null in silence. */
-type HumScript = (tau: number, path: GlidePath) => Hum | null
-
-/** The path's note at `tau`, cents above the root. */
-function pathCents(path: GlidePath, tau: number): number {
-  const root = path.arches[0].rootMidi
-  return ((targetAt(path, tau) ?? root) - root) * 100
-}
-
-/** The opening scoop of a run of humming, cents under its note. */
-const attack = (tau: number, onset: number): number => {
-  const k = Math.min(1, Math.max(0, (tau - onset) / ATTACK_SEC))
-  return ATTACK_CENTS * (1 - k)
-}
 
 /**
  * Take 1: the root held past the moment the line left it, a jump to the
  * third held past the line again, a jump to the fifth; then down the line
  * on time, with the hum stopping for half a second on the way.
  */
-const offHum: HumScript = (tau, path) => {
+const offHum: GlideDemoScript = (tau, path) => {
   const arch = path.arches[0]
   if (tau < arch.start || tau >= arch.landingEnd) return null
   if (tau >= OFF_GAP.from && tau < OFF_GAP.to) return null
@@ -137,39 +103,11 @@ const offHum: HumScript = (tau, path) => {
 }
 
 /** Take 2: the line itself, a breath behind it, from the root to the landing. */
-const onHum: HumScript = (tau, path) => {
+const onHum: GlideDemoScript = (tau, path) => {
   const arch = path.arches[0]
   if (tau < arch.start || tau >= arch.landingEnd) return null
   const cents = pathCents(path, Math.max(arch.start, tau - ON_LAG_SEC))
   return { cents: cents + attack(tau, arch.start), onset: arch.start }
-}
-
-/** A slow, seeded wander of a few cents: a voice is never a sine. */
-function wanderFor(seed: number): (t: number) => number {
-  const rand = seeded(seed)
-  const parts = [1.3, 0.8, 0.5].map((amp) => ({
-    amp,
-    hz: 0.25 + rand() * 0.55,
-    phase: rand() * Math.PI * 2,
-  }))
-  return (t) =>
-    parts.reduce(
-      (sum, p) => sum + p.amp * Math.sin(2 * Math.PI * p.hz * t + p.phase),
-      0,
-    )
-}
-
-/** The vibrato's swing at take time t of a run that began at `onset`. */
-export function demoVibratoCents(t: number, onset: number): number {
-  const grown = Math.min(1, Math.max(0, (t - onset) / DEMO_VIBRATO.rampSec))
-  return (
-    DEMO_VIBRATO.cents * grown * Math.sin(2 * Math.PI * DEMO_VIBRATO.hz * t)
-  )
-}
-
-/** Merc's 0..1 loudness as an RMS level (the inverse of levelFromRms). */
-function rmsForLevel(level: number): number {
-  return Math.pow(10, (level * 40 - 50) / 20)
 }
 
 /** One of Merc's slides on a root (the demo kit's shape, demo-plan.ts). */
@@ -192,77 +130,39 @@ export function demoPlan(root: number): NgPlan {
   )
 }
 
-/** The two clocks of the demo kit, here one and the same. */
-const ONE_CLOCK = {
-  engineAt: (wall: number): number => wall,
-  wallAt: (engine: number): number => engine,
-} as const
-
 const OFF_SEED = 0x4e40
 const ON_SEED = 0x4e41
 
+/**
+ * One slide hummed through the glide engine (room-kit glide-demo-take.ts),
+ * its vibrato on the path's clock.
+ */
 function buildTake(
   id: DemoTakeId,
   root: number,
-  hum: HumScript,
+  hum: GlideDemoScript,
   seed: number,
 ): NgDemoTake {
   const plan = demoPlan(root)
-  const { path, countIn } = plan
-  const wander = wanderFor(seed)
-  const grain = seeded(seed + 7)
-  const state = createGlideState(path)
-  const frames: PitchFrame[] = []
-  const events: DemoEvent[] = []
-  let coverage = 0
-  for (let i = 0; !state.ended; i++) {
-    const t = i * FRAME_SECONDS
-    const tau = t - countIn
-    const sung = hum(tau, path)
-    let frame: PitchFrame = { t, f0: 0, conf: 0, rms: SILENT_RMS }
-    if (sung !== null) {
-      const jitter = (grain() - 0.5 + (grain() - 0.5)) * JITTER_CENTS
-      const cents =
-        sung.cents + wander(t) + demoVibratoCents(tau, sung.onset) + jitter
-      frame = {
-        t,
-        f0: midiToFrequency(root + cents / 100),
-        conf: CONF,
-        rms: rmsForLevel(HUM_LEVEL),
-      }
-    }
-    frames.push(frame)
-    // The room's take ticks each frame on the path's clock (glide-take.ts).
-    tickGlide(state, { ...frame, t: tau }, path, DEMO_PRESET)
-    for (const event of state.events) {
-      events.push({ type: event.type, at: t })
-      if (event.type === 'archEnd') coverage = event.coverage
-    }
-  }
-  const length = frames[frames.length - 1].t
-  const points: DemoVoicePoint[] = []
-  for (let i = 0; i * VOICE_STEP <= length + 1e-9; i++) {
-    const t = i * VOICE_STEP
-    const tau = t - countIn
-    const sung = hum(tau, path)
-    points.push({
-      t,
-      cents: sung === null ? 0 : sung.cents + wander(t),
-      level: sung === null ? 0 : HUM_LEVEL,
-    })
-  }
+  const sung = singGlideDemo(
+    root,
+    plan,
+    hum,
+    { seed, level: HUM_LEVEL, vibrato: DEMO_VIBRATO },
+    DEMO_PRESET,
+  )
   return {
     id,
     root,
     plan,
     preset: DEMO_PRESET,
-    coverage,
-    frames,
-    events,
+    coverage: sung.coverage,
+    frames: sung.frames,
+    events: sung.events,
     fast: [],
     ...ONE_CLOCK,
-    voice: points,
-    length,
+    voice: sung.voice,
+    length: sung.length,
   }
 }
 
