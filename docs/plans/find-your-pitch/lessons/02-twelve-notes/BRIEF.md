@@ -153,11 +153,13 @@ direction: it never asks semitone or tone.
   pills "black key" and "white key", the check on "white key" and "E♯ = F".
 - "C#4" in the house-style labels, under "How MercuryPitch's pitch line labels notes".
 - The cents ruler and its magnifier inset, labelled as the film's own ("PITCH-LINE NAMES" over the
-  names, "CENTS ABOVE A3" over the cents): the readout running 0 to 100, then "100 ¢"; "1200 ¢ = 1 octave"; the monitor's
+  names, "CENTS ABOVE A3" over the cents): the readout running 0 to 100, then "100 ¢"; "1200 ¢ = 1
+  octave"; the monitor's marker swinging right and left of centre while the name stays A3, then its
   name flip at 50 ¢.
 - The slide drawn on the lanes; the app's "you are here" marker naming A4, A#4, A4 beside orange's
   line, and the monitor's marker in the middle; then, with nothing of the app's drawing left, "Your
-  turn.", "NEVER PUSH", "A3 or A4" and a chrome cursor sweeping the film's own plain guide.
+  turn.", "NEVER PUSH", "A3 or A4", a highlight running once along the path as Blue describes it,
+  and a chrome cursor sweeping the film's own plain guide.
 - The recap cards, each answered by the object that taught it; Leap's twelve answers, m2 and M2
   lit under "semitone" and "tone", with "LISTEN FOR THESE TWO".
 - "59 %" asked and "10–16 %" tested, side by side, with "≥ 1 semitone off": the range the voice
