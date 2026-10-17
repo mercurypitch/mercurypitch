@@ -3,7 +3,6 @@
 // ============================================================
 //
 // L0 5.4's layers, back to front:
-//
 //   bay-back     sky, cliffs, the far sea: one plate, slid with the camera
 //                (bay-sky.ts), its horizon moved from screen 1's to
 //                screens 2 and 3's with the zoom; the moon, a plate of its
@@ -31,14 +30,13 @@
 //   sea-front    the near sea and its foam, over Merc and the dots
 //   result       the pulled-back bay, lit once from the take
 //
-// The waves and the sea-front share one transform a frame: the camera,
-// and the zoom from the intro's wave A to the run's wave B (a scale
-// across and a scale up and down, bay-layout.ts). The dots are not
-// scaled, so they stay round: their path is rebuilt when the zoom moves
-// (the count-in only) and translated otherwise. Nothing here is a signal
-// per frame; the run drives it through the BayView it is handed
-// (`onReady`). Every picture here is a stand-in until the paintings
-// arrive (STAND-INS.md).
+// The waves and the sea-front share one transform a frame: the camera, and
+// the zoom from the intro's wave A to the run's wave B (a scale across and a
+// scale up and down, bay-layout.ts). The dots are not scaled, so they stay
+// round: their path is rebuilt when the zoom moves (the count-in only) and
+// translated otherwise. Nothing here is a signal per frame; the run drives it
+// through the BayView it is handed (`onReady`). Every picture here is a
+// stand-in until the paintings arrive (STAND-INS.md).
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
@@ -591,6 +589,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
           data-testid="lip-bay"
         >
           <img
+            draggable={false}
             ref={moonEl}
             class={styles.moon}
             src={MOON_URL}
@@ -608,7 +607,12 @@ export function BayScene(props: BaySceneProps): JSX.Element {
                 style={waveBox(k)}
                 data-wave={k}
               >
-                <img class={styles.fill} src={art().waveUnlit} alt="" />
+                <img
+                  draggable={false}
+                  class={styles.fill}
+                  src={art().waveUnlit}
+                  alt=""
+                />
               </div>
             )}
           </For>
@@ -780,6 +784,7 @@ export function BayScene(props: BaySceneProps): JSX.Element {
           <For each={FRONT_TILES}>
             {(j) => (
               <img
+                draggable={false}
                 class={styles.sprite}
                 src={art().seaFront}
                 alt=""

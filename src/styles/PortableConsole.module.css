@@ -101,6 +101,8 @@
   /* Selectable on purpose: it is the fallback when the clipboard is refused. */
   user-select: text;
   -webkit-user-select: text;
+  /* The native app turns the long-press callout off for the document. */
+  -webkit-touch-callout: default;
 }
 
 .line {

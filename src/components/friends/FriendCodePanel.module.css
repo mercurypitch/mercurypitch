@@ -79,7 +79,12 @@
   border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.2));
   background: var(--bg-tertiary, rgba(255, 255, 255, 0.05));
   color: var(--text-primary, #eee);
+  /* Copied by hand, so one tap selects all of it. Prefixed too: iOS honours
+     only -webkit-user-select, and the native app turns selection and the
+     long-press callout off for the whole document (shell.css). */
+  -webkit-user-select: all;
   user-select: all;
+  -webkit-touch-callout: default;
 }
 
 .input {

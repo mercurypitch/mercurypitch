@@ -164,7 +164,12 @@
   background: var(--bg-primary, #0d1117);
   border: 1px solid var(--border, #30363d);
   border-radius: 8px;
+  /* Copied by hand, so one tap selects all of it. Prefixed too: iOS honours
+     only -webkit-user-select, and the native app turns selection and the
+     long-press callout off for the whole document (shell.css). */
+  -webkit-user-select: all;
   user-select: all;
+  -webkit-touch-callout: default;
 }
 
 .status {

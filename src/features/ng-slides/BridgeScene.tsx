@@ -431,6 +431,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
         />
         <div ref={stone} class={styles.world} data-testid="ng-stone">
           <img
+            draggable={false}
             class={styles.sprite}
             src={art().pier}
             alt=""
@@ -439,6 +440,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
           <For each={arches.slice(0, -1)}>
             {(k) => (
               <img
+                draggable={false}
                 class={styles.sprite}
                 src={art().landing}
                 alt=""
@@ -447,6 +449,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
             )}
           </For>
           <img
+            draggable={false}
             class={`${styles.sprite} ${styles.mirrored}`}
             src={art().pier}
             alt=""
@@ -471,7 +474,12 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
                   class={styles.sprite}
                   style={archBox(k, 'reflection-unlit')}
                 >
-                  <img class={styles.fill} src={REFLECTION_ART.unlit} alt="" />
+                  <img
+                    draggable={false}
+                    class={styles.fill}
+                    src={REFLECTION_ART.unlit}
+                    alt=""
+                  />
                 </div>
                 <div
                   ref={(el) => (glassHolders[k] = el)}
@@ -479,7 +487,12 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
                   style={archBox(k, 'glass-unlit')}
                   data-arch={k}
                 >
-                  <img class={styles.fill} src={art().glassUnlit} alt="" />
+                  <img
+                    draggable={false}
+                    class={styles.fill}
+                    src={art().glassUnlit}
+                    alt=""
+                  />
                 </div>
               </>
             )}
@@ -563,6 +576,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
           }}
         />
         <img
+          draggable={false}
           class={styles.nearLeft}
           src={art().nearLeft}
           alt=""
@@ -572,6 +586,7 @@ export function BridgeScene(props: BridgeSceneProps): JSX.Element {
           }}
         />
         <img
+          draggable={false}
           class={styles.nearRight}
           src={art().nearRight}
           alt=""

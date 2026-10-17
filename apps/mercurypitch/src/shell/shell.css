@@ -54,6 +54,45 @@
   text-size-adjust: 100%;
 }
 
+/* NOTHING IN THE APP SELECTS, CALLS OUT OR DRAGS, UNLESS IT SAYS SO.
+   A native app does not highlight a picture you tap, raise a "Save image"
+   callout on a long press, or lift a label out as a drag. In a WebView all
+   three are the default, and the singer met them on the Ng bridge and the
+   Lantern's note label.
+
+   The prefixed spellings are the ones that work here. iOS WebViews honour
+   only `-webkit-user-select` (caniuse: "requires prefix" through iOS 26.5),
+   and this bundle's build adds no prefixes, so an unprefixed rule alone is
+   ignored on an iPhone. Both properties inherit in WebKit, which is why one
+   rule on the document reaches the More sheet and the Keep alert that
+   portal to <body>. The tap highlight is already transparent on html and
+   body (app.css); it is restated so this block is the whole baseline. */
+:root[data-native-shell] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Dragging does not inherit, so pictures and links get it directly. */
+:root[data-native-shell] img,
+:root[data-native-shell] a {
+  -webkit-user-drag: none;
+}
+
+/* Text fields opt back in. WebKit can refuse a caret or typing in a field
+   whose ancestor says `-webkit-user-select: none`, so a field restores
+   selection, and its long-press callout goes back to the default. The places that want selection
+   on purpose (the account email, the developer report, the portable console,
+   the codes a singer copies) set their own value on their own rule. */
+:root[data-native-shell] input,
+:root[data-native-shell] textarea,
+:root[data-native-shell] [contenteditable]:not([contenteditable='false']) {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 .mp-shell {
   --mp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --mp-out: 220ms;
@@ -983,6 +1022,8 @@
   overflow-wrap: anywhere;
   -webkit-user-select: text;
   user-select: text;
+  /* The baseline above turns the long-press callout off for the document. */
+  -webkit-touch-callout: default;
 }
 
 /* ---------- the More sheet's tiles ---------- */

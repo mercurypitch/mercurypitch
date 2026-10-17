@@ -584,6 +584,8 @@
 .mp-set-card__email {
   -webkit-user-select: text;
   user-select: text;
+  /* The shell turns the long-press callout off for the document (shell.css). */
+  -webkit-touch-callout: default;
 }
 
 .mp-set-card__note {

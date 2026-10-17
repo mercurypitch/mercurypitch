@@ -43,6 +43,7 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
 import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
+import surface from '@/components/room-kit/RoomSurface.module.css'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { ARCH } from './bridge-geometry'
 import type { BridgeLayout } from './bridge-layout'
@@ -237,7 +238,7 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
   return (
     <div
       ref={rootEl}
-      class={`${styles.room} mp-dark-stage`}
+      class={`${styles.room} ${surface.surface} mp-dark-stage`}
       data-phase={phase()}
       data-demo={demoMode()}
       data-testid="ng-slides-room"
