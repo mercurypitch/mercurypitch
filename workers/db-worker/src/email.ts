@@ -180,7 +180,7 @@ export function footerHtml(reason: string): string {
   return `<tr>
             <td style="padding:24px 16px 8px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; text-align:center;">
               <p style="margin:0 0 12px; font-size:14px; color:${C.muted};">
-                Learn to sing and play. Practice has never been more fun.
+                Learn to sing and play.
               </p>
               <p style="margin:0 0 14px; font-size:13px;">
                 <a href="${ABOUT_URL}" style="color:${C.blue}; text-decoration:none;">About</a>
@@ -310,7 +310,7 @@ ${AUTO_LINK_STYLE}
     ``,
     `Didn't request a reset? You can safely ignore this email — your password won't change.`,
     ``,
-    `MercuryPitch · Learn to sing and play. Practice has never been more fun.`,
+    `MercuryPitch · Learn to sing and play.`,
     `${ABOUT_URL} · ${REPO_URL}`,
     `You're receiving this because a password reset was requested for your account on mercurypitch.com.`,
   ].join('\n')
@@ -431,7 +431,7 @@ ${AUTO_LINK_STYLE}
     ``,
     `Didn't try to sign in? Ignore this email — the code is useless without it, and nothing about your account has changed. Nobody from MercuryPitch will ever ask you for it.`,
     ``,
-    `MercuryPitch · Learn to sing and play. Practice has never been more fun.`,
+    `MercuryPitch · Learn to sing and play.`,
     `${ABOUT_URL} · ${REPO_URL}`,
     `You're receiving this because a sign-in code was requested for your account on mercurypitch.com.`,
   ].join('\n')
