@@ -103,8 +103,8 @@ octave, on every object.
    seven letters with five holes a note wide and two touching pairs, B and C, E and F; the five
    drop back into their holes: that is where the other five come from.
 3. **One key, two names.** An arrow climbs one semitone from C and writes C♯ on the black key;
-   another steps one semitone down from D and writes D♭ on the very same key; both names stay, side
-   by side, under one gold ring.
+   another steps one semitone down from D and writes D♭ on the very same key; both names stay, one
+   above the other (the dark tile is too narrow for two side by side), under one gold ring.
 
 ### Checkpoint (sung)
 
