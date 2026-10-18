@@ -199,12 +199,12 @@ Each question has three answers, shown in a shuffled order, so a guess scores a 
      D, a different scale. In a major scale the semitones fall between mi and fa, and between ti
      and do."
 2. You start a major scale on D. Which notes does it use?
-   - D, E, F♯, G, A, B, C♯, D **[correct]** · Feedback: "Right: keeping the pattern takes two black
-     keys, F♯ and C♯."
+   - D, E, F♯, G, A, B, C♯, D **[correct]** · Feedback: "Right: keeping the pattern takes two
+     black keys, F♯ and C♯."
    - D, E, F, G, A, B, C, D · Feedback: "Those are the white keys from D. Their steps come out in a
      different order, so it isn't do-re-mi. Try Step 3 again."
-   - C, D, E, F, G, A, B, C · Feedback: "That's the major scale on C. A major scale can start on any
-     note: start on D and do is D."
+   - C, D, E, F, G, A, B, C · Feedback: "That's the major scale on C. A major scale can start on
+     any note: start on D and do is D."
 3. Merc climbs a major scale to ti and stops. [Play] What do most listeners hear?
    - It sounds unfinished: ti leans up to do **[correct]** · Feedback: "Yes: ti sits a semitone
      below do, and most listeners hear it lean home."
@@ -231,10 +231,10 @@ don't sound like do-re-mi.
 
 **Practise it:** MercuryPitch's Scale Runner plays a major scale one note at a time, do up to do,
 and you sing each note back. It draws the notes still to come as a ladder ahead of your pitch line:
-this lesson's staircase. Major and Ascending are already chosen. It listens for each note in the
-octave it plays, starting from the voice range saved in Settings, so set yours there first (under
-Singing Voice Range; "Don't know? Find my voice" helps). Free: **mercurypitch.com/pitch-training**
-opens the exercises; tap Scale Runner.
+this lesson's staircase. Major and Ascending are already chosen. Its scale starts from the voice
+range saved in Settings, and it listens for each note in the octave it plays, so set your range
+there first (under Singing Voice Range; "Don't know? Find my voice" helps). Free:
+**mercurypitch.com/pitch-training** opens the exercises; tap Scale Runner.
 
 To train your ear on the names, Ear Lab's Home plays a few chords that set home, then one note:
 name its step, 1 to 7. The pads show do to ti, with so written Sol, and you can tap your answer or

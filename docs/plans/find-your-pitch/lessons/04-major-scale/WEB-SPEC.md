@@ -114,9 +114,9 @@ One component with five states, so the object the lesson transforms is one objec
   stage shows all twenty-five rows from C4 to C6, so the climb is visible; on a phone it shows the
   scale's own thirteen rows with a pitch ruler at the left that scrolls with it, and the strip
   shows the scale's octave at full width and pans with it. A readout names the scale and counts
-  its black keys, "D major · 2 black keys: F♯, C♯" (FACTS 10, 12). Letters follow each scale's own
-  spelling, one letter per step (FACTS 13), and the strip's black keys take that spelling too (B♭
-  in F major, A♯ in F♯ major):
+  its black keys, "D major · 2 black keys: F♯, C♯" (FACTS 10, 12). Letters follow each scale's
+  own spelling, one letter per step (FACTS 13), and the strip's black keys take that spelling too
+  (B♭ in F major, A♯ in F♯ major):
 
   | Start | Spelled               | Start | Spelled                |
   | ----- | --------------------- | ----- | ---------------------- |
@@ -206,14 +206,14 @@ A `details` disclosure, closed by default, under step 5's text, holding LESSON.m
 ## Audio
 
 Every tone is synthesised in the page with Web Audio at the frequencies in FACTS 56 and 56a,
-through the kit's sound module and its house envelopes (`.claude/memory/audio-pop-free-playback.md`),
-and started only by a tap: taps in the soft tone, Merc's singing in Merc's "ooh" (FACTS, Sounds).
-Nothing autoplays, and the page has no music bed.
+through the kit's sound module and its house envelopes
+(`.claude/memory/audio-pop-free-playback.md`), and started only by a tap: taps in the soft tone,
+Merc's singing in Merc's "ooh" (FACTS, Sounds). Nothing autoplays, and the page has no music bed.
 
 ## Mercs
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer
-loaded after first paint, one WebGL context per Merc, medium quality on phones, turned toward each
+loaded after first paint, one WebGL context per Merc, medium quality on phones, turned towards each
 other, paused off screen, and the still images when WebGL fails or would run on the CPU.
 Reactions: blue `sing` while Play from C sounds and orange `sing` while Play from D sounds, each
 `listen` while the other sings; orange `celebrate` once after the cold-open reveal (no sparkles);
@@ -258,11 +258,11 @@ each Merc holds a still frame and skips the reactions.
 
 ## Explorer and season data
 
-- **Season data.** In `kit/season.ts`, Lesson 4's practise entry gains today's link, `{ href:
-'/pitch-training?lesson=04', addr: 'mercurypitch.com/pitch-training', label: 'Scale Runner',
-note: 'for now, then tap Scale Runner' }`, and keeps its `needs` until the slug ships. Its `sig`
-  reads "A staircase with two uneven steps that slides to start on any note"; "with two short
-  steps" says what the toy shows.
+- **Season data.** In `kit/season.ts`, Lesson 4's practise entry gains today's link: `href`
+  `/pitch-training?lesson=04`, `addr` `mercurypitch.com/pitch-training`, `label` "Scale Runner"
+  and `note` "for now, then tap Scale Runner". It keeps its `needs` until the slug ships. Its
+  `sig` reads "A staircase with two uneven steps that slides to start on any note"; "with two
+  short steps" says what the toy shows.
 - **A text-only lesson.** Today a lesson is either planned or "Ready · watch and read", and a ready
   card links "Watch the episode" to `#watch` (`kit/explorer.ts:63-107`). Lesson 4 needs a third
   state, "Ready · read", with no Watch button and a Length row reading "10-minute read": a new

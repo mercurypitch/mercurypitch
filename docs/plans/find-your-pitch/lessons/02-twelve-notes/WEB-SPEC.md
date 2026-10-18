@@ -47,7 +47,8 @@ the Wrap comes before the episode; and each "Common mix-up" card sits inside the
 refutes it. New against Lesson 1: the recall check (item 3) runs for the first time; the practice
 link sits in the Wrap, as the anatomy has it; the page has two mix-up cards, one per concept
 (playbook rule 3); and there is no series blueprint section (Lesson 1's page carries it for the
-team), so the masthead's anchors are Lesson, Watch and Explorer.
+team), so the masthead's anchors are Lesson, Watch and Explorer. Each section's heading, and the
+line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 02", anchors Lesson, Watch, Explorer, the
    Sound toggle off by default, the Pause animations toggle with its reduced-motion lock).
@@ -78,8 +79,8 @@ team), so the masthead's anchors are Lesson, Watch and Explorer.
    6. A hundred cents: the semitone ruler with cents (Toys, 2), and the Go deeper drawer.
 7. **Sing it**: the slide guide (Toys, 5) with Merc's slide, the octave-up slide and the guide; the
    safety line; nothing listens.
-8. **Quick check**: Lesson 1's quiz component with LESSON.md's four questions, which are the film's
-   four recap questions, as Lesson 1's page asks its film's recap questions: three answers each,
+8. **Quick check**: Lesson 1's quiz component with LESSON.md's four questions, the film's four
+   recap questions (Lesson 1's quick check asks its film's three, and one more): three answers each,
    shuffled (seeded per question), one-line feedback for every answer, a check icon and ink (not
    gold) on the right one. Question 2 has its own play button, Play the two steps: A4 to B4, then
    B4 to C5 (FACTS 52, the film's `quiz-pair`), with "1st" and "2nd" lighting in turn as each step
@@ -93,21 +94,22 @@ team), so the masthead's anchors are Lesson, Watch and Explorer.
    Answers stay in the viewer's browser (localStorage) until the Lesson telemetry track exists;
    then each first answer is a telemetry event behind consent (MASTER-PLAN Phase 1). A later visit
    asks them afresh, and Lesson 3's page will open with two of them.
-9. **Wrap**: the three recap lines; the challenge; the practice card (LESSON.md), Lesson 1's app
-   card with Leap's text, today's caveat and Contour as an optional first drill, the address line
-   "Practise it free: mercurypitch.com/ear-lab" as the film's end card has it, linking
-   `/ear-lab?lesson=02`, and as its figure a house-style drawing of Leap's twelve answer pads in the
-   app's six columns, each its label over its name (FACTS 32), m2 and M2 lit, the other ten ghosted
-   with their fills and outlines dimmed but their labels at full contrast, as the film's S15g draws
-   them (DECISIONS 77), captioned "Illustration: Leap's twelve answers. In Leap: m2 = semitone · M2
-   = tone."; then the next lesson's hook on a card that opens Lesson 3 in the explorer, with the
-   tease's two figures side by side as the film shows them: ASKED, 59 %, of 1,105; TESTED, 10–16 %,
-   a semitone or more off (FACTS 36). Then free play: one stage with the whole object and every
-   control of the step toys at once (the spiral with Climb and Look down; Unroll and Straighten;
-   Lift out the five; the names toggle with Sharp, Flat and Show the rare ones; the ruler with One
-   semitone and Glide), switched by Spiral, Keyboard, Tiles and Ruler buttons. Nothing locks it:
-   the page's order already puts the guided steps first (playbook rule 17: guided first, free play
-   after).
+9. **Wrap**: the three recap lines and the challenge, then:
+   - **The practice card** (LESSON.md): Lesson 1's app card, with Leap's text, today's caveat and
+     Contour as an optional first drill, and the address line "Practise it free:
+     mercurypitch.com/ear-lab", as the film's end card has it, linking `/ear-lab?lesson=02`. Its
+     figure is a house-style drawing of Leap's twelve answer pads in the app's six columns, each its
+     label over its name (FACTS 32), m2 and M2 lit, the other ten ghosted with their fills and
+     outlines dimmed but their labels at full contrast, as the film's S15g draws them (DECISIONS
+     77), captioned "Illustration: Leap's twelve answers. In Leap: m2 = semitone · M2 = tone."
+   - **The next-lesson card**: the next lesson's hook on a card that opens Lesson 3 in the
+     explorer, with the tease's two figures side by side as the film shows them: ASKED, 59 %, of
+     1,105; TESTED, 10–16 %, a semitone or more off (FACTS 36).
+   - **Free play**: one stage with the whole object and every control of the step toys at once (the
+     spiral with Climb and Look down; Unroll and Straighten; Lift out the five; the names toggle
+     with Sharp, Flat and Show the rare ones; the ruler with One semitone and Glide), switched by
+     Spiral, Keyboard, Tiles and Ruler buttons. Nothing locks it: the page's order already puts the
+     guided steps first (playbook rule 17: guided first, free play after).
 10. **Watch the episode**: the kit's episode section (`kit/episode.ts`), as Lesson 1's page has it:
     the film as MP4s on R2 in the page's own player, never a YouTube embed, with its chapters, its
     captions and the transcript; until the files are uploaded, the poster, the chapters and the
@@ -140,9 +142,10 @@ Lesson 1's page does with 5:14; `onDuration` hands the same length to the explor
   px and below) stays `null` until the files are uploaded, and while it is null the section shows
   the poster, the chapters and the transcript with "Film coming soon"; `FILM_CHAPTERS` and
   `FILM_CAPTIONS_TEXT` read the bundled copies below. The MP4s live on R2 (MASTER-PLAN § 12 item
-  7), served from R2's custom domain (planned: `media.mercurypitch.com`), not `r2.dev`. `media-src`
-  in `public/_headers` allows only `*.r2.dev` and `*.r2.cloudflarestorage.com` today, so the domain
-  goes in there before `FILM_SOURCES` points at it, or the browser refuses the video. Once the
+  7), served from R2's custom domain (planned: `media.mercurypitch.com`), not `r2.dev`. Of outside
+  hosts, `media-src` in `public/_headers` lists only `*.r2.dev` and `*.r2.cloudflarestorage.com`
+  today, so the domain goes in there before `FILM_SOURCES` points at it, or the browser refuses the
+  video. Once the
   episode is on YouTube the section adds a "Watch on YouTube" link; there is no YouTube embed.
 - **The files**: the film's `tools/web-video.sh` cuts them all from the delivery master:
   `lesson-02-1080p.mp4` and `lesson-02-720p.mp4` (H.264 and AAC at 30 fps, moov first) for R2;
@@ -251,8 +254,8 @@ vertical (pitch is height).
   side by side at a readable size (the film's build decision B21; FACTS, Illustrations).
 - **Sharp** and **Flat** buttons: select any key or tile, press one, and an arrow steps one
   semitone up or down and writes the name it gives on the key it lands on (in place of that key's
-  own label while it shows). A key given both names this way gets one gold ring, the fit: one key
-  (never the Both state's labels, which are not a fit). Step 5 opens on the film's signature 3: an
+  own label while it shows). A key the arrows have given both names gets one gold ring, the fit:
+  one key (the Both labels never take a ring). Step 5 opens on the film's signature 3: an
   arrow climbs one semitone from C and writes C♯ on the dark tile, another steps one semitone down
   from D and writes D♭ under it, and the gold ring settles round the tile; beside it, **Play both
   ways** sounds C4 to C♯4, then D4 to D♭4 (FACTS 49), and runs the arrows again. From E, Sharp
@@ -279,28 +282,30 @@ vertical (pitch is height).
 - **Play Merc's slide** (A3) and **Play it an octave up** (A4) sound Merc's synthesised "ooh" along
   FACTS 50's contour (A held, up one lane, held, and back, 4.2 s; FACTS 51 an octave up), in Lesson
   1's recipe (partials 1, .62, .38, .24, .14, .08, .045, .025 over a lowpass near 2.6 kHz, vibrato
-  5.5 Hz, +-14 cents, grown in over 0.35 s). While a slide plays, its path lights along the lanes
-  in the app's target amber, the model a singer follows (MASTER-PLAN § 5), and the ring shows the
-  still of the Merc singing it, blue for A3 and orange for A4, as Lesson 1's ring does.
+  5.5 Hz, +-14 cents, grown in over 0.35 s). Merc's path rests faint on the lanes in the app's
+  target amber, the model a singer follows (MASTER-PLAN § 5), and lights in step with a slide as it
+  plays, while the ring shows the still of the Merc singing it, blue for A3 and orange for A4, as
+  Lesson 1's ring does.
 - **Start the guide** is enabled once either slide has played (hear it first: playbook rule 16). It
   is the viewer's turn, so nothing of the app's drawing stays, as in the film from "Now you"
   (DECISIONS 68): the amber goes, the lanes turn plain chrome and Merc's path is drawn dashed in
   chrome. It counts in for one second, then a vertical chrome line sweeps across the lanes along
   the path in 4.2 s, with nothing riding the path itself, while the ring breathes with Merc's still
-  in its centre, never a microphone icon (DECISIONS 65). Nothing listens and nothing is scored: no
-  microphone on this page. Under reduced motion the path's segments light one after another instead
-  of a travelling line.
+  in its centre, never a microphone icon (DECISIONS 65); when the sweep ends, the lanes go back to
+  their amber rest. Nothing listens and nothing is scored: no microphone on this page. Under reduced
+  motion the path's segments light one after another instead of a travelling line.
 - The safety line from LESSON.md sits under the buttons.
 
 ### 6. Recall check
 
-- The quick-check component, at the top of the page, with Lesson 1's questions 2 and 4 under their
-  Lesson 1 `question_id`s (proposed: `l01-q2` and `l01-q4`, beside this page's `l02-q1` to
-  `l02-q4`), the first time the page anatomy's item 3 runs. Options are reshuffled (a seed of its
-  own, `fyp-l02-recall-seed`, so the order is not Lesson 1's) and earlier answers are never shown,
-  so the answers measure delayed retrieval (MASTER-PLAN § 9). It marks no lesson done. On the
-  public host each answer is a telemetry event with its `visit_index`. The kit needs three changes
-  for it (below): a second quiz on one page, no done-marking, and question ids.
+- The quick-check component, at the top of the page, with Lesson 1's questions 2 and 4 under the
+  `question_id`s Lesson 1's page gives them (proposed: `l01-q2` and `l01-q4`, as this page's own
+  are `l02-q1` to `l02-q4`), so one question reports under one id on both pages; the first time the
+  page anatomy's item 3 runs. Options are reshuffled from a seed of its own (keys
+  `fyp-l02-recall-seed` and `fyp-l02-recall-v1`), not Lesson 1's, and earlier answers are never
+  shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). It marks no lesson done. On
+  the public host each answer is a telemetry event with its `visit_index`. The kit needs three
+  changes for it (below): a second quiz on one page, no done-marking, and question ids.
 
 ### 7 and 8. Predicts and the Go deeper drawer
 

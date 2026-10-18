@@ -199,8 +199,7 @@ scores a third, not half. The page puts "Right." or "Not quite." before each fee
 "Try Step N again" ends with a link to that step, as in Lesson 1's quick check.
 
 1. How many semitones make an octave?
-   - 12 **[correct]** · Feedback: "Yes: seven letters and five notes between them, twelve equal
-     steps."
+   - 12 **[correct]** · Feedback: "Seven letters and five notes between them: twelve equal steps."
    - 7 · Feedback: "Seven is the number of letters. Five more notes sit between them: twelve
      semitones in all. Try Step 2 again."
    - 8 · Feedback: "From A to A there are eight letters, counting both As, but five more notes sit
@@ -261,11 +260,30 @@ missed by a semitone or more. So what's going on?" Beside it, the film's two fig
 
 ## Watch the episode
 
-Below the Wrap (WEB-SPEC § 10).
+Below the Wrap (WEB-SPEC, "The episode").
 
 - Above the heading: The same lesson, as a film: 7:11, captions on
 - Play button: Play the episode · 7:11 · captions on. Until the film is on R2: Film coming soon ·
   The poster for now · chapters and transcript are ready.
-- Beside the player: Chapters · tap to jump, the film's eleven chapters (WEB-SPEC § 10), from "The
-  missing five" at 00:00 to "Next time" at 06:49.
+- Beside the player: Chapters · tap to jump, the film's eleven chapters as WEB-SPEC lists them,
+  from "The missing five" at 00:00 to "Next time" at 06:49.
 - Under it: Read the transcript · from the captions.
+
+## Section headings
+
+Each section opens as Lesson 1's do, with a short line above its heading; where a section is the
+same as Lesson 1's, so are its words.
+
+| Section           | Line above the heading                                                     | Heading                              |
+| ----------------- | -------------------------------------------------------------------------- | ------------------------------------ |
+| Recall            | From Lesson 1: two questions, asked afresh                                 | Recall from Lesson 1                 |
+| Four words        | Four words you'll meet before the first step                               | Semitone, tone, sharp and flat, cent |
+| Steps             | Six steps, one object: a spiral, then a keyboard, then tiles, then a ruler | Twelve notes                         |
+| Sing it           | Cadenza: your solo, and any octave counts                                  | Sing it                              |
+| Quick check       | Ripresa: the theme comes back, from memory                                 | Quick check                          |
+| Wrap              | Coda: the closing bars                                                     | Three lines to keep                  |
+| Watch the episode | The same lesson, as a film: 7:11, captions on                              | Watch the episode                    |
+| Explorer          | Season 1, fourteen lessons and a trailer: theory and voice, alternating    | The season, mapped                   |
+
+The explorer's line under its heading ends "Lessons 1 and 2 are ready to watch and read; the rest
+are planned."
