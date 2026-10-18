@@ -300,7 +300,7 @@ on the CPU.
   stored pace (difficulty 5 unless the app has moved it, FACTS 42), starting from the saved voice
   range (FACTS 41). It scores each note against the octave it plays (FACTS 40), so the copy says
   so and sends the viewer to Settings, Singing Voice Range, first. On a first visit the main app
-  opens First Light first, and its welcome's one way out is the X at the top right, labelled Skip
+  opens First Light first, and its welcome's one way out is the × at the top right, labelled Skip
   the intro (FACTS 35a), so the card says so until the `?lesson=` marker lets First Light step
   aside (CURRICULUM § 4 item 6). On the public host the link is `/pitch-training?lesson=04`.
 - **Today, Ear Lab Home.** `mercurypitch.com/ear-lab`, then tap Home (FACTS 46, 47); on the public

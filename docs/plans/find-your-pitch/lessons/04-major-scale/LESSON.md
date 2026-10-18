@@ -257,8 +257,9 @@ don't sound like do-re-mi.
   in Settings, and it listens for each note in the octave it plays, so set your range there first
   (under Singing Voice Range; "Don't know? Find my voice" helps). Sing at about speaking volume,
   and stop immediately if anything feels uncomfortable.
-- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Scale Runner. (On a
-  first visit a welcome opens first: close it with Skip the intro, the X at the top right.)
+- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Scale Runner. (First
+  visit? MercuryPitch opens with its intro: close it with the × at the top right ("Skip the
+  intro").)
 - Second drill: For your ear, Ear Lab's Home plays a few chords that set home, then one note: name
   its scale degree, 1 to 7. The pads show do to ti, with so written Sol, and you can tap your
   answer or sing it, in any octave. Free: **mercurypitch.com/ear-lab**, then tap Home.

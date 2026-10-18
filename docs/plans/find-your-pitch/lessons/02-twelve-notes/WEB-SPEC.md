@@ -120,7 +120,8 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
      Contour as an optional first drill; the address line "Practise it free:
      mercurypitch.com/ear-lab, then tap Leap", as the film's end card prints the address, linking
      `/ear-lab?lesson=02` in a new tab, as Lesson 1's card links Voice Mirror; and the first-visit
-     line, "First visit? MercuryPitch opens with its intro: close it with the × at the top right."
+     line, "First visit? MercuryPitch opens with its intro: close it with the × at the top right
+     ("Skip the intro")."
      (Practice link, below; FACTS 33a). Its figure is a house-style drawing of Leap's twelve answer
      pads in the app's six columns, each its label over its name (FACTS 32), in the page's own
      colours (DECISIONS 87): m2 and M2 lit, their labels and names in ink on a brighter fill; the
@@ -461,8 +462,9 @@ the buttons and the reveal carry the moment.
   for good and leaves the Ear Lab on screen. Every later screen's "Not now" opens the intro's Map
   instead, whose rooms and doors do not include the Ear Lab; entering any of them ends the intro
   too, after which the link opens the Ear Lab. So the practice card carries "First visit?
-  MercuryPitch opens with its intro: close it with the × at the top right.", the footer "On a
-  first visit, close the intro first, with the × at the top right.", and the explorer card the
+  MercuryPitch opens with its intro: close it with the × at the top right ("Skip the intro").", the
+  footer "On a first visit, close the intro first, with the × at the top right ("Skip the
+  intro").", and the explorer card the
   short form in `season.ts` (Lesson explorer, above). Lesson 1's link, `/mirror`, boots Voice
   Mirror's own page, which has no intro, so the line is new with Lesson 2. It goes when the
   `?lesson=` step-aside ships (What the kit and the app still need, 18); the page does not wait for
