@@ -1088,9 +1088,11 @@
   }
 }
 
+/* The card's box stays flush on the column's edge; its content keeps the
+   same 12px inset from the bottom as from the sides. */
 .phraseCoach > [data-mode='compact'] {
   flex: none;
-  padding-inline: 12px;
+  padding: 0 12px 12px;
 }
 
 .takeHistoryLink {
@@ -3055,6 +3057,7 @@
   }
   .coachCue strong {
     font-size: 11px;
+    text-wrap: balance;
   }
   .coachCue small {
     overflow: hidden;
