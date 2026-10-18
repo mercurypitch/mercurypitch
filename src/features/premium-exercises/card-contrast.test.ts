@@ -158,3 +158,18 @@ describe("the exercise picker's cards, in every theme", () => {
     expect(Object.values(card('dark')).map(round)).toEqual([1.37, 1.1, 1.24])
   })
 })
+
+/** One theme's group heading (Pitch, Warm-ups) against the sheet. */
+function heading(theme: string): number {
+  const colours = themeTokens(theme)
+  const sheet = paint('var(--bg-secondary)', colours).rgb
+  const text = paint(property(rule(CARDS_CSS, '.groupTitle'), 'color'), colours)
+  return contrast(over(text, sheet), sheet)
+}
+
+describe("the exercise picker's group headings, in every theme", () => {
+  // 12 px text: WCAG's 4.5 for text under the large size.
+  it.each(THEME_PRESETS)('%s: read at 4.5 against the sheet', (theme) => {
+    expect(round(heading(theme))).toBeGreaterThanOrEqual(4.5)
+  })
+})

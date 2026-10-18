@@ -200,6 +200,23 @@
   height: 22px;
 }
 
+/* A heading and its cards, as the Karaoke library draws its groups
+   (karaoke-room.module.css, .group and .groupTitle). */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.groupTitle {
+  margin: 0 2px;
+  font: 600 12px/16px var(--font-body, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #8b949e);
+}
+
 .cards {
   display: flex;
   flex-direction: column;
