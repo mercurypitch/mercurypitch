@@ -7,6 +7,8 @@ import { ACESFilmicToneMapping, Box3, DirectionalLight, Fog, FogExp2, Hemisphere
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { getRequiredRouteBreakableIds } from '../core/progress'
 import { createLoadingProgressLedger } from '../loading-progress'
+import { createArchiveOverviewFraming } from './archive-camera'
+import { createArchiveRoom } from './archive-room'
 import { loadMuseumAssets } from './asset-kit'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { releaseAssetImage } from './asset-texture-profile'
@@ -210,7 +212,8 @@ function createGlassRendererInstance(
   registerPartialCleanup(() => disposeObject(scene, partialBorrowedMaterials))
   const atmosphere = createAtmosphere(materials, sceneRecipe)
   scene.add(atmosphere.root)
-  scene.add(new HemisphereLight(0xcceaff, 0x243e42, 0.6))
+  const hemisphere = new HemisphereLight(0xcceaff, 0x243e42, 0.6)
+  scene.add(hemisphere)
   const key = new DirectionalLight(0xffdfaa, 2.5)
   key.position.copy(sceneFrame.keyPosition)
   key.target.position.copy(sceneFrame.lightTarget)
@@ -254,6 +257,20 @@ function createGlassRendererInstance(
     museum.materialLibrary.dispose()
   })
   scene.add(museum.root)
+  const archiveRoom = createArchiveRoom(level, museum.root)
+  const archiveOverview = createArchiveOverviewFraming(level)
+  registerPartialCleanup(() => archiveRoom?.dispose())
+  if (archiveRoom !== undefined)
+    scene.add(archiveRoom.light, archiveRoom.light.target)
+  const applyArchiveLight = (z: number) => {
+    if (archiveRoom === undefined) return
+    const night = archiveRoom.lightWeight(z)
+    hemisphere.intensity = 0.6 - night * 0.34
+    key.intensity = 2.5 - night * 1.4
+    rim.intensity = 0.75 - night * 0.2
+    scene.environmentIntensity = 0.65 - night * 0.06
+  }
+  applyArchiveLight(level.spawn.position.z)
   const portal = createResonancePortal(
     { ...level.exit, requiresCompleted: getRequiredRouteBreakableIds(level) },
     materials,
@@ -397,6 +414,8 @@ function createGlassRendererInstance(
           releaseAssetImage(image)
         else decodedAssetImages.add(image)
       },
+      onBundleInstalled: (source, bundle) =>
+        archiveRoom?.installBundle(source, bundle),
     },
   )
   registerPartialCleanup(() => {
@@ -420,6 +439,7 @@ function createGlassRendererInstance(
   const ready = Promise.all([mercReady, assetsReady, environmentReady])
     .then(() => {
       if (disposed || contextLost) return
+      archiveRoom?.finishInstallation()
       if (isCloudwayLevel(level) && skyBackdrop !== undefined)
         installBackdropFog(scene, skyBackdrop)
       if (!sceneRecipe.reflectionProbe) return
@@ -475,7 +495,10 @@ function createGlassRendererInstance(
     setOrbitActive: camera.setOrbitActive,
     zoom: camera.zoom,
     recenter: camera.recenter,
-    setCameraMode: camera.setMode,
+    setCameraMode(mode) {
+      if (mode === 'first-person') archiveOverview?.clear(camera.camera)
+      camera.setMode(mode)
+    },
     getCameraMode: camera.mode,
     getCameraYaw: camera.yaw,
     getMercYaw: () => merc?.root.rotation.y ?? null,
@@ -565,6 +588,14 @@ function createGlassRendererInstance(
               challengeDefinition.position.z - snapshot.player.position.z,
             )
       const museumShadowVisibilityChanged = museum.update(snapshot)
+      if (archiveRoom !== undefined) {
+        applyArchiveLight(snapshot.player.position.z)
+        archiveRoom.update(
+          presentation,
+          presentationPaused ? 0 : presentationDt,
+          snapshot.player.position.z,
+        )
+      }
       if (portal.update(snapshot, simulationDt))
         options.onExitCelebrationComplete?.()
       contact.update(snapshot)
@@ -614,6 +645,21 @@ function createGlassRendererInstance(
       }
       if (challengeId === null) boundsEncounterId = null
       camera.update(snapshot, presentationDt, presentationPaused)
+      const archiveHush = presentation?.archiveHush
+      if (
+        camera.mode() === 'third-person' &&
+        archiveHush?.inRoom === true &&
+        archiveHush.phase !== 'complete'
+      ) {
+        archiveOverview?.apply(
+          camera.camera,
+          container.clientWidth,
+          container.clientHeight,
+          archiveHush.roomId,
+        )
+      } else {
+        archiveOverview?.clear(camera.camera)
+      }
       const cloudwaySelectionChanged = museum.cullCloudwayPlatforms(
         camera.camera,
       )
@@ -711,6 +757,7 @@ function createGlassRendererInstance(
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
       observer.disconnect()
       camera.clearChallenge()
+      archiveRoom?.dispose()
       merc?.dispose()
       vessels.forEach((vessel) => vessel.dispose())
       scene.environment = null

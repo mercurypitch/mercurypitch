@@ -1,6 +1,7 @@
 // Voice challenge session — one microphone generation owns calibration, references and scoring.
 
 import type { BreakableDefinition, GameEvent, GlassGame, LevelDefinition, PitchChallengeDefinition, PitchObservation, PitchTargetId, PitchTargets, } from '../contracts'
+import { resolvePitchStepTarget } from '../core/archive-notes'
 import { createChallengeJudge } from '../core/challenge'
 import type { GlassGameHost, GlassSound, GlassVoiceSession } from '../host'
 import type { MicrophoneIssue } from './mic-error'
@@ -81,7 +82,9 @@ function validMidi(value: unknown): value is number {
   )
 }
 
-function readComfortable(host: VoiceChallengeOptions['host']): number | null {
+function readComfortable(
+  host: Pick<GlassGameHost, 'readPreference'>,
+): number | null {
   const midi = Number(host.readPreference('comfortable-note') ?? '')
   return validMidi(midi) ? midi : null
 }
@@ -109,6 +112,18 @@ function steps(definition: PitchChallengeDefinition) {
   return definition.kind === 'ordered-pair'
     ? definition.steps
     : [definition.step]
+}
+
+/** Written notes may resolve saved calibration before the microphone opens. */
+export function readVoicePitchTargets(
+  host: Pick<GlassGameHost, 'readPreference'>,
+): PitchTargets {
+  const comfortable = readComfortable(host)
+  const pair = readPair(host.readPreference(PAIR_PREFERENCE))
+  return {
+    ...(comfortable === null ? {} : { comfortable }),
+    ...(pair === null ? {} : { low: pair.low, high: pair.high }),
+  }
 }
 
 function pairTolerances(level: LevelDefinition): {
@@ -264,7 +279,10 @@ export function createVoiceChallenge(
     stepIndex: 0,
     stepCount: 1,
     stepCharge: 0,
-    targets: comfortable === null ? {} : { comfortable },
+    targets: {
+      ...(comfortable === null ? {} : { comfortable }),
+      ...(pair === null ? {} : { low: pair.low, high: pair.high }),
+    },
   }
   let disposed = false
   let generation = 0
@@ -275,7 +293,7 @@ export function createVoiceChallenge(
   let current:
     | (BreakableDefinition & { challenge: PitchChallengeDefinition })
     | null = null
-  let targets: PitchTargets = {}
+  let targets: PitchTargets = copyTargets(state.targets)
   let queue: PitchTargetId[] = []
   let samples: PitchObservation[] = []
   let lastSequence = -Infinity
@@ -391,8 +409,8 @@ export function createVoiceChallenge(
     })
     try {
       for (const step of steps(definition)) {
-        const midi = targets[step.target]
-        if (midi === undefined)
+        const midi = resolvePitchStepTarget(step, targets)
+        if (midi === null)
           throw new Error('The calibrated note is unavailable.')
         emit({ target: midi })
         if (definition.kind === 'settle-wave')
@@ -641,11 +659,12 @@ export function createVoiceChallenge(
       const session = options.host.createVoice()
       voice = session
       sound = options.host.createSound(encounter)
-      const quiet = sound.prepareShatter
-        ? Promise.all([options.beforeCapture(), sound.prepareShatter()]).then(
-            () => undefined,
-          )
-        : options.beforeCapture()
+      const quiet =
+        current.completion !== 'awaken' && sound.prepareShatter
+          ? Promise.all([options.beforeCapture(), sound.prepareShatter()]).then(
+              () => undefined,
+            )
+          : options.beforeCapture()
       await session.start(quiet)
       if (disposed || run !== generation || voice !== session) {
         session.stop()
@@ -726,12 +745,17 @@ export function createVoiceChallenge(
   const completeBreak = (): void => {
     if (state.mode === 'off') return
     stopCapture()
-    sound?.shatter()
-    const finishedSound = sound
-    soundTimer = setTimeout(() => {
-      finishedSound?.dispose()
-      if (sound === finishedSound) sound = null
-    }, 3000)
+    // The legacy completion entry point also owns intact-success teardown.
+    // Awakening must release the reference sound without starting a fracture.
+    if (current?.completion === 'awaken') stopSound()
+    else {
+      sound?.shatter()
+      const finishedSound = sound
+      soundTimer = setTimeout(() => {
+        finishedSound?.dispose()
+        if (sound === finishedSound) sound = null
+      }, 3000)
+    }
     current = null
     queue = []
   }

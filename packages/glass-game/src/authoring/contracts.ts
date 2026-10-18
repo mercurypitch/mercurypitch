@@ -103,6 +103,8 @@ export interface ExhibitPlacement {
   label: string
   optional: boolean
   challenge: ChallengeDefinition
+  /** Defaults to shatter; awakening preserves the mounted exhibit after success. */
+  completion?: 'shatter' | 'awaken'
   requiresCompleted?: readonly string[]
 }
 

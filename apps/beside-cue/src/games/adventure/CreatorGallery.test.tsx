@@ -23,6 +23,8 @@ import { CreatorGallery } from './CreatorGallery'
 
 describe('creator art studies', () => {
   it.each([
+    ['The archive after dark', 'glassworks-unbroken-archive/archive-hush'],
+    ['The unbroken archive', 'glassworks-unbroken-archive/archive-awakening'],
     ['The pearl alcove', 'cloudway-thawing-song-alcove'],
     ['The living pearl', 'living-crystal-pearl-roots-art-study-v2'],
     ['The living amber', 'living-crystal-living-amber-art-study-v2'],

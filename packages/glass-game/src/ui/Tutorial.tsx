@@ -8,6 +8,7 @@ interface TutorialProps {
   content?: LevelTutorialDefinition
   autoRun?: boolean
   automaticSinging?: boolean
+  intactGlass?: boolean
   onClose(): void
 }
 export function Tutorial(props: TutorialProps) {
@@ -63,12 +64,14 @@ export function Tutorial(props: TutorialProps) {
                   stroke="#c69e53"
                   stroke-width="3"
                 />
-                <path
-                  d="m293 62-9 20 14 8-13 16"
-                  fill="none"
-                  stroke="#fff6d5"
-                  stroke-width="3"
-                />
+                <Show when={props.intactGlass !== true}>
+                  <path
+                    d="m293 62-9 20 14 8-13 16"
+                    fill="none"
+                    stroke="#fff6d5"
+                    stroke-width="3"
+                  />
+                </Show>
               </>
             }
           >
@@ -105,15 +108,21 @@ export function Tutorial(props: TutorialProps) {
           {props.content?.pages[page()].title ??
             (page() === 0
               ? 'A little room to wander.'
-              : 'A little note can break glass.')}
+              : props.intactGlass === true
+                ? 'Wake the glass with a note.'
+                : 'A little note can break glass.')}
         </h2>
         <p>
           {props.content?.pages[page()].body ??
             (page() === 0
               ? 'Move Merc with WASD. Use the arrow keys or drag to look around. Press Space to jump. On a phone, use the thumbstick and Jump.'
-              : props.automaticSinging === true
-                ? 'Walk onto a glowing circle and the microphone opens automatically. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.'
-                : 'Walk onto a glowing circle and choose Sing. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.')}
+              : props.intactGlass === true
+                ? props.automaticSinging === true
+                  ? 'Walk onto a glowing circle and hum a comfortable note. Listen to the example, then hold the note to wake the glass. Every piece stays whole.'
+                  : 'Walk onto a glowing circle and choose Sing. Hum a comfortable note, listen to the example, then hold the note to wake the glass. Every piece stays whole.'
+                : props.automaticSinging === true
+                  ? 'Walk onto a glowing circle and the microphone opens automatically. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.'
+                  : 'Walk onto a glowing circle and choose Sing. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.')}
         </p>
         <Show when={page() === 1 && props.automaticSinging !== undefined}>
           <p class={styles.tutorialAside}>
@@ -127,7 +136,9 @@ export function Tutorial(props: TutorialProps) {
             (page() === 0
               ? props.autoRun === true
                 ? 'Keep moving to ease into a run; small thumbstick moves stay gentle. Falls return you to safety.'
-                : 'Miss a jump? You return to a safe spot. Your broken glass stays broken.'
+                : props.intactGlass === true
+                  ? 'Miss a jump? You return to a safe spot. Glass you have awakened stays awake.'
+                  : 'Miss a jump? You return to a safe spot. Your broken glass stays broken.'
               : 'No shouting and no rush. Cancel whenever you want to take a breath.')}
         </p>
         <div class={styles.tutorialBottom}>

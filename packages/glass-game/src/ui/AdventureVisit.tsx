@@ -9,6 +9,7 @@ import { deriveAdventureProgressGuidance } from './AdventureGuidance'
 import { AdventureMessageStack } from './AdventureMessageStack'
 import { AdventureSettings } from './AdventureSettings'
 import { AdventureVoicePanel } from './AdventureVoicePanel'
+import { ArchiveHushPanel } from './ArchiveHushPanel'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import type { CompletionDifficultyAction } from './CompletionResults'
 import { CompletionResults } from './CompletionResults'
@@ -120,6 +121,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
   )
   const showArtworkOffer = createMemo(
     () =>
+      adventure.hush === null &&
       adventure.ready() &&
       !adventure.paused() &&
       !adventure.tutorial() &&
@@ -130,6 +132,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
   )
   const showEncounterOffer = createMemo(
     () =>
+      adventure.hush === null &&
       adventure.voiceMode() === 'off' &&
       adventure.microphoneIssue() === null &&
       nearby() !== undefined,
@@ -217,6 +220,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
         data-testid="glass-adventure"
         data-ready={adventure.ready()}
         data-level-id={level.id}
+        data-archive-hush={adventure.hush !== null ? '' : undefined}
         data-loading-phase={adventure.loadingPhase()}
         data-checkpoint={adventure.snapshot().checkpointId}
         data-completed={count()}
@@ -329,15 +333,17 @@ export function AdventureVisit(props: AdventureVisitProps) {
             <Show when={showArtworkOffer()}>
               <ArtworkOffer onOpen={adventure.inspectNearbyArtwork} />
             </Show>
-            <div
-              class={styles.collection}
-              aria-label={`${count()} of ${total} main exhibits opened`}
-            >
-              <span>
-                {count()} / {total}
-              </span>
-              <span>Exhibits</span>
-            </div>
+            <Show when={adventure.hush === null}>
+              <div
+                class={styles.collection}
+                aria-label={`${count()} of ${total} main exhibits opened`}
+              >
+                <span>
+                  {count()} / {total}
+                </span>
+                <span>Exhibits</span>
+              </div>
+            </Show>
             <GameIconButton
               label="Open settings"
               icon="settings"
@@ -392,8 +398,8 @@ export function AdventureVisit(props: AdventureVisitProps) {
           </Show>
           <AdventureMessageStack
             narration={visibleNarrationCaption()}
-            notice={visibleNotice()}
-            guidance={progressGuidance()}
+            notice={adventure.hush === null ? visibleNotice() : ''}
+            guidance={adventure.hush === null ? progressGuidance() : undefined}
             withEncounterOffer={showEncounterOffer()}
           />
           <Show when={adventure.error()}>
@@ -443,6 +449,26 @@ export function AdventureVisit(props: AdventureVisitProps) {
                   adventure.snapshot().phase === 'shattering'
                 }
               />
+              <Show
+                when={
+                  !adventure.snapshot().complete &&
+                  adventure.hush &&
+                  adventure.hushState()
+                }
+              >
+                {(state) => (
+                  <ArchiveHushPanel
+                    session={adventure.hush!}
+                    state={state()}
+                    vessels={adventure.hushAdventure!.vessels()}
+                    room={adventure.hushAdventure!.room()}
+                    roomNumber={adventure.hushAdventure!.roomNumber()}
+                    totalRooms={adventure.hushAdventure!.totalRooms}
+                    inRoom={adventure.hushAdventure!.inRoom()}
+                    doorOpen={adventure.hushAdventure!.doorOpen()}
+                  />
+                )}
+              </Show>
               <Show when={showEncounterOffer()}>
                 <div class={styles.encounterOffer}>
                   <span>
@@ -474,6 +500,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
               <Show
                 when={
                   adventure.voiceMode() === 'off' &&
+                  adventure.hush === null &&
                   adventure.snapshot().phase !== 'shattering'
                 }
               >
@@ -488,6 +515,10 @@ export function AdventureVisit(props: AdventureVisitProps) {
             <Tutorial
               onClose={adventure.closeTutorial}
               content={level.guidance?.tutorial}
+              intactGlass={
+                level.breakables.length > 0 &&
+                level.breakables.every((item) => item.completion === 'awaken')
+              }
               automaticSinging={
                 adventure.automaticSingingAvailable
                   ? adventure.automaticSingingEnabled()

@@ -34,6 +34,8 @@ export class RequiredMuseumAssetError extends Error {
 }
 
 export interface MuseumAssetLoadOptions {
+  /** Synchronous consumers must clone owned resources before the source is retired. */
+  readonly onBundleInstalled?: (scene: Object3D, bundle: string) => void
   /** Cancels abort-capable work and invalidates late results from one attempt. */
   readonly signal?: AbortSignal
   /** Bounds simultaneous compressed downloads and Meshopt decode work. */
@@ -290,6 +292,7 @@ export async function loadMuseumAssets(
         (scene, resolvedBundle) => {
           museum.setKit(scene, bundle)
           installTargets(scene, bundle, resolvedBundle)
+          options.onBundleInstalled?.(scene, bundle)
         },
       )
       if (installed) completeUnit(`bundle:${bundle}`)

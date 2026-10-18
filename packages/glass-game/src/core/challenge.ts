@@ -1,6 +1,7 @@
 // Pitch challenge judging — dispatch held notes and ordered pairs over one capture-clock contract.
 
 import type { ChallengeDefinition, PitchChallengeDefinition, PitchObservation, PitchStepDefinition, PitchTargetId, PitchTargets, } from '../contracts'
+import { resolvePitchStepTarget } from './archive-notes'
 import type { ChallengeJudge, ChallengeJudgeEvent } from './challenge-contracts'
 import type { HoldJudge } from './hold'
 import { createHoldJudge } from './hold'
@@ -39,11 +40,10 @@ function resolveStep(
   step: PitchStepDefinition,
   targets: PitchTargets,
 ): ResolvedStep | ChallengeTargetError {
-  const midi = targets[step.target]
-  if (midi === undefined)
+  if (targets[step.target] === undefined)
     return { reason: 'missing-target', target: step.target }
-  if (!Number.isFinite(midi) || midi < 0 || midi > 127)
-    return { reason: 'invalid-target', target: step.target }
+  const midi = resolvePitchStepTarget(step, targets)
+  if (midi === null) return { reason: 'invalid-target', target: step.target }
   return { definition: step, midi }
 }
 

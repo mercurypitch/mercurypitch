@@ -22,6 +22,19 @@ export interface GlassRendererOptions {
 }
 
 export interface GlassRendererPresentation {
+  /** Calibrated archive placards use the same targets as the pitch judge. */
+  archiveNotes?: readonly { id: string; label: string }[]
+  /** Active protection room presentation; never owns game decisions. */
+  archiveHush?: {
+    roomId: string
+    curtainClosed: boolean
+    inRoom: boolean
+    completedRoomIds?: readonly string[]
+    coveredIndex: number | null
+    aimedIndex: number | null
+    protectedIndices: readonly number[]
+    phase: string
+  }
   /** Optional narrated speech energy for Merc's mouth; no microphone access. */
   narrationLevel?: number
   challengeEncounterId: string | null

@@ -12,14 +12,14 @@ function cloneChallenge(challenge: ChallengeDefinition): ChallengeDefinition {
   if (challenge.kind === 'settle-wave')
     return {
       kind: challenge.kind,
-      step: { target: challenge.step.target, hold: { ...challenge.step.hold } },
+      step: { ...challenge.step, hold: { ...challenge.step.hold } },
       wave: { ...challenge.wave },
     }
   if (challenge.kind === 'hold')
     return {
       kind: challenge.kind,
       step: {
-        target: challenge.step.target,
+        ...challenge.step,
         hold: { ...challenge.step.hold },
       },
     }
@@ -27,11 +27,11 @@ function cloneChallenge(challenge: ChallengeDefinition): ChallengeDefinition {
     kind: challenge.kind,
     steps: [
       {
-        target: challenge.steps[0].target,
+        ...challenge.steps[0],
         hold: { ...challenge.steps[0].hold },
       },
       {
-        target: challenge.steps[1].target,
+        ...challenge.steps[1],
         hold: { ...challenge.steps[1].hold },
       },
     ],
@@ -108,6 +108,9 @@ export function compileExhibits(
       },
       variant: prefab.variant,
       optional: placement.optional,
+      ...(placement.completion === undefined
+        ? {}
+        : { completion: placement.completion }),
       requiresCompleted: mapEncounterRefs(
         placement.requiresCompleted,
         runtimeEncounterIds,

@@ -50,6 +50,27 @@ function frame(
 }
 
 describe('pitch challenges', () => {
+  it('judges the same calibrated archive degree displayed on its placard', () => {
+    const result = createChallengeJudge(
+      {
+        kind: 'hold',
+        step: { target: 'comfortable', archiveNoteDegree: 2, hold: HOLD },
+      },
+      { comfortable: 57, low: 50, high: 66 },
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.judge.snapshot().targetMidi).toBe(64)
+    for (let sequence = 0; sequence <= 4; sequence++) {
+      expect(result.judge.feed(frame(sequence, 57), sequence * 25)).toEqual([])
+    }
+    expect(result.judge.snapshot().charge).toBe(0)
+    const events = Array.from({ length: 5 }, (_, index) =>
+      result.judge.feed(frame(index + 5, 64), (index + 5) * 25),
+    ).flat()
+    expect(events).toContainEqual({ type: 'complete' })
+  })
+
   it('preserves the held-note judge result and charge for the same frames', () => {
     const result = createChallengeJudge(COMFORTABLE, 57)
     expect(result.ok).toBe(true)

@@ -56,7 +56,7 @@ const CREATOR_PREVIEWS: readonly {
     id: 'creator-gallery',
     name: 'Little discoveries',
     blurb:
-      'An optional pearl alcove and three living crystal studies to explore.',
+      'Wake sleeping glass, explore a pearl alcove and walk through living crystal.',
   },
   {
     id: 'echo-curator',

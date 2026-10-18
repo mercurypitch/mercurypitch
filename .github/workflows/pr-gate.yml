@@ -478,6 +478,7 @@ jobs:
       matrix:
         spec:
           [
+            archive-hush,
             artwork,
             authoring,
             auto-singing,
