@@ -80,6 +80,7 @@ import { walkKaraoke, walkKaraokeNoDecoder } from './probe-karaoke.mjs'
 import { importTarget, walkKaraokeImport } from './probe-karaoke-import.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
 import { NOTICE_FRAMES, walkNotices } from './probe-notices.mjs'
+import { ONBOARDING_FRAMES, walkOnboarding } from './probe-onboarding.mjs'
 import { walkLeaderboard, walkProgress } from './probe-progress.mjs'
 import { EXERCISE_FRAMES, EXERCISE_LANDSCAPE_FRAMES, walkExerciseEntry, } from './probe-exercise-entry.mjs'
 import { walkRoomHandover } from './probe-room-handover.mjs'
@@ -136,6 +137,7 @@ function parseArgs(argv) {
     progressOnly: false,
     exercisesOnly: false,
     noticesOnly: false,
+    onboardingOnly: false,
     noticeLog: null,
     noticeFrame: null,
     noticeRoom: null,
@@ -157,6 +159,7 @@ function parseArgs(argv) {
     else if (flag === '--progress-only') args.progressOnly = true
     else if (flag === '--exercises-only') args.exercisesOnly = true
     else if (flag === '--notices-only') args.noticesOnly = true
+    else if (flag === '--onboarding-only') args.onboardingOnly = true
     else if (flag === '--notice-log') args.noticeLog = argv[(i += 1)]
     else if (flag === '--notice-frame') args.noticeFrame = argv[(i += 1)]
     else if (flag === '--notice-room') args.noticeRoom = argv[(i += 1)]
@@ -185,6 +188,10 @@ function seed(theme) {
     // edge as it captures lines — over the rail, which is what this walk taps.
     // A layout probe has no business measuring a debug overlay.
     localStorage.setItem('mp:portableConsole', '0')
+    // The native onboarding opens over a new install's first Sing room
+    // (src/onboarding). Every walk starts past it but its own, which takes
+    // the flag away again (probe-onboarding.mjs).
+    localStorage.setItem('mp:native-onboarding', 'done')
     for (const tab of [
       'home',
       'singing',
@@ -5118,6 +5125,19 @@ async function main() {
     }
   }
 
+  /**
+   * The native onboarding, on a build that has it: the one with the import
+   * switch on (NATIVE_ONBOARDING).
+   */
+  const walkOnboardingFrame = async (frame) => {
+    if (!imports.importing) return
+    try {
+      steps.push(...(await walkOnboarding(browser, args, frame, kit)))
+    } catch (error) {
+      failures.push(error.message)
+    }
+  }
+
   /** Sing and Karaoke, one after the other, on one frame. */
   const walkHandoverFrame = async (frame) => {
     try {
@@ -5171,13 +5191,17 @@ async function main() {
     for (const frame of args.noticesOnly ? noticeFrames : []) {
       await walkNoticesFrame(frame)
     }
+    for (const frame of args.onboardingOnly ? ONBOARDING_FRAMES : []) {
+      await walkOnboardingFrame(frame)
+    }
     for (const frame of args.landscapeOnly ||
     args.karaokeOnly ||
     args.handoverOnly ||
     args.safeAreasOnly ||
     args.progressOnly ||
     args.exercisesOnly ||
-    args.noticesOnly
+    args.noticesOnly ||
+    args.onboardingOnly
       ? []
       : FRAMES) {
       const result = await walkFrame(browser, args, frame)
@@ -5230,7 +5254,8 @@ async function main() {
       !args.safeAreasOnly &&
       !args.progressOnly &&
       !args.exercisesOnly &&
-      !args.noticesOnly
+      !args.noticesOnly &&
+      !args.onboardingOnly
     ) {
       for (const frame of LANDSCAPE_FRAMES) {
         try {
@@ -5274,6 +5299,12 @@ async function main() {
       for (const frame of args.landscapeOnly ? [] : NOTICE_FRAMES) {
         await walkNoticesFrame(frame)
       }
+      // The onboarding exists only where the import switch is on.
+      for (const frame of args.landscapeOnly || !imports.importing
+        ? []
+        : ONBOARDING_FRAMES) {
+        await walkOnboardingFrame(frame)
+      }
     }
   } finally {
     await browser.close()
@@ -5301,7 +5332,9 @@ async function main() {
               ? `the way in to the exercises only, ${EXERCISE_FRAMES.length} frames and ${EXERCISE_LANDSCAPE_FRAMES.length} sideways${args.baseline ? ', the stage only' : ''}`
               : args.noticesOnly
                 ? `notices only, ${NOTICE_FRAMES.map((f) => f.name).join(', ')}`
-                : `${FRAMES.length} frames`
+                : args.onboardingOnly
+                  ? `the onboarding only, ${ONBOARDING_FRAMES.length} frames${imports.importing ? '' : ' (not in this build)'}`
+                  : `${FRAMES.length} frames`
   console.log(`\nprobe-bundle: every step passed (${args.theme}, ${scope}).`)
 }
 

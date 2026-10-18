@@ -308,6 +308,13 @@ const KARAOKE_STAGE_2 = [
   // its record of being seen.
   ['lip-demo-take', "Lip roll's demo"],
   ['mp_lip_demo_seen', "Lip roll's demo record"],
+  // The native onboarding ships with the offer screens, on the same switch
+  // (NATIVE_ONBOARDING, src/lib/native-build.ts): its flag, which the shell
+  // imports statically (vite.config.ts lists it), and its layer, a lazy
+  // chunk behind the switch.
+  ['mp:native-onboarding', 'the native onboarding flag'],
+  ['onboarding-not-now', "the native onboarding's Not now"],
+  ["Hi, I'm Merc.", "the native onboarding's first line"],
 ]
 
 /**
