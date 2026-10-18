@@ -109,6 +109,9 @@ export interface ProceduralChunk {
     | 'cascading-drop'
     | 'crystal-crossroads'
     | 'crescent-balcony'
+    | 'frost-raft-transfer'
+    | 'twin-glide-crossing'
+    | 'cracking-spiral'
   readonly entrySocket: ChunkSocket
   readonly exitSocket: ChunkSocket
   readonly platforms: readonly ChunkPlatform[]
