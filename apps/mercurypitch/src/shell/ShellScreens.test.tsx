@@ -251,6 +251,7 @@ describe('one volume for a room’s visit', () => {
     setOneVolumeInRooms(true)
     resetPageAudioSessionForTests()
     Reflect.deleteProperty(navigator, 'audioSession')
+    Reflect.deleteProperty(document, 'visibilityState')
     vi.restoreAllMocks()
   })
 
@@ -301,6 +302,28 @@ describe('one volume for a room’s visit', () => {
     pushScreen('long-note')
     back()
     expect(writes).toEqual([])
+  })
+
+  it('gives the type back while the page is hidden, and asks again as it shows', () => {
+    const hide = (hidden: boolean): void => {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => (hidden ? 'hidden' : 'visible'),
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+    pushScreen('ng-slides')
+    hide(true)
+    expect(type).toBe('auto')
+    hide(false)
+    expect(type).toBe('play-and-record')
+    back()
+    expect(writes).toEqual([
+      'play-and-record',
+      'auto',
+      'play-and-record',
+      'auto',
+    ])
   })
 })
 

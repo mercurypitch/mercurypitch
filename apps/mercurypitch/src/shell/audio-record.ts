@@ -11,7 +11,9 @@
 // under `[audio]`:
 //
 //   room      a premium room entered and left, with "One volume in rooms"
-//             and what the visit asked WebKit for (room-visit.ts)
+//             and what the visit asked WebKit for (room-visit.ts), and the
+//             type given back as the page went away and asked for again
+//             as it came back (`release-hidden`, `reclaim-visible`)
 //   session   every change to the page's session type, who asked, from
 //             and to (page-audio-session.ts), and WebKit's word on the
 //             session's state where it gives one
@@ -20,10 +22,10 @@
 //   demo      each turn of a room's demo, read off the room's `data-demo`
 //   app       launch, and the app going behind and coming back
 //
-// As a room opens and closes, as the app comes back and as WebKit's
-// session changes state, the phone's output is read now and once settled
-// (the census's readOutputAround), since each is a moment WebKit may move
-// the sound to another of iOS's stored volumes.
+// As a room opens, closes, goes away and comes back, as the app comes back
+// and as WebKit's session changes state, the phone's output is read now
+// and once settled (the census's readOutputAround), since each is a moment
+// WebKit may move the sound to another of iOS's stored volumes.
 //
 // CHEAP. Nothing runs while nothing happens. The rooms' output is polled
 // (the census's watchRoomLevels) and a room's demo watched only while a
@@ -74,6 +76,9 @@ function pageSessionOf(win: Window): PageSession | null {
 }
 
 function visitDetail(step: RoomVisitStep): Record<string, unknown> {
+  if (step.moment === 'release-hidden' || step.moment === 'reclaim-visible') {
+    return { room: step.room, on: step.on }
+  }
   return {
     room: step.room,
     oneVolume: step.oneVolume ? 'on' : 'off',
@@ -82,6 +87,14 @@ function visitDetail(step: RoomVisitStep): Record<string, unknown> {
       ? {}
       : { after: `${(step.ms / 1000).toFixed(1)} s` }),
   }
+}
+
+/** How a step of the visit is named where the output is read around it. */
+const VISIT_WORDS: Record<RoomVisitStep['moment'], string> = {
+  enter: 'entered',
+  'release-hidden': 'hidden',
+  'reclaim-visible': 'shown',
+  leave: 'left',
 }
 
 function sessionDetail(
@@ -195,12 +208,12 @@ export function installAudioRecord(
   stops.push(leave)
   stops.push(
     onRoomVisit((step) => {
-      roomReport(step.entering ? 'enter' : 'leave', visitDetail(step))
-      readOutputAround(
-        `room ${step.room} ${step.entering ? 'entered' : 'left'}`,
-      )
+      roomReport(step.moment, visitDetail(step))
+      readOutputAround(`room ${step.room} ${VISIT_WORDS[step.moment]}`)
+      // The page going and coming back leaves the room's watches running.
+      if (step.moment !== 'enter' && step.moment !== 'leave') return
       leave()
-      if (!step.entering) return
+      if (step.moment === 'leave') return
       leaving = [watchDemo(win, step.room)]
       if (options.roomLevels !== undefined) {
         leaving.push(watchRoomLevels(options.roomLevels))

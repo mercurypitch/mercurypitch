@@ -15,6 +15,7 @@ import { audioDiagnosticEntries, formatAudioDiagnostic, resetAudioDiagnosticsFor
 import type { NativeAudioOutputReading } from '@/stores/native-shell-store'
 import { LEVEL_POLL_MS, resetAudioCensusForTests, SOUND_GAP_MS, } from './audio-census'
 import { installAudioRecord } from './audio-record'
+import type { RoomVisitOptions } from './room-visit'
 import { beginRoomVisit } from './room-visit'
 import type { RoomVolumeNotice } from './RoomVolumeHint'
 
@@ -74,6 +75,13 @@ function hide(hidden: boolean): void {
 // An iPhone's visit with the switch on (room-visit.ts asks only on iOS).
 const on = { oneVolume: () => true, platform: () => 'ios' }
 
+/** A visit the test ends, or the cleanup does: none outlives its test. */
+function visit(room: string, options: RoomVisitOptions): () => void {
+  const leave = beginRoomVisit(room, options)
+  stops.push(leave)
+  return leave
+}
+
 beforeEach(() => {
   vi.spyOn(console, 'info').mockImplementation(() => {})
   resetAudioDiagnosticsForTests()
@@ -96,7 +104,7 @@ describe('a room’s visit', () => {
     vi.useFakeTimers()
     giveThePageASession()
     install()
-    const leave = beginRoomVisit('long-note', on)
+    const leave = visit('long-note', on)
     vi.advanceTimersByTime(28_900)
     leave()
     expect(lines().slice(1)).toEqual([
@@ -107,10 +115,55 @@ describe('a room’s visit', () => {
     ])
   })
 
+  it('records the type given back as the page hides, and asked for again as it shows', () => {
+    giveThePageASession()
+    install()
+    const leave = visit('long-note', on)
+    hide(true)
+    hide(false)
+    leave()
+    expect(
+      lines().filter((line) => /^(room|session|app) /u.test(line)),
+    ).toEqual([
+      'app launch page=visible',
+      'room enter room=long-note oneVolume=on asks=play-and-record',
+      'session set who=room long-note from=auto to=play-and-record holders=room long-note',
+      'app background [hidden]',
+      'room release-hidden room=long-note on=visibilitychange [hidden]',
+      'session restore who=room long-note from=play-and-record to=auto holders=none [hidden]',
+      'app foreground',
+      'room reclaim-visible room=long-note on=visibilitychange',
+      'session set who=room long-note from=auto to=play-and-record holders=room long-note',
+      expect.stringMatching(
+        /^room leave room=long-note oneVolume=on asks=play-and-record after=\d+\.\d s$/u,
+      ),
+      'session restore who=room long-note from=play-and-record to=auto holders=none',
+    ])
+  })
+
+  it('keeps the room’s watches running while the page goes and comes', () => {
+    // A sound that sounds through it is one sound, cut only as the room
+    // closes: the page going away does not restart the room's watches.
+    vi.useFakeTimers()
+    giveThePageASession()
+    install(() => [{ gain: 1, peakDb: -9, rmsDb: -15 } as RoomOutputReading])
+    const leave = visit('echo', on)
+    vi.advanceTimersByTime(LEVEL_POLL_MS * 3)
+    hide(true)
+    hide(false)
+    vi.advanceTimersByTime(LEVEL_POLL_MS * 3)
+    leave()
+    expect(
+      lines().filter((line) => line.startsWith('census room-sound')),
+    ).toEqual([
+      expect.stringMatching(/^census room-sound peak=-9 .* cut=true$/u),
+    ])
+  })
+
   it('says when the switch is off, and when the page has no session', () => {
     install()
-    beginRoomVisit('echo', { oneVolume: () => false })()
-    beginRoomVisit('echo', on)()
+    visit('echo', { oneVolume: () => false })()
+    visit('echo', on)()
     expect(lines().filter((line) => line.startsWith('room enter'))).toEqual([
       'room enter room=echo oneVolume=off asks=nothing',
       'room enter room=echo oneVolume=on asks=nothing',
@@ -125,7 +178,7 @@ describe('a room’s visit', () => {
       set: () => undefined,
     })
     install()
-    beginRoomVisit('lip-roll', on)
+    visit('lip-roll', on)
     expect(lines()).toContain(
       'session set who=room lip-roll from=auto to=play-and-record reads=auto holders=room lip-roll',
     )
@@ -156,7 +209,7 @@ describe('a demo', () => {
 
   it('records each turn of a demo while its room is open, and nothing after', async () => {
     install()
-    const leave = beginRoomVisit('echo', on)
+    const leave = visit('echo', on)
     const root = drawRoom()
     root.setAttribute('data-demo', 'card')
     root.setAttribute('data-demo', 'playing')
@@ -234,7 +287,7 @@ describe('what the rooms sent', () => {
     install(levels)
     expect(vi.getTimerCount()).toBe(0)
 
-    const leave = beginRoomVisit('long-note', on)
+    const leave = visit('long-note', on)
     expect(vi.getTimerCount()).toBe(1)
     peak = -12
     vi.advanceTimersByTime(LEVEL_POLL_MS * 5)
@@ -254,7 +307,7 @@ describe('what the rooms sent', () => {
       { gain: 1, peakDb: -9, rmsDb: -15 } as RoomOutputReading,
     ]
     install(levels)
-    const leave = beginRoomVisit('echo', on)
+    const leave = visit('echo', on)
     vi.advanceTimersByTime(LEVEL_POLL_MS * 3)
     leave()
     expect(lines()).toContainEqual(
@@ -271,7 +324,7 @@ describe('uninstalling', () => {
     install()
     for (const stop of stops.splice(0)) stop()
     const before = audioDiagnosticEntries().length
-    beginRoomVisit('echo', on)()
+    visit('echo', on)()
     hide(true)
     sessionTarget.dispatchEvent(new Event('statechange'))
     expect(audioDiagnosticEntries()).toHaveLength(before)
