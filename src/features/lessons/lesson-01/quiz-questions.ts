@@ -55,7 +55,7 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
         text: "A4 swings exactly twice as fast: they're an octave apart",
         correct: true,
         feedback:
-          'Right: two to one is an octave, same spot on the spiral, one turn higher.',
+          'Two to one is an octave: the same spot on the spiral, one turn higher.',
       },
       {
         text: 'They are the same frequency',
