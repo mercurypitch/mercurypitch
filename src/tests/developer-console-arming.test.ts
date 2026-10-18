@@ -23,7 +23,8 @@ vi.mock('@/components/FloatingConsole', () => ({
   },
 }))
 
-import { armDeveloperConsole, DEVELOPER_CONSOLE_KEY, } from '@/lib/developer-console'
+import { armDeveloperConsole } from '@/components/developer-console-arming'
+import { DEVELOPER_CONSOLE_KEY } from '@/lib/developer-console'
 
 /** The dynamic import resolves on a microtask; let it. */
 const settle = (): Promise<void> =>

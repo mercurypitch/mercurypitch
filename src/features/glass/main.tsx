@@ -11,8 +11,8 @@
 import { render } from 'solid-js/web'
 import './glass.css'
 import { setupConsent } from '@/components/ConsentBanner'
+import { armDeveloperConsole } from '@/components/developer-console-arming'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
-import { armDeveloperConsole } from '@/lib/developer-console'
 import { trackGlass } from './funnel'
 import { GlassApp } from './GlassApp'
 

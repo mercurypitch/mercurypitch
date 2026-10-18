@@ -1003,7 +1003,7 @@ cancels the browser's pan itself as well as by class. None of these was shown
 to be the cause.
 
 **If it comes back,** switch on the developer console first (Settings; it
-works on a deployed build, so a tablet has logs -- `src/lib/developer-console.ts`).
+works on a deployed build, so a tablet has logs -- `src/components/developer-console-arming.ts`).
 Three things on the screen also tell the causes apart without it: is a name lit
 in Parts, or Done showing (an armed brush); does the
 100% over the words change while dragging (the sheet thinks two fingers are

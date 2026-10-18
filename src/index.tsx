@@ -31,7 +31,7 @@ import { installPwaInstallListeners } from '@/lib/pwa-install'
 import { registerServiceWorker } from '@/lib/pwa-service-worker'
 import { showActionNotification } from '@/stores/notifications-store'
 import { initTheme } from '@/stores/theme-store'
-import { armDeveloperConsole } from '@/lib/developer-console'
+import { armDeveloperConsole } from '@/components/developer-console-arming'
 
 // Before anything else: the pitch engine is a package now, and it reads its
 // wasm and model locations from module state that has to be set before the

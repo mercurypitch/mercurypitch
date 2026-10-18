@@ -2246,7 +2246,7 @@ export const SettingsPanel: Component = () => {
                       toggleConsoleLog()
                       // Mount the floating panel on the press that turns it
                       // on, rather than at the next page load. The entries
-                      // only read the flag at boot (see lib/developer-console
+                      // only read the flag at boot (see developer-console-arming
                       // — a room cannot reach this switch). The native build
                       // folds this panel out, and its Vite config drops
                       // FloatingConsole with it (FLOATING_CONSOLE in

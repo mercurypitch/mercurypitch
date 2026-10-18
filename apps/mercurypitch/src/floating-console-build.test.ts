@@ -29,11 +29,13 @@ const FLOATING_CONSOLE = [
 const FLAG_BLOCK =
   /^if \(import\.meta\.env\.VITE_PORTABLE_CONSOLE === 'true'\) \{\n[\s\S]*?^\}/gmu
 
-const ARMING = /import\s*\(\s*'@\/lib\/developer-console'\s*\)/u
+const ARMING = /import\s*\(\s*'@\/components\/developer-console-arming'\s*\)/u
 /** One import statement, however many lines its names take: nothing between
- *  `import` and the module's path is a string. */
+ *  `import` and the module's path is a string. The arming, or the switch's
+ *  key it reads, either one statically imported puts the key in the store
+ *  binary. */
 const STATIC_IMPORT =
-  /^import\s+(?:[^'"]*?\s+from\s+)?'@\/lib\/developer-console'/mu
+  /^import\s+(?:[^'"]*?\s+from\s+)?'@\/(?:components\/developer-console-arming|lib\/developer-console)'/mu
 
 describe('the floating console in a native build', () => {
   it('is dropped whole where nothing uses it, by the modules it really is', async () => {
