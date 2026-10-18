@@ -158,7 +158,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Contour',
     faculty: 'shape',
     measures: 'Shape · direction',
-    answer: 'Up, down or level, fast',
+    answer: 'Two quick tones: up, down or level',
   },
   {
     view: 'echo',
