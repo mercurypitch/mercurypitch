@@ -17,6 +17,7 @@ Start with [MASTER-PLAN.md](MASTER-PLAN.md).
 | [lessons/03-match-a-note/](lessons/03-match-a-note/)             | Lesson 3, text only: facts, written lesson, web spec                                                                                                     |
 | [lessons/04-major-scale/](lessons/04-major-scale/)               | Lesson 4, text only: facts, written lesson, web spec                                                                                                     |
 | [lessons/05-breath-steady-note/](lessons/05-breath-steady-note/) | Lesson 5, text only: facts, written lesson, web spec                                                                                                     |
+| [lessons/06-intervals/](lessons/06-intervals/)                   | Lesson 6, text only: facts, written lesson, web spec                                                                                                     |
 | [research/](research/)                                           | The seven Phase 0 research reports and the stats-site snippets                                                                                           |
 
 Each lesson's documents are kept in its folder under `lessons/`; a filmed lesson's LEDGER follows

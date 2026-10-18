@@ -182,7 +182,9 @@ lines wait on the vocal coach's sign-off, and its page publishes after `/learn/0
   singing; onset types (Arneson, Estill). Never rate breath support (the app's guided-voice claims
   rules).
 
-**Lesson 6. Intervals: the distance between notes**
+**Lesson 6. Intervals: the distance between notes** (written: the lesson, its facts and its page
+spec are in [lessons/06-intervals/](lessons/06-intervals/), reviewed; no film yet; its sing-along
+waits on the vocal coach's sign-off, and its page publishes after `/learn/04`)
 
 - Objectives: hear that a melody is a pattern of distances, not of particular notes; recognise
   steps and leaps; anchor a few intervals to familiar tunes.
