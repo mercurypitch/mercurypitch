@@ -145,8 +145,8 @@ Lesson 1's page does with 5:14; `onDuration` hands the same length to the explor
   7), served from R2's custom domain (planned: `media.mercurypitch.com`), not `r2.dev`. Of outside
   hosts, `media-src` in `public/_headers` lists only `*.r2.dev` and `*.r2.cloudflarestorage.com`
   today, so the domain goes in there before `FILM_SOURCES` points at it, or the browser refuses the
-  video. Once the
-  episode is on YouTube the section adds a "Watch on YouTube" link; there is no YouTube embed.
+  video. Once the episode is on YouTube the section adds a "Watch on YouTube" link; there is no
+  YouTube embed.
 - **The files**: the film's `tools/web-video.sh` cuts them all from the delivery master:
   `lesson-02-1080p.mp4` and `lesson-02-720p.mp4` (H.264 and AAC at 30 fps, moov first) for R2;
   `poster.jpg`, the title card 1.6 s into its scene, 1920 x 1080, for `lesson-02/assets/poster.jpg`
