@@ -71,7 +71,8 @@ function hide(hidden: boolean): void {
   document.dispatchEvent(new Event('visibilitychange'))
 }
 
-const on = { oneVolume: () => true }
+// An iPhone's visit with the switch on (room-visit.ts asks only on iOS).
+const on = { oneVolume: () => true, platform: () => 'ios' }
 
 beforeEach(() => {
   vi.spyOn(console, 'info').mockImplementation(() => {})

@@ -54,8 +54,9 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-const on = { oneVolume: () => true }
-const off = { oneVolume: () => false }
+// An iPhone's visit (only iOS asks), with the switch on or off.
+const on = { oneVolume: () => true, platform: () => 'ios' }
+const off = { oneVolume: () => false, platform: () => 'ios' }
 
 describe('a premium room’s visit', () => {
   it('asks WebKit for play-and-record at the door, and gives the page’s type back on the way out', () => {
@@ -73,7 +74,7 @@ describe('a premium room’s visit', () => {
     expect(writes).toEqual([])
   })
 
-  it('asks for nothing where the page has no audio session, as on Android', () => {
+  it('asks for nothing where the page has no audio session', () => {
     const steps: RoomVisitStep[] = []
     stops.push(onRoomVisit((step) => steps.push(step)))
     beginRoomVisit('lip-roll', on)()
@@ -102,6 +103,26 @@ describe('a premium room’s visit', () => {
     expect(type).toBe('playback')
     nowPlaying?.()
     expect(type).toBe('auto')
+  })
+})
+
+describe('only on iOS', () => {
+  it('asks for nothing on Android, even where the page has an audio session', () => {
+    giveThePageASession()
+    const steps: RoomVisitStep[] = []
+    stops.push(onRoomVisit((step) => steps.push(step)))
+    beginRoomVisit('long-note', { ...on, platform: () => 'android' })()
+    expect(writes).toEqual([])
+    expect(steps.map((s) => [s.entering, s.asks])).toEqual([
+      [true, false],
+      [false, false],
+    ])
+  })
+
+  it('asks for nothing on the web', () => {
+    giveThePageASession()
+    beginRoomVisit('echo', { ...on, platform: () => 'web' })()
+    expect(writes).toEqual([])
   })
 })
 

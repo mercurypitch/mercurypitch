@@ -27,14 +27,16 @@
 // as the app goes behind, none of which a room did before. A device test
 // decides whether that stays. The Developer screen's "One volume in rooms"
 // switches it off to compare (room-volume-switch.ts); a store build always
-// has it on. Where the page has no audio session (Android, the web)
-// nothing is asked.
+// has it on. Only iOS asks: Capacitor's platform says so, and the page must
+// have an audio session, so an Android WebView that ships the API one day
+// still asks for nothing.
 //
 // ShellScreens mounts a RoomVisit with each premium room, before the room,
 // so the session is asked for before the room's first sound, and given back
 // after the room has torn down. Each step is handed to `onRoomVisit`
 // listeners: a test build's audio census writes it into the audio record.
 
+import { Capacitor } from '@capacitor/core'
 import { claimPageAudioSession, pageAudioSessionType, } from '@irchiinnuss/mobile-runtime/page-audio-session'
 import { onCleanup } from 'solid-js'
 import { oneVolumeInRooms } from './room-volume-switch'
@@ -55,6 +57,8 @@ export interface RoomVisitStep {
 export interface RoomVisitOptions {
   /** The switch; the Developer screen's when not given. */
   readonly oneVolume?: () => boolean
+  /** Capacitor's platform; only 'ios' asks. */
+  readonly platform?: () => string
 }
 
 type Listener = (step: RoomVisitStep) => void
@@ -79,17 +83,22 @@ export function onRoomVisit(listener: Listener): () => void {
   }
 }
 
+const capacitorPlatform = (): string => Capacitor.getPlatform()
+
 /**
- * The visit to `room` begins: play-and-record is asked for where the switch
- * is on and the page has an audio session. Returns what ends it (safe to
- * call twice).
+ * The visit to `room` begins: play-and-record is asked for on iOS, where
+ * the switch is on and the page has an audio session. Returns what ends it
+ * (safe to call twice).
  */
 export function beginRoomVisit(
   room: string,
   options: RoomVisitOptions = {},
 ): () => void {
   const oneVolume = (options.oneVolume ?? oneVolumeInRooms)()
-  const asks = oneVolume && pageAudioSessionType() !== null
+  const asks =
+    oneVolume &&
+    (options.platform ?? capacitorPlatform)() === 'ios' &&
+    pageAudioSessionType() !== null
   const started = Date.now()
   tell({ room, entering: true, oneVolume, asks })
   const giveBack = asks

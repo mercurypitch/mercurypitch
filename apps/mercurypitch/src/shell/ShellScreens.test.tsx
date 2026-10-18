@@ -2,9 +2,10 @@
 // The pushed screens the shell draws: only the top of the stack
 // ============================================================
 
+import { Capacitor } from '@capacitor/core'
 import { resetPageAudioSessionForTests } from '@irchiinnuss/mobile-runtime/page-audio-session'
 import { onCleanup } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores/ui-store'
@@ -226,6 +227,8 @@ describe('one volume for a room’s visit', () => {
   beforeEach(() => {
     writes = []
     type = 'auto'
+    // An iPhone: only iOS asks (room-visit.ts).
+    vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('ios')
     Object.defineProperty(navigator, 'audioSession', {
       configurable: true,
       value: {
@@ -248,6 +251,7 @@ describe('one volume for a room’s visit', () => {
     setOneVolumeInRooms(true)
     resetPageAudioSessionForTests()
     Reflect.deleteProperty(navigator, 'audioSession')
+    vi.restoreAllMocks()
   })
 
   it.each(['long-note', 'echo', 'lip-roll', 'ng-slides'] as const)(
@@ -288,6 +292,13 @@ describe('one volume for a room’s visit', () => {
   it('asks for nothing with "One volume in rooms" off', () => {
     setOneVolumeInRooms(false)
     pushScreen('echo')
+    back()
+    expect(writes).toEqual([])
+  })
+
+  it('asks for nothing on Android, where a WebView may one day have the API', () => {
+    vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('android')
+    pushScreen('long-note')
     back()
     expect(writes).toEqual([])
   })
