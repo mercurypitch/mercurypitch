@@ -36,7 +36,7 @@
 //
 // On top, "One volume in rooms" (room-volume-switch.ts): a premium room
 // keeps one iOS session, and so one volume, for its whole visit
-// (room-visit.ts). On by default; off to compare.
+// (room-visit.ts). Off by default; on to compare.
 //
 // Registered by the native entry alone, behind VITE_PORTABLE_CONSOLE and
 // through a dynamic import (main.tsx), so a store build carries none of it.
@@ -308,7 +308,7 @@ export const AudioDiagnosticsPanel: Component = () => {
         <SettingsRow
           id="dev-one-volume-in-rooms"
           label="One volume in rooms"
-          sub="A premium room uses iOS's call volume from the door to the way out, so the level no longer changes as the mic opens and closes. Turn it off to compare. Takes effect in the next room you open."
+          sub="On, a premium room uses iOS's call volume from the door to the way out: the level holds as the mic opens and closes, but the room plays quieter. Off, only a take with the mic open uses it. Takes effect in the next room you open."
           accessory={
             <SettingsSwitch
               checked={oneVolumeInRooms()}

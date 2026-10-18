@@ -227,6 +227,8 @@ describe('one volume for a room’s visit', () => {
   beforeEach(() => {
     writes = []
     type = 'auto'
+    // The switch is off by default (room-volume-switch.ts); these rooms ask.
+    setOneVolumeInRooms(true)
     // An iPhone: only iOS asks (room-visit.ts).
     vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('ios')
     Object.defineProperty(navigator, 'audioSession', {
@@ -248,7 +250,7 @@ describe('one volume for a room’s visit', () => {
   afterEach(() => {
     view?.unmount()
     view = null
-    setOneVolumeInRooms(true)
+    setOneVolumeInRooms(false)
     resetPageAudioSessionForTests()
     Reflect.deleteProperty(navigator, 'audioSession')
     Reflect.deleteProperty(document, 'visibilityState')

@@ -40,9 +40,10 @@
 //
 // What it still costs, from the audit (REPORT option A): AirPods are
 // hands-free for the whole visit, and the call level's voice processing
-// applies to the demos too. The Developer screen's "One volume in rooms"
-// switches it off to compare (room-volume-switch.ts); a store build always
-// has it on. Only iOS asks: Capacitor's platform says so, and the page must
+// applies to the demos too, which made the rooms too quiet (owner, 18 Oct
+// 2026). So the Developer screen's "One volume in rooms" turns it on for a
+// tester (room-volume-switch.ts); it is off by default, and a store build
+// always has it off. Only iOS asks: Capacitor's platform says so, and the page must
 // have an audio session, so an Android WebView that ships the API one day
 // still asks for nothing.
 //

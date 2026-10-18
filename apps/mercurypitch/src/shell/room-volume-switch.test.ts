@@ -1,5 +1,5 @@
 // ============================================================
-// "One volume in rooms": on until a tester turns it off
+// "One volume in rooms": off until a tester turns it on
 // ============================================================
 //
 // The Developer screen's switch for room-visit.ts. It persists on the phone,
@@ -21,30 +21,36 @@ afterEach(() => {
 })
 
 describe('the switch', () => {
-  it('is on until a tester turns it off', () => {
-    expect(oneVolumeInRooms()).toBe(true)
+  it('is off until a tester turns it on', () => {
+    expect(oneVolumeInRooms()).toBe(false)
     expect(localStorage.getItem(ONE_VOLUME_KEY)).toBeNull()
   })
 
-  it('keeps an off on the phone, and comes back on', () => {
-    setOneVolumeInRooms(false)
+  it('reads an off left by a build that had it on by default', () => {
+    localStorage.setItem(ONE_VOLUME_KEY, '0')
+    reloadOneVolumeForTests()
     expect(oneVolumeInRooms()).toBe(false)
-    expect(localStorage.getItem(ONE_VOLUME_KEY)).toBe('0')
+  })
+
+  it('keeps an on on the phone, and goes back off', () => {
+    setOneVolumeInRooms(true)
+    expect(oneVolumeInRooms()).toBe(true)
+    expect(localStorage.getItem(ONE_VOLUME_KEY)).toBe('1')
 
     // A later launch reads it back.
     reloadOneVolumeForTests()
-    expect(oneVolumeInRooms()).toBe(false)
-
-    setOneVolumeInRooms(true)
     expect(oneVolumeInRooms()).toBe(true)
+
+    setOneVolumeInRooms(false)
+    expect(oneVolumeInRooms()).toBe(false)
     expect(localStorage.getItem(ONE_VOLUME_KEY)).toBeNull()
   })
 
-  it('is on in a store build, whatever a test build left in storage', () => {
-    localStorage.setItem(ONE_VOLUME_KEY, '0')
+  it('is off in a store build, whatever a test build left in storage', () => {
+    localStorage.setItem(ONE_VOLUME_KEY, '1')
     reloadOneVolumeForTests()
     vi.stubEnv('VITE_PORTABLE_CONSOLE', 'false')
-    expect(oneVolumeInRooms()).toBe(true)
+    expect(oneVolumeInRooms()).toBe(false)
   })
 
   it('holds for the session where storage refuses it', () => {
@@ -53,8 +59,8 @@ describe('the switch', () => {
       .mockImplementation(() => {
         throw new DOMException('Full', 'QuotaExceededError')
       })
-    setOneVolumeInRooms(false)
-    expect(oneVolumeInRooms()).toBe(false)
+    setOneVolumeInRooms(true)
+    expect(oneVolumeInRooms()).toBe(true)
     refuse.mockRestore()
   })
 })

@@ -247,21 +247,21 @@ describe('the Audio section', () => {
     expect(window.getSelection()?.toString()).toBe(report)
   })
 
-  it('has "One volume in rooms", on until turned off, and keeps an off on the phone', async () => {
+  it('has "One volume in rooms", off until turned on, and keeps an on on the phone', async () => {
     localStorage.clear()
     await openPanel()
     const { ONE_VOLUME_KEY, oneVolumeInRooms } =
       await import('./room-volume-switch')
     const toggle = button('dev-one-volume-in-rooms')
-    expect(toggle.getAttribute('aria-checked')).toBe('true')
-
-    toggle.click()
     expect(toggle.getAttribute('aria-checked')).toBe('false')
-    expect(oneVolumeInRooms()).toBe(false)
-    expect(localStorage.getItem(ONE_VOLUME_KEY)).toBe('0')
 
     toggle.click()
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
     expect(oneVolumeInRooms()).toBe(true)
+    expect(localStorage.getItem(ONE_VOLUME_KEY)).toBe('1')
+
+    toggle.click()
+    expect(oneVolumeInRooms()).toBe(false)
     expect(localStorage.getItem(ONE_VOLUME_KEY)).toBeNull()
   })
 
@@ -355,7 +355,7 @@ describe('the report', () => {
       'App session: not read',
       'Outputs: not read on the web',
       'Page session type: not available',
-      'One volume in rooms: on',
+      'One volume in rooms: off',
     ])
   })
 
