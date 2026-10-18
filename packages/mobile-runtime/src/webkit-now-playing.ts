@@ -14,11 +14,13 @@
 // (MediaElementSession::canShowControlsManager). Web Audio alone qualifies
 // only when `navigator.audioSession.type` asks for playback, and then the
 // lock screen's buttons pause the context instead of reaching the room, so
-// that stays unset. What qualifies instead is a carrier: a looping `<audio>`
-// of generated silence that plays and pauses with the song, while
-// `navigator.mediaSession` names the song, holds its place and length, and
-// hears the buttons. WebKit hands a press to a registered handler rather than
-// to the carrier.
+// the Karaoke room leaves it unset. (A premium room asks for
+// play-and-record while its page shows, which WebKit counts as playback
+// too, and gives it back as its page hides: room-visit.ts in the app.) What
+// qualifies instead is a carrier: a looping `<audio>` of generated silence
+// that plays and pauses with the song, while `navigator.mediaSession` names
+// the song, holds its place and length, and hears the buttons. WebKit hands
+// a press to a registered handler rather than to the carrier.
 //
 // The carrier holds the playback session, which never mixes. The unlock clip
 // in src/lib/audio-unlock.ts took the same session on every play tap before
@@ -61,6 +63,7 @@ import type { InFrontHost } from './carrier-in-front'
 import { keepInFront } from './carrier-in-front'
 import type { SilenceKind } from './carrier-silence'
 import { silenceBlob } from './carrier-silence'
+import { claimPageAudioSession } from './page-audio-session'
 import { watchTheSamePlace } from './same-place-twice'
 import type { PressGuardHost } from './waited-presses'
 import { guardPresses } from './waited-presses'
@@ -565,24 +568,12 @@ function pageAudioSession(): PageAudioSession | null {
  * the sound, or refuses, which leaves the carrier paused.
  * Left asked for, it would make Web Audio a Now Playing item of its own,
  * whose buttons pause the clock instead of reaching the room (see the
- * header), so it goes back at once.
+ * header), so it goes back at once. Asked through the page's one owner of
+ * the type (page-audio-session.ts), so a room's claim standing meanwhile
+ * gets its own type back, and the page's once that has gone.
  */
 function askForPlayback(): (() => void) | null {
-  const audioSession = pageAudioSession()
-  if (audioSession === null) return null
-  const before = audioSession.type
-  try {
-    audioSession.type = 'playback'
-  } catch {
-    return null
-  }
-  return () => {
-    try {
-      audioSession.type = before
-    } catch {
-      // Left as it is: WebKit drops it for a page that goes away.
-    }
-  }
+  return claimPageAudioSession('now playing', 'playback')
 }
 
 export interface TakeTheSoundOptions {

@@ -10,6 +10,7 @@
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ONCE_MORE_MS } from './carrier-in-front'
+import { claimPageAudioSession, resetPageAudioSessionForTests, } from './page-audio-session'
 import type { Carrier, WebKitAction, WebKitSong } from './webkit-now-playing'
 import { claimCarrier, listenOnWebKit, onCarrierHolding, resetWebKitNowPlaying, showOnWebKit, takeTheSound, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
@@ -1049,6 +1050,28 @@ describe('play from behind the app', () => {
     expect(console.info).toHaveBeenCalledWith(
       '[now playing] play from behind the app took the sound from another app (session inactive, then inactive)',
     )
+  })
+
+  // A premium room asks for play-and-record for its whole visit through the
+  // same owner of the type (page-audio-session.ts): the brief playback goes
+  // back to the room's word, and the page's own comes back with the room.
+  it('gives a room’s play-and-record back after the brief playback', () => {
+    const deliver = vi.fn()
+    pausedByAnotherApp(deliver)
+    const leaveRoom = claimPageAudioSession('room long-note', 'play-and-record')
+    try {
+      press('play', { action: 'play' })
+      expect(audioSession.type).toBe('play-and-record')
+      leaveRoom?.()
+      expect(types).toEqual([
+        'play-and-record',
+        'playback',
+        'play-and-record',
+        'auto',
+      ])
+    } finally {
+      resetPageAudioSessionForTests()
+    }
   })
 
   it('leaves the song paused, as it was, when the other app keeps the sound', () => {

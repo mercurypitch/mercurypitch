@@ -19,6 +19,7 @@ import { thisDevice } from '@/lib/device-noun'
 import { KaraokeStudioScreen } from './KaraokeStudioScreen'
 import { isFullBleed, isPremiumRoom } from './premium-rooms'
 import { PushedScreen } from './PushedScreen'
+import { RoomVisit } from './room-visit'
 import { RoomVolumeHint } from './RoomVolumeHint'
 import type { PushedScreen as PushedScreenId } from './run-shell-store'
 import { popScreen, pushed, pushScreen } from './run-shell-store'
@@ -141,6 +142,9 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
           onBack={popScreen}
           bleed={isFullBleed(screen)}
         >
+          {/* One iOS volume from the door to the way out (room-visit.ts):
+              before the room, so its first sound already has it. */}
+          {isPremiumRoom(screen) ? <RoomVisit room={screen} /> : null}
           {body(screen)}
           {/* A premium room's notes play through the phone's volume: the
               hint asks for it to go up while it is down (RoomVolumeHint). */}

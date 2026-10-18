@@ -10,14 +10,29 @@
 // press can come with no word from the phone, so while this is up, and
 // whenever the app comes back, it reads the volume again.
 //
+// It also reads again whenever WebKit may have moved the sound to another
+// of iOS's stored volumes: as the room opens and as the mic opens or
+// closes, at once and once more SETTLE_MS later. Opening the mic moves
+// WebKit's session to play-and-record, which keeps a volume of its own
+// (WebKit bug 236219; room-visit.ts asks for that session for the whole
+// visit, so it moves once, at the door).
+//
+// It says "zero" only from a reading taken at its word (volume-hint.ts):
+// an iPhone's own session can read 0 while the room plays out loud.
+//
 // ShellScreens mounts it over each premium room, so no room draws it and
 // none of them changes for it. It sits in the bar over the room's title,
 // the one place no room uses (RoomVolumeHint.module.css says what is where),
 // and takes no taps. The web never shows it: there the app has no reading of
 // the volume and nothing is registered to ask.
+//
+// Each decision that changes what it shows is handed to `onRoomVolumeNotice`
+// listeners with the reading behind it: a test build's audio census writes
+// it into the audio record. A store build registers none.
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
+import { micManager } from '@/lib/mic-manager'
 import type { NativeAudioOutput, NativeAudioOutputReading, } from '@/stores/native-shell-store'
 import { nativeDeviceApi, pushedBarEnd } from '@/stores/native-shell-store'
 import { VolumeLowIcon, VolumeOffIcon } from './icons'
@@ -36,9 +51,59 @@ const GAP_PX = 8
 /** How often the volume is read again while the hint is up. */
 export const READ_AGAIN_MS = 500
 
+/**
+ * After the room opens or the mic opens or closes, the volume is read once
+ * more this long after: WebKit changes its session a moment later.
+ */
+export const SETTLE_MS = 1000
+
+/** Hears the page's microphone open (true) and close (false). */
+export type MicWatch = (onChange: (open: boolean) => void) => () => void
+
+/**
+ * The app's microphone as the mic manager holds it: open from the device's
+ * first open to its close, the linger after the last release included,
+ * since that close is the one WebKit's session follows.
+ */
+export const watchAppMic: MicWatch = (onChange) => {
+  let open = micManager.getStream() !== null
+  return micManager.subscribe(() => {
+    const now = micManager.getStream() !== null
+    if (now === open) return
+    open = now
+    onChange(now)
+  })
+}
+
+/** What the hint shows after a reading, and the reading that decided it. */
+export interface RoomVolumeNotice {
+  /** The words on screen, or null while nothing shows. */
+  readonly text: string | null
+  readonly reading: NativeAudioOutputReading
+  /** What brought the reading: 'room open', 'mic open', 'change: volume'... */
+  readonly cause: string
+}
+
+const noticeListeners = new Set<(notice: RoomVolumeNotice) => void>()
+
+/** Every change to what the hint shows. Returns the unsubscribe. */
+export function onRoomVolumeNotice(
+  listener: (notice: RoomVolumeNotice) => void,
+): () => void {
+  noticeListeners.add(listener)
+  return () => noticeListeners.delete(listener)
+}
+
+const wordsOf = (hint: VolumeHint): string | null => {
+  if (!hint.shown) return null
+  return hint.silent ? HINT_SILENT : HINT_LOW
+}
+
 export interface RoomVolumeHintProps {
   /** The phone's output; the registered native device's when not given. */
   output?: NativeAudioOutput
+  /** The page's microphone; the app's mic manager when not given. */
+  mic?: MicWatch
 }
 
 /**
@@ -56,9 +121,22 @@ function rightEdge(): number | null {
 export const RoomVolumeHint: Component<RoomVolumeHintProps> = (props) => {
   const [hint, setHint] = createSignal<VolumeHint>(VOLUME_HINT_START)
   const [right, setRight] = createSignal<number | null>(null)
-  const take = (reading: NativeAudioOutputReading): void => {
+  const take = (reading: NativeAudioOutputReading, cause: string): void => {
     setRight(rightEdge())
-    setHint((last) => nextVolumeHint(last, reading))
+    let last = VOLUME_HINT_START
+    const next = setHint((previous) => {
+      last = previous
+      return nextVolumeHint(previous, reading)
+    })
+    const words = wordsOf(next)
+    if (last.volume !== null && words === wordsOf(last)) return
+    for (const listener of [...noticeListeners]) {
+      try {
+        listener({ text: words, reading, cause })
+      } catch {
+        // A record that broke must not take the hint with it.
+      }
+    }
   }
   // The room's controls come and go (none while a take runs), and the hint
   // ends where they begin.
@@ -89,9 +167,9 @@ export const RoomVolumeHint: Component<RoomVolumeHintProps> = (props) => {
     let open = true
     const stop = output.watch((reading) => {
       heard += 1
-      take(reading)
+      take(reading, `change: ${reading.reason ?? 'unnamed'}`)
     })
-    const ask = (): void => {
+    const ask = (cause: string): void => {
       if (!open || asking) return
       asking = true
       const before = heard
@@ -100,14 +178,29 @@ export const RoomVolumeHint: Component<RoomVolumeHintProps> = (props) => {
           asking = false
           // A change heard meanwhile is newer than this answer, which is
           // then dropped.
-          if (open && heard === before && reading !== null) take(reading)
+          if (open && heard === before && reading !== null) take(reading, cause)
         },
         () => {
           asking = false
         },
       )
     }
-    ask()
+    const inFront = (): boolean => document.visibilityState !== 'hidden'
+    // At once, and once more after WebKit has had time to switch.
+    const settling = new Set<number>()
+    const askAround = (cause: string): void => {
+      ask(cause)
+      const timer = window.setTimeout(() => {
+        settling.delete(timer)
+        if (inFront()) ask(`${cause}, settled`)
+      }, SETTLE_MS)
+      settling.add(timer)
+    }
+    askAround('room open')
+    // eslint-disable-next-line solid/reactivity -- read once, on mount
+    const stopMic = (props.mic ?? watchAppMic)((micOpen) => {
+      askAround(micOpen ? 'mic open' : 'mic closed')
+    })
 
     // A change can come with no word from the phone. iOS tells the app of
     // the volume through the app's own audio session, which stopped
@@ -117,21 +210,23 @@ export const RoomVolumeHint: Component<RoomVolumeHintProps> = (props) => {
     // nothing when a stream is muted or unmuted without its level moving.
     // So while the hint is up, and whenever the app comes back, the volume
     // is read again.
-    const inFront = (): boolean => document.visibilityState !== 'hidden'
     createEffect(() => {
       if (!hint().shown) return
       const timer = window.setInterval(() => {
-        if (inFront()) ask()
+        if (inFront()) ask('read again')
       }, READ_AGAIN_MS)
       onCleanup(() => window.clearInterval(timer))
     })
     const back = (): void => {
-      if (inFront()) ask()
+      if (inFront()) ask('app back')
     }
     document.addEventListener('visibilitychange', back)
     onCleanup(() => {
       open = false
+      for (const timer of settling) window.clearTimeout(timer)
+      settling.clear()
       document.removeEventListener('visibilitychange', back)
+      stopMic()
       stop()
     })
   }
@@ -152,9 +247,7 @@ export const RoomVolumeHint: Component<RoomVolumeHintProps> = (props) => {
           <Show when={hint().silent} fallback={<VolumeLowIcon size={18} />}>
             <VolumeOffIcon size={18} />
           </Show>
-          <span class={styles.words}>
-            {hint().silent ? HINT_SILENT : HINT_LOW}
-          </span>
+          <span class={styles.words}>{wordsOf(hint())}</span>
         </div>
       </Show>
     </div>

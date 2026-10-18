@@ -2,12 +2,16 @@
 // The pushed screens the shell draws: only the top of the stack
 // ============================================================
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { Capacitor } from '@capacitor/core'
+import { resetPageAudioSessionForTests } from '@irchiinnuss/mobile-runtime/page-audio-session'
+import { onCleanup } from 'solid-js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores/ui-store'
 import type { RenderedShell } from './render-for-test'
 import { renderShell } from './render-for-test'
+import { setOneVolumeInRooms } from './room-volume-switch'
 import { pushScreen, resetRunShell } from './run-shell-store'
 import { ShellScreens } from './ShellScreens'
 
@@ -193,6 +197,133 @@ describe('the low-volume hint', () => {
     expect(
       screens()[0]?.querySelector('[data-testid="room-volume-slot"]'),
     ).toBeNull()
+  })
+})
+
+// WebKit's session for the page is stood in for by an object that keeps
+// every type written to it (room-visit.ts says why a room asks for one).
+describe('one volume for a room’s visit', () => {
+  const stub = () => <div />
+  let writes: string[] = []
+  let type = 'auto'
+
+  /** The type a room's own code reads. */
+  const pageType = (): string =>
+    (navigator as Navigator & { audioSession: { type: string } }).audioSession
+      .type
+
+  function drawRooms(longNote = stub): void {
+    view?.unmount()
+    view = renderShell(() => (
+      <ShellScreens
+        longNote={longNote}
+        echo={stub}
+        lipRoll={stub}
+        ngSlides={stub}
+      />
+    ))
+  }
+
+  beforeEach(() => {
+    writes = []
+    type = 'auto'
+    // An iPhone: only iOS asks (room-visit.ts).
+    vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('ios')
+    Object.defineProperty(navigator, 'audioSession', {
+      configurable: true,
+      value: {
+        get type() {
+          return type
+        },
+        set type(value: string) {
+          writes.push(value)
+          type = value
+        },
+        state: 'active',
+      },
+    })
+    drawRooms()
+  })
+
+  afterEach(() => {
+    view?.unmount()
+    view = null
+    setOneVolumeInRooms(true)
+    resetPageAudioSessionForTests()
+    Reflect.deleteProperty(navigator, 'audioSession')
+    Reflect.deleteProperty(document, 'visibilityState')
+    vi.restoreAllMocks()
+  })
+
+  it.each(['long-note', 'echo', 'lip-roll', 'ng-slides'] as const)(
+    'asks for play-and-record in %s, and gives the page its type back on the way out',
+    (screen) => {
+      pushScreen(screen)
+      expect(type).toBe('play-and-record')
+      back()
+      expect(type).toBe('auto')
+      expect(writes).toEqual(['play-and-record', 'auto'])
+    },
+  )
+
+  it('asks before the room is drawn, and gives the type back after it has gone', () => {
+    let atDoor: string | null = null
+    let onWayOut: string | null = null
+    drawRooms(() => {
+      atDoor = pageType()
+      onCleanup(() => {
+        onWayOut = pageType()
+      })
+      return <div />
+    })
+    pushScreen('long-note')
+    back()
+    expect([atDoor, onWayOut]).toEqual(['play-and-record', 'play-and-record'])
+    expect(type).toBe('auto')
+  })
+
+  it('asks for nothing over any other screen', () => {
+    pushScreen('settings')
+    pushScreen('appearance')
+    back()
+    back()
+    expect(writes).toEqual([])
+  })
+
+  it('asks for nothing with "One volume in rooms" off', () => {
+    setOneVolumeInRooms(false)
+    pushScreen('echo')
+    back()
+    expect(writes).toEqual([])
+  })
+
+  it('asks for nothing on Android, where a WebView may one day have the API', () => {
+    vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('android')
+    pushScreen('long-note')
+    back()
+    expect(writes).toEqual([])
+  })
+
+  it('gives the type back while the page is hidden, and asks again as it shows', () => {
+    const hide = (hidden: boolean): void => {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => (hidden ? 'hidden' : 'visible'),
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+    pushScreen('ng-slides')
+    hide(true)
+    expect(type).toBe('auto')
+    hide(false)
+    expect(type).toBe('play-and-record')
+    back()
+    expect(writes).toEqual([
+      'play-and-record',
+      'auto',
+      'play-and-record',
+      'auto',
+    ])
   })
 })
 

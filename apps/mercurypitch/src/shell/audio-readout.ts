@@ -38,13 +38,15 @@ export function outputLine(reading: Reading, native: boolean): string {
 }
 
 /**
- * The volume, Android's steps, and whether the rooms count it as low. An
- * iPhone's two readings follow: the system's (a volume view nobody sees),
- * which counts once it has moved, and the app's session's.
+ * The volume, how far it is taken at its word (a room says "zero" only
+ * from a live or agreed one, volume-hint.ts), Android's steps, and whether
+ * the rooms count it as low. An iPhone's two readings follow: the system's
+ * (a volume view nobody sees), which counts once it has moved, and the
+ * app's session's.
  */
 export function volumeLine(reading: Reading): string {
   if (reading === null) return 'not read'
-  const parts = [reading.volume.toFixed(2)]
+  const parts = [reading.volume.toFixed(2), `known: ${reading.volumeKnown}`]
   if (reading.step !== null && reading.steps !== null) {
     parts.push(`step ${String(reading.step)} of ${String(reading.steps)}`)
   }

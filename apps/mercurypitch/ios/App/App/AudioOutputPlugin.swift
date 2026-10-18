@@ -38,7 +38,15 @@ import UIKit
 // own volume indicator, and read, never moved, since moving it would change
 // the phone's volume. Developers report that a volume view outside a window
 // reads 0 and never moves, so its reading counts (systemVolumeLive) only once
-// it has been seen to move. Until then the page goes by outputVolume.
+// it has been seen to move. Until then the page goes by outputVolume, and
+// believes it only where the view, settled in its window for a second
+// (systemVolumeSettled), reads the same: a view reads 0 until it fills.
+//
+// AN INTERRUPTION SAYS WHAT KIND IT WAS where iOS does, by its reason
+// (AVAudioSessionInterruptionReasonKey), and the app's state as it arrived
+// goes with it: one that came while the app was suspended is delivered only
+// as the app runs again. AVAudioSessionInterruptionWasSuspendedKey is not
+// read: iOS 14.5 deprecated it as "No longer supported".
 //
 // An app's own plugin is not on Capacitor's package list, so
 // ViewController.capacitorDidLoad() registers this one.
@@ -125,6 +133,7 @@ public class AudioOutputPlugin: CAPPlugin, CAPBridgedPlugin {
         if let value = systemVolume() {
             data["systemVolume"] = Double(value)
             data["systemVolumeLive"] = systemVolumeMoved
+            data["systemVolumeSettled"] = systemVolumeSettled()
         }
         data["activation"] = AudioSession.activation
         data["interrupted"] = interrupted
@@ -150,6 +159,7 @@ public class AudioOutputPlugin: CAPPlugin, CAPBridgedPlugin {
         let info = note.userInfo ?? [:]
         let type = (info[AVAudioSessionInterruptionTypeKey] as? UInt)
             .flatMap { AVAudioSession.InterruptionType(rawValue: $0) }
+        let extra: [String: Any] = ["appState": Self.appState()]
         switch type {
         case .began?:
             interrupted = true
@@ -164,17 +174,36 @@ public class AudioOutputPlugin: CAPPlugin, CAPBridgedPlugin {
         default:
             lastInterruption = "of a kind this build does not name"
         }
-        changed("interruption")
+        changed("interruption", extra)
     }
 
     private static func interruptionReason(_ raw: UInt) -> String {
-        switch AVAudioSession.InterruptionReason(rawValue: raw) {
+        let reason = AVAudioSession.InterruptionReason(rawValue: raw)
+        if #available(iOS 17.0, *), reason == .routeDisconnected {
+            return "route disconnected"
+        }
+        switch reason {
         case .default?:
             return "default"
         case .builtInMicMuted?:
             return "built-in mic muted"
         default:
             return "reason \(raw)"
+        }
+    }
+
+    /// Whether the app was in front as iOS said it: a suspension's
+    /// interruption arrives only once the app runs again.
+    private static func appState() -> String {
+        switch UIApplication.shared.applicationState {
+        case .active:
+            return "active"
+        case .inactive:
+            return "inactive"
+        case .background:
+            return "background"
+        @unknown default:
+            return "unknown"
         }
     }
 
@@ -239,6 +268,12 @@ public class AudioOutputPlugin: CAPPlugin, CAPBridgedPlugin {
     private func systemVolume() -> Float? {
         guard let view = volumeView, view.window != nil else { return nil }
         return view.subviews.compactMap { $0 as? UISlider }.first?.value
+    }
+
+    /// In its window long enough to have filled its slider.
+    private func systemVolumeSettled() -> Bool {
+        guard let since = inWindowSince else { return false }
+        return Date().timeIntervalSince(since) >= Self.systemVolumeSettle
     }
 
     /// A change once the view has settled in its window is a key or Control

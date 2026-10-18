@@ -97,10 +97,25 @@ describe('the second volume, and what the session went through', () => {
   })
 
   it('sends it under the names the JavaScript side reads', () => {
-    for (const key of ['systemVolume', 'systemVolumeLive']) {
+    for (const key of [
+      'systemVolume',
+      'systemVolumeLive',
+      'systemVolumeSettled',
+    ]) {
       expect(PLUGIN).toContain(`data["${key}"]`)
       expect(JS_SIDE).toContain(`data.${key}`)
     }
+  })
+
+  // Two zeros are one stale reading twice while the view is still filling
+  // its slider, so the session is believed only once the view has settled.
+  it('says when the volume view has been in its window long enough to fill', () => {
+    expect(PLUGIN).toContain(
+      'data["systemVolumeSettled"] = systemVolumeSettled()',
+    )
+    expect(PLUGIN).toContain(
+      'Date().timeIntervalSince(since) >= Self.systemVolumeSettle',
+    )
   })
 
   it('keeps the interruptions and how the app last made its session active', () => {
@@ -110,6 +125,21 @@ describe('the second volume, and what the session went through', () => {
     expect(PLUGIN).toContain('data["lastInterruption"]')
     expect(PLUGIN).toContain('data["activation"] = AudioSession.activation')
     expect(KIT).toContain('public private(set) static var activation')
+  })
+
+  // iOS 14.5 deprecated the suspension key as "No longer supported", so it
+  // reads false: the app's state as an interruption arrives is what tells a
+  // suspension from a call.
+  it('says the app’s state as an interruption arrives, and not the suspension key iOS no longer sends', () => {
+    expect(PLUGIN).not.toContain(
+      'info[AVAudioSessionInterruptionWasSuspendedKey]',
+    )
+    expect(PLUGIN).not.toContain('wasSuspended')
+    expect(PLUGIN).toContain(
+      'let extra: [String: Any] = ["appState": Self.appState()]',
+    )
+    expect(PLUGIN).toContain('UIApplication.shared.applicationState')
+    expect(PLUGIN).toContain('changed("interruption", extra)')
   })
 
   it('says why the route moved', () => {
