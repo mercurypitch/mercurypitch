@@ -5,6 +5,34 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.21] - 2026-10-18
+
+The sign-in, sign-up and password reset mails now look like the welcome mail,
+and Drum Night's Take ready card no longer covers the coach.
+
+### Changed
+
+- **The sign-in, sign-up and reset mails get the welcome mail's look.** Your
+  code sits in a panel of its own, with "It expires in 10 minutes and works
+  once." under it.
+- **The newsletter and account notices match.** Each news item and each part
+  of a notice gets a panel of its own.
+- **Every Ear Lab drill answers the same way.** "Right. The fourth click was
+  late by 40 ms." when you're right, "That was Do Re Mi. Listen again." when
+  you're not.
+- **Shorter sentences** like "Two notes. Name the distance between them." in
+  the Ear Lab, on Home, in the Voice Mirror and on your profile.
+
+### Fixed
+
+- **Drum Night's Take ready card no longer covers the coach.** After a take,
+  the phrase coach scrolls above the card, and no row peeks out below it.
+- **On a smaller screen, Drum Night's take cue stays off the kick drum.**
+  Finish take sits beside the cue now, not under it.
+- **Smaller things.** Mail subject lines write MercuryPitch as one word,
+  Drum Night's take cue title wraps into even lines, and the karaoke playlist
+  puts the next singer in parentheses.
+
 ## [0.9.20] - 2026-10-18
 
 Karaoke Night, Hairline, Glass and Drum Night now say things in plain words,
