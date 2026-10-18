@@ -30,6 +30,7 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { offerable, QUIET_LIMIT_SECONDS, } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
 import { openRoomMic } from '@/components/room-kit/room-mic'
+import { createRoomScript } from '@/components/room-kit/room-script'
 import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
@@ -670,63 +671,64 @@ export function useLongNoteController(): LongNoteController {
     scripted = null
   }
 
+  // In and out on the room kit's terms (room-script.ts); the moves are
+  // this room's own.
   const script: LongNoteScript = {
-    active: scriptActive,
-    audio: () => capture.audio(),
-    note: () => untrack(state).targetMidi ?? picked.midi,
-    enter: (text) => {
-      const phase = untrack(state).phase
-      if (!demoOn() && phase !== 'intro' && phase !== 'result') return false
-      clearForScript()
-      batch(() => {
-        setScriptActive(true)
-        setScriptNote(script.note())
-        setLine(text)
-        dispatch({ type: 'demo', phase: 'intro' })
-      })
-      lantern.ease(0, 450)
-      merc.put('idle', 'beside')
-      return true
-    },
-    play: (take) => {
-      if (!demoOn()) return
-      if (windowOpen) closeWindow()
-      scripted = take
-      batch(() => {
-        setSummary(null)
-        setShine(0)
+    ...createRoomScript<ScriptedTake>({
+      active: scriptActive,
+      phase: () => untrack(state).phase,
+      audio: () => capture.audio(),
+      note: () => untrack(state).targetMidi ?? picked.midi,
+      enter: (text) => {
+        clearForScript()
+        batch(() => {
+          setScriptActive(true)
+          setScriptNote(script.note())
+          setLine(text)
+          dispatch({ type: 'demo', phase: 'intro' })
+        })
+        lantern.ease(0, 450)
+        merc.put('idle', 'beside')
+      },
+      // A take keeps the light where it is: it only closes a take's window.
+      play: (take) => {
+        if (windowOpen) closeWindow()
+        scripted = take
+        batch(() => {
+          setSummary(null)
+          setShine(0)
+          dispatch({ type: 'demo', phase: 'listen' })
+        })
+        merc.put('listen', 'beside')
+        openWindow()
+      },
+      rest: () => {
+        clearForScript()
         dispatch({ type: 'demo', phase: 'listen' })
-      })
-      merc.put('listen', 'beside')
-      openWindow()
-    },
-    rest: () => {
-      if (!demoOn()) return
-      clearForScript()
-      dispatch({ type: 'demo', phase: 'listen' })
-      lantern.ease(0, 600)
-    },
+        lantern.ease(0, 600)
+      },
+      // Where Merc is, and how he moves, before the take is cleared.
+      leave: () => {
+        const inside = untrack(merc.place) === 'inside'
+        const still = scripted?.still === true
+        clearForScript()
+        batch(() => {
+          setScriptActive(false)
+          setScriptNote(null)
+          setDemoPlaying(false)
+          level.follow()
+          dispatch({ type: 'demo', phase: 'intro' })
+        })
+        lantern.ease(0, 450)
+        sayIntro()
+        if (inside && !still) merc.hopTo('beside', 'idle')
+        else merc.put('idle', 'beside')
+      },
+      playing: setDemoPlaying,
+    }),
     mood: (next) => {
       if (demoOn()) merc.set(next)
     },
-    leave: () => {
-      if (!demoOn()) return
-      const inside = untrack(merc.place) === 'inside'
-      const still = scripted?.still === true
-      clearForScript()
-      batch(() => {
-        setScriptActive(false)
-        setScriptNote(null)
-        setDemoPlaying(false)
-        level.follow()
-        dispatch({ type: 'demo', phase: 'intro' })
-      })
-      lantern.ease(0, 450)
-      sayIntro()
-      if (inside && !still) merc.hopTo('beside', 'idle')
-      else merc.put('idle', 'beside')
-    },
-    playing: setDemoPlaying,
   }
 
   onCleanup(() => {

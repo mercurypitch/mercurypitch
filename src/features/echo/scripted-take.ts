@@ -17,12 +17,14 @@
 //
 // `createScriptedRoom` is the demo's way in: the room (useEchoController)
 // lends it its steps, and it moves through them with the demo kit's
-// script (enter, play, rest, leave), never opening the mic.
+// script (enter, play, rest, leave), never opening the mic, on the room
+// kit's terms for when each move may come (room-kit room-script.ts).
 
 import type { Accessor } from 'solid-js'
-import { batch, untrack } from 'solid-js'
+import { batch } from 'solid-js'
 import type { TakeClock } from '@/components/demo-kit/demo-plan'
 import type { DemoScript } from '@/components/demo-kit/useExerciseDemo'
+import { createRoomScript } from '@/components/room-kit/room-script'
 import type { MercState } from '@/lib/merc/constants'
 import type { EchoPhrase } from '@/lib/sequence/phrase-bank'
 import type { EchoLevelId } from '@/lib/sequence/sequence-engine'
@@ -129,7 +131,6 @@ export function createScriptedRoom(
 ): ScriptedRoom {
   /** Bumped by every move the demo makes: older timers fall silent. */
   let turn = 0
-  const on = (): boolean => untrack(host.active)
   const clear = (): void => {
     turn += 1
     host.clear()
@@ -157,57 +158,54 @@ export function createScriptedRoom(
   }
 
   const script: EchoScript = {
-    active: host.active,
+    ...createRoomScript<ScriptedEchoTake>({
+      active: host.active,
+      phase: host.phase,
+      audio: host.audio,
+      ready: host.ready,
+      note: host.note,
+      enter: (text) => {
+        clear()
+        batch(() => {
+          host.setActive(true)
+          host.line(text)
+          host.demo('intro')
+        })
+        host.merc('idle')
+      },
+      play: (take) => {
+        clear()
+        host.load(take)
+        batch(() => {
+          host.line('')
+          host.demo('call')
+        })
+        host.begin(take)
+        // The call's tooltip may show once its first note is heard.
+        const mine = turn
+        const first = take.startsAt + (take.call[0]?.from ?? 0) * 1000
+        host.later(Math.max(0, first - performance.now()), () => {
+          if (mine === turn && host.current() === take) host.mark('call')
+        })
+      },
+      rest: () => {
+        clear()
+        host.demo('between')
+        host.merc('idle')
+      },
+      leave: () => {
+        clear()
+        batch(() => {
+          host.setActive(false)
+          host.setPlaying(false)
+          host.demo('intro')
+        })
+        host.sayIntro()
+        host.merc('idle')
+      },
+      playing: host.setPlaying,
+    }),
     callVoice: host.callVoice,
-    audio: host.audio,
-    ready: host.ready,
-    note: host.note,
-    enter: (text) => {
-      const from = host.phase()
-      if (!on() && from !== 'intro' && from !== 'result') return false
-      clear()
-      batch(() => {
-        host.setActive(true)
-        host.line(text)
-        host.demo('intro')
-      })
-      host.merc('idle')
-      return true
-    },
-    play: (take) => {
-      if (!on()) return
-      clear()
-      host.load(take)
-      batch(() => {
-        host.line('')
-        host.demo('call')
-      })
-      host.begin(take)
-      // The call's tooltip may show once its first note is heard.
-      const mine = turn
-      const first = take.startsAt + (take.call[0]?.from ?? 0) * 1000
-      host.later(Math.max(0, first - performance.now()), () => {
-        if (mine === turn && host.current() === take) host.mark('call')
-      })
-    },
-    rest: () => {
-      if (!on()) return
-      clear()
-      host.demo('between')
-      host.merc('idle')
-    },
-    leave: () => {
-      if (!on()) return
-      clear()
-      batch(() => {
-        host.setActive(false)
-        host.setPlaying(false)
-        host.demo('intro')
-      })
-      host.sayIntro()
-      host.merc('idle')
-    },
-    playing: host.setPlaying,
   }
 
   return {

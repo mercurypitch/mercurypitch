@@ -12,6 +12,7 @@
 
 import type { DemoCue as KitDemoCue, DemoMark as KitDemoMark, DemoTimeline, } from '@/components/demo-kit/demo-plan'
 import { demoMarkAt, planDemo } from '@/components/demo-kit/demo-plan'
+import { DEMO_WORDS } from '@/components/demo-kit/demo-words'
 import type { HoldEventType } from '@/lib/hold/hold-engine'
 import type { DemoTake } from './demo-script'
 import { demoTake } from './demo-script'
@@ -103,22 +104,15 @@ export const DEMO_BEATS = {
   afterOn: 2.2,
 } as const
 
-/** The demo's words. No em dashes; "practice", never "practise". */
+/**
+ * The demo's words: the kit's (demo-kit demo-words.ts), with the pill's
+ * fast-forward and a mic hint of the room's own. No em dashes;
+ * "practice", never "practise".
+ */
 export const DEMO_COPY = {
-  watch: 'Watch me first.',
-  off: 'Not like this',
-  on: 'Like this',
+  ...DEMO_WORDS,
   fast: '4x',
   fastLabel: 'Four times faster',
-  skip: 'Skip',
-  ask: 'How it works',
-  cardTitle: 'See how it works',
-  cardLine: 'Merc sings it first. Turn your sound on.',
-  watchButton: 'Watch',
-  notNow: 'Not now',
-  endTitle: 'Your turn',
-  tryIt: 'Try it',
-  again: 'Watch again',
   micHint: 'Tap the mic, then hold your note.',
 } as const
 
