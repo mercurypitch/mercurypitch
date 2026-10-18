@@ -24,7 +24,7 @@ import { fillLevel } from '../lantern-geometry'
 import type { LongNoteRunSummary } from '../long-note-controller-types'
 import type { LongNotePhase } from '../long-note-machine'
 import type { LongNoteMoment } from '../merc-lines'
-import { MERC_LINES } from '../merc-lines'
+import { fillNote, MERC_LINES } from '../merc-lines'
 import type { TraceSample } from '../voice-trace-buffer'
 
 /** The note every fixture holds: A3. */
@@ -59,7 +59,7 @@ export interface LongNoteFixtureScene {
 export function mercLine(moment: LongNoteMoment, id: string): string {
   const line = MERC_LINES[moment].find((each) => each.id === id)
   if (line === undefined) throw new Error(`no line ${moment}/${id}`)
-  return line.text.replaceAll('{note}', 'A3')
+  return fillNote(line.text, 'A3')
 }
 
 /** The trace's frames, one every 1/60 s. */

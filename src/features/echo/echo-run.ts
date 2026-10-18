@@ -14,6 +14,7 @@
 // stopped before it) counts as no voice: the voice it heard was the note
 // before it, still sounding.
 
+import type { RoomLine } from '@/components/room-kit/room-lines'
 import { EXERCISE_ECHO_STARS } from '@/lib/domain/exercise-contracts'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { EchoLevelId, MissedNote } from '@/lib/sequence/sequence-engine'
@@ -36,10 +37,8 @@ const TENDENCY_NOTES = 2
 /** The phrases' last notes landing this much less often than the rest. */
 const ENDS_SHARE_GAP = 0.25
 
-export interface EchoLine {
-  readonly moment: EchoMoment
-  readonly fields: LineFields
-}
+/** A moment for Merc to speak at, and its fields. */
+export type EchoLine = RoomLine<EchoMoment, LineFields>
 
 /** A miss, ranked: the lower, the more use its line is. */
 function missRank(miss: MissedNote, tolCents: number): number {
