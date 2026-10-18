@@ -108,6 +108,13 @@ round and what was done with it.
 - **47.** On phones the tile row stands vertical (13 tiles of 44 px) and the keyboard shows one octave with 44 px black-key targets: touch targets of 44 px, no sideways scroll, and pitch is height.
 - **48.** The Semitone or tone? game gives feedback about the sound, never the listener, and keeps no rating or streak: it is a practice toy, not a test (rules 21 and 25).
 - **49.** The recall check asks Lesson 1's questions 2 and 4 word for word, reshuffled and without stored answers, so they measure delayed retrieval (MASTER-PLAN § 9); neither quiz has question ids yet (FACTS 35a), so the Lesson telemetry track gives both the same ids before the answers count. Question 4 (after B3 comes C4) also primes the B-to-C boundary this lesson explains. MASTER-PLAN § 4.2 called the section a "warm-up retrieval"; it is now a "recall check", and the page's section "Recall from Lesson 1", so "warm-up" keeps its one meaning (decision 3; script critic 02, N8).
+- **78.** The quick check asks the film's four recap questions (semitones in an octave; which of two
+  steps, played by ear, is the semitone; C♯ and D♭, one key or two; cents in a tone), as Lesson 1's
+  page asks its film's, and a wrong answer links back to the step whose toy is that question's
+  answer object in the film (18 October 2026, with the film as built).
+- **79.** Sing it shows the film's plain chrome guide while the viewer sings, so nothing of the
+  app's drawing is on screen during their turn; amber shows only while one of Merc's slides plays
+  (decision 68 applied to the page).
 
 ## Process
 
