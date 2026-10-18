@@ -216,7 +216,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
         capture.release()
         setAnswerMode('tap')
         setMicError(
-          'No microphone could be opened — this run takes tapped answers.',
+          'No microphone could be opened. This run takes tapped answers.',
         )
       }
     } else {
@@ -240,7 +240,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
     if (current === 'answer') {
       return {
         label: 'Done',
-        sub: 'or wait — silence closes it',
+        sub: 'or wait for silence to close it',
         state: undefined,
       }
     }
@@ -271,12 +271,12 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
       title="Echo"
       drillId="echo"
       measures="Shape · dictation"
-      description="A cadence plants the key, then a short phrase sounds — three to six notes. Tap it back on the ladder, note by note, in order: 1 is home, 1′ the home above. Take a note back with Backspace before the last one lands; the whole phrase is judged at once. A miss plays it again, slower. The bank grows from steps to leaps as the rating climbs."
-      prompt="A phrase in a planted key — give it back in order."
+      description="A cadence plants the key, then a short phrase sounds: three to six notes. Tap it back on the ladder, note by note, in order: 1 is home, 1′ the home above. Take a note back with Backspace before the last one lands; the whole phrase is judged at once. A miss plays it again, slower. The bank grows from steps to leaps as the rating climbs."
+      prompt="A phrase in a planted key. Give it back in order."
       listenHint="Listen to the phrase…"
       answerHint={
         sungRun()
-          ? 'Sing or play it back — at your own pace, then a breath.'
+          ? 'Sing or play it back at your own pace, then take a breath.'
           : 'Tap it back on the ladder, note by note.'
       }
       choices={[]}

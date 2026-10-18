@@ -129,7 +129,7 @@ describe('the desk', () => {
     // The draw is pinned: the 125 Hz band, a 12 dB boost to start.
     fireEvent.click(screen.getByRole('button', { name: /125 Hz/ }))
     expect(status()).toContain(
-      'Right — the 125 Hz band, up 12.0 dB. The boost shrinks.',
+      'Right. The 125 Hz band, up 12.0 dB. The boost shrinks.',
     )
 
     // Two right, one wrong, over and over: the staircase steps down after
@@ -163,7 +163,7 @@ describe('the desk', () => {
     await reach('Which carried the heavier low end?')
     fireEvent.click(screen.getByRole('button', { name: /The first/ }))
     expect(status()).toContain(
-      'Right — the first had the weight, a 6.0 dB shelf under 120 Hz. The shelf thins.',
+      'Right. The first had the weight, a 6.0 dB shelf under 120 Hz. The shelf thins.',
     )
   })
 
@@ -175,7 +175,7 @@ describe('the desk', () => {
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
     await reach('Name the fault.')
     fireEvent.click(screen.getByRole('button', { name: /Mud/ }))
-    expect(status()).toContain('Yes — Mud — a build-up around 250 Hz.')
+    expect(status()).toContain('Yes. Mud: a build-up around 250 Hz.')
     expect(earPlayerRating('desk-critique').attempts).toBe(1)
     expect(earPlayerRating('stack').attempts).toBe(0)
   })

@@ -16,13 +16,13 @@ describe('MixingDesk', () => {
         labels={['Mud', 'Box', 'Harsh']}
         playing={false}
         highlight={0}
-        reveal={{ index: 2, name: 'Harsh — a peak around 3 kHz' }}
+        reveal={{ index: 2, name: 'Harsh: a peak around 3 kHz' }}
       />
     ))
     const desk = screen.getByRole('img', { name: 'The mixing desk' })
     const frame = desk.querySelector('rect')
     const nameplate = desk.querySelector('[data-part="nameplate"]')
-    expect(nameplate?.textContent).toBe('Harsh — a peak around 3 kHz')
+    expect(nameplate?.textContent).toBe('Harsh: a peak around 3 kHz')
     const frameBottom =
       Number(frame?.getAttribute('y')) + Number(frame?.getAttribute('height'))
     expect(Number(nameplate?.getAttribute('y'))).toBeGreaterThan(

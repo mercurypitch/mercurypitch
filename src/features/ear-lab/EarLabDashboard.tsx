@@ -224,7 +224,7 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
                   [styles.instrumentSeal]: instrument.view === 'calibration',
                 }}
                 onClick={() => openInstrument(instrument)}
-                aria-label={`${instrument.name} — ${instrument.measures}`}
+                aria-label={`${instrument.name}: ${instrument.measures}`}
               >
                 <Icon size={30} class={styles.instrumentIcon} />
                 <span class={styles.instrumentName}>{instrument.name}</span>

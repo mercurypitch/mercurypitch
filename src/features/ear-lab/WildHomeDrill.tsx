@@ -95,7 +95,7 @@ export function WildHomeDrill(props: WildDrillProps): JSX.Element {
   })
 
   const nameOf = (choiceId: string) =>
-    `${choiceId} — ${solfegeOfDegree(Number(choiceId), mode)}`
+    `${choiceId} (${solfegeOfDegree(Number(choiceId), mode)})`
 
   return (
     <IdentificationDrillView
@@ -104,7 +104,7 @@ export function WildHomeDrill(props: WildDrillProps): JSX.Element {
       measures={`Function · ${keyLabel(book.key)}`}
       description="The song's own key, read from its vocal. A chord plants it, then the song plays up to a note the singer held: name the degree that note lands on, one to seven. A miss plays the end of the excerpt again. Rated on the Field Book's own track; the Column never moves for it."
       prompt="Which degree does the voice land on?"
-      listenHint="A chord plants the key, then the song — listen for where the voice lands…"
+      listenHint="A chord plants the key, then the song. Listen for where the voice lands…"
       answerHint="Which degree of the song's key was that?"
       choices={DEGREES.map((degree) => ({
         id: String(degree),

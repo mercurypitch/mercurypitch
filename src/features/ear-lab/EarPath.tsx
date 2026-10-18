@@ -115,7 +115,7 @@ export function EarPath(props: EarPathProps): JSX.Element {
                   type="button"
                   class={styles.orb}
                   title={milestone.label}
-                  aria-label={`${milestone.label} — ${milestone.lit ? 'lit' : 'dark'}`}
+                  aria-label={`${milestone.label}: ${milestone.lit ? 'lit' : 'dark'}`}
                   aria-current={isNext() ? 'step' : undefined}
                   onClick={() => go(milestone)}
                 >
@@ -132,7 +132,7 @@ export function EarPath(props: EarPathProps): JSX.Element {
           when={next()}
           fallback={
             <span class={styles.nextName}>
-              The train is complete — every orb is lit.
+              The train is complete. Every orb is lit.
             </span>
           }
         >
@@ -144,7 +144,7 @@ export function EarPath(props: EarPathProps): JSX.Element {
                   {milestone().label}
                   <Show when={milestone().progress}>
                     {(progress) =>
-                      ` — ${progress().done} of ${progress().of} days`
+                      ` (${progress().done} of ${progress().of} days)`
                     }
                   </Show>
                 </span>

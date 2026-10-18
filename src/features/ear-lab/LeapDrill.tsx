@@ -90,8 +90,8 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
       title="Leap"
       drillId="leap"
       measures="Shape · interval"
-      description="Two notes, one distance — name the interval. The supporting vocabulary drill: Home trains the hearing that transfers, Leap names the spans inside it."
-      prompt="Two notes — name the distance between them."
+      description="Two notes, one distance. Name the interval. The supporting vocabulary drill: Home trains the hearing that transfers, Leap names the spans inside it."
+      prompt="Two notes. Name the distance between them."
       listenHint="Listen to the leap…"
       answerHint="Which interval was that?"
       choices={LEAP_BANK.map((item) => ({

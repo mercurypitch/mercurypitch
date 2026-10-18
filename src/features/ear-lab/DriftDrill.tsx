@@ -135,8 +135,8 @@ export function DriftDrill(props: DriftDrillProps): JSX.Element {
       title="Drift"
       drillId="drift"
       measures="Time · tempo"
-      description="Eleven clicks. The first five hold their tempo; the rest gain a little, lose a little, or hold. Say which. The drift shrinks toward the smallest change of tempo you still catch — that number, in percent, is your reading. A third of the trains hold steady, so guessing a direction will not carry you."
-      prompt="A click train — did the tempo hold, gain, or lose?"
+      description="Eleven clicks. The first five hold their tempo; the rest gain a little, lose a little, or hold. Say which. The drift shrinks toward the smallest change of tempo you still catch. That number, in percent, is your reading. A third of the trains hold steady, so guessing a direction will not carry you."
+      prompt="A click train. Did the tempo hold, gain, or lose?"
       listenHint="Listen to the train…"
       answerHint="Did the tempo hold steady, gain, or lose?"
       levelCaption="Drift"
@@ -181,7 +181,7 @@ export function DriftDrill(props: DriftDrillProps): JSX.Element {
       }
       revealLine={() =>
         run.lastCorrect() === true
-          ? `Right — it ${wentWord()}.`
+          ? `Right. It ${wentWord()}.`
           : `It ${wentWord()}. The drift widens.`
       }
       onBack={props.onBack}

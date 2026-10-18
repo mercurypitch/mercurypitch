@@ -102,7 +102,7 @@ export function CritiqueDrill(props: DeskDrillProps): JSX.Element {
       drillId="desk-critique"
       measures="Color · the desk"
       description="A slice of the mix with one thing wrong: mud around 250 Hz, box around 500, harshness at 3 kHz, sibilance from 8 kHz, a compressor pumping, or the stereo folded narrow. Name the fault. A miss plays it again. Rated on the desk's own track; the Column never moves for it."
-      prompt="One thing is wrong with this mix — what?"
+      prompt="One thing is wrong with this mix. What?"
       listenHint="Listen to the mix…"
       answerHint="Name the fault."
       choices={DESK_FAULTS.map((entry) => ({

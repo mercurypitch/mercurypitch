@@ -134,7 +134,7 @@ describe('SubdivideDrill', () => {
     await beginAndListen()
     const right = pads().find((pad) => (pad.textContent ?? '').includes('4/4'))
     fireEvent.click(right as HTMLElement)
-    expect(status()).toBe('Yes — 4/4.')
+    expect(status()).toBe('Yes. 4/4.')
     expect(lattice()?.querySelectorAll('[data-accent="true"]').length).toBe(1)
     expect(lattice()?.querySelector('[data-part="bar-line"]')).not.toBeNull()
     expect(
@@ -146,7 +146,7 @@ describe('SubdivideDrill', () => {
     await beginAndListen()
     const wrong = pads().find((pad) => !(pad.textContent ?? '').includes('4/4'))
     fireEvent.click(wrong as HTMLElement)
-    expect(status()).toBe('That was 4/4 — listen again.')
+    expect(status()).toBe('That was 4/4. Listen again.')
     await vi.advanceTimersByTimeAsync(0)
     expect(hits).toHaveLength(16)
     const slowBar = hits[12].at - hits[8].at

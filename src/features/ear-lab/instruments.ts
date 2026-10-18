@@ -62,7 +62,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Hairline',
     faculty: 'resolution',
     measures: 'Resolution · cents',
-    answer: 'Two tones — which was higher',
+    answer: 'Two tones: which was higher',
   },
   {
     view: 'beat-hunt',
@@ -70,7 +70,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Beat Hunt',
     faculty: 'resolution',
     measures: 'Resolution · beats',
-    answer: 'Two pairs of tones — which pair was beating',
+    answer: 'Two pairs of tones: which pair was beating',
   },
   {
     view: 'home',
@@ -78,7 +78,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Home',
     faculty: 'function',
     measures: 'Function · degree',
-    answer: 'A cadence, one note — name the degree, tap or sing',
+    answer: 'A cadence, one note: name the degree, tap or sing',
   },
   {
     view: 'gravity',
@@ -86,7 +86,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Gravity',
     faculty: 'function',
     measures: 'Function · chromatic',
-    answer: 'One note of the twelve over a planted key — name it',
+    answer: 'One note of the twelve over a planted key: name it',
   },
   {
     view: 'the-pull',
@@ -94,7 +94,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'The Pull',
     faculty: 'function',
     measures: 'Function · tendency',
-    answer: 'Two degrees — which one leans harder',
+    answer: 'Two degrees: which one leans harder',
   },
   {
     view: 'cadence',
@@ -102,7 +102,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Cadence',
     faculty: 'function',
     measures: 'Function · progression',
-    answer: 'A progression on the guitar — name it in numerals',
+    answer: 'A progression on the guitar: name it in numerals',
   },
   {
     view: 'bassline',
@@ -110,7 +110,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Bassline',
     faculty: 'function',
     measures: 'Function · root motion',
-    answer: 'Four bass roots under a held tonic — tap them back',
+    answer: 'Four bass roots under a held tonic: tap them back',
   },
   {
     view: 'grid',
@@ -118,7 +118,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'The Grid',
     faculty: 'time',
     measures: 'Time · milliseconds',
-    answer: 'Six clicks — which one left the lattice',
+    answer: 'Six clicks: which one left the lattice',
   },
   {
     view: 'drift',
@@ -126,7 +126,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Drift',
     faculty: 'time',
     measures: 'Time · tempo',
-    answer: 'A click train — did the tempo hold, gain or lose',
+    answer: 'A click train: did the tempo hold, gain or lose',
   },
   {
     view: 'leap',
@@ -134,7 +134,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Leap',
     faculty: 'shape',
     measures: 'Shape · interval',
-    answer: 'Two notes — name the interval',
+    answer: 'Two notes: name the interval',
   },
   {
     view: 'stack',
@@ -142,7 +142,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Stack',
     faculty: 'colour',
     measures: 'Color · chord quality',
-    answer: 'One chord, roved root — name its quality',
+    answer: 'One chord, roved root: name its quality',
   },
   {
     view: 'desk',
@@ -158,7 +158,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Contour',
     faculty: 'shape',
     measures: 'Shape · direction',
-    answer: 'Up, down or level — fast',
+    answer: 'Up, down or level, fast',
   },
   {
     view: 'echo',
@@ -166,7 +166,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Echo',
     faculty: 'shape',
     measures: 'Shape · dictation',
-    answer: 'A phrase in a planted key — tap it back in order',
+    answer: 'A phrase in a planted key: tap it back in order',
   },
   {
     view: 'span',
@@ -174,7 +174,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Span',
     faculty: 'shape',
     measures: 'Shape · span',
-    answer: 'The phrase grows a note at a time — how many hold?',
+    answer: 'The phrase grows a note at a time: how many hold?',
   },
   {
     view: 'pulse',
@@ -182,7 +182,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Pulse',
     faculty: 'time',
     measures: 'Time · rhythm',
-    answer: 'A bar of onsets — your first tap starts yours',
+    answer: 'A bar of onsets: your first tap starts yours',
   },
   {
     view: 'chart',
@@ -190,7 +190,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'The Chart',
     faculty: 'time',
     measures: 'Time · reading',
-    answer: 'A written bar over the click — tap it at sight',
+    answer: 'A written bar over the click: tap it at sight',
   },
   {
     view: 'subdivide',
@@ -198,7 +198,7 @@ export const INSTRUMENTS: readonly Instrument[] = [
     name: 'Subdivide',
     faculty: 'time',
     measures: 'Time · metre',
-    answer: 'Two bars on the kit — name the metre',
+    answer: 'Two bars on the kit: name the metre',
   },
   {
     view: 'calibration',

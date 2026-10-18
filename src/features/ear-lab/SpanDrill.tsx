@@ -171,7 +171,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
         capture.release()
         setAnswerMode('tap')
         setMicError(
-          'No microphone could be opened — this run takes tapped answers.',
+          'No microphone could be opened. This run takes tapped answers.',
         )
         sung = false
       }
@@ -195,7 +195,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
     if (current === 'answer') {
       return {
         label: 'Done',
-        sub: 'or wait — silence closes it',
+        sub: 'or wait for silence to close it',
         state: undefined,
       }
     }
@@ -226,7 +226,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
       title="Span"
       drillId="span"
       measures="Shape · span"
-      description="A cadence plants the key, then a phrase sounds — as many notes as the staircase says. Tap it back in order on the ladder; Backspace takes one back. Hold the whole phrase and it grows by a note, slip and it shortens. The reading is notes held — the longest phrase your ear carries whole."
+      description="A cadence plants the key, then a phrase sounds: as many notes as the staircase says. Tap it back in order on the ladder; Backspace takes one back. Hold the whole phrase and it grows by a note, slip and it shortens. The reading is notes held: the longest phrase your ear carries whole."
       idleAside={
         <ConsoleStack>
           <ModeToggle
@@ -249,11 +249,11 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
           </Show>
         </ConsoleStack>
       }
-      prompt={`A phrase of ${run.level()} notes to start — give it all back, and it grows while you keep up.`}
+      prompt={`A phrase of ${run.level()} notes to start. Give it all back, and it grows while you keep up.`}
       listenHint="Listen to the phrase…"
       answerHint={
         sungRun()
-          ? 'Sing or play it back — at your own pace, then a breath.'
+          ? 'Sing or play it back at your own pace, then take a breath.'
           : 'Tap it back on the ladder, note by note.'
       }
       levelCaption="Length"
@@ -323,14 +323,14 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
         const result = verdict()
         const count = phrase().length
         if (run.lastCorrect() === true) {
-          return `Held — all ${count} notes, ${solfegeOf(phrase())}. The phrase grows.`
+          return `Held. All ${count} notes, ${solfegeOf(phrase())}. The phrase grows.`
         }
         const slip = result?.firstMiss ?? 0
         const back =
           answered().length > 0
             ? `, you ${sungRun() ? 'sang' : 'tapped'} ${solfegeOf(answered())}`
             : ''
-        return `Slipped at note ${slip + 1} of ${count} — it was ${solfegeOf(phrase())}${back}. The phrase shortens.`
+        return `Slipped at note ${slip + 1} of ${count}. It was ${solfegeOf(phrase())}${back}. The phrase shortens.`
       }}
       onBack={props.onBack}
     />

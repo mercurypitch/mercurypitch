@@ -142,7 +142,7 @@ describe('EchoDrill', () => {
     expect(strip()).toContain('DoRe')
     expect(strip()).toContain('2 of 3')
     fireEvent.click(ladder()[2])
-    expect(status()).toBe('Yes — Do Re Mi.')
+    expect(status()).toBe('Yes. Do Re Mi.')
     expect(parts('right')).toBe(3)
     expect(parts('wrong')).toBe(0)
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
@@ -164,7 +164,7 @@ describe('EchoDrill', () => {
     fireEvent.click(ladder()[0])
     fireEvent.click(ladder()[1])
     fireEvent.click(ladder()[4])
-    expect(status()).toBe('That was Do Re Mi — listen again.')
+    expect(status()).toBe('That was Do Re Mi. Listen again.')
     expect(parts('right')).toBe(2)
     expect(parts('wrong')).toBe(1)
     expect(screen.getByTestId('ear-stage-last-call').textContent).toContain(
@@ -235,7 +235,7 @@ describe('SpanDrill', () => {
       </Stage>
     ))
     expect(status()).toBe(
-      'A phrase of 3 notes to start — give it all back, and it grows while you keep up.',
+      'A phrase of 3 notes to start. Give it all back, and it grows while you keep up.',
     )
   })
 
@@ -247,7 +247,7 @@ describe('SpanDrill', () => {
     fireEvent.click(ladder()[0])
     fireEvent.click(ladder()[4])
     fireEvent.click(ladder()[0])
-    expect(status()).toBe('Held — all 3 notes, Do Sol Do. The phrase grows.')
+    expect(status()).toBe('Held. All 3 notes, Do Sol Do. The phrase grows.')
     expect(parts('right')).toBe(3)
   })
 
@@ -257,7 +257,7 @@ describe('SpanDrill', () => {
     fireEvent.click(ladder()[1])
     fireEvent.click(ladder()[0])
     expect(status()).toBe(
-      'Slipped at note 2 of 3 — it was Do Sol Do, you tapped Do Re Do. The phrase shortens.',
+      'Slipped at note 2 of 3. It was Do Sol Do, you tapped Do Re Do. The phrase shortens.',
     )
     expect(parts('wrong')).toBe(1)
     await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 5)

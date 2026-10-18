@@ -89,10 +89,10 @@ export function WildBasslineDrill(props: WildDrillProps): JSX.Element {
       title="Bassline in the Wild"
       drillId="wild-bassline"
       measures={`Function · ${keyLabel(book.key)}`}
-      description="A chord plants the song's key, then two chords of the song play — the bass part when the song has a stem split. The first root is named; answer the degree the root moved to. A miss plays the pair again. Rated on the Field Book's own track; the Column never moves for it."
-      prompt="The root moves — to which degree?"
-      listenHint={`A chord plants the key, then the song — the root starts on ${fromWord()}…`}
-      answerHint={`The root moved from ${fromWord()} — to which degree?`}
+      description="A chord plants the song's key, then two chords of the song play (the bass part when the song has a stem split). The first root is named; answer the degree the root moved to. A miss plays the pair again. Rated on the Field Book's own track; the Column never moves for it."
+      prompt="The root moves. To which degree?"
+      listenHint={`A chord plants the key, then the song. The root starts on ${fromWord()}…`}
+      answerHint={`The root moved from ${fromWord()}. To which degree?`}
       choices={DEGREES.map((degree) => ({
         id: String(degree),
         label: numeralOf(degree, mode),

@@ -114,7 +114,7 @@ async function beginAndListen(): Promise<void> {
   ).toBe('off')
   await vi.advanceTimersByTimeAsync(PROBES)
   expect(engine.playTone).toHaveBeenCalledTimes(2)
-  expect(status()).toBe('Which note leans harder — the first, or the second?')
+  expect(status()).toBe('Which note leans harder: the first, or the second?')
 }
 
 describe('PullDrill', () => {
@@ -130,7 +130,7 @@ describe('PullDrill', () => {
   it('the leading tone leans harder: the first is right, and the beam tips to it', async () => {
     await beginAndListen()
     fireEvent.click(screen.getByRole('button', { name: /The first/ }))
-    expect(status()).toBe('Yes — the first, Ti leaning to Do′.')
+    expect(status()).toBe('Yes. The first, Ti leaning to Do′.')
     const tilt = Number(
       beam()?.querySelector('[data-part="beam"]')?.getAttribute('data-tilt'),
     )
@@ -144,7 +144,7 @@ describe('PullDrill', () => {
     await beginAndListen()
     fireEvent.click(screen.getByRole('button', { name: /The second/ }))
     expect(status()).toBe(
-      'That was the first, Ti leaning to Do′ — listen again.',
+      'That was the first, Ti leaning to Do′. Listen again.',
     )
     await vi.advanceTimersByTimeAsync(
       PULL_TIMING.replayMs + PULL_TIMING.probeGapMs + 5,

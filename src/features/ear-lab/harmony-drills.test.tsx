@@ -172,7 +172,7 @@ describe('CadenceDrill', () => {
       (pad.textContent ?? '').includes('I–IV–V'),
     )
     fireEvent.click(right as HTMLElement)
-    expect(status()).toBe('Yes — I–IV–V.')
+    expect(status()).toBe('Yes. I–IV–V.')
     const numerals = [
       ...(document.querySelectorAll(
         'svg[data-instrument="train"] [data-part="numeral"]',
@@ -187,7 +187,7 @@ describe('CadenceDrill', () => {
       (pad) => !(pad.textContent ?? '').includes('I–IV–V'),
     )
     fireEvent.click(wrong as HTMLElement)
-    expect(status()).toBe('That was I–IV–V — listen again.')
+    expect(status()).toBe('That was I–IV–V. Listen again.')
     await vi.advanceTimersByTimeAsync(0)
     expect(struck).toHaveLength(24)
     // The next round waits for the slow strum to finish, then the hold.
@@ -236,13 +236,13 @@ describe('BasslineDrill', () => {
     expect(screen.getByTestId('ear-phrase-strip').textContent).toContain('IIVV')
     expect(status()).toBe('Tap the roots back on the ladder, in order.')
     fireEvent.click(pads()[0])
-    expect(status()).toBe('Yes — I–IV–V–I.')
+    expect(status()).toBe('Yes. I–IV–V–I.')
   })
 
   it('a slip names the line and replays it', async () => {
     await beginAndListen()
     for (const rung of [0, 3, 3, 0]) fireEvent.click(pads()[rung])
-    expect(status()).toBe('That was I–IV–V–I — listen again.')
+    expect(status()).toBe('That was I–IV–V–I. Listen again.')
     await vi.advanceTimersByTimeAsync(0)
     // Four tapped rungs strummed their roots, then the slow replay.
     expect(struck).toHaveLength(20)

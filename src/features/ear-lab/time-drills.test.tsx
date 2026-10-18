@@ -116,7 +116,7 @@ describe('BeatHuntDrill', () => {
     await vi.advanceTimersByTimeAsync(
       WHOLE - LEAD - 10 - DYAD - BEAT_TIMING.gapMs,
     )
-    expect(status()).toBe('Which pair was beating — the first, or the second?')
+    expect(status()).toBe('Which pair was beating: the first, or the second?')
     expect(pad(/The first/).hasAttribute('disabled')).toBe(false)
   }
 
@@ -131,7 +131,7 @@ describe('BeatHuntDrill', () => {
     await practiceAndListen()
     fireEvent.click(pad(/The first/))
     expect(status()).toMatch(
-      /^Right — the first pair was beating, [\d.]+ beats a second at 40\.0¢\.$/,
+      /^Right\. The first pair was beating, [\d.]+ beats a second at 40\.0¢\.$/,
     )
     const svg = document.querySelector('svg[data-instrument="beat-pendulums"]')
     expect(
@@ -202,7 +202,7 @@ describe('DriftDrill', () => {
   it('a steady train: eleven clicks, the lamps chase, Steady is right', async () => {
     await practiceAndListen(0)
     fireEvent.click(pad(/Steady/))
-    expect(status()).toBe('Right — it held steady.')
+    expect(status()).toBe('Right. It held steady.')
     const svg = document.querySelector('svg[data-instrument="metronome"]')
     expect(
       svg?.querySelector('[data-part="arm"]')?.getAttribute('data-lean'),

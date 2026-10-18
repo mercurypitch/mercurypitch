@@ -226,8 +226,8 @@ function IndexPlate(props: WindowProps): JSX.Element {
         when={latest()}
         fallback={
           <PlateNote>
-            No sealed calibrations yet — the mercury moves only when one says
-            so. Run Calibration from the bench.
+            No sealed calibrations yet. The mercury moves only when one says so.
+            Run Calibration from the bench.
           </PlateNote>
         }
       >
@@ -278,7 +278,7 @@ function ThresholdPlates(props: WindowProps): JSX.Element {
       fallback={
         <Plate title="Thresholds over time" id="thresholds-empty">
           <PlateNote>
-            No threshold readings yet — run Hairline or The Grid. Falling is
+            No threshold readings yet. Run Hairline or The Grid. Falling is
             improving, so the trace is drawn to rise.
           </PlateNote>
         </Plate>

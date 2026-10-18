@@ -102,11 +102,11 @@ export function DeskView(props: DeskViewProps): JSX.Element {
       case 'rendering':
         return current.pct === null
           ? 'Rendering the desk’s source…'
-          : `Rendering the desk’s source — ${current.note} · ${current.pct}%`
+          : `Rendering the desk’s source: ${current.note} · ${current.pct}%`
       case 'error':
         return current.error
       case 'ready':
-        return `On ${current.source?.label ?? 'the source'} — three drills, each on its own plate.`
+        return `On ${current.source?.label ?? 'the source'}: three drills, each on its own plate.`
     }
   }
 

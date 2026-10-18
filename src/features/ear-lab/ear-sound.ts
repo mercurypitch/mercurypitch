@@ -32,7 +32,7 @@ export function formatEarVolume(value: number): string {
 }
 
 export const CLICK_VOICES: { id: ClickVoice; label: string; note: string }[] = [
-  { id: 'wood', label: 'Wood', note: 'a woodblock — round, kind to earbuds' },
+  { id: 'wood', label: 'Wood', note: 'a round woodblock, kind to earbuds' },
   { id: 'tick', label: 'Tick', note: 'bright and sharp' },
   { id: 'soft', label: 'Soft', note: 'low and gentle' },
 ]

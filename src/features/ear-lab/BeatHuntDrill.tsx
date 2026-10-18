@@ -142,10 +142,10 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
       title="Beat Hunt"
       drillId="beat-hunt"
       measures="Resolution · beats"
-      description="Two pairs of tones. One pair is in tune with itself; in the other, one tone is pulled a few cents off, and the pair beats — a slow swell and fade where the two waves fall in and out of step. Find the beating pair. The detune shrinks toward the finest beat your ear still catches; that number, in cents, is your reading."
-      prompt="Two pairs of tones — which pair was beating?"
+      description="Two pairs of tones. One pair is in tune with itself; in the other, one tone is pulled a few cents off, and the pair beats: a slow swell and fade where the two waves fall in and out of step. Find the beating pair. The detune shrinks toward the finest beat your ear still catches; that number, in cents, is your reading."
+      prompt="Two pairs of tones. Which pair was beating?"
       listenHint="Listen…"
-      answerHint="Which pair was beating — the first, or the second?"
+      answerHint="Which pair was beating: the first, or the second?"
       levelCaption="Detune"
       levelLabel={detune}
       formatValue={(value) => value.toFixed(1)}
@@ -189,7 +189,7 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
       ]}
       revealLine={() =>
         run.lastCorrect() === true
-          ? `Right — the ${pairWord()} pair was beating, ${beatWord(rateHz())} at ${detune()}.`
+          ? `Right. The ${pairWord()} pair was beating, ${beatWord(rateHz())} at ${detune()}.`
           : `The ${pairWord()} pair was beating, ${beatWord(rateHz())} at ${detune()}. The detune widens.`
       }
       onBack={props.onBack}

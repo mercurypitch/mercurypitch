@@ -67,6 +67,10 @@ interface IdentificationDrillViewProps {
   backLabel?: string
 }
 
+/** The same text with its first letter upper case. */
+const sentenceCase = (text: string): string =>
+  text.charAt(0).toUpperCase() + text.slice(1)
+
 export function IdentificationDrillView(
   props: IdentificationDrillViewProps,
 ): JSX.Element {
@@ -105,9 +109,12 @@ export function IdentificationDrillView(
       case 'reveal': {
         const expected = props.controller.expectedId()
         if (expected === null) return ''
+        // A reveal name is written to follow "That was", so Pull's starts
+        // lower case ("the first, Ti leaning to Do′"). After "Yes." it opens
+        // a sentence of its own.
         return correct()
-          ? `Yes — ${props.revealName(expected)}.`
-          : `That was ${props.revealName(expected)} — listen again.`
+          ? `Yes. ${sentenceCase(props.revealName(expected))}.`
+          : `That was ${props.revealName(expected)}. Listen again.`
       }
       default:
         return props.prompt
@@ -282,13 +289,13 @@ export function IdentificationDrillView(
             >
               <Show when={isProvisional(result().rating)}>
                 <PlateBadge>
-                  Provisional — settling for {10 - result().rating.attempts}{' '}
-                  more answers
+                  Provisional: settling for {10 - result().rating.attempts} more
+                  answers
                 </PlateBadge>
               </Show>
               <PlateLine>
                 {result().total === 0
-                  ? 'Stopped before the first answer — nothing marked.'
+                  ? 'Stopped before the first answer. Nothing marked.'
                   : `${result().correct} of ${result().total} named correctly`}
               </PlateLine>
               <OutcomeDots
@@ -297,7 +304,7 @@ export function IdentificationDrillView(
                   title: `${props.revealName(outcome.expectedId)}${
                     outcome.correct
                       ? ''
-                      : ` — answered ${props.revealName(outcome.answeredId)}`
+                      : ` (answered ${props.revealName(outcome.answeredId)})`
                   }`,
                 }))}
               />

@@ -187,7 +187,7 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
         capture.release()
         setAnswerMode('tap')
         setMicError(
-          'No microphone could be opened — this run takes tapped answers.',
+          'No microphone could be opened. This run takes tapped answers.',
         )
       }
     } else {
@@ -205,7 +205,7 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
     if (current === 'answer') {
       return {
         label: 'Done',
-        sub: 'or wait — silence closes it',
+        sub: 'or wait for silence to close it',
         state: undefined,
       }
     }
@@ -228,12 +228,12 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
       title="Echo in the Wild"
       drillId="wild-echo"
       measures={`Shape · ${keyLabel(book.key)}`}
-      description="A chord plants the song's key, then the singer's own phrase plays — three to six notes the reading found. Tap it back on the ladder in order; 1′ counts as 1, since the song's degrees are named within the octave. A miss plays the phrase again. Rated on the Field Book's own track; the Column never moves for it."
-      prompt="A phrase the singer sang — give it back in order."
+      description="A chord plants the song's key, then the singer's own phrase plays: three to six notes the reading found. Tap it back on the ladder in order; 1′ counts as 1, since the song's degrees are named within the octave. A miss plays the phrase again. Rated on the Field Book's own track; the Column never moves for it."
+      prompt="A phrase the singer sang. Give it back in order."
       listenHint="A chord plants the key, then the phrase…"
       answerHint={
         sungRun()
-          ? 'Sing or play it back — at your own pace, then a breath.'
+          ? 'Sing or play it back at your own pace, then take a breath.'
           : 'Tap it back on the ladder, note by note.'
       }
       choices={[]}

@@ -138,7 +138,7 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
         ? `Rhythm drum: every onset of the ${props.upperWord ?? 'call'} met`
         : `Rhythm drum: ${missed} onset${missed === 1 ? '' : 's'} missed, ${props.reveal.extras.length} extra tap${props.reveal.extras.length === 1 ? '' : 's'}`
     }
-    if (props.waiting === true) return 'Rhythm drum, your bar — tap to start it'
+    if (props.waiting === true) return 'Rhythm drum, your bar: tap to start it'
     return props.bar
       ? `Rhythm drum, ${BAR_WORD[props.bar].toLowerCase()}, beat ${props.beat}`
       : `Rhythm drum, ${beats() === 8 ? 'two bars' : 'one bar'} of four beats, nothing written yet`
@@ -377,7 +377,7 @@ export function RhythmDrum(props: RhythmDrumProps): JSX.Element {
       <Show when={!props.reveal && props.bar}>
         {(bar) => (
           <text x="260" y="244" class={styles.nameplate} text-anchor="middle">
-            {props.waiting === true ? 'Yours — tap to start' : BAR_WORD[bar()]}
+            {props.waiting === true ? 'Yours. Tap to start' : BAR_WORD[bar()]}
           </text>
         )}
       </Show>

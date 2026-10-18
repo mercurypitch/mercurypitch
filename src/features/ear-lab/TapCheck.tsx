@@ -104,7 +104,7 @@ export function TapCheck(): JSX.Element {
     if (phase() === 'running') {
       return count() === 0
         ? 'Tap with the clicks.'
-        : `Tap with the clicks — ${count()} so far.`
+        : `Tap with the clicks: ${count()} so far.`
     }
     const take = summary()
     if (!take) return 'No tap landed near a click. Press the pad to try again.'
@@ -112,7 +112,7 @@ export function TapCheck(): JSX.Element {
     const trip =
       micLatencyMs() > 0
         ? `Round trip ${Math.round(micLatencyMs())} ms subtracted from every tap.`
-        : 'Round trip unmeasured — these are raw taps.'
+        : 'Round trip unmeasured. These are raw taps.'
     return `Mean ${signed(take.meanMs)} ms (${side}) · spread ${Math.round(take.spreadMs)} ms · ${take.matched} of ${BEATS} clicks met. ${trip}`
   }
 

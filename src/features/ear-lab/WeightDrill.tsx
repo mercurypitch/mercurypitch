@@ -111,7 +111,7 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
       drillId="desk-weight"
       measures="Color · the desk"
       description="The same slice of the mix twice; one carries a low shelf under 120 Hz, the two matched for loudness. Say which is heavier. The shelf thins while you are right and thickens when you slip; the reading is the thinnest shelf you still hear. Practice only: the desk reads on its own plate and the Column never moves for it."
-      prompt="Two renders — which has the weight?"
+      prompt="Two renders. Which has the weight?"
       listenHint="The first… then the second…"
       answerHint="Which carried the heavier low end?"
       levelCaption="Shelf"
@@ -131,7 +131,7 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
             run.phase() === 'reveal' && heavier()
               ? {
                   index: heavier() === 'first' ? 0 : 1,
-                  name: `${heavier() === 'first' ? 'The first' : 'The second'} — the shelf`,
+                  name: `${heavier() === 'first' ? 'The first' : 'The second'} (the shelf)`,
                 }
               : null
           }
@@ -164,7 +164,7 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
         const db = run.level().toFixed(1)
         if (!which) return ''
         return run.lastCorrect() === true
-          ? `Right — the ${which} had the weight, a ${db} dB shelf under 120 Hz. The shelf thins.`
+          ? `Right. The ${which} had the weight, a ${db} dB shelf under 120 Hz. The shelf thins.`
           : `It was the ${which}, a ${db} dB shelf under 120 Hz. The shelf thickens.`
       }}
       backLabel="Back to the desk"

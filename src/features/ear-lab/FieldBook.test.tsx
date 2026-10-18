@@ -220,7 +220,7 @@ describe('FieldBookView', () => {
   it('shows the reading and opens Home in the Wild, rated on wild-home only', async () => {
     mount(() => <FieldBookView onBack={() => undefined} />)
     expect(status()).toContain(
-      'C major — 1 landings, 1 phrases, 1 root motions.',
+      'C major: 1 landings, 1 phrases, 1 root motions.',
     )
     fireEvent.click(screen.getByRole('button', { name: /Home in the Wild/ }))
     await vi.advanceTimersByTimeAsync(0)
@@ -231,7 +231,7 @@ describe('FieldBookView', () => {
     expect(layers).toHaveLength(2)
     expect([startS, endS]).toEqual([0, 2])
     fireEvent.click(screen.getByRole('button', { name: /3 Mi$/ }))
-    expect(status()).toContain('Yes — 3 — Mi.')
+    expect(status()).toContain('Yes. 3 (Mi).')
     expect(earPlayerRating('wild-home').attempts).toBe(1)
     expect(earPlayerRating('home').attempts).toBe(0)
     expect(earItemStates()['wild:s1:home:0']).toBeUndefined()
@@ -285,7 +285,7 @@ describe('FieldBookView', () => {
         screen.getByRole('button', { name: new RegExp(`${word}$`) }),
       )
     }
-    expect(status()).toContain('Yes — Do Re Mi.')
+    expect(status()).toContain('Yes. Do Re Mi.')
     expect(earPlayerRating('wild-echo').attempts).toBe(1)
     expect(earPlayerRating('echo').attempts).toBe(0)
   })
@@ -297,9 +297,9 @@ describe('FieldBookView', () => {
     )
     await vi.advanceTimersByTimeAsync(0)
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
-    await reach('The root moved from I — to which degree?')
+    await reach('The root moved from I. To which degree?')
     fireEvent.click(screen.getByRole('button', { name: /V Sol$/ }))
-    expect(status()).toContain('Yes — V.')
+    expect(status()).toContain('Yes. V.')
     expect(earPlayerRating('wild-bassline').attempts).toBe(1)
     expect(earPlayerRating('bassline').attempts).toBe(0)
   })

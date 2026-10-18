@@ -120,7 +120,7 @@ export function SprintCard(props: SprintCardProps): JSX.Element {
       <p class={styles.note}>
         <Show
           when={remaining() > 0}
-          fallback="Done for today — the glass keeps what you earned."
+          fallback="Done for today. The glass keeps what you earned."
         >
           Two slots go to what is neediest, the third rotates. Finish a drill
           anywhere in the Lab and it ticks here.

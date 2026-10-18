@@ -46,7 +46,7 @@ import { useIdentificationController } from './use-identification-controller'
 const MISS = 'miss'
 
 const PULSE_DESCRIPTION =
-  'Four clicks count you in and a bar of onsets sounds. Then it waits: nothing plays until your first tap — pad or Space — which is the first onset, wherever you place it. From there the beat keeps you company and the bar fills left to right. Tap the rest of the call at the same tempo, every onset in order, nothing extra. The reading is the finest subdivision you clear — quarters, eighths, triplets, sixteenths.'
+  'Four clicks count you in and a bar of onsets sounds. Then it waits: nothing plays until your first tap (pad or Space), which is the first onset, wherever you place it. From there the beat keeps you company and the bar fills left to right. Tap the rest of the call at the same tempo, every onset in order, nothing extra. The reading is the finest subdivision you clear: quarters, eighths, triplets, sixteenths.'
 
 export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
@@ -251,13 +251,13 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
         return bar() === 'count' ? 'Count-in…' : 'Listen to the call…'
       case 'answer':
         return tapCount() === 0
-          ? 'Yours — your first tap starts the bar.'
-          : `Tapping — ${tapCount()} so far.`
+          ? 'Yours. Your first tap starts the bar.'
+          : `Tapping: ${tapCount()} so far.`
       case 'reveal': {
         const verdict = take()
         if (!verdict) return ''
-        if (verdict.correct) return 'Clean — every onset met.'
-        if (!begun()) return 'No take — the bar came and went untapped.'
+        if (verdict.correct) return 'Clean. Every onset met.'
+        if (!begun()) return 'No take. The bar came and went untapped.'
         const missed = verdict.met.filter((m) => !m).length
         const parts = []
         if (missed > 0)
@@ -266,10 +266,10 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
           parts.push(
             `${verdict.extras.length} extra tap${verdict.extras.length === 1 ? '' : 's'}`,
           )
-        return `Not quite — ${parts.join(', ')}.`
+        return `Not quite: ${parts.join(', ')}.`
       }
       default:
-        return 'A bar of onsets, then a bar of yours — tap the call back.'
+        return 'A bar of onsets, then a bar of yours. Tap the call back.'
     }
   }
 
@@ -419,8 +419,8 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
             >
               <Show when={isProvisional(result().rating)}>
                 <PlateBadge>
-                  Provisional — settling for {10 - result().rating.attempts}{' '}
-                  more calls
+                  Provisional: settling for {10 - result().rating.attempts} more
+                  calls
                 </PlateBadge>
               </Show>
               <PlateLine>

@@ -44,7 +44,7 @@ import { useIdentificationController } from './use-identification-controller'
 const MISS = 'miss'
 
 const CHART_DESCRIPTION =
-  'The pattern is written on the drum — nothing sounds but the beat. Four clicks count the tempo in, then it waits: nothing plays until your first tap — pad or Space — which is the first written onset, wherever you place it. From there the beat keeps you company and the bar fills left to right. Tap the rest of the chart at the same tempo, every onset in order, nothing extra. Reading, where Pulse is dictation.'
+  'The pattern is written on the drum. Nothing sounds but the beat. Four clicks count the tempo in, then it waits: nothing plays until your first tap (pad or Space), which is the first written onset, wherever you place it. From there the beat keeps you company and the bar fills left to right. Tap the rest of the chart at the same tempo, every onset in order, nothing extra. Reading, where Pulse is dictation.'
 
 export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
@@ -232,16 +232,16 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
   const status = () => {
     switch (phase()) {
       case 'playing':
-        return 'Count-in — read the chart…'
+        return 'Count-in. Read the chart…'
       case 'answer':
         return tapCount() === 0
-          ? 'Yours — your first tap starts the bar.'
-          : `Tapping — ${tapCount()} so far.`
+          ? 'Yours. Your first tap starts the bar.'
+          : `Tapping: ${tapCount()} so far.`
       case 'reveal': {
         const verdict = take()
         if (!verdict) return ''
-        if (verdict.correct) return 'Clean — every onset met.'
-        if (!begun()) return 'No take — the bar came and went untapped.'
+        if (verdict.correct) return 'Clean. Every onset met.'
+        if (!begun()) return 'No take. The bar came and went untapped.'
         const missed = verdict.met.filter((m) => !m).length
         const parts = []
         if (missed > 0)
@@ -250,10 +250,10 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
           parts.push(
             `${verdict.extras.length} extra tap${verdict.extras.length === 1 ? '' : 's'}`,
           )
-        return `Not quite — ${parts.join(', ')}.`
+        return `Not quite: ${parts.join(', ')}.`
       }
       default:
-        return 'A written bar over the click — tap it at sight.'
+        return 'A written bar over the click. Tap it at sight.'
     }
   }
 
@@ -393,8 +393,8 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
             >
               <Show when={isProvisional(result().rating)}>
                 <PlateBadge>
-                  Provisional — settling for {10 - result().rating.attempts}{' '}
-                  more charts
+                  Provisional: settling for {10 - result().rating.attempts} more
+                  charts
                 </PlateBadge>
               </Show>
               <PlateLine>
