@@ -15,7 +15,7 @@
 // (where the voice flips), then a break (where the sound stopped), then a
 // top that fell short or overshot (Pro), then the timing, then praise.
 
-import type { GlideKept, GlidePlan, } from '@/components/room-kit/glide/glide-room-contract'
+import type { GlideKept, GlideLine, GlidePlan, } from '@/components/room-kit/glide/glide-room-contract'
 import { COUNT_IN_TONE_SEC } from '@/components/room-kit/glide/glide-room-contract'
 import type { GlideArchHeard, GlideRecords, } from '@/components/room-kit/glide/glide-run'
 import { countNear, glideArchHeard, keepGlideRun, missedTop, noteName, timingVerdict, } from '@/components/room-kit/glide/glide-run'
@@ -26,7 +26,7 @@ import { lipRollPath } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import type { GlideTargets } from '@/lib/glide/glide-targets'
 import { lipBest, recordLipBest, rememberLipNote, } from '@/stores/lip-roll-store'
-import type { LipFields, LipMoment } from './merc-lines'
+import type { LipMoment } from './merc-lines'
 
 // The room's tones, as long as every glide room's.
 export {
@@ -58,10 +58,7 @@ export function planLipRun(fit: GlideTargets, preset: GlidePreset): LipPlan {
 }
 
 /** The line a run opens with, before the first wave. */
-export function introLine(plan: LipPlan | null): {
-  moment: LipMoment
-  fields: LipFields
-} {
+export function introLine(plan: LipPlan | null): GlideLine<LipMoment> {
   if (plan === null || plan.source === 'preset') {
     return { moment: 'introAny', fields: {} }
   }
@@ -104,7 +101,7 @@ export function waveLine(
   preset: GlidePreset,
   next: number,
   top: number,
-): { moment: LipMoment; fields: LipFields } {
+): GlideLine<LipMoment> {
   if (!heard.voiced) return { moment: 'tip', fields: {} }
   if (heard.jumpNote !== null) {
     return { moment: 'jump', fields: { note: noteName(heard.jumpNote) } }
@@ -221,7 +218,7 @@ export function resultLine(
   result: GlideResult,
   summary: LipSummary,
   preset: GlidePreset,
-): { moment: LipMoment; fields: LipFields } {
+): GlideLine<LipMoment> {
   const pct = { pct: `${summary.litPct}%` }
   const clean =
     summary.jumps === 0 &&

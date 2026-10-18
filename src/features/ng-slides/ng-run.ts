@@ -14,7 +14,7 @@
 // stepping), then a break, then a top that fell short or overshot (Pro),
 // then the timing, then praise.
 
-import type { GlideKept, GlidePlan, } from '@/components/room-kit/glide/glide-room-contract'
+import type { GlideKept, GlideLine, GlidePlan, } from '@/components/room-kit/glide/glide-room-contract'
 import { COUNT_IN_TONE_SEC } from '@/components/room-kit/glide/glide-room-contract'
 import type { GlideArchHeard, GlideRecords, } from '@/components/room-kit/glide/glide-run'
 import { countNear, glideArchHeard, keepGlideRun, missedTop, noteName, timingVerdict, } from '@/components/room-kit/glide/glide-run'
@@ -25,7 +25,7 @@ import { ngSlidesPath } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import type { GlideTargets } from '@/lib/glide/glide-targets'
 import { ngBest, recordNgBest, rememberNgNote } from '@/stores/ng-slides-store'
-import type { NgFields, NgMoment } from './merc-lines'
+import type { NgMoment } from './merc-lines'
 
 // The room's tones, as long as every glide room's.
 export {
@@ -52,10 +52,7 @@ export function planNgRun(fit: GlideTargets, preset: GlidePreset): NgPlan {
 }
 
 /** The line a run opens with, before the first slide. */
-export function introLine(plan: NgPlan | null): {
-  moment: NgMoment
-  fields: NgFields
-} {
+export function introLine(plan: NgPlan | null): GlideLine<NgMoment> {
   if (plan === null || plan.source === 'preset') {
     return { moment: 'introAny', fields: {} }
   }
@@ -93,7 +90,7 @@ export function slideLine(
   preset: GlidePreset,
   next: number,
   top: number,
-): { moment: NgMoment; fields: NgFields } {
+): GlideLine<NgMoment> {
   const nextNote = { note: noteName(next) }
   if (!heard.voiced) return { moment: 'silent', fields: nextNote }
   if (heard.jumpNote !== null) {
@@ -176,7 +173,7 @@ export function resultLine(
   result: GlideResult,
   summary: NgSummary,
   preset: GlidePreset,
-): { moment: NgMoment; fields: NgFields } {
+): GlideLine<NgMoment> {
   const pct = { pct: `${summary.litPct}%` }
   const clean =
     summary.jumps === 0 &&

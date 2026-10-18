@@ -12,7 +12,7 @@
 // what the voice did and what to do about it. Merc speaks between slides
 // only, never while the singer slides.
 
-import type { GlideLineFields, GlideLines, } from '@/components/room-kit/glide/glide-room-contract'
+import type { GlideLines } from '@/components/room-kit/glide/glide-room-contract'
 import type { LineTable } from '@/components/room-kit/room-lines'
 import { createRoomLines } from '@/components/room-kit/room-lines'
 
@@ -132,9 +132,6 @@ export const NG_LINES: LineTable<NgMoment> = {
     },
   ],
 }
-
-/** What a line's placeholders become. */
-export type NgFields = GlideLineFields
 
 export type NgLines = GlideLines<NgMoment>
 
