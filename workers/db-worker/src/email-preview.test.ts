@@ -59,6 +59,14 @@ describe('the mail preview route', () => {
       'purchase-offer',
       'withdrawal',
       'withdrawal-by-hand',
+      'sign-in-code',
+      'sign-up-code',
+      'password-reset',
+      'newsletter',
+      'notice-security',
+      'notice-legal',
+      'notice-account',
+      'notice-test',
     ]) {
       expect(html).toContain(`?mail=${id}&amp;app=`)
     }
@@ -125,6 +133,6 @@ describe('the mail preview route', () => {
   })
 
   it('says so when the mail does not exist', () => {
-    expect(get('?mail=newsletter')?.status).toBe(404)
+    expect(get('?mail=no-such-mail')?.status).toBe(404)
   })
 })

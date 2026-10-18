@@ -124,7 +124,8 @@ const item = {
   cta: 'Open it',
 }
 
-/** Every preview, plus each renderer called directly. */
+/** Every preview, plus each renderer called directly with what no preview
+ *  shows: no name, and an item without a call to action. */
 async function everyMail(): Promise<[string, string][]> {
   const previews = await Promise.all(
     PREVIEW_MAIL_IDS.map(
