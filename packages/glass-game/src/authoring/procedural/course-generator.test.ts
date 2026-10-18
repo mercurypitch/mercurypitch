@@ -270,4 +270,30 @@ describe('generateProceduralCourse', () => {
       ).toEqual([])
     }
   })
+
+  it('stiches compound multi-mechanic set-piece chunks with zero static or swept-volume overlaps', async () => {
+    const {
+      createArrivalChunk,
+      createFrostRaftTransferChunk,
+      createCrackingSpiralChunk,
+      createTwinGlideCrossingChunk,
+      createFinalePavilionChunk,
+    } = await import('./chunk-library.ts')
+    const { hasAssembledPlatformOverlap, stitchChunks } = await import(
+      './chunk-stitcher.ts'
+    )
+
+    const stitched = stitchChunks([
+      createArrivalChunk('first-arc-home'),
+      createFrostRaftTransferChunk('frt1', 1.5),
+      createCrackingSpiralChunk('csp1', 'east', 1.5, 0.48),
+      createTwinGlideCrossingChunk('tgc1', 1.6),
+      createCrackingSpiralChunk('csp2', 'west', 1.5, -0.36),
+      createFinalePavilionChunk('fin1'),
+    ])
+
+    expect(hasAssembledPlatformOverlap(stitched.platforms)).toBe(false)
+    expect(stitched.cameraSections.length).toBe(6)
+    expect(stitched.platforms.length).toBeGreaterThanOrEqual(30)
+  })
 })

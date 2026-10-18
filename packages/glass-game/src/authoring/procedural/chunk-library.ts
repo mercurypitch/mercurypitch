@@ -1390,3 +1390,261 @@ export function createCrystalCrossroadsChunk(
   }
 }
 
+/** Chunk 17: Frost-to-Raft Transfer — low-friction frost runway launching onto a diagonal aurora ferry and cracking landing stone */
+export function createFrostRaftTransferChunk(
+  idSuffix: string,
+  warningSeconds = 1.5,
+): ProceduralChunk {
+  const platforms: ChunkPlatform[] = [
+    {
+      localId: `frt-dep-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.36 },
+    },
+    {
+      localId: `frt-frost1-${idSuffix}`,
+      profileId: 'frost-lily',
+      center: { x: -0.45, y: 0.08, z: 2.38 },
+    },
+    {
+      localId: `frt-frost2-${idSuffix}`,
+      profileId: 'frost-lily',
+      center: { x: -0.45, y: 0.16, z: 5.14 },
+    },
+    {
+      localId: `frt-raft-${idSuffix}`,
+      profileId: 'aurora-glide',
+      center: { x: -0.45, y: 0.24, z: 7.65 },
+      behavior: {
+        kind: 'glide',
+        translation: { x: 0.9, y: 0.24, z: 2.2 },
+        travelSeconds: 3.2,
+        dwellSeconds: 1.2,
+      },
+    },
+    {
+      localId: `frt-hex-${idSuffix}`,
+      profileId: 'rose-hex-crumble',
+      center: { x: 0.45, y: 0.48, z: 11.92 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    {
+      localId: `frt-arr-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.54, z: 13.5 },
+    },
+  ]
+
+  return {
+    id: `chunk-frost-raft-${idSuffix}`,
+    kind: 'frost-raft-transfer',
+    entrySocket: {
+      id: 'entry',
+      position: { x: 0, y: 0, z: 0.0 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    exitSocket: {
+      id: 'exit',
+      position: { x: 0, y: 0.54, z: 13.86 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    platforms,
+    gaps: [],
+    cameraSection: {
+      localId: `cam-frt-${idSuffix}`,
+      platformLocalIds: platforms.map((p) => p.localId),
+      lookFromPlatformLocalId: platforms[0].localId,
+      lookToPlatformLocalId: platforms[platforms.length - 1].localId,
+    },
+  }
+}
+
+/** Chunk 18: Twin Glide Crossing — counter-sweeping aurora ferries bridged by a central amethyst crackle pivot */
+export function createTwinGlideCrossingChunk(
+  idSuffix: string,
+  warningSeconds = 1.6,
+): ProceduralChunk {
+  const platforms: ChunkPlatform[] = [
+    {
+      localId: `tgc-dep-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.36 },
+    },
+    {
+      localId: `tgc-raft1-${idSuffix}`,
+      profileId: 'aurora-glide',
+      center: { x: -0.6, y: 0.08, z: 2.13 },
+      behavior: {
+        kind: 'glide',
+        translation: { x: 1.2, y: 0.2, z: 1.8 },
+        travelSeconds: 3.0,
+        dwellSeconds: 1.1,
+      },
+    },
+    {
+      localId: `tgc-pivot-${idSuffix}`,
+      profileId: 'amethyst-crackle',
+      center: { x: 0.6, y: 0.28, z: 6.08 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    {
+      localId: `tgc-raft2-${idSuffix}`,
+      profileId: 'aurora-glide',
+      center: { x: 0.6, y: 0.28, z: 8.23 },
+      behavior: {
+        kind: 'glide',
+        translation: { x: -1.2, y: 0.2, z: 1.8 },
+        travelSeconds: 3.0,
+        dwellSeconds: 1.1,
+      },
+    },
+    {
+      localId: `tgc-arr1-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.48, z: 11.8 },
+    },
+    {
+      localId: `tgc-arr2-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.48, z: 12.52 },
+    },
+  ]
+
+  return {
+    id: `chunk-twin-glide-${idSuffix}`,
+    kind: 'twin-glide-crossing',
+    entrySocket: {
+      id: 'entry',
+      position: { x: 0, y: 0, z: 0.0 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    exitSocket: {
+      id: 'exit',
+      position: { x: 0, y: 0.48, z: 12.88 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    platforms,
+    gaps: [],
+    cameraSection: {
+      localId: `cam-tgc-${idSuffix}`,
+      platformLocalIds: platforms.map((p) => p.localId),
+      lookFromPlatformLocalId: platforms[0].localId,
+      lookToPlatformLocalId: platforms[platforms.length - 1].localId,
+    },
+  }
+}
+
+/** Chunk 19: Cracking Spiral Turnaround — 90-degree turning staircase combining amethyst/rose crackle tiles and frost runway */
+export function createCrackingSpiralChunk(
+  idSuffix: string,
+  turn: 'east' | 'west',
+  warningSeconds = 1.5,
+  elevationDelta = 0.48,
+): ProceduralChunk {
+  const sign = turn === 'east' ? 1 : -1
+  const landingTurns = turn === 'east' ? 1 : 3
+  const y1 = Number((elevationDelta * 0.2).toFixed(3))
+  const y2 = Number((elevationDelta * 0.4).toFixed(3))
+  const y3 = Number((elevationDelta * 0.6).toFixed(3))
+  const y4 = Number((elevationDelta * 0.8).toFixed(3))
+  const y5 = Number(elevationDelta.toFixed(3))
+
+  const platforms: ChunkPlatform[] = [
+    {
+      localId: `csp-p1-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.36 },
+    },
+    {
+      localId: `csp-p2-${idSuffix}`,
+      profileId: 'amethyst-crackle',
+      center: { x: Number((sign * 0.65).toFixed(3)), y: y1, z: 2.02 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    {
+      localId: `csp-p3-${idSuffix}`,
+      profileId: 'rose-hex-crumble',
+      center: { x: Number((sign * 1.95).toFixed(3)), y: y2, z: 3.98 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    {
+      localId: `csp-p4-${idSuffix}`,
+      profileId: 'frost-lily',
+      center: { x: Number((sign * 4.27).toFixed(3)), y: y3, z: 4.49 },
+      quarterTurns: landingTurns,
+    },
+    {
+      localId: `csp-p5-${idSuffix}`,
+      profileId: 'rose-crackle',
+      center: { x: Number((sign * 6.67).toFixed(3)), y: y4, z: 4.49 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    {
+      localId: `csp-p6-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: Number((sign * 8.33).toFixed(3)), y: y5, z: 4.49 },
+      quarterTurns: landingTurns,
+    },
+  ]
+
+  return {
+    id: `chunk-spiral-${idSuffix}`,
+    kind: 'cracking-spiral',
+    entrySocket: {
+      id: 'entry',
+      position: { x: 0, y: 0, z: 0.0 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    exitSocket: {
+      id: 'exit',
+      position: { x: Number((sign * 8.69).toFixed(3)), y: y5, z: 4.49 },
+      facing: turn,
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    platforms,
+    gaps: [],
+    cameraSection: {
+      localId: `cam-csp-${idSuffix}`,
+      platformLocalIds: platforms.map((p) => p.localId),
+      lookFromPlatformLocalId: platforms[0].localId,
+      lookToPlatformLocalId: platforms[platforms.length - 1].localId,
+    },
+  }
+}
+

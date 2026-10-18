@@ -8,16 +8,19 @@ import {
   createArrivalChunk,
   createAuroraGlideChunk,
   createCascadingDropChunk,
+  createCrackingSpiralChunk,
   createCrystalCrossroadsChunk,
   createDiagonalGlideChunk,
   createFinalePavilionChunk,
   createFrostGlissadeChunk,
+  createFrostRaftTransferChunk,
   createHexCascadeChunk,
   createScrollBridgeChunk,
   createSkyElevatorGlideChunk,
   createSlalomZigzagChunk,
   createSplitForkChunk,
   createTerracedAscentChunk,
+  createTwinGlideCrossingChunk,
   createViaductSCurveChunk,
   createVocalSanctuaryChunk,
   type VocalSanctuaryOptions,
@@ -203,6 +206,21 @@ export function generateProceduralCourse(
           ],
           preferredTurns: ['east', 'none', 'west'],
         },
+        {
+          traversal: [
+            createFrostRaftTransferChunk(tagA, hexWarningTime),
+            createCrackingSpiralChunk(tagB, 'east', hexWarningTime, 0.48),
+            createScrollBridgeChunk(tagC, preset),
+          ],
+          preferredTurns: ['none', 'west', 'east'],
+        },
+        {
+          traversal: [
+            createTwinGlideCrossingChunk(tagA, hexWarningTime),
+            createCrackingSpiralChunk(tagB, 'west', hexWarningTime, 0.48),
+          ],
+          preferredTurns: ['none', 'east', 'west'],
+        },
       ]
     }
 
@@ -265,6 +283,20 @@ export function generateProceduralCourse(
           ],
           preferredTurns: ['none', 'west', 'east'],
         },
+        {
+          traversal: [
+            createCrackingSpiralChunk(tagA, 'east', hexWarningTime, climbDelta),
+            createFrostRaftTransferChunk(tagB, hexWarningTime),
+          ],
+          preferredTurns: ['none', 'west', 'east'],
+        },
+        {
+          traversal: [
+            createTwinGlideCrossingChunk(tagA, hexWarningTime),
+            createArcedViaductChunk(tagB, 'west', hexWarningTime, climbDelta),
+          ],
+          preferredTurns: ['none', 'east', 'west'],
+        },
       ]
     }
 
@@ -297,6 +329,13 @@ export function generateProceduralCourse(
           createCrystalCrossroadsChunk(tagB, preset, hexWarningTime),
         ],
         preferredTurns: ['east', 'none', 'west'],
+      },
+      {
+        traversal: [
+          createCrackingSpiralChunk(tagA, 'east', hexWarningTime, -0.36),
+          createTwinGlideCrossingChunk(tagB, hexWarningTime),
+        ],
+        preferredTurns: ['none', 'west', 'east'],
       },
     ]
   }
