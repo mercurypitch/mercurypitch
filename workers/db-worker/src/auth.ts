@@ -27,9 +27,10 @@ import { revokeAndForgetAppleGrant } from './apple-auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
 import { createAuthSession, endSession, listSessions, renewSession, sessionAlive, touchSession, } from './auth-sessions'
-import { maskAddresses, sendPasswordReset } from './email'
+import { maskAddresses } from './email'
 import { sendLoginCode, sendSignUpCode } from './email-code'
 import type { MailOrigins } from './email-layout'
+import { sendPasswordReset } from './email-password-reset'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 import { shouldTouchLastActive } from './last-active'
 import type { SignUpFrom } from './launch-offer'
@@ -1621,6 +1622,7 @@ async function sendPasswordResetEmail(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
       user.email,
       {
+        ...mailOrigins(returnTo, env),
         displayName: profile?.displayName,
         resetUrl,
         ttlHours: RESET_TOKEN_TTL_MS / 3_600_000,

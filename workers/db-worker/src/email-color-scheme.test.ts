@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Env } from './auth'
-import { AUTO_LINK_STYLE, COLOR_SCHEME_META, renderAccountNotice, renderNewsletterIssue, renderPasswordReset, } from './email'
+import { AUTO_LINK_STYLE, COLOR_SCHEME_META, renderAccountNotice, renderNewsletterIssue, } from './email'
 import { renderLoginCode, renderSignUpCode } from './email-code'
 import type { MailOrigins } from './email-layout'
+import { renderPasswordReset } from './email-password-reset'
 import { EMAIL_PREVIEW_PATH, handleEmailPreview, PREVIEW_MAIL_IDS, } from './email-preview'
 
 // Every mail is drawn dark and declares "light only" (see COLOR_SCHEME_META).
@@ -133,6 +134,7 @@ async function everyMail(): Promise<[string, string][]> {
     [
       'password reset',
       renderPasswordReset({
+        ...ORIGINS,
         resetUrl: 'https://mercurypitch.com/#/reset-password?token=t',
         ttlHours: 1,
       }).html,
