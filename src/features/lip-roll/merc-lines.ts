@@ -13,7 +13,7 @@
 // not the lips, so no line claims to hear the buzz. Merc speaks between
 // waves only, never while the singer rides one.
 
-import type { GlideLineFields, GlideLines, } from '@/components/room-kit/glide/glide-room-contract'
+import type { GlideLines } from '@/components/room-kit/glide/glide-room-contract'
 import type { LineTable } from '@/components/room-kit/room-lines'
 import { createRoomLines } from '@/components/room-kit/room-lines'
 
@@ -143,9 +143,6 @@ export const LIP_LINES: LineTable<LipMoment> = {
     },
   ],
 }
-
-/** What a line's placeholders become. */
-export type LipFields = GlideLineFields
 
 export type LipLines = GlideLines<LipMoment>
 

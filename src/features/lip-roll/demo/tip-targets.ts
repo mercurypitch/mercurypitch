@@ -17,12 +17,13 @@
 // over the time ahead, from the controller's mercAhead), not only of
 // where he is. No tooltip covers the room's controls (Skip, "?", the
 // take's pill, the progress bar, the mic and its ring), Merc's body, his
-// line, the chip, or the water it explains.
+// line, the chip, or the water it explains. What every room's tooltips
+// share (the room measured off the layer, the gaps, the mic's target, a
+// lit stretch of the world) is the demo kit's (demo-kit/tip-target.ts).
 
-import type { Point, Rect, Side } from '@/components/demo-kit/tip-place'
-import { inflate } from '@/components/demo-kit/tip-place'
+import type { Point, Rect } from '@/components/demo-kit/tip-place'
 import type { TipAim, TipTarget } from '@/components/demo-kit/tip-target'
-import { roomRects } from '@/components/demo-kit/tip-target'
+import { aimIn, controlsClear, micTarget, partOf, present, roomInside, roomRects, stretchOf, stretchTarget, } from '@/components/demo-kit/tip-target'
 import { PLATES, WAVE } from '../bay-geometry'
 import type { DemoTarget } from './demo-cues'
 
@@ -53,36 +54,27 @@ export interface DemoScene {
   readonly controls: readonly Rect[]
 }
 
-/** The arrow keeps this far off what it points at. */
-const ARROW_GAP = 4
-/** The mic's pulse ring reaches this far past the disc. */
-const MIC_RING = 14
-/** A tooltip keeps this far from the demo's own controls. */
-const CONTROL_GAP = 8
 /** The water lit behind the voice and a little ahead of it, W. */
 const VOICE_BEHIND_W = 0.12
 const VOICE_AHEAD_W = 0.02
 /** The top: the flat top and a little either side, of a. */
 const TOP_REACH = WAVE.f + 0.12
-/** The water glows this far past the crest line. */
-const WATER_GLOW = 6
 /**
  * Merc's drawn body and his buzz in his canvas, as the room's own drive
  * measured them (0.06 to 0.87 of its width, 0.19 to 0.90 of its height).
  */
 const BODY = { x0: 0.06, x1: 0.87, y0: 0.19, y1: 0.9 } as const
-
-const present = (rects: readonly (Rect | null)[]): Rect[] =>
-  rects.filter((rect): rect is Rect => rect !== null)
+/** The same, as a part of his canvas. */
+const BODY_PART: Rect = {
+  x: BODY.x0,
+  y: BODY.y0,
+  w: BODY.x1 - BODY.x0,
+  h: BODY.y1 - BODY.y0,
+}
 
 /** Merc's body inside his canvas, which is mostly clear over his head. */
 export function mercBody(canvas: Rect): Rect {
-  return {
-    x: canvas.x + canvas.w * BODY.x0,
-    y: canvas.y + canvas.h * BODY.y0,
-    w: canvas.w * (BODY.x1 - BODY.x0),
-    h: canvas.h * (BODY.y1 - BODY.y0),
-  }
+  return partOf(canvas, BODY_PART)
 }
 
 /** The water from x0 to x1 (px), crest line to root, kept on the screen. */
@@ -92,10 +84,7 @@ function waterBand(
   x0: number,
   x1: number,
 ): Rect | null {
-  const left = Math.max(scene.room.x, x0)
-  const right = Math.min(scene.room.x + scene.room.w, x1)
-  if (right - left < 4) return null
-  return { x: left, y: wave.top, w: right - left, h: wave.root - wave.top }
+  return stretchOf(scene.room, x0, x1, wave.top, wave.root)
 }
 
 /**
@@ -104,26 +93,15 @@ function waterBand(
  * tooltip is up.
  */
 function keepClear(scene: DemoScene): Rect[] {
-  return present([
-    ...scene.controls.map((rect) => inflate(rect, CONTROL_GAP)),
-    scene.mic === null ? null : inflate(scene.mic, MIC_RING),
-    scene.chip,
-    scene.bubble,
-    scene.merc === null ? null : mercBody(scene.merc),
+  return [
+    ...controlsClear(scene.controls, scene.mic),
+    ...present([
+      scene.chip,
+      scene.bubble,
+      scene.merc === null ? null : mercBody(scene.merc),
+    ]),
     ...scene.lane.map(mercBody),
-  ])
-}
-
-/** Around a box: the point on each side the arrow touches. */
-function around(box: Rect, gap: number): Partial<Record<Side, Point>> {
-  const midX = box.x + box.w / 2
-  const midY = box.y + box.h / 2
-  return {
-    above: { x: midX, y: box.y - gap },
-    below: { x: midX, y: box.y + box.h + gap },
-    left: { x: box.x - gap, y: midY },
-    right: { x: box.x + box.w + gap, y: midY },
-  }
+  ]
 }
 
 /**
@@ -135,40 +113,20 @@ function waterTarget(
   band: Rect | null,
   whole: Rect | null,
 ): TipTarget | null {
-  if (band === null) return null
-  return {
-    anchors: around(band, ARROW_GAP),
-    sides: ['above', 'below'],
-    avoid: [band, ...keepClear(scene)],
-    prefer: present([whole]),
-    glow: { kind: 'light', rect: inflate(band, WATER_GLOW) },
-  }
-}
-
-/** Beside the mic, clear of its ring and of the pill over it. */
-function micTarget(scene: DemoScene): TipTarget | null {
-  const mic = scene.mic
-  if (mic === null) return null
-  const ring = inflate(mic, MIC_RING)
-  const midY = mic.y + mic.h / 2
-  return {
-    anchors: {
-      above: { x: mic.x + mic.w / 2, y: ring.y },
-      right: { x: ring.x + ring.w, y: midY },
-      left: { x: ring.x, y: midY },
-    },
-    sides: ['above', 'right', 'left'],
-    avoid: present([ring, ...scene.controls]),
-    prefer: present([scene.merc === null ? null : mercBody(scene.merc)]),
-    glow: null,
-  }
+  return stretchTarget(band, whole, keepClear(scene))
 }
 
 export function tipTarget(
   target: DemoTarget,
   scene: DemoScene,
 ): TipTarget | null {
-  if (target === 'mic') return micTarget(scene)
+  if (target === 'mic') {
+    // Beside the mic, clear of its ring and of the pill over it.
+    return micTarget(scene.mic, {
+      avoid: scene.controls,
+      prefer: present([scene.merc === null ? null : mercBody(scene.merc)]),
+    })
+  }
   const wave = scene.wave
   if (wave === null) return null
   const foot = wave.crestX - wave.halfWidth
@@ -233,23 +191,11 @@ export function measureLipScene(
   lane: readonly Rect[] = [],
 ): DemoScene | null {
   const rects = roomRects(layer)
-  const root = layer.parentElement
-  if (rects === null || root === null) return null
-  const box = layer.getBoundingClientRect()
-  const origin = { x: box.left, y: box.top }
+  if (rects === null) return null
   const id = rects.byTestId
-  // Drawn full-bleed, the room runs under the status bar and the floating
-  // bar; its padding keeps its controls clear of them, and the tooltips.
-  const style = window.getComputedStyle(root)
-  const top = Number.parseFloat(style.paddingTop) || 0
-  const bottom = Number.parseFloat(style.paddingBottom) || 0
   return {
-    room: {
-      ...rects.room,
-      y: top,
-      h: Math.max(0, rects.room.h - top - bottom),
-    },
-    wave: waveMark(root, origin),
+    room: roomInside(rects),
+    wave: waveMark(rects.root, rects.origin),
     merc: id('lip-merc'),
     lane,
     bubble: id('lip-bubble'),
@@ -270,8 +216,7 @@ export function aimLipTip(
   layer: HTMLElement,
   lane: readonly Rect[] = [],
 ): TipAim | null {
-  const scene = measureLipScene(layer, lane)
-  const aim = scene === null ? null : tipTarget(target, scene)
-  if (scene === null || aim === null) return null
-  return { target: aim, bounds: scene.room }
+  return aimIn(measureLipScene(layer, lane), (scene) =>
+    tipTarget(target, scene),
+  )
 }

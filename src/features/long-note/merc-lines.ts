@@ -237,13 +237,12 @@ export interface MercLineSelector {
   next(moment: LongNoteMoment, note: string): string
 }
 
-/** Merc's lines for Long note, from this table unless a test brings its own. */
+/** Merc's lines for Long note, from this table. */
 export function createMercLineSelector(
   random: () => number = Math.random,
-  lines: LineTable<LongNoteMoment> = MERC_LINES,
 ): MercLineSelector {
   const roomLines = createRoomLines<LongNoteMoment, { note?: string }>(
-    lines,
+    MERC_LINES,
     random,
   )
   return { next: (moment, note) => roomLines.next(moment, { note }) }
