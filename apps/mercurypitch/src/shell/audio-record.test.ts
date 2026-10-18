@@ -5,15 +5,17 @@
 // What the census does not count, recorded for a tester who walks through
 // a scenario and sends the report: a room entered and left, every change
 // to the page's session type, the volume notice shown or gone with the
-// reading behind it, a demo's start and stop, and the app going behind and
-// coming back. WebKit's `navigator.audioSession` is stood in for.
+// reading behind it, a demo's start and stop, the app going behind and
+// coming back, and iOS calling it inactive and active. WebKit's
+// `navigator.audioSession` and the platform's app state are stood in for.
 
 import { resetPageAudioSessionForTests } from '@irchiinnuss/mobile-runtime/page-audio-session'
+import type { AppLifecycleHandler, AppLifecycleState, } from '@irchiinnuss/mobile-runtime/platform'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoomOutputReading } from '@/components/room-kit/room-output'
 import { audioDiagnosticEntries, formatAudioDiagnostic, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
 import type { NativeAudioOutputReading } from '@/stores/native-shell-store'
-import { LEVEL_POLL_MS, resetAudioCensusForTests, SOUND_GAP_MS, } from './audio-census'
+import { installAudioCensus, LEVEL_POLL_MS, OUTPUT_SETTLE_MS, resetAudioCensusForTests, SOUND_GAP_MS, } from './audio-census'
 import { installAudioRecord } from './audio-record'
 import type { RoomVisitOptions } from './room-visit'
 import { beginRoomVisit } from './room-visit'
@@ -23,6 +25,20 @@ let type = 'auto'
 let sessionTarget: EventTarget = new EventTarget()
 const stops: (() => void)[] = []
 let tellNotice: (notice: RoomVolumeNotice) => void = () => undefined
+const appHandlers = new Set<AppLifecycleHandler>()
+
+/** The platform's app state, as the record and a visit listen for it. */
+function appState(handler: AppLifecycleHandler): () => void {
+  appHandlers.add(handler)
+  return () => {
+    appHandlers.delete(handler)
+  }
+}
+
+/** iOS calling the app active, or not: 'background' is willResignActive. */
+function tellApp(state: AppLifecycleState): void {
+  for (const handler of [...appHandlers]) handler(state)
+}
 
 /** WebKit's session for the page, as an iPhone has it. */
 function giveThePageASession(): EventTarget {
@@ -54,6 +70,7 @@ function install(roomLevels?: () => readonly RoomOutputReading[]): void {
           tellNotice = () => undefined
         }
       },
+      appState,
     }),
   )
 }
@@ -275,6 +292,57 @@ describe('the app', () => {
       'app foreground',
     ])
   })
+
+  it('records iOS calling it inactive and active, with the output read around each', async () => {
+    // Control Center pulled over a room: iOS calls the app inactive, the
+    // page stays in front and the room keeps its type, so no `background`
+    // line comes, and the reads show the level the slider left.
+    vi.useFakeTimers()
+    giveThePageASession()
+    let volume = 0.5
+    const reading = (): NativeAudioOutputReading => ({
+      volume,
+      volumeKnown: 'live',
+      step: null,
+      steps: null,
+      route: 'speaker',
+      outputs: [{ type: 'Speaker', name: 'Speaker' }],
+      detail: {},
+      reason: null,
+    })
+    installAudioCensus({
+      win: window,
+      output: { read: async () => reading(), watch: () => () => undefined },
+    })
+    install()
+    const leave = visit('long-note', { ...on, appState })
+    tellApp('background')
+    await vi.advanceTimersByTimeAsync(0)
+    volume = 0.8
+    tellApp('active')
+    await vi.advanceTimersByTimeAsync(OUTPUT_SETTLE_MS)
+    leave()
+
+    expect(lines().filter((line) => /^(app|room) /u.test(line))).toEqual([
+      'app launch page=visible',
+      'room enter room=long-note oneVolume=on asks=play-and-record',
+      'app inactive',
+      'app active',
+      expect.stringMatching(/^room leave room=long-note /u),
+    ])
+    expect(
+      audioDiagnosticEntries()
+        .filter((entry) => entry.source === 'output' && entry.event === 'read')
+        .map((entry) => entry.detail ?? {})
+        .filter((detail) => String(detail.at).startsWith('app '))
+        .map((detail) => [detail.at, detail.volume, detail.pageSession]),
+    ).toEqual([
+      ['app inactive', 0.5, 'play-and-record'],
+      ['app active', 0.8, 'play-and-record'],
+      ['app inactive, settled', 0.8, 'play-and-record'],
+      ['app active, settled', 0.8, 'play-and-record'],
+    ])
+  })
 })
 
 describe('what the rooms sent', () => {
@@ -326,6 +394,7 @@ describe('uninstalling', () => {
     const before = audioDiagnosticEntries().length
     visit('echo', on)()
     hide(true)
+    tellApp('background')
     sessionTarget.dispatchEvent(new Event('statechange'))
     expect(audioDiagnosticEntries()).toHaveLength(before)
   })

@@ -20,12 +20,17 @@
 //   notice    the volume notice shown or gone, with the reading and the
 //             cause that decided it (RoomVolumeHint.tsx)
 //   demo      each turn of a room's demo, read off the room's `data-demo`
-//   app       launch, and the app going behind and coming back
+//   app       launch; the page going behind and coming back (`background`,
+//             `foreground`); and iOS's own word on the app (`inactive`,
+//             `active`). Control Center and the notification shade make
+//             the app inactive and leave the page in front, so a pull over
+//             a room shows in this line alone
 //
 // As a room opens, closes, goes away and comes back, as the app comes back
-// and as WebKit's session changes state, the phone's output is read now
-// and once settled (the census's readOutputAround), since each is a moment
-// WebKit may move the sound to another of iOS's stored volumes.
+// or iOS calls it inactive or active, and as WebKit's session changes
+// state, the phone's output is read now and once settled (the census's
+// readOutputAround), since each is a moment WebKit may move the sound to
+// another of iOS's stored volumes, or Control Center's slider may move it.
 //
 // CHEAP. Nothing runs while nothing happens. The rooms' output is polled
 // (the census's watchRoomLevels) and a room's demo watched only while a
@@ -37,6 +42,8 @@
 
 import type { PageAudioSessionChange } from '@irchiinnuss/mobile-runtime/page-audio-session'
 import { onPageAudioSessionChange } from '@irchiinnuss/mobile-runtime/page-audio-session'
+import type { AppLifecycleHandler } from '@irchiinnuss/mobile-runtime/platform'
+import { onAppState } from '@irchiinnuss/mobile-runtime/platform'
 import type { RoomOutputReading } from '@/components/room-kit/room-output'
 import { audioReporter } from '@/lib/audio-diagnostics'
 import { readOutputAround, watchRoomLevels } from './audio-census'
@@ -54,6 +61,8 @@ export interface AudioRecordOptions {
   readonly roomLevels?: () => readonly RoomOutputReading[]
   /** The volume notice's decisions; RoomVolumeHint's when not given. */
   readonly notices?: Subscribe<RoomVolumeNotice>
+  /** iOS's word on the app, active or not; the platform's when not given. */
+  readonly appState?: (handler: AppLifecycleHandler) => () => void
 }
 
 const appReport = audioReporter('app')
@@ -178,6 +187,15 @@ export function installAudioRecord(
   }
   doc.addEventListener('visibilitychange', visibility)
   stops.push(() => doc.removeEventListener('visibilitychange', visibility))
+  // Apart from the page's: iOS calls the app inactive under Control Center,
+  // where the page never hides and a room keeps its type (room-visit.ts).
+  stops.push(
+    (options.appState ?? onAppState)((state) => {
+      const word = state === 'active' ? 'active' : 'inactive'
+      appReport(word)
+      readOutputAround(`app ${word}`)
+    }),
+  )
 
   stops.push(
     onPageAudioSessionChange((change) =>
