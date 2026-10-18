@@ -109,7 +109,7 @@ export const LESSONS: readonly Lesson[] = [
     title: 'What is a note?',
     short: 'What is a note?',
     topics: ['T01', 'T02'],
-    len: '4:57',
+    len: '5:14',
     ready: true,
     hook: 'If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?',
     sig: 'The pitch line winds into a spiral; the spiral unrolls into the keyboard.',

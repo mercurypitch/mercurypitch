@@ -60,7 +60,7 @@ words, "Why is there no black key between B and C?" (42).
 names), T04 adds cents, and the film refutes two misconceptions, each with a predict, then ends on a
 sung checkpoint and a four-question recap. That sits inside the series' 6 to 9 minutes (MASTER-PLAN
 D6), near the MOOC engagement median of about 6 minutes, and about two minutes longer than Lesson 1
-(4:57), which had one refutation and a single sung gap. Nothing is cut to hit a number: each act is
+(4:57 with its scratch voices, 5:14 with the owner's), which had one refutation and a single sung gap. Nothing is cut to hit a number: each act is
 one idea (rule 8); the round 1 critics' fixes cost about 18 s net, and round 2 took back 4 s with
 three trims that cost no teaching. If the voiced cut runs past 7:00, DECISIONS 56 lists what goes
 first. Voiced with the owner's ElevenLabs voices (17 October 2026), it runs 7:11, at 2.43 words a
