@@ -22,9 +22,11 @@
 //
 // The sky is EchoSky (the plates, the take's clouds, rings, stars and
 // lines, the celebration star), the voice EchoRibbon and Merc the room
-// kit's MercView on the ridge (EchoMerc). The chip, the bubble, the result
-// card, the mic, the result's buttons and the level control are the room
-// kit's; this room brings its world, its words and its test ids.
+// kit's MercView on the ridge (EchoMerc). The page around the sky is the
+// room kit's shell (RoomShell.tsx): the chip, the result, Merc's line, the
+// mic, the level and "?". This room brings its world, its words, its
+// stylesheet and its test ids, the result's accuracy line, and "Hear it
+// again", which only Echo has.
 //
 // "How it works" (demo/) plays over the same room: Merc sings the phrase
 // and sings it back twice through the room's own engine, not like this and
@@ -32,20 +34,15 @@
 // first visit opens on it, and the "?" in the bar plays it again.
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { DemoLayer } from '@/components/demo-kit/DemoLayer'
-import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
+import { createEffect, createMemo, on, Show, untrack } from 'solid-js'
 import { Volume2 } from '@/components/icons'
-import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MercView } from '@/components/room-kit/MercView'
 import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
-import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
-import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
-import { ResultCard, RoomBubble, RoomChip, } from '@/components/room-kit/RoomHeader'
+import { createMeasure, cssPx } from '@/components/room-kit/room-measure'
+import { ResultCard } from '@/components/room-kit/RoomHeader'
+import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, ShellSkip, } from '@/components/room-kit/RoomShell'
 import surface from '@/components/room-kit/RoomSurface.module.css'
-import { UnlockChip } from '@/components/room-kit/UnlockChip'
-import { DEMO_COPY } from './demo/demo-cues'
 import { aimEchoTip } from './demo/tip-targets'
 import { useEchoDemo } from './demo/useEchoDemo'
 import type { CityLightState } from './echo-art'
@@ -82,11 +79,6 @@ interface RoomBox {
   readonly resultClear: number
 }
 
-const px = (style: CSSStyleDeclaration, name: string): number => {
-  const value = Number.parseFloat(style.getPropertyValue(name))
-  return Number.isFinite(value) ? value : 0
-}
-
 /** What the mic says at rest: a tap starts a run. */
 const START_LABEL = 'Start: Merc sings, you sing it back'
 
@@ -110,35 +102,23 @@ export function resultDetail(summary: EchoSummary): string | null {
 export function EchoRoom(props: EchoRoomProps): JSX.Element {
   const room = useEchoController()
   const demo = useEchoDemo(room)
-  const phase = (): string => room.state().phase
-  /** The demo has the room: its controls are out of reach. */
-  const demoBusy = (): boolean => demo.mode() !== 'idle'
-  /**
-   * The demo is singing a take: Merc's bubble and the chip keep quiet, so
-   * the take's pill and the tooltip speak one at a time.
-   */
-  const demoTake = (): boolean => demo.take() !== null
+  const shell = createRoomShell({ ids: 'echo', styles, run: room, demo })
+  const phase = shell.phase
   let rootEl: HTMLDivElement | undefined
-  const [box, setBox] = createSignal<RoomBox | null>(null)
-
-  onMount(() => {
-    const measure = (): void => {
-      if (rootEl === undefined) return
-      const style = window.getComputedStyle(rootEl)
+  const box = createMeasure(
+    () => rootEl,
+    (el): RoomBox => {
+      const style = window.getComputedStyle(el)
       const top = Number.parseFloat(style.paddingTop) || 0
-      setBox({
-        width: rootEl.clientWidth,
-        height: rootEl.clientHeight,
+      return {
+        width: el.clientWidth,
+        height: el.clientHeight,
         top,
-        chipClear: top + px(style, '--echo-chip-clear'),
-        resultClear: top + px(style, '--echo-result-clear'),
-      })
-    }
-    measure()
-    const observer = new ResizeObserver(measure)
-    if (rootEl !== undefined) observer.observe(rootEl)
-    onCleanup(() => observer.disconnect())
-  })
+        chipClear: top + cssPx(style, '--echo-chip-clear'),
+        resultClear: top + cssPx(style, '--echo-result-clear'),
+      }
+    },
+  )
 
   const layout = createMemo((): SkyLayout | null => {
     const b = box()
@@ -234,7 +214,7 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
     room.line() !== '' &&
     phase() !== 'response' &&
     phase() !== 'blocked' &&
-    !demoTake()
+    shell.take() === null
   const showLevel = (): boolean =>
     !room.script.active() &&
     (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
@@ -246,7 +226,7 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
    */
   const said = (): string => {
     // The demo speaks for itself (its layer's region).
-    if (demoBusy() || room.script.active()) return ''
+    if (shell.busy() || room.script.active()) return ''
     if (phase() === 'response') return room.chip() ?? ''
     const summary = phase() === 'result' ? room.summary() : null
     if (summary === null) return room.line()
@@ -254,21 +234,6 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
     return `${landedText(summary)} notes on pitch.${detail === null ? '' : ` ${detail}.`} ${room.line()}`
   }
 
-  // Focus on a control the room takes away goes to the one in its place.
-  const focus = createFocusHandoff()
-  const mainControl = (): HTMLElement | null => {
-    const mode = demo.mode()
-    // The demo's cards take focus themselves.
-    if (mode === 'card' || mode === 'end') return null
-    let id = 'echo-mic'
-    if (mode === 'playing') id = 'echo-demo-skip'
-    else if (phase() === 'result' && !room.script.active()) id = 'echo-again'
-    else if (phase() === 'blocked') id = 'echo-retry'
-    return rootEl?.querySelector<HTMLElement>(`[data-testid="${id}"]`) ?? null
-  }
-  createEffect(
-    on([phase, demo.mode], () => focus.handOff(mainControl), { defer: true }),
-  )
   /** The mic: ready, waiting through Merc's call, or hearing the reply. */
   const micState = (): MicState =>
     echoMicState(room.state().phase, room.script.active())
@@ -281,13 +246,13 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
   }
 
   return (
-    <div
-      ref={rootEl}
+    <RoomShell
+      shell={shell}
+      ref={(el) => (rootEl = el)}
       class={`${styles.room} ${surface.surface} mp-dark-stage`}
-      data-phase={phase()}
-      data-demo={demo.mode()}
-      data-testid="echo-room"
-      onFocusIn={(event) => focus.noteFocus(event)}
+      testId="echo-room"
+      said={said()}
+      aim={(tip, layer) => aimEchoTip(tip.target, layer)}
     >
       <Show when={layout()}>
         {(l) => (
@@ -324,64 +289,32 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
         )}
       </Show>
 
-      <div class={styles.head} data-testid="echo-header" inert={demoBusy()}>
-        <Switch>
-          <Match when={phase() === 'result' ? room.summary() : null}>
-            {(summary) => (
-              <div class={styles.result}>
-                <ResultCard
-                  value={landedText(summary())}
-                  detail="notes on pitch"
-                  testId="echo-result"
-                  detailTestId="echo-result-label"
-                />
-                <Show when={resultDetail(summary())}>
-                  {(detail) => (
-                    <p class={styles.detail} data-testid="echo-result-detail">
-                      {detail()}
-                    </p>
-                  )}
-                </Show>
-              </div>
-            )}
-          </Match>
-          <Match when={phase() !== 'result'}>
-            <div class={styles.chip}>
-              <RoomChip
-                text={demoTake() ? null : room.chip()}
-                testId="echo-chip"
-              />
-            </div>
-          </Match>
-        </Switch>
-        <UnlockChip
-          atResult={phase() === 'result' && !demoBusy()}
-          testId="echo-unlock"
-        />
-      </div>
+      <ShellHead shell={shell} summary={room.summary} chip={room.chip()}>
+        {(summary) => (
+          <div class={styles.result}>
+            <ResultCard
+              value={landedText(summary())}
+              detail="notes on pitch"
+              testId="echo-result"
+              detailTestId="echo-result-label"
+            />
+            <Show when={resultDetail(summary())}>
+              {(detail) => (
+                <p class={styles.detail} data-testid="echo-result-detail">
+                  {detail()}
+                </p>
+              )}
+            </Show>
+          </div>
+        )}
+      </ShellHead>
 
-      <RoomBarEnd>
-        <Show when={showLevel()}>
-          <EchoLevel />
-        </Show>
-        <Show when={demo.canAsk()}>
-          <RoomAsk
-            onAsk={() => demo.ask()}
-            label={DEMO_COPY.ask}
-            testId="echo-ask"
-          />
-        </Show>
-      </RoomBarEnd>
-      <Show when={demo.mode() === 'playing'}>
-        <button
-          type="button"
-          class={styles.skip}
-          onClick={() => demo.skip()}
-          data-testid="echo-demo-skip"
-        >
-          {DEMO_COPY.skip}
-        </button>
-      </Show>
+      <ShellBarEnd
+        shell={shell}
+        showLevel={showLevel()}
+        level={<EchoLevel />}
+      />
+      <ShellSkip shell={shell} />
       <Show when={room.canReplay()}>
         <button
           type="button"
@@ -394,68 +327,19 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
         </button>
       </Show>
 
-      <Show when={showLine()}>
-        <div class={styles.bubble} style={{ bottom: `${bubbleBottom()}px` }}>
-          <RoomBubble testId="echo-bubble">{room.line()}</RoomBubble>
-        </div>
-      </Show>
-
-      <div
-        class={styles.bottom}
-        classList={{
-          [styles.bottomAway]: demo.mode() === 'card' || demo.mode() === 'end',
-        }}
-        inert={demoBusy()}
-      >
-        <Switch>
-          <Match when={phase() === 'result' && !room.script.active()}>
-            <ResultActions
-              onAgain={() => room.start()}
-              onDone={() => props.onDone()}
-              againTestId="echo-again"
-              doneTestId="echo-done"
-            />
-          </Match>
-          <Match when={phase() === 'blocked'}>
-            <MicBlocked
-              block={room.state().block}
-              onRetry={() => room.start()}
-              retryTestId="echo-retry"
-            />
-          </Match>
-          <Match when={true}>
-            {/* The demo's take pill stands over the mic while it sings. */}
-            <Show when={room.script.active()}>
-              <DemoTakePill
-                take={demo.take()}
-                copy={DEMO_COPY}
-                testId="echo-demo-take"
-              />
-            </Show>
-            <MicButton
-              state={micState()}
-              level={room.micLevel}
-              pulse={demo.micPulse()}
-              disabled={phase() === 'starting'}
-              label={micLabel()}
-              onClick={() => {
-                if (phase() === 'intro') room.start()
-                else room.stop()
-              }}
-              testId="echo-mic"
-            />
-          </Match>
-        </Switch>
-      </div>
-      <div class={styles.said} aria-live="polite" data-testid="echo-said">
-        {said()}
-      </div>
-      <DemoLayer
-        demo={demo}
-        aim={(tip, layer) => aimEchoTip(tip.target, layer)}
-        copy={DEMO_COPY}
-        testId="echo-demo"
+      <ShellBubble
+        shell={shell}
+        show={showLine()}
+        line={room.line()}
+        bottom={bubbleBottom()}
       />
-    </div>
+
+      <ShellDock
+        shell={shell}
+        onDone={() => props.onDone()}
+        mic={micState()}
+        micLabel={micLabel()}
+      />
+    </RoomShell>
   )
 }

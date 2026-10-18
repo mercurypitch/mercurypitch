@@ -21,10 +21,14 @@
 // steady the top asks the voice to be. Both sit in the bar's right side
 // (RoomBar.tsx).
 //
-// The head, the mic, the result's buttons and the level control are the
-// room kit's (src/components/room-kit/); the demo's layer, cards and take
-// pill are the demo kit's (src/components/demo-kit/). This room brings its
-// world (the lantern, Merc in it, the line), its words and its test ids.
+// The page around the stage is the room kit's shell (RoomShell.tsx): the
+// root, the mic and the result's buttons under the stage, the level and
+// "?" in the bar, the demo's Skip, the live region and the demo's layer
+// (src/components/demo-kit/). This room brings its world (the lantern,
+// Merc in it, the line), its words, its stylesheet and its test ids, and
+// what only it has: the head over the stage (the timer while the note is
+// held, the result, Merc's line), the note picker over the mic and "Pick
+// another note" beside Again and Done.
 //
 // Merc's canvas sits BETWEEN the lantern's two layers (Lantern.tsx), so in
 // the glass he is behind its highlights and frame, and his feet are in the
@@ -35,16 +39,13 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { DemoLayer } from '@/components/demo-kit/DemoLayer'
-import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
 import { Minus, Plus, Volume2 } from '@/components/icons'
-import { createFocusHandoff } from '@/components/room-kit/focus-handoff'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
-import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
-import { MicBlocked, MicButton, ResultActions, } from '@/components/room-kit/RoomControls'
+import { createMeasure } from '@/components/room-kit/room-measure'
 import { ResultCard, RoomBubble, RoomChip, RoomHeader, RoomTimer, } from '@/components/room-kit/RoomHeader'
+import { createRoomShell, RoomShell, ShellBarEnd, ShellDock, ShellSkip, } from '@/components/room-kit/RoomShell'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import { UnlockChip } from '@/components/room-kit/UnlockChip'
 import { DEMO_COPY } from './demo/demo-cues'
@@ -114,45 +115,29 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   // eslint-disable-next-line solid/reactivity -- read once, as documented
   const room = props.controller ?? useLongNoteController()
   const demo: LongNoteDemo | null = own ? useLongNoteDemo(room) : null
-  const demoMode = (): string => demo?.mode() ?? 'idle'
-  /** The demo has the room: its controls are out of reach. */
-  const demoBusy = (): boolean => demoMode() !== 'idle'
-  /**
-   * The demo is singing a take: Merc's bubble and chip keep quiet, so the
-   * take's pill and the tooltip speak one at a time.
-   */
-  const demoTake = (): boolean => (demo?.take() ?? null) !== null
+  const shell = createRoomShell({ ids: 'long-note', styles, run: room, demo })
+  let rootEl: HTMLDivElement | undefined
   let stageEl: HTMLDivElement | undefined
-  const [stageSize, setStageSize] = createSignal({ width: 0, height: 0 })
+  const stageSize = createMeasure(
+    () => stageEl,
+    (el) => ({ width: el.clientWidth, height: el.clientHeight }),
+  )
   // Centred while Merc floats in the glass, moved over for him beside it;
   // gliding between the two. `settled` is where a glide is going.
   const settled = createMemo(() => {
-    const { width, height } = stageSize()
+    const { width, height } = stageSize() ?? { width: 0, height: 0 }
     return layoutStage(width, height, room.mercPlace() === 'beside' ? 1 : 0)
   })
   const layout = createLayoutGlide(() => settled())
 
   onMount(() => {
-    const measure = (): void => {
-      if (stageEl === undefined) return
-      setStageSize({
-        width: stageEl.clientWidth,
-        height: stageEl.clientHeight,
-      })
-    }
-    measure()
-    const observer = new ResizeObserver(measure)
-    if (stageEl !== undefined) observer.observe(stageEl)
-    onCleanup(() => {
-      observer.disconnect()
-    })
     if (props.onSettled !== undefined && rootEl !== undefined) {
       // The lantern's plates are in the room from its first frame.
       void imagesDecoded(rootEl).then(props.onSettled)
     }
   })
 
-  const phase = (): string => room.state().phase
+  const phase = shell.phase
 
   // A change of place eases across for the length of his hop; the rest of
   // the time his canvas follows the liquid frame by frame, with no easing to
@@ -247,7 +232,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
    * region), so the room keeps quiet while it runs.
    */
   const said = (): string => {
-    if (demoBusy() || room.script.active()) return ''
+    if (shell.busy() || room.script.active()) return ''
     if (phase() === 'hold') return room.chip() ?? ''
     const summary = phase() === 'result' ? room.summary() : null
     if (summary === null) return room.line()
@@ -261,24 +246,6 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
         : ` Steadiness ${Math.round(summary.steadiness)}.`
     return `${seconds}.${steadiness} ${room.line()}`
   }
-
-  // Focus on a control the room takes away goes to the one in its place.
-  let rootEl: HTMLDivElement | undefined
-  const focus = createFocusHandoff()
-  const mainControl = (): HTMLElement | null => {
-    const mode = demoMode()
-    // The demo's cards take focus themselves.
-    if (mode === 'card' || mode === 'end') return null
-    let id = 'long-note-mic'
-    if (mode === 'playing') id = 'long-note-demo-skip'
-    else if (phase() === 'result' && !room.script.active()) {
-      id = 'long-note-again'
-    } else if (phase() === 'blocked') id = 'long-note-retry'
-    return rootEl?.querySelector<HTMLElement>(`[data-testid="${id}"]`) ?? null
-  }
-  createEffect(
-    on([phase, demoMode], () => focus.handOff(mainControl), { defer: true }),
-  )
 
   /**
    * The result's line under the seconds. None without a steadiness, and
@@ -307,16 +274,18 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   }
 
   return (
-    <div
-      ref={rootEl}
+    <RoomShell
+      shell={shell}
+      ref={(el) => (rootEl = el)}
       class={`${styles.room} ${surface.surface} mp-dark-stage`}
       classList={{ [styles.still]: props.still === true }}
-      data-phase={phase()}
-      data-demo={demoMode()}
-      data-testid="long-note-room"
-      onFocusIn={(event) => focus.noteFocus(event)}
+      testId="long-note-room"
+      said={said()}
+      aim={(tip, layer) =>
+        aimLongNoteTip(tip.target, layer, room.lanternLevel())
+      }
     >
-      <RoomHeader inert={demoBusy()}>
+      <RoomHeader inert={shell.busy()}>
         <Switch>
           <Match when={phase() === 'hold'}>
             <RoomTimer testId="long-note-timer">
@@ -332,7 +301,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
               </Show>
             </RoomTimer>
             <RoomChip
-              text={demoTake() ? null : room.chip()}
+              text={shell.take() !== null ? null : room.chip()}
               testId="long-note-chip"
             />
           </Match>
@@ -348,10 +317,14 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           </Match>
         </Switch>
         <UnlockChip
-          atResult={phase() === 'result' && !demoBusy()}
+          atResult={phase() === 'result' && !shell.busy()}
           testId="long-note-unlock"
         />
-        <Show when={room.line() !== '' && phase() !== 'hold' && !demoTake()}>
+        <Show
+          when={
+            room.line() !== '' && phase() !== 'hold' && shell.take() === null
+          }
+        >
           <RoomBubble testId="long-note-line">{room.line()}</RoomBubble>
         </Show>
       </RoomHeader>
@@ -453,152 +426,92 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           muted={() => phase() === 'result'}
           still={props.still}
         />
-        <Show when={demoMode() === 'playing'}>
+        <ShellSkip shell={shell} />
+      </div>
+
+      <ShellBarEnd
+        shell={shell}
+        showLevel={demo?.canAsk() === true}
+        level={<LongNoteLevel />}
+      />
+
+      <ShellDock
+        shell={shell}
+        onAgain={() => room.again()}
+        onDone={() => props.onDone()}
+        mic={micState()}
+        micLabel={micLabel()}
+        onMic={() => {
+          if (phase() === 'listen' || phase() === 'hold') room.stop()
+          else room.start()
+        }}
+        still={props.still}
+        besideResult={
           <button
             type="button"
-            class={styles.skip}
-            onClick={() => demo?.skip()}
-            data-testid="long-note-demo-skip"
+            class={styles.textButton}
+            onClick={() => room.changeNote()}
           >
-            {DEMO_COPY.skip}
+            Pick another note
           </button>
-        </Show>
-      </div>
-
-      <RoomBarEnd>
-        <Show when={demo?.canAsk() === true}>
-          <LongNoteLevel />
-          <RoomAsk
-            onAsk={() => demo?.ask()}
-            label={DEMO_COPY.ask}
-            testId="long-note-ask"
-          />
-        </Show>
-      </RoomBarEnd>
-
-      <div
-        class={styles.bottom}
-        classList={{
-          [styles.bottomAway]: demoMode() === 'card' || demoMode() === 'end',
-        }}
-        inert={demoBusy()}
-      >
-        <Switch>
-          <Match when={phase() === 'result' && !room.script.active()}>
-            <ResultActions
-              onAgain={() => room.again()}
-              onDone={() => props.onDone()}
-              againTestId="long-note-again"
-              doneTestId="long-note-done"
-            />
+        }
+        overMic={
+          // The picker keeps its place once the take starts, so the mic
+          // button stays under the finger that pressed it. The demo's take
+          // pill stands in it while the demo sings.
+          <div
+            class={styles.picker}
+            classList={{
+              [styles.pickerAway]: phase() !== 'intro',
+              [styles.pickerOut]: room.script.active(),
+            }}
+            role="group"
+            aria-label="The note to hold"
+            aria-hidden={phase() !== 'intro'}
+            data-testid="long-note-picker"
+          >
             <button
               type="button"
-              class={styles.textButton}
-              onClick={() => room.changeNote()}
+              class={styles.step}
+              onClick={() => room.nudge(-1)}
+              disabled={phase() !== 'intro'}
+              aria-label="A note lower"
+              data-testid="long-note-lower"
             >
-              Pick another note
+              <Minus size={18} />
             </button>
-          </Match>
-          <Match when={phase() === 'blocked'}>
-            <MicBlocked
-              block={room.state().block}
-              onRetry={() => room.start()}
-              retryTestId="long-note-retry"
-            />
-          </Match>
-          <Match when={phase() !== 'result' || room.script.active()}>
-            {/* The picker keeps its place once the take starts, so the mic
-                button stays under the finger that pressed it. The demo's
-                take pill stands in it while the demo sings. */}
-            <Show when={room.script.active()}>
-              <DemoTakePill
-                take={demo?.take() ?? null}
-                copy={DEMO_COPY}
-                testId="long-note-demo-take"
-              />
-            </Show>
-            <div
-              class={styles.picker}
-              classList={{
-                [styles.pickerAway]: phase() !== 'intro',
-                [styles.pickerOut]: room.script.active(),
-              }}
-              role="group"
-              aria-label="The note to hold"
-              aria-hidden={phase() !== 'intro'}
-              data-testid="long-note-picker"
+            <Show
+              when={room.noteName() !== ''}
+              fallback={
+                <span class={styles.hear} data-testid="long-note-any">
+                  Any easy note
+                </span>
+              }
             >
               <button
                 type="button"
-                class={styles.step}
-                onClick={() => room.nudge(-1)}
+                class={styles.hear}
+                onClick={() => room.hearNote()}
                 disabled={phase() !== 'intro'}
-                aria-label="A note lower"
-                data-testid="long-note-lower"
+                aria-label={`Hear ${room.noteName()}`}
               >
-                <Minus size={18} />
+                <Volume2 />
+                <span>{room.noteName()}</span>
               </button>
-              <Show
-                when={room.noteName() !== ''}
-                fallback={
-                  <span class={styles.hear} data-testid="long-note-any">
-                    Any easy note
-                  </span>
-                }
-              >
-                <button
-                  type="button"
-                  class={styles.hear}
-                  onClick={() => room.hearNote()}
-                  disabled={phase() !== 'intro'}
-                  aria-label={`Hear ${room.noteName()}`}
-                >
-                  <Volume2 />
-                  <span>{room.noteName()}</span>
-                </button>
-              </Show>
-              <button
-                type="button"
-                class={styles.step}
-                onClick={() => room.nudge(1)}
-                disabled={phase() !== 'intro'}
-                aria-label="A note higher"
-                data-testid="long-note-higher"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-            <MicButton
-              state={micState()}
-              level={room.micLevel}
-              pulse={demo?.micPulse() === true}
-              still={props.still}
-              disabled={phase() === 'starting'}
-              label={micLabel()}
-              onClick={() => {
-                if (phase() === 'listen' || phase() === 'hold') room.stop()
-                else room.start()
-              }}
-              testId="long-note-mic"
-            />
-          </Match>
-        </Switch>
-      </div>
-      <div class={styles.said} aria-live="polite" data-testid="long-note-said">
-        {said()}
-      </div>
-      <Show when={demo}>
-        {(d) => (
-          <DemoLayer
-            demo={d()}
-            aim={(tip, layer) =>
-              aimLongNoteTip(tip.target, layer, room.lanternLevel())
-            }
-            copy={DEMO_COPY}
-            testId="long-note-demo"
-          />
-        )}
-      </Show>
-    </div>
+            </Show>
+            <button
+              type="button"
+              class={styles.step}
+              onClick={() => room.nudge(1)}
+              disabled={phase() !== 'intro'}
+              aria-label="A note higher"
+              data-testid="long-note-higher"
+            >
+              <Plus size={18} />
+            </button>
+          </div>
+        }
+      />
+    </RoomShell>
   )
 }
