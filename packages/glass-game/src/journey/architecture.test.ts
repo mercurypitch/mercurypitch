@@ -1,6 +1,6 @@
 // Journey architecture tests — preserve landmark heights and progress-owned decoration seams.
 
-import type { BufferGeometry } from 'three'
+import type { BufferGeometry, Object3D } from 'three'
 import { DoubleSide, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Raycaster, Vector3, } from 'three'
 import { describe, expect, it } from 'vitest'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
@@ -12,6 +12,7 @@ function createFixture(
   sculptural = false,
   includePortraitInset = true,
   architectural = false,
+  gardenSource?: Object3D,
 ) {
   const material = new MeshBasicMaterial({ side: DoubleSide })
   const frameMaterial = new MeshBasicMaterial({ side: DoubleSide })
@@ -93,6 +94,7 @@ function createFixture(
         : undefined,
       materials,
       ownedGeometries,
+      gardenSource,
     )
   } catch (error) {
     disposeResources()
@@ -111,6 +113,45 @@ function createFixture(
 }
 
 describe('journey architecture', () => {
+  it.each([
+    { sculptural: false, architectural: false, kinds: [] },
+    { sculptural: true, architectural: false, kinds: ['pavilion'] },
+    { sculptural: false, architectural: true, kinds: ['conservatory'] },
+    {
+      sculptural: true,
+      architectural: true,
+      kinds: ['pavilion', 'twins', 'conservatory'],
+    },
+  ])(
+    'adds supported gardens only for the available authored buildings: $sculptural/$architectural',
+    ({ sculptural, architectural, kinds }) => {
+      const source = new Group()
+      const plane = new PlaneGeometry()
+      const botanical = new MeshBasicMaterial()
+      botanical.name = 'Botanical_atlas'
+      const jasmine = new MeshBasicMaterial()
+      jasmine.name = 'Botanical_jasmine'
+      source.add(new Mesh(plane, botanical), new Mesh(plane, jasmine))
+      const fixture = createFixture(sculptural, true, architectural, source)
+      try {
+        for (const stage of FLOATING_MUSEUM_JOURNEY.stages) {
+          const garden = fixture.assembly.root.getObjectByName(
+            `${stage.id}-building-garden`,
+          )
+          expect(
+            garden !== undefined,
+            `${stage.kind} must have its authored support`,
+          ).toBe(kinds.includes(stage.kind))
+        }
+      } finally {
+        fixture.dispose()
+        plane.dispose()
+        botanical.dispose()
+        jasmine.dispose()
+      }
+    },
+  )
+
   it('keeps every source pond clear of processional stairs', () => {
     const fixture = createFixture(true, true, true)
     try {
@@ -170,22 +211,21 @@ describe('journey architecture', () => {
         expect(
           marker?.getObjectByName(`${stage.id}-medallion-face`)?.position.y,
         ).toBe(JOURNEY_MEDALLION_FACE_Y)
-        expect(
-          marker?.getObjectByName(`${stage.id}-medallion-ring`)?.position.y,
-        ).toBe(JOURNEY_MEDALLION_SURFACE_Y)
-        const pedestal = marker?.getObjectByName(`${stage.id}-path-medallion`)
-        expect(pedestal?.position.y).toBe(0.11)
-        expect(pedestal?.scale.y).toBe(1)
-        expect(
-          marker?.getObjectByName(`${stage.id}-engraved-inner-rim`),
-        ).toBeDefined()
-        expect(
-          (
-            marker?.getObjectByName(
-              `${stage.id}-sun-and-route-inlay`,
-            ) as InstancedMesh
-          ).count,
-        ).toBe(14)
+        const ray = new Raycaster(
+          new Vector3(
+            stage.position[0],
+            stage.position[1] + 1,
+            stage.position[2],
+          ),
+          new Vector3(0, -1, 0),
+        )
+        fixture.assembly.root.updateMatrixWorld(true)
+        const contact = ray.intersectObject(marker!, true)[0]!
+        expect(contact.point.y).toBeGreaterThanOrEqual(
+          stage.position[1] + JOURNEY_MEDALLION_SURFACE_Y - 0.000001,
+        )
+        expect(contact.point.y).toBeLessThan(stage.position[1] + 0.17)
+        expect(contact.object.userData.journeyStageId).toBe(stage.id)
       }
     } finally {
       fixture.dispose()

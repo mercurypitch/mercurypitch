@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { build } from 'vite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { gameAssetsPlugin, NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, } from './game-assets'
+import { gameAssetsPlugin, NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES, NATIVE_EXCLUDED_GAME_ASSETS, } from './game-assets'
 
 const R3_NATIVE_GAME_ASSETS = [
   'games/adventure-v2/platform-kit.glb',
@@ -27,6 +27,8 @@ const CRYSTAL_CURRENT_GAME_ASSETS = [
   'games/runner-obstacles-v1/glacial-bulwark.glb',
   'games/runner-obstacles-v1/rose-wave-hurdle.glb',
   'games/runner-obstacles-v1/celadon-low-arch.glb',
+  'games/runner-collectibles-v1/c01-sun-seal-ring.webp',
+  'games/runner-collectibles-v1/provenance.json',
 ] as const
 
 const CURRENT_DELIVERY_GAME_ASSETS = GLASS_GAME_REQUIRED_FILES.filter(
@@ -93,7 +95,22 @@ beforeEach(() => {
 afterEach(() => rmSync(root, { recursive: true, force: true }))
 
 describe('direct Vite game asset packaging', () => {
-  it('retains all runner obstacle models in native builds', async () => {
+  it('serves the full-profile jasmine dependency on web and removes it from native output only', async () => {
+    const dependency = 'games/journey-map-v11/museum-jasmine-full-v11.webp'
+    expect(NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES).toEqual([dependency])
+    expect(GLASS_GAME_REQUIRED_FILES).toContain(
+      dependency.slice('games/'.length),
+    )
+    await compile(true)
+    expect(contents(`output/${dependency}`)).toBe(`${dependency} source`)
+    await compile(true, 'native-output', undefined, true)
+    expect(existsSync(join(root, 'native-output', dependency))).toBe(false)
+    expect(contents(`public/${dependency}`)).toBe(`${dependency} source`)
+    const mobile = 'journey-map-v11/floating-museum-garden-edge-mobile-v11.glb'
+    expect(contents(`native-output/games/${mobile}`)).toBe(`${mobile} source`)
+  })
+
+  it('retains runner obstacles and collectible artwork with provenance in native builds', async () => {
     await compile(true, 'output', undefined, true)
     for (const asset of CRYSTAL_CURRENT_GAME_ASSETS) {
       expect(GLASS_GAME_REQUIRED_FILES).toContain(asset.slice('games/'.length))

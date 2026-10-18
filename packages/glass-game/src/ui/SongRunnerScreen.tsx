@@ -8,9 +8,11 @@ import type { GlassAssetQualityProfile, GlassRenderQualityProfile, } from '../re
 import { GLASS_RENDER_QUALITY_PREFERENCE, parseGlassRenderQualityPreference, } from '../render/render-quality'
 import type { SongRunnerRenderer } from '../render/runner-renderer'
 import { createSongRunnerRenderer } from '../render/runner-renderer'
+import { runnerCollectibleArtworkPickup } from '../runner/collectible-presentation'
 import type { CompiledRunnerCourse } from '../runner/contracts'
 import { CURRENT_SINGING_COURSE, readEarlierSingingRecord, } from '../runner/current-course'
 import { SINGING_CURRENT, SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_TRIALS, } from '../runner/first-course'
+import { createCollectibleArtworkPreference } from './collectible-artwork-preference'
 import { hasDevelopmentTuning } from './development-tuning'
 import { GameUIProvider } from './GameUI'
 import type { RunnerCameraChoice } from './RunnerSoundTune'
@@ -144,6 +146,19 @@ function RunnerVisit(props: {
   let disposed = false,
     generation = 0,
     previousSeconds: number | undefined
+  const { collectibleArtworkScale, changeCollectibleArtworkScale } =
+    createCollectibleArtworkPreference(gameHost, {
+      renderer: () => renderer,
+      snapshot: () => session.state().game,
+      canRender: () => !loading() && error() === undefined,
+      disposed: () => disposed,
+      failed: (cause) =>
+        failed(
+          'The view is unavailable. Retry to return to your checkpoint.',
+          'frame',
+          cause,
+        ),
+    })
   const reducedMotion = window.matchMedia(
     '(prefers-reduced-motion: reduce)',
   ).matches
@@ -223,6 +238,7 @@ function RunnerVisit(props: {
         {
           assetProfile: props.assetProfile,
           shatterPlaybackSpeed: shatterPlaybackSpeed(),
+          collectibleArtworkScale: collectibleArtworkScale(),
           renderQuality: renderQualityPreference(),
           reducedMotion,
           initialSnapshot: session.state().game,
@@ -285,6 +301,15 @@ function RunnerVisit(props: {
   return (
     <SongRunnerView
       earlierRecord={props.earlierRecord}
+      artworkControls={
+        hasDevelopmentTuning(gameHost) &&
+        runnerCollectibleArtworkPickup(props.course)
+          ? {
+              scale: collectibleArtworkScale(),
+              onChange: changeCollectibleArtworkScale,
+            }
+          : undefined
+      }
       developmentControls={
         hasDevelopmentTuning(gameHost)
           ? {

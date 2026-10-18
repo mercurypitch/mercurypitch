@@ -1,17 +1,22 @@
 // Journey architecture — compose authored kit pieces into palatial halls, medallions and arched paths.
 
 import type { BufferGeometry, Material, Object3D } from 'three'
-import { BoxGeometry, CylinderGeometry, Group, InstancedMesh, Matrix4, Mesh, OctahedronGeometry, Quaternion, RingGeometry, Shape, ShapeGeometry, SphereGeometry, TorusGeometry, Vector3, } from 'three'
-import type { MuseumJourneyDefinition, MuseumJourneyPortraitMonument, MuseumJourneyStage, } from '../content/museum-journey'
+import { BoxGeometry, CylinderGeometry, Group, InstancedMesh, Matrix4, Mesh, OctahedronGeometry, Quaternion, SphereGeometry, TorusGeometry, Vector3, } from 'three'
+import type { MuseumJourneyDefinition, MuseumJourneyPortraitMonument, } from '../content/museum-journey'
 import { createJourneyBridge } from './bridges'
-import { JOURNEY_MEDALLION_FACE_Y, JOURNEY_MEDALLION_SURFACE_Y, } from './landmarks'
+import { createJourneyBuildingGarden } from './building-gardens'
+import type { JourneyProgressStars } from './medallions'
+import { createJourneyMedallion, createJourneyMedallionGeometry, } from './medallions'
+import { createGardenQuartzCluster, createGardenQuartzGeometry, } from './quartz-garden'
+import type { JourneyAuthoredUnit } from './resources'
 import type { JourneyStairway } from './terrace-layout'
-import { JOURNEY_STAIR_COUNT, JOURNEY_STAIR_DEPTH, JOURNEY_STAIR_RUN, JOURNEY_STAIRWAYS, } from './terrace-layout'
+import { JOURNEY_STAIR_COUNT, JOURNEY_STAIR_DEPTH, JOURNEY_STAIR_RUN, JOURNEY_STAIRWAYS, JOURNEY_TERRACE_SURFACE_OFFSET, } from './terrace-layout'
 
 export interface JourneyArchitectureMaterials {
   gold: Material
   jade: Material
   medallionGlass?: Material
+  medallionGold?: Material
   ivory: Material
   amber: Material
   celadon: Material
@@ -19,9 +24,10 @@ export interface JourneyArchitectureMaterials {
   shadow: Material
   mysteryPortrait?: Material
   crystal: Material
+  quartz?: Material
 }
 
-export type JourneyAuthoredUnit = (name: string) => Object3D
+export type { JourneyAuthoredUnit } from './resources'
 
 export const JOURNEY_PORTRAIT_INSET_MATERIAL = 'map_frame_atlas_00'
 const JOURNEY_PORTRAIT_SURFACE_CLEARANCE = 0.003
@@ -102,13 +108,9 @@ interface ArchitectureGeometry {
   base: CylinderGeometry
   step: BoxGeometry
   dome: SphereGeometry
-  medallion: CylinderGeometry
-  medallionRing: RingGeometry
-  medallionBeadRing: TorusGeometry
-  detailStud: CylinderGeometry
-  progressStar: ShapeGeometry
   connectorArch: TorusGeometry
   crystal: OctahedronGeometry
+  quartz: BufferGeometry
 }
 
 export interface JourneyArchitectureAssembly {
@@ -119,7 +121,7 @@ export interface JourneyArchitectureAssembly {
   starMarkers: ReadonlyMap<string, JourneyProgressStars>
 }
 
-export type JourneyProgressStars = readonly [Object3D, Object3D, Object3D]
+export type { JourneyProgressStars } from './medallions'
 
 function own<T extends BufferGeometry>(
   geometry: T,
@@ -127,20 +129,6 @@ function own<T extends BufferGeometry>(
 ): T {
   owned.add(geometry)
   return geometry
-}
-
-function createProgressStarGeometry(): ShapeGeometry {
-  const shape = new Shape()
-  for (let point = 0; point < 10; point++) {
-    const angle = -Math.PI / 2 + (point * Math.PI) / 5
-    const radius = point % 2 === 0 ? 0.052 : 0.023
-    const x = Math.cos(angle) * radius
-    const y = Math.sin(angle) * radius
-    if (point === 0) shape.moveTo(x, y)
-    else shape.lineTo(x, y)
-  }
-  shape.closePath()
-  return new ShapeGeometry(shape)
 }
 
 function createGeometry(owned: Set<BufferGeometry>): ArchitectureGeometry {
@@ -151,13 +139,9 @@ function createGeometry(owned: Set<BufferGeometry>): ArchitectureGeometry {
       new SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2),
       owned,
     ),
-    medallion: own(new CylinderGeometry(1, 1, 0.075, 40), owned),
-    medallionRing: own(new RingGeometry(0.72, 0.96, 40), owned),
-    medallionBeadRing: own(new TorusGeometry(0.365, 0.014, 6, 40), owned),
-    detailStud: own(new CylinderGeometry(1, 1, 0.018, 12), owned),
-    progressStar: own(createProgressStarGeometry(), owned),
     connectorArch: own(new TorusGeometry(1, 0.075, 8, 32, Math.PI), owned),
     crystal: own(new OctahedronGeometry(0.22, 0), owned),
+    quartz: own(createGardenQuartzGeometry(), owned),
   }
 }
 
@@ -289,13 +273,21 @@ function addPavilion(
   sculpturalUnit: JourneyAuthoredUnit | undefined,
   geometry: ArchitectureGeometry,
   materials: JourneyArchitectureMaterials,
+  deckY: number,
 ): void {
   const temple = sculpturalUnit?.('map_temple_teal')
   if (temple !== undefined) {
     temple.position.y = 0.02
     temple.scale.setScalar(0.9)
     root.add(temple)
-    addCrystalCluster(root, geometry, materials.crystal, 1.12, 0.7)
+    root.add(
+      createGardenQuartzCluster(
+        geometry.quartz,
+        materials.quartz ?? materials.crystal,
+        [1.12, deckY, 0.7],
+        0.9,
+      ),
+    )
     return
   }
   addGlazedHall(root, authoredUnit, geometry, materials, {
@@ -316,7 +308,14 @@ function addPavilion(
     0.48,
   )
   addStairway(root, geometry, materials.ivory, JOURNEY_STAIRWAYS.pavilion)
-  addCrystalCluster(root, geometry, materials.crystal, 1.05, 0.78)
+  root.add(
+    createGardenQuartzCluster(
+      geometry.quartz,
+      materials.quartz ?? materials.crystal,
+      [1.05, deckY, 0.78],
+      0.9,
+    ),
+  )
 }
 
 function addEntryGarden(
@@ -352,7 +351,13 @@ function addEntryGarden(
     planter.scale.setScalar(0.34)
     root.add(planter)
   }
-  addCrystalCluster(root, geometry, materials.crystal, 0, 0.18)
+  root.add(
+    createGardenQuartzCluster(
+      geometry.quartz,
+      materials.quartz ?? materials.crystal,
+      [0, 0.15, 0.18],
+    ),
+  )
   addStairway(root, geometry, materials.ivory, JOURNEY_STAIRWAYS.garden)
 }
 
@@ -480,108 +485,6 @@ function addConservatory(
   addCrystalCluster(root, geometry, materials.crystal, -1.24, 0.88)
 }
 
-function addMedallion(
-  stageRoot: Group,
-  stage: MuseumJourneyStage,
-  variantIndex: number,
-  geometry: ArchitectureGeometry,
-  materials: JourneyArchitectureMaterials,
-  starMarkers: Map<string, JourneyProgressStars>,
-): void {
-  const marker = new Group()
-  marker.name = `${stage.id}-journey-medallion`
-  marker.position.fromArray(stage.position)
-  marker.userData.journeyStageId = stage.id
-  marker.userData.journeyMedallionSurfaceY = JOURNEY_MEDALLION_SURFACE_Y
-
-  const medallion = new Mesh(geometry.medallion, materials.gold)
-  medallion.name = `${stage.id}-path-medallion`
-  // The authored stairs and promenade sit above the terrace surface. Sink the
-  // pedestal into that surface and lift its face clear of those ribbons.
-  medallion.position.y = 0.11
-  medallion.scale.set(0.46, 1, 0.46)
-  medallion.castShadow = true
-  medallion.receiveShadow = true
-  const face = new Mesh(
-    geometry.medallion,
-    materials.medallionGlass ?? materials.jade,
-  )
-  face.name = `${stage.id}-medallion-face`
-  face.position.y = JOURNEY_MEDALLION_FACE_Y
-  face.scale.set(0.36, 0.14, 0.36)
-  const ring = new Mesh(geometry.medallionRing, materials.gold)
-  ring.name = `${stage.id}-medallion-ring`
-  ring.rotation.x = -Math.PI / 2
-  ring.position.y = JOURNEY_MEDALLION_SURFACE_Y
-  ring.scale.setScalar(0.52)
-
-  const beadRing = new Mesh(geometry.medallionBeadRing, materials.gold)
-  beadRing.name = `${stage.id}-engraved-inner-rim`
-  beadRing.rotation.x = Math.PI / 2
-  beadRing.position.y = JOURNEY_MEDALLION_SURFACE_Y + 0.007
-
-  const inlay = new InstancedMesh(geometry.detailStud, materials.gold, 14)
-  inlay.name = `${stage.id}-sun-and-route-inlay`
-  const matrix = new Matrix4()
-  for (let index = 0; index < 8; index++) {
-    const angle = (index / 8) * Math.PI * 2 + variantIndex * (Math.PI / 16)
-    matrix.compose(
-      new Vector3(
-        Math.sin(angle) * 0.13,
-        JOURNEY_MEDALLION_SURFACE_Y + 0.009,
-        Math.cos(angle) * 0.13,
-      ),
-      new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), angle),
-      new Vector3(0.018, 0.25, 0.11),
-    )
-    inlay.setMatrixAt(index, matrix)
-  }
-  matrix.compose(
-    new Vector3(0, JOURNEY_MEDALLION_SURFACE_Y + 0.011, 0),
-    new Quaternion(),
-    new Vector3(0.06, 0.25, 0.06),
-  )
-  inlay.setMatrixAt(8, matrix)
-  for (let index = 0; index < 5; index++) {
-    const angle = -Math.PI * 0.82 + index * 0.32 + variantIndex * (Math.PI / 20)
-    const radius = 0.26 + Math.sin(index * 1.8) * 0.018
-    matrix.compose(
-      new Vector3(
-        Math.cos(angle) * radius,
-        JOURNEY_MEDALLION_SURFACE_Y + 0.011,
-        Math.sin(angle) * radius,
-      ),
-      new Quaternion(),
-      new Vector3(0.022, 0.22, 0.022),
-    )
-    inlay.setMatrixAt(index + 9, matrix)
-  }
-  inlay.instanceMatrix.needsUpdate = true
-
-  const earnedStars = new Group()
-  earnedStars.name = `${stage.id}-earned-stars`
-  const createStar = (slot: 1 | 2 | 3, x: number): Mesh => {
-    const star = new Mesh(geometry.progressStar, materials.gold)
-    star.name = `${stage.id}-progress-star-${slot}`
-    star.position.set(x, JOURNEY_MEDALLION_SURFACE_Y + 0.012, 0.235)
-    star.rotation.x = -Math.PI / 2
-    star.visible = false
-    star.userData.journeyStageId = stage.id
-    star.userData.journeyStarSlot = slot
-    return star
-  }
-  const stars: JourneyProgressStars = [
-    createStar(1, -0.115),
-    createStar(2, 0),
-    createStar(3, 0.115),
-  ]
-  earnedStars.add(...stars)
-  starMarkers.set(stage.id, stars)
-
-  marker.add(medallion, face, ring, beadRing, inlay, earnedStars)
-  stageRoot.add(marker)
-}
-
 function addPortraitMonument(
   stageRoot: Group,
   stageId: string,
@@ -636,6 +539,7 @@ export function createJourneyArchitecture(
   architecturalUnit: JourneyAuthoredUnit | undefined,
   materials: JourneyArchitectureMaterials,
   ownedGeometries: Set<BufferGeometry>,
+  gardenSource?: Object3D,
 ): JourneyArchitectureAssembly {
   const root = new Group()
   root.name = 'floating-museum-palaces'
@@ -644,6 +548,7 @@ export function createJourneyArchitecture(
   const portraitMysteries = new Map<string, Object3D>()
   const starMarkers = new Map<string, JourneyProgressStars>()
   const geometry = createGeometry(ownedGeometries)
+  const medallionGeometry = createJourneyMedallionGeometry(ownedGeometries)
 
   for (const [stageIndex, stage] of definition.stages.entries()) {
     const stageRoot = new Group()
@@ -653,8 +558,25 @@ export function createJourneyArchitecture(
     building.position.fromArray(stage.architecturePosition)
     building.rotation.y = stage.yaw
     building.scale.setScalar(stage.scale)
+    const landmass = definition.landmasses.find(
+      (island) => island.id === stage.islandId,
+    )
+    const deckY =
+      landmass === undefined
+        ? 0
+        : (landmass.position[1] +
+            JOURNEY_TERRACE_SURFACE_OFFSET -
+            stage.architecturePosition[1]) /
+          stage.scale
     if (stage.kind === 'pavilion')
-      addPavilion(building, authoredUnit, sculpturalUnit, geometry, materials)
+      addPavilion(
+        building,
+        authoredUnit,
+        sculpturalUnit,
+        geometry,
+        materials,
+        deckY,
+      )
     else if (stage.kind === 'garden')
       addEntryGarden(building, authoredUnit, geometry, materials)
     else if (stage.kind === 'rotunda')
@@ -676,8 +598,37 @@ export function createJourneyArchitecture(
         geometry,
         materials,
       )
+    // Garden anchors follow the authored buildings, not the procedural fallback.
+    const hasGardenSupport =
+      (stage.kind === 'pavilion' && sculpturalUnit !== undefined) ||
+      (stage.kind === 'twins' &&
+        sculpturalUnit !== undefined &&
+        architecturalUnit !== undefined) ||
+      (stage.kind === 'conservatory' && architecturalUnit !== undefined)
+    if (
+      gardenSource !== undefined &&
+      hasGardenSupport &&
+      landmass !== undefined
+    ) {
+      const garden = createJourneyBuildingGarden(
+        stage,
+        gardenSource,
+        authoredUnit,
+        ownedGeometries,
+        deckY,
+        materials.ivory,
+      )
+      if (garden !== undefined) building.add(garden)
+    }
     stageRoot.add(building)
-    addMedallion(stageRoot, stage, stageIndex, geometry, materials, starMarkers)
+    const medallion = createJourneyMedallion(
+      stage,
+      stageIndex,
+      medallionGeometry,
+      materials,
+    )
+    stageRoot.add(medallion.root)
+    starMarkers.set(stage.id, medallion.stars)
     if (stage.portrait !== undefined)
       addPortraitMonument(
         stageRoot,

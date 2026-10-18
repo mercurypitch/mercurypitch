@@ -1,11 +1,11 @@
 // Journey model tests — partial loads retire resources.
 
-import type { MeshStandardMaterial } from 'three'
-import { AnimationClip, BoxGeometry, BufferGeometry, Group, Material, Mesh, MeshBasicMaterial, PlaneGeometry, Texture, } from 'three'
+import { AnimationClip, BoxGeometry, BufferGeometry, Group, Int16BufferAttribute, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, Texture, Vector3, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 import { loadJourneyMapModels } from './models'
 import type { JourneyGltfDocument } from './resources'
+import { loadJourneyGltf } from './resources'
 
 function createKitScene(
   includePortraitInset = true,
@@ -56,6 +56,184 @@ function createArchitectureScene(includeConservatory = true): Group {
 }
 
 describe('journey map model loading', () => {
+  it.each([true, false])(
+    'preserves donor ownership and decoded garden placement, marked=%s',
+    async (marked) => {
+      const kitScene = createKitScene()
+      const apron = new Mesh(new BoxGeometry(), new MeshBasicMaterial())
+      apron.name = 'map_platform_mesh_4'
+      const trim = new Group()
+      trim.name = 'preserved-terrace-trim'
+      kitScene.getObjectByName('map_platform')!.add(apron, trim)
+      const bitmap = { width: 8, height: 8, close: vi.fn() }
+      const texture = new Texture(bitmap)
+      const materials = [
+        new MeshBasicMaterial({ map: texture, alphaTest: 0.5 }),
+        new MeshBasicMaterial({ map: texture, alphaTest: 0.5 }),
+      ]
+      const geometry = new BufferGeometry()
+      // Quantized positions retain a child decode transform beneath each
+      // identity donor root. Removing that child transform moves the plants.
+      geometry.setAttribute(
+        'position',
+        new Int16BufferAttribute(
+          [32767, 0, -32767, 0, 32767, 0, -32767, 0, 32767],
+          3,
+          true,
+        ),
+      )
+      const sculptureScene = new Group()
+      for (const name of [
+        'map_temple_amber',
+        'map_temple_teal',
+        'map_cliff',
+        'map_cypress',
+        'map_flower_cluster',
+      ]) {
+        const unit = new Group()
+        unit.name = name
+        if (name === 'map_cliff' && marked) unit.userData.museumEdgeVersion = 3
+        sculptureScene.add(unit)
+      }
+      const foliageNames = [
+        'map_foliage_first_light',
+        'map_foliage_twin_galleries',
+        'map_foliage_resonance_conservatory',
+      ]
+      for (const name of foliageNames) {
+        const unit = new Group()
+        unit.name = name
+        const decode = new Group()
+        decode.name = 'quantized-position-decode'
+        decode.position.set(0.19, -0.37, 0.11)
+        decode.scale.set(0.7, 1.4, 0.6)
+        for (const material of materials)
+          decode.add(new Mesh(geometry, material))
+        unit.add(decode)
+        sculptureScene.add(unit)
+      }
+      const snapshot = (scene: Group) => {
+        const objects: unknown[] = []
+        scene.traverse((object) => {
+          objects.push({
+            id: object.uuid,
+            name: object.name,
+            parent: object.parent?.uuid,
+            children: object.children.map((child) => child.uuid),
+            position: object.position.toArray(),
+            quaternion: object.quaternion.toArray(),
+            scale: object.scale.toArray(),
+            userData: { ...object.userData },
+            geometry: (object as Mesh).geometry,
+            material: (object as Mesh).material,
+            castShadow: object.castShadow,
+            receiveShadow: object.receiveShadow,
+          })
+        })
+        return objects
+      }
+      const before = [snapshot(kitScene), snapshot(sculptureScene)]
+      const originalPositions = Array.from(geometry.attributes.position!.array)
+      const disposeTexture = vi.spyOn(texture, 'dispose')
+      const resourceDisposals = [
+        geometry,
+        ...materials,
+        apron.geometry,
+        apron.material,
+      ].map((resource) => vi.spyOn(resource, 'dispose'))
+      resourceDisposals.push(disposeTexture)
+      const mercScene = new Group()
+      mercScene.add(new Mesh(new PlaneGeometry(), new MeshBasicMaterial()))
+      const signal = new AbortController().signal
+      const documents = await Promise.all(
+        [kitScene, mercScene, sculptureScene].map((scene) =>
+          loadJourneyGltf('/fixture.gltf', signal, {
+            fetch: vi.fn().mockResolvedValue(new Response('{}')),
+            parse: async () => ({ scene, animations: [] }),
+          }),
+        ),
+      )
+      const documentDisposals = documents.map((document) =>
+        vi.spyOn(document, 'dispose'),
+      )
+      const models = await loadJourneyMapModels(
+        FLOATING_MUSEUM_JOURNEY,
+        '/map.glb',
+        '/merc.glb',
+        signal,
+        {
+          sculptureUrl: '/sculpture.glb',
+          loadGltf: vi
+            .fn()
+            .mockResolvedValueOnce(documents[0])
+            .mockResolvedValueOnce(documents[1])
+            .mockResolvedValueOnce(documents[2]),
+        },
+      )
+      try {
+        for (const [
+          index,
+          island,
+        ] of FLOATING_MUSEUM_JOURNEY.landmasses.entries()) {
+          const cliff = models.root.getObjectByName(
+            `${island.id}-sculpted-cliff`,
+          )!
+          expect(
+            cliff.children
+              .filter((child) => foliageNames.includes(child.name))
+              .map((child) => child.name),
+          ).toEqual(marked ? [foliageNames[index]] : [])
+          const terrace = models.root.getObjectByName(
+            `${island.id}-ivory-terrace`,
+          )!
+          expect(terrace.getObjectByName(trim.name)).toBeDefined()
+          expect(terrace.getObjectByName(apron.name) !== undefined).toBe(
+            !marked,
+          )
+          expect(cliff.scale.y).toBeCloseTo(
+            island.scale[1] * (marked ? 1.65 : 2.25),
+          )
+          if (!marked) continue
+          const source = sculptureScene.getObjectByName(foliageNames[index]!)!
+          const attached = cliff.getObjectByName(foliageNames[index]!)!
+          expect(attached).not.toBe(source)
+          const decode = attached.getObjectByName('quantized-position-decode')!
+          const mesh = decode.children[0] as Mesh
+          expect(mesh.geometry).toBe(geometry)
+          expect(mesh.material).toBe(materials[0])
+          const actual = mesh.localToWorld(new Vector3(1, 0, -1))
+          const expected = new Vector3(
+            (0.89 * island.scale[0] * 2.621731) / 4.5,
+            -0.37 * island.scale[1] * 1.65,
+            (-0.49 * island.scale[2] * 2.602302) / 2.464056,
+          )
+            .applyAxisAngle(new Vector3(0, 1, 0), island.yaw)
+            .add(new Vector3(...island.position))
+          expect(actual.distanceTo(expected)).toBeLessThan(1e-10)
+        }
+        expect(
+          models.root.getObjectByName('museum-hanging-ivy') !== undefined,
+        ).toBe(!marked)
+        expect([snapshot(kitScene), snapshot(sculptureScene)]).toEqual(before)
+        expect(Array.from(geometry.attributes.position!.array)).toEqual(
+          originalPositions,
+        )
+        for (const dispose of resourceDisposals)
+          expect(dispose).not.toHaveBeenCalled()
+        expect(bitmap.close).not.toHaveBeenCalled()
+      } finally {
+        models.dispose()
+        models.dispose()
+      }
+      for (const dispose of [...documentDisposals, ...resourceDisposals])
+        expect(dispose).toHaveBeenCalledOnce()
+      expect(bitmap.close).toHaveBeenCalledOnce()
+      expect(bitmap.close.mock.invocationCallOrder[0]).toBeGreaterThan(
+        disposeTexture.mock.invocationCallOrder[0]!,
+      )
+    },
+  )
+
   it.each([
     {
       assetProfile: 'mobile' as const,
@@ -235,6 +413,69 @@ describe('journey map model loading', () => {
       vi.restoreAllMocks()
     }
   })
+
+  it.each([
+    'map_foliage_first_light',
+    'map_foliage_twin_galleries',
+    'map_foliage_resonance_conservatory',
+  ])(
+    'rejects a garden kit missing %s before allocating assembly materials',
+    async (missingRoot) => {
+      const kit = { scene: createKitScene(), animations: [], dispose: vi.fn() }
+      const merc = { scene: new Group(), animations: [], dispose: vi.fn() }
+      const sculptureScene = new Group()
+      for (const name of [
+        'map_temple_amber',
+        'map_temple_teal',
+        'map_cliff',
+        'map_cypress',
+        'map_flower_cluster',
+        'map_foliage_first_light',
+        'map_foliage_twin_galleries',
+        'map_foliage_resonance_conservatory',
+      ]) {
+        if (name === missingRoot) continue
+        const node = new Group()
+        node.name = name
+        if (name === 'map_cliff') node.userData.museumEdgeVersion = 3
+        sculptureScene.add(node)
+      }
+      const sculpture = {
+        scene: sculptureScene,
+        animations: [],
+        dispose: vi.fn(),
+      }
+      const allocateMaterial = vi.spyOn(
+        MeshStandardMaterial.prototype,
+        'setValues',
+      )
+      const updateMascot = vi.spyOn(merc.scene, 'updateWorldMatrix')
+      try {
+        await expect(
+          loadJourneyMapModels(
+            FLOATING_MUSEUM_JOURNEY,
+            '/map.glb',
+            '/merc.glb',
+            new AbortController().signal,
+            {
+              sculptureUrl: '/sculpture.glb',
+              loadGltf: vi
+                .fn()
+                .mockResolvedValueOnce(kit)
+                .mockResolvedValueOnce(merc)
+                .mockResolvedValueOnce(sculpture),
+            },
+          ),
+        ).rejects.toThrow(`Journey map kit is missing ${missingRoot}.`)
+        expect(allocateMaterial).not.toHaveBeenCalled()
+        expect(updateMascot).not.toHaveBeenCalled()
+        for (const document of [kit, merc, sculpture])
+          expect(document.dispose).toHaveBeenCalledOnce()
+      } finally {
+        vi.restoreAllMocks()
+      }
+    },
+  )
 
   it('disposes a successful sibling document when the other load fails', async () => {
     const dispose = vi.fn()

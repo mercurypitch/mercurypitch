@@ -43,7 +43,7 @@ export interface MuseumJourneyBridge {
   to: JourneyPoint
   width: number
   kind: 'promenade' | 'skybridge'
-  /** Signed horizontal bow in metres. */
+  /** Signed horizontal control-point offset; the midpoint bow is half this. */
   curve: number
 }
 
@@ -188,7 +188,7 @@ export const FLOATING_MUSEUM_JOURNEY: MuseumJourneyDefinition = {
       to: [-1.54, 0.75, 0.95],
       width: 0.82,
       kind: 'skybridge',
-      curve: -0.22,
+      curve: -0.55,
     },
     {
       id: 'twins-to-conservatory',

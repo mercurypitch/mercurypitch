@@ -3,6 +3,9 @@
 import { QuadraticBezierCurve3, Vector3 } from 'three'
 import type { MuseumJourneyBridge } from '../content/museum-journey'
 
+/** Outside the walking width, within the existing 8 cm planting clearance. */
+export const JOURNEY_BRIDGE_CORNICE_WIDTH = 0.055
+
 export interface JourneyBridgePath {
   curve: QuadraticBezierCurve3
   steps: number
@@ -17,6 +20,17 @@ export function createJourneyBridgePath(
   const from = new Vector3().fromArray(bridge.from)
   const to = new Vector3().fromArray(bridge.to)
   const delta = to.clone().sub(from)
+  // Parallel curves develop a cusp when the inside offset reaches the bend's
+  // radius. This quadratic's tightest horizontal radius is at its midpoint.
+  const horizontalLengthSquared = delta.x * delta.x + delta.z * delta.z
+  const minimumRadius = horizontalLengthSquared / (4 * Math.abs(bridge.curve))
+  if (
+    horizontalLengthSquared <= Number.EPSILON ||
+    minimumRadius <= bridge.width * 0.5 + JOURNEY_BRIDGE_CORNICE_WIDTH
+  )
+    throw new Error(
+      `Journey bridge ${bridge.id} has a bend too tight for its width.`,
+    )
   const side = new Vector3(-delta.z, 0, delta.x).normalize()
   const middle = from.clone().lerp(to, 0.5).addScaledVector(side, bridge.curve)
   const curve = new QuadraticBezierCurve3(from, middle, to)

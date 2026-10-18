@@ -9,6 +9,9 @@ import { reportGraphicsFailure, reportGraphicsLoad, } from '../render/graphics-d
 import { GameAppearanceControls, GameIcon, GameSettingsDialog, GameSurface, GameUIProvider, } from './GameUI'
 import type { IslandTrialView } from './IslandTrials'
 import { IslandTrials } from './IslandTrials'
+import type { JourneyPlaqueLayout } from './journey-plaque-layout'
+import { createJourneyPlaqueLayout } from './journey-plaque-layout'
+import { MuseumBrand } from './MuseumBrand'
 import styles from './MuseumJourney.module.css'
 import { MuseumJourneySoundControls } from './MuseumJourneySoundControls'
 import { SongRunnerJourneyCard } from './SongRunnerJourneyCard'
@@ -70,6 +73,9 @@ export function MuseumJourney(props: {
   onAudioReady?(audio: MuseumJourneyAudio | undefined): void
 }) {
   let mapContainer: HTMLDivElement | undefined
+  let stageRail: HTMLElement | undefined
+  let selectedCard: HTMLElement | undefined
+  let plaqueLayout: JourneyPlaqueLayout | undefined
   const stageLabels = new Map<string, HTMLButtonElement>()
   let scene: MuseumJourneyScene | undefined
   let music: GlassMuseumAudio | undefined
@@ -209,6 +215,11 @@ export function MuseumJourney(props: {
       element.dataset.projected = 'true'
       element.tabIndex = 0
       element.removeAttribute('aria-hidden')
+      plaqueLayout?.update(
+        label.stageId,
+        Math.round(label.x),
+        Math.round(label.y),
+      )
     }
     for (const [stageId, element] of stageLabels) {
       if (projectedStageIds.has(stageId)) continue
@@ -317,11 +328,13 @@ export function MuseumJourney(props: {
   createEffect(() => {
     latestSelectedStageId = props.selectedStageId
     scene?.setSelected(latestSelectedStageId)
+    plaqueLayout?.refresh()
   })
 
   createEffect(() => {
     latestProgress = sceneProgress(props.chapters)
     scene?.setProgress(latestProgress)
+    plaqueLayout?.refresh()
   })
 
   createEffect(() => {
@@ -331,6 +344,13 @@ export function MuseumJourney(props: {
 
   onMount(() => {
     lifetime++
+    if (mapContainer !== undefined)
+      plaqueLayout = createJourneyPlaqueLayout({
+        container: mapContainer,
+        labels: stageLabels,
+        plaqueSelector: `.${styles.stagePlaque}`,
+        obstacles: () => [stageRail, selectedCard],
+      })
     music = props.createMusic?.()
     props.onAudioReady?.(
       music === undefined
@@ -364,6 +384,7 @@ export function MuseumJourney(props: {
     generation++
     unsubscribeForeground?.()
     removeMotionListener?.()
+    plaqueLayout?.dispose()
     scene?.dispose()
     scene = undefined
     updateProjectedStageLabels([])
@@ -414,17 +435,7 @@ export function MuseumJourney(props: {
             <div class={styles.mapCanvas} ref={mapContainer} />
 
             <header class={styles.mapHeader} data-game-hud>
-              <div class={styles.brand}>
-                <svg class={styles.sunMark} viewBox="0 0 80 80" aria-hidden>
-                  <circle cx="40" cy="40" r="14" />
-                  <circle cx="40" cy="40" r="3" />
-                  <path d="M40 3v18M40 59v18M3 40h18M59 40h18M14 14l13 13M53 53l13 13M66 14 53 27M27 53 14 66M29 6l5 15M51 59l5 15M6 29l15 5M59 51l15 5M51 6l-5 15M34 59l-5 15M74 29l-15 5M21 51 6 56" />
-                </svg>
-                <h1 id="glass-campaign-title">Glassworks</h1>
-                <p>
-                  Find your voice <span>in a brighter world.</span>
-                </p>
-              </div>
+              <MuseumBrand />
               <div class={styles.headerActions}>
                 <Show when={props.onOpenCollection}>
                   <button
@@ -536,7 +547,11 @@ export function MuseumJourney(props: {
           </div>
 
           <div class={styles.mapDock} data-game-hud-layer>
-            <nav class={styles.stageRail} aria-label="Select a museum island">
+            <nav
+              ref={stageRail}
+              class={styles.stageRail}
+              aria-label="Select a museum island"
+            >
               <div class={styles.cardMaterial} aria-hidden="true">
                 <GameSurface kind="plaque" class={styles.cardSurface}>
                   {null}
@@ -564,7 +579,14 @@ export function MuseumJourney(props: {
 
             <Show when={selectedChapter()} keyed>
               {(chapter) => (
-                <article class={styles.selectedCard} aria-live="polite">
+                <article
+                  ref={(element) => {
+                    selectedCard = element
+                    plaqueLayout?.refresh()
+                  }}
+                  class={styles.selectedCard}
+                  aria-live="polite"
+                >
                   <div class={styles.cardMaterial} aria-hidden="true">
                     <GameSurface class={styles.cardSurface} cornerLimit={12}>
                       {null}

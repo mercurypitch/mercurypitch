@@ -39,6 +39,13 @@ const lazyMeshoptDecoder = {
   },
 } satisfies LoaderMeshoptDecoder
 
+/** Share lazy Meshopt decoding with every game GLB loader. */
+export function createGameGltfLoader(manager?: LoadingManager): GLTFLoader {
+  return new GLTFLoader(manager).setMeshoptDecoder(
+    lazyMeshoptDecoder as MeshoptDecoder,
+  )
+}
+
 export interface ProfiledAssetSceneOptions {
   readonly signal: AbortSignal
   readonly assetProfile?: GlassAssetQualityProfile
@@ -59,11 +66,7 @@ export async function loadProfiledAssetScene(
   options.signal.addEventListener('abort', abort, { once: true })
   let scene: Object3D | undefined
   try {
-    scene = (
-      await new GLTFLoader(manager)
-        .setMeshoptDecoder(lazyMeshoptDecoder as MeshoptDecoder)
-        .loadAsync(url)
-    ).scene
+    scene = (await createGameGltfLoader(manager).loadAsync(url)).scene
     if (options.signal.aborted) throw abortError()
     if (failedDependencies.length > 0)
       throw new Error(

@@ -1,13 +1,15 @@
 // Runner scenery — bounded chunk instances use certified floor cuts and reviewed Living Crystal geometry.
-import type { BufferGeometry, Material, Object3D, Texture } from 'three'
+import type { BufferGeometry, Camera, Material, Object3D, Texture } from 'three'
 import { BoxGeometry, CylinderGeometry, FrontSide, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, Quaternion, TorusGeometry, Vector3, } from 'three'
 import { LIVING_CRYSTAL_PLATFORM_NODES } from '../content/living-crystal-profile'
 import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
+import { runnerCollectibleArtworkPickup } from '../runner/collectible-presentation'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { createLivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { validateLivingCrystalPlatformDonor } from './living-crystal-platform-contract'
 import type { MaterialFinishBank } from './material-finishes'
 import { useRunnerClearTransmission } from './runner-clear-transmission'
+import { createRunnerCollectibleArtwork } from './runner-collectible-artwork'
 import { createRunnerObstacleArt } from './runner-obstacles'
 import { RUNNER_GAP_APRON_THICKNESS_METERS, RUNNER_GAP_LIP_RADIUS_METERS, runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, } from './runner-world-layout'
 
@@ -63,13 +65,25 @@ export function createRunnerWorld(
   reducedMotion: boolean,
   finishes?: MaterialFinishBank,
   obstacleSources: ReadonlyMap<string, Object3D> = new Map(),
+  collectibleArtwork?: { readonly texture: Texture; readonly scale: number },
 ) {
   const donor = crystalScene.getObjectByName(LIVING_CRYSTAL_PLATFORM_NODES.root)
   if (!donor) throw new Error('Runner crystal support is missing.')
   const contract = validateLivingCrystalPlatformDonor(donor)
+  const artworkPickup = runnerCollectibleArtworkPickup(course)
+  if (artworkPickup && !collectibleArtwork)
+    throw new Error('Runner collectible artwork is missing.')
   const obstacleArt = createRunnerObstacleArt(course, obstacleSources)
   const root = new Group()
   root.name = 'singing-current-world'
+  const artwork =
+    artworkPickup && collectibleArtwork
+      ? createRunnerCollectibleArtwork(
+          artworkPickup,
+          collectibleArtwork.texture,
+          collectibleArtwork.scale,
+        )
+      : undefined
   const boxGeometry = new BoxGeometry(1, 1, 1)
   const lipGeometry = new CylinderGeometry(
     RUNNER_GAP_LIP_RADIUS_METERS,
@@ -310,7 +324,9 @@ export function createRunnerWorld(
         batch(part.geometry, part.material, crystal, `living-crystal-${index}`),
       ),
     ]
-    const pickups = course.rewards.pickups.filter((item) => item.chunkId === id)
+    const pickups = course.rewards.pickups.filter(
+      (item) => item.chunkId === id && item.id !== artwork?.pickupId,
+    )
     const coins = batch(
       pickupGeometry,
       gold,
@@ -324,6 +340,7 @@ export function createRunnerWorld(
       'discovery-rings',
     )
     group.add(...meshes, coins)
+    artwork?.attach(group, id)
     root.add(group)
     const item = {
       root: group,
@@ -342,6 +359,7 @@ export function createRunnerWorld(
       const resident = new Set(snapshot.residentChunkIds)
       for (const [id, item] of installed)
         if (!resident.has(id)) {
+          artwork?.retireChunk(id)
           item.root.removeFromParent()
           for (const mesh of [...item.meshes, item.coins]) mesh.dispose()
           installed.delete(id)
@@ -349,7 +367,7 @@ export function createRunnerWorld(
       for (const id of resident) {
         const item = installed.get(id) ?? install(id)
         const pickups = course.rewards.pickups.filter(
-          (pickup) => pickup.chunkId === id,
+          (pickup) => pickup.chunkId === id && pickup.id !== artwork?.pickupId,
         )
         pickups.forEach((pickup, index) => {
           const matrix = new Matrix4().makeTranslation(
@@ -370,7 +388,17 @@ export function createRunnerWorld(
         item.coins.instanceMatrix.needsUpdate = true
       }
       root.position.z = snapshot.courseDistanceMeters
+      artwork?.update(snapshot)
       roots.update({ deltaSeconds: dt, paused: snapshot.status !== 'running' })
+    },
+    faceCollectible(camera: Camera) {
+      artwork?.faceCamera(camera)
+    },
+    setCollectibleArtworkScale(scale: number) {
+      artwork?.setScale(scale)
+    },
+    withCollectibleWarmupState(prepare: () => Promise<void>) {
+      return artwork ? artwork.withWarmupState(root, prepare) : prepare()
     },
     metrics: () => ({
       residentChunks: installed.size,
@@ -385,6 +413,7 @@ export function createRunnerWorld(
     dispose() {
       if (disposed) return
       disposed = true
+      artwork?.dispose()
       for (const item of installed.values())
         for (const mesh of [...item.meshes, item.coins]) mesh.dispose()
       root.clear()

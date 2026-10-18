@@ -7,6 +7,9 @@ import type { GlassAssetQualityProfile } from '../render/render-quality'
 import type { JourneyAuthoredUnit } from './architecture'
 import { createJourneyArchitecture, findJourneyPortraitInset, } from './architecture'
 import { createJourneyBridgePath } from './bridge-path'
+import { attachAuthoredCliffGarden, GARDEN_CLIFF_VERTICAL_SCALE, hasAuthoredCliffGarden, removeLegacyCliffApron, validateAuthoredCliffGarden, } from './cliff-garden'
+import { createFirstLightDomeGeometry } from './dome-geometry'
+import { createJourneyDomeMaterials } from './dome-materials'
 import { createJourneyMerc } from './merc'
 import { createJourneyPondBorders } from './ponds'
 import { disposeJourneyPortraitTexture, fitJourneyPortraitTexture, loadJourneyPortraitTexture, } from './portrait-texture'
@@ -73,6 +76,7 @@ function createLandmasses(
   authored: JourneyAuthoredUnit,
   sculptural: JourneyAuthoredUnit | undefined,
   materials: JourneyTerraceMaterials,
+  ownedGeometries: Set<BufferGeometry>,
 ): Group {
   const root = new Group()
   root.name = 'floating-museum-three-landmasses'
@@ -80,12 +84,20 @@ function createLandmasses(
     const islandRoot = new Group()
     islandRoot.name = island.id
     const cliff = sculptural?.('map_cliff') ?? authored('map_island_root')
+    const gardenCliff = hasAuthoredCliffGarden(cliff)
+    if (gardenCliff && sculptural !== undefined)
+      attachAuthoredCliffGarden(cliff, island.id, sculptural, ownedGeometries)
     cliff.name = `${island.id}-sculpted-cliff`
     cliff.position.fromArray(island.position)
     cliff.rotation.y = island.yaw
     cliff.scale.set(
       island.scale[0] * (sculptural === undefined ? 1 : SCULPTED_CLIFF_SCALE_X),
-      island.scale[1] * (sculptural === undefined ? 1 : SCULPTED_CLIFF_SCALE_Y),
+      island.scale[1] *
+        (sculptural === undefined
+          ? 1
+          : gardenCliff
+            ? GARDEN_CLIFF_VERTICAL_SCALE
+            : SCULPTED_CLIFF_SCALE_Y),
       island.scale[2] * (sculptural === undefined ? 1 : SCULPTED_CLIFF_SCALE_Z),
     )
     islandRoot.add(cliff)
@@ -114,6 +126,7 @@ function createLandmasses(
 
     const terrace = authored('map_platform')
     terrace.name = `${island.id}-ivory-terrace`
+    if (gardenCliff) removeLegacyCliffApron(terrace, ownedGeometries)
     terrace.traverse((object) => {
       const mesh = object as Mesh
       if (!mesh.isMesh) return
@@ -191,6 +204,10 @@ function createAssembly(
     authoredUnit(sculptureDocument, 'map_cliff')
     authoredUnit(sculptureDocument, 'map_cypress')
     authoredUnit(sculptureDocument, 'map_flower_cluster')
+    validateAuthoredCliffGarden(
+      sculptureDocument.scene,
+      definition.landmasses.map((island) => island.id),
+    )
   }
   if (architectureDocument !== undefined) {
     authoredUnit(architectureDocument, 'map_twin_connector')
@@ -219,12 +236,22 @@ function createAssembly(
       roughness: 0.42,
       side: DoubleSide,
     }),
-    medallionGlass: new MeshStandardMaterial({
-      color: 0x2d756d,
-      emissive: 0x0b403b,
-      emissiveIntensity: 0.34,
-      metalness: 0.08,
-      roughness: 0.2,
+    medallionGold: new MeshPhysicalMaterial({
+      color: 0xffdfa3,
+      metalness: 0.68,
+      roughness: 0.14,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.12,
+      envMapIntensity: 1.9,
+    }),
+    medallionGlass: new MeshPhysicalMaterial({
+      color: 0xffffff,
+      vertexColors: true,
+      metalness: 0.24,
+      roughness: 0.12,
+      clearcoat: 1,
+      clearcoatRoughness: 0.07,
+      envMapIntensity: 1.6,
     }),
     ivory: new MeshStandardMaterial({
       color: 0xf5eee2,
@@ -283,6 +310,21 @@ function createAssembly(
       metalness: 0.18,
       roughness: 0.56,
     }),
+    quartz: new MeshPhysicalMaterial({
+      color: 0xf5faff,
+      vertexColors: true,
+      metalness: 0,
+      roughness: 0.055,
+      transmission: 0.62,
+      thickness: 0.34,
+      ior: 1.7,
+      clearcoat: 1,
+      clearcoatRoughness: 0.045,
+      iridescence: 0.16,
+      iridescenceIOR: 1.3,
+      iridescenceThicknessRange: [160, 340],
+      envMapIntensity: 2.1,
+    }),
     crystal: new MeshPhysicalMaterial({
       color: 0xbce6df,
       emissive: 0x2e827b,
@@ -292,6 +334,16 @@ function createAssembly(
       depthWrite: false,
       roughness: 0.14,
       side: DoubleSide,
+    }),
+    ivyFoliage: new MeshStandardMaterial({
+      color: 0x7a8747,
+      roughness: 0.76,
+      vertexColors: true,
+    }),
+    ivyDarkFoliage: new MeshStandardMaterial({
+      color: 0x4e683b,
+      roughness: 0.8,
+      vertexColors: true,
     }),
     foliage: new MeshStandardMaterial({
       color: 0x3c7357,
@@ -319,7 +371,15 @@ function createAssembly(
     architectureDocument === undefined
       ? undefined
       : (name) => authoredUnit(architectureDocument, name)
-  root.add(createLandmasses(definition, authored, sculptural, materials))
+  root.add(
+    createLandmasses(
+      definition,
+      authored,
+      sculptural,
+      materials,
+      ownedGeometries,
+    ),
+  )
   const architecture = createJourneyArchitecture(
     definition,
     authored,
@@ -327,6 +387,14 @@ function createAssembly(
     architectural,
     materials,
     ownedGeometries,
+    sculptureDocument?.scene,
+  )
+  const ownedDomeMaterials = createJourneyDomeMaterials(architecture.root)
+  createFirstLightDomeGeometry(
+    architecture.root,
+    materials.gold,
+    ownedGeometries,
+    ownedDomeMaterials,
   )
   if (mysteryTexture !== undefined) {
     const inset = architecture.portraitSurfaces.values().next().value
@@ -343,6 +411,9 @@ function createAssembly(
       sculptural,
       materials,
       ownedGeometries,
+      hasAuthoredCliffGarden(
+        sculptureDocument?.scene.getObjectByName('map_cliff'),
+      ),
     ),
   )
   const trail = createGoldTrail(definition, materials.gold, ownedGeometries)
@@ -355,6 +426,7 @@ function createAssembly(
     starMarkers: architecture.starMarkers,
     materials,
     ownedGeometries,
+    ownedDomeMaterials,
   }
 }
 
@@ -364,6 +436,7 @@ function disposeAssembly(assembly: ReturnType<typeof createAssembly>): void {
     if (object instanceof InstancedMesh) object.dispose()
   })
   assembly.ownedGeometries.forEach((geometry) => geometry.dispose())
+  assembly.ownedDomeMaterials.forEach((material) => material.dispose())
   Object.values(assembly.materials).forEach((material) => material.dispose())
 }
 

@@ -18,7 +18,7 @@ import { runnerUpcomingCue } from './runner-upcoming-cue'
 import { RunnerControls } from './RunnerControls'
 import { RunnerFinishRewards } from './RunnerFinishRewards'
 import { RunnerNotation } from './RunnerNotation'
-import type { RunnerCameraControls } from './RunnerSoundTune'
+import type { RunnerArtworkControls, RunnerCameraControls, } from './RunnerSoundTune'
 import { RunnerSetup, RunnerSoundTune } from './RunnerSoundTune'
 import { RunnerUpcomingCue } from './RunnerUpcomingCue'
 import styles from './SongRunnerView.module.css'
@@ -26,6 +26,7 @@ import styles from './SongRunnerView.module.css'
 interface SongRunnerViewProps {
   earlierRecord?: SavedRunnerProgress
   developmentControls?: DevelopmentRenderControls
+  artworkControls?: RunnerArtworkControls
   cameraControls?: RunnerCameraControls
   course: CompiledRunnerCourse
   session: SongRunnerSession
@@ -421,6 +422,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       data-course-beat={game().courseBeat.toFixed(3)}
       data-course-status={game().status}
       data-resolved-targets={game().resolvedTargets.length}
+      data-collected-rewards={game().collectedRewardIds.join(',')}
       data-hit-targets={
         game().resolvedTargets.filter((target) => target.outcome === 'hit')
           .length
@@ -474,6 +476,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         </Show>
         <RunnerSoundTune
           developmentControls={props.developmentControls}
+          artworkControls={props.artworkControls}
           cameraControls={props.cameraControls}
           open={settingsOpen()}
           continuous={props.course.movement.kind === 'continuous'}

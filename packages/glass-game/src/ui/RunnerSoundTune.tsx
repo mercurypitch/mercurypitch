@@ -1,5 +1,6 @@
 // Runner settings — existing mix, camera and setup controls within the shared game dialog.
 import { createEffect, createMemo, createSignal, For, Show, untrack, } from 'solid-js'
+import { COLLECTIBLE_ARTWORK_SCALE } from '../core/collectible-artwork'
 import { SHATTER_PLAYBACK_SPEED } from '../core/shatter-presentation'
 import type { GlassMicrophoneInput } from '../host'
 import { runnerMidiName } from '../runner/notation'
@@ -100,6 +101,11 @@ export interface RunnerCameraControls {
   readonly onChange: (profile: RunnerCameraChoice) => void
 }
 
+export interface RunnerArtworkControls {
+  readonly scale: number
+  readonly onChange: (scale: number) => void
+}
+
 const CAMERA_VIEWS = [
   { profile: 'responsive-close', label: 'Standard' },
   { profile: 'steering-close', label: 'Closer' },
@@ -108,6 +114,7 @@ const CAMERA_VIEWS = [
 
 interface RunnerSoundTuneProps {
   developmentControls?: DevelopmentRenderControls
+  artworkControls?: RunnerArtworkControls
   cameraControls?: RunnerCameraControls
   microphoneInput?: GlassMicrophoneInput
   microphoneIssue?: MicrophoneIssue
@@ -310,6 +317,44 @@ export function RunnerSoundTune(props: RunnerSoundTuneProps) {
     <Show when={props.developmentControls}>
       {(controls) => (
         <div class={styles.section}>
+          <Show when={props.artworkControls}>
+            {(artwork) => (
+              <>
+                <label class={styles.volume}>
+                  <span>
+                    Artwork size <output>{percentage(artwork().scale)}%</output>
+                  </span>
+                  <input
+                    type="range"
+                    aria-label="Artwork size"
+                    aria-valuetext={`${percentage(artwork().scale)} percent`}
+                    min={percentage(COLLECTIBLE_ARTWORK_SCALE.minimum)}
+                    max={percentage(COLLECTIBLE_ARTWORK_SCALE.maximum)}
+                    step={percentage(COLLECTIBLE_ARTWORK_SCALE.step)}
+                    value={percentage(artwork().scale)}
+                    onInput={(event) =>
+                      artwork().onChange(
+                        event.currentTarget.valueAsNumber / 100,
+                      )
+                    }
+                  />
+                </label>
+                <p class={styles.description}>
+                  Changes the Sun seal artwork size. Pickup reach stays the
+                  same.
+                </p>
+                <button
+                  type="button"
+                  class={styles.action}
+                  onClick={() =>
+                    artwork().onChange(COLLECTIBLE_ARTWORK_SCALE.default)
+                  }
+                >
+                  Reset to 120%
+                </button>
+              </>
+            )}
+          </Show>
           <label class={styles.volume}>
             <span>
               Shatter speed{' '}

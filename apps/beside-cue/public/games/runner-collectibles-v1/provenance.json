@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "C01",
+      "assetId": "runner-sun-seal-ring-v1",
+      "file": "c01-sun-seal-ring.webp",
+      "bytes": 94828,
+      "sha256": "2b48faf6c53f3f6e692f2eb1245eb9e0c21bb1ca3d6f1dc65aa82f1ff13308c4",
+      "width": 768,
+      "height": 768,
+      "reference": {
+        "file": "c01-sun-seal-ring.png",
+        "bytes": 1944835,
+        "sha256": "c673095c332d0800e9b959f16321e3730a9577c511ac641ca386ca43a617afd9"
+      },
+      "acceptedAlpha": {
+        "file": "c01-sun-seal-ring-alpha-v1.png",
+        "bytes": 1269622,
+        "sha256": "595ea83fdb4ad096fcb5d3f12c82461a5e4bd8deb7341e58a321f5bef07775d0",
+        "method": "Image-generation background extraction from the accepted reference; transparent image, no generated 3D model"
+      },
+      "deliveryEncoding": {
+        "format": "webp",
+        "quality": 85,
+        "alphaQuality": 100,
+        "effort": 6,
+        "resize": "768 by 768, Lanczos3"
+      },
+      "presentation": "Camera-facing cutout using baked reference lighting. First authored Crystal Current continuous pickup only; collection geometry and rewards are unchanged."
+    }
+  ]
+}

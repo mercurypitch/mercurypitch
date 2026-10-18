@@ -3,7 +3,9 @@ import type { Object3D, Texture } from 'three'
 import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HemisphereLight, PCFShadowMap, PerspectiveCamera, RepeatWrapping, Scene, SRGBColorSpace, TextureLoader, } from 'three'
 import { RUNNER_MATERIAL_FINISH_TEXTURE_IDS } from '../content/material-finishes'
 import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
+import { normalizeCollectibleArtworkScale } from '../core/collectible-artwork'
 import { parseShatterPlaybackSpeed } from '../core/shatter-presentation'
+import { RUNNER_COLLECTIBLE_ARTWORK, runnerCollectibleArtworkPickup, } from '../runner/collectible-presentation'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { resolveAssetProfileBundle } from './asset-profile-bundles'
 import { loadProfiledAssetScene } from './asset-scene-loader'
@@ -39,6 +41,7 @@ export interface SongRunnerRendererOptions {
   readonly assetProfile?: GlassAssetQualityProfile
   readonly reducedMotion?: boolean
   readonly shatterPlaybackSpeed?: number
+  readonly collectibleArtworkScale?: number
   readonly renderQuality?: GlassRenderQualityPreference
   readonly onContextLost: () => void
 }
@@ -47,6 +50,7 @@ export interface SongRunnerRenderer {
   render(snapshot: RunnerSnapshot, deltaSeconds: number): boolean
   resize(): void
   setShatterPlaybackSpeed(speed: number): void
+  setCollectibleArtworkScale(scale: number): void
   setRenderQuality(preference: GlassRenderQualityPreference): void
   getRenderQuality: GlassRenderer['getRenderQuality']
   setCameraProfile(
@@ -87,6 +91,9 @@ export function createSongRunnerRenderer(
   const camera = new PerspectiveCamera(55, 1, 0.08, 75)
   let shatterPlaybackSpeed = parseShatterPlaybackSpeed(
     options.shatterPlaybackSpeed,
+  )
+  let collectibleArtworkScale = normalizeCollectibleArtworkScale(
+    options.collectibleArtworkScale,
   )
   let qualityPreference = options.renderQuality ?? 'auto'
   const qualityEnvironment = {
@@ -406,6 +413,10 @@ export function createSongRunnerRenderer(
         finishTextures.set(id, await texture(id))
       if (disposed) return
       const finishes = createMaterialFinishBank(finishTextures)
+      const collectibleTexture = runnerCollectibleArtworkPickup(course)
+        ? await texture(RUNNER_COLLECTIBLE_ARTWORK.assetId)
+        : undefined
+      if (disposed) return
       world = createRunnerWorld(
         course,
         crystal,
@@ -413,6 +424,9 @@ export function createSongRunnerRenderer(
         options.reducedMotion === true,
         finishes,
         obstacleSources,
+        collectibleTexture
+          ? { texture: collectibleTexture, scale: collectibleArtworkScale }
+          : undefined,
       )
       targets = createRunnerTargets(
         course,
@@ -452,6 +466,7 @@ export function createSongRunnerRenderer(
       if (opening) scene.add(opening.root)
       if (disposed) return
       world.update(options.initialSnapshot, 0)
+      world.faceCollectible(camera)
       targets.update(options.initialSnapshot, 0)
       scenery.update(options.initialSnapshot, 0)
       opening?.update(options.initialSnapshot, 0)
@@ -462,14 +477,22 @@ export function createSongRunnerRenderer(
         [merc.root, targets.root],
         quality,
       )
-      installBackdropFog(scene, sky)
-      await scenery.withWarmupState(async () => {
-        await precompileRendererPrograms(renderer, scene, camera, abort.signal)
-        if (disposed) return
-        renderer.shadowMap.needsUpdate = true
-        withResidentRenderablesVisible(scene, () =>
-          renderer.render(scene, camera),
-        )
+      await world.withCollectibleWarmupState(async () => {
+        world!.faceCollectible(camera)
+        installBackdropFog(scene, sky!)
+        await scenery!.withWarmupState(async () => {
+          await precompileRendererPrograms(
+            renderer,
+            scene,
+            camera,
+            abort.signal,
+          )
+          if (disposed) return
+          renderer.shadowMap.needsUpdate = true
+          withResidentRenderablesVisible(scene, () =>
+            renderer.render(scene, camera),
+          )
+        })
       })
       if (disposed) return
       shadowCadence.invalidate()
@@ -523,6 +546,7 @@ export function createSongRunnerRenderer(
       dt,
     )
     applyCameraPose()
+    world!.faceCollectible(camera)
     merc!.update(
       {
         player: {
@@ -584,6 +608,11 @@ export function createSongRunnerRenderer(
     setShatterPlaybackSpeed(speed) {
       shatterPlaybackSpeed = parseShatterPlaybackSpeed(speed)
       targets?.setShatterPlaybackSpeed(shatterPlaybackSpeed)
+    },
+    setCollectibleArtworkScale(scale) {
+      if (disposed || contextLost) return
+      collectibleArtworkScale = normalizeCollectibleArtworkScale(scale)
+      world?.setCollectibleArtworkScale(collectibleArtworkScale)
     },
     setRenderQuality(preference) {
       if (disposed || contextLost) return

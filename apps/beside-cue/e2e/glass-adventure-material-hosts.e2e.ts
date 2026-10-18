@@ -1,5 +1,6 @@
 // Museum material integration — decorative tiles must fill their real touch controls in every engine.
 import { expect, test } from '@playwright/test'
+import { catalogueActionContainment, museumTextContrast, completedMuseumCardStorage, museumCardContainment, } from './helpers/museum-card-containment'
 
 test.use({ hasTouch: true })
 test.setTimeout(120_000)
@@ -242,3 +243,119 @@ test('compact museum cards keep every gallery title and entry inside the frame @
     })
   }
 })
+
+for (const progress of ['default', 'completed'] as const) {
+  for (const viewport of [
+    { width: 768, height: 1024 },
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+  ]) {
+    test(`museum cards contain full titles, rewards and actions with ${progress} progress at ${viewport.width}x${viewport.height} @smoke`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize(viewport)
+      if (progress === 'completed')
+        await page.addInitScript((storage) => {
+          for (const [key, value] of Object.entries(storage))
+            localStorage.setItem(key, value)
+        }, completedMuseumCardStorage())
+      await page.goto('/glass-game/?campaign=1')
+      await expect(page.locator('[data-map-state]')).toHaveAttribute(
+        'data-map-state',
+        'ready',
+        { timeout: 60_000 },
+      )
+      const choices = page
+        .getByRole('navigation', { name: 'Select a museum island' })
+        .getByRole('button')
+      await expect(choices).toHaveCount(4)
+      // Start with the long Conservatory title that previously clipped its completed action.
+      for (const index of [3, 0, 1, 2]) {
+        const choice = choices.nth(index)
+        await choice.tap()
+        await expect(choice).toHaveAttribute('aria-pressed', 'true')
+        const action = page.getByRole('button', {
+          name: /^Open selected gallery:/,
+        })
+        const card = page.locator('article').filter({ has: action })
+        if (progress === 'completed' && index > 0) {
+          await expect(card.getByText(/^Portrait collected/)).toBeVisible()
+          await expect(
+            card.locator(`[aria-label^="${index} saved "]`),
+          ).toBeVisible()
+        }
+        await expect
+          .poll(() => action.evaluate(museumCardContainment))
+          .toEqual([])
+        await page.screenshot({
+          path: testInfo.outputPath(`card-${index}.png`),
+        })
+      }
+      if (viewport.width === 320 || viewport.width === 768) {
+        const catalogue = page.getByRole('region', {
+          name: 'The museum catalogue',
+        })
+        const entries = catalogue.getByRole('button', {
+          name: /^(Enter|Continue|Replay|Locked:) /,
+        })
+        await expect(entries).toHaveCount(4)
+        for (const theme of ['Crystal', 'Celadon']) {
+          const settings = page.getByRole('button', {
+            name: 'Open museum settings',
+            exact: true,
+          })
+          await settings.scrollIntoViewIfNeeded()
+          await settings.tap()
+          const dialog = page.getByRole('dialog', {
+            name: 'Settings',
+            exact: true,
+          })
+          await dialog
+            .getByRole('tab', { name: 'Appearance', exact: true })
+            .tap()
+          await dialog.getByRole('button', { name: theme, exact: true }).tap()
+          await dialog
+            .getByRole('button', { name: 'Close settings', exact: true })
+            .tap()
+          const titles = catalogue.locator('strong')
+          await expect(titles).toHaveCount(4)
+          const runner = page.getByRole('region', {
+            name: 'The Singing Current',
+            exact: true,
+          })
+          const texts = [
+            catalogue.getByRole('heading', {
+              name: 'The museum catalogue',
+              exact: true,
+            }),
+            ...(await titles.all()),
+            runner.getByRole('heading', {
+              name: 'The Singing Current',
+              exact: true,
+            }),
+            runner.locator('p'),
+            runner.locator('small'),
+          ]
+          for (const text of texts) {
+            await text.scrollIntoViewIfNeeded()
+            await expect
+              .poll(() => text.evaluate(museumTextContrast))
+              .toBeGreaterThanOrEqual(4.5)
+          }
+          for (const entry of await entries.all()) {
+            await entry.scrollIntoViewIfNeeded()
+            await expect
+              .poll(() => entry.evaluate(catalogueActionContainment))
+              .toEqual([])
+          }
+          await page.screenshot({
+            path: testInfo.outputPath(`catalogue-actions-${theme}.png`),
+          })
+        }
+      }
+    })
+  }
+}

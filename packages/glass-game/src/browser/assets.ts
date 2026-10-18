@@ -70,7 +70,9 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'floating-museum-mystery-portrait-v5': 'journey-map-v5/mystery-muse.webp',
   'floating-museum-cloudscape-v3': 'journey-map-v3/cloudscape.webp',
   'floating-museum-twin-finish-kit-v4':
-    'journey-map-v10/floating-museum-botanical-kit-v10.glb',
+    'journey-map-v11/floating-museum-garden-edge-desktop-v11.glb',
+  'floating-museum-garden-edge-mobile-v11':
+    'journey-map-v11/floating-museum-garden-edge-mobile-v11.glb',
   'floating-museum-architecture-kit-v6':
     'journey-map-v8/floating-museum-architecture-kit-v8.glb',
   'floating-museum-map-kit-v1': 'journey-map-v1/floating-museum-map-kit-v1.glb',
@@ -110,6 +112,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'runner-crystal-bulwark-v1': 'runner-obstacles-v1/glacial-bulwark.glb',
   'runner-rose-hurdle-v1': 'runner-obstacles-v1/rose-wave-hurdle.glb',
   'runner-celadon-arch-v1': 'runner-obstacles-v1/celadon-low-arch.glb',
+  'runner-sun-seal-ring-v1': 'runner-collectibles-v1/c01-sun-seal-ring.webp',
   'resonance-rosebud-v1': 'resonance/assets/resonance-rosebud-v1.glb',
   'g01-sunlit-diadem': 'glassware-trio-v1/g01-sunlit-diadem.glb',
   'g14-tidal-wave-carafe': 'glassware-trio-v1/g14-tidal-wave-carafe.glb',
@@ -159,6 +162,10 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
  */
 export const GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS = Object.freeze([
   {
+    desktop: GLASS_GAME_ASSET_FILES['floating-museum-twin-finish-kit-v4'],
+    mobile: GLASS_GAME_ASSET_FILES['floating-museum-garden-edge-mobile-v11'],
+  },
+  {
     desktop:
       GLASS_GAME_ASSET_FILES['cloudway-lab-pearl-quarter-turn-a-desktop-v1'],
     mobile:
@@ -174,7 +181,13 @@ export const GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS = Object.freeze([
   },
 ] as const)
 
+/** External resources referenced only by full-profile bundles. Mobile embeds its images. */
+export const GLASS_GAME_DESKTOP_ONLY_DEPENDENCY_FILES = Object.freeze([
+  'journey-map-v11/museum-jasmine-full-v11.webp',
+] as const)
+
 const MANIFEST_FILES = [
+  'runner-collectibles-v1/provenance.json',
   'material-finish-v1/manifest.json',
   'adventure/manifest.json',
   'adventure-v2/manifest.json',
@@ -184,7 +197,7 @@ const MANIFEST_FILES = [
   'adventure-v7/manifest.json',
   'journey-map-v1/manifest.json',
   'journey-map-v3/manifest.json',
-  'journey-map-v10/manifest.json',
+  'journey-map-v11/manifest.json',
   'journey-map-v8/manifest.json',
   'cloudway-v7/manifest.json',
   'cloudway-v3/manifest.json',
@@ -220,6 +233,7 @@ export const GLASS_GAME_REQUIRED_FILES: readonly string[] = Object.freeze([
     ...Object.values(GLASS_GAME_ASSET_FILES),
     ...MANIFEST_FILES,
     ...DEPENDENCY_FILES,
+    ...GLASS_GAME_DESKTOP_ONLY_DEPENDENCY_FILES,
   ]),
 ])
 

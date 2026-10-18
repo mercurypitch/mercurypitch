@@ -1,0 +1,28 @@
+{
+  "version": 11,
+  "status": "Selected artwork delivery; exact profile hashes. Native device acceptance remains separate.",
+  "assets": {
+    "floating-museum-twin-finish-kit-v4": {
+      "file": "floating-museum-garden-edge-desktop-v11.glb",
+      "profile": "full",
+      "bytes": 24497292,
+      "sha256": "366c18747aed0784fb49be3f3feb9c60ffea3d09d64962c09dbf2694e0899e85",
+      "dependencies": [
+        {
+          "uri": "museum-jasmine-full-v11.webp",
+          "mimeType": "image/webp",
+          "bytes": 1306384,
+          "sha256": "9c4fd99bc7a92b1eca0be72e5ed3c5aee507620b84425cc8710e4157043dd49c",
+          "native": false
+        }
+      ]
+    },
+    "floating-museum-garden-edge-mobile-v11": {
+      "file": "floating-museum-garden-edge-mobile-v11.glb",
+      "profile": "mobile",
+      "bytes": 21667240,
+      "sha256": "93cfd1b548ab3bd7ffee4fcb3fa11cbb5cf8dc29c750126f61d893c8885e4272",
+      "dependencies": []
+    }
+  }
+}
