@@ -136,21 +136,21 @@ export function FieldBookView(props: FieldBookViewProps): JSX.Element {
 
   const status = () => {
     if (!session()) {
-      return 'No song is open — choose one from the Field Book on the bench.'
+      return 'No song is open. Choose one from the Field Book on the bench.'
     }
     const current = state()
     switch (current.status) {
       case 'unread':
         return 'Opening the song…'
       case 'reading':
-        return `Reading the song — ${phaseWord(current.progress)} · ${current.progress?.pct ?? 0}%`
+        return `Reading the song: ${phaseWord(current.progress)} · ${current.progress?.pct ?? 0}%`
       case 'error':
         return current.error
       case 'ready': {
         const book = current.reading?.book
         const tally = counts()
         return book && tally
-          ? `${keyLabel(book.key)} — ${tally.home} landings, ${tally.echo} phrases, ${tally.bassline} root motions.`
+          ? `${keyLabel(book.key)}: ${tally.home} landings, ${tally.echo} phrases, ${tally.bassline} root motions.`
           : 'Read.'
       }
     }

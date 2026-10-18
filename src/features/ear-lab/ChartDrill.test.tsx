@@ -126,17 +126,17 @@ async function beginAndRead(): Promise<{ origin: number; pad: HTMLElement }> {
   // started.
   expect(ctx.createOscillator).toHaveBeenCalledTimes(4)
   await vi.advanceTimersByTimeAsync(LEAD)
-  expect(status()).toBe('Count-in — read the chart…')
+  expect(status()).toBe('Count-in. Read the chart…')
   // The pattern is already written on the upper rule.
   expect(drum().querySelectorAll('[data-part="score-onset"]')).toHaveLength(3)
   await vi.advanceTimersByTimeAsync(COUNT - PULSE_TIMING.armEarlyMs)
-  expect(status()).toBe('Yours — your first tap starts the bar.')
+  expect(status()).toBe('Yours. Your first tap starts the bar.')
   const pad = screen.getByTestId('ear-tap-pad')
   expect(pad.hasAttribute('disabled')).toBe(false)
   await vi.advanceTimersByTimeAsync(PULSE_TIMING.armEarlyMs)
   // Nothing plays the first beat for the player any more.
   expect(ctx.createOscillator).toHaveBeenCalledTimes(4)
-  expect(drum().textContent).toContain('tap to start')
+  expect(drum().textContent).toContain('Tap to start')
   return { origin: t0 + LEAD + COUNT, pad }
 }
 
@@ -147,7 +147,7 @@ describe('ChartDrill', () => {
         <ChartDrill onBack={vi.fn()} />
       </Stage>
     ))
-    expect(status()).toBe('A written bar over the click — tap it at sight.')
+    expect(status()).toBe('A written bar over the click. Tap it at sight.')
   })
 
   it('anchors the take on the first tap and reads a clean bar', async () => {
@@ -161,7 +161,7 @@ describe('ChartDrill', () => {
 
     await vi.advanceTimersByTimeAsync(700)
     tapAt(pad, origin + 700)
-    expect(status()).toBe('Tapping — 1 so far.')
+    expect(status()).toBe('Tapping: 1 so far.')
     await vi.advanceTimersByTimeAsync(PERIOD)
     tapAt(pad, origin + 700 + PERIOD + 50)
     await vi.advanceTimersByTimeAsync(PERIOD)
@@ -170,7 +170,7 @@ describe('ChartDrill', () => {
     await vi.advanceTimersByTimeAsync(
       4 * PERIOD + 120 + PULSE_TIMING.tailMs + 40,
     )
-    expect(status()).toBe('Clean — every onset met.')
+    expect(status()).toBe('Clean. Every onset met.')
     expect(drum().querySelectorAll('[data-part="score-onset"]')).toHaveLength(0)
     expect(
       drum().querySelectorAll('[data-part="onset"][data-met="true"]'),
@@ -200,7 +200,7 @@ describe('ChartDrill', () => {
     await vi.advanceTimersByTimeAsync(
       4 * PERIOD + 120 + PULSE_TIMING.tailMs + 40,
     )
-    expect(status()).toBe('Not quite — 2 onsets missed, 1 extra tap.')
+    expect(status()).toBe('Not quite: 2 onsets missed, 1 extra tap.')
     expect(earPlayerRating('chart').rating).toBeLessThan(before)
   })
 })

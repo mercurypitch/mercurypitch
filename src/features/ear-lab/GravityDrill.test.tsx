@@ -123,7 +123,7 @@ describe('GravityDrill', () => {
   it('rates a right answer under gravity, not home', async () => {
     await beginAndListen()
     fireEvent.click(pads()[8])
-    expect(status()).toBe('Yes — Le (♭6).')
+    expect(status()).toBe('Yes. Le (♭6).')
     expect(earPlayerRating('gravity').attempts).toBe(1)
     expect(earPlayerRating('home').attempts).toBe(0)
   })
@@ -131,7 +131,7 @@ describe('GravityDrill', () => {
   it('names the slip in the chromatic labels and replays the fall home', async () => {
     await beginAndListen()
     fireEvent.click(pads()[9])
-    expect(status()).toBe('That was Le (♭6) — hear it fall home.')
+    expect(status()).toBe('That was Le (♭6). Hear it fall home.')
     expect(earPlayerRating('gravity').attempts).toBe(1)
   })
 

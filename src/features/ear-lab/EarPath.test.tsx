@@ -21,7 +21,7 @@ describe('EarPath', () => {
     expect(screen.getByTestId('ear-path-count').textContent).toBe('0 of 11 lit')
     expect(container.textContent).not.toMatch(/\d%/)
     const current = container.querySelector('[aria-current="step"]')
-    expect(current?.getAttribute('aria-label')).toBe('First reading — dark')
+    expect(current?.getAttribute('aria-label')).toBe('First reading: dark')
     fireEvent.click(screen.getByTestId('ear-path-go'))
     expect(onNavigate).toHaveBeenCalledWith('hairline')
   })
@@ -58,7 +58,7 @@ describe('EarPath', () => {
     const onNavigate = vi.fn()
     render(() => <EarPath onNavigate={onNavigate} />)
     fireEvent.click(
-      screen.getByRole('button', { name: 'First desk reading — dark' }),
+      screen.getByRole('button', { name: 'First desk reading: dark' }),
     )
     expect(onNavigate).toHaveBeenCalledWith('desk')
   })

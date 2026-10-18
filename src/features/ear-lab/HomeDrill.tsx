@@ -57,9 +57,9 @@ export const HOME_COPY: HomeDrillCopy = {
   micConsumer: 'ear-home-drill',
   padLabel: 'Which degree was that?',
   columns: 7,
-  prompt: 'A cadence plants the key, then one note sounds — name its degree.',
+  prompt: 'A cadence plants the key, then one note sounds. Name its degree.',
   description:
-    'A short cadence tells your ear where home is. Then one note sounds — name its scale degree. This is the hearing that transfers to real music: not “a major sixth”, but “that note is La, and it wants to fall to Sol”.',
+    'A short cadence tells your ear where home is. Then one note sounds. Name its scale degree. This is the hearing that transfers to real music: not “a major sixth”, but “that note is La, and it wants to fall to Sol”.',
   ratingUnit: 'Function rating',
 }
 
@@ -189,11 +189,11 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       case 'cadence':
         return 'Planting the key…'
       case 'probe':
-        return 'The note — which degree is it?'
+        return 'The note. Which degree is it?'
       case 'answer':
         if (controller.mode() === 'mic') {
           return controller.unclear()
-            ? 'Did not catch that — once more, louder and steadier.'
+            ? 'Did not catch that. Once more, louder and steadier.'
             : 'Sing or play the degree you heard…'
         }
         return copy.padLabel
@@ -201,11 +201,11 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
         const degree = target()
         if (!degree) return ''
         if (controller.answeredDegree() === null) {
-          return `No clear take — that was ${degree.solfege} (${degreeLabel(degree)}). Round skipped, rating untouched.`
+          return `No clear take. That was ${degree.solfege} (${degreeLabel(degree)}). Round skipped, rating untouched.`
         }
         return correct()
-          ? `Yes — ${degree.solfege} (${degreeLabel(degree)})${centsLabel()}.`
-          : `That was ${degree.solfege} (${degreeLabel(degree)}) — hear it fall home.`
+          ? `Yes. ${degree.solfege} (${degreeLabel(degree)})${centsLabel()}.`
+          : `That was ${degree.solfege} (${degreeLabel(degree)}). Hear it fall home.`
       }
       default:
         return copy.prompt
@@ -261,8 +261,8 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     const gap = Math.round(ear.rating - voice.rating)
     if (Math.abs(gap) < 40) return 'Ear and voice are moving together.'
     return gap > 0
-      ? `Your ear (tap ${Math.round(ear.rating)}) leads your voice (sing ${Math.round(voice.rating)}) — the hearing is there; drill the production.`
-      : `Your voice (sing ${Math.round(voice.rating)}) leads your ear (tap ${Math.round(ear.rating)}) — rare, and worth more tap rounds.`
+      ? `Your ear (tap ${Math.round(ear.rating)}) leads your voice (sing ${Math.round(voice.rating)}). The hearing is there; drill the production.`
+      : `Your voice (sing ${Math.round(voice.rating)}) leads your ear (tap ${Math.round(ear.rating)}). That's rare, and worth more tap rounds.`
   }
 
   let ratingBefore = 0
@@ -367,9 +367,9 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                 />
                 <Show when={homeAnswerMode() === 'mic'}>
                   <ConsoleNote>
-                    Mic mode answers by ear alone — no buttons to luck into —
-                    and reads your intonation on every note. Octave does not
-                    matter; sing or play the degree anywhere comfortable.
+                    Mic mode answers by ear alone (no buttons to luck into) and
+                    reads your intonation on every note. Octave does not matter;
+                    sing or play the degree anywhere comfortable.
                   </ConsoleNote>
                 </Show>
                 <Show when={micPending()}>
@@ -447,13 +447,13 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
             >
               <Show when={isProvisional(result().rating)}>
                 <PlateBadge>
-                  Provisional — settling for {10 - result().rating.attempts}{' '}
-                  more answers
+                  Provisional: settling for {10 - result().rating.attempts} more
+                  answers
                 </PlateBadge>
               </Show>
               <PlateLine>
                 {result().total === 0
-                  ? 'Stopped before the first answer — nothing marked.'
+                  ? 'Stopped before the first answer. Nothing marked.'
                   : `${result().correct} of ${result().total} named correctly`}
                 {result().skipped > 0
                   ? ` · ${result().skipped} skipped (unclear)`
@@ -473,8 +473,8 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                     outcome.correct
                       ? ''
                       : outcome.answered === 0
-                        ? ' — skipped'
-                        : ` — answered ${labelOf(outcome.answered)}`
+                        ? ' (skipped)'
+                        : ` (answered ${labelOf(outcome.answered)})`
                   }`,
                 }))}
               />

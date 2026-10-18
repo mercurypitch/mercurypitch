@@ -109,7 +109,7 @@ describe('Contour', () => {
         <ContourDrill onBack={onBack} />
       </Stage>
     ))
-    expect(status()).toContain('which way did the second one go')
+    expect(status()).toContain('Which way did the second one go')
     expect(screen.queryByTestId('ear-stage-pads')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
@@ -131,7 +131,7 @@ describe('Contour', () => {
     ])
 
     fireEvent.click(armedPads()[0])
-    expect(status()).toMatch(/^(Yes — |That was )/)
+    expect(status()).toMatch(/^(Yes\. |That was )/)
     expect(screen.getByLabelText('Right')).toBeTruthy()
     expect(armedPads()).toHaveLength(0)
 
@@ -211,7 +211,7 @@ describe('Leap', () => {
     // garnet mark is exercised; the first click may happen to be right.
     fireEvent.click(armedPads()[0])
     const first = status()
-    expect(first).toMatch(/^(Yes — |That was )/)
+    expect(first).toMatch(/^(Yes\. |That was )/)
     if (first.startsWith('That was')) {
       expect(screen.getByLabelText('Wrong')).toBeTruthy()
     }
@@ -411,7 +411,7 @@ describe('Stack', () => {
     expect(armedPads().length).toBeGreaterThan(2)
 
     fireEvent.click(armedPads()[0])
-    expect(status()).toMatch(/^(Yes — |That was )/)
+    expect(status()).toMatch(/^(Yes\. |That was )/)
     fireEvent.click(screen.getByRole('button', { name: /Stop/ }))
     expect(screen.getByTestId('ear-stage-plate').textContent).toContain(
       'Stack rating',

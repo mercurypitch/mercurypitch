@@ -568,8 +568,8 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
           <Show when={panel() === 'readiness'}>
             <div class={styles.rackPanel}>
               <p class={styles.rackNote}>
-                The round trip from your speakers back to your microphone — one
-                number for the whole app, the same one Settings shows. Tap
+                The round trip from your speakers back to your microphone. It's
+                one number for the whole app, the same one Settings shows. Tap
                 drills subtract it so the reading is your ear, not your
                 hardware. Nothing listens until you press Start, and the
                 microphone is asked for only then.
@@ -587,7 +587,7 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
               <p>
                 Adaptive drills hold everyone near 75% correct forever, so a
                 score can never show growth. The Ear Lab reports thresholds in
-                real units — cents, milliseconds, notes — that keep falling, and
+                real units (cents, milliseconds, notes) that keep falling, and
                 ratings against items of frozen difficulty that keep rising.
               </p>
               <p>

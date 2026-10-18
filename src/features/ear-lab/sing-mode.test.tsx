@@ -179,7 +179,7 @@ describe('sing mode', () => {
     // Mi, then a breath of silence: judged by itself.
     mic.frames = sungFrames([60, 62, 64])
     await vi.advanceTimersByTimeAsync(SUNG_ANSWER.pollMs)
-    expect(status()).toContain('Yes — Do Re Mi.')
+    expect(status()).toContain('Yes. Do Re Mi.')
     expect(earPlayerRating('echo-sing').attempts).toBe(1)
     expect(earPlayerRating('echo').attempts).toBe(0)
     expect(earItemStates()['e-steps-up']).toBeUndefined()
@@ -191,7 +191,7 @@ describe('sing mode', () => {
     mic.frames = sungFrames([60, 65, 64], { open: true })
     fireEvent.click(screen.getByRole('button', { name: /Done/ }))
     await vi.advanceTimersByTimeAsync(0)
-    expect(status()).toContain('That was Do Re Mi — listen again.')
+    expect(status()).toContain('That was Do Re Mi. Listen again.')
     expect(
       document.querySelectorAll('[data-instrument="chain"] [data-part="wrong"]')
         .length,
@@ -243,7 +243,7 @@ describe('sing mode', () => {
     await vi.advanceTimersByTimeAsync(
       sungAnswerCeilingMs(echoPhraseMs(3)) + SUNG_ANSWER.pollMs,
     )
-    expect(status()).toContain('That was Do Re Mi — listen again.')
+    expect(status()).toContain('That was Do Re Mi. Listen again.')
     expect(earPlayerRating('echo-sing').attempts).toBe(1)
   })
 
@@ -262,7 +262,7 @@ describe('sing mode', () => {
         screen.getByRole('button', { name: new RegExp(`${word}$`) }),
       )
     }
-    expect(status()).toContain('Yes — Do Re Mi.')
+    expect(status()).toContain('Yes. Do Re Mi.')
     expect(earPlayerRating('echo').attempts).toBe(1)
     expect(earPlayerRating('echo-sing').attempts).toBe(0)
   })
@@ -280,7 +280,7 @@ describe('sing mode', () => {
     mic.frames = sungFrames([60, 67, 60])
     await vi.advanceTimersByTimeAsync(SUNG_ANSWER.pollMs)
     expect(status()).toContain(
-      'Held — all 3 notes, Do Sol Do. The phrase grows.',
+      'Held. All 3 notes, Do Sol Do. The phrase grows.',
     )
 
     // Next trial: two notes, then silence — slipped at note 3.

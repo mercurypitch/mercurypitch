@@ -103,8 +103,8 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
       title="Color"
       drillId="desk-colour"
       measures="Color · the desk"
-      description="A slice of the mix plays with one octave band boosted — 125 Hz to 4 kHz, six bands. Name the band. The boost shrinks while you are right and widens when you slip; the reading is the smallest boost you still place. Practice only: the desk reads on its own plate and the Column never moves for it."
-      prompt="One band is boosted — which?"
+      description="A slice of the mix plays with one octave band boosted (125 Hz to 4 kHz, six bands). Name the band. The boost shrinks while you are right and widens when you slip; the reading is the smallest boost you still place. Practice only: the desk reads on its own plate and the Column never moves for it."
+      prompt="One band is boosted. Which?"
       listenHint="Listen to the mix…"
       answerHint="Which band was boosted?"
       levelCaption="Boost"
@@ -126,7 +126,7 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
                   index: DESK_BANDS.findIndex(
                     (entry) => entry.id === band()?.id,
                   ),
-                  name: `${band()?.label ?? ''} — ${band()?.word ?? ''}`,
+                  name: `${band()?.label ?? ''} (${band()?.word ?? ''})`,
                 }
               : null
           }
@@ -159,7 +159,7 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
         const db = run.level().toFixed(1)
         if (!chosen) return ''
         return run.lastCorrect() === true
-          ? `Right — the ${chosen.label} band, up ${db} dB. The boost shrinks.`
+          ? `Right. The ${chosen.label} band, up ${db} dB. The boost shrinks.`
           : `It was ${chosen.label}, up ${db} dB. The boost widens.`
       }}
       backLabel="Back to the desk"

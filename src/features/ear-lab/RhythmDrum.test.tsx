@@ -32,7 +32,7 @@ describe('RhythmDrum', () => {
     render(() => <RhythmDrum bar="response" beat={0} waiting reveal={null} />)
     expect(drum().querySelector('[data-part="progress-fill"]')).toBeNull()
     expect(drum().querySelector('[data-part="playhead"]')).toBeNull()
-    expect(drum().textContent).toContain('tap to start')
+    expect(drum().textContent).toContain('Tap to start')
     expect(
       drum().querySelectorAll('[data-part="beat-lamp"][data-passed="true"]'),
     ).toHaveLength(0)

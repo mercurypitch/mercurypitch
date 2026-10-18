@@ -98,8 +98,8 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
       title="Contour"
       drillId="contour"
       measures="Shape · direction"
-      description="Two quick tones — up, down or the same? Easy until the gaps shrink: the top tier plays quarter-tone and finer moves, where contour hearing meets raw discrimination."
-      prompt="Two quick tones — which way did the second one go?"
+      description="Two quick tones: up, down or the same? Easy until the gaps shrink: the top tier plays quarter-tone and finer moves, where contour hearing meets raw discrimination."
+      prompt="Two quick tones. Which way did the second one go?"
       listenHint="Listen…"
       answerHint="Which way did it move?"
       choices={DIRECTIONS.map((d) => ({ id: d.id, label: d.label }))}

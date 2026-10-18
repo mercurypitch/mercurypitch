@@ -81,8 +81,8 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
       title="Stack"
       drillId="stack"
       measures="Color · chord quality"
-      description="One chord, roved root — name its quality. Color hearing starts here: major and minor first, then the qualities that take years by accident and weeks on purpose."
-      prompt="One chord — name its quality."
+      description="One chord, roved root. Name its quality. Color hearing starts here: major and minor first, then the qualities that take years by accident and weeks on purpose."
+      prompt="One chord. Name its quality."
       listenHint="Listen to the stack…"
       answerHint="Which quality was that?"
       choices={STACK_BANK.map((item) => ({

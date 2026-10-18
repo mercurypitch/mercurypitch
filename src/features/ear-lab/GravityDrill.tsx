@@ -19,9 +19,9 @@ export const GRAVITY_COPY: HomeDrillCopy = {
   micConsumer: 'ear-gravity-drill',
   padLabel: 'Which of the twelve was that?',
   columns: 6,
-  prompt: 'A cadence, then one note — any of the twelve. Which?',
+  prompt: 'A cadence, then one note (any of the twelve). Which?',
   description:
-    'A cadence plants the key and one note sounds — any of the twelve, not just the scale. Name it: the diatonic seven by number, the others by their leaning (♭2, ♭3, ♯4, ♭6, ♭7). Tap answers rate under Gravity with a one-in-twelve guess floor; sung or played answers rate on their own track and never touch the yardsticks.',
+    'A cadence plants the key and one note sounds (any of the twelve, not just the scale). Name it: the diatonic seven by number, the others by their leaning (♭2, ♭3, ♯4, ♭6, ♭7). Tap answers rate under Gravity with a one-in-twelve guess floor; sung or played answers rate on their own track and never touch the yardsticks.',
   ratingUnit: 'Gravity rating',
   keycaps: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
 }

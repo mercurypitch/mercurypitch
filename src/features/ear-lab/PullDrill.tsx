@@ -129,9 +129,9 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
       drillId="the-pull"
       measures="Function · tendency"
       description="A cadence plants the key, then two degrees sound, one after the other. Which one wants to move? The leading tone leans hardest, up to home; 4 leans down to 3; 6 and 2 lean more gently; 1, 3 and 5 rest. A miss plays the leaning note again and lets it resolve, so you hear the pull."
-      prompt="Two degrees over the key — which one leans harder?"
+      prompt="Two degrees over the key. Which one leans harder?"
       listenHint="Listen to the two notes…"
-      answerHint="Which note leans harder — the first, or the second?"
+      answerHint="Which note leans harder: the first, or the second?"
       choices={CHOICES}
       padLamp={(id) =>
         phase() === 'playing' && sounding() === (id === 'first' ? 1 : 2)

@@ -67,7 +67,7 @@ export function PhraseConsole(props: PhraseConsoleProps): JSX.Element {
       </Pads>
       <Show when={degrees().includes(8)}>
         <p class={styles.ladderHint}>
-          1′ is home again, an octave up — the top rung.
+          1′ is home again, an octave up: the top rung.
         </p>
       </Show>
     </>

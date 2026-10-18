@@ -299,7 +299,7 @@ export function Regulator(props: RegulatorProps): JSX.Element {
         <Show when={props.missingCount > 0}>
           <span class={styles.legendMissing}>
             {props.missingCount} facult
-            {props.missingCount === 1 ? 'y' : 'ies'} unmeasured — the cap stays
+            {props.missingCount === 1 ? 'y' : 'ies'} unmeasured. The cap stays
             dashed.
           </span>
         </Show>
