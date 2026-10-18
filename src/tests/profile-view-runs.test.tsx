@@ -195,7 +195,7 @@ describe('ProfileView identity', () => {
     render(() => <ProfileView {...base()} twinName="Elvis Presley" />)
 
     const portrait = screen.getByRole('img', {
-      name: /Elvis Presley — your voice twin/,
+      name: /Elvis Presley \(your voice twin\)/,
     })
     // The `mid` tier, at the 90px box it was chosen to land on.
     expect(portrait).toHaveAttribute('src', '/legends/mid/elvis.webp')

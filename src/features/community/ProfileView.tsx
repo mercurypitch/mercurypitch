@@ -162,7 +162,7 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
               src={art().src}
               width="90"
               height="112"
-              alt={`${art().twin} — your voice twin`}
+              alt={`${art().twin} (your voice twin)`}
               decoding="async"
             />
           )}
@@ -240,7 +240,7 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
         when={hasRuns()}
         fallback={
           <p class={styles.nothingYet}>
-            Nothing to show yet — finish a practice session and your range, your
+            Nothing to show yet. Finish a practice session and your range, your
             best runs and how they move over time all start filling in here.
           </p>
         }

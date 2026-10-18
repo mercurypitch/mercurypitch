@@ -148,7 +148,7 @@ describe('the count-in before a match note', () => {
     // The take is over. The stub heard nothing, so the note comes round
     // again after a pause, and nothing asks for a note in between.
     await vi.advanceTimersByTimeAsync(3100)
-    expect(screen.getByText(/one more try/)).toBeInTheDocument()
+    expect(screen.getByText(/One more try/)).toBeInTheDocument()
     expect(stage()).not.toHaveTextContent('Your turn')
     // The stub tone ends at once, so the retry is straight into its count-in.
     await vi.advanceTimersByTimeAsync(1300)
