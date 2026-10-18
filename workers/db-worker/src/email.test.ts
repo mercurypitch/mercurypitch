@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResendConfig } from './email'
-import { maskAddresses, maskEmail, sendAccountNotice, sendNewsletterIssue, sendPasswordReset, } from './email'
+import { maskAddresses, maskEmail, sendAccountNotice, sendNewsletterIssue, } from './email'
 import { sendLoginCode, sendSignUpCode } from './email-code'
+import { sendPasswordReset } from './email-password-reset'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 
 describe('maskEmail', () => {
@@ -58,6 +59,7 @@ describe('what a sent mail logs', () => {
       'a password reset',
       () =>
         sendPasswordReset(CFG, TO, {
+          ...ORIGINS,
           resetUrl: 'https://app.example.test/#/reset-password?token=t',
           ttlHours: 1,
         }),
@@ -152,6 +154,8 @@ describe('what a mail Resend refuses logs', () => {
     )
 
     await sendPasswordReset(CFG, TO, {
+      appOrigin: 'https://app.example.test',
+      assetOrigin: 'https://assets.example.test',
       resetUrl: 'https://app.example.test/#/reset-password?token=t',
       ttlHours: 1,
     })
@@ -174,6 +178,8 @@ describe('what a mail Resend refuses logs', () => {
     )
 
     await sendPasswordReset(CFG, TO, {
+      appOrigin: 'https://app.example.test',
+      assetOrigin: 'https://assets.example.test',
       resetUrl: 'https://app.example.test/#/reset-password?token=t',
       ttlHours: 1,
     })
