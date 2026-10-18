@@ -169,7 +169,7 @@ describe('a password sign-up', () => {
 
     expect(userId).toBeTruthy()
     const mail = onlyMail()
-    expect(mail.subject).toBe('Confirm your email for Mercury Pitch')
+    expect(mail.subject).toBe('Confirm your email for MercuryPitch')
     expect(mail.html).toContain('Who shares your range?')
     expect(mail.html).not.toContain('Nobody Famous')
   })
@@ -213,12 +213,12 @@ describe('a mailed sign-up code', () => {
 
     expect(verified.status).toBe(200)
     const mail = onlyMail()
-    expect(mail.subject).toBe("Welcome to Mercury Pitch. Let's hear you.")
+    expect(mail.subject).toBe("Welcome to MercuryPitch. Let's hear you.")
     expect(mail.html).toContain(
       `src="${DEV}/email/hero-06-karaoke-night-v1.jpg"`,
     )
     expect(mail.html).toContain(
-      `<a href="${DEV}/#/home" aria-label="Open Mercury Pitch"`,
+      `<a href="${DEV}/#/home" aria-label="Open MercuryPitch"`,
     )
   })
 })

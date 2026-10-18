@@ -236,7 +236,7 @@ ${footerHtml(reason)}
 /** The footer, as the plain-text part says it. */
 export function footerText(reason: string): string[] {
   return [
-    'Mercury Pitch · Learn to sing and play. Practice has never been more fun.',
+    'MercuryPitch · Learn to sing and play. Practice has never been more fun.',
     `${ABOUT_URL} · ${REPO_URL}`,
     `${reason} mercurypitch.com.`,
   ]

@@ -117,7 +117,7 @@ describe('the mail preview route', () => {
     )
     const text = (await response?.text()) ?? ''
     expect(
-      text.startsWith('Subject: Confirm your email for Mercury Pitch\n\n'),
+      text.startsWith('Subject: Confirm your email for MercuryPitch\n\n'),
     ).toBe(true)
     expect(text).toContain(
       'Confirm my email: https://mercurypitch.com/api/auth/verify-email?token=sample-token',

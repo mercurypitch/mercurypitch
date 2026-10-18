@@ -43,7 +43,7 @@ const PUBLIC_API = 'https://api.public.test'
 /** Where the console's requests arrive: the Access-gated door. */
 const DOOR = 'https://studio.door.test'
 const DAY = 24 * 60 * 60 * 1000
-const PLAIN_SUBJECT = 'A fresh link to confirm your Mercury Pitch email'
+const PLAIN_SUBJECT = 'A fresh link to confirm your MercuryPitch email'
 const TWIN_SUBJECT = 'Your voiceprint is still on your account'
 const CONFIRMED = `${APP}/#everified=1`
 const DEAD_LINK = `${APP}/#everified_error=invalid_or_used`

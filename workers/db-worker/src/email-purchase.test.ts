@@ -5,6 +5,9 @@ import { MAIL_ART, WORDMARK_PATH } from './email-layout'
 import type { PurchaseEmailVars } from './email-purchase'
 import { renderPurchaseEmail } from './email-purchase'
 
+/** The footer's copyright line as the HTML spells it. */
+const COPYRIGHT = '&copy; 2026 Mercury Pitch &middot; AGPL-3.0'
+
 // Links and pictures on different hosts, so a test can tell which one a URL
 // was built from.
 const APP = 'https://app.test'
@@ -132,10 +135,12 @@ describe('the purchase mail', () => {
       expect(copy).not.toMatch(/—|&mdash;|&#8212;/)
       expect(copy).not.toMatch(/practise/i)
     }
-    // The wordmark picture's alt is the logo; anywhere a person reads the
-    // name, it is two words.
-    expect(visibleText(html)).not.toContain('MercuryPitch')
-    expect(text).not.toContain('MercuryPitch')
+    // The name is one word, as docs/branding/BRAND.md types it: in the copy,
+    // the labels and the alt text. Only the copyright line, a legal notice,
+    // keeps its own wording.
+    for (const copy of [subject, html.replace(COPYRIGHT, ''), text]) {
+      expect(copy).not.toContain('Mercury Pitch')
+    }
     expect(visibleText(html)).toContain(
       "You're receiving this because you bought credits on mercurypitch.com.",
     )

@@ -302,7 +302,7 @@ const SIGN_OFF = 'Have a question? Reply to this email. Merc reads every one.'
 // A welcome's picture opens Home. A confirm mail's stays unlinked, so
 // confirming is always a deliberate tap on the button: someone who got a
 // mistyped address must not confirm a stranger's account by scrolling.
-const HOME_LINK: HeroLink = { path: '/#/home', label: 'Open Mercury Pitch' }
+const HOME_LINK: HeroLink = { path: '/#/home', label: 'Open MercuryPitch' }
 const WELCOME_REASON = "You're receiving this because you created an account on"
 const CONFIRM_REASON =
   "You're receiving this because this address was used to create an account on"
@@ -312,12 +312,12 @@ const CONFIRM_REASON =
 function welcomeLines(voiceprint: SignupVoiceprint | null): Lines {
   return voiceprint === null
     ? {
-        eyebrow: 'Welcome to Mercury Pitch',
+        eyebrow: 'Welcome to MercuryPitch',
         headline: 'Only the first note has to be brave.',
-        body: "After that, it's practice. Mercury Pitch shows every note you sing as a line on screen, so you can see right away if you're sharp or flat.",
+        body: "After that, it's practice. MercuryPitch shows every note you sing as a line on screen, so you can see right away if you're sharp or flat.",
       }
     : {
-        eyebrow: 'Welcome to Mercury Pitch',
+        eyebrow: 'Welcome to MercuryPitch',
         headline: `You share a range with ${voiceprint.twin}.`,
         body: "Your voiceprint is saved to your account. Here's what it found.",
       }
@@ -328,7 +328,7 @@ export function renderWelcomeEmail(vars: WelcomeEmailVars): RenderedEmail {
   const { voiceprint } = vars
   const subject =
     voiceprint === null
-      ? "Welcome to Mercury Pitch. Let's hear you."
+      ? "Welcome to MercuryPitch. Let's hear you."
       : `You share a range with ${voiceprint.twin}`
   const preheader =
     voiceprint === null
@@ -369,7 +369,7 @@ export function renderConfirmEmail(vars: ConfirmEmailVars): RenderedEmail {
   const { voiceprint } = vars
   const subject =
     voiceprint === null
-      ? 'Confirm your email for Mercury Pitch'
+      ? 'Confirm your email for MercuryPitch'
       : `Confirm your email, then meet ${voiceprint.twin} again`
   const preheader =
     voiceprint === null
@@ -380,7 +380,7 @@ export function renderConfirmEmail(vars: ConfirmEmailVars): RenderedEmail {
     headline: 'Last thing before the first note.',
     body: 'Confirm your email so we know this address is yours.',
   }
-  const ignore = "Didn't sign up for Mercury Pitch? You can ignore this email."
+  const ignore = "Didn't sign up for MercuryPitch? You can ignore this email."
   const html = documentHtml(
     subject,
     preheader,
@@ -422,7 +422,7 @@ export function renderFreshLinkEmail(vars: FreshLinkEmailVars): RenderedEmail {
   const { voiceprint } = vars
   const subject =
     voiceprint === null
-      ? 'A fresh link to confirm your Mercury Pitch email'
+      ? 'A fresh link to confirm your MercuryPitch email'
       : 'Your voiceprint is still on your account'
   const preheader =
     voiceprint === null
@@ -442,7 +442,7 @@ export function renderFreshLinkEmail(vars: FreshLinkEmailVars): RenderedEmail {
           body: `It's on your account: ${noteName(voiceprint.lowMidi)} to ${noteName(voiceprint.highMidi)}, a range you share with ${voiceprint.twin}. Confirm your email so we know this address is yours.`,
         }
   const ignore =
-    "Didn't sign up for Mercury Pitch? Ignore this and we won't write to this address again."
+    "Didn't sign up for MercuryPitch? Ignore this and we won't write to this address again."
   const html = documentHtml(
     subject,
     preheader,
