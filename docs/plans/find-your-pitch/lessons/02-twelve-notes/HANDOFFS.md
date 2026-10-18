@@ -179,7 +179,9 @@ scale 1.05 as their brackets turn gold (166.0); on "apart" all thirteen tiles sc
   720, D4 840, D♯4 960, E4 1080, F4 1200, F♯4 1320, G4 1440, G♯4 1560, A4 1680), so the row runs from
   x 184 to 1736; its home is y 420 to 700; corner radius 10.
 - White tiles `#e6edf3` at 92 % with their labels (JetBrains Mono 40 px, `#2a323c`, baseline y 676);
-  dark tiles `#161b22` with the `#30363d` rim and no label.
+  dark tiles `#2a313b` with a 2 px chrome rim (`#c3ccd6` at 65 %) and no label (film critic 11: the
+  first dark tiles, `#161b22` with a `#30363d` rim, stood at 1.04:1 on the stage). In S9's glide
+  each black key's face and rim blend into the tile style, so key and tile still meet exactly.
 - Under the row, at y 740: a chrome bracket under each of the 12 neighbouring pairs, labelled "1"
   (Outfit 40 px, baseline y 790). The step bars shrink into them.
 - The A3 tile's top edge glows blue, the A4 tile's orange (the two beads' notes).
