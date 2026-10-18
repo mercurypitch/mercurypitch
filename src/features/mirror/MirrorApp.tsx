@@ -1665,7 +1665,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
             <p class="mirror-dim">
               Note {session().matchIndex + 1} of {session().targets.length}
               <Show when={retryNotice()}>
-                . We couldn't hear a note there, one more try!
+                . We couldn't hear a note there. One more try!
               </Show>
             </p>
           </Show>
