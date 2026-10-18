@@ -1,0 +1,384 @@
+1
+00:00:00,900 --> 00:00:02,800
+[blue Merc sings an A, 220 Hz]
+
+2
+00:00:03,150 --> 00:00:05,050
+[orange Merc sings an A, 440 Hz]
+
+3
+00:00:05,300 --> 00:00:06,809
+ORANGE: Ha! Same note.
+
+4
+00:00:07,109 --> 00:00:11,612
+BLUE: Is it?
+Mine shook the air 220 times a second.
+
+5
+00:00:11,862 --> 00:00:14,512
+Yours shook it 440.
+
+6
+00:00:14,812 --> 00:00:18,388
+ORANGE: Twice as fast?
+Then why do they sound the same?
+
+7
+00:00:18,788 --> 00:00:23,567
+BLUE: Good question. To answer it,
+we need to know what a note really is.
+
+8
+00:00:23,767 --> 00:00:26,967
+[chime]
+
+9
+00:00:27,367 --> 00:00:32,070
+Every note you have ever heard
+starts with something shaking.
+
+10
+00:00:32,420 --> 00:00:33,783
+A guitar string.
+
+11
+00:00:34,083 --> 00:00:35,147
+A speaker.
+
+12
+00:00:35,447 --> 00:00:37,759
+The vocal folds in your throat.
+
+13
+00:00:38,609 --> 00:00:43,259
+Pluck a string, and it swings
+back and forth, pushing on the air.
+
+14
+00:00:43,559 --> 00:00:46,018
+Here it is, slowed right down.
+
+15
+00:00:46,418 --> 00:00:50,868
+Each push travels outward as a wave,
+all the way to your ear.
+
+16
+00:00:51,268 --> 00:00:55,598
+Count the swings in one second,
+and you have the note's frequency.
+
+17
+00:00:56,198 --> 00:01:01,253
+At real speed,
+this string swings 220 times.
+
+18
+00:01:01,553 --> 00:01:04,797
+We measure it in hertz. Swings per second.
+
+19
+00:01:05,597 --> 00:01:07,862
+Slow swings make a low note.
+
+20
+00:01:07,945 --> 00:01:09,897
+[a tone sweeps up from 110 to 880 Hz]
+
+21
+00:01:10,197 --> 00:01:12,438
+Fast swings make a high one.
+
+22
+00:01:13,038 --> 00:01:15,771
+ORANGE: So a high note
+is just a loud note?
+
+23
+00:01:16,071 --> 00:01:16,904
+BLUE: No.
+
+24
+00:01:16,997 --> 00:01:19,169
+Loud is how far it swings.
+
+25
+00:01:19,619 --> 00:01:21,266
+High is how fast.
+
+26
+00:01:21,966 --> 00:01:24,963
+MercuryPitch draws
+your voice the same way.
+
+27
+00:01:25,046 --> 00:01:28,341
+As you sing,
+a line climbs when you go higher.
+
+28
+00:01:31,141 --> 00:01:33,109
+Now, back to our puzzle.
+
+29
+00:01:33,459 --> 00:01:35,552
+Here is 220.
+
+30
+00:01:35,852 --> 00:01:37,937
+And here is 440.
+
+31
+00:01:38,237 --> 00:01:40,626
+Exactly twice as fast.
+
+32
+00:01:41,126 --> 00:01:46,865
+Before you listen, predict.
+Two different notes, or the same one?
+
+33
+00:01:47,165 --> 00:01:49,765
+[pause and predict]
+
+34
+00:01:49,965 --> 00:01:51,365
+[220 Hz]
+
+35
+00:01:51,665 --> 00:01:53,065
+[440 Hz]
+
+36
+00:01:53,365 --> 00:01:55,365
+[both together]
+
+37
+00:01:55,865 --> 00:01:59,955
+Higher, yes. But together,
+they melt into one note.
+
+38
+00:02:00,305 --> 00:02:01,884
+That jump has a name.
+
+39
+00:02:02,234 --> 00:02:03,434
+An octave.
+
+40
+00:02:04,234 --> 00:02:05,671
+Now look at the waves.
+
+41
+00:02:05,754 --> 00:02:10,730
+Every second peak of the fast one
+lands right on a peak of the slow one.
+
+42
+00:02:11,030 --> 00:02:14,726
+They line up again, and again, forever.
+
+43
+00:02:15,226 --> 00:02:19,924
+ORANGE: Like us walking together.
+I take two steps for every one of yours.
+
+44
+00:02:20,224 --> 00:02:25,892
+BLUE: And we land together, every time.
+Two for one: the simplest fit there is.
+
+45
+00:02:25,975 --> 00:02:27,393
+That's the octave.
+
+46
+00:02:28,143 --> 00:02:35,724
+Try 277 instead, and the peaks drift in
+and out of step. That's a different note.
+
+47
+00:02:36,224 --> 00:02:39,098
+Go down an octave, to 110.
+
+48
+00:02:39,348 --> 00:02:40,265
+[A: 110 to 880 Hz]
+
+49
+00:02:40,348 --> 00:02:45,583
+Then double, and double, and double.
+The same letter, every time.
+
+50
+00:02:46,033 --> 00:02:51,473
+The gaps in hertz keep doubling,
+but every jump sounds the same size.
+
+51
+00:02:51,557 --> 00:02:54,679
+Your ear hears multiplying, not adding.
+
+52
+00:02:57,579 --> 00:03:01,683
+So pitch isn't really a straight line.
+It's more like a spiral.
+
+53
+00:03:02,083 --> 00:03:06,463
+Go up an octave, and you come back round,
+right above where you started.
+
+54
+00:03:07,063 --> 00:03:11,550
+Musicians name the notes on
+each turn with seven letters.
+
+55
+00:03:11,750 --> 00:03:16,550
+[eight notes: A B C D E F G A]
+
+56
+00:03:16,950 --> 00:03:18,480
+ORANGE: Only seven notes?
+
+57
+00:03:18,780 --> 00:03:20,230
+BLUE: Seven letters.
+
+58
+00:03:20,580 --> 00:03:21,710
+Twelve notes.
+
+59
+00:03:22,060 --> 00:03:24,670
+The other five are next time's story.
+
+60
+00:03:25,270 --> 00:03:30,633
+A number tells you which turn you're on.
+Each new turn starts at C.
+
+61
+00:03:31,033 --> 00:03:37,442
+So the A that orchestras
+tune to is A4. 440 Hz.
+
+62
+00:03:37,742 --> 00:03:43,724
+Middle C on a piano is C4.
+Same letters, different turns.
+
+63
+00:03:44,724 --> 00:03:47,884
+Unroll the spiral, and you get the piano.
+
+64
+00:03:47,967 --> 00:03:51,448
+The same seven letters,
+octave after octave.
+
+65
+00:03:52,448 --> 00:03:57,685
+When two people sing the same tune,
+they're often an octave apart. Listen.
+
+66
+00:03:57,985 --> 00:04:02,585
+[a tune, two voices an octave apart]
+
+67
+00:04:02,935 --> 00:04:05,391
+Two voices, one tune.
+
+68
+00:04:05,691 --> 00:04:10,170
+So when you match a note,
+an octave up or down still counts.
+
+69
+00:04:10,670 --> 00:04:15,553
+Let's try. I'll sing an A.
+Hum it back, wherever it feels easy.
+
+70
+00:04:15,953 --> 00:04:18,153
+[blue Merc sings an A]
+
+71
+00:04:18,353 --> 00:04:21,753
+[your turn: hum an A]
+
+72
+00:04:21,953 --> 00:04:23,953
+[orange Merc hums an A, an octave up]
+
+73
+00:04:24,203 --> 00:04:26,403
+ORANGE: I hummed it higher.
+Does that count?
+
+74
+00:04:26,665 --> 00:04:31,870
+BLUE: Higher, but the same note.
+That counts. Keep it gentle. Never push.
+
+75
+00:04:32,870 --> 00:04:33,781
+Quick check.
+
+76
+00:04:34,081 --> 00:04:36,571
+What makes a note higher?
+
+77
+00:04:36,871 --> 00:04:38,671
+[think]
+
+78
+00:04:38,971 --> 00:04:41,699
+Faster swings. A higher frequency.
+
+79
+00:04:42,299 --> 00:04:44,556
+Double the frequency, and you get?
+
+80
+00:04:44,856 --> 00:04:46,656
+[think]
+
+81
+00:04:46,956 --> 00:04:49,105
+ORANGE: The same note, one octave up!
+
+82
+00:04:49,705 --> 00:04:53,292
+BLUE: And why do A3 and A4 share a letter?
+
+83
+00:04:53,592 --> 00:04:55,392
+[think]
+
+84
+00:04:55,692 --> 00:05:00,979
+Their waves fit two to one.
+Same spot on the spiral, one turn higher.
+
+85
+00:05:01,979 --> 00:05:02,895
+Next time.
+
+86
+00:05:03,195 --> 00:05:07,602
+Seven letters, but twelve notes.
+Where do the other five come from?
+
+87
+00:05:08,002 --> 00:05:09,102
+ORANGE: See you there.
+
+88
+00:05:09,185 --> 00:05:13,949
+[chime]

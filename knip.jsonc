@@ -11,6 +11,8 @@
         // build.rollupOptions.input. Knip does not read HTML, and the default
         // src/index.tsx entry only covers index.html.
         "src/features/*/main.tsx!",
+        // The web lessons are plain documents under learn/, one main.ts each.
+        "src/features/lessons/*/main.ts!",
         // The two workers under workers/ are not pnpm workspaces, so the
         // `main` of their own wrangler.jsonc has to be named here. The root
         // wrangler.jsonc (src/worker.ts) is read by the wrangler plugin.

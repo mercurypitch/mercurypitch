@@ -258,9 +258,11 @@ function link<N extends string>(
 export function createSceneProgram(
   gl: WebGL2RenderingContext,
   quality: MercQuality,
+  patch?: (source: string) => string,
 ): SceneProgram {
   const q = QUALITY[quality]
-  return { ...link(gl, fragSource(q), SCENE_UNIFORMS), q }
+  const src = fragSource(q)
+  return { ...link(gl, patch ? patch(src) : src, SCENE_UNIFORMS), q }
 }
 
 export function createPostPrograms(gl: WebGL2RenderingContext): PostPrograms {

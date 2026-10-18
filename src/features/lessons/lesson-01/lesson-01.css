@@ -1,0 +1,1346 @@
+/* ============================================================
+   Lesson 1 — the hero, three words, the six steps and Sing it
+   ============================================================
+   The cold open's night stage, the ticket cards, the step deck and its five
+   figure toys, and the hum-along ring. */
+
+/* ---------------------------------------------------------------- hero */
+.hero {
+  position: relative;
+  padding-block: clamp(28px, 5vw, 64px) clamp(24px, 4vw, 48px);
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(28px, 4vw, 56px);
+  align-items: start;
+}
+.hero-copy {
+  min-width: 0;
+  padding-top: 6px;
+}
+/* the hook is the title and the largest type on the page; the masthead carries the series wordmark */
+.hook {
+  margin: 20px 0 0;
+  font: 400 italic clamp(34px, 4.9vw, 72px)/1.02 var(--f-serif);
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  text-wrap: balance;
+  word-spacing: 0.04em;
+  max-width: 13em;
+}
+.hook .hz {
+  font-style: normal;
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 0.74em;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.hook .hz.b {
+  color: var(--signal-blue);
+}
+.hook .hz.o {
+  color: var(--orange);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 26px 0 0;
+}
+.promise {
+  margin: 18px 0 0;
+  color: var(--ink-2);
+  max-width: 46ch;
+}
+.gate {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 1px dashed var(--hair-2);
+  max-width: 520px;
+}
+.gate p {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: 1.5;
+  color: var(--ink-2);
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.gate .ico {
+  width: 22px;
+  height: 22px;
+  color: var(--aqua);
+}
+.gate.is-on {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--aqua) 40%, transparent);
+}
+
+.hero-side {
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+.stage-night {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  isolation: isolate;
+  padding: 22px 22px 0;
+  background: radial-gradient(
+    120% 70% at 50% 0%,
+    #121a2b 0%,
+    #0b0f18 55%,
+    var(--night) 100%
+  );
+  border: 1px solid var(--hair);
+  box-shadow: var(--shadow);
+}
+.stage-night::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 46%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      60% 70% at 50% 100%,
+      rgba(122, 88, 196, 0.2),
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 50% at 22% 92%,
+      color-mix(in srgb, var(--signal-blue) 12%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 50% at 78% 92%,
+      color-mix(in srgb, var(--orange) 11%, transparent),
+      transparent 70%
+    );
+}
+/* one shot: the camera pushes in on .stage-shot; the sky, the staff, the Mercs and the floor move at different depths */
+.stage-shot {
+  position: relative;
+  transform-origin: 50% 70%;
+}
+.sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+/* the conversation reads in film order: orange speaks first (right, high), blue answers (left, lower) */
+.bubbles {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14px;
+  z-index: 2;
+}
+.bubble {
+  position: relative;
+  margin: 0;
+  padding: 12px 16px 13px;
+  border-radius: 16px;
+  font-size: var(--fs-16);
+  line-height: 1.45;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--c) 10%, rgba(13, 17, 23, 0.78));
+  border: 1px solid color-mix(in srgb, var(--c) 38%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.bubble b {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--c);
+}
+.bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  border: inherit;
+  border-top: 0;
+  border-left: 0;
+  transform: rotate(45deg);
+}
+.bubble.o {
+  --c: var(--orange);
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+}
+.bubble.o::after {
+  right: 30%;
+}
+.bubble.b {
+  --c: var(--signal-blue);
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: start;
+  margin-top: -18px;
+}
+.bubble.b::after {
+  left: 30%;
+  transform: rotate(45deg);
+}
+.duo {
+  --merc: clamp(150px, 19vw, 262px);
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--merc) minmax(40px, 1fr) var(--merc);
+  align-items: start;
+  margin-top: -30px;
+  height: calc(var(--merc) * 1.1);
+}
+.merc {
+  position: relative;
+  width: var(--merc);
+  height: var(--merc);
+}
+.merc img,
+.merc .live {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-box-reflect: below calc(var(--merc) * -0.335)
+    linear-gradient(transparent 58%, rgba(255, 255, 255, 0.26));
+}
+.merc img {
+  transition:
+    opacity 0.6s var(--ease),
+    transform 0.4s var(--ease);
+}
+.merc.is-live img {
+  opacity: 0;
+}
+/* while a live Merc may still mount, the still waits (it shows by itself after 4 s if the script never settles it) */
+.duo.pending .merc img {
+  opacity: 0;
+  animation: still-in 0.4s 4s forwards;
+}
+@keyframes still-in {
+  to {
+    opacity: 1;
+  }
+}
+.merc.dropping img,
+.merc.dropping .live {
+  -webkit-box-reflect: unset;
+}
+.merc .live canvas {
+  display: block;
+}
+.merc.is-singing img {
+  animation: sing-bob 0.5s ease-in-out infinite alternate;
+}
+@keyframes sing-bob {
+  to {
+    transform: translateY(-3px) scale(1.015);
+  }
+}
+.merc .splash {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 79%;
+  height: 9%;
+  border-radius: 50%;
+  border: 1.5px solid var(--c);
+  opacity: 0;
+  pointer-events: none;
+}
+.merc-blue .splash {
+  --c: color-mix(in srgb, var(--signal-blue) 70%, transparent);
+}
+.merc-orange .splash {
+  --c: color-mix(in srgb, var(--orange) 70%, transparent);
+}
+.floor {
+  position: absolute;
+  left: -22px;
+  right: -22px;
+  top: calc(var(--merc) * 0.835);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(195, 204, 214, 0.34) 18%,
+    rgba(195, 204, 214, 0.5) 50%,
+    rgba(195, 204, 214, 0.34) 82%,
+    transparent
+  );
+}
+.floor::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 1px;
+  height: 140px;
+  background: linear-gradient(
+    180deg,
+    rgba(160, 175, 210, 0.07),
+    transparent 70%
+  );
+}
+.rail {
+  position: relative;
+  height: calc(var(--merc) * 0.7);
+  margin-top: calc(var(--merc) * 0.12);
+}
+.rail svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.rail .tick {
+  stroke: rgba(195, 204, 214, 0.28);
+}
+.rail .tick.oct {
+  stroke: rgba(195, 204, 214, 0.55);
+}
+.rail .lbl {
+  font: 600 var(--fs-14) var(--f-display);
+  font-variant-numeric: tabular-nums;
+}
+.rail .unit {
+  fill: var(--ink-3);
+  letter-spacing: 0.06em;
+}
+.predict {
+  padding: 22px 24px 20px;
+}
+.predict .pq {
+  margin: 8px 0 16px;
+  font: italic 400 clamp(22px, 2.3vw, 30px)/1.15 var(--f-serif);
+  word-spacing: 0.08em;
+  text-wrap: balance;
+}
+.choices,
+.plays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.choice {
+  min-width: 132px;
+}
+.choice[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--aqua) 14%, transparent);
+  border-color: color-mix(in srgb, var(--aqua) 70%, transparent);
+  color: var(--ink);
+}
+.choice[disabled][aria-pressed='false'] {
+  opacity: 0.45;
+}
+.choice[disabled][aria-pressed='true'] {
+  opacity: 1;
+  cursor: default;
+}
+.plays {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--hair-2);
+}
+.lock-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.lock-hint .ico {
+  width: 15px;
+  height: 15px;
+}
+.reveal {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--aqua) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--aqua) 30%, transparent);
+  font-size: var(--fs-16);
+  line-height: 1.55;
+}
+.reveal .mono {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--aqua);
+}
+@media (max-width: 1080px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .hero-copy,
+  .hero-side {
+    display: contents;
+  }
+  .motion-note {
+    order: 0;
+  }
+  #heroKicker {
+    order: 1;
+  }
+  .hook {
+    order: 2;
+  }
+  .meta {
+    order: 3;
+  }
+  /* the sound gate sits between the stage and the predict card, so its button comes before the choices
+     in the reading order as it does in the tab order */
+  .stage-night {
+    order: 4;
+    margin-top: 24px;
+  }
+  .gate {
+    order: 5;
+    margin-top: 16px;
+    max-width: none;
+  }
+  .predict {
+    order: 6;
+    margin-top: 16px;
+  }
+  .promise {
+    order: 7;
+    margin-top: 26px;
+  }
+  .duo {
+    --merc: clamp(150px, 30vw, 262px);
+  }
+}
+@media (max-width: 560px) {
+  .hook {
+    font-size: 36px;
+    line-height: 1.04;
+  }
+  .meta {
+    gap: 6px;
+  }
+  .meta .chip {
+    padding: 0 8px;
+    gap: 5px;
+  }
+  .meta .chip i {
+    width: 6px;
+    height: 6px;
+  }
+  .kicker {
+    gap: 8px 10px;
+  }
+  .stage-night {
+    padding: 14px 12px 0;
+    border-radius: var(--r-lg);
+  }
+  .bubbles {
+    grid-template-columns: 1fr;
+    row-gap: 10px;
+  }
+  .bubble {
+    font-size: var(--fs-14);
+    max-width: 86%;
+  }
+  .bubble.o {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .bubble.b {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 0;
+  }
+  .duo {
+    --merc: min(39vw, 160px);
+    margin-top: -18px;
+    grid-template-columns: var(--merc) minmax(28px, 1fr) var(--merc);
+  }
+  .floor {
+    left: -12px;
+    right: -12px;
+  }
+  .predict {
+    padding: 18px 16px;
+  }
+  .choice {
+    flex: 1 1 120px;
+    min-width: 0;
+  }
+  .plays .btn {
+    flex: 1 1 140px;
+  }
+  .gate {
+    flex-wrap: wrap;
+  }
+}
+
+/* ---------------------------------------------------------------- three words (ticket cards) */
+.tickets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.ticket {
+  position: relative;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  min-height: 190px;
+  border-radius: var(--r-lg);
+  background:
+    var(--grad-card) padding-box,
+    var(--grad-rim) border-box;
+  border: 1px solid transparent;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.ticket .stub {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-right: 1px dashed var(--hair-2);
+  background: rgba(255, 255, 255, 0.015);
+}
+.ticket .stub::before,
+.ticket .stub::after {
+  content: '';
+  position: absolute;
+  right: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--obsidian);
+  border: 1px solid var(--hair);
+}
+.ticket .stub::before {
+  top: -10px;
+}
+.ticket .stub::after {
+  bottom: -10px;
+}
+.ticket .stub svg {
+  width: 64px;
+  height: 120px;
+  overflow: visible;
+}
+.svg-mono {
+  font: 500 12px var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.ticket .body {
+  min-width: 0;
+  padding: 20px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ticket h3 {
+  margin: 0;
+  font: 600 var(--fs-22)/1.1 var(--f-display);
+  letter-spacing: -0.015em;
+}
+.ticket h3 small {
+  color: var(--ink-3);
+  margin-left: 6px;
+}
+.ticket p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--fs-16);
+  line-height: 1.5;
+}
+.ticket .btn {
+  margin-top: auto;
+  align-self: flex-start;
+}
+@media (max-width: 900px) {
+  .tickets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ticket {
+    min-height: 160px;
+  }
+}
+
+/* ---------------------------------------------------------------- the steps */
+.steps-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(28px, 4vw, 56px);
+  align-items: start;
+}
+/* the stage comes first in the DOM (it is drawn first on phones); on the desktop grid it sits right */
+.steps-text {
+  min-width: 0;
+  grid-column: 1;
+  grid-row: 1;
+}
+.step {
+  min-width: 0;
+  padding-block: 16vh;
+}
+.step:first-child {
+  padding-top: 6px;
+}
+.step:last-of-type {
+  padding-bottom: 24vh;
+}
+.step-kicker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 6px;
+  color: var(--ink-3);
+}
+.step-kicker .n {
+  font: 200 var(--fs-46)/0.8 var(--f-display);
+  letter-spacing: -0.04em;
+  text-transform: none;
+  color: transparent;
+  -webkit-text-stroke: 1.2px color-mix(in srgb, var(--chrome) 50%, transparent);
+}
+.step.is-active .step-kicker .n {
+  -webkit-text-stroke-color: var(--aqua);
+}
+.step h3 {
+  margin: 6px 0 14px;
+  font: 600 clamp(22px, 2.6vw, 30px)/1.1 var(--f-display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.step p {
+  margin: 0 0 14px;
+  max-width: 60ch;
+}
+.step .try,
+.step .notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 12px 0;
+  margin: 0;
+  border-top: 1px solid var(--hair);
+}
+.step .try b {
+  color: var(--ink);
+}
+.step .notice {
+  color: var(--ink-2);
+}
+.step .notice .k,
+.step .try .k {
+  line-height: 1.6;
+  color: var(--aqua);
+  min-width: 72px;
+}
+.step .notice .k {
+  color: var(--chrome);
+}
+.mixup {
+  margin: 18px 0 16px;
+  padding: 20px 22px;
+  border-radius: var(--r-lg);
+  border: 1px solid color-mix(in srgb, var(--violet) 36%, transparent);
+  background: color-mix(in srgb, var(--violet) 7%, var(--card));
+}
+.mixup .eyebrow {
+  color: var(--violet);
+  margin: 0 0 4px;
+}
+.mixup blockquote {
+  margin: 8px 0 10px;
+  font: italic 400 var(--fs-30)/1.15 var(--f-serif);
+  color: var(--ink);
+  text-wrap: balance;
+}
+.mixup p:not(.eyebrow) {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+  margin: 0 0 10px;
+}
+.mixup p:last-child {
+  margin: 0;
+  color: var(--ink);
+}
+.ladder-note {
+  color: var(--ink-2);
+}
+.steps-stage {
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  top: calc(var(--mast) + 18px + env(safe-area-inset-top, 0px));
+}
+.stage-card {
+  padding: 16px 18px 18px;
+}
+.stage-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.stage-head .counter {
+  margin: 0;
+  color: var(--ink-3);
+}
+.stage-head .counter b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.progress {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+}
+.progress i {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(195, 204, 214, 0.16);
+  transition: background 0.4s var(--ease);
+}
+.progress i.done {
+  background: color-mix(in srgb, var(--aqua) 55%, transparent);
+}
+.progress i.now {
+  background: var(--aqua);
+}
+.stage-nav {
+  display: flex;
+  gap: 6px;
+}
+.toy {
+  display: none;
+}
+/* a toy enters from the side the deck moved towards; the one it replaces leaves at once */
+.toy.is-active {
+  display: block;
+  animation: toy-in 0.42s var(--ease);
+}
+.stage-card[data-dir='b'] .toy.is-active {
+  animation-name: toy-in-b;
+}
+@keyframes toy-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes toy-in-b {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.toy .eyebrow {
+  margin-bottom: 10px;
+}
+.viz {
+  position: relative;
+  height: 330px;
+  border-radius: var(--r-md);
+  background: radial-gradient(100% 90% at 50% 40%, #121927, #0b0f16);
+  border: 1px solid var(--hair);
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.viz canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.viz.tall {
+  height: 380px;
+}
+.viz .readout {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  display: flex;
+  gap: 18px;
+  pointer-events: none;
+}
+.viz .readout.right {
+  left: auto;
+  right: 14px;
+  text-align: right;
+}
+.ro {
+  display: grid;
+  gap: 4px;
+}
+.ro .k {
+  color: var(--ink-3);
+}
+.ro .v {
+  font: 600 var(--fs-22)/1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.ro .v small {
+  color: var(--ink-3);
+  margin-left: 3px;
+}
+.ro .v.big {
+  font-size: var(--fs-30);
+}
+.viz .hint {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  text-align: center;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+/* a figure's status line sits under its canvas, so a flag never covers the readouts or the drawing: a quiet hint
+   at rest, the flag in its place when there is something to name. Its height is reserved, so nothing below moves. */
+.viz-status {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  margin: 8px 0 0;
+}
+.viz-status .vs-hint {
+  color: var(--ink-3);
+  transition: opacity 0.3s var(--ease);
+}
+.viz-status.flagged .vs-hint {
+  opacity: 0;
+}
+.viz-status + .slider-row {
+  margin-top: 4px;
+}
+.flag {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 999px;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease);
+}
+@media (max-width: 359px) {
+  .viz-status {
+    min-height: 46px;
+  }
+}
+#spiralHint {
+  top: 14px;
+  bottom: auto;
+  left: auto;
+  right: 14px;
+  text-align: right;
+  max-width: 52%;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+.controls .spacer {
+  flex: 1;
+}
+.slider-row {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+.slider-row label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ink-3);
+}
+.slider-row label b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+}
+.range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--fill, var(--chrome)) 0 var(--p, 50%),
+    rgba(195, 204, 214, 0.16) var(--p, 50%) 100%
+  );
+}
+.range::-moz-range-track {
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(195, 204, 214, 0.16);
+}
+.range::-moz-range-progress {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--fill, var(--chrome));
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -10px;
+  border-radius: 50%;
+  border: 0;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #fff,
+    var(--chrome) 45%,
+    #6b7786 100%
+  );
+  box-shadow:
+    0 0 0 4px rgba(13, 17, 23, 0.6),
+    0 0 18px color-mix(in srgb, var(--fill, var(--chrome)) 70%, transparent);
+}
+.range::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 0;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #fff,
+    var(--chrome) 45%,
+    #6b7786 100%
+  );
+  box-shadow: 0 0 0 4px rgba(13, 17, 23, 0.6);
+}
+.range:focus-visible {
+  outline-offset: -4px;
+}
+.ticks {
+  position: relative;
+  height: 18px;
+  color: var(--ink-3);
+  margin: -6px 13px 0;
+}
+.ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.ticks span::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  width: 1px;
+  height: 5px;
+  background: var(--hair-3);
+}
+.ticks span.mark {
+  color: var(--violet);
+}
+.ticks span.mark::before {
+  background: var(--violet);
+  height: 7px;
+}
+.ticks span.gold {
+  color: var(--gold);
+}
+.ticks span.gold::before {
+  background: var(--gold);
+}
+.ticks span:last-child {
+  transform: translateX(-100%);
+}
+.ticks span:first-child {
+  transform: none;
+}
+.ticks span:last-child::before {
+  left: auto;
+  right: 0;
+}
+.ticks span:first-child::before {
+  left: 0;
+}
+.ladder {
+  display: grid;
+  gap: 0;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(255, 255, 255, 0.015);
+}
+.ladder-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.rung {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.rung .btn {
+  justify-content: flex-start;
+  width: 100%;
+}
+.rung .gap {
+  color: var(--ink-3);
+  text-align: right;
+  min-width: 74px;
+}
+.rung-gap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 18px;
+  padding-left: 26px;
+  color: var(--ink-3);
+}
+.rung-gap::before {
+  content: '';
+  width: 1px;
+  height: 100%;
+  background: var(--hair-2);
+}
+.oct-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 176px;
+  gap: 12px;
+  align-items: stretch;
+}
+.oct-main {
+  min-width: 0;
+}
+.oct-grid .ladder {
+  margin-top: 0;
+  padding: 10px 10px 12px;
+  align-content: start;
+}
+.oct-grid .rung .btn {
+  padding: 0 10px;
+  font-size: var(--fs-14);
+  gap: 7px;
+}
+.oct-grid .rung-gap {
+  padding-left: 18px;
+}
+@media (max-width: 600px) {
+  .oct-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+#heroRail .halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+}
+#heroRail g.on .halo {
+  animation: halo 1s ease-out infinite;
+}
+@keyframes halo {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.tickets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.tk {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 2px 12px;
+  min-height: 52px;
+  padding: 8px 16px 8px 12px;
+  border-radius: 12px;
+  border: 1px dashed
+    color-mix(in srgb, var(--c, var(--chrome)) 50%, transparent);
+  background: color-mix(in srgb, var(--c, var(--chrome)) 8%, transparent);
+  cursor: pointer;
+  text-align: left;
+}
+.tk b {
+  grid-row: span 2;
+  font: 600 var(--fs-22)/1 var(--f-display);
+  color: var(--c, var(--ink));
+}
+.tk span {
+  color: var(--ink-2);
+}
+.tk em {
+  font: italic 400 var(--fs-16)/1.1 var(--f-serif);
+  color: var(--ink);
+}
+.tk:hover {
+  background: color-mix(in srgb, var(--c, var(--chrome)) 14%, transparent);
+}
+.kb-pan {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.kb-pan .win {
+  flex: 1;
+  text-align: center;
+  color: var(--ink-2);
+}
+.deck-nav {
+  display: none;
+}
+@media (max-width: 1080px) {
+  .steps-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  }
+}
+@media (max-width: 960px) {
+  .steps-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .steps-text,
+  .steps-stage {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .steps-stage {
+    position: relative;
+    top: 0;
+  }
+  .steps.is-deck .step {
+    display: none;
+    padding-block: 4px 0;
+  }
+  .steps.is-deck .step.is-active {
+    display: block;
+  }
+  .deck-nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .deck-nav .btn:last-child {
+    margin-left: auto;
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.25;
+    padding-block: 8px;
+    text-align: left;
+  }
+  .deck-nav .btn:first-child {
+    flex: none;
+  }
+  .viz {
+    height: 280px;
+  }
+  .viz.tall {
+    height: 340px;
+  }
+  .stage-card {
+    padding: 12px 12px 14px;
+  }
+}
+@media (max-width: 420px) {
+  .viz {
+    height: 250px;
+  }
+  .viz.tall {
+    height: 310px;
+  }
+  .ro .v {
+    font-size: var(--fs-18);
+  }
+  .ro .v.big {
+    font-size: var(--fs-22);
+  }
+  .deck-nav .btn {
+    padding: 0 14px;
+  }
+}
+
+/* ---------------------------------------------------------------- sing it */
+.sing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: center;
+}
+.sing-copy p {
+  max-width: 58ch;
+}
+.sing-copy .unscored {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+  margin: 12px 0 0;
+}
+.sing-copy .turn {
+  padding: 14px 0;
+  border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+}
+.sing-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 22px 0 14px;
+}
+.btn.lg {
+  min-height: 56px;
+  padding: 0 24px;
+  font-size: var(--fs-18);
+}
+.safety {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+  margin: 0;
+}
+.safety .ico {
+  color: var(--aqua);
+  margin-top: 3px;
+}
+.ring {
+  position: relative;
+  width: min(100%, 380px);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  max-width: 100%;
+}
+.ring svg.r {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.ring img {
+  position: absolute;
+  left: 25%;
+  top: 13%;
+  width: 50%;
+  height: 50%;
+  object-fit: contain;
+  transition: opacity 0.5s var(--ease);
+}
+.ring .lbl {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 59%;
+  text-align: center;
+}
+.ring .lbl b {
+  display: block;
+  font: 600 var(--fs-22)/1.1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+}
+.ring .lbl span {
+  color: var(--ink-3);
+}
+.app-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+  margin-top: clamp(36px, 5vw, 56px);
+  padding: 26px 28px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.app-card h3 {
+  margin: 6px 0 8px;
+  font: 600 var(--fs-30)/1.15 var(--f-display);
+  letter-spacing: -0.015em;
+}
+.app-card p {
+  margin: 0 0 14px;
+  color: var(--ink-2);
+}
+.addr {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font: 500 var(--fs-16)/1.2 var(--f-mono);
+  color: var(--aqua);
+  word-break: break-all;
+}
+.app-card .fig svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.app-card figcaption {
+  margin-top: 6px;
+  color: var(--ink-3);
+}
+@media (max-width: 860px) {
+  .sing-grid,
+  .app-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ring {
+    width: min(100%, 320px);
+  }
+  .app-card {
+    padding: 20px 18px;
+  }
+}

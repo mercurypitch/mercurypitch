@@ -83,6 +83,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Measured 1432 (was 3822). Most of it is the room itself.
   'guitar-night.html': 1800,
 
+  // Find Your Pitch, Lesson 1: the lesson's own module and Vite's helper.
+  // Measured 97. Merc's renderer arrives through a dynamic import, so the
+  // page stays this light only while that boundary holds.
+  'learn/01.html': 125,
+
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
   // than a claim that the number is good.
@@ -127,6 +132,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   'piano-night.html': 95,
   'drum-night.html': 125,
   'guitar-night.html': 400,
+
+  // Lesson 1. Measured 68: its own sheet (56) and the shared Inter and
+  // Outfit @font-face rules (13).
+  'learn/01.html': 90,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx
@@ -311,13 +320,19 @@ export async function firstPaintOf(documentPath, distDir) {
   }
 }
 
-/** Every document at the root of the build that runs any JavaScript. */
+/**
+ * Every document the build emits that runs any JavaScript, keyed by its path
+ * in dist ('mirror.html', 'learn/01.html'). Documents below the root count:
+ * a page is not exempt for living in a folder. Only `assets/` is skipped,
+ * since everything in it is something a document loads.
+ */
 export async function measureFirstPaint(distDirectory = 'dist') {
   const distDir = isAbsolute(distDirectory)
     ? resolve(distDirectory)
     : resolve(REPO_ROOT, distDirectory)
-  const documents = (await readdir(distDir))
-    .filter((name) => name.endsWith('.html'))
+  const documents = (await readdir(distDir, { recursive: true }))
+    .map(normalizePath)
+    .filter((name) => name.endsWith('.html') && !name.startsWith('assets/'))
     .sort()
 
   const measured = new Map()

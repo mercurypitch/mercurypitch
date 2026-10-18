@@ -59,6 +59,15 @@ does it.
   Matches your measured range against the ranges well-known singers cover. It
   compares notes, not timbre — a shared range is not a shared sound.
 
+## Lessons
+
+Find Your Pitch, a free series on music theory and singing. Each lesson is a
+page with the whole lesson in its text, live sound examples and its episode.
+
+- [Lesson 1: What is a note?](https://mercurypitch.com/learn/01): Why 220 Hz
+  and 440 Hz share a name. What a note is, why notes come back an octave
+  higher, and how to read names like A4 and C4.
+
 ## About the project
 
 - [About MercuryPitch](https://about.mercurypitch.com/): What it is, who it is

@@ -1,0 +1,324 @@
+// ============================================================
+// Lesson episode — the film with its chapters, captions and transcript
+// ============================================================
+//
+// The film is a self-hosted MP4 on R2 in two sizes, 720p at 900 px and
+// below and 1080p above, picked when the viewer first presses play (the
+// markup's preload="none" keeps a page view from fetching any of it). Until
+// the film is published (`film: null`) the player says it is coming and the
+// chapters and transcript, which need only the captions, still work.
+// Captions are a same-origin WebVTT track, on by default; the transcript is
+// the same text, one paragraph per speaker turn.
+
+import { clamp, lerp, q, qa } from './dom'
+import { toast } from './toast'
+
+export interface Chapter {
+  readonly title: string
+  /** Seconds from the start of the film. */
+  readonly start: number
+}
+
+export interface EpisodeOptions {
+  /** The 1080p and 720p MP4s, or null while the film is still rendering. */
+  readonly film: { readonly hd: string; readonly sd: string } | null
+  /** Same-origin WebVTT captions, for the video's track. */
+  readonly captions: string
+  /** The same captions as text, for the transcript. */
+  readonly vtt: string
+  readonly chapters: readonly Chapter[]
+  /** Hears the running time ("4:57") once the film's own metadata has loaded. */
+  readonly onDuration?: (len: string) => void
+}
+
+type Speaker = 'blue' | 'orange'
+
+interface Paragraph {
+  at: number
+  text: string
+  who: Speaker | null
+  sfx: boolean
+}
+
+/** Volume ramp either side of a jump, ms. */
+const DIP_MS = 80
+
+/** "02:44", as the chapter list and the transcript print a time. */
+const clock = (s: number): string =>
+  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+
+/** "4:57", rounded once so that 59.6 s reads 1:00 and never 0:60. */
+function runningTime(seconds: number): string {
+  const whole = Math.round(seconds)
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
+
+function cueSeconds(stamp: string): number {
+  const p = stamp.split(':').map(Number)
+  return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1]
+}
+
+/**
+ * A caption block as its start time and its text on one line; null for a
+ * block that is not a cue (the header, a NOTE) or a cue with no text.
+ */
+function cueOf(block: string): { at: number; body: string } | null {
+  const lines = block.split('\n').filter((l) => l !== '')
+  const ti = lines.findIndex((l) => l.includes('-->'))
+  if (ti < 0) return null
+  const at = cueSeconds(lines[ti].split('-->')[0].trim())
+  const body = lines
+    .slice(ti + 1)
+    .join(' ')
+    .trim()
+  return body === '' ? null : { at, body }
+}
+
+/** "BLUE" or "ORANGE" (or the older "BLUE MERC"), as the speaker of a turn. */
+const speakerOf = (label: string): Speaker =>
+  label.startsWith('BLUE') ? 'blue' : 'orange'
+
+/**
+ * Caption cues to paragraphs: "BLUE:" or "ORANGE:" starts a turn (captions cut
+ * before 17 October 2026 say "BLUE MERC:" and "ORANGE MERC:"),
+ * an unlabelled cue carries on the current one, and a [bracketed] cue is a
+ * sound of its own.
+ */
+function paragraphs(vtt: string): Paragraph[] {
+  const out: Paragraph[] = []
+  let who: Speaker | null = null
+  for (const block of vtt.replace(/\r/g, '').split(/\n\n+/)) {
+    const cue = cueOf(block)
+    if (cue === null) continue
+    const { at, body } = cue
+    if (/^\[.*\]$/.test(body)) {
+      out.push({ at, text: body.slice(1, -1), who: null, sfx: true })
+      continue
+    }
+    const label = /^(BLUE|ORANGE)(?: MERC)?:\s*/.exec(body)
+    if (label !== null) {
+      who = speakerOf(label[1])
+      out.push({ at, text: body.slice(label[0].length), who, sfx: false })
+      continue
+    }
+    const last = out.at(-1)
+    if (last !== undefined && !last.sfx && last.who === who)
+      last.text += ` ${body}`
+    else out.push({ at, text: body, who, sfx: false })
+  }
+  return out
+}
+
+export function createEpisode(opts: EpisodeOptions): void {
+  const { film, chapters } = opts
+  const v = q<HTMLVideoElement>('#ep')
+  const big = q<HTMLButtonElement>('#bigPlay')
+  const list = q('#chapters')
+  const grid = q('#playerGrid')
+  const tx = q('#tx')
+  let attached = false
+  // a chapter picked before the film has its metadata: applied when it does
+  let pending: number | null = null
+
+  const track =
+    v.querySelector('track') ??
+    v.appendChild(
+      Object.assign(document.createElement('track'), {
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English',
+        default: true,
+      }),
+    )
+  if (track.getAttribute('src') !== opts.captions) track.src = opts.captions
+
+  function showCaptions(): void {
+    for (const t of v.textTracks) {
+      if (t.kind === 'captions' || t.kind === 'subtitles') t.mode = 'showing'
+    }
+  }
+
+  function seek(at: number): void {
+    try {
+      v.currentTime = at
+    } catch {
+      // not seekable yet
+    }
+  }
+
+  // A jump while the film plays dips the element's own volume to silence,
+  // seeks, waits for the seek to land and brings the volume back, so the cut
+  // does not click. Element volume rather than a Web Audio gain: routing the
+  // film through a MediaElementAudioSourceNode is permanent, and silent if
+  // the context never runs (.claude/memory/audio-pop-free-playback.md). iOS
+  // ignores element volume (read-only there, always 1), so on an iPhone or
+  // iPad a jump is still a plain seek.
+  let jumpId = 0
+  let level: number | null = null // the viewer's volume while a dip is in flight
+
+  /** Moves the volume to `to` over DIP_MS; false if a newer jump took over. */
+  function ramp(to: number, id: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const from = v.volume
+      const t0 = performance.now()
+      let done = false
+      let fallback = 0
+      const finish = (): void => {
+        if (done) return
+        done = true
+        window.clearTimeout(fallback)
+        if (id === jumpId) v.volume = to
+        resolve(id === jumpId)
+      }
+      const frame = (now: number): void => {
+        if (done) return
+        if (id !== jumpId) {
+          finish()
+          return
+        }
+        const u = clamp((now - t0) / DIP_MS, 0, 1)
+        v.volume = lerp(from, to, u)
+        if (u < 1) requestAnimationFrame(frame)
+        else finish()
+      }
+      // a page that is not painting gets no frames: the timer lands the ramp
+      fallback = window.setTimeout(finish, DIP_MS + 150)
+      requestAnimationFrame(frame)
+    })
+  }
+
+  function settled(): Promise<void> {
+    if (!v.seeking) return Promise.resolve()
+    return new Promise((resolve) => {
+      const done = (): void => {
+        window.clearTimeout(timer)
+        v.removeEventListener('seeked', done)
+        v.removeEventListener('error', done)
+        resolve()
+      }
+      const timer = window.setTimeout(done, 3000)
+      v.addEventListener('seeked', done)
+      v.addEventListener('error', done)
+    })
+  }
+
+  async function jump(at: number): Promise<void> {
+    const id = ++jumpId
+    const restore = (level ??= v.volume) // a jump mid-dip keeps the first level
+    if (!(await ramp(0, id))) return
+    seek(at)
+    await settled()
+    if (id !== jumpId) return
+    if (await ramp(restore, id)) level = null
+  }
+
+  function attach(): boolean {
+    if (attached) return true
+    if (film === null) {
+      toast(
+        'Film coming soon: the episode is still rendering. The chapters and transcript are ready below.',
+      )
+      return false
+    }
+    if (v.canPlayType('video/mp4') === '') {
+      toast('This browser cannot play the stream.')
+      return false
+    }
+    v.src = window.matchMedia('(max-width: 900px)').matches ? film.sd : film.hd
+    attached = true
+    v.controls = true
+    big.hidden = true
+    showCaptions()
+    return true
+  }
+
+  // play() stays inside the tap that asked for it (iOS refuses it later);
+  // a seek before the metadata waits for it
+  function start(at: number | null): void {
+    if (!attach()) return
+    if (at !== null) {
+      if (v.readyState < 1) pending = at
+      else if (!v.paused) {
+        void jump(at)
+        return
+      } else seek(at)
+    }
+    void v.play().catch(() => undefined)
+  }
+
+  function renderChapters(): void {
+    list.textContent = ''
+    chapters.forEach((c) => {
+      const li = document.createElement('li')
+      li.innerHTML =
+        '<button type="button"><time></time><span></span><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span></button>'
+      q('time', li).textContent = clock(c.start)
+      q('span', li).textContent = c.title
+      q('button', li).addEventListener('click', () => start(c.start))
+      list.appendChild(li)
+    })
+    list.firstElementChild?.classList.add('on')
+  }
+
+  function renderTranscript(text: string): void {
+    tx.textContent = ''
+    for (const p of paragraphs(text)) {
+      const el = document.createElement('p')
+      if (p.sfx) el.className = 'sfx'
+      const tb = document.createElement('button')
+      tb.type = 'button'
+      tb.className = 't'
+      tb.textContent = clock(p.at)
+      tb.setAttribute('aria-label', `Play from ${clock(p.at)}`)
+      tb.addEventListener('click', () => start(p.at))
+      el.appendChild(tb)
+      if (!p.sfx && p.who !== null) {
+        const w = document.createElement('span')
+        w.className = `who ${p.who}`
+        w.textContent = p.who === 'blue' ? 'Blue Merc' : 'Orange Merc'
+        el.appendChild(w)
+      }
+      el.appendChild(document.createTextNode(p.text))
+      tx.appendChild(el)
+    }
+  }
+
+  if (film === null) {
+    big.dataset.state = 'soon'
+    q('.disc', big).innerHTML =
+      '<svg class="ico" aria-hidden="true" style="margin:0"><use href="#i-clock"/></svg>'
+    q('#bigPlayCap').textContent = 'Film coming soon'
+    q('#bigPlaySub').textContent =
+      'The poster for now · chapters and transcript are ready'
+    big.setAttribute(
+      'aria-label',
+      'Film coming soon: the episode is still rendering. Chapters and the transcript are ready.',
+    )
+  }
+  renderChapters()
+  if (opts.vtt.trim() !== '') renderTranscript(opts.vtt)
+
+  big.addEventListener('click', () => start(null))
+  v.addEventListener('loadedmetadata', () => {
+    showCaptions()
+    if (pending !== null) seek(pending)
+    pending = null
+    // the film's own running time replaces the one printed in the markup
+    if (Number.isFinite(v.duration) && v.duration > 30) {
+      const len = runningTime(v.duration)
+      qa('.dur').forEach((el) => {
+        el.textContent = len
+      })
+      opts.onDuration?.(len)
+    }
+  })
+  v.addEventListener('play', () => grid.classList.add('playing'))
+  v.addEventListener('pause', () => grid.classList.remove('playing'))
+  v.addEventListener('timeupdate', () => {
+    let k = 0
+    chapters.forEach((c, i) => {
+      if (v.currentTime + 0.25 >= c.start) k = i
+    })
+    qa('li', list).forEach((li, i) => li.classList.toggle('on', i === k))
+  })
+}
