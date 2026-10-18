@@ -874,6 +874,13 @@ import handler, issue #813.
 **Rule:** in any stylesheet the native app loads, write the `-webkit-` spelling of `user-select` (and `-webkit-touch-callout`, `-webkit-user-drag`) beside the unprefixed one, even though the CSS target adds `-webkit-user-select` too: the source is what the test can read, and the target adds nothing for the other two. The app turns selection off for the document (`shell.css`), so a place that wants it back must say `-webkit-user-select: text` or `all`; `apps/mercurypitch/src/no-select-css.test.ts` fails if it does not. Rooms take the shared `RoomSurface.module.css` class on their root.
 **See:** `apps/mercurypitch/src/shell/shell.css`, `src/components/room-kit/RoomSurface.module.css`, `apps/mercurypitch/src/no-select-css.test.ts`.
 
+### Give a pinned footer its own row, not `position: sticky` over the scroller
+
+**Symptom:** Drum Night's Take ready card, `sticky; bottom: 0` in the phrase-coach column, cut the coach's last row and left the top 12 px of a button showing under it (DOM at 1440x900: card 534.38-738 in a column 66-750).
+**Cause:** Chromium insets a sticky box by its scroller's padding, so `bottom: 0` in a column with `padding: 12px` stops 12 px short of the edge and scrolled content paints in that strip. And a sticky footer is an overlay by design: at most scroll positions some row is partly under it.
+**Rule:** for a footer that must stay on a column's edge, make the column a flex column, scroll the content in its own region above the footer, and keep the footer out of the scroller. Test it by walking the scroll range and checking each text node's clipped box against the footer.
+**See:** `.phraseCoachScroll` in `src/features/drum-night/DrumNightApp.module.css`, `src/e2e/drum-take-card.spec.ts`.
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
