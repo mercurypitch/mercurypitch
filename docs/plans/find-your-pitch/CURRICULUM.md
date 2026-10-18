@@ -158,7 +158,9 @@ on the vocal coach's sign-off, and its page publishes after `/learn/02`, which i
 - Facts: major-scale step pattern T-T-S-T-T-T-S (two T-T-S groups joined by a tone); stable and
   unstable degrees (Hooktheory I, ch. 3).
 
-**Lesson 5. Breath and a steady note**
+**Lesson 5. Breath and a steady note** (written: the lesson, its facts and its page spec are in
+[lessons/05-breath-steady-note/](lessons/05-breath-steady-note/), reviewed; no film yet; its voice
+lines wait on the vocal coach's sign-off, and its page publishes after `/learn/02` and `/learn/03`)
 
 - Objectives: breathe low and quietly; start a note cleanly (balanced onset); hold a note steadily
   for a comfortable fixed length (5, 10 or 15 s, principle 6).
