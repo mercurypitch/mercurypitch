@@ -47,7 +47,7 @@ registers, chords, vowels, a whole song.
 
 Target length 6 to 9 minutes; tiny topics 4 to 5; cap at 10 (3Blue1Brown's curriculum series
 runs 4:27 to 17:16, median 11:34; MOOC engagement medians sit at about 6 minutes). Lesson 1 runs
-4:57 (297.0 s on its cue sheet).
+5:14 (314.2 s on its cue sheet, with the owner's ElevenLabs voices).
 
 The hook is the cold open, not necessarily the YouTube title. A YouTube title has at most 100
 characters (aim for about 60) and may shorten the hook as long as it stays accurate; the full hook
@@ -79,9 +79,8 @@ sincere wrong guess (playbook rule 3); "Signature" is the episode's persistent o
 transformation (rule 6); "Checkpoint" is the sung moment (rule 16); "Practise" is the app link
 (see § 4 for what exists and what needs engineering).
 
-**Lesson 1. What is a note?** (in production: script, storyboard, all 17 Merc passes and all 21
-scenes built; the full-film critic rounds and the delivery render are still to come, and the web
-lesson is in build; 4:57)
+**Lesson 1. What is a note?** (made: the film's master, `rc-07`, passed its last critic round and
+waits on a person's listen to the new voices; the web lesson is built at `/learn/01`; 5:14)
 
 - Objectives: say what makes a note higher (faster vibration, more hertz) and that loudness is
   something else; recognise that doubling the frequency gives the same note an octave up; read

@@ -1,6 +1,6 @@
 # Storyboard v3: Find Your Pitch, Lesson 1, "What is a note?"
 
-1920x1080, 60 fps, 4:57 (297.0 s; re-timed after the b16a re-voice and two chapter breaths), timed to the narration clock in `cues.json`. Every time below
+1920x1080, 60 fps, timed to the narration clock in `cues.json`: 4:57 (297.0 s) with the scratch voices, the clock the times below follow (re-timed after the b16a re-voice and two chapter breaths), and 5:14 (314.2 s) with the owner's ElevenLabs voices from `rc-07`. Every time below
 is a cue; scenes key off cue names (`L.at(scene, cue)`), never off typed seconds. v2 answers
 `review/critic-01/report.md` item by item (noted as [c1.n]).
 
