@@ -25,13 +25,14 @@ import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show,
 import { Portal } from 'solid-js/web'
 import './shell.css'
 import { TAB_HOME } from '@/features/tabs/constants'
-import { KARAOKE_IMPORT, PREMIUM_EXERCISES } from '@/lib/native-build'
+import { KARAOKE_IMPORT, NATIVE_ONBOARDING, PREMIUM_EXERCISES, } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
 import { onUnlockShown, setNotificationPresenter, showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { practiceScope } from '@/stores/settings-store'
 import { RoomsAlley } from '../alley/RoomsAlley'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
+import { installNativeOnboarding, onboardingMounted, } from '../onboarding/onboarding-layer'
 import { CornerTabs } from './CornerTabs'
 import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
@@ -118,6 +119,20 @@ const NgSlidesScreen: Component = PREMIUM_EXERCISES
   ? lazy(async () =>
       import('./NgSlidesScreen').then((module) => ({
         default: module.NgSlidesScreen,
+      })),
+    )
+  : () => null
+
+/**
+ * The native onboarding (src/onboarding), on a build with it
+ * (`NATIVE_ONBOARDING`) and no other: the same ternary as Long note's. It
+ * loads when it first opens, on a new install's first Sing door, so a phone
+ * that has finished it never fetches the chunk.
+ */
+const NativeOnboarding: Component = NATIVE_ONBOARDING
+  ? lazy(async () =>
+      import('../onboarding/NativeOnboarding').then((module) => ({
+        default: module.NativeOnboarding,
       })),
     )
   : () => null
@@ -307,6 +322,9 @@ export const NativeShell: Component = () => {
   mirrorShellChrome()
   // A phone holds a premium room upright (portrait-lock.ts, decision D2).
   installPortraitLock()
+  // The onboarding opens over the first Sing room of a new install
+  // (onboarding-layer.ts). A plain conditional, so a store build folds it.
+  if (NATIVE_ONBOARDING) installNativeOnboarding()
 
   onCleanup(() => {
     setShellOwnsTransport(false)
@@ -431,6 +449,14 @@ export const NativeShell: Component = () => {
             onDiscard={finishRun}
             onKeep={finishRun}
           />
+
+          {/* The native onboarding, over the rail and every pushed screen
+              and under the sheets after it, which open over it. */}
+          {NATIVE_ONBOARDING ? (
+            <Show when={onboardingMounted()}>
+              <NativeOnboarding />
+            </Show>
+          ) : null}
 
           {/* Keep, the account offer: over the Sing room after a Keep, and
               from Settings and the Cloud offer. Its Use email and a second

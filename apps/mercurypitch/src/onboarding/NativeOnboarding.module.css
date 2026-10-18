@@ -1,0 +1,404 @@
+/* The native onboarding: one dark stage over the Sing room, above the rail
+   and under the sheets (--z-focus, a deliberate full-screen takeover,
+   mobile-kit.css), so Keep and the Cloud offer can rise over it. Sized by
+   the dynamic viewport with a 100vh fallback, and clear of every safe
+   area (REQ-NFL-048): top, left and right as well as the bottom. */
+.layer {
+  /* The mic's lit colour in the singer's turn: the house teal. */
+  --mic-lit: #2dd4bf;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: var(--z-focus, 500);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  padding: var(--safe-top, 0px) var(--safe-right, 0px) var(--safe-bottom, 0px)
+    var(--safe-left, 0px);
+  overflow: hidden;
+  background:
+    radial-gradient(
+      90% 55% at 50% 40%,
+      rgba(188, 140, 255, 0.14) 0%,
+      rgba(13, 17, 23, 0) 70%
+    ),
+    var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  animation: onboarding-in var(--mp-in, 280ms) ease-out both;
+  transition: opacity var(--mp-in, 280ms) ease;
+}
+
+/* Leaving: the shell is back underneath while this fades. */
+.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes onboarding-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Not now: top right on every beat, a 44 px target at full contrast
+   (S7b E1). */
+.top {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px 0;
+}
+
+.notNow {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 22px;
+  background: none;
+  color: var(--text-primary);
+  font: 600 17px/1 var(--font-body, sans-serif);
+}
+
+.notNow:focus-visible,
+.primary:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+
+.beat {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Merc's line for a screen reader, read once as it changes. */
+.said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+/* Above the spotlight's beam, which reaches up behind it. */
+.bubbleRow {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  min-height: 64px;
+}
+
+.bubble {
+  margin: 0;
+  max-width: 320px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  font: 500 17px/1.35 var(--font-body, sans-serif);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* Merc on his lit spot: a square box, his feet at MERC_FEET of it. */
+.merc {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(46vw, 30vh, 240px);
+  width: min(46vw, 30dvh, 240px);
+  aspect-ratio: 1;
+}
+
+/* The spot of light under his feet. */
+.merc::before {
+  content: '';
+  position: absolute;
+  top: 81%;
+  left: 50%;
+  width: 130%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(188, 140, 255, 0.42) 0%,
+    rgba(88, 166, 255, 0.16) 55%,
+    rgba(13, 17, 23, 0) 100%
+  );
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* The beam it falls from. */
+.merc::after {
+  content: '';
+  position: absolute;
+  bottom: 19%;
+  left: 50%;
+  width: 110%;
+  height: 150%;
+  background: linear-gradient(
+    to bottom,
+    rgba(188, 140, 255, 0) 0%,
+    rgba(188, 140, 255, 0.07) 60%,
+    rgba(188, 140, 255, 0.13) 100%
+  );
+  clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.mercView {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* The lane the voice draws on, with the held note's guide across it. */
+.lane {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(100%, 720px);
+  height: clamp(84px, 13vh, 140px);
+}
+
+.lane::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(230, 237, 243, 0) 0%,
+    rgba(230, 237, 243, 0.14) 20%,
+    rgba(230, 237, 243, 0.14) 80%,
+    rgba(230, 237, 243, 0) 100%
+  );
+  transition: opacity 300ms ease;
+}
+
+.ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+/* Where the newest voice is drawn. */
+.head {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: linear-gradient(
+    to bottom,
+    rgba(230, 237, 243, 0),
+    rgba(230, 237, 243, 0.38),
+    rgba(230, 237, 243, 0)
+  );
+  transition: opacity 300ms ease;
+}
+
+/* Named: the line gives way to the note. */
+.laneAway::before,
+.laneAway .ribbon,
+.laneAway .head {
+  opacity: 0;
+}
+
+/* The demonstration's label (REQ-NFL-021). */
+.example {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  padding: 3px 10px;
+  border: 1px solid rgba(230, 237, 243, 0.3);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font: 600 12px/1.2 var(--font-body, sans-serif);
+  letter-spacing: 0.02em;
+}
+
+.note {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: linear-gradient(135deg, #2dd4bf 0%, #58a6ff 50%, #bc8cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font: 800 64px/1 var(--font-display, var(--font-body, sans-serif));
+  letter-spacing: -0.01em;
+  animation: note-pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1.2) both;
+}
+
+@keyframes note-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Held at the height of its tallest beat, the mic's (its well, two lines and
+   the promise), so the stage stays put when Start singing or the mic's
+   notice takes the mic's place: the shorter beats sit at the bottom. */
+.foot {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  min-height: 244px;
+  padding: 8px 16px 16px;
+}
+
+/* Room for the mic's ring at full travel: 100 px at rest and 1.3 times that
+   for a loud voice (room kit mic-state.ts RING_REACH), so 23 px past the
+   84 px button each way. Without it the ring ran through the caption. */
+.micWell {
+  display: grid;
+  place-items: center;
+  padding: 16px 0;
+}
+
+.caption {
+  margin: 2px 0 0;
+  color: var(--text-primary);
+  font: 600 17px/1.2 var(--font-body, sans-serif);
+}
+
+.fine {
+  max-width: 340px;
+  margin: 0;
+  color: var(--text-secondary);
+  font: 400 14px/1.4 var(--font-body, sans-serif);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* Kept in the flow so nothing below it moves when it goes. */
+.away {
+  visibility: hidden;
+}
+
+.promise {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--text-secondary);
+  font: 500 13px/1.3 var(--font-body, sans-serif);
+}
+
+/* One big button, full width and centred. */
+.primary {
+  width: 100%;
+  max-width: 360px;
+  min-height: 52px;
+  border: 0;
+  border-radius: 26px;
+  background: #7c4dff;
+  box-shadow: 0 6px 20px rgba(124, 77, 255, 0.4);
+  color: #fff;
+  font: 600 17px/1 var(--font-body, sans-serif);
+}
+
+/* A short phone (360 x 640, 375 x 667): tighter rows. */
+@media (max-height: 700px) {
+  .bubbleRow {
+    min-height: 52px;
+  }
+
+  .bubble {
+    padding: 7px 14px;
+  }
+
+  .note {
+    font-size: 52px;
+  }
+}
+
+/* On its side and short (a phone the lock has not caught, a browser): the
+   stage and the foot side by side. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .beat {
+    flex-direction: row;
+  }
+
+  .stage {
+    flex: 1 1 60%;
+  }
+
+  .foot {
+    flex: 1 1 40%;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  .merc {
+    width: min(30vw, 34vh, 200px);
+    width: min(30vw, 34dvh, 200px);
+  }
+
+  .bubbleRow {
+    min-height: 44px;
+  }
+}
+
+/* Reduced motion: no pop, and the shell's crossfade in and out. */
+@media (prefers-reduced-motion: reduce) {
+  .layer {
+    animation: none;
+  }
+
+  .note {
+    animation: none;
+  }
+
+  .lane::before,
+  .ribbon,
+  .head {
+    transition: none;
+  }
+}

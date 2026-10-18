@@ -68,6 +68,17 @@ export const KARAOKE_IMPORT: boolean =
 export const PREMIUM_EXERCISES: boolean = KARAOKE_IMPORT
 
 /**
+ * Whether this build carries the native app's own onboarding (plans S7 and
+ * S7b): Merc, the first note and what follows it, from the first Sing door
+ * of a new install. It ships with the offer screens it leads to, in one
+ * release (owner, 16 Oct 2026), so it is on in exactly the builds the Cloud
+ * offer is: a native test build, TestFlight among them, and not the store
+ * build until the V1 flip. Folded like `KARAOKE_IMPORT`, so the store build
+ * carries none of it (assert-bundle.mjs STAGE 2).
+ */
+export const NATIVE_ONBOARDING: boolean = KARAOKE_IMPORT
+
+/**
  * The origin `/api/uvr/*` is asked on. Empty on the web, whose page is on
  * the worker that serves it. A native page is on capacitor://localhost, so
  * a native build names the web host that goes with its db-worker.
