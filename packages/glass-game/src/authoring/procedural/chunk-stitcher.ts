@@ -97,11 +97,16 @@ export function hasAssembledPlatformOverlap(
     const rotated = Math.abs(p.quarterTurns) % 2 === 1
     const halfX = (rotated ? dims.depth : dims.width) / 2
     const halfZ = (rotated ? dims.width : dims.depth) / 2
+    const behavior = p.behavior as
+      | { kind?: string; translation?: Vec3 }
+      | undefined
+    const tx = behavior?.kind === 'glide' ? (behavior.translation?.x ?? 0) : 0
+    const tz = behavior?.kind === 'glide' ? (behavior.translation?.z ?? 0) : 0
     return {
-      minX: p.center.x - halfX,
-      maxX: p.center.x + halfX,
-      minZ: p.center.z - halfZ,
-      maxZ: p.center.z + halfZ,
+      minX: p.center.x - halfX + Math.min(0, tx),
+      maxX: p.center.x + halfX + Math.max(0, tx),
+      minZ: p.center.z - halfZ + Math.min(0, tz),
+      maxZ: p.center.z + halfZ + Math.max(0, tz),
     }
   })
 
@@ -363,14 +368,27 @@ export function stitchChunks(
       }
     }
 
-    // Camera sections
-    if (chunk.cameraSection) {
+    // Camera sections (assign all platforms in the chunk and align look vector with chunk traversal)
+    if (chunk.platforms.length > 0) {
+      const chunkPlatformIds = chunk.platforms.map(
+        (p) => idMap.get(p.localId)!,
+      )
       const cs = chunk.cameraSection
+      const rawFrom = cs
+        ? idMap.get(cs.lookFromPlatformLocalId)!
+        : chunkPlatformIds[0]!
+      const rawTo = cs
+        ? idMap.get(cs.lookToPlatformLocalId)!
+        : chunkPlatformIds[chunkPlatformIds.length - 1]!
+      const lookFromPlatformId =
+        rawFrom === rawTo && lastExitPlatformId !== null
+          ? lastExitPlatformId
+          : rawFrom
       assembledCameraSections.push({
-        id: `${chunkPrefix}-${cs.localId}`,
-        platformIds: cs.platformLocalIds.map((lid) => idMap.get(lid)!),
-        lookFromPlatformId: idMap.get(cs.lookFromPlatformLocalId)!,
-        lookToPlatformId: idMap.get(cs.lookToPlatformLocalId)!,
+        id: `${chunkPrefix}-${cs?.localId ?? 'cam'}`,
+        platformIds: chunkPlatformIds,
+        lookFromPlatformId,
+        lookToPlatformId: rawTo,
       })
     }
 

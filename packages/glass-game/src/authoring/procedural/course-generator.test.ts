@@ -19,7 +19,7 @@ describe('generateProceduralCourse', () => {
     expect(result.compiledLevel.rewards?.discoveries.length).toBe(1)
   })
 
-  it('supports 5-station sunlit-steps-v1 lessons and optional alcove toggling', () => {
+  it('supports 5-station, 7-station, and 10-station melody lessons with zero overlaps and optional alcove toggling', () => {
     const sunlit = generateProceduralCourse({
       seed: 'sunlit-voyage',
       melodyLessonId: 'sunlit-steps-v1',
@@ -28,12 +28,52 @@ describe('generateProceduralCourse', () => {
     expect(sunlit.compiledLevel.melodyLesson?.stations.length).toBe(5)
     expect(sunlit.compiledLevel.rewards?.discoveries.length).toBe(2)
 
+    const galleryArch = generateProceduralCourse({
+      seed: 'grand-archway',
+      melodyLessonId: 'gallery-arch-v1',
+      includeOptionalAlcoves: true,
+    })
+    expect(galleryArch.compiledLevel.melodyLesson?.stations.length).toBe(7)
+    expect(galleryArch.compiledLevel.rewards?.discoveries.length).toBe(2)
+
+    const twoWindows = generateProceduralCourse({
+      seed: 'twin-windows',
+      melodyLessonId: 'two-windows-v1',
+      includeOptionalAlcoves: true,
+    })
+    expect(twoWindows.compiledLevel.melodyLesson?.stations.length).toBe(10)
+    expect(twoWindows.compiledLevel.platforms.length).toBeGreaterThanOrEqual(70)
+
     const withoutAlcoves = generateProceduralCourse({
       seed: 42,
       includeOptionalAlcoves: false,
     })
     expect(withoutAlcoves.compiledLevel.breakables.length).toBe(4)
     expect(withoutAlcoves.compiledLevel.rewards).toBeUndefined()
+  })
+
+  it('assigns chunk-aligned camera sections covering every platform and proves sanctuary barriers block sequence breaks', async () => {
+    const { proveBarrierSecurity } = await import(
+      '../../solver/sequence-break-prover.ts'
+    )
+    const result = generateProceduralCourse({ seed: 'spire' })
+    const level = result.compiledLevel
+
+    // Every chunk produces its own camera section
+    expect(level.camera?.sections.length).toBeGreaterThanOrEqual(7)
+
+    // First vocal sanctuary barrier must block an uncompleted sprint/jump attempt from its checkpoint
+    const firstGate = level.breakables.find(
+      (b) => b.presentation?.kind === 'barrier',
+    )!
+    const sanctuaryCheckpoint = level.checkpoints[1]!
+    const securityProof = proveBarrierSecurity(
+      level,
+      firstGate.id,
+      sanctuaryCheckpoint.position,
+    )
+    expect(securityProof.secure).toBe(true)
+    expect(securityProof.exploitWitnessSequence).toBeUndefined()
   })
 
   it('is strictly deterministic for identical seeds', () => {
