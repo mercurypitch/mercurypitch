@@ -13,6 +13,13 @@
 // background. Sound needs a running audio clock: a first visit that cannot
 // start one without a tap opens on a play card instead of a silent demo.
 //
+// A first visit's demo that has not started when the app goes (Control
+// Center, the lock screen, the app switcher) is held, the room left as it
+// was: no card, no hint, no clock. It starts AUTO_PLAY_MS after the singer
+// is back, the app active and the page showing, if the room is still at its
+// intro. One that had started ends on its card, and nothing plays by itself
+// on the way back.
+//
 // Its mic hint ("Tap the mic to start.") is the room's at rest: it stays
 // over the mic whenever the room waits for the tap that starts a take
 // (the mic's ready state, room-kit mic-state.ts) and the demo is not on.
@@ -22,8 +29,9 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
-import { onAppLeave } from '@/components/room-kit/app-leave'
+import { onAppLeave, onAppReturn } from '@/components/room-kit/app-leave'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
+import { tellDemoAuto } from './demo-auto'
 import type { DemoBeats, DemoCue, DemoMark, DemoTakeId, DemoTakeShape, TakeClock, } from './demo-plan'
 import { takeClock } from './demo-plan'
 import type { DemoSoundtrack } from './demo-sound'
@@ -151,7 +159,10 @@ export interface ExerciseDemo<C extends string, T extends string> {
   tryIt: () => void
 }
 
-/** A first visit waits for Merc to land before the demo starts. */
+/**
+ * A first visit waits for Merc to land before the demo starts, and a demo
+ * the app's leaving held back waits as long once the singer is back.
+ */
 const AUTO_PLAY_MS = 1200
 /** How long a first visit waits for sound before the play card. */
 const AUDIO_WAIT_MS = 700
@@ -200,8 +211,15 @@ export function useExerciseDemo<
   let generation = 0
   /** Bumped by every request for sound: older answers are dropped. */
   let request = 0
-  /** The app left with the page showing, and no tap since. */
+  /**
+   * The app left with the page showing, and no tap since, nor the start of
+   * a demo it held back.
+   */
   let away = false
+  /** The app left, and the shell has not said it is back (app-leave.ts). */
+  let appAway = false
+  /** A first visit's demo the app or the page took away before it started. */
+  let held = false
   let sound: DemoSoundtrack<Take> | null = null
   let plan: ReturnType<typeof config.plan> | null = null
   /** The tooltips already cued this run: each shows once. */
@@ -383,6 +401,10 @@ export function useExerciseDemo<
       setAutoPending(false)
       return
     }
+    // Only a singer who is here gets this far: a demo held for the app
+    // waits for its return.
+    away = false
+    tellDemoAuto({ step: 'starting' })
     const mine = ++request
     const offer = (): void => {
       clearTimeout(audioWait)
@@ -405,13 +427,18 @@ export function useExerciseDemo<
   const cancelAuto = (): void => {
     if (autoTimer !== undefined) clearTimeout(autoTimer)
     autoTimer = undefined
+    held = false
     setAutoPending(false)
   }
 
-  onMount(() => {
-    if (!config.autoPlays()) return
+  const armAuto = (): void => {
     setAutoPending(true)
     autoTimer = setTimeout(autoPlay, AUTO_PLAY_MS)
+    tellDemoAuto({ step: 'waiting', ms: AUTO_PLAY_MS })
+  }
+
+  onMount(() => {
+    if (config.autoPlays()) armAuto()
   })
 
   // The room keeps the screen on while the demo plays, and only then: not
@@ -433,10 +460,21 @@ export function useExerciseDemo<
   )
 
   // The app went to the background: the demo stops where it is and offers
-  // itself again; it has not been seen.
+  // itself again; it has not been seen. One that had not started yet, on
+  // its timer or still waiting for its sound, is held for the singer's
+  // return instead, with every answer on its way dropped.
   const leaveWithTheApp = (): void => {
     const playing = untrack(mode) === 'playing'
-    if (!playing && autoTimer === undefined) return
+    if (!playing && untrack(autoPending)) {
+      if (autoTimer !== undefined) clearTimeout(autoTimer)
+      autoTimer = undefined
+      clearTimeout(audioWait)
+      request += 1
+      if (!held) tellDemoAuto({ step: 'held' })
+      held = true
+      return
+    }
+    if (!playing) return
     cancelAuto()
     request += 1
     halt()
@@ -445,8 +483,17 @@ export function useExerciseDemo<
     setRun(null)
     setMode('card')
   }
+  // The singer is back, the app active and the page showing: a held demo
+  // starts as a first visit's does, while the room is still at its intro.
+  const comeBack = (): void => {
+    if (!held || appAway || document.visibilityState === 'hidden') return
+    held = false
+    if (idleIntro() && config.autoPlays()) armAuto()
+    else setAutoPending(false)
+  }
   const onVisibility = (): void => {
     if (document.visibilityState === 'hidden') leaveWithTheApp()
+    else comeBack()
   }
   document.addEventListener('visibilitychange', onVisibility)
   // Or it went with the page still showing (Control Center, the
@@ -454,7 +501,12 @@ export function useExerciseDemo<
   // before does not start while the singer is away (`begin`).
   const stopAppLeave = onAppLeave(() => {
     away = true
+    appAway = true
     leaveWithTheApp()
+  })
+  const stopAppReturn = onAppReturn(() => {
+    appAway = false
+    comeBack()
   })
 
   onCleanup(() => {
@@ -464,6 +516,7 @@ export function useExerciseDemo<
     halt()
     document.removeEventListener('visibilitychange', onVisibility)
     stopAppLeave()
+    stopAppReturn()
   })
 
   return {

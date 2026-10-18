@@ -7,7 +7,7 @@
 // take its demo's listener with it.
 
 import { describe, expect, it, vi } from 'vitest'
-import { announceAppLeave, onAppLeave } from './app-leave'
+import { announceAppLeave, announceAppReturn, onAppLeave, onAppReturn, } from './app-leave'
 
 describe('onAppLeave', () => {
   it('tells every room listening, each time the app leaves', () => {
@@ -33,5 +33,22 @@ describe('onAppLeave', () => {
     stopRoom()
     announceAppLeave()
     expect(demo).not.toHaveBeenCalled()
+  })
+})
+
+describe('onAppReturn', () => {
+  it('tells every room listening each time the app is in front again, and nobody after', () => {
+    const demo = vi.fn()
+    const left = vi.fn()
+    const stopDemo = onAppReturn(demo)
+    const stopLeft = onAppLeave(left)
+    announceAppReturn()
+    announceAppReturn()
+    stopDemo()
+    announceAppReturn()
+    stopLeft()
+    expect(demo).toHaveBeenCalledTimes(2)
+    // The way back is its own word: no leave is heard.
+    expect(left).not.toHaveBeenCalled()
   })
 })

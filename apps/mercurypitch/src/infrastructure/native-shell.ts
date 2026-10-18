@@ -13,6 +13,7 @@
 
 import { suspendSharedAudioContext } from '@irchiinnuss/audio-io'
 import { minimizeApp, onAppState, onBackButton, } from '@irchiinnuss/mobile-runtime/platform'
+import { announceAppReturn } from '@/components/room-kit/app-leave'
 
 /** Enough of `History` to decide whether there is anywhere to go back to. */
 interface HistoryLike {
@@ -96,6 +97,11 @@ export function installNativeShell(
   // resumed on the way in: another app has the sound, and only a press of
   // play takes it back (docs/plans/mobile-native/ios-audio-handoff.md).
   //
+  // What the way back does say is that the singer is here: a premium room's
+  // first-visit demo that the app's leaving held back starts again from
+  // here, once the page shows as well (room-kit app-leave.ts). It wakes no
+  // clock itself.
+  //
   // Today this parks the one context `packages/audio-io` owns, which on this
   // app's side is nobody yet: the root rooms each build their own. They adopt
   // the shared context ROOM BY ROOM (task E2 and the R-tasks, starting with
@@ -103,6 +109,7 @@ export function installNativeShell(
   // moves — which is why the hook goes in now rather than with the first one.
   const stopLifecycle = onAppState((state) => {
     if (state === 'background') suspendSharedAudioContext()
+    else announceAppReturn()
   })
 
   // Android's hardware back. Registering a handler turns Capacitor's default

@@ -19,7 +19,11 @@
 //             session's state where it gives one
 //   notice    the volume notice shown or gone, with the reading and the
 //             cause that decided it (RoomVolumeHint.tsx)
-//   demo      each turn of a room's demo, read off the room's `data-demo`
+//   demo      each turn of a room's demo, read off the room's `data-demo`,
+//             and a first visit's wait before it starts (demo-kit
+//             demo-auto.ts): `auto-waiting` with how long, `auto-held` when
+//             the app or the page went first, `auto-starting` as it asks
+//             for the clock
 //   app       launch; the page going behind and coming back (`background`,
 //             `foreground`); and iOS's own word on the app (`inactive`,
 //             `active`). Control Center and the notification shade make
@@ -44,6 +48,8 @@ import type { PageAudioSessionChange } from '@irchiinnuss/mobile-runtime/page-au
 import { onPageAudioSessionChange } from '@irchiinnuss/mobile-runtime/page-audio-session'
 import type { AppLifecycleHandler } from '@irchiinnuss/mobile-runtime/platform'
 import { onAppState } from '@irchiinnuss/mobile-runtime/platform'
+import type { DemoAutoStep } from '@/components/demo-kit/demo-auto'
+import { onDemoAuto } from '@/components/demo-kit/demo-auto'
 import type { RoomOutputReading } from '@/components/room-kit/room-output'
 import { audioReporter } from '@/lib/audio-diagnostics'
 import { readOutputAround, watchRoomLevels } from './audio-census'
@@ -171,6 +177,18 @@ function watchDemo(win: Window, room: string): () => void {
   return () => observer.disconnect()
 }
 
+/** The open room's first-visit demo, before it starts. Returns the stop. */
+function watchDemoWait(room: string): () => void {
+  return onDemoAuto((step: DemoAutoStep) => {
+    demoReport(
+      `auto-${step.step}`,
+      step.step === 'waiting'
+        ? { room, in: `${(step.ms / 1000).toFixed(1)} s` }
+        : { room },
+    )
+  })
+}
+
 /** Record the scenario steps from now on. Returns the stop. */
 export function installAudioRecord(
   options: AudioRecordOptions = {},
@@ -232,7 +250,7 @@ export function installAudioRecord(
       if (step.moment !== 'enter' && step.moment !== 'leave') return
       leave()
       if (step.moment === 'leave') return
-      leaving = [watchDemo(win, step.room)]
+      leaving = [watchDemo(win, step.room), watchDemoWait(step.room)]
       if (options.roomLevels !== undefined) {
         leaving.push(watchRoomLevels(options.roomLevels))
       }

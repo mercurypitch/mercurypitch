@@ -492,6 +492,31 @@ describe('the shared audio context', () => {
     expect(() => suspendSharedAudioContext()).not.toThrow()
   })
 
+  it('tells every lease the app is going even when no clock was ever built, and builds none', () => {
+    // A room's first-visit demo waits a moment before it asks for the
+    // clock: unwarned, it would build and start one behind the app.
+    const { built } = useFakeContexts()
+    const prepare = vi.fn(() => 250)
+    acquireSharedAudioContext('room', { prepareToSuspend: prepare })
+
+    suspendSharedAudioContext()
+
+    expect(prepare).toHaveBeenCalledOnce()
+    expect(built).toHaveLength(0)
+  })
+
+  it('tells no lease while a hold keeps the clock for the app leaving', () => {
+    useFakeContexts()
+    const prepare = vi.fn(() => 0)
+    acquireSharedAudioContext('room', { prepareToSuspend: prepare })
+    const letGo = holdSharedAudioContextInBackground('mic-permission')
+
+    suspendSharedAudioContext()
+    letGo()
+
+    expect(prepare).not.toHaveBeenCalled()
+  })
+
   it('ignores a double release', async () => {
     vi.useFakeTimers()
     const { built } = useFakeContexts()
