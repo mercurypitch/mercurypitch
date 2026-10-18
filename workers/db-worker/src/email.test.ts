@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResendConfig } from './email'
-import { maskAddresses, maskEmail, sendAccountNotice, sendNewsletterIssue, } from './email'
+import { maskAddresses, maskEmail, sendAccountNotice } from './email'
 import { sendLoginCode, sendSignUpCode } from './email-code'
+import { sendNewsletterIssue } from './email-newsletter'
 import { sendPasswordReset } from './email-password-reset'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 
@@ -35,7 +36,12 @@ describe('what a sent mail logs', () => {
     appOrigin: 'https://app.example.test',
     assetOrigin: 'https://assets.example.test',
   }
-  const ITEMLESS = { subject: 'Subject', preheader: 'Preview', intro: 'Intro' }
+  const ITEMLESS = {
+    ...ORIGINS,
+    subject: 'Subject',
+    preheader: 'Preview',
+    intro: 'Intro',
+  }
   let logged: string[]
 
   beforeEach(() => {

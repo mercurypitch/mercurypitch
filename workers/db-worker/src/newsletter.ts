@@ -23,9 +23,9 @@
 // way — this file imports auth.ts, never the reverse.
 
 import type { Env } from './auth'
-import { b64urlEncode, checkRateLimit, getAuth, ipRateLimitKey } from './auth'
-import type { NewsletterItem } from './email'
-import { renderNewsletterIssue, sendNewsletterIssue } from './email'
+import { b64urlEncode, checkRateLimit, fallbackAppOrigin, getAuth, ipRateLimitKey, mailOrigins, } from './auth'
+import type { NewsletterItem } from './email-newsletter'
+import { renderNewsletterIssue, sendNewsletterIssue } from './email-newsletter'
 import type { NewsletterConsent } from './newsletter-consent'
 import { readNewsletterConsent, setNewsletterConsent, } from './newsletter-consent'
 
@@ -359,6 +359,8 @@ export async function handleNewsletterRoute(
     })
 
     const origin = new URL(request.url).origin
+    // The issue's links and pictures: this environment's own app.
+    const origins = mailOrigins(fallbackAppOrigin(env), env)
     const outcomes: SendOutcome[] = []
     let preview: { subject: string; html: string; text: string } | null = null
 
@@ -374,6 +376,7 @@ export async function handleNewsletterRoute(
         consent.optInAt,
       )
       const vars = {
+        ...origins,
         displayName: person.displayName,
         subject: content.subject,
         preheader: content.preheader,
