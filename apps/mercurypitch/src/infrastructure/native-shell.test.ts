@@ -8,6 +8,7 @@
 // is what kept the app alive.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { onAppReturn } from '@/components/room-kit/app-leave'
 import { installNativeShell } from './native-shell'
 
 const audio = vi.hoisted(() => ({ suspendSharedAudioContext: vi.fn() }))
@@ -55,6 +56,21 @@ describe('the app leaving the foreground', () => {
     appStateHandler()('active')
 
     expect(audio.suspendSharedAudioContext).toHaveBeenCalledTimes(1)
+  })
+
+  it('tells the rooms the app is back, and only then', () => {
+    // A first-visit demo the app's leaving held back starts again on it.
+    const back = vi.fn()
+    const stop = onAppReturn(back)
+    installNativeShell({ history: null })
+
+    appStateHandler()('background')
+    const whileAway = back.mock.calls.length
+    appStateHandler()('active')
+    stop()
+
+    expect(whileAway).toBe(0)
+    expect(back).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -571,15 +571,27 @@ describe('the Long note demo', () => {
     await run(1300)
     expect(demoMode()).toBe('idle')
 
-    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
     document.dispatchEvent(new Event('visibilitychange'))
     answer({} as AudioContext)
     await run(50)
 
-    expect(demoMode()).toBe('card')
+    // Held for the singer, the room as it was: no card, no sound.
+    expect(demoMode()).toBe('idle')
     expect(sound.made).toBe(0)
     expect(room().dataset.phase).toBe('intro')
     expect(seen.value).toBe(false)
+
+    // Back: it starts as a first visit's does, AUTO_PLAY_MS later.
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await run(1100)
+    expect(demoMode()).toBe('idle')
+    await run(200)
+    expect(demoMode()).toBe('playing')
+    expect(sound.made).toBe(1)
   })
 
   it('never starts in the background on a Watch that was still waiting', async () => {

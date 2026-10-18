@@ -12,6 +12,7 @@
 import { resetPageAudioSessionForTests } from '@irchiinnuss/mobile-runtime/page-audio-session'
 import type { AppLifecycleHandler, AppLifecycleState, } from '@irchiinnuss/mobile-runtime/platform'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { tellDemoAuto } from '@/components/demo-kit/demo-auto'
 import type { RoomOutputReading } from '@/components/room-kit/room-output'
 import { audioDiagnosticEntries, formatAudioDiagnostic, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
 import type { NativeAudioOutputReading } from '@/stores/native-shell-store'
@@ -241,6 +242,24 @@ describe('a demo', () => {
       'demo card room=echo from=idle',
       'demo playing room=echo from=card',
       'demo end room=echo from=playing',
+    ])
+  })
+
+  it("records a first visit's wait before its demo starts, held by the app, while its room is open", () => {
+    install()
+    tellDemoAuto({ step: 'waiting', ms: 1200 })
+    const leave = visit('long-note', on)
+    tellDemoAuto({ step: 'waiting', ms: 1200 })
+    tellDemoAuto({ step: 'held' })
+    tellDemoAuto({ step: 'waiting', ms: 1200 })
+    tellDemoAuto({ step: 'starting' })
+    leave()
+    tellDemoAuto({ step: 'starting' })
+    expect(lines().filter((line) => line.startsWith('demo'))).toEqual([
+      'demo auto-waiting room=long-note in=1.2 s',
+      'demo auto-held room=long-note',
+      'demo auto-waiting room=long-note in=1.2 s',
+      'demo auto-starting room=long-note',
     ])
   })
 })

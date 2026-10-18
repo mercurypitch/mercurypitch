@@ -125,7 +125,11 @@ function cancelPendingSuspension(): void {
  */
 export const RELEASE_GRACE_MS = 120
 
-function requestSuspension(audioContext: AudioContext): void {
+/**
+ * Tells every lease the clock is about to park, and returns the longest
+ * release one asked for (at most 250 ms).
+ */
+function prepareOwners(): number {
   let grace = 0
   // A callback can release its own lease; don't iterate a live ownership map.
   for (const owner of [...owners.values()]) {
@@ -137,6 +141,11 @@ function requestSuspension(audioContext: AudioContext): void {
       // One output must not prevent the shared clock from being parked.
     }
   }
+  return grace
+}
+
+function requestSuspension(audioContext: AudioContext): void {
+  const grace = prepareOwners()
   if (audioContext.state !== 'running') return
   parkAfter(audioContext, grace)
 }
@@ -335,7 +344,8 @@ export function acquireSharedAudioContext(
  * app switcher, a screen lock — and a context left running through that keeps
  * an output stream open behind an app nobody can see.
  *
- * Outputs may request a bounded release before the clock parks. Native intent
+ * Outputs may request a bounded release before the clock parks, and every
+ * lease is asked even when no clock has been built yet. Native intent
  * blocks automatic page/interruption resumes until foreground handling calls
  * cancelSharedAudioContextSuspension(), or a fresh gesture calls unlock().
  * Cancelling intent alone does not resume the clock or replay stopped sound.
@@ -349,7 +359,15 @@ export function suspendSharedAudioContext(): void {
   explicitlySuspended = true
   suspendedByPage = false
   const audioContext = context
-  if (audioContext !== undefined) requestSuspension(audioContext)
+  if (audioContext !== undefined) {
+    requestSuspension(audioContext)
+    return
+  }
+  // No clock yet, so nothing to park, but a lease may be about to ask for
+  // one: a room's first-visit demo waits a moment before it starts. Its
+  // timer would build and start the clock behind the app, and that start
+  // undoes this intent. So each lease hears the app go all the same.
+  prepareOwners()
 }
 
 /** Clears a native suspension intent without resuming playback or the clock. */
