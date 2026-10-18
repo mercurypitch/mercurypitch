@@ -127,11 +127,17 @@ describe('the second volume, and what the session went through', () => {
     expect(KIT).toContain('public private(set) static var activation')
   })
 
-  // A suspension and a call can be told apart: iOS marked the first with
-  // this key (10 to 14.4), and the app's state says when it arrived.
-  it('says whether an interruption came with the app’s suspension', () => {
-    expect(PLUGIN).toContain('info[AVAudioSessionInterruptionWasSuspendedKey]')
-    expect(PLUGIN).toContain('extra["wasSuspended"] = suspended')
+  // iOS 14.5 deprecated the suspension key as "No longer supported", so it
+  // reads false: the app's state as an interruption arrives is what tells a
+  // suspension from a call.
+  it('says the app’s state as an interruption arrives, and not the suspension key iOS no longer sends', () => {
+    expect(PLUGIN).not.toContain(
+      'info[AVAudioSessionInterruptionWasSuspendedKey]',
+    )
+    expect(PLUGIN).not.toContain('wasSuspended')
+    expect(PLUGIN).toContain(
+      'let extra: [String: Any] = ["appState": Self.appState()]',
+    )
     expect(PLUGIN).toContain('UIApplication.shared.applicationState')
     expect(PLUGIN).toContain('changed("interruption", extra)')
   })

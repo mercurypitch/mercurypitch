@@ -42,11 +42,11 @@ import UIKit
 // believes it only where the view, settled in its window for a second
 // (systemVolumeSettled), reads the same: a view reads 0 until it fills.
 //
-// AN INTERRUPTION SAYS WHAT KIND IT WAS where iOS does: a call or Siri, or
-// the app's suspension, which iOS 10 to 14.4 marked with
-// AVAudioSessionInterruptionWasSuspendedKey (Apple has deprecated it, and
-// its successor reason, since). The app's state as it arrived goes with it:
-// a suspension's is delivered only as the app runs again.
+// AN INTERRUPTION SAYS WHAT KIND IT WAS where iOS does, by its reason
+// (AVAudioSessionInterruptionReasonKey), and the app's state as it arrived
+// goes with it: one that came while the app was suspended is delivered only
+// as the app runs again. AVAudioSessionInterruptionWasSuspendedKey is not
+// read: iOS 14.5 deprecated it as "No longer supported".
 //
 // An app's own plugin is not on Capacitor's package list, so
 // ViewController.capacitorDidLoad() registers this one.
@@ -159,15 +159,13 @@ public class AudioOutputPlugin: CAPPlugin, CAPBridgedPlugin {
         let info = note.userInfo ?? [:]
         let type = (info[AVAudioSessionInterruptionTypeKey] as? UInt)
             .flatMap { AVAudioSession.InterruptionType(rawValue: $0) }
-        var extra: [String: Any] = ["appState": Self.appState()]
+        let extra: [String: Any] = ["appState": Self.appState()]
         switch type {
         case .began?:
             interrupted = true
             let reason = (info[AVAudioSessionInterruptionReasonKey] as? UInt)
                 .map { Self.interruptionReason($0) } ?? "no reason given"
-            let suspended = (info[AVAudioSessionInterruptionWasSuspendedKey] as? Bool) == true
-            extra["wasSuspended"] = suspended
-            lastInterruption = suspended ? "began: \(reason), the app was suspended" : "began: \(reason)"
+            lastInterruption = "began: \(reason)"
         case .ended?:
             interrupted = false
             let raw = (info[AVAudioSessionInterruptionOptionKey] as? UInt) ?? 0
