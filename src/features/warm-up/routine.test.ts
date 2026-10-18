@@ -57,6 +57,16 @@ describe('the run, stop by stop', () => {
     expect(day.lastActiveAt).toBe(2003)
   })
 
+  it('counts the day at the end, not at a stop finished on the way', () => {
+    let day = fresh()
+    const counted: boolean[] = []
+    LINES.forEach((line, i) => {
+      day = finishStop(day, i, finished(line))
+      counted.push(day.warmedUp)
+    })
+    expect(counted).toEqual([false, false, false, true])
+  })
+
   it('every way through four stops: each one finished or skipped, in order', () => {
     for (let way = 0; way < 16; way += 1) {
       let day = fresh()
@@ -170,6 +180,17 @@ describe('Warm up again', () => {
     expect(again.date).toBe(TODAY)
     expect(again.lastActiveAt).toBe(9000)
   })
+
+  it('skipping every stop of the new run leaves the day warmed up', () => {
+    let day = fresh()
+    LINES.forEach((line, i) => {
+      day = finishStop(day, i, finished(line))
+    })
+    day = restartDay(day)
+    for (let i = 0; i < 4; i += 1) day = skipStop(day, i)
+    expect(states(day)).toEqual(Array(5).fill('waiting'))
+    expect(day.warmedUp).toBe(true)
+  })
 })
 
 describe('the day the path opens', () => {
@@ -187,6 +208,7 @@ describe('the day the path opens', () => {
     expect(day).toBe(leftHalfway)
     expect(tally(day)).toEqual({ done: 1, skipped: 1, rooms: 4 })
     expect(nextStop(day)).toBe(2)
+    expect(day.warmedUp).toBe(false)
   })
 
   it("a new day: a fresh run of that day's plan", () => {
