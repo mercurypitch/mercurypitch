@@ -41,7 +41,7 @@ page prints "Right." or "Not quite." before each feedback line.
    - The first · Feedback: "The first, A to B, is a tone, with A♯ between them. The second, B to
      C, is the semitone: two white keys with nothing between. Try Lesson 2, Step 3 again."
    - They're the same size · Feedback: "Listen again: the first, A to B, has A♯ between, so it's a
-     tone, twice the size of the second, B to C."
+     tone, twice the size of the second, B to C. Try Lesson 2, Step 3 again."
 2. How many cents is a tone?
    - 200 **[correct]** · Feedback: "Two equal semitones, a hundred cents each."
    - 100 · Feedback: "That's one semitone. A tone is two of them: 200 cents. Try Lesson 2, Step 6
