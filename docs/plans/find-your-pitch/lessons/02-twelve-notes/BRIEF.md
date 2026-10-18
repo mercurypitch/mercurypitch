@@ -2,7 +2,7 @@
 workflow: motion-designer
 flow: automation
 storyboard: no
-renders: ask
+renders: pre-authorized
 unattended: false
 message: 'Between the seven letters sit five more notes: twelve equal semitones make an octave, each a hundred cents, and one key can carry two names.'
 audience: 'Adult and teen beginners who sing or want to, with no theory beyond Lesson 1 (what a note is, the octave, the pitch spiral); YouTube viewers who like Veritasium and 3Blue1Brown'
