@@ -117,14 +117,12 @@
   background: rgb(231 173 82 / 3.5%);
 }
 
-/* In the phrase-coach column the compact host is the column's last child
-   and sticks to its bottom edge while the column scrolls, with the whole
-   column above it to travel over. Opaque, so scrolled content does not show
-   through the strip. */
+/* In the phrase-coach column the compact host is the column's footer: it
+   stays on the column's bottom edge while the coach scrolls in its own
+   region above it (DrumNightApp.module.css), so nothing ever passes under
+   it. The rule on top marks where that region ends. */
 .history[data-mode='compact'] {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
+  border-top: 1px solid var(--take-line-strong);
   background: rgb(10 12 15);
 }
 

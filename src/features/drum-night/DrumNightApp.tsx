@@ -4003,24 +4003,28 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                   aria-label="Session phrase coach"
                   inert={drawerInteractionLocked()}
                 >
-                  <DrumSessionCoach
-                    session={activeSessionState}
-                    playheadBeat={() => transport().positionBeats}
-                    capturedHits={capturedSessionHits}
-                    options={liveCoachOptions}
-                    scoreIndex={sessionScoreIndex}
-                    onRequestRecoveryLoop={applyRecoveryLoop}
-                  />
-                  <Show when={activeProject() !== null}>
-                    <button
-                      class={styles.takeHistoryLink}
-                      type="button"
-                      onClick={() => openWorkspace('coach', 'takes')}
-                    >
-                      <History aria-hidden="true" />
-                      <span>Open take history</span>
-                    </button>
-                  </Show>
+                  {/* The coach scrolls on its own, above the take card, so
+                      no row ever passes under the card or shows below it. */}
+                  <div class={styles.phraseCoachScroll}>
+                    <DrumSessionCoach
+                      session={activeSessionState}
+                      playheadBeat={() => transport().positionBeats}
+                      capturedHits={capturedSessionHits}
+                      options={liveCoachOptions}
+                      scoreIndex={sessionScoreIndex}
+                      onRequestRecoveryLoop={applyRecoveryLoop}
+                    />
+                    <Show when={activeProject() !== null}>
+                      <button
+                        class={styles.takeHistoryLink}
+                        type="button"
+                        onClick={() => openWorkspace('coach', 'takes')}
+                      >
+                        <History aria-hidden="true" />
+                        <span>Open take history</span>
+                      </button>
+                    </Show>
+                  </div>
                   <Show when={takeRailShown()}>
                     <DrumTakeHistoryHost
                       mode="compact"

@@ -1026,22 +1026,71 @@
   top: 0;
   right: 0;
   bottom: 0;
-  display: block;
+  display: flex;
   width: 318px;
   min-height: 0;
-  /* The column scrolls and the take strip, its last child, sticks to the
-     bottom edge (DrumTakeHistory.module.css), so Keep and Not now are never
-     clipped by the column's edge (UX-36). */
-  overscroll-behavior: contain;
-  padding: 12px;
-  overflow: auto;
+  flex-direction: column;
+  overflow: hidden;
   border-left: 1px solid var(--line);
   background: rgb(10 12 15 / 94%);
   box-shadow: -18px 0 40px rgb(0 0 0 / 18%);
 }
 
-.phraseCoach > * {
+/* The coach scrolls in its own region and the take strip sits under it,
+   flush with the column's bottom edge, so Keep and Not now are never clipped
+   by that edge (UX-36). Nothing scrolls beneath the strip: a row is either
+   above it or scrolled out of the region, and the region's bottom padding
+   lets the last row clear the strip. The region shrinks only when the coach
+   is taller than the room, so a short coach still has the strip right under
+   it. */
+.phraseCoachScroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  padding: 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.phraseCoachScroll > * {
   width: 100%;
+}
+
+/* While the coach runs on past the take strip, its last visible line fades
+   into the strip's rule instead of stopping dead on it, which read as a row
+   cut in half. The fade lifts over the last 32px of scroll, so the final row
+   ends crisp. A coach that fits has no scroll timeline and never fades, and
+   browsers without scroll-driven animations keep the plain edge. */
+@property --coach-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes coach-fade-out {
+  from {
+    --coach-fade: 32px;
+  }
+  to {
+    --coach-fade: 0px;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .phraseCoachScroll {
+    animation: coach-fade-out linear both;
+    animation-timeline: scroll(self);
+    animation-range: calc(100% - 32px) 100%;
+    mask-image: linear-gradient(
+      to bottom,
+      #000 calc(100% - var(--coach-fade)),
+      transparent
+    );
+  }
+}
+
+.phraseCoach > [data-mode='compact'] {
+  flex: none;
+  padding-inline: 12px;
 }
 
 .takeHistoryLink {
@@ -1133,13 +1182,13 @@
   line-height: 1.05;
 }
 
-.phraseCoach > p {
+.phraseCoachScroll > p {
   margin: 0;
   color: var(--vellum-muted);
   font-size: 11px;
   line-height: 1.55;
 }
-.phraseCoach > p b {
+.phraseCoachScroll > p b {
   color: var(--vellum);
 }
 
