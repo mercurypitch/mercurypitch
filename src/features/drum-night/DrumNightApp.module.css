@@ -2947,6 +2947,13 @@
   .coachCueDock > * {
     pointer-events: auto;
   }
+  /* A waiting take puts Finish beside the cue rather than under it. Stacked,
+     the bottom-anchored dock grew a row taller and lifted the cue over the
+     kick zone of the photographed kit. */
+  .coachCueDock[data-finish='true'] {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
   .coachCue {
     display: grid;
     width: 100%;
