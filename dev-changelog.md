@@ -9,6 +9,426 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.21] - 2026-10-18
+
+38 commits since `v0.9.20` (217047ffe) before this release PR, from 8 PRs, on
+24 first-parent entries. 5 PRs came in as merge commits: #1068 (1 commit),
+#1083 (3), #1082 (8), #1086 (1) and #1089 (1). The other 3 were rebased onto
+`main`: #1084 (6), #1085 (5) and #1088 (8). Every commit came through a PR.
+
+On the web, the release is:
+
+- #1088's mails: the sign-in code, sign-up code, password reset, newsletter
+  and account notice mails move onto the welcome mail's layout, and the mails
+  name MercuryPitch as one word everywhere but the footer's copyright line.
+  The DB worker sends them, so the tag's `deploy-db-prod` ships them.
+- #1085's Drum Night fixes: the Take ready card covers nothing in the phrase
+  coach column, and below 1040px Finish take sits beside the take cue.
+- #1084's copy: no em dash in the visible strings of the Ear Lab, Home, the
+  Voice Mirror, the profile page and the karaoke playlist overlay, one verdict
+  shape in every Ear Lab drill, and a guard test.
+- From #1082, console lines only: the web's `[audio]` diagnostics start with
+  the local clock (below).
+
+The rest is the native app. #1068, #1083, #1086 and #1089 change the four
+premium rooms, which are compiled in only where `PREMIUM_EXERCISES` is true
+(`src/lib/native-build.ts`: it equals `KARAOKE_IMPORT`, which needs
+`IS_NATIVE_BUILD`) and mount only from `apps/mercurypitch`. #1082 is the
+native shell's room visit and audio record. A `build:tours` web build of
+f7f202003 carries none of their lines ("Tap the mic, then hold your note.",
+"Take a breath, then sing", "Four times faster", "Merc sings a phrase", "One
+volume in rooms", "MercuryPitch audio diagnostics", "Share report",
+`play-and-record`, `release-hidden`, `auto-waiting`, `auto-held`), and does
+carry #1084's and #1085's ("Two quick tones: up, down or the same?",
+"Streak restored: ", "Review and finish.", `phraseCoachScroll`). The web's
+older Long note (`src/features/exercises/long-note`) did not change, and
+`room-kit/room-mic.ts` is read only by Echo, the premium Long note and the
+glide core.
+
+### Release steps (prod)
+
+1. **No migration.** Nothing under `workers/db-worker/migrations`, the
+   repository's one migrations folder, changed since `v0.9.20`; the newest
+   file is still `0070_natural_keys.sql`. Project memory holds no pending
+   prod migration note.
+2. **No new secret, variable or binding.** No `wrangler*` file changed since
+   `v0.9.20`, and the `env.*` names read in `workers/` and `src/worker.ts`
+   are the same 70 at both ends. #1088 reaches the app's origin through
+   `requestAppOrigin`, `mailOrigins` and `fallbackAppOrigin` in `auth.ts`,
+   whose bodies did not change.
+3. **Worker code.** The tag's `deploy-db-prod` job deploys the DB worker with
+   #1088's mails. The Jam worker and `src/worker.ts` did not change. The same
+   DB worker has run on dev since #1088's merge (Deploy DB Worker run
+   39119051435 on f7f202003, green).
+4. **No new link into the landing** (prod-upd step 0c). The diff's only new
+   about.mercurypitch.com URLs are two test allowlists and the email
+   preview's sample legal notice (`/terms/`), which only `EMAIL_PREVIEW`
+   serves, and that is set in the dev block alone. The moved mails keep
+   `footerHtml`'s About, Terms, Privacy and Contact links, and the purchase
+   mail keeps `/terms/#withdrawal`. The live landing, `mp-v0.1.34`
+   (disjoint-colliders 10ff9f8d), has `terms.astro` with `id="withdrawal"`,
+   `privacy.astro` and `contact.astro`. No new query parameter.
+5. **Social cards.** `pnpm run og:versions` on this PR stamped 13 cards with
+   no change.
+6. **Walk the tours on `main`** before the tag (Release Tours, prod-upd step
+   4). The baseline is 0 misses.
+7. **Push the tag `v0.9.21`.**
+8. **After the tag.** #1088 checked browser renders only (headless Chromium,
+   600 and 375 px wide), not the Gmail app, Outlook or Apple Mail. The owner
+   answered its four questions on 2026-10-18 (below).
+
+### Web: the code, reset, newsletter and notice mails take the welcome mail's layout (#1088)
+
+Eight commits, one per step, each passing `pnpm typecheck:db` and
+`pnpm test:db` on its own. No new art, and nothing was sent: every check is a
+render. Only the owner's billing alerts ("[MercuryPitch billing] ...") stay
+plain text; they go to the owner alone.
+
+- **Welcome, confirm, fresh link and purchase** (`email-welcome.ts`,
+  `email-purchase.ts`) were already on `email-layout.ts`. They named the
+  product as two words in 11 places, three subjects among them ("Welcome to
+  Mercury Pitch. Let's hear you.", "Confirm your email for Mercury Pitch" and
+  "A fresh link to confirm your Mercury Pitch email"). Now it is one word, as
+  `docs/branding/BRAND.md` types it.
+- **Sign-in code** (`email-code.ts`): was a table fixed at 624 px with the
+  code in 34 px blue. Now the letter picture (not a link), a "Sign in"
+  eyebrow, and the code in a panel at 36 px teal (#2dd4bf) monospace with "It
+  expires in 10 minutes and works once." under it.
+- **Sign-up code** (`email-code.ts`; `email-sign-up-code.ts` is removed): the
+  same frame with a "Sign up" eyebrow, and no "Hi there," since there is no
+  name to greet.
+- **Password reset** (`email-password-reset.ts`): the letter picture, the
+  "Choose a new password" button, the link to paste, and "It expires in 2
+  hours and can be used once." under it.
+- **Newsletter** (`email-newsletter.ts`): the first-note stage linked to
+  Home, a "What's new" eyebrow, the issue's subject as the headline, each item
+  a panel with an arrow link, an "Open MercuryPitch" button and the
+  unsubscribe line above the footer.
+- **Account notices** (security, legal, account and the test copy;
+  `email-notice.ts`): no picture; the notice's label as the eyebrow, its
+  subject as the headline, each section a panel, an amber banner on a test
+  copy, and "We will never ask for your password by email." on security
+  notices only, as before.
+- **Every footer's line** now stops at "Learn to sing and play." (it went on
+  with "Practice has never been more fun."). `footerHtml` in `email.ts` draws
+  every HTML footer and `footerText` in `email-layout.ts` every plain-text
+  one, so the line changed once, in its own commit, and the plain-text footer
+  names MercuryPitch as one word. The copyright line, "© 2026 Mercury Pitch ·
+  AGPL-3.0", is unchanged: at f7f202003 it is the only two-word name left in
+  `workers/db-worker/src` outside tests.
+- **The layout's new rows**: a code panel, a second body paragraph, item
+  panels and a closing row that can carry a link. The mails already on the
+  layout render byte for byte as before.
+- **Behavior.** The code mails take their links and pictures from the app
+  that asked for the code (`requestAppOrigin`, the existing allowlist), as
+  the sign-up mails do; a native shell's origin (`capacitor://localhost`,
+  `https://localhost`) gets this environment's app. The newsletter's "Open
+  MercuryPitch" button now uses `fallbackAppOrigin(env)`: mercurypitch.com
+  on prod, as before, and dev.mercurypitch.com on dev, where it used to point
+  at prod. `/api/email-preview` lists eight more mails (sign-in-code,
+  sign-up-code, password-reset, newsletter, notice-security, notice-legal,
+  notice-account and notice-test) with made-up words.
+- **Unchanged:** what each subject says (the code still leads the code
+  mails' subjects), every link, the send path (triggers, gates and the Resend
+  call; List-Unsubscribe headers on the newsletter only), the From name, the
+  light-only color scheme (#1010), `<body id="body">`, the auto-link styles
+  and the versioned picture names. The notices' wording lock hashes the
+  operator's words, not the HTML, so a notice approved before this sends the
+  same words after it.
+- **Copy.** The code mails' ignore lines now say that whoever asked can't
+  finish signing in (or up) without the code, with "Nobody from MercuryPitch
+  will ever ask you for this code." under a rule. The reset mail's expiry
+  moved under the link as its own sentence, and the notices say "You're
+  getting this" where they said "You are getting this".
+- **Checks** (#1088's): `pnpm test:db` at every commit, 106 files and 2,124
+  tests at the head. The new mail tests failed 35 of 56 against the old
+  renderers, and the one-word name and ignore-line tests 17 of 102 against
+  the old copy. Every mail was rendered through `handleEmailPreview` and shot
+  at 600 and 375 px: the 8 old-look mails were 624 px wide and scrolled
+  sideways in all 16 before shots; after, no sideways scroll and no broken
+  picture in 40 shots (74 pictures).
+- **Decided by the owner** (#1088's "Needs maff", answered 2026-10-18): the
+  footer stays at "Learn to sing and play."; the account notices carry no
+  picture; the newsletter keeps opening with the first-note stage (a picture
+  per issue would need a field in the issue file and new art); and the
+  copyright line stays "© 2026 Mercury Pitch · AGPL-3.0".
+- **Follow-ups, not in it:** `scripts/newsletter/v0-9-10.json`, the last
+  issue's words, has 2 em dashes and "quietly", left as the operator wrote
+  them; the withdrawal mail says "cancelled" in its preheader and reason
+  line; the reset mail's paste-this-link fallback and `confirmBlock`
+  (`email-welcome.ts`) could share a helper; and `src/` still spells the name
+  as two words 27 times (among them "Mercury Pitch Cloud" and the karaoke
+  import's "Open Mercury Pitch within about a day").
+
+### Web: Drum Night's Take ready card covers nothing (#1085)
+
+- **Why.** The card was `position: sticky; bottom: 0` over the scrolling
+  phrase-coach column. Chromium insets a sticky box by its scroller's
+  padding, so it stopped 12 px above the column's edge, and the next row
+  showed in that strip (at 0.9.20, the top of "Set recovery loop to bar 1").
+  As an overlay it also cut whichever coach row ran under it. Below 1040px,
+  stacking Finish take under the take cue made the bottom-anchored dock 51 px
+  taller and lifted the cue over the photographed kick zone: 27 px of overlap
+  at 1024x768 and 17 px at 390x844.
+- **Change.** `.phraseCoach` is a flex column with `overflow: hidden`, and
+  `.phraseCoachScroll` holds the coach and "Open take history" and scrolls,
+  with 12 px of bottom padding so the last row clears the card. The compact
+  take history is the footer under it (`flex: none`, a 1 px rule on top),
+  flush on the column's edge with its content 12 px in. Where the coach runs
+  on past the card, its last line fades into the rule; a scroll-driven
+  animation lifts the fade over the last 32 px of scroll, under
+  `@supports (animation-timeline: scroll())`, and browsers without it keep a
+  plain edge. Below 1040px the dock gets `data-finish`, and
+  `.coachCueDock[data-finish='true']` lays the cue and Finish side by side.
+  The take cue title uses `text-wrap: balance` ("12 strikes ready ·" /
+  "Review and finish.", where "Review" used to end the first line). The
+  card's contents and the coach's copy are unchanged.
+- **Tests.** New `src/e2e/drum-take-card.spec.ts` (@smoke) plays a
+  real-pointer take at six room sizes and walks the column's scroll range in
+  13 steps, checking every text node's and control's clipped box against the
+  card. It fails on 217047ffe at 1440x900, 1280x800, 1024x768 and 390x844 and
+  passes on the branch. `docs/agent/MISTAKES.md` gains "Give a pinned footer
+  its own row, not `position: sticky` over the scroller".
+- **Not checked:** Safari and Firefox, so the fade is unverified there, and
+  the take-saved state below 1040px (Keep in Hear Yourself stacks a row under
+  the cue).
+
+### Web: no em dash in the Ear Lab, Home, the Voice Mirror, the profile page and the karaoke playlist overlay (#1084)
+
+- **189 visible strings** (197 em dashes), counted by the guard's own parser
+  at 217047ffe: 53 in the first pass (The Grid, Home, the Voice Mirror and
+  the karaoke playlist overlay) and 136 in the second (the rest of the Ear
+  Lab, its desk fault names and the profile page). Each became a full stop,
+  colon, parentheses or a shorter sentence. One change has no dash: the
+  Voice Mirror's retry line was a comma splice and is now two sentences.
+  Examples: "Right. The third click was late by 40 ms.", "Streak restored:
+  12 days", "Next: Song (Ana)", "Elvis Presley (your voice twin)" and the
+  share text "My voice, mapped:" before its link.
+- **One verdict shape** in every Ear Lab drill: "Right. The …" or "Yes. …"
+  for a right answer, "That was …. Listen again." for a wrong one, "Not
+  quite: …" for a ragged take, "Clean. Every onset met." and "No take. The
+  bar came and went untapped.", and "Provisional: settling for …". After
+  "Yes." the drill view capitalizes a reveal name written to follow "That
+  was" (Pull's "the first, Ti leaning to Do′").
+- **The guard:** `src/tests/visible-copy-em-dash.test.ts` (node project,
+  listed in `vitest.node-tests.json`) parses each swept file with the
+  TypeScript compiler and fails on any string, template piece or JSX text
+  that holds an em dash, so comments are never read. The lone `—` placeholder
+  and `console.*` arguments are exempt, and a fixture case pins the scanner.
+  Before the copy fix it failed all six swept paths and listed 52 lines.
+- **Kept:** the lone `—` that stands in for a missing number (Home's average
+  score, the Voice Mirror's range hero, the Ear Lab dials and the stopped
+  plate), comments, range en dashes, and every identifier, key and
+  machine-readable value.
+- **Found while writing these notes:** 17 of the strings are the `answer`
+  field of `src/features/ear-lab/instruments.ts`, among them the Contour
+  drill's, now "Two quick tones: up, down or level" (4310150bc, the PR's last
+  commit). Nothing in `src/` reads that field at f7f202003: the room's rack
+  rows (`EarRoomShell.tsx`) and the dashboard (`EarLabDashboard.tsx`) show
+  `name` and `measures`. The strings ship in the bundle and show nowhere, so
+  CHANGELOG.md leaves them out.
+- **Follow-ups, not in it** (#1084's list): "metre" in 25 visible strings,
+  where American spelling wants "meter"; the og:title and page-copy em
+  dashes in `src/seo/entry-pages.ts` (75 at 217047ffe); and em dashes in
+  other features, among them Karaoke Night, Voice History, Path, exercise
+  help and the community pages other than the profile.
+- **A tooling bug it found, not fixed:** `pnpm check` and `pnpm check:ci`
+  run their steps through `run-s` (npm-run-all 4.1.5), which carries on and
+  exits 0 when eslint dies of an out-of-memory abort. With a 256 MB heap,
+  `pnpm lint` alone exits 134 and `run-s lint docs:index:check` exits 0; on
+  the 4 GB default heap `eslint src --fix` ran out inside `pnpm check`, which
+  still exited 0. CI is not exposed: `.github/workflows/pr-gate.yml` chains
+  `pnpm run typecheck && pnpm run lint && pnpm run fmt`.
+
+### Web, console only: the `[audio]` lines (#1082)
+
+`src/lib/audio-diagnostics.ts` is in the web graph: the stem mixer's
+`stem-load-path.ts`, `playback-return-watch.ts` and
+`useStemMixerAudioController.ts` import it. Its console lines now start with
+the local clock (`21:31:05.120`) instead of the seconds since the first
+entry, and carry `[hidden]` only when the page was not visible, with no
+`[visible]`. The in-memory ring keeps 1,000 entries instead of 200. Nothing
+on screen changes. `scripts/assert-no-portable-console.mjs`, which the web
+build also runs, fingerprints #1082's two test-build keys,
+`mp:dev-one-volume-in-rooms` and `mp:dev-audio-log`.
+
+### Native: Long note hears only the start that stands (#1068)
+
+- Long note took every mic answer while its screen lived (`lateAnswers: true`
+  in `room-kit/room-mic.ts`) and left its machine to drop one for a start that
+  no longer stood. The machine dropped the `mic-ready` or `mic-failed`, but
+  the room acted on the answer anyway. #1064 found it and left the behavior
+  change for its own PR.
+- What a late answer did: an open over the demo's listening take ran
+  `beginListening` again (the line became "Take a breath, then sing A3.", and
+  the take's window, hold, trace and clock started over); a refusal set Merc
+  idle, the demo included; an open during the next take opened its window a
+  second time (`startWindow` twice); and an open on a hidden page let the
+  page check stop the next take.
+- Who can reach it: the answer has to come after the singer moved on. A
+  browser's permission prompt does not block the page; iOS's is modal. The
+  third case also needs a capture that does not queue a second acquisition
+  behind the first, which the real one (`useExerciseCapture.ts`) does.
+- The fix: every answer is held to `stands()`, as Echo's and the glide
+  core's already were. `lateAnswers` and its doc go, since nothing else used
+  them, and `onOpen` loses its `phase !== 'listen'` return: `mic-ready` for
+  the standing start always moves the machine from `starting` to `listen`.
+- Proof: `useLongNoteController.test.ts` (new, 3 tests) mounts the real
+  controller on a capture whose mic answers on cue, and all three fail on
+  main, each for its own reason. `room-mic.test.ts`'s three `lateAnswers`
+  tests now check that the answers are dropped. The #1064 harness ran main
+  against the branch and against main with every answer held to `stands()`:
+  the branch matches that third side in all 165 Long note scenarios and in
+  3,000 random programs, and Echo, Lip roll and Ng slides are identical to
+  main.
+
+### Native: one iOS volume for a whole premium room visit, and an audio record to test it with (#1082)
+
+- **Why.** The owner saw iOS turn the volume down to mute in the rooms (17
+  Oct). The audit found that nothing in our code lowers it: opening the mic
+  makes WebKit move the page's audio session to play-and-record with the
+  VideoChat mode, and iOS keeps a separate stored volume for that (WebKit bug
+  236219). It also found that the volume notice could claim zero from a stale
+  reading.
+- **The notice** never claims zero from a stale reading. `audio-output.ts`
+  marks each reading's `volumeKnown`: `live` (Android, or the hidden volume
+  view once seen to move), `agreed` (the app's session and a settled volume
+  view say the same) or `session` (the app's session alone). `volume-hint.ts`
+  says "The volume is at zero. Turn it up." only from `live` or `agreed`, and
+  otherwise "Turn the volume up to hear the notes.". `RoomVolumeHint.tsx`
+  reads again as the mic opens and closes, at once and 1 s later, and
+  `AudioOutputPlugin.swift` sends `systemVolumeSettled` and each
+  interruption's `appState`.
+- **One volume for a visit.** Long note, Echo, Lip roll and Ng slides set
+  `navigator.audioSession.type = 'play-and-record'` at the door and give the
+  page its type back on the way out (`room-visit.ts`, mounted by
+  `ShellScreens` before the room), on iOS only. It is the page API alone,
+  with no AVAudioSession change (#923).
+  `packages/mobile-runtime/src/page-audio-session.ts` is the type's one owner
+  (`claimPageAudioSession`, a stack of claims, each change told to
+  listeners). The room visit and Now Playing's brief `'playback'`
+  (`askForPlayback` in `webkit-now-playing.ts`) both claim through it, and a
+  wiring test keeps every other source from writing the type. A room gives
+  its claim back as the page hides (`visibilitychange`, `pagehide`) and
+  claims again as it shows, so its context cannot reach the lock screen's Now
+  Playing; Control Center and the notification shade keep the claim. More >
+  Developer > Audio > "One volume in rooms" is on by default and folded to on
+  in a store build.
+- **The audio record.** Room enter and leave; session set, restore, kept and
+  refused; notice shown and hidden with the deciding reading; the demo's
+  turns; and the app's launch, background, foreground, inactive and active,
+  each line starting with the phone's clock. The ring holds 1,000 (it held
+  200), a test build keeps the newest 500 across a restart
+  (`audio-log-store.ts`), and Developer > Audio gains Share report and Clear
+  log. The rooms' 100 ms level poll runs only during a room visit, not from
+  launch on. `AVAudioSessionInterruptionWasSuspendedKey`, unsupported since
+  iOS 14.5, is no longer read.
+- **Needs a phone**, per the PR's eleven-scenario TestFlight plan: AirPods go
+  hands-free (HFP) for the whole room, the call level's voice processing
+  applies to demos too, and the lock screen, Control Center's slider and
+  whether a mic indicator shows with the mic off are unchecked.
+
+### Native: a first visit's demo waits while the app is away (#1089)
+
+- **What was wrong.** On a premium room's first visit the demo starts by
+  itself 1,200 ms in (`useExerciseDemo.ts`, `AUTO_PLAY_MS`). When Control
+  Center came down before that, the shell parked the shared clock
+  (`native-shell.ts`, `suspendSharedAudioContext()`), but no clock had been
+  built yet, and `suspendSharedAudioContext` asked the leases
+  (`prepareToSuspend`) only when one existed. So the room never heard
+  app-leave and the demo's timer stayed armed. When it fired, its
+  `lease.unlock()` cancelled the shell's intent, built and resumed the clock,
+  and the demo played behind Control Center. The lock screen and the app
+  switcher also hide the page, where the demo's own `visibilitychange`
+  listener already stopped it.
+- **The fix.** In `packages/audio-io`, `suspendSharedAudioContext()` asks
+  every lease even when no clock exists; a background hold, such as the mic
+  permission alert, still stops it from asking. `room-kit/app-leave.ts` adds
+  a return word (`onAppReturn`, `announceAppReturn`), which the native shell
+  announces when iOS calls the app active; it wakes no clock. The demo kit
+  holds a first-visit demo that had not started when the app or the page
+  went: no card, no mic hint, no clock. It starts 1,200 ms after the app is
+  active and the page shows, while the room is still at its intro and the
+  demo unseen; a demo that had started still ends on its play card. A test
+  build's audio record writes `demo auto-waiting`, `demo auto-held` and
+  `demo auto-starting`.
+- **Tests.** `apps/mercurypitch/src/shell/room-demo-away.test.ts` runs the
+  real chain (native shell, shared clock, a room's lease, the demo kit) on
+  fake timers in 12 cases. The Control Center case failed before the fix, as
+  did 9 of the first 11. `LongNoteDemo.test.tsx`'s background test now
+  expects the held demo, then the restart on return.
+- **Phone test** (the PR's): on a phone that has not seen a room's demo, open
+  Echo, Lip roll or Ng slides and pull Control Center down within a second.
+  Nothing should play, and about a second after Control Center closes the
+  demo starts. The same with the lock button.
+
+### Refactors (no behavior change)
+
+- **#1083**, room refactor step 4 (after #1058, #1061 and #1064), the demo's
+  way in. `room-kit/room-script.ts` (`createRoomScript`) holds the terms
+  Echo, Long note and the glide core each wrote for when a demo may come in
+  and move. `demo-kit/demo-voice.ts`, `demo-segments.ts` and `demo-words.ts`
+  hold Merc's demo voice and the 13 demo words (`DEMO_WORDS`, to which Long
+  note adds its mic hint and fast-forward pill), and
+  `room-kit/glide/glide-demo-take.ts` is one glide take for Lip roll and Ng
+  slides. `demo-plan.ts` gains `ONE_CLOCK`. jscpd over the four rooms with
+  room-kit and demo-kit: 33 clones and 590 lines before, 24 and 444 after.
+  The recorded-world harness found all four rooms byte-identical to main in
+  24 named scenarios and 3,000 random programs each, with 41 planted bugs as
+  controls. Found, not fixed: the rooms' `demo/tip-targets.ts` files still
+  share 7 clones (128 lines).
+- **#1086**, step 5: `room-kit/room-lines.ts` (`fillLine`, `createRoomLines`)
+  is the one way every room picks and fills Merc's lines.
+  `room-kit/line-selector.ts` and `room-kit/glide/glide-lines.ts` are
+  deleted, and Echo's own fill pass is now an alias of `fillLine`. A recorder
+  drove each room's line API on main and on the branch with 13 random
+  sources: 159,111 recorded lines and the four tables are byte-identical. Of
+  11 planted bugs, the recorder catches 11 and the repo's tests 10. Step 6
+  (RoomShell) follows in its own PR.
+
+### native-mercurypitch
+
+`mp-v0.8.36` (a46652538, the merge of #1082) carries #1068, #1083 and #1082.
+#1086, #1084, #1085, #1089 and #1088 merged after it and arrive with the next
+`mp-v` tag, apart from #1088's mails, which the DB worker sends to every
+build: dev now, prod with this tag. Mercury Pitch Mobile built f7f202003
+green (run 39119051445).
+
+Reach, from static import tracing, not from the native bundle's module list:
+
+- #1068, #1083, #1086 and #1089's demo kit change are in the premium rooms,
+  which a native test build (TestFlight among them) carries and a store build
+  does not (`PREMIUM_EXERCISES`).
+- #1082's room visit and #1089's return word run from `apps/mercurypitch`
+  (`ShellScreens.tsx`, `native-shell.ts`). #1082's own store-build check
+  found the room visit in the store bundle and none of its switch, Share
+  report, Clear log or "log restored".
+- #1084 and #1085: `apps/mercurypitch/src/main.tsx` mounts `src/App.tsx`,
+  which renders `HomePage` only when `IS_NATIVE_BUILD` is false, and
+  `EarLabPage` under `TAB_EAR_LAB` with no native guard. Whether the native
+  shell opens the Ear Lab, the Voice Mirror, the profile or Drum Night was
+  not traced.
+
+### native-besidecue
+
+No file under `apps/beside-cue` or `packages/glass-game` changed since
+`v0.9.20`, and no `bc-v` tag exists yet. Three shared packages Beside Cue
+depends on changed:
+
+- `packages/audio-io` (#1089): Beside Cue's `app-foreground.ts` calls
+  `suspendSharedAudioContext()`, and its `web-audio-output.ts`, with Glass
+  Game's `glass-sound.ts` and `merc-narration.ts`, leases with
+  `prepareToSuspend`, which now runs even when no clock has been built.
+- `packages/mobile-runtime` (#1082): Beside Cue imports
+  `@irchiinnuss/mobile-runtime/platform`, which imports
+  `webkit-now-playing.ts`, whose `askForPlayback` now claims through the new
+  `page-audio-session.ts`. `audio-output.ts` readings gain `volumeKnown`.
+- `packages/ios-audio-session`'s `AudioSession.swift`, which both iOS apps
+  link, changed only in comments.
+
+Beside Cue Mobile built f7f202003 green (run 39119051444). None of this was
+checked against Beside Cue's bundle or on a phone.
+
 ## [0.9.20] - 2026-10-18
 
 158 commits since `v0.9.19` (d6f4a945e) before this release PR, from 43 PRs,
