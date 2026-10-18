@@ -188,17 +188,54 @@ export function heroRow(
   return `<tr><td style="padding:0;font-size:0;line-height:0;">${hero}</td></tr>`
 }
 
+/** A paragraph set like the one under the headline. Takes markup: escape
+ *  what goes in. */
+export function bodyParagraph(html: string): string {
+  return `<p style="margin:14px 0 0;font:17px/1.6 ${SANS};color:${W.soft};">${html}</p>`
+}
+
 export function introRow(lines: Lines, after = ''): string {
-  return `<tr><td style="padding:30px 36px 4px;">${eyebrow(lines.eyebrow)}<h1 style="margin:0;font:700 31px/1.12 ${DISPLAY};letter-spacing:-0.4px;color:${W.text};">${escapeHtml(lines.headline)}</h1><p style="margin:14px 0 0;font:17px/1.6 ${SANS};color:${W.soft};">${escapeHtml(lines.body)}</p>${after}</td></tr>`
+  return `<tr><td style="padding:30px 36px 4px;">${eyebrow(lines.eyebrow)}<h1 style="margin:0;font:700 31px/1.12 ${DISPLAY};letter-spacing:-0.4px;color:${W.text};">${escapeHtml(lines.headline)}</h1>${bodyParagraph(escapeHtml(lines.body))}${after}</td></tr>`
+}
+
+/** A panel in the card: the box the purchase mail's credits sit in. `top`
+ *  is the space above it, less after another panel. Takes markup. */
+export function panelRow(inner: string, top = 22): string {
+  return `<tr><td style="padding:${top}px 24px 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${W.panel};border:1px solid ${W.panelLine};border-radius:16px;"><tr><td style="padding:18px 22px;">${inner}</td></tr></table></td></tr>`
+}
+
+/**
+ * A one-time code, large, spaced and monospaced, because the reader copies
+ * six digits between two windows, often on a phone. The digits are one run
+ * of text, so copying them picks up the code and nothing else. Left-aligned
+ * like the rest of the card: centered, the spacing after the last digit would
+ * pull it off center. `note` says how long it lasts.
+ */
+export function codeRow(code: string, note: string): string {
+  return panelRow(
+    `<div style="font:700 36px/1.2 ${MONO};letter-spacing:10px;color:${W.teal};">${escapeHtml(code)}</div><div style="margin-top:10px;font:14px/1.5 ${SANS};color:${W.muted};">${escapeHtml(note)}</div>`,
+  )
 }
 
 /** The closing line, and a quieter note under a rule when there is one. */
 export function signOffRow(line: string, note: string | null): string {
+  return closingRow(escapeHtml(line), note === null ? null : escapeHtml(note))
+}
+
+/**
+ * signOffRow for markup: a link in the note, or a note of two paragraphs.
+ * Without a closing line it is the rule and the note alone.
+ */
+export function closingRow(line: string | null, note: string | null): string {
+  const said =
+    line === null
+      ? ''
+      : `<p style="margin:0;font:15px/1.6 ${SANS};color:${W.soft};">${line}</p>`
   const under =
     note === null
       ? ''
-      : `<div style="border-top:1px solid ${W.line};margin-top:20px;padding-top:16px;font:13px/1.6 ${SANS};color:${W.muted};">${escapeHtml(note)}</div>`
-  return `<tr><td style="padding:22px 36px 30px;"><p style="margin:0;font:15px/1.6 ${SANS};color:${W.soft};">${escapeHtml(line)}</p>${under}</td></tr>`
+      : `<div style="border-top:1px solid ${W.line};margin-top:${line === null ? 0 : 20}px;padding-top:16px;font:13px/1.6 ${SANS};color:${W.muted};">${note}</div>`
+  return `<tr><td style="padding:22px 36px 30px;">${said}${under}</td></tr>`
 }
 
 /** The whole mail: wordmark, the card of rows, and the shared footer. */
