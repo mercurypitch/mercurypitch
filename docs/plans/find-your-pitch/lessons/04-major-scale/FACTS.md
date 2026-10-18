@@ -2,9 +2,10 @@
 
 `claim | source | how it was verified`. Everything the page says, shows or plays must be here. App
 claims cite the source at `8a0e8f069` on the branch `claude/music-theory-tutorial-curriculum-cej8h7`
-by `file:line`; earlier lessons' facts are cited by lesson and number. Web sources were fetched and
-read on 18 Oct 2026, and quotations are verbatim. Lesson 4 is a text-only package (no film), so
-nothing here is narrated: every line is page copy or a page sound.
+by `file:line`, and none of the cited app files changed up to `b23da0be0`; earlier lessons' facts
+are cited by lesson and number. Web sources were fetched and read on 18 Oct 2026, and quotations
+are verbatim. Lesson 4 is a text-only package (no film), so nothing here is narrated: every line
+is page copy or a page sound.
 
 ## Sources
 
@@ -62,7 +63,7 @@ Full references. The facts below use the short names in bold, with the section o
 28. The title, the hook question: "Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?" | CURRICULUM § 2, Season 1 table, row 4 | plan; answered on the page by 22 and 23
 29. Lesson 4 builds on Lesson 2 (the prerequisite chip); its topics are T09 and T10 | CURRICULUM § 3.3 ("4 The major scale and home | 2 | T09 needs T03"); `EDGES` holds [2, 4] (`src/features/lessons/kit/season.ts:318-336`, the pair at `:321`) | plan and code
 30. The recall check is Lesson 2's quick-check questions 1 and 3, word for word, with their feedback, under Lesson 2's ids `l02-q1` and `l02-q3`; Lesson 3's draft recall check asks `l02-q2` and `l02-q4`, so between them Lessons 3 and 4 ask all four again | Lesson 2 LESSON.md, Quick check 1 and 3; Lesson 2 WEB-SPEC, Sections 8 (ids `l02-q1` to `l02-q4`); Lesson 3's draft (`lessons/03-match-a-note/LESSON.md`, "Recall from Lesson 2", read on 18 Oct 2026, not edited); the kit's `QuizQuestion` has no id field yet (`src/features/lessons/kit/quiz.ts:31-36`; Lesson 2 FACTS 35a) | read; the questions' own facts are Lesson 2 FACTS 3, 18 and 20
-31. Next lesson: Lesson 5, "Breath and a steady note", whose hook is "Singers are told to "support" a long note. If that doesn't mean pushing, what keeps it steady?" | CURRICULUM § 2, row 5 | plan
+31. Next lesson: Lesson 5, "Breath and a steady note", whose hook is "Singers are told to 'support' a long note. If that doesn't mean pushing, what keeps it steady?" | CURRICULUM § 2, row 5 (where the inner quotation marks are double) | plan
 32. An octave up or down still counts as the same note | Lesson 1 FACTS 18 and 19; Lesson 2 FACTS 39 | carried
 33. Lesson 3 is "Match a note", about matching a note with your voice (the Sing it card's "as in Lesson 3") | CURRICULUM § 2, row 3, and its card (matching as "a hear, try, compare, adjust loop") | plan; the page names the lesson, not its wording, which was being written alongside this one
 
@@ -78,7 +79,7 @@ Full references. The facts below use the short names in bold, with the section o
 41. It starts from the voice range saved in Settings, under "Singing Voice Range" ("Set your natural singing voice range. This will automatically adjust the default octave for new exercises."; "Don't know? Find my voice"), and a visitor who never set one gets the tenor preset; the Vocal Range Test page does not set it | the start note is the preset's anchor, or a requested note inside the range, folded down an octave if the top would not fit (`ScaleRunnerExercise.tsx:36-50`; `src/lib/vocal-range.ts:114-134`); anchors and ranges in `VOCAL_RANGES` (`src/stores/settings-store.ts:91-152`), default `'tenor'` (`:298-299`); Settings (`src/components/SettingsPanel.tsx:600-637`); the preset is set only by the selector, "Find my voice" and the full range test in Settings, and by the karaoke key controller (`src/components/VocalRangeSelector.tsx:39`, `:94-223`; `src/components/VoiceTypeDetectorModal.tsx:184`; `src/components/VoiceRangeTestModal.tsx:238`; `src/features/stem-mixer/useStemMixerKeyController.ts:351`) | code
 42. Its pace follows a difficulty from 1 to 10: at the default 5 each note plays for 700 ms, then 250 ms pass, then you have 2 s to sing; difficulty 2 stretches these to 868, 310 and 2,480 ms; `speed-scales` (difficulty 8) shrinks them to 532, 190 and 1,520 ms; the code labels levels 1 and 2 "Beginner" | constants (`use-scale-runner-controller.ts:15-18`) scaled by `difficultyFactor`, 1 + (5 − level) × 0.08 (`src/features/practice-intelligence/difficulty-scaling.ts:52-55`; `use-scale-runner-controller.ts:69-80`); the default 5 (`src/features/practice-intelligence/difficulty-store.ts:40-42`); the range and the label (`src/features/practice-intelligence/adaptive-difficulty.ts:23-24`, `:89-90`; no screen shows the label) | code; arithmetic (700 × 1.24 = 868, 250 × 1.24 = 310, 2,000 × 1.24 = 2,480; × 0.76 at level 8)
 43. Today no link opens Scale Runner at a beginner pace: the four slugs are `perfect-octave`, `speed-scales` (Scale Runner, `scale-major-c4`, difficulty 8), `karaoke-duel` and `jam-relay`; a slug launch carries `notes`, `scaleId` and `difficulty` and opens the exercise on its setup screen without starting it; the worker serves any `/exercises/<slug>` path, and its routing test walks the registry | `src/features/exercises/slug-map.ts:24-65`; `applyExerciseSlug` (`src/App.tsx:592-636`); `src/worker.ts:93-105`; `src/tests/worker-entry-routing.test.ts:407` | code (WEB-SPEC, Practise links)
-44. A slug carrying `scaleId: 'scale-major-c4'` would start sopranos on C5 (top note C6) and tenors on C4 (top note C5), the top notes of those presets; a slug with no notes starts each voice on its preset's anchor, a fourth or so above the bottom of the range (bass A2, baritone C3, tenor E3, alto A3, mezzo-soprano C4, soprano E4), so each run's top note sits seven to nine semitones under the top of the range | the seeded `scale-major-c4` is C4 to B4 (its seed, `src/stores/melody-store.ts:391-397` with the degrees at `:364`, named at `:471`); `applyExerciseSlug` moves it into the range by whole octaves (`src/App.tsx:605-620`; `octaveShiftIntoRange` and `fitPhraseToRange`, `src/lib/vocal-range.ts:36-101`), then Scale Runner folds the start down if the top would not fit (`:114-122`); with no notes it starts on the anchor (`ScaleRunnerExercise.tsx:39-47`; `getDefaultNote`, `vocal-range.ts:132-134`) | code, re-run for all six presets as a script replica (scratchpad `startnotes.py`)
+44. A slug carrying `scaleId: 'scale-major-c4'` would start sopranos on C5 (top note C6) and tenors on C4 (top note C5), the top notes of those presets; a slug with no notes starts each voice on its preset's anchor, a fourth or so above the bottom of the range (bass A2, baritone C3, tenor E3, alto A3, mezzo-soprano C4, soprano E4), so each run's top note sits seven to nine semitones under the top of the range | the seeded `scale-major-c4` is C4 to B4 (its seed, `src/stores/melody-store.ts:391-397` with the degrees at `:364`, named at `:471`); `applyExerciseSlug` moves it into the range by whole octaves (`src/App.tsx:605-620`; `octaveShiftIntoRange` and `fitPhraseToRange`, `src/lib/vocal-range.ts:36-101`), then Scale Runner folds the start down if the top would not fit (`:114-122`); with no notes it starts on the anchor (`ScaleRunnerExercise.tsx:39-47`; `getDefaultNote`, `vocal-range.ts:132-134`), which the code describes as "A natural note a fourth or so above the bottom, so that a one-octave run up from it stays clear of BOTH ends" (`src/stores/settings-store.ts:63-65`) | code, re-run for all six presets as a script replica (scratchpad `startnotes.py`); the seven to nine semitones are counted from `VOCAL_RANGES`
 45. A slug's difficulty holds for every run until the viewer leaves Scale Runner | Scale Runner reads the launch difficulty at each start (`use-scale-runner-controller.ts:69-80`); the override is cleared when the exercise is exited (`resetExerciseLaunchState`, `src/App.tsx:550-558`; `src/features/practice-intelligence/launch-override.ts:7-10`) | code (WEB-SPEC)
 46. Ear Lab is at mercurypitch.com/ear-lab | `src/seo/entry-pages.ts:397-402`; Lesson 2 FACTS 31 | code
 47. Ear Lab's Home: "A cadence, one note — name the degree, tap or sing"; "A short cadence tells your ear where home is. Then one note sounds — name its scale degree."; seven pads numbered 1 to 7, with Do, Re, Mi, Fa, Sol, La, Ti under them; answers by Tap or by "Sing or play" ("Octave does not matter; sing or play the degree anywhere comfortable"); a new key every round (a tonic from C3 to B3); 12 rounds; a miss replays the note "— hear it fall home" | `src/features/ear-lab/instruments.ts:75-82`; `src/features/ear-lab/HomeDrill.tsx:53-64`, `:73-76`, `:208`, `:368-373`, `:419-430`; `src/lib/ear/item-bank.ts:48-56`, `:161-166`; `src/features/ear-lab/use-home-controller.ts:72` | code; the page calls the cadence "a few chords that set home" (chords are Lesson 12)
@@ -146,20 +147,22 @@ Merc's singing uses Merc's "ooh" (partials 1, .62, .38, .24, .14, .08, .045, .02
 
 - Hooktheory I, chapter 3, "Stable vs. Unstable Scale Degrees" (Dave Carlton, Ryan Miyakawa and
   Chris Anderson; hooktheory.com/books gives a release date of 6 August 2014). The table of
-  contents was read, the chapter's text was not, and Hooktheory's own forum describes stability
-  relative to the chord underneath, which this lesson does not teach. The CURRICULUM card cites
-  it for stable and unstable degrees; this lesson cites K&S 1979 for the order instead (24).
+  contents was read and the chapter's text was not; a web search returned posts on Hooktheory's
+  own forum that describe stability relative to the chord underneath (seen only as search
+  summaries), which this lesson does not teach. The CURRICULUM card cites the chapter for stable
+  and unstable degrees; this lesson cites K&S 1979 for the order instead (24).
 - David Huron, _Sweet Anticipation_ (2006): its scale-degree descriptions ("home", "restless") and
   its counts of which degree follows ti could not be read here.
 - The numbers of the major-key profile in K&K 1982 (how well each of the twelve notes fits): in the
   closed full text, not the abstract. Not quoted.
-- The exact stimulus in K&S 1979 (a reference entry, SAGE's _Music in the Social and Behavioral
-  Sciences_, 2014, "Probe-Tone Method", describes "the first seven notes of a C major scale"): the
-  entry is behind a sign-in. The page says only what the abstract says (24).
+- The exact stimulus in K&S 1979: a search summary of a reference entry (SAGE's _Music in the
+  Social and Behavioral Sciences_, 2014, "Probe-Tone Method") gives the context as "the first seven
+  notes of a C major scale", but the entry is behind a sign-in and was not read. The page says only
+  what the abstract says (24).
 - Cuddy and Badertscher (1987), _Perception & Psychophysics_ 41(6), 609–620, on untrained listeners
   and children and the tonal hierarchy: the open PDF returned a bot challenge. Not read, not used.
-- "Leading note" as the British name for ti's role: widely used, but not checked against a British
-  source for this lesson. The page uses OMT's "leading tone" (22).
+- "Leading note" as the British name for ti's role: not checked against a British source for this
+  lesson, so the page uses OMT's "leading tone" (22).
 - "Most people meet the major scale on C first", or "most beginners think scales start on C": no
   data. The misconception is voiced only as orange's sincere guess, and the cold-open reveal calls
   C "a fair guess" for a sourced reason (12).
@@ -168,8 +171,9 @@ Merc's singing uses Merc's "ooh" (partials 1, .62, .38, .24, .14, .08, .045, .02
   misconception. Left out.
 - Which countries use fixed do: Wikipedia lists them, but the page needs only that the system
   exists (19).
-- Steve Larson's "magnetism", the pull of an unstable note towards the nearest stable one: read only
-  in a secondary review (Music Theory Online 18.3), not in the book. Not used.
+- Steve Larson's "magnetism", the pull of an unstable note towards the nearest stable one: known
+  here only from a search summary of a review in Music Theory Online 18.3; neither the review nor
+  Larson's book was read. Not used.
 - Takeuchi and Hulse (1993), _Psychological Bulletin_ 113(2), 345–361: the abstract describes a
   shift "from perceiving individual features to perceiving relations among features" after about
   age 6, while explaining absolute pitch. Hearing tunes by their relations is Lesson 6's topic, so
