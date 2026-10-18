@@ -17,6 +17,13 @@
 // It leaves once, by Not now or by its own last beat, and the flag records
 // that at once: it never opens again on this install. The shell is back as
 // it starts to fade (LEAVE_MS); the layer unmounts when the fade is over.
+//
+// The range on its own. Keep's "Find your range first" (S7b §3.2) runs the
+// range and the reveal in this same layer (`openRangeFinder`), then opens
+// Keep again, however the layer leaves. That is not the onboarding, so the
+// flag is left as it is. The shell registers it with Keep for as long as
+// the shell lives (account-offer.ts registerRangeFinder): a build without
+// the onboarding has no range, and its Keep offers none.
 
 import { createEffect, createSignal, on, onCleanup, untrack } from 'solid-js'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
@@ -24,6 +31,7 @@ import { TAB_SINGING } from '@/features/tabs/constants'
 import { holdRoomArrival } from '@/stores/native-shell-store'
 import { welcomeSeen } from '../alley/alley-welcome'
 import { currentTab, onboardingShown, setOnboardingShown, } from '../shell/run-shell-store'
+import { openKeep, registerRangeFinder } from '../shell/settings/account-offer'
 import { registerOnboardingBack } from '../shell/shell-navigation'
 import { markOnboardingDone, onboardingDue, settleOnboarding, } from './onboarding-flag'
 
@@ -34,40 +42,70 @@ export const LEAVE_REDUCED_MS = 120
 
 export type OnboardingExit = 'not-now' | 'finished'
 
+/** What the layer opened for: the onboarding, or the range on its own. */
+export type OnboardingEntry = 'onboarding' | 'range'
+
 const [mounted, setMounted] = createSignal(false)
+const [entry, setEntry] = createSignal<OnboardingEntry>('onboarding')
 
 /** Whether the layer is in the document: from its opening to the end of its fade. */
 export const onboardingMounted = mounted
+
+/** What the layer is up for; read by the layer as it mounts. */
+export const onboardingEntry = entry
 
 /** The Sing room's arrival, held while the onboarding is up. */
 let releaseArrival: (() => void) | null = null
 let unmount: ReturnType<typeof setTimeout> | null = null
 let lastExit: OnboardingExit | null = null
+/** What runs once the range on its own has left: Keep, again. */
+let afterRange: (() => void) | null = null
 
 function leaveMs(): number {
   return prefersReducedMotion() ? LEAVE_REDUCED_MS : LEAVE_MS
 }
 
-/** Put the onboarding up, over the tab. Nothing when it is up already. */
-export function openOnboarding(): void {
-  if (untrack(onboardingShown)) return
+/** Up, for `next`. The entry is set before the lazy layer mounts and reads it. */
+function show(next: OnboardingEntry): void {
   if (unmount !== null) {
+    // Still fading from the last time: a fresh layer, not the faded one.
     clearTimeout(unmount)
     unmount = null
+    setMounted(false)
   }
+  setEntry(next)
   releaseArrival ??= holdRoomArrival()
   setMounted(true)
   setOnboardingShown(true)
 }
 
+/** Put the onboarding up, over the tab. Nothing when it is up already. */
+export function openOnboarding(): void {
+  if (untrack(onboardingShown)) return
+  afterRange = null
+  show('onboarding')
+}
+
 /**
- * The onboarding leaves: done for good, the Sing room let in, the rail
- * back, and the layer gone once it has faded. True when it was up.
+ * The range and the reveal on their own (Keep's "Find your range first"),
+ * then `then` once the layer leaves, whichever way it leaves. Nothing when
+ * the layer is up already.
+ */
+export function openRangeFinder(then: () => void): void {
+  if (untrack(onboardingShown)) return
+  afterRange = then
+  show('range')
+}
+
+/**
+ * The layer leaves: the onboarding done for good (the range on its own
+ * leaves the flag be), the Sing room let in, the rail back, and the layer
+ * gone once it has faded. True when it was up.
  */
 export function leaveOnboarding(exit: OnboardingExit): boolean {
   if (!untrack(onboardingShown)) return false
   lastExit = exit
-  markOnboardingDone()
+  if (untrack(entry) === 'onboarding') markOnboardingDone()
   setOnboardingShown(false)
   releaseArrival?.()
   releaseArrival = null
@@ -75,6 +113,9 @@ export function leaveOnboarding(exit: OnboardingExit): boolean {
     unmount = null
     setMounted(false)
   }, leaveMs())
+  const then = afterRange
+  afterRange = null
+  then?.()
   return true
 }
 
@@ -86,11 +127,12 @@ export function onboardingExit(): OnboardingExit | null {
 /**
  * The shell's half, for as long as the shell lives: the flag settled, the
  * layer opened when the Sing tab comes up while it is due (or the app
- * starts on it), and Back.
+ * starts on it), Back, and the range Keep links to.
  */
 export function installNativeOnboarding(): void {
   settleOnboarding(welcomeSeen())
   onCleanup(registerOnboardingBack(() => leaveOnboarding('not-now')))
+  onCleanup(registerRangeFinder(() => openRangeFinder(openKeep)))
   // On the tab's arrival, not on the flag's change: "Replay the
   // onboarding" sets it due from a screen that may sit over the Sing tab,
   // and the onboarding is for the next Sing door, not for that screen.
@@ -104,7 +146,9 @@ export function installNativeOnboarding(): void {
     unmount = null
     releaseArrival?.()
     releaseArrival = null
+    afterRange = null
     setOnboardingShown(false)
     setMounted(false)
+    setEntry('onboarding')
   })
 }

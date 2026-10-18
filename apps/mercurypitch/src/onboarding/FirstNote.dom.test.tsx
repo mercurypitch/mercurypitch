@@ -9,14 +9,13 @@
 import type { JSX } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MercView } from '@/components/room-kit/MercView'
-import type { ExerciseCapture } from '@/components/room-kit/useExerciseCapture'
 import { CaptureError } from '@/components/room-kit/useExerciseCapture'
 import type * as MicSentinel from '@/lib/mic-sentinel'
-import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
-import { TAKE_MAX_SEC, TAKE_SEC } from './first-note'
-import { FirstNoteView } from './FirstNoteView'
+import { FirstNoteView, noteSays } from './FirstNoteView'
+import type { Stand } from './onboarding-capture.test-fixtures'
+import { flushFrame, noteTake, settle, stand, stubFrames, } from './onboarding-capture.test-fixtures'
 import { ONBOARDING_COPY } from './onboarding-copy'
 import type { FirstNoteController } from './useFirstNote'
 import { GREET_MS, useFirstNote } from './useFirstNote'
@@ -41,82 +40,28 @@ vi.mock('@/lib/mic-sentinel', async (importOriginal) => ({
 
 const GRANT = 'pitchperfect_sing_mic_granted'
 
-// ── A hand-cranked screen frame ──────────────────────────────
-let queued = new Map<number, FrameRequestCallback>()
-let nextFrame = 1
-
-function flushFrame(): void {
-  const now = queued
-  queued = new Map()
-  for (const callback of now.values()) callback(performance.now())
-}
-
-// ── A stand-in for the room kit's capture ────────────────────
-interface Stand {
-  capture: ExerciseCapture
-  calls: { acquire: number; release: number; startWindow: number }
-  frames: PitchFrame[]
-  answer: () => Promise<void>
-}
-
-function stand(): Stand {
-  const s: Stand = {
-    calls: { acquire: 0, release: 0, startWindow: 0 },
-    frames: [],
-    answer: async () => Promise.resolve(),
-    capture: {
-      acquire: async () => {
-        s.calls.acquire += 1
-        return s.answer()
-      },
-      release: () => {
-        s.calls.release += 1
-      },
-      held: () => false,
-      startWindow: () => {
-        s.calls.startWindow += 1
-        s.frames = []
-      },
-      peekFrames: () => [...s.frames],
-      takeFrames: () => [...s.frames],
-      playTone: async () => Promise.resolve(),
-      audio: async () => Promise.resolve(null),
-    },
-  }
-  return s
-}
-
-const RATE = 100
-
-/**
- * A take: a second of room, then `hz` to its end. An unvoiced noise (0)
- * runs to the longest take there is: too little voice keeps it open.
- */
-function take(hz: number): PitchFrame[] {
-  const frames: PitchFrame[] = []
-  const end = 1 + (hz > 0 ? TAKE_SEC : TAKE_MAX_SEC) + 0.05
-  for (let i = 0; i < end * RATE; i++) {
-    const t = i / RATE
-    frames.push(
-      t < 1
-        ? { t, f0: 0, conf: 0, rms: 0.002 }
-        : { t, f0: hz, conf: hz > 0 ? 0.95 : 0, rms: 0.12 },
-    )
-  }
-  return frames
-}
-
 let view: RenderedShell | null = null
 let controller: FirstNoteController | null = null
 
-function show(s: Stand, onFinish: () => void = () => undefined): void {
+interface Ways {
+  onRange: () => void
+  onSkip: () => void
+}
+
+function show(
+  s: Stand,
+  ways: Ways = { onRange: () => undefined, onSkip: () => undefined },
+): void {
   const Harness = (): JSX.Element => {
     const note = useFirstNote({ capture: s.capture, still: () => false })
     controller = note
     return (
       <FirstNoteView
         controller={note}
-        onFinish={onFinish}
+        line={noteSays(note)}
+        onRange={() => ways.onRange()}
+        onSkip={() => ways.onSkip()}
+        skipped={false}
         merc={
           <MercView
             state={note.mercState}
@@ -137,11 +82,6 @@ const line = (): string | null => q('onboarding-line')?.textContent ?? null
 const micState = (): string | null =>
   q('onboarding-mic')?.getAttribute('data-state') ?? null
 
-/** Lets the mic's answer land. */
-async function settle(): Promise<void> {
-  for (let i = 0; i < 5; i++) await Promise.resolve()
-}
-
 async function listen(): Promise<void> {
   q('onboarding-mic')?.click()
   await settle()
@@ -152,15 +92,7 @@ beforeEach(() => {
   vi.useFakeTimers({
     toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
   })
-  queued = new Map()
-  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-    const id = nextFrame++
-    queued.set(id, callback)
-    return id
-  })
-  vi.stubGlobal('cancelAnimationFrame', (id: number) => {
-    queued.delete(id)
-  })
+  stubFrames()
   localStorage.clear()
 })
 
@@ -186,7 +118,6 @@ describe('the first note', () => {
     )
     vi.advanceTimersByTime(GREET_MS)
     expect(line()).toBe(ONBOARDING_COPY.ask)
-    expect(q('onboarding-said')?.textContent).toBe(ONBOARDING_COPY.ask)
     // No mic, no clock, no prompt before the tap (REQ-NFL-020).
     expect(s.calls.acquire).toBe(0)
     expect(localStorage.getItem(GRANT)).toBeNull()
@@ -207,33 +138,39 @@ describe('the first note', () => {
     expect(q('onboarding-example')).toBeNull()
   })
 
-  it('names the note it heard settle, and Start singing ends the beat', async () => {
+  it('names the note it heard settle, and offers Find my range or Skip for now', async () => {
     const s = stand()
-    const onFinish = vi.fn()
-    show(s, onFinish)
+    const ways = { onRange: vi.fn(), onSkip: vi.fn() }
+    show(s, ways)
     await listen()
-    s.frames = take(220)
+    s.frames = noteTake(220)
     flushFrame()
     expect(controller?.state().phase).toBe('heard')
     expect(q('onboarding-note')?.textContent).toBe('A3')
     expect(line()).toBe("That's an A3.")
     expect(s.calls.release).toBeGreaterThan(0)
     expect(q('onboarding-mic')).toBeNull()
-    q('onboarding-start-singing')?.click()
-    expect(onFinish).toHaveBeenCalledTimes(1)
+    expect(q('onboarding-find-range')?.textContent).toBe(
+      ONBOARDING_COPY.findRange,
+    )
+    expect(q('onboarding-skip')?.textContent).toBe(ONBOARDING_COPY.skip)
+    q('onboarding-find-range')?.click()
+    q('onboarding-skip')?.click()
+    expect(ways.onRange).toHaveBeenCalledTimes(1)
+    expect(ways.onSkip).toHaveBeenCalledTimes(1)
   })
 
   it('listens again by itself once, then asks for a tap', async () => {
     const s = stand()
     show(s)
     await listen()
-    s.frames = take(0)
+    s.frames = noteTake(0)
     flushFrame()
     // A new window, and Merc says the take wandered.
     expect(controller?.state()).toMatchObject({ phase: 'listen', misses: 1 })
     expect(s.calls.startWindow).toBe(2)
     expect(line()).toBe(ONBOARDING_COPY.wandered)
-    s.frames = take(0)
+    s.frames = noteTake(0)
     flushFrame()
     expect(controller?.state().phase).toBe('missed')
     expect(line()).toBe(ONBOARDING_COPY.missed)

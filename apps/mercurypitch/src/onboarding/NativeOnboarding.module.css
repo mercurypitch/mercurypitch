@@ -69,7 +69,10 @@
 }
 
 .notNow:focus-visible,
-.primary:focus-visible {
+.primary:focus-visible,
+.secondary:focus-visible,
+.findTwin:focus-visible,
+.twinName:focus-visible {
   outline: 2px solid #58a6ff;
   outline-offset: 2px;
 }
@@ -280,7 +283,7 @@
 }
 
 /* Held at the height of its tallest beat, the mic's (its well, two lines and
-   the promise), so the stage stays put when Start singing or the mic's
+   the promise), so the stage stays put when Find my range or the mic's
    notice takes the mic's place: the shorter beats sit at the bottom. */
 .foot {
   flex: 0 0 auto;
@@ -344,6 +347,381 @@
   font: 600 17px/1 var(--font-body, sans-serif);
 }
 
+/* A plain button under the big one: Skip for now, Share. A 44 px target. */
+.secondary {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 22px;
+  background: none;
+  color: var(--text-primary);
+  font: 600 17px/1 var(--font-body, sans-serif);
+}
+
+/* The first note's two ways on: Find my range over Skip for now. */
+.ways,
+.footBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Under the mic's caption, a button high whatever it holds. */
+.slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+}
+
+/* ── The range (beat 4) ─────────────────────────────────────
+
+   The climb: Merc rides at the left at the voice's height, the ladder's
+   rungs stand to his right, and the pins sit at the far right. Everything
+   is placed by --at, its height on the ladder (0 the foot, 1 the top), on
+   the same travel: Merc's box, --m, keeps clear of either end. */
+.climb {
+  --m: clamp(64px, 14vh, 120px);
+  --m: clamp(64px, 14dvh, 120px);
+  position: relative;
+  flex: 1 1 auto;
+  width: min(100%, 420px);
+  min-height: 180px;
+  max-height: 560px;
+}
+
+.rider,
+.rung,
+.pin {
+  position: absolute;
+  bottom: calc(var(--m) * 0.5 + var(--at, 0) * (100% - var(--m)));
+}
+
+.rider {
+  left: 0;
+  width: var(--m);
+  height: var(--m);
+  transform: translateY(50%);
+  transition: bottom 140ms linear;
+}
+
+.ladder {
+  position: absolute;
+  top: 0;
+  right: 64px;
+  bottom: 0;
+  left: calc(var(--m) + 12px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The rails, a little past the top and bottom rungs. */
+.ladder::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--m) * 0.5 - 10px);
+  right: 0;
+  bottom: calc(var(--m) * 0.5 - 10px);
+  left: 0;
+  border-inline: 2px solid rgba(230, 237, 243, 0.08);
+}
+
+.rung {
+  right: 6px;
+  left: 6px;
+  height: 6px;
+  margin-bottom: -3px;
+  border-radius: 3px;
+  background: rgba(230, 237, 243, 0.1);
+  transition:
+    background-color 240ms ease,
+    box-shadow 240ms ease;
+}
+
+.rungLit {
+  background: var(--rung);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--rung) 55%, transparent);
+}
+
+.pins {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 56px;
+  pointer-events: none;
+}
+
+.pin {
+  right: 0;
+  min-width: 48px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #0d1117;
+  font: 700 15px/1.2 var(--font-body, sans-serif);
+  text-align: center;
+  transform: translateY(50%);
+  transition: bottom 200ms ease;
+}
+
+.pinLow {
+  background: #2dd4bf;
+}
+
+.pinHigh {
+  background: #bc8cff;
+}
+
+/* Measured: the pins lock in place. */
+.climb[data-locked='on'] .pin {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
+  animation: pin-lock 360ms cubic-bezier(0.2, 0.8, 0.2, 1.2) both;
+}
+
+@keyframes pin-lock {
+  from {
+    transform: translateY(50%) scale(0.8);
+  }
+
+  to {
+    transform: translateY(50%) scale(1);
+  }
+}
+
+/* Reduced motion: Merc keeps to the foot, and nothing slides. */
+.still .rider,
+.still .rung,
+.still .pin {
+  transition: none;
+}
+
+.climb.still[data-locked='on'] .pin {
+  animation: none;
+}
+
+/* ── The reveal (beat 5) ──────────────────────────────────── */
+.revealBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  overflow-y: auto;
+}
+
+/* Centred while there is room; from the top, not clipped, when there is
+   not. */
+.revealBody > :first-child {
+  margin-top: auto;
+}
+
+.revealBody > :last-child {
+  margin-bottom: auto;
+}
+
+.revealTitle {
+  margin: 0;
+  font: 800 28px/1.15 var(--font-display, var(--font-body, sans-serif));
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  row-gap: 4px;
+  box-sizing: border-box;
+  width: min(100%, 400px);
+  padding: 16px 16px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  /* The gradient under a see-through border, sized to it rather than
+     wrapped into it (MISTAKES.md). */
+  background-origin: border-box;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  animation: card-in 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.print {
+  display: block;
+  width: clamp(112px, 19vh, 168px);
+  width: clamp(112px, 19dvh, 168px);
+  height: auto;
+  aspect-ratio: 1;
+  margin-bottom: 6px;
+}
+
+/* Each ridge draws in, the inner ones first. */
+.ridge {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ridge-draw 700ms ease-out forwards;
+  animation-delay: calc(120ms + var(--i, 0) * 45ms);
+}
+
+@keyframes ridge-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.cardLabel {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 600 14px/1.2 var(--font-body, sans-serif);
+}
+
+.cardRange {
+  margin: 0;
+  background: linear-gradient(135deg, #2dd4bf 0%, #58a6ff 50%, #bc8cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font: 800 34px/1.1 var(--font-display, var(--font-body, sans-serif));
+  letter-spacing: -0.01em;
+}
+
+.cardType {
+  margin: 2px 0 0;
+  padding: 3px 12px;
+  border: 1px solid rgba(230, 237, 243, 0.24);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font: 600 14px/1.3 var(--font-body, sans-serif);
+}
+
+.twinRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.twinFace {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: rgba(188, 140, 255, 0.16);
+  color: var(--text-secondary);
+}
+
+.twinPortrait {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.twinText {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.twinLabel {
+  color: var(--text-secondary);
+  font: 600 13px/1.3 var(--font-body, sans-serif);
+}
+
+.findTwin {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(188, 140, 255, 0.55);
+  border-radius: 22px;
+  background: rgba(124, 77, 255, 0.2);
+  color: var(--text-primary);
+  font: 600 16px/1 var(--font-body, sans-serif);
+}
+
+.twinName {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--text-primary);
+  font: 700 19px/1.2 var(--font-body, sans-serif);
+  outline: none;
+  animation: note-pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1.2) both;
+}
+
+/* Merc in his guide slot, his line beside him. */
+.guide {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 400px);
+  animation: card-in 420ms 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.guideMerc {
+  position: relative;
+  flex: 0 0 auto;
+  width: 76px;
+  height: 76px;
+}
+
+.guideLine {
+  flex: 1 1 auto;
+  max-width: none;
+  text-align: start;
+}
+
+.revealFoot {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px 12px;
+}
+
+.shareNote {
+  min-height: 19px;
+  margin: 0;
+  color: var(--text-secondary);
+  font: 500 14px/1.35 var(--font-body, sans-serif);
+  text-align: center;
+}
+
 /* A short phone (360 x 640, 375 x 667): tighter rows. */
 @media (max-height: 700px) {
   .bubbleRow {
@@ -356,6 +734,23 @@
 
   .note {
     font-size: 52px;
+  }
+
+  .revealTitle {
+    font-size: 24px;
+  }
+
+  .print {
+    width: 104px;
+  }
+
+  .cardRange {
+    font-size: 30px;
+  }
+
+  .guideMerc {
+    width: 60px;
+    height: 60px;
   }
 }
 
@@ -384,6 +779,62 @@
   .bubbleRow {
     min-height: 44px;
   }
+
+  .climb {
+    --m: clamp(52px, 16vh, 88px);
+    --m: clamp(52px, 16dvh, 88px);
+    min-height: 140px;
+  }
+
+  /* The card on its side: the print beside the words. */
+  .revealBody {
+    flex: 1 1 60%;
+    gap: 8px;
+  }
+
+  .revealFoot {
+    flex: 1 1 40%;
+    justify-content: center;
+  }
+
+  .revealTitle {
+    font-size: 22px;
+  }
+
+  .card {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    align-items: center;
+    column-gap: 16px;
+    padding: 12px 14px 10px;
+  }
+
+  .print {
+    grid-row: 1 / span 3;
+    width: 92px;
+    margin-bottom: 0;
+  }
+
+  .cardLabel,
+  .cardRange,
+  .cardType {
+    grid-column: 2;
+  }
+
+  .cardRange {
+    font-size: 28px;
+  }
+
+  .twinRow {
+    grid-column: 1 / -1;
+    margin-top: 6px;
+    padding: 4px 10px;
+  }
+
+  .guideMerc {
+    width: 56px;
+    height: 56px;
+  }
 }
 
 /* Reduced motion: no pop, and the shell's crossfade in and out. */
@@ -400,5 +851,16 @@
   .ribbon,
   .head {
     transition: none;
+  }
+
+  .card,
+  .guide,
+  .twinName {
+    animation: none;
+  }
+
+  .ridge {
+    stroke-dashoffset: 0;
+    animation: none;
   }
 }

@@ -63,11 +63,12 @@ export function onsetBar(floor: number): number {
   return Math.min(Math.max(ONSET_RMS, floor * FLOOR_HEADROOM), LOUD_RMS)
 }
 
-/** Where a take stands, from every frame since its window opened (oldest first). */
-export function readTake(frames: readonly PitchFrame[]): TakeReading {
-  const newest = frames.length === 0 ? 0 : frames[frames.length - 1].t
-  if (newest < FLOOR_SEC) return { kind: 'floor' }
-
+/**
+ * When the voice started, s on the frames' clock: the first of ONSET_FRAMES
+ * in a row over the bar the room's first FLOOR_SEC set. Null before then,
+ * the floor included. The range's slides start the same way (range-take.ts).
+ */
+export function voiceOnset(frames: readonly PitchFrame[]): number | null {
   let floor = 0
   let i = 0
   for (; i < frames.length && frames[i].t < FLOOR_SEC; i++) {
@@ -76,15 +77,20 @@ export function readTake(frames: readonly PitchFrame[]): TakeReading {
   const bar = onsetBar(floor)
 
   let above = 0
-  let onset = -1
   for (; i < frames.length; i++) {
     above = frames[i].rms > bar ? above + 1 : 0
-    if (above >= ONSET_FRAMES) {
-      onset = frames[i - ONSET_FRAMES + 1].t
-      break
-    }
+    if (above >= ONSET_FRAMES) return frames[i - ONSET_FRAMES + 1].t
   }
-  if (onset < 0) return { kind: 'waiting', nudge: newest >= NUDGE_SEC }
+  return null
+}
+
+/** Where a take stands, from every frame since its window opened (oldest first). */
+export function readTake(frames: readonly PitchFrame[]): TakeReading {
+  const newest = frames.length === 0 ? 0 : frames[frames.length - 1].t
+  if (newest < FLOOR_SEC) return { kind: 'floor' }
+
+  const onset = voiceOnset(frames)
+  if (onset === null) return { kind: 'waiting', nudge: newest >= NUDGE_SEC }
 
   const end = onset + TAKE_SEC
   if (newest < end) {

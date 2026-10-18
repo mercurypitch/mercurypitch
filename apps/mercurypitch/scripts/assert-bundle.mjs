@@ -315,6 +315,13 @@ const KARAOKE_STAGE_2 = [
   ['mp:native-onboarding', 'the native onboarding flag'],
   ['onboarding-not-now', "the native onboarding's Not now"],
   ["Hi, I'm Merc.", "the native onboarding's first line"],
+  // Its range and reveal, in the same lazy chunk. The range also opens from
+  // Keep, but only once the layer registered it (onboarding-layer.ts).
+  ['onboarding-see-voice', "the native onboarding's See my voice"],
+  [
+    "That's your voiceprint. It changes as you practice.",
+    "the native onboarding's reveal",
+  ],
 ]
 
 /**

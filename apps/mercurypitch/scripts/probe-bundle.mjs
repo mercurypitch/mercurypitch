@@ -4993,8 +4993,11 @@ function checkNativeCopy(dir) {
 
   // ── …and the room's own sentences really are in there ──
   const source = files.map((file) => readFileSync(file, 'utf8')).join('\n')
+  // Keep's sentence names the device it runs on (KeepAlert.tsx and
+  // SingTakeSheet.tsx: "Keep stores it on {thisDeviceLower()}."), so the
+  // bundle holds it as a template with the name left out: its fixed start.
   const missing = [
-    'Keep stores it on this phone.',
+    'Keep stores it on',
     'The microphone stays off until you tap.',
     'Only you can hear you.',
   ].filter((sentence) => !source.includes(sentence))

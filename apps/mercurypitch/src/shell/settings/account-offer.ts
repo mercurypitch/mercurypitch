@@ -27,8 +27,9 @@
 //
 // The range finder: with no range measured, Keep's first row is "Find your
 // range first", which runs the range and comes back to this sheet (S7b
-// §3.2). The native app has no range capture yet, so nothing registers one
-// and the row is not drawn: no build offers what it lacks.
+// §3.2). A build with the native onboarding registers its range
+// (onboarding-layer.ts); a build without one registers none, and the row is
+// not drawn: no build offers what it lacks.
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createRoot, createSignal, onCleanup, untrack, } from 'solid-js'
