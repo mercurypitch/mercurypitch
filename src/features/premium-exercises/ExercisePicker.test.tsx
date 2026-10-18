@@ -154,6 +154,64 @@ describe('the cards', () => {
   })
 })
 
+describe('the headings', () => {
+  const groups = (): HTMLElement[] =>
+    screen.getAllByTestId('sing-exercise-group')
+
+  const idsUnder = (group: HTMLElement): (string | undefined)[] =>
+    within(group)
+      .getAllByTestId('sing-exercise-card')
+      .map((one) => one.dataset.exercise)
+
+  it('heads the cards Pitch, then Warm-ups, under the sheet title', async () => {
+    await openPicker()
+
+    expect(
+      screen
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent),
+    ).toEqual(['Pitch', 'Warm-ups'])
+  })
+
+  it('puts the pitch rooms under Pitch and the warm-ups under Warm-ups', async () => {
+    await openPicker()
+
+    expect(groups().map((group) => group.dataset.group)).toEqual([
+      'pitch',
+      'warm-ups',
+    ])
+    expect(groups().map(idsUnder)).toEqual([
+      ['long-note-lantern', 'echo-stars'],
+      ['lip-roll-bay', 'ng-slides-bridge'],
+    ])
+  })
+
+  it('names each list by its heading, for a screen reader', async () => {
+    await openPicker()
+
+    const pitch = screen.getByRole('list', { name: 'Pitch' })
+    const warmUps = screen.getByRole('list', { name: 'Warm-ups' })
+
+    expect(within(pitch).getAllByRole('button')).toHaveLength(2)
+    expect(within(warmUps).getAllByRole('button')).toHaveLength(2)
+  })
+
+  it('keeps the last exercise marked under its own heading', async () => {
+    await openPicker({ last: 'lip-roll-bay' })
+
+    const [pitch, warmUps] = groups()
+    const marked = (group: HTMLElement | undefined): (string | null)[] =>
+      within(group as HTMLElement)
+        .getAllByTestId('sing-exercise-card')
+        .map((one) => one.getAttribute('aria-current'))
+
+    expect([marked(pitch), marked(warmUps)]).toEqual([
+      [null, null],
+      ['true', null],
+    ])
+  })
+})
+
 describe("a card's third line", () => {
   it('says Merc sings it first exactly when the demo will play by itself', async () => {
     await openPicker()

@@ -4,7 +4,9 @@
 //
 // A kit Sheet the Sing room owns, as it owns its song and take sheets. The
 // head is the Karaoke library's (a title and a 44 px close); the cards are
-// its rows grown to two lines, so a card can say what the exercise is.
+// its rows grown to two lines, so a card can say what the exercise is. They
+// sit under the library's group headings, one per catalogue group (Pitch,
+// Warm-ups), each list named by its heading for a screen reader.
 //
 // The last exercise opened is marked, not moved: catalogue order stays put,
 // so a card is where it was the last time. Beside its name a card names the
@@ -17,14 +19,14 @@
 // whatever is running before the exercise opens over it.
 
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createUniqueId, For, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Volume2 } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
-import type { PremiumExercise } from './catalogue'
-import { EXERCISE_CATALOGUE } from './catalogue'
+import type { CatalogueGroup, PremiumExercise } from './catalogue'
+import { catalogueGroups } from './catalogue'
 import { lastExercise } from './last-exercise'
 import styles from './premium-exercises.module.css'
 
@@ -112,6 +114,30 @@ const Card: Component<{
   )
 }
 
+/** A heading and its cards; the list is named by the heading. */
+const Group: Component<{
+  group: CatalogueGroup
+  onPick: (id: PremiumExerciseId) => void
+}> = (props) => {
+  const headingId = `exercise-group-${createUniqueId()}`
+  return (
+    <section
+      class={styles.group}
+      data-testid="sing-exercise-group"
+      data-group={props.group.id}
+    >
+      <h3 id={headingId} class={styles.groupTitle}>
+        {props.group.title}
+      </h3>
+      <ul class={styles.cards} aria-labelledby={headingId}>
+        <For each={props.group.exercises}>
+          {(exercise) => <Card exercise={exercise} onPick={props.onPick} />}
+        </For>
+      </ul>
+    </section>
+  )
+}
+
 export const ExercisePicker: Component<ExercisePickerProps> = (props) => {
   const pick = (id: PremiumExerciseId): void => {
     props.close()
@@ -138,11 +164,9 @@ export const ExercisePicker: Component<ExercisePickerProps> = (props) => {
             <CloseGlyph />
           </button>
         </div>
-        <ul class={styles.cards}>
-          <For each={EXERCISE_CATALOGUE}>
-            {(exercise) => <Card exercise={exercise} onPick={pick} />}
-          </For>
-        </ul>
+        <For each={catalogueGroups()}>
+          {(group) => <Group group={group} onPick={pick} />}
+        </For>
       </div>
     </Sheet>
   )

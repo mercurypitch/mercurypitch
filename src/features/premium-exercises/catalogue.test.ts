@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { catalogueEntry, EXERCISE_CATALOGUE } from './catalogue'
+import { catalogueEntry, catalogueGroups, EXERCISE_CATALOGUE, EXERCISE_GROUPS, } from './catalogue'
 import { PREMIUM_EXERCISE_IDS } from './ids'
 
 describe('the exercise catalogue', () => {
@@ -18,6 +18,36 @@ describe('the exercise catalogue', () => {
     const names = EXERCISE_CATALOGUE.map((exercise) => exercise.name)
 
     expect(new Set(names).size).toBe(names.length)
+  })
+
+  it("lists a group's entries together, in the headings' order", () => {
+    // The picker draws the groups in turn: an entry out of its group's run
+    // would move its card away from where the catalogue puts it.
+    const grouped = catalogueGroups().flatMap((group) =>
+      group.exercises.map((exercise) => exercise.id),
+    )
+
+    expect(grouped).toEqual(EXERCISE_CATALOGUE.map((exercise) => exercise.id))
+  })
+
+  it('heads the pitch rooms Pitch and the warm-ups Warm-ups', () => {
+    expect(
+      catalogueGroups().map((group) => [
+        group.title,
+        group.exercises.map((exercise) => exercise.name),
+      ]),
+    ).toEqual([
+      ['Pitch', ['Long note', 'Echo']],
+      ['Warm-ups', ['Lip roll', 'Ng slides']],
+    ])
+  })
+
+  it('puts every entry under a heading the picker draws', () => {
+    const headings = new Set(EXERCISE_GROUPS.map((group) => group.id))
+
+    for (const exercise of EXERCISE_CATALOGUE) {
+      expect(headings.has(exercise.group), exercise.name).toBe(true)
+    }
   })
 
   it('finds an entry by its id', () => {
