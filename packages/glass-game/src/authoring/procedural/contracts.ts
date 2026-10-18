@@ -54,12 +54,13 @@ export interface ChunkGap {
 
 export interface ChunkEncounter {
   readonly localId: string
-  readonly role: 'note' | 'gate' | 'finale'
+  readonly role: 'note' | 'gate' | 'finale' | 'optional-discovery'
   readonly label: string
   readonly variant: string
   readonly position: Vec3
   readonly anchor: Vec3
   readonly noteAnchorId?: string
+  readonly discoveryCoinIds?: readonly string[]
   readonly presentationBarrier?: {
     profileId: string
     facingYaw: number
@@ -103,6 +104,11 @@ export interface ProceduralChunk {
     | 'viaduct-s-curve'
     | 'split-fork'
     | 'diagonal-glide'
+    | 'terraced-ascent'
+    | 'sky-elevator-glide'
+    | 'cascading-drop'
+    | 'crystal-crossroads'
+    | 'crescent-balcony'
   readonly entrySocket: ChunkSocket
   readonly exitSocket: ChunkSocket
   readonly platforms: readonly ChunkPlatform[]
@@ -118,7 +124,11 @@ export interface ProceduralGeneratorOptions {
   readonly courseId?: string
   readonly title?: string
   readonly difficulty?: 'gentle' | 'balanced' | 'virtuoso'
-  readonly melodyLessonId?: 'first-arc-v1' | 'sunlit-steps-v1' | 'gallery-arch-v1'
+  readonly melodyLessonId?:
+    | 'first-arc-v1'
+    | 'sunlit-steps-v1'
+    | 'gallery-arch-v1'
   readonly fogTheme?: 'dawn' | 'celestial' | 'aurora' | 'twilight'
   readonly includeLivingCrystals?: boolean
+  readonly includeOptionalAlcoves?: boolean
 }
