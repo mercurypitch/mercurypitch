@@ -97,11 +97,12 @@ line above it, are in LESSON.md ("Section headings").
 9. **Wrap**: the three recap lines and the challenge, then:
    - **The practice card** (LESSON.md): Lesson 1's app card, with Leap's text, today's caveat and
      Contour as an optional first drill, and the address line "Practise it free:
-     mercurypitch.com/ear-lab", as the film's end card has it, linking `/ear-lab?lesson=02`. Its
-     figure is a house-style drawing of Leap's twelve answer pads in the app's six columns, each its
-     label over its name (FACTS 32), m2 and M2 lit, the other ten ghosted with their fills and
-     outlines dimmed but their labels at full contrast, as the film's S15g draws them (DECISIONS
-     77), captioned "Illustration: Leap's twelve answers. In Leap: m2 = semitone · M2 = tone."
+     mercurypitch.com/ear-lab", as the film's end card has it, linking `/ear-lab?lesson=02` in a new
+     tab, as Lesson 1's card links Voice Mirror. Its figure is a house-style drawing of Leap's
+     twelve answer pads in the app's six columns, each its label over its name (FACTS 32), m2 and M2
+     lit, the other ten ghosted with their fills and outlines dimmed but their labels at full
+     contrast, as the film's S15g draws them (DECISIONS 77), captioned "Illustration: Leap's twelve
+     answers. In Leap: m2 = semitone · M2 = tone."
    - **The next-lesson card**: the next lesson's hook on a card that opens Lesson 3 in the
      explorer, with the tease's two figures side by side as the film shows them: ASKED, 59 %, of
      1,105; TESTED, 10–16 %, a semitone or more off (FACTS 36).
