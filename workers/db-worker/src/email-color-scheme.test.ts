@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Env } from './auth'
-import { AUTO_LINK_STYLE, COLOR_SCHEME_META, renderAccountNotice, renderNewsletterIssue, } from './email'
+import { AUTO_LINK_STYLE, COLOR_SCHEME_META, renderAccountNotice, } from './email'
 import { renderLoginCode, renderSignUpCode } from './email-code'
 import type { MailOrigins } from './email-layout'
+import { renderNewsletterIssue } from './email-newsletter'
 import { renderPasswordReset } from './email-password-reset'
 import { EMAIL_PREVIEW_PATH, handleEmailPreview, PREVIEW_MAIL_IDS, } from './email-preview'
 
@@ -150,6 +151,7 @@ async function everyMail(): Promise<[string, string][]> {
     [
       'newsletter',
       renderNewsletterIssue({
+        ...ORIGINS,
         subject: 'Issue',
         preheader: 'Pre',
         intro: 'Intro.',

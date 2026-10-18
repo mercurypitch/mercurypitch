@@ -31,7 +31,8 @@
 // Dispatched from index.ts, which owns the admin policy.
 
 import type { Env } from './auth'
-import type { AccountNoticeKind, NewsletterItem } from './email'
+import type { AccountNoticeKind } from './email'
+import type { NewsletterItem } from './email-newsletter'
 import { renderAccountNotice, sendAccountNotice } from './email'
 import { MANAGED_TEST_EMAIL_DOMAIN } from './testing-account-state'
 
