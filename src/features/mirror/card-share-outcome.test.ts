@@ -153,7 +153,7 @@ describe('shareCard — where there is no share sheet', () => {
     const onLinkLeaving = vi.fn()
 
     const outcome = await shareCard(blob, 'card.png', {
-      text: `My voice, mapped — ${LINK}`,
+      text: `My voice, mapped: ${LINK}`,
       link: LINK,
       onLinkLeaving,
     })
@@ -200,7 +200,7 @@ describe('shareCard — where there is no share sheet', () => {
 
   it('says the link was copied, because nothing else would', () => {
     expect(shareOutcomeMessage('downloaded-link-copied')).toMatch(/link/i)
-    expect(shareOutcomeMessage('downloaded')).toBe('Saved — post it anywhere.')
+    expect(shareOutcomeMessage('downloaded')).toBe('Saved. Post it anywhere.')
     expect(shareOutcomeMessage('shared')).toBe('Shared!')
     expect(shareOutcomeMessage('dismissed')).toBeNull()
   })
@@ -243,9 +243,9 @@ describe('a card that carried a link says where the link went', () => {
     // Only for the callers that passed a link: a free-sing card carries
     // none, and telling its owner to copy one would be a lie.
     expect(shareOutcomeMessage('downloaded', true)).toBe(
-      'Saved. The link did not copy here — use Copy link for that.',
+      'Saved. The link did not copy here. Use Copy link for that.',
     )
-    expect(shareOutcomeMessage('downloaded')).toBe('Saved — post it anywhere.')
+    expect(shareOutcomeMessage('downloaded')).toBe('Saved. Post it anywhere.')
     expect(shareOutcomeStatus('downloaded', true)?.tone).toBe('ok')
   })
 })

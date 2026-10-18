@@ -42,16 +42,16 @@ const SHARE_URL = MIRROR_SHARE_URL
 
 /** Share text for a card whose caller has nothing more specific to say.
  *  Prefer `defaultShareText(link)` where a voiceprint is in hand. */
-export const DEFAULT_SHARE_TEXT = `My voice, mapped — ${SHARE_URL}`
+export const DEFAULT_SHARE_TEXT = `My voice, mapped: ${SHARE_URL}`
 
 /** Share text for a card, optionally carrying its own voiceprint. */
 export function defaultShareText(link: string = SHARE_URL): string {
-  return `My voice, mapped — ${link}`
+  return `My voice, mapped: ${link}`
 }
 
 /** Share text naming the singer someone matched. */
 export function twinShareText(twin: string, link: string = SHARE_URL): string {
-  return `${twin} is my voice twin — ${link}`
+  return `${twin} is my voice twin: ${link}`
 }
 
 export type CardFormat = 'story' | 'square'
@@ -1027,8 +1027,8 @@ export function shareOutcomeMessage(
       return 'Saved, and the link is copied. Paste it beside the picture.'
     case 'downloaded':
       return carriedLink
-        ? 'Saved. The link did not copy here — use Copy link for that.'
-        : 'Saved — post it anywhere.'
+        ? 'Saved. The link did not copy here. Use Copy link for that.'
+        : 'Saved. Post it anywhere.'
     case 'dismissed':
       return null
   }
@@ -1070,8 +1070,8 @@ export function copyOutcomeMessage(outcome: CopyOutcome): string {
     case 'copied':
       return 'Copied to clipboard!'
     case 'unsupported':
-      return 'Copy not supported here — use Share.'
+      return 'Copy not supported here. Use Share.'
     default:
-      return 'Copy failed — use Share instead.'
+      return 'Copy failed. Use Share instead.'
   }
 }

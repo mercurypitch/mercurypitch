@@ -37,7 +37,7 @@ const STEPS: StepCard[] = [
   {
     kind: 'glide-up',
     title: 'Glide up',
-    blurb: 'Slide from your lowest comfy note to your highest — like a siren.',
+    blurb: 'Slide like a siren, from your lowest comfy note to your highest.',
   },
   {
     kind: 'glide-down',
@@ -47,7 +47,7 @@ const STEPS: StepCard[] = [
   {
     kind: 'hold',
     title: 'Hold a note',
-    blurb: 'Pick any comfortable note and keep it steady — the ring tightens.',
+    blurb: 'Pick any comfortable note and keep it steady. The ring tightens.',
   },
   {
     kind: 'match',

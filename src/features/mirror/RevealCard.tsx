@@ -220,7 +220,7 @@ export const RevealCard: Component<{
           <p class="mirror-reveal-hint revealed">
             <span
               class="mirror-chip mirror-voicechip"
-              title="A playful range match — voice type and the legend you overlap with depend on more than range, so it stays a hint."
+              title="A playful range match. Voice type and the legend you overlap with depend on more than range, so it stays a hint."
             >
               {props.voiceType} · like {props.legend}
             </span>
