@@ -1,13 +1,15 @@
 // ============================================================
-// No em dash in the copy of The Grid, Home, Voice Mirror and the karaoke
+// No em dash in the copy of the Ear Lab, Home, Voice Mirror and the karaoke
 // playlist overlay
 // ============================================================
 //
 // The owner's product voice keeps the em dash out of visible English: a full
 // stop, a colon, parentheses or a shorter sentence does the job instead. The
 // 0.9.20 store frames still showed "grid — except one", "Today counts —" and
-// "±19 cents —", so these four features were swept in one pass. This guard
-// keeps a dash from coming back to them.
+// "±19 cents —", so these features were swept: The Grid first, then every
+// Ear Lab drill so their feedback lines share one shape ("Right. The …"),
+// and the profile's voice twin with the rest of Voice Mirror. This guard keeps
+// a dash from coming back to them.
 //
 // It reads the source rather than a rendered screen, because most of these
 // lines appear only after a sung take or a finished session. The TypeScript
@@ -26,11 +28,13 @@ const EM_DASH = '—'
 
 /** The source of each swept feature: a file, or a directory read in full. */
 const SWEPT: readonly (readonly [string, string])[] = [
-  ['The Grid', 'src/features/ear-lab/GridDrill.tsx'],
+  ['the Ear Lab', 'src/features/ear-lab'],
+  ['the Ear Lab', 'src/lib/ear/desk.ts'],
   ['Home', 'src/pages/HomePage.tsx'],
   ['Home', 'src/features/home'],
   ['Voice Mirror', 'src/features/mirror'],
   ['Voice Mirror', 'src/lib/mirror/cosmic-melodies.ts'],
+  ['Voice Mirror', 'src/features/community/ProfileView.tsx'],
   ['the karaoke playlist overlay', 'src/components/KaraokePlaylistOverlay.tsx'],
 ]
 
