@@ -115,7 +115,7 @@ ${AUTO_LINK_STYLE}
     ``,
     `Didn't ask for this? Ignore this email. No account is made unless the code is typed in, and nobody from MercuryPitch will ever ask you for it.`,
     ``,
-    `Mercury Pitch · Learn to sing and play. Practice has never been more fun.`,
+    `MercuryPitch · Learn to sing and play. Practice has never been more fun.`,
     `${ABOUT_URL} · ${REPO_URL}`,
     `You're receiving this because a sign-up code was requested for this address on mercurypitch.com.`,
   ].join('\n')

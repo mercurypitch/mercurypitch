@@ -6,6 +6,9 @@ import { legendPortraitPath, rangeBarWidths, renderConfirmEmail, renderFreshLink
 import type { SignupVoiceprint } from './signup-hint'
 import { parseVoiceprintHint } from './signup-hint'
 
+/** The footer's copyright line as the HTML spells it. */
+const COPYRIGHT = '&copy; 2026 Mercury Pitch &middot; AGPL-3.0'
+
 // Links and pictures on different hosts, so a test can tell which one a URL
 // was built from.
 const APP = 'https://app.test'
@@ -114,7 +117,7 @@ describe('which picture a mail opens with', () => {
 
   it('opens Home from the welcome picture only', () => {
     expect(welcome(null).html).toContain(
-      `<a href="${APP}/#/home" aria-label="Open Mercury Pitch"`,
+      `<a href="${APP}/#/home" aria-label="Open MercuryPitch"`,
     )
     // A confirm mail's picture is not a link, so confirming is always a tap
     // on the button and never a stray tap on the picture.
@@ -137,7 +140,7 @@ describe('subject and preheader', () => {
     [
       'welcome',
       () => welcome(null),
-      "Welcome to Mercury Pitch. Let's hear you.",
+      "Welcome to MercuryPitch. Let's hear you.",
       "Your account is ready. Here's where to start.",
     ],
     [
@@ -149,7 +152,7 @@ describe('subject and preheader', () => {
     [
       'confirm',
       () => confirm(null),
-      'Confirm your email for Mercury Pitch',
+      'Confirm your email for MercuryPitch',
       'One tap and your account is set. Then the fun part.',
     ],
     [
@@ -161,7 +164,7 @@ describe('subject and preheader', () => {
     [
       'fresh link',
       () => freshLink(null),
-      'A fresh link to confirm your Mercury Pitch email',
+      'A fresh link to confirm your MercuryPitch email',
       'The first one may have expired or landed in another folder.',
     ],
     [
@@ -400,10 +403,12 @@ describe('every mail', () => {
       expect(copy).not.toMatch(/—|&mdash;|&#8212;/)
       expect(copy).not.toMatch(/practise/i)
     }
-    // The wordmark picture's alt is the logo; anywhere a person reads the
-    // name, it is two words.
-    expect(visibleText(html)).not.toContain('MercuryPitch')
-    expect(text).not.toContain('MercuryPitch')
+    // The name is one word, as docs/branding/BRAND.md types it: in the copy,
+    // the labels and the alt text. Only the copyright line, a legal notice,
+    // keeps its own wording.
+    for (const copy of [subject, html.replace(COPYRIGHT, ''), text]) {
+      expect(copy).not.toContain('Mercury Pitch')
+    }
     expect(visibleText(html)).toContain(
       'Learn to sing and play. Practice has never been more fun.',
     )

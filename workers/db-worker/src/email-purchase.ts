@@ -141,11 +141,11 @@ export function renderPurchaseEmail(vars: PurchaseEmailVars): RenderedEmail {
   const credits = count(vars.credits, 'credit', 'credits')
   const subject = `Your ${credits} ${vars.credits === 1 ? 'is' : 'are'} ready`
   const preheader =
-    'Thank you for supporting Mercury Pitch. Karaoke Night is ready when you are.'
+    'Thank you for supporting MercuryPitch. Karaoke Night is ready when you are.'
   const lines: Lines = {
     eyebrow: `${vars.packLabel} pack`,
     headline: 'Thank you. Your credits are in.',
-    body: 'Mercury Pitch is a small open-source project, so every purchase counts.',
+    body: 'MercuryPitch is a small open-source project, so every purchase counts.',
   }
   const html = documentHtml(
     subject,
