@@ -413,11 +413,12 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   master is `rc-04` (7:11, 60 fps, with the owner's ElevenLabs voices), which round 15 passed with
   four polish items for a later render. Its web lesson is specified and reviewed, and is not built
   yet; it waits on Lesson 1's page shipping and the kit work its spec lists.
-- Lessons 3 to 5: written lessons, text only and reviewed, in
+- Lessons 3 to 6: written lessons, text only and reviewed, in
   [`lessons/03-match-a-note/`](lessons/03-match-a-note/),
-  [`lessons/04-major-scale/`](lessons/04-major-scale/) and
-  [`lessons/05-breath-steady-note/`](lessons/05-breath-steady-note/) (facts, copy and page spec).
-  Lessons 3 and 5 wait on the vocal coach (§ 12 item 8).
+  [`lessons/04-major-scale/`](lessons/04-major-scale/),
+  [`lessons/05-breath-steady-note/`](lessons/05-breath-steady-note/) and
+  [`lessons/06-intervals/`](lessons/06-intervals/) (facts, copy and page spec). Lessons 3 and 5
+  wait on the vocal coach (§ 12 item 8), and so does Lesson 6's sing-along.
 
 ## 12. Owner decisions
 
