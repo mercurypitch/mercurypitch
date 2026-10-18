@@ -2,9 +2,10 @@
 // Merc's lines for Lip roll: one table, easy to swap
 // ============================================================
 //
-// The room kit's selector (line-selector.ts) picks the next line for a
-// moment and never says the same one twice running. `{note}` is a note
-// ("G3"), `{top}` a wave's top note ("G3"), `{pct}` a share ("88%").
+// The room kit's room-lines.ts picks the next line for a moment, never the
+// same one twice running, and fills its fields (GlideLineFields): `{note}`
+// is a note ("G3"), `{top}` a wave's top note ("G3"),
+// `{pct}` a share ("88%").
 //
 // DESIGN-lip-roll.md 5 drafts them; the owner's rule for every room's
 // lines holds (11 Oct 2026): plain words, one register, each line says
@@ -12,9 +13,9 @@
 // not the lips, so no line claims to hear the buzz. Merc speaks between
 // waves only, never while the singer rides one.
 
-import type { GlideLineFields, GlideLines, } from '@/components/room-kit/glide/glide-lines'
-import { createGlideLines } from '@/components/room-kit/glide/glide-lines'
-import type { MercLine } from '@/components/room-kit/line-selector'
+import type { GlideLineFields, GlideLines, } from '@/components/room-kit/glide/glide-room-contract'
+import type { LineTable } from '@/components/room-kit/room-lines'
+import { createRoomLines } from '@/components/room-kit/room-lines'
 
 export type LipMoment =
   | 'intro'
@@ -42,7 +43,7 @@ export type LipMoment =
   | 'rest'
   | 'left'
 
-export const LIP_LINES: Readonly<Record<LipMoment, readonly MercLine[]>> = {
+export const LIP_LINES: LineTable<LipMoment> = {
   intro: [
     {
       id: 'intro-roll',
@@ -149,5 +150,5 @@ export type LipFields = GlideLineFields
 export type LipLines = GlideLines<LipMoment>
 
 export function createLipLines(random: () => number = Math.random): LipLines {
-  return createGlideLines(LIP_LINES, random)
+  return createRoomLines(LIP_LINES, random)
 }

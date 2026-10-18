@@ -2,18 +2,19 @@
 // Merc's lines for Ng slides: one table, easy to swap
 // ============================================================
 //
-// The room kit's selector (line-selector.ts) picks the next line for a
-// moment and never says the same one twice running. `{note}` is a note
-// ("A2"), `{top}` a slide's top note ("E3"), `{pct}` a share ("84%").
+// The room kit's room-lines.ts picks the next line for a moment, never the
+// same one twice running, and fills its fields (GlideLineFields): `{note}`
+// is a note ("A2"), `{top}` a slide's top note ("E3"),
+// `{pct}` a share ("84%").
 //
 // DESIGN-ng-slides.md 5 drafts them; the owner's rule for every room's
 // lines holds (11 Oct 2026): plain words, one register, each line says
 // what the voice did and what to do about it. Merc speaks between slides
 // only, never while the singer slides.
 
-import type { GlideLineFields, GlideLines, } from '@/components/room-kit/glide/glide-lines'
-import { createGlideLines } from '@/components/room-kit/glide/glide-lines'
-import type { MercLine } from '@/components/room-kit/line-selector'
+import type { GlideLineFields, GlideLines, } from '@/components/room-kit/glide/glide-room-contract'
+import type { LineTable } from '@/components/room-kit/room-lines'
+import { createRoomLines } from '@/components/room-kit/room-lines'
 
 export type NgMoment =
   | 'intro'
@@ -40,7 +41,7 @@ export type NgMoment =
   | 'rest'
   | 'left'
 
-export const NG_LINES: Readonly<Record<NgMoment, readonly MercLine[]>> = {
+export const NG_LINES: LineTable<NgMoment> = {
   intro: [
     {
       id: 'intro-sing',
@@ -138,5 +139,5 @@ export type NgFields = GlideLineFields
 export type NgLines = GlideLines<NgMoment>
 
 export function createNgLines(random: () => number = Math.random): NgLines {
-  return createGlideLines(NG_LINES, random)
+  return createRoomLines(NG_LINES, random)
 }

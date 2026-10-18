@@ -17,6 +17,7 @@ import type { Accessor } from 'solid-js'
 import type { TakeClock } from '@/components/demo-kit/demo-plan'
 import type { DemoScript } from '@/components/demo-kit/useExerciseDemo'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
+import type { RoomLine, RoomLines } from '@/components/room-kit/room-lines'
 import type { ExerciseCapture } from '@/components/room-kit/useExerciseCapture'
 import type { GlideEvent } from '@/lib/glide/glide-engine'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
@@ -26,10 +27,28 @@ import type { GlideTargetInput, GlideTargets, GlideTargetSource, } from '@/lib/g
 import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice } from '@/lib/merc/sim'
 import type { ExerciseLevel } from '@/stores/exercise-level'
-import type { GlideCoreMoment, GlideLine, GlideLines } from './glide-lines'
 import type { GlideRideStates } from './glide-ride'
 import type { GlideRoomState } from './glide-room-machine'
 import type { GlideContact, GlideScroll, GlideTake, GlideTakeDeps, GlideTraceSample, } from './glide-take'
+
+/** The moments the core itself speaks at: every glide room's table has them. */
+export type GlideCoreMoment = 'found' | 'listen' | 'rest' | 'left' | 'again'
+
+/**
+ * What a glide line's fields become: `{note}` a note ("G3"), `{top}` an
+ * arch's top note, `{pct}` a share ("88%").
+ */
+export interface GlideLineFields {
+  readonly note?: string
+  readonly top?: string
+  readonly pct?: string
+}
+
+/** A moment to speak at, and its fields: what a room's run module returns. */
+export type GlideLine<M extends string> = RoomLine<M, GlideLineFields>
+
+/** A glide room's lines (room-lines.ts), with the glide fields. */
+export type GlideLines<M extends string> = RoomLines<M, GlideLineFields>
 
 /** The count-in's tone: the first root, s. */
 export const COUNT_IN_TONE_SEC = 1

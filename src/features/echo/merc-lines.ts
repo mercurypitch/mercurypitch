@@ -2,19 +2,19 @@
 // Merc's lines for Echo: one table, easy to swap
 // ============================================================
 //
-// The room kit's selector (line-selector.ts) picks the next line for a
-// moment and never says the same one twice running. Echo's lines name more
-// than the note: `{nth}` is a note's place in the phrase ("second"),
-// `{sung}` and `{target}` are notes ("C4"), `{landed}`, `{count}` and
-// `{total}` are counts, and `{level}` is the level's name.
+// The room kit's room-lines.ts picks the next line for a moment, never the
+// same one twice running, and fills its fields. Echo's lines name more than
+// the note: `{nth}` is a note's place in the phrase ("second"), `{sung}`
+// and `{target}` are notes ("C4"), `{landed}`, `{count}` and `{total}` are
+// counts, and `{level}` is the level's name.
 //
 // Owner, 11 Oct 2026: plain words, one register. Each line says what the
 // voice did (on the note, flat, sharp, another note) and what to do about
 // it. No decoration, and nothing about the singer: the lines are about the
 // sound.
 
-import type { MercLine } from '@/components/room-kit/line-selector'
-import { createLineSelector } from '@/components/room-kit/line-selector'
+import type { LineTable, RoomLines } from '@/components/room-kit/room-lines'
+import { createRoomLines, fillLine } from '@/components/room-kit/room-lines'
 
 export type EchoMoment =
   | 'intro'
@@ -39,7 +39,7 @@ export type EchoMoment =
   | 'rest'
   | 'left'
 
-export const ECHO_LINES: Readonly<Record<EchoMoment, readonly MercLine[]>> = {
+export const ECHO_LINES: LineTable<EchoMoment> = {
   intro: [
     { id: 'intro-first', text: 'I sing it first. Then you sing it back.' },
     {
@@ -174,23 +174,12 @@ export function nthNote(index: number): string {
   return PLACES[index] ?? `number ${index + 1}`
 }
 
-/** The lines with every placeholder filled in. */
-export function fillFields(text: string, fields: LineFields): string {
-  return text.replace(/\{(\w+)\}/gu, (whole, key: string) => {
-    const value = fields[key as keyof LineFields]
-    return value === undefined ? whole : String(value)
-  })
-}
+/** The lines with every placeholder filled in (the room kit's fillLine). */
+export const fillFields: (text: string, fields: LineFields) => string = fillLine
 
-export interface EchoLines {
-  next(moment: EchoMoment, fields?: LineFields): string
-}
+export type EchoLines = RoomLines<EchoMoment, LineFields>
 
 /** Merc's next line for a moment, never the same one twice running. */
 export function createEchoLines(random: () => number = Math.random): EchoLines {
-  const selector = createLineSelector(ECHO_LINES, random)
-  return {
-    next: (moment, fields = {}) =>
-      fillFields(selector.next(moment, fields.note ?? '{note}'), fields),
-  }
+  return createRoomLines(ECHO_LINES, random)
 }
