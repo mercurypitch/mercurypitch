@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResendConfig } from './email'
-import { maskAddresses, maskEmail, sendAccountNotice, sendLoginCode, sendNewsletterIssue, sendPasswordReset, } from './email'
-import { sendSignUpCode } from './email-sign-up-code'
+import { maskAddresses, maskEmail, sendAccountNotice, sendNewsletterIssue, sendPasswordReset, } from './email'
+import { sendLoginCode, sendSignUpCode } from './email-code'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 
 describe('maskEmail', () => {
@@ -64,7 +64,8 @@ describe('what a sent mail logs', () => {
     ],
     [
       'a sign-in code',
-      () => sendLoginCode(CFG, TO, { code: '123456', ttlMinutes: 10 }),
+      () =>
+        sendLoginCode(CFG, TO, { ...ORIGINS, code: '123456', ttlMinutes: 10 }),
     ],
     [
       'a newsletter',
@@ -86,7 +87,8 @@ describe('what a sent mail logs', () => {
     ],
     [
       'a sign-up code',
-      () => sendSignUpCode(CFG, TO, { code: '123456', ttlMinutes: 10 }),
+      () =>
+        sendSignUpCode(CFG, TO, { ...ORIGINS, code: '123456', ttlMinutes: 10 }),
     ],
     [
       'a welcome',

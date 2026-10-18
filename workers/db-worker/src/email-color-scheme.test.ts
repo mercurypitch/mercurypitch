@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Env } from './auth'
-import { AUTO_LINK_STYLE, COLOR_SCHEME_META, renderAccountNotice, renderLoginCode, renderNewsletterIssue, renderPasswordReset, } from './email'
+import { AUTO_LINK_STYLE, COLOR_SCHEME_META, renderAccountNotice, renderNewsletterIssue, renderPasswordReset, } from './email'
+import { renderLoginCode, renderSignUpCode } from './email-code'
+import type { MailOrigins } from './email-layout'
 import { EMAIL_PREVIEW_PATH, handleEmailPreview, PREVIEW_MAIL_IDS, } from './email-preview'
-import { renderSignUpCode } from './email-sign-up-code'
 
 // Every mail is drawn dark and declares "light only" (see COLOR_SCHEME_META).
 // A client that honors it paints text with no color of its own black, and a
@@ -108,6 +109,11 @@ async function preview(id: string): Promise<string> {
   return res.text()
 }
 
+const ORIGINS: MailOrigins = {
+  appOrigin: 'https://mercurypitch.com',
+  assetOrigin: 'https://mercurypitch.com',
+}
+
 const item = {
   title: 'What happened',
   body: 'A paragraph.',
@@ -131,8 +137,14 @@ async function everyMail(): Promise<[string, string][]> {
         ttlHours: 1,
       }).html,
     ],
-    ['login code', renderLoginCode({ code: '123456', ttlMinutes: 10 }).html],
-    ['sign-up code', renderSignUpCode({ code: '123456', ttlMinutes: 10 }).html],
+    [
+      'login code',
+      renderLoginCode({ ...ORIGINS, code: '123456', ttlMinutes: 10 }).html,
+    ],
+    [
+      'sign-up code',
+      renderSignUpCode({ ...ORIGINS, code: '123456', ttlMinutes: 10 }).html,
+    ],
     [
       'newsletter',
       renderNewsletterIssue({

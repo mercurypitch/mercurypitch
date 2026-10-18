@@ -413,7 +413,7 @@ describe('what a sign-up request tells the world', () => {
       /^\d{6} is your MercuryPitch sign-up code$/,
     )
     expect(toNew[0]?.text).toContain(
-      'No account is made unless the code is typed in',
+      "Without this code, whoever asked can't finish signing up",
     )
   })
 })
