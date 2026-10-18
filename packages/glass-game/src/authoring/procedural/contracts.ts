@@ -128,6 +128,7 @@ export interface ProceduralGeneratorOptions {
     | 'first-arc-v1'
     | 'sunlit-steps-v1'
     | 'gallery-arch-v1'
+    | 'two-windows-v1'
   readonly fogTheme?: 'dawn' | 'celestial' | 'aurora' | 'twilight'
   readonly includeLivingCrystals?: boolean
   readonly includeOptionalAlcoves?: boolean

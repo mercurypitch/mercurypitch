@@ -86,10 +86,45 @@ async function selectedDevelopmentLevel() {
   if (layout === 'thawing-song') return CLOUDWAY_THAWING_SONG
   if (layout === 'prismatic-causeway') return CLOUDWAY_PRISMATIC_CAUSEWAY
   if (layout === 'procedural') {
-    const seed = new URLSearchParams(window.location.search).get('seed')
-    return typeof seed === 'string' && seed.length > 0
-      ? createProceduralCourse(seed).compiledLevel
-      : CLOUDWAY_PROCEDURAL
+    const params = new URLSearchParams(window.location.search)
+    const seed = params.get('seed')
+    const difficulty = params.get('difficulty')
+    const lesson = params.get('lesson')
+    const fog = params.get('fog')
+    if (
+      (typeof seed === 'string' && seed.length > 0) ||
+      difficulty !== null ||
+      lesson !== null ||
+      fog !== null
+    ) {
+      return createProceduralCourse({
+        seed:
+          typeof seed === 'string' && seed.length > 0
+            ? seed
+            : 'celestial-prime',
+        difficulty:
+          difficulty === 'gentle' ||
+          difficulty === 'balanced' ||
+          difficulty === 'virtuoso'
+            ? difficulty
+            : undefined,
+        melodyLessonId:
+          lesson === 'first-arc-v1' ||
+          lesson === 'sunlit-steps-v1' ||
+          lesson === 'gallery-arch-v1' ||
+          lesson === 'two-windows-v1'
+            ? lesson
+            : undefined,
+        fogTheme:
+          fog === 'dawn' ||
+          fog === 'celestial' ||
+          fog === 'aurora' ||
+          fog === 'twilight'
+            ? fog
+            : undefined,
+      }).compiledLevel
+    }
+    return CLOUDWAY_PROCEDURAL
   }
   if (layout === 'crystal-interiors') {
     const preset = new URLSearchParams(window.location.search).get('interior')
