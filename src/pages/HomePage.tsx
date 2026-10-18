@@ -97,7 +97,7 @@ const HomePage: Component = () => {
     const result = await repairStreak()
     void refetchStreak()
     if (result.ok) {
-      showNotification(`Streak restored — ${result.streak} days`, 'success')
+      showNotification(`Streak restored: ${result.streak} days`, 'success')
       return
     }
     // Each reason gets its own sentence, because they need different things
@@ -105,7 +105,7 @@ const HomePage: Component = () => {
     // while the page sat open, and a refetch has just corrected the card.
     showNotification(
       result.reason === 'not-repairable'
-        ? 'That streak can no longer be repaired — the 72-hour window has passed.'
+        ? 'That streak can no longer be repaired. The 72-hour window has passed.'
         : 'The streak could not be repaired. Nothing was changed; try again in a moment.',
       'error',
     )
@@ -232,7 +232,7 @@ const HomePage: Component = () => {
               class={styles.freezes}
               title={`${streak()?.freezes ?? 0} of ${
                 streak()?.maxFreezes ?? MAX_FREEZES
-              } streak freezes — each covers one missed day`}
+              } streak freezes (each covers one missed day)`}
             >
               <span
                 class={`${styles.freezeCount} ${
@@ -271,7 +271,7 @@ const HomePage: Component = () => {
             <div class={styles.goalTextRow}>
               <span class={styles.goalText}>
                 {goal().met
-                  ? `Today counts — ${DAILY_GOAL_MIN} min sung`
+                  ? `Today counts: ${DAILY_GOAL_MIN} min sung`
                   : `${goal().minutes} of ${DAILY_GOAL_MIN} min today keeps the streak`}
               </span>
               {/* Both forgiveness paths, in the order a singer meets them.
@@ -281,7 +281,7 @@ const HomePage: Component = () => {
                   currencies and the card now shows one at a time. */}
               <InfoPopover label="How the streak works">
                 Sing for {DAILY_GOAL_MIN} minutes and the day counts. Anything
-                you practice counts — sessions, exercises and challenges alike.
+                you practice counts: sessions, exercises and challenges alike.
                 <br />
                 <br />
                 Miss a day and a banked freeze covers it automatically, the next
@@ -290,9 +290,9 @@ const HomePage: Component = () => {
                 <br />
                 <br />
                 If a gap is longer than your freezes can cover, the streak goes
-                back to zero — and then a one-off repair can restore it for
-                free, within 72 hours, once a month. Repair is a separate
-                favour: it never spends a freeze.
+                back to zero. Then a one-off repair can restore it for free,
+                within 72 hours, once a month. Repair is a separate favour: it
+                never spends a freeze.
               </InfoPopover>
             </div>
           </div>
@@ -334,7 +334,7 @@ const HomePage: Component = () => {
               <span>
                 {(streak()?.freezes ?? 0) > 0
                   ? `Your ${streak()!.currentStreak}-day streak is open today. Sing ${DAILY_GOAL_MIN} minutes to keep it, or a freeze will cover the gap.`
-                  : `Your ${streak()!.currentStreak}-day streak ends today unless you sing — no freezes left to cover it.`}
+                  : `Your ${streak()!.currentStreak}-day streak ends today unless you sing. You have no freezes left to cover it.`}
               </span>
             </div>
           </Show>
@@ -350,7 +350,7 @@ const HomePage: Component = () => {
 
           <Show when={streak()?.canRepair}>
             <button class={styles.repairBtn} onClick={() => void onRepair()}>
-              Repair streak — restore {streak()!.repairableStreak} days (free)
+              Repair streak: restore {streak()!.repairableStreak} days (free)
             </button>
           </Show>
 
@@ -385,8 +385,8 @@ const HomePage: Component = () => {
                     <span>New skill</span>
                     <span>A real phrase</span>
                     <InfoPopover label="How today's session is chosen">
-                      Four short segments, picked from your practice history —
-                      the weak-spot drill targets whatever you have been missing
+                      Four short segments, picked from your practice history.
+                      The weak-spot drill targets whatever you have been missing
                       most. Pick a length and it builds one for you.
                     </InfoPopover>
                   </div>
@@ -425,7 +425,7 @@ const HomePage: Component = () => {
                   already says what to do. */}
               <Show when={routine.resumable()}>
                 <p class={styles.resumeNote}>
-                  Picking up where you left off —{' '}
+                  Picking up where you left off:{' '}
                   {routine.completedSegments().length} of{' '}
                   {routine.template()!.segments.length} done.
                 </p>
@@ -537,7 +537,7 @@ const HomePage: Component = () => {
               >
                 <div class={styles.doneBlock}>
                   <div class={styles.doneMsg}>
-                    Session complete — nice work today.
+                    Session complete. Nice work today.
                   </div>
                   {/* The sidebar panel has offered these all along; Home
                     showed the message and nothing to do next. */}
@@ -594,9 +594,9 @@ const HomePage: Component = () => {
           <Show when={showStreakNudge()}>
             <div class={styles.accountNudge}>
               <span>
-                {streak()?.currentStreak} days in a row — and right now that
-                lives only in this browser. An account carries it to your phone,
-                and keeps it if you clear your history.
+                {streak()?.currentStreak} days in a row. Right now that lives
+                only in this browser. An account carries it to your phone, and
+                keeps it if you clear your history.
               </span>
               <div class={styles.accountNudgeRow}>
                 <button

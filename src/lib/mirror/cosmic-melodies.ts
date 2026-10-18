@@ -33,7 +33,7 @@ export const COSMIC_MELODIES: CosmicMelody[] = [
     id: 'orion',
     name: 'Orion Rising',
     blurb:
-      "Orion's belt and shoulders, sung by declination — one semitone per degree of sky.",
+      "Orion's belt and shoulders, sung by declination: one semitone per degree of sky.",
     source: 'Star positions: ESA Gaia / Hipparcos',
     // Declination (degrees): Mintaka −0.30, Alnilam −1.20, Alnitak −1.94,
     // Bellatrix +6.35, Betelgeuse +7.41 → rounded to semitone offsets.
@@ -49,7 +49,7 @@ export const COSMIC_MELODIES: CosmicMelody[] = [
     id: 'pulsar-clock',
     name: 'Pulsar Clock',
     blurb:
-      'Five famous pulsars — each spin frequency octave-shifted into your voice.',
+      'Five famous pulsars: each spin frequency octave-shifted into your voice.',
     source: 'Spin rates: ATNF pulsar catalogue',
     // Spin frequency (Hz), octave-folded to one register, nearest semitone,
     // written relative to the Crab pulsar:
@@ -68,7 +68,7 @@ export const COSMIC_MELODIES: CosmicMelody[] = [
     id: 'perseus',
     name: 'The Perseus Note',
     blurb:
-      'The deepest note observed in the universe: the Perseus cluster black hole hums a B♭ — hold it, 57 octaves up.',
+      'The deepest note observed in the universe: the Perseus cluster black hole hums a B♭. Hold it, 57 octaves up.',
     source: 'NASA Chandra X-ray Observatory (2003)',
     rootPitchClass: 10, // it has to be a B♭
     notes: [{ offset: 0, beats: 4 }],

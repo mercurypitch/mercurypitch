@@ -443,11 +443,11 @@ describe('The Grid', () => {
     ])
 
     fireEvent.click(armedPads()[1])
-    // Right: "Right — the fourth click was late by 40 ms."; wrong: "It was
+    // Right: "Right. The fourth click was late by 40 ms."; wrong: "It was
     // the fifth, early by 40 ms. The offset widens." — the pick is random.
     expect(status()).toMatch(/(early|late) by \d+ ms\./)
     expect(status()).toMatch(
-      /^(Right — the|It was the) (third|fourth|fifth|sixth)/,
+      /^(Right\. The|It was the) (third|fourth|fifth|sixth)/,
     )
 
     fireEvent.click(screen.getByRole('button', { name: /Stop/ }))

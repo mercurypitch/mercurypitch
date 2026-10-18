@@ -122,7 +122,7 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     eyebrow: 'Sing together, live',
     title: 'Jam Rooms',
     description:
-      'Create a room, share the code, and practice together — synced playback with live pitch from every singer.',
+      'Create a room, share the code, and practice together: synced playback with live pitch from every singer.',
     action: 'Start a jam',
   },
   {

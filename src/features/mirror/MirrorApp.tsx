@@ -121,7 +121,7 @@ const TASK_COPY: Record<string, TaskCopy> = {
   'glide-up': {
     title: 'Glide up',
     instruction:
-      'Slide from your lowest comfy note to your highest — like a siren.',
+      'Slide like a siren, from your lowest comfy note to your highest.',
     cue: 'Your turn. Slide up.',
   },
   'glide-down': {
@@ -1396,7 +1396,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
             </div>
           </Show>
           <Show when={micError() === null && micChecking()}>
-            <p class="mirror-dim">Checking your microphone — say "ahh"…</p>
+            <p class="mirror-dim">Checking your microphone. Say "ahh"…</p>
             <MicLevelBar level={() => f0?.latestLevel() ?? 0} />
             <Show when={activeMicLabel() !== ''}>
               <p class="mirror-dim mirror-mic-hearing">
@@ -1424,8 +1424,8 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
                   <strong>{activeMicLabel()}</strong>
                 ) : (
                   'a default input'
-                )}{' '}
-                — if that's not the mic in front of you, switch it here and test
+                )}
+                . If that's not the mic in front of you, switch it here and test
                 again.
               </p>
               <div class="mirror-micpick">
@@ -1477,7 +1477,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
         <section class="mirror-panel">
           <h2>Just sing</h2>
           <p>
-            Sing anything you like for 40 seconds — your shower song counts. No
+            Sing anything you like for 40 seconds. Your shower song counts. No
             targets, no judgment: we map what your voice actually does.
           </p>
           <div class="mirror-stage">
@@ -1649,7 +1649,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
             </Show>
           </div>
           <p class="mirror-dim">
-            Five short notes to sing back — about a minute.
+            Five short notes to sing back (about a minute).
           </p>
           <ShareStatusNote status={shareStatus()} />
         </section>
@@ -1665,8 +1665,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
             <p class="mirror-dim">
               Note {session().matchIndex + 1} of {session().targets.length}
               <Show when={retryNotice()}>
-                {' '}
-                — we couldn't hear a note there, one more try!
+                . We couldn't hear a note there, one more try!
               </Show>
             </p>
           </Show>
@@ -1867,8 +1866,8 @@ export const FreeResults: Component<{
   const r = (): FreeSingResult | null => props.result
   const styleLabel = (): string => {
     const agility = r()?.agilityMovesPerSec ?? 0
-    if (agility >= 0.8) return "You're a mover — lots of melodic motion."
-    if (agility <= 0.3) return "You're a sustainer — you live in held notes."
+    if (agility >= 0.8) return "You're a mover: lots of melodic motion."
+    if (agility <= 0.3) return "You're a sustainer: you live in held notes."
     return 'You balance held notes and melodic motion.'
   }
   return (
@@ -1879,7 +1878,7 @@ export const FreeResults: Component<{
           <>
             <h2>We couldn't hear enough</h2>
             <p class="mirror-dim">
-              A quieter room — or singing a little louder — usually fixes it.
+              A quieter room (or singing a little louder) usually fixes it.
             </p>
             <button class="mirror-cta" onClick={() => props.onAgain()}>
               Try again
@@ -1899,12 +1898,12 @@ export const FreeResults: Component<{
           <div class="mirror-stat">
             <h3>Breath</h3>
             <p>
-              {r()?.phrases?.count} phrases — median{' '}
+              {r()?.phrases?.count} phrases: median{' '}
               {r()?.phrases?.medianSec.toFixed(1)} s, longest{' '}
               {r()?.phrases?.longestSec.toFixed(1)} s
               {(r()?.phrases?.longestSec ?? 0) >= 6
-                ? ' — solid breath support.'
-                : ' — breath support to build on.'}
+                ? '. Solid breath support.'
+                : '. Breath support to build on.'}
             </p>
           </div>
         </Show>
@@ -1917,7 +1916,7 @@ export const FreeResults: Component<{
             <h3>Vibrato</h3>
             <p>
               {r()?.vibrato?.rateHz.toFixed(1)} Hz, ±{r()?.vibrato?.extentCents}{' '}
-              cents on your longest note — a feature worth keeping.
+              cents on your longest note. That's a feature worth keeping.
             </p>
           </div>
         </Show>
@@ -2069,14 +2068,14 @@ export const Results: Component<{
               You hit {hits()} of {accuracy()?.takes.length} targets within a
               third of a semitone
               {hits() >= 3
-                ? ' — your ear is ahead of your control, the good order.'
-                : ' — a trainable skill, and this is the honest baseline.'}
+                ? '. Your ear is ahead of your control, the good order.'
+                : ". That's a trainable skill, and this is the honest baseline."}
             </p>
             <Show when={accuracy()?.scoopMedianMs !== null}>
               <p class="mirror-note-sub">
                 {(accuracy()?.scoopMedianMs ?? 0) > 120
-                  ? `You scoop ~${accuracy()?.scoopMedianMs} ms into notes — try landing the pitch directly.`
-                  : `Clean onset — you settle in ~${accuracy()?.scoopMedianMs} ms.`}
+                  ? `You scoop ~${accuracy()?.scoopMedianMs} ms into notes. Try landing the pitch directly.`
+                  : `Clean onset: you settle in ~${accuracy()?.scoopMedianMs} ms.`}
               </p>
             </Show>
           </div>
@@ -2094,7 +2093,7 @@ export const Results: Component<{
           />
           <Show when={!range()}>
             <p class="mirror-dim">
-              We couldn't map a range this time — a quieter room usually fixes
+              We couldn't map a range this time. A quieter room usually fixes
               it.
             </p>
           </Show>
@@ -2114,8 +2113,8 @@ export const Results: Component<{
             <Show when={steadiness()?.vibrato}>
               <p class="mirror-note-sub">
                 Vibrato {steadiness()?.vibrato?.rateHz.toFixed(1)} Hz, ±
-                {steadiness()?.vibrato?.extentCents} cents — a feature, not
-                scored against you.
+                {steadiness()?.vibrato?.extentCents} cents. That's a feature,
+                not scored against you.
               </p>
             </Show>
           </div>

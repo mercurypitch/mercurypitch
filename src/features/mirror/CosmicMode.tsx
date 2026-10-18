@@ -120,7 +120,7 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
       teardownAudio()
       setPhase('pick')
       setMicError(
-        "We couldn't open the microphone — check the browser's mic permission and try again.",
+        "We couldn't open the microphone. Check the browser's mic permission and try again.",
       )
       return
     }
@@ -206,7 +206,7 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
     if (outcome === 'dismissed') return
     trackFunnel('card_shared')
     setShareStatus(
-      outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
+      outcome === 'shared' ? 'Shared!' : 'Saved. Post it anywhere.',
     )
   }
 
@@ -262,7 +262,7 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
       <Show when={phase() === 'sing'}>
         <h2>{melody()?.name}</h2>
         <p class="mirror-dim">
-          Note {noteIndex() + 1} of {targets().length} —{' '}
+          Note {noteIndex() + 1} of {targets().length}:{' '}
           {midiToNoteNameOctave(targets()[noteIndex()] ?? 60)} (any octave
           counts)
         </p>

@@ -753,7 +753,7 @@ export const LegendCaricature: Component<{
       class={`mirror-legend-svg ${props.class ?? ''}`}
       viewBox="0 0 220 280"
       role="img"
-      aria-label={`${props.legend} — constellation portrait`}
+      aria-label={`Constellation portrait of ${props.legend}`}
     >
       <defs>
         <linearGradient id="mlg-body" x1="0" y1="0" x2="0" y2="1">

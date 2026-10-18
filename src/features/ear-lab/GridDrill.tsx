@@ -144,10 +144,10 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
       title="The Grid"
       drillId="the-grid"
       measures="Time · milliseconds"
-      description="Six clicks on a perfectly steady grid — except one of the last four, nudged early or late. Say which. The nudge keeps shrinking toward the finest timing flaw your ear still catches, in milliseconds. Perception only: you never tap, so your device's round trip is not in this number."
+      description="Six clicks on a perfectly steady grid. One of the last four is nudged early or late. Say which. The nudge keeps shrinking toward the finest timing flaw your ear still catches, in milliseconds. Perception only: you never tap, so your device's round trip is not in this number."
       prompt="Six clicks on a steady grid. One of the last four is early or late."
       listenHint="Listen to the lattice…"
-      answerHint="Which click was off — third, fourth, fifth, or sixth?"
+      answerHint="Which click was off: third, fourth, fifth, or sixth?"
       levelCaption="Offset"
       levelLabel={offset}
       formatValue={(value) => value.toFixed(0)}
@@ -156,8 +156,8 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
       latestValue={() => latestThresholdReading('the-grid')?.value ?? null}
       idleAside={
         <ConsoleLink onClick={() => room.openPanel('room')}>
-          Click: {voiceLabel()} at {formatEarVolume(room.volume())} — change it
-          in the room
+          Click: {voiceLabel()} at {formatEarVolume(room.volume())} (change it
+          in the room)
         </ConsoleLink>
       }
       run={run}
@@ -197,7 +197,7 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
         const ordinal = ORDINALS[pattern()?.displacedIndex ?? 2]
         const way = early() ? 'early' : 'late'
         return run.lastCorrect() === true
-          ? `Right — the ${ordinal} click was ${way} by ${offset()}.`
+          ? `Right. The ${ordinal} click was ${way} by ${offset()}.`
           : `It was the ${ordinal}, ${way} by ${offset()}. The offset widens.`
       }}
       onBack={props.onBack}

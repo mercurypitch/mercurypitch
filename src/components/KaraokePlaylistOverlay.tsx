@@ -152,8 +152,7 @@ export const KaraokePlaylistOverlay: Component<KaraokePlaylistOverlayProps> = (
               <div class={styles.nextUp}>
                 Next: <strong>{nextSong()!.songTitle}</strong>
                 <Show when={nextSong()!.singerName}>
-                  {' — '}
-                  {nextSong()!.singerName}
+                  {` (${nextSong()!.singerName})`}
                 </Show>
               </div>
             </Show>
