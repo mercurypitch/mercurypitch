@@ -27,10 +27,10 @@ import { revokeAndForgetAppleGrant } from './apple-auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
 import { createAuthSession, endSession, listSessions, renewSession, sessionAlive, touchSession, } from './auth-sessions'
-import { maskAddresses, sendLoginCode, sendPasswordReset } from './email'
+import { maskAddresses, sendPasswordReset } from './email'
+import { sendLoginCode, sendSignUpCode } from './email-code'
 import type { MailOrigins } from './email-layout'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
-import { sendSignUpCode } from './email-sign-up-code'
 import { shouldTouchLastActive } from './last-active'
 import type { SignUpFrom } from './launch-offer'
 import { claimLaunchGift, signUpFrom } from './launch-offer'
@@ -2006,6 +2006,7 @@ async function sendLoginCodeEmail(
   env: Env,
   user: UserRow,
   code: string,
+  appOrigin: string,
 ): Promise<void> {
   if (!user.email) return
   try {
@@ -2027,6 +2028,7 @@ async function sendLoginCodeEmail(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
       user.email,
       {
+        ...mailOrigins(appOrigin, env),
         displayName: profile?.displayName,
         code,
         ttlMinutes: LOGIN_CODE_TTL_MS / 60_000,
@@ -2048,6 +2050,7 @@ async function sendSignUpCodeEmail(
   env: Env,
   email: string,
   code: string,
+  appOrigin: string,
 ): Promise<void> {
   try {
     if (!env.RESEND_API_KEY) {
@@ -2059,7 +2062,11 @@ async function sendSignUpCodeEmail(
     await sendSignUpCode(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
       email,
-      { code, ttlMinutes: LOGIN_CODE_TTL_MS / 60_000 },
+      {
+        ...mailOrigins(appOrigin, env),
+        code,
+        ttlMinutes: LOGIN_CODE_TTL_MS / 60_000,
+      },
     )
   } catch (err) {
     console.error(
@@ -2085,6 +2092,7 @@ async function sendSignUpCodeEmail(
  * which is a timing oracle that would undo the uniform body above it.
  */
 async function handleEmailCodeRequest(
+  request: Request,
   body: AuthBody,
   env: Env,
   respond: Respond,
@@ -2128,10 +2136,14 @@ async function handleEmailCodeRequest(
 
   let codeId = 0
   let work: Promise<void> | null = null
+  // The mail's links follow the app that asked, as the sign-up mails' do.
+  // The native shells' origins (capacitor://localhost, https://localhost)
+  // are no app a mail may link to, so they get this environment's own.
+  const appOrigin = requestAppOrigin(request, env)
   if (user?.email) {
     const minted = await mintLoginCode(env.DB, user.id, email, Date.now())
     codeId = minted.id
-    work = sendLoginCodeEmail(env, user, minted.code)
+    work = sendLoginCodeEmail(env, user, minted.code, appOrigin)
   } else if (signUp) {
     const minted = await mintLoginCode(
       env.DB,
@@ -2140,7 +2152,7 @@ async function handleEmailCodeRequest(
       Date.now(),
     )
     codeId = minted.id
-    work = sendSignUpCodeEmail(env, email, minted.code)
+    work = sendSignUpCodeEmail(env, email, minted.code, appOrigin)
   } else {
     // The decoy. Same hashing cost, no row, and a ceremony that can never
     // match anything.
@@ -4598,7 +4610,7 @@ export async function handleAuth(
     case 'forgot-password':
       return handleForgotPassword(request, body, env, respond, ctx)
     case 'email-code/request':
-      return handleEmailCodeRequest(body, env, respond, ctx)
+      return handleEmailCodeRequest(request, body, env, respond, ctx)
     case 'email-code/verify':
       return handleEmailCodeVerify(request, body, env, respond)
     case 'reset-password':
