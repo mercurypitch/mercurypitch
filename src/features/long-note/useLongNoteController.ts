@@ -488,14 +488,11 @@ export function useLongNoteController(): LongNoteController {
       alive: life.alive,
       state,
       tone: untrack(state).targetMidi,
-      // Every answer while the screen lives: the machine drops one for a
-      // start that no longer stands (the singer left the room, or the
-      // app, while the note played or the mic opened), and only a take
-      // that listens goes on.
-      lateAnswers: true,
+      // Only the start that stands hears its answer, so the room listens
+      // now: a singer who stopped, started again or played the demo while
+      // a browser's prompt was up has moved on, and hears nothing.
       onOpen: (run) => {
         dispatch({ type: 'mic-ready', run })
-        if (untrack(state).phase !== 'listen') return
         beginListening(moment)
         // The page went away while the microphone opened.
         if (document.visibilityState === 'hidden') stopListening()
