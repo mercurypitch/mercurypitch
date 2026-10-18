@@ -15,15 +15,16 @@ built on the shared parts in `src/features/lessons/kit/`, the way Lesson 1's pag
 `src/features/lessons/lesson-01/`, built and not yet merged) is. A private proof preview page is
 optional; if one is made, its host rules bind only the preview.
 
-The page agrees with the film as voiced and built, checked on 18 October 2026 against its release
-candidate, `renders/rc-04-60fps.mp4` in `output/motion/lesson-02/` (7:11, 431.08 s on its cue
+The page agrees with the film as voiced and built, checked on 18 October 2026 against its master,
+`renders/rc-04-60fps.mp4` in `output/motion/lesson-02/` (7:11, 431.08 s on its cue
 sheet, FACTS 54; the build decisions B1 to B25 in that folder's DECISIONS.md): the quick check asks
 the film's four recap questions and points back to the objects that answer them there; C♯ and D♭
 stack on one key under one gold ring (B21); the practice card draws Leap's twelve answers with the
 end card's legend; the next-lesson card carries the tease's two figures; and the episode section
-prints the film's running time and chapters. The release candidate's last critic round is still
-running, so the recap objects, the Leap grid and the end card are checked again against the master
-that ships. The film is a check, not a source: every claim on the page still has its FACTS line.
+prints the film's running time and chapters. The master passed its last critic round (critic 15,
+SHIP, 18 October 2026) with the recap objects, the Leap grid and the end card as checked here; a
+later re-render is checked again. The film is a check, not a source: every claim on the page still
+has its FACTS line.
 
 ## Look
 
@@ -183,8 +184,8 @@ Twelve notes".
   today, so the domain goes in there before `FILM_SOURCES` points at it, or the browser refuses the
   video. Once the episode is on YouTube the section adds a "Watch on YouTube" link; there is no
   YouTube embed.
-- **The files**: the film's `tools/web-video.sh` cuts them all from the delivery master (the
-  release candidate is `rc-04`; the master is whichever render its critic rounds pass):
+- **The files**: the film's `tools/web-video.sh` cuts them all from the delivery master,
+  `rc-04-60fps`:
   `lesson-02-1080p.mp4` and `lesson-02-720p.mp4` (H.264 and AAC at 30 fps, moov first) for R2;
   `poster.jpg`, the title card 1.6 s into its scene, 1920 x 1080, for `lesson-02/assets/poster.jpg`
   (Lesson 1's poster is its title card too); `og.jpg`, the same frame at 1200 x 630, for

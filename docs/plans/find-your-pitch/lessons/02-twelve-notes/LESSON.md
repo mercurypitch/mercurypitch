@@ -5,8 +5,8 @@ English, as the owner decided on 16 October 2026 (MASTER-PLAN § 12 item 5, DECI
 in general, with American wording where the owner prefers it; the app's screens stay American.
 Each step names its toy (the interactive visual it sits beside); the page spec is
 [WEB-SPEC.md](WEB-SPEC.md). Checked on 18 October 2026 against the film as voiced and built, its
-release candidate `rc-04` (7:11, `output/motion/lesson-02/`, FACTS 54), whose last critic round is
-still running: the quick check asks the film's four recap questions, and the Wrap's practice card
+master, `rc-04` (7:11, `output/motion/lesson-02/`, FACTS 54), which passed its last critic round:
+the quick check asks the film's four recap questions, and the Wrap's practice card
 and next-lesson card say what the film's end card and tease say. The first review of this written
 lesson is answered in DECISIONS ("Written lesson, review 1 response").
 
@@ -331,8 +331,8 @@ The page's head, its share text and its footer, exactly (WEB-SPEC, Footer; Lesso
 - og:image and twitter:image: https://mercurypitch.com/learn/lesson-02-og.jpg, 1200 × 630
 - og:image:alt and twitter:image:alt: "The title card: Find Your Pitch, Lesson 02, Twelve notes,
   above a glowing five-line staff with a blue note, an orange note, a chrome bead and chrome
-  notes, one of them sharp." (As the release candidate's title card draws it, 1.6 s into its scene;
-  checked again on the share card cut from the master that ships.)
+  notes, one of them sharp." (As the master's title card draws it, 1.6 s into its scene; checked
+  again on the share card cut from it.)
 - The video's `aria-label`: Find Your Pitch, Lesson 02: Twelve notes
 - `public/llms.txt`, in its "Lessons" list, wrapped as that file wraps:
 

@@ -392,7 +392,7 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
 | First-time visitors from a lesson see onboarding first                                                                                                          | The `?lesson=` marker in Phase 1, or embrace First Light for Lesson 1                                                                                                            |
 | Builders produce uneven quality                                                                                                                                 | The shared kit, the build guide, handoff frames, and a critic that never saw the build                                                                                           |
 
-## 11. Lesson 1: what exists now
+## 11. What exists now
 
 - Durable sources in this repo: [`lessons/01-what-is-a-note/`](lessons/01-what-is-a-note/) (brief,
   facts, script with timings and `script.json`, storyboard, handoffs, build guide, decisions,
@@ -407,6 +407,17 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   `src/features/lessons/`), not yet merged. Until the film is on R2 the page shows the poster,
   the chapters and the transcript. A private preview page, which also plays the film, stays for
   review.
+- Lesson 2: [`lessons/02-twelve-notes/`](lessons/02-twelve-notes/) holds the same set, plus the
+  film's build decisions and the LEDGER of its fifteen critic rounds (ten on the script and
+  storyboard, five on the film). Its film project is `output/motion/lesson-02/` (gitignored); the
+  master is `rc-04` (7:11, 60 fps, with the owner's ElevenLabs voices), which round 15 passed with
+  four polish items for a later render. Its web lesson is specified and reviewed, and is not built
+  yet; it waits on Lesson 1's page shipping and the kit work its spec lists.
+- Lessons 3 to 5: written lessons, text only and reviewed, in
+  [`lessons/03-match-a-note/`](lessons/03-match-a-note/),
+  [`lessons/04-major-scale/`](lessons/04-major-scale/) and
+  [`lessons/05-breath-steady-note/`](lessons/05-breath-steady-note/) (facts, copy and page spec).
+  Lessons 3 and 5 wait on the vocal coach (§ 12 item 8).
 
 ## 12. Owner decisions
 

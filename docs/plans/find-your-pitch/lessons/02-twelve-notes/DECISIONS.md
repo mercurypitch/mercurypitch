@@ -658,7 +658,7 @@ Optional:
   no longer claims to print the film's label; WEB-SPEC's address line has ", then tap Leap"; the
   ear game's feedback follows the names toggle; a step bar carries its number of semitones,
   whatever it is; and amber has a kit token, `--amber`.
-- Caveat (the film is not signed off): TAKEN. rc-04 is called the release candidate throughout. The
-  recap objects, the Leap grid and the end card were checked again against `s15-recap.html`,
-  `s16-next.html` and `s17-end.html` as built, and are checked once more against the master that
-  ships.
+- Caveat (the film is not signed off): TAKEN. rc-04 was called the release candidate until it
+  shipped. The recap objects, the Leap grid and the end card were checked again against
+  `s15-recap.html`, `s16-next.html` and `s17-end.html` as built. Critic 15 then passed rc-04 (SHIP,
+  18 October 2026), so it is the master, and this folder holds its captions and chapters.
