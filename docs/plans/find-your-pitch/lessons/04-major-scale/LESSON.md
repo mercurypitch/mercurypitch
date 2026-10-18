@@ -3,7 +3,9 @@
 The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
 English, as MASTER-PLAN § 12 item 5 decides; the app's screens stay American. Each step names its
 toy (the interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md). This is
-a text-only package: Lesson 4 has no film yet, so the page has no Watch section.
+a text-only package: Lesson 4 has no film yet, so the page has no Watch section. It is a theory
+lesson, but its sing-along spans an octave, so its voice lines are listed for the vocal coach at
+the end.
 
 ---
 
@@ -12,10 +14,10 @@ a text-only package: Lesson 4 has no film yet, so the page has no Watch section.
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 04
 - Title (the hook question): **Why does do-re-mi sound finished when it lands on do, and restless
   when it stops on ti?**
-- Meta: 10 minutes · after Lesson 2 · sound on
-- Prerequisite chip: Lesson 2, Twelve notes
+- Meta, as three chips: 10 minutes · After Lesson 2: Twelve notes (the prerequisite chip, a link
+  to Lesson 2's page) · Sound on
 - Promise: By the end you'll build a major scale from its pattern of steps, start it on any note,
-  name its notes do to ti, and know why ti leans towards home.
+  name its notes do to ti, and hear ti lean towards home.
 
 ## Sound gate
 
@@ -26,27 +28,28 @@ a text-only package: Lesson 4 has no film yet, so the page has no Watch section.
 
 Two questions from Lesson 2, asked afresh (no earlier answers are shown). They are Lesson 2's quiz
 questions 1 and 3, word for word, under their ids `l02-q1` and `l02-q3`; Lesson 3's draft asks the
-other two (FACTS 30). The kit's quiz has no id field yet, so the Lesson telemetry track adds one
-before these answers count as the delayed score (MASTER-PLAN § 9).
+other two (FACTS 30). Each "Try Step N again" links to that step on Lesson 2's page, not this one.
+The kit's quiz has no id field yet, so the Lesson telemetry track adds one before these answers
+count as the delayed score (MASTER-PLAN § 9).
 
 1. How many semitones make an octave?
-   - 12 **[correct]** · Feedback: "Yes: seven letters and five notes between them, twelve equal
-     steps."
+   - 12 **[correct]** · Feedback: "Seven letters and five notes between them: twelve equal steps."
    - 7 · Feedback: "Seven is the number of letters. Five more notes sit between them: twelve
-     semitones in all."
+     semitones in all. Try Step 2 again."
    - 8 · Feedback: "From A to A there are eight letters, counting both As, but five more notes sit
      between them: the octave is twelve semitone steps."
-2. Why does the black key between C and D have two names?
-   - It's one semitone up from C and one semitone down from D **[correct]** · Feedback: "Yes: it
-     takes a name from each neighbour, C♯ from below and D♭ from above."
-   - It's two different notes that share one key · Feedback: "It's one note: C♯ and D♭ sound
-     exactly the same on a piano, two names for one key."
-   - Black keys have two names and white keys never do · Feedback: "White keys can have two names
-     too: one semitone up from E is F, so E♯ is F."
+2. C♯ and D♭: one key or two?
+   - One key, with two names **[correct]** · Feedback: "One semitone up from C and one semitone
+     down from D land on the same key."
+   - Two keys, side by side · Feedback: "There's only one key between C and D: C♯ is a semitone up
+     from C, D♭ a semitone down from D, and both land on it. Try Step 5 again."
+   - It depends on the music around it · Feedback: "The music around it decides which name is
+     written, not which key: C♯ and D♭ are one key either way."
 
 ## Cold open: predict
 
-[ Play from C ] (Merc climbs the major scale from C and stops on ti. Land on do finishes it.)
+[ Play from C ] (Merc climbs the major scale from C and stops on ti. Land on do finishes it. The
+small staircase beside the bubbles shows do-re-mi names only: no letters and no keys.)
 
 Orange Merc: "It just hangs there, waiting. Is that because we started on C?"
 Blue Merc: "Start somewhere else and listen."
@@ -55,12 +58,14 @@ Blue Merc: "Start somewhere else and listen."
 still sound unfinished?
 [ Yes, still unfinished ] [ No, only from C ]
 
-(After a choice, Play from D unlocks: it climbs to ti and stops, and Land on do finishes it.)
+(After a choice, Play from D unlocks. The staircase, announced "Major scale from D", climbs to ti
+and stops, and Land on do finishes it. With sound off, the hint reads: "Sound is off, so nothing
+played. Turn sound on to hear it, then press Play from D." The reveal waits for the sound.)
 
-Reveal (shown after Play from D has played, so it describes what was heard): Still unfinished.
-From D, ti is C♯, and most listeners hear it lean up to D, just as B leans up to C. So home moves
-with the start: it's the steps that matter, not the note C, and the steps are this lesson's story.
-(The scale on C is the only major scale on the white keys alone, so C was a fair guess.)
+Reveal (shown after Play from D has played, so it describes what was heard): Still unfinished, and
+Land on do finishes it on D. Home moved with the start: it's the steps that matter, not the note C,
+and the steps are this lesson's story. (The scale you heard first started on C, so C was a fair
+guess.)
 
 ## Four words you'll meet
 
@@ -99,10 +104,14 @@ _Toy: the staircase with Group._
 
 ## Step 3 of 5: Start anywhere
 
+Orange Merc: "Same white keys, just starting on D. Surely that's the same scale?"
+
 **Predict:** start on D and play only white keys, up to the next D. Is it still do-re-mi?
 [ Yes: same keys, same scale ] [ No, it changes ]
 
-(After a choice: Play white keys from D · Play the pattern from D.)
+(After a choice: Play white keys from D · Play the pattern from D. With sound off, the hint reads:
+"Sound is off, so nothing played. Turn sound on to hear them, then press Play the pattern from
+D.")
 
 Reveal: It changes. From D, the white keys climb tone, semitone, tone, tone, tone, semitone, tone:
 the short steps land in the wrong places, and the third and seventh notes come out a semitone low.
@@ -124,13 +133,14 @@ lower. Only the keys under it change: every start except C needs at least one bl
 
 _Toy: the staircase with Slide and White keys only._
 
-## Step 4 of 5: Name the steps
+## Step 4 of 5: Name the stairs
 
 The first note of a scale is its tonic, its home. Musicians number the notes up from it, 1 to 7,
 and sing them as do, re, mi, fa, so, la, ti, with do again at the top. (Many books write so as
-sol, and so does MercuryPitch's Ear Lab.) The names belong to the steps, not to the keys. In C
-major, do is C. Slide to D and do is D, re is E, mi is F♯. That's movable do: home moves, and the
-names move with it. There's also a fixed do, in which do is always C; this lesson uses movable do.
+sol, and so does MercuryPitch's Ear Lab.) The names belong to the places in the scale, not to the
+keys. In C major, do is C. Slide to D and do is D, re is E, mi is F♯. That's movable do: home
+moves, and the names move with it. There's also a fixed do, in which do is always C; this lesson
+uses movable do.
 
 **Try:** switch the names between letters, numbers and do-re-mi, then slide the staircase.
 **Notice:** the letters change as you slide. The numbers and the do-re-mi stay on their stairs.
@@ -141,9 +151,11 @@ _Toy: the staircase with the names switch._
 
 Back to the opening question. Ti is the seventh note, and it sits just a semitone below do: the
 pattern's last step is a short one. Climb to ti and stop, and most listeners hear the scale waiting
-for one more note. Take that step, and it lands home. Textbooks call ti the leading tone, because
-it's thought of as leading to the tonic. And it leads wherever home is: from D, ti is C♯, and it
-leans up to D.
+for one more note. Take that step, and it lands home. Why is do home? Asked how well each note
+finishes a scale, listeners rate do highest, and that seems to be learned just by hearing music
+(Go deeper, below). And whatever the start, ti sits just under home. It's called the leading note
+(American books, and MercuryPitch's Ear Lab, say leading tone), because it's thought of as leading
+to the tonic. It leads wherever home is: from D, ti is C♯, and it leans up to D.
 
 **Try:** press Stop on ti, wait a moment, then press Land on do. Slide the staircase and try again.
 **Notice:** the last step is always a semitone, so ti always sits right under home.
@@ -157,9 +169,11 @@ _Toy: the staircase with Stop on ti and Land on do._
 >   four notes, and last the five notes outside the scale. The order was clearest for listeners
 >   with musical training; for the others, how close a note sat in pitch counted for more
 >   (Krumhansl and Shepard, 1979).
-> - **No lessons needed.** A review of studies on tension and release, expectation and more found
->   that some of these responses come from listening to music, not from training: untrained
->   listeners can respond as trained ones do (Bigand and Poulin-Charronnat, 2006).
+> - **Learned by listening.** Later studies found the same kind of order in children and adults,
+>   with and without training, only sharper in musicians and in adults, which suggests it is
+>   picked up just by hearing music (Janata and colleagues, 2003, summing up those studies). A
+>   review of studies on tension and release, expectation and more came to the same view: some of
+>   these responses come from listening, not from lessons (Bigand and Poulin-Charronnat, 2006).
 > - **A drill for the pull.** MercuryPitch's Ear Lab has one, The Pull: a few chords set home, two
 >   notes sound, and you say which one leans harder.
 
@@ -170,28 +184,31 @@ lands on do. Orange Merc sings the same an octave up.
 
 > Sore, hoarse or unwell today? Just listen along.
 
-**Your turn:** play Merc's scale, then sing it with the guide, on do, re, mi or on "ooh". Listen
-first, then sing it back, as in Lesson 3. Start on Merc's note or the one an octave up, whichever
-is comfortable: an octave up or down still counts. If the top feels high or the bottom feels low,
-move do lower or higher until it sits easily. Sing at about speaking volume. When you stop on ti,
-wait a moment and notice where it wants to go. Then land on do.
+**Your turn:** play Merc's scale, then sing it with the guide, on do, re, mi or on "ooh". Start on
+Merc's note or the one an octave up, whichever is comfortable: an octave up or down still counts.
+If the top feels high, move do lower; if the bottom feels low, move it higher. Sing at about
+speaking volume. When you stop on ti, wait a moment and notice where it wants to go. Then land on
+do.
 
 Stop immediately if anything feels uncomfortable.
 
 [ Play Merc's scale ] [ Play it an octave up ] [ Start the guide ] [ Move do: lower · higher ]
 
-The guide runs once after Merc: a line sweeps along Merc's path, up to so and back, then up to ti,
-a pause, and home. Nothing listens here and nothing is scored. It's just for you.
+Start the guide once you've heard Merc's scale: it counts you in on do, then a line sweeps along
+Merc's path, up to so and back, then up to ti, a pause, and home. Nothing listens here and nothing
+is scored. It's just for you.
 
 If hoarseness or discomfort lasts more than a couple of weeks, see a doctor or a voice
 specialist.
 
 ## Quick check
 
-Each question has three answers, shown in a shuffled order, so a guess scores a third, not half.
+Four questions, each with three answers shown in a shuffled order, so a guess scores a third, not
+half. The page puts "Right." or "Not quite." before each feedback line, and a "Try Step N again"
+ends with a link to that step, as in Lessons 1 and 2.
 
 1. Which pattern of steps makes a major scale?
-   - Tone, tone, semitone, tone, tone, tone, semitone **[correct]** · Feedback: "Yes: two
+   - Tone, tone, semitone, tone, tone, tone, semitone **[correct]** · Feedback: "Two
      tone-tone-semitone groups, joined by a tone."
    - Seven equal steps · Feedback: "Two of the steps are half the size of the others: semitones,
      from mi to fa and from ti to do. Try Step 1 again."
@@ -199,21 +216,21 @@ Each question has three answers, shown in a shuffled order, so a guess scores a 
      D, a different scale. In a major scale the semitones fall between mi and fa, and between ti
      and do."
 2. You start a major scale on D. Which notes does it use?
-   - D, E, F♯, G, A, B, C♯, D **[correct]** · Feedback: "Right: keeping the pattern takes two
-     black keys, F♯ and C♯."
+   - D, E, F♯, G, A, B, C♯, D **[correct]** · Feedback: "Keeping the pattern takes two black keys,
+     F♯ and C♯."
    - D, E, F, G, A, B, C, D · Feedback: "Those are the white keys from D. Their steps come out in a
      different order, so it isn't do-re-mi. Try Step 3 again."
    - C, D, E, F, G, A, B, C · Feedback: "That's the major scale on C. A major scale can start on
      any note: start on D and do is D."
 3. Merc climbs a major scale to ti and stops. [Play] What do most listeners hear?
-   - It sounds unfinished: ti leans up to do **[correct]** · Feedback: "Yes: ti sits a semitone
-     below do, and most listeners hear it lean home."
+   - It sounds unfinished: ti leans up to do **[correct]** · Feedback: "Ti sits a semitone below
+     do, and most listeners hear it lean home."
    - It sounds finished: ti is the top of the scale · Feedback: "Ti is the seventh note, not the
      end. The scale lands home on do, an octave above where it started."
    - It sounds unfinished only if the scale started on C · Feedback: "The pull goes wherever home
      goes: start on D, and ti, C♯, leans up to D."
 4. In D major, which note is mi?
-   - F♯ **[correct]** · Feedback: "Yes: do is D, re is E, mi is F♯. The names move with home."
+   - F♯ **[correct]** · Feedback: "Do is D, re is E, mi is F♯. The names move with home."
    - E · Feedback: "E is re, the second note. Count up from do: D, E, F♯."
    - F · Feedback: "Mi is two tones above do, and two tones above D is F♯. F is only a tone and a
      semitone up."
@@ -229,21 +246,76 @@ Each question has three answers, shown in a shuffled order, so a guess scores a 
 **One-sentence challenge:** explain to a friend, in one sentence, why the white keys from D to D
 don't sound like do-re-mi.
 
-**Practise it:** MercuryPitch's Scale Runner plays a major scale one note at a time, do up to do,
-and you sing each note back. It draws the notes still to come as a ladder ahead of your pitch line:
-this lesson's staircase. Major and Ascending are already chosen. Its scale starts from the voice
-range saved in Settings, and it listens for each note in the octave it plays, so set your range
-there first (under Singing Voice Range; "Don't know? Find my voice" helps). Free:
-**mercurypitch.com/pitch-training** opens the exercises; tap Scale Runner.
+**Practise it.** The practice card:
 
-To train your ear on the names, Ear Lab's Home plays a few chords that set home, then one note:
-name its step, 1 to 7. The pads show do to ti, with so written Sol, and you can tap your answer or
-sing it, in any octave. Free: **mercurypitch.com/ear-lab**, then tap Home.
+- Eyebrow: Practise in MercuryPitch
+- Title: Scale Runner
+- Text: Scale Runner plays a major scale one note at a time, do up to do, and you sing each note
+  back. It draws the notes still to come as a ladder ahead of your pitch line: this lesson's
+  staircase. Major and Ascending are already chosen. Its scale starts from the voice range saved
+  in Settings, and it listens for each note in the octave it plays, so set your range there first
+  (under Singing Voice Range; "Don't know? Find my voice" helps). Sing at about speaking volume,
+  and stop immediately if anything feels uncomfortable.
+- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Scale Runner. (On a
+  first visit a welcome opens first: close it with Skip the intro, the X at the top right.)
+- Second drill: For your ear, Ear Lab's Home plays a few chords that set home, then one note: name
+  its scale degree, 1 to 7. The pads show do to ti, with so written Sol, and you can tap your
+  answer or sing it, in any octave. Free: **mercurypitch.com/ear-lab**, then tap Home.
+- Figure: the staircase on C beside a house-style drawing of a short pitch line with the notes
+  still to come drawn as rungs ahead of it. Caption: "Illustration: Scale Runner draws the notes
+  still to come as a ladder."
 
-_[Editorial: when the beginner-tempo slug ships (CURRICULUM § 4 item 1; WEB-SPEC, Practise links),
-replace the Scale Runner link with "Free: mercurypitch.com/exercises/slow-scales" (proposed slug),
-which opens Scale Runner on a major scale at a beginner pace, starting a little above the bottom
-of your saved voice range. On the public host every link carries `?lesson=04`.]_
+_[Editorial: when the beginner-tempo slug ships (CURRICULUM § 4 item 1; WEB-SPEC, Practice links),
+the card's address becomes "Practise it free: mercurypitch.com/exercises/slow-scales" (proposed
+slug), which opens Scale Runner on a major scale at a beginner pace, starting a little above the
+bottom of your saved voice range. When the `?lesson=` marker ships (CURRICULUM § 4 item 6), First
+Light steps aside and the welcome sentence goes. On the public host every link carries
+`?lesson=04`.]_
 
-**Next lesson:** Lesson 5, Breath and a steady note. "Singers are told to 'support' a long note.
-If that doesn't mean pushing, what keeps it steady?"
+**Next lesson** (a card that opens Lesson 5 in the explorer): Lesson 5, Breath and a steady note.
+"Singers are told to 'support' a long note. If that doesn't mean pushing, what keeps it steady?"
+
+## Footer
+
+Season 1 · Lesson 04 · The major scale and home. The practice link, printed
+mercurypitch.com/pitch-training and linking `/pitch-training?lesson=04`, with "Scale Runner is
+free: tap it in the exercises". Lesson 1's fonts line, and "Every sound on this page is
+synthesised in your browser."
+
+## Section headings
+
+Each section opens as Lesson 1's do, with a short line above its heading; where a section is the
+same as Lesson 2's, so are its words.
+
+| Section     | Line above the heading                                                  | Heading                             |
+| ----------- | ----------------------------------------------------------------------- | ----------------------------------- |
+| Recall      | From Lesson 2: two questions, asked afresh                              | Recall from Lesson 2                |
+| Four words  | Four words you'll meet before the first step                            | Scale, tonic, scale degree, solfège |
+| Steps       | Five steps, one object: a staircase you can slide                       | The major scale                     |
+| Sing it     | Cadenza: your solo, and any octave counts                               | Sing it                             |
+| Quick check | Ripresa: the theme comes back, from memory                              | Quick check                         |
+| Wrap        | Coda: the closing bars                                                  | Three lines to keep                 |
+| Explorer    | Season 1, fourteen lessons and a trailer: theory and voice, alternating | The season, mapped                  |
+
+The explorer's line under its heading ends "Lessons 1 and 2 are ready to watch and read, and
+Lesson 4 to read; the rest are planned." If Lesson 3's page is live by then, it reads "Lessons 1
+and 2 are ready to watch and read, and Lessons 3 and 4 to read; the rest are planned."
+
+## For the vocal coach
+
+The voice lines and the exercise to look at before publishing. Lesson 4 is a theory lesson, so
+the coach's gates in MASTER-PLAN § 7 do not bind it, but the sing-along spans an octave:
+
+- The comfort line before the sing-along: "Sore, hoarse or unwell today? Just listen along."
+  (FACTS 50)
+- "Sing at about speaking volume." (FACTS 51), in Sing it and on the practice card.
+- The stop line, "Stop immediately if anything feels uncomfortable." (FACTS 53), in Sing it and on
+  the practice card.
+- The referral line, "If hoarseness or discomfort lasts more than a couple of weeks, see a doctor
+  or a voice specialist." (FACTS 54; the guideline behind it says four weeks).
+- The range: Merc's scale on D3 or D4, an octave either way, and Move do up to four semitones
+  lower or higher (FACTS 52).
+- The exercise: do-re-mi-fa-so and back, then up to ti, a 2 s pause on ti, then do; 0.8 s a note,
+  sung on do-re-mi or "ooh"; nothing listens and nothing is scored (FACTS 55, 63).
+- The practice card's Scale Runner: one octave, do up to do, one note at a time, scored in cents,
+  at the viewer's stored pace, and the proposed beginner slug at difficulty 2 (FACTS 37, 42).
