@@ -171,7 +171,12 @@ export function enterSingRoom(): SingRoomContext {
   // flight — parked, or an undecided card — is the same visit, and a counter
   // that reset under it would renumber the take the singer is looking at.
   if (before.state === 'resting' && summary === null) room().takes[1](0)
-  return dispatchSingRoom({ type: 'enter', hasSummary: summary !== null })
+  return dispatchSingRoom({
+    type: 'enter',
+    hasSummary: summary !== null,
+    // A grant remembered since the store was built (room-machine.ts).
+    granted: untrack(singMicGranted),
+  })
 }
 
 /** Tests, and nothing else — the room has no "start over" control. */

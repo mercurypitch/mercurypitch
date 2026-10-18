@@ -16,10 +16,10 @@ import { holdPortrait } from '@irchiinnuss/mobile-runtime/platform'
 import { createEffect, onCleanup } from 'solid-js'
 import { deviceNoun } from '@/lib/device-noun'
 import { isPremiumRoom } from './premium-rooms'
-import { pushed } from './run-shell-store'
+import { onboardingShown, pushed } from './run-shell-store'
 
 export interface PortraitLockDeps {
-  /** A premium room is on top of the stack. */
+  /** A premium room is on top of the stack, or the onboarding is up. */
   room: () => boolean
   /** The device in hand is a phone (not an iPad or a tablet). */
   phone: () => boolean
@@ -28,7 +28,8 @@ export interface PortraitLockDeps {
 }
 
 const DEVICE: PortraitLockDeps = {
-  room: () => isPremiumRoom(pushed()),
+  // The onboarding is held upright the same way (REQ-NFL-049).
+  room: () => isPremiumRoom(pushed()) || onboardingShown(),
   phone: () => deviceNoun() === 'phone',
   hold: (on) => {
     // A phone without the plugin keeps turning; nothing about a room is

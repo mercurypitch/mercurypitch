@@ -123,6 +123,25 @@ export function registerDoorClear(clear: () => boolean): () => void {
   }
 }
 
+// ── The onboarding ───────────────────────────────────────────
+//
+// The native onboarding covers the screen above the rail and under the
+// sheets (src/onboarding/onboarding-layer.ts), and its one exit is Not now.
+// Back is that Not now, once no sheet or alert over it wants the press.
+
+let onboardingBack: (() => boolean) | null = null
+
+/**
+ * Register the onboarding's Back. It answers true when the onboarding was
+ * up and is now leaving; the returned function unregisters it.
+ */
+export function registerOnboardingBack(back: () => boolean): () => void {
+  onboardingBack = back
+  return () => {
+    if (onboardingBack === back) onboardingBack = null
+  }
+}
+
 /**
  * Go to a tab, parking a run on the way out if this is the room it belongs
  * to. Sound stops and the microphone is released on the same frame, with
@@ -159,6 +178,7 @@ export function returnToRun(): void {
 
 export type BackOutcome =
   | 'door-open'
+  | 'onboarding'
   | 'door-cleared'
   | 'column'
   | 'sheet'
@@ -253,6 +273,9 @@ export function performBack(host: BackHost): BackOutcome {
   // the alley stays. Never 'minimize' — the app is not at its root, it is
   // half-way into a room.
   if (cancelDoorOpen()) return 'door-open'
+  // The onboarding, which nothing but a sheet or an alert is drawn over:
+  // the press is its Not now. Never 'history' or 'minimize' while it is up.
+  if (!shellOverlayOpen() && onboardingBack?.() === true) return 'onboarding'
   // A door picked is the alley's overlay: the press puts it back. Never
   // 'history' or 'minimize' while the card is up. Only with nothing of the
   // shell's over it — a sheet or a pushed screen covering the alley has

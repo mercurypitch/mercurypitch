@@ -6,12 +6,12 @@ import solid from 'vite-plugin-solid'
 // @ts-expect-error -- the same kind of plain .mjs helper, shared with
 // scripts/assert-bundle.mjs, which must stay dependency-free.
 import { karaokeImportFor, portableConsoleFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from './api-base.mjs'
-// @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
-// under bare node for a one-off sync as well as inside this config.
-import { NATIVE_PUBLIC_DIR, pitchEngineBytes, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
 // @ts-expect-error -- a plain .mjs helper with no types, like api-base.mjs:
 // the suite imports it too (src/native-font-aliases.test.ts).
 import { nativeFontAliases } from './native-font-aliases.mjs'
+// @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
+// under bare node for a one-off sync as well as inside this config.
+import { NATIVE_PUBLIC_DIR, pitchEngineBytes, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
 
 // The same resolution the root config does, for the same constant. `@`
 // resolves to the root `src`, so the code reading __COMMIT_SHA__ is literally
@@ -89,6 +89,11 @@ const KARAOKE_STAGE_2 = [
   '/apps/mercurypitch/src/shell/settings/KaraokeSongsGroups.tsx',
   '/apps/mercurypitch/src/shell/settings/StorageImportedSongs.tsx',
   '/apps/mercurypitch/src/shell/settings/imported-songs-copy.ts',
+  // The native onboarding rides the same switch (NATIVE_ONBOARDING, in
+  // src/lib/native-build.ts): its layer's state and its flag, which the
+  // shell imports statically.
+  '/apps/mercurypitch/src/onboarding/onboarding-layer.ts',
+  '/apps/mercurypitch/src/onboarding/onboarding-flag.ts',
 ]
 
 function isKaraokeStage2(id: string): boolean {

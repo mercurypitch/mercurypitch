@@ -80,8 +80,14 @@ export type SingRoomEvent =
    * An `ended` that comes back with no summary — a reload, a store cleared
    * under it — is a room with no card, no capsule and no way out, so it
    * rests instead. Measured: Back with the card open left exactly that.
+   *
+   * `granted` is the remembered grant, read as the room arrives. The
+   * context reads it once, when the store is built, and the native
+   * onboarding's first note can remember one after that, over this very
+   * room: without it the room the singer lands in would rest and ask
+   * again for a microphone they have just given it.
    */
-  | { type: 'enter'; hasSummary: boolean }
+  | { type: 'enter'; hasSummary: boolean; granted?: boolean }
   /** The tab stopped being the one on screen. The shell parks the run. */
   | { type: 'leave' }
   /** The capsule. The gesture the permission ask has to happen inside. */
@@ -176,6 +182,8 @@ export function singRoomReducer(
         ...ctx,
         active: true,
         muted: false,
+        permission:
+          event.granted === true ? ('granted' as const) : ctx.permission,
         state:
           ctx.state === 'ended' && !event.hasSummary
             ? ('resting' as SingRoomState)

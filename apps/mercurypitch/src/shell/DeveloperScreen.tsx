@@ -29,7 +29,9 @@ import type { Component } from 'solid-js'
 import { For } from 'solid-js'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { developerSections } from '@/lib/developer-sections'
+import { NATIVE_ONBOARDING } from '@/lib/native-build'
 import { resetWelcome, WELCOME_SEEN_KEY } from '../alley/alley-welcome'
+import { ONBOARDING_KEY, resetOnboarding } from '../onboarding/onboarding-flag'
 import { goToTab } from './shell-navigation'
 
 /**
@@ -38,6 +40,17 @@ import { goToTab } from './shell-navigation'
  * to see it again on a phone that has opened one.
  */
 const replayWelcome = (): void => {
+  resetWelcome()
+  goToTab(TAB_HOME)
+}
+
+/**
+ * "Replay the onboarding": due again, and the welcome with it, so Rooms
+ * shows its first-run headline and the next Sing door opens the onboarding,
+ * as on a new install. Only on a build that has it (NATIVE_ONBOARDING).
+ */
+const replayOnboarding = (): void => {
+  resetOnboarding()
   resetWelcome()
   goToTab(TAB_HOME)
 }
@@ -58,6 +71,20 @@ export const DeveloperScreen: Component = () => (
           first-run headline again until a door is opened.
         </span>
       </button>
+      {NATIVE_ONBOARDING ? (
+        <button
+          type="button"
+          class="mp-dev__row"
+          data-testid="dev-replay-onboarding"
+          onClick={replayOnboarding}
+        >
+          <span class="mp-dev__row-title">Replay the onboarding</span>
+          <span class="mp-dev__row-sub">
+            Sets {ONBOARDING_KEY} due and clears {WELCOME_SEEN_KEY}, then opens
+            Rooms: the next Sing door opens the onboarding, as on a new install.
+          </span>
+        </button>
+      ) : null}
     </section>
     <For each={developerSections()}>
       {(section) => (

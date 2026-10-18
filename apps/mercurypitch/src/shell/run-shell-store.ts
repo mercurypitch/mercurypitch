@@ -311,14 +311,33 @@ export const transportVisible = createMemo<boolean>(
 export const fullBleedOnTop = createMemo<boolean>(() => isFullBleed(pushed()))
 
 /**
+ * The native onboarding is over the tab (src/onboarding/onboarding-layer.ts).
+ * It is a full-screen takeover with one exit of its own, Not now, so the
+ * rail steps aside for it as for a full-bleed room. Here rather than in the
+ * onboarding's module because this store reads it: the other way round
+ * would be an import cycle.
+ */
+const [onboardingOver, setOnboardingOver] = createSignal(false)
+
+export const onboardingShown = onboardingOver
+
+export function setOnboardingShown(on: boolean): void {
+  setOnboardingOver(on)
+}
+
+/**
  * The full rail is gone exactly while a run is on screen: the shell's
  * transport has its slot, or the room is its own transport. And while an
  * exercise pushed over the tab holds a note (`exerciseHoldsFocus`): nothing
  * takes the rail's place then, it only steps aside until the note ends.
- * And for as long as a full-bleed room is on top.
+ * And for as long as a full-bleed room is on top, or the onboarding is up.
  */
 export const railVisible = createMemo<boolean>(
-  () => !runOnScreen() && !exerciseHoldsFocus() && !fullBleedOnTop(),
+  () =>
+    !runOnScreen() &&
+    !exerciseHoldsFocus() &&
+    !fullBleedOnTop() &&
+    !onboardingOver(),
 )
 
 /** R2's corner chip: present whenever the transport took the rail's place. */
