@@ -13,9 +13,10 @@ import { resetRoomArrivalHolds, roomArrivalHeld, } from '@/stores/native-shell-s
 import { setActiveTab } from '@/stores/ui-store'
 import { markWelcomeSeen, resetWelcome } from '../alley/alley-welcome'
 import { moreOpen, onboardingShown, openMore, railVisible, resetRunShell, } from '../shell/run-shell-store'
+import { offerOpen, rangeFinder, resetAccountOffer, } from '../shell/settings/account-offer'
 import { performBack, shellBackHost } from '../shell/shell-navigation'
 import { onboardingDue, resetOnboarding, resetOnboardingFlagForTests, } from './onboarding-flag'
-import { installNativeOnboarding, LEAVE_MS, leaveOnboarding, onboardingExit, onboardingMounted, } from './onboarding-layer'
+import { installNativeOnboarding, LEAVE_MS, leaveOnboarding, onboardingEntry, onboardingExit, onboardingMounted, } from './onboarding-layer'
 
 let dispose: (() => void) | null = null
 
@@ -34,12 +35,14 @@ beforeEach(() => {
   resetWelcome()
   resetRunShell()
   resetRoomArrivalHolds()
+  resetAccountOffer()
   setActiveTab(TAB_HOME)
 })
 
 afterEach(() => {
   dispose?.()
   dispose = null
+  resetAccountOffer()
   vi.useRealTimers()
   localStorage.clear()
   resetOnboardingFlagForTests()
@@ -130,5 +133,75 @@ describe('the onboarding layer', () => {
     expect(onboardingShown()).toBe(false)
     expect(onboardingMounted()).toBe(false)
     expect(roomArrivalHeld()).toBe(false)
+  })
+})
+
+describe('the range on its own, from Keep', () => {
+  /** Keep's "Find your range first", as the sheet runs it. */
+  function findRangeFirst(): void {
+    const run = rangeFinder()
+    if (run === null) throw new Error('no range finder registered')
+    run()
+  }
+
+  it('is registered with Keep while the shell lives, and goes with it', () => {
+    install()
+    expect(rangeFinder()).not.toBeNull()
+
+    dispose?.()
+    dispose = null
+
+    expect(rangeFinder()).toBeNull()
+  })
+
+  it('comes up over any tab, leaves the onboarding due, and opens Keep again', () => {
+    install()
+    findRangeFirst()
+    expect(onboardingShown()).toBe(true)
+    expect(onboardingEntry()).toBe('range')
+    expect(railVisible()).toBe(false)
+    expect(offerOpen()).toBe(false)
+
+    leaveOnboarding('finished')
+
+    expect(offerOpen()).toBe(true)
+    expect(onboardingDue()).toBe(true)
+    expect(railVisible()).toBe(true)
+  })
+
+  it('opens Keep again when it leaves by Back', () => {
+    install()
+    findRangeFirst()
+
+    expect(performBack(shellBackHost())).toBe('onboarding')
+
+    expect(offerOpen()).toBe(true)
+    expect(onboardingDue()).toBe(true)
+  })
+
+  it('does not come up over the onboarding, nor open Keep when that leaves', () => {
+    install()
+    setActiveTab(TAB_SINGING)
+    findRangeFirst()
+    expect(onboardingEntry()).toBe('onboarding')
+
+    leaveOnboarding('not-now')
+
+    expect(offerOpen()).toBe(false)
+    expect(onboardingDue()).toBe(false)
+  })
+
+  it('takes over a layer still fading from the onboarding', () => {
+    install()
+    setActiveTab(TAB_SINGING)
+    leaveOnboarding('finished')
+    expect(onboardingMounted()).toBe(true)
+
+    findRangeFirst()
+    vi.advanceTimersByTime(LEAVE_MS)
+
+    expect(onboardingEntry()).toBe('range')
+    expect(onboardingShown()).toBe(true)
+    expect(onboardingMounted()).toBe(true)
   })
 })

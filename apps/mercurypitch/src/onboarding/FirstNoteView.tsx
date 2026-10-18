@@ -4,12 +4,13 @@
 //
 // Top to bottom: Merc's line in a bubble, Merc on a lit spot, the lane the
 // voice draws on, and the foot: the mic with what a tap does and the house
-// promise, the mic's notice when it would not open, or Start singing once
-// the note is named. The controller (useFirstNote.ts) decides; this draws.
+// promise, the mic's notice when it would not open, or, once the note is
+// named, its two ways on: Find my range and Skip for now (S7b §6.1). The
+// controller (useFirstNote.ts) decides; this draws.
 //
-// Merc's line is read out once, from a polite live region; the bubble
-// itself is hidden from a screen reader so it is not read twice. Merc is
-// decorative (MercView is aria-hidden).
+// Merc's line is read out by the layer's one live region (noteSays); the
+// bubble itself is hidden from a screen reader so it is not read twice.
+// Merc is decorative (MercView is aria-hidden).
 
 import type { JSX } from 'solid-js'
 import { createSignal, Match, onCleanup, onMount, Show, Switch } from 'solid-js'
@@ -25,8 +26,14 @@ import type { FirstNoteController } from './useFirstNote'
 
 export interface FirstNoteViewProps {
   controller: FirstNoteController
-  /** Start singing: the beat is over. */
-  onFinish: () => void
+  /** Merc's line in the bubble (noteSays), or null for none. */
+  line: string | null
+  /** Find my range: on to the range, the mic opened inside this tap. */
+  onRange: () => void
+  /** Skip for now: the range is left for later. */
+  onSkip: () => void
+  /** The range was skipped: its two buttons go while Merc has his word. */
+  skipped: boolean
   /** Merc: the layer's own view of him. */
   merc: JSX.Element
 }
@@ -53,10 +60,15 @@ function lineText(line: NoteLine | null, note: string | null): string | null {
   }
 }
 
+/** What Merc says on the first note, for the bubble and the live region. */
+export function noteSays(controller: FirstNoteController): string | null {
+  return lineText(controller.line(), controller.state().note?.note ?? null)
+}
+
 export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
   const phase = () => props.controller.state().phase
   const note = () => props.controller.state().note?.note ?? null
-  const said = () => lineText(props.controller.line(), note())
+  const said = () => props.line
   const before = () => phase() === 'hello' || phase() === 'missed'
 
   const micLabel = (): string => {
@@ -97,14 +109,6 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
 
   return (
     <div class={styles.beat} data-phase={phase()}>
-      <span
-        class={styles.said}
-        aria-live="polite"
-        data-testid="onboarding-said"
-      >
-        {said() ?? ''}
-      </span>
-
       <div class={styles.stage}>
         <div class={styles.bubbleRow}>
           <Show when={said()}>
@@ -166,14 +170,30 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
       <div class={styles.foot}>
         <Switch>
           <Match when={phase() === 'heard'}>
-            <button
-              type="button"
-              class={styles.primary}
-              onClick={() => props.onFinish()}
-              data-testid="onboarding-start-singing"
+            {/* Kept in the flow once skipped, so the stage stays put while
+                Merc says it is there for later. */}
+            <div
+              class={styles.ways}
+              classList={{ [styles.away]: props.skipped }}
+              inert={props.skipped}
             >
-              {ONBOARDING_COPY.startSinging}
-            </button>
+              <button
+                type="button"
+                class={styles.primary}
+                onClick={() => props.onRange()}
+                data-testid="onboarding-find-range"
+              >
+                {ONBOARDING_COPY.findRange}
+              </button>
+              <button
+                type="button"
+                class={styles.secondary}
+                onClick={() => props.onSkip()}
+                data-testid="onboarding-skip"
+              >
+                {ONBOARDING_COPY.skip}
+              </button>
+            </div>
           </Match>
           <Match when={phase() === 'blocked'}>
             <MicBlocked
