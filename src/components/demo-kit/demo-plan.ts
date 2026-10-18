@@ -63,6 +63,12 @@ export interface DemoTakeShape<E extends string> {
   readonly length: number
 }
 
+/** The two clocks of a take played at its own speed: one and the same. */
+export const ONE_CLOCK = {
+  engineAt: (wall: number): number => wall,
+  wallAt: (engine: number): number => engine,
+} as const
+
 /**
  * A take's engine event, or `fast` and `slow`: one of its fast-forwards
  * beginning and ending.

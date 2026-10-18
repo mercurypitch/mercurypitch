@@ -43,14 +43,13 @@
 // tickGlide to prove what each tooltip says.
 
 import type { DemoEvent as KitDemoEvent, DemoTakeId, DemoTakeShape, DemoVoicePoint, } from '@/components/demo-kit/demo-plan'
-import { midiToFrequency } from '@/lib/frequency-to-note'
-import { createGlideState, tickGlide } from '@/lib/glide/glide-engine'
+import { ONE_CLOCK } from '@/components/demo-kit/demo-plan'
+import type { GlideDemoScript } from '@/components/room-kit/glide/glide-demo-take'
+import { attack, pathCents, singGlideDemo, } from '@/components/room-kit/glide/glide-demo-take'
 import type { GlidePath } from '@/lib/glide/glide-path'
-import { LIP_ROLL_SEMITONES, targetAt } from '@/lib/glide/glide-path'
+import { LIP_ROLL_SEMITONES } from '@/lib/glide/glide-path'
 import type { GlideLevelId, GlidePreset } from '@/lib/glide/glide-presets'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
-import { seeded } from '@/lib/mirror/demo-frames'
-import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { CameraHold } from '../bay-scroll'
 import type { LipPlan } from '../lip-run'
 import { planLipRun } from '../lip-run'
@@ -87,44 +86,12 @@ export const RIDE_LAG_SEC = 0.08
  * far foot stay on the screen while the last tooltips are read.
  */
 export const DEMO_HOLD: CameraHold = { from: 1.6, to: 3.1 }
-/** Each run of buzzing opens from this far under its note, cents. */
-const ATTACK_CENTS = -25
-const ATTACK_SEC = 0.08
-
-const FRAME_SECONDS = 1 / 60
-const VOICE_STEP = 0.025
-const CONF = 0.92
-const SILENT_RMS = 0.001
 /** Merc's buzz, a little under a sung note's loudness. */
 const BUZZ_LEVEL = 0.7
-/** Pitch-tracker grain on the frames, cents (not in the synth). */
-const JITTER_CENTS = 1.2
-
-/** What Merc buzzes at a path time: cents above the root, and its onset. */
-interface Buzz {
-  readonly cents: number
-  /** When this run of buzzing began, path seconds. */
-  readonly onset: number
-}
-
-/** A take's buzz: path seconds to cents above the root, null in silence. */
-type BuzzScript = (tau: number, path: GlidePath) => Buzz | null
-
-/** The path's note at `tau`, cents above the root. */
-function pathCents(path: GlidePath, tau: number): number {
-  const root = path.arches[0].rootMidi
-  return ((targetAt(path, tau) ?? root) - root) * 100
-}
 
 /** The crest a breath behind: where a voice riding it is at `tau`. */
 function ridden(path: GlidePath, tau: number): number {
   return pathCents(path, Math.max(path.arches[0].start, tau - RIDE_LAG_SEC))
-}
-
-/** The opening scoop of a run of buzzing, cents under its note. */
-const attack = (tau: number, onset: number): number => {
-  const k = Math.min(1, Math.max(0, (tau - onset) / ATTACK_SEC))
-  return ATTACK_CENTS * (1 - k)
 }
 
 /**
@@ -132,7 +99,7 @@ const attack = (tau: number, onset: number): number => {
  * over the top and comes back down to him, then down with it; the buzz
  * stops for half a second on the way.
  */
-const shortBuzz: BuzzScript = (tau, path) => {
+const shortBuzz: GlideDemoScript = (tau, path) => {
   const wave = path.arches[0]
   if (tau < wave.start || tau >= wave.landingEnd) return null
   if (tau >= OFF_GAP.from && tau < OFF_GAP.to) return null
@@ -142,33 +109,13 @@ const shortBuzz: BuzzScript = (tau, path) => {
 }
 
 /** Take 2: the crest itself, a breath behind it, from the root to the landing. */
-const fullBuzz: BuzzScript = (tau, path) => {
+const fullBuzz: GlideDemoScript = (tau, path) => {
   const wave = path.arches[0]
   if (tau < wave.start || tau >= wave.landingEnd) return null
   return {
     cents: ridden(path, tau) + attack(tau, wave.start),
     onset: wave.start,
   }
-}
-
-/** A slow, seeded wander of a few cents: a voice is never a sine. */
-function wanderFor(seed: number): (t: number) => number {
-  const rand = seeded(seed)
-  const parts = [1.3, 0.8, 0.5].map((amp) => ({
-    amp,
-    hz: 0.25 + rand() * 0.55,
-    phase: rand() * Math.PI * 2,
-  }))
-  return (t) =>
-    parts.reduce(
-      (sum, p) => sum + p.amp * Math.sin(2 * Math.PI * p.hz * t + p.phase),
-      0,
-    )
-}
-
-/** Merc's 0..1 loudness as an RMS level (the inverse of levelFromRms). */
-function rmsForLevel(level: number): number {
-  return Math.pow(10, (level * 40 - 50) / 20)
 }
 
 /** One of Merc's waves on a root (the demo kit's shape, demo-plan.ts). */
@@ -193,76 +140,37 @@ export function demoPlan(root: number): LipPlan {
   )
 }
 
-/** The two clocks of the demo kit, here one and the same. */
-const ONE_CLOCK = {
-  engineAt: (wall: number): number => wall,
-  wallAt: (engine: number): number => engine,
-} as const
-
 const OFF_SEED = 0x11b0
 const ON_SEED = 0x11b1
 
+/** One wave buzzed through the glide engine (room-kit glide-demo-take.ts). */
 function buildTake(
   id: DemoTakeId,
   root: number,
-  buzz: BuzzScript,
+  buzz: GlideDemoScript,
   seed: number,
 ): LipDemoTake {
   const plan = demoPlan(root)
-  const { path, countIn } = plan
-  const wander = wanderFor(seed)
-  const grain = seeded(seed + 7)
-  const state = createGlideState(path)
-  const frames: PitchFrame[] = []
-  const events: DemoEvent[] = []
-  let coverage = 0
-  for (let i = 0; !state.ended; i++) {
-    const t = i * FRAME_SECONDS
-    const tau = t - countIn
-    const sung = buzz(tau, path)
-    let frame: PitchFrame = { t, f0: 0, conf: 0, rms: SILENT_RMS }
-    if (sung !== null) {
-      const jitter = (grain() - 0.5 + (grain() - 0.5)) * JITTER_CENTS
-      const cents = sung.cents + wander(t) + jitter
-      frame = {
-        t,
-        f0: midiToFrequency(root + cents / 100),
-        conf: CONF,
-        rms: rmsForLevel(BUZZ_LEVEL),
-      }
-    }
-    frames.push(frame)
-    // The room's take ticks each frame on the path's clock (glide-take.ts).
-    tickGlide(state, { ...frame, t: tau }, path, DEMO_PRESET)
-    for (const event of state.events) {
-      events.push({ type: event.type, at: t })
-      if (event.type === 'archEnd') coverage = event.coverage
-    }
-  }
-  const length = frames[frames.length - 1].t
-  const points: DemoVoicePoint[] = []
-  for (let i = 0; i * VOICE_STEP <= length + 1e-9; i++) {
-    const t = i * VOICE_STEP
-    const sung = buzz(t - countIn, path)
-    points.push({
-      t,
-      cents: sung === null ? 0 : sung.cents + wander(t),
-      level: sung === null ? 0 : BUZZ_LEVEL,
-    })
-  }
+  const sung = singGlideDemo(
+    root,
+    plan,
+    buzz,
+    { seed, level: BUZZ_LEVEL },
+    DEMO_PRESET,
+  )
   return {
     id,
     root,
     plan,
     preset: DEMO_PRESET,
     hold: DEMO_HOLD,
-    coverage,
-    frames,
-    events,
+    coverage: sung.coverage,
+    frames: sung.frames,
+    events: sung.events,
     fast: [],
     ...ONE_CLOCK,
-    voice: points,
-    length,
+    voice: sung.voice,
+    length: sung.length,
   }
 }
 
