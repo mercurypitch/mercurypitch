@@ -90,7 +90,6 @@ export interface DemoRoom<S> {
   moment: Accessor<string>
 }
 
-/** The demo as one room plays it. */
 /** What a room asks of its demo's hook (useLipDemo and the others). */
 export interface RoomDemoOptions {
   /**
@@ -100,6 +99,7 @@ export interface RoomDemoOptions {
   readonly autoPlay?: boolean
 }
 
+/** The demo as one room plays it. */
 export interface ExerciseDemoConfig<
   C extends string,
   T extends string,
