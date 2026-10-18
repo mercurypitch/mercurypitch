@@ -409,9 +409,8 @@ describe('every mail', () => {
     for (const copy of [subject, html.replace(COPYRIGHT, ''), text]) {
       expect(copy).not.toContain('Mercury Pitch')
     }
-    expect(visibleText(html)).toContain(
-      'Learn to sing and play. Practice has never been more fun.',
-    )
+    expect(visibleText(html)).toContain('Learn to sing and play.')
+    expect(visibleText(html)).not.toContain('never been more fun')
     expect(visibleText(html)).toContain('© 2026 Mercury Pitch · AGPL-3.0')
   })
 
