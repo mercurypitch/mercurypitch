@@ -8,12 +8,14 @@
 // settle, not at its size mid-animation. Merc, the result, the mic and the
 // demo's own controls are measured off the screen as they stand. The demo
 // kit's layer (demo-kit/DemoLayer.tsx) asks `aimEchoTip` where each
-// tooltip goes.
+// tooltip goes. What every room's tooltips share (the room measured off
+// the layer, the gaps, what none of them covers, the mic's target) is the
+// kit's own (demo-kit/tip-target.ts).
 
-import type { Point, Rect, Side } from '@/components/demo-kit/tip-place'
+import type { Point, Rect } from '@/components/demo-kit/tip-place'
 import { inflate } from '@/components/demo-kit/tip-place'
 import type { TipAim, TipTarget } from '@/components/demo-kit/tip-target'
-import { roomRects } from '@/components/demo-kit/tip-target'
+import { aimIn, around, ARROW_GAP, controlsClear, mercBody, micTarget, present, roomInside, roomRects, } from '@/components/demo-kit/tip-target'
 import type { DemoTarget } from './demo-cues'
 
 /** A ring or a star of the sky: its centre and radius, px from the room. */
@@ -46,15 +48,6 @@ const LIVE = 'p0'
 const RING_GLOW = 6
 /** A star's sprite reaches this far past its tips. */
 const STAR_GLOW = 4
-/** The arrow keeps this far off what it points at. */
-const ARROW_GAP = 4
-/** The mic's pulse ring reaches this far past the disc. */
-const MIC_RING = 14
-/** A tooltip keeps this far from the demo's own controls. */
-const CONTROL_GAP = 8
-
-const present = (rects: readonly (Rect | null)[]): Rect[] =>
-  rects.filter((rect): rect is Rect => rect !== null)
 
 const markRect = (mark: SkyMark, pad: number): Rect => ({
   x: mark.x - mark.r - pad,
@@ -73,16 +66,6 @@ export function union(rects: readonly Rect[]): Rect | null {
   return { x, y, w: right - x, h: bottom - y }
 }
 
-/** Merc's body inside his canvas, which is mostly clear around him. */
-function mercBody(canvas: Rect): Rect {
-  return {
-    x: canvas.x + canvas.w * 0.26,
-    y: canvas.y + canvas.h * 0.3,
-    w: canvas.w * 0.48,
-    h: canvas.h * 0.58,
-  }
-}
-
 const liveRings = (scene: DemoScene): SkyMark[] =>
   scene.rings.filter((ring) => ring.key.startsWith(`${LIVE}-r`))
 const liveStars = (scene: DemoScene): SkyMark[] =>
@@ -93,29 +76,16 @@ const liveStars = (scene: DemoScene): SkyMark[] =>
  * gap), the mic's ring, the chip, and every ring and star in the sky.
  */
 function keepClear(scene: DemoScene): Rect[] {
-  return present([
-    ...scene.controls.map((rect) => inflate(rect, CONTROL_GAP)),
-    scene.mic === null ? null : inflate(scene.mic, MIC_RING),
-    scene.chip,
+  return [
+    ...controlsClear(scene.controls, scene.mic),
+    ...present([scene.chip]),
     ...scene.rings.map((ring) => markRect(ring, RING_GLOW)),
     ...scene.stars.map((star) => markRect(star, STAR_GLOW)),
-  ])
+  ]
 }
 
 function softly(scene: DemoScene): Rect[] {
   return present([scene.merc === null ? null : mercBody(scene.merc)])
-}
-
-/** Around a box: the point on each side the arrow touches. */
-function around(box: Rect, gap: number): Partial<Record<Side, Point>> {
-  const midX = box.x + box.w / 2
-  const midY = box.y + box.h / 2
-  return {
-    above: { x: midX, y: box.y - gap },
-    below: { x: midX, y: box.y + box.h + gap },
-    left: { x: box.x - gap, y: midY },
-    right: { x: box.x + box.w + gap, y: midY },
-  }
 }
 
 /** One ring or star: beside it, covering nothing in the sky. */
@@ -193,25 +163,6 @@ function scoreTarget(scene: DemoScene): TipTarget | null {
   }
 }
 
-/** Beside the mic, clear of its ring and of the pill over it. */
-function micTarget(scene: DemoScene): TipTarget | null {
-  const mic = scene.mic
-  if (mic === null) return null
-  const ring = inflate(mic, MIC_RING)
-  const midY = mic.y + mic.h / 2
-  return {
-    anchors: {
-      above: { x: mic.x + mic.w / 2, y: ring.y },
-      right: { x: ring.x + ring.w, y: midY },
-      left: { x: ring.x, y: midY },
-    },
-    sides: ['above', 'right', 'left'],
-    avoid: present([ring, ...scene.controls]),
-    prefer: softly(scene),
-    glow: null,
-  }
-}
-
 export function tipTarget(
   target: DemoTarget,
   scene: DemoScene,
@@ -249,7 +200,11 @@ export function tipTarget(
     case 'score':
       return scoreTarget(scene)
     case 'mic':
-      return micTarget(scene)
+      // Beside the mic, clear of its ring and of the pill over it.
+      return micTarget(scene.mic, {
+        avoid: scene.controls,
+        prefer: softly(scene),
+      })
   }
 }
 
@@ -280,24 +235,12 @@ function skyMarks(
 /** The room's parts, measured from the layer (which covers the room). */
 export function measureEchoScene(layer: HTMLElement): DemoScene | null {
   const rects = roomRects(layer)
-  const root = layer.parentElement
-  if (rects === null || root === null) return null
-  const box = layer.getBoundingClientRect()
-  const origin = { x: box.left, y: box.top }
+  if (rects === null) return null
   const id = rects.byTestId
-  // Drawn full-bleed, the room runs under the status bar and the floating
-  // bar; its padding keeps its controls clear of them, and the tooltips.
-  const style = window.getComputedStyle(root)
-  const top = Number.parseFloat(style.paddingTop) || 0
-  const bottom = Number.parseFloat(style.paddingBottom) || 0
   return {
-    room: {
-      ...rects.room,
-      y: top,
-      h: Math.max(0, rects.room.h - top - bottom),
-    },
-    rings: skyMarks(root, 'echo-ring', origin),
-    stars: skyMarks(root, 'echo-star', origin),
+    room: roomInside(rects),
+    rings: skyMarks(rects.root, 'echo-ring', rects.origin),
+    stars: skyMarks(rects.root, 'echo-star', rects.origin),
     merc: id('echo-merc'),
     chip: id('echo-chip'),
     result: union(present([id('echo-result'), id('echo-result-detail')])),
@@ -317,8 +260,5 @@ export function aimEchoTip(
   target: DemoTarget,
   layer: HTMLElement,
 ): TipAim | null {
-  const scene = measureEchoScene(layer)
-  const aim = scene === null ? null : tipTarget(target, scene)
-  if (scene === null || aim === null) return null
-  return { target: aim, bounds: scene.room }
+  return aimIn(measureEchoScene(layer), (scene) => tipTarget(target, scene))
 }

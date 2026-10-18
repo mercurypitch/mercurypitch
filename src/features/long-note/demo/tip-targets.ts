@@ -8,12 +8,14 @@
 // (lantern-geometry.ts) says where the light is, and the painted handle
 // sits on top: the two parts of the lantern a tooltip may never cover. The
 // demo kit's layer (demo-kit/DemoLayer.tsx) asks `aimLongNoteTip` where
-// each tooltip goes.
+// each tooltip goes. What every room's tooltips share (the room measured
+// off the layer, the gaps, what none of them covers, the mic's target) is
+// the kit's own (demo-kit/tip-target.ts).
 
 import type { Rect, Side } from '@/components/demo-kit/tip-place'
 import { inflate } from '@/components/demo-kit/tip-place'
 import type { TipAim, TipTarget } from '@/components/demo-kit/tip-target'
-import { roomRects } from '@/components/demo-kit/tip-target'
+import { aimIn, controlsClear, micTarget, partOf, present, roomRects, } from '@/components/demo-kit/tip-target'
 import { CHIMNEY_BOTTOM, CHIMNEY_TOP, chimneyHalfWidth, HOLD_FILL_MAX, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, } from '../lantern-geometry'
 import type { DemoTarget } from './demo-cues'
 
@@ -46,16 +48,17 @@ const WIDEST = Math.max(
 )
 /** How far above the chimney's top the "full" tooltip points. */
 const BRIM_BELOW_TOP = 30
-/** The mic's pulse ring reaches this far past the disc. */
-const MIC_RING = 14
-/** A tooltip keeps this far from the demo's own controls (Skip, the pill). */
-const CONTROL_GAP = 8
 /**
  * The lantern's painted handle (its bail), view-box units: the ring from
  * its top at y 4 down to the cap at 60, x 47 to 152 where it is widest,
  * as measured off the frame plate.
  */
 const BAIL = { x: 47, y: 4, w: 105, h: 56 } as const
+/**
+ * Merc's body inside his canvas, which is mostly clear around him: beside
+ * the lantern and floating in it, as fractions of the canvas.
+ */
+const MERC_BODY: Rect = { x: 0.28, y: 0.26, w: 0.44, h: 0.58 }
 
 /** Where the light can be: the chimney's bounding box, px. */
 export function lightRect(lantern: Rect): Rect {
@@ -83,12 +86,7 @@ export function bailRect(lantern: Rect): Rect {
 
 /** Merc's body inside his canvas, which is mostly clear around him. */
 function mercBody(canvas: Rect): Rect {
-  return {
-    x: canvas.x + canvas.w * 0.28,
-    y: canvas.y + canvas.h * 0.26,
-    w: canvas.w * 0.44,
-    h: canvas.h * 0.58,
-  }
+  return partOf(canvas, MERC_BODY)
 }
 
 /** A strip across the stage around the target line. */
@@ -102,20 +100,18 @@ function lineY(scene: DemoScene): number | null {
   return scene.note === null ? null : scene.note.y + scene.note.h
 }
 
-const present = (rects: readonly (Rect | null)[]): Rect[] =>
-  rects.filter((rect): rect is Rect => rect !== null)
-
 /**
  * What no tooltip covers: the room's controls, the demo's own (with a
  * gap), and the lantern's handle.
  */
 function controls(scene: DemoScene): Rect[] {
-  return present([
-    ...scene.controls.map((rect) => inflate(rect, CONTROL_GAP)),
-    scene.mic === null ? null : inflate(scene.mic, MIC_RING),
-    scene.note,
-    scene.lantern === null ? null : bailRect(scene.lantern),
-  ])
+  return [
+    ...controlsClear(scene.controls, scene.mic),
+    ...present([
+      scene.note,
+      scene.lantern === null ? null : bailRect(scene.lantern),
+    ]),
+  ]
 }
 
 function softly(scene: DemoScene): Rect[] {
@@ -203,25 +199,6 @@ function textTarget(
   }
 }
 
-/** Beside the mic, clear of its ring and of the note picker over it. */
-function micTarget(scene: DemoScene): TipTarget | null {
-  const mic = scene.mic
-  if (mic === null) return null
-  const ring = inflate(mic, MIC_RING)
-  const midY = mic.y + mic.h / 2
-  return {
-    anchors: {
-      right: { x: ring.x + ring.w, y: midY },
-      left: { x: ring.x, y: midY },
-      above: { x: mic.x + mic.w / 2, y: ring.y },
-    },
-    sides: ['right', 'left', 'above'],
-    avoid: present([ring, scene.picker, ...scene.controls]),
-    prefer: softly(scene),
-    glow: null,
-  }
-}
-
 export function tipTarget(
   target: DemoTarget,
   scene: DemoScene,
@@ -251,7 +228,12 @@ export function tipTarget(
         ['below', 'left', 'right'],
       )
     case 'mic':
-      return micTarget(scene)
+      // Beside the mic, clear of its ring and of the note picker over it.
+      return micTarget(scene.mic, {
+        sides: ['right', 'left', 'above'],
+        avoid: [scene.picker, ...scene.controls],
+        prefer: softly(scene),
+      })
   }
 }
 
@@ -275,12 +257,12 @@ export function measureLongNoteScene(
     mic: id('long-note-mic'),
     picker: id('long-note-picker'),
     merc: id('long-note-merc'),
-    controls: [
+    controls: present([
       id('long-note-demo-skip'),
       id('long-note-ask'),
       id('long-note-demo-take'),
       id('long-note-demo-fast'),
-    ].filter((rect) => rect !== null),
+    ]),
     level,
   }
 }
@@ -294,8 +276,7 @@ export function aimLongNoteTip(
   layer: HTMLElement,
   level: number,
 ): TipAim | null {
-  const scene = measureLongNoteScene(layer, level)
-  const aim = scene === null ? null : tipTarget(target, scene)
-  if (scene === null || aim === null) return null
-  return { target: aim, bounds: scene.room }
+  return aimIn(measureLongNoteScene(layer, level), (scene) =>
+    tipTarget(target, scene),
+  )
 }

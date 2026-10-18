@@ -13,11 +13,13 @@
 //
 // No tooltip covers the room's controls (Skip, "?", the take's pill, the
 // mic and its ring), Merc's body, the chip, or the glass it explains.
+// What every room's tooltips share (the room measured off the layer, the
+// gaps, the mic's target, a lit stretch of the world) is the demo kit's
+// (demo-kit/tip-target.ts).
 
-import type { Point, Rect, Side } from '@/components/demo-kit/tip-place'
-import { inflate } from '@/components/demo-kit/tip-place'
+import type { Point, Rect } from '@/components/demo-kit/tip-place'
 import type { TipAim, TipTarget } from '@/components/demo-kit/tip-target'
-import { roomRects } from '@/components/demo-kit/tip-target'
+import { aimIn, controlsClear, mercBody, micTarget, present, roomInside, roomRects, stretchOf, stretchTarget, } from '@/components/demo-kit/tip-target'
 import { ARCH, PLATES, PLAYHEAD_X } from '../bridge-geometry'
 import type { DemoTarget } from './demo-cues'
 
@@ -46,32 +48,11 @@ export interface DemoScene {
   readonly controls: readonly Rect[]
 }
 
-/** The arrow keeps this far off what it points at. */
-const ARROW_GAP = 4
-/** The mic's pulse ring reaches this far past the disc. */
-const MIC_RING = 14
-/** A tooltip keeps this far from the demo's own controls. */
-const CONTROL_GAP = 8
 /** The glass lit around the playhead, W behind it and ahead of it. */
 const PLAYHEAD_BEHIND_W = 0.12
 const PLAYHEAD_AHEAD_W = 0.02
 /** The top note's glass: the flat top and a little either side, of a. */
 const TOP_REACH = ARCH.f + 0.12
-/** The glass glows this far past its rim. */
-const GLASS_GLOW = 6
-
-const present = (rects: readonly (Rect | null)[]): Rect[] =>
-  rects.filter((rect): rect is Rect => rect !== null)
-
-/** Merc's body inside his canvas, which is mostly clear around him. */
-function mercBody(canvas: Rect): Rect {
-  return {
-    x: canvas.x + canvas.w * 0.26,
-    y: canvas.y + canvas.h * 0.3,
-    w: canvas.w * 0.48,
-    h: canvas.h * 0.58,
-  }
-}
 
 /** The glass from x0 to x1 (px), apex to deck, kept on the screen. */
 function glassBand(
@@ -80,10 +61,7 @@ function glassBand(
   x0: number,
   x1: number,
 ): Rect | null {
-  const left = Math.max(scene.room.x, x0)
-  const right = Math.min(scene.room.x + scene.room.w, x1)
-  if (right - left < 4) return null
-  return { x: left, y: arch.top, w: right - left, h: arch.deck - arch.top }
+  return stretchOf(scene.room, x0, x1, arch.top, arch.deck)
 }
 
 /**
@@ -91,24 +69,10 @@ function glassBand(
  * gap), the mic's ring, the chip and Merc.
  */
 function keepClear(scene: DemoScene): Rect[] {
-  return present([
-    ...scene.controls.map((rect) => inflate(rect, CONTROL_GAP)),
-    scene.mic === null ? null : inflate(scene.mic, MIC_RING),
-    scene.chip,
-    scene.merc === null ? null : mercBody(scene.merc),
-  ])
-}
-
-/** Around a box: the point on each side the arrow touches. */
-function around(box: Rect, gap: number): Partial<Record<Side, Point>> {
-  const midX = box.x + box.w / 2
-  const midY = box.y + box.h / 2
-  return {
-    above: { x: midX, y: box.y - gap },
-    below: { x: midX, y: box.y + box.h + gap },
-    left: { x: box.x - gap, y: midY },
-    right: { x: box.x + box.w + gap, y: midY },
-  }
+  return [
+    ...controlsClear(scene.controls, scene.mic),
+    ...present([scene.chip, scene.merc === null ? null : mercBody(scene.merc)]),
+  ]
 }
 
 /**
@@ -120,40 +84,20 @@ function glassTarget(
   band: Rect | null,
   whole: Rect | null,
 ): TipTarget | null {
-  if (band === null) return null
-  return {
-    anchors: around(band, ARROW_GAP),
-    sides: ['above', 'below'],
-    avoid: [band, ...keepClear(scene)],
-    prefer: present([whole]),
-    glow: { kind: 'light', rect: inflate(band, GLASS_GLOW) },
-  }
-}
-
-/** Beside the mic, clear of its ring and of the pill over it. */
-function micTarget(scene: DemoScene): TipTarget | null {
-  const mic = scene.mic
-  if (mic === null) return null
-  const ring = inflate(mic, MIC_RING)
-  const midY = mic.y + mic.h / 2
-  return {
-    anchors: {
-      above: { x: mic.x + mic.w / 2, y: ring.y },
-      right: { x: ring.x + ring.w, y: midY },
-      left: { x: ring.x, y: midY },
-    },
-    sides: ['above', 'right', 'left'],
-    avoid: present([ring, ...scene.controls]),
-    prefer: present([scene.merc === null ? null : mercBody(scene.merc)]),
-    glow: null,
-  }
+  return stretchTarget(band, whole, keepClear(scene))
 }
 
 export function tipTarget(
   target: DemoTarget,
   scene: DemoScene,
 ): TipTarget | null {
-  if (target === 'mic') return micTarget(scene)
+  if (target === 'mic') {
+    // Beside the mic, clear of its ring and of the pill over it.
+    return micTarget(scene.mic, {
+      avoid: scene.controls,
+      prefer: present([scene.merc === null ? null : mercBody(scene.merc)]),
+    })
+  }
   const arch = scene.arch
   if (arch === null) return null
   const foot = arch.apexX - arch.halfWidth
@@ -215,24 +159,12 @@ function archMark(root: Element, origin: Point, unit: number): ArchMark | null {
 /** The room's parts, measured from the layer (which covers the room). */
 export function measureNgScene(layer: HTMLElement): DemoScene | null {
   const rects = roomRects(layer)
-  const root = layer.parentElement
-  if (rects === null || root === null) return null
-  const box = layer.getBoundingClientRect()
-  const origin = { x: box.left, y: box.top }
+  if (rects === null) return null
   const id = rects.byTestId
-  // Drawn full-bleed, the room runs under the status bar and the floating
-  // bar; its padding keeps its controls clear of them, and the tooltips.
-  const style = window.getComputedStyle(root)
-  const top = Number.parseFloat(style.paddingTop) || 0
-  const bottom = Number.parseFloat(style.paddingBottom) || 0
   const unit = rects.room.w
   return {
-    room: {
-      ...rects.room,
-      y: top,
-      h: Math.max(0, rects.room.h - top - bottom),
-    },
-    arch: archMark(root, origin, unit),
+    room: roomInside(rects),
+    arch: archMark(rects.root, rects.origin, unit),
     playheadX: PLAYHEAD_X * unit,
     merc: id('ng-merc'),
     chip: id('ng-chip'),
@@ -251,8 +183,5 @@ export function aimNgTip(
   target: DemoTarget,
   layer: HTMLElement,
 ): TipAim | null {
-  const scene = measureNgScene(layer)
-  const aim = scene === null ? null : tipTarget(target, scene)
-  if (scene === null || aim === null) return null
-  return { target: aim, bounds: scene.room }
+  return aimIn(measureNgScene(layer), (scene) => tipTarget(target, scene))
 }
