@@ -31,9 +31,10 @@
 // Dispatched from index.ts, which owns the admin policy.
 
 import type { Env } from './auth'
-import type { AccountNoticeKind } from './email'
+import { fallbackAppOrigin, mailOrigins } from './auth'
 import type { NewsletterItem } from './email-newsletter'
-import { renderAccountNotice, sendAccountNotice } from './email'
+import type { AccountNoticeKind } from './email-notice'
+import { renderAccountNotice, sendAccountNotice } from './email-notice'
 import { MANAGED_TEST_EMAIL_DOMAIN } from './testing-account-state'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
@@ -414,9 +415,12 @@ export async function handleAccountNoticeRoute(
   let sent = 0
   let failed = 0
   let preview: { subject: string; html: string; text: string } | null = null
+  // The notice's links and pictures: this environment's own app.
+  const origins = mailOrigins(fallbackAppOrigin(env), env)
 
   for (const [index, person] of recipients.entries()) {
     const vars = {
+      ...origins,
       displayName: person.displayName,
       kind: content.kind,
       subject: content.subject,
@@ -492,6 +496,7 @@ export async function handleAccountNoticeRoute(
   // at the mail, so it renders for nobody in particular.
   if (dryRun && preview === null) {
     preview = renderAccountNotice({
+      ...origins,
       displayName: null,
       kind: content.kind,
       subject: content.subject,

@@ -1,6 +1,10 @@
 // ============================================================
-// Mail layout — the look the sign-up and purchase mails share
+// Mail layout — the look every mail a person receives shares
 // ============================================================
+//
+// The sign-up, code, password reset, purchase and withdrawal mails, the
+// newsletter and the account notices. Only the owner's billing alerts stay
+// plain text (sendBillingAlert in email.ts).
 //
 // Mail clients set the rules: tables and inline styles only, no SVG, live
 // text never inside an image, and pictures as JPEG or PNG under /email/ on

@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResendConfig } from './email'
-import { maskAddresses, maskEmail, sendAccountNotice } from './email'
+import { maskAddresses, maskEmail } from './email'
 import { sendLoginCode, sendSignUpCode } from './email-code'
 import { sendNewsletterIssue } from './email-newsletter'
+import { sendAccountNotice } from './email-notice'
 import { sendPasswordReset } from './email-password-reset'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 
