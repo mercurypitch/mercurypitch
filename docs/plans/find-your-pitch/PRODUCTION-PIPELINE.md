@@ -252,6 +252,29 @@ session.
     fanned so each ticket covers part of the next, failed layout (`content_overlap`) only at rc-07.
     Mark layering that is meant with `data-layout-allow-overlap` on each text block involved; it is
     not inherited, so a wrapper does not cover its children.
+23. A Merc pass's drop starts above its own square. For about 0.45 s at its start (Lesson 2's m13
+    and m14, frames 0 to 27 at 60 fps; m05, frames 7 to 36) the frames hold only part of the body,
+    cut off by the square's top row, and no mask hides the edge. Keep the box, pass and reflection,
+    at opacity 0 until the first frame with the whole body inside the square, then fade it in over
+    3 frames. Count that frame from the tag's `data-start` alone: HyperFrames 0.8.97 extracts from
+    the keyframe before `data-media-start`, so the render can show a frame one earlier than the
+    tag's times suggest (Lesson 2, film critics 11 and 12).
+24. A scene that guards `L.merc()` with its own idea of a tag's id fails silently when the ids
+    differ. Lesson 2's closing scenes looked for `s14-sing-m14-duo-blue` while the tag was
+    `s14-m14-duo-blue`, so `L.merc()` never ran and the four videos sat unplaced at the frame's
+    top left, orange on top, with blue's sound arcs round her. Pass the tag ids to `L.merc()`
+    (`video`, `reflVideo`) and let it report a missing tag; a clearance check of each Merc's box
+    against every text (`lab/s13-cents/merc-clear.mjs`) catches the rest (critic 11).
+25. A shared label push must keep each label on one side of its obstacle for the label's whole
+    life. A push straight out of each obstacle reverses when the obstacle's centre crosses the
+    label: it threw "+25 Hz" 83 to 177 px in one frame, five times in half a second (critic 11).
+26. `check`'s layout stage treats a video's whole square as opaque, and reads a `tspan` at
+    `fill-opacity` 0 as visible text. Mark a label beside Merc `data-layout-allow-occlusion` only
+    where the pixels show the square is transparent there, and set hidden text to opacity 0
+    outside its stretch.
+27. On four CPUs, Lesson 2's 7:11 film renders in 27 minutes as a 30 fps draft (`--quality looks`)
+    and in 55 to 61 minutes as a 60 fps release candidate (`--quality high`). The first film round
+    can read the draft; each later round costs an hour of render before its critic starts.
 
 ## 5. The web lesson
 

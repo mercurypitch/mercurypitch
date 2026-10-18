@@ -116,7 +116,9 @@ waits on a person's listen to the new voices; the web lesson is built at `/learn
   the app's pitch line labels notes with sharps only (its sheet-music view spells flats in flat
   keys).
 
-**Lesson 3. Match a note**
+**Lesson 3. Match a note** (written: the lesson, its facts and its page spec are in
+[lessons/03-match-a-note/](lessons/03-match-a-note/), reviewed; no film yet; its voice lines wait
+on the vocal coach's sign-off, and its page publishes after `/learn/02`, which its recall links to)
 
 - YouTube title: "Can you really be tone deaf?" (the full hook goes in the thumbnail, the
   description's first line and the cold open).
@@ -141,7 +143,8 @@ waits on a person's listen to the new voices; the web lesson is built at `/learn
   experiments (79 and 45 participants) found 13 % and 16 % missing by a semitone or more (the
   abstract says 10 to 15 %).
 
-**Lesson 4. The major scale and home**
+**Lesson 4. The major scale and home** (written: the lesson, its facts and its page spec are in
+[lessons/04-major-scale/](lessons/04-major-scale/), reviewed; no film yet)
 
 - Objectives: build a major scale from the tone-tone-semitone-tone-tone-tone-semitone pattern (two
   tone-tone-semitone groups joined by a tone); feel the tonic as home; name scale degrees with
@@ -408,7 +411,7 @@ draws the fewest lines. Every prerequisite is an earlier Season 1 lesson.
 | 0 Find your pitch (trailer)       | none        | It previews every lesson                                                              |
 | 1 What is a note?                 | none        | T01 and T02 start the graph                                                           |
 | 2 Twelve notes                    | 1           | T03 needs T02                                                                         |
-| 3 Match a note                    | 1           | S01 needs T01; S05 needs T02                                                          |
+| 3 Match a note                    | 1           | S01 needs T01; S05 needs T02. Lesson 2 helps, but Lesson 3 explains the cent again    |
 | 4 The major scale and home        | 2           | T09 needs T03                                                                         |
 | 5 Breath and a steady note        | 2, 3        | S06 needs T04 (cents in 2, in tune in 3) and S05 (3); S02 needs S01 (3)               |
 | 6 Intervals                       | 4           | T11 needs T10; T12 needs T09                                                          |
@@ -420,6 +423,11 @@ draws the fewest lines. Every prerequisite is an earlier Season 1 lesson.
 | 12 Chords and the four-chord song | 10          | T19 needs T14 (10); T20 needs T10 (4, via 10)                                         |
 | 13 Resonance and vowels           | 11          | S13 needs S12 (11); T28 needs T01 (1, via 11)                                         |
 | 14 Phrasing                       | 5, 8, 9, 12 | S16 needs S03 (5), T06 (8) and S09 (9); S17 needs S03 and S06 (5); T22 needs T20 (12) |
+
+A lesson's recall check asks about an earlier lesson. When that lesson is a prerequisite (Lesson 4
+recalls Lesson 2), the recall shows to everyone: it checks what the lesson builds on and links
+back. When the earlier lesson only helps (Lesson 3 recalls Lesson 2), the recall shows once that
+lesson is marked done.
 
 ## 4. Practise links: what exists and what needs building
 
