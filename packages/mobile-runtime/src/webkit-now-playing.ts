@@ -14,11 +14,13 @@
 // (MediaElementSession::canShowControlsManager). Web Audio alone qualifies
 // only when `navigator.audioSession.type` asks for playback, and then the
 // lock screen's buttons pause the context instead of reaching the room, so
-// that stays unset. What qualifies instead is a carrier: a looping `<audio>`
-// of generated silence that plays and pauses with the song, while
-// `navigator.mediaSession` names the song, holds its place and length, and
-// hears the buttons. WebKit hands a press to a registered handler rather than
-// to the carrier.
+// the Karaoke room leaves it unset. (A premium room asks for
+// play-and-record for its visit, page-audio-session.ts, which WebKit counts
+// as playback too; no song plays there.) What qualifies instead is a
+// carrier: a looping `<audio>` of generated silence that plays and pauses
+// with the song, while `navigator.mediaSession` names the song, holds its
+// place and length, and hears the buttons. WebKit hands a press to a
+// registered handler rather than to the carrier.
 //
 // The carrier holds the playback session, which never mixes. The unlock clip
 // in src/lib/audio-unlock.ts took the same session on every play tap before

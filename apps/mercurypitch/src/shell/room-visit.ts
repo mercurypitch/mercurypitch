@@ -21,9 +21,14 @@
 //
 // What it costs, from the audit (REPORT option A): AirPods are hands-free
 // for the whole visit, and the call level's voice processing applies to the
-// demos too. The Developer screen's "One volume in rooms" switches it off
-// to compare (room-volume-switch.ts); a store build always has it on. Where
-// the page has no audio session (Android, the web) nothing is asked.
+// demos too. And WebKit counts play-and-record as a playback session for
+// Web Audio (AudioContext.cpp, hasPlayBackAudioSession): for the visit, the
+// room's context may show on the lock screen, take its buttons, and play on
+// as the app goes behind, none of which a room did before. A device test
+// decides whether that stays. The Developer screen's "One volume in rooms"
+// switches it off to compare (room-volume-switch.ts); a store build always
+// has it on. Where the page has no audio session (Android, the web)
+// nothing is asked.
 //
 // ShellScreens mounts a RoomVisit with each premium room, before the room,
 // so the session is asked for before the room's first sound, and given back
