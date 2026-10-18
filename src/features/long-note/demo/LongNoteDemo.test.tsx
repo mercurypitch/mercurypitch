@@ -516,6 +516,30 @@ describe('the Long note demo', () => {
     expect(demoMode()).toBe('end')
   })
 
+  it('never plays by itself in the Warm-up, even on a first visit; "?" still plays it', async () => {
+    render(() => (
+      <LongNoteRoom
+        onDone={() => undefined}
+        routine={{
+          index: 0,
+          count: 4,
+          settledNote: null,
+          finish: () => undefined,
+          skip: () => undefined,
+        }}
+      />
+    ))
+    await run(3000)
+    expect(demoMode()).toBe('idle')
+    expect(sound.made).toBe(0)
+
+    fireEvent.click(screen.getByTestId('long-note-ask'))
+    await run(100)
+
+    expect(demoMode()).toBe('playing')
+    expect(screen.queryByTestId('long-note-skip-stop')).toBeNull()
+  })
+
   it('waits for "?" on a second visit, and Skip goes to the end card', async () => {
     seen.value = true
     render(() => <LongNoteRoom onDone={() => undefined} />)

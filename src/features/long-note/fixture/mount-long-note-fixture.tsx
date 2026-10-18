@@ -7,6 +7,7 @@
 // exists only on the dev server and no build carries it.
 
 import { render } from 'solid-js/web'
+import { fixtureStop } from '@/components/room-kit/routine-fixture'
 import { isFixtureName, LongNoteFixture } from './LongNoteFixture'
 
 /**
@@ -16,7 +17,7 @@ import { isFixtureName, LongNoteFixture } from './LongNoteFixture'
  */
 export function mountLongNoteFixture(root: HTMLElement, name: string): boolean {
   if (!isFixtureName(name)) return false
-  render(() => <LongNoteFixture name={name} />, root)
+  render(() => <LongNoteFixture name={name} stop={fixtureStop()} />, root)
   root.classList.add('loaded')
   return true
 }

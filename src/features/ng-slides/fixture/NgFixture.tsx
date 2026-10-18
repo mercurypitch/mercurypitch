@@ -16,9 +16,11 @@
 
 import type { JSX } from 'solid-js'
 import { createFixtureReady, glideFixtureController, } from '@/components/room-kit/glide/glide-fixture'
+import type { RoutineStop } from '@/components/room-kit/routine-stop'
 import { ngSlidesPath } from '@/lib/glide/glide-path'
 import { NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
 import { bridgeArt, bridgeImage, REFLECTION_ART } from '../bridge-art'
+import { NG_LINES } from '../merc-lines'
 import type { NgController, NgTypes } from '../ng-controller-contract'
 import { NgSlidesRoom } from '../NgSlidesRoom'
 import type { NgFixtureName, NgFixtureScene } from './fixture-scenes'
@@ -70,12 +72,24 @@ async function canvasesPainted(): Promise<void> {
 
 export interface NgFixtureProps {
   name: NgFixtureName
+  /** The room as a stop of the Warm-up (`&warmUp=<n>`); none by default. */
+  stop?: RoutineStop
+}
+
+/** In the Warm-up the intro opens on Merc's cue (merc-lines.ts). */
+function inWarmUp(
+  scene: NgFixtureScene,
+  stop: RoutineStop | undefined,
+): NgFixtureScene {
+  if (stop === undefined || scene.phase !== 'intro') return scene
+  return { ...scene, line: NG_LINES.routine[0].text }
 }
 
 export function NgFixture(props: NgFixtureProps): JSX.Element {
   const { ready, settled } = createFixtureReady(canvasesPainted)
   // eslint-disable-next-line solid/reactivity -- a fixture is one frame
-  const controller = fixtureController(FIXTURE_SCENES[props.name])
+  const scene = inWarmUp(FIXTURE_SCENES[props.name], props.stop)
+  const controller = fixtureController(scene)
   return (
     <div
       style={{
@@ -93,6 +107,7 @@ export function NgFixture(props: NgFixtureProps): JSX.Element {
         controller={controller}
         still
         onSettled={settled}
+        routine={props.stop}
       />
     </div>
   )

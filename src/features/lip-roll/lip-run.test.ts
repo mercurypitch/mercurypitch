@@ -151,6 +151,15 @@ describe('the plan', () => {
     expect(introLine(plan)).toEqual({ moment: 'intro', fields: { top: 'C4' } })
     expect(introLine(null).moment).toBe('introAny')
   })
+
+  it("opens on Merc's cue in the Warm-up, and still asks for an easy note with no root", () => {
+    const plan = planLipRun(
+      { roots: [48, 50, 52], semitones: 12, source: 'settled' },
+      singer,
+    )
+    expect(introLine(plan, true)).toEqual({ moment: 'routine', fields: {} })
+    expect(introLine(null, true).moment).toBe('introAny')
+  })
 })
 
 describe("Merc's line after a wave", () => {

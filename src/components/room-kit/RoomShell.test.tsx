@@ -5,12 +5,15 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import type { Accessor } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DemoTakeId } from '@/components/demo-kit/demo-plan'
 import { DEMO_WORDS } from '@/components/demo-kit/demo-words'
 import type { DemoMode, ExerciseDemo, } from '@/components/demo-kit/useExerciseDemo'
+import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import type { RoomShellState, ShellRun } from './RoomShell'
 import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, ShellSkip, } from './RoomShell'
+import type { RoutineStop, ShellRoutine, StopResult } from './routine-stop'
+import { ROUTINE_RESULT_HOLD_MS, ROUTINE_TAP_GRACE_MS, ROUTINE_WORDS, } from './routine-stop'
 
 /** A room's stylesheet: the classes the parts read. */
 const STYLES = {
@@ -465,5 +468,231 @@ describe('ShellDock', () => {
     expect([el.className, el.inert]).toEqual(['bottom bottomAway', true])
     fake.setMode('playing')
     expect([el.className, el.inert]).toEqual(['bottom', true])
+  })
+})
+
+describe('warm-up mode', () => {
+  const RESULT: StopResult = {
+    id: EXERCISE_LIP_ROLL_BAY,
+    line: '86% lit',
+    settledNote: 50,
+  }
+  const SETTLE_MS = 1200
+
+  /** The second stop of four, counting what the room asks of it. */
+  function fakeStop() {
+    const calls = { finish: [] as StopResult[], skip: 0 }
+    const stop: RoutineStop = {
+      index: 1,
+      count: 4,
+      settledNote: null,
+      finish: (result) => calls.finish.push(result),
+      skip: () => {
+        calls.skip += 1
+      },
+    }
+    const routine: ShellRoutine = {
+      stop,
+      settleMs: SETTLE_MS,
+      result: () => RESULT,
+    }
+    return { routine, calls }
+  }
+
+  function createRoutineShell(
+    phase: Accessor<string>,
+    demo: ExerciseDemo<'cue', 'spot'> | null,
+    routine: ShellRoutine,
+    scripted: Accessor<boolean> = () => false,
+  ): RoomShellState<'cue', 'spot'> {
+    const { run } = fakeRun(phase, scripted)
+    return createRoomShell({ ids: 'room', styles: STYLES, run, demo, routine })
+  }
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('reads the chip "Warm-up 2 of 4" before the take only, and none outside the Warm-up', () => {
+    const [phase, setPhase] = createSignal('intro')
+    const [scripted, setScripted] = createSignal(false)
+    const shell = createRoutineShell(phase, null, fakeStop().routine, scripted)
+
+    const chips = [
+      'intro',
+      'starting',
+      'blocked',
+      'settle',
+      'run',
+      'result',
+    ].map((each) => {
+      setPhase(each)
+      return shell.routineChip()
+    })
+    expect(chips).toEqual([
+      'Warm-up 2 of 4',
+      'Warm-up 2 of 4',
+      'Warm-up 2 of 4',
+      null,
+      null,
+      null,
+    ])
+    setPhase('intro')
+    setScripted(true)
+    expect(shell.routineChip()).toBeNull()
+    expect(shellFor(() => 'intro', null).routineChip()).toBeNull()
+  })
+
+  it("shows its chip in the room's place before the take, and the room's own during it", () => {
+    const [phase, setPhase] = createSignal('intro')
+    render(() => (
+      <ShellHead
+        shell={createRoutineShell(phase, null, fakeStop().routine)}
+        summary={() => null}
+        chip={phase() === 'run' ? 'Wave 2 of 3' : null}
+      >
+        {() => <p>The result</p>}
+      </ShellHead>
+    ))
+
+    expect(screen.getByTestId('room-chip').textContent).toBe('Warm-up 2 of 4')
+    setPhase('run')
+    expect(screen.getByTestId('room-chip').textContent).toBe('Wave 2 of 3')
+  })
+
+  it('puts "Skip stop" in the level\'s place before the take, and keeps "?" there', () => {
+    const fake = fakeDemo()
+    const stop = fakeStop()
+    const [phase, setPhase] = createSignal('intro')
+    render(() => (
+      <ShellBarEnd
+        shell={createRoutineShell(phase, fake.demo, stop.routine)}
+        showLevel
+        level={<span data-testid="room-level">Level</span>}
+      />
+    ))
+
+    expect(screen.queryByTestId('room-level')).toBeNull()
+    const skip = screen.getByTestId('room-skip-stop')
+    expect(skip.textContent).toBe(ROUTINE_WORDS.skip)
+    fireEvent.click(skip)
+    expect(stop.calls.skip).toBe(1)
+    fireEvent.click(screen.getByTestId('room-ask'))
+    expect(fake.calls.ask).toBe(1)
+
+    setPhase('blocked')
+    expect(screen.queryByTestId('room-skip-stop')).not.toBeNull()
+    for (const each of ['starting', 'settle', 'run', 'result']) {
+      setPhase(each)
+      expect(screen.queryByTestId('room-skip-stop')).toBeNull()
+    }
+    // "?" goes at the held result: the routine takes the room on from there.
+    expect(screen.queryByTestId('room-ask')).toBeNull()
+
+    setPhase('intro')
+    fake.setMode('playing')
+    expect(screen.queryByTestId('room-skip-stop')).toBeNull()
+    fake.setMode('card')
+    expect(screen.queryByTestId('room-skip-stop')).toBeNull()
+  })
+
+  it('drops Again and Done at the result, and keeps the mic before it', () => {
+    const [phase, setPhase] = createSignal('intro')
+    render(() => (
+      <ShellDock
+        shell={createRoutineShell(phase, null, fakeStop().routine)}
+        onDone={() => undefined}
+        mic="ready"
+        micLabel="Start: hold G3"
+        besideResult={
+          <button type="button" data-testid="room-other">
+            Pick another note
+          </button>
+        }
+      />
+    ))
+
+    expect(screen.getByTestId('room-mic')).not.toBeNull()
+    setPhase('result')
+    expect(screen.queryByTestId('room-again')).toBeNull()
+    expect(screen.queryByTestId('room-done')).toBeNull()
+    expect(screen.queryByTestId('room-other')).toBeNull()
+    expect(screen.queryByTestId('room-mic')).toBeNull()
+  })
+
+  /** The room at its intro; the setter moves it on. */
+  function renderRoom(routine: ShellRoutine): (phase: string) => void {
+    const [phase, setPhase] = createSignal('intro')
+    render(() => (
+      <RoomShell
+        shell={createRoutineShell(phase, null, routine)}
+        class="room"
+        testId="room-root"
+        said=""
+        aim={() => null}
+      >
+        <Show
+          when={phase() === 'result'}
+          fallback={
+            <button type="button" data-testid="room-mic">
+              Mic
+            </button>
+          }
+        >
+          <p>86%</p>
+        </Show>
+      </RoomShell>
+    ))
+    return setPhase
+  }
+
+  it('holds the result, then hands it to the routine once', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+    const stop = fakeStop()
+    const setPhase = renderRoom(stop.routine)
+
+    expect(screen.queryByTestId('room-routine-on')).toBeNull()
+    setPhase('result')
+    vi.advanceTimersByTime(SETTLE_MS + ROUTINE_RESULT_HOLD_MS - 1)
+    expect(stop.calls.finish).toEqual([])
+    vi.advanceTimersByTime(1)
+    expect(stop.calls.finish).toEqual([RESULT])
+    fireEvent.click(screen.getByTestId('room-routine-on'))
+    expect(stop.calls.finish).toEqual([RESULT])
+  })
+
+  it('goes on sooner at a tap anywhere on the result, and hands focus to it', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+    const stop = fakeStop()
+    const setPhase = renderRoom(stop.routine)
+
+    screen.getByTestId('room-mic').focus()
+    setPhase('result')
+    const onward = screen.getByTestId('room-routine-on')
+    expect(onward.getAttribute('aria-label')).toBe(ROUTINE_WORDS.onward)
+    expect(document.activeElement).toBe(onward)
+    fireEvent.click(onward)
+    expect(stop.calls.finish).toEqual([])
+    vi.advanceTimersByTime(ROUTINE_TAP_GRACE_MS)
+    fireEvent.click(onward)
+    expect(stop.calls.finish).toEqual([RESULT])
+  })
+
+  it('holds nothing outside the Warm-up', () => {
+    const [phase, setPhase] = createSignal('intro')
+    render(() => (
+      <RoomShell
+        shell={shellFor(phase, null)}
+        class="room"
+        testId="room-root"
+        said=""
+        aim={() => null}
+      >
+        <p>The world</p>
+      </RoomShell>
+    ))
+
+    setPhase('result')
+    expect(screen.queryByTestId('room-routine-on')).toBeNull()
   })
 })

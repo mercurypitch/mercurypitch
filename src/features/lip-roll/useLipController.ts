@@ -13,6 +13,7 @@
 // clear of him.
 
 import { useGlideRoom } from '@/components/room-kit/glide/useGlideRoom'
+import type { RoutineRunOptions } from '@/components/room-kit/routine-stop'
 import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
 import { fitLipRoll } from '@/lib/glide/glide-targets'
@@ -28,7 +29,9 @@ import { mercAheadOf } from './merc-ahead'
 import { createLipLines } from './merc-lines'
 import { useLipCapture } from './useLipCapture'
 
-export function useLipController(): LipController {
+export function useLipController(
+  options: RoutineRunOptions = {},
+): LipController {
   const room = useGlideRoom<LipTypes>({
     exercise: EXERCISE_LIP_ROLL_BAY,
     capture: useLipCapture(),
@@ -93,6 +96,7 @@ export function useLipController(): LipController {
       preloadResult: preloadLipResult,
       demoDrawsTake: true,
     },
+    options,
   })
 
   return {

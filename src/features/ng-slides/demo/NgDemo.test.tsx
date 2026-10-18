@@ -517,6 +517,30 @@ describe('the Ng slides demo', () => {
     expect(screen.queryByTestId('ng-demo-tip')).toBeNull()
   })
 
+  it('never plays by itself in the Warm-up, even on a first visit; "?" still plays it', async () => {
+    render(() => (
+      <NgSlidesRoom
+        onDone={() => undefined}
+        routine={{
+          index: 0,
+          count: 4,
+          settledNote: null,
+          finish: () => undefined,
+          skip: () => undefined,
+        }}
+      />
+    ))
+    await run(3000)
+    expect(demoMode()).toBe('idle')
+    expect(sound.made).toBe(0)
+
+    fireEvent.click(screen.getByTestId('ng-ask'))
+    await run(100)
+
+    expect(demoMode()).toBe('playing')
+    expect(screen.queryByTestId('ng-skip-stop')).toBeNull()
+  })
+
   it('plays by itself only until it is seen; then "?" plays it', async () => {
     seen.value = true
     await open()

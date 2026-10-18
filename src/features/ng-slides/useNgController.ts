@@ -10,6 +10,7 @@
 // (bridge-ride.ts) and cheers when all five light.
 
 import { useGlideRoom } from '@/components/room-kit/glide/useGlideRoom'
+import type { RoutineRunOptions } from '@/components/room-kit/routine-stop'
 import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import { NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
 import { fitNgSlides } from '@/lib/glide/glide-targets'
@@ -24,7 +25,7 @@ import type { NgController, NgTypes } from './ng-controller-contract'
 import { introLine, keepNgRun, planNgRun, resultLine, slideHeard, slideLine, summarize, } from './ng-run'
 import { useNgCapture } from './useNgCapture'
 
-export function useNgController(): NgController {
+export function useNgController(options: RoutineRunOptions = {}): NgController {
   return useGlideRoom<NgTypes>({
     exercise: EXERCISE_NG_SLIDES_BRIDGE,
     capture: useNgCapture(),
@@ -76,5 +77,6 @@ export function useNgController(): NgController {
       // The demo's slide is sung over the intro's bridge and its names.
       demoDrawsTake: false,
     },
+    options,
   })
 }

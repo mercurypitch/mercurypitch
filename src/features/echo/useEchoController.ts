@@ -8,12 +8,13 @@
 // scene (echo-scene.ts), Merc's state and voice, his lines, the chip and
 // the ribbon (voice-path.ts).
 //
-// A run is five phrases at the singer's level, planned as it starts
-// (planEchoRun) around a root: the voiceprint's, else the one the last run
-// started on, else the first note the singer settles on (the "any easy
-// note" pre-roll, settle-note.ts). Each phrase: Merc sings the call, the
-// singer sings it back, the constellation it made shows for a moment and
-// joins the top band. After the fifth, the result. The microphone opens on
+// A run is five phrases at the singer's level (three in the Warm-up),
+// planned as it starts (planEchoRun) around a root: the voiceprint's, else
+// the one the last run started on (or, in the Warm-up, an earlier stop's),
+// else the first note the singer settles on (the "any easy note" pre-roll,
+// settle-note.ts). Each phrase: Merc sings the call, the singer sings it
+// back, the constellation it made shows for a moment and joins the top
+// band. After the last, the result. The microphone opens on
 // the tap and closes at the result; Again opens it again.
 //
 // One capture window per call and response, opened as the call is
@@ -50,7 +51,7 @@ import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { EchoPhrase } from '@/lib/sequence/phrase-bank'
 import type { EchoWindow } from '@/lib/sequence/phrase-fit'
-import { echoWindow, planEchoRun } from '@/lib/sequence/phrase-fit'
+import { ECHO_RUN_PHRASES, echoWindow, planEchoRun, } from '@/lib/sequence/phrase-fit'
 import type { EchoLevelId, SequenceEvent, SequenceState, } from '@/lib/sequence/sequence-engine'
 import { createSequenceState, ECHO_LEVELS, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
 import type { PhraseTake } from '@/lib/sequence/sequence-metrics'
@@ -101,10 +102,16 @@ export function useEchoController(
   const capture = useEchoCapture()
   const voiceOfMerc = options.voice ?? MERC_CALL
   const random = options.random ?? Math.random
+  const phraseCount = options.phrases ?? ECHO_RUN_PHRASES
+  /** The root a run starts on: the room's own, else the Warm-up's. */
+  const startRoot = (): number | null =>
+    rememberedEchoRoot() ?? options.root ?? null
   const lines = createEchoLines()
   const voicePreset = untrack(vocalRangePreset)
 
-  const [state, setState] = createSignal<EchoState>(initialEchoState(5))
+  const [state, setState] = createSignal<EchoState>(
+    initialEchoState(phraseCount),
+  )
   const [scene, setSceneSignal] = createSignal<SkyScene>(EMPTY_SCENE)
   const [line, setLine] = createSignal('')
   const [chip, setChip] = createSignal<string | null>(null)
@@ -128,14 +135,15 @@ export function useEchoController(
     setLine(lines.next(moment, fields))
   }
   /** The root the next run starts on, if the room has one before it hears the singer. */
-  const knownWindow = (settledMidi: number | null = rememberedEchoRoot()) =>
+  const knownWindow = (settledMidi: number | null = startRoot()) =>
     echoWindow({
       voiceprints: loadLocalVoiceprints(),
       settledMidi,
       voicePreset,
     })
   const sayIntro = (): void => {
-    say(knownWindow().source === 'preset' ? 'introAny' : 'intro')
+    if (knownWindow().source === 'preset') say('introAny')
+    else say(options.routine === true ? 'routine' : 'intro')
   }
 
   // ── Timers that belong to the screen ───────────────────────
@@ -219,6 +227,7 @@ export function useEchoController(
         done: takes,
         result: false,
         celebration: false,
+        phrases: phraseCount,
       }),
     )
   }
@@ -466,12 +475,13 @@ export function useEchoController(
     }
   }
 
-  /** The run's five phrases around the window's root, at the run's level. */
+  /** The run's phrases around the window's root, at the run's level. */
   const plan = (window: EchoWindow): void => {
     phrases = planEchoRun({
       level: runLevel,
       window,
       seed: Math.floor(random() * 2 ** 31),
+      count: phraseCount,
     })
     takes = []
   }
@@ -522,12 +532,19 @@ export function useEchoController(
   function finishRun(): void {
     capture.release()
     const metrics = sequenceMetrics(takes, rules().rhythmToleranceMs)
-    const { improved } = keepEchoRun(runLevel, metrics, phrases[0]?.root ?? 0)
+    const { improved } = keepEchoRun(
+      runLevel,
+      metrics,
+      phrases[0]?.root ?? 0,
+      Date.now(),
+      phraseCount,
+    )
     const run = untrack(state).run
     const shown = showResultOf(takes, metrics, {
       level: runLevel,
       run,
       improved,
+      phrases: phraseCount,
     })
     batch(() => {
       setSummary(shown.summary)
@@ -743,5 +760,9 @@ export function useEchoController(
       sink = next
     },
     script: demo.script,
+    settledNote: () => {
+      const root = startRoot()
+      return root === null ? null : Math.round(root)
+    },
   }
 }

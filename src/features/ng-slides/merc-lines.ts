@@ -18,6 +18,7 @@ import { createRoomLines } from '@/components/room-kit/room-lines'
 
 export type NgMoment =
   | 'intro'
+  | 'routine'
   | 'introAny'
   | 'found'
   | 'listen'
@@ -49,6 +50,8 @@ export const NG_LINES: LineTable<NgMoment> = {
     },
     { id: 'intro-follow', text: 'Hum ng and follow the arch up to {top}.' },
   ],
+  // In the Warm-up: the storyboard's cue, the intro without its top.
+  routine: [{ id: 'routine-slide', text: 'Hum ng and slide over the arch.' }],
   // No voiceprint and no note kept: the singer's own note fits the slides.
   introAny: [
     {

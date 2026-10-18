@@ -38,6 +38,9 @@ import { GlideRoomScreen } from '@/components/room-kit/glide/GlideRoomScreen'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import surface from '@/components/room-kit/RoomSurface.module.css'
+import type { RoutineStop } from '@/components/room-kit/routine-stop'
+import { routineRun } from '@/components/room-kit/routine-stop'
+import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import { ARCH } from './bridge-geometry'
 import type { BridgeLayout } from './bridge-layout'
 import { layoutBridge, yOf } from './bridge-layout'
@@ -64,6 +67,12 @@ export interface NgSlidesRoomProps {
   still?: boolean
   /** Every picture the scene shows has decoded (the fixtures wait for it). */
   onSettled?: () => void
+  /**
+   * A stop of the Warm-up (room-kit routine-stop.ts): the room in warm-up
+   * mode, its run started from the stop's note when it keeps none of its
+   * own, and its demo never starting by itself. Read once.
+   */
+  routine?: RoutineStop
 }
 
 /**
@@ -116,13 +125,19 @@ export function NgSlidesRoom(props: NgSlidesRoomProps): JSX.Element {
   // eslint-disable-next-line solid/reactivity -- read once, as documented
   const own = props.controller === undefined
   // eslint-disable-next-line solid/reactivity -- read once, as documented
-  const room = props.controller ?? useNgController()
-  const demo: NgDemo | null = own ? useNgDemo(room) : null
+  const stop = props.routine
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const room = props.controller ?? useNgController(routineRun(stop))
+  const demo: NgDemo | null = own
+    ? useNgDemo(room, { autoPlay: stop === undefined })
+    : null
   const reduced = prefersReducedMotion()
 
   return (
     <GlideRoomScreen
       room={room}
+      exercise={EXERCISE_NG_SLIDES_BRIDGE}
+      routine={stop}
       demo={demo}
       ids="ng"
       testId="ng-slides-room"

@@ -14,6 +14,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CREST_NOTE } from '@/components/room-kit/CrestNote'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import mic from '@/components/room-kit/RoomControls.module.css'
+import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
+import { ROUTINE_RESULT_HOLD_MS, ROUTINE_WORDS, } from '@/components/room-kit/routine-stop'
+import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import { tone } from '@/lib/glass/test-frames'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { segmentAt } from '@/lib/glide/glide-path'
@@ -1006,5 +1009,79 @@ describe('the dots ahead of Merc', () => {
       )
     })
     expect(ahead.length).toBeGreaterThan(0)
+  })
+})
+
+describe('in the Warm-up', () => {
+  /** The first stop of four, counting what the room hands it. */
+  function warmUp(settledNote: number | null = null) {
+    const calls = { finish: [] as StopResult[], skip: 0 }
+    const stop: RoutineStop = {
+      index: 0,
+      count: 4,
+      settledNote,
+      finish: (result) => calls.finish.push(result),
+      skip: () => {
+        calls.skip += 1
+      },
+    }
+    return { stop, calls }
+  }
+
+  it('opens on the stop\'s chip, Merc\'s cue and "Skip stop", with no level', () => {
+    const { stop, calls } = warmUp()
+    render(() => <LipRollRoom onDone={() => undefined} routine={stop} />)
+
+    expect(phase()).toBe('intro')
+    expect(chip()).toBe('Warm-up 1 of 4')
+    expect(bubble()).toBe(linesOf('routine')[0])
+    expect(screen.queryByTestId('lip-level')).toBeNull()
+    const skip = screen.getByTestId('lip-skip-stop')
+    expect(skip.textContent).toBe(ROUTINE_WORDS.skip)
+    fireEvent.click(skip)
+    expect(calls.skip).toBe(1)
+  })
+
+  it('fits the waves to the note an earlier stop started from, when it keeps none', () => {
+    kept.note = null
+    render(() => (
+      <LipRollRoom onDone={() => undefined} routine={warmUp(55).stop} />
+    ))
+
+    expect(bubble()).toBe(linesOf('routine')[0])
+    cleanup()
+    render(() => (
+      <LipRollRoom onDone={() => undefined} routine={warmUp().stop} />
+    ))
+    expect(said(bubble() ?? '', 'introAny')).toBe(true)
+  })
+
+  it('holds its result without Again or Done, then hands "N% lit" and its note on once', async () => {
+    const { stop, calls } = warmUp()
+    render(() => <LipRollRoom onDone={() => undefined} routine={stop} />)
+    fireEvent.click(screen.getByTestId('lip-mic'))
+    await settle()
+    expect(chip()).not.toBe('Warm-up 1 of 4')
+    const plan = planFor('learning', 52)
+    play(windowFrames(plan, follow(plan.path)), plan)
+
+    expect(phase()).toBe('result')
+    expect(screen.queryByTestId('lip-again')).toBeNull()
+    expect(screen.queryByTestId('lip-done')).toBeNull()
+    expect(screen.queryByTestId('lip-level')).toBeNull()
+    expect(screen.queryByTestId('lip-ask')).toBeNull()
+    expect(kept.history).toHaveLength(1)
+    const pct = /\d+%/u.exec(
+      screen.getByTestId('lip-result').textContent ?? '',
+    )?.[0]
+    expect(pct).toBeDefined()
+    expect(calls.finish).toEqual([])
+    vi.advanceTimersByTime(1200 + ROUTINE_RESULT_HOLD_MS)
+    expect(calls.finish).toEqual([
+      { id: EXERCISE_LIP_ROLL_BAY, line: `${pct} lit`, settledNote: 52 },
+    ])
+    fireEvent.click(screen.getByTestId('lip-routine-on'))
+    vi.advanceTimersByTime(10_000)
+    expect(calls.finish).toHaveLength(1)
   })
 })

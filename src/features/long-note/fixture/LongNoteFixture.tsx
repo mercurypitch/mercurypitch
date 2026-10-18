@@ -16,6 +16,7 @@
 
 import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
+import type { RoutineStop } from '@/components/room-kit/routine-stop'
 import type { HoldState } from '@/lib/hold/hold-engine'
 import { createHoldState, LANTERN_LEVELS } from '@/lib/hold/hold-engine'
 import type { MercVoice } from '@/lib/merc/sim'
@@ -91,6 +92,7 @@ export function fixtureController(
     nudge: () => undefined,
     canHear: () => !open,
     hearNote: () => undefined,
+    settledNote: () => FIXTURE_NOTE,
     // A fixture has no demo (LongNoteRoom: another's run has none).
     script: {
       active: () => false,
@@ -108,6 +110,11 @@ export function fixtureController(
 
 export interface LongNoteFixtureProps {
   name: LongNoteFixtureName
+  /**
+   * The room as a stop of the Warm-up (`&warmUp=<n>`); none by default.
+   * The intro's line is already Merc's cue in the Warm-up.
+   */
+  stop?: RoutineStop
 }
 
 export function LongNoteFixture(props: LongNoteFixtureProps): JSX.Element {
@@ -135,6 +142,7 @@ export function LongNoteFixture(props: LongNoteFixtureProps): JSX.Element {
         controller={controller}
         still
         onSettled={settled}
+        routine={props.stop}
       />
     </div>
   )

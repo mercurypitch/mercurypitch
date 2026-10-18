@@ -67,4 +67,10 @@ export interface LongNoteController {
   canHear: Accessor<boolean>
   hearNote: () => void
   script: LongNoteScript
+  /**
+   * The note to hold, MIDI, for a later stop of the Warm-up: after a take,
+   * the one held; null while the singer picks their own. Read when asked;
+   * deliberately not reactive.
+   */
+  settledNote: () => number | null
 }

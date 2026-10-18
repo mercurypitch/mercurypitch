@@ -30,6 +30,11 @@
 // held, the result, Merc's line), the note picker over the mic and "Pick
 // another note" beside Again and Done.
 //
+// In the Warm-up (`routine`, room-kit routine-stop.ts) the head shows the
+// stop's chip before the take, the note picker stays, and the shell holds
+// the result (without "Pick another note") until Merc's hop beside the
+// lantern has landed.
+//
 // Merc's canvas sits BETWEEN the lantern's two layers (Lantern.tsx), so in
 // the glass he is behind its highlights and frame, and his feet are in the
 // liquid. The target line and the voice are drawn on both sides of him
@@ -47,7 +52,10 @@ import { createMeasure } from '@/components/room-kit/room-measure'
 import { ResultCard, RoomBubble, RoomChip, RoomHeader, RoomTimer, } from '@/components/room-kit/RoomHeader'
 import { createRoomShell, RoomShell, ShellBarEnd, ShellDock, ShellSkip, } from '@/components/room-kit/RoomShell'
 import surface from '@/components/room-kit/RoomSurface.module.css'
+import type { RoutineStop } from '@/components/room-kit/routine-stop'
+import { routineRun } from '@/components/room-kit/routine-stop'
 import { UnlockChip } from '@/components/room-kit/UnlockChip'
+import { EXERCISE_LONG_NOTE_LANTERN } from '@/lib/domain/exercise-contracts'
 import { DEMO_COPY } from './demo/demo-cues'
 import { aimLongNoteTip } from './demo/tip-targets'
 import type { LongNoteDemo } from './demo/useLongNoteDemo'
@@ -58,7 +66,7 @@ import { formatHoldSeconds } from './long-note-entry'
 import { longNoteMicState } from './long-note-machine'
 import { LongNoteLevel } from './LongNoteLevel'
 import styles from './LongNoteRoom.module.css'
-import { BESIDE_X, createLayoutGlide, layoutStage, MERC_UNITS, } from './stage-layout'
+import { BESIDE_X, createLayoutGlide, GLIDE_MS, layoutStage, MERC_UNITS, } from './stage-layout'
 import type { LongNoteController } from './useLongNoteController'
 import { useLongNoteController } from './useLongNoteController'
 import { TRACE_PX_PER_CENT, VoiceTrace } from './VoiceTrace'
@@ -76,6 +84,12 @@ export interface LongNoteRoomProps {
   still?: boolean
   /** Every picture the room shows has decoded (the fixtures wait for it). */
   onSettled?: () => void
+  /**
+   * A stop of the Warm-up (room-kit routine-stop.ts): the room in warm-up
+   * mode, opening on the stop's note when it has no note of its own, and
+   * its demo never starting by itself. Read once.
+   */
+  routine?: RoutineStop
 }
 
 /** Every image under `root` decoded (a failure counts: it will not get better). */
@@ -113,9 +127,36 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   // eslint-disable-next-line solid/reactivity -- read once, as documented
   const own = props.controller === undefined
   // eslint-disable-next-line solid/reactivity -- read once, as documented
-  const room = props.controller ?? useLongNoteController()
-  const demo: LongNoteDemo | null = own ? useLongNoteDemo(room) : null
-  const shell = createRoomShell({ ids: 'long-note', styles, run: room, demo })
+  const stop = props.routine
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const room = props.controller ?? useLongNoteController(routineRun(stop))
+  const demo: LongNoteDemo | null = own
+    ? useLongNoteDemo(room, { autoPlay: stop === undefined })
+    : null
+  const shell = createRoomShell({
+    ids: 'long-note',
+    styles,
+    run: room,
+    demo,
+    routine:
+      stop === undefined
+        ? null
+        : {
+            stop,
+            // Merc's hop out of the glass to beside it has landed.
+            settleMs: GLIDE_MS,
+            result: () => {
+              const summary = room.summary()
+              return summary === null
+                ? null
+                : {
+                    id: EXERCISE_LONG_NOTE_LANTERN,
+                    line: formatHoldSeconds(summary.inBandSeconds),
+                    settledNote: room.settledNote(),
+                  }
+            },
+          },
+  })
   let rootEl: HTMLDivElement | undefined
   let stageEl: HTMLDivElement | undefined
   const stageSize = createMeasure(
@@ -314,6 +355,9 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                 detailTestId="long-note-steadiness"
               />
             )}
+          </Match>
+          <Match when={shell.take() === null ? shell.routineChip() : null}>
+            {(chip) => <RoomChip text={chip()} testId="long-note-chip" />}
           </Match>
         </Switch>
         <UnlockChip

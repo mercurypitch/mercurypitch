@@ -1,6 +1,9 @@
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext, ribbonColours, } from '@/components/room-kit/ribbon-test-context'
+import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
+import { ROUTINE_RESULT_HOLD_MS } from '@/components/room-kit/routine-stop'
+import { EXERCISE_LONG_NOTE_LANTERN } from '@/lib/domain/exercise-contracts'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { HoldState } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
@@ -17,6 +20,7 @@ import { CHIMNEY_BOTTOM, CHIMNEY_TOP, fillLevel, HOLD_FILL_MAX, LANTERN_VIEW_H, 
 import styles from './LongNoteRoom.module.css'
 import type { LongNoteMoment } from './merc-lines'
 import { fillNote, MERC_LINES } from './merc-lines'
+import { GLIDE_MS } from './stage-layout'
 import type * as CaptureModule from './useLongNoteCapture'
 import { TRACE_PX_PER_CENT } from './VoiceTrace'
 
@@ -2013,4 +2017,80 @@ describe('LongNoteRoom', () => {
       cleanup()
     }
   }, 10_000)
+
+  describe('in the Warm-up', () => {
+    /** The third stop of four, counting what the room hands it. */
+    function warmUp(settledNote: number | null = null) {
+      const handed = { finish: [] as StopResult[], skip: 0 }
+      const stop: RoutineStop = {
+        index: 2,
+        count: 4,
+        settledNote,
+        finish: (result) => handed.finish.push(result),
+        skip: () => {
+          handed.skip += 1
+        },
+      }
+      return { stop, handed }
+    }
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('opens on the stop\'s chip, Merc\'s cue and "Skip stop", with no level', () => {
+      const { stop, handed } = warmUp()
+      render(() => <LongNoteRoom onDone={() => undefined} routine={stop} />)
+
+      expect(screen.getByTestId('long-note-chip').textContent).toBe(
+        'Warm-up 3 of 4',
+      )
+      expect(screen.getByTestId('long-note-line').textContent).toBe(
+        fillNote(MERC_LINES.routine[0].text, 'A3'),
+      )
+      expect(screen.queryByTestId('long-note-level')).toBeNull()
+      fireEvent.click(screen.getByTestId('long-note-skip-stop'))
+      expect(handed.skip).toBe(1)
+    })
+
+    it('opens on the note an earlier stop started from, with no voiceprint and none kept', () => {
+      target.pick = { midi: 60, source: 'preset' }
+      render(() => (
+        <LongNoteRoom onDone={() => undefined} routine={warmUp(55).stop} />
+      ))
+
+      expect(screen.getByTestId('long-note-note').textContent).toBe('G3')
+    })
+
+    it('holds its result without Again, Done or another note, then hands its seconds and note on once', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const { stop, handed } = warmUp()
+      render(() => <LongNoteRoom onDone={() => undefined} routine={stop} />)
+      await startListening()
+      expect(
+        screen.queryByTestId('long-note-chip')?.textContent ?? '',
+      ).not.toBe('Warm-up 3 of 4')
+
+      fake.frames = sequence(
+        (t) => tone(57, 3, { startT: t }),
+        (t) => silence(0.8, t),
+      )
+      flushFrames()
+      await settle()
+
+      expect(phase()).toBe('result')
+      expect(screen.queryByTestId('long-note-again')).toBeNull()
+      expect(screen.queryByTestId('long-note-done')).toBeNull()
+      expect(screen.queryByText('Pick another note')).toBeNull()
+      expect(recorded.calls).toHaveLength(1)
+      const seconds = /\d+\.\d s/u.exec(
+        screen.getByTestId('long-note-result').textContent ?? '',
+      )?.[0]
+      expect(seconds).toBeDefined()
+      vi.advanceTimersByTime(GLIDE_MS + ROUTINE_RESULT_HOLD_MS)
+      expect(handed.finish).toEqual([
+        { id: EXERCISE_LONG_NOTE_LANTERN, line: seconds, settledNote: 57 },
+      ])
+    })
+  })
 })

@@ -91,6 +91,15 @@ export interface DemoRoom<S> {
 }
 
 /** The demo as one room plays it. */
+/** What a room asks of its demo's hook (useLipDemo and the others). */
+export interface RoomDemoOptions {
+  /**
+   * The demo may start by itself, by its room's rule (a first visit). False
+   * in the Warm-up: there "?" still plays it, and nothing starts it unasked.
+   */
+  readonly autoPlay?: boolean
+}
+
 export interface ExerciseDemoConfig<
   C extends string,
   T extends string,
