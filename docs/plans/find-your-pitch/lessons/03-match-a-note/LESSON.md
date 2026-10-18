@@ -310,11 +310,13 @@ the coach reviews Lessons 3 and 5):
 - The voice choice: "Lower: sing with blue Merc, around A3" or "Higher: sing with orange Merc,
   around A4".
 - The three notes, A, G and B around A3 or A4: Merc's two-second note, up to six seconds to start
-  and about three to hold, and up to three tries a note. Hutchins and Peretz (2012) found that
-  singers "do not improve over multiple sung responses", so more tries would add singing, not
-  learning (FACTS 16).
+  and about three to hold, up to three tries a note, and, after "Easy" or "Workable", one more run
+  of all three. Hutchins and Peretz (2012) found that singers "do not improve over multiple sung
+  responses", so more tries would add singing, not learning (FACTS 16).
 - The feedback lines, the answers to "How did that feel?", and the practise card after
-  "Uncomfortable" or "Just listen today" (WEB-SPEC, Toys 7).
+  "Uncomfortable" or "Just listen today" (WEB-SPEC, Toys 7); and whether "Effortful" should lead to
+  that rest card too, since the app's own recommendations never raise the dose after "Effortful"
+  (FACTS 36).
 - The practise card's Voice Mirror note (two glides and a held note) and "Ten minutes, gently, most
   days".
 - The proposed Pitch Hold link: one 5-second hold in a 35-cent zone.

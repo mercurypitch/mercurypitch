@@ -119,8 +119,8 @@ transforms is one object on the page.
   fit without rescaling. The stairs light as Merc sings them; Stop on ti leaves the top stair an
   outline with the arrow up from ti, and Land on do fills it. Its stairs are not buttons (the
   bubbles' buttons carry every action), so the drawing is `aria-hidden` and a polite live region
-  speaks for it: "Major scale from C" or "Major scale from D" as each starts, then Stop on ti's
-  line (below). Play from D slides it up two rows first.
+  speaks for it: "Major scale from C" or "Major scale from D" as each starts, then "Stopped on ti.
+  Land on do finishes the scale." Play from D slides it up two rows first.
 - **One action per tap.** A tap on a stair plays its note in the soft tone, in every state but the
   compact one. A tap on a key of the strip plays that key in steps 1 and 2; from step 3 on, and in
   free play, it makes that key do instead. A pointer that moves more than 6 px before it lifts is a
@@ -213,8 +213,8 @@ button (FACTS 61).
   faint. Until a scale has played the rows show Merc's scale, D3 to D4. Merc's model is an amber
   target path (FACTS 63): up to so and back, a rest, up to ti, a 2 s hold on ti, then do.
 - **Play Merc's scale** (do = D3) and **Play it an octave up** (do = D4) sing in Merc's "ooh". The
-  path lights in step as each plays, while Lesson 1's breathing ring beside the guide shows the
-  still of the Merc singing it, blue for D3 and orange for D4, as Lesson 1's ring does
+  path lights in step as each plays, while the breathing ring beside the guide shows the still of
+  the Merc singing it, blue for D3 and orange for D4, as Lesson 1's ring does
   (`lesson-01/sing.ts:23-39`).
 - **Start the guide** is enabled once either scale has played (hear it first: playbook rule 16);
   until then it is `aria-disabled`, with the hint "Play Merc's scale first". It is the viewer's
@@ -222,8 +222,8 @@ button (FACTS 61).
   the rows turn plain chrome and Merc's path is drawn dashed in chrome. The count-in sounds do of
   the scale last played, once and softly, for its one second (FACTS 63). Then a vertical chrome
   line sweeps across the rows along the path for 18.2 s, with nothing riding the path itself;
-  during the hold on ti the ring breathes with Merc's still at its centre, never a microphone icon.
-  When the sweep ends, the rows go back to their amber rest.
+  during the hold on ti the ring breathes with the still of the Merc last heard at its centre,
+  never a microphone icon. When the sweep ends, the rows go back to their amber rest.
 - **Move do** shifts do a semitone lower or higher, up to four either way (FACTS 52, 63): the rows
   relabel and the path keeps its shape, movable do at work. Both scales and the count-in follow it.
 - The card follows LESSON.md's order: the comfort line, Your turn, the stop line, the buttons, the
@@ -344,6 +344,9 @@ into the kit (Toys table):
   `Lesson` serves both lessons, added by whichever page ships first; the card's status line,
   "Ready · watch and read" today (`kit/explorer.ts:72-74`), then reads "Ready · read", and the
   phone list and the graph read the same field.
+- `kit/explorer.ts`, the current lesson: it selects Lesson 1 when it opens (`let sel = 1`,
+  `kit/explorer.ts:115`). Lesson 2's page adds the option (its WEB-SPEC lists it), and this page
+  passes 4.
 - `kit/explorer.ts`, links between pages: a ready card's actions are the same-page anchors
   `#watch` and `#lesson` (`kit/explorer.ts:105`), right only for the page's own lesson, so a card
   for another ready lesson links to that lesson's page, `/learn/NN` (Lesson 2 lists the same gap).
