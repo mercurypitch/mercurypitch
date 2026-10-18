@@ -257,7 +257,7 @@ B and C.
   only whether the second note went up, down or stayed.
 - Address: Practise it free: **mercurypitch.com/ear-lab**, then tap Leap.
 - First visit: First visit? MercuryPitch opens with its intro: close it with the × at the top
-  right.
+  right ("Skip the intro").
 - Figure: Leap's twelve answers in the app's six columns, m2 and M2 lit, the other ten ghosted.
   Caption: "Illustration: Leap's twelve answers. In Leap: m2 = semitone · M2 = tone."
 
@@ -346,7 +346,7 @@ The page's head, its share text and its footer, exactly (WEB-SPEC, Footer; Lesso
   (Lesson 1's second line, "Proof episode, October 2026.", has no counterpart here.)
 - Footer, Practise: the link "mercurypitch.com/ear-lab" (to `/ear-lab?lesson=02`, in a new tab),
   then "Ear Lab is free: tap Leap. On a first visit, close the intro first, with the × at the top
-  right."
+  right ("Skip the intro")."
 - Footer, Credits: "Fonts: Outfit, Inter, Instrument Serif, JetBrains Mono and Noto Music, all SIL
   OFL 1.1. Voices in the episode: ElevenLabs (Eleven v3). Merc's sung notes in the film:
   development placeholders re-pitched from ElevenLabs takes. Every other musical example, Merc's
