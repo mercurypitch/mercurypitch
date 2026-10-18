@@ -96,7 +96,9 @@ waits on a person's listen to the new voices; the web lesson is built at `/learn
   `src/lib/mirror/metrics.ts:261`).
 - Facts: [lessons/01-what-is-a-note/FACTS.md](lessons/01-what-is-a-note/FACTS.md).
 
-**Lesson 2. Twelve notes**
+**Lesson 2. Twelve notes** (made: the film's master, `rc-04`, passed its last critic round and waits
+on a person's listen and watch; the web lesson is specified and reviewed in
+[lessons/02-twelve-notes/](lessons/02-twelve-notes/), not built yet; 7:11)
 
 - Objectives: find the twelve notes on a keyboard and on the spiral; tell a semitone from a whole
   tone by ear; know why one key has two names (C sharp, D flat); know a semitone is 100 cents, the
