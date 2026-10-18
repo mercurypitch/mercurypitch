@@ -4062,7 +4062,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                   </Show>
                 </aside>
 
-                <div class={styles.coachCueDock} data-testid="drum-take-cue">
+                <div
+                  class={styles.coachCueDock}
+                  data-testid="drum-take-cue"
+                  data-finish={takeFinishInStrip() ? 'true' : 'false'}
+                >
                   <button
                     class={styles.coachCue}
                     type="button"
