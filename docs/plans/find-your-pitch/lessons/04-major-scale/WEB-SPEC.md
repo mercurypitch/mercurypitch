@@ -93,14 +93,14 @@ headings").
 
 ## Toys: what each reuses, and what is new
 
-| Toy                       | Reuses                                                                                                                                                                                                                                                                                                                                                | New in Lesson 4                                                                                                                                       |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Toy                       | Reuses                                                                                                                                                                                                                                                                                                                                                | New in Lesson 4                                                                                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. The staircase          | The kit's sound (`kit/sound.ts`: `playTone`, the soft tone, Merc's "ooh"), notes (`kit/notes.ts`: `hz`, `COLOR`), frame loop and step deck (`kit/frame-loop.ts`, `kit/step-deck.ts`); Lesson 1's keyboard drawing (`lesson-01/toy-spiral-keys.ts`) and its canvas-as-slider keys (`lesson-01/toy-spiral.ts`), promoted into the kit as Lesson 2 plans | Stairs on semitone rows; the compact state; Group; Slide; White keys only; the names switch; Stop on ti and Land on do; a spelling helper; a house icon |
-| 2. Predict widgets        | Lesson 1's predict (`lesson-01/predict.ts`), promoted into the kit as Lesson 2 plans (its Toys 7)                                                                                                                                                                                                                                                     | A play button that works before the choice (Play from C) beside one that unlocks after it                                                             |
-| 3. Four words             | Lesson 1's strip of figure, word, definition and play button (`lesson-01/words.ts`)                                                                                                                                                                                                                                                                   | Four new figures                                                                                                                                      |
-| 4. Scale guide (Sing it)  | Lesson 2's slide guide (its Toys 5, in build) and Lesson 1's breathing ring (`lesson-01/sing.ts`)                                                                                                                                                                                                                                                     | Thirteen rows instead of four, a 17-note path, a count-in on do, Move do                                                                              |
-| 5. Recall and quick check | The kit's quiz (`kit/quiz.ts`) with the three changes Lesson 2 makes to it, and Lesson 2's questions                                                                                                                                                                                                                                                  | Nothing more, once Lesson 2's changes land                                                                                                            |
-| 6. Go deeper drawer       | Lesson 2's `details` drawer (its Toys 8)                                                                                                                                                                                                                                                                                                              | Three items                                                                                                                                           |
+| 2. Predict widgets        | Lesson 1's predict (`lesson-01/predict.ts`), promoted into the kit as Lesson 2 plans (its Toys 7)                                                                                                                                                                                                                                                     | A play button that works before the choice (Play from C) beside one that unlocks after it                                                               |
+| 3. Four words             | Lesson 1's strip of figure, word, definition and play button (`lesson-01/words.ts`)                                                                                                                                                                                                                                                                   | Four new figures                                                                                                                                        |
+| 4. Scale guide (Sing it)  | Lesson 2's slide guide (its Toys 5, in build) and Lesson 1's breathing ring (`lesson-01/sing.ts`)                                                                                                                                                                                                                                                     | Thirteen rows instead of four, a 17-note path, a count-in on do, Move do                                                                                |
+| 5. Recall and quick check | The kit's quiz (`kit/quiz.ts`) with the three changes Lesson 2 makes to it, and Lesson 2's questions                                                                                                                                                                                                                                                  | Nothing more, once Lesson 2's changes land                                                                                                              |
+| 6. Go deeper drawer       | Lesson 2's `details` drawer (its Toys 8)                                                                                                                                                                                                                                                                                                              | Three items                                                                                                                                             |
 
 ### 1. The staircase
 
@@ -238,7 +238,7 @@ Two quizzes share this page, so it depends on the three changes Lesson 2 makes t
 (its WEB-SPEC, "What the kit and the app still need"):
 
 - a root element or id prefix, because the kit binds to `#qs`, `#scoreN` and `#quizReset` and
-  writes the ids `q0` and `fb0` onwards (`kit/quiz.ts:104-108`, `:155-163`);
+  writes the ids `q0` and `fb0` onwards (`kit/quiz.ts:104-108`, `:155-165`);
 - `lesson` optional, because the kit marks `lesson` done once every question has an answer
   (`:174-175`);
 - a question `id`, the telemetry's `question_id` (`QuizQuestion` has none, `:31-36`).
@@ -279,7 +279,7 @@ Merc's singing in Merc's "ooh", and the guide's count-in in the soft tone at hal
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer
 loaded after first paint, one WebGL context per Merc, medium quality on phones, turned towards each
-other, paused off screen (`merc-duo.ts:42-51`), and the still images when WebGL fails or would run
+other, paused off screen (`merc-duo.ts:42-52`), and the still images when WebGL fails or would run
 on the CPU.
 
 - They live in the hero, and their reactions are the hero pair's: blue `sing` while the hero's
@@ -342,7 +342,7 @@ into the kit (Toys table):
   no film: its card offers "Read the lesson" (`/learn/04`) without "Watch the episode" and shows
   "10 minutes" (`kit/explorer.ts` knows only done, ready and planned). One optional field on
   `Lesson` serves both lessons, added by whichever page ships first; the card's status line,
-  "Ready · watch and read" today (`kit/explorer.ts:73-74`), then reads "Ready · read", and the
+  "Ready · watch and read" today (`kit/explorer.ts:72-74`), then reads "Ready · read", and the
   phone list and the graph read the same field.
 - `kit/explorer.ts`, links between pages: a ready card's actions are the same-page anchors
   `#watch` and `#lesson` (`kit/explorer.ts:105`), right only for the page's own lesson, so a card
@@ -350,7 +350,7 @@ into the kit (Toys table):
 - `kit/season.ts`, Lesson 4's entry: the practice link, `href` `/pitch-training?lesson=04`,
   `addr` `mercurypitch.com/pitch-training`, `label` "Exercises" and `note` "then tap Scale
   Runner", which the card prints as "Exercises, then tap Scale Runner" after the address
-  (`practiseMarkup`, `kit/explorer.ts:50-55`). It keeps its `needs` until the slug ships. Its
+  (`practiseMarkup`, `kit/explorer.ts:51-56`). It keeps its `needs` until the slug ships. Its
   `sig` becomes "A staircase with two short steps that slides to start on any note.", since "two
   uneven steps" did not say which.
 - `kit/notes.ts`: the spelling helper (Toys 1).
@@ -366,7 +366,7 @@ into the kit (Toys table):
 - `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, as at `:66`): Lesson 4's entry.
 - `public/learn/lesson-04-og.jpg`: the share card, 1200 x 630. With no film to cut a frame from,
   it is a still of the hero: the title over the staircase on C, do's house glyph lit.
-- The page's head, as Lesson 1's (`learn/01.html:9-45`):
+- The page's head, as Lesson 1's (`learn/01.html:9-58`):
   - title: "The major scale and home · Find Your Pitch, Lesson 4 | MercuryPitch";
   - meta description: "Why does do-re-mi sound finished when it lands on do, and restless when
     it stops on ti? A ten-minute lesson with live sound toys: the major scale's pattern of steps,
