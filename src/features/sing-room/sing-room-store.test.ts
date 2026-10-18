@@ -1,6 +1,7 @@
 import { createEffect, createRoot, createSignal } from 'solid-js'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { micIntent } from './room-machine'
+import { setSingMicGranted } from './sing-room-settings'
 import { beginTake, clearSingTakeResult, dispatchSingRoom, enterSingRoom, resetSingRoom, setSingTakeResult, singRoomContext, singTakeSummary, takesThisSession, } from './sing-room-store'
 
 beforeEach(() => {
@@ -73,6 +74,24 @@ describe('the mic policy, read through the store', () => {
     expect(micIntent(singRoomContext())).toBe(true)
     dispatchSingRoom({ type: 'leave' })
     expect(micIntent(singRoomContext())).toBe(false)
+  })
+})
+
+describe('a grant remembered after the room was built', () => {
+  afterEach(() => {
+    setSingMicGranted(false)
+  })
+
+  it('counts at the next arrival: the room starts live', () => {
+    // A new install: the room's store is built with nothing remembered...
+    setSingMicGranted(false)
+    resetSingRoom()
+    expect(singRoomContext().permission).toBe('unknown')
+    // ...and the native onboarding, over the held room, remembers a grant.
+    setSingMicGranted(true)
+    enterSingRoom()
+    expect(singRoomContext().permission).toBe('granted')
+    expect(singRoomContext().state).toBe('live')
   })
 })
 

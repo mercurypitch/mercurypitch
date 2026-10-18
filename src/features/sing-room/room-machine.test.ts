@@ -538,3 +538,34 @@ describe('the way in to the exercises', () => {
     },
   )
 })
+
+describe('a grant remembered after the room was built', () => {
+  it('counts at the arrival: the room starts, with no priming screen', () => {
+    // The native onboarding's first note, over a room built before it.
+    const ctx = run(initialSingRoomContext(), {
+      type: 'enter',
+      hasSummary: false,
+      granted: true,
+    })
+    expect(ctx.permission).toBe('granted')
+    expect(ctx.state).toBe('live')
+    expect(micIntent(ctx)).toBe(true)
+  })
+
+  it('leaves the permission as it was when none is remembered', () => {
+    const denied = run(
+      initialSingRoomContext(),
+      { type: 'enter', hasSummary: false },
+      { type: 'sing-a-note' },
+      { type: 'mic-denied' },
+      { type: 'leave' },
+    )
+    const ctx = run(denied, {
+      type: 'enter',
+      hasSummary: false,
+      granted: false,
+    })
+    expect(ctx.permission).toBe('denied')
+    expect(micIntent(ctx)).toBe(false)
+  })
+})
