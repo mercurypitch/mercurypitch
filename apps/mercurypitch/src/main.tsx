@@ -240,7 +240,7 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
   // the web. Same gate, same reason: called unconditionally, it put the
   // panel, its host and its switch into the store binary, which
   // `assert-no-portable-console.mjs --store-binary` now fails.
-  void import('@/lib/developer-console').then((module) => {
+  void import('@/components/developer-console-arming').then((module) => {
     module.armDeveloperConsole()
   })
 }

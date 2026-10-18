@@ -26,7 +26,9 @@ vi.mock('solid-js/web', async (importOriginal) => ({
 }))
 vi.mock('./MirrorApp', () => ({ MirrorApp: () => null }))
 vi.mock('@/components/ConsentBanner', () => ({ setupConsent: vi.fn() }))
-vi.mock('@/lib/developer-console', () => ({ armDeveloperConsole: vi.fn() }))
+vi.mock('@/components/developer-console-arming', () => ({
+  armDeveloperConsole: vi.fn(),
+}))
 vi.mock('@/features/voice-control/voice-diagnostics', () => ({
   initVoiceDiagnostics: vi.fn(),
   announceVoiceDiagnostics: vi.fn(),
