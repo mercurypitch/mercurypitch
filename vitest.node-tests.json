@@ -413,6 +413,7 @@
   "src/tests/uvr-stem-lease.test.ts",
   "src/tests/uvr-stem-persistence.test.ts",
   "src/tests/uvr-stem-split.test.ts",
+  "src/tests/visible-copy-em-dash.test.ts",
   "src/tests/vocal-analysis-mock.test.ts",
   "src/tests/vocal-analyzer.test.ts",
   "src/tests/vocal-range-fit.test.ts",
