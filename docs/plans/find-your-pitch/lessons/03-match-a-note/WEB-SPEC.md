@@ -340,7 +340,9 @@ Tests:
 - Two quizzes on one page need the three changes to `kit/quiz.ts` that Lesson 2's spec lists (its
   "What the kit and the app still need"): a root element or id prefix, so two quizzes share a page;
   `lesson` optional, so the recall marks no lesson done; and a question `id` (`QuizQuestion` has
-  none). Lesson 2's page brings them, and this page publishes after it.
+  none). The recall also needs the slot that spec adds after a question's heading, so question 2's
+  Play the two steps stays out of its answers' names. Lesson 2's page brings them, and this page
+  publishes after it.
 
 ### 9. Go deeper
 
@@ -411,8 +413,9 @@ motion or Pause animations each Merc holds a still frame and skips the reactions
    "Read the lesson" (`/learn/03`) without "Watch the episode" (`kit/explorer.ts` knows only done,
    ready and planned, and a ready card's buttons are same-page anchors); and Lesson 3's `len` in
    `season.ts`, "15 minutes" (FACTS 61).
-5. The quiz: Lesson 2's three changes to `kit/quiz.ts` (Toys, 8), if its page has not shipped
-   them, and the recall's rule of showing only after Lesson 2.
+5. The quiz: Lesson 2's three changes to `kit/quiz.ts` and its slot for a question's own controls
+   (Toys, 8), if its page has not shipped them, and the recall's rule of showing only after
+   Lesson 2.
 6. Optional: links that open Lesson 2 at a step (proposed `/learn/02#step-3`), which needs Lesson
    2's step deck to read the address when it opens (`kit/step-deck.ts` has no such hook today);
    until then the recall links the page.

@@ -1,4 +1,4 @@
-# Decisions (draft v11)
+# Decisions (draft v12)
 
 One line each, with the reason. These are Lesson 2's own choices; what waits for the owner across
 the series stays in MASTER-PLAN § 12, and the questions this lesson raises are at the end. v2
@@ -14,10 +14,11 @@ its own for the faults the five rounds kept finding, v7 answered round 6
 (`review/critic-08/report.md`) by making the rule measurable and handing pixel checks to the build,
 v10 answered round 9 (`review/critic-09/report.md`) by giving each close-up with no Merc a lead move
 and the build a total-hold budget, and v11 makes the five text changes of round 10
-(`review/critic-10/report.md`), whose verdict was SHIP, so the storyboard is approved for build. The
+(`review/critic-10/report.md`), whose verdict was SHIP, so the storyboard is approved for build. v12
+answers the written lesson's first review (18 October 2026), with decisions 80 to 87. The
 numbers are stable ids, so every reference to a decision holds: they are grouped by topic, not in
-order, and new decisions take the next free number. The last ten sections list every finding of each
-round and what was done with it.
+order, and new decisions take the next free number. The last eleven sections list every finding of
+each round and what was done with it, the last of them the written lesson's first review.
 
 ## Shape and length
 
@@ -103,18 +104,97 @@ round and what was done with it.
 
 ## Page
 
-- **45.** Page text: the six steps run to 818 words by a whitespace count with the headings, the toy notes and the Go deeper drawer left out (the script critic's round 2 count; v2 reported 824 by a looser one), inside MASTER-PLAN § 4.2's 500 to 900; the drawer is 147 words by that count and closed by default.
+- **45.** Page text: the six steps run to 818 words by a whitespace count with the headings, the toy
+  notes and the Go deeper drawer left out (the script critic's round 2 count; v2 reported 824 by a
+  looser one), inside MASTER-PLAN § 4.2's 500 to 900; the drawer is 147 words by that count and
+  closed by default.
+  Fix pass 1 (18 October 2026), counting the words that hold a letter or a digit, with the headings,
+  the toy notes and the drawer left out: the steps run 80, 108, 203, 103, 214 and 101 words, 809 in
+  all (the same count gives 798 for the text before the pass), and the drawer 132. Steps 3 and 5
+  stay over § 4.2's 120 a step because each carries a predict and a mix-up card, as Lesson 1's step
+  4 runs 151 with its card; without their cards they run 117 and 139. Step 3 lost its third "drawn
+  the same width" and a longer card; step 5 gained its predict (decision 85) and trimmed elsewhere.
 - **46.** Two mix-up cards, one per concept (playbook rule 3), each inside the step whose toy refutes it, as Lesson 1 placed its card; card 1 now states the eye's guess.
-- **47.** On phones the tile row stands vertical (13 tiles of 44 px) and the keyboard shows one octave with 44 px black-key targets: touch targets of 44 px, no sideways scroll, and pitch is height.
+- **47.** On phones the tile row stands vertical (13 tiles of 44 px) and the keyboard shows one
+  octave with 44 px black-key targets: touch targets of 44 px, no sideways scroll, and pitch is
+  height. Amended by decision 83: the figures lie left to right on phones too, and the geometry is
+  measured.
 - **48.** The Semitone or tone? game gives feedback about the sound, never the listener, and keeps no rating or streak: it is a practice toy, not a test (rules 21 and 25).
 - **49.** The recall check asks Lesson 1's questions 2 and 4 word for word, reshuffled and without stored answers, so they measure delayed retrieval (MASTER-PLAN § 9); neither quiz has question ids yet (FACTS 35a), so the Lesson telemetry track gives both the same ids before the answers count. Question 4 (after B3 comes C4) also primes the B-to-C boundary this lesson explains. MASTER-PLAN § 4.2 called the section a "warm-up retrieval"; it is now a "recall check", and the page's section "Recall from Lesson 1", so "warm-up" keeps its one meaning (decision 3; script critic 02, N8).
 - **78.** The quick check asks the film's four recap questions (semitones in an octave; which of two
   steps, played by ear, is the semitone; C♯ and D♭, one key or two; cents in a tone), as Lesson 1's
   page asks its film's, and a wrong answer links back to the step whose toy is that question's
-  answer object in the film (18 October 2026, with the film as built).
+  answer object in the film (18 October 2026, with the film as built). The link sits on the
+  misconception's answer, as in Lesson 1's quick check, so question 2's "They're the same size",
+  mix-up card 1's belief, links Step 3 as "The first" already did (review 1, item 9). No question,
+  option or right answer changed, so Lesson 3's recall copy changes that one feedback line, and
+  Lesson 4's (questions 1 and 3) nothing.
 - **79.** Sing it shows the film's plain chrome guide while the viewer sings, so nothing of the
   app's drawing is on screen during their turn; amber shows only while one of Merc's slides plays
-  (decision 68 applied to the page).
+  (decision 68 applied to the page). Merc's path rests in plain chrome and goes back to it after
+  each slide and after the guide's sweep (review 1, item 6).
+- **80.** The cold open plays in the hero and the recall check follows it, which swaps MASTER-PLAN
+  § 4.2's items 3 and 4 (review 1, item 2). Play the climb lights the beads and counts the steps on
+  the hero spiral, and the Mercs' `sing` and `celebrate` happen in the hero, so the bubbles and the
+  predict stay beside that spiral, as Lesson 1's sit beside its stage. With the recall's two
+  questions between them, the climb that answers the predict would play off screen and the bubbles
+  would sit apart from the Mercs who speak them (playbook rule 10). The recall still comes before
+  any step, so it still asks from memory before the lesson teaches anything.
+- **81.** Each copy of the spiral keeps its own lit beads (review 1, item 3). The hero's, steps 1
+  and 2's and free play's light only the beads heard on them, so the cold-open climb lights only
+  the hero spiral: step 1 opens on dim beads, ready for its own discovery, and free play starts
+  fresh. Steps 1 and 2 are worded to read true either way ("the bead between A and B", "watch the
+  beads light"), in case a later build shares them.
+- **82.** The Semitone or tone? game sits in step 4's text column, under the Notice, as a card of
+  its own, not on the stage (review 1, item 3). It is played by ear and needs no picture, so the
+  step deck keeps one toy per step (`toyFor`) and the tile row keeps the stage; it follows the step
+  that teaches tones, so the practice comes straight after the guided toy (playbook rule 17); and
+  on phones, where the stage sits above the text, it comes under the step's text with its two
+  44 px buttons. Free play does not repeat it.
+- **83.** Phone geometry for steps 3 to 5, amending decision 47 (review 1, item 4). Measured from
+  Lesson 1's stage CSS at 390 x 844, the stage card is 358 px inside the 16 px gutters, and its 1 px
+  borders, its 12 px padding below 960 px and a figure's 1 px border leave a 330 px canvas: eight
+  white keys got 39.75 px with Lesson 1's 6 px key margin, and thirteen tiles standing up needed
+  572 px. Steps 3 to 5's figure now spans the card's inner 356 px, 310 px tall. Step 3 keeps the
+  whole octave, all eight white keys at 44.5 px, each black key's 44 px zone 0.5 px clear of the
+  next. The straightened row and step 4's row are thirteen 27 px tiles drawn as a picture that
+  takes no taps, every control being a 44 px button. Step 5 closes up on B3 to F4, seven tiles at
+  50.9 px, each a target, which holds everything the step asks. The keys and tiles lie left to
+  right, as in the film and on the desktop, so Straighten is one glide, not a turn; the film too
+  stands only the ruler up for pitch as height (decision 36). The stages run 478, 478 and 680 px,
+  under the 786 px left below the masthead. Narrower than 386 px, the keyboard shows the white keys
+  that fit at 44 px and pans one key at a time. The octave is A3 to A4, as the climb, the film's
+  tiles (`output/motion/lesson-02/assets/lib/tiles.js:48`) and Lesson 1's phone keyboard
+  (`lesson-01/toy-spiral.ts:26-27`, `:68-69`) have it: nothing on the page or in the film shows it
+  C to C.
+- **84.** The first visit (review 1, item 1). `/ear-lab` opens First Light, the studio's intro,
+  before the Ear Lab for anyone with no stored welcome flag (FACTS 33a), so the practice card, the
+  footer and the explorer card tell a first-time visitor to close it with the × at the top right,
+  its welcome screen's only way out (accessible name "Skip the intro"), then tap Leap. Lesson 1's
+  link, `/mirror`, is a page of its own with no intro, so the problem is new with Lesson 2. The
+  proper fix is the `?lesson=` step-aside (CURRICULUM § 4 item 6), after which the line goes; it is
+  listed under the kit and app work, not as a launch dependency, so the page can publish with the
+  line.
+- **85.** Step 5 has the page's third predict, "One semitone up from E: a black key or a white
+  key?", before Sharp, as the film holds its 2.0 s `predict-e` pause before the sound (decision 18;
+  playbook rule 2, predict before every reveal; review 1, item 5). Mix-up card 2 shows its belief
+  and why it seems right, then the predict, whose choice unlocks Play E to F and the stage's Sharp,
+  Flat and Show the rare ones, and only then its evidence and better idea. The Try and Notice move
+  on to Flat on F, so they try the idea on a second case rather than repeat the evidence.
+- **86.** The six step headings are orange's questions, playbook rule 4's web column (review 1,
+  item 19): from orange's own lines where one fits (o3 for step 2, o5 for step 3, o2 for step 4, o8
+  for step 6) and in orange's voice for steps 1 and 5. The other section headings ("Recall from
+  Lesson 1", "Semitone, tone, sharp and flat, cent", "Twelve notes", "Sing it", "Quick check",
+  "Three lines to keep", "Watch the episode", "The season, mapped") stay Lesson 1's labels: as
+  questions they would not read naturally. A deviation from rule 4, recorded here; Lesson 1's page
+  does not make its headings questions either.
+- **87.** The practice card's Leap figure keeps decision 77's rule with the page's own values
+  (review 1, item 8): m2 and M2 lit, their labels in ink; the other ten with no fill and a faint
+  outline (ink at 20 %), their labels and names in ink-2, 7.7:1 to 8.5:1 on the card's gradient
+  (`--ink-2` #a8b3bf on `--card` #12171e and on its lighter top, `kit/lesson-base.css:17`, `:25`,
+  `:53-57`). The film's S15g sets its ghosted labels in #7b828c, about 4.9:1 on the film's ground;
+  on the card that would measure 4.2:1 to 4.6:1, under 4.5:1 where the card is lighter, so the page
+  does not borrow it.
 
 ## Process
 
@@ -501,3 +581,84 @@ Storyboard critic (`review/critic-10/report.md`):
 - Needs a human (whether act 1's highlight pulls the eye from A3 to A♯3, 148 s of front-on framing, the legend and the monitor on a phone, S12d on Orange and accents alone): open for the owner, in STORYBOARD § Approved for build, with the earlier critics' open questions.
 
 No sweep for holds this round: critic 10's recount replaces the board's own estimate (STORYBOARD § Build checks). The storyboard is approved for build.
+
+## Written lesson, review 1 response
+
+One line per finding of the written lesson's first review (18 October 2026, on LESSON.md,
+WEB-SPEC.md and FACTS.md at `a549e58f7`; verdict ONE MORE PASS, with 8 blocking and 12 optional
+findings). The film is unchanged.
+
+Blocking:
+
+- 1 (first-time visitors meet First Light before the Ear Lab): CHANGED. WEB-SPEC's Practice link
+  states the first-visit behaviour, read in the app's source (FACTS 33a): the intro's welcome screen
+  has one way out, an × at the top right whose accessible name is "Skip the intro". The practice
+  card and the footer carry a first-visit line, and the explorer card's note in `season.ts` a short
+  form. The `?lesson=` step-aside (CURRICULUM § 4 item 6) is listed under the kit and app work as
+  the proper fix, not as a launch dependency (decision 84).
+- 2 (the recall check sits between the spiral and its predict): CHANGED. The bubbles, the predict
+  and Play the climb stay in the hero beside the spiral, as Lesson 1's do, and the recall check
+  comes straight after the hero, swapping MASTER-PLAN § 4.2's items 3 and 4 (decision 80). The
+  section-headings table has a row for the hero and cold open.
+- 3 (kit work not named): CHANGED. WEB-SPEC lists each kit item with what it must do. The named CSS,
+  `sing.ts`, `predict.ts`, the toys and the hero's sky move into the kit; toys and predicts mount
+  per root, several per page (six spiral copies, two rulers, three predicts); the names toggle has
+  one page-wide store. Lit beads stay per copy, so the cold-open climb lights only the hero spiral,
+  and steps 1 and 2 read true either way (decision 81). The ear game sits in step 4's text column
+  (decision 82).
+- 4 (the phone keyboard's 44 px targets do not fit): CHANGED. Measured from Lesson 1's stage CSS,
+  the canvas is 330 px. Steps 3 to 5's figure now spans the card's inner 356 px: all eight white
+  keys at 44.5 px with black-key zones 0.5 px clear, the straightened row as a picture, step 5 as a
+  seven-tile close-up, and stages of 478, 478 and 680 px with every control placed (decision 83,
+  amending 47). The octave stays A3 to A4, as the page and the film have it.
+- 5 (step 5 reveals E♯ = F with no predict): CHANGED. A third predict, "One semitone up from E: a
+  black key or a white key?", unlocks Play E to F and the stage's Sharp, Flat and Show the rare
+  ones, and the card's evidence follows it; Toys 7 has three predicts; the Try and Notice move on
+  to F♭ (decision 85).
+- 6 (Sing it rests in amber): CHANGED. Merc's path rests in plain chrome, goes back to it after each
+  slide and after the sweep, and is amber only while a slide plays (Toys 5; decision 79).
+- 7 (Go deeper's "a little ... much smaller distances" has no source): CHANGED, as the review gives
+  it: "the same directions, for a miss of any size". FACTS 37a loses "a little".
+- 8 (the Leap figure misdescribes the film): CHANGED. The Wrap gives the page's own values, the
+  ghosted labels and names in ink-2 at 7.7:1 to 8.5:1 on the card, fills and outlines dimmed,
+  checked against the kit's tokens; "as the film draws them" is gone (decision 87).
+
+Optional:
+
+- 9 (question 2's step link sits on the wrong distractor): CHANGED, minimally. "They're the same
+  size" now also ends "Try Step 3 again.", so both wrong answers link Step 3. No question, option
+  or right answer changed; Lessons 3 and 4 need that one feedback line only (decision 78).
+- 10 (mix-up card 1 says "listen" with nothing to press): CHANGED. Play C to C♯, then B to C on the
+  card (FACTS 46); Play E to F after step 3's reveal (FACTS 47); Play C, C♯, D, then C to D in step
+  4 (FACTS 48). WEB-SPEC's Audio lists every control.
+- 11 (two long steps): CHANGED. Step 3 drops its third "drawn the same width" and tightens its
+  card, 224 words to 203; step 5 gains its predict and trims elsewhere, to 214. Without their
+  mix-up cards they run 117 and 139 (decision 45).
+- 12 ("ready to watch" before the film is up): CHANGED. The explorer reads "In production" until
+  the film is published, with both of its lines in LESSON.md. FACTS 54 gives 7:11 and the chapter
+  times from the cue sheet, `captions/chapters.json` and DELIVERY.md.
+- 13 (Lesson 3 will reuse this quiz's step links): CHANGED. The quiz kit item says a reused
+  question's link is a plain link to `/learn/02` (or `/learn/02#step-N` once the step deck opens
+  at a step), never `data-goto-step`; opening at a step is an optional step-deck item.
+- 14 (question 2's play button inside the `<h3>`): CHANGED. The quiz kit item names a slot after
+  the heading, outside the label of the answers.
+- 15 (head and footer copy missing): CHANGED. LESSON.md's "Head and footer" gives every string; the
+  footer credits read "Voices in the episode: ElevenLabs (Eleven v3).", as Lesson 1's built footer
+  does.
+- 16 (Toys 3 contradicts itself): CHANGED. An arrow's name goes in place of the label on a black key
+  or dark tile, and above the letter on a white one.
+- 17 (Toys 2 flips "past 50"): CHANGED to "at 50 cents".
+- 18 (spoken names for ♯ and ♭): CHANGED. The Contract gives every printed ♯ and ♭ a spoken name,
+  the lanes' labels included.
+- 19 (rule 4's web column): CHANGED where it reads naturally. The six step headings are orange's
+  questions; the other section headings stay Lesson 1's labels, a deviation recorded in decision 86
+  that Lesson 1's page shares.
+- 20 (small points): CHANGED. The game's name is italic in step 4; "toward" is "towards"; the future
+  card text says "answer whether"; the next-lesson card keeps "a semitone or more off" in words and
+  no longer claims to print the film's label; WEB-SPEC's address line has ", then tap Leap"; the
+  ear game's feedback follows the names toggle; a step bar carries its number of semitones,
+  whatever it is; and amber has a kit token, `--amber`.
+- Caveat (the film is not signed off): TAKEN. rc-04 is called the release candidate throughout. The
+  recap objects, the Leap grid and the end card were checked again against `s15-recap.html`,
+  `s16-next.html` and `s17-end.html` as built, and are checked once more against the master that
+  ships.
