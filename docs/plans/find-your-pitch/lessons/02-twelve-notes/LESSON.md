@@ -4,7 +4,9 @@ The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Wri
 English, as the owner decided on 16 October 2026 (MASTER-PLAN § 12 item 5, DECISIONS 75): British
 in general, with American wording where the owner prefers it; the app's screens stay American.
 Each step names its toy (the interactive visual it sits beside); the page spec is
-[WEB-SPEC.md](WEB-SPEC.md).
+[WEB-SPEC.md](WEB-SPEC.md). Checked on 18 October 2026 against the film as voiced and built (7:11,
+`output/motion/lesson-02/`): the quick check asks the film's four recap questions, and the Wrap's
+practice card and next-lesson card say what the film's end card and tease say.
 
 ---
 
@@ -13,8 +15,8 @@ Each step names its toy (the interactive visual it sits beside); the page spec i
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 02
 - Title (the hook question): **Musicians only use seven letters, so where do the other five notes
   come from?**
-- Meta: 10 minutes · after Lesson 1 · sound on
-- Prerequisite chip: Lesson 1, What is a note?
+- Meta, as three chips: 10 minutes · After Lesson 1: What is a note? (the prerequisite chip, a link
+  to Lesson 1's page) · Sound on
 - Promise: By the end you'll find all twelve notes on a keyboard, tell a semitone from a tone by
   ear, know why one key has two names, and know what a cent is.
 
@@ -27,8 +29,8 @@ Each step names its toy (the interactive visual it sits beside); the page spec i
 
 Two questions from last time, asked afresh (no earlier answers are shown). They are Lesson 1's
 quiz questions 2 and 4, word for word (FACTS 35a). Neither quiz has question ids yet, so the
-Lesson telemetry track gives both the same ids before these answers can count as the delayed score
-(MASTER-PLAN § 9).
+Lesson telemetry track gives Lesson 1's questions their ids (WEB-SPEC, Toys 6) before these
+answers can count as the delayed score (MASTER-PLAN § 9).
 
 1. You double a note's frequency. What do you get?
    - The same note, one octave up **[correct]** · Feedback: "Exactly: two for one is an octave."
@@ -147,15 +149,16 @@ C#4.
 **Try:** switch the names between sharps, flats and both. Then tap E and press Sharp.
 **Notice:** one semitone up from E lands on F, a white key: E♯ is just another name for F.
 
-_Toy: the tile row with the two-names toggle._
+_Toy: the tile row with the two-names toggle, opening on C♯ written above D♭ on one key under one
+gold ring._
 
 ## Step 6 of 6: A hundred cents
 
-How big is a semitone, exactly? Musicians measure it in cents: in the tuning MercuryPitch uses,
-every semitone is a hundred cents wide, so the twelve semitones of an octave make 1,200 cents,
-and a tone is 200. MercuryPitch measures in cents too: its Singing tab names the nearest note and
-shows on a bar how far above or below it you are, up to 50 cents either way. Fifty cents is
-halfway; past that, the next note is nearer.
+How big is a semitone, exactly? We measure it in cents: in the tuning MercuryPitch uses, every
+semitone is a hundred cents wide, so the twelve semitones of an octave make 1,200 cents, and a
+tone is 200. MercuryPitch measures in cents too: its Singing tab names the nearest note and shows
+on a bar how far above or below it you are, up to 50 cents either way. Fifty cents is halfway;
+past that, the next note is nearer.
 
 **Try:** drag the marker slowly from A3 up to A♯3.
 **Notice:** at 50 cents the nearest note changes from A3 to A#3, just as MercuryPitch's monitor
@@ -185,39 +188,42 @@ anything feels uncomfortable.
 
 [ Play Merc's slide ] [ Play it an octave up ] [ Start the guide ]
 
-The guide runs once after Merc's slide: a line sweeps along Merc's path, so follow it up one lane
-and back. Nothing listens here and nothing is scored. It's just for you.
+Start the guide once you've heard Merc's slide: it counts you in, then a line sweeps along Merc's
+path, so follow it up one lane and back. Nothing listens here and nothing is scored. It's just for
+you.
 
 ## Quick check
 
-Each question has three answers, shown in a shuffled order, so a guess scores a third, not half.
+The film's four recap questions, each with three answers shown in a shuffled order, so a guess
+scores a third, not half. The page puts "Right." or "Not quite." before each feedback line, and a
+"Try Step N again" ends with a link to that step, as in Lesson 1's quick check.
 
 1. How many semitones make an octave?
    - 12 **[correct]** · Feedback: "Yes: seven letters and five notes between them, twelve equal
      steps."
    - 7 · Feedback: "Seven is the number of letters. Five more notes sit between them: twelve
-     semitones in all."
+     semitones in all. Try Step 2 again."
    - 8 · Feedback: "From A to A there are eight letters, counting both As, but five more notes sit
      between them: the octave is twelve semitone steps."
-2. Play the step: E, then F. How big is it? [Play]
-   - One semitone **[correct]** · Feedback: "Right: E and F are neighbours, with no black key
-     between them."
-   - One tone · Feedback: "They're both white keys, but nothing sits between them: E to F is one
-     semitone, like B to C."
-   - No step: it's the same note · Feedback: "Listen again: F is higher. It's the smallest step a
-     piano has, one semitone."
-3. Why does the black key between C and D have two names?
-   - It's one semitone up from C and one semitone down from D **[correct]** · Feedback: "Yes: it
-     takes a name from each neighbour, C♯ from below and D♭ from above."
-   - It's two different notes that share one key · Feedback: "It's one note: C♯ and D♭ sound
-     exactly the same on a piano, two names for one key."
-   - Black keys have two names and white keys never do · Feedback: "White keys can have two names
-     too: one semitone up from E is F, so E♯ is F."
-4. How many cents are in one semitone?
-   - 100 **[correct]** · Feedback: "Yes: a hundred cents to an equal semitone, 1,200 to an
-     octave."
-   - 12 · Feedback: "Twelve is the number of semitones in an octave. Each one is a hundred cents."
-   - 1,200 · Feedback: "That's a whole octave: twelve semitones of a hundred cents each."
+2. Listen to two steps. Which one is the semitone? [Play the two steps]
+   - The second **[correct]** · Feedback: "B to C: two white keys, but only one semitone. The
+     first, A to B, is a tone."
+   - The first · Feedback: "The first, A to B, is a tone, with A♯ between them. The second, B to
+     C, is the semitone: two white keys with nothing between. Try Step 3 again."
+   - They're the same size · Feedback: "Listen again: the first, A to B, has A♯ between, so it's a
+     tone, twice the size of the second, B to C."
+3. C♯ and D♭: one key or two?
+   - One key, with two names **[correct]** · Feedback: "One semitone up from C and one semitone
+     down from D land on the same key."
+   - Two keys, side by side · Feedback: "There's only one key between C and D: C♯ is a semitone up
+     from C, D♭ a semitone down from D, and both land on it. Try Step 5 again."
+   - It depends on the music around it · Feedback: "The music around it decides which name is
+     written, not which key: C♯ and D♭ are one key either way."
+4. How many cents is a tone?
+   - 200 **[correct]** · Feedback: "Two equal semitones, a hundred cents each."
+   - 100 · Feedback: "That's one semitone. A tone is two of them: 200 cents. Try Step 6 again."
+   - 2 · Feedback: "Two is how many semitones make a tone. Each is a hundred cents, so a tone is
+     200."
 
 ## Wrap
 
@@ -230,17 +236,36 @@ Each question has three answers, shown in a shuffled order, so a guess scores a 
 **One-sentence challenge:** explain to a friend, in one sentence, why there's no black key between
 B and C.
 
-**Practise it:** in MercuryPitch's Ear Lab, Leap plays two notes, going up or down, and asks for
-the distance. There a semitone is called a minor 2nd (m2) and a tone a major 2nd (M2). Leap mixes
-all twelve distances today, so listen for those two. Free: **mercurypitch.com/ear-lab**, then tap
-Leap. For an easier first drill, Contour asks only whether the second note went up, down or
-stayed.
+**Practise it.** The practice card, which says what the film's end card says:
+
+- Eyebrow: Practise in MercuryPitch
+- Title: Ear Lab's Leap
+- Text: In MercuryPitch's Ear Lab, Leap plays two notes, going up or down, and asks for the
+  distance. There a semitone is called a minor 2nd (m2) and a tone a major 2nd (M2). Leap mixes
+  all twelve distances today, so listen for those two. For an easier first drill, Contour asks
+  only whether the second note went up, down or stayed.
+- Address: Practise it free: **mercurypitch.com/ear-lab**, then tap Leap.
+- Figure: Leap's twelve answers in the app's six columns, m2 and M2 lit, the other ten ghosted.
+  Caption: "Illustration: Leap's twelve answers. In Leap: m2 = semitone · M2 = tone."
 
 _[Editorial: when the `ear-drill` launch kind with a bank subset ships (CURRICULUM § 4 item 5),
-replace the Leap sentences with: "Leap plays two notes, going up or down; say whether the step was
-a semitone (m2) or a tone (M2). Free: mercurypitch.com/exercises/semitone-or-tone" (proposed
-slug, DECISIONS 31). On the public host every link carries `?lesson=02`.]_
+the card's text becomes "Leap plays two notes, going up or down; say whether the step was a
+semitone (m2) or a tone (M2)." and its address "Practise it free:
+mercurypitch.com/exercises/semitone-or-tone" (proposed slug, DECISIONS 31); the figure stays. On
+the public host every link carries `?lesson=02`.]_
 
-**Next lesson:** Lesson 3, Match a note. "Asked, most of 1,105 students said they couldn't copy a
-tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going
-on?"
+**Next lesson** (a card that opens Lesson 3 in the explorer): Lesson 3, Match a note. "Asked, most
+of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six
+missed by a semitone or more. So what's going on?" Beside it, the film's two figures: ASKED 59 %
+(of 1,105) and TESTED 10–16 % (a semitone or more off).
+
+## Watch the episode
+
+Below the Wrap (WEB-SPEC § 10).
+
+- Above the heading: The same lesson, as a film: 7:11, captions on
+- Play button: Play the episode · 7:11 · captions on. Until the film is on R2: Film coming soon ·
+  The poster for now · chapters and transcript are ready.
+- Beside the player: Chapters · tap to jump, the film's eleven chapters (WEB-SPEC § 10), from "The
+  missing five" at 00:00 to "Next time" at 06:49.
+- Under it: Read the transcript · from the captions.
