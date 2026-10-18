@@ -397,11 +397,23 @@ export function createAuroraGlideChunk(idSuffix: string): ProceduralChunk {
   }
 }
 
-/** Chunk 6: Vocal Sanctuary Gate — marble courtyard with clear singing anchor and frosted gate */
+export interface VocalSanctuaryOptions {
+  readonly barrierProfileId?:
+    | 'frosted-scroll-wall'
+    | 'frost-gold-arch-breakwall-a'
+  readonly optionalAlcove?: {
+    readonly variant: 'goblet' | 'coupe'
+    readonly label: string
+    readonly coinId: string
+  }
+}
+
+/** Chunk 6: Vocal Sanctuary Gate — marble courtyard with clear singing anchor, barrier, and optional discovery alcove */
 export function createVocalSanctuaryChunk(
   idSuffix: string,
   noteAnchorId: string,
   turn: 'none' | 'east' | 'west' = 'none',
+  options?: VocalSanctuaryOptions,
 ): ProceduralChunk {
   // Courtyard of 6 pearl-rest slabs: bounds z = 0.0 to 4.32
   const platforms: ChunkPlatform[] = [
@@ -437,22 +449,63 @@ export function createVocalSanctuaryChunk(
     },
   ]
 
+  const barrierProfileId =
+    options?.barrierProfileId ?? 'frosted-scroll-wall'
+  const barrierLabel =
+    barrierProfileId === 'frost-gold-arch-breakwall-a'
+      ? 'The Gilded Resonance Arch'
+      : 'The Frosted Gate'
+
   // Barrier placed at z = 3.96, singing anchor placed at z = 1.80 (2.16m forward distance)
   const encounters: ChunkEncounter[] = [
     {
       localId: `gate-${idSuffix}`,
       role: 'gate',
-      label: 'The Frosted Gate',
-      variant: 'frosted-scroll-wall',
+      label: barrierLabel,
+      variant: barrierProfileId,
       position: { x: 0, y: 0, z: 3.96 },
       anchor: { x: 0, y: 0, z: 1.8 },
       noteAnchorId,
       presentationBarrier: {
-        profileId: 'frosted-scroll-wall',
+        profileId: barrierProfileId,
         facingYaw: Math.PI,
       },
     },
   ]
+
+  // Optional side-alcove wing placed on the side opposite any turn
+  if (options?.optionalAlcove) {
+    const alcoveSign = turn === 'east' ? -1 : 1
+    platforms.push(
+      {
+        localId: `sanc-alcove-1-${idSuffix}`,
+        profileId: 'pearl-rest',
+        center: { x: Number((alcoveSign * 3.2).toFixed(3)), y: 0, z: 1.8 },
+      },
+      {
+        localId: `sanc-alcove-2-${idSuffix}`,
+        profileId: 'pearl-rest',
+        center: { x: Number((alcoveSign * 3.2).toFixed(3)), y: 0, z: 2.52 },
+      },
+    )
+    encounters.push({
+      localId: `alcove-${idSuffix}`,
+      role: 'optional-discovery',
+      label: options.optionalAlcove.label,
+      variant: options.optionalAlcove.variant,
+      position: {
+        x: Number((alcoveSign * 3.4).toFixed(3)),
+        y: 0,
+        z: 2.52,
+      },
+      anchor: {
+        x: Number((alcoveSign * 2.75).toFixed(3)),
+        y: 0,
+        z: 1.8,
+      },
+      discoveryCoinIds: [options.optionalAlcove.coinId],
+    })
+  }
 
   const checkpoints: ChunkCheckpoint[] = [
     {
@@ -497,7 +550,7 @@ export function createVocalSanctuaryChunk(
       localId: `cam-sanctuary-${idSuffix}`,
       platformLocalIds: platforms.map((p) => p.localId),
       lookFromPlatformLocalId: platforms[0].localId,
-      lookToPlatformLocalId: platforms[platforms.length - 1].localId,
+      lookToPlatformLocalId: `sanc-6-${idSuffix}`,
     },
   }
 }
@@ -605,7 +658,7 @@ export function createFinalePavilionChunk(idSuffix: string): ProceduralChunk {
   }
 }
 
-/** Chunk 8: Slalom Zigzag Cascade — alternating diagonal stepping stones requiring directional jumping */
+/** Chunk 8: Slalom Zigzag Cascade — alternating diagonal stepping stones with rising contour */
 export function createSlalomZigzagChunk(
   idSuffix: string,
   style: 'frost' | 'hex' | 'hybrid' = 'hybrid',
@@ -620,7 +673,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-s1-${idSuffix}`,
       profileId: style === 'frost' ? 'frost-lily' : 'rose-hex-crumble',
-      center: { x: -0.7, y: 0, z: 2.2 },
+      center: { x: -0.7, y: 0.12, z: 2.2 },
       behavior:
         style !== 'frost'
           ? {
@@ -634,7 +687,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-s2-${idSuffix}`,
       profileId: style === 'hex' ? 'rose-hex-crumble' : 'frost-lily',
-      center: { x: 0.7, y: 0, z: 4.8 },
+      center: { x: 0.7, y: 0.24, z: 4.8 },
       behavior:
         style === 'hex'
           ? {
@@ -648,7 +701,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-s3-${idSuffix}`,
       profileId: style === 'frost' ? 'frost-lily' : 'rose-hex-crumble',
-      center: { x: -0.7, y: 0, z: 7.4 },
+      center: { x: -0.7, y: 0.12, z: 7.4 },
       behavior:
         style !== 'frost'
           ? {
@@ -662,7 +715,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-s4-${idSuffix}`,
       profileId: style === 'hex' ? 'rose-hex-crumble' : 'frost-lily',
-      center: { x: 0.7, y: 0, z: 10.0 },
+      center: { x: 0.7, y: 0.24, z: 10.0 },
       behavior:
         style === 'hex'
           ? {
@@ -676,7 +729,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-arr-${idSuffix}`,
       profileId: 'pearl-rest',
-      center: { x: 0, y: 0, z: 11.84 },
+      center: { x: 0, y: 0.3, z: 11.84 },
     },
   ]
 
@@ -699,7 +752,7 @@ export function createSlalomZigzagChunk(
     },
     exitSocket: {
       id: 'exit',
-      position: { x: 0, y: 0, z: 12.2 },
+      position: { x: 0, y: 0.3, z: 12.2 },
       facing: 'north',
       width: 3.2,
       clearanceMargin: 0.6,
@@ -710,14 +763,19 @@ export function createSlalomZigzagChunk(
   }
 }
 
-/** Chunk 9: Arced Viaduct — sweeping 90-degree curved causeway across the clouds */
+/** Chunk 9: Arced Viaduct — sweeping 90-degree 3D spiral causeway across the clouds */
 export function createArcedViaductChunk(
   idSuffix: string,
   turn: 'east' | 'west',
   warningSeconds = 1.6,
+  elevationDelta = 0.36,
 ): ProceduralChunk {
   const sign = turn === 'east' ? 1 : -1
   const landingTurns = turn === 'east' ? 1 : 3
+  const y1 = Number((elevationDelta * 0.25).toFixed(3))
+  const y2 = Number((elevationDelta * 0.5).toFixed(3))
+  const y3 = Number((elevationDelta * 0.75).toFixed(3))
+  const y4 = Number(elevationDelta.toFixed(3))
 
   const platforms: ChunkPlatform[] = [
     {
@@ -728,12 +786,12 @@ export function createArcedViaductChunk(
     {
       localId: `arc-p2-${idSuffix}`,
       profileId: 'frost-lily',
-      center: { x: Number((sign * 0.85).toFixed(3)), y: 0, z: 2.17 },
+      center: { x: Number((sign * 0.85).toFixed(3)), y: y1, z: 2.17 },
     },
     {
       localId: `arc-p3-${idSuffix}`,
       profileId: 'rose-hex-crumble',
-      center: { x: Number((sign * 2.45).toFixed(3)), y: 0, z: 4.49 },
+      center: { x: Number((sign * 2.45).toFixed(3)), y: y2, z: 4.49 },
       behavior: {
         kind: 'crackle',
         warningSeconds,
@@ -744,13 +802,13 @@ export function createArcedViaductChunk(
     {
       localId: `arc-p4-${idSuffix}`,
       profileId: 'frost-lily',
-      center: { x: Number((sign * 4.885).toFixed(3)), y: 0, z: 4.49 },
+      center: { x: Number((sign * 4.885).toFixed(3)), y: y3, z: 4.49 },
       quarterTurns: landingTurns,
     },
     {
       localId: `arc-p5-${idSuffix}`,
       profileId: 'pearl-rest',
-      center: { x: Number((sign * 6.7).toFixed(3)), y: 0, z: 4.49 },
+      center: { x: Number((sign * 6.7).toFixed(3)), y: y4, z: 4.49 },
       quarterTurns: landingTurns,
     },
   ]
@@ -774,7 +832,7 @@ export function createArcedViaductChunk(
     },
     exitSocket: {
       id: 'exit',
-      position: { x: Number((sign * 7.06).toFixed(3)), y: 0, z: 4.49 },
+      position: { x: Number((sign * 7.06).toFixed(3)), y: y4, z: 4.49 },
       facing: turn,
       width: 3.2,
       clearanceMargin: 0.6,
@@ -785,7 +843,7 @@ export function createArcedViaductChunk(
   }
 }
 
-/** Chunk 10: Viaduct S-Curve — serpentine flowing ribbon path weaving laterally */
+/** Chunk 10: Viaduct S-Curve — serpentine flowing ribbon path weaving laterally and vertically */
 export function createViaductSCurveChunk(
   idSuffix: string,
   warningSeconds = 1.6,
@@ -799,12 +857,12 @@ export function createViaductSCurveChunk(
     {
       localId: `scurve-p2-${idSuffix}`,
       profileId: 'frost-lily',
-      center: { x: 0.8, y: 0, z: 2.1 },
+      center: { x: 0.8, y: 0.14, z: 2.1 },
     },
     {
       localId: `scurve-p3-${idSuffix}`,
       profileId: 'rose-hex-crumble',
-      center: { x: 1.2, y: 0, z: 4.3 },
+      center: { x: 1.2, y: 0.28, z: 4.3 },
       behavior: {
         kind: 'crackle',
         warningSeconds,
@@ -815,7 +873,7 @@ export function createViaductSCurveChunk(
     {
       localId: `scurve-p4-${idSuffix}`,
       profileId: 'rose-hex-crumble',
-      center: { x: 0.0, y: 0, z: 6.2 },
+      center: { x: 0.0, y: 0.14, z: 6.2 },
       behavior: {
         kind: 'crackle',
         warningSeconds,
@@ -826,12 +884,12 @@ export function createViaductSCurveChunk(
     {
       localId: `scurve-p5-${idSuffix}`,
       profileId: 'frost-lily',
-      center: { x: -0.8, y: 0, z: 8.4 },
+      center: { x: -0.8, y: 0.28, z: 8.4 },
     },
     {
       localId: `scurve-p6-${idSuffix}`,
       profileId: 'pearl-rest',
-      center: { x: 0.0, y: 0, z: 10.22 },
+      center: { x: 0.0, y: 0.36, z: 10.22 },
     },
   ]
 
@@ -854,7 +912,7 @@ export function createViaductSCurveChunk(
     },
     exitSocket: {
       id: 'exit',
-      position: { x: 0, y: 0, z: 10.58 },
+      position: { x: 0, y: 0.36, z: 10.58 },
       facing: 'north',
       width: 3.2,
       clearanceMargin: 0.6,
@@ -877,13 +935,13 @@ export function createSplitForkChunk(idSuffix: string): ProceduralChunk {
     {
       localId: `fork-frost-${idSuffix}`,
       profileId: 'frost-lily',
-      center: { x: -1.0, y: 0, z: 2.1 },
+      center: { x: -1.0, y: 0.12, z: 2.1 },
     },
     // Right lane: Hex crumble stepping stones
     {
       localId: `fork-hex1-${idSuffix}`,
       profileId: 'rose-hex-crumble',
-      center: { x: 1.0, y: 0, z: 1.82 },
+      center: { x: 1.0, y: 0.1, z: 1.82 },
       behavior: {
         kind: 'crackle',
         warningSeconds: 1.6,
@@ -894,7 +952,7 @@ export function createSplitForkChunk(idSuffix: string): ProceduralChunk {
     {
       localId: `fork-hex2-${idSuffix}`,
       profileId: 'rose-hex-crumble',
-      center: { x: 1.0, y: 0, z: 3.56 },
+      center: { x: 1.0, y: 0.2, z: 3.56 },
       behavior: {
         kind: 'crackle',
         warningSeconds: 1.6,
@@ -906,7 +964,7 @@ export function createSplitForkChunk(idSuffix: string): ProceduralChunk {
     {
       localId: `fork-arr-${idSuffix}`,
       profileId: 'pearl-rest',
-      center: { x: 0, y: 0, z: 5.1 },
+      center: { x: 0, y: 0.24, z: 5.1 },
     },
   ]
 
@@ -929,7 +987,7 @@ export function createSplitForkChunk(idSuffix: string): ProceduralChunk {
     },
     exitSocket: {
       id: 'exit',
-      position: { x: 0, y: 0, z: 5.46 },
+      position: { x: 0, y: 0.24, z: 5.46 },
       facing: 'north',
       width: 3.2,
       clearanceMargin: 0.6,
@@ -963,7 +1021,7 @@ export function createDiagonalGlideChunk(
       center: { x: raftStartX, y: 0, z: 1.97 },
       behavior: {
         kind: 'glide',
-        translation: { x: deltaX, y: 0, z: 2.4 },
+        translation: { x: deltaX, y: 0.32, z: 2.4 },
         travelSeconds: 3.4,
         dwellSeconds: 1.2,
       },
@@ -971,7 +1029,7 @@ export function createDiagonalGlideChunk(
     {
       localId: `diag-arr-${idSuffix}`,
       profileId: 'pearl-rest',
-      center: { x: endX, y: 0, z: 5.98 },
+      center: { x: endX, y: 0.32, z: 5.98 },
     },
   ]
 
@@ -994,7 +1052,7 @@ export function createDiagonalGlideChunk(
     },
     exitSocket: {
       id: 'exit',
-      position: { x: endX, y: 0, z: 6.34 },
+      position: { x: endX, y: 0.32, z: 6.34 },
       facing: 'north',
       width: 3.2,
       clearanceMargin: 0.6,
@@ -1004,3 +1062,331 @@ export function createDiagonalGlideChunk(
     cameraSection,
   }
 }
+
+/** Chunk 13: Terraced Ascent — 3D climbing marble stair and alternating amethyst/rose crackle tiers (+0.72m rise) */
+export function createTerracedAscentChunk(
+  idSuffix: string,
+  warningSeconds = 1.5,
+): ProceduralChunk {
+  const platforms: ChunkPlatform[] = [
+    {
+      localId: `asc-s1-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.0, z: 0.36 },
+    },
+    {
+      localId: `asc-s2-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.06, z: 1.08 },
+    },
+    {
+      localId: `asc-s3-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.12, z: 1.8 },
+    },
+    {
+      localId: `asc-amethyst-${idSuffix}`,
+      profileId: 'amethyst-crackle',
+      center: { x: -0.65, y: 0.3, z: 3.16 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    {
+      localId: `asc-rose-${idSuffix}`,
+      profileId: 'rose-crackle',
+      center: { x: 0.65, y: 0.48, z: 5.03 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    {
+      localId: `asc-top1-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.66, z: 6.71 },
+    },
+    {
+      localId: `asc-top2-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.72, z: 7.43 },
+    },
+  ]
+
+  return {
+    id: `chunk-ascent-${idSuffix}`,
+    kind: 'terraced-ascent',
+    entrySocket: {
+      id: 'entry',
+      position: { x: 0, y: 0, z: 0.0 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    exitSocket: {
+      id: 'exit',
+      position: { x: 0, y: 0.72, z: 7.79 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    platforms,
+    gaps: [],
+    cameraSection: {
+      localId: `cam-ascent-${idSuffix}`,
+      platformLocalIds: platforms.map((p) => p.localId),
+      lookFromPlatformLocalId: platforms[0].localId,
+      lookToPlatformLocalId: platforms[platforms.length - 1].localId,
+    },
+  }
+}
+
+/** Chunk 14: Sky Elevator Glide — 3D ascending/descending aurora ferry lifting across a cloud chasm */
+export function createSkyElevatorGlideChunk(
+  idSuffix: string,
+  verticalDelta = 0.56,
+): ProceduralChunk {
+  const dy = Number(verticalDelta.toFixed(3))
+  const platforms: ChunkPlatform[] = [
+    {
+      localId: `elev-dep-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.36 },
+    },
+    {
+      localId: `elev-raft-${idSuffix}`,
+      profileId: 'aurora-glide',
+      center: { x: 0, y: 0, z: 1.97 },
+      behavior: {
+        kind: 'glide',
+        translation: { x: 0, y: dy, z: 2.4 },
+        travelSeconds: 3.4,
+        dwellSeconds: 1.3,
+      },
+    },
+    {
+      localId: `elev-arr-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: dy, z: 5.98 },
+    },
+  ]
+
+  return {
+    id: `chunk-elevator-${idSuffix}`,
+    kind: 'sky-elevator-glide',
+    entrySocket: {
+      id: 'entry',
+      position: { x: 0, y: 0, z: 0.0 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    exitSocket: {
+      id: 'exit',
+      position: { x: 0, y: dy, z: 6.34 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    platforms,
+    gaps: [],
+    cameraSection: {
+      localId: `cam-elev-${idSuffix}`,
+      platformLocalIds: platforms.map((p) => p.localId),
+      lookFromPlatformLocalId: platforms[0].localId,
+      lookToPlatformLocalId: platforms[platforms.length - 1].localId,
+    },
+  }
+}
+
+/** Chunk 15: Cascading Drop Corner — 90-degree turning 3D descending glissade (-0.60m drop) */
+export function createCascadingDropChunk(
+  idSuffix: string,
+  turn: 'east' | 'west',
+  warningSeconds = 1.6,
+): ProceduralChunk {
+  const sign = turn === 'east' ? 1 : -1
+  const landingTurns = turn === 'east' ? 1 : 3
+
+  const platforms: ChunkPlatform[] = [
+    {
+      localId: `drop-p1-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.36 },
+    },
+    {
+      localId: `drop-p2-${idSuffix}`,
+      profileId: 'frost-lily',
+      center: { x: 0, y: -0.24, z: 2.22 },
+    },
+    {
+      localId: `drop-p3-${idSuffix}`,
+      profileId: 'amethyst-crackle',
+      center: { x: Number((sign * 0.85).toFixed(3)), y: -0.44, z: 4.35 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    {
+      localId: `drop-p4-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: Number((sign * 2.45).toFixed(3)), y: -0.6, z: 4.35 },
+      quarterTurns: landingTurns,
+    },
+    {
+      localId: `drop-p5-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: Number((sign * 3.17).toFixed(3)), y: -0.6, z: 4.35 },
+      quarterTurns: landingTurns,
+    },
+  ]
+
+  return {
+    id: `chunk-drop-${idSuffix}`,
+    kind: 'cascading-drop',
+    entrySocket: {
+      id: 'entry',
+      position: { x: 0, y: 0, z: 0.0 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    exitSocket: {
+      id: 'exit',
+      position: { x: Number((sign * 3.53).toFixed(3)), y: -0.6, z: 4.35 },
+      facing: turn,
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    platforms,
+    gaps: [],
+    cameraSection: {
+      localId: `cam-drop-${idSuffix}`,
+      platformLocalIds: platforms.map((p) => p.localId),
+      lookFromPlatformLocalId: platforms[0].localId,
+      lookToPlatformLocalId: platforms[platforms.length - 1].localId,
+    },
+  }
+}
+
+/** Chunk 16: Crystal Crossroads — dual parallel frost & rose-crackle lanes converging onto a living-crystal scroll bridge */
+export function createCrystalCrossroadsChunk(
+  idSuffix: string,
+  crystalPreset:
+    | 'aurora-heart'
+    | 'resonance-veins'
+    | 'frost-roots' = 'resonance-veins',
+  warningSeconds = 1.5,
+): ProceduralChunk {
+  const platforms: ChunkPlatform[] = [
+    {
+      localId: `cross-dep-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.36 },
+    },
+    // Left lane: frost runway + amethyst crackle
+    {
+      localId: `cross-frost-${idSuffix}`,
+      profileId: 'frost-lily',
+      center: { x: -1.35, y: 0.12, z: 2.3 },
+    },
+    {
+      localId: `cross-amethyst-${idSuffix}`,
+      profileId: 'amethyst-crackle',
+      center: { x: -1.35, y: 0.24, z: 4.45 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    // Right lane: twin square rose-crackle stepping stones
+    {
+      localId: `cross-rose1-${idSuffix}`,
+      profileId: 'rose-crackle',
+      center: { x: 1.35, y: 0.12, z: 2.02 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    {
+      localId: `cross-rose2-${idSuffix}`,
+      profileId: 'rose-crackle',
+      center: { x: 1.35, y: 0.24, z: 4.18 },
+      behavior: {
+        kind: 'crackle',
+        warningSeconds,
+        releaseSeconds: 0.4,
+        resetSeconds: 2.2,
+      },
+    },
+    // Convergence terrace
+    {
+      localId: `cross-mid-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.24, z: 5.86 },
+    },
+    // Living-crystal scroll bridge extending along Z (quarterTurns: 1)
+    {
+      localId: `cross-scroll-${idSuffix}`,
+      profileId: 'gilt-scroll',
+      center: { x: 0, y: 0.24, z: 7.66 },
+      quarterTurns: 1,
+      behavior: {
+        kind: 'scroll',
+        minLengthRatio: 0.3,
+        extendedSeconds: 4.5,
+        retractedSeconds: 2.5,
+        transitionSeconds: 1.2,
+        initialState: 'extended',
+      },
+      crystalInterior: { preset: crystalPreset, seed: 20261018 },
+    },
+    // Arrival terrace
+    {
+      localId: `cross-arr-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0.24, z: 9.46 },
+    },
+  ]
+
+  return {
+    id: `chunk-crossroads-${idSuffix}`,
+    kind: 'crystal-crossroads',
+    entrySocket: {
+      id: 'entry',
+      position: { x: 0, y: 0, z: 0.0 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    exitSocket: {
+      id: 'exit',
+      position: { x: 0, y: 0.24, z: 9.82 },
+      facing: 'north',
+      width: 3.2,
+      clearanceMargin: 0.6,
+    },
+    platforms,
+    gaps: [],
+    cameraSection: {
+      localId: `cam-crossroads-${idSuffix}`,
+      platformLocalIds: platforms.map((p) => p.localId),
+      lookFromPlatformLocalId: platforms[0].localId,
+      lookToPlatformLocalId: platforms[platforms.length - 1].localId,
+    },
+  }
+}
+

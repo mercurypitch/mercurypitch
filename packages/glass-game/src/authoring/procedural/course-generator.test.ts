@@ -14,8 +14,26 @@ describe('generateProceduralCourse', () => {
     expect(result.compiledLevel).toBeDefined()
     expect(result.compiledLevel.id).toBe(result.courseId)
     expect(result.compiledLevel.platforms.length).toBeGreaterThan(20)
-    expect(result.compiledLevel.breakables.length).toBe(4) // home note, gate 1, gate 2, finale portrait
+    expect(result.compiledLevel.breakables.length).toBe(5) // home note, gate 1, optional alcove goblet, gate 2, finale portrait
     expect(result.compiledLevel.checkpoints.length).toBeGreaterThanOrEqual(3)
+    expect(result.compiledLevel.rewards?.discoveries.length).toBe(1)
+  })
+
+  it('supports 5-station sunlit-steps-v1 lessons and optional alcove toggling', () => {
+    const sunlit = generateProceduralCourse({
+      seed: 'sunlit-voyage',
+      melodyLessonId: 'sunlit-steps-v1',
+      includeOptionalAlcoves: true,
+    })
+    expect(sunlit.compiledLevel.melodyLesson?.stations.length).toBe(5)
+    expect(sunlit.compiledLevel.rewards?.discoveries.length).toBe(2)
+
+    const withoutAlcoves = generateProceduralCourse({
+      seed: 42,
+      includeOptionalAlcoves: false,
+    })
+    expect(withoutAlcoves.compiledLevel.breakables.length).toBe(4)
+    expect(withoutAlcoves.compiledLevel.rewards).toBeUndefined()
   })
 
   it('is strictly deterministic for identical seeds', () => {
@@ -105,7 +123,7 @@ describe('generateProceduralCourse', () => {
     expect(exitX.size).toBeGreaterThan(1)
   })
 
-  it('guarantees rich lateral variety, diagonal placements, and multiple turns across seeds', () => {
+  it('guarantees 3D verticality, rich lateral variety, dual barrier styles, and multiple turns across seeds', () => {
     // Test across a diverse seed suite
     const testSeeds = [
       10,
@@ -118,12 +136,14 @@ describe('generateProceduralCourse', () => {
       'abyss',
       'aurora',
       'meander',
+      'spire',
+      'crossroads',
     ]
     for (const seed of testSeeds) {
       const result = generateProceduralCourse({ seed })
       const level = result.compiledLevel
 
-      // 1. Ensure course has extensive platforms (typically 40-55 platforms)
+      // 1. Ensure course has extensive platforms
       expect(level.platforms.length).toBeGreaterThanOrEqual(35)
 
       // 2. Ensure platforms have pronounced lateral variety (|x| > 0.5m)
@@ -132,12 +152,25 @@ describe('generateProceduralCourse', () => {
       )
       expect(maxAbsX).toBeGreaterThanOrEqual(1.0)
 
-      // 3. Ensure multi-mechanic presence (frost, crackle/hex, deck)
+      // 3. Ensure genuine 3D verticality across platform top surfaces
+      const minTop = Math.min(...level.platforms.map((p) => p.top))
+      const maxTop = Math.max(...level.platforms.map((p) => p.top))
+      expect(maxTop - minTop).toBeGreaterThanOrEqual(0.5)
+
+      // 4. Ensure multi-mechanic presence (frost, crackle/hex, deck) and both barrier styles
       const hasFrost = level.platforms.some((p) => p.surface?.kind === 'frost')
       const hasHex = level.platforms.some((p) => p.behavior?.kind === 'crackle')
       expect(hasFrost || hasHex).toBe(true)
 
-      // 4. Ensure non-trivial bounding box (both width and depth span over 10m)
+      const barrierProfiles = new Set(
+        level.breakables
+          .filter((b) => b.presentation?.kind === 'barrier')
+          .map((b) => b.variant),
+      )
+      expect(barrierProfiles.has('frosted-scroll-wall')).toBe(true)
+      expect(barrierProfiles.has('frost-gold-arch-breakwall-a')).toBe(true)
+
+      // 5. Ensure non-trivial bounding box (both width and depth span over 8m / 15m)
       const spanX =
         Math.max(...level.platforms.map((p) => p.maxX)) -
         Math.min(...level.platforms.map((p) => p.minX))
@@ -157,11 +190,20 @@ describe('generateProceduralCourse', () => {
       'abyss',
       'aurora',
       'meander',
+      'spire',
+      'crossroads',
       1,
       2,
+      3,
+      4,
+      5,
+      10,
       42,
       100,
+      255,
       777,
+      888,
+      999,
     ]
     for (const seed of testSeeds) {
       const result = generateProceduralCourse({ seed })
@@ -169,8 +211,8 @@ describe('generateProceduralCourse', () => {
       const overlappingPairs: string[] = []
       for (let i = 0; i < level.platforms.length; i++) {
         for (let j = i + 1; j < level.platforms.length; j++) {
-          const p1 = level.platforms[i]
-          const p2 = level.platforms[j]
+          const p1 = level.platforms[i]!
+          const p2 = level.platforms[j]!
           const xOverlap =
             Math.min(p1.maxX, p2.maxX) - Math.max(p1.minX, p2.minX)
           const zOverlap =

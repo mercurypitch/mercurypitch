@@ -29,12 +29,13 @@ export interface AssembledGap {
 
 export interface AssembledEncounter {
   readonly id: string
-  readonly role: 'note' | 'gate' | 'finale'
+  readonly role: 'note' | 'gate' | 'finale' | 'optional-discovery'
   readonly label: string
   readonly variant: string
   readonly position: Vec3
   readonly anchor: Vec3
   readonly noteAnchorId?: string
+  readonly discoveryCoinIds?: readonly string[]
   readonly requiresCompleted: readonly string[]
   readonly presentationBarrier?: {
     profileId: string
@@ -47,6 +48,7 @@ export interface AssembledCheckpoint {
   readonly position: Vec3
   readonly facingYaw: number
   readonly radius: number
+  readonly requiresCompleted?: readonly string[]
 }
 
 export interface AssembledCameraSection {
@@ -73,6 +75,48 @@ export interface AssembledCourseData {
   readonly exitPosition: Vec3
   readonly exitBounds?: ChunkExitBounds
   readonly finalHeading: CardinalDirection
+}
+
+const PROFILE_DIMENSIONS: Readonly<
+  Record<string, { readonly width: number; readonly depth: number }>
+> = {
+  'pearl-rest': { width: 3.2, depth: 0.72 },
+  'frost-lily': { width: 1.65, depth: 2.2 },
+  'rose-hex-crumble': { width: 1.969, depth: 1.738 },
+  'rose-crackle': { width: 1.64, depth: 1.64 },
+  'amethyst-crackle': { width: 1.64, depth: 1.1 },
+  'gilt-scroll': { width: 2.206, depth: 2.206 },
+  'aurora-glide': { width: 2.55, depth: 1.4 },
+}
+
+export function hasAssembledPlatformOverlap(
+  platforms: readonly AssembledPlatform[],
+): boolean {
+  const boxes = platforms.map((p) => {
+    const dims = PROFILE_DIMENSIONS[p.profileId] ?? { width: 3.2, depth: 0.72 }
+    const rotated = Math.abs(p.quarterTurns) % 2 === 1
+    const halfX = (rotated ? dims.depth : dims.width) / 2
+    const halfZ = (rotated ? dims.width : dims.depth) / 2
+    return {
+      minX: p.center.x - halfX,
+      maxX: p.center.x + halfX,
+      minZ: p.center.z - halfZ,
+      maxZ: p.center.z + halfZ,
+    }
+  })
+
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i]!
+      const b = boxes[j]!
+      const xOverlap = Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX)
+      const zOverlap = Math.min(a.maxZ, b.maxZ) - Math.max(a.minZ, b.minZ)
+      if (xOverlap > 0.01 && zOverlap > 0.01) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 function rotatePoint(local: Vec3, heading: CardinalDirection): Vec3 {
@@ -114,15 +158,25 @@ function headingToYaw(heading: CardinalDirection): number {
   }
 }
 
-const CARDINALS: readonly CardinalDirection[] = ['north', 'east', 'south', 'west']
+const CARDINALS: readonly CardinalDirection[] = [
+  'north',
+  'east',
+  'south',
+  'west',
+]
 
-export function turnHeading(current: CardinalDirection, turn: CardinalDirection): CardinalDirection {
+export function turnHeading(
+  current: CardinalDirection,
+  turn: CardinalDirection,
+): CardinalDirection {
   const currentIdx = CARDINALS.indexOf(current)
   const turnIdx = CARDINALS.indexOf(turn)
-  return CARDINALS[(currentIdx + turnIdx) % 4]
+  return CARDINALS[(currentIdx + turnIdx) % 4]!
 }
 
-export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCourseData {
+export function stitchChunks(
+  chunks: readonly ProceduralChunk[],
+): AssembledCourseData {
   const assembledPlatforms: AssembledPlatform[] = []
   const assembledGaps: AssembledGap[] = []
   const assembledEncounters: AssembledEncounter[] = []
@@ -137,14 +191,17 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
 
   let minX = 0
   let maxX = 0
+  let minY = 0
+  let maxY = 0
   let minZ = 0
   let maxZ = 0
 
   for (let cIdx = 0; cIdx < chunks.length; cIdx++) {
-    const chunk = chunks[cIdx]
+    const chunk = chunks[cIdx]!
     const chunkPrefix = `proc-c${cIdx + 1}`
     const quarterTurnOffset = headingToQuarterTurns(currentHeading)
     const baseYaw = headingToYaw(currentHeading)
+    const chunkEntryEncounterId = lastCompletedEncounterId
 
     // Map of local platform IDs to global platform IDs
     const idMap = new Map<string, string>()
@@ -162,13 +219,18 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
 
       minX = Math.min(minX, worldCenter.x - 2.5)
       maxX = Math.max(maxX, worldCenter.x + 2.5)
+      minY = Math.min(minY, worldCenter.y)
+      maxY = Math.max(maxY, worldCenter.y)
       minZ = Math.min(minZ, worldCenter.z - 2.5)
       maxZ = Math.max(maxZ, worldCenter.z + 2.5)
 
       let behavior: unknown = undefined
       if (p.behavior) {
         if (p.behavior.kind === 'glide' && p.behavior.translation) {
-          const rotatedTranslation = rotatePoint(p.behavior.translation, currentHeading)
+          const rotatedTranslation = rotatePoint(
+            p.behavior.translation,
+            currentHeading,
+          )
           behavior = {
             kind: 'glide',
             translation: {
@@ -179,6 +241,8 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
             travelSeconds: p.behavior.travelSeconds ?? 3.2,
             dwellSeconds: p.behavior.dwellSeconds ?? 1.2,
           }
+          minY = Math.min(minY, worldCenter.y + rotatedTranslation.y)
+          maxY = Math.max(maxY, worldCenter.y + rotatedTranslation.y)
         } else {
           behavior = { ...p.behavior }
         }
@@ -193,7 +257,7 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
         crystalInterior: p.crystalInterior
           ? {
               preset: p.crystalInterior.preset,
-              seed: p.crystalInterior.seed ?? (20261006 + cIdx),
+              seed: p.crystalInterior.seed ?? 20261006 + cIdx,
             }
           : undefined,
       })
@@ -201,13 +265,14 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
 
     // Inter-chunk gap connecting last platform of previous chunk to first platform of this chunk
     if (lastExitPlatformId !== null && chunk.platforms.length > 0) {
-      const firstPlatformGlobalId = idMap.get(chunk.platforms[0].localId)!
+      const firstPlatformGlobalId = idMap.get(chunk.platforms[0]!.localId)!
       assembledGaps.push({
         id: `proc-intergap-${cIdx}`,
         platformAId: lastExitPlatformId,
         platformBId: firstPlatformGlobalId,
         minimumClearanceMeters: 0.55,
-        axis: currentHeading === 'east' || currentHeading === 'west' ? 'x' : 'z',
+        axis:
+          currentHeading === 'east' || currentHeading === 'west' ? 'x' : 'z',
       })
     }
 
@@ -222,9 +287,31 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
         minimumClearanceMeters: g.minimumClearanceMeters,
         axis:
           currentHeading === 'east' || currentHeading === 'west'
-            ? g.axis === 'z' ? 'x' : 'z'
+            ? g.axis === 'z'
+              ? 'x'
+              : 'z'
             : g.axis,
       })
+    }
+
+    // Checkpoints (require the station completed prior to entering this chunk)
+    if (chunk.checkpoints) {
+      for (const cp of chunk.checkpoints) {
+        const rotatedPos = rotatePoint(cp.position, currentHeading)
+        assembledCheckpoints.push({
+          id: `${chunkPrefix}-${cp.localId}`,
+          position: {
+            x: Number((currentOrigin.x + rotatedPos.x).toFixed(3)),
+            y: Number((currentOrigin.y + rotatedPos.y).toFixed(3)),
+            z: Number((currentOrigin.z + rotatedPos.z).toFixed(3)),
+          },
+          facingYaw: cp.facingYaw + baseYaw,
+          radius: cp.radius,
+          ...(chunkEntryEncounterId !== null
+            ? { requiresCompleted: [chunkEntryEncounterId] }
+            : {}),
+        })
+      }
     }
 
     // Encounters
@@ -245,10 +332,12 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
           z: Number((currentOrigin.z + rotatedAnchor.z).toFixed(3)),
         }
 
-        const requiresCompleted: string[] = []
-        if (lastCompletedEncounterId !== null) {
-          requiresCompleted.push(lastCompletedEncounterId)
-        }
+        const isOptional = e.role === 'optional-discovery'
+        const prerequisiteId = isOptional
+          ? chunkEntryEncounterId
+          : lastCompletedEncounterId
+        const requiresCompleted: string[] =
+          prerequisiteId !== null ? [prerequisiteId] : []
 
         assembledEncounters.push({
           id: encounterId,
@@ -258,6 +347,7 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
           position: worldPos,
           anchor: worldAnchor,
           noteAnchorId: e.noteAnchorId,
+          discoveryCoinIds: e.discoveryCoinIds,
           requiresCompleted,
           presentationBarrier: e.presentationBarrier
             ? {
@@ -267,24 +357,9 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
             : undefined,
         })
 
-        lastCompletedEncounterId = encounterId
-      }
-    }
-
-    // Checkpoints
-    if (chunk.checkpoints) {
-      for (const cp of chunk.checkpoints) {
-        const rotatedPos = rotatePoint(cp.position, currentHeading)
-        assembledCheckpoints.push({
-          id: `${chunkPrefix}-${cp.localId}`,
-          position: {
-            x: Number((currentOrigin.x + rotatedPos.x).toFixed(3)),
-            y: Number((currentOrigin.y + rotatedPos.y).toFixed(3)),
-            z: Number((currentOrigin.z + rotatedPos.z).toFixed(3)),
-          },
-          facingYaw: cp.facingYaw + baseYaw,
-          radius: cp.radius,
-        })
+        if (!isOptional) {
+          lastCompletedEncounterId = encounterId
+        }
       }
     }
 
@@ -323,16 +398,21 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
         maxX: Number(cMaxX.toFixed(3)),
         minZ: Number(cMinZ.toFixed(3)),
         maxZ: Number(cMaxZ.toFixed(3)),
-        top: chunk.localExit.top,
+        top: Number((currentOrigin.y + chunk.localExit.top).toFixed(3)),
       }
     }
 
     // Update origin for next chunk
     if (chunk.platforms.length > 0) {
-      lastExitPlatformId = idMap.get(chunk.platforms[chunk.platforms.length - 1].localId)!
+      lastExitPlatformId = idMap.get(
+        chunk.platforms[chunk.platforms.length - 1]!.localId,
+      )!
     }
 
-    const rotatedExitPos = rotatePoint(chunk.exitSocket.position, currentHeading)
+    const rotatedExitPos = rotatePoint(
+      chunk.exitSocket.position,
+      currentHeading,
+    )
     currentOrigin = {
       x: Number((currentOrigin.x + rotatedExitPos.x).toFixed(3)),
       y: Number((currentOrigin.y + rotatedExitPos.y).toFixed(3)),
@@ -352,8 +432,8 @@ export function stitchChunks(chunks: readonly ProceduralChunk[]): AssembledCours
     bounds: {
       minX: Math.floor(minX - 3),
       maxX: Math.ceil(maxX + 3),
-      minY: -5,
-      maxY: 8,
+      minY: Math.floor(minY - 5),
+      maxY: Math.ceil(maxY + 8),
       minZ: Math.floor(minZ - 3),
       maxZ: Math.ceil(maxZ + 3),
     },

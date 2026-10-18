@@ -287,6 +287,18 @@
           "profileId": "pearl-rest",
           "center": { "x": 18.426, "y": 0, "z": 5.06 },
           "quarterTurns": 0
+        },
+        {
+          "id": "prisma-alcove-step-1",
+          "profileId": "pearl-rest",
+          "center": { "x": 15.226, "y": 0.06, "z": 10.82 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-alcove-step-2",
+          "profileId": "pearl-rest",
+          "center": { "x": 15.226, "y": 0.12, "z": 10.10 },
+          "quarterTurns": 0
         }
       ],
       "gaps": [],
@@ -355,9 +367,21 @@
           }
         },
         {
+          "id": "prisma-goblet-alcove",
+          "label": "The Starlight Goblet",
+          "variant": "goblet",
+          "position": { "x": 14.6, "y": 0.12, "z": 10.10 },
+          "anchor": { "x": 15.6, "y": 0.06, "z": 10.82 },
+          "optional": true,
+          "challenge": {
+            "profileId": "comfortable-hold"
+          },
+          "requiresCompleted": ["prisma-gate-rise"]
+        },
+        {
           "id": "prisma-gate-return",
           "label": "The Threshold of Song",
-          "variant": "frosted-scroll-wall",
+          "variant": "frost-gold-arch-breakwall-a",
           "position": { "x": 18.426, "y": 0, "z": 7.94 },
           "anchor": { "x": 18.426, "y": 0, "z": 10.10 },
           "optional": false,
@@ -370,7 +394,7 @@
           "requiresCompleted": ["prisma-gate-rise"],
           "presentation": {
             "kind": "barrier",
-            "profileId": "frosted-scroll-wall",
+            "profileId": "frost-gold-arch-breakwall-a",
             "facingYaw": 0
           }
         },
@@ -389,6 +413,15 @@
           "requiresCompleted": ["prisma-gate-return"]
         }
       ],
+      "rewards": {
+        "revision": 1,
+        "discoveries": [
+          {
+            "encounterId": "prisma-goblet-alcove",
+            "coinIds": ["prisma-coin-starlight-goblet"]
+          }
+        ]
+      },
       "melodyLesson": {
         "profileId": "first-arc-v1",
         "id": "prismatic-arc-v1",
@@ -482,7 +515,9 @@
               "prisma-pav-7",
               "prisma-pav-8",
               "prisma-pav-9",
-              "prisma-pav-10"
+              "prisma-pav-10",
+              "prisma-alcove-step-1",
+              "prisma-alcove-step-2"
             ],
             "lookFromPlatformId": "prisma-pav-1",
             "lookToPlatformId": "prisma-pav-10"

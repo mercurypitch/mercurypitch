@@ -8,11 +8,11 @@ import { CLOUDWAY_PRISMATIC_CAUSEWAY } from './cloudway-prismatic-causeway'
 const level = CLOUDWAY_PRISMATIC_CAUSEWAY
 
 describe('The Celestial Promenade course definition', () => {
-  it('compiles with expected structural entities and lesson linkage', () => {
+  it('compiles with expected structural entities, optional alcove discovery, and lesson linkage', () => {
     expect(level.id).toBe('cloudway-prismatic-causeway')
     expect(level.title).toBe('The Celestial Promenade')
-    expect(level.platforms.length).toBe(39)
-    expect(level.breakables.length).toBe(4)
+    expect(level.platforms.length).toBe(41)
+    expect(level.breakables.length).toBe(5)
     expect(level.checkpoints.length).toBe(4)
     expect(level.spawn.checkpointId).toBe('prisma-save-arrival')
 
@@ -20,6 +20,18 @@ describe('The Celestial Promenade course definition', () => {
     expect(level.melodyLesson?.id).toBe('prismatic-arc-v1')
     expect(level.melodyLesson?.stations.length).toBe(3)
     expect(level.melodyLesson?.finaleEncounterId).toBe('prisma-portrait-finale')
+
+    const optionalGoblet = level.breakables.find(
+      (b) => b.id === 'prisma-goblet-alcove',
+    )
+    expect(optionalGoblet).toBeDefined()
+    expect(optionalGoblet?.optional).toBe(true)
+    expect(level.rewards?.discoveries).toEqual([
+      {
+        encounterId: 'prisma-goblet-alcove',
+        coinIds: ['prisma-coin-starlight-goblet'],
+      },
+    ])
   })
 
   it('incorporates atmospheric linear fog and living crystal interior', () => {
