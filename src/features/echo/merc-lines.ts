@@ -18,6 +18,7 @@ import { createRoomLines, fillLine } from '@/components/room-kit/room-lines'
 
 export type EchoMoment =
   | 'intro'
+  | 'routine'
   | 'introAny'
   | 'found'
   | 'early'
@@ -46,6 +47,10 @@ export const ECHO_LINES: LineTable<EchoMoment> = {
       id: 'intro-listen',
       text: 'Listen to my phrase, then sing it back to me.',
     },
+  ],
+  // In the Warm-up: the storyboard's cue, one line every time.
+  routine: [
+    { id: 'routine-first', text: 'I sing it first. Then you sing it back.' },
   ],
   // No root yet: the singer's own note starts the phrases.
   introAny: [

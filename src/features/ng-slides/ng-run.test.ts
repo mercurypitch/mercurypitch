@@ -148,6 +148,15 @@ describe('the plan', () => {
     expect(introLine(plan)).toEqual({ moment: 'intro', fields: { top: 'E3' } })
     expect(introLine(null).moment).toBe('introAny')
   })
+
+  it("opens on Merc's cue in the Warm-up, and still asks for an easy note with no root", () => {
+    const plan = planNgRun(
+      { roots: [45, 46, 47, 48, 49], semitones: 7, source: 'settled' },
+      singer,
+    )
+    expect(introLine(plan, true)).toEqual({ moment: 'routine', fields: {} })
+    expect(introLine(null, true).moment).toBe('introAny')
+  })
 })
 
 describe("Merc's line after a slide", () => {

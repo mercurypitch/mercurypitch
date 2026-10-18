@@ -7,6 +7,7 @@
 // reading the run.
 
 import type { Accessor } from 'solid-js'
+import type { RoutineRunOptions } from '@/components/room-kit/routine-stop'
 import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice } from '@/lib/merc/sim'
 import type { EchoState } from './echo-machine'
@@ -32,6 +33,13 @@ export const CALL_LEAD_SECONDS = 0.35
 export const SETTLED_LEAD_SECONDS = 0.9
 /** Nobody sang for this long during a run: the run stops, the mic closes. */
 export { QUIET_LIMIT_SECONDS } from '@/components/room-kit/room-constants'
+
+/**
+ * A run in the Warm-up: three phrases, the first, third and fifth places at
+ * the result (echo-scene.ts slotOf). Three keep the minor mode, which the
+ * plan starts on the third.
+ */
+export const WARM_UP_PHRASES = 3
 
 /** The chip while the singer sings the phrase back. */
 export const YOUR_TURN = 'Your turn'
@@ -67,11 +75,23 @@ export interface EchoController {
   drawVoice: (sink: (points: readonly VoicePoint[] | null) => void) => void
   /** The demo's way in (scripted-take.ts). */
   script: EchoScript
+  /**
+   * The root a run starts on, MIDI, for a later stop of the Warm-up: the
+   * one the room keeps, else the one it was given; null for none. Read
+   * when asked; deliberately not reactive.
+   */
+  settledNote: () => number | null
 }
 
-export interface EchoControllerOptions {
+/**
+ * The room's options; in the Warm-up (RoutineRunOptions) its stop's note
+ * and Merc's cue, and three phrases.
+ */
+export interface EchoControllerOptions extends RoutineRunOptions {
   /** The voice that sings Merc's calls (merc-call.ts). */
   voice?: CallVoice
   /** Picks each run's phrases. */
   random?: () => number
+  /** The phrases in a run: a full run's five (ECHO_RUN_PHRASES) by default. */
+  phrases?: number
 }

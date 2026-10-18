@@ -9,7 +9,7 @@
 // tooltip waits for the engine event it explains (demo-cues.ts), and both
 // takes play at their own speed, one wave each at Learning's timing.
 
-import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, } from '@/components/demo-kit/useExerciseDemo'
+import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, RoomDemoOptions, } from '@/components/demo-kit/useExerciseDemo'
 import { useGlideDemo } from '@/components/room-kit/glide/useGlideDemo'
 import { lipDemoAutoPlays, markLipDemoSeen } from '@/stores/lip-roll-store'
 import type { LipController } from '../lip-controller-contract'
@@ -24,14 +24,17 @@ export type DemoTip = KitDemoTip<DemoCueId, DemoTarget>
 
 export type LipDemo = ExerciseDemo<DemoCueId, DemoTarget>
 
-export function useLipDemo(room: LipController): LipDemo {
+export function useLipDemo(
+  room: LipController,
+  options: RoomDemoOptions = {},
+): LipDemo {
   return useGlideDemo(room, {
     plan: planLipDemo,
     cues: DEMO_CUES,
     cueText: (id) => demoCueText(id),
     // The tooltips name no note.
     ownNote: () => true,
-    autoPlays: () => lipDemoAutoPlays(),
+    autoPlays: () => options.autoPlay !== false && lipDemoAutoPlays(),
     markSeen: () => markLipDemoSeen(),
     sound: (ctx, minLead) => createDemoSound(ctx, minLead),
     take: (take, clock): ScriptedLipTake => ({

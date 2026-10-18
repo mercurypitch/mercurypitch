@@ -51,11 +51,18 @@ export function planNgRun(fit: GlideTargets, preset: GlidePreset): NgPlan {
   }
 }
 
-/** The line a run opens with, before the first slide. */
-export function introLine(plan: NgPlan | null): GlideLine<NgMoment> {
+/**
+ * The line a run opens with, before the first slide. In the Warm-up
+ * (`routine`) Merc's cue, without the top.
+ */
+export function introLine(
+  plan: NgPlan | null,
+  routine = false,
+): GlideLine<NgMoment> {
   if (plan === null || plan.source === 'preset') {
     return { moment: 'introAny', fields: {} }
   }
+  if (routine) return { moment: 'routine', fields: {} }
   return { moment: 'intro', fields: { top: noteName(plan.roots[0] + 7) } }
 }
 

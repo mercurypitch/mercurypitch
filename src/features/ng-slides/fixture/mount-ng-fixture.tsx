@@ -7,6 +7,7 @@
 // the dev server and no build carries it.
 
 import { render } from 'solid-js/web'
+import { fixtureStop } from '@/components/room-kit/routine-fixture'
 import { isFixtureName, NgFixture } from './NgFixture'
 
 /**
@@ -16,7 +17,7 @@ import { isFixtureName, NgFixture } from './NgFixture'
  */
 export function mountNgFixture(root: HTMLElement, name: string): boolean {
   if (!isFixtureName(name)) return false
-  render(() => <NgFixture name={name} />, root)
+  render(() => <NgFixture name={name} stop={fixtureStop()} />, root)
   root.classList.add('loaded')
   return true
 }

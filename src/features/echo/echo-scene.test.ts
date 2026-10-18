@@ -178,6 +178,76 @@ describe('the phrases done', () => {
   })
 })
 
+describe("the Warm-up's three phrases", () => {
+  const three: DonePhrase[] = [
+    { phrase: C_E_G, outcomes: [landed(0), landed(1), landed(2)] },
+    { phrase: phrase(62, 65, 69), outcomes: [landed(0), landed(1), landed(2)] },
+    { phrase: phrase(64, 67, 71), outcomes: [landed(0), landed(1), landed(2)] },
+  ]
+  const threeOf = (result: boolean) =>
+    echoScene({
+      run: 1,
+      live: null,
+      done: three,
+      result,
+      celebration: false,
+      phrases: 3,
+    })
+  /** The place each of the first `count` phrases' stars sit in. */
+  const slotsOf = (
+    stars: readonly { key: string; u: number; v: number }[],
+    slots: readonly { u0: number; u1: number; v0: number; v1: number }[],
+    count: number,
+  ): number[] =>
+    Array.from({ length: count }, (_, i) => {
+      const mine = stars.filter((s) => s.key.slice(1).startsWith(`${i}-`))
+      return slots.findIndex((slot) =>
+        mine.every(
+          (s) =>
+            s.u >= slot.u0 - 1e-9 &&
+            s.u <= slot.u1 + 1e-9 &&
+            s.v >= slot.v0 - 1e-9 &&
+            s.v <= slot.v1 + 1e-9,
+        ),
+      )
+    })
+
+  it('spread over the first, third and fifth places at the result', () => {
+    expect(slotsOf(threeOf(true).stars, RESULT_BOXES, 3)).toEqual([0, 2, 4])
+  })
+
+  it('wait in the top band where a full run waits: top left, then top right', () => {
+    const band = echoScene({
+      run: 1,
+      live: null,
+      done: three.slice(0, 2),
+      result: false,
+      celebration: false,
+      phrases: 3,
+    })
+    expect(slotsOf(band.stars, FINISHED_SLOTS, 2)).toEqual([0, 1])
+  })
+
+  it('keeps a full run in its places, one after another', () => {
+    const five = echoScene({
+      run: 1,
+      live: null,
+      done: [...three, ...three.slice(0, 2)],
+      result: true,
+      celebration: false,
+      phrases: 5,
+    })
+    const mine = (i: number) =>
+      five.stars.filter((s) => s.key.startsWith(`r${i}-`))
+    for (const [i, box] of RESULT_BOXES.entries()) {
+      for (const s of mine(i)) {
+        expect(s.u).toBeGreaterThanOrEqual(box.u0 - 1e-9)
+        expect(s.u).toBeLessThanOrEqual(box.u1 + 1e-9)
+      }
+    }
+  })
+})
+
 describe('keeping what did not change', () => {
   it('hands back the very objects of items that did not change', () => {
     const first = sceneOf({ outcomes: [landed(0)], listening: 1 })

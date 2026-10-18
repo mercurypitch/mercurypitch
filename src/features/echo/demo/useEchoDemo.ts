@@ -9,7 +9,7 @@
 // (demo-cues.ts), and both takes play at their own speed. The result takes
 // down the tooltip on the phrase, whose stars it moves.
 
-import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, } from '@/components/demo-kit/useExerciseDemo'
+import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, RoomDemoOptions, } from '@/components/demo-kit/useExerciseDemo'
 import { useExerciseDemo } from '@/components/demo-kit/useExerciseDemo'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { echoDemoAutoPlays, markEchoDemoSeen } from '@/stores/echo-store'
@@ -26,7 +26,10 @@ export type DemoTip = KitDemoTip<DemoCueId, DemoTarget>
 
 export type EchoDemo = ExerciseDemo<DemoCueId, DemoTarget>
 
-export function useEchoDemo(room: EchoController): EchoDemo {
+export function useEchoDemo(
+  room: EchoController,
+  options: RoomDemoOptions = {},
+): EchoDemo {
   return useExerciseDemo({
     room: {
       script: room.script,
@@ -43,7 +46,7 @@ export function useEchoDemo(room: EchoController): EchoDemo {
     micTarget: 'mic',
     endMark: 'phraseEnd',
     clearTipOn: ['result'],
-    autoPlays: () => echoDemoAutoPlays(),
+    autoPlays: () => options.autoPlay !== false && echoDemoAutoPlays(),
     markSeen: () => markEchoDemoSeen(),
     sound: (ctx, minLead) =>
       createDemoSound(ctx, minLead, room.script.callVoice),

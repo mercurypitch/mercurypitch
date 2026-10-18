@@ -19,6 +19,11 @@
 //   ShellDock    under the world: the mic with the demo's take pill over
 //                it, or Again and Done, or the mic's notice
 //
+// A room the Warm-up opens (`routine`, routine-stop.ts) is in warm-up mode:
+// the head's chip says "Warm-up 2 of 4" before the take, "Skip stop" takes
+// the level's place in the bar, the dock has no Again or Done at the
+// result, and the root holds the result, then hands it to the routine.
+//
 // A room makes its shell once (createRoomShell: its test ids, its
 // stylesheet, its run and its demo) and puts the parts in its own order:
 // Long note draws its own head (its timer and its line) over its stage,
@@ -54,6 +59,9 @@ import type { MicState } from './mic-state'
 import { RoomAsk, RoomBarEnd } from './RoomBar'
 import { MicBlocked, MicButton, ResultActions } from './RoomControls'
 import { RoomBubble, RoomChip } from './RoomHeader'
+import type { ShellRoutine } from './routine-stop'
+import { createRoutineHold, ROUTINE_WORDS, routineChip } from './routine-stop'
+import routineStyles from './RoutineStop.module.css'
 import { UnlockChip } from './UnlockChip'
 import type { CaptureFailure } from './useExerciseCapture'
 
@@ -89,6 +97,8 @@ export interface RoomShellConfig<C extends string, T extends string> {
   readonly run: ShellRun
   /** "How it works"; null on another's run (the fixtures). */
   readonly demo: ExerciseDemo<C, T> | null
+  /** A stop of the Warm-up: the room in warm-up mode; null outside one. */
+  readonly routine?: ShellRoutine | null
 }
 
 /** The shell's reading of the room, for the room and its parts. */
@@ -110,20 +120,42 @@ export interface RoomShellState<
    * speak one at a time.
    */
   readonly take: Accessor<DemoTakeId | null>
+  /** The room is a stop of the Warm-up (routine-stop.ts); null outside one. */
+  readonly routine: ShellRoutine | null
+  /** "Warm-up 2 of 4" before the singer's take; null otherwise. */
+  readonly routineChip: Accessor<string | null>
+  /** The room shows its own take's result (not the demo's). */
+  readonly atOwnResult: Accessor<boolean>
 }
+
+/** The phases before a take: the room at rest, the mic opening or refused. */
+const BEFORE_TAKE: ReadonlySet<string> = new Set([
+  'intro',
+  'starting',
+  'blocked',
+])
 
 export function createRoomShell<C extends string, T extends string>(
   config: RoomShellConfig<C, T>,
 ): RoomShellState<C, T> {
   const demo = config.demo
+  const routine = config.routine ?? null
   const mode = (): DemoMode => demo?.mode() ?? 'idle'
+  const phase = (): string => config.run.state().phase
+  const scripted = (): boolean => config.run.script.active()
   return {
     ...config,
-    phase: () => config.run.state().phase,
-    scripted: () => config.run.script.active(),
+    phase,
+    scripted,
     mode,
     busy: () => mode() !== 'idle',
     take: () => demo?.take() ?? null,
+    routine,
+    routineChip: () =>
+      routine !== null && !scripted() && BEFORE_TAKE.has(phase())
+        ? routineChip(routine.stop)
+        : null,
+    atOwnResult: () => phase() === 'result' && !scripted(),
   }
 }
 
@@ -158,8 +190,8 @@ export function RoomShell<C extends string, T extends string>(
     if (mode === 'card' || mode === 'end') return null
     let id = `${shell.ids}-mic`
     if (mode === 'playing') id = `${shell.ids}-demo-skip`
-    else if (shell.phase() === 'result' && !shell.scripted()) {
-      id = `${shell.ids}-again`
+    else if (shell.atOwnResult()) {
+      id = `${shell.ids}-${shell.routine === null ? 'again' : 'routine-on'}`
     } else if (shell.phase() === 'blocked') id = `${shell.ids}-retry`
     return root?.querySelector<HTMLElement>(`[data-testid="${id}"]`) ?? null
   }
@@ -168,6 +200,12 @@ export function RoomShell<C extends string, T extends string>(
       defer: true,
     }),
   )
+  // Warm-up mode: the result holds, then goes on to the routine.
+  const routine = shell.routine
+  const hold =
+    routine === null
+      ? null
+      : createRoutineHold({ routine, atResult: shell.atOwnResult })
 
   return (
     <div
@@ -183,6 +221,15 @@ export function RoomShell<C extends string, T extends string>(
       onFocusIn={(event) => focus.noteFocus(event)}
     >
       {props.children}
+      <Show when={hold !== null && shell.atOwnResult()}>
+        <button
+          type="button"
+          class={routineStyles.onward}
+          aria-label={ROUTINE_WORDS.onward}
+          data-testid={`${shell.ids}-routine-on`}
+          onClick={() => hold?.tap()}
+        />
+      </Show>
       <div
         aria-live="polite"
         data-testid={`${shell.ids}-said`}
@@ -233,7 +280,11 @@ export function ShellHead<C extends string, T extends string, S>(
         <Match when={shell.phase() !== 'result'}>
           <div class={shell.styles.chip}>
             <RoomChip
-              text={shell.take() !== null ? null : props.chip}
+              text={
+                shell.take() !== null
+                  ? null
+                  : (shell.routineChip() ?? props.chip)
+              }
               testId={`${shell.ids}-chip`}
             />
           </div>
@@ -251,20 +302,46 @@ export interface ShellBarEndProps<C extends string, T extends string> {
   shell: RoomShellState<C, T>
   /** The room's level pill (LevelControl, with its lines). */
   level: JSX.Element
-  /** The level shows: at rest and at a result, never mid-take. */
+  /**
+   * The level shows: at rest and at a result, never mid-take. Never in
+   * warm-up mode: the Warm-up's path carries the level.
+   */
   showLevel: boolean
 }
 
-/** The room's side of the bar: its level pill, and "?" while the demo allows. */
+/**
+ * The room's side of the bar: its level pill, and "?" while the demo
+ * allows. In warm-up mode "Skip stop" takes the level's place before the
+ * take, and "?" goes at the held result.
+ */
 export function ShellBarEnd<C extends string, T extends string>(
   props: ShellBarEndProps<C, T>,
 ): JSX.Element {
   // eslint-disable-next-line solid/reactivity -- the room's, made once
   const shell = props.shell
+  const routine = shell.routine
+  const skipStop = (): boolean =>
+    routine !== null &&
+    shell.mode() === 'idle' &&
+    !shell.scripted() &&
+    (shell.phase() === 'intro' || shell.phase() === 'blocked')
+  const canAsk = (): boolean =>
+    shell.demo?.canAsk() === true &&
+    !(routine !== null && shell.phase() === 'result')
   return (
     <RoomBarEnd>
-      <Show when={props.showLevel}>{props.level}</Show>
-      <Show when={shell.demo?.canAsk() === true}>
+      <Show when={props.showLevel && routine === null}>{props.level}</Show>
+      <Show when={skipStop()}>
+        <button
+          type="button"
+          class={routineStyles.skip}
+          data-testid={`${shell.ids}-skip-stop`}
+          onClick={() => routine?.stop.skip()}
+        >
+          {ROUTINE_WORDS.skip}
+        </button>
+      </Show>
+      <Show when={canAsk()}>
         <RoomAsk
           onAsk={() => shell.demo?.ask()}
           label={DEMO_WORDS.ask}
@@ -360,7 +437,8 @@ export interface ShellDockProps<C extends string, T extends string> {
  * Under the world: the mic, Again and Done at a take's own result, or the
  * mic's notice and Try again (the run's start). Under the demo's play card
  * and end card it keeps its place unseen (the room's .bottomAway), and the
- * demo's take pill stands over the mic while the demo sings.
+ * demo's take pill stands over the mic while the demo sings. In warm-up
+ * mode the result has nothing under it: the routine takes the room on.
  */
 export function ShellDock<C extends string, T extends string>(
   props: ShellDockProps<C, T>,
@@ -387,7 +465,10 @@ export function ShellDock<C extends string, T extends string>(
       inert={shell.busy()}
     >
       <Switch>
-        <Match when={shell.phase() === 'result' && !shell.scripted()}>
+        <Match when={shell.atOwnResult() && shell.routine !== null}>
+          {null}
+        </Match>
+        <Match when={shell.atOwnResult()}>
           <ResultActions
             onAgain={again}
             onDone={() => props.onDone()}

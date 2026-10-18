@@ -12,6 +12,9 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext, ribbonColours, } from '@/components/room-kit/ribbon-test-context'
 import mic from '@/components/room-kit/RoomControls.module.css'
+import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
+import { ROUTINE_RESULT_HOLD_MS } from '@/components/room-kit/routine-stop'
+import { EXERCISE_ECHO_STARS } from '@/lib/domain/exercise-contracts'
 import { silence, tone } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
@@ -752,5 +755,70 @@ describe('the mic through a phrase', () => {
 
     expect(overTheCall).toBe(1)
     expect(ringScale()).toBeGreaterThan(1.2)
+  })
+})
+
+describe('in the Warm-up', () => {
+  /** The last stop of four, counting what the room hands it. */
+  function warmUp(settledNote: number | null = null) {
+    const handed = { finish: [] as StopResult[], skip: 0 }
+    const stop: RoutineStop = {
+      index: 3,
+      count: 4,
+      settledNote,
+      finish: (result) => handed.finish.push(result),
+      skip: () => {
+        handed.skip += 1
+      },
+    }
+    return { stop, handed }
+  }
+
+  it('opens on the stop\'s chip, Merc\'s cue and "Skip stop", with no level', () => {
+    const { stop, handed } = warmUp()
+    render(() => <EchoRoom onDone={() => undefined} routine={stop} />)
+
+    expect(screen.getByTestId('echo-chip').textContent).toBe('Warm-up 4 of 4')
+    expect(screen.getByTestId('echo-bubble').textContent).toBe(
+      ECHO_LINES.routine[0].text,
+    )
+    expect(screen.queryByTestId('echo-level')).toBeNull()
+    fireEvent.click(screen.getByTestId('echo-skip-stop'))
+    expect(handed.skip).toBe(1)
+  })
+
+  it('starts on the note an earlier stop started from, when it keeps none', () => {
+    kept.root = null
+    render(() => (
+      <EchoRoom onDone={() => undefined} routine={warmUp(57).stop} />
+    ))
+
+    expect(screen.getByTestId('echo-bubble').textContent).toBe(
+      ECHO_LINES.routine[0].text,
+    )
+  })
+
+  it('sings three phrases, keeps them as history and never as a best, then hands "N of M on pitch" on once', async () => {
+    const { stop, handed } = warmUp()
+    render(() => <EchoRoom onDone={() => undefined} routine={stop} />)
+    fireEvent.click(screen.getByTestId('echo-mic'))
+    await settle()
+    for (let i = 0; i < 3; i++) {
+      respond(singBack)
+      vi.advanceTimersByTime(PHRASE_SHOW_MS)
+    }
+
+    expect(phase()).toBe('result')
+    expect(calls.sung).toHaveLength(3)
+    expect(screen.getByTestId('echo-result').textContent).toContain('9 of 9')
+    expect(stars('result')).toHaveLength(9)
+    expect(kept.history).toHaveLength(1)
+    expect(kept.bests).toEqual([])
+    expect(screen.queryByTestId('echo-again')).toBeNull()
+    expect(screen.queryByTestId('echo-done')).toBeNull()
+    vi.advanceTimersByTime(1800 + ROUTINE_RESULT_HOLD_MS)
+    expect(handed.finish).toEqual([
+      { id: EXERCISE_ECHO_STARS, line: '9 of 9 on pitch', settledNote: 60 },
+    ])
   })
 })

@@ -45,6 +45,9 @@ import { GlideRoomScreen } from '@/components/room-kit/glide/GlideRoomScreen'
 import { MercView } from '@/components/room-kit/MercView'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import surface from '@/components/room-kit/RoomSurface.module.css'
+import type { RoutineStop } from '@/components/room-kit/routine-stop'
+import { routineRun } from '@/components/room-kit/routine-stop'
+import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import { WAVE } from './bay-geometry'
 import type { BayLayout } from './bay-layout'
 import { layoutBay, MERC_INTRO_X, mercBoxAt, zoomAt } from './bay-layout'
@@ -72,6 +75,12 @@ export interface LipRollRoomProps {
   still?: boolean
   /** Every picture the scene shows has decoded (the fixtures wait for it). */
   onSettled?: () => void
+  /**
+   * A stop of the Warm-up (room-kit routine-stop.ts): the room in warm-up
+   * mode, its run started from the stop's note when it keeps none of its
+   * own, and its demo never starting by itself. Read once.
+   */
+  routine?: RoutineStop
 }
 
 /**
@@ -130,8 +139,12 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
   // eslint-disable-next-line solid/reactivity -- read once, as documented
   const own = props.controller === undefined
   // eslint-disable-next-line solid/reactivity -- read once, as documented
-  const room = props.controller ?? useLipController()
-  const demo: LipDemo | null = own ? useLipDemo(room) : null
+  const stop = props.routine
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const room = props.controller ?? useLipController(routineRun(stop))
+  const demo: LipDemo | null = own
+    ? useLipDemo(room, { autoPlay: stop === undefined })
+    : null
   const reduced = prefersReducedMotion()
 
   /** Merc's canvas over the next moments of the demo's take, px. */
@@ -144,6 +157,8 @@ export function LipRollRoom(props: LipRollRoomProps): JSX.Element {
   return (
     <GlideRoomScreen
       room={room}
+      exercise={EXERCISE_LIP_ROLL_BAY}
+      routine={stop}
       demo={demo}
       ids="lip"
       testId="lip-roll-room"

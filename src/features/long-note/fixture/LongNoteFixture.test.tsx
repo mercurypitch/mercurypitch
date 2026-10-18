@@ -237,6 +237,31 @@ describe('the Long note fixtures', () => {
     },
   )
 
+  it('draws a stop of the Warm-up: its chip and "Skip stop" at the intro, no buttons at the result', async () => {
+    const stop = {
+      index: 1,
+      count: 4,
+      settledNote: null,
+      finish: () => undefined,
+      skip: () => undefined,
+    }
+    render(() => <LongNoteFixture name="intro" stop={stop} />)
+    expect(screen.getByTestId('long-note-chip').textContent).toBe(
+      'Warm-up 2 of 4',
+    )
+    expect(screen.getByTestId('long-note-skip-stop')).toBeTruthy()
+    expect(screen.queryByTestId('long-note-level')).toBeNull()
+    cleanup()
+
+    render(() => <LongNoteFixture name="result" stop={stop} />)
+    await waitFor(() => {
+      expect(screen.getByTestId('long-note-fixture').dataset.ready).toBe('true')
+    })
+    expect(screen.queryByTestId('long-note-again')).toBeNull()
+    expect(screen.queryByTestId('long-note-done')).toBeNull()
+    expect(screen.getByTestId('long-note-routine-on')).toBeTruthy()
+  })
+
   it('names the five states, and nothing else', () => {
     expect(NAMES).toEqual(['intro', 'rest', 'mid-take', 'demo-off', 'result'])
     expect(isFixtureName('result')).toBe(true)

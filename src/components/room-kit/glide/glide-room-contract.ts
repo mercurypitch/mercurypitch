@@ -18,6 +18,7 @@ import type { TakeClock } from '@/components/demo-kit/demo-plan'
 import type { DemoScript } from '@/components/demo-kit/useExerciseDemo'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import type { RoomLine, RoomLines } from '@/components/room-kit/room-lines'
+import type { RoutineRunOptions } from '@/components/room-kit/routine-stop'
 import type { ExerciseCapture } from '@/components/room-kit/useExerciseCapture'
 import type { GlideEvent } from '@/lib/glide/glide-engine'
 import type { GlideResult } from '@/lib/glide/glide-metrics'
@@ -198,8 +199,14 @@ export interface GlideRoomSetup<R extends GlideRoomTypes> {
   readonly words: {
     /** Its table of lines; the core speaks at GlideCoreMoment too. */
     readonly lines: GlideLines<GlideCoreMoment | R['line']>
-    /** The line a run opens with; null for arches that are a guess. */
-    readonly intro: (plan: R['plan'] | null) => GlideLine<R['line']>
+    /**
+     * The line a run opens with; null for arches that are a guess.
+     * `routine`: the Warm-up's cue in place of the intro.
+     */
+    readonly intro: (
+      plan: R['plan'] | null,
+      routine: boolean,
+    ) => GlideLine<R['line']>
     /** The line in the breath after an arch: `next` root, its `top` note. */
     readonly afterArch: (
       heard: R['heard'],
@@ -260,6 +267,8 @@ export interface GlideRoomSetup<R extends GlideRoomTypes> {
      */
     readonly demoDrawsTake: boolean
   }
+  /** The Warm-up's stop, when the room is one (routine-stop.ts). */
+  readonly options?: RoutineRunOptions
 }
 
 /** What the room's screen gets: its room, its demo and its fixture name it. */
@@ -288,6 +297,12 @@ export interface GlideRoomController<R extends GlideRoomTypes> {
   lines: Accessor<GlideSceneLines>
   /** The pulled-back result is up. */
   showResult: Accessor<boolean>
+  /**
+   * The note a run starts from, MIDI, for a later stop of the Warm-up: the
+   * easy note the room keeps, else the one it was given; null for none.
+   * Read when asked; deliberately not reactive.
+   */
+  settledNote: () => number | null
   /** Start a run: from the intro, a result or a blocked mic. */
   start: () => void
   /** The mic button during a run: the run stops, nothing kept. */

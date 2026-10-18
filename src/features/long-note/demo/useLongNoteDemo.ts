@@ -9,7 +9,7 @@
 // (demo-cues.ts). At the goal the tooltip goes while Merc steps out of the
 // glass to cheer, until the next one explains the top.
 
-import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, } from '@/components/demo-kit/useExerciseDemo'
+import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, RoomDemoOptions, } from '@/components/demo-kit/useExerciseDemo'
 import { useExerciseDemo } from '@/components/demo-kit/useExerciseDemo'
 import type { ScriptedTake } from '../scripted-take'
 import type { LongNoteController } from '../useLongNoteController'
@@ -25,7 +25,10 @@ export type DemoTip = KitDemoTip<DemoCueId, DemoTarget>
 
 export type LongNoteDemo = ExerciseDemo<DemoCueId, DemoTarget>
 
-export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
+export function useLongNoteDemo(
+  room: LongNoteController,
+  options: RoomDemoOptions = {},
+): LongNoteDemo {
   return useExerciseDemo({
     room: {
       script: room.script,
@@ -42,7 +45,7 @@ export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
     micTarget: 'mic',
     endMark: 'end',
     clearTipOn: ['goal'],
-    autoPlays: () => longNoteDemoAutoPlays(),
+    autoPlays: () => options.autoPlay !== false && longNoteDemoAutoPlays(),
     markSeen: () => markLongNoteDemoSeen(),
     sound: (ctx, minLead) => createDemoSound(ctx, minLead),
     take: (take, note, clock, still): ScriptedTake => ({

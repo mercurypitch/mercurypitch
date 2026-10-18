@@ -32,6 +32,10 @@
 // and sings it back twice through the room's own engine, not like this and
 // like this, with the demo kit's layer, cards and take pill over it. A
 // first visit opens on it, and the "?" in the bar plays it again.
+//
+// In the Warm-up (`routine`, room-kit routine-stop.ts) a run is three
+// phrases (WARM_UP_PHRASES), kept in the history but never as a best, and
+// the shell holds the result until the celebration has settled.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, on, Show, untrack } from 'solid-js'
@@ -43,10 +47,15 @@ import { createMeasure, cssPx } from '@/components/room-kit/room-measure'
 import { ResultCard } from '@/components/room-kit/RoomHeader'
 import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, ShellSkip, } from '@/components/room-kit/RoomShell'
 import surface from '@/components/room-kit/RoomSurface.module.css'
+import type { RoutineStop } from '@/components/room-kit/routine-stop'
+import { routineRun } from '@/components/room-kit/routine-stop'
+import { EXERCISE_ECHO_STARS } from '@/lib/domain/exercise-contracts'
 import { aimEchoTip } from './demo/tip-targets'
 import { useEchoDemo } from './demo/useEchoDemo'
 import type { CityLightState } from './echo-art'
-import type { EchoSummary } from './echo-controller-contract'
+import { CELEBRATION } from './echo-celebration'
+import type { EchoController, EchoSummary } from './echo-controller-contract'
+import { WARM_UP_PHRASES } from './echo-controller-contract'
 import { echoMicState } from './echo-machine'
 import type { CloudState } from './EchoClouds'
 import { EchoLevel } from './EchoLevel'
@@ -63,6 +72,22 @@ import type { VoicePoint } from './voice-path'
 export interface EchoRoomProps {
   /** Leave the room (Done). */
   onDone: () => void
+  /**
+   * The run, when it is not the room's own: the dev fixtures' pinned
+   * frames (fixture/EchoRoomFixture.tsx). Read once. A room on another's
+   * run has no demo.
+   */
+  controller?: EchoController
+  /** No animation at all (the fixtures). */
+  still?: boolean
+  /** The sky's plate has settled (the fixtures wait for it). */
+  onSettled?: () => void
+  /**
+   * A stop of the Warm-up (room-kit routine-stop.ts): the room in warm-up
+   * mode, three phrases started from the stop's note when it keeps none of
+   * its own, and its demo never starting by itself. Read once.
+   */
+  routine?: RoutineStop
 }
 
 /** The ribbon's band, plate v: the voice never goes outside it (voiceV). */
@@ -100,9 +125,43 @@ export function resultDetail(summary: EchoSummary): string | null {
 }
 
 export function EchoRoom(props: EchoRoomProps): JSX.Element {
-  const room = useEchoController()
-  const demo = useEchoDemo(room)
-  const shell = createRoomShell({ ids: 'echo', styles, run: room, demo })
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const stop = props.routine
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const own = props.controller === undefined
+  const room =
+    // eslint-disable-next-line solid/reactivity -- read once, as documented
+    props.controller ??
+    useEchoController(
+      stop === undefined
+        ? {}
+        : { ...routineRun(stop), phrases: WARM_UP_PHRASES },
+    )
+  const demo = own ? useEchoDemo(room, { autoPlay: stop === undefined }) : null
+  const shell = createRoomShell({
+    ids: 'echo',
+    styles,
+    run: room,
+    demo,
+    routine:
+      stop === undefined
+        ? null
+        : {
+            stop,
+            // The celebration has settled into its idle by then.
+            settleMs: CELEBRATION.timing.idleFromMs,
+            result: () => {
+              const summary = room.summary()
+              return summary === null
+                ? null
+                : {
+                    id: EXERCISE_ECHO_STARS,
+                    line: `${landedText(summary)} on pitch`,
+                    settledNote: room.settledNote(),
+                  }
+            },
+          },
+  })
   const phase = shell.phase
   let rootEl: HTMLDivElement | undefined
   const box = createMeasure(
@@ -182,7 +241,7 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
     const { phase: now, phrase } = room.state()
     // The demo: screen 3's clouds through the take not to copy, a take's
     // through the one to copy; none at its result, its start or its end.
-    const take = demo.take()
+    const take = demo?.take() ?? null
     if (room.script.active()) {
       return {
         present: take !== null,
@@ -259,7 +318,8 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
           <EchoSky
             layout={l()}
             scene={room.scene()}
-            still={false}
+            still={props.still === true}
+            onPlateSettled={() => props.onSettled?.()}
             clouds={clouds()}
             cityLight={cityLight()}
             ribbon={
@@ -339,6 +399,7 @@ export function EchoRoom(props: EchoRoomProps): JSX.Element {
         onDone={() => props.onDone()}
         mic={micState()}
         micLabel={micLabel()}
+        still={props.still}
       />
     </RoomShell>
   )

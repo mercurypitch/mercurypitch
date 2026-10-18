@@ -17,6 +17,7 @@
 import type { RoomLine } from '@/components/room-kit/room-lines'
 import { EXERCISE_ECHO_STARS } from '@/lib/domain/exercise-contracts'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { ECHO_RUN_PHRASES } from '@/lib/sequence/phrase-fit'
 import type { EchoLevelId, MissedNote } from '@/lib/sequence/sequence-engine'
 import type { PhraseTake, SequenceMetrics, } from '@/lib/sequence/sequence-metrics'
 import { recordEchoBest, rememberEchoRoot } from '@/stores/echo-store'
@@ -135,13 +136,16 @@ export interface KeptRun {
 /**
  * A finished run is kept: the exercise history, the best at its level and
  * the root its first phrase started on. A run that landed nothing is kept
- * in the history too (it was sung), but it is never a best.
+ * in the history too (it was sung), but it is never a best; nor is a run
+ * shorter than a full one (the Warm-up's three `phrases`): its notes could
+ * never match a full run's, and a best it set would be beaten by length.
  */
 export function keepEchoRun(
   level: EchoLevelId,
   metrics: SequenceMetrics,
   root: number,
   now: number = Date.now(),
+  phrases: number = ECHO_RUN_PHRASES,
 ): KeptRun {
   recordExerciseResult({
     type: EXERCISE_ECHO_STARS,
@@ -158,7 +162,9 @@ export function keepEchoRun(
     completedAt: now,
   })
   rememberEchoRoot(root)
-  if (metrics.landed === 0) return { improved: false }
+  if (metrics.landed === 0 || phrases < ECHO_RUN_PHRASES) {
+    return { improved: false }
+  }
   const { improved } = recordEchoBest(level, {
     landed: metrics.landed,
     notes: metrics.notes,
@@ -189,11 +195,11 @@ export interface ShownResult {
   readonly celebrate: boolean
 }
 
-/** The result of `done`, sung at `level` in run `run`. */
+/** The result of `done`, sung at `level` in run `run` of `phrases`. */
 export function showResultOf(
   done: readonly PhraseTake[],
   metrics: SequenceMetrics,
-  at: { level: EchoLevelId; run: number; improved: boolean },
+  at: { level: EchoLevelId; run: number; improved: boolean; phrases?: number },
 ): ShownResult {
   const all = metrics.notes > 0 && metrics.landed === metrics.notes
   const celebrate = at.improved || all
@@ -212,6 +218,7 @@ export function showResultOf(
       done: [...done],
       result: true,
       celebration: celebrate,
+      phrases: at.phrases,
     }),
     celebrate,
   }

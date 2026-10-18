@@ -285,6 +285,28 @@ describe('keeping a run', () => {
     ])
   })
 
+  it("keeps the Warm-up's three phrases in the history, but never as a best", () => {
+    kept.improved = true
+    const result = keepEchoRun(
+      'learning',
+      metrics({ landed: 9, notes: 9, missed: 0 }),
+      60,
+      3_000,
+      3,
+    )
+
+    expect(result).toEqual({ improved: false })
+    expect(kept.history).toHaveLength(1)
+    expect(kept.history[0]).toMatchObject({
+      type: 'echo-stars',
+      score: 100,
+      metrics: { landed: 9, notes: 9 },
+      completedAt: 3_000,
+    })
+    expect(kept.roots).toEqual([60])
+    expect(kept.bests).toEqual([])
+  })
+
   it('keeps a run that landed nothing in the history, but never as a best', () => {
     const result = keepEchoRun(
       'learning',

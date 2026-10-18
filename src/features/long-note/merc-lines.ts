@@ -26,6 +26,7 @@ import { createRoomLines, fillLine } from '@/components/room-kit/room-lines'
 
 export type LongNoteMoment =
   | 'intro'
+  | 'routine'
   | 'introAny'
   | 'listen'
   | 'found'
@@ -68,6 +69,8 @@ export const MERC_LINES: LineTable<LongNoteMoment> = {
       text: 'Hold {note}. The light fills while you stay on it.',
     },
   ],
+  // In the Warm-up: the storyboard's cue, one line every time.
+  routine: [{ id: 'routine-breathe', text: 'Breathe in, then hold {note}.' }],
   // No note yet: the singer picks one by singing it.
   introAny: [
     { id: 'any-easy', text: "Sing any note that sits easy. I'll find it." },

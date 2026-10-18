@@ -9,7 +9,7 @@
 // Every tooltip waits for the engine event it explains (demo-cues.ts), and
 // both takes play at their own speed, one slide each at Beginner's timing.
 
-import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, } from '@/components/demo-kit/useExerciseDemo'
+import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, RoomDemoOptions, } from '@/components/demo-kit/useExerciseDemo'
 import { useGlideDemo } from '@/components/room-kit/glide/useGlideDemo'
 import { markNgDemoSeen, ngDemoAutoPlays } from '@/stores/ng-slides-store'
 import type { NgController } from '../ng-controller-contract'
@@ -24,13 +24,16 @@ export type DemoTip = KitDemoTip<DemoCueId, DemoTarget>
 
 export type NgDemo = ExerciseDemo<DemoCueId, DemoTarget>
 
-export function useNgDemo(room: NgController): NgDemo {
+export function useNgDemo(
+  room: NgController,
+  options: RoomDemoOptions = {},
+): NgDemo {
   return useGlideDemo(room, {
     plan: planNgDemo,
     cues: DEMO_CUES,
     cueText: (id) => demoCueText(id),
     ownNote: () => room.lines().root !== null,
-    autoPlays: () => ngDemoAutoPlays(),
+    autoPlays: () => options.autoPlay !== false && ngDemoAutoPlays(),
     markSeen: () => markNgDemoSeen(),
     sound: (ctx, minLead) => createDemoSound(ctx, minLead),
     take: (take, clock): ScriptedNgTake => ({

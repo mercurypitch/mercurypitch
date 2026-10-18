@@ -57,11 +57,18 @@ export function planLipRun(fit: GlideTargets, preset: GlidePreset): LipPlan {
   }
 }
 
-/** The line a run opens with, before the first wave. */
-export function introLine(plan: LipPlan | null): GlideLine<LipMoment> {
+/**
+ * The line a run opens with, before the first wave. In the Warm-up
+ * (`routine`) Merc's cue, without the top.
+ */
+export function introLine(
+  plan: LipPlan | null,
+  routine = false,
+): GlideLine<LipMoment> {
   if (plan === null || plan.source === 'preset') {
     return { moment: 'introAny', fields: {} }
   }
+  if (routine) return { moment: 'routine', fields: {} }
   return {
     moment: 'intro',
     fields: { top: noteName(plan.roots[0] + plan.semitones) },

@@ -7,6 +7,7 @@
 // on the dev server and no build carries it.
 
 import { render } from 'solid-js/web'
+import { fixtureStop } from '@/components/room-kit/routine-fixture'
 import { isFixtureName, LipFixture } from './LipFixture'
 
 /**
@@ -16,7 +17,7 @@ import { isFixtureName, LipFixture } from './LipFixture'
  */
 export function mountLipFixture(root: HTMLElement, name: string): boolean {
   if (!isFixtureName(name)) return false
-  render(() => <LipFixture name={name} />, root)
+  render(() => <LipFixture name={name} stop={fixtureStop()} />, root)
   root.classList.add('loaded')
   return true
 }

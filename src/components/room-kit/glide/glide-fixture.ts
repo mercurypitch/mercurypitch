@@ -105,6 +105,7 @@ export function glideFixtureController<
     mercVoice: voice,
     lines: () => setup.lines(scene),
     showResult: () => scene.summary !== null,
+    settledNote: () => setup.root,
     start: () => undefined,
     stop: () => undefined,
     // A fixture has no demo (the room: another's run has none).

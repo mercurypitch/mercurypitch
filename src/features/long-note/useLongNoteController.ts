@@ -31,6 +31,7 @@ import { offerable, QUIET_LIMIT_SECONDS, } from '@/components/room-kit/room-cons
 import { createRoomLife } from '@/components/room-kit/room-life'
 import { openRoomMic } from '@/components/room-kit/room-mic'
 import { createRoomScript } from '@/components/room-kit/room-script'
+import type { RoutineRunOptions } from '@/components/room-kit/routine-stop'
 import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
@@ -75,13 +76,19 @@ const SLEEP_AFTER_SECONDS = 25
 /** The halo at the goal, of the brim's full shine. */
 export const GOAL_SHINE = 0.5
 
-export function useLongNoteController(): LongNoteController {
+export function useLongNoteController(
+  options: RoutineRunOptions = {},
+): LongNoteController {
   const capture = useLongNoteCapture()
   // The voice type's usual note: where the arrows start from no note.
   const picked = loadHoldTarget(untrack(vocalRangePreset))
+  // The note held last time, else the voiceprint's, else (in the Warm-up)
+  // the one an earlier stop started from.
   const opening =
     rememberedLongNote() ??
-    (picked.source === 'voiceprint' ? picked.midi : null)
+    (picked.source === 'voiceprint' ? picked.midi : null) ??
+    options.root ??
+    null
   const lines = createMercLineSelector()
 
   const [state, setState] = createSignal<LongNoteState>(
@@ -114,7 +121,8 @@ export function useLongNoteController(): LongNoteController {
     setLine(lines.next(moment, untrack(noteName)))
   }
   const sayIntro = (): void => {
-    say(untrack(state).targetMidi === null ? 'introAny' : 'intro')
+    if (untrack(state).targetMidi === null) say('introAny')
+    else say(options.routine === true ? 'routine' : 'intro')
   }
 
   // ── Timers that belong to the screen ───────────────────────
@@ -772,5 +780,6 @@ export function useLongNoteController(): LongNoteController {
     canHear,
     hearNote,
     script,
+    settledNote: () => untrack(state).targetMidi,
   }
 }

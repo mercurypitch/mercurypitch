@@ -96,6 +96,10 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   setup: GlideRoomSetup<R>,
 ): GlideRoom<R> {
   const { capture, words, scene } = setup
+  const options = setup.options ?? {}
+  /** The easy note a run starts from: the room's own, else the Warm-up's. */
+  const startNote = (): number | null =>
+    setup.run.remembered() ?? options.root ?? null
   const tones = createRoomTones()
   const voicePreset = untrack(vocalRangePreset)
 
@@ -127,9 +131,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   }
 
   /** The arches as they would be fitted now, before the singer is heard. */
-  const knownFit = (
-    settledMidi: number | null = setup.run.remembered(),
-  ): GlideTargets =>
+  const knownFit = (settledMidi: number | null = startNote()): GlideTargets =>
     setup.run.fit({
       voiceprints: loadLocalVoiceprints(),
       settledMidi,
@@ -150,6 +152,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     introVoice = introHum(plan.roots[0])
     const { moment, fields } = words.intro(
       plan.source === 'preset' ? null : plan,
+      options.routine === true,
     )
     say(moment, fields)
   }
@@ -717,6 +720,10 @@ export function useGlideRoom<R extends GlideRoomTypes>(
       }
     },
     showResult,
+    settledNote: () => {
+      const note = startNote()
+      return note === null ? null : Math.round(note)
+    },
     start,
     stop,
     attach: (next) => {

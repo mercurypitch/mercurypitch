@@ -19,6 +19,7 @@ import { createRoomLines } from '@/components/room-kit/room-lines'
 
 export type LipMoment =
   | 'intro'
+  | 'routine'
   | 'introAny'
   | 'found'
   | 'listen'
@@ -53,6 +54,10 @@ export const LIP_LINES: LineTable<LipMoment> = {
       id: 'intro-follow',
       text: 'Buzz your lips, then follow the wave up to {top} and down.',
     },
+  ],
+  // In the Warm-up: the storyboard's cue, the intro without its top.
+  routine: [
+    { id: 'routine-roll', text: 'Roll your lips, brrr, and ride the wave.' },
   ],
   // No voiceprint and no note kept: the singer's own note sets the waves.
   introAny: [

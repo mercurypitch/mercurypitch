@@ -1,0 +1,39 @@
+/* A room in warm-up mode (routine-stop.ts): "Skip stop" in the bar, and
+   the tap anywhere at its held result. */
+
+/* "Skip stop" where the level pill was (the path carries the level): the
+   bar's dark glass, as the level pill and "?" beside it have, so it reads
+   over bright art (Lip roll's moon at 320 and 360 px wide). */
+.skip {
+  display: inline-flex;
+  align-items: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 22px;
+  background: rgba(10, 18, 44, 0.55);
+  color: var(--text-secondary);
+  font: 600 13px/1 var(--font-body, sans-serif);
+  white-space: nowrap;
+}
+
+/* The held result: the whole room is one target, over every part of it.
+   It draws nothing; a keyboard's focus shows as a ring inside the room's
+   edge. */
+.onward {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.onward:focus-visible {
+  outline: 2px solid var(--text-secondary);
+  outline-offset: -6px;
+}

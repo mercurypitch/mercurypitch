@@ -15,6 +15,11 @@
 //             over the buttons
 //   blocked   the mic's notice and Try again
 //
+// In the Warm-up (`routine`, room-kit routine-stop.ts) the shell puts the
+// stop's chip, "Skip stop" and the held result in; the page says what the
+// routine's card shows ("88% lit") and that the result has settled once
+// the view has pulled back.
+//
 // The head's and the controls' heights are the room's CSS custom
 // properties (`clear`), read here once a resize, so the room's world keeps
 // Merc and its marks clear of both.
@@ -36,6 +41,8 @@ import { createMeasure, cssPx } from '@/components/room-kit/room-measure'
 import { ResultCard } from '@/components/room-kit/RoomHeader'
 import type { RoomStyles, ShellRun } from '@/components/room-kit/RoomShell'
 import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, ShellSkip, } from '@/components/room-kit/RoomShell'
+import type { RoutineStop } from '@/components/room-kit/routine-stop'
+import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import type { GlideRoomState } from './glide-room-machine'
 import { glideMicState } from './glide-room-machine'
@@ -69,6 +76,8 @@ export interface GlideScreenRoom<
   chip: Accessor<string | null>
   singing: Accessor<boolean>
   summary: Accessor<S | null>
+  /** The note a run starts from, for a later stop of the Warm-up. */
+  settledNote: () => number | null
 }
 
 /** The room's own words on the page. */
@@ -101,6 +110,8 @@ export interface GlideRoomScreenProps<
   L extends { readonly height: number },
 > {
   room: GlideScreenRoom<S>
+  /** The exercise, as the Warm-up names it. */
+  exercise: PremiumExerciseId
   /** "How it works"; null on another's run (the fixtures). */
   demo: ExerciseDemo<C, T> | null
   /** The room's test ids start with this: `lip` gives lip-mic. */
@@ -134,10 +145,17 @@ export interface GlideRoomScreenProps<
   onDone: () => void
   /** No animation at all (the fixtures). */
   still?: boolean
+  /** A stop of the Warm-up: the room in warm-up mode. Read once. */
+  routine?: RoutineStop
 }
 
 /** At the result Merc's line sits this far over the controls, px. */
 const RESULT_BUBBLE_GAP = 12
+/**
+ * The result has settled once the view has pulled back to the whole world,
+ * ms: the rooms' 1200 ms move to it (.scene[data-result] in their CSS).
+ */
+export const GLIDE_RESULT_SETTLE_MS = 1200
 
 /** "88%": the result's big number is the share of the world lit. */
 export function litText(summary: GlideScreenSummary): string {
@@ -152,6 +170,10 @@ export function GlideRoomScreen<
 >(props: GlideRoomScreenProps<S, C, T, L>): JSX.Element {
   // eslint-disable-next-line solid/reactivity -- the room's, made once
   const room = props.room
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const stop = props.routine
+  // eslint-disable-next-line solid/reactivity -- the room's, made once
+  const exercise = props.exercise
   const shell = createRoomShell({
     // eslint-disable-next-line solid/reactivity -- the room's, made once
     ids: props.ids,
@@ -160,6 +182,23 @@ export function GlideRoomScreen<
     run: room,
     // eslint-disable-next-line solid/reactivity -- the room's, made once
     demo: props.demo,
+    routine:
+      stop === undefined
+        ? null
+        : {
+            stop,
+            settleMs: GLIDE_RESULT_SETTLE_MS,
+            result: () => {
+              const summary = room.summary()
+              return summary === null
+                ? null
+                : {
+                    id: exercise,
+                    line: `${litText(summary)} lit`,
+                    settledNote: room.settledNote(),
+                  }
+            },
+          },
   })
   const phase = shell.phase
   const scripted = shell.scripted

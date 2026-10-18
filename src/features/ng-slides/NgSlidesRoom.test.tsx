@@ -14,6 +14,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CREST_NOTE } from '@/components/room-kit/CrestNote'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
 import mic from '@/components/room-kit/RoomControls.module.css'
+import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
+import { ROUTINE_RESULT_HOLD_MS } from '@/components/room-kit/routine-stop'
+import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import { tone } from '@/lib/glass/test-frames'
 import type { GlidePath } from '@/lib/glide/glide-path'
 import { segmentAt } from '@/lib/glide/glide-path'
@@ -836,4 +839,62 @@ describe('the mic and the contact light', () => {
       )
     },
   )
+})
+
+describe('in the Warm-up', () => {
+  /** The second stop of four, counting what the room hands it. */
+  function warmUp(settledNote: number | null = null) {
+    const calls = { finish: [] as StopResult[], skip: 0 }
+    const stop: RoutineStop = {
+      index: 1,
+      count: 4,
+      settledNote,
+      finish: (result) => calls.finish.push(result),
+      skip: () => {
+        calls.skip += 1
+      },
+    }
+    return { stop, calls }
+  }
+
+  it('opens on the stop\'s chip, Merc\'s cue and "Skip stop", with no level', () => {
+    const { stop, calls } = warmUp()
+    render(() => <NgSlidesRoom onDone={() => undefined} routine={stop} />)
+
+    expect(chip()).toBe('Warm-up 2 of 4')
+    expect(bubble()).toBe(linesOf('routine')[0])
+    expect(screen.queryByTestId('ng-level')).toBeNull()
+    fireEvent.click(screen.getByTestId('ng-skip-stop'))
+    expect(calls.skip).toBe(1)
+  })
+
+  it('fits the slides to the note an earlier stop started from, when it keeps none', () => {
+    kept.note = null
+    render(() => (
+      <NgSlidesRoom onDone={() => undefined} routine={warmUp(50).stop} />
+    ))
+
+    expect(bubble()).toBe(linesOf('routine')[0])
+  })
+
+  it('holds its result without Again or Done, then hands "N% lit" on once', async () => {
+    const { stop, calls } = warmUp()
+    render(() => <NgSlidesRoom onDone={() => undefined} routine={stop} />)
+    fireEvent.click(screen.getByTestId('ng-mic'))
+    await settle()
+    const plan = planFor('learning', 45)
+    play(windowFrames(plan, follow(plan.path)), plan)
+
+    expect(phase()).toBe('result')
+    expect(screen.queryByTestId('ng-again')).toBeNull()
+    expect(screen.queryByTestId('ng-done')).toBeNull()
+    const pct = /\d+%/u.exec(
+      screen.getByTestId('ng-result').textContent ?? '',
+    )?.[0]
+    expect(pct).toBeDefined()
+    vi.advanceTimersByTime(1200 + ROUTINE_RESULT_HOLD_MS)
+    expect(calls.finish).toEqual([
+      { id: EXERCISE_NG_SLIDES_BRIDGE, line: `${pct} lit`, settledNote: 45 },
+    ])
+  })
 })

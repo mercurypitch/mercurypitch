@@ -73,6 +73,24 @@ export interface EchoSceneInput {
   readonly result: boolean
   /** The result's celebration star over the town. */
   readonly celebration: boolean
+  /**
+   * The phrases the run has: a full run's five by default. Fewer (the
+   * Warm-up's three) spread over the result's five places (slotOf). The
+   * top band needs no spreading: it fills from its two outer places, top
+   * left and top right, and a run of three never has more than two there.
+   */
+  readonly phrases?: number
+}
+
+/**
+ * The place, of `slots`, for phrase `index` of a run of `phrases`: one
+ * after another for a full run; a shorter one spread over them, three
+ * phrases on the first, third and fifth (top left, the middle, bottom
+ * right), so the sky keeps its shape.
+ */
+export function slotOf(index: number, phrases: number, slots: number): number {
+  if (phrases >= slots || phrases <= 1) return index
+  return Math.round((index * (slots - 1)) / (phrases - 1))
 }
 
 interface Pieces {
@@ -202,9 +220,14 @@ function slotPieces(
 /** The sky for a moment of the run. */
 export function echoScene(input: EchoSceneInput): SkyScene {
   const slots = input.result ? RESULT_BOXES : FINISHED_SLOTS
+  const phrases = input.phrases ?? slots.length
+  const place = (i: number): number =>
+    input.result ? slotOf(i, phrases, slots.length) : i
   const all: Pieces[] = input.done
     .slice(0, slots.length)
-    .map((done, i) => slotPieces(done, i, slots[i], input.run, input.result))
+    .map((done, i) =>
+      slotPieces(done, i, slots[place(i)], input.run, input.result),
+    )
   if (input.live !== null && !input.result) {
     all.push(livePieces(input.live, input.run))
   }
