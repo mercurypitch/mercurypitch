@@ -250,8 +250,8 @@ Lesson 2 describes.
   30), under their Lesson 2 ids, `l02-q1` and `l02-q3`. It is reshuffled from a seed of its own
   (keys `fyp-l04-recall-seed` and `fyp-l04-recall-v1`), and earlier answers are never shown, so
   the answers measure delayed retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks
-  nothing done. Neither question plays a sound (FACTS 62). "Try Step 2 again" and "Try Step 5
-  again" are plain links to Lesson 2's steps, `/learn/02#lesson`, opening in a new tab so the
+  nothing done. Neither question plays a sound (FACTS 62). "Try Lesson 2, Step 2 again" and "Try
+  Lesson 2, Step 5 again" are plain links to Lesson 2's steps, `/learn/02#lesson`, opening in a new tab so the
   viewer keeps their place here; never `data-goto-step`, which would move this page's own deck. On
   the public host each answer is a telemetry event with its `visit_index`.
 - **Quick check**: LESSON.md's four questions, ids `l04-q1` to `l04-q4`, keys `fyp-l04-seed` and

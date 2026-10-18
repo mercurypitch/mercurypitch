@@ -28,22 +28,22 @@ the end.
 
 Two questions from Lesson 2, asked afresh (no earlier answers are shown). They are Lesson 2's quiz
 questions 1 and 3, word for word, under their ids `l02-q1` and `l02-q3`; Lesson 3's draft asks the
-other two (FACTS 30). Each "Try Step N again" is a plain link to Lesson 2's steps on its own page,
-not to a step on this one.
+other two (FACTS 30). Their feedback is Lesson 2's, except that "Try Step N again" reads "Try
+Lesson 2, Step N again" and is a plain link to Lesson 2's page, not to a step on this one.
 The kit's quiz has no id field yet, so the Lesson telemetry track adds one before these answers
 count as the delayed score (MASTER-PLAN § 9).
 
 1. How many semitones make an octave?
    - 12 **[correct]** · Feedback: "Seven letters and five notes between them: twelve equal steps."
    - 7 · Feedback: "Seven is the number of letters. Five more notes sit between them: twelve
-     semitones in all. Try Step 2 again."
+     semitones in all. Try Lesson 2, Step 2 again."
    - 8 · Feedback: "From A to A there are eight letters, counting both As, but five more notes sit
      between them: the octave is twelve semitone steps."
 2. C♯ and D♭: one key or two?
    - One key, with two names **[correct]** · Feedback: "One semitone up from C and one semitone
      down from D land on the same key."
    - Two keys, side by side · Feedback: "There's only one key between C and D: C♯ is a semitone up
-     from C, D♭ a semitone down from D, and both land on it. Try Step 5 again."
+     from C, D♭ a semitone down from D, and both land on it. Try Lesson 2, Step 5 again."
    - It depends on the music around it · Feedback: "The music around it decides which name is
      written, not which key: C♯ and D♭ are one key either way."
 
