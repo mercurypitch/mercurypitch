@@ -118,6 +118,72 @@ describe('the second volume, and what the session went through', () => {
     )
   })
 
+  // The slider was looked at four times a second for as long as the app
+  // ran. It is looked at until the view has settled in its window and been
+  // read once, and after that only while a screen listens for changes.
+  describe('looks at the slider only while it is needed', () => {
+    /** One Swift function of the plugin, alone. */
+    const fn = (signature: string): string => {
+      const start = PLUGIN.indexOf(signature)
+      if (start < 0) return ''
+      const end = PLUGIN.indexOf('\n    }\n', start)
+      return PLUGIN.slice(start, end < 0 ? undefined : end)
+    }
+
+    it('starts and stops its timer in one place each', () => {
+      expect(PLUGIN.match(/DispatchSource\.makeTimerSource/gu)).toHaveLength(1)
+      expect(fn('private func startLooking()')).toContain(
+        'DispatchSource.makeTimerSource',
+      )
+      expect(fn('private func startLooking()')).toContain(
+        'guard systemVolumeTimer == nil',
+      )
+      expect(fn('private func stopLooking()')).toContain(
+        'systemVolumeTimer?.cancel()',
+      )
+      expect(fn('private func stopLooking()')).toContain(
+        'systemVolumeTimer = nil',
+      )
+    })
+
+    it('needs it while a screen listens, and until the view has settled and been read', () => {
+      const needs = fn('private func needsLooking()')
+      expect(needs).toContain('hasListeners("audioOutputChange")')
+      expect(needs).toContain('!systemVolumeSettled()')
+      expect(needs).toContain('lastSystemVolume == nil')
+      const decide = fn('private func lookWhileNeeded()')
+      expect(decide).toContain('if needsLooking()')
+      expect(decide).toContain('startLooking()')
+      expect(decide).toContain('stopLooking()')
+    })
+
+    it('decides again on every tick, so it stops on its own once nobody listens', () => {
+      expect(fn('private func startLooking()')).toMatch(
+        /self\?\.lookAtSystemVolume\(\)\s+self\?\.lookWhileNeeded\(\)/u,
+      )
+    })
+
+    // Capacitor calls these on the plugin's own queue; the timer and what
+    // it reads live on the main queue.
+    it.each(['addListener', 'removeListener', 'removeAllListeners'])(
+      'decides again when the page calls %s',
+      (method) => {
+        const body = fn(`override public func ${method}(_ call: CAPPluginCall)`)
+        expect(body).toContain(`super.${method}(call)`)
+        expect(body).toMatch(
+          /DispatchQueue\.main\.async \{ \[weak self\] in\s+self\?\.lookWhileNeeded\(\)/u,
+        )
+      },
+    )
+
+    it('starts looking as the volume view goes up', () => {
+      expect(fn('private func putUpVolumeView()')).toContain('startLooking()')
+      expect(fn('private func putUpVolumeView()')).not.toContain(
+        'makeTimerSource',
+      )
+    })
+  })
+
   it('keeps the interruptions and how the app last made its session active', () => {
     expect(PLUGIN).toContain('AVAudioSessionInterruptionTypeKey')
     expect(PLUGIN).toContain('AVAudioSessionInterruptionReasonKey')
