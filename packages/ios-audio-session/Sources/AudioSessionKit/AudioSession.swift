@@ -28,11 +28,16 @@
 //
 //  A WEB PAGE THAT OPENS THE MIC GETS `playAndRecord`, whose default
 //  output port is the receiver -- the earpiece -- not the speaker.
-//  WebKit sets that category itself when getUserMedia starts and does
-//  not ask for `.defaultToSpeaker`. Both apps here sing: the
-//  mic is open for most of every session, so playback spends most of its
-//  life coming out of a speaker held nowhere near the player's ear. That
-//  reads as "no audio", not as "quiet audio".
+//  WebKit sets that category itself when getUserMedia starts, in mode
+//  VideoChat, and it does ask for `.defaultToSpeaker` (unless the earpiece
+//  is the preferred speaker), together with `.allowBluetooth` (the
+//  hands-free profile, HFP, so AirPods move to it while the mic is open),
+//  `.allowBluetoothA2DP` and `.allowAirPlay`: AudioSessionIOS.mm, the same
+//  on WebKit main and on the safari-7621 to 7625 branches. The app's own
+//  session below asks for the speaker as well. Both apps here sing: the
+//  mic is open for most of every session, so a receiver route would put
+//  playback, for most of its life, in a speaker held nowhere near the
+//  player's ear. That reads as "no audio", not as "quiet audio".
 //
 //  Both were written down before any of this shipped:
 //  docs/plans/mobile-native/capacitor-readiness.md rows B2 and B3 name

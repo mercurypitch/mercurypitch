@@ -36,10 +36,24 @@ export interface AudioOutputPort {
   readonly name: string
 }
 
+/**
+ * How far a reading's volume can be taken at its word.
+ *
+ *   live     it follows the volume keys: Android's stream volume, and an
+ *            iPhone's volume view once it has been seen to move
+ *   agreed   an iPhone's two readings say the same: the app's session and a
+ *            volume view settled in its window, not yet seen to move
+ *   session  an iPhone's own session alone, which can read 0 while the room
+ *            plays out loud (build 880) or keep an old value (iOS 18 on)
+ */
+export type VolumeKnown = 'live' | 'agreed' | 'session'
+
 /** The phone's output at one moment. */
 export interface AudioOutputReading {
   /** The volume the page's sound plays at, 0 to 1. */
   readonly volume: number
+  /** Whether `volume` follows the keys; a room says "zero" only if so. */
+  readonly volumeKnown: VolumeKnown
   /** Android: the volume in the phone's own steps, and how many there are. */
   readonly step: number | null
   readonly steps: number | null
@@ -87,6 +101,9 @@ const ROUTES: Readonly<Record<string, AudioRoute>> = {
 const finite = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
+/** Two volumes this close are one reading: a sixteenth is a key's step. */
+const AGREE_WITHIN = 0.01
+
 function ports(value: unknown): AudioOutputPort[] {
   if (!Array.isArray(value)) return []
   return value.flatMap((entry: unknown) => {
@@ -109,15 +126,31 @@ function ports(value: unknown): AudioOutputPort[] {
  * (AudioOutputPlugin.swift), and counts once the plugin has seen it move,
  * which a volume view that reads nothing never does. Until then the
  * session's stands, as it always has; the readout shows both.
+ *
+ * Standing is not being believed. Until the view has moved, the session's
+ * volume is taken at its word only where the view agrees with it, and only
+ * once the view has settled in its window (`systemVolumeSettled`): a view
+ * reads 0 until it fills, and two zeros then would be one stale reading
+ * twice. Android's volume is the stream's own and always follows the keys.
  */
 export function toAudioOutputReading(raw: unknown): AudioOutputReading | null {
   if (typeof raw !== 'object' || raw === null) return null
   const data = raw as RawOutput
   const session = finite(data.outputVolume)
   if (session === null) return null
-  const system =
-    data.systemVolumeLive === true ? finite(data.systemVolume) : null
+  const view = finite(data.systemVolume)
+  const system = data.systemVolumeLive === true ? view : null
   const volume = system ?? session
+  let volumeKnown: VolumeKnown = 'session'
+  if (finite(data.volumeStep) !== null || system !== null) {
+    volumeKnown = 'live'
+  } else if (
+    view !== null &&
+    data.systemVolumeSettled === true &&
+    Math.abs(view - session) <= AGREE_WITHIN
+  ) {
+    volumeKnown = 'agreed'
+  }
   const outputs = ports(data.outputs)
   const first = outputs[0]
   const route: AudioRoute =
@@ -135,6 +168,7 @@ export function toAudioOutputReading(raw: unknown): AudioOutputReading | null {
   if ('systemVolume' in data) detail.sessionVolume = session
   return {
     volume: Math.min(1, Math.max(0, volume)),
+    volumeKnown,
     step: finite(data.volumeStep),
     steps: finite(data.volumeSteps),
     route,

@@ -21,6 +21,13 @@
 // the singer is already doing what the hint asks. It comes back only when
 // the volume falls into the bottom quarter again, or on a new route that is
 // low at the same volume (headphones out, the speaker on).
+//
+// WHEN IT SAYS ZERO. Only from a reading taken at its word (`volumeKnown`):
+// one that follows the volume keys, or an iPhone's two readings agreeing.
+// An iPhone's own session can read 0 while the room plays out loud (build
+// 880, and iOS 18 on), and the hint said "The volume is at zero" over a
+// room the singer could hear. From that reading alone it asks for the
+// volume to go up and claims no number.
 
 import type { NativeAudioOutputReading, NativeAudioRoute, } from '@/stores/native-shell-store'
 
@@ -35,11 +42,12 @@ const EPSILON = 1e-6
 
 export interface VolumeHint {
   readonly shown: boolean
-  /** All the way down: the hint says so. */
+  /** All the way down, by a reading taken at its word: the hint says so. */
   readonly silent: boolean
-  /** The last reading's volume and route; null before the first. */
+  /** The last reading's volume, route and standing; null before the first. */
   readonly volume: number | null
   readonly route: NativeAudioRoute | null
+  readonly known: NativeAudioOutputReading['volumeKnown'] | null
 }
 
 /** A room just opened: nothing read yet, nothing shown. */
@@ -48,6 +56,7 @@ export const VOLUME_HINT_START: VolumeHint = {
   silent: false,
   volume: null,
   route: null,
+  known: null,
 }
 
 /** Is this volume too low to hear the room by, on this route? */
@@ -74,8 +83,9 @@ export function nextVolumeHint(
   }
   return {
     shown,
-    silent: reading.volume <= EPSILON,
+    silent: reading.volume <= EPSILON && reading.volumeKnown !== 'session',
     volume: reading.volume,
     route: reading.route,
+    known: reading.volumeKnown,
   }
 }

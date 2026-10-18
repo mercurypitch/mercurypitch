@@ -7,14 +7,39 @@
 // recorder are both module state, and a buffer decoded in one case would
 // otherwise be the next case's cache hit.
 
+import type * as Platform from '@irchiinnuss/mobile-runtime/platform'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RELEASE_SLACK_MS } from '../alley/alley-audio'
 import type { RenderedShell } from './render-for-test'
 import { renderShell } from './render-for-test'
+import type * as DeviceFactsModule from './settings/device-facts'
 import { TONE_HZ, TONE_MS } from './test-tone'
 
 /** The shipped Sing ambient's size, so the body is recognisably the file. */
 const SING_BYTES = 266_161
+
+/** The share sheet: what it was handed, and whether one was shown. */
+const sheet = vi.hoisted(() => ({
+  handed: [] as { title?: string; text?: string }[],
+  shown: true,
+}))
+vi.mock('@irchiinnuss/mobile-runtime/platform', async (importOriginal) => ({
+  ...(await importOriginal<typeof Platform>()),
+  sharePayload: async (payload: { title?: string; text?: string }) => {
+    sheet.handed.push(payload)
+    return sheet.shown
+  },
+}))
+
+// The phone as @capacitor/device and the app's record name it.
+vi.mock('./settings/device-facts', async (importOriginal) => ({
+  ...(await importOriginal<typeof DeviceFactsModule>()),
+  loadDeviceFacts: async () => ({
+    model: 'iPhone17,3',
+    system: 'iOS 26.0.1',
+    version: '0.9.19 (912)',
+  }),
+}))
 
 interface FakeOscillator {
   frequency: { value: number }
@@ -116,6 +141,8 @@ async function settle(): Promise<void> {
 beforeEach(() => {
   vi.resetModules()
   vi.useFakeTimers()
+  sheet.handed = []
+  sheet.shown = true
   contexts = []
   oscillators = []
   analyserLevel = 0
@@ -220,6 +247,24 @@ describe('the Audio section', () => {
     expect(window.getSelection()?.toString()).toBe(report)
   })
 
+  it('has "One volume in rooms", on until turned off, and keeps an off on the phone', async () => {
+    localStorage.clear()
+    await openPanel()
+    const { ONE_VOLUME_KEY, oneVolumeInRooms } =
+      await import('./room-volume-switch')
+    const toggle = button('dev-one-volume-in-rooms')
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+
+    toggle.click()
+    expect(toggle.getAttribute('aria-checked')).toBe('false')
+    expect(oneVolumeInRooms()).toBe(false)
+    expect(localStorage.getItem(ONE_VOLUME_KEY)).toBe('0')
+
+    toggle.click()
+    expect(oneVolumeInRooms()).toBe(true)
+    expect(localStorage.getItem(ONE_VOLUME_KEY)).toBeNull()
+  })
+
   it('says Copied when the clipboard takes it', async () => {
     const writeText = vi.fn(async () => undefined)
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
@@ -295,10 +340,69 @@ describe('the Audio section', () => {
   })
 })
 
+describe('the report', () => {
+  const reportLines = (): string[] =>
+    (el('[data-testid="dev-audio-report"]').textContent ?? '').split('\n')
+
+  it('opens with the app, the phone, the session, the outputs, the page type and the switch', async () => {
+    await openPanel()
+    await settle()
+    button('dev-audio-copy').click()
+    await settle()
+    expect(reportLines().slice(0, 6)).toEqual([
+      'MercuryPitch audio diagnostics',
+      'App: 0.9.19 (912) · iPhone17,3 · iOS 26.0.1',
+      'App session: not read',
+      'Outputs: not read on the web',
+      'Page session type: not available',
+      'One volume in rooms: on',
+    ])
+  })
+
+  it('goes to the share sheet as it reads on screen', async () => {
+    await openPanel()
+    await settle()
+    button('dev-audio-share').click()
+    await settle()
+    expect(sheet.handed).toHaveLength(1)
+    expect(sheet.handed[0]?.title).toBe('MercuryPitch audio report')
+    expect(sheet.handed[0]?.text).toBe(reportLines().join('\n'))
+  })
+
+  it('says so where there is no share sheet', async () => {
+    sheet.shown = false
+    await openPanel()
+    button('dev-audio-share').click()
+    await settle()
+    expect(button('dev-audio-share').textContent).toContain(
+      'No share sheet here. Copy the report instead.',
+    )
+  })
+
+  it('clears the log, so a scenario starts clean', async () => {
+    await openPanel()
+    const { audioDiagnosticEntries, recordAudioDiagnostic } =
+      await import('@/lib/audio-diagnostics')
+    recordAudioDiagnostic('room', 'enter', { room: 'echo' })
+    button('dev-audio-copy').click()
+    await settle()
+
+    button('dev-audio-clear').click()
+
+    expect(
+      audioDiagnosticEntries().map((e) => `${e.source} ${e.event}`),
+    ).toEqual(['log cleared'])
+    expect(
+      view?.container.querySelector('[data-testid="dev-audio-report"]'),
+    ).toBeNull()
+  })
+})
+
 describe("the phone's output, the census and the rooms' output", () => {
   /** An iPhone playing to its receiver, then moved to the speaker turned low. */
   const RECEIVER = {
     volume: 1,
+    volumeKnown: 'session' as const,
     step: null,
     steps: null,
     route: 'receiver' as const,
@@ -344,7 +448,7 @@ describe("the phone's output, the census and the rooms' output", () => {
       await openPanel()
       await settle()
       expect(row('Output')).toBe('Receiver (the earpiece) · Receiver')
-      expect(row('Volume')).toBe('1.00')
+      expect(row('Volume')).toBe('1.00 · known: session')
       expect(row('Phone session')).toBe(
         'PlayAndRecord · Default · mixWithOthers, defaultToSpeaker',
       )
@@ -359,7 +463,9 @@ describe("the phone's output, the census and the rooms' output", () => {
         outputs: [{ type: 'Speaker', name: 'Speaker' }],
       })
       expect(row('Output')).toBe('Speaker · Speaker')
-      expect(row('Volume')).toBe('0.06 · low: the rooms ask for more')
+      expect(row('Volume')).toBe(
+        '0.06 · known: session · low: the rooms ask for more',
+      )
     } finally {
       unregister()
     }

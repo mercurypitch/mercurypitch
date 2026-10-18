@@ -22,7 +22,8 @@
 // switches its own session as they do: so the output is read as each mic
 // opens and stops and as each context changes state, and once more
 // OUTPUT_SETTLE_MS later, beside the session type the page asked WebKit for
-// (`navigator.audioSession.type`, read and never set). The report then
+// (`navigator.audioSession.type`: read here, and set only through
+// page-audio-session.ts in packages/mobile-runtime). The report then
 // shows the app's session, the route and both volumes before and after.
 //
 // TRANSPARENT. The constructor is wrapped in a Proxy whose construct trap
@@ -40,7 +41,9 @@
 // Instead every sound the rooms send through their output (room-output.ts)
 // is one entry, `room-sound`, with its loudest peak and RMS: a report that
 // shows a note sent at -10 dBFS while the phone played it faintly puts the
-// fault below the page (the route, the session, the volume).
+// fault below the page (the route, the session, the volume). The output is
+// read only while a premium room is open (audio-record.ts starts and stops
+// `watchRoomLevels` with each visit), so nothing polls between rooms.
 //
 // Installed by the native entry alone, behind VITE_PORTABLE_CONSOLE and
 // through a dynamic import (main.tsx), as the panel is: a store build wraps
@@ -90,8 +93,6 @@ export interface AudioCensusOptions {
   readonly win?: Window
   /** The phone's output, whose readings go to the record. */
   readonly output?: NativeAudioOutput
-  /** The rooms' output levels (roomOutputReadings), each sound recorded. */
-  readonly roomLevels?: () => readonly RoomOutputReading[]
 }
 
 /** Above this the rooms' output is sounding, dBFS. */
@@ -238,6 +239,8 @@ export function describeOutput(
   const detail: Record<string, unknown> = {
     route: reading.route,
     volume: reading.volume,
+    known: reading.volumeKnown,
+    outputs: reading.outputs.map((port) => port.type).join(', ') || 'none',
     ports: reading.outputs.map((port) => port.name).join(', ') || 'none',
   }
   if (reading.reason !== null) detail.reason = reading.reason
@@ -280,8 +283,13 @@ function readOutput(output: NativeAudioOutput, at: string): void {
     .catch(() => undefined)
 }
 
-/** The output now, and once more after WebKit has had time to switch. */
-function readOutputAround(at: string): void {
+/**
+ * The output now, and once more after WebKit has had time to switch: as a
+ * mic or a context starts and stops here, and as a room opens and closes,
+ * the app comes back or WebKit's session changes state (audio-record.ts).
+ * Nothing without the phone's output.
+ */
+export function readOutputAround(at: string): void {
   const output = outputSource
   if (output === null) return
   readOutput(output, at)
@@ -310,10 +318,20 @@ interface Sound {
 
 const tenth = (db: number): number => Math.round(db * 10) / 10
 
+function recordSound(sound: Sound, end: number, cut: boolean): void {
+  census('room-sound', {
+    peak: tenth(sound.peak),
+    rms: tenth(sound.rms),
+    ms: end - sound.start,
+    gain: sound.gain,
+    ...(cut ? { cut: true } : {}),
+  })
+}
+
 /**
  * Read the rooms' output every LEVEL_POLL_MS and record each sound once it
  * ends: its loudest peak and RMS, how long it ran and the output's gain.
- * Returns the stop.
+ * Returns the stop, which records a sound still sounding as `cut`.
  */
 export function watchRoomLevels(
   read: () => readonly RoomOutputReading[],
@@ -344,15 +362,14 @@ export function watchRoomLevels(
     if (sound === null) return
     sound.quietSince ??= clock
     if (clock - sound.quietSince < SOUND_GAP_MS) return
-    census('room-sound', {
-      peak: tenth(sound.peak),
-      rms: tenth(sound.rms),
-      ms: sound.quietSince - sound.start,
-      gain: sound.gain,
-    })
+    recordSound(sound, sound.quietSince, false)
     sound = null
   }, LEVEL_POLL_MS)
-  return () => clearInterval(timer)
+  return () => {
+    clearInterval(timer)
+    if (sound !== null) recordSound(sound, sound.quietSince ?? clock, true)
+    sound = null
+  }
 }
 
 /** Count every context and mic track from now on. Once per window. */
@@ -368,7 +385,6 @@ export function installAudioCensus(options: AudioCensusOptions = {}): void {
   }
   wrapGetUserMedia(win)
   if (options.output !== undefined) watchOutput(options.output)
-  if (options.roomLevels !== undefined) watchRoomLevels(options.roomLevels)
 }
 
 /** The contexts made and not yet closed, oldest first. */

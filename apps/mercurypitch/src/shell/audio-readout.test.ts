@@ -11,6 +11,7 @@ import { contextsLine, hardwareLine, leasesLine, outputLine, roomOutputLine, ses
 
 const IPHONE: NativeAudioOutputReading = {
   volume: 1,
+  volumeKnown: 'session',
   step: null,
   steps: null,
   route: 'receiver',
@@ -30,6 +31,7 @@ const IPHONE: NativeAudioOutputReading = {
 
 const ANDROID: NativeAudioOutputReading = {
   volume: 0.2,
+  volumeKnown: 'live',
   step: 3,
   steps: 15,
   route: 'speaker',
@@ -57,10 +59,10 @@ describe('the phone rows', () => {
     )
   })
 
-  it('gives the volume, Android’s steps, and says when the rooms call it low', () => {
-    expect(volumeLine(IPHONE)).toBe('1.00')
+  it('gives the volume, how far it is taken at its word, Android’s steps, and says when the rooms call it low', () => {
+    expect(volumeLine(IPHONE)).toBe('1.00 · known: session')
     expect(volumeLine(ANDROID)).toBe(
-      '0.20 · step 3 of 15 · low: the rooms ask for more',
+      '0.20 · known: live · step 3 of 15 · low: the rooms ask for more',
     )
   })
 
@@ -68,6 +70,7 @@ describe('the phone rows', () => {
     const live: NativeAudioOutputReading = {
       ...IPHONE,
       volume: 0.5,
+      volumeKnown: 'live',
       detail: {
         ...IPHONE.detail,
         systemVolume: 0.5,
@@ -75,7 +78,9 @@ describe('the phone rows', () => {
         sessionVolume: 0,
       },
     }
-    expect(volumeLine(live)).toBe('0.50 · system 0.50 · session 0.00')
+    expect(volumeLine(live)).toBe(
+      '0.50 · known: live · system 0.50 · session 0.00',
+    )
     const still: NativeAudioOutputReading = {
       ...IPHONE,
       volume: 0.75,
@@ -87,7 +92,7 @@ describe('the phone rows', () => {
       },
     }
     expect(volumeLine(still)).toBe(
-      '0.75 · system 0.00, not seen to move yet · session 0.75',
+      '0.75 · known: session · system 0.00, not seen to move yet · session 0.75',
     )
   })
 

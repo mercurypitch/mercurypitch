@@ -194,6 +194,7 @@ describe("the phone's output", () => {
     let send: (reading: NativeAudioOutputReading) => void = () => undefined
     const reading = (volume: number, reason: string | null) => ({
       volume,
+      volumeKnown: 'session' as const,
       step: null,
       steps: null,
       route: 'receiver' as const,
@@ -232,6 +233,7 @@ describe("the phone's output", () => {
 describe("the phone's output as the rooms' audio starts and stops", () => {
   const reading = (volume: number): NativeAudioOutputReading => ({
     volume,
+    volumeKnown: 'session',
     step: null,
     steps: null,
     route: 'speaker',
