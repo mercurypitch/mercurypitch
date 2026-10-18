@@ -30,6 +30,12 @@ describe('premium rooms', () => {
     expect(isPremiumRoom('lip-roll')).toBe(true)
   })
 
+  it("draws the Warm-up's path full-bleed too, held upright on a phone", () => {
+    expect(PREMIUM_ROOM_SCREENS['warm-up']).toEqual({ fullBleed: true })
+    expect(isFullBleed('warm-up')).toBe(true)
+    expect(isPremiumRoom('warm-up')).toBe(true)
+  })
+
   it('leaves every other screen under the opaque bar, free to turn', () => {
     for (const screen of ['settings', 'karaoke', 'developer'] as const) {
       expect(isFullBleed(screen)).toBe(false)

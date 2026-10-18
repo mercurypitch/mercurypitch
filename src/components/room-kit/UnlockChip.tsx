@@ -14,8 +14,12 @@
 //
 // The region is always in the tree so a screen reader hears the chip when
 // it fills; its contents come and go.
+//
+// UnlockList is the chip without the claim: the Warm-up's path draws the
+// routine's unlocks with it (features/warm-up), since a room in warm-up mode
+// claims none of its own.
 
-import type { JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { ChevronDown } from '@/components/icons'
 import { badgeArtSrc } from '@/lib/badge-art'
@@ -53,8 +57,20 @@ function Medal(props: { item: UnlockItem }): JSX.Element {
 
 export function UnlockChip(props: UnlockChipProps): JSX.Element {
   const unlocks = createRoomUnlocks(() => props.atResult)
+  return <UnlockList items={unlocks.items} testId={props.testId} />
+}
+
+export interface UnlockListProps {
+  /** What the chip shows, in the order it was earned. */
+  items: Accessor<readonly UnlockItem[]>
+  testId: string
+}
+
+/** The chip, drawn from a list someone else claims. */
+export function UnlockList(props: UnlockListProps): JSX.Element {
   const [open, setOpen] = createSignal(false)
-  const items = unlocks.items
+  // eslint-disable-next-line solid/reactivity -- an accessor, read where used
+  const items = props.items
   const listId = (): string => `${props.testId}-list`
 
   // A fresh set starts folded.

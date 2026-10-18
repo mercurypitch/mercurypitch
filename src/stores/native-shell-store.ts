@@ -495,6 +495,32 @@ export function consumeRunParked(tab: ActiveTab): boolean {
   return parked
 }
 
+// ── The song list, asked for from outside the Sing room ──────
+//
+// The Warm-up's "Sing a song" goes back to the Sing room and opens its song
+// list (DESIGN-warm-up.md N15). The shell asks as it pops the Warm-up; the
+// Sing room opens the list once it is on screen, and takes the request as
+// it does, so the list opens once.
+
+const [songListAsked, setSongListAsked] = createSignal(false)
+
+/** The shell: open the Sing room's song list as soon as it is on screen. */
+export function requestSongList(): void {
+  setSongListAsked(true)
+}
+
+/** The Sing room: its song list has been asked for. */
+export function songListRequested(): boolean {
+  return songListAsked()
+}
+
+/** The Sing room opens the list now: true once per request. */
+export function takeSongListRequest(): boolean {
+  const asked = songListAsked()
+  if (asked) setSongListAsked(false)
+  return asked
+}
+
 // ── The door that opened into a room ─────────────────────────
 //
 // The alley's Enter grows a clone of the door over the screen, and the room

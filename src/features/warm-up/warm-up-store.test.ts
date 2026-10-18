@@ -9,10 +9,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StopResult } from '@/components/room-kit/routine-stop'
 import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import type { UnlockItem } from '@/stores/notifications-store'
+import { notifications, resetNotifications, setNotificationPresenter, showNotification, } from '@/stores/notifications-store'
 import type { WarmUpDay } from './routine'
 import { nextStop, tally } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
-import { canStartWarmUp, enterStop, leaveStop, openStop, resetWarmUpForTests, routineStopFor, skipNextStop, WARM_UP_TODAY_KEY, warmUpAgain, warmUpDay, } from './warm-up-store'
+import { canStartWarmUp, claimPathUnlocks, enterStop, leavePath, leaveStop, nextWarmUpRoom, openStop, resetWarmUpForTests, routineStopFor, routineUnlocks, skipNextStop, WARM_UP_TODAY_KEY, warmedUpToday, warmUpAgain, warmUpDay, warmUpLastMove, } from './warm-up-store'
 
 const ROOMS: readonly WarmUpRoomId[] = [
   EXERCISE_LIP_ROLL_BAY,
@@ -216,5 +218,122 @@ describe('coming back', () => {
     resetWarmUpForTests()
     expect(states(warmUpDay())).toEqual(Array(5).fill('waiting'))
     expect(warmUpDay().warmedUp).toBe(false)
+  })
+})
+
+describe("the last move, for the path's card", () => {
+  it('is the stop just finished, and none once the next one opens', () => {
+    sing(0, '86% lit')
+    expect(warmUpLastMove()).toEqual({ index: 0, state: 'done' })
+    expect(enterStop(1)).toBe(true)
+    expect(warmUpLastMove()).toBeNull()
+  })
+
+  it('is the stop skipped, in its room or beside Next', () => {
+    expect(enterStop(0)).toBe(true)
+    routineStopFor(EXERCISE_LIP_ROLL_BAY)!.skip()
+    expect(warmUpLastMove()).toEqual({ index: 0, state: 'skipped' })
+    skipNextStop()
+    expect(warmUpLastMove()).toEqual({ index: 1, state: 'skipped' })
+  })
+
+  it('stays none when a room is left before its result', () => {
+    sing(0, '86% lit')
+    expect(enterStop(1)).toBe(true)
+    leaveStop()
+    expect(warmUpLastMove()).toBeNull()
+  })
+
+  it('goes with the path, with Warm up again and with a restart; the run stays', () => {
+    sing(0, '86% lit')
+    leavePath()
+    expect(warmUpLastMove()).toBeNull()
+
+    sing(1, '92% lit')
+    sing(2, '12.6 s')
+    sing(3, '8 of 9 on pitch')
+    warmUpAgain()
+    expect(warmUpLastMove()).toBeNull()
+
+    sing(0, '80% lit')
+    resetWarmUpForTests()
+    expect(warmUpLastMove()).toBeNull()
+    expect(states(warmUpDay())[0]).toBe('80% lit')
+  })
+})
+
+describe('what the routine unlocked', () => {
+  const STEADY: UnlockItem = {
+    kind: 'badge',
+    name: 'Steady Hold',
+    icon: 'leaf',
+  }
+  const WEEK: UnlockItem = { kind: 'achievement', name: 'First Week' }
+  const grant = (item: UnlockItem): void => {
+    showNotification(`Unlocked: ${item.name}`, 'success', { unlock: item })
+  }
+
+  beforeEach(() => {
+    resetNotifications()
+    setNotificationPresenter('pill')
+  })
+
+  afterEach(() => {
+    resetWarmUpForTests()
+    resetNotifications()
+  })
+
+  it("comes to the path from a stop's room, and raises no notice", () => {
+    expect(enterStop(0)).toBe(true)
+    grant(STEADY)
+    routineStopFor(EXERCISE_LIP_ROLL_BAY)!.finish(
+      result(EXERCISE_LIP_ROLL_BAY, '86% lit'),
+    )
+    expect(routineUnlocks()).toEqual([STEADY])
+    expect(notifications()).toHaveLength(0)
+  })
+
+  it('is held by the path while it is up, and let go as it is left', () => {
+    const release = claimPathUnlocks()
+    grant(WEEK)
+    expect(routineUnlocks()).toEqual([WEEK])
+    expect(notifications()).toHaveLength(0)
+
+    release()
+    leavePath()
+    expect(routineUnlocks()).toEqual([])
+    grant(STEADY)
+    expect(notifications().map((n) => n.message)).toEqual([
+      'New badge: Steady Hold',
+    ])
+  })
+
+  it('is no longer claimed once a room is left unfinished', () => {
+    expect(enterStop(0)).toBe(true)
+    leaveStop()
+    grant(STEADY)
+    expect(routineUnlocks()).toEqual([])
+    expect(notifications()).toHaveLength(1)
+  })
+})
+
+describe('the picker card and the tap that opens the Warm-up', () => {
+  it('counts today once the end is reached with a stop finished', () => {
+    sing(0, '86% lit')
+    skipNextStop()
+    sing(2, '12.6 s')
+    expect(warmedUpToday()).toBe(false)
+    sing(3, '8 of 9 on pitch')
+    expect(warmedUpToday()).toBe(true)
+  })
+
+  it('names the room the path opens next, and none at the end', () => {
+    expect(nextWarmUpRoom()).toBe(EXERCISE_LIP_ROLL_BAY)
+    sing(0, '86% lit')
+    skipNextStop()
+    expect(nextWarmUpRoom()).toBe(EXERCISE_LONG_NOTE_LANTERN)
+    sing(2, '12.6 s')
+    sing(3, '8 of 9 on pitch')
+    expect(nextWarmUpRoom()).toBeNull()
   })
 })

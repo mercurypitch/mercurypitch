@@ -101,6 +101,7 @@ export type PushedScreen =
   | 'echo'
   | 'lip-roll'
   | 'ng-slides'
+  | 'warm-up'
   | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
@@ -478,6 +479,7 @@ export type SettingsChild = Exclude<
   | 'echo'
   | 'lip-roll'
   | 'ng-slides'
+  | 'warm-up'
 >
 
 /**

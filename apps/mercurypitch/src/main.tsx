@@ -288,6 +288,11 @@ const lipFixture = import.meta.env.DEV
 const longNoteFixture = import.meta.env.DEV
   ? new URLSearchParams(window.location.search).get('longNoteFixture')
   : null
+// The Warm-up path's fixtures, the same way: `?warmFixture=<name>` (start,
+// between, resume, end, done, locked: Codex's frames F1 to F4).
+const warmFixture = import.meta.env.DEV
+  ? new URLSearchParams(window.location.search).get('warmFixture')
+  : null
 
 const HYDRATION_DEADLINE_MS = 5000
 const hydrationDeadline = new Promise<never>((_, reject) => {
@@ -329,6 +334,12 @@ void Promise.race([hydrateStoragePort(), hydrationDeadline])
     if (import.meta.env.DEV && longNoteFixture !== null) {
       void import('@/features/long-note/fixture/mount-long-note-fixture').then(
         (m) => m.mountLongNoteFixture(root, longNoteFixture),
+      )
+      return
+    }
+    if (import.meta.env.DEV && warmFixture !== null) {
+      void import('@/features/warm-up/fixture/mount-warm-fixture').then((m) =>
+        m.mountWarmFixture(root, warmFixture),
       )
       return
     }

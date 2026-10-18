@@ -54,6 +54,14 @@ export const EXERCISE_NG_SLIDES_BRIDGE = 'ng-slides-bridge' as const
  * draws. The web warm-up's lip trill is a different exercise and ruler.
  */
 export const EXERCISE_LIP_ROLL_BAY = 'lip-roll-bay' as const
+/**
+ * The premium Warm-up: the rooms above run one after another, each a stop
+ * on a glass path through the night, with the singer's song on top. Not an
+ * exercise with a ruler of its own: each stop records in its own room, so
+ * it is a premium exercise id (the picker opens it) and never an
+ * ExerciseType. The web warm-up is a different routine.
+ */
+export const EXERCISE_WARM_UP_PATH = 'warm-up-path' as const
 
 export type ExerciseType =
   | typeof EXERCISE_VIBRATO
@@ -81,7 +89,7 @@ export type ExerciseType =
 
 /**
  * The premium exercises the phone app opens from the Sing screen (Long note,
- * Echo, Ng slides, then Lip roll). A type here, below the features, so the shell bridge in
+ * Echo, Ng slides, Lip roll, then the Warm-up). A type here, below the features, so the shell bridge in
  * `src/stores` can name one without importing a feature.
  */
 export type PremiumExerciseId =
@@ -89,6 +97,7 @@ export type PremiumExerciseId =
   | typeof EXERCISE_ECHO_STARS
   | typeof EXERCISE_NG_SLIDES_BRIDGE
   | typeof EXERCISE_LIP_ROLL_BAY
+  | typeof EXERCISE_WARM_UP_PATH
 
 // ── Config ──────────────────────────────────────────────────────
 

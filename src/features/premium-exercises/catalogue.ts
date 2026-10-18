@@ -7,12 +7,13 @@
 // on, its best there, and whether its demo plays by itself). This is the
 // one file that reaches into an exercise's own feature, so a new exercise
 // is one entry here and nothing in the row or the picker. Echo's, Lip
-// roll's and Ng slides' reads sit beside it (echo-entry.ts, lip-entry.ts,
-// ng-entry.ts): they need their stores, not their rooms.
+// roll's, Ng slides' and the Warm-up's reads sit beside it (echo-entry.ts,
+// lip-entry.ts, ng-entry.ts, warm-entry.ts): they need their stores, not
+// their rooms.
 //
 // Each entry names its group, and the picker draws the groups under
 // headings in the Karaoke library's style: Pitch (Long note, Echo), then
-// Warm-ups (Lip roll above Ng slides). Catalogue order is the order the
+// Warm-ups (the Warm-up heading its group, then Lip roll and Ng slides). Catalogue order is the order the
 // picker lists them, so a group's entries sit together here, in its
 // heading's order (catalogue.test.ts holds that).
 // There is no card for an exercise that is not built: a card that does
@@ -21,11 +22,12 @@
 import type { Component } from 'solid-js'
 import { longNoteEntry } from '@/features/long-note/long-note-entry'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import { echoEntry } from './echo-entry'
-import { BridgeGlyph, EchoGlyph, LanternGlyph, WaveGlyph } from './glyphs'
+import { BridgeGlyph, EchoGlyph, LanternGlyph, WarmUpGlyph, WaveGlyph, } from './glyphs'
 import { lipEntry } from './lip-entry'
 import { ngEntry } from './ng-entry'
+import { warmEntry } from './warm-entry'
 
 /** The headings the picker sorts its cards under. */
 export type ExerciseGroupId = 'pitch' | 'warm-ups'
@@ -81,6 +83,15 @@ export const EXERCISE_CATALOGUE: readonly PremiumExercise[] = [
     Glyph: EchoGlyph,
     bestOnNote: false,
     ...echoEntry(),
+  },
+  {
+    id: EXERCISE_WARM_UP_PATH,
+    name: 'Warm-up',
+    group: 'warm-ups',
+    line: 'Four stops, about three minutes, then a song.',
+    Glyph: WarmUpGlyph,
+    bestOnNote: false,
+    ...warmEntry(),
   },
   {
     id: EXERCISE_LIP_ROLL_BAY,

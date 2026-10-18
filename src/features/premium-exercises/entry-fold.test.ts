@@ -82,3 +82,34 @@ describe('the way in to the exercises, in the sources', () => {
     expect(shown).toEqual([])
   })
 })
+
+// The Warm-up is the fifth way in: its path is a screen of the shell's
+// (WarmUpScreen.tsx), and the Sing room reaches it only through
+// `openExercise`. The store build carries none of it as long as nothing
+// in the Sing room or NativeShell imports its folder statically, and the
+// shell loads its screen only behind the constant.
+describe("the Warm-up's way in, in the sources", () => {
+  const WARM_UP = /(?:\bfrom|\bimport)\s+['"](?:@\/features|\.\.)\/warm-up\b/u
+
+  it('is never imported statically by the Sing room or NativeShell', () => {
+    const offenders = [
+      ...roomSources(),
+      [NATIVE_SHELL, read(NATIVE_SHELL)] as [string, string],
+    ]
+      .filter(([, text]) => WARM_UP.test(text))
+      .map(([path]) => path)
+
+    expect(offenders).toEqual([])
+  })
+
+  it('loads its screen only behind PREMIUM_EXERCISES', () => {
+    const shell = read(NATIVE_SHELL)
+
+    expect(shell).toMatch(
+      /const WarmUpScreen: Component = PREMIUM_EXERCISES\s*\?\s*lazy\(async \(\) =>\s*import\('\.\/WarmUpScreen'\)/u,
+    )
+    expect(shell).toMatch(
+      /warmUp=\{PREMIUM_EXERCISES \? WarmUpScreen : undefined\}/u,
+    )
+  })
+})

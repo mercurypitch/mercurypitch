@@ -290,10 +290,15 @@ export function ShellHead<C extends string, T extends string, S>(
           </div>
         </Match>
       </Switch>
-      <UnlockChip
-        atResult={shell.phase() === 'result' && !shell.busy()}
-        testId={`${shell.ids}-unlock`}
-      />
+      {/* In warm-up mode the routine claims the badges, and its path says
+          them (features/warm-up): the tap layer over a held result would
+          leave a chip here that no tap can open. */}
+      {shell.routine === null ? (
+        <UnlockChip
+          atResult={shell.phase() === 'result' && !shell.busy()}
+          testId={`${shell.ids}-unlock`}
+        />
+      ) : null}
     </div>
   )
 }

@@ -360,10 +360,14 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             {(chip) => <RoomChip text={chip()} testId="long-note-chip" />}
           </Match>
         </Switch>
-        <UnlockChip
-          atResult={phase() === 'result' && !shell.busy()}
-          testId="long-note-unlock"
-        />
+        {/* In the Warm-up the routine claims the badges, and its path says
+            them (warm-up-store.ts): no chip under the held result. */}
+        {stop === undefined ? (
+          <UnlockChip
+            atResult={phase() === 'result' && !shell.busy()}
+            testId="long-note-unlock"
+          />
+        ) : null}
         <Show
           when={
             room.line() !== '' && phase() !== 'hold' && shell.take() === null

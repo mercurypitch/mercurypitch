@@ -145,7 +145,8 @@ function isLaunchOffer(id: string): boolean {
 /**
  * The premium exercises' pictures (the Long note lantern's plates in
  * src/features/long-note/, Echo's sky and stars in src/features/echo/art/,
- * and the folders Ng slides and Lip roll will paint in), which only a build
+ * the folders Ng slides and Lip roll paint in, and the Warm-up path's night
+ * and orbs in src/features/warm-up/art/), which only a build
  * with the premium exercises shows (PREMIUM_EXERCISES,
  * src/lib/native-build.ts). The rooms fold away in the store build, but
  * their pictures would not: Vite emits an image the moment Rollup loads the
@@ -160,7 +161,7 @@ function isLaunchOffer(id: string): boolean {
  * src/premium-images-build.test.ts checks this switch on every PR.
  */
 const PREMIUM_IMAGES =
-  /\/src\/features\/(?:(?:long-note|echo|ng-slides|lip-roll)\/(?:[^/]+\/)*[^/]+|karaoke-room\/assets\/[^/]+)\.webp$/u
+  /\/src\/features\/(?:(?:long-note|echo|ng-slides|lip-roll|warm-up)\/(?:[^/]+\/)*[^/]+|karaoke-room\/assets\/[^/]+)\.webp$/u
 
 /**
  * The premium exercises' voices (Merc's sung "ooh" set for Echo's calls in
@@ -170,7 +171,7 @@ const PREMIUM_IMAGES =
  * src/premium-images-build.test.ts checks this switch on every PR.
  */
 const PREMIUM_VOICES =
-  /\/src\/features\/(?:long-note|echo|ng-slides|lip-roll)\/(?:[^/]+\/)*[^/]+\.mp3$/u
+  /\/src\/features\/(?:long-note|echo|ng-slides|lip-roll|warm-up)\/(?:[^/]+\/)*[^/]+\.mp3$/u
 
 /**
  * The browsers this bundle's CSS is written for: the iOS floor, and nothing

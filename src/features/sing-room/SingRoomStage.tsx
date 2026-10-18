@@ -47,7 +47,7 @@ import type { MidiWindow } from '@/lib/voice-window'
 import { createVoiceWindowFollower, voiceWindowFor } from '@/lib/voice-window'
 import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
+import { nativeShellApi, registerRunControls, roomArrivalHeld, songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores/sing-takes-store'
@@ -747,6 +747,16 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     setOptionsOpen(false)
     setSongOpen(false)
     props.picker.setIsModalOpen(true)
+  }
+
+  // "Sing a song" at the end of the Warm-up comes back here for the song
+  // list (DESIGN-warm-up.md N15): taken once, as the room shows again.
+  if (PREMIUM_EXERCISES) {
+    createEffect(
+      on(songListRequested, (asked) => {
+        if (asked && takeSongListRequest()) openSongPicker()
+      }),
+    )
   }
 
   /**
