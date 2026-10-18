@@ -41,6 +41,8 @@ import UIKit
 // it has been seen to move. Until then the page goes by outputVolume, and
 // believes it only where the view, settled in its window for a second
 // (systemVolumeSettled), reads the same: a view reads 0 until it fills.
+// The slider has no event, so it is looked at, and only while that is
+// needed: see lookWhileNeeded().
 //
 // AN INTERRUPTION SAYS WHAT KIND IT WAS where iOS does, by its reason
 // (AVAudioSessionInterruptionReasonKey), and the app's state as it arrived
@@ -255,13 +257,73 @@ public class AudioOutputPlugin: CAPPlugin, CAPBridgedPlugin {
         view.accessibilityElementsHidden = true
         host.addSubview(view)
         volumeView = view
+        startLooking()
+    }
+
+    // LOOKED AT ONLY WHILE IT IS NEEDED. The slider has no event, so it is
+    // looked at four times a second, and nothing is gained by that while no
+    // screen listens: a read answers from the slider as it is. It is looked
+    // at from launch until the view has settled in its window and been read
+    // once, so that the first room's first reading already says it has
+    // settled, and a key pressed before anyone listens still counts as a
+    // move on the first look once someone does. After that, only while a
+    // screen listens for audioOutputChange: a premium room's volume notice
+    // (RoomVolumeHint.tsx), the Developer screen, and a test build's audio
+    // record, which listens from launch.
+
+    /// Whether the slider needs looking at now.
+    private func needsLooking() -> Bool {
+        hasListeners("audioOutputChange") || !systemVolumeSettled() || lastSystemVolume == nil
+    }
+
+    /// Looking at the slider, or not, as it is needed. On the main queue.
+    private func lookWhileNeeded() {
+        if needsLooking() {
+            startLooking()
+        } else {
+            stopLooking()
+        }
+    }
+
+    private func startLooking() {
+        guard systemVolumeTimer == nil, volumeView != nil else { return }
         let timer = DispatchSource.makeTimerSource(queue: .main)
         timer.schedule(deadline: .now(), repeating: Self.systemVolumeEvery, leeway: .milliseconds(50))
         timer.setEventHandler { [weak self] in
             self?.lookAtSystemVolume()
+            self?.lookWhileNeeded()
         }
         timer.resume()
         systemVolumeTimer = timer
+    }
+
+    private func stopLooking() {
+        systemVolumeTimer?.cancel()
+        systemVolumeTimer = nil
+    }
+
+    // Capacitor calls these on the plugin's own queue, and a reload of the
+    // page removes every listener; the timer lives on the main queue.
+
+    override public func addListener(_ call: CAPPluginCall) {
+        super.addListener(call)
+        DispatchQueue.main.async { [weak self] in
+            self?.lookWhileNeeded()
+        }
+    }
+
+    override public func removeListener(_ call: CAPPluginCall) {
+        super.removeListener(call)
+        DispatchQueue.main.async { [weak self] in
+            self?.lookWhileNeeded()
+        }
+    }
+
+    override public func removeAllListeners(_ call: CAPPluginCall) {
+        super.removeAllListeners(call)
+        DispatchQueue.main.async { [weak self] in
+            self?.lookWhileNeeded()
+        }
     }
 
     /// The system volume off the volume view's slider: read, never moved.
