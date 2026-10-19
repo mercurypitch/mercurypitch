@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Each URL carries a <lastmod> and nothing else: Google and Bing both
+       ignore <changefreq> and <priority>, and read <lastmod> only while the
+       dates in this file stay believable. A page's date is the day its
+       document last changed in a way a reader or a crawler would notice: its
+       words, its structured data or its links. Move it in the same PR as that
+       change, and never for a change nobody would see. -->
   <url>
     <loc>https://mercurypitch.com/</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <!-- /exercises/<slug> deep links are deliberately NOT listed: they serve the
        SPA shell whose canonical is the homepage, so search engines would file
@@ -13,21 +17,15 @@
        description, canonical) — e.g. via an HTMLRewriter step in the worker. -->
   <url>
     <loc>https://mercurypitch.com/mirror</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/vocal-range-test</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/karaoke-night</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <!-- The instrument rooms. Piano and Guitar Night were `noindex` pilots until
        2026-08-20 and Drum Night until 2026-09-08; each is finished enough to
@@ -35,67 +33,57 @@
        and share card. -->
   <url>
     <loc>https://mercurypitch.com/piano-night</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/guitar-night</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/drum-night</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <!-- The Ear Lab: a tab of the studio with a page of its own, so the bench
        has a URL that unfurls with its card. -->
   <url>
     <loc>https://mercurypitch.com/ear-lab</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <!-- Jam Rooms: the rooms live behind the fragment router, but /jam is a real
        document with its own head and share card, so it belongs here like the
        instrument rooms above. -->
   <url>
     <loc>https://mercurypitch.com/jam</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <!-- Glassworks is the museum campaign. The original sixty-second /glass
        challenge below remains a separate, independently loadable room. -->
   <url>
     <loc>https://mercurypitch.com/glass-game</loc>
-    <lastmod>2026-09-21</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <!-- Glass aliases (/break-glass-with-your-voice, /high-note-test, /shatter)
        serve the same page with canonical /glass, so only the canonical URL
        is listed. -->
   <url>
     <loc>https://mercurypitch.com/glass</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/pitch-training</loc>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/voice-type-test</loc>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/vocal-remover</loc>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/which-singer-has-my-vocal-range</loc>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/karaoke-app</loc>
@@ -103,14 +91,10 @@
   </url>
   <url>
     <loc>https://mercurypitch.com/learn/01</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/learn/02</loc>
     <lastmod>2026-10-19</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
   </url>
 </urlset>
