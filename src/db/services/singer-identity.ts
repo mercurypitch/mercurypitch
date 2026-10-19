@@ -3,10 +3,13 @@
 // ============================================================
 //
 // The app stopped making an identity at start (billing-service.ts: a visitor
-// who only browses gets none). Owner decision E11 (S7b, 5 Oct 2026) names the
-// two moments that make one now, whichever comes first: the range finishing in
-// the onboarding, or the first offer opening. Every one of them calls this,
-// and nothing else in the offer's path mints an identity of its own.
+// who only browses gets none). Owner decision E11 (S7b, 5 Oct 2026) allows two
+// moments to make one now: the range finishing in the onboarding, or the first
+// offer opening. The app uses the second: Keep, the account offer, as it opens
+// (account-offer.ts), which is the first offer a new install meets, and the
+// Cloud offer and Import (cloud-offer-store.ts, karaoke-songs.ts). Every one
+// of them calls this, and nothing else in the offer's path mints an identity
+// of its own.
 //
 // Why before the offer and not at Subscribe: a phone the server cannot name
 // is a 401 at /api/billing/me, so nothing about its songs is known. On a

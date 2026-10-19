@@ -35,12 +35,19 @@
 // after the reveal, or after a skipped range, on a phone with no account
 // yet (`noAccountYet`). After the reveal the card flies in, small
 // (`openKeepFromReveal`, S7b §3.5).
+//
+// The anonymous identity (S7b E11): the first offer to open mints it, and
+// Keep is the first offer a new install meets (singer-identity.ts). Only in
+// a build with the offer screens: the store build keeps today's behaviour
+// until the V1 release brings them (owner, 16 Oct: nothing ships early).
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createRoot, createSignal, onCleanup, untrack, } from 'solid-js'
 import { needsSignIn } from '@/db/services/auth-service'
+import { ensureSingerIdentity } from '@/db/services/singer-identity'
 import { authVersion } from '@/db/services/user-service'
 import { TAB_SINGING } from '@/features/tabs/constants'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
 import type { SingTake } from '@/stores/sing-takes-store'
 import { singTakes } from '@/stores/sing-takes-store'
 import { countingIn, currentTab, runState, shellCovered, } from '../run-shell-store'
@@ -102,6 +109,9 @@ function markShown(): void {
 function open(how: KeepArrival): void {
   markShown()
   void loadAppGift()
+  // Never awaited: Keep is up at once, and the identity is made behind it
+  // (one request however many ask, singer-identity.ts).
+  if (KARAOKE_IMPORT) void ensureSingerIdentity()
   setArrival(how)
   setSheetOpen(true)
 }
