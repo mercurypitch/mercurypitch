@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CONTACT_FORM_URL } from '@/lib/contact-links'
 import { DELETE_ACCOUNT_URL } from '@/lib/legal-links'
+import { STORE_LISTINGS, storeLinks } from '@/lib/store-listings'
 import { canonicalPath, ENTRY_PAGES } from '@/seo/entry-pages'
 
 function repoFile(path: string): string {
@@ -714,6 +715,10 @@ describe('llms.txt', () => {
     const hosts = [...llms().matchAll(/\((https?:\/\/[^)]+)\)/g)].map(
       (match) => new URL(match[1]).hostname,
     )
+    // A store is a real destination once its listing is live, and only then.
+    const stores = Object.values(storeLinks(STORE_LISTINGS)).map(
+      (url) => new URL(url).hostname,
+    )
 
     for (const host of hosts) {
       expect([
@@ -721,7 +726,31 @@ describe('llms.txt', () => {
         'about.mercurypitch.com',
         'github.com',
         'llmstxt.org',
+        ...stores,
       ]).toContain(host)
+    }
+  })
+
+  // "Does MercuryPitch have an app?" gets answered with whatever this file
+  // says. Until a listing is live it says plainly that the apps are not out;
+  // the day one goes live, this fails until the file links the listing.
+  it('says where it runs, and names a store only once its listing is live', () => {
+    const text = llms()
+    const links = storeLinks(STORE_LISTINGS)
+
+    expect(text).toContain('## Where it runs')
+    // Both ways round: the sentence goes the day either store is out.
+    expect(text.includes('not yet in the stores')).toBe(
+      links.appStore === undefined && links.googlePlay === undefined,
+    )
+    for (const url of Object.values(links)) {
+      expect(text, `llms.txt does not link ${url}`).toContain(`(${url})`)
+    }
+    if (links.appStore === undefined) {
+      expect(text).not.toContain('apps.apple.com')
+    }
+    if (links.googlePlay === undefined) {
+      expect(text).not.toContain('play.google.com')
     }
   })
 })

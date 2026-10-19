@@ -21,6 +21,8 @@
 // production resolves /vocal-range-test through Cloudflare's asset-layer
 // html_handling, which only maps a clean path to a document beside it.
 
+import type { StoreListings } from '../lib/store-listings'
+import { STORE_LISTINGS, storeLinks } from '../lib/store-listings'
 import { OG_IMAGE_VERSIONS } from './og-image-versions.ts'
 
 export interface FaqItem {
@@ -249,6 +251,10 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       {
         q: 'Can it score my singing?',
         a: 'Yes. Enable your microphone and MercuryPitch tracks your pitch against the original vocal melody in real time, drawing every note you sing and scoring your performance.',
+      },
+      {
+        q: 'Can I change the key of a song?',
+        a: 'Yes. The key chip beside Speed moves a song up or down by up to six semitones at the same tempo, and Find my key picks a key from your vocal range. This device remembers the key you chose for each song, and a playlist entry can carry a key of its own.',
       },
     ],
     noscript:
@@ -493,6 +499,20 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       description:
         'Peer-to-peer browser rooms for singing together, with a live pitch lane for every singer and one shared transport.',
     },
+    faq: [
+      {
+        q: 'How do I sing karaoke with friends online?',
+        a: 'Open a Jam Room and share its link. Everyone who opens it joins the same room in their own browser, with the lyrics down the left, a pitch lane of their own, and one shared transport that keeps the room in step.',
+      },
+      {
+        q: 'How many people can sing in one room?',
+        a: 'Up to twelve. Every singer sings in their own color on a pitch lane of their own, every line is scored as it goes past, and the room shares one scoreboard.',
+      },
+      {
+        q: 'Can we sing our own songs together?',
+        a: "Yes. Songs you separated in Karaoke Night and songs of your own are in the room's picker and stream to everyone in it. The host can hand lines out to each singer, so a duet or a chorus splits the way you want it to.",
+      },
+    ],
     noscript:
       'Jam Rooms needs JavaScript — the room, the lyrics and the live scoring all run right here in your browser.',
   },
@@ -689,6 +709,60 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     noscript:
       'The singer match needs JavaScript — your voice is analyzed here in your browser.',
   },
+  {
+    slug: 'karaoke-app',
+    paths: ['/karaoke-app'],
+    navLabel: 'Karaoke App',
+    boot: '/src/features/karaoke-night/main.tsx',
+    title: 'Free Karaoke App: Lyrics and Live Scoring | MercuryPitch',
+    description:
+      'Sing karaoke in your browser on a phone, tablet or computer: synced lyrics, live pitch scoring, key change and playlists, with the example songs or your own.',
+    og: {
+      title: 'A free karaoke app with lyrics and live scoring',
+      description:
+        'Sing the example songs or songs you own, with synced lyrics, live pitch scoring, key change and playlists. In your browser, with nothing to install.',
+      image: ogImage('karaoke-og.png'),
+      imageAlt:
+        'MercuryPitch Karaoke Night — turn any song into karaoke on a theater stage, with the demo song Goodbye to Spring ready to sing.',
+    },
+    twitter: {
+      title: 'A free karaoke app with lyrics and live scoring',
+      description:
+        'Synced lyrics, live pitch scoring, key change and playlists, in your browser. Try an example song free.',
+    },
+    h1: 'A free karaoke app with lyrics and live scoring',
+    lede: 'MercuryPitch is a free karaoke app that runs in your browser on a phone, a tablet or a computer, with nothing to install. Sing one of the example songs, or bring a song you own: the original vocal is separated out, synced lyrics are looked up for it, and every note you sing is scored live against the original melody. Change the key, slow a hard line down, and line up a whole night of songs in a playlist.',
+    app: {
+      name: 'MercuryPitch Karaoke',
+      category: 'MusicApplication',
+      description:
+        'A free browser karaoke app: example songs or songs the singer owns, vocal separation, synced lyrics, live pitch scoring against the original melody, key change, playlists with a singer per song, and Jam Rooms for singing together.',
+    },
+    faq: [
+      {
+        q: 'Is there a free karaoke app that scores your singing?',
+        a: 'Yes. MercuryPitch is free and runs in your browser. Turn on your microphone and it follows your pitch against the original vocal melody as you sing, draws every note against the one you were aiming for, and scores the song. The example songs and the on-device vocal separation cost nothing; an optional server pass for the cleanest separation uses credits.',
+      },
+      {
+        q: 'Can I sing my own songs?',
+        a: 'Yes, from audio files you own. MercuryPitch separates the vocal from the instruments so you can turn the original singer down or off, and looks up synced lyrics for the song. It is not a music service: apart from a few example songs it hosts no catalog, so you bring the file.',
+      },
+      {
+        q: 'Can friends sing with me?',
+        a: 'Yes, in two ways. In a playlist each song can have its own singer, and the night steps from one song to the next with a score after each. Jam Rooms put up to twelve singers, each on their own device, in one room with a live pitch lane apiece.',
+      },
+      {
+        q: 'Does it work on a TV?',
+        a: "A TV's browser can play songs you prepared on a phone or computer while signed in, with the lyrics on the big screen, and the example songs play there too. Most TV browsers cannot use a microphone, so singing with live scoring needs a phone, a tablet or a computer for now.",
+      },
+      {
+        q: 'Is there a MercuryPitch app for iPhone or Android?',
+        a: nativeAppsAnswer(),
+      },
+    ],
+    noscript:
+      'The karaoke app needs JavaScript — the stage, the lyrics and the scoring all run in your browser.',
+  },
 ]
 
 /** Canonical path for a page — what its <link rel="canonical"> points at. */
@@ -722,4 +796,26 @@ export function navLinksFor(
     })),
     { href: ABOUT_URL, label: 'About MercuryPitch' },
   ]
+}
+
+/**
+ * The answer to "is there an app for iPhone or Android?", worked out from the
+ * store listings rather than typed into a page. The day a listing goes live
+ * (src/lib/store-listings.ts), every document that asks says so, and none
+ * keeps promising an app that has already shipped. A listing counts only once
+ * it can be linked, the same rule the store chips follow.
+ */
+export function nativeAppsAnswer(
+  listings: StoreListings = STORE_LISTINGS,
+): string {
+  const links = storeLinks(listings)
+  const iphone = links.appStore !== undefined
+  const android = links.googlePlay !== undefined
+  if (iphone && android)
+    return 'Yes. MercuryPitch is on the App Store for iPhone and on Google Play for Android, and the browser version still works everywhere with nothing to install.'
+  if (iphone)
+    return 'MercuryPitch is on the App Store for iPhone. An Android app is on the way; until it arrives, the browser version works on Android with nothing to install.'
+  if (android)
+    return 'MercuryPitch is on Google Play for Android. An iPhone app is on the way; until it arrives, the browser version works on iPhone with nothing to install.'
+  return 'Apps for iPhone and Android are on the way. Until they arrive, the browser version works on both with nothing to install, and you can add it to your home screen.'
 }

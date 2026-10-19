@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { canonicalPath, ENTRY_PAGES, navLinksFor } from '@/seo/entry-pages'
+import type { StoreListings } from '@/lib/store-listings'
+import { STORE_LISTINGS } from '@/lib/store-listings'
+import { canonicalPath, ENTRY_PAGES, nativeAppsAnswer, navLinksFor, } from '@/seo/entry-pages'
 import { renderEntryPage } from '@/seo/render-entry-page'
 
 // The entry documents are generated from ENTRY_PAGES, so the thing worth
@@ -28,6 +30,7 @@ describe('entry page model', () => {
       'voice-type-test',
       'vocal-remover',
       'which-singer-has-my-vocal-range',
+      'karaoke-app',
     ]) {
       const page = ENTRY_PAGES.find((entry) => entry.slug === slug)
       expect(page, `${slug} is missing from the model`).toBeTruthy()
@@ -199,6 +202,18 @@ describe('entry page model', () => {
     }
   })
 
+  // The documents are build output. One that is not ignored is committed by
+  // the next `git add -A`, and from then on the repo carries a stale copy the
+  // generator overwrites on every run.
+  it('git-ignores every generated document', () => {
+    const ignored = repoFile('.gitignore').split('\n')
+    for (const page of ENTRY_PAGES) {
+      expect(ignored, `${page.slug}.html is not git-ignored`).toContain(
+        `/${page.slug}.html`,
+      )
+    }
+  })
+
   it('precaches every entry path and its document', () => {
     const serviceWorker = repoFile('src/lib/sw-runtime.ts')
     for (const page of ENTRY_PAGES) {
@@ -359,4 +374,61 @@ describe('the rooms nav in the hand-written documents', () => {
       }
     },
   )
+})
+
+// "Is there an app?" is the question a karaoke searcher asks next, and its
+// answer changes on the day a store publishes the listing. It is worked out
+// from src/lib/store-listings.ts, so that day needs no copy change and no page
+// keeps saying "on the way" about an app that is out.
+describe('the answer about the phone apps', () => {
+  const listings = (appStore: boolean, googlePlay: boolean): StoreListings => ({
+    appStore: { live: appStore, appleId: '1234567890' },
+    googlePlay: {
+      live: googlePlay,
+      packageName: 'com.irchiinnuss.mercurypitch',
+    },
+  })
+
+  it('says both are on the way while neither listing is live', () => {
+    const answer = nativeAppsAnswer(listings(false, false))
+    expect(answer).toMatch(/^Apps for iPhone and Android are on the way\./)
+    expect(answer).not.toMatch(/App Store|Google Play/)
+  })
+
+  it('names the store that is live and keeps the other on the way', () => {
+    expect(nativeAppsAnswer(listings(true, false))).toMatch(
+      /^MercuryPitch is on the App Store for iPhone\. An Android app is on the way/,
+    )
+    expect(nativeAppsAnswer(listings(false, true))).toMatch(
+      /^MercuryPitch is on Google Play for Android\. An iPhone app is on the way/,
+    )
+  })
+
+  it('names both once both are live', () => {
+    const answer = nativeAppsAnswer(listings(true, true))
+    expect(answer).toContain('App Store')
+    expect(answer).toContain('Google Play')
+    expect(answer).not.toContain('on the way')
+  })
+
+  // The store chips' rule: a live flag with no usable ID links nowhere, so it
+  // does not count as out either.
+  it('does not count a live App Store listing that has no Apple ID', () => {
+    const answer = nativeAppsAnswer({
+      ...listings(false, false),
+      appStore: { live: true, appleId: '' },
+    })
+    expect(answer).toMatch(/^Apps for iPhone and Android are on the way\./)
+  })
+
+  it('is what the karaoke app page answers, from the shipped listings', () => {
+    const page = ENTRY_PAGES.find((entry) => entry.slug === 'karaoke-app')
+    expect(page).toBeDefined()
+    if (page === undefined) return
+    const item = page.faq?.find((entry) =>
+      entry.q.includes('iPhone or Android'),
+    )
+    expect(item?.a).toBe(nativeAppsAnswer(STORE_LISTINGS))
+    expect(renderEntryPage(page)).toContain(nativeAppsAnswer(STORE_LISTINGS))
+  })
 })
