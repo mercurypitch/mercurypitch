@@ -16,20 +16,29 @@
 //                               opens the next stop (cancellable: Stay
 //                               here, or any tap on the screen)
 //   the end            the finished stops brighten from the bottom up,
-//                      END_STEP_MS apart, and the path draws on to the
-//                      song; END_SONG_MS after the last stop the song
-//                      lights with its burst, the night's glow brightens
+//                      END_STEP_MS apart, still at their rest places with
+//                      Merc beside the stop he came from, and the path draws
+//                      on to the song; END_SONG_MS after the last stop the
+//                      song lights with its burst, the night's glow brightens
 //                      to its end and its points grow, and Merc hops onto
-//                      the song, landing at screen 3's size (path-layout
-//                      MERC_SONG_SCALE), where he cheers (CHEER_MS) and the
-//                      phone gives its success (§5.8, §10)
+//                      the song while the stops pack closer under the titles
+//                      (PACK_MS, §3), landing at screen 3's size (path-layout
+//                      MERC_SONG_SCALE) as they settle, where he cheers
+//                      (CHEER_MS) and the phone gives its success (§5.8, §10)
+//   the day's first    the path draws in from the bottom stop up, each stop
+//   open               fading in as it reaches it (DRAW_IN_MS, §5.2, §10);
+//                      every later open that day arrives settled
+//
+// Packed from the start, the end had Merc beside Echo on "Long note 12.6 s"
+// until he hopped: the rest places keep a full stop's gap on his side.
 //
 // A fixture (`still`) shows every view settled, with no timer and no
 // countdown. Under reduced motion Merc does not hop or jump: he fades out
 // where he is and in where he goes (MERC_FADE_MS each), and his cheer shows
-// as the lock's smile (merc-moves.ts); the path appears without drawing,
-// the burst only fades (WarmUpPath.module.css), and the buttons keep their
-// timing.
+// as the lock's smile (merc-moves.ts); the end arrives in its settled frame
+// (packed, Merc on the song) and only lights; the path appears without
+// drawing in, the burst only fades (WarmUpPath.module.css), and the buttons
+// keep their timing.
 
 import type { Accessor } from 'solid-js'
 import { batch, createEffect, createSignal, on, onCleanup, untrack, } from 'solid-js'
@@ -58,12 +67,79 @@ export const END_STEP_MS = 120
 export const END_SONG_MS = 240
 /** Under reduced motion Merc fades out, then in where he goes, ms each. */
 export const MERC_FADE_MS = 150
+/**
+ * A stop's sprite crossfades to its new state, ms: the end's brightening,
+ * and a finished stop from next to done (§5.5, 300 ms). A fade, so reduced
+ * motion keeps it.
+ */
+export const ORB_FADE_MS = 300
+/**
+ * The end packs its stops closer (§3, screen 3) while Merc hops onto the
+ * song, ms: they start just after he does.
+ */
+export const PACK_AFTER_HOP_MS = 50
+/** The pack itself, ms: done as Merc lands (HOP_MS). */
+export const PACK_MS = 600
+/** The pack's pace: a slow start, so the song's name stays up as he leaves. */
+export const PACK_EASE = 'cubic-bezier(0.45, 0, 0.25, 1)'
+
+/** Merc's hop, across and up at once: a straight glide (HOP_MS). */
+export const HOP_EASE = 'cubic-bezier(0.33, 0, 0.25, 1)'
+/**
+ * The end's hop goes across first and up after. He starts beside the last
+ * stop, under the song's name, and that name comes down to him as the
+ * stops pack: across at once, he is out from under it before it reaches
+ * his height; up, he follows the song down onto it.
+ */
+export const END_HOP_ACROSS_EASE = 'cubic-bezier(0.2, 0.75, 0.3, 1)'
+export const END_HOP_UP_EASE = 'cubic-bezier(0.55, 0, 0.6, 1)'
+
+/**
+ * Where the end's stops stand: at their rest places (the end arriving, so
+ * Merc beside the stop he came from covers no name), moving to the end's
+ * packed places, or there.
+ */
+export type PackPhase = 'unpacked' | 'packing' | 'settled'
+
+/** The day's first open: the path draws in from the bottom stop up, ms (§10). */
+export const DRAW_IN_MS = 700
+/** Each stop's fade as the path reaches it, ms. */
+const DRAW_IN_FADE_MS = 220
+
+/** The draw-in, stop by stop: what PathColumn hands its CSS. */
+export interface DrawInSchedule {
+  /** When each stop starts to fade in, ms from the open, bottom stop first. */
+  readonly stops: readonly number[]
+  /** How long each stop's fade takes, ms. */
+  readonly fade: number
+  /**
+   * How long each segment of the path takes to draw, ms: from its lower
+   * stop's start to its upper one's, so the path reaches a stop as it
+   * appears, and the top one is in by DRAW_IN_MS whatever the plan's length.
+   */
+  readonly segment: number
+}
+
+export function drawInSchedule(count: number): DrawInSchedule {
+  const segment = count > 1 ? (DRAW_IN_MS - DRAW_IN_FADE_MS) / (count - 1) : 0
+  return {
+    stops: Array.from({ length: count }, (_, i) => i * segment),
+    fade: DRAW_IN_FADE_MS,
+    segment,
+  }
+}
 
 export interface PathMotionSetup {
   readonly view: Accessor<PathView>
   readonly last: Accessor<LastMove | null>
   readonly still: boolean
   readonly reduced: () => boolean
+  /**
+   * The path's first open of the day on this device (warm-up-store.ts
+   * firstPathOpenToday): it draws in, unless it is a fixture's frame or a
+   * return from a stop, which arrives as that stop's card.
+   */
+  readonly drawIn?: boolean
   /** The countdown ran out: open the next stop. */
   readonly go: () => void
   /** A finished stop lights on the path (a light tick, §10). */
@@ -73,6 +149,8 @@ export interface PathMotionSetup {
 }
 
 export interface PathMotion {
+  /** The day's first open: the path is drawing in (DRAW_IN_MS). */
+  readonly drawingIn: Accessor<boolean>
   /** The stop just finished still shows as it did before (next). */
   readonly unlit: Accessor<number | null>
   /** The lit path has reached the next stop. */
@@ -87,6 +165,8 @@ export interface PathMotion {
   readonly endLit: Accessor<boolean>
   /** The song's burst plays: the end arriving, never a settled view. */
   readonly burst: Accessor<boolean>
+  /** The end's stops: still at rest, packing, or packed (settled). */
+  readonly pack: Accessor<PackPhase>
   readonly merc: Accessor<MercSpot>
   readonly mercState: Accessor<MercState>
   /** Merc is on his way between two spots (his transform eases). */
@@ -131,10 +211,25 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
   const [brightened, setBrightened] = createSignal(endArriving ? 0 : ALL)
   const [endLit, setEndLit] = createSignal(!endArriving)
   const [burst, setBurst] = createSignal(false)
+  // Unpacked from the first frame too: drawn packed, the stops would jump.
+  const [pack, setPack] = createSignal<PackPhase>(
+    endArriving && !setup.reduced() ? 'unpacked' : 'settled',
+  )
   const [merc, setMerc] = createSignal<MercSpot>(settled.merc)
   const [mercState, setMercState] = createSignal<MercState>('idle')
   const [hopping, setHopping] = createSignal(false)
   const [mercFaded, setMercFaded] = createSignal(false)
+
+  // Its own timer: the arrivals below clear theirs on every last move,
+  // the first run included.
+  const [drawingIn, setDrawingIn] = createSignal(
+    setup.drawIn === true && !setup.still && untrack(setup.last) === null,
+  )
+  let drawn: ReturnType<typeof setTimeout> | undefined
+  if (untrack(drawingIn)) {
+    drawn = setTimeout(() => setDrawingIn(false), DRAW_IN_MS)
+  }
+  onCleanup(() => clearTimeout(drawn))
 
   let countdown: ReturnType<typeof setTimeout> | undefined
   const stopCounting = (): void => {
@@ -194,6 +289,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
   const arriveBetween = (last: LastMove): void => {
     const view = untrack(setup.view)
     batch(() => {
+      setPack('settled')
       setUnlit(last.state === 'done' ? last.index : null)
       setTrailIn(false)
       setCard(false)
@@ -218,6 +314,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
 
   const arriveAtEnd = (last: LastMove): void => {
     const view = untrack(setup.view)
+    const reduced = setup.reduced()
     const rooms = view.stops.filter(
       (stop) => stop.orb === 'lit' && !stop.song,
     ).length
@@ -227,8 +324,14 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
       setTrailIn(false)
       setEndLit(false)
       setBurst(false)
-      setMerc({ at: 'beside', index: last.index })
+      // The stops where they stood, and Merc beside the stop he came from:
+      // packed, its neighbour's name comes within his reach. Under reduced
+      // motion the end is its settled frame from the start: packed, Merc
+      // already on the song, and nothing moves.
+      setPack(reduced ? 'settled' : 'unpacked')
+      setMerc(reduced ? view.merc : { at: 'beside', index: last.index })
       setMercState('idle')
+      setMercFaded(false)
     })
     for (let i = 1; i <= rooms; i += 1) {
       later(i * END_STEP_MS, () => setBrightened(i))
@@ -240,10 +343,19 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
         setEndLit(true)
         setBurst(true)
       })
-      moveMerc(view.merc, 'celebrate', () => {
+      const landed = (): void => {
         setup.onEnd?.()
         later(CHEER_MS, () => setMercState('idle'))
-      })
+      }
+      if (reduced) {
+        // His cheer, still: the lock's smile (merc-moves.ts).
+        setMercState('lock')
+        landed()
+        return
+      }
+      moveMerc(view.merc, 'celebrate', landed)
+      later(PACK_AFTER_HOP_MS, () => setPack('packing'))
+      later(PACK_AFTER_HOP_MS + PACK_MS, () => setPack('settled'))
     })
   }
 
@@ -256,6 +368,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
       const view = untrack(setup.view)
       if (setup.still || last === null) {
         batch(() => {
+          setPack('settled')
           setBrightened(ALL)
           setTrailIn(true)
           setEndLit(true)
@@ -268,7 +381,12 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
       }
       if (view.state === 'between') arriveBetween(last)
       else if (view.state === 'end') arriveAtEnd(last)
-      else setMerc(view.merc)
+      else {
+        batch(() => {
+          setPack('settled')
+          setMerc(view.merc)
+        })
+      }
     }),
   )
 
@@ -287,6 +405,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
   )
 
   return {
+    drawingIn,
     unlit,
     trailIn,
     card,
@@ -295,6 +414,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
     brightened,
     endLit,
     burst,
+    pack,
     merc,
     mercState,
     hopping,

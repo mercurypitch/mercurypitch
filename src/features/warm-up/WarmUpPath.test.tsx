@@ -18,7 +18,9 @@ import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN,
 import { haptics } from '@/lib/haptics'
 import type { UnlockItem } from '@/stores/notifications-store'
 import { onUnlockShown, resetNotifications, setNotificationPresenter, showNotification, } from '@/stores/notifications-store'
-import { ACTIONS_MS, END_SONG_MS, END_STEP_MS, HOP_AT_MS, LIGHT_MS, } from './path-motion'
+import type { PathMode } from './path-layout'
+import { columnX, columnY, pathFrame, segmentD, stopPlaces, } from './path-layout'
+import { ACTIONS_MS, DRAW_IN_MS, END_HOP_ACROSS_EASE, END_SONG_MS, END_STEP_MS, HOP_AT_MS, HOP_EASE, LIGHT_MS, PACK_AFTER_HOP_MS, PACK_MS, } from './path-motion'
 import { pinnedSource } from './path-source'
 import { freshDay } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
@@ -93,6 +95,19 @@ const zoneOf = (id: string): string | undefined =>
 const said = (): string | null =>
   document.querySelector('[role="status"][aria-live="polite"]')?.textContent ??
   null
+/**
+ * A stop's two sprite layers in order, the one in front marked "*": a
+ * change of orb brings the other layer, with the new sprite, to the front,
+ * and the CSS crossfades the two.
+ */
+const sprites = (index: number): string[] =>
+  [
+    ...screen
+      .getByTestId(`warm-up-stop-${index}`)
+      .querySelectorAll<HTMLImageElement>('img[data-sprite]'),
+  ].map(
+    (img) => `${img.dataset.sprite}${img.dataset.front === 'true' ? '*' : ''}`,
+  )
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -157,6 +172,69 @@ describe('the first visit', () => {
   })
 })
 
+describe("the day's first open (§5.2, §10)", () => {
+  /** The column while it draws in, or null once it is the settled path. */
+  const drawing = (): HTMLElement | null =>
+    document.querySelector<HTMLElement>('[data-draw="in"]')
+  /** When each stop starts to fade in, ms, bottom stop first. */
+  const startsAt = (): number[] =>
+    [0, 1, 2, 3, 4].map((i) =>
+      Number.parseFloat(
+        screen
+          .getByTestId(`warm-up-stop-${i}`)
+          .style.getPropertyValue('--draw-at'),
+      ),
+    )
+
+  it('draws the path in from the bottom stop up, then settles', () => {
+    mount()
+    expect(drawing()).not.toBeNull()
+    const at = startsAt()
+    expect(at[0]).toBe(0)
+    for (let i = 1; i < at.length; i += 1) {
+      expect(at[i]).toBeGreaterThan(at[i - 1]!)
+    }
+    vi.advanceTimersByTime(DRAW_IN_MS)
+    expect(drawing()).toBeNull()
+  })
+
+  it('a later open the same day arrives settled', () => {
+    const first = mount()
+    first.leave()
+    mount()
+    expect(drawing()).toBeNull()
+  })
+
+  it('reduced motion draws nothing in, and the open still counts for the day', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+    try {
+      const first = mount()
+      expect(drawing()).toBeNull()
+      first.leave()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+    mount()
+    expect(drawing()).toBeNull()
+  })
+
+  it('a return from a stop is its card, not a draw-in', () => {
+    sing(0)
+    const back = mount()
+    expect(drawing()).toBeNull()
+    back.leave()
+    // The day's first open is still to come.
+    leavePath()
+    mount()
+    expect(drawing()).not.toBeNull()
+  })
+})
+
 describe('back from a stop', () => {
   beforeEach(() => {
     sing(0)
@@ -168,6 +246,26 @@ describe('back from a stop', () => {
     vi.advanceTimersByTime(LIGHT_MS)
     expect(haptics.tapLight).toHaveBeenCalledTimes(1)
     expect(haptics.success).not.toHaveBeenCalled()
+  })
+
+  it('Merc hops beside the next stop straight across and up, then stands', () => {
+    mount()
+    const track = screen.getByTestId('warm-up-merc-track')
+    expect(track.style.transition).toBe('none')
+    vi.advanceTimersByTime(HOP_AT_MS)
+    expect(track.style.transition).toContain(`${HOP_MS}ms`)
+    expect(track.style.transition).toContain(HOP_EASE)
+    vi.advanceTimersByTime(HOP_MS)
+    expect(track.style.transition).toBe('none')
+  })
+
+  it('the finished stop crossfades from next to done', () => {
+    mount()
+    expect(sprites(0)).toEqual(['next*', 'next'])
+    vi.advanceTimersByTime(LIGHT_MS)
+    expect(sprites(0)).toEqual(['next', 'done*'])
+    // The next stop was next already: nothing to fade.
+    expect(sprites(1)).toEqual(['next*', 'next'])
   })
 
   it('raises the card at 0.3 s and says it once, politely', () => {
@@ -268,6 +366,119 @@ describe('the end', () => {
       expect(text(`warm-up-stop-${i}`)).toContain(line)
     }
     expect(screen.queryByTestId('warm-up-level')).toBeNull()
+  })
+
+  it('each stop brightens by a crossfade of its sprites, bottom up, the song last', () => {
+    mount()
+    expect(sprites(0)).toEqual(['done*', 'done'])
+    expect(sprites(4)).toEqual(['waiting*', 'waiting'])
+    vi.advanceTimersByTime(END_STEP_MS)
+    expect(sprites(0)).toEqual(['done', 'lit*'])
+    expect(sprites(1)).toEqual(['done*', 'done'])
+    vi.advanceTimersByTime(3 * END_STEP_MS + END_SONG_MS)
+    expect([1, 2, 3].map((i) => sprites(i))).toEqual(
+      Array(3).fill(['done', 'lit*']),
+    )
+    expect(sprites(4)).toEqual(['waiting', 'lit*'])
+  })
+
+  describe('the pack (§3: closer under the titles)', () => {
+    // jsdom lays nothing out: the path keeps its 390 x 844 phone frame.
+    const frame = pathFrame(
+      { width: 390, height: 844, top: 56, bottom: 0 },
+      5,
+      'end',
+    )
+    const at = (mode: PathMode, i: number): { x: number; y: number } => {
+      const place = stopPlaces(5, mode)[i]!
+      return { x: columnX(place.x, frame), y: columnY(place.y, frame) }
+    }
+    const stop = (i: number): HTMLElement =>
+      screen.getByTestId(`warm-up-stop-${i}`)
+    const yOf = (i: number): number =>
+      Number(
+        /translate\([^,]+,\s*([-\d.e]+)px\)/u.exec(
+          stop(i).style.transform,
+        )?.[1],
+      )
+    const segment = (i: number): SVGGElement =>
+      screen.getByTestId('warm-up-trail').querySelectorAll('g')[i]!
+    const SONG_AT = 4 * END_STEP_MS + END_SONG_MS
+
+    it('the stops brighten where they stood, then pack while Merc hops, the path with them', () => {
+      mount()
+      for (const i of [0, 1, 2, 3, 4]) {
+        expect(yOf(i)).toBeCloseTo(at('rest', i).y, 3)
+      }
+      expect(stop(3).style.transition).toBe('')
+      expect(segment(2).style.transform).toBe('translate(0px, 0px) scale(1, 1)')
+      vi.advanceTimersByTime(SONG_AT + PACK_AFTER_HOP_MS)
+      // Packing: each stop moves to its end place by a transition, and each
+      // segment, still drawn between the rest places, is carried with them.
+      for (const i of [0, 1, 2, 3, 4]) {
+        expect(yOf(i)).toBeCloseTo(at('end', i).y, 3)
+      }
+      expect(stop(3).style.transition).toContain(`${PACK_MS}ms`)
+      expect(segment(2).style.transition).toContain(`${PACK_MS}ms`)
+      expect(segment(2).querySelector('path')?.getAttribute('d')).toBe(
+        segmentD(at('rest', 2), at('rest', 3)),
+      )
+      const move =
+        /translate\(0px, ([-\d.e]+)px\) scale\(1, ([-\d.e]+)\)/u.exec(
+          segment(2).style.transform,
+        )
+      const [shift, scale] = [Number(move?.[1]), Number(move?.[2])]
+      // The rest segment's ends land on the packed stops' centres.
+      expect(shift + scale * at('rest', 2).y).toBeCloseTo(at('end', 2).y, 3)
+      expect(shift + scale * at('rest', 3).y).toBeCloseTo(at('end', 3).y, 3)
+      vi.advanceTimersByTime(PACK_MS)
+      // Packed: drawn between the end's places, nothing moving.
+      expect(stop(3).style.transition).toBe('')
+      expect(segment(2).style.transform).toBe('translate(0px, 0px) scale(1, 1)')
+      expect(segment(2).querySelector('path')?.getAttribute('d')).toBe(
+        segmentD(at('end', 2), at('end', 3)),
+      )
+    })
+
+    it("Merc's hop onto the song goes across first, out from under its name", () => {
+      mount()
+      const track = screen.getByTestId('warm-up-merc-track')
+      const across = (): number =>
+        Number(/translateX\(([-\d.e]+)px\)/u.exec(track.style.transform)?.[1])
+      const beside = across()
+      expect(track.style.transition).toBe('none')
+      vi.advanceTimersByTime(SONG_AT)
+      // On its way to the song's x, at the across pace (path-motion.ts).
+      expect(across()).toBeLessThan(beside)
+      expect(track.style.transition).toContain(`${HOP_MS}ms`)
+      expect(track.style.transition).toContain(END_HOP_ACROSS_EASE)
+      vi.advanceTimersByTime(HOP_MS)
+      expect(track.style.transition).toBe('none')
+    })
+
+    it('reduced motion: packed from the first frame, and nothing moves', () => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query.includes('reduce'),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }))
+      try {
+        mount()
+        for (const i of [0, 1, 2, 3, 4]) {
+          expect(yOf(i)).toBeCloseTo(at('end', i).y, 3)
+        }
+        for (let t = 0; t < SONG_AT + PACK_MS + HOP_MS; t += 50) {
+          vi.advanceTimersByTime(50)
+          expect(stop(3).style.transition).toBe('')
+          expect(segment(2).style.transform).toBe(
+            'translate(0px, 0px) scale(1, 1)',
+          )
+        }
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
   })
 
   it('the song lights with its burst, and Merc lands on it with a success', () => {

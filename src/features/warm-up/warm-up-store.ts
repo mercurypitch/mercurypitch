@@ -78,6 +78,36 @@ function daysSignal(): Signal<WarmUpDays> {
   return daysRecord
 }
 
+/**
+ * The day the path last opened on this device, under its own `mp_` key:
+ * device-local like the run, and kept apart from it, because opening the
+ * path is not a run (a new day's run is kept from its first stop).
+ */
+export const WARM_UP_OPENED_KEY = 'mp_warm_up_opened'
+
+let openedRecord: Signal<string> | undefined
+
+function openedSignal(): Signal<string> {
+  openedRecord ??= createPersistedSignal<string>(WARM_UP_OPENED_KEY, '', {
+    validator: (value): value is string => typeof value === 'string',
+  })
+  return openedRecord
+}
+
+/**
+ * The path is opening: true the first time today on this device, when it
+ * draws itself in (DESIGN-warm-up.md §5.2, §10); every later open that day
+ * arrives settled. The day is written as it is asked, so a restart the same
+ * day does not draw the path in again.
+ */
+export function firstPathOpenToday(): boolean {
+  const [opened, setOpened] = openedSignal()
+  const today = localDayString()
+  if (untrack(opened) === today) return false
+  setOpened(today)
+  return true
+}
+
 /** The run's day joins the days warmed up: written once, never on a read. */
 function markWarmedUp(date: string): void {
   const [days, setDays] = daysSignal()
@@ -304,6 +334,7 @@ export function canStartWarmUp(): boolean {
 export function resetWarmUpForTests(): void {
   record = undefined
   daysRecord = undefined
+  openedRecord = undefined
   setOpen(null)
   leavePath()
 }

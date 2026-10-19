@@ -19,7 +19,7 @@ import type { WarmUpDays } from '@/lib/warm-up-days'
 import type { UnlockItem } from '@/stores/notifications-store'
 import type { WarmUpDay } from './routine'
 import type { LastMove } from './warm-up-store'
-import { canStartWarmUp, claimPathUnlocks, enterStop, leavePath, openStop, routineUnlocks, skipNextStop, warmUpAgain, warmUpDay, warmUpDays, warmUpLastMove, } from './warm-up-store'
+import { canStartWarmUp, claimPathUnlocks, enterStop, firstPathOpenToday, leavePath, openStop, routineUnlocks, skipNextStop, warmUpAgain, warmUpDay, warmUpDays, warmUpLastMove, } from './warm-up-store'
 
 export interface PathSource {
   readonly day: Accessor<WarmUpDay>
@@ -44,6 +44,11 @@ export interface PathSource {
   readonly leave: () => void
   /** A stop's room is open: the path went for it. */
   readonly inRoom: () => boolean
+  /**
+   * The path is opening: true for its first open today on this device,
+   * which draws it in (§5.2, §10). Asked once, as it opens.
+   */
+  readonly firstOpenToday: () => boolean
 }
 
 /** The singer's own run, from the store. Call inside the path's owner. */
@@ -70,6 +75,7 @@ export function storeSource(): PathSource {
     claim: claimPathUnlocks,
     leave: leavePath,
     inRoom: () => openStop() !== null,
+    firstOpenToday: firstPathOpenToday,
   }
 }
 
@@ -80,6 +86,8 @@ export interface PinnedRun {
   /** The days warmed up the run's week shows; none if left out. */
   readonly days?: WarmUpDays
   readonly unlocks?: readonly UnlockItem[]
+  /** Open it as the day's first: the path draws in (a live fixture). */
+  readonly firstOpen?: boolean
 }
 
 /** A run that stays as it is handed in: its moves change nothing. */
@@ -99,5 +107,6 @@ export function pinnedSource(run: PinnedRun): PathSource {
     claim: () => () => undefined,
     leave: () => undefined,
     inRoom: () => false,
+    firstOpenToday: () => run.firstOpen === true,
   }
 }

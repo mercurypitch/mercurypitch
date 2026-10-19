@@ -16,7 +16,7 @@ import { notifications, resetNotifications, setNotificationPresenter, showNotifi
 import type { WarmUpDay } from './routine'
 import { nextStop, tally } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
-import { canStartWarmUp, claimPathUnlocks, enterStop, leavePath, leaveStop, nextWarmUpRoom, openStop, resetWarmUpForTests, routineStopFor, routineUnlocks, skipNextStop, WARM_UP_TODAY_KEY, warmedUpToday, warmUpAgain, warmUpDay, warmUpDays, warmUpLastMove, warmUpWeek, } from './warm-up-store'
+import { canStartWarmUp, claimPathUnlocks, enterStop, firstPathOpenToday, leavePath, leaveStop, nextWarmUpRoom, openStop, resetWarmUpForTests, routineStopFor, routineUnlocks, skipNextStop, WARM_UP_OPENED_KEY, WARM_UP_TODAY_KEY, warmedUpToday, warmUpAgain, warmUpDay, warmUpDays, warmUpLastMove, warmUpWeek, } from './warm-up-store'
 
 const ROOMS: readonly WarmUpRoomId[] = [
   EXERCISE_LIP_ROLL_BAY,
@@ -425,5 +425,36 @@ describe('the days warmed up (N5)', () => {
     ])
     expect(week?.find((dot) => dot.today)?.day).toBe('2026-10-01')
     expect(warmedUpToday()).toBe(false)
+  })
+})
+
+describe("the path's first open of the day (§5.2, §10)", () => {
+  it('is the first open today, once: later opens that day arrive settled', () => {
+    expect(firstPathOpenToday()).toBe(true)
+    expect(firstPathOpenToday()).toBe(false)
+    expect(firstPathOpenToday()).toBe(false)
+  })
+
+  it('is kept on this device, so a restart the same day does not draw it in again', () => {
+    expect(firstPathOpenToday()).toBe(true)
+    expect(localStorage.getItem(WARM_UP_OPENED_KEY)).toBe('2026-10-18')
+    resetWarmUpForTests()
+    expect(firstPathOpenToday()).toBe(false)
+  })
+
+  it("a new day opens fresh, at the singer's midnight", () => {
+    expect(firstPathOpenToday()).toBe(true)
+    vi.setSystemTime(new Date(2026, 9, 18, 23, 59))
+    expect(firstPathOpenToday()).toBe(false)
+    vi.setSystemTime(new Date(2026, 9, 19, 0, 1))
+    expect(firstPathOpenToday()).toBe(true)
+  })
+
+  it('is not a run: opening the path writes no day of its own', () => {
+    firstPathOpenToday()
+    expect(kept()).toBeNull()
+    expect(warmUpDay().marks.every((mark) => mark.state === 'waiting')).toBe(
+      true,
+    )
   })
 })

@@ -177,6 +177,39 @@
   stroke-dashoffset: 1;
 }
 
+/* The day's first open (§5.2, §10): the path draws in from the bottom stop
+   up, each segment from its lower stop's start, and each stop fades in as
+   the path reaches it (path-motion.ts drawInSchedule; --draw-at on each
+   stop and segment). By opacity and stroke-dashoffset alone. */
+.column[data-draw='in'] .trail path {
+  stroke-dasharray: 1;
+  animation: draw-trail var(--draw-segment, 120ms) linear both;
+  animation-delay: var(--draw-at, 0ms);
+}
+
+.column[data-draw='in'] .stop {
+  animation: draw-stop var(--draw-fade, 220ms) ease-out both;
+  animation-delay: var(--draw-at, 0ms);
+}
+
+@keyframes draw-trail {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes draw-stop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ── The stops ───────────────────────────────────────────── */
 
 .stops {
@@ -205,15 +238,25 @@
   left: 0;
 }
 
+/* Two sprite layers a stop (PathColumn.tsx OrbSprites): a new state comes
+   to the front as the old one fades behind, by opacity alone. */
 .orb {
   display: block;
   pointer-events: none;
+  transition: opacity var(--orb-fade, 300ms) ease-in-out;
+}
+
+.orbBehind {
+  opacity: 0;
 }
 
 .glyph {
   color: #b3c7f9;
   opacity: 0.8;
   pointer-events: none;
+  transition:
+    color var(--orb-fade, 300ms) ease-in-out,
+    opacity var(--orb-fade, 300ms) ease-in-out;
 }
 
 .stop[data-orb='next'] .glyph {
@@ -330,13 +373,13 @@
   outline-offset: 4px;
 }
 
+/* Merc across (his track) and up (himself): each glides only while he
+   hops, at the paces PathColumn.tsx sets. */
+.mercTrack,
 .merc {
   position: absolute;
   top: 0;
   left: 0;
-  transition:
-    transform 650ms cubic-bezier(0.33, 0, 0.25, 1),
-    opacity 150ms linear;
   pointer-events: none;
 }
 
@@ -662,8 +705,10 @@
     transition: none;
   }
 
-  .merc {
-    transition: opacity 150ms linear;
+  /* The path never draws in (WarmUpPath.tsx asks too). */
+  .column[data-draw='in'] .trail path,
+  .column[data-draw='in'] .stop {
+    animation: none;
   }
 
   .burst {
@@ -700,4 +745,9 @@
 .path[data-still='true'] .row,
 .path[data-still='true'] .again {
   animation: none;
+}
+
+.path[data-still='true'] .orb,
+.path[data-still='true'] .glyph {
+  transition: none;
 }

@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CHEER_MS, HOP_MS } from '@/components/room-kit/merc-moves'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
 import type { PathMotion } from './path-motion'
-import { ACTIONS_MS, createPathMotion, END_SONG_MS, END_STEP_MS, HOP_AT_MS, LIGHT_MS, MERC_FADE_MS, TRAIL_MS, } from './path-motion'
+import { ACTIONS_MS, createPathMotion, DRAW_IN_MS, drawInSchedule, END_SONG_MS, END_STEP_MS, HOP_AT_MS, LIGHT_MS, MERC_FADE_MS, PACK_AFTER_HOP_MS, PACK_MS, TRAIL_MS, } from './path-motion'
 import type { PathView } from './path-view'
 import { pathView } from './path-view'
 import type { WarmUpDay } from './routine'
@@ -27,7 +27,12 @@ const sung = (day: WarmUpDay, index: number): WarmUpDay =>
 interface Rig {
   motion: PathMotion
   /** What the motion held when it was made, before its effects ran. */
-  first: { endLit: boolean; brightened: number; trailIn: boolean }
+  first: {
+    endLit: boolean
+    brightened: number
+    trailIn: boolean
+    pack: string
+  }
   go: ReturnType<typeof vi.fn>
   lit: ReturnType<typeof vi.fn>
   end: ReturnType<typeof vi.fn>
@@ -38,7 +43,7 @@ interface Rig {
 function rig(
   day: WarmUpDay,
   last: LastMove | null,
-  options: { still?: boolean; reduced?: boolean } = {},
+  options: { still?: boolean; reduced?: boolean; drawIn?: boolean } = {},
 ): Rig {
   const go = vi.fn()
   const lit = vi.fn()
@@ -53,6 +58,7 @@ function rig(
       last: move,
       still: options.still === true,
       reduced: () => options.reduced === true,
+      drawIn: options.drawIn === true,
       go,
       onLit: lit,
       onEnd: end,
@@ -63,6 +69,7 @@ function rig(
         endLit: motion.endLit(),
         brightened: motion.brightened(),
         trailIn: motion.trailIn(),
+        pack: motion.pack(),
       },
       go,
       lit,
@@ -178,6 +185,7 @@ describe('the end', () => {
       endLit: false,
       brightened: 0,
       trailIn: false,
+      pack: 'unpacked',
     })
     // A settled end (a fixture, or opened again) is lit from the start.
     current.dispose()
@@ -231,19 +239,49 @@ describe('the end', () => {
     expect(current.end).toHaveBeenCalledTimes(1)
   })
 
-  it('reduced motion: he fades out and in on the song, and smiles', () => {
-    current = rig(ended(), { index: 3, state: 'done' }, { reduced: true })
-    vi.advanceTimersByTime(SONG_AT)
-    expect(current.motion.mercFaded()).toBe(true)
+  it('the stops stand where they were while they brighten, Merc beside Echo', () => {
+    // Packed, Echo's place is closer to Long note's, and Merc beside it
+    // stood on "Long note 12.6 s" until he hopped (13e's finding).
+    current = rig(ended(), { index: 3, state: 'done' })
+    vi.advanceTimersByTime(SONG_AT - 1)
+    expect(current.motion.pack()).toBe('unpacked')
     expect(current.motion.merc()).toEqual({ at: 'beside', index: 3 })
-    vi.advanceTimersByTime(MERC_FADE_MS)
+  })
+
+  it('they pack while Merc hops onto the song, and are packed as he lands', () => {
+    current = rig(ended(), { index: 3, state: 'done' })
+    vi.advanceTimersByTime(SONG_AT)
+    expect(current.motion.hopping()).toBe(true)
+    expect(current.motion.pack()).toBe('unpacked')
+    vi.advanceTimersByTime(PACK_AFTER_HOP_MS)
+    expect(current.motion.pack()).toBe('packing')
+    vi.advanceTimersByTime(PACK_MS - 1)
+    expect(current.motion.pack()).toBe('packing')
+    vi.advanceTimersByTime(1)
+    expect(current.motion.pack()).toBe('settled')
+    expect(PACK_AFTER_HOP_MS + PACK_MS).toBeLessThanOrEqual(HOP_MS)
+    expect(PACK_MS).toBeGreaterThanOrEqual(550)
+  })
+
+  it('reduced motion: the settled end, Merc on the song from the start, smiling as it lights', () => {
+    current = rig(ended(), { index: 3, state: 'done' }, { reduced: true })
+    expect(current.first.pack).toBe('settled')
+    expect(current.motion.merc()).toEqual({ at: 'on', index: 4 })
+    expect(current.motion.mercFaded()).toBe(false)
+    vi.advanceTimersByTime(SONG_AT - 1)
+    expect(current.motion.mercState()).toBe('idle')
+    expect(current.end).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
     expect([
-      current.motion.mercFaded(),
+      current.motion.pack(),
       current.motion.hopping(),
+      current.motion.mercFaded(),
       current.motion.mercState(),
-    ]).toEqual([false, false, 'lock'])
+    ]).toEqual(['settled', false, false, 'lock'])
     expect(current.motion.merc()).toEqual({ at: 'on', index: 4 })
     expect(current.end).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(CHEER_MS)
+    expect(current.motion.mercState()).toBe('idle')
   })
 })
 
@@ -294,9 +332,55 @@ describe('reduced motion and fixtures', () => {
       current.motion.endLit(),
       current.motion.burst(),
       current.motion.mercFaded(),
-    ]).toEqual([true, false, false])
+      current.motion.pack(),
+    ]).toEqual([true, false, false, 'settled'])
     expect(current.motion.merc()).toEqual({ at: 'on', index: 4 })
     vi.advanceTimersByTime(60_000)
     expect(current.end).not.toHaveBeenCalled()
+  })
+})
+
+describe("the day's first open: the path draws in (§5.2, §10)", () => {
+  it('draws in for 700 ms, then is the settled path', () => {
+    current = rig(fresh(), null, { drawIn: true })
+    expect(current.motion.drawingIn()).toBe(true)
+    vi.advanceTimersByTime(DRAW_IN_MS - 1)
+    expect(current.motion.drawingIn()).toBe(true)
+    vi.advanceTimersByTime(1)
+    expect(current.motion.drawingIn()).toBe(false)
+  })
+
+  it('a later open, a fixture or a return from a stop draws nothing in', () => {
+    current = rig(fresh(), null)
+    expect(current.motion.drawingIn()).toBe(false)
+    current.dispose()
+    current = rig(fresh(), null, { drawIn: true, still: true })
+    expect(current.motion.drawingIn()).toBe(false)
+    current.dispose()
+    current = rig(
+      sung(fresh(), 0),
+      { index: 0, state: 'done' },
+      { drawIn: true },
+    )
+    expect(current.motion.drawingIn()).toBe(false)
+  })
+
+  it('the stops fade in one after another, bottom up, as the path reaches each', () => {
+    const plan = drawInSchedule(5)
+    expect(plan.stops[0]).toBe(0)
+    for (let i = 1; i < 5; i += 1) {
+      expect(plan.stops[i]).toBeGreaterThan(plan.stops[i - 1]!)
+      // The segment from the stop below reaches this one as it starts.
+      expect(plan.stops[i - 1]! + plan.segment).toBeCloseTo(plan.stops[i]!, 6)
+    }
+    // The last stop is in by 700 ms.
+    expect(plan.stops[4]! + plan.fade).toBeCloseTo(DRAW_IN_MS, 6)
+  })
+
+  it('a longer plan draws in within the same 700 ms', () => {
+    const plan = drawInSchedule(9)
+    expect(plan.stops).toHaveLength(9)
+    expect(plan.stops[8]! + plan.fade).toBeCloseTo(DRAW_IN_MS, 6)
+    expect(drawInSchedule(1).stops).toEqual([0])
   })
 })

@@ -122,12 +122,24 @@ function createScreenBox(): {
     const measure = (): void => {
       const rect = root.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
-      setBox({
+      const next: ScreenBox = {
         width: rect.width,
         height: rect.height,
         top: top.getBoundingClientRect().top - rect.top,
         bottom: rect.bottom - bottom.getBoundingClientRect().bottom,
-      })
+      }
+      // The observer's first call measures what the mount just did: the
+      // same box is not a new frame (nothing on the path is placed again).
+      const was = untrack(box)
+      if (
+        next.width === was.width &&
+        next.height === was.height &&
+        next.top === was.top &&
+        next.bottom === was.bottom
+      ) {
+        return
+      }
+      setBox(next)
     }
     measure()
     if (typeof ResizeObserver === 'undefined') return
@@ -161,11 +173,20 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
     return isRoomStop(stop) ? stop.id : null
   }
 
+  // The day's first open draws the path in; a return from a stop arrives as
+  // its card instead. Asked as the path opens, so under reduced motion the
+  // open still counts for the day, though nothing draws in.
+  const drawIn =
+    !still &&
+    untrack(source.last) === null &&
+    source.firstOpenToday() &&
+    !prefersReducedMotion()
   const motion = createPathMotion({
     view,
     last: source.last,
     still,
     reduced: prefersReducedMotion,
+    drawIn,
     go: () => enter(untrack(view).next),
     onLit: () => haptics.tapLight(),
     onEnd: () => haptics.success(),
@@ -285,6 +306,7 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
           frame={frame()}
           mode={mode()}
           stops={view().stops}
+          drawingIn={motion.drawingIn()}
           litTo={
             view().state === 'start' || view().state === 'locked' ? 0 : litTo()
           }
@@ -293,6 +315,7 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
           brightened={motion.brightened()}
           endLit={motion.endLit()}
           burst={motion.burst()}
+          pack={motion.pack()}
           pulsing={pulsing()}
           merc={motion.merc()}
           mercState={motion.mercState()}
