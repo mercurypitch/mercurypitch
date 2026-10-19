@@ -17,6 +17,7 @@ import { resolve } from 'node:path'
 import { ENTRY_PAGES } from '../src/seo/entry-pages'
 import type { RenderEntryPageOptions } from '../src/seo/render-entry-page'
 import { renderEntryPage } from '../src/seo/render-entry-page'
+import { releasedLessonLinks } from './lesson-links'
 
 /**
  * Generate every entry document. Returns the absolute paths written, in model
@@ -29,9 +30,12 @@ export function writeEntryPages(
   options: RenderEntryPageOptions = {},
 ): Record<string, string> {
   const inputs: Record<string, string> = {}
+  // Every released lesson, read off learn/: releasing one is deleting its
+  // line from drafts.ts, and this is what then links it from every nav.
+  const rendered = { lessons: releasedLessonLinks(root), ...options }
   for (const page of ENTRY_PAGES) {
     const file = resolve(root, `${page.slug}.html`)
-    const next = renderEntryPage(page, options)
+    const next = renderEntryPage(page, rendered)
     // Only touch the file when it actually changed: an unconditional write
     // retriggers the dev server's full-reload watcher on every config read.
     let current = ''
