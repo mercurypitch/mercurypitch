@@ -9,7 +9,8 @@
 // list. The path is the real one (WarmUpScreen, WarmUpPath, the store);
 // each room is a stand-in that is handed its stop the way the real ones
 // are (warm-up-stop.ts) and finishes it with the frames' results. The
-// path's haptics are the device's (the platform package's), not the web's.
+// path's haptics are the device's (the platform package's), not the web's:
+// installed behind `@/lib/haptics` as main.tsx installs them at boot.
 
 import { hapticSuccess, hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import { fireEvent, screen } from '@solidjs/testing-library'
@@ -24,9 +25,9 @@ import { resetWarmUpForTests, warmUpDay, } from '@/features/warm-up/warm-up-stor
 import { PULSE_MS } from '@/features/warm-up/WarmUpPath'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
 import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
-import { haptics as webHaptics } from '@/lib/haptics'
 import { songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
+import { installNativeHaptics } from '../infrastructure/native-haptics'
 import type { RenderedShell } from './render-for-test'
 import { renderShell } from './render-for-test'
 import { popScreen, pushed, pushScreen, resetRunShell } from './run-shell-store'
@@ -38,9 +39,6 @@ vi.mock('@irchiinnuss/mobile-runtime/platform', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   hapticTap: vi.fn(async () => true),
   hapticSuccess: vi.fn(async () => true),
-}))
-vi.mock('@/lib/haptics', () => ({
-  haptics: { tapLight: vi.fn(), tapMedium: vi.fn(), success: vi.fn() },
 }))
 
 vi.mock('@/components/room-kit/MercView', () => ({
@@ -88,6 +86,9 @@ function standIn(id: WarmUpRoomId): () => JSX.Element {
 }
 
 let view: RenderedShell | undefined
+let releaseHaptics: (() => void) | undefined
+/** The web's haptics, which the device's replace in the app. */
+const vibrate = vi.fn()
 
 /** The room on top: its id and its place in the Warm-up. */
 function room(): string {
@@ -118,6 +119,12 @@ beforeEach(() => {
   setActiveTab(TAB_SINGING)
   resetRunShell()
   takeSongListRequest()
+  Object.defineProperty(navigator, 'vibrate', {
+    value: vibrate,
+    configurable: true,
+    writable: true,
+  })
+  releaseHaptics = installNativeHaptics()
   view = renderShell(() => (
     <ShellScreens
       warmUp={WarmUpScreen}
@@ -139,6 +146,9 @@ afterEach(async () => {
   resetWarmUpForTests()
   resetRunShell()
   takeSongListRequest()
+  releaseHaptics?.()
+  releaseHaptics = undefined
+  Reflect.deleteProperty(navigator, 'vibrate')
   vi.useRealTimers()
 })
 
@@ -193,8 +203,7 @@ describe('a Warm-up, start to song', () => {
     // The end: four stops brighten, the song lights, and Merc lands on it.
     vi.advanceTimersByTime(4 * END_STEP_MS + END_SONG_MS + HOP_MS)
     expect(hapticSuccess).toHaveBeenCalledTimes(1)
-    expect(webHaptics.success).not.toHaveBeenCalled()
-    expect(webHaptics.tapLight).not.toHaveBeenCalled()
+    expect(vibrate).not.toHaveBeenCalled()
   })
 
   it('Back from a room returns to the path with that stop still next', () => {

@@ -27,6 +27,10 @@
 //
 // A tablet shows the phone's column, centred, on the night's colours
 // (option (a), owner).
+//
+// What the singer feels (§10): a light tick when a stop lights or opens, a
+// success as Merc lands on the song. Through `@/lib/haptics`, as the rooms'
+// own: the device's haptics in the app, which installs them at boot.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -36,7 +40,7 @@ import { RoomBarEnd } from '@/components/room-kit/RoomBar'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import { UnlockList } from '@/components/room-kit/UnlockChip'
 import { WeekDots } from '@/components/room-kit/WeekDots'
-import { haptics as webHaptics } from '@/lib/haptics'
+import { haptics } from '@/lib/haptics'
 import { exerciseLevel } from '@/stores/exercise-level'
 import { unlockShown } from '@/stores/notifications-store'
 import { warmUpMinutes } from './estimate'
@@ -62,25 +66,6 @@ export const PULSE_REDUCED_MS = 150
 /** Until the screen is measured (and in a test, which has no layout). */
 const PHONE: ScreenBox = { width: 390, height: 844, top: 56, bottom: 0 }
 
-/**
- * What the singer feels on the path (§10): a light tick when a stop lights
- * or opens, a success when Merc lands on the song at the end.
- */
-export interface PathHaptics {
-  readonly tick: () => void
-  readonly success: () => void
-}
-
-/**
- * The web's: `navigator.vibrate`, which an Android browser has and iOS
- * WebKit does not. The native shell hands the path the device's own
- * (WarmUpScreen.tsx).
- */
-const WEB_HAPTICS: PathHaptics = {
-  tick: () => webHaptics.tapLight(),
-  success: () => webHaptics.success(),
-}
-
 export interface WarmUpPathProps {
   /** Open a stop's room: the stop is open in the store by now. */
   onOpenRoom: (id: WarmUpRoomId) => void
@@ -98,8 +83,6 @@ export interface WarmUpPathProps {
   still?: boolean
   /** The sky is on screen (or failed): a fixture's capture waits for it. */
   onSkySettled?: () => void
-  /** What the singer feels: the device's own in the app. Default: the web's. */
-  haptics?: PathHaptics
 }
 
 function modeOf(view: PathView): PathMode {
@@ -139,12 +122,24 @@ function createScreenBox(): {
     const measure = (): void => {
       const rect = root.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
-      setBox({
+      const next: ScreenBox = {
         width: rect.width,
         height: rect.height,
         top: top.getBoundingClientRect().top - rect.top,
         bottom: rect.bottom - bottom.getBoundingClientRect().bottom,
-      })
+      }
+      // The observer's first call measures what the mount just did: the
+      // same box is not a new frame (nothing on the path is placed again).
+      const was = untrack(box)
+      if (
+        next.width === was.width &&
+        next.height === was.height &&
+        next.top === was.top &&
+        next.bottom === was.bottom
+      ) {
+        return
+      }
+      setBox(next)
     }
     measure()
     if (typeof ResizeObserver === 'undefined') return
@@ -170,8 +165,6 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
     }),
   )
   const mode = createMemo(() => modeOf(view()))
-  // eslint-disable-next-line solid/reactivity -- the device's, chosen once
-  const feel = props.haptics ?? WEB_HAPTICS
   const [pulsing, setPulsing] = createSignal<number | null>(null)
   let opening: ReturnType<typeof setTimeout> | undefined
 
@@ -180,14 +173,23 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
     return isRoomStop(stop) ? stop.id : null
   }
 
+  // The day's first open draws the path in; a return from a stop arrives as
+  // its card instead. Asked as the path opens, so under reduced motion the
+  // open still counts for the day, though nothing draws in.
+  const drawIn =
+    !still &&
+    untrack(source.last) === null &&
+    source.firstOpenToday() &&
+    !prefersReducedMotion()
   const motion = createPathMotion({
     view,
     last: source.last,
     still,
     reduced: prefersReducedMotion,
+    drawIn,
     go: () => enter(untrack(view).next),
-    onLit: () => feel.tick(),
-    onEnd: () => feel.success(),
+    onLit: () => haptics.tapLight(),
+    onEnd: () => haptics.success(),
   })
 
   /** Start, Next, Again, the countdown's end: pulse, then open the stop. */
@@ -197,7 +199,7 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
     if (id === null) return
     motion.lean()
     props.onPreload?.(id)
-    feel.tick()
+    haptics.tapLight()
     setPulsing(index)
     opening = setTimeout(
       () => {
@@ -304,6 +306,7 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
           frame={frame()}
           mode={mode()}
           stops={view().stops}
+          drawingIn={motion.drawingIn()}
           litTo={
             view().state === 'start' || view().state === 'locked' ? 0 : litTo()
           }
@@ -312,6 +315,7 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
           brightened={motion.brightened()}
           endLit={motion.endLit()}
           burst={motion.burst()}
+          pack={motion.pack()}
           pulsing={pulsing()}
           merc={motion.merc()}
           mercState={motion.mercState()}

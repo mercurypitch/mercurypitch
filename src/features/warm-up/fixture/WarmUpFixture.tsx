@@ -15,9 +15,10 @@
 // which is set once the sky is on screen.
 //
 // `live` plays the state's arrival instead of settling it: `end` brightens
-// the stops and lands Merc on the song, `between` raises the card and
-// counts down. For watching the motion (and capturing it under reduced
-// motion), not for a still.
+// the stops, packs them and lands Merc on the song, `between` raises the
+// card and counts down, and a state with no stop just behind it (`start`)
+// opens as the day's first and draws the path in. For watching the motion
+// (and capturing it under reduced motion), not for a still.
 
 import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
@@ -54,7 +55,11 @@ const BAR: JSX.CSSProperties = {
 export function WarmUpFixture(props: WarmUpFixtureProps): JSX.Element {
   const [ready, setReady] = createSignal(false)
   // eslint-disable-next-line solid/reactivity -- a fixture is one frame
-  const source = pinnedSource(fixtureRun(props.name, props.unlocks))
+  const { name, unlocks, live } = props
+  const source = pinnedSource({
+    ...fixtureRun(name, unlocks),
+    firstOpen: live === true,
+  })
   // Two frames after the sky, for the column's last layout to settle.
   const settled = (): void => {
     requestAnimationFrame(() => requestAnimationFrame(() => setReady(true)))

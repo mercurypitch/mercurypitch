@@ -35,6 +35,9 @@
 //   installNativeShell()           The OS taking the whole app away, and the
 //                                  Android hardware back button. Both in
 //                                  infrastructure/native-shell.ts.
+//   installNativeHaptics()         The rooms' haptics (src/lib/haptics) on
+//                                  the device: navigator.vibrate is not in
+//                                  iOS WebKit. infrastructure/native-haptics.ts.
 // Added here and nowhere else, because each is a fact about a WebView:
 //
 //   installStoragePort()           `mp:userId`, `mp:deviceSecret` and
@@ -99,6 +102,7 @@ import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/l
 import { nativeDeviceApi, registerNativeDevice, } from '@/stores/native-shell-store'
 import { initTheme } from '@/stores/theme-store'
 import { createNativeDevice, standUnlockClipAsideForNowPlaying, } from './infrastructure/native-device'
+import { installNativeHaptics } from './infrastructure/native-haptics'
 import { installNativeShell } from './infrastructure/native-shell'
 import { createPreferencesStoragePort } from './infrastructure/preferences-storage'
 import { createSocialLoginBridge } from './infrastructure/social-login'
@@ -132,6 +136,8 @@ initTheme()
 // Before the first render, so a back press during boot is answered by this
 // app rather than by Capacitor's default, which is to exit.
 installNativeShell()
+// The rooms' haptics are the device's, not navigator.vibrate (none on iOS).
+installNativeHaptics()
 // The one AudioContext and the screen's keep-awake, for a room under `src/`
 // that cannot import either (the Karaoke room). Before the first render, so
 // a room never mounts without them.

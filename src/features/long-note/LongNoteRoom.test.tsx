@@ -10,6 +10,7 @@ import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@
 import type { TakeShape } from '@/lib/hold/test-takes'
 import { realisticTake } from '@/lib/hold/test-takes'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import { installHaptics } from '@/lib/platform'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { registerNativeDevice } from '@/stores/native-shell-store'
@@ -100,9 +101,18 @@ vi.mock('@/stores/exercise-history-store', () => ({
   recordExerciseResult: (entry: unknown) => recorded.calls.push(entry),
 }))
 
-vi.mock('@/lib/haptics', () => ({
-  haptics: { tapLight: () => undefined, success: () => undefined },
-}))
+// The room's haptics, counted through the seam the native app fills with
+// the device's own at boot (installHaptics, main.tsx): what an iPhone feels.
+const felt = { taps: 0, successes: 0 }
+installHaptics({
+  tapLight: () => {
+    felt.taps += 1
+  },
+  success: () => {
+    felt.successes += 1
+  },
+  warning: () => undefined,
+})
 
 // A3 from a voiceprint, unless a test takes the voiceprint away.
 const target = vi.hoisted(() => ({
@@ -422,6 +432,8 @@ describe('LongNoteRoom', () => {
     merc.states = []
     merc.options = []
     recorded.calls = []
+    felt.taps = 0
+    felt.successes = 0
     rafQueue = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafQueue.push(cb)
@@ -1890,6 +1902,8 @@ describe('LongNoteRoom', () => {
     expect(shownLevel()).toBeCloseTo(1, 6)
     expect(haloShine()).toBe(1)
     expect(sparkles()).toBeGreaterThan(0)
+    // Felt: a tick as the note locks, a success at the goal and at the brim.
+    expect(felt).toEqual({ taps: 1, successes: 2 })
     expect(
       says('resultBrim', screen.getByTestId('long-note-line').textContent),
     ).toBe(true)
@@ -1975,6 +1989,7 @@ describe('LongNoteRoom', () => {
     expect(haloShine()).toBe(0)
     expect(phase()).toBe('result')
     expect(recorded.calls).toHaveLength(0)
+    expect(felt).toEqual({ taps: 0, successes: 0 })
     expect(screen.getByTestId('long-note-result').textContent).toMatch(
       /^0\.0 s/,
     )

@@ -26,6 +26,7 @@ import { fitLipRoll } from '@/lib/glide/glide-targets'
 import type { Voice } from '@/lib/glide/test-glides'
 import { follow, framesOf, offset, playGlide, silentWhen, } from '@/lib/glide/test-glides'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import { installHaptics } from '@/lib/platform'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type * as ArtModule from './bay-art'
@@ -199,17 +200,18 @@ vi.mock('@/db/services/voiceprint-service', () => ({
   loadLocalVoiceprints: () => [],
 }))
 
-const felt = vi.hoisted(() => ({ taps: 0, successes: 0 }))
-vi.mock('@/lib/haptics', () => ({
-  haptics: {
-    tapLight: () => {
-      felt.taps += 1
-    },
-    success: () => {
-      felt.successes += 1
-    },
+// The room's haptics, counted through the seam the native app fills with
+// the device's own at boot (installHaptics, main.tsx): what an iPhone feels.
+const felt = { taps: 0, successes: 0 }
+installHaptics({
+  tapLight: () => {
+    felt.taps += 1
   },
-}))
+  success: () => {
+    felt.successes += 1
+  },
+  warning: () => undefined,
+})
 
 const { CaptureError } = await import('./useLipCapture')
 const { LipRollRoom } = await import('./LipRollRoom')

@@ -9,6 +9,11 @@
 // calls behind the same interface — one file, no component changes.
 // (docs/plans/mobile-native/capacitor-readiness.md §A3)
 //
+// The haptics are the first swapped: the native app installs the device's
+// own at boot (`installHaptics`, from apps/mercurypitch's main.tsx), so the
+// rooms' ticks reach an iPhone, whose WKWebView has no navigator.vibrate.
+// The web installs nothing and keeps the vibrate patterns below.
+//
 // Every implementation here must be a safe no-op when the underlying web
 // API is missing: these run in every browser, in jsdom tests, and inside
 // WKWebView (where e.g. navigator.vibrate does not exist).
@@ -62,6 +67,29 @@ const vibrate = (pattern: number | number[]): void => {
   }
 }
 
+/** The web's haptics: what an Android browser feels, and nothing on iOS. */
+const WEB_HAPTICS: HapticsService = {
+  tapLight: () => vibrate(10),
+  success: () => vibrate([15, 30, 40]),
+  warning: () => vibrate([30, 40, 30]),
+}
+
+let installedHaptics: HapticsService = WEB_HAPTICS
+
+/**
+ * The device's haptics in place of the web's, for a native build: every
+ * caller of `platform.haptics` (and `@/lib/haptics`) reaches them from now
+ * on, including a room that took the alias at import, long before boot ran
+ * this. Returns the release, which puts the web's back unless a newer
+ * install has replaced this one.
+ */
+export function installHaptics(service: HapticsService): () => void {
+  installedHaptics = service
+  return () => {
+    if (installedHaptics === service) installedHaptics = WEB_HAPTICS
+  }
+}
+
 // ── Screen wake lock ─────────────────────────────────────────
 //
 // Two things about the web lock shape this. It is reference counted
@@ -104,10 +132,12 @@ function bindWakeVisibility(): void {
 }
 
 export const platform: PlatformServices = {
+  // Read at each call, never copied: the alias in @/lib/haptics is this
+  // object, taken at import, before a native build installs its own.
   haptics: {
-    tapLight: () => vibrate(10),
-    success: () => vibrate([15, 30, 40]),
-    warning: () => vibrate([30, 40, 30]),
+    tapLight: () => installedHaptics.tapLight(),
+    success: () => installedHaptics.success(),
+    warning: () => installedHaptics.warning(),
   },
 
   keepAwake: {

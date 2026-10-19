@@ -18,7 +18,8 @@
 // "Ng slides, next", "Long note, waiting".
 
 import type { JSX } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Index, on, Show, untrack, } from 'solid-js'
+import { HOP_MS } from '@/components/room-kit/merc-moves'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import { PlateImage } from '@/components/room-kit/PlateImage'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
@@ -27,7 +28,9 @@ import { ORB_SPRITES, SKY_FALLBACK, SKY_FLOOR, SKY_PLATE, SKY_PX, } from './path
 import type { PathFrame, PathMode, StopPlace } from './path-layout'
 import type { MercSpot } from './path-layout'
 import { columnX, columnY, MERC_CANVAS_W, MERC_SONG_SCALE, mercFeet, NAME_GAP_W, ORB_BOX_W, RIM_W, segmentD, sparkleCount, sparkles, stopPlaces, } from './path-layout'
-import type { StopView } from './path-view'
+import type { PackPhase } from './path-motion'
+import { drawInSchedule, END_HOP_ACROSS_EASE, END_HOP_UP_EASE, HOP_EASE, ORB_FADE_MS, PACK_EASE, PACK_MS, } from './path-motion'
+import type { OrbState, StopView } from './path-view'
 import { PATH_WORDS } from './path-view'
 import { PathGlyph } from './PathGlyph'
 import styles from './WarmUpPath.module.css'
@@ -40,6 +43,8 @@ export interface PathColumnProps {
   frame: PathFrame
   mode: PathMode
   stops: readonly StopView[]
+  /** The day's first open: the path draws in from the bottom stop up. */
+  drawingIn: boolean
   /** Segments lit from the bottom: up to this stop's index. */
   litTo: number
   /** The newest lit segment is still drawing in. */
@@ -52,6 +57,11 @@ export interface PathColumnProps {
   endLit: boolean
   /** The song's burst plays as it lights. */
   burst: boolean
+  /**
+   * The end's stops: at their rest places as it arrives, packing closer
+   * while Merc hops onto the song, then packed (path-motion.ts).
+   */
+  pack: PackPhase
   /** The stop whose ring pulses: the one opening. */
   pulsing: number | null
   merc: MercSpot
@@ -90,11 +100,71 @@ function orbShown(
   return order < props.brightened ? 'lit' : 'done'
 }
 
+/**
+ * The orb's sprite, crossfaded when its state changes: the end's stops
+ * brightening one by one, a stop lit on the way back from its room. Two
+ * layers that stay mounted, so nothing decodes again: a change puts the new
+ * sprite on the layer behind and brings it to the front, and the CSS fades
+ * one in as the other goes (ORB_FADE_MS). A fixture's frame swaps at once.
+ */
+function OrbSprites(props: { orb: OrbState; box: number }): JSX.Element {
+  const [layers, setLayers] = createSignal<readonly [OrbState, OrbState]>([
+    untrack(() => props.orb),
+    untrack(() => props.orb),
+  ])
+  const [front, setFront] = createSignal<0 | 1>(0)
+  // The orb as it stands once the path's own arrival has set it (its
+  // effects run before these, still before the first paint) is the one it
+  // mounts with: no fade. Every change after that crossfades.
+  let shown: OrbState | null = null
+  createEffect(
+    on(
+      () => props.orb,
+      (orb) => {
+        if (shown === null) {
+          shown = orb
+          setLayers([orb, orb])
+          return
+        }
+        if (orb === shown) return
+        shown = orb
+        const behind = untrack(front) === 0 ? 1 : 0
+        setLayers((was) => (behind === 0 ? [orb, was[1]] : [was[0], orb]))
+        setFront(behind)
+      },
+    ),
+  )
+  const layer = (index: 0 | 1): JSX.Element => (
+    <img
+      class={styles.orb}
+      classList={{ [styles.orbBehind]: front() !== index }}
+      src={ORB_SPRITES[layers()[index]]}
+      alt=""
+      draggable={false}
+      data-sprite={layers()[index]}
+      data-front={front() === index ? 'true' : 'false'}
+      style={{
+        width: `${props.box}px`,
+        height: `${props.box}px`,
+        margin: `${-props.box / 2}px 0 0 ${-props.box / 2}px`,
+      }}
+    />
+  )
+  return (
+    <>
+      {layer(0)}
+      {layer(1)}
+    </>
+  )
+}
+
 function Stop(props: {
   column: PathColumnProps
   stop: Placed
   /** The orb it shows now (orbShown). */
   orb: StopView['orb']
+  /** When it fades in as the path draws in, ms (drawInSchedule). */
+  drawAt: number
 }): JSX.Element {
   const unit = (): number => props.column.frame.unit
   const box = (): number => ORB_BOX_W * unit()
@@ -114,22 +184,19 @@ function Stop(props: {
   return (
     <li
       class={styles.stop}
-      style={{ transform: `translate(${props.stop.x}px, ${props.stop.y}px)` }}
+      style={{
+        transform: `translate(${props.stop.x}px, ${props.stop.y}px)`,
+        transition:
+          props.column.pack === 'packing'
+            ? `transform ${PACK_MS}ms ${PACK_EASE}`
+            : undefined,
+        '--draw-at': `${props.drawAt}ms`,
+      }}
       data-orb={orb()}
       data-testid={`warm-up-stop-${props.stop.view.index}`}
       aria-label={props.stop.view.said}
     >
-      <img
-        class={styles.orb}
-        src={ORB_SPRITES[orb()]}
-        alt=""
-        draggable={false}
-        style={{
-          width: `${box()}px`,
-          height: `${box()}px`,
-          margin: `${-box() / 2}px 0 0 ${-box() / 2}px`,
-        }}
-      />
+      <OrbSprites orb={orb()} box={box()} />
       <span
         class={styles.ring}
         classList={{
@@ -196,17 +263,53 @@ function Stop(props: {
   )
 }
 
+/** A segment at rest: an identity in the same form as a move, so the two interpolate. */
+const SEGMENT_STILL = 'translate(0px, 0px) scale(1, 1)'
+
+/**
+ * The segment between `from` and `to`, drawn there, carried onto `a` and
+ * `b` (the packed places) by one transform. The stops keep their x, and an
+ * S-curve's control points are an affine function of its ends' heights
+ * (path-layout.ts segmentD), so a vertical scale and shift lands it exactly
+ * on the packed segment, and the CSS can interpolate it in step with the
+ * stops' own move.
+ */
+function segmentMove(
+  from: { y: number },
+  to: { y: number },
+  a: { y: number },
+  b: { y: number },
+): string {
+  const scale = (b.y - a.y) / (to.y - from.y)
+  const shift = a.y - scale * from.y
+  return `translate(0px, ${shift}px) scale(1, ${scale})`
+}
+
 /** The path between each pair of stops, and which of them are lit. */
 function Trail(props: {
   column: PathColumnProps
+  /** The stops the path is drawn between. */
   placed: readonly Placed[]
+  /** Where they are packing to, while the end packs; null otherwise. */
+  toward: readonly Placed[] | null
+  /** When each segment starts to draw in, ms: its lower stop's start. */
+  drawAt: readonly number[]
 }): JSX.Element {
   const segments = createMemo(() =>
-    props.placed.slice(1).map((to, i) => ({
-      d: segmentD(props.placed[i]!, to),
-      lit: i < props.column.litTo,
-      drawing: i === props.column.litTo - 1 && !props.column.trailIn,
-    })),
+    props.placed.slice(1).map((to, i) => {
+      const from = props.placed[i]!
+      const a = props.toward?.[i]
+      const b = props.toward?.[i + 1]
+      return {
+        d: segmentD(from, to),
+        lit: i < props.column.litTo,
+        drawing: i === props.column.litTo - 1 && !props.column.trailIn,
+        move:
+          a === undefined || b === undefined
+            ? SEGMENT_STILL
+            : segmentMove(from, to, a, b),
+      }
+    }),
   )
   const unit = (): number => props.column.frame.unit
   return (
@@ -215,6 +318,7 @@ function Trail(props: {
       width={props.column.frame.column}
       height={props.column.frame.height}
       aria-hidden="true"
+      data-testid="warm-up-trail"
     >
       <defs>
         <linearGradient id="warm-trail" x1="0" y1="1" x2="0" y2="0">
@@ -222,38 +326,49 @@ function Trail(props: {
           <stop offset="1" stop-color="#9cf7fe" />
         </linearGradient>
       </defs>
-      <For each={segments()}>
-        {(segment) => (
-          <g>
+      <Index each={segments()}>
+        {(segment, i) => (
+          <g
+            style={{
+              '--draw-at': `${props.drawAt[i] ?? 0}ms`,
+              transform: segment().move,
+              transition:
+                props.toward === null
+                  ? undefined
+                  : `transform ${PACK_MS}ms ${PACK_EASE}`,
+            }}
+          >
             <path
-              d={segment.d}
+              d={segment().d}
               class={styles.trailGlow}
+              pathLength="1"
               stroke-width={0.085 * unit()}
             />
             <path
-              d={segment.d}
+              d={segment().d}
               class={styles.trailCore}
+              pathLength="1"
               stroke-width={0.02 * unit()}
             />
-            <Show when={segment.lit}>
+            <Show when={segment().lit}>
               <path
-                d={segment.d}
+                d={segment().d}
                 class={styles.litGlow}
-                classList={{ [styles.drawing]: segment.drawing }}
+                classList={{ [styles.drawing]: segment().drawing }}
                 pathLength="1"
                 stroke-width={0.11 * unit()}
               />
               <path
-                d={segment.d}
+                d={segment().d}
                 class={styles.litCore}
-                classList={{ [styles.drawing]: segment.drawing }}
+                classList={{ [styles.drawing]: segment().drawing }}
                 pathLength="1"
                 stroke-width={0.03 * unit()}
               />
             </Show>
           </g>
         )}
-      </For>
+      </Index>
     </svg>
   )
 }
@@ -306,57 +421,90 @@ function Pools(props: {
   )
 }
 
+/**
+ * Merc, placed across by his track and up (with his size) by himself, so
+ * a hop can take the two at its own paces: the end's goes across first
+ * (END_HOP_ACROSS_EASE), every other hop glides straight. Between hops he
+ * does not glide; a crossfade still fades.
+ */
 function Merc(props: {
   column: PathColumnProps
   places: readonly StopPlace[]
 }): JSX.Element {
   const size = (): number => MERC_CANVAS_W * props.column.frame.unit
-  const at = (): JSX.CSSProperties => {
-    const feet = mercFeet(props.places, props.column.merc)
-    const left = columnX(feet.x, props.column.frame) - size() / 2
-    const top = columnY(feet.y, props.column.frame) - MERC_FEET * size()
+  const feet = (): { x: number; y: number } =>
+    mercFeet(props.places, props.column.merc)
+  const glide = (end: string): string | undefined =>
+    props.column.hopping
+      ? `transform ${HOP_MS}ms ${props.column.mode === 'end' ? end : HOP_EASE}`
+      : undefined
+  const across = (): JSX.CSSProperties => ({
+    transform: `translateX(${columnX(feet().x, props.column.frame) - size() / 2}px)`,
+    transition: glide(END_HOP_ACROSS_EASE) ?? 'none',
+  })
+  const up = (): JSX.CSSProperties => {
+    const top = columnY(feet().y, props.column.frame) - MERC_FEET * size()
     // On the song, screen 3's size (option B), about his feet.
     const scale =
       props.column.merc.at === 'on' ? ` scale(${MERC_SONG_SCALE})` : ''
+    const up = glide(END_HOP_UP_EASE)
     return {
       width: `${size()}px`,
       height: `${size()}px`,
-      transform: `translate(${left}px, ${top}px)${scale}`,
+      transform: `translateY(${top}px)${scale}`,
       'transform-origin': `50% ${MERC_FEET * 100}%`,
+      transition:
+        up === undefined
+          ? 'opacity 150ms linear'
+          : `${up}, opacity 150ms linear`,
     }
   }
   return (
-    <MercView
-      state={() => props.column.mercState}
-      voice={() => SILENT_VOICE}
-      still={() => props.column.still}
-      class={
-        props.column.mercFaded
-          ? `${styles.merc} ${styles.mercFaded}`
-          : styles.merc
-      }
-      style={{
-        ...at(),
-        // Between hops he does not glide; a crossfade still fades.
-        transition: props.column.hopping ? undefined : 'opacity 150ms linear',
-      }}
-      testId="warm-up-merc"
-    />
+    <div
+      class={styles.mercTrack}
+      style={across()}
+      data-testid="warm-up-merc-track"
+    >
+      <MercView
+        state={() => props.column.mercState}
+        voice={() => SILENT_VOICE}
+        still={() => props.column.still}
+        class={
+          props.column.mercFaded
+            ? `${styles.merc} ${styles.mercFaded}`
+            : styles.merc
+        }
+        style={up()}
+        testId="warm-up-merc"
+      />
+    </div>
   )
 }
 
 export function PathColumn(props: PathColumnProps): JSX.Element {
-  const places = createMemo(() => stopPlaces(props.stops.length, props.mode))
-  const placed = createMemo((): Placed[] =>
+  /** Where the stops, and Merc beside them, stand now. */
+  const stopLayout = (): PathMode =>
+    props.mode === 'end' && props.pack === 'unpacked' ? 'rest' : props.mode
+  /**
+   * The path's drawn geometry: the rest one until the end's pack has
+   * settled, moved onto the packed one by a transform while it packs.
+   */
+  const trailLayout = (): PathMode =>
+    props.mode === 'end' && props.pack !== 'settled' ? 'rest' : props.mode
+  const placeAll = (places: readonly StopPlace[]): Placed[] =>
     props.stops.map((view, i) => {
-      const place = places()[i]!
+      const place = places[i]!
       return {
         view,
         place,
         x: columnX(place.x, props.frame),
         y: columnY(place.y, props.frame),
       }
-    }),
+    })
+  const places = createMemo(() => stopPlaces(props.stops.length, stopLayout()))
+  const placed = createMemo(() => placeAll(places()))
+  const trailPlaced = createMemo(() =>
+    placeAll(stopPlaces(props.stops.length, trailLayout())),
   )
   /** The orb each stop shows now: the end lights the finished ones in turn. */
   const shown = createMemo(() => {
@@ -366,6 +514,8 @@ export function PathColumn(props: PathColumnProps): JSX.Element {
     )
     return props.stops.map((stop, i) => orbShown(props, stop, order[i]!, total))
   })
+  /** The day's first open: each stop's start and each segment's draw. */
+  const drawIn = createMemo(() => drawInSchedule(props.stops.length))
   const plateHeight = (): number =>
     (props.frame.column * SKY_PX.height) / SKY_PX.width
   const area = (): number => props.frame.column * props.frame.height
@@ -377,7 +527,11 @@ export function PathColumn(props: PathColumnProps): JSX.Element {
       style={{
         width: `${props.frame.column}px`,
         height: `${props.frame.height}px`,
+        '--orb-fade': `${ORB_FADE_MS}ms`,
+        '--draw-fade': `${drawIn().fade}ms`,
+        '--draw-segment': `${drawIn().segment}ms`,
       }}
+      data-draw={props.drawingIn ? 'in' : undefined}
     >
       <div class={styles.skyWindow}>
         <PlateImage
@@ -420,13 +574,26 @@ export function PathColumn(props: PathColumnProps): JSX.Element {
           )}
         </For>
       </div>
-      <Trail column={props} placed={placed()} />
+      <Trail
+        column={props}
+        placed={trailPlaced()}
+        toward={props.pack === 'packing' ? placed() : null}
+        drawAt={drawIn().stops}
+      />
       <ol class={styles.stops} aria-label={PATH_WORDS.stops}>
-        <For each={placed()}>
+        {/* By index, not by object: a stop stays the same element when the
+            frame is measured again or the stops move, so its sprites'
+            crossfade and its move run on (OrbSprites, the end's pack). */}
+        <Index each={placed()}>
           {(stop, i) => (
-            <Stop column={props} stop={stop} orb={shown()[i()] ?? 'waiting'} />
+            <Stop
+              column={props}
+              stop={stop()}
+              orb={shown()[i] ?? 'waiting'}
+              drawAt={drawIn().stops[i] ?? 0}
+            />
           )}
-        </For>
+        </Index>
       </ol>
       <Merc column={props} places={places()} />
     </div>
