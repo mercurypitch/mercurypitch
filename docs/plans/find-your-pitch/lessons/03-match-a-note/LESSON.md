@@ -211,7 +211,7 @@ For each note, listen, then sing it back at about speaking volume for about thre
 then G a tone below, then B a tone above, up to three tries each. After each try, one line about
 the sound:
 
-- "In the band: 12 cents above Merc's note."
+- "In the band: 20 cents above Merc's note."
 - "About two semitones below, nearer a different note. Listen again, then slide up to the band."
 - "You sang it an octave lower: same note."
 - "We didn't hear a steady note that time. Try again at about speaking volume."

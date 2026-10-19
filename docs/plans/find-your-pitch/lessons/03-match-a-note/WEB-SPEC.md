@@ -293,7 +293,7 @@ Listening (`kit/listen.ts`, loaded as its own chunk when Start is pressed):
 Accessibility and motion:
 
 - The band state is words plus the mint edge, never colour alone (REQ-GVC-082). After each take
-  the chart's text summary reads, for example, "Merc's note A3; your note 12 cents above it, in the
+  the chart's text summary reads, for example, "Merc's note A3; your note 20 cents above it, in the
   band" (REQ-GVC-085).
 - Start, Again, Next note, Done, the comfort buttons and the four feelings are real buttons of at
   least 44 px, in a keyboard order that follows the flow; Space never starts a take by itself
@@ -303,7 +303,8 @@ Accessibility and motion:
 
 Tests:
 
-- Unit: the take reader on synthetic frames (12 cents above: "In the band"; 45 below: "Close"; 200
+- Unit: the take reader on synthetic frames (12 cents above: "Right in the middle"; 20 above: "In
+  the band"; 45 below: "Close"; 200
   below: "About two semitones below"; an octave below and 25 cents high: "In the band" with the
   octave line; an octave below and 55 cents high: "Close" with no octave line; an octave below and
   200 cents high: no octave line; 0.4 s of voice: no steady note); the count (three steady takes,
