@@ -461,6 +461,32 @@ describe('entry document prelude', () => {
     }
   })
 
+  // Google takes a result's site name from a WebSite node on the home page,
+  // and "Mercury Pitch" is how the name gets typed. The studio is what every
+  // entry document's app links to as its whole (render-entry-page.ts), so its
+  // @id has to be the one they use.
+  it('names the site for search results and links it to the organization', () => {
+    const blocks = Array.from(
+      repoHtml('index.html').querySelectorAll(
+        'script[type="application/ld+json"]',
+      ),
+    ).map((node) => JSON.parse(node.textContent ?? '{}'))
+    const website = blocks.find((data) => data['@type'] === 'WebSite')
+    const studio = blocks.find((data) => data['@type'] === 'WebApplication')
+    const organization = { '@id': 'https://mercurypitch.com/#organization' }
+
+    expect(website).toBeDefined()
+    expect(website['@id']).toBe('https://mercurypitch.com/#website')
+    expect(website.name).toBe('MercuryPitch')
+    expect(website.alternateName).toBe('Mercury Pitch')
+    expect(website.url).toBe('https://mercurypitch.com/')
+    expect(website.publisher).toEqual(organization)
+
+    expect(studio['@id']).toBe('https://mercurypitch.com/#app')
+    expect(studio.url).toBe('https://mercurypitch.com/')
+    expect(studio.publisher).toEqual(organization)
+  })
+
   // The audience reads American English. Main fixed "colour" and
   // "recognisable"; these are the ones that were still live on 14 Oct 2026.
   it.each(ENTRY_FILES)('writes %s in American spelling', (file) => {

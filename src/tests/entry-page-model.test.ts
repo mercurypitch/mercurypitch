@@ -144,6 +144,49 @@ describe('entry page model', () => {
     }
   })
 
+  // The rooms people search for by name were the ones that never said they
+  // were apps: Karaoke Night, the Voice Mirror, the range test and Break Glass
+  // shipped an FAQ and no WebApplication, while their front doors had both.
+  it('describes the most searched rooms as free web apps', () => {
+    for (const slug of ['karaoke', 'mirror', 'vocal-range-test', 'glass']) {
+      const page = ENTRY_PAGES.find((entry) => entry.slug === slug)
+      expect(page?.app, `${slug} has no app markup`).toBeDefined()
+      expect(page?.app?.description.length ?? 0).toBeGreaterThan(60)
+    }
+  })
+
+  // Each app node is its own (@id on its canonical URL) and links by @id to
+  // the studio and organization index.html defines, so every document reads
+  // as one product from one publisher. The links repeat the name and URL, so
+  // a reader that resolves nothing across pages still gets the whole claim.
+  it('links every app to the studio and its publisher by @id', () => {
+    for (const page of ENTRY_PAGES) {
+      if (page.app === undefined) continue
+      const scripts = new DOMParser()
+        .parseFromString(renderEntryPage(page), 'text/html')
+        .querySelectorAll('script[type="application/ld+json"]')
+      const node = Array.from(scripts)
+        .map((script) => JSON.parse(script.textContent ?? '{}'))
+        .find((data) => data['@type'] === 'WebApplication')
+      const url = `https://mercurypitch.com${canonicalPath(page)}`
+
+      expect(node['@id'], page.slug).toBe(`${url}#app`)
+      expect(node.url).toBe(url)
+      expect(node.isPartOf).toEqual({
+        '@type': 'WebApplication',
+        '@id': 'https://mercurypitch.com/#app',
+        name: 'MercuryPitch',
+        url: 'https://mercurypitch.com/',
+      })
+      expect(node.publisher).toEqual({
+        '@type': 'Organization',
+        '@id': 'https://mercurypitch.com/#organization',
+        name: 'MercuryPitch',
+        url: 'https://mercurypitch.com/',
+      })
+    }
+  })
+
   it('lists every entry in the sitemap and in llms.txt', () => {
     const sitemap = repoFile('public/sitemap.xml')
     const llms = repoFile('public/llms.txt')

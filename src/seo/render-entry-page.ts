@@ -9,7 +9,7 @@
 // tools/generate-entry-pages.ts, before the alias exists.
 import { LEGAL_DOCUMENT_LINKS } from '../lib/legal-links'
 import type { EntryPage } from './entry-pages'
-import { ABOUT_URL, canonicalPath, DEFAULT_THEME_COLOR, navLinksFor, OG_IMAGE, OG_IMAGE_SIZE, SITE_ORIGIN, } from './entry-pages'
+import { ABOUT_URL, canonicalPath, DEFAULT_THEME_COLOR, navLinksFor, OG_IMAGE, OG_IMAGE_SIZE, ORGANIZATION_ID, SITE_ORIGIN, STUDIO_APP_ID, } from './entry-pages'
 
 /** Escape for an attribute value or text node. */
 function esc(value: string): string {
@@ -23,17 +23,29 @@ function esc(value: string): string {
 function structuredData(page: EntryPage): unknown[] {
   const nodes: unknown[] = []
   if (page.app) {
+    const url = `${SITE_ORIGIN}${canonicalPath(page)}`
     nodes.push({
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
+      '@id': `${url}#app`,
       name: page.app.name,
-      url: `${SITE_ORIGIN}${canonicalPath(page)}`,
+      url,
       applicationCategory: page.app.category,
       operatingSystem: 'Any (browser)',
       isAccessibleForFree: true,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      // Both nodes are defined in full in index.html. Linking them by @id is
+      // what makes every room part of one studio from one publisher, rather
+      // than unrelated apps that happen to share a name.
       isPartOf: {
         '@type': 'WebApplication',
+        '@id': STUDIO_APP_ID,
+        name: 'MercuryPitch',
+        url: `${SITE_ORIGIN}/`,
+      },
+      publisher: {
+        '@type': 'Organization',
+        '@id': ORGANIZATION_ID,
         name: 'MercuryPitch',
         url: `${SITE_ORIGIN}/`,
       },

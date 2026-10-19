@@ -169,12 +169,29 @@
         ]
       }
     </script>
+    <!-- The site's own name for search results, and the studio every entry
+         document's app links to as its whole (render-entry-page.ts). Both
+         point at the organization above by @id. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://mercurypitch.com/#website",
+        "name": "MercuryPitch",
+        "alternateName": "Mercury Pitch",
+        "url": "https://mercurypitch.com/",
+        "inLanguage": "en",
+        "publisher": { "@id": "https://mercurypitch.com/#organization" }
+      }
+    </script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
+        "@id": "https://mercurypitch.com/#app",
         "name": "MercuryPitch",
         "url": "https://mercurypitch.com/",
+        "publisher": { "@id": "https://mercurypitch.com/#organization" },
         "applicationCategory": "MusicApplication",
         "operatingSystem": "Any (browser)",
         "isAccessibleForFree": true,
