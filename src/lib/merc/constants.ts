@@ -24,6 +24,8 @@ export const STATES = [
   // The glide rooms (Ng slides, Lip roll): humming, and riding the voice.
   'hum',
   'ride',
+  // The onboarding's range: climbing with the voice's height (S7b §3.3).
+  'reach',
 ] as const
 
 export type MercState = (typeof STATES)[number]
@@ -31,6 +33,13 @@ export type MercState = (typeof STATES)[number]
 export function isMercState(name: string): name is MercState {
   return (STATES as readonly string[]).includes(name)
 }
+
+/**
+ * `reach` reads the voice's height in the singer's range as `cents` from
+ * its middle: this many at either end, the lowest note -REACH_CENTS and
+ * the highest +REACH_CENTS.
+ */
+export const REACH_CENTS = 700
 
 // Rest shape, in world units (body base on the floor at y = 0, about 1.14 tall).
 export const SHAPE = {

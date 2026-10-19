@@ -6,7 +6,9 @@
 // feels easy. Each slide is one window of the room kit's capture, read once
 // a screen frame (range-take.ts); the two together are the range, the Voice
 // Mirror's computeRange. The ladder (range-ladder.ts) lights the rungs the
-// voice dwelt on as it goes, and Merc rides beside it at the voice's height.
+// voice dwelt on as it goes, and Merc climbs beside it at the voice's
+// height: his `reach`, squashed low and stretched tall with the pitch, his
+// colour going teal to violet with it (S7b §3.3).
 //
 // From the first note, Find my range opens the mic inside its own tap, so
 // the slides start at once (`start`). Opened on its own (Keep's "Find your
@@ -47,7 +49,7 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { exposeForE2E } from '@/lib/test-utils'
 import { midiOf } from './note-lane'
 import type { LadderView } from './range-ladder'
-import { emptyLadder, growLadder } from './range-ladder'
+import { emptyLadder, growLadder, reachCents } from './range-ladder'
 import type { RangeEvent, RangeLine, RangeState } from './range-machine'
 import { RANGE_START, rangeLine, rangeReducer } from './range-machine'
 import type { SlideReading } from './range-take'
@@ -248,10 +250,17 @@ export function useRange(options: RangeOptions = {}): RangeController {
     level = newestLevel(frames)
     const heard =
       newest !== null && heardFrame(newest) ? midiOf(newest.f0) : null
+    // His reach reads the voice's height on the ladder as it now stands.
     voice =
       heard === null
         ? { ...SILENT_VOICE, level }
-        : { voiced: true, cents: 0, level, steady: 1, midi: heard }
+        : {
+            voiced: true,
+            cents: reachCents(heard, untrack(ladder).span),
+            level,
+            steady: 1,
+            midi: heard,
+          }
     const now = readSlide(frames)
     setReading(now)
 
@@ -300,7 +309,7 @@ export function useRange(options: RangeOptions = {}): RangeController {
       onOpen: (run) => {
         dispatch({ type: 'mic-ready', run })
         setSingMicGranted(true)
-        merc.set('ride')
+        merc.set('reach')
         ladderAt = Number.NEGATIVE_INFINITY
         capture.startWindow()
         loop.start()
