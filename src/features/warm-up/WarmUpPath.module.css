@@ -111,6 +111,16 @@
   background: #fff;
 }
 
+/* The end's own points grow in as it lights (§5.8): scaled, never by a
+   filter, one after another (transition-delay, PathColumn.tsx). */
+.spark[data-extra='true'] {
+  transition: transform 500ms cubic-bezier(0.2, 0.7, 0.3, 1.3);
+}
+
+.sparkles[data-grown='false'] .spark[data-extra='true'] {
+  transform: scale(0);
+}
+
 @keyframes twinkle {
   0%,
   100% {
@@ -274,6 +284,38 @@
   color: rgba(190, 200, 225, 0.6);
 }
 
+/* The song's burst as the end lights it (§5.8): a flare of white-cyan
+   light that swells and fades, by transform and opacity only. */
+.burst {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(242, 253, 255, 0.95) 0%,
+    rgba(127, 233, 255, 0.5) 38%,
+    rgba(127, 233, 255, 0) 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  animation: burst 900ms ease-out forwards;
+}
+
+@keyframes burst {
+  0% {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
 /* The song stop at the end: the orb is the button (Sing a song). */
 .songTap {
   padding: 0;
@@ -292,8 +334,15 @@
   position: absolute;
   top: 0;
   left: 0;
-  transition: transform 650ms cubic-bezier(0.33, 0, 0.25, 1);
+  transition:
+    transform 650ms cubic-bezier(0.33, 0, 0.25, 1),
+    opacity 150ms linear;
   pointer-events: none;
+}
+
+/* Out of sight between two spots: reduced motion's crossfade. */
+.mercFaded {
+  opacity: 0;
 }
 
 /* ── Over the path: the glow, the top and the bottom ─────── */
@@ -312,9 +361,11 @@
     rgba(92, 118, 214, 0) 100%
   );
   opacity: 0.8;
+  transition: opacity 600ms ease-out;
   pointer-events: none;
 }
 
+/* The end's grade: brighter as the song lights (§5.8). */
 .glow[data-end='true'] {
   opacity: 1;
 }
@@ -345,6 +396,14 @@
   background: rgba(20, 32, 55, 0.86);
   color: #e1e4eb;
   font: 600 14px/1 var(--font-body, sans-serif);
+}
+
+/* This week's dots under "Warmed up today" (§5.9, Codex's end frame F4
+   screen 2). Chip, gap and dots stay inside the end's top room
+   (TOP_END_PX in path-layout.ts). */
+.week {
+  display: inline-flex;
+  margin-top: 10px;
 }
 
 .title {
@@ -574,15 +633,17 @@
 }
 
 /* A short screen (320 x 568): the chip goes, the path keeps its room
-   (§3). */
+   (§3). Not on the day already warmed up: that path is packed as the end
+   is, under a taller top room, and "Warmed up today" fits in it. */
 @media (max-height: 600px) {
-  .chip {
+  .path:not([data-state='done']) .chip {
     display: none;
   }
 }
 
 /* Reduced motion: no twinkle, no pulse (a short fade), no rise, no
-   draw-in; the countdown still drains, it is the deadline (§10). */
+   draw-in, no growing points; Merc crossfades, and the song's burst only
+   fades; the countdown still drains, it is the deadline (§10). */
 @media (prefers-reduced-motion: reduce) {
   .spark,
   .card,
@@ -597,8 +658,30 @@
 
   .litGlow,
   .litCore,
-  .merc {
+  .spark[data-extra='true'] {
     transition: none;
+  }
+
+  .merc {
+    transition: opacity 150ms linear;
+  }
+
+  .burst {
+    animation: burst-fade 600ms ease-out forwards;
+  }
+}
+
+@keyframes burst-fade {
+  0% {
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 0;
   }
 }
 

@@ -23,6 +23,7 @@ import type { Component } from 'solid-js'
 import { longNoteEntry } from '@/features/long-note/long-note-entry'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
+import type { WeekDot } from '@/lib/warm-up-days'
 import { echoEntry } from './echo-entry'
 import { BridgeGlyph, EchoGlyph, LanternGlyph, WarmUpGlyph, WaveGlyph, } from './glyphs'
 import { lipEntry } from './lip-entry'
@@ -56,6 +57,12 @@ export interface PremiumExercise {
   note: () => string | null
   /** Its best, as its result card prints it ("Best 9.4 s"), or null. */
   progress: () => string | null
+  /**
+   * This week's days, as seven dots beside its progress (the Warm-up's
+   * days warmed up), or null: none yet this week. Left out by an exercise
+   * that keeps no days.
+   */
+  week?: () => readonly WeekDot[] | null
   /**
    * Its best belongs to the note it opens on (Long note: "Best 9.4 s on
    * A3"), not to the level (Echo: "Best 18 of 20", at the card's level).

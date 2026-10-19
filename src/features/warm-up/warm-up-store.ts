@@ -11,8 +11,13 @@
 // prefix keeps it out of the settings sync (settings-service.ts syncs
 // `pitchperfect_` keys). It is written at every stop, and synced it would
 // race a second device mid-run; a run picks up on the device it was left
-// on (§7). The days warmed up are synced on their own, with the week's
-// dots (PR 13e).
+// on (§7).
+//
+// The days warmed up are synced on their own (`pitchperfect_warm_up_days`,
+// src/lib/warm-up-days.ts): whenever a run that counts is kept, its date
+// joins them, so the card, the Sing room's pill and the path's week dots
+// read the same days on every device the singer signs in on (N5). Today's
+// own run counts too before its date has landed there.
 //
 // The open stop is never stored: when the app goes, the stop in progress
 // drops, and the run picks up at the next stop (N4).
@@ -38,10 +43,12 @@
 // (premium-exercises/last-exercise.ts).
 
 import type { Accessor, Signal } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
 import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
 import { localDayString } from '@/lib/local-day'
 import { createPersistedSignal } from '@/lib/storage'
+import type { WarmUpDays, WeekDot } from '@/lib/warm-up-days'
+import { isWarmUpDays, WARM_UP_DAYS_KEY, weekDots, withDay, } from '@/lib/warm-up-days'
 import type { UnlockItem } from '@/stores/notifications-store'
 import { claimUnlocks } from '@/stores/notifications-store'
 import type { WarmUpDay } from './routine'
@@ -61,8 +68,27 @@ function stored(): Signal<WarmUpDay | null> {
   return record
 }
 
+let daysRecord: Signal<WarmUpDays> | undefined
+
+/** The days warmed up, synced with the account (N5). */
+function daysSignal(): Signal<WarmUpDays> {
+  daysRecord ??= createPersistedSignal<WarmUpDays>(WARM_UP_DAYS_KEY, [], {
+    validator: isWarmUpDays,
+  })
+  return daysRecord
+}
+
+/** The run's day joins the days warmed up: written once, never on a read. */
+function markWarmedUp(date: string): void {
+  const [days, setDays] = daysSignal()
+  const before = untrack(days)
+  const after = withDay(before, date)
+  if (after !== before) setDays(after)
+}
+
 function keep(day: WarmUpDay): void {
   stored()[1](day)
+  if (day.warmedUp) markWarmedUp(day.date)
 }
 
 /** The stop whose room is open: an index into the plan's stops. */
@@ -118,11 +144,30 @@ export function openStop(): number | null {
 }
 
 /**
- * Today counts as warmed up (N11): the end was reached with a stop
- * finished. The picker card's "Warmed up today".
+ * The days warmed up: the synced ones, and today's if this device's run
+ * counts and its date has not landed in them yet.
+ */
+export function warmUpDays(): WarmUpDays {
+  const days = daysSignal()[0]()
+  const day = warmUpDay()
+  return day.warmedUp ? withDay(days, day.date) : days
+}
+
+/**
+ * Today counts as warmed up (N11): a run reached its end with a stop
+ * finished, on this device or on another the singer is signed in on. The
+ * picker card's and the Sing room pill's "Warmed up today".
  */
 export function warmedUpToday(): boolean {
-  return warmUpDay().warmedUp
+  return warmUpDays().includes(localDayString())
+}
+
+/**
+ * This week's dots for the picker card and the Sing room's pill, or null
+ * before a day of the week is warmed up (pw-mark "dots").
+ */
+export function warmUpWeek(): readonly WeekDot[] | null {
+  return weekDots(warmUpDays(), localDayString())
 }
 
 /**
@@ -255,9 +300,10 @@ export function canStartWarmUp(): boolean {
   return true
 }
 
-/** Drop the run read so far and the open stop: the next read takes storage as it is now. */
+/** Drop the run and the days read so far and the open stop: the next read takes storage as it is now. */
 export function resetWarmUpForTests(): void {
   record = undefined
+  daysRecord = undefined
   setOpen(null)
   leavePath()
 }

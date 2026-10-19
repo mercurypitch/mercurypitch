@@ -31,6 +31,8 @@ interface Seed {
   ngBest?: number
   /** Today's warm-up reached its end with a stop finished. */
   warmedUp?: boolean
+  /** The days warmed up, synced: this device's or another's. */
+  warmUpDays?: readonly string[]
 }
 
 beforeEach(() => {
@@ -107,6 +109,12 @@ async function openPicker(seed: Seed = {}) {
         warmedUp: true,
         lastActiveAt: 1,
       }),
+    )
+  }
+  if (seed.warmUpDays !== undefined) {
+    localStorage.setItem(
+      'pitchperfect_warm_up_days',
+      JSON.stringify(seed.warmUpDays),
     )
   }
   if (seed.level !== undefined) {
@@ -313,6 +321,48 @@ describe("a card's third line", () => {
     localStorage.clear()
     await openPicker({ warmedUp: true })
     expect(meta('warm-up-path')).toBe('Warmed up today')
+  })
+
+  it("draws this week's dots on the Warm-up once a day of the week is warmed up", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    // Wednesday 21 Oct 2026.
+    vi.setSystemTime(new Date(2026, 9, 21, 9, 0))
+    const drawn = (): string[] =>
+      [
+        ...(within(card('warm-up-path')).queryByTestId('sing-exercise-week')
+          ?.children ?? []),
+      ].map((dot) => {
+        const el = dot as HTMLElement
+        return `${el.dataset.warmed === 'true' ? 'x' : '.'}${el.dataset.today === undefined ? '' : 'o'}`
+      })
+    try {
+      // Only last week (Sunday 18 Oct): no dots yet.
+      await openPicker({ warmUpDays: ['2026-10-18'] })
+      expect(meta('warm-up-path')).toBeNull()
+
+      // Monday this week, on another device: the dots, today ringed.
+      cleanup()
+      vi.resetModules()
+      localStorage.clear()
+      await openPicker({ warmUpDays: ['2026-10-19'] })
+      expect(meta('warm-up-path')).toBe('')
+      expect(drawn()).toEqual(['x', '.', '.o', '.', '.', '.', '.'])
+
+      // Warmed up today too: the words and the dots.
+      cleanup()
+      vi.resetModules()
+      localStorage.clear()
+      await openPicker({ warmUpDays: ['2026-10-19'], warmedUp: true })
+      expect(meta('warm-up-path')).toBe('Warmed up today')
+      expect(drawn()).toEqual(['x', '.', 'xo', '.', '.', '.', '.'])
+      expect(
+        within(card('warm-up-path'))
+          .getByRole('img')
+          .getAttribute('aria-label'),
+      ).toBe('Warmed up this week: Monday and today')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('says Merc sings Lip roll first until its demo is seen, before its first best', async () => {

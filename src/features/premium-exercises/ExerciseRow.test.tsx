@@ -17,6 +17,8 @@ interface Seed {
   note?: number
   /** The best on that note, in seconds held in the band. */
   best?: number
+  /** The Warm-up's days warmed up, synced. */
+  warmUpDays?: readonly string[]
 }
 
 beforeEach(() => {
@@ -65,6 +67,12 @@ async function mountRow(seed: Seed = {}, disabled = false) {
       JSON.stringify({
         [seed.note]: { inBandSeconds: seed.best, steadiness: 80, at: 1 },
       }),
+    )
+  }
+  if (seed.warmUpDays !== undefined) {
+    localStorage.setItem(
+      'pitchperfect_warm_up_days',
+      JSON.stringify(seed.warmUpDays),
     )
   }
   const { ExerciseRow } = await import('./ExerciseRow')
@@ -152,6 +160,58 @@ describe('with a last exercise', () => {
     fireEvent.click(screen.getByTestId('sing-exercise-door'))
     expect(onBrowse).toHaveBeenCalledTimes(1)
     expect(onOpen).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('with the Warm-up as the last exercise', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    // Wednesday 21 Oct 2026.
+    vi.setSystemTime(new Date(2026, 9, 21, 9, 0))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const pillName = (): string | null =>
+    screen.getByTestId('sing-exercise-pill').getAttribute('aria-label')
+  const drawn = (): string[] =>
+    [...screen.getByTestId('sing-exercise-week').children].map((dot) => {
+      const el = dot as HTMLElement
+      return `${el.dataset.warmed === 'true' ? 'x' : '.'}${el.dataset.today === undefined ? '' : 'o'}`
+    })
+
+  it("says Warmed up today with this week's dots, and names both", async () => {
+    await mountRow({
+      last: 'warm-up-path',
+      warmUpDays: ['2026-10-19', '2026-10-21'],
+    })
+
+    expect(screen.getByTestId('sing-exercise-best').textContent).toBe(
+      'Warmed up today',
+    )
+    expect(drawn()).toEqual(['x', '.', 'xo', '.', '.', '.', '.'])
+    expect(pillName()).toBe(
+      'Warm-up. Warmed up today. Warmed up this week: Monday and today. Open your last exercise',
+    )
+  })
+
+  it('draws the dots alone before today is warmed up', async () => {
+    await mountRow({ last: 'warm-up-path', warmUpDays: ['2026-10-19'] })
+
+    expect(screen.getByTestId('sing-exercise-best').textContent).toBe('')
+    expect(drawn()).toEqual(['x', '.', '.o', '.', '.', '.', '.'])
+    expect(pillName()).toBe(
+      'Warm-up. Warmed up this week: Monday. Open your last exercise',
+    )
+  })
+
+  it('has no second line before a day of the week is warmed up', async () => {
+    await mountRow({ last: 'warm-up-path', warmUpDays: ['2026-10-18'] })
+
+    expect(screen.queryByTestId('sing-exercise-best')).toBeNull()
+    expect(pillName()).toBe('Warm-up. Open your last exercise')
   })
 })
 

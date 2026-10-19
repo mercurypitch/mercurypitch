@@ -117,10 +117,20 @@
 }
 
 .best {
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
   font: 400 12px/16px var(--font-body, sans-serif);
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary, #a8b3bf);
+}
+
+/* The words may ellipsize; the Warm-up's week dots beside them may not. */
+.bestText {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

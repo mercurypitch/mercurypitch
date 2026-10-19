@@ -9,6 +9,10 @@
 // and result beside it) and Merc. Every place comes from path-layout.ts in
 // W units, at the screen's one scale.
 //
+// The end (§5.8) adds the song's burst as it lights, and the points the
+// end has over the rest grow in with it; on the song Merc is drawn at
+// screen 3's size, scaled about his feet (MERC_SONG_SCALE).
+//
 // The stops are an ordered list in the plan's order, bottom stop first, so
 // a screen reader hears the path as it climbs: "Lip roll, done, 86% lit",
 // "Ng slides, next", "Long note, waiting".
@@ -22,7 +26,7 @@ import type { MercState } from '@/lib/merc/constants'
 import { ORB_SPRITES, SKY_FALLBACK, SKY_FLOOR, SKY_PLATE, SKY_PX, } from './path-art'
 import type { PathFrame, PathMode, StopPlace } from './path-layout'
 import type { MercSpot } from './path-layout'
-import { columnX, columnY, MERC_CANVAS_W, mercFeet, NAME_GAP_W, ORB_BOX_W, RIM_W, segmentD, sparkles, stopPlaces, } from './path-layout'
+import { columnX, columnY, MERC_CANVAS_W, MERC_SONG_SCALE, mercFeet, NAME_GAP_W, ORB_BOX_W, RIM_W, segmentD, sparkleCount, sparkles, stopPlaces, } from './path-layout'
 import type { StopView } from './path-view'
 import { PATH_WORDS } from './path-view'
 import { PathGlyph } from './PathGlyph'
@@ -42,13 +46,19 @@ export interface PathColumnProps {
   trailIn: boolean
   /** The stop just finished, still drawn as it was (next). */
   unlit: number | null
-  /** At the end, how many finished stops have brightened. */
+  /** At the end, how many finished stops have brightened, the song last. */
   brightened: number
+  /** The end has lit: its points have grown in. */
+  endLit: boolean
+  /** The song's burst plays as it lights. */
+  burst: boolean
   /** The stop whose ring pulses: the one opening. */
   pulsing: number | null
   merc: MercSpot
   mercState: MercState
   hopping: boolean
+  /** Faded out between two spots: reduced motion's crossfade. */
+  mercFaded: boolean
   still: boolean
   /** The song stop at the end: what Sing a song does. */
   onSong?: () => void
@@ -154,6 +164,20 @@ function Stop(props: {
           )}
         </Show>
       </span>
+      {/* The song's burst as the end lights it (§5.8): a flare of light,
+          by transform and opacity, gone once it has played. */}
+      <Show when={props.stop.view.song && props.column.burst}>
+        <span
+          class={styles.burst}
+          style={{
+            width: `${4 * RIM_W * unit()}px`,
+            height: `${4 * RIM_W * unit()}px`,
+            margin: `${-2 * RIM_W * unit()}px 0 0 ${-2 * RIM_W * unit()}px`,
+          }}
+          aria-hidden="true"
+          data-testid="warm-up-burst"
+        />
+      </Show>
       <Show when={songOpens()}>
         <button
           type="button"
@@ -291,10 +315,14 @@ function Merc(props: {
     const feet = mercFeet(props.places, props.column.merc)
     const left = columnX(feet.x, props.column.frame) - size() / 2
     const top = columnY(feet.y, props.column.frame) - MERC_FEET * size()
+    // On the song, screen 3's size (option B), about his feet.
+    const scale =
+      props.column.merc.at === 'on' ? ` scale(${MERC_SONG_SCALE})` : ''
     return {
       width: `${size()}px`,
       height: `${size()}px`,
-      transform: `translate(${left}px, ${top}px)`,
+      transform: `translate(${left}px, ${top}px)${scale}`,
+      'transform-origin': `50% ${MERC_FEET * 100}%`,
     }
   }
   return (
@@ -302,10 +330,15 @@ function Merc(props: {
       state={() => props.column.mercState}
       voice={() => SILENT_VOICE}
       still={() => props.column.still}
-      class={styles.merc}
+      class={
+        props.column.mercFaded
+          ? `${styles.merc} ${styles.mercFaded}`
+          : styles.merc
+      }
       style={{
         ...at(),
-        transition: props.column.hopping ? undefined : 'none',
+        // Between hops he does not glide; a crossfade still fades.
+        transition: props.column.hopping ? undefined : 'opacity 150ms linear',
       }}
       testId="warm-up-merc"
     />
@@ -336,6 +369,8 @@ export function PathColumn(props: PathColumnProps): JSX.Element {
   const plateHeight = (): number =>
     (props.frame.column * SKY_PX.height) / SKY_PX.width
   const area = (): number => props.frame.column * props.frame.height
+  /** The points the rest shows: the end's own come after them. */
+  const restPoints = (): number => sparkleCount(area(), 'rest')
   return (
     <div
       class={styles.column}
@@ -358,18 +393,28 @@ export function PathColumn(props: PathColumnProps): JSX.Element {
         />
       </div>
       <Pools column={props} placed={placed()} />
-      <div class={styles.sparkles} aria-hidden="true">
+      <div
+        class={styles.sparkles}
+        data-grown={props.mode === 'end' && !props.endLit ? 'false' : 'true'}
+        aria-hidden="true"
+      >
         <For each={sparkles(area(), props.mode)}>
-          {(point) => (
+          {(point, i) => (
             <span
               class={styles.spark}
               data-tint={point.tint}
+              data-extra={i() >= restPoints() ? 'true' : undefined}
               style={{
                 left: `${point.x * 100}%`,
                 top: `${point.y * (props.frame.floor / props.frame.height) * 100}%`,
                 width: `${point.size}px`,
                 height: `${point.size}px`,
                 'animation-delay': `${-point.delay}s`,
+                // The end's own points grow in one after another.
+                'transition-delay':
+                  i() >= restPoints()
+                    ? `${(i() - restPoints()) * 30}ms`
+                    : undefined,
               }}
             />
           )}

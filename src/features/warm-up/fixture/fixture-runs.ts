@@ -12,7 +12,9 @@
 //   resume    the same day, later: "1 of 4 today", Ng slides skipped,
 //             "Next: Long note"
 //   end       the run's end: "Warmed up", "4 of 4 today", every result
-//   done      opened again that day: "Warmed up today", Warm up again
+//   done      opened again that day: "Warmed up today", the week's dots
+//             (Monday and Tuesday warmed up, today the Wednesday), Warm
+//             up again
 //   locked    the free run used: the padlocked "Warm up with Premium"
 //
 // The results are the frames' own lines, from the rooms' result screens.
@@ -42,8 +44,15 @@ export function isWarmFixtureName(
   return name !== null && (WARM_FIXTURES as readonly string[]).includes(name)
 }
 
-/** The fixtures' day: fixed, so a capture never depends on the clock. */
-const DATE = '2026-10-19'
+/**
+ * The fixtures' day: fixed, so a capture never depends on the clock. A
+ * Wednesday, so the done state's week has days before it (Codex's frame
+ * F4 screen 2: the first three dots filled, the third ringed).
+ */
+const DATE = '2026-10-21'
+
+/** The days warmed up before it that week: Monday and Tuesday. */
+const EARLIER_DAYS = ['2026-10-19', '2026-10-20'] as const
 
 const WAITING: StopMark = { state: 'waiting' }
 const SKIPPED: StopMark = { state: 'skipped' }
@@ -110,6 +119,11 @@ function stateRun(name: WarmFixtureName): PinnedRun {
         canStart: true,
       }
     case 'done':
-      return { day: dayWith(RESULTS, true), last: null, canStart: true }
+      return {
+        day: dayWith(RESULTS, true),
+        last: null,
+        canStart: true,
+        days: EARLIER_DAYS,
+      }
   }
 }

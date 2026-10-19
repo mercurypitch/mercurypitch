@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ScreenBox } from './path-layout'
-import { columnX, columnY, fitScale, layoutTop, MAX_K, mercFeet, MIN_K, pathFrame, RIM_W, segmentD, sparkles, SPARKLES_MAX, stopPlaces, TOP_LOCKED_PX, } from './path-layout'
+import { columnX, columnY, fitScale, layoutTop, MAX_K, MERC_SONG_SCALE, mercFeet, MIN_K, openingScroll, pathFrame, RIM_W, segmentD, sparkleCount, sparkles, SPARKLES_MAX, stopPlaces, TOP_END_PX, TOP_LOCKED_PX, } from './path-layout'
 
 const PHONE: ScreenBox = { width: 390, height: 844, top: 56, bottom: 0 }
 const IPHONE: ScreenBox = { width: 390, height: 844, top: 103, bottom: 34 }
@@ -56,20 +56,31 @@ describe('the stops', () => {
     expect(round(layoutTop(stopPlaces(5, 'rest'), 'rest'))).toBe(
       round(1.24 + RIM_W + 0.02),
     )
+    // At the end: Merc's feet 0.036 over the song stop, and screen 3's
+    // 0.311 W from them to his crown (option B).
     expect(round(layoutTop(stopPlaces(5, 'end'), 'end'))).toBe(
-      round(0.972 + 0.42),
+      round(0.972 + 0.036 + 0.311),
     )
     expect(layoutTop([], 'rest')).toBe(0)
   })
 })
 
 describe("Merc's height on the song", () => {
-  it('the end reaches over his crown as he is drawn there, not as screen 3 drew him', () => {
-    // Measured in the end fixture at 390 x 844: his crown's tip 163 px, or
-    // 0.416 W, over the song stop's centre. Screen 3's Merc is smaller
-    // (0.311 W tall) than the renderer's (0.35 W and his crown).
+  it("is screen 3's, drawn smaller there than anywhere else (option B)", () => {
+    // The renderer draws his crown's tip 0.42 W over the song stop's centre
+    // at full size (PR 1102), his feet 0.036 over it; screen 3 draws him
+    // 0.311 W from feet to crown.
+    expect(round((0.42 - 0.036) * MERC_SONG_SCALE)).toBe(0.311)
+    expect(round(MERC_SONG_SCALE, 2)).toBe(0.81)
+  })
+
+  it('the end reaches over his crown as he is drawn there', () => {
+    // Measured in the end fixture at 390 x 844 at full size: his crown's
+    // tip 163 px, or 0.416 W, over the song stop's centre. On the song he
+    // is scaled about his feet.
     const end = stopPlaces(5, 'end')
-    expect(layoutTop(end, 'end') - end[4]!.y).toBeGreaterThanOrEqual(0.416)
+    const crown = 0.036 + (0.416 - 0.036) * MERC_SONG_SCALE
+    expect(layoutTop(end, 'end') - end[4]!.y).toBeGreaterThanOrEqual(crown)
   })
 })
 
@@ -136,7 +147,9 @@ describe("the path's frame on a screen", () => {
   it('an iPhone with its insets: one scale for every state', () => {
     const rest = pathFrame(IPHONE, 5, 'rest')
     const end = pathFrame(IPHONE, 5, 'end')
-    expect(round(rest.k, 3)).toBe(0.886)
+    // 0.886 while Merc stood on the song at full size: screen 3's Merc
+    // gives the path back about 5% (option B).
+    expect(round(rest.k, 3)).toBe(0.935)
     expect(end.k).toBe(rest.k)
     expect(rest.floor).toBe(844 - 34 - 142)
     expect([rest.scrolls, end.scrolls]).toEqual([false, false])
@@ -173,19 +186,33 @@ describe("the path's frame on a screen", () => {
     expect(locked.k).toBeLessThan(start.k)
     const reach = columnY(layoutTop(stopPlaces(9, 'rest'), 'rest'), locked)
     expect(reach).toBeGreaterThanOrEqual(IPAD_UP.top + TOP_LOCKED_PX - 0.5)
-    // The owner's routine: the end's room is the tighter, and the locked
-    // path keeps the first visit's scale.
-    expect(pathFrame(IPAD_SIDE, 5, 'rest', true).k).toBe(
-      pathFrame(IPAD_SIDE, 5, 'rest').k,
-    )
+    // The owner's routine on an iPad on its side: under its line too, at a
+    // scale no larger than the first visit's.
+    const side = pathFrame(IPAD_SIDE, 5, 'rest', true)
+    expect(side.scrolls).toBe(false)
+    expect(side.k).toBeLessThanOrEqual(pathFrame(IPAD_SIDE, 5, 'rest').k)
+    expect(
+      columnY(layoutTop(stopPlaces(5, 'rest'), 'rest'), side),
+    ).toBeGreaterThanOrEqual(IPAD_SIDE.top + TOP_LOCKED_PX - 0.5)
   })
 
   it('an exact fit does not scroll by a rounding error', () => {
-    // 393 x 822: the end's path fits its room to 1e-13 px over the floor.
-    const box: ScreenBox = { width: 393, height: 822, top: 56, bottom: 0 }
+    // 379 x 768: the end's path fits its room to 1e-13 px over the floor.
+    const box: ScreenBox = { width: 379, height: 768, top: 56, bottom: 0 }
     const end = pathFrame(box, 5, 'end')
     expect(end.scrolls).toBe(false)
-    expect(end.floor).toBe(822 - 142)
+    expect(end.floor).toBe(768 - 142)
+  })
+
+  it('a path taller than its screen opens at its floor, the end at its top', () => {
+    expect(openingScroll(pathFrame(SMALL, 5, 'rest'), 'rest')).toBe('floor')
+    expect(openingScroll(pathFrame(SMALL, 5, 'end'), 'end')).toBe('top')
+    // On a 320 x 568 phone the end is taller than the screen: opened at its
+    // top, Merc's crown on the song is under the titles, not behind them.
+    const end = pathFrame(SMALL, 5, 'end')
+    expect(end.scrolls).toBe(true)
+    const crown = columnY(layoutTop(stopPlaces(5, 'end'), 'end'), end)
+    expect(crown).toBeGreaterThanOrEqual(SMALL.top + TOP_END_PX)
   })
 
   it('places a W point in the column, up from its floor', () => {
@@ -207,6 +234,7 @@ describe("the night's points", () => {
   it('number 8 per 100,000 px at rest and 13.7 at the end, never past 40', () => {
     expect(sparkles(390 * 844, 'rest')).toHaveLength(26)
     expect(sparkles(390 * 844, 'end')).toHaveLength(SPARKLES_MAX)
+    expect(sparkleCount(320 * 568, 'end')).toBe(25)
   })
 
   it('are the same points on every visit, the end adding to them', () => {

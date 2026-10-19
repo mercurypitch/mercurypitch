@@ -1,0 +1,55 @@
+/* WeekDots (WeekDots.tsx): the week's seven days, Monday first. A day
+   warmed up is filled, today is ringed, every other day is an outline.
+   Sized and coloured by where the row sits. */
+
+.week {
+  --dot: 6px;
+  /* Today's ring clears its neighbours by 1.5 px. */
+  --gap: 6px;
+  --ring: 3px;
+  --dot-on: var(--teal, #2dd4bf);
+  --dot-off: var(--text-tertiary, #8b949e);
+
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--gap);
+  height: calc(var(--dot) + 2 * var(--ring) + 3px);
+  /* Today's ring reaches past the first and last dots. */
+  padding: 0 calc(var(--ring) + 1.5px);
+}
+
+/* Under the path's chip: the night's teal in every theme, as the card's
+   check is (DESIGN-warm-up.md §1.2), at the end frame's size. */
+.week[data-size='path'] {
+  --dot: 12px;
+  --gap: 18px;
+  --ring: 4px;
+  --dot-on: #0febdf;
+  --dot-off: rgba(190, 205, 235, 0.55);
+}
+
+.dot {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--dot);
+  height: var(--dot);
+  border: 1.5px solid var(--dot-off);
+  border-radius: 50%;
+}
+
+.dot[data-warmed='true'] {
+  border-color: var(--dot-on);
+  background: var(--dot-on);
+}
+
+/* Today: a ring round the dot, warmed up or not. */
+.dot[data-today]::after {
+  position: absolute;
+  inset: calc(-1 * var(--ring) - 1.5px);
+  box-sizing: border-box;
+  border: 1.5px solid var(--dot-on);
+  border-radius: 50%;
+  content: '';
+}
