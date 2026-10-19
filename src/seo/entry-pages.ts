@@ -171,11 +171,11 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     themeColor: MIRROR_THEME_COLOR,
     title: 'Free Vocal Range Test: Lowest & Highest Note | MercuryPitch',
     description:
-      'Glide from your lowest note to your highest and get both notes, your span in semitones and a voice-type guide. Free, in your browser.',
+      'Glide from your lowest note to your highest comfortable note and get both notes, your span in semitones and a voice-type guide. Free, in your browser.',
     og: {
       title: 'Free Vocal Range Test — Find Your Lowest & Highest Note',
       description:
-        'Glide from your lowest note to your highest and get both notes, your span in semitones and a broad voice-type guide.',
+        'Glide from your lowest note to your highest comfortable note and get both notes, your span in semitones and a broad voice-type guide.',
       image: ogImage('vocal-range-test-og.png'),
       imageAlt:
         'A measured vocal span marked on a pitch ruler, with the lowest and highest notes lit at each end.',
@@ -186,7 +186,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'Get your measured notes, semitone span and a broad voice-type guide. Free, in your browser.',
     },
     h1: 'Free vocal range test',
-    lede: 'Glide from your lowest comfortable note to your highest and get both notes, your span in semitones and a broad voice-type guide. It runs in your browser and needs no piano and no teacher. The timed part takes about a minute, and each step waits until you are ready.',
+    lede: 'Glide from your lowest comfortable note to your highest comfortable note and get both notes, your span in semitones and a broad voice-type guide. It runs in your browser and needs no piano and no teacher. The timed part takes about a minute, and each step waits until you are ready.',
     app: {
       name: 'MercuryPitch Vocal Range Test',
       category: 'MusicApplication',

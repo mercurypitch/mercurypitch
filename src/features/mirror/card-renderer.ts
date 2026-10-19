@@ -9,7 +9,7 @@
 // download fallback.
 // ============================================================
 
-import type { F0Frame, MirrorDelta, MirrorResult } from '@/lib/mirror/metrics'
+import type { F0Frame, MirrorResult, MirrorSummary } from '@/lib/mirror/metrics'
 import { centsToMidi, preprocess } from '@/lib/mirror/metrics'
 import { MIRROR_SHARE_URL } from '@/lib/mirror/shared-voiceprint'
 
@@ -60,7 +60,8 @@ export interface CardInput {
   result: MirrorResult
   /** Raw takes — the card plots the singer's actual trace. */
   glides: F0Frame[][]
-  /** Optional returning-visit delta line, e.g. "▲ +2 semitones since 12 May". */
+  /** Optional returning-visit change line, from `formatDeltaLine`, e.g.
+   *  "Since 12 May: span 14 to 16 semitones · accuracy similar". */
   deltaLine?: string | null
   /** Optional headline, e.g. a cosmic melody name. Drawn above the trace. */
   title?: string | null
@@ -89,26 +90,60 @@ function starRandom(seed: number): () => number {
   }
 }
 
-export function formatDeltaLine(delta: MirrorDelta, since: Date): string {
-  const parts: string[] = []
-  const arrow = (value: number): string => (value >= 0 ? '▲ +' : '▼ ')
-  if (delta.semitones !== null && delta.semitones !== 0) {
-    parts.push(`${arrow(delta.semitones)}${delta.semitones} semitones`)
-  }
-  if (delta.accuracy !== null && delta.accuracy !== 0) {
-    parts.push(`accuracy ${delta.accuracy > 0 ? '+' : ''}${delta.accuracy}`)
-  }
-  if (delta.steadiness !== null && delta.steadiness !== 0) {
-    parts.push(
-      `steadiness ${delta.steadiness > 0 ? '+' : ''}${delta.steadiness}`,
-    )
-  }
+interface DeltaPart {
+  similar: boolean
+  text: string
+}
+
+/** One reading of the change line; null when either run lacks it. */
+function deltaPart(
+  name: string,
+  earlier: number | null,
+  today: number | null,
+  unit: string,
+): DeltaPart | null {
+  if (earlier === null || today === null) return null
+  return earlier === today
+    ? { similar: true, text: `${name} similar` }
+    : { similar: false, text: `${name} ${earlier} to ${today}${unit}` }
+}
+
+/**
+ * A returning visitor's change line: today's run against the baseline this
+ * device kept, in plain words with no arrow and no sign. An up arrow for a
+ * wider span read as a reward for range (REQ-GVC-072), and every change,
+ * however small, got a direction (REQ-GVC-065, REQ-GVC-066).
+ *
+ * "Similar today" belongs to a change inside the measurement's noise, and no
+ * validated noise figure exists for these readings: not in this code (each is
+ * a whole number, the span in semitones and the two scores out of 100), not
+ * in docs/specs/guided-voice-check.ears.md, and not in the lessons' FACTS
+ * (Lesson 7's 26: a measured range "varied by at least several semitones"
+ * across recordings, which names no figure). So none is assumed. Only an
+ * unchanged reading is "similar", and any other is given as its two readings,
+ * earlier then today, with no word for which way is better: REQ-GVC-066's
+ * "report the direct values without a directional claim". A validated noise
+ * floor, once one exists, belongs in `deltaPart`.
+ */
+export function formatDeltaLine(
+  baseline: MirrorSummary,
+  current: MirrorSummary,
+  since: Date,
+): string {
+  const parts = [
+    deltaPart('span', baseline.semitones, current.semitones, ' semitones'),
+    deltaPart('accuracy', baseline.accuracy, current.accuracy, ''),
+    deltaPart('steadiness', baseline.steadiness, current.steadiness, ''),
+  ].filter((part): part is DeltaPart => part !== null)
   if (parts.length === 0) return ''
   const day = since.toLocaleDateString(undefined, {
     day: 'numeric',
     month: 'short',
   })
-  return `${parts.join(' · ')} since ${day}`
+  if (parts.every((part) => part.similar)) {
+    return `Similar today to your run on ${day}`
+  }
+  return `Since ${day}: ${parts.map((part) => part.text).join(' · ')}`
 }
 
 export function renderCard(

@@ -2,8 +2,9 @@
 // Voice Mirror — client-side baseline persistence.
 //
 // The latest result is always stored in localStorage so anonymous
-// return visits get a delta ("▲ +2 semitones since 12 May"). Only
-// derived numbers are stored — never audio (privacy stance §8).
+// return visits get a change line ("Since 12 May: span 14 to 16
+// semitones", see formatDeltaLine). Only derived numbers are stored —
+// never audio (privacy stance §8).
 // Email save / server baseline is out of scope for the demo.
 // ============================================================
 
@@ -49,14 +50,16 @@ export function saveBaseline(
   }
 }
 
-/** Delta of the current run vs. the stored baseline, or null on first visit. */
+/** The stored baseline and the current run's delta against it, or null on
+ *  first visit. The change line reads both readings, not only the delta. */
 export function deltaVsBaseline(
   storage: Storage,
   current: MirrorSummary,
-): { delta: MirrorDelta; since: Date } | null {
+): { baseline: MirrorSummary; delta: MirrorDelta; since: Date } | null {
   const baseline = loadBaseline(storage)
   if (baseline === null) return null
   return {
+    baseline: baseline.summary,
     delta: computeDelta(baseline.summary, current),
     since: new Date(baseline.savedAt),
   }

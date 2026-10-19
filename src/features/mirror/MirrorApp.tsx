@@ -56,6 +56,7 @@ import { SharedVoiceprintWelcome } from './SharedVoiceprintWelcome'
 import { TaskDemo } from './TaskDemo'
 import { playReferenceTone } from './tone-player'
 import { TrustInfo } from './TrustInfo'
+import { twinPeekLine } from './twin-peek-line'
 import { copyVoiceprintLink } from './voiceprint-share'
 
 // 8s was long enough that people ran out of glide and stood there filling
@@ -121,7 +122,7 @@ const TASK_COPY: Record<string, TaskCopy> = {
   'glide-up': {
     title: 'Glide up',
     instruction:
-      'Slide like a siren, from your lowest comfy note to your highest.',
+      'Slide like a siren, from your lowest comfy note to your highest comfortable note.',
     cue: 'Your turn. Slide up.',
   },
   'glide-down': {
@@ -891,7 +892,9 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       steadiness: summary.steadiness,
     })
     const previous = deltaVsBaseline(localStorage, summary)
-    const line = previous ? formatDeltaLine(previous.delta, previous.since) : ''
+    const line = previous
+      ? formatDeltaLine(previous.baseline, summary, previous.since)
+      : ''
     setDeltaLine(line !== '' ? line : null)
     saveBaseline(localStorage, summary)
 
@@ -1021,11 +1024,22 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     const profileKey = queryKey ?? hashKey
     const profile = DEMO_PROFILES[profileKey] ?? DEMO_PROFILES.baritone
     const { result, glides } = buildDemoResult(profile)
-    // Built by the real formatter so ?delta=1 screenshots stay pixel-faithful.
+    // Built by the real formatter so ?delta=1 screenshots stay pixel-faithful,
+    // against a baseline whose span, accuracy and steadiness differ by 5, 1
+    // and 11 from this profile's own.
+    const today = summarize(result)
+    const earlier = (value: number | null, by: number): number | null =>
+      value === null ? null : value - by
     const line =
       params.get('delta') !== null
         ? formatDeltaLine(
-            { semitones: 5, accuracy: 1, steadiness: -11 },
+            {
+              ...today,
+              semitones: earlier(today.semitones, 5),
+              accuracy: earlier(today.accuracy, 1),
+              steadiness: earlier(today.steadiness, -11),
+            },
+            today,
             new Date('2026-07-07'),
           )
         : ''
@@ -1606,8 +1620,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
             </div>
           </div>
           <p>
-            {peekLegend()} shares your voice type. That is yours now: it is on
-            your voiceprint whatever happens next.
+            {twinPeekLine(
+              peekLegend() as string,
+              session().range?.voiceHint ?? null,
+            )}
           </p>
           <div class="mirror-actions">
             <button
@@ -2064,11 +2080,13 @@ export const Results: Component<{
                 )}
               </For>
             </div>
+            {/* What the five notes did, and nothing about the ear: the task
+                measured the voice (REQ-GVC-045). */}
             <p>
               You hit {hits()} of {accuracy()?.takes.length} targets within a
               third of a semitone
               {hits() >= 3
-                ? '. Your ear is ahead of your control, the good order.'
+                ? '.'
                 : ". That's a trainable skill, and this is the honest baseline."}
             </p>
             <Show when={accuracy()?.scoopMedianMs !== null}>
