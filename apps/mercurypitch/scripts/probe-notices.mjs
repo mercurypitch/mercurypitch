@@ -439,16 +439,14 @@ function verbs(page, args, frame, kit, results) {
       })
     }, item)
 
-  /** Raise one kind of notice here, test it, and dismiss it. */
-  const pillCheck = async (
-    screen,
-    kind,
-    { shotName = null, swipe = false } = {},
-  ) => {
-    await raise(kind)
-    await visible(PLACED)
-    // Measured where it rests: after its drop from the status bar, which a
-    // loaded machine can stretch well past its 280 ms.
+  /**
+   * The pill where it rests: after its drop from the status bar, which a
+   * loaded machine can stretch well past its 280 ms, and where it stays.
+   * The pill measures the screen again every 250 ms and moves when what is
+   * under it has changed (a room's bar that a tap could not reach yet when
+   * the pill was placed), so it rests once its box has held for 400 ms.
+   */
+  const atRest = async () => {
     await page.evaluate(() =>
       Promise.race([
         Promise.all(
@@ -461,9 +459,115 @@ function verbs(page, args, frame, kit, results) {
         new Promise((done) => setTimeout(done, 3000)),
       ]),
     )
-    await settle(300)
-    const read = await page.evaluate(readPill)
+    await page.evaluate(
+      () =>
+        new Promise((done) => {
+          const box = () => {
+            const r = document
+              .querySelector('[data-testid="notice-pill"]')
+              ?.getBoundingClientRect()
+            return r === undefined
+              ? ''
+              : `${r.left},${r.top},${r.width},${r.height}`
+          }
+          const start = performance.now()
+          let last = box()
+          let since = start
+          const tick = () => {
+            const now = box()
+            if (now !== last) {
+              last = now
+              since = performance.now()
+            }
+            const at = performance.now()
+            if (at - since >= 400 || at - start >= 3000) done(undefined)
+            else setTimeout(tick, 50)
+          }
+          tick()
+        }),
+    )
+  }
+
+  /**
+   * The pill at rest, read in the page with no waiting: what it says,
+   * whether it is an unlock, and its body's box. Null while none rests.
+   */
+  const resting = () =>
+    page.evaluate((placed) => {
+      const pill = document.querySelector(placed)
+      const r = pill
+        ?.querySelector('[data-testid="notice-pill-body"]')
+        ?.getBoundingClientRect()
+      if (pill === null || r === undefined || r.width === 0 || r.height === 0)
+        return null
+      return {
+        text: pill.textContent ?? '',
+        unlock: pill.getAttribute('data-unlock') === 'on',
+        body: { x: r.left, y: r.top, width: r.width, height: r.height },
+      }
+    }, PLACED)
+
+  /** Whether the pill at rest is the notice this walk raised of `kind`. */
+  const raisedHere = (kind, now) =>
+    kind === 'unlocks'
+      ? now.unlock
+      : now.text.startsWith(
+          kind === 'action'
+            ? 'New to Piano? Take a quick tour.'
+            : 'Saved to your library',
+        )
+
+  /**
+   * The notice raised of `kind`, at rest. The pill shows one notice at a
+   * time, in turn, so one raised before it shows first: a room's run that
+   * could not be saved against the stand-in, still up as the next room
+   * opens. Measuring that one, the walk saw it end mid-check and this one
+   * come up after it: fresh and unplaced at the status bar, then dropping
+   * in over the room's bar, so the pill covered the bar, or had no box, or
+   * a tap dismissed the other and left this one up. Each one before it is
+   * tapped away, and named in the notes, until this one rests.
+   */
+  const raisedAtRest = async (kind, where) => {
+    const before = []
+    for (let turn = 0; turn < 4; turn += 1) {
+      await visible(PLACED)
+      await atRest()
+      const now = await resting()
+      if (now === null) continue
+      if (raisedHere(kind, now)) {
+        if (before.length > 0)
+          results.notes.push(
+            `${where}: tapped away first, raised before it: ${before.map((text) => `"${text}"`).join(', ')}`,
+          )
+        return
+      }
+      before.push(now.text)
+      await page.touchscreen.tap(
+        now.body.x + 12,
+        now.body.y + now.body.height / 2,
+      )
+      await page.waitForFunction(
+        ([placed, was]) => document.querySelector(placed)?.textContent !== was,
+        [PLACED, now.text],
+        { timeout: stepTimeoutMs },
+      )
+    }
+    throw new Error(
+      `${where}: it never came to rest; on show instead: ${before.join(' | ')}`,
+    )
+  }
+
+  /** Raise one kind of notice here, test it, and dismiss it. */
+  const pillCheck = async (
+    screen,
+    kind,
+    { shotName = null, swipe = false } = {},
+  ) => {
     const where = `${screen} (${kind})`
+    await raise(kind)
+    // Measured where it rests, and the one raised here.
+    await raisedAtRest(kind, where)
+    const read = await page.evaluate(readPill)
     if (read.error !== undefined) {
       results.failures.push(`${where}: ${read.error}`)
       return
@@ -516,10 +620,11 @@ function verbs(page, args, frame, kit, results) {
     })
     if (shotName !== null) await shot(shotName)
 
-    // And away: a swipe up, or a tap.
-    const body = page.locator('[data-testid="notice-pill-body"]').first()
-    const b = await body.boundingBox()
-    if (b === null) throw new Error(`${where}: the pill's body has no box`)
+    // And away: a swipe up, or a tap, on the pill just measured.
+    const measured = await page.$(PLACED)
+    const b = (await resting())?.body ?? null
+    if (measured === null || b === null)
+      throw new Error(`${where}: the pill's body has no box`)
     if (swipe) {
       const x = b.x + b.width / 2
       const y = b.y + b.height / 2
@@ -531,11 +636,25 @@ function verbs(page, args, frame, kit, results) {
     } else {
       await page.touchscreen.tap(b.x + 12, b.y + b.height / 2)
     }
-    await hidden(PILL).catch(() => {
+    // Gone, the pill measured: leaving, or replaced by a notice raised after
+    // it. An empty screen proves less, since a pill that has only just come
+    // up is hidden until a frame places it.
+    const gone = await page
+      .waitForFunction(
+        (el) => !el.isConnected || el.classList.contains('is-leaving'),
+        measured,
+        { timeout: stepTimeoutMs },
+      )
+      .then(
+        () => true,
+        () => false,
+      )
+    await measured.dispose()
+    if (!gone) {
       results.failures.push(
         `${where}: a ${swipe ? 'swipe up' : 'tap'} did not dismiss the pill`,
       )
-    })
+    }
     await settle(250)
   }
 

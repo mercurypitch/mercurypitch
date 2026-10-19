@@ -8,12 +8,17 @@
 // the mic. The probe's fake voice (its tone file) sings one note, and the
 // note is named. Find my range: two slides over the tone file's three notes,
 // a range measured between two of them, the pins and the voiceprint kept;
-// See my voice: the card, its twin found; Continue lands in the Sing room,
-// live, with the flag done. Then, each on an install of its own: Skip for
-// now, Keep's "Find your range first" (the range on its own, then Keep
-// again, with the voiceprint on it), Not now, Back, and a refused
-// microphone. Every visible part is measured on each frame: inside the
-// screen, apart from one another, and every control at least 44 px.
+// See my voice: the card, its twin found; Continue brings Keep (beat 7) over
+// the layer, the voiceprint on it, and the anonymous identity is asked for
+// as it opens and not before (S7b E11); Keep's Not now lands in the Sing
+// room, live, with the flag done. Then, each on an install of its own: Skip
+// for now (Keep, its "Find your range first" run in the layer, and Keep
+// again with the voiceprint), Keep's "Find your range first" from Settings
+// (the range on its own, Keep again, and the first note then ending on the
+// range kept), Not now, Back, and a refused microphone. Every visible part
+// is measured on each frame: inside the screen, apart from one another, and
+// every control at least 44 px. With --shots, the screens this part added
+// are shot once each, after their motion has played out.
 //
 // Only on a build with the onboarding (NATIVE_ONBOARDING, the import
 // switch: `kit.importing`); probe-bundle.mjs decides, owns the browser and
@@ -34,7 +39,12 @@ const CARD_RANGE = '[data-testid="onboarding-card-range"]'
 const FIND_TWIN = '[data-testid="onboarding-find-twin"]'
 const TWIN = '[data-testid="onboarding-twin"]'
 const CONTINUE = '[data-testid="onboarding-continue"]'
+const SEE_SAVED = '[data-testid="onboarding-see-saved"]'
 const KEEP = '[data-testid="account-offer"]'
+const KEEP_NOT_NOW = '[data-testid="keep-not-now"]'
+const KEEP_FIND_RANGE = '[data-testid="keep-find-range"]'
+/** The anonymous identity's request (auth-service.ts, S7b E11). */
+const MINT = '/api/auth/anonymous'
 const FLAG = 'mp:native-onboarding'
 /** Where this phone keeps its voiceprints (voiceprint-service.ts). */
 const VOICEPRINTS = 'mercurypitch.voiceprints.v1'
@@ -93,6 +103,11 @@ async function boot(browser, args, frame, kit, { refuse = false } = {}) {
   page.on('pageerror', (error) => {
     errors.push(error.message)
   })
+  // Asked for, though the probe answers no API: the request is the proof.
+  const mints = []
+  page.on('request', (request) => {
+    if (request.url().includes(MINT)) mints.push(request.url())
+  })
   await page.addInitScript(kit.seed, args.theme)
   await page.addInitScript(fresh, FLAG)
   if (refuse) await page.addInitScript(refuseMic)
@@ -103,8 +118,15 @@ async function boot(browser, args, frame, kit, { refuse = false } = {}) {
   await page
     .locator('[data-testid="rooms-alley"]')
     .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
-  return { context, page, errors }
+  return { context, page, errors, mints }
 }
+
+/** What kit.shoot needs: the frame, the theme, and where shots go. */
+const shotsFor = (args, frame) => ({
+  frame,
+  theme: args.theme,
+  shots: args.shots,
+})
 
 const flagNow = (page) =>
   page.evaluate((key) => localStorage.getItem(key), FLAG)
@@ -211,6 +233,7 @@ const readLayout = () => {
     mic: id('mic'),
     findRange: id('find-range'),
     skip: id('skip'),
+    seeSaved: id('see-saved'),
     seeVoice: id('see-voice'),
     findTwin: id('find-twin'),
     continue: id('continue'),
@@ -231,6 +254,7 @@ const readLayout = () => {
     'mic',
     'findRange',
     'skip',
+    'seeSaved',
     'seeVoice',
     'findTwin',
     'continue',
@@ -255,7 +279,9 @@ const readLayout = () => {
     ['lane', 'mic'],
     ['lane', 'findRange'],
     ['lane', 'skip'],
+    ['lane', 'seeSaved'],
     ['findRange', 'skip'],
+    ['seeSaved', 'findRange'],
     ['merc', 'mic'],
     ['line', 'ladder'],
     ['ladder', 'mic'],
@@ -370,9 +396,11 @@ async function openAtSingDoor(page, frame, kit) {
  * One note, named. The pitch stream reads once a screen frame, and a
  * headless page this size draws few of them, so a take can come up short
  * and Merc asks for a tap, as he would on a phone. Up to three taps, and
- * the step says how many it took. Then the note's two ways on.
+ * the step says how many it took. Then the note's two ways on: Find my
+ * range and Skip for now, or, on a phone that already keeps a range, See
+ * my voice and Find my range again.
  */
-async function nameOneNote(page, kit) {
+async function nameOneNote(page, kit, { saved = false } = {}) {
   let tries = 0
   let named = false
   while (!named && tries < 3) {
@@ -418,8 +446,15 @@ async function nameOneNote(page, kit) {
     throw new Error(`heard: Merc says "${said}"`)
   }
   const heard = await expectLayout(page, 'heard')
-  if (heard.findRange === null || heard.skip === null || heard.mic !== null) {
+  const ways = saved
+    ? heard.seeSaved !== null && heard.skip === null
+    : heard.seeSaved === null && heard.skip !== null
+  if (!ways || heard.findRange === null || heard.mic !== null) {
     throw new Error(`heard: ${JSON.stringify(heard)}`)
+  }
+  const again = (await page.locator(FIND_RANGE).textContent())?.trim()
+  if (again !== (saved ? 'Find my range again' : 'Find my range')) {
+    throw new Error(`heard: the range button reads "${again}"`)
   }
   const grant = await page.evaluate(() =>
     localStorage.getItem('pitchperfect_sing_mic_granted'),
@@ -481,9 +516,12 @@ async function measureRange(page, kit, how) {
   return { low, high }
 }
 
-/** See my voice: the card says the range, and the twin is found. */
-async function reveal(page, kit, range) {
-  await page.locator(SEE_VOICE).tap()
+/**
+ * See my voice: the card says the range, and the twin is found. `see` is
+ * the range's own See my voice, or the first note's, for a range kept.
+ */
+async function reveal(page, kit, range, see = SEE_VOICE) {
+  await page.locator(see).tap()
   await expectBeat(page, kit, 'reveal', 'See my voice')
   await settleAnimations(page, LAYER)
   const card = (await page.locator(CARD_RANGE).textContent())?.trim() ?? ''
@@ -507,9 +545,196 @@ async function reveal(page, kit, range) {
   return `"${card}", twin ${twin}`
 }
 
-/** The Sing door, one note, the range, the reveal, and Continue. */
+/**
+ * Keep's sheet, risen, its card in: every animation in it that ends,
+ * played out, so a box measured is the one that stays.
+ */
+async function settleKeep(page) {
+  await page.evaluate(async (keep) => {
+    const sheet = document
+      .querySelector(keep)
+      ?.closest('[data-testid="sheet-panel"]')?.parentElement
+    if (!sheet) return
+    const ending = sheet
+      .getAnimations({ subtree: true })
+      .filter((animation) =>
+        Number.isFinite(
+          animation.effect?.getComputedTiming().endTime ?? Infinity,
+        ),
+      )
+    await Promise.all(
+      ending.map((animation) => animation.finished.catch(() => undefined)),
+    )
+  }, KEEP)
+}
+
+/**
+ * Keep, as the onboarding opens it. Its shape is the shell's own, measured
+ * the one way (probe-bundle.mjs); here, what this part decides: the
+ * variant and its title, the card's range, the card flown in only straight
+ * after a reveal, the free song with its one sentence on the confirmed
+ * email, "Find your range first" (under a minute) only with no range, and
+ * Keep on top. Over the layer (`over`), the layer stays on its keep beat,
+ * its own Not now hidden and out of reach, the room still held, the flag
+ * still due. Where Merc stands against the sheet is said, for the eye.
+ */
+async function expectKeep(
+  page,
+  kit,
+  how,
+  { variant, arrival, range = null, over = true },
+) {
+  await page
+    .locator(KEEP)
+    .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
+    .catch(() => {
+      throw new Error(`${how}: Keep did not come`)
+    })
+  if (over) await expectBeat(page, kit, 'keep', how)
+  await settleKeep(page)
+  const shape = await kit.keepShape(page)
+  if (!kit.keepShapeHolds(shape)) {
+    throw new Error(`${how}: Keep is out of shape ${JSON.stringify(shape)}`)
+  }
+  const seen = await page.evaluate(
+    ([keep, layer]) => {
+      const root = document.querySelector(keep)
+      const panel = root?.closest('[data-testid="sheet-panel"]') ?? null
+      const card = root?.querySelector('[data-testid="keep-voiceprint"]')
+      const box = panel?.getBoundingClientRect()
+      const hit = box
+        ? document.elementFromPoint(
+            box.left + box.width / 2,
+            box.top + Math.min(box.height / 2, 120),
+          )
+        : null
+      const notNow = document.querySelector(
+        '[data-testid="onboarding-not-now"]',
+      )
+      const merc = document
+        .querySelector('[data-testid="onboarding-merc"]')
+        ?.getBoundingClientRect()
+      return {
+        variant: root?.getAttribute('data-variant') ?? null,
+        arrival: root?.getAttribute('data-arrival') ?? null,
+        flown: card ? getComputedStyle(card).animationName : null,
+        range:
+          card?.querySelector('.mp-keep__print-range')?.textContent?.trim() ??
+          null,
+        song:
+          root
+            ?.querySelector('[data-testid="keep-free-song"]')
+            ?.textContent?.trim() ?? null,
+        find:
+          root
+            ?.querySelector('[data-testid="keep-find-range"]')
+            ?.textContent?.trim() ?? null,
+        onTop: panel !== null && hit !== null && panel.contains(hit),
+        beat: document.querySelector(layer)?.getAttribute('data-beat') ?? null,
+        layerNotNow:
+          notNow === null
+            ? null
+            : {
+                hidden: getComputedStyle(notNow).visibility === 'hidden',
+                inert: notNow.closest('[inert]') !== null,
+              },
+        room:
+          typeof window.mpSingRoom === 'function'
+            ? window.mpSingRoom().state
+            : null,
+        sheetTop: box ? Math.round(box.top) : null,
+        merc: merc
+          ? { top: Math.round(merc.top), bottom: Math.round(merc.bottom) }
+          : null,
+      }
+    },
+    [KEEP, LAYER],
+  )
+  const wrong = []
+  const title =
+    variant === 'voiceprint' ? 'Keep your voiceprint' : 'Save your progress'
+  if (seen.variant !== variant) wrong.push(`the ${seen.variant} variant`)
+  if (shape.title !== title) wrong.push(`titled "${shape.title}"`)
+  if (seen.arrival !== arrival) wrong.push(`arrived ${seen.arrival}`)
+  if (variant === 'voiceprint') {
+    const flown = arrival === 'reveal' ? 'mp-keep-card-in' : 'none'
+    if (seen.flown !== flown) wrong.push(`the card's motion is ${seen.flown}`)
+    if (range !== null && seen.range !== `${range.low}–${range.high}`) {
+      wrong.push(`the card says ${seen.range}`)
+    }
+    if (seen.find !== null) wrong.push('"Find your range first" with a range')
+  } else if (seen.find !== 'Find your range first. Takes under a minute.') {
+    wrong.push(`the range row reads "${seen.find}"`)
+  }
+  if (
+    seen.song !==
+    '1 free karaoke song every monthYours once your email is confirmed.'
+  ) {
+    wrong.push(`the free song reads "${seen.song}"`)
+  }
+  if (!seen.onTop) wrong.push('something covers Keep')
+  if (over) {
+    if (seen.beat !== 'keep') wrong.push(`the layer is on ${seen.beat}`)
+    if (seen.layerNotNow?.hidden !== true || seen.layerNotNow?.inert !== true) {
+      wrong.push(`the layer's Not now is ${JSON.stringify(seen.layerNotNow)}`)
+    }
+    if (seen.room !== 'resting') wrong.push(`the room is ${seen.room}`)
+    const flag = await flagNow(page)
+    if (flag !== 'due') wrong.push(`the flag is ${flag}`)
+    // Merc stands over the sheet: at most his feet go behind it.
+    if (
+      seen.merc !== null &&
+      seen.sheetTop !== null &&
+      (seen.merc.top + seen.merc.bottom) / 2 > seen.sheetTop
+    ) {
+      wrong.push(
+        `Merc is under the sheet (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`,
+      )
+    }
+  }
+  if (wrong.length > 0) throw new Error(`${how}: Keep ${wrong.join('; ')}`)
+  const merc =
+    !over || seen.merc === null || seen.sheetTop === null
+      ? ''
+      : seen.merc.bottom <= seen.sheetTop
+        ? `, Merc whole over the sheet (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`
+        : `, Merc over the sheet, his feet behind it (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`
+  const card =
+    seen.range === null
+      ? 'no card'
+      : `the card ${seen.range}${arrival === 'reveal' ? ' flown in' : ''}`
+  return `${kit.keepShapeLine(shape)}; ${card}; the free song with its email line${over ? '; over the layer, its Not now hidden, the room held' : ''}${merc}`
+}
+
+/**
+ * The anonymous identity, asked for once Keep has opened (S7b E11). The
+ * probe answers no API, so the request going out is the whole proof.
+ */
+async function expectMint(page, kit, mints, how) {
+  const end = Date.now() + kit.stepTimeoutMs
+  while (mints.length === 0 && Date.now() < end) {
+    await page.waitForTimeout(100)
+  }
+  if (mints.length === 0) {
+    throw new Error(`${how}: no anonymous identity was asked for`)
+  }
+}
+
+/** None yet: the identity waits for the first offer (S7b E11). */
+function expectNoMint(mints, how) {
+  if (mints.length > 0) {
+    throw new Error(
+      `${how}: the anonymous identity was asked for before Keep (${mints.length})`,
+    )
+  }
+}
+
+/**
+ * The Sing door, one note, the range, the reveal, Continue to Keep, and
+ * Keep's Not now.
+ */
 async function walkRange(browser, args, frame, kit) {
-  const { context, page, errors } = await boot(browser, args, frame, kit)
+  const { context, page, errors, mints } = await boot(browser, args, frame, kit)
   try {
     await openAtSingDoor(page, frame, kit)
     const { note, said, tries } = await nameOneNote(page, kit)
@@ -519,11 +744,22 @@ async function walkRange(browser, args, frame, kit) {
     await expectBeat(page, kit, 'range', 'Find my range')
     const range = await measureRange(page, kit, 'range')
     const card = await reveal(page, kit, range)
+    expectNoMint(mints, 'the reveal')
 
-    // ── Continue: the Sing room, live, with no priming screen ──
+    // ── Continue: Keep, beat 7, over the layer ────────────────
     await page.locator(CONTINUE).tap()
-    await expectRoomLive(page, kit, 'Continue')
-    await expectGone(page, kit, 'Continue', 'transport')
+    const keep = await expectKeep(page, kit, 'Continue', {
+      variant: 'voiceprint',
+      arrival: 'reveal',
+      range,
+    })
+    await expectMint(page, kit, mints, 'Keep')
+    await kit.shoot(page, shotsFor(args, frame), 'onboarding-keep')
+
+    // ── Keep's Not now: the Sing room, live, no priming screen ──
+    await page.locator(KEEP_NOT_NOW).tap()
+    await expectRoomLive(page, kit, "Keep's Not now")
+    await expectGone(page, kit, "Keep's Not now", 'transport')
 
     // ── Never again on this install ───────────────────────────
     // The run is live, so the corner chip's column is the way to Rooms: it
@@ -543,16 +779,21 @@ async function walkRange(browser, args, frame, kit) {
     }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     return [
-      `the Sing door: up over the held room, rail aside; hello and the example; ${note} named ("${said}", tap ${tries}); Find my range: ${range.low} to ${range.high} from two slides, kept as a voiceprint; the reveal: ${card}; Continue: the room live under the transport, flag done; parked and back, not again`,
+      `the Sing door: up over the held room, rail aside; hello and the example; ${note} named ("${said}", tap ${tries}); Find my range: ${range.low} to ${range.high} from two slides, kept as a voiceprint; the reveal: ${card}, no identity asked for yet; Continue: Keep, ${keep}; the anonymous identity asked for as it opened; Keep's Not now: the room live under the transport, flag done; parked and back, not again`,
     ]
   } finally {
     await context.close()
   }
 }
 
-/** One note, then Skip for now: Merc's word, then the Sing room, live. */
+/**
+ * One note, then Skip for now: Merc's word, then Keep's Save your
+ * progress, whose "Find your range first" runs the range in the layer, its
+ * mic opened in that tap; the reveal, Keep again with the voiceprint, and
+ * Keep's Not now to the Sing room, live.
+ */
 async function walkSkip(browser, args, frame, kit) {
-  const { context, page, errors } = await boot(browser, args, frame, kit)
+  const { context, page, errors, mints } = await boot(browser, args, frame, kit)
   try {
     await openAtSingDoor(page, frame, kit)
     const { note } = await nameOneNote(page, kit)
@@ -569,11 +810,48 @@ async function walkSkip(browser, args, frame, kit) {
         throw new Error(`Skip for now: Merc says "${line}"`)
       })
     await expectLayout(page, 'skipped')
-    await expectRoomLive(page, kit, 'Skip for now')
-    await expectGone(page, kit, 'Skip for now', 'transport')
+    expectNoMint(mints, 'Skip for now')
+
+    // ── Keep, Save your progress, over the layer ──────────────
+    const keep = await expectKeep(page, kit, 'Skip for now', {
+      variant: 'progress',
+      arrival: 'plain',
+    })
+    await expectMint(page, kit, mints, 'Keep after a skip')
+    await kit.shoot(page, shotsFor(args, frame), 'onboarding-keep-skipped')
+
+    // ── Find your range first: this layer's range, mic in that tap ──
+    await page.locator(KEEP_FIND_RANGE).tap()
+    await expectBeat(page, kit, 'range', 'Find your range first')
+    await page
+      .locator(KEEP)
+      .waitFor({ state: 'hidden', timeout: kit.stepTimeoutMs })
+      .catch(() => {
+        throw new Error('Find your range first: Keep stayed up')
+      })
+    const entry = await page.evaluate(
+      (layer) => document.querySelector(layer)?.getAttribute('data-entry'),
+      LAYER,
+    )
+    if (entry !== 'onboarding') {
+      throw new Error(`Find your range first: the range opened as ${entry}`)
+    }
+    const range = await measureRange(page, kit, 'the range from Keep')
+    const card = await reveal(page, kit, range)
+
+    // ── Continue: Keep again, the voiceprint flown in ─────────
+    await page.locator(CONTINUE).tap()
+    const again = await expectKeep(page, kit, 'Continue after Keep', {
+      variant: 'voiceprint',
+      arrival: 'reveal',
+      range,
+    })
+    await page.locator(KEEP_NOT_NOW).tap()
+    await expectRoomLive(page, kit, "Keep's Not now")
+    await expectGone(page, kit, "Keep's Not now", 'transport')
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     return [
-      `${note} named, then Skip for now: "It's here when you want it.", then gone, flag done, the room live under the transport`,
+      `${note} named, then Skip for now: "It's here when you want it.", no identity asked for yet; Keep: ${keep}; the anonymous identity asked for as it opened; Find your range first: the layer's own range (entry onboarding), its mic opened in that tap, ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${again}; Keep's Not now: gone, flag done, the room live under the transport`,
     ]
   } finally {
     await context.close()
@@ -581,12 +859,15 @@ async function walkSkip(browser, args, frame, kit) {
 }
 
 /**
- * Settings' Save your progress opens Keep, whose "Find your range first"
- * runs the range on its own: the range and the reveal, then Keep again,
- * now with the voiceprint on it. The onboarding is left due.
+ * Settings' Save your progress opens Keep, the first offer, so the
+ * anonymous identity is asked for then. Its "Find your range first" runs
+ * the range on its own: the range and the reveal, then Keep again, the
+ * voiceprint flown in. The onboarding is left due, and when it comes, its
+ * first note ends on the range kept: See my voice reveals it, the twin it
+ * was kept with, then Keep, and Keep's Not now leaves the onboarding done.
  */
 async function walkKeepRange(browser, args, frame, kit) {
-  const { context, page, errors } = await boot(browser, args, frame, kit)
+  const { context, page, errors, mints } = await boot(browser, args, frame, kit)
   const visible = (selector, timeout = kit.stepTimeoutMs) =>
     page.locator(selector).waitFor({ state: 'visible', timeout })
   try {
@@ -594,8 +875,10 @@ async function walkKeepRange(browser, args, frame, kit) {
     await visible('[data-more-item="settings"]')
     await page.locator('[data-more-item="settings"]').click()
     await visible('[data-settings-row="save-progress"]')
+    expectNoMint(mints, 'Settings')
     await page.locator('[data-settings-row="save-progress"]').click()
     await visible(KEEP)
+    await expectMint(page, kit, mints, 'Keep from Settings')
     await visible('[data-testid="keep-find-range"]').catch(() => {
       throw new Error('Keep: no "Find your range first" without a voiceprint')
     })
@@ -643,22 +926,45 @@ async function walkKeepRange(browser, args, frame, kit) {
         throw new Error('Continue: the range is still up')
       })
 
-    await visible(KEEP).catch(() => {
-      throw new Error('Continue: Keep did not open again')
+    const keep = await expectKeep(page, kit, 'Continue', {
+      variant: 'voiceprint',
+      arrival: 'reveal',
+      range,
+      over: false,
     })
-    await visible('[data-testid="keep-voiceprint"]').catch(() => {
-      throw new Error('Keep: no voiceprint on it after the range')
-    })
-    if ((await page.locator('[data-testid="keep-find-range"]').count()) > 0) {
-      throw new Error('Keep: still offers "Find your range first"')
-    }
     const flag = await flagNow(page)
     if (flag !== 'due') {
       throw new Error(`the range from Keep: the onboarding is ${flag}, not due`)
     }
+    await kit.shoot(page, shotsFor(args, frame), 'keep-after-range')
+
+    // ── Not now, then the rail's Sing: the onboarding, due ────
+    await page.locator(KEEP_NOT_NOW).tap()
+    await page
+      .locator(KEEP)
+      .waitFor({ state: 'hidden', timeout: kit.stepTimeoutMs })
+    await page.locator('[data-rail-item="stage"]').click()
+    await expectUp(page, kit, "the rail's Sing, a range kept")
+    const { note } = await nameOneNote(page, kit, { saved: true })
+    await kit.shoot(page, shotsFor(args, frame), 'onboarding-saved-note')
+
+    // ── See my voice: the range kept, the twin it was kept with ──
+    const kept = await reveal(page, kit, range, SEE_SAVED)
+    if (kept !== card) {
+      throw new Error(`See my voice: the range kept reads ${kept}, not ${card}`)
+    }
+    await page.locator(CONTINUE).tap()
+    const again = await expectKeep(page, kit, 'Continue on the range kept', {
+      variant: 'voiceprint',
+      arrival: 'reveal',
+      range,
+    })
+    await page.locator(KEEP_NOT_NOW).tap()
+    await expectRoomLive(page, kit, "Keep's Not now")
+    await expectGone(page, kit, "Keep's Not now", 'transport')
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     return [
-      `Keep's "Find your range first": the range on its own (no Skip for now), ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again with the voiceprint, no Find your range row; the onboarding still due`,
+      `Keep from Settings, the anonymous identity asked for as it opened; "Find your range first": the range on its own (no Skip for now), ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${keep}; the onboarding still due. Then the rail's Sing: ${note} named, the first note ending on See my voice and Find my range again, no Skip for now; See my voice: ${kept}, as kept; Continue: Keep, ${again}; Keep's Not now: gone, flag done, the room live under the transport`,
     ]
   } finally {
     await context.close()

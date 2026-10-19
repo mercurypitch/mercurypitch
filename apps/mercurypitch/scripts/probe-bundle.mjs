@@ -5057,6 +5057,10 @@ async function main() {
     tapDoor,
     waitPhase,
     walkOpen,
+    // Keep, measured the one way (the onboarding's beat 7 is this Keep).
+    keepShape,
+    keepShapeHolds,
+    keepShapeLine,
     importing: imports.importing,
     bootTimeoutMs: BOOT_TIMEOUT_MS,
     stepTimeoutMs: STEP_TIMEOUT_MS,

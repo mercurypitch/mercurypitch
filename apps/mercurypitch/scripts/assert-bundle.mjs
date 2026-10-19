@@ -337,6 +337,15 @@ const KARAOKE_STAGE_2 = [
     "That's your voiceprint. It changes as you practice.",
     "the native onboarding's reveal",
   ],
+  // Beat 7, Keep over the layer (KeepView.tsx), and the first note's ways on
+  // for a range this phone already keeps (saved-range.ts), in the same lazy
+  // chunk. Keep's own sheet ships in every build, so it marks nothing here.
+  ['onboarding-keep', "the native onboarding's Keep beat"],
+  [
+    'onboarding-see-saved',
+    "the native onboarding's See my voice, a range kept",
+  ],
+  ['Find my range again', "the native onboarding's Find my range again"],
 ]
 
 /**

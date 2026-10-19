@@ -5,8 +5,10 @@
 // Top to bottom: Merc's line in a bubble, Merc on a lit spot, the lane the
 // voice draws on, and the foot: the mic with what a tap does and the house
 // promise, the mic's notice when it would not open, or, once the note is
-// named, its two ways on: Find my range and Skip for now (S7b §6.1). The
-// controller (useFirstNote.ts) decides; this draws.
+// named, its two ways on: Find my range and Skip for now (S7b §6.1). On a
+// phone that already keeps a range (saved-range.ts), they are See my voice,
+// which reveals it, and Find my range again. The controller
+// (useFirstNote.ts) decides; this draws.
 //
 // Merc's line is read out by the layer's one live region (noteSays); the
 // bubble itself is hidden from a screen reader so it is not read twice.
@@ -32,6 +34,12 @@ export interface FirstNoteViewProps {
   onRange: () => void
   /** Skip for now: the range is left for later. */
   onSkip: () => void
+  /**
+   * See my voice, on a phone that already keeps a range: its reveal. While
+   * it is given, the second way on is Find my range again (`onRange`), and
+   * there is no Skip for now.
+   */
+  onSeeSaved?: () => void
   /** The range was skipped: its two buttons go while Merc has his word. */
   skipped: boolean
   /** Merc: the layer's own view of him. */
@@ -177,22 +185,50 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
               classList={{ [styles.away]: props.skipped }}
               inert={props.skipped}
             >
-              <button
-                type="button"
-                class={styles.primary}
-                onClick={() => props.onRange()}
-                data-testid="onboarding-find-range"
+              <Show
+                when={props.onSeeSaved}
+                fallback={
+                  <>
+                    <button
+                      type="button"
+                      class={styles.primary}
+                      onClick={() => props.onRange()}
+                      data-testid="onboarding-find-range"
+                    >
+                      {ONBOARDING_COPY.findRange}
+                    </button>
+                    <button
+                      type="button"
+                      class={styles.secondary}
+                      onClick={() => props.onSkip()}
+                      data-testid="onboarding-skip"
+                    >
+                      {ONBOARDING_COPY.skip}
+                    </button>
+                  </>
+                }
               >
-                {ONBOARDING_COPY.findRange}
-              </button>
-              <button
-                type="button"
-                class={styles.secondary}
-                onClick={() => props.onSkip()}
-                data-testid="onboarding-skip"
-              >
-                {ONBOARDING_COPY.skip}
-              </button>
+                {(see) => (
+                  <>
+                    <button
+                      type="button"
+                      class={styles.primary}
+                      onClick={() => see()()}
+                      data-testid="onboarding-see-saved"
+                    >
+                      {ONBOARDING_COPY.seeVoice}
+                    </button>
+                    <button
+                      type="button"
+                      class={styles.secondary}
+                      onClick={() => props.onRange()}
+                      data-testid="onboarding-find-range"
+                    >
+                      {ONBOARDING_COPY.findRangeAgain}
+                    </button>
+                  </>
+                )}
+              </Show>
             </div>
           </Match>
           <Match when={phase() === 'blocked'}>

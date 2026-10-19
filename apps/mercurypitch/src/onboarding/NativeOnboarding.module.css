@@ -109,6 +109,13 @@
   padding: 0 16px;
 }
 
+/* Under Keep (beat 7, KeepView.tsx): Merc at the top of the stage, over
+   the sheet where there is room, his feet behind it where there is not. */
+.keepStage {
+  justify-content: flex-start;
+  padding-top: 8px;
+}
+
 /* Above the spotlight's beam, which reaches up behind it. */
 .bubbleRow {
   position: relative;

@@ -7,24 +7,45 @@
 // (010). Not now is quiet (014). A phone signed in, or signed out of the
 // account it has, is not asked unprompted; the Save your progress row and
 // the Cloud offer's free account open it for anyone signed out (S7b §5).
+// The first offer to open mints the anonymous identity (S7b E11), in a
+// build with the offer screens only.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthService from '@/db/services/auth-service'
+import type * as BillingService from '@/db/services/billing-service'
 import { setAuthToken } from '@/db/services/user-service'
 import { TAB_HOME, TAB_SINGING } from '@/features/tabs/constants'
+import type * as NativeBuild from '@/lib/native-build'
 import { setPlaybackState } from '@/stores/playback-state-store'
 import type { SingTake } from '@/stores/sing-takes-store'
 import { clearSingTakes, keepSingTake, removeSingTake, SING_TAKES_KEPT, } from '@/stores/sing-takes-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { openMore, resetRunShell, runState } from '../run-shell-store'
-import { declineOffer, forgetAccountOffer, installAccountOffer, OFFER_BEAT_MS, offerOpen, openKeep, rangeFinder, registerRangeFinder, resetAccountOffer, } from './account-offer'
+import { declineOffer, forgetAccountOffer, installAccountOffer, keepArrival, noAccountYet, OFFER_BEAT_MS, offerOpen, openKeep, openKeepFromReveal, rangeFinder, registerRangeFinder, resetAccountOffer, } from './account-offer'
 import { resetSignIn, signInOpen } from './sign-in-state'
 
-const stand = vi.hoisted(() => ({ signedOutHere: false }))
+const stand = vi.hoisted(() => ({
+  signedOutHere: false,
+  importing: false,
+  identify: vi.fn(async () => Promise.resolve(true)),
+}))
 
 vi.mock('@/db/services/auth-service', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthService>()),
   needsSignIn: () => stand.signedOutHere,
+}))
+vi.mock('@/db/services/singer-identity', () => ({
+  ensureSingerIdentity: stand.identify,
+}))
+vi.mock('@/db/services/billing-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof BillingService>()),
+  fetchAppGift: async () => Promise.resolve(null),
+}))
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<typeof NativeBuild>()),
+  get KARAOKE_IMPORT() {
+    return stand.importing
+  },
 }))
 
 let serial = 0
@@ -79,6 +100,8 @@ function clean(): void {
   resetSignIn()
   forgetAccountOffer()
   stand.signedOutHere = false
+  stand.importing = false
+  stand.identify.mockClear()
 }
 
 beforeEach(() => {
@@ -280,6 +303,31 @@ describe('Not now, and the other ways in', () => {
     expect(offerOpen()).toBe(false)
   })
 
+  it('opens straight after a reveal with its card flying in, and plainly from anywhere else', () => {
+    openKeepFromReveal()
+    const fromReveal = keepArrival()
+    declineOffer()
+    openKeep()
+
+    expect(fromReveal).toBe('reveal')
+    expect(keepArrival()).toBe('plain')
+  })
+
+  it('says whether this phone has no account yet: none signed in, none signed out of', () => {
+    const none = noAccountYet()
+    setAuthToken(token('anonymous'))
+    const ownIdentity = noAccountYet()
+    setAuthToken(token('google'))
+    const signedIn = noAccountYet()
+    setAuthToken(null)
+    stand.signedOutHere = true
+
+    expect(none).toBe(true)
+    expect(ownIdentity).toBe(true)
+    expect(signedIn).toBe(false)
+    expect(noAccountYet()).toBe(false)
+  })
+
   it('offers a range finder only while one is registered', () => {
     const none = rangeFinder()
     const run = vi.fn()
@@ -290,5 +338,34 @@ describe('Not now, and the other ways in', () => {
     expect(none).toBeNull()
     expect(registered).toBe(run)
     expect(rangeFinder()).toBeNull()
+  })
+})
+
+describe('the anonymous identity (S7b E11)', () => {
+  it('is minted as Keep opens, the first offer a new install meets, in a build with the offer screens', () => {
+    stand.importing = true
+
+    openKeep()
+    declineOffer()
+    openKeepFromReveal()
+
+    expect(stand.identify).toHaveBeenCalledTimes(2)
+  })
+
+  it('is minted when Keep rises after a Keep in the room, too', () => {
+    stand.importing = true
+    install()
+
+    keep()
+
+    expect(offerOpen()).toBe(true)
+    expect(stand.identify).toHaveBeenCalledTimes(1)
+  })
+
+  it('is not minted by the store build, whose Keep stays as it is until the V1 release', () => {
+    openKeep()
+
+    expect(offerOpen()).toBe(true)
+    expect(stand.identify).not.toHaveBeenCalled()
   })
 })

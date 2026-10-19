@@ -11,13 +11,26 @@
 //
 //   first-note  beats 2 and 3 (useFirstNote.ts): one note, named. Then Find
 //               my range, or Skip for now: Merc says the range is there for
-//               later, and the layer goes a beat after
+//               later, and Keep comes a beat after. On a phone that already
+//               keeps a range (saved-range.ts): See my voice, its reveal,
+//               or Find my range again
 //   range       beat 4 (useRange.ts): a slide down, a slide up, the range
 //   reveal      beat 5 (useReveal.ts): the voiceprint card, the twin, Share
+//   keep        beat 7 (KeepView.tsx): Keep, the account offer, the shell's
+//               own sheet over this layer (account-offer.ts). After the
+//               reveal it shows the voiceprint, its card flown in; after a
+//               skipped range it is Save your progress, whose "Find your
+//               range first" runs beat 4 here and comes back to Keep
 //
-// Continue on the reveal, or a skipped range, lands in the Sing room, live,
-// until Keep (beat 7) takes that place. Opened on its own from Keep's "Find
-// your range first", the layer starts on the range and goes back to Keep.
+// Keep comes only to a phone with no account yet (signed in, or signed out
+// of one, the layer goes straight on), and only after a range measured or
+// skipped: a refused mic never gets that far, so it gets no offer (S7b E5).
+// Not now on the layer stands aside while Keep is up: Keep's own is the way
+// out. Once Keep has closed, and the sign-in sheet or the voiceprint ask it
+// handed over to has closed too, the layer goes on to the Sing room, live,
+// until the sung line (part 4) takes that place. Opened on its own from
+// Keep's "Find your range first" over anything else, the layer starts on
+// the range and goes back to Keep.
 //
 // The beats share one capture, so the mic the first note opened is the one
 // the range opens again, and one Merc, who moves from beat to beat with the
@@ -32,21 +45,32 @@ import { createEffect, createSignal, Match, on, onCleanup, onMount, Switch, untr
 import { MercView } from '@/components/room-kit/MercView'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import { useExerciseCapture } from '@/components/room-kit/useExerciseCapture'
+import type { RangeResult } from '@/lib/mirror/metrics'
 import { onboardingShown } from '../shell/run-shell-store'
+import { noAccountYet, offerOpen, openKeep, openKeepFromReveal, } from '../shell/settings/account-offer'
+import { signInOpen } from '../shell/settings/sign-in-state'
+import { voiceprintAskAsking } from '../shell/settings/voiceprint-ask'
 import { FirstNoteView, noteSays } from './FirstNoteView'
+import { KeepView } from './KeepView'
 import styles from './NativeOnboarding.module.css'
 import { ONBOARDING_COPY } from './onboarding-copy'
-import { leaveOnboarding, onboardingEntry } from './onboarding-layer'
+import { leaveOnboarding, onboardingEntry, registerLayerRange, } from './onboarding-layer'
 import { rangeSays, RangeView } from './RangeView'
 import { RevealView } from './RevealView'
+import { savedRange } from './saved-range'
 import { ONBOARDING_AUDIO_OWNER, useFirstNote } from './useFirstNote'
 import { useRange } from './useRange'
 import { useReveal } from './useReveal'
 
-/** Merc's word on a skipped range has its moment, then the layer goes, ms. */
+/** Merc's word on a skipped range has its moment, then Keep comes, ms. */
 export const SKIP_BEAT_MS = 1600
 
-export type OnboardingBeat = 'first-note' | 'range' | 'reveal'
+export type OnboardingBeat = 'first-note' | 'range' | 'reveal' | 'keep'
+
+/** Keep, or what Keep handed over to: the sign-in sheet, the voiceprint ask. */
+function keepUp(): boolean {
+  return offerOpen() || signInOpen() || voiceprintAskAsking()
+}
 
 export function NativeOnboarding(): JSX.Element {
   const leaving = () => !onboardingShown()
@@ -64,6 +88,18 @@ export function NativeOnboarding(): JSX.Element {
     entry === 'range' ? 'range' : 'first-note',
   )
   const [skipped, setSkipped] = createSignal(false)
+  /** The range the reveal shows: the one just measured, or the one kept. */
+  const [revealed, setRevealed] = createSignal<RangeResult | null>(null)
+  /**
+   * A range this phone already keeps, measured from Keep before the first
+   * Sing door: the first note ends on it rather than on a second measuring.
+   * Only the onboarding opens on the first note; the range on its own
+   * measures. Read once: the layer is mounted fresh for each opening.
+   */
+  const saved = savedRange()
+
+  let skipTimer: ReturnType<typeof setTimeout> | undefined
+  onCleanup(() => clearTimeout(skipTimer))
 
   // Leaving shuts the mic at once; the layer only fades after.
   createEffect(
@@ -78,27 +114,82 @@ export function NativeOnboarding(): JSX.Element {
     ),
   )
 
-  let skipTimer: ReturnType<typeof setTimeout> | undefined
-  onCleanup(() => clearTimeout(skipTimer))
-
-  /** Find my range: the range, its mic opened inside this tap. */
+  /** Find my range, or again: the range, its mic opened inside this tap. */
   const findRange = (): void => {
+    setSkipped(false)
     setBeat('range')
     range.start()
   }
-  /** Skip for now: Merc's word, then on (the Sing room, until Keep). */
+
+  /**
+   * Beat 7: Keep over the layer, for a phone with no account yet. After the
+   * reveal its card flies in; after a skipped range there is none. A phone
+   * with an account goes straight on to the Sing room.
+   */
+  const toKeep = (after: 'reveal' | 'skip'): void => {
+    // A layer on its way out brings no Keep: Merc's word on a skip still
+    // ends while it fades.
+    if (untrack(leaving)) return
+    if (!noAccountYet()) {
+      leaveOnboarding('finished')
+      return
+    }
+    setBeat('keep')
+    if (after === 'reveal') openKeepFromReveal()
+    else openKeep()
+  }
+
+  /** Skip for now: Merc's word, then Keep. */
   const skip = (): void => {
     if (untrack(skipped)) return
     setSkipped(true)
-    skipTimer = setTimeout(() => leaveOnboarding('finished'), SKIP_BEAT_MS)
+    skipTimer = setTimeout(() => {
+      skipTimer = undefined
+      toKeep('skip')
+    }, SKIP_BEAT_MS)
   }
   /** The range's own Skip for now: in the onboarding only. From Keep, Not
    *  now is the way back to it. A plain value, so a tap reads no getter. */
   const skipRange = entry === 'onboarding' ? skip : undefined
-  const seeVoice = (): void => {
+
+  const showReveal = (shown: RangeResult | null): void => {
+    if (shown === null) return
+    setRevealed(shown)
     setBeat('reveal')
     reveal.arrive()
   }
+  const seeVoice = (): void => showReveal(untrack(range.state).range)
+  /** See my voice on the first note: the range this phone already keeps. */
+  const seeSaved = saved === null ? undefined : () => showReveal(saved)
+
+  /** Continue on the reveal: Keep in the onboarding, back to Keep from it. */
+  const continueOn = (): void => {
+    if (entry === 'onboarding') toKeep('reveal')
+    else leaveOnboarding('finished')
+  }
+
+  // Keep's "Find your range first", over this layer's beat 7: this layer's
+  // own range, inside Keep's tap. Keep brings itself back after the reveal.
+  if (entry === 'onboarding') onCleanup(registerLayerRange(findRange))
+
+  // Keep has closed, and so has what it handed over to: on to the Sing room.
+  // Checked once the tap that closed it is over, because Keep's ways close
+  // it and open what comes next in the one tap (Use email, a sign-in and
+  // its voiceprint ask, Find your range first).
+  createEffect(
+    on(
+      [beat, keepUp],
+      ([now, up]) => {
+        if (now !== 'keep' || up) return
+        queueMicrotask(() => {
+          if (untrack(beat) === 'keep' && !untrack(keepUp)) {
+            leaveOnboarding('finished')
+          }
+        })
+      },
+      { defer: true },
+    ),
+  )
 
   /** The beat on screen's controller: Merc's state and voice are its. */
   const active = () => {
@@ -106,14 +197,17 @@ export function NativeOnboarding(): JSX.Element {
       case 'range':
         return range
       case 'reveal':
+      case 'keep':
         return reveal
       default:
         return note
     }
   }
 
-  /** Merc's line on the beat on screen, for its bubble and the live region. */
+  /** Merc's line on the beat on screen, for its bubble and the live region.
+   *  None under Keep: the sheet says it. */
   const said = (): string | null => {
+    if (beat() === 'keep') return null
     if (skipped()) return ONBOARDING_COPY.skipped
     switch (beat()) {
       case 'range':
@@ -131,6 +225,10 @@ export function NativeOnboarding(): JSX.Element {
         return ONBOARDING_COPY.rangeTitle
       case 'reveal':
         return ONBOARDING_COPY.revealTitle
+      case 'keep':
+        return revealed() === null
+          ? ONBOARDING_COPY.title
+          : ONBOARDING_COPY.revealTitle
       default:
         return ONBOARDING_COPY.title
     }
@@ -167,7 +265,13 @@ export function NativeOnboarding(): JSX.Element {
       data-entry={entry}
       data-leaving={leaving() ? 'on' : 'off'}
     >
-      <div class={styles.top}>
+      {/* Under Keep, its own Not now is the way out: this one stands aside,
+          in place, so nothing moves when Keep has gone. */}
+      <div
+        class={styles.top}
+        classList={{ [styles.away]: beat() === 'keep' }}
+        inert={beat() === 'keep'}
+      >
         <button
           type="button"
           class={styles.notNow}
@@ -192,6 +296,7 @@ export function NativeOnboarding(): JSX.Element {
             line={said()}
             onRange={findRange}
             onSkip={skip}
+            onSeeSaved={seeSaved}
             skipped={skipped()}
             merc={merc}
           />
@@ -206,15 +311,18 @@ export function NativeOnboarding(): JSX.Element {
             merc={merc}
           />
         </Match>
-        <Match when={beat() === 'reveal' ? range.state().range : null}>
-          {(measured) => (
+        <Match when={beat() === 'reveal' ? revealed() : null}>
+          {(shown) => (
             <RevealView
               controller={reveal}
-              range={measured()}
-              onContinue={() => leaveOnboarding('finished')}
+              range={shown()}
+              onContinue={continueOn}
               merc={merc}
             />
           )}
+        </Match>
+        <Match when={beat() === 'keep'}>
+          <KeepView merc={merc} />
         </Match>
       </Switch>
     </div>

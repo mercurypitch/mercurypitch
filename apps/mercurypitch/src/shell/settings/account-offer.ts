@@ -30,12 +30,24 @@
 // §3.2). A build with the native onboarding registers its range
 // (onboarding-layer.ts); a build without one registers none, and the row is
 // not drawn: no build offers what it lacks.
+//
+// The onboarding's beat 7 is Keep too (S7b §3.1), opened over its layer
+// after the reveal, or after a skipped range, on a phone with no account
+// yet (`noAccountYet`). After the reveal the card flies in, small
+// (`openKeepFromReveal`, S7b §3.5).
+//
+// The anonymous identity (S7b E11): the first offer to open mints it, and
+// Keep is the first offer a new install meets (singer-identity.ts). Only in
+// a build with the offer screens: the store build keeps today's behaviour
+// until the V1 release brings them (owner, 16 Oct: nothing ships early).
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createRoot, createSignal, onCleanup, untrack, } from 'solid-js'
 import { needsSignIn } from '@/db/services/auth-service'
+import { ensureSingerIdentity } from '@/db/services/singer-identity'
 import { authVersion } from '@/db/services/user-service'
 import { TAB_SINGING } from '@/features/tabs/constants'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
 import type { SingTake } from '@/stores/sing-takes-store'
 import { singTakes } from '@/stores/sing-takes-store'
 import { countingIn, currentTab, runState, shellCovered, } from '../run-shell-store'
@@ -49,7 +61,11 @@ export const OFFER_BEAT_MS = 400
 
 const SHOWN_KEY = 'mp:account-offer-shown'
 
+/** How Keep came up: after a reveal, its card flies in; else it is there. */
+export type KeepArrival = 'reveal' | 'plain'
+
 const [sheetOpen, setSheetOpen] = createSignal(false)
+const [arrival, setArrival] = createSignal<KeepArrival>('plain')
 const [finder, setFinder] = createSignal<(() => void) | null>(null)
 
 /** Where storage is blocked, the session still remembers. */
@@ -58,8 +74,14 @@ let shownThisSession = false
 /** Whether Keep is up. Reactive. */
 export const offerOpen = sheetOpen
 
-/** No account on this phone yet: none signed in, and none signed out of. */
-function noAccountYet(): boolean {
+/** How Keep came up this time. Reactive. */
+export const keepArrival = arrival
+
+/**
+ * No account on this phone yet: none signed in, and none signed out of.
+ * Only then is Keep raised unprompted, here and in the onboarding.
+ */
+export function noAccountYet(): boolean {
   // The signed-out flag lives in storage; the version makes it as current
   // as the token it goes with.
   authVersion()
@@ -84,15 +106,29 @@ function markShown(): void {
   }
 }
 
-/**
- * Open Keep: the Save your progress row, the Cloud offer's free account,
- * and the sheet's own rise after a Keep. The same `() => void` shape as
- * openSignIn, so either can be handed to a button.
- */
-export function openKeep(): void {
+function open(how: KeepArrival): void {
   markShown()
   void loadAppGift()
+  // Never awaited: Keep is up at once, and the identity is made behind it
+  // (one request however many ask, singer-identity.ts).
+  if (KARAOKE_IMPORT) void ensureSingerIdentity()
+  setArrival(how)
   setSheetOpen(true)
+}
+
+/**
+ * Open Keep: the Save your progress row, the Cloud offer's free account,
+ * the sheet's own rise after a Keep, and the onboarding after a skipped
+ * range. The same `() => void` shape as openSignIn, so either can be handed
+ * to a button.
+ */
+export function openKeep(): void {
+  open('plain')
+}
+
+/** Open Keep straight after a reveal: the voiceprint card flies in, small. */
+export function openKeepFromReveal(): void {
+  open('reveal')
 }
 
 /** Not now; and Back, the backdrop or a swipe on the sheet. */
@@ -194,6 +230,7 @@ export function installAccountOffer(): () => void {
 /** Tests: nothing open, no range finder, nothing remembered this session. */
 export function resetAccountOffer(): void {
   setSheetOpen(false)
+  setArrival('plain')
   setFinder(null)
   shownThisSession = false
 }

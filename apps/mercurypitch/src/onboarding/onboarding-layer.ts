@@ -18,12 +18,17 @@
 // that at once: it never opens again on this install. The shell is back as
 // it starts to fade (LEAVE_MS); the layer unmounts when the fade is over.
 //
-// The range on its own. Keep's "Find your range first" (S7b §3.2) runs the
-// range and the reveal in this same layer (`openRangeFinder`), then opens
-// Keep again, however the layer leaves. That is not the onboarding, so the
-// flag is left as it is. The shell registers it with Keep for as long as
-// the shell lives (account-offer.ts registerRangeFinder): a build without
-// the onboarding has no range, and its Keep offers none.
+// Keep's "Find your range first" (S7b §3.2), which the shell registers with
+// Keep for as long as the shell lives (account-offer.ts
+// registerRangeFinder): a build without the onboarding has no range, and
+// its Keep offers none. What it runs depends on what is under Keep:
+//
+//   - the onboarding, on its beat 7: the onboarding's own range, in the
+//     layer that is up (`registerLayerRange`), and the onboarding brings
+//     Keep back after it;
+//   - anything else: the range and the reveal on their own, in this same
+//     layer (`openRangeFinder`), then Keep again, however the layer leaves.
+//     That is not the onboarding, so the flag is left as it is.
 
 import { createEffect, createSignal, on, onCleanup, untrack } from 'solid-js'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
@@ -31,7 +36,7 @@ import { TAB_SINGING } from '@/features/tabs/constants'
 import { holdRoomArrival } from '@/stores/native-shell-store'
 import { welcomeSeen } from '../alley/alley-welcome'
 import { currentTab, onboardingShown, setOnboardingShown, } from '../shell/run-shell-store'
-import { openKeep, registerRangeFinder } from '../shell/settings/account-offer'
+import { openKeep, openKeepFromReveal, registerRangeFinder, } from '../shell/settings/account-offer'
 import { registerOnboardingBack } from '../shell/shell-navigation'
 import { markOnboardingDone, onboardingDue, settleOnboarding, } from './onboarding-flag'
 
@@ -59,7 +64,9 @@ let releaseArrival: (() => void) | null = null
 let unmount: ReturnType<typeof setTimeout> | null = null
 let lastExit: OnboardingExit | null = null
 /** What runs once the range on its own has left: Keep, again. */
-let afterRange: (() => void) | null = null
+let afterRange: ((exit: OnboardingExit) => void) | null = null
+/** The onboarding's own range, while its layer is up to run it. */
+let layerRange: (() => void) | null = null
 
 function leaveMs(): number {
   return prefersReducedMotion() ? LEAVE_REDUCED_MS : LEAVE_MS
@@ -88,13 +95,43 @@ export function openOnboarding(): void {
 
 /**
  * The range and the reveal on their own (Keep's "Find your range first"),
- * then `then` once the layer leaves, whichever way it leaves. Nothing when
- * the layer is up already.
+ * then `then` once the layer leaves, whichever way it leaves, told which.
+ * Nothing when the layer is up already.
  */
-export function openRangeFinder(then: () => void): void {
+export function openRangeFinder(then: (exit: OnboardingExit) => void): void {
   if (untrack(onboardingShown)) return
   afterRange = then
   show('range')
+}
+
+/**
+ * The onboarding's layer registers its own range here while it is up, so
+ * Keep over its beat 7 runs that one, inside Keep's tap (the mic opens in
+ * it). Registration returns its own unregister.
+ */
+export function registerLayerRange(run: () => void): () => void {
+  layerRange = run
+  return () => {
+    if (layerRange === run) layerRange = null
+  }
+}
+
+/** After the reveal's Continue the card flies in; any other way, it is there. */
+function keepAgain(exit: OnboardingExit): void {
+  if (exit === 'finished') openKeepFromReveal()
+  else openKeep()
+}
+
+/**
+ * Keep's "Find your range first": the onboarding's own range when the
+ * onboarding is up under Keep, else the range on its own, then Keep again.
+ */
+function findRangeFromKeep(): void {
+  if (untrack(onboardingShown)) {
+    layerRange?.()
+    return
+  }
+  openRangeFinder(keepAgain)
 }
 
 /**
@@ -115,7 +152,7 @@ export function leaveOnboarding(exit: OnboardingExit): boolean {
   }, leaveMs())
   const then = afterRange
   afterRange = null
-  then?.()
+  then?.(exit)
   return true
 }
 
@@ -132,7 +169,7 @@ export function onboardingExit(): OnboardingExit | null {
 export function installNativeOnboarding(): void {
   settleOnboarding(welcomeSeen())
   onCleanup(registerOnboardingBack(() => leaveOnboarding('not-now')))
-  onCleanup(registerRangeFinder(() => openRangeFinder(openKeep)))
+  onCleanup(registerRangeFinder(findRangeFromKeep))
   // On the tab's arrival, not on the flag's change: "Replay the
   // onboarding" sets it due from a screen that may sit over the Sing tab,
   // and the onboarding is for the next Sing door, not for that screen.
@@ -147,6 +184,7 @@ export function installNativeOnboarding(): void {
     releaseArrival?.()
     releaseArrival = null
     afterRange = null
+    layerRange = null
     setOnboardingShown(false)
     setMounted(false)
     setEntry('onboarding')

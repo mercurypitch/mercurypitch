@@ -6,15 +6,17 @@
 //   - "Not now" at the top right, a labelled text button, there from the
 //     first frame;
 //   - the singer's voiceprint card, small, when this phone holds one an
-//     account made here would adopt (keep-voiceprint.ts);
+//     account made here would adopt (keep-voiceprint.ts). Straight after a
+//     reveal (the onboarding's beat 7, or the range Keep ran) it flies in;
 //   - "Keep your voiceprint" over a measured range, else "Save your
 //     progress";
 //   - one icon and one line a row, each only where it is true: the
 //     voiceprint saved (with one); "Find your range first" (without one,
 //     while a range finder is registered); progress everywhere; the free
-//     song and the launch gift (a build that splits songs, for a singer
-//     without the subscription; the gift only while the server says it
-//     runs, keep-gift.ts);
+//     song, with the one sentence that says it needs a confirmed email, and
+//     the launch gift (a build that splits songs, for a singer without the
+//     subscription; the gift only while the server says it runs,
+//     keep-gift.ts);
 //   - the one fact line, the whole of the loss framing;
 //   - Apple first on iOS in Apple's own style, Google first on Android,
 //     then Use email, which hands over to the sign-in sheet's email pane.
@@ -41,7 +43,7 @@ import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { ChevronIcon, GiftIcon, KaraokeIcon, MailIcon, MicIcon, ProgressIcon, WaveIcon, } from '../icons'
 import { KEEP, keepFact, keepGiftLine } from './account-copy'
-import { closeOffer, declineOffer, offerOpen, rangeFinder, } from './account-offer'
+import { closeOffer, declineOffer, keepArrival, offerOpen, rangeFinder, } from './account-offer'
 import { liveAppGift } from './keep-gift'
 import type { KeepableVoiceprint } from './keep-voiceprint'
 import { keepableVoiceprint, keepRange } from './keep-voiceprint'
@@ -131,9 +133,12 @@ function Rows(props: { print: KeepableVoiceprint | null }): JSX.Element {
         <span>{KEEP.everywhere}</span>
       </li>
       <Show when={songsOffered()}>
-        <li>
+        <li data-testid="keep-free-song">
           <KaraokeIcon size={22} />
-          <span>{KEEP.freeSong}</span>
+          <span class="mp-keep__row-text">
+            <span>{KEEP.freeSong}</span>
+            <span class="mp-keep__row-sub">{KEEP.freeSongEmail}</span>
+          </span>
         </li>
       </Show>
       <Show when={giftLine()}>
@@ -238,6 +243,7 @@ export function AccountOfferSheet(): JSX.Element {
         class="mp-offer mp-offer--sheet mp-keep"
         data-testid="account-offer"
         data-variant={print() === null ? 'progress' : 'voiceprint'}
+        data-arrival={keepArrival()}
       >
         <div class="mp-keep__top">
           <button

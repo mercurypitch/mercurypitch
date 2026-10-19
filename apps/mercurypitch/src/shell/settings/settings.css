@@ -1036,6 +1036,42 @@
   color: var(--text-secondary);
 }
 
+/* Straight after a reveal the card flies in, small, from above (S7b §3.5),
+   as the sheet comes up. Transform and opacity only. The shell's motion
+   tokens reach the sheet through its portal (Sheet.tsx), and reduced motion
+   sets them to no lift, no pop and a 120 ms fade, from the phone's setting
+   or the shell's own (shell.css), so it needs no rule of its own here. */
+.mp-keep[data-arrival='reveal'] .mp-keep__print {
+  animation: mp-keep-card-in calc(var(--mp-in, 280ms) * 1.8)
+    var(--mp-ease, ease-out) both;
+}
+
+@keyframes mp-keep-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--mp-lift, 16px) * -3.5))
+      scale(calc(1 + (1 - var(--mp-pop, 0.6)) * 0.5));
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A row with a sentence under its line: the free song. */
+.mp-keep__row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mp-keep__row-sub {
+  font: 400 14px/19px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
 /* "Find your range first": a row that leads somewhere. */
 .mp-keep__find {
   display: flex;
