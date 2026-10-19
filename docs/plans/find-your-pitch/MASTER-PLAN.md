@@ -4,13 +4,13 @@ A music theory and singing tutorial series by MercuryPitch, in two forms per les
 (short text, many motion visuals, interactive toys, a lesson explorer) and a YouTube explainer
 built entirely in code, hosted by blue Merc and orange Merc.
 
-Status, 17 Oct 2026: Phase 0 is done when Lesson 1's delivery master and LEDGER exist. Both do
+Status, 19 Oct 2026: Phase 0 is done when Lesson 1's delivery master and LEDGER exist. Both do
 now, and one human check remains: the master, `rc-07` (5:14, 314.2 s on its cue sheet), speaks
 with the owner's ElevenLabs voices and passed the last of nine critic rounds, and a person listens
 to the new voices before it is published. Written: the research, curriculum, playbook, host bible
 and production pipeline, and Lesson 1's documents (script, storyboard and the rest, see § 11).
-Built: the Lesson 1 film, and the web lesson with the explorer at `/learn/01`. Lesson 2 is voiced
-and in build. Phase 1 starts with the owner decisions in § 12.
+Built: the Lesson 1 and Lesson 2 films, and the web lessons with the explorer at `/learn/01` and
+`/learn/02`; `/learn/03` is built as a draft that waits on the vocal coach (§ 11). Phase 1 starts with the owner decisions in § 12.
 
 | Document                                                 | What it holds                                                        |
 | -------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -412,8 +412,9 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   film's build decisions and the LEDGER of its fifteen critic rounds (ten on the script and
   storyboard, five on the film). Its film project is `output/motion/lesson-02/` (gitignored); the
   master is `rc-04` (7:11, 60 fps, with the owner's ElevenLabs voices), which round 15 passed with
-  four polish items for a later render. Its web lesson is specified and reviewed, and is not built
-  yet; it waits on the kit work its spec lists.
+  four polish items for a later render. Its web lesson is built at `/learn/02` (`learn/02.html`,
+  `src/features/lessons/lesson-02/`, on the shared kit in `src/features/lessons/kit/`), merged on
+  19 October 2026 and live on the dev site; it reaches `mercurypitch.com` with the next release.
 - Lessons 3 to 7: written lessons, text only and reviewed, in
   [`lessons/03-match-a-note/`](lessons/03-match-a-note/),
   [`lessons/04-major-scale/`](lessons/04-major-scale/),
@@ -421,12 +422,15 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   [`lessons/06-intervals/`](lessons/06-intervals/) and
   [`lessons/07-slides-sirens-range/`](lessons/07-slides-sirens-range/) (facts, copy and page
   spec). Lessons 3, 5 and 7 wait on the vocal coach (§ 12 item 8), and so does Lesson 6's
-  sing-along.
+  sing-along. Lesson 3's page is built at `/learn/03` as a draft: the dev site builds it, and a
+  production build leaves it out until the coach signs it off (`src/features/lessons/kit/drafts.ts`).
 - YouTube: [`youtube/YOUTUBE.md`](youtube/YOUTUBE.md) is the upload guide for Lessons 1 and 2
   (every Studio field, chapters, end screens, cards and pinned comments, checked against YouTube's
   help pages on 19 October 2026), with three thumbnails per film, end-screen maps, paste-ready
   descriptions and tags, and titles, thumbnail ideas, opening lines and tags for the trailer and
-  Lessons 3 to 14. Nothing is uploaded; its four gates and its owner decisions come first.
+  Lessons 3 to 14. Nothing is uploaded yet: the owner uploads the films once its four gates pass.
+  Decided on 19 October 2026: not made for kids, no AI disclosure, the playlist element on Lesson
+  2's end screen, and Shorts remixing allowed.
 
 ## 12. Owner decisions
 
