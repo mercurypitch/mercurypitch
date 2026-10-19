@@ -45,6 +45,12 @@ describe('baseline persistence', () => {
     expect(later?.since.getTime()).toBe(1750000000000)
   })
 
+  it('hands back the stored readings the change line names', () => {
+    saveBaseline(localStorage, summary(), 1750000000000)
+    const later = deltaVsBaseline(localStorage, summary({ semitones: 26 }))
+    expect(later?.baseline).toEqual(summary())
+  })
+
   it('returns null delta when no baseline exists', () => {
     expect(deltaVsBaseline(localStorage, summary())).toBeNull()
   })

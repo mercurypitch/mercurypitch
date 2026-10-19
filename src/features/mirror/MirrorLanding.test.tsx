@@ -41,7 +41,7 @@ const DOORS = [
   {
     path: '/vocal-range-test',
     h1: 'Find your vocal range.',
-    lede: 'Glide from your lowest comfortable note to your highest. Your result leads with both notes, your span in semitones and a broad voice-type guide; two short follow-ups add accuracy and steadiness.',
+    lede: 'Glide from your lowest comfortable note to your highest comfortable note. Your result leads with both notes, your span in semitones and a broad voice-type guide; two short follow-ups add accuracy and steadiness.',
     cta: 'Test my vocal range',
     howItWorks: 'How the test works',
   },
