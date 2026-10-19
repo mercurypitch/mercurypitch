@@ -172,9 +172,9 @@ lines wait on the vocal coach's sign-off, and its page publishes after `/learn/0
   low, quiet inhale and a steady, unforced flow. "Support" has no agreed definition (Salomoni et
   al. 2016).
 - Signature: the pitch line of a held note settling from a wobble into a narrow band.
-- Checkpoint: hold one comfortable note for 5 seconds, then 10, after the "Sore, hoarse or unwell
+- Checkpoint: hold one comfortable note for 10 seconds, then 15, after the "Sore, hoarse or unwell
   today? Just listen along." line.
-- Practise: Long Note with a fixed 5 or 10 s length (needs the `durationSec` launch field; today
+- Practise: Long Note with a fixed 10 or 15 s length (needs the `durationSec` launch field; today
   the length is the viewer's saved timer preference). No Ascent link until its "Breath & Power"
   week is rewritten (§ 4).
 - Facts: Hixon on respiratory function in singing, including inspiratory checking; Leanderson,

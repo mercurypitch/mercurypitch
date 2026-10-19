@@ -79,8 +79,8 @@ above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,347 words by the review's count (FACTS 2), between Lesson 2's 2,293 and
-Lesson 3's 2,355 on the same count, and the page runs about 17 minutes, past MASTER-PLAN § 4.2's 8
+The learner copy is 2,351 words by the review's count (FACTS 2), under Lesson 3's 2,361 on the
+same count, and the page runs about 17 minutes, past MASTER-PLAN § 4.2's 8
 to 12 minutes of active time, as Lesson 3's 15 minutes do; the holds, the warm-up and the six
 questions take about 4 of them. Steps 1 and 5 sit inside § 4.2's 50 to 120 words a step (about 98
 and 89). Three run longer, for these reasons:
@@ -190,17 +190,17 @@ One component, two views, so the breathing object is one object on the page.
 
 The signature: a held note's line settling from a wobble into the band.
 
-- The band chart in a fixed-frame hold mode: 0 to 5 s across, cents −150 to +150 up the side, Merc's
-  band ±35 cents with Merc's amber line steady at its centre (Look). **Play**, **Slow** (half
-  speed) and a scrub bar, with sound: the violet line of FACTS 76 scoops up from 60 cents low,
-  wavers, enters the band and stays, with a small, regular wave, the vibrato Step 5 names (FACTS
-  42). A "settled" marker appears where it stays in the band; readouts give the settled time and
-  the time in the band out of 5 seconds, computed by the checkpoint's own reader (Toys, 6), so the
-  demo shows exactly what a take will read.
+- The band chart in a fixed-frame hold mode: 0 to 10 s across, the first hold's length, cents −150
+  to +150 up the side, Merc's band ±35 cents with Merc's amber line steady at its centre (Look).
+  **Play**, **Slow** (half speed) and a scrub bar, with sound: the violet line of FACTS 76 scoops
+  up from 60 cents low, wavers, enters the band and stays, with a small, regular wave, the vibrato
+  Step 5 names (FACTS 42). A "settled" marker appears where it stays in the band; readouts give
+  the settled time and the time in the band out of 10 seconds, computed by the checkpoint's own
+  reader (Toys, 6), so the demo shows exactly what a take will read.
 - States: idle (Merc's band and line); playing; paused; scrubbed.
 - Keyboard: Play and Slow are buttons; the scrub bar is a slider whose `aria-valuetext` reads, for
-  example, "1.2 seconds of 5: in the band". Under reduced motion it lands in its end state with its
-  readouts beside it.
+  example, "1.2 seconds of 10: in the band". Under reduced motion it lands in its end state with
+  its readouts beside it.
 
 ### 6. Sing it: two holds
 
@@ -214,10 +214,11 @@ States:
 
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 3's comfort line,
    its list naming all six of REQ-GVC-020's conditions, and its two buttons (FACTS 48, 49). "Just
-   listen today" opens listen-only mode: **Play Merc's 5-second note** and **Play Merc's 10-second
-   note**, a tap each, in the stored voice (if none is stored, the voice choice comes first, since
-   it picks the Merc who sings); the chart shows Merc's band and line; nothing listens; LESSON.md's
-   rest line and the doctor lines show (REQ-GVC-021; FACTS 51); and the Wrap shows the rest card.
+   listen today" opens listen-only mode: **Play Merc's 10-second note** and
+   **Play Merc's 15-second note**, a tap each, in the stored voice (if none is stored, the voice
+   choice comes first, since it picks the Merc who sings); the chart shows Merc's band and line;
+   nothing listens; LESSON.md's rest line and the doctor lines show (REQ-GVC-021; FACTS 51); and
+   the Wrap shows the rest card.
 2. **Voice choice**, if none is stored, before the warm-up so that its demonstrations are in the
    chosen voice, as in Lesson 3: Lesson 3's two buttons, "Lower: sing with blue Merc, around A3"
    and "Higher: sing with orange Merc, around A4" (`aria-pressed`, at least 44 px), read from and
@@ -233,24 +234,24 @@ States:
    microphone.
 5. **Briefing**: the "What this does" box (REQ-GVC-002, REQ-GVC-003, REQ-GVC-012, REQ-GVC-026) and
    **Start**, the only control that asks for the microphone (MASTER-PLAN § 4.2 item 2).
-6. **Hold 1**, the five-second hold, in three phases shown on the ring as **Listen · Breathe ·
+6. **Hold 1**, the ten-second hold, in three phases shown on the ring as **Listen · Breathe ·
    Sing**. Listen: Merc's note, 2.0 s, the singing Merc in `sing`. Breathe: the ring breathes once
    over 2 s from the end of Merc's note, with "Breathe in, low and quiet"; nothing counts down.
    Sing: the ring turns, with "Sing, and hold the note until the ring closes", and closes over the
-   hold; the violet line draws on a fixed 5-second frame; both Mercs `listen`. The take opens 0.4 s
-   after Merc's note ends, during the Breathe ring, so a voice that starts as the breath turns is
-   caught and nobody sits holding a breath for a cue (FACTS 56, 65). It waits up to 6 s from opening
-   for the first voiced frame, then runs exactly 5 s from it, whatever happens; nothing on the page
-   extends it. The microphone is released when the take ends.
+   hold; the violet line draws on a fixed 10-second frame; both Mercs `listen`. The take opens
+   0.4 s after Merc's note ends, during the Breathe ring, so a voice that starts as the breath
+   turns is caught and nobody sits holding a breath for a cue (FACTS 56, 65). It waits up to 6 s
+   from opening for the first voiced frame, then runs exactly 10 s from it, whatever happens;
+   nothing on the page extends it. The microphone is released when the take ends.
 7. **Reading**: one line from the reader (below). If no voice came within 6 s, the line asks again
    ("We didn't hear you start that time. Breathe in, then sing as the ring turns.") with **Again**
    (while the hold has had fewer than three takes; the take counts as one) and **Done for today**,
    and no feeling question, since nothing was sung. Otherwise **How did that feel?** follows at
    once (REQ-GVC-022).
-8. **How did that feel?** after a five-second take:
+8. **How did that feel?** after a ten-second take:
    - Easy or Workable: Merc `celebrate`s if the take was in the band for at least 80 % of its
      length; rule 15's line ("If that felt tricky, good: that's learning.") if it was in the band
-     for less than half; then **Rest** with **Hold for 10 seconds** (only when hold 1 has a take
+     for less than half; then **Rest** with **Hold for 15 seconds** (only when hold 1 has a take
      with a reading), **Again** (while hold 1 has had fewer than three takes) and **Done for
      today**.
    - Effortful: the reading, no celebration, no Again and no longer hold (a report of effort
@@ -264,14 +265,14 @@ States:
    so the singer ends the rest, and the buttons of state 8. **Done for
    today** ends the checkpoint with the status "Done for today." and leaves the Voice Mirror card
    in the Wrap.
-10. **Hold 2**, the ten-second hold: as 6 and 7, for 10 s on a 10-second frame.
-11. **How did that feel?** after a ten-second take:
-    - Easy or Workable: the two readings, "This time your line was in the band for X of 5 seconds,
-      then Y of 10.", from each hold's counted take (below), or the first alone, "This time your
-      line was in the band for X of 5 seconds.", while the ten-second hold has no take with a
-      reading; rule 15's line if either was in the band for less than half its length; Merc
-      `celebrate`s if the ten-second take was in the band for at least 80 % of it; then **Again**
-      (while hold 2 has had fewer than three takes) and **Done**.
+10. **Hold 2**, the fifteen-second hold: as 6 and 7, for 15 s on a 15-second frame.
+11. **How did that feel?** after a fifteen-second take:
+    - Easy or Workable: the two readings, "This time your line was in the band for X of 10
+      seconds, then Y of 15.", from each hold's counted take (below), or the first alone, "This
+      time your line was in the band for X of 10 seconds.", while the fifteen-second hold has no
+      take with a reading; rule 15's line if either was in the band for less than half its length;
+      Merc `celebrate`s if the fifteen-second take was in the band for at least 80 % of it; then
+      **Again** (while hold 2 has had fewer than three takes) and **Done**.
     - Effortful: as in 8: the readings, no celebration, no Again and no further hold, only **Done
       for today**.
     - Uncomfortable: as in 8.
@@ -291,10 +292,10 @@ branch above is unit-tested without a microphone.
 
 Reading a hold (`kit/take.ts`, extended; pure and unit-tested):
 
-- Input: the take's raw frames, Merc's MIDI note and the hold's length L (5 or 10 s). Voiced frames
-  come from Voice Mirror's `preprocess`; the deviation d is `foldCents(cents − target)`, and the
-  octave count comes from the median of the unfolded difference, rounded to whole octaves, as in
-  Lesson 3's reader.
+- Input: the take's raw frames, Merc's MIDI note and the hold's length L (10 or 15 s). Voiced
+  frames come from Voice Mirror's `preprocess`; the deviation d is `foldCents(cents − target)`, and
+  the octave count comes from the median of the unfolded difference, rounded to whole octaves, as
+  in Lesson 3's reader.
 - No voice: no voiced frame within 6 s of the take opening gives the "didn't hear you start" line
   (state 7).
 - Too little: under 0.6 s of voiced frames gives "We didn't hear a steady note that time. Try again
@@ -338,8 +339,8 @@ nothing is recorded or kept, and nothing leaves the device (FACTS 57). At most a
 
 Accessibility and motion: the band state is words plus the mint edge, never colour alone
 (REQ-GVC-082); after each take the chart's text summary reads, for example, "Merc's note A3; your
-line in the band for 4.2 of 5 seconds, settled after 0.5 seconds" (REQ-GVC-085). Start, Again,
-Lower, Higher, Hold for 10 seconds, Again, Done for today, the comfort buttons and
+line in the band for 8.4 of 10 seconds, settled after 0.5 seconds" (REQ-GVC-085). Start, Again,
+Lower, Higher, Hold for 15 seconds, Again, Done for today, the comfort buttons and
 the four feelings are real buttons of at least 44 px in a keyboard order that follows the flow; a
 button the flow does not offer is absent, not disabled; Space never starts a take by itself
 (REQ-GVC-080). Under reduced motion the ring shows the phase and the seconds as words and a number,
@@ -347,32 +348,35 @@ and the Mercs skip their reactions (REQ-GVC-083).
 
 Tests:
 
-- Unit, the hold reader on synthetic frames: a steady A3 for 5 s reads "In the band for all 5
-  seconds."; the same with one 0.05 s stretch outside the band reads "In the band for 4.9 of the 5
+- Unit, the hold reader on synthetic frames: a steady A3 for 10 s reads "In the band for all 10
+  seconds."; the same with one 0.05 s stretch outside the band reads "In the band for 9.9 of the 10
   seconds", never "all"; a take that starts 80 cents low and stays in the band from 0.6 s gives the
   settled line with 0.6; a take whose median sits in the band but never stays 0.5 s gives "in short
   stretches"; a steady take 45 cents low gives the "close" line; a voice that stops at 3.0 s of a
-  10-second hold gives the stopped line with 3; an octave below and 20 cents high adds the octave
+  15-second hold gives the stopped line with 3; an octave below and 20 cents high adds the octave
   line; an octave below and 55 cents high gives the "close" line with no octave line; 0.4 s of
   voice gives no steady note; no voiced frame in 6 s gives the "didn't hear you start" line. Plus
   the claims check on every template.
-- Unit, the flow rule: after a five-second take, Easy and Workable offer Hold for 10 seconds, Again
+- Unit, the flow rule: after a ten-second take, Easy and Workable offer Hold for 15 seconds, Again
   and Done for today; Effortful offers only Done for today, with no Again and no
-  celebration; Uncomfortable offers no hold and picks the rest card; Hold for 10 seconds is absent
+  celebration; Uncomfortable offers no hold and picks the rest card; Hold for 15 seconds is absent
   while hold 1 has no take with a reading; Again is absent after a hold's
-  third take; after a ten-second take, Easy gives both readings from the counted takes; Merc
+  third take; after a fifteen-second take, Easy gives both readings from the counted takes; Merc
   celebrates only after Easy or Workable and at least 80 % in the band.
 - End to end, with the fake microphone's steady A3 (`src/e2e/helpers/tone-wav.ts`,
-  `writeToneWav(220)`, `fakeMicArgs`): the lower voice on A reads "In the band for all 5 seconds"
-  and asks "How did that feel?" before any longer hold; "Easy" shows Rest with Hold for 10 seconds,
-  Again and Done for today; the ten-second hold reads "In the band for all 10 seconds", and "Easy"
-  shows both readings and, in the Wrap, the Voice Mirror card with "Ten minutes, gently, most
-  days"; moved Higher by one, the same input reads "About a semitone below…"; the higher voice adds
-  the octave line. "Effortful" after the first hold shows no Hold for 10 seconds and no Again,
-  only Done for today, and no celebration; after the third take of a hold, Again is
-  gone. "Uncomfortable" shows no further hold and the doctor lines, and the Wrap shows the rest
-  card with no "Ten minutes" line. "Just listen today" requests no microphone and leaves the same
-  rest card. The microphone stops listening at the end of each hold.
+  `writeToneWav(220, 20)`, `fakeMicArgs`; 20 s rather than the helper's default of 5,
+  `tone-wav.ts:29`, so one file outlasts a whole fifteen-second take without relying on the fake
+  device's loop, as `src/e2e/guided-voice-check.spec.ts:17-20` does): the lower voice on A reads
+  "In the band for all 10 seconds" and asks "How did that feel?" before any longer hold; "Easy"
+  shows Rest with Hold for 15 seconds, Again and Done for today; the fifteen-second hold reads
+  "In the band for all 15 seconds", and "Easy" shows both readings and, in the Wrap, the Voice
+  Mirror card with "Ten minutes, gently, most days"; moved Higher by one, the same input reads
+  "About a semitone below…"; the higher voice adds the octave line. "Effortful" after the first
+  hold shows no Hold for 15 seconds and no Again, only Done for today, and no celebration; after
+  the third take of a hold, Again is gone. "Uncomfortable" shows no further hold and the doctor
+  lines, and the Wrap shows the rest card with no "Ten minutes" line. "Just listen today" requests
+  no microphone and leaves the same rest card. The microphone stops listening at the end of each
+  hold.
 
 ### 7. Recall and quick check
 
@@ -435,9 +439,9 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
 - **Long Note, needed before the lesson links it** (the card's drill; CURRICULUM § 4 items 1, 2, 6
   and 7; FACTS 62 to 64 and 66):
   1. A slug, proposed `/exercises/steady-note`, registered in `EXERCISE_SLUGS` as
-     `{ kind: 'exercise', exercise: EXERCISE_LONG_NOTE, durationSec: 5 }`, with no notes, so the
-     target is the preset's anchor, and a line in `src/tests/slug-map.test.ts`. Whether it should
-     open at five seconds or ten is the owner's question (LESSON.md; FACTS 63).
+     `{ kind: 'exercise', exercise: EXERCISE_LONG_NOTE, durationSec: 10 }`, with no notes, so the
+     target is the preset's anchor, and a line in `src/tests/slug-map.test.ts`. It opens at ten
+     seconds, as the owner decided on 19 October 2026 (LESSON.md; FACTS 63).
   2. The `durationSec` launch field: on `ExerciseLaunch` and the launch override (beside
      `difficulty`), passed by `applyExerciseSlug` (`src/App.tsx:592-636`); read by `ExerciseShell`
      as guided length, then launch length, then saved timer (`effectiveTimerSeconds`,
@@ -445,8 +449,8 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
      preference, and dropped if the viewer picks another length. Pitch Hold shares the field
      (Lesson 3's spec).
   3. Long Note's duration score reads that same effective length, not `activeTimerSeconds()`
-     (`use-long-note-controller.ts:163`). Without this, a five-second launch on a device that saved
-     30 s scores five seconds of coverage out of thirty.
+     (`use-long-note-controller.ts:163`). Without this, a ten-second launch on a device that saved
+     30 s scores ten seconds of coverage out of thirty.
   4. App content: the card's two sentences and its "Breath Control" tag (`ExerciseMenu.tsx:83-90`;
      FACTS 62), the help's summary and its "and how long you hold it" (`exercise-help.ts:28-36`),
      and the setup screen's "The longer and steadier, the better." (`LongNoteExercise.tsx:106`)
@@ -478,7 +482,8 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
 - **Season data**: Lesson 5's entry in `kit/season.ts` (`:173-181`) gains today's link, `href`
   `/mirror?lesson=05`, `addr` `mercurypitch.com/mirror`, `label` "Voice Mirror" and `note` "its
   Hold, until Long Note has a slug", and `len: '17 minutes'` (FACTS 2, 70), and keeps its `needs`
-  until the slug ships. Its `sig` already reads the signature.
+  until the slug ships, with the owner's lengths: "Long Note with a fixed 10 or 15 s length
+  (durationSec)" (FACTS 63, 70). Its `sig` already reads the signature.
 - **A text-only lesson**: the "Ready · read" state Lesson 4's spec proposes (no Watch button, the
   card's length from `len`), and cards for other lessons linking to their own `/learn/NN`.
 
@@ -491,16 +496,16 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
    `comfort.ts` and `Sound.context()`; promoted from Lesson 3's page, `folds.ts` and the voice
    choice on `fyp-voice`; promoted from Lesson 1's, the predict widget, the loudness toy and the
    breathing ring.
-3. Kit extensions for this page: the band chart's fixed-frame hold mode (5 or 10 s), level strip and
-   settled marker; the hold reader in `take.ts`; in `sound.ts`, a noise source and contours of pitch
-   and level.
+3. Kit extensions for this page: the band chart's fixed-frame hold mode (10 or 15 s), level strip
+   and settled marker; the hold reader in `take.ts`; in `sound.ts`, a noise source and contours of
+   pitch and level.
 4. The page's own toys and rules in `lesson-05/`: Push with Hold the note, Breath (gauge and
    figure), Three starts, and the hold flow (`hold-flow.ts`).
 5. Quiz ids and keys (the Lesson telemetry track; the recall needs Lesson 3's ids), and the tests in
    Toys 6.
 6. For the Long Note link: the slug, `durationSec`, Long Note's effective length, its new copy, the
    octave note or option, and the `?lesson=` marker (Practice links).
-7. The season entry's link and `len`, and the explorer's text-only state.
+7. The season entry's link, `len` and `needs`, and the explorer's text-only state.
 
 ## Contract and page QA
 
@@ -522,9 +527,9 @@ Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
   and when the tab is hidden.
 - Each hold stops listening at exactly its length from the first voiced frame; no control lengthens
   a hold, and nothing shows a best or longest time.
-- "How did that feel?" follows every take; neither the ten-second hold nor Again is offered after
-  "Effortful" or "Uncomfortable"; Again is gone after a hold's third take; Merc never celebrates
-  after "Effortful" or "Uncomfortable".
+- "How did that feel?" follows every take; neither the fifteen-second hold nor Again is offered
+  after "Effortful" or "Uncomfortable"; Again is gone after a hold's third take; Merc never
+  celebrates after "Effortful" or "Uncomfortable".
 - The Wrap shows the rest card after "Uncomfortable" and after "Just listen today", and the Voice
   Mirror card otherwise.
 - The network panel shows nothing sent while the microphone is open, and storage holds nothing but
