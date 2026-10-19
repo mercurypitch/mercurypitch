@@ -23,7 +23,7 @@ there. What the vocal coach and the owner decide is listed at the end.
 - Meta, as chips: 17 minutes · After Lesson 2: Twelve notes · After Lesson 3: Match a note ·
   Sound on · Microphone optional
 - Promise: By the end you'll know why pushing moves a note, how to breathe in low and start
-  easily, and you'll hold a comfortable note for five seconds, then ten if that felt easy.
+  easily, and you'll hold a comfortable note for ten seconds, then fifteen if that felt easy.
 
 ## Sound gate
 
@@ -181,11 +181,11 @@ seconds, never "as long as you can".
 **Notice:** the line scoops up, wavers, then settles into the band with a small, even wave: a
 steady note.
 
-_Toy: the band chart, a five-second hold, with Play, Slow and scrub._
+_Toy: the band chart, a ten-second hold, with Play, Slow and scrub._
 
 ## Sing it: hold one note
 
-Your turn: five seconds, then ten if that felt easy.
+Your turn: ten seconds, then fifteen if that felt easy.
 
 > **Sore, hoarse or unwell today? Just listen along.**
 > Choose listening if anything hurts or singing has felt uncomfortable, if your voice feels
@@ -221,15 +221,15 @@ stop sooner if you need to. Stop immediately if anything feels uncomfortable.
 
 After each hold, one line, such as:
 
-- "In the band for 4.2 of the 5 seconds. It settled after about 0.5 seconds."
+- "In the band for 8.4 of the 10 seconds. It settled after about 0.5 seconds."
 - Added when it applies: "You sang it an octave lower: same note."
 
 Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable ]
 
-- Easy or Workable, after five seconds: "Rest for a few easy breaths. Ready when you are." [ Hold
-  for 10 seconds ] [ Again ] [ Done for today ]
-- Easy or Workable, after ten: "This time your line was in the band for 4.2 of 5 seconds, then 8.6
-  of 10." [ Again ] [ Done ]
+- Easy or Workable, after ten seconds: "Rest for a few easy breaths. Ready when you are."
+  [ Hold for 15 seconds ] [ Again ] [ Done for today ]
+- Easy or Workable, after fifteen: "This time your line was in the band for 8.4 of 10 seconds,
+  then 12.9 of 15." [ Again ] [ Done ]
 - If a hold spent under half its length in the band: "If that felt tricky, good: that's
   learning."
 - Effortful: the reading and no more holds, then "Keep it gentle: rest before you sing again."
@@ -295,9 +295,9 @@ long note steadier.
 - Instead, after "Uncomfortable" or "Just listen today", with no "Ten minutes" line: "Rest today.
   Voice Mirror will be here when your voice feels comfortable: **mercurypitch.com/mirror**"
 
-_[Editorial: the card's own drill, Long Note at a fixed 5 or 10 seconds, can't be linked yet. It
+_[Editorial: the card's own drill, Long Note at a fixed 10 or 15 seconds, can't be linked yet. It
 needs engineering first: a slug (proposed `/exercises/steady-note`) that opens Long Note with a
-five-second run whatever timer the viewer saved, through the planned `durationSec` launch field;
+ten-second run whatever timer the viewer saved, through the planned `durationSec` launch field;
 Long Note's own score reading that length rather than the saved timer; new card, help and setup
 copy, because today's asks for a note held "as long as you can", says "the longer and steadier, the
 better" and makes promises about the breath that the claims rules forbid; and the `?lesson=05`
@@ -305,7 +305,7 @@ marker, so First Light steps aside (CURRICULUM § 4 items 1, 2 and 6; WEB-SPEC, 
 Long Note also scores its drift and steady zone against the octave written on its target, so until
 the octave-folded option ships (§ 4 item 7) the copy sends the viewer to Settings first. When it
 ships, add to the Voice Mirror version of the card, after its text: "Then hold a note for a set
-time. Long Note opens with its timer on five seconds; choose 10 on the timer once five feels easy.
+time. Long Note opens with its timer on ten seconds; choose 15 on the timer once ten feels easy.
 It wants the octave written on its target, so set your range in Settings first (under Singing
 Voice Range). Free: mercurypitch.com/exercises/steady-note". The rest card stays as it is. On the
 public host every link carries `?lesson=05`. No Ascent link either: its "Breath & Power" week
@@ -362,11 +362,11 @@ the coach reviews Lessons 3 and 5), and the questions still open:
   listening only.
 - The warm-up, Lesson 3's: three sighs and the optional lip trill (or a hum, or a soft "oo"), about
   a minute, never scored, with "Follow the shape, not Merc's notes".
-- The holds: five seconds, then ten only after "Easy" or "Workable"; Listen · Breathe · Sing, with
-  the take open from the in-breath so nobody waits holding their breath; at speaking volume; A3 or
-  A4, moved up to four semitones either way; Merc's two-second note; a rest the singer ends, with
-  "Done for today" on it; the stop-early line; up to three tries a hold, as Lesson 3 caps tries
-  (Hutchins and Peretz 2012: repeated sung tries don't improve; FACTS 52).
+- The holds: ten seconds, then fifteen only after "Easy" or "Workable"; Listen · Breathe · Sing,
+  with the take open from the in-breath so nobody waits holding their breath; at speaking volume;
+  A3 or A4, moved up to four semitones either way; Merc's two-second note; a rest the singer ends,
+  with "Done for today" on it; the stop-early line; up to three tries a hold, as Lesson 3 caps
+  tries (Hutchins and Peretz 2012: repeated sung tries don't improve; FACTS 52).
 - The answers to "How did that feel?" (FACTS 52). After "Effortful" the page shows the reading and
   no more holds, as Lesson 3 shows its count and no Again (REQ-GVC-021: a report of effort
   suppresses immediate-repeat encouragement). Should "Effortful" lead to the rest card, the question
@@ -374,9 +374,9 @@ the coach reviews Lessons 3 and 5), and the questions still open:
 - The feedback lines (every one is in WEB-SPEC, Toys 6, with the rule that picks it) and the two
   practice cards: Voice Mirror's six-second hold (not one of the
   house lengths of 5, 10 or 15 seconds) and its two glides; the rest card after "Uncomfortable" or
-  "Just listen today"; and the proposed Long Note link at five seconds.
-- For the owner: the proposed Long Note slug, and this page's first hold, open at five seconds,
-  while the owner's own note on the app's timer says that "by the time a singer settles onto the
-  note, half of a five-second run is already gone" and chose ten as the app's default (FACTS 63).
-  Should the slug, or the first hold, open at ten seconds instead, or is five right for a first
-  lesson, as the house lengths and the CURRICULUM card's "5 seconds, then 10" have it?
+  "Just listen today"; and the proposed Long Note link at ten seconds.
+- For the owner, decided on 19 October 2026 (review 1, O13): the first hold is 10 seconds, the
+  longer hold 15, the next house length, and the proposed Long Note slug opens at 10, the app's
+  default timer length (FACTS 44 and 63). The vocal coach still signs off the doses with the holds
+  above, including the 15 seconds that the app's own timer comment calls "a long way to go without
+  a rest" (FACTS 63); here a rest the singer ends always comes first.
