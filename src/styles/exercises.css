@@ -2562,7 +2562,10 @@
   outline-offset: 3px;
 }
 
-.exercise-guided-result-title {
+/* The headline that stands where a score would: a guided dose's state, or an
+   ungraded drill's title (the Guided Warmup). */
+.exercise-guided-result-title,
+.exercise-result-title {
   color: var(--text-primary);
   font-size: 1rem;
   font-weight: 750;

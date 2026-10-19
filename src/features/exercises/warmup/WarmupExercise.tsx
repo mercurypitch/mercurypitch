@@ -4,7 +4,6 @@ import { IconFire } from '@/components/exercise-icons'
 import { Volume2, VolumeX } from '@/components/icons'
 import { NoteDial } from '@/components/NoteDial'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
-import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchPattern, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
 import { createZenNoteScheduler } from '@/features/zen/note-playback'
 import { useZenPitchSession } from '@/features/zen/useZenPitchSession'
@@ -303,6 +302,11 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
     }
   })
 
+  // The run still goes to the exercise history: that is how a full warm-up
+  // ticks off the first segment of Today's Session, and how it earns practice
+  // time, the streak and badges. It no longer moves a difficulty level.
+  // Nothing in the warm-up reads one, so a level here could only rise and fall
+  // with the participation number ("Level up!"), a grade by another name.
   createEffect(() => {
     const r = base.result()
     if (r && r.type === EXERCISE_WARMUP) {
@@ -313,10 +317,18 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
           metrics: r.metrics,
           completedAt: r.completedAt,
         })
-        updateDifficultyFromEma(r.type)
       })
     }
   })
+
+  /** The end screen's headline: what the run did, never how well. "Complete"
+   *  is the routine's own rule for a full run (autoAdvanceRoutineSegment). */
+  const resultTitle = (): string => {
+    const metrics = base.result()?.metrics
+    return (metrics?.stepsCompleted ?? 0) >= (metrics?.totalSteps ?? Infinity)
+      ? 'Warmup complete'
+      : 'Warmup ended'
+  }
 
   // ── The canvas ──────────────────────────────────────────────
   // The live pass only. Reviewing takes is what the Zen stage is for; a
@@ -353,6 +365,7 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      ungraded={{ resultTitle }}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
@@ -458,8 +471,7 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       resultSummary={
         <>
           Steps: {base.result()?.metrics.stepsCompleted}/
-          {base.result()?.metrics.totalSteps} · Participation:{' '}
-          {base.result()?.metrics.participation}%
+          {base.result()?.metrics.totalSteps}
         </>
       }
       onTryAgain={() => {

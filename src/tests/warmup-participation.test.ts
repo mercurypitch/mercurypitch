@@ -2,18 +2,20 @@
 // The warmup keeps its "no grades" promise (CLAUDE-JOURNEY-015)
 // ============================================================
 //
-// Both the help sheet and the idle card promise "There are no grades
-// here — the score just reflects that you sang along", but the runtime
-// banked each step's accuracy-weighted `score.total` (pitch, coverage
-// and steadiness blended) — a grade by any name. The banked number is
-// now the run's coverage: the share of target time the singer voiced,
-// whatever the pitch. That is what "you sang along" measures.
+// The help sheet promises "There are no grades and no score here", and the
+// shell now shows none for the warm-up (ExerciseShell.ungraded.test.tsx,
+// warmup/WarmupExercise.test.tsx). The number the warm-up still keeps for
+// the exercise history is the run's coverage: the share of target time the
+// singer voiced, whatever the pitch. Before, the runtime banked each step's
+// accuracy-weighted `score.total` (pitch, coverage and steadiness blended),
+// a grade by any name, and the end screen graded it.
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { EXERCISE_HELP } from '@/features/exercises/exercise-help'
 import { EXERCISE_WARMUP } from '@/features/exercises/types'
 import { warmupStepScore } from '@/features/exercises/warmup/warmup-steps'
+import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
 
 describe('warmupStepScore', () => {
   it('banks participation, not the accuracy-weighted total', () => {
@@ -34,10 +36,27 @@ describe('warmupStepScore', () => {
 })
 
 describe('the promise and the mechanism stay wired together', () => {
-  it('the help sheet still makes the promise', () => {
-    const body = EXERCISE_HELP[EXERCISE_WARMUP].body.join(' ')
-    expect(body).toContain('There are no grades here')
-    expect(body).toContain('you sang along')
+  it('the help sheet promises no grades and no score, and what the end shows', () => {
+    const body = EXERCISE_HELP[EXERCISE_WARMUP].body
+    expect(body[2]).toBe(
+      'There are no grades and no score here. The end screen just counts the steps you finished. Pick the block you need, or run the full warmup before practice.',
+    )
+  })
+
+  it('the help claims nothing for the voice, and carries the stop line', () => {
+    // No source the Find Your Pitch lessons read says a warm-up protects the
+    // voice (Lesson 7 FACTS 20 and 76), so the help describes the routine
+    // instead: gentle, at the series' speaking volume, with the stop rule.
+    const body = EXERCISE_HELP[EXERCISE_WARMUP].body
+    expect(body[0]).toBe(
+      'A warmup is a gentle start: easy sounds, at about speaking volume, before anything harder. Stop immediately if anything feels uncomfortable.',
+    )
+    expect(body.join(' ')).not.toMatch(/protect|cords|stretch|muscle/i)
+    for (const text of body) {
+      expect(
+        validateGuidedDynamicClaim({ surface: 'finding', text }).violations,
+      ).toEqual([])
+    }
   })
 
   it('the runtime routes through warmupStepScore, not score.total', () => {
