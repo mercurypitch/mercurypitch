@@ -25,22 +25,16 @@
 // SOUND NEVER STARTS ON ARRIVAL. The clip's `play()` and the ambient's
 // context are both started inside the door tap, and nowhere else.
 
-import { fetchAssetRead } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import { hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
-import { batch, createEffect, createMemo, createSignal, For, lazy, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import './alley.css'
 import { roomName } from '@/features/rooms/room-names'
-import { audioReporter } from '@/lib/audio-diagnostics'
-import { activateAudioPlayback } from '@/lib/audio-unlock'
-import { NATIVE_ONBOARDING } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { holdRoomArrival, registerSkipTarget, roomArrivalHeld, } from '@/stores/native-shell-store'
-import type { AlleyGuideProps } from '../onboarding/AlleyGuide'
 import { currentTab, shellCovered } from '../shell/run-shell-store'
 import { goToTab, registerDoorClear, registerDoorOpen, } from '../shell/shell-navigation'
-import type { AlleyAmbient } from './alley-audio'
-import { createAlleyAmbient } from './alley-audio'
+import { ambient, madeAmbient } from './alley-ambient'
 import { readBlock } from './alley-block'
 import { ALLEY_COPY, doorLabel } from './alley-copy'
 import type { DoorOpen } from './alley-entry'
@@ -55,6 +49,10 @@ import { dropRoom, pickRoom, takeRoom } from './alley-room'
 import { markWelcomeSeen, welcomeSeen } from './alley-welcome'
 import { AlleyCard } from './AlleyCard'
 import { AlleyDoor } from './AlleyDoor'
+import { AlleyGuideSlot, alleyLit } from './AlleyGuideSlot'
+
+// The Developer screen's Audio panel and its device facts read it here.
+export { ambient } from './alley-ambient'
 
 /** The ambient's fades (S4 §2): in over 600 ms, out over 520 from the open. */
 const FADE_IN_MS = 600
@@ -65,19 +63,6 @@ const CLEAR_MS = 320
 const SETTLE_MS = 360
 /** A measured edge that moved by less than this has not moved. */
 const MEASURE_EPSILON = 0.5
-
-/**
- * Merc's welcome on a new install's first alley (S7b beat 1), on a build
- * with the onboarding (`NATIVE_ONBOARDING`) and no other: the shell's
- * ternary, so the store build keeps no chunk of it.
- */
-const AlleyGuide: Component<AlleyGuideProps> = NATIVE_ONBOARDING
-  ? lazy(async () =>
-      import('../onboarding/AlleyGuide').then((module) => ({
-        default: module.AlleyGuide,
-      })),
-    )
-  : () => null
 
 // The alley's state outlives the component: the open unmounts it (the tab
 // changes under the clone), and Back has to find the door it opened.
@@ -119,28 +104,6 @@ function onPressOutside(event: Event): void {
   const target = event.target
   if (target instanceof Element && target.closest('.mp-alley') !== null) return
   cancelOpen()
-}
-
-let ambientInstance: AlleyAmbient | null = null
-
-/** The alley's one ambient. Exported for the Developer screen's Audio panel. */
-export function ambient(): AlleyAmbient {
-  ambientInstance ??= createAlleyAmbient({
-    createContext: () => {
-      const Ctor =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext
-      return Ctor === undefined ? null : new Ctor()
-    },
-    // Not `response.ok`: iOS serves a packaged .m4a with status 0 and the
-    // whole body (@irchiinnuss/mobile-runtime/asset-fetch). The status is
-    // kept for the report, which is the Developer screen's Audio section.
-    load: (url) => fetchAssetRead(url),
-    activate: (target) => activateAudioPlayback(target),
-    report: audioReporter('alley'),
-  })
-  return ambientInstance
 }
 
 export const RoomsAlley: Component = () => {
@@ -245,8 +208,6 @@ export const RoomsAlley: Component = () => {
   createEffect(() => {
     if (!welcomeSeen()) setFirst(true)
   })
-  /** The door lit for Merc's welcome, one at a time (AlleyGuide). */
-  const [lit, setLit] = createSignal<DoorKey | null>(null)
 
   /**
    * The Sing door's clip lets go of its source and its decoder. It has one
@@ -604,7 +565,7 @@ export const RoomsAlley: Component = () => {
     // coming back leaves the ambient's context suspect (alley-audio.ts).
     const onVisibility = (): void => {
       if (document.visibilityState === 'visible') {
-        ambientInstance?.recover()
+        madeAmbient()?.recover()
         return
       }
       if (document.visibilityState !== 'hidden') return
@@ -628,13 +589,13 @@ export const RoomsAlley: Component = () => {
       door: alley().door,
       welcomeSeen: welcomeSeen(),
       firstRun: first(),
-      sounding: ambientInstance?.sounding() ?? null,
-      level: ambientInstance?.level() ?? 0,
-      sources: ambientInstance?.sourcesStarted() ?? 0,
+      sounding: madeAmbient()?.sounding() ?? null,
+      level: madeAmbient()?.level() ?? 0,
+      sources: madeAmbient()?.sourcesStarted() ?? 0,
       reduced: reduced(),
       openMs: OPEN_MS,
       held: roomArrivalHeld(),
-      silentAt: ambientInstance?.stoppedAt() ?? null,
+      silentAt: madeAmbient()?.stoppedAt() ?? null,
     }))
   })
 
@@ -652,7 +613,7 @@ export const RoomsAlley: Component = () => {
     }
     // Its context and decoded buffers go once the last fade has run; the
     // next door tap rebuilds them.
-    ambientInstance?.dispose()
+    madeAmbient()?.dispose()
     // The Sing door's clip lets go of its decoder: an unmounted <video> with
     // a src keeps its buffer and its hardware decoder until it is collected.
     releaseClip()
@@ -669,7 +630,7 @@ export const RoomsAlley: Component = () => {
       data-phase={alley().phase}
       data-door={alley().door ?? ''}
       data-first={first() ? 'on' : 'off'}
-      data-lit={lit() ?? ''}
+      data-lit={alleyLit() ?? ''}
       onClick={onRoot}
     >
       <div class="mp-alley__plate" aria-hidden="true">
@@ -734,7 +695,7 @@ export const RoomsAlley: Component = () => {
               settling={() =>
                 alley().phase === 'settling' && alley().door === spec.key
               }
-              lit={() => lit() === spec.key}
+              lit={() => alleyLit() === spec.key}
               clipRef={(element) => {
                 singVideo = element
               }}
@@ -756,26 +717,17 @@ export const RoomsAlley: Component = () => {
       </div>
 
       {/* Merc's welcome, under the headline on a new install only. */}
-      {NATIVE_ONBOARDING ? (
-        <Show when={first()}>
-          <AlleyGuide
-            input={() => ({
-              w: size().w,
-              h: size().h,
-              landscape: landscape(),
-              floor: floor(),
-              top: topBottom(),
-              left: columnLeft(),
-              right: topRight(),
-              doors: doors(),
-            })}
-            reduced={reduced}
-            aside={() => alley().phase !== 'rest'}
-            opened={() => alley().phase === 'opening'}
-            light={setLit}
-          />
-        </Show>
-      ) : null}
+      <AlleyGuideSlot
+        shown={first}
+        size={size}
+        floor={floor}
+        top={topBottom}
+        left={columnLeft}
+        right={topRight}
+        doors={doors}
+        reduced={reduced}
+        phase={() => alley().phase}
+      />
 
       <div
         class="mp-alley__hit"
