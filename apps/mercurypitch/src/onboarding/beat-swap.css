@@ -1,0 +1,33 @@
+/* ============================================================
+   Between the beats: the layer's View Transition (beat-swap.ts)
+   ============================================================
+
+   A View Transition's pseudo-elements belong to the document, so these
+   rules are global. They hold only while the layer's own swap runs, which
+   puts .mp-beat-swap on <html> (SWAP_CLASS) and takes it off as the
+   transition finishes. Transform and opacity only (S7b §3.3). */
+
+/* Merc moves by his own transform (the FLIP in beat-swap.ts), so he is named
+   on his own: his group follows him as he is drawn, with no morph of its
+   own, and his old picture is not drawn, so there is one Merc, not two. */
+html.mp-beat-swap .mp-onboarding-merc {
+  view-transition-name: onboarding-merc;
+}
+
+html.mp-beat-swap::view-transition-group(onboarding-merc) {
+  animation: none;
+}
+
+html.mp-beat-swap::view-transition-old(onboarding-merc) {
+  display: none;
+}
+
+html.mp-beat-swap::view-transition-new(onboarding-merc) {
+  animation: none;
+}
+
+/* The rest of the screen: one cross-fade, SWAP_MS long. */
+html.mp-beat-swap::view-transition-old(root),
+html.mp-beat-swap::view-transition-new(root) {
+  animation-duration: 280ms;
+}

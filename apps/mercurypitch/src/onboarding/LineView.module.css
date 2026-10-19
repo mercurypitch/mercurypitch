@@ -3,10 +3,32 @@
    NativeOnboarding.module.css's. Merc in the house violet while he sings,
    the singer in the house teal. */
 
-/* Merc a little smaller than on the beats before: the line wants the room. */
+/* Merc in his guide slot at the side, his line beside him (S7b §3.3): the
+   lane wants the room, so he sings the line from there. */
+.guide {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 520px);
+}
+
 .merc {
-  width: min(36vw, 22vh, 180px);
-  width: min(36vw, 22dvh, 180px);
+  width: clamp(72px, 12vh, 96px);
+  width: clamp(72px, 12dvh, 96px);
+}
+
+/* Held at two lines of the bubble, so the lane stays put as he speaks. */
+.says {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+}
+
+.bubble {
+  max-width: none;
+  text-align: start;
 }
 
 /* The lane: the ten notes as bars at their pitches and times. */
@@ -118,8 +140,12 @@
    so the lane and Merc come down to fit. */
 @media (max-height: 520px) and (orientation: landscape) {
   .merc {
-    width: min(20vw, 22vh, 120px);
-    width: min(20vw, 22dvh, 120px);
+    width: clamp(56px, 16vh, 76px);
+    width: clamp(56px, 16dvh, 76px);
+  }
+
+  .says {
+    min-height: 56px;
   }
 
   .lane {

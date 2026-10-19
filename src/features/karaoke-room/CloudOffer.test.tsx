@@ -90,7 +90,7 @@ function accountSays(user: {
 import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
-import { cloudOffer, openCloudOffer, resetCloudOfferForTests, unaskedRefusal, } from './cloud-offer-store'
+import { closeCloudOffer, cloudOffer, cloudOfferGuest, openCloudOffer, resetCloudOfferForTests, setCloudOfferGuest, unaskedRefusal, } from './cloud-offer-store'
 import { CloudOffer } from './CloudOffer'
 import { karaokeSongs, resetKaraokeSongsForTests, songsOnTheWay, } from './karaoke-songs'
 
@@ -619,6 +619,35 @@ describe('who is offered what', () => {
     await waitFor(() => expect(account.reads).toBe(1))
     expect(offer.textContent).not.toContain('Your next free song')
     expect(offer.textContent).not.toContain('Confirm your email')
+  })
+})
+
+describe('Merc by the art', () => {
+  it('stands the guest the onboarding hands over by the art, hidden from a screen reader, and lets him go as the offer closes', async () => {
+    withStore(store())
+    const offer = await open()
+    const merc = document.createElement('div')
+    merc.dataset.testid = 'onboarding-merc'
+
+    setCloudOfferGuest(merc)
+
+    const slot = await waitFor(() => {
+      const found = offer.querySelector('[data-testid="cloud-offer-guest"]')
+      expect(found).not.toBeNull()
+      return found
+    })
+    expect(slot?.contains(merc)).toBe(true)
+    expect(slot?.closest('[aria-hidden="true"]')).not.toBeNull()
+    closeCloudOffer('not-now')
+    expect(cloudOfferGuest()).toBeNull()
+    expect(merc.isConnected).toBe(false)
+  })
+
+  it('has nobody by the art on an offer nobody handed a guest to', async () => {
+    withStore(store())
+    const offer = await open()
+
+    expect(offer.querySelector('[data-testid="cloud-offer-guest"]')).toBeNull()
   })
 })
 

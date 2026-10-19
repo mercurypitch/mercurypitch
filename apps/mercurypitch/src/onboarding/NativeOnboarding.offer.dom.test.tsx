@@ -120,7 +120,7 @@ vi.mock('@/features/karaoke-room/karaoke-songs', async (importOriginal) => {
   }
 })
 
-import { closeCloudOffer, cloudOffer, cloudOfferOpen, resetCloudOfferForTests, } from '@/features/karaoke-room/cloud-offer-store'
+import { closeCloudOffer, cloudOffer, cloudOfferGuest, cloudOfferOpen, resetCloudOfferForTests, } from '@/features/karaoke-room/cloud-offer-store'
 import { resetKaraokeSongsForTests } from '@/features/karaoke-room/karaoke-songs'
 
 const free: KaraokeSongs = {
@@ -426,6 +426,14 @@ describe('beat 9, the Cloud offer', () => {
     expect(q('onboarding-offer')).not.toBeNull()
     expect(said()).toBe('')
     expect(onboardingShown()).toBe(true)
+    // Merc goes with the offer, small by its art (S7b beat 9): handed to
+    // the sheet, and not left on the stage under it.
+    expect((cloudOfferGuest() as HTMLElement | null)?.dataset.testid).toBe(
+      'onboarding-merc',
+    )
+    expect(
+      q('onboarding-offer')?.querySelector('[data-testid="onboarding-merc"]'),
+    ).toBeNull()
   })
 
   it("goes on to the Sing room once the offer's Not now closes it, the onboarding done", async () => {
@@ -442,6 +450,7 @@ describe('beat 9, the Cloud offer', () => {
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
     expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    expect(cloudOfferGuest()).toBeNull()
   })
 
   it("takes Back as the offer's Not now, then goes on to the Sing room", async () => {

@@ -41,6 +41,11 @@
 // plan, then Subscribe, and one light sweeps across it once. Transform and
 // opacity only. Reduced motion: everything present, one 150 ms fade.
 //
+// MERC, SMALL BY THE ART, on the offer the onboarding opens (S7b beat 9):
+// its one Merc, handed over through cloud-offer-store.ts (cloudOfferGuest),
+// stands beside the two lights once the art has opened. Decorative, as he
+// is everywhere: the hero is hidden from a screen reader.
+//
 // A NIGHT SURFACE IN EVERY THEME. The art is a dark stage and its fade ends
 // on Obsidian, so the sheet keeps its own dark palette in the light theme
 // as well (cloud-offer.module.css).
@@ -56,7 +61,7 @@ import type { KaraokeOffer } from '@/stores/native-shell-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
 import heroArt from './assets/paywall-two-lights.webp'
 import styles from './cloud-offer.module.css'
-import { closeCloudOffer, cloudOffer, showCloudSubscribed, } from './cloud-offer-store'
+import { closeCloudOffer, cloudOffer, cloudOfferGuest, showCloudSubscribed, } from './cloud-offer-store'
 import { awaitSubscription, CLOUD_NAME, CONFIRM_FOR_FREE_SONG_LINE, confirmEmailForFreeSong, freeSongUsed, freeSongWithheld, KARAOKE_PLAN, karaokeSongs, nextFreeSongLine, refreshKaraokeSongs, restoreNote, songsOnTheWay, } from './karaoke-songs'
 
 /** The sheet's name, and its title: what the singer gets (E3). */
@@ -406,6 +411,13 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
               <div class={styles.heroBloom}>
                 <img class={styles.heroArt} src={heroArt} alt="" />
               </div>
+              <Show when={cloudOfferGuest()}>
+                {(guest) => (
+                  <div class={styles.heroGuest} data-testid="cloud-offer-guest">
+                    {guest()}
+                  </div>
+                )}
+              </Show>
             </div>
             <div class={styles.head}>
               <p class={styles.kicker}>{CLOUD_NAME}</p>

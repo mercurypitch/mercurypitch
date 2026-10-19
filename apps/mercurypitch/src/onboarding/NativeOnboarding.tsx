@@ -27,7 +27,8 @@
 //               Karaoke engine
 //   offer       beat 9: the Cloud offer, the shell's own sheet over this
 //               layer (CloudOffer.tsx), once an install, held out of one
-//               install in ten, never to a subscriber (onboarding-offer.ts)
+//               install in ten, never to a subscriber (onboarding-offer.ts).
+//               Merc goes with it, small by its art (cloudOfferGuest)
 //
 // Keep comes only to a phone with no account yet (signed in, or signed out
 // of one, the layer goes straight on to the line), and only after a range
@@ -47,20 +48,28 @@
 // singer instead of landing again on each. One live region reads Merc's
 // lines across the beats, so a beat's first line is read as it arrives.
 //
+// A beat gives way to the next by a View Transition, or by a cross-fade
+// where the WebView has none or a sheet comes up with the next beat, and
+// Merc moves across from his old place to his new one (beat-swap.ts).
+//
 // NativeShell loads this file lazily, and only on a build with the
 // onboarding (NATIVE_ONBOARDING), so the store build carries none of it.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, Match, on, onCleanup, onMount, Switch, untrack, } from 'solid-js'
 import { MercView } from '@/components/room-kit/MercView'
+import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import { useExerciseCapture } from '@/components/room-kit/useExerciseCapture'
-import { cloudOfferOpen } from '@/features/karaoke-room/cloud-offer-store'
+import { cloudOfferGuest, cloudOfferOpen, setCloudOfferGuest, } from '@/features/karaoke-room/cloud-offer-store'
 import type { RangeResult } from '@/lib/mirror/metrics'
 import { onboardingShown } from '../shell/run-shell-store'
 import { noAccountYet, offerOpen, openKeep, openKeepFromReveal, } from '../shell/settings/account-offer'
 import { signInOpen } from '../shell/settings/sign-in-state'
 import { voiceprintAskAsking } from '../shell/settings/voiceprint-ask'
+import './beat-swap.css'
+import type { SwapDone } from './beat-swap'
+import { createBeatSwap, GHOST_ATTR, MERC_CLASS } from './beat-swap'
 import { FirstNoteView, noteSays } from './FirstNoteView'
 import { KeepView } from './KeepView'
 import { lineSaysText, LineView } from './LineView'
@@ -115,6 +124,34 @@ export function NativeOnboarding(): JSX.Element {
   const [beat, setBeat] = createSignal<OnboardingBeat>(
     entry === 'range' ? 'range' : 'first-note',
   )
+  /** How the last beat gave way, for the probe. */
+  const [swapped, setSwapped] = createSignal<SwapDone | 'none'>('none')
+  let root: HTMLDivElement | undefined
+  /** The beat on screen: the root its view draws in the layer. */
+  const beatOnScreen = (): HTMLElement | undefined => {
+    for (const child of root?.children ?? []) {
+      if (
+        child instanceof HTMLElement &&
+        child.classList.contains(styles.beat) &&
+        !child.hasAttribute(GHOST_ATTR)
+      ) {
+        return child
+      }
+    }
+    return undefined
+  }
+  /**
+   * On to `next` (beat-swap.ts): by a cross-fade when a sheet comes up with
+   * it, so the sheet answers from its first frame; else by a View
+   * Transition, where the WebView has one.
+   */
+  const go = (next: OnboardingBeat): void => {
+    if (untrack(beat) === next) return
+    swaps.swap(
+      () => setBeat(next),
+      next === 'keep' || next === 'offer' ? 'fade' : 'view',
+    )
+  }
   const [skipped, setSkipped] = createSignal(false)
   /** The range the reveal shows: the one just measured, or the one kept. */
   const [revealed, setRevealed] = createSignal<RangeResult | null>(null)
@@ -155,7 +192,7 @@ export function NativeOnboarding(): JSX.Element {
   /** Find my range, or again: the range, its mic opened inside this tap. */
   const findRange = (): void => {
     setSkipped(false)
-    setBeat('range')
+    go('range')
     range.start()
   }
 
@@ -165,7 +202,7 @@ export function NativeOnboarding(): JSX.Element {
    */
   const toLine = (): void => {
     if (untrack(leaving)) return
-    setBeat('line')
+    go('line')
     line.arrive()
   }
 
@@ -182,7 +219,7 @@ export function NativeOnboarding(): JSX.Element {
       toLine()
       return
     }
-    setBeat('keep')
+    go('keep')
     if (after === 'reveal') openKeepFromReveal()
     else openKeep()
   }
@@ -203,7 +240,7 @@ export function NativeOnboarding(): JSX.Element {
   const showReveal = (shown: RangeResult | null): void => {
     if (shown === null) return
     setRevealed(shown)
-    setBeat('reveal')
+    go('reveal')
     reveal.arrive()
   }
   const seeVoice = (): void => showReveal(untrack(range.state).range)
@@ -279,7 +316,9 @@ export function NativeOnboarding(): JSX.Element {
         return
       }
       offered = true
-      setBeat('offer')
+      // Merc goes with the offer, small by its art (S7b beat 9).
+      setCloudOfferGuest(mercEl() ?? null)
+      go('offer')
     })
   }
 
@@ -350,12 +389,25 @@ export function NativeOnboarding(): JSX.Element {
       voice={() => active().mercVoice()}
       still={() => active().still()}
       rings={false}
-      class={styles.mercView}
+      class={`${styles.mercView} ${MERC_CLASS}`}
       testId="onboarding-merc"
     />
   )
+  const mercEl = (): HTMLElement | undefined =>
+    merc instanceof HTMLElement ? merc : undefined
+  const swaps = createBeatSwap({
+    layer: () => root,
+    beat: beatOnScreen,
+    merc: mercEl,
+    reduced: prefersReducedMotion,
+    done: (how) => setSwapped(how),
+  })
+  onCleanup(() => {
+    swaps.dispose()
+    // A layer gone with the offer still up takes its Merc back from it.
+    if (cloudOfferGuest() === merc) setCloudOfferGuest(null)
+  })
 
-  let root: HTMLDivElement | undefined
   // Into the dialog, for a screen reader; nothing is drawn for it.
   onMount(() => root?.focus({ preventScroll: true }))
 
@@ -373,6 +425,7 @@ export function NativeOnboarding(): JSX.Element {
       data-beat={beat()}
       data-entry={entry}
       data-leaving={leaving() ? 'on' : 'off'}
+      data-swap={swapped()}
     >
       {/* Under Keep or the Cloud offer, the sheet's own Not now is the way
           out: this one stands aside, in place, so nothing moves when the
@@ -444,7 +497,7 @@ export function NativeOnboarding(): JSX.Element {
           />
         </Match>
         <Match when={beat() === 'offer'}>
-          <KeepView merc={merc} testId="onboarding-offer" />
+          <KeepView testId="onboarding-offer" />
         </Match>
       </Switch>
     </div>

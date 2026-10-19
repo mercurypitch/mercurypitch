@@ -2,8 +2,8 @@
 // LineView: the sung line on screen (S7b beat 8)
 // ============================================================
 //
-// Top to bottom: Merc's line in a bubble; Merc, a little smaller than on
-// the beats before, since the line wants the room; the lane, its ten notes
+// Top to bottom: Merc in his guide slot at the side, his line beside him
+// (S7b §3.3), since the line wants the room; the lane, its ten notes
 // as bars at their pitches and times, a cursor running over them, and the
 // singer's voice drawn across them in the turn; the words, lighting as the
 // cursor reaches them; and, once it is scored, the chip: "8 of 10 notes on
@@ -154,21 +154,23 @@ export function LineView(props: LineViewProps): JSX.Element {
       data-testid="onboarding-sung-line"
     >
       <div class={styles.stage}>
-        <div class={styles.bubbleRow}>
-          <Show when={props.line}>
-            {(text) => (
-              <p
-                class={styles.bubble}
-                aria-hidden="true"
-                data-testid="onboarding-line"
-              >
-                {text()}
-              </p>
-            )}
-          </Show>
+        {/* Merc in his guide slot, his line beside him (S7b §3.3). */}
+        <div class={line.guide}>
+          <div class={`${styles.merc} ${line.merc}`}>{props.merc}</div>
+          <div class={line.says}>
+            <Show when={props.line}>
+              {(text) => (
+                <p
+                  class={`${styles.bubble} ${line.bubble}`}
+                  aria-hidden="true"
+                  data-testid="onboarding-line"
+                >
+                  {text()}
+                </p>
+              )}
+            </Show>
+          </div>
         </div>
-
-        <div class={`${styles.merc} ${line.merc}`}>{props.merc}</div>
 
         <div
           class={line.lane}
