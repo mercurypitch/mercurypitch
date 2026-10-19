@@ -100,6 +100,37 @@ describe('mountSpiral', () => {
     expect(said(b.root)).toBe('B flat 4, 466 hertz')
   })
 
+  it('keeps the selection inside the notes the page shows', () => {
+    // Arrange: a keyboard that shows only the octave A3 to A4
+    const root = spiralRoot()
+    const spiral = mountSpiral(root, { range: () => [57, 69] })
+    const canvas = root.querySelector('canvas')
+
+    // Act: down from A3, then a jump past A4
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    const low = spiral.selected
+    spiral.select(80)
+
+    // Assert
+    expect(low).toBe(57)
+    expect(spiral.selected).toBe(69)
+    expect(canvas?.getAttribute('aria-valuemin')).toBe('12')
+    expect(canvas?.getAttribute('aria-valuemax')).toBe('24')
+  })
+
+  it('looks straight down its axis and back, at once under reduced motion', () => {
+    // Arrange
+    const spiral = mountSpiral(spiralRoot())
+
+    // Act
+    spiral.setView('top')
+    const down = spiral.top
+    spiral.setView('side')
+
+    // Assert
+    expect([down, spiral.top]).toEqual([1, 0])
+  })
+
   it("unrolls one copy, leaving the other's button and hint alone", () => {
     // Arrange
     const [a, b] = twoCopies()

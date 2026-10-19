@@ -111,6 +111,33 @@ describe('mountPredict', () => {
     expect(root.querySelector('.lock-hint')?.textContent).toBe(HINTS.silent)
   })
 
+  it('waits for both answering sounds when the reveal compares two of them', async () => {
+    // Arrange: Lesson 2's step 3, B to C and C to D, each with its own button
+    const root = document.createElement('div')
+    root.innerHTML = `<button type="button" class="choice" data-choice="same">The same</button><button type="button" data-play="bc" disabled>B to C</button><button type="button" data-play="cd" disabled>C to D</button><p class="lock-hint"></p><div class="reveal" hidden><p class="mono"></p></div>`
+    document.body.appendChild(root)
+    mountPredict(root, {
+      play: () => Promise.resolve(),
+      hints: { ...HINTS, next: 'Now the other one' },
+      revealOn: ['bc', 'cd'],
+      revealAfter: 'all',
+    })
+    click(root, '[data-choice="same"]')
+
+    // Act
+    click(root, '[data-play="bc"]')
+    await settle()
+    const afterOne = reveal(root)?.hidden
+    const hintAfterOne = root.querySelector('.lock-hint')?.textContent
+    click(root, '[data-play="cd"]')
+    await settle()
+
+    // Assert
+    expect(afterOne).toBe(true)
+    expect(hintAfterOne).toBe('Now the other one')
+    expect(reveal(root)?.hidden).toBe(false)
+  })
+
   it('lets a free example play before a choice, and never reveals with it', async () => {
     // Arrange
     const root = predictRoot()

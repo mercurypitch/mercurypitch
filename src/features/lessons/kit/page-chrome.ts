@@ -8,19 +8,26 @@ import { A3, A4, hz } from './notes'
 import { Sound } from './sound'
 import { hideToast, toast } from './toast'
 
-/** The masthead's Sound switch, the hero's gate and the toast's "Turn on" all drive one state. */
+/**
+ * The masthead's Sound switch, the hero's gate and the toast's "Turn on" all
+ * drive one state. The gate's line while sound is off is the page's own, as
+ * its markup words it (each lesson says what its sound is about).
+ */
 export function initSoundSwitch(): void {
   const sw = q('#soundSwitch')
   const gate = q('#gate')
   const gateText = q('#gateText')
   const gateBtn = q('#gateBtn')
+  const offText =
+    (gateText.textContent ?? '').replace(/\s+/g, ' ').trim() ||
+    'This lesson is about sound. Tap to turn it on: nothing plays until you press a play button.'
   Sound.subscribe((state) => {
     const on = state === 'on'
     sw.setAttribute('aria-pressed', String(on))
     gate.classList.toggle('is-on', on)
     gateText.textContent = on
       ? 'Sound is on. Each example plays only when you press its button.'
-      : 'This lesson is about sound. Tap to turn it on: nothing plays until you press a play button.'
+      : offText
     gateBtn.textContent = on ? 'Turn sound off' : 'Turn sound on'
   })
   const toggle = (): void => {

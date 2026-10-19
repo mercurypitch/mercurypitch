@@ -133,6 +133,8 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // with no lesson on it.
   '/learn/01',
   '/learn/01.html',
+  '/learn/02',
+  '/learn/02.html',
   '/jam-rooms',
   '/jam-rooms.html',
   // Search-intent entries (src/seo/entry-pages.ts). Each boots an existing

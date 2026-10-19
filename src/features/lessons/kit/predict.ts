@@ -44,6 +44,11 @@ export interface PredictOptions {
   }
   /** The plays (`data-play` values) whose sound reveals the answer; default every play but the free ones. */
   readonly revealOn?: readonly string[]
+  /**
+   * 'any' reveals once one of those has been heard (the default); 'all' waits
+   * until every one has, for a predict that compares two sounds.
+   */
+  readonly revealAfter?: 'any' | 'all'
   /** The reveal's line about the choice ("You said: ..."), never "right" or "wrong". */
   readonly guess?: (choice: string) => string
   /** After the reveal shows (a Merc's celebration). */
@@ -80,6 +85,11 @@ export function mountPredict(root: HTMLElement, opts: PredictOptions): Predict {
     opts.revealOn === undefined
       ? !plays.some((p) => p.dataset.play === what && free(p))
       : opts.revealOn.includes(what)
+  // the answering plays heard so far, for a reveal that waits on all of them
+  const heardPlays = new Set<string>()
+  const answered = (): boolean =>
+    opts.revealAfter !== 'all' ||
+    (opts.revealOn ?? []).every((w) => heardPlays.has(w))
   let choice: string | null = null
   let busy = false
   let revealed = false
@@ -128,7 +138,8 @@ export function mountPredict(root: HTMLElement, opts: PredictOptions): Predict {
       if (!revealed) hint.innerHTML = `${ICON.speaker}${opts.hints.silent}`
       return
     }
-    if (!revealsAnswer(what) || choice === null) {
+    if (revealsAnswer(what) && choice !== null) heardPlays.add(what)
+    if (!revealsAnswer(what) || choice === null || !answered()) {
       const next = opts.hints.next
       if (!revealed && next !== undefined && choice !== null)
         hint.innerHTML = `${ICON.play}${next}`

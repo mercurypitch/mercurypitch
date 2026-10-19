@@ -1,0 +1,582 @@
+/* ============================================================
+   Lesson 2 — Twelve notes: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage
+   and lesson-guide). Here: the hero spiral between the Mercs, the four
+   tickets, the names toggle, the semitone ruler and its app-style monitor,
+   the ear game, the predicts that sit in the step text, the Go deeper
+   drawer, the slide guide beside the ring, the practice card's Leap grid,
+   the next-lesson card's two figures and the free-play stage. On phones,
+   steps 3 to 5 keep the stage heights WEB-SPEC Toys 1 measures (478, 478
+   and 680 px at 390 x 844). */
+
+/* ---------------------------------------------------------------- hero: the spiral between the Mercs */
+.l2-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --spiral-h: clamp(270px, 25vw, 340px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--spiral-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the spiral's base, where the Mercs stand */
+.l2-duo .floor {
+  top: var(--spiral-h);
+}
+.l2-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l2-duo .merc-blue {
+  grid-column: 1;
+}
+.l2-duo .merc-orange {
+  grid-column: 3;
+}
+.hero-spiral {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--spiral-h);
+  touch-action: pan-y;
+}
+.hero-spiral canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.hero-spiral .readout {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  gap: 16px;
+  pointer-events: none;
+  z-index: 2;
+}
+.ro .v .x2 {
+  margin-left: 8px;
+  color: var(--gold);
+}
+@media (max-width: 1080px) {
+  .l2-duo {
+    --merc: clamp(120px, 20vw, 190px);
+    --spiral-h: clamp(270px, 42vw, 360px);
+  }
+}
+/* on a phone the spiral takes the stage's width, and the Mercs stand smaller either side of its base */
+@media (max-width: 560px) {
+  .l2-duo {
+    --merc: min(25vw, 100px);
+    --spiral-h: 264px;
+    margin-top: 2px;
+  }
+  .l2-duo .hero-spiral {
+    grid-column: 1 / -1;
+  }
+}
+
+/* the prerequisite chip is a link: a 44 px target around a 28 px chip */
+.chip-link {
+  position: relative;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.chip-link::after {
+  content: '';
+  position: absolute;
+  inset: -8px -4px;
+}
+.chip-link:hover {
+  border-color: var(--hair-3);
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- four words */
+.tickets.four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* a long label wraps inside its ticket rather than running past it */
+.tickets.four .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
+}
+.nw {
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .tickets.four {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------- the stage's controls */
+/* a figure label is one 16 px line (the stage heights in WEB-SPEC Toys 1 count on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+.seg {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--hair-2);
+  overflow: hidden;
+}
+.seg .btn {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.seg .btn + .btn {
+  box-shadow: inset 1px 0 0 var(--hair-2);
+}
+.seg .btn[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--aqua) 16%, transparent);
+  color: var(--ink);
+}
+.names-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+}
+.names-note {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+.controls.rows .row {
+  display: contents;
+}
+@media (max-width: 960px) {
+  /* step 5's stage: the toggle, then its note, then the figure (WEB-SPEC Toys 1, "On phones") */
+  .names-bar {
+    display: grid;
+    justify-items: start;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .names-note {
+    line-height: 26px;
+  }
+  .controls.rows {
+    display: grid;
+    gap: 10px;
+  }
+  .controls.rows .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+@media (max-width: 420px) {
+  /* step 3's two buttons share one row at 332 px, either label */
+  #toyKeys .controls .btn {
+    padding: 0 12px;
+  }
+}
+
+/* ---------------------------------------------------------------- the semitone ruler */
+.ruler-viz {
+  touch-action: pan-y;
+}
+/* the ruler's strip takes the drag (and holds the page still under it); the rest of the figure scrolls */
+.ruler-slider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 88px;
+  touch-action: none;
+  cursor: ns-resize;
+  border-radius: var(--r-md);
+  z-index: 1;
+}
+.ruler-slider:focus-visible {
+  outline: none;
+}
+.ruler-viz.is-focused {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+.ruler-ro {
+  flex-direction: column;
+  gap: 10px;
+}
+.monitor {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: min(48%, 230px);
+  padding: 10px 12px 8px;
+  border-radius: var(--r-sm);
+  background: rgba(13, 17, 23, 0.82);
+  border: 1px solid var(--hair-2);
+  pointer-events: none;
+}
+.monitor p {
+  margin: 0;
+}
+.monitor .m-title {
+  font: 500 var(--fs-12)/1.3 var(--f-mono);
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.monitor .m-note {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 4px 0 8px;
+}
+.monitor .m-note b {
+  font: 600 var(--fs-22)/1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.monitor .m-note span {
+  font: 500 var(--fs-12)/1 var(--f-mono);
+  color: var(--ink-2);
+}
+.m-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(195, 204, 214, 0.14);
+}
+.m-bar::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  bottom: -3px;
+  width: 1px;
+  background: var(--hair-3);
+}
+.m-bar i {
+  position: absolute;
+  top: -5px;
+  width: 4px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--ink);
+  transform: translateX(-50%);
+}
+.monitor .m-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font: 500 var(--fs-12)/1.2 var(--f-mono);
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------- the step text: plays, predicts, the game */
+.step-play {
+  margin: 0 0 14px;
+}
+.predict.in-step {
+  margin: 4px 0 16px;
+}
+.predict.in-card {
+  margin: 14px 0 10px;
+  padding: 14px 0 0;
+  border-top: 1px dashed color-mix(in srgb, var(--violet) 36%, transparent);
+}
+.predict.in-card .pq,
+.predict.in-step .pq {
+  font-size: clamp(20px, 2vw, 26px);
+}
+div.reveal p {
+  margin: 0 0 10px;
+}
+.mixup .reveal {
+  margin: 12px 0 10px;
+}
+.btn.inline {
+  margin: 4px 6px 4px 0;
+  vertical-align: middle;
+}
+.ear-game {
+  margin: 18px 0 8px;
+  padding: 18px 20px;
+}
+.eg-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 14px;
+}
+.eg-head h4 {
+  margin: 0;
+  font: 600 var(--fs-22)/1.2 var(--f-display);
+}
+.eg-round {
+  margin: 0;
+  font: 500 var(--fs-12)/1.3 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ear-game .eg-ask {
+  margin: 8px 0 14px;
+  color: var(--ink-2);
+}
+.eg-play,
+.eg-answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.eg-answers {
+  margin-top: 12px;
+}
+.eg-answer {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 52px;
+}
+.eg-answer kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--hair-2);
+  font: 500 var(--fs-12)/1 var(--f-mono);
+  color: var(--ink-3);
+}
+.eg-answer.picked {
+  border-color: var(--hair-3);
+}
+.eg-answer.right {
+  border-color: var(--ink);
+  color: var(--ink);
+  opacity: 1;
+}
+.ear-game .eg-feedback {
+  min-height: 26px;
+  margin: 12px 0 0;
+  color: var(--ink);
+}
+.ear-game .eg-keys {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+details.deeper {
+  margin: 18px 0 0;
+  border-top: 1px solid var(--hair);
+}
+details.deeper summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  font: 600 var(--fs-16)/1.2 var(--f-display);
+  color: var(--ink);
+  list-style: none;
+}
+details.deeper summary::-webkit-details-marker {
+  display: none;
+}
+details.deeper summary .ico {
+  transition: transform 0.3s var(--ease);
+}
+details.deeper[open] summary .ico {
+  transform: rotate(90deg);
+}
+details.deeper ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  color: var(--ink-2);
+}
+details.deeper li {
+  margin: 0 0 10px;
+}
+details.deeper li b {
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- sing it: the guide beside the ring */
+.l2-sing {
+  align-items: start;
+}
+.guide-side {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.guide-side .ring {
+  width: min(100%, 300px);
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.wrapup .challenge {
+  margin-top: 0;
+}
+.l2-app {
+  align-items: start;
+}
+.l2-app .addr-line {
+  margin: 0 0 6px;
+  color: var(--ink-2);
+}
+.l2-app .first-visit {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.leap-fig {
+  margin: 0;
+  min-width: 0;
+}
+/* Leap's twelve answers in the app's six columns: m2 and M2 lit, the other ten ghosted */
+.leap {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.leap .pad {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-height: 58px;
+  padding: 6px 4px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  text-align: center;
+  font-size: var(--fs-12);
+  line-height: 1.2;
+  color: var(--ink-2);
+}
+.leap .pad b {
+  font: 600 var(--fs-16)/1.1 var(--f-display);
+  color: var(--ink-2);
+}
+.leap .pad.on {
+  border-color: color-mix(in srgb, var(--ink) 55%, transparent);
+  background: color-mix(in srgb, var(--chrome) 16%, transparent);
+  color: var(--ink);
+}
+.leap .pad.on b {
+  color: var(--ink);
+}
+.leap-fig figcaption {
+  margin-top: 8px;
+  /* m2 and M2 differ only in case: the caption keeps it */
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+.l2-next {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+  margin-top: 18px;
+}
+.tease {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.tease .stat {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair-2);
+}
+.tease .stat .k {
+  font: 500 var(--fs-12)/1.3 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.tease .stat b {
+  font: 600 var(--fs-30)/1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.tease .stat .of {
+  font-size: var(--fs-14);
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+@media (max-width: 860px) {
+  .l2-next {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 420px) {
+  .leap {
+    gap: 4px;
+  }
+  .leap .pad {
+    min-height: 64px;
+    padding: 6px 2px;
+  }
+}
+
+/* on a phone the climb's step count needs the hint's place at the figure's top */
+@media (max-width: 560px) {
+  .has-climb .viz .hint[data-spiral-hint] {
+    visibility: hidden;
+  }
+}
+
+/* the five lifted out rise into the figure's top: its readout and hint step aside */
+.is-lifted .viz .readout,
+.is-lifted .viz .hint {
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+
+/* ---------------------------------------------------------------- free play */
+.free-play {
+  margin-top: 18px;
+}
+.fp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}
+.free-play .seg .btn {
+  padding: 0 12px;
+}
+
+/* ---------------------------------------------------------------- the quick check's pair */
+.pair-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--hair-2);
+  font: 500 var(--fs-12)/1 var(--f-mono);
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s,
+    border-color 0.2s;
+}
+.pair-chip.on {
+  border-color: var(--chrome);
+  background: color-mix(in srgb, var(--chrome) 18%, transparent);
+  color: var(--ink);
+}

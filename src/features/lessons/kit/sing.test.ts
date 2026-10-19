@@ -4,7 +4,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
-import { mountSing } from './sing'
+import { mountRing, mountSing } from './sing'
 import { Sound } from './sound'
 
 const STILLS = { blue: '/stills/blue.webp', orange: '/stills/orange.webp' }
@@ -56,5 +56,29 @@ describe('mountSing', () => {
     expect(waiting(a)).toEqual([true, true])
     expect(text(b, '.ring-state')).toBe('')
     expect(waiting(b)).toEqual([false, false])
+  })
+
+  it("says a run's own words over the ring's, as a guide's silent count-in does", () => {
+    // Arrange: a ring on its own, as Lesson 2's slide guide drives it
+    const root = document.createElement('div')
+    root.innerHTML = `<div class="ring"><svg><circle class="ring-progress" r="182"></circle><circle class="ring-breath" r="150"></circle><g class="ring-ripples"></g></svg><img class="ring-merc" alt=""><p class="ring-note"></p><p class="ring-state"></p></div>`
+    document.body.appendChild(root)
+    const ringEl = root.querySelector<HTMLElement>('.ring')
+    if (ringEl === null) throw new Error('no ring')
+    const ring = mountRing(ringEl, { stills: STILLS })
+
+    // Act
+    void ring.run({
+      which: 'blue',
+      label: 'A3 · 220 Hz',
+      listen: 1,
+      turn: 4.2,
+      ripples: false,
+      words: { listen: 'Get ready' },
+    })
+
+    // Assert
+    expect(text(root, '.ring-state')).toBe('Get ready')
+    expect(ring.busy).toBe(true)
   })
 })

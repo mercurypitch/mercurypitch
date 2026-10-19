@@ -18,6 +18,12 @@
 // `[data-pan]` buttons and `[data-pan-window]` label) and `[data-key]`
 // buttons that play a note. Every name follows the page's sharps-or-flats
 // choice (names.ts).
+//
+// A page can take the figure further without forking it: look straight down
+// the axis (`setView('top')`), keep the selection inside the notes it shows
+// (`range`), and draw the unrolled keys itself (`keys`, a layer that also
+// says where each key is and where it takes taps), as Lesson 2 does to
+// straighten the keyboard into a row of equal tiles.
 
 import { clamp, q, qa, TAU } from './dom'
 import { addDrawer, surface, watch } from './frame-loop'
@@ -26,10 +32,10 @@ import { Names, namesFor, spokenNames } from './names'
 import { fmtHz, hz, isBlack, nameHtml, nameOf, noteColor, signName, } from './notes'
 import type { Voice } from './sound'
 import { playTone, Sound } from './sound'
-import type { BeadHit, BeadLabels } from './spiral-draw'
+import type { BeadHit, BeadLabels, KeysLayer } from './spiral-draw'
 import { drawOverlays, drawSpiral } from './spiral-draw'
-import type { KeyHit, KeyLabels } from './spiral-keys'
-import { LO, N, wIndex } from './spiral-keys'
+import type { KeyboardView, KeyHit, KeyLabels } from './spiral-keys'
+import { KEY_SLOP, LO, N, wIndex } from './spiral-keys'
 
 /** The phone keyboard's three windows, by pan / 7. */
 const WIN = ['A2 to A3', 'A3 to A4', 'A4 to A5']
@@ -83,7 +89,24 @@ export interface SpiralOptions {
   readonly unrollLabels?: readonly [string, string]
   /** Draws a page's own marks over each frame. */
   readonly overlay?: (frame: SpiralFrame) => void
+  /** The page's own unrolled keys, built for each frame; default the kit's keyboard. */
+  readonly keys?: (frame: KeysFrame) => KeysLayer
+  /** The notes the selection may reach, MIDI low and high; default A2 to A5. */
+  readonly range?: () => readonly [number, number]
+  /** The turn that stays lit from above starts here, MIDI; default A3. */
+  readonly ring?: number
 }
+
+/** What a page's keys layer is built from: the canvas size, the time and the figure's state. */
+export interface KeysFrame {
+  readonly W: number
+  readonly H: number
+  readonly now: number
+  readonly view: KeyboardView
+}
+
+/** From the side, or straight down the axis. */
+export type SpiralCamera = 'side' | 'top'
 
 export interface Spiral {
   readonly root: HTMLElement
@@ -101,9 +124,15 @@ export interface Spiral {
   /** Moves the selection (and the slider's value) to a note. */
   select(midi: number): void
   setUnrolled(on: boolean): void
+  /** True once the keys show (unrolled and settled). */
+  readonly unrolled: boolean
   setLabels(labels: BeadLabels): void
   /** Whether the spiral may turn by itself (never under Pause animations or reduced motion). */
   setTurning(on: boolean): void
+  /** Moves the camera over the axis or back to the side (at once under reduced motion). */
+  setView(camera: SpiralCamera): void
+  /** How far the camera has moved over the axis, 0 to 1. */
+  readonly top: number
   /** Says the hint and the slider's value again, after something they read has changed. */
   refresh(): void
 }
@@ -170,12 +199,26 @@ export function mountSpiral(
   let narrow = false
   let pan = 7
   let panTarget = 7
+  let top = 0
+  let topTarget = 0
   const pulses = new Map<number, number>()
   const drifting = (): boolean => userDrift && !Motion.paused
 
+  /** The selection's reach, in semitones from A2: every bead, or the page's range. */
+  function reach(): [number, number] {
+    if (opts.range === undefined) return [0, N - 1]
+    const [lo, hi] = opts.range()
+    return [clamp(lo - LO, 0, N - 1), clamp(hi - LO, 0, N - 1)]
+  }
+
   function setSel(s: number): void {
-    sel = clamp(s, 0, N - 1)
+    const [lo, hi] = reach()
+    sel = clamp(s, lo, hi)
     tapLabel = null // the label follows the selection (a tap sets it again when it plays)
+    if (opts.range !== undefined) {
+      canvas.setAttribute('aria-valuemin', String(lo))
+      canvas.setAttribute('aria-valuemax', String(hi))
+    }
     canvas.setAttribute('aria-valuenow', String(sel))
     canvas.setAttribute('aria-valuetext', valueText(LO + sel))
     if (narrow && uTarget > 0.5) {
@@ -339,8 +382,8 @@ export function mountSpiral(
       (kh) =>
         x >= kh.x &&
         x <= kh.x + kh.w &&
-        y >= kh.y - 10 &&
-        y <= kh.y + kh.h + 10,
+        y >= kh.y - KEY_SLOP &&
+        y <= kh.y + kh.h + KEY_SLOP,
     )
     if (under) return under
     let best: KeyHit | undefined
@@ -440,6 +483,10 @@ export function mountSpiral(
     if (Math.abs(du) > 0.001) {
       u += Math.sign(du) * Math.min(Math.abs(du), dt / 1.7)
     } else u = uTarget
+    const dTop = topTarget - top
+    if (Math.abs(dTop) > 0.001) {
+      top += Math.sign(dTop) * Math.min(Math.abs(dTop), dt / 1.2)
+    } else top = topTarget
     const dp = panTarget - pan
     pan =
       reducedMotion() || Math.abs(dp) < 0.01
@@ -456,6 +503,8 @@ export function mountSpiral(
     active: opts.active ?? watch(root),
     draw(now, dt) {
       const { ctx, w: W, h: H } = cv.fit()
+      // a canvas not laid out yet (a hidden or collapsing box) has nothing to show
+      if (W < 24 || H < 24) return
       const nar = W < 560
       if (nar !== narrow) {
         narrow = nar
@@ -464,19 +513,25 @@ export function mountSpiral(
         syncUnroll()
       }
       step(dt)
-      const view = {
-        yaw,
-        u,
+      const keyView: KeyboardView = {
         narrow,
         pan,
         focused,
         sel,
-        labels,
         pulses,
-        lit,
         keyLabels: opts.keyLabels ?? 'landmarks',
         span: opts.span ?? null,
         spelling: Names.mode,
+      }
+      const view = {
+        ...keyView,
+        yaw,
+        u,
+        labels,
+        lit,
+        top,
+        ringFrom: (opts.ring ?? 57) - LO,
+        layer: opts.keys?.({ W, H, now, view: keyView }),
       }
       const drawn = drawSpiral(ctx, W, H, now, view)
       hits = drawn.hits
@@ -518,6 +573,9 @@ export function mountSpiral(
       if (reducedMotion()) u = uTarget
       syncUnroll()
     },
+    get unrolled() {
+      return u === 1
+    },
     setLabels(next) {
       labels = next
       syncUnroll()
@@ -525,8 +583,17 @@ export function mountSpiral(
     setTurning(on) {
       turning = on
     },
+    setView(camera) {
+      topTarget = camera === 'top' ? 1 : 0
+      if (reducedMotion()) top = topTarget
+    },
+    get top() {
+      return top
+    },
     refresh() {
       syncUnroll()
+      // the page's range may have moved: keep the selection inside it
+      if (opts.range !== undefined) setSel(sel)
       canvas.setAttribute('aria-valuetext', valueText(LO + sel))
     },
   }

@@ -9,6 +9,9 @@
 // keyboard, so a tap lands on the key the viewer saw. Lesson 1 names only
 // the landmarks (the Cs, A3 and A4); a page can name every key, the black
 // ones by the page's sharps-or-flats choice (names.ts).
+//
+// A page can fit the phone keyboard its own way (`KeyboardFit`): Lesson 2's
+// runs edge to edge, so eight white keys of 44.5 px fill a 356 px figure.
 
 import { clamp } from './dom'
 import type { Spelling } from './names'
@@ -19,6 +22,23 @@ import { COLOR, letterOf, nameOf, rgba, signName } from './notes'
 export const LO = 45
 /** A2 to A5: 37 notes, three turns. */
 export const N = 37
+
+/** How far past a key's drawn edge, above and below, a tap still lands on it. */
+export const KEY_SLOP = 10
+
+/** How a key is painted, shared by every page that draws keys or tiles. */
+export const KEY_LOOK = {
+  /** A white key's face, top to bottom. */
+  whiteTop: '#dfe6ee',
+  whiteBottom: '#b9c3ce',
+  /** Blue Merc's A3 and orange Merc's A4. */
+  a3: '#9cc8ff',
+  a4: '#ffb196',
+  black: '#0d1117',
+  blackEdge: 'rgba(195,204,214,.4)',
+  /** A white key's name. */
+  whiteInk: '#0d1117',
+} as const
 
 /** The notes with a letter of their own (the white keys), as semitones from A2. */
 export const WHITE: number[] = []
@@ -59,6 +79,14 @@ export interface KeyboardView {
   spelling: Spelling
 }
 
+/** How the phone keyboard fills its canvas; each field defaults to Lesson 1's. */
+export interface KeyboardFit {
+  /** Px between the canvas edge and the keys (6 on a phone, 12 on a wide canvas). */
+  readonly margin?: number
+  /** White keys the phone keyboard shows at once (8, an octave). */
+  readonly visible?: number
+}
+
 type KeyPos = { x: number; y: number; white: boolean; wi: number }
 
 /** A rounded rectangle path, or a square one on a canvas without roundRect. */
@@ -93,10 +121,11 @@ export function keyboardLayout(
   H: number,
   narrow: boolean,
   pan: number,
+  fit: KeyboardFit = {},
 ) {
-  const km = narrow ? 6 : 12
+  const km = fit.margin ?? (narrow ? 6 : 12)
   const kbW = W - 2 * km
-  const vis = narrow ? 8 : WHITE.length
+  const vis = narrow ? (fit.visible ?? 8) : WHITE.length
   const off = narrow ? pan : 0
   const ww = kbW / vis
   const kbTop = H * 0.36
@@ -138,9 +167,9 @@ function drawWhiteKeys(k: KeyFrame, hits: KeyHit[]): void {
     if (!visible(kb, x, ww)) continue
     const pulse = pulseOf(view.pulses, m, now)
     const g = ctx.createLinearGradient(0, kbTop, 0, kbTop + kbH)
-    g.addColorStop(0, '#dfe6ee')
-    g.addColorStop(1, '#b9c3ce')
-    ctx.fillStyle = m === 57 ? '#9cc8ff' : m === 69 ? '#ffb196' : g
+    g.addColorStop(0, KEY_LOOK.whiteTop)
+    g.addColorStop(1, KEY_LOOK.whiteBottom)
+    ctx.fillStyle = m === 57 ? KEY_LOOK.a3 : m === 69 ? KEY_LOOK.a4 : g
     ctx.beginPath()
     roundedRect(ctx, x + 0.75, kbTop, ww - 1.5, kbH, [0, 0, 4, 4])
     ctx.fill()
@@ -154,7 +183,7 @@ function drawWhiteKeys(k: KeyFrame, hits: KeyHit[]): void {
     const landmark = m === 48 || m === 60 || m === 72 || m === 57 || m === 69
     if (landmark || view.keyLabels === 'all') {
       const size = Math.max(10, Math.min(13, ww * 0.42))
-      ctx.fillStyle = '#0d1117'
+      ctx.fillStyle = KEY_LOOK.whiteInk
       ctx.font = `600 ${size}px Outfit, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'alphabetic'
@@ -189,8 +218,8 @@ function drawBlackKeys(k: KeyFrame, hits: KeyHit[]): void {
     const x = kp.x - bW / 2
     if (!visible(kb, x, bW)) continue
     const pulse = pulseOf(view.pulses, m, now)
-    ctx.fillStyle = '#0d1117'
-    ctx.strokeStyle = 'rgba(195,204,214,.4)'
+    ctx.fillStyle = KEY_LOOK.black
+    ctx.strokeStyle = KEY_LOOK.blackEdge
     ctx.lineWidth = 1
     ctx.beginPath()
     roundedRect(ctx, x, kbTop, bW, bH, [0, 0, 3, 3])

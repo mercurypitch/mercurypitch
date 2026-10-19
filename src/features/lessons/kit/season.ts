@@ -164,6 +164,9 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Twelve notes',
     short: 'Twelve notes',
     topics: ['T03', 'T04'],
+    len: '7:11',
+    page: '/learn/02',
+    film: 'production',
     hook: 'Musicians only use seven letters, so where do the other five notes come from?',
     sig: 'The five "?" beads from Lesson 1\'s spiral light up; twelve equal steps multiply to exactly 2.',
     pr: {
@@ -173,9 +176,12 @@ export const LESSONS: readonly Lesson[] = [
         href: '/ear-lab?lesson=02',
         addr: 'mercurypitch.com/ear-lab',
         label: 'Ear Lab',
-        note: 'for now, then tap Leap',
+        note: 'for now, then tap Leap (on a first visit, close the intro first)',
       },
     },
+    fig: 'poster',
+    posterAlt:
+      'The title card: Find Your Pitch, Lesson 02, Twelve notes, above a glowing five-line staff with a blue note, an orange note, a chrome bead and chrome notes, one of them sharp',
   },
   {
     n: 3,
