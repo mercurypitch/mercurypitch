@@ -64,12 +64,12 @@ Gaps the audit found:
 
 | Gap                                                                                               | Now                         |
 | ------------------------------------------------------------------------------------------------- | --------------------------- |
-| No `WebSite` node, so no declared site name; app nodes not linked by `@id`                        | **[in review]** #1105       |
-| Karaoke Night, Voice Mirror, the range test and Break Glass had no app markup                     | **[in review]** #1105       |
-| Manifest description still described the pitch trainer of a year ago                              | **[in review]** #1105       |
-| Nothing answered "karaoke app", "karaoke with friends online", "karaoke on TV", "is there an app" | **[in review]** #1106       |
-| Jam Rooms had no FAQ                                                                              | **[in review]** #1106       |
-| Nothing on the site follows the store listings except the chips                                   | **[in review]** #1107       |
+| No `WebSite` node, so no declared site name; app nodes not linked by `@id`                        | **[shipped]** #1105         |
+| Karaoke Night, Voice Mirror, the range test and Break Glass had no app markup                     | **[shipped]** #1105         |
+| Manifest description still described the pitch trainer of a year ago                              | **[shipped]** #1105         |
+| Nothing answered "karaoke app", "karaoke with friends online", "karaoke on TV", "is there an app" | **[shipped]** #1106         |
+| Jam Rooms had no FAQ                                                                              | **[shipped]** #1106         |
+| Nothing on the site follows the store listings except the chips                                   | **[shipped]** #1107         |
 | Sitemap `lastmod` dates are stale (2026-09-08 on pages edited since), four pages have none        | **[next]** §4.3             |
 | `/exercises/<slug>` deep links are `noindex` (they serve the shell)                               | **[open]** needs real heads |
 | No IndexNow, no Bing Webmaster Tools                                                              | **[open]** §3.3, §3.4       |
@@ -95,7 +95,7 @@ Gaps the audit found:
   - Jam Rooms gets its first FAQ, and Karaoke Night answers key changes.
   - llms.txt gains _Where it runs_. Its test fails on launch day until the live
     listing is linked.
-- **#1107, store presence** (stacked on #1105).
+- **#1107, store presence.**
   - Generated documents carry Safari's Smart App Banner once the App Store
     listing is live.
   - The tests then demand three hand-written additions, naming the exact text:
@@ -214,11 +214,11 @@ _(verified)_. So the rule is:
 
 | Intent                                                              | Page                   | Status          |
 | ------------------------------------------------------------------- | ---------------------- | --------------- |
-| karaoke app, free karaoke app, karaoke app with scoring             | `/karaoke-app`         | **[in review]** |
+| karaoke app, free karaoke app, karaoke app with scoring             | `/karaoke-app`         | **[shipped]**   |
 | make karaoke from a song, karaoke version of a song                 | `/karaoke-night`       | **[shipped]**   |
 | vocal remover, remove vocals from a song                            | `/vocal-remover`       | **[shipped]**   |
-| sing karaoke with friends online, online karaoke party              | `/jam` (FAQ)           | **[in review]** |
-| change a song's key, karaoke in my key                              | `/karaoke-night` (FAQ) | **[in review]** |
+| sing karaoke with friends online, online karaoke party              | `/jam` (FAQ)           | **[shipped]**   |
+| change a song's key, karaoke in my key                              | `/karaoke-night` (FAQ) | **[shipped]**   |
 | karaoke on smart TV, phone as karaoke microphone                    | `/karaoke-on-tv`       | **[open]** §7.3 |
 | free alternative to the paid karaoke apps                           | one comparison page    | **[open]** §4.4 |
 | vocal range, voice type, pitch practice, singer match, ear training | existing pages         | **[shipped]**   |
@@ -351,7 +351,7 @@ first press coverage. Wikipedia notability is further off.
 
 ### 6.1 The switch
 
-Flip `live` in `src/lib/store-listings.ts` per store (after #1106 and #1107).
+Flip `live` in `src/lib/store-listings.ts` per store.
 
 **Follows on its own:**
 
