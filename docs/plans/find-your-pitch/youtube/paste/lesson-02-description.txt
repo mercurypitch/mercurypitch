@@ -1,0 +1,33 @@
+Musicians only use seven letters, so where do the other five notes come from?
+The interactive lesson: https://mercurypitch.com/learn/02
+
+Find Your Pitch, Lesson 2: Twelve notes. Blue Merc and orange Merc find all twelve notes in an octave. You'll hear the very next note up from A, count twelve equal steps back to A, see why there is no black key between B and C (or between E and F), learn why one key can carry two names, such as C sharp and D flat, and measure a semitone in cents, the unit MercuryPitch measures in.
+
+Chapters
+00:00 The missing five
+00:35 The very next note
+00:48 Twelve equal steps
+01:35 The keyboard
+01:48 B to C
+02:52 Where the five come from
+03:19 Sharps and flats
+04:25 Cents
+05:06 Sing a semitone
+05:57 Quick check
+06:49 Next time
+
+Practise
+In Ear Lab's Leap, listen for the semitone (m2) and the tone (M2). Leap mixes all twelve intervals; these are the two from this lesson. Ear Lab is free: https://mercurypitch.com/ear-lab
+First visit? MercuryPitch opens with its intro: close it with the × at the top right ("Skip the intro").
+Singing the slide: hum it quietly, or sing it on ooh. Never push, and stop if anything feels uncomfortable.
+
+New here? Start with Lesson 1, What is a note?: [PASTE LESSON 1 LINK]
+Season 1 playlist: [PASTE PLAYLIST LINK]
+
+Credits
+Hosts: blue Merc and orange Merc, animated in code.
+Voices: ElevenLabs (Eleven v3). Merc's two sung notes in the opening: re-pitched from ElevenLabs takes. Every other musical example, both semitone slides included, is synthesised in code at its exact pitch; there is no recorded music.
+Fonts: Outfit, Inter, Instrument Serif, JetBrains Mono and Noto Music, all under the SIL Open Font Licence 1.1.
+Made by MercuryPitch, a free singing and playing studio: https://mercurypitch.com
+
+#MusicTheory #Singing #FindYourPitch
