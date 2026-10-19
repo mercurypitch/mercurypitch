@@ -12,16 +12,18 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal, Show } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { HOP_MS } from '@/components/room-kit/merc-moves'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
 import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import type { UnlockItem } from '@/stores/notifications-store'
 import { onUnlockShown, resetNotifications, setNotificationPresenter, showNotification, } from '@/stores/notifications-store'
-import { ACTIONS_MS, HOP_AT_MS } from './path-motion'
+import { ACTIONS_MS, END_SONG_MS, END_STEP_MS, HOP_AT_MS, LIGHT_MS, } from './path-motion'
 import { pinnedSource } from './path-source'
 import { freshDay } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
 import { OWNER_ROUTINE } from './warm-up-plan'
 import { enterStop, leavePath, openStop, resetWarmUpForTests, routineStopFor, routineUnlocks, skipNextStop, warmUpDay, warmUpLastMove, } from './warm-up-store'
+import type { PathHaptics } from './WarmUpPath'
 import { PULSE_MS, WarmUpPath } from './WarmUpPath'
 
 vi.mock('@/lib/haptics', () => ({
@@ -62,7 +64,10 @@ interface Mounted {
   leave: () => void
 }
 
-function mount(source?: Parameters<typeof WarmUpPath>[0]['source']): Mounted {
+function mount(
+  source?: Parameters<typeof WarmUpPath>[0]['source'],
+  haptics?: PathHaptics,
+): Mounted {
   const [shown, setShown] = createSignal(true)
   const handlers = {
     onOpenRoom: vi.fn(),
@@ -73,7 +78,7 @@ function mount(source?: Parameters<typeof WarmUpPath>[0]['source']): Mounted {
   }
   render(() => (
     <Show when={shown()}>
-      <WarmUpPath source={source} {...handlers} />
+      <WarmUpPath source={source} haptics={haptics} {...handlers} />
     </Show>
   ))
   return { ...handlers, leave: () => setShown(false) }
@@ -157,6 +162,15 @@ describe('the first visit', () => {
 describe('back from a stop', () => {
   beforeEach(() => {
     sing(0)
+  })
+
+  it('the stop lights with the tick the shell hands it', () => {
+    const felt = { tick: vi.fn(), success: vi.fn() }
+    mount(undefined, felt)
+    expect(felt.tick).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(LIGHT_MS)
+    expect(felt.tick).toHaveBeenCalledTimes(1)
+    expect(felt.success).not.toHaveBeenCalled()
   })
 
   it('raises the card at 0.3 s and says it once, politely', () => {
@@ -251,11 +265,23 @@ describe('the end', () => {
   it('"Warmed up", "4 of 4 today", every result under its stop', () => {
     mount()
     expect(text('warm-up-title')).toBe('Warmed up')
+    expect(screen.queryByTestId('warm-up-week')).toBeNull()
     expect(screen.getByText('4 of 4 today')).not.toBeNull()
     for (const [i, line] of LINES.entries()) {
       expect(text(`warm-up-stop-${i}`)).toContain(line)
     }
     expect(screen.queryByTestId('warm-up-level')).toBeNull()
+  })
+
+  it('the song lights with its burst, and Merc lands on it with a success', () => {
+    const felt = { tick: vi.fn(), success: vi.fn() }
+    mount(undefined, felt)
+    expect(screen.queryByTestId('warm-up-burst')).toBeNull()
+    vi.advanceTimersByTime(4 * END_STEP_MS + END_SONG_MS)
+    expect(screen.queryByTestId('warm-up-burst')).not.toBeNull()
+    expect(felt.success).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(HOP_MS)
+    expect(felt.success).toHaveBeenCalledTimes(1)
   })
 
   it('Done leaves; Sing a song and the song stop open the song list', () => {
@@ -271,6 +297,13 @@ describe('the end', () => {
     leavePath()
     mount()
     expect(text('warm-up-chip')).toBe('Warmed up today')
+    // Drawn settled: no burst on the song.
+    expect(screen.queryByTestId('warm-up-burst')).toBeNull()
+    // This week's dots under the chip: Monday 19 Oct, today, filled.
+    expect(zoneOf('warm-up-week')).toBe('warm-up-top')
+    expect(screen.getByTestId('warm-up-week').getAttribute('aria-label')).toBe(
+      'Warmed up this week: today',
+    )
     fireEvent.click(screen.getByTestId('warm-up-again-run'))
     expect(text('warm-up-start')).toBe('Start warm-up')
     expect(warmUpDay().warmedUp).toBe(true)

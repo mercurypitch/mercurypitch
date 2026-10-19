@@ -8,19 +8,23 @@
 // on once, the end, and Sing a song back to the Sing room for its song
 // list. The path is the real one (WarmUpScreen, WarmUpPath, the store);
 // each room is a stand-in that is handed its stop the way the real ones
-// are (warm-up-stop.ts) and finishes it with the frames' results.
+// are (warm-up-stop.ts) and finishes it with the frames' results. The
+// path's haptics are the device's (the platform package's), not the web's.
 
+import { hapticSuccess, hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import { fireEvent, screen } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { HOP_MS } from '@/components/room-kit/merc-moves'
 import { lastExercise, resetLastExerciseForTests, } from '@/features/premium-exercises/last-exercise'
 import { TAB_SINGING } from '@/features/tabs/constants'
-import { ACTIONS_MS } from '@/features/warm-up/path-motion'
+import { ACTIONS_MS, END_SONG_MS, END_STEP_MS, } from '@/features/warm-up/path-motion'
 import type { WarmUpRoomId } from '@/features/warm-up/warm-up-plan'
 import { resetWarmUpForTests, warmUpDay, } from '@/features/warm-up/warm-up-store'
 import { PULSE_MS } from '@/features/warm-up/WarmUpPath'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
 import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { haptics as webHaptics } from '@/lib/haptics'
 import { songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
 import type { RenderedShell } from './render-for-test'
@@ -30,6 +34,11 @@ import { ShellScreens } from './ShellScreens'
 import { warmUpStop } from './warm-up-stop'
 import { WarmUpScreen } from './WarmUpScreen'
 
+vi.mock('@irchiinnuss/mobile-runtime/platform', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  hapticTap: vi.fn(async () => true),
+  hapticSuccess: vi.fn(async () => true),
+}))
 vi.mock('@/lib/haptics', () => ({
   haptics: { tapLight: vi.fn(), tapMedium: vi.fn(), success: vi.fn() },
 }))
@@ -102,6 +111,7 @@ function next(): void {
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date(2026, 9, 19, 9, 0))
+  vi.clearAllMocks()
   localStorage.clear()
   resetLastExerciseForTests()
   resetWarmUpForTests()
@@ -166,6 +176,25 @@ describe('a Warm-up, start to song', () => {
     fireEvent.click(screen.getByTestId('warm-up-sing'))
     expect(pushed()).toBeNull()
     expect(songListRequested()).toBe(true)
+  })
+
+  it("the path's tick and success are the device's", () => {
+    pushScreen('warm-up')
+    fireEvent.click(screen.getByTestId('warm-up-start'))
+    expect(hapticTap).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(PULSE_MS)
+    finishRoom()
+    for (let stop = 2; stop <= 4; stop += 1) {
+      next()
+      finishRoom()
+    }
+    expect(hapticSuccess).not.toHaveBeenCalled()
+
+    // The end: four stops brighten, the song lights, and Merc lands on it.
+    vi.advanceTimersByTime(4 * END_STEP_MS + END_SONG_MS + HOP_MS)
+    expect(hapticSuccess).toHaveBeenCalledTimes(1)
+    expect(webHaptics.success).not.toHaveBeenCalled()
+    expect(webHaptics.tapLight).not.toHaveBeenCalled()
   })
 
   it('Back from a room returns to the path with that stop still next', () => {

@@ -13,7 +13,8 @@
 // level the exercises are at (the accuracy tier, exercise-level.ts), picked
 // in the exercise or in Settings. A card's third line says one thing a
 // singer cannot see from its name: that Merc sings it first (only when its
-// demo will play by itself), or the best on the note it opens on.
+// demo will play by itself), or the best on the note it opens on, or (the
+// Warm-up) "Warmed up today" and this week's dots.
 //
 // A tap closes the sheet and hands the id to the room, which winds down
 // whatever is running before the exercise opens over it.
@@ -23,7 +24,9 @@ import { createUniqueId, For, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Volume2 } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
+import { WeekDots } from '@/components/room-kit/WeekDots'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
+import type { WeekDot } from '@/lib/warm-up-days'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
 import type { CatalogueGroup, PremiumExercise } from './catalogue'
 import { catalogueGroups } from './catalogue'
@@ -66,6 +69,7 @@ const Card: Component<{
   onPick: (id: PremiumExerciseId) => void
 }> = (props) => {
   const current = (): boolean => lastExercise() === props.exercise.id
+  const week = (): readonly WeekDot[] | null => props.exercise.week?.() ?? null
   return (
     <li class={styles.cardItem}>
       <button
@@ -91,15 +95,15 @@ const Card: Component<{
           <Show
             when={props.exercise.demoAutoPlays()}
             fallback={
-              <Show when={bestLine(props.exercise)}>
-                {(line) => (
-                  <span
-                    class={styles.cardMeta}
-                    data-testid="sing-exercise-meta"
-                  >
-                    {line()}
-                  </span>
-                )}
+              <Show when={bestLine(props.exercise) !== null || week()}>
+                <span class={styles.cardMeta} data-testid="sing-exercise-meta">
+                  {bestLine(props.exercise)}
+                  <Show when={week()}>
+                    {(dots) => (
+                      <WeekDots dots={dots()} testId="sing-exercise-week" />
+                    )}
+                  </Show>
+                </span>
               </Show>
             }
           >

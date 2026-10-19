@@ -13,6 +13,11 @@
 // A capture waits for
 //   [data-testid="warm-up-fixture"][data-fixture="<name>"][data-ready="true"]
 // which is set once the sky is on screen.
+//
+// `live` plays the state's arrival instead of settling it: `end` brightens
+// the stops and lands Merc on the song, `between` raises the card and
+// counts down. For watching the motion (and capturing it under reduced
+// motion), not for a still.
 
 import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
@@ -26,6 +31,8 @@ export interface WarmUpFixtureProps {
   name: WarmFixtureName
   /** How many stand-in unlocks the run carries (fixture-runs.ts). */
   unlocks?: number
+  /** Play the state's arrival rather than settle it. */
+  live?: boolean
 }
 
 const BAR: JSX.CSSProperties = {
@@ -66,7 +73,7 @@ export function WarmUpFixture(props: WarmUpFixtureProps): JSX.Element {
     >
       <WarmUpPath
         source={source}
-        still
+        still={props.live !== true}
         onOpenRoom={() => undefined}
         onDone={() => undefined}
         onSong={() => undefined}

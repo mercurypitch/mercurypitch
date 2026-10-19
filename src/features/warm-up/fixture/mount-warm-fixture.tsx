@@ -4,7 +4,9 @@
 //
 // The native entry calls this behind `import.meta.env.DEV` when the page
 // is opened with `?warmFixture=<name>` (WarmUpFixture.tsx), so it exists
-// only on the dev server and no build carries it.
+// only on the dev server and no build carries it. `&warmLive=1` plays the
+// state's arrival (the end's sequence, the card and countdown) instead of
+// settling it.
 
 import { render } from 'solid-js/web'
 import { isWarmFixtureName } from './fixture-runs'
@@ -18,14 +20,14 @@ import { WarmUpFixture } from './WarmUpFixture'
  */
 export function mountWarmFixture(root: HTMLElement, name: string): boolean {
   if (!isWarmFixtureName(name)) return false
-  const unlocks = Number(
-    new URLSearchParams(window.location.search).get('warmUnlocks') ?? 0,
-  )
+  const query = new URLSearchParams(window.location.search)
+  const unlocks = Number(query.get('warmUnlocks') ?? 0)
   render(
     () => (
       <WarmUpFixture
         name={name}
         unlocks={Number.isInteger(unlocks) ? unlocks : 0}
+        live={query.get('warmLive') === '1'}
       />
     ),
     root,

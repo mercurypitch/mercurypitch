@@ -9,12 +9,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StopResult } from '@/components/room-kit/routine-stop'
 import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { applyPersistedValue } from '@/lib/storage'
+import { WARM_UP_DAYS_KEY } from '@/lib/warm-up-days'
 import type { UnlockItem } from '@/stores/notifications-store'
 import { notifications, resetNotifications, setNotificationPresenter, showNotification, } from '@/stores/notifications-store'
 import type { WarmUpDay } from './routine'
 import { nextStop, tally } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
-import { canStartWarmUp, claimPathUnlocks, enterStop, leavePath, leaveStop, nextWarmUpRoom, openStop, resetWarmUpForTests, routineStopFor, routineUnlocks, skipNextStop, WARM_UP_TODAY_KEY, warmedUpToday, warmUpAgain, warmUpDay, warmUpLastMove, } from './warm-up-store'
+import { canStartWarmUp, claimPathUnlocks, enterStop, leavePath, leaveStop, nextWarmUpRoom, openStop, resetWarmUpForTests, routineStopFor, routineUnlocks, skipNextStop, WARM_UP_TODAY_KEY, warmedUpToday, warmUpAgain, warmUpDay, warmUpDays, warmUpLastMove, warmUpWeek, } from './warm-up-store'
 
 const ROOMS: readonly WarmUpRoomId[] = [
   EXERCISE_LIP_ROLL_BAY,
@@ -38,6 +40,12 @@ function states(day: WarmUpDay): string[] {
 function kept(): WarmUpDay | null {
   const raw = localStorage.getItem(WARM_UP_TODAY_KEY)
   return raw === null ? null : (JSON.parse(raw) as WarmUpDay)
+}
+
+/** The synced days as stored, or null before any were written. */
+function keptDays(): unknown {
+  const raw = localStorage.getItem(WARM_UP_DAYS_KEY)
+  return raw === null ? null : JSON.parse(raw)
 }
 
 /** Open stop `index` and finish it through the stop its room is handed. */
@@ -335,5 +343,87 @@ describe('the picker card and the tap that opens the Warm-up', () => {
     sing(2, '12.6 s')
     sing(3, '8 of 9 on pitch')
     expect(nextWarmUpRoom()).toBeNull()
+  })
+})
+
+describe('the days warmed up (N5)', () => {
+  it('joins the synced days once the end counts the day, and once only', () => {
+    sing(0, '86% lit')
+    sing(1, '92% lit')
+    sing(2, '12.6 s')
+    expect(keptDays()).toBeNull()
+    sing(3, '8 of 9 on pitch')
+    expect(keptDays()).toEqual(['2026-10-18'])
+    const written = localStorage.getItem(WARM_UP_DAYS_KEY)
+    warmUpAgain()
+    sing(0, '90% lit')
+    expect(localStorage.getItem(WARM_UP_DAYS_KEY)).toBe(written)
+  })
+
+  it('counts a day reached by Skip beside Next, and none with every stop skipped', () => {
+    for (let i = 0; i < 4; i += 1) skipNextStop()
+    expect(keptDays()).toBeNull()
+    sing(0, '86% lit')
+    for (let i = 0; i < 3; i += 1) skipNextStop()
+    expect(keptDays()).toEqual(['2026-10-18'])
+  })
+
+  it('writes nothing on a read', () => {
+    expect(warmedUpToday()).toBe(false)
+    expect(warmUpWeek()).toBeNull()
+    expect(warmUpDays()).toEqual([])
+    expect(keptDays()).toBeNull()
+  })
+
+  it("says today is warmed up when another device's run counted it", () => {
+    localStorage.setItem(WARM_UP_DAYS_KEY, JSON.stringify(['2026-10-18']))
+    expect(warmedUpToday()).toBe(true)
+    // This device's run is its own: the path still starts fresh here.
+    expect(warmUpDay().warmedUp).toBe(false)
+    expect(warmUpWeek()?.find((dot) => dot.today)).toEqual({
+      day: '2026-10-18',
+      warmed: true,
+      today: true,
+    })
+  })
+
+  it('takes a pulled day into the card at once', () => {
+    expect(warmedUpToday()).toBe(false)
+    applyPersistedValue(WARM_UP_DAYS_KEY, JSON.stringify(['2026-10-18']))
+    expect(warmedUpToday()).toBe(true)
+  })
+
+  it("counts today's run before its date has landed in the synced days", () => {
+    for (const i of [0, 1, 2, 3]) sing(i, 'done')
+    // The settings sync set the days back (another account's copy, say):
+    // this device's run still counts today.
+    applyPersistedValue(WARM_UP_DAYS_KEY, '[]')
+    expect(warmedUpToday()).toBe(true)
+    expect(warmUpDays()).toEqual(['2026-10-18'])
+  })
+
+  it('shows the week across a month boundary, Monday first, today ringed', () => {
+    // Thursday 1 Oct 2026; Monday 28 Sep was warmed up, Sunday 27 Sep is
+    // the week before.
+    vi.setSystemTime(new Date(2026, 9, 1, 9, 0))
+    localStorage.setItem(
+      WARM_UP_DAYS_KEY,
+      JSON.stringify(['2026-09-27', '2026-09-28']),
+    )
+    const week = warmUpWeek()
+    expect(week?.map((dot) => dot.day)).toEqual([
+      '2026-09-28',
+      '2026-09-29',
+      '2026-09-30',
+      '2026-10-01',
+      '2026-10-02',
+      '2026-10-03',
+      '2026-10-04',
+    ])
+    expect(week?.filter((dot) => dot.warmed).map((dot) => dot.day)).toEqual([
+      '2026-09-28',
+    ])
+    expect(week?.find((dot) => dot.today)?.day).toBe('2026-10-01')
+    expect(warmedUpToday()).toBe(false)
   })
 })

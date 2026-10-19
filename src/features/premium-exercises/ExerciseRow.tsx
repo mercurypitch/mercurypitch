@@ -17,6 +17,10 @@
 // then says what a tap does (WCAG 2.5.3): the app ships voice control, and
 // a name that paraphrased the pill would leave it unspeakable.
 //
+// Its second line is the exercise's best, or for the Warm-up "Warmed up
+// today" and this week's seven dots (pw-mark "dots"). The words may
+// ellipsize on a narrow phone; the dots keep their size.
+//
 // Until the room has arrived (Sing is the tab on screen) the row is drawn
 // but takes no tap, as the capsule does, and it shows: it dims to half (the
 // module's [aria-disabled] rule). `aria-disabled` rather than `disabled`, so
@@ -27,7 +31,9 @@ import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { ListRows } from '@/components/icons'
+import { WeekDots } from '@/components/room-kit/WeekDots'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
+import { weekSaid } from '@/lib/warm-up-days'
 import type { PremiumExercise } from './catalogue'
 import { catalogueEntry } from './catalogue'
 import { PlayGlyph } from './glyphs'
@@ -46,12 +52,21 @@ export interface ExerciseRowProps {
   onBrowse: () => void
 }
 
-/** "Long note · A3. Best 9.4 s. Open your last exercise" */
+/**
+ * "Long note · A3. Best 9.4 s. Open your last exercise", or "Warm-up.
+ * Warmed up today. Warmed up this week: Monday and today. Open your last
+ * exercise".
+ */
 function pillName(exercise: PremiumExercise): string {
   const note = exercise.note()
   const best = exercise.progress()
+  const week = exercise.week?.() ?? null
   const shown = note === null ? exercise.name : `${exercise.name} · ${note}`
-  return `${shown}. ${best === null ? '' : `${best}. `}Open your last exercise`
+  const said = [best, week === null ? null : weekSaid(week)]
+    .filter((line) => line !== null)
+    .map((line) => `${line}. `)
+    .join('')
+  return `${shown}. ${said}Open your last exercise`
 }
 
 export function ExerciseRow(props: ExerciseRowProps): JSX.Element {
@@ -109,12 +124,19 @@ export function ExerciseRow(props: ExerciseRowProps): JSX.Element {
                     )}
                   </Show>
                 </span>
-                <Show when={exercise().progress()}>
-                  {(best) => (
-                    <span class={styles.best} data-testid="sing-exercise-best">
-                      {best()}
-                    </span>
-                  )}
+                <Show
+                  when={exercise().progress() !== null || exercise().week?.()}
+                >
+                  <span class={styles.best} data-testid="sing-exercise-best">
+                    <Show when={exercise().progress()}>
+                      {(best) => <span class={styles.bestText}>{best()}</span>}
+                    </Show>
+                    <Show when={exercise().week?.()}>
+                      {(dots) => (
+                        <WeekDots dots={dots()} testId="sing-exercise-week" />
+                      )}
+                    </Show>
+                  </span>
                 </Show>
               </span>
               <span class={styles.play} aria-hidden="true">

@@ -181,6 +181,29 @@ describe('opened again that day (F4 screen 2, N5)', () => {
     expect(view.card).toBeNull()
     expect(view.merc).toEqual({ at: 'on', index: 4 })
   })
+
+  it("draws this week's dots under it, today filled before its date is synced", () => {
+    // Monday 19 Oct; another device warmed up last Sunday, outside the week.
+    const view = pathView(input(allSung(), { days: ['2026-10-18'] }))
+    expect(
+      view.week?.map(
+        (dot) => `${dot.warmed ? 'x' : '.'}${dot.today ? 'o' : ''}`,
+      ),
+    ).toEqual(['xo', '.', '.', '.', '.', '.', '.'])
+  })
+
+  it('has no dots in any other state, the end included', () => {
+    const days = ['2026-10-19']
+    expect(pathView(input(fresh(), { days })).week).toBeNull()
+    expect(
+      pathView(input(sung(fresh(), 0, '86% lit'), { days })).week,
+    ).toBeNull()
+    const end = pathView(
+      input(allSung(), { days, last: { index: 3, state: 'done' } }),
+    )
+    expect(end.state).toBe('end')
+    expect(end.week).toBeNull()
+  })
 })
 
 describe('the free run used (F4 screen 3, N3)', () => {

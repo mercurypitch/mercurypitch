@@ -9,8 +9,9 @@
 //
 //   top      the shell's bar (Back, "Warm-up", the level pill on its right:
 //            pw-level), then the chip ("3 min", "1 of 4 today", "Warmed up
-//            today") or, at the end, "Warmed up" and "4 of 4 today"; what
-//            the routine unlocked under it (decision (a), 13a review)
+//            today" with this week's dots under it) or, at the end, "Warmed
+//            up" and "4 of 4 today"; what the routine unlocked under it
+//            (decision (a), 13a review)
 //   middle   the path (PathColumn.tsx), standing on the floor just above
 //            the buttons, scrolling when a long plan does not fit (pw-stops)
 //   bottom   the state's buttons (PathActions.tsx)
@@ -34,13 +35,14 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { RoomBarEnd } from '@/components/room-kit/RoomBar'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import { UnlockList } from '@/components/room-kit/UnlockChip'
-import { haptics } from '@/lib/haptics'
+import { WeekDots } from '@/components/room-kit/WeekDots'
+import { haptics as webHaptics } from '@/lib/haptics'
 import { exerciseLevel } from '@/stores/exercise-level'
 import { unlockShown } from '@/stores/notifications-store'
 import { warmUpMinutes } from './estimate'
 import { SKY_BOTTOM, SKY_TOP } from './path-art'
 import type { PathMode, ScreenBox } from './path-layout'
-import { pathFrame } from './path-layout'
+import { openingScroll, pathFrame } from './path-layout'
 import { createPathMotion } from './path-motion'
 import type { PathSource } from './path-source'
 import { storeSource } from './path-source'
@@ -60,6 +62,25 @@ export const PULSE_REDUCED_MS = 150
 /** Until the screen is measured (and in a test, which has no layout). */
 const PHONE: ScreenBox = { width: 390, height: 844, top: 56, bottom: 0 }
 
+/**
+ * What the singer feels on the path (§10): a light tick when a stop lights
+ * or opens, a success when Merc lands on the song at the end.
+ */
+export interface PathHaptics {
+  readonly tick: () => void
+  readonly success: () => void
+}
+
+/**
+ * The web's: `navigator.vibrate`, which an Android browser has and iOS
+ * WebKit does not. The native shell hands the path the device's own
+ * (WarmUpScreen.tsx).
+ */
+const WEB_HAPTICS: PathHaptics = {
+  tick: () => webHaptics.tapLight(),
+  success: () => webHaptics.success(),
+}
+
 export interface WarmUpPathProps {
   /** Open a stop's room: the stop is open in the store by now. */
   onOpenRoom: (id: WarmUpRoomId) => void
@@ -77,6 +98,8 @@ export interface WarmUpPathProps {
   still?: boolean
   /** The sky is on screen (or failed): a fixture's capture waits for it. */
   onSkySettled?: () => void
+  /** What the singer feels: the device's own in the app. Default: the web's. */
+  haptics?: PathHaptics
 }
 
 function modeOf(view: PathView): PathMode {
@@ -143,9 +166,12 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
       last: source.last(),
       canStart: source.canStart(),
       minutes: warmUpMinutes(source.day().plan, exerciseLevel()),
+      days: source.days(),
     }),
   )
   const mode = createMemo(() => modeOf(view()))
+  // eslint-disable-next-line solid/reactivity -- the device's, chosen once
+  const feel = props.haptics ?? WEB_HAPTICS
   const [pulsing, setPulsing] = createSignal<number | null>(null)
   let opening: ReturnType<typeof setTimeout> | undefined
 
@@ -160,8 +186,8 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
     still,
     reduced: prefersReducedMotion,
     go: () => enter(untrack(view).next),
-    onLit: () => haptics.tapLight(),
-    onEnd: () => haptics.success(),
+    onLit: () => feel.tick(),
+    onEnd: () => feel.success(),
   })
 
   /** Start, Next, Again, the countdown's end: pulse, then open the stop. */
@@ -171,7 +197,7 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
     if (id === null) return
     motion.lean()
     props.onPreload?.(id)
-    haptics.tapLight()
+    feel.tick()
     setPulsing(index)
     opening = setTimeout(
       () => {
@@ -234,13 +260,15 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
       view().state === 'locked',
     ),
   )
-  // A path taller than the screen opens at its floor, where the run is.
-  // One that fits stays put: its column is the screen, scrolled nowhere.
+  // A path taller than the screen opens at its floor, where the run is,
+  // and the end at its top, where the titles and Merc on the song are
+  // (openingScroll). One that fits stays put: its column is the screen.
   createEffect(
     on(
-      () => [frame().height, frame().scrolls] as const,
-      ([, scrolls]) => {
-        if (scroller) scroller.scrollTop = scrolls ? scroller.scrollHeight : 0
+      () => [openingScroll(frame(), mode()), frame().height] as const,
+      ([at]) => {
+        if (!scroller) return
+        scroller.scrollTop = at === 'floor' ? scroller.scrollHeight : 0
       },
     ),
   )
@@ -282,27 +310,43 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
           trailIn={motion.trailIn()}
           unlit={motion.unlit()}
           brightened={motion.brightened()}
+          endLit={motion.endLit()}
+          burst={motion.burst()}
           pulsing={pulsing()}
           merc={motion.merc()}
           mercState={motion.mercState()}
           hopping={motion.hopping()}
+          mercFaded={motion.mercFaded()}
           still={still || prefersReducedMotion()}
           onSong={() => props.onSong()}
           onSkySettled={() => props.onSkySettled?.()}
         />
       </div>
-      <div class={styles.glow} data-end={mode() === 'end'} aria-hidden="true" />
+      <div
+        class={styles.glow}
+        data-end={mode() === 'end' && motion.endLit()}
+        aria-hidden="true"
+      />
       <div ref={topZone} class={styles.top} data-testid="warm-up-top">
         <Show
           when={view().state === 'end'}
           fallback={
-            <Show when={view().chip}>
-              {(chip) => (
-                <span class={styles.chip} data-testid="warm-up-chip">
-                  {chip()}
-                </span>
-              )}
-            </Show>
+            <>
+              <Show when={view().chip}>
+                {(chip) => (
+                  <span class={styles.chip} data-testid="warm-up-chip">
+                    {chip()}
+                  </span>
+                )}
+              </Show>
+              <Show when={view().week}>
+                {(week) => (
+                  <span class={styles.week}>
+                    <WeekDots dots={week()} size="path" testId="warm-up-week" />
+                  </span>
+                )}
+              </Show>
+            </>
           }
         >
           <h2 class={styles.title} data-testid="warm-up-title">

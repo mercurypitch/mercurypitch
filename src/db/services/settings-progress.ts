@@ -14,6 +14,7 @@ import { LONG_NOTE_BESTS_KEY, mergeBestsOnPull } from '@/lib/hold/hold-bests'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import { ECHO_BESTS_KEY, mergeEchoBestsOnPull } from '@/lib/sequence/echo-bests'
 import { applyPersistedValue } from '@/lib/storage'
+import { mergeWarmUpDaysOnPull, WARM_UP_DAYS_KEY } from '@/lib/warm-up-days'
 import { readPending, readPendingEntry } from './settings-pending'
 
 /**
@@ -48,13 +49,16 @@ export const MERGE_ON_PULL: Record<
 // The premium exercises' bests are records too: a pull keeps the better
 // best on each note (Long note, hold-bests.ts) and at each level (Echo,
 // echo-bests.ts; Ng slides, ng-bests.ts; Lip roll, lip-bests.ts), not the
-// newest device's table. Named only in a build with the premium exercises;
-// a store build folds the keys and the merges away.
+// newest device's table. So are the days warmed up (the Warm-up's week
+// dots, warm-up-days.ts): a pull keeps the days from both sides. Named
+// only in a build with the premium exercises; a store build folds the keys
+// and the merges away.
 if (PREMIUM_EXERCISES) {
   MERGE_ON_PULL[LONG_NOTE_BESTS_KEY] = mergeBestsOnPull
   MERGE_ON_PULL[ECHO_BESTS_KEY] = mergeEchoBestsOnPull
   MERGE_ON_PULL[NG_BESTS_KEY] = mergeNgBestsOnPull
   MERGE_ON_PULL[LIP_BESTS_KEY] = mergeLipBestsOnPull
+  MERGE_ON_PULL[WARM_UP_DAYS_KEY] = mergeWarmUpDaysOnPull
 }
 
 /** Legacy owner stamps are read once when migrating each progress key. */
@@ -68,6 +72,7 @@ if (PREMIUM_EXERCISES) {
   MERGE_DEFAULTS[ECHO_BESTS_KEY] = '{}'
   MERGE_DEFAULTS[NG_BESTS_KEY] = '{}'
   MERGE_DEFAULTS[LIP_BESTS_KEY] = '{}'
+  MERGE_DEFAULTS[WARM_UP_DAYS_KEY] = '[]'
 }
 
 interface ResetIntent {

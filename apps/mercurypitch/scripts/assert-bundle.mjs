@@ -323,6 +323,9 @@ const KARAOKE_STAGE_2 = [
     "the Warm-up path's level lines",
   ],
   ['mp_warm_up_today', "the Warm-up's run of the day"],
+  // The days warmed up, the week's dots, synced with the account: its key
+  // and its pull merge (settings-progress.ts) fold with the rest.
+  ['pitchperfect_warm_up_days', "the Warm-up's days warmed up"],
   // The native onboarding ships with the offer screens, on the same switch
   // (NATIVE_ONBOARDING, src/lib/native-build.ts): its flag, which the shell
   // imports statically (vite.config.ts lists it), and its layer, a lazy

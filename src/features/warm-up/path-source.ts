@@ -15,16 +15,19 @@
 import type { Accessor } from 'solid-js'
 import { createMemo, createSignal } from 'solid-js'
 import { localDayString } from '@/lib/local-day'
+import type { WarmUpDays } from '@/lib/warm-up-days'
 import type { UnlockItem } from '@/stores/notifications-store'
 import type { WarmUpDay } from './routine'
 import type { LastMove } from './warm-up-store'
-import { canStartWarmUp, claimPathUnlocks, enterStop, leavePath, openStop, routineUnlocks, skipNextStop, warmUpAgain, warmUpDay, warmUpLastMove, } from './warm-up-store'
+import { canStartWarmUp, claimPathUnlocks, enterStop, leavePath, openStop, routineUnlocks, skipNextStop, warmUpAgain, warmUpDay, warmUpDays, warmUpLastMove, } from './warm-up-store'
 
 export interface PathSource {
   readonly day: Accessor<WarmUpDay>
   readonly last: Accessor<LastMove | null>
   /** A run may start: the Warm-up's free run is not used (N3). */
   readonly canStart: Accessor<boolean>
+  /** The days warmed up, synced: the week's dots (N5). */
+  readonly days: Accessor<WarmUpDays>
   /** What the routine unlocked while the path was open. */
   readonly unlocks: Accessor<readonly UnlockItem[]>
   /** Read the date again: the app came back, perhaps on a new day. */
@@ -50,10 +53,15 @@ export function storeSource(): PathSource {
     today()
     return warmUpDay()
   })
+  const days = createMemo(() => {
+    today()
+    return warmUpDays()
+  })
   return {
     day,
     last: warmUpLastMove,
     canStart: canStartWarmUp,
+    days,
     unlocks: routineUnlocks,
     refresh: () => setToday(localDayString()),
     enter: enterStop,
@@ -69,16 +77,20 @@ export interface PinnedRun {
   readonly day: WarmUpDay
   readonly last: LastMove | null
   readonly canStart: boolean
+  /** The days warmed up the run's week shows; none if left out. */
+  readonly days?: WarmUpDays
   readonly unlocks?: readonly UnlockItem[]
 }
 
 /** A run that stays as it is handed in: its moves change nothing. */
 export function pinnedSource(run: PinnedRun): PathSource {
   const unlocks = run.unlocks ?? []
+  const days = run.days ?? []
   return {
     day: () => run.day,
     last: () => run.last,
     canStart: () => run.canStart,
+    days: () => days,
     unlocks: () => unlocks,
     refresh: () => undefined,
     enter: () => false,

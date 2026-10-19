@@ -61,12 +61,20 @@ const MERC_ON_SONG = { dx: -0.054, dy: 0.036 } as const
 /** On the floor at the start, left of the bottom stop (screen 1). */
 const MERC_ON_FLOOR = { x: 0.2075, y: 0 } as const
 /**
- * His crown's tip above the song stop's centre at the end, W: as the
- * renderer draws him there, measured in the end fixture (0.416 W at
- * 390 x 844). Screen 3 draws a smaller Merc (0.311 W tall, his crown 0.29 W
- * over the stop); at that height the end's titles ran into his crown.
+ * His crown's tip over his feet at full size, W: the renderer drew it
+ * 0.42 W over the song stop's centre in the end fixture at 390 x 844
+ * (PR 1102), his feet MERC_ON_SONG.dy over it.
  */
-const MERC_HEAD_OVER_SONG = 0.42
+const MERC_CROWN_OVER_FEET = 0.42 - MERC_ON_SONG.dy
+/** Screen 3 draws him on the song 0.311 W from his feet to his crown. */
+const MERC_SONG_HEIGHT = 0.311
+/**
+ * On the song he is drawn at screen 3's size (owner, 13c review, option
+ * B): 0.81 of his size anywhere else, scaled about his feet as he lands.
+ */
+export const MERC_SONG_SCALE = MERC_SONG_HEIGHT / MERC_CROWN_OVER_FEET
+/** His crown's tip above the song stop's centre at the end, W. */
+const MERC_HEAD_OVER_SONG = MERC_ON_SONG.dy + MERC_SONG_HEIGHT
 
 /** The clamp on the screen's one scale (§3). */
 export const MIN_K = 0.75
@@ -285,6 +293,21 @@ export function pathFrame(
   }
 }
 
+/**
+ * Where a path taller than its screen opens: at its floor, where the run
+ * is, except at the end (and the day already warmed up, drawn the same
+ * way), which opens at its top so the titles and Merc on the song are
+ * clear of each other. On a 320 x 568 phone the end is about 30 px taller
+ * than the screen, and opened at its floor it left Merc's crown under the
+ * titles; at its top, its bottom stop still clears the end's two buttons.
+ */
+export function openingScroll(
+  frame: PathFrame,
+  mode: PathMode,
+): 'floor' | 'top' {
+  return frame.scrolls && mode === 'rest' ? 'floor' : 'top'
+}
+
 /** A W position across, in the column's px: the path centred in it. */
 export function columnX(x: number, frame: PathFrame): number {
   return frame.column / 2 + (x - 0.5) * frame.unit
@@ -316,13 +339,19 @@ export interface Sparkle {
 
 const TINTS = ['blue', 'violet', 'white'] as const
 
+/** How many points a screen of `area` px² shows in a mode. */
+export function sparkleCount(area: number, mode: PathMode): number {
+  const density = mode === 'end' ? SPARKLES_END : SPARKLES_REST
+  return Math.min(SPARKLES_MAX, Math.round((area / 100_000) * density))
+}
+
 /**
  * The night's points: the same ones on every visit (a fixed seed), so the
- * sky does not reshuffle between states; the end shows more of them.
+ * sky does not reshuffle between states; the end shows more of them, the
+ * rest's first (the end's own grow in as it lights).
  */
 export function sparkles(area: number, mode: PathMode): Sparkle[] {
-  const density = mode === 'end' ? SPARKLES_END : SPARKLES_REST
-  const count = Math.min(SPARKLES_MAX, Math.round((area / 100_000) * density))
+  const count = sparkleCount(area, mode)
   let seed = 0x2f6b
   const next = (): number => {
     seed = (seed * 16807) % 2147483647

@@ -17,15 +17,26 @@
 // exercise the moment it mounts, as every room's screen does, and the Sing
 // screen's row offers it again from then on. Its stops do not: in the
 // Warm-up a room is a stop, not the singer's choice.
+//
+// The path's haptics are the device's own (§10: a tick as a stop lights, a
+// success as Merc lands on the song), through the platform package as the
+// shell's are: the web's `navigator.vibrate` does nothing on iOS.
 
+import { hapticSuccess, hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import type { JSX } from 'solid-js'
 import { onMount } from 'solid-js'
 import { rememberLastExercise } from '@/features/premium-exercises/last-exercise'
+import type { PathHaptics } from '@/features/warm-up/WarmUpPath'
 import { WarmUpPath } from '@/features/warm-up/WarmUpPath'
 import { EXERCISE_WARM_UP_PATH } from '@/lib/domain/exercise-contracts'
 import { requestSongList } from '@/stores/native-shell-store'
 import { openPremiumExercise, preloadExercise } from './premium-exercise-wiring'
 import { popScreen } from './run-shell-store'
+
+const DEVICE_HAPTICS: PathHaptics = {
+  tick: () => void hapticTap(),
+  success: () => void hapticSuccess(),
+}
 
 export function WarmUpScreen(): JSX.Element {
   onMount(() => {
@@ -33,6 +44,7 @@ export function WarmUpScreen(): JSX.Element {
   })
   return (
     <WarmUpPath
+      haptics={DEVICE_HAPTICS}
       onPreload={preloadExercise}
       onOpenRoom={openPremiumExercise}
       onDone={popScreen}

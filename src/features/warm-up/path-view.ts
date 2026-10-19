@@ -16,7 +16,8 @@
 //             titles "Warmed up" and "4 of 4 today", every result under its
 //             stop's name, Done and Sing a song (§5.8)
 //   done      opened again the same day once warmed up: "Warmed up
-//             today", Warm up again and Sing a song (§5.9)
+//             today" and this week's seven dots under it, Warm up again
+//             and Sing a song (§5.9, Codex's end frame F4 screen 2)
 //   locked    the Warm-up's free run is used: the first visit's path, and a
 //             padlocked "Warm up with Premium" (N3, pw-free). Only once the
 //             gate exists (the flip); no build locks it today
@@ -26,6 +27,8 @@
 // says "Your song".
 
 import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import type { WarmUpDays, WeekDot } from '@/lib/warm-up-days'
+import { weekDots, withDay } from '@/lib/warm-up-days'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import type { MercSpot } from './path-layout'
 import type { StopMark, WarmUpDay } from './routine'
@@ -151,6 +154,8 @@ export interface PathView {
   readonly next: number | null
   /** The chip under the bar; null between stops and at the end. */
   readonly chip: string | null
+  /** This week's dots under "Warmed up today"; null in every other state. */
+  readonly week: readonly WeekDot[] | null
   /** The end's second title: "4 of 4 today". */
   readonly today: string
   readonly card: PathCard | null
@@ -165,6 +170,8 @@ export interface PathInput {
   readonly canStart: boolean
   /** The chip's estimate at the singer's level (estimate.ts). */
   readonly minutes: number
+  /** The days warmed up, synced (src/lib/warm-up-days.ts); none if left out. */
+  readonly days?: WarmUpDays
 }
 
 /** The last move still describes the run: its stop is marked as it says. */
@@ -262,6 +269,19 @@ function chipOf(input: PathInput, state: PathState): string | null {
   }
 }
 
+/**
+ * The week under "Warmed up today": the synced days and today's own, since
+ * the run that counts it may be newer than the days it has written.
+ */
+function weekShown(
+  input: PathInput,
+  state: PathState,
+): readonly WeekDot[] | null {
+  if (state !== 'done') return null
+  const { date } = input.day
+  return weekDots(withDay(input.days ?? [], date), date)
+}
+
 /** The song stop, or the top stop of a plan without one: Merc's at the end. */
 function topIndex(day: WarmUpDay): number {
   return day.plan.stops.length - 1
@@ -291,6 +311,7 @@ export function pathView(input: PathInput): PathView {
     stops: day.plan.stops.map((_, i) => stopView(day, state, next, i)),
     next: state === 'end' || state === 'done' ? null : next,
     chip: chipOf(input, state),
+    week: weekShown(input, state),
     today: todayLabel(done, rooms),
     card: state === 'between' ? cardOf(day, liveMove(day, input.last)) : null,
     merc: mercOf(day, state, next),
