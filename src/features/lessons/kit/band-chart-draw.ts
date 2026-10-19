@@ -308,9 +308,15 @@ export function drawMark(f: ChartFrame, m: ChartMark): void {
   ctx.setLineDash([])
   ctx.font = MONO
   ctx.fillStyle = COLOR.ink2
-  ctx.textAlign = x > f.x1 - 60 ? 'right' : 'center'
+  const words = m.label.toUpperCase()
+  let align: CanvasTextAlign = 'center'
+  if (x > f.x1 - 60) align = 'right'
+  // a mark at the very start (a hold that settled straight away) starts its
+  // label there, where a centred one would run off the canvas
+  else if (x - ctx.measureText(words).width / 2 < 0) align = 'left'
+  ctx.textAlign = align
   ctx.textBaseline = 'top'
-  ctx.fillText(m.label.toUpperCase(), x, f.top + 2)
+  ctx.fillText(words, x, f.top + 2)
 }
 
 /**

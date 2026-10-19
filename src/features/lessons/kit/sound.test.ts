@@ -72,15 +72,53 @@ class FakeCompressor extends FakeNode {
   readonly release = new FakeParam(0.25)
 }
 
+class FakeBuffer {
+  readonly data: Float32Array
+  constructor(
+    readonly numberOfChannels: number,
+    readonly length: number,
+    readonly sampleRate: number,
+  ) {
+    this.data = new Float32Array(length)
+  }
+  getChannelData(): Float32Array {
+    return this.data
+  }
+}
+
+class FakeBufferSource extends FakeNode {
+  buffer: FakeBuffer | null = null
+  loop = false
+  readonly starts: number[] = []
+  readonly stops: number[] = []
+  start(t: number): void {
+    this.starts.push(t)
+  }
+  stop(t: number): void {
+    this.stops.push(t)
+  }
+}
+
 class FakeContext {
   static last: FakeContext | null = null
   currentTime = 0
   state = 'running'
+  readonly sampleRate = 48000
   readonly destination = new FakeNode()
   readonly oscillators: FakeOscillator[] = []
   readonly gains: FakeGain[] = []
+  readonly sources: FakeBufferSource[] = []
+  readonly filters: FakeFilter[] = []
   constructor() {
     FakeContext.last = this
+  }
+  createBuffer(channels: number, length: number, rate: number): FakeBuffer {
+    return new FakeBuffer(channels, length, rate)
+  }
+  createBufferSource(): FakeBufferSource {
+    const s = new FakeBufferSource()
+    this.sources.push(s)
+    return s
   }
   createOscillator(): FakeOscillator {
     const o = new FakeOscillator()
@@ -93,7 +131,9 @@ class FakeContext {
     return g
   }
   createBiquadFilter(): FakeFilter {
-    return new FakeFilter()
+    const f = new FakeFilter()
+    this.filters.push(f)
+    return f
   }
   createDynamicsCompressor(): FakeCompressor {
     return new FakeCompressor()
@@ -312,5 +352,89 @@ describe('contourVoice', () => {
     // Assert
     expect(v).toBeNull()
     expect(ctx.oscillators).toHaveLength(0)
+  })
+})
+
+describe('a voice that starts later (Lesson 5, the air-first start)', () => {
+  it('opens on the house attack at its own time on the audio clock', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+
+    // Act
+    kit.Sound.voice(A3, { kind: 'merc', at: 0.25, attack: 0.25 })
+
+    // Assert: the master is the first gain; then the voice's envelope
+    expect(ctx.oscillators[0].frequency.events).toEqual([
+      ['setValueAtTime', A3, 0.25],
+    ])
+    expect(ctx.gains[1].gain.events).toEqual([
+      ['setValueAtTime', 1e-4, 0.25],
+      ['exponentialRampToValueAtTime', 1, 0.5],
+    ])
+  })
+})
+
+describe('playNoise', () => {
+  it('plays a band-passed burst on the house envelope, stopped only once its release is below audibility', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+
+    // Act: the air of an "h", 0.35 s
+    kit.playNoise({
+      dur: 0.35,
+      gain: 0.06,
+      band: { hz: 2400, q: 0.8 },
+      release: 0.12,
+    })
+
+    // Assert
+    const [source] = ctx.sources
+    const envelope = ctx.gains[1].gain.events
+    expect(envelope).toEqual([
+      ['setValueAtTime', 1e-4, 0],
+      ['exponentialRampToValueAtTime', 0.06, 0.02],
+      ['setValueAtTime', 0.06, 0.35],
+      ['setTargetAtTime', 0, 0.35, 0.12 / 5],
+    ])
+    expect(ctx.filters.at(-1)?.type).toBe('bandpass')
+    expect(source.starts).toEqual([0])
+    const stopAt = source.stops.at(-1) ?? 0
+    expect(stopAt).toBeCloseTo(0.35 + 0.12 + 0.06, 9)
+    expect(valueAt(envelope, stopAt, 0)).toBeLessThan(AUDIBLE / 10)
+  })
+
+  it('makes a 3 ms click at its own time, white, with no band', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+    const filtersBefore = ctx.filters.length
+
+    // Act
+    kit.playNoise({
+      dur: 0.003,
+      gain: 0.25,
+      attack: 0.0005,
+      release: 0.002,
+      at: 0.15,
+    })
+
+    // Assert
+    expect(ctx.sources[0].starts).toEqual([0.15])
+    expect(ctx.filters).toHaveLength(filtersBefore)
+    expect(ctx.gains[1].gain.events[0]).toEqual(['setValueAtTime', 1e-4, 0.15])
+  })
+
+  it('plays nothing while sound is off or a take is open', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+
+    // Act
+    kit.Sound.hush(true)
+    kit.playNoise({ dur: 0.35 })
+    kit.Sound.hush(false)
+    kit.Sound.set('off')
+    kit.playNoise({ dur: 0.35 })
+
+    // Assert
+    expect(ctx.sources).toHaveLength(0)
   })
 })

@@ -240,9 +240,23 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Breath and a steady note',
     short: 'Steady note',
     topics: ['S02', 'S03', 'S04', 'S06'],
+    // A draft until its sign-off (drafts.ts), folded exactly as Lesson 3's
+    // entry is: one constant expression, so a build that hides drafts
+    // carries no trace of the page.
+    ...(DRAFT_LESSONS[5] !== undefined && !DRAFTS_SHOWN
+      ? {}
+      : { len: '17 minutes', page: '/learn/05' }),
     hook: 'Singers are told to "support" a long note. If that doesn\'t mean pushing, what keeps it steady?',
     sig: 'The pitch line of a held note settling from a wobble into a narrow band.',
-    pr: { needs: 'Long Note with a fixed 5 or 10 s length (durationSec)' },
+    pr: {
+      needs: 'Long Note with a fixed 10 or 15 s length (durationSec)',
+      link: {
+        href: '/mirror?lesson=05',
+        addr: 'mercurypitch.com/mirror',
+        label: 'Voice Mirror',
+        note: 'its Hold, until Long Note has a slug',
+      },
+    },
   },
   {
     n: 6,

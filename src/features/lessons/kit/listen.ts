@@ -90,6 +90,12 @@ export interface TakeOptions {
   readonly wait: number
   /** Seconds of the take once the voice has started (3). */
   readonly run: number
+  /**
+   * Ends the take early once the voice, having started, has been silent this
+   * many seconds on the frames' clock: a hold the singer stops (Lesson 5's
+   * one second). Absent, a take always runs `run` seconds.
+   */
+  readonly quiet?: number
   /** Every animation frame while the take is open: the newest frame, and when the voice began (null before). */
   readonly onFrame?: (frame: PitchFrame | null, voicedAt: number | null) => void
   /** Ends the take early, with nothing to read: the viewer left. */
@@ -117,10 +123,32 @@ function soon(fn: () => void): void {
   const timer = window.setTimeout(run, 100)
 }
 
+/** The newest voiced frame's time, or null for none. */
+function lastVoiced(frames: readonly F0Frame[]): number | null {
+  for (let i = frames.length - 1; i >= 0; i--)
+    if (voiced(frames[i])) return frames[i].t
+  return null
+}
+
+/** Whether a take is over: no voice in time, its run done, or (with `quiet`) the voice stopped. */
+function takeOver(
+  frames: readonly F0Frame[],
+  voicedAt: number | null,
+  waited: number,
+  o: TakeOptions,
+): boolean {
+  if (voicedAt === null) return waited >= o.wait
+  const last = frames[frames.length - 1]?.t ?? 0
+  if (last >= voicedAt + o.run) return true
+  if (o.quiet === undefined) return false
+  return last - (lastVoiced(frames) ?? voicedAt) > o.quiet
+}
+
 /**
  * One take: waits up to `wait` seconds for the voice, then runs `run`
- * seconds from its first voiced frame, timed on the frames' own clock.
- * Resolves with the raw frames, or null if it was cancelled.
+ * seconds from its first voiced frame, timed on the frames' own clock, or
+ * less with `quiet` when the voice stops. Resolves with the raw frames, or
+ * null if it was cancelled.
  */
 export function takeFrames(
   l: Listener,
@@ -140,12 +168,8 @@ export function takeFrames(
       const frames = stream.peekFrames()
       if (voicedAt === null) voicedAt = frames.find(voiced)?.t ?? null
       o.onFrame?.(stream.latestSmoothed(), voicedAt)
-      const last = frames[frames.length - 1]?.t ?? 0
       const waited = (performance.now() - t0) / 1000
-      if (
-        (voicedAt === null && waited >= o.wait) ||
-        (voicedAt !== null && last >= voicedAt + o.run)
-      ) {
+      if (takeOver(frames, voicedAt, waited, o)) {
         resolve(stream.takeFrames())
         return
       }

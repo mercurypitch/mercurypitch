@@ -8,7 +8,9 @@
 // the Merc singing sits in its centre (blue for the lower voice, orange for
 // the higher), never a microphone icon. Pages build on it: the sing card
 // here plays Merc's note on a button, and a lesson's own guide (Lesson 2's
-// slides, Lesson 4's scale) runs the ring beside its drawing.
+// slides, Lesson 4's scale) runs the ring beside its drawing. A run can hold
+// an in-breath between Merc's note and the turn, and turn as one long
+// out-breath: Lesson 5's Listen · Breathe · Sing, and its "sss".
 //
 // Mounted on a `.ring` element, any number per page. Inside it: the
 // `.ring-progress` and `.ring-breath` circles, the `.ring-ripples` group,
@@ -34,6 +36,8 @@ export interface RingWords {
   readonly turn: (secondsLeft: number) => string
   /** Back at rest. */
   readonly done: string
+  /** Through a run's in-breath (`breathe`), which counts nothing down. */
+  readonly breathe?: string
 }
 
 export interface RingRun {
@@ -49,6 +53,17 @@ export interface RingRun {
   readonly ripples?: boolean
   /** This run's own state lines, over the ring's (a count-in's "Get ready"). */
   readonly words?: Partial<RingWords>
+  /**
+   * Seconds of an in-breath between Merc's note and the turn (default none):
+   * the circle swells once and nothing counts down (Lesson 5's Listen ·
+   * Breathe · Sing).
+   */
+  readonly breathe?: number
+  /**
+   * Through the turn, the circle settles back once, one long out-breath,
+   * instead of breathing every two seconds (a held note, an "sss").
+   */
+  readonly exhale?: boolean
 }
 
 export interface RingOptions {
@@ -71,6 +86,34 @@ const WORDS: RingWords = {
   listen: 'Listen',
   turn: (n) => `Hum it back · ${n}`,
   done: 'Again whenever you like',
+}
+
+export type RingPhase = 'listen' | 'breathe' | 'turn' | 'done'
+
+/** Where a run is `s` seconds in: its phase, and the seconds into that phase. */
+export function ringPhase(
+  run: RingRun,
+  s: number,
+): { phase: RingPhase; h: number } {
+  const inhaled = run.listen + (run.breathe ?? 0)
+  if (s < run.listen) return { phase: 'listen', h: s }
+  if (s < inhaled) return { phase: 'breathe', h: s - run.listen }
+  if (s < inhaled + run.turn) return { phase: 'turn', h: s - inhaled }
+  return { phase: 'done', h: s - inhaled - run.turn }
+}
+
+/**
+ * How full the breathing circle is, 0 to 1, `h` seconds into a phase: one
+ * swell over the in-breath; through the turn a breath every two seconds,
+ * or with `exhale` one long settle from full to rest.
+ */
+export function swellAt(run: RingRun, phase: RingPhase, h: number): number {
+  if (phase === 'breathe')
+    return 0.5 - 0.5 * Math.cos((Math.PI * h) / (run.breathe ?? 1))
+  if (phase !== 'turn') return 0
+  if (run.exhale === true)
+    return 0.5 + 0.5 * Math.cos(Math.PI * Math.min(1, h / run.turn))
+  return 0.5 - 0.5 * Math.cos((TAU * h) / 2)
 }
 
 interface Running {
@@ -126,17 +169,31 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
     rest()
   }
 
+  /** The breathing circle at `b`, 0 at rest to 1 full. */
+  function swell(b: number): void {
+    breath.setAttribute('r', (142 + 22 * b).toFixed(1))
+    breath.setAttribute('opacity', (0.45 + 0.45 * b).toFixed(2))
+    breath.setAttribute('stroke-width', (2 + 2 * b).toFixed(1))
+  }
+
+  /** The in-breath: the circle swells once over the phase, and nothing counts down. */
+  function breathing(r: Running, h: number): void {
+    if (r.lastN !== -2) {
+      r.lastN = -2
+      state.textContent = r.words.breathe ?? 'Breathe in'
+      progress.setAttribute('stroke-dashoffset', String(circ))
+    }
+    swell(still() ? 0.5 : swellAt(r.run, 'breathe', h))
+  }
+
   function turning(r: Running, h: number): void {
     const n = Math.ceil(r.run.turn - h)
     if (n !== r.lastN) {
       r.lastN = n
       state.textContent = r.words.turn(n)
     }
-    // breathe in and out, two seconds a breath
-    const b = still() ? 0.5 : 0.5 - 0.5 * Math.cos((TAU * h) / 2)
-    breath.setAttribute('r', (142 + 22 * b).toFixed(1))
-    breath.setAttribute('opacity', (0.45 + 0.45 * b).toFixed(2))
-    breath.setAttribute('stroke-width', (2 + 2 * b).toFixed(1))
+    // breathe in and out, two seconds a breath; or, a held note, one long out-breath
+    swell(still() ? 0.5 : swellAt(r.run, 'turn', h))
     progress.setAttribute(
       'stroke-dashoffset',
       (circ * (1 - h / r.run.turn)).toFixed(1),
@@ -170,9 +227,10 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
     draw(t) {
       const r = now
       if (r === null) return
-      const s = (t - r.t0) / 1000
-      if (s < r.run.listen) listening(r, t)
-      else if (s < r.run.listen + r.run.turn) turning(r, s - r.run.listen)
+      const { phase, h } = ringPhase(r.run, (t - r.t0) / 1000)
+      if (phase === 'listen') listening(r, t)
+      else if (phase === 'breathe') breathing(r, h)
+      else if (phase === 'turn') turning(r, h)
       else finish(r)
       fade(t)
     },

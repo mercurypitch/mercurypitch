@@ -195,6 +195,20 @@ describe('Sim', () => {
     }
   })
 
+  it('celebrates with no sparkles at all when asked for none', () => {
+    // Arrange: a lesson's quiet celebration (Lesson 5 WEB-SPEC, Mercs)
+    const sim = new Sim('idle')
+    sim.sparkleSide = 'none'
+
+    // Act
+    sim.setState('celebrate')
+    for (let i = 0; i < 240; i++) sim.step(STEP)
+    sim.sparkle()
+
+    // Assert
+    expect(sim.sparks).toEqual([])
+  })
+
   it('replays the same frames after restoring a snapshot', () => {
     // Arrange
     const sim = simAt('idle', 1)

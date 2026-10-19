@@ -79,8 +79,8 @@ describe('the lesson pages', () => {
     expect(lessonPages(resolve(root, 'nowhere'))).toEqual([])
   })
 
-  it('include Lessons 1 and 3 in this repository', () => {
-    expect(lessonPages(ROOT)).toEqual(expect.arrayContaining([1, 3]))
+  it('include Lessons 1, 3 and 5 in this repository', () => {
+    expect(lessonPages(ROOT)).toEqual(expect.arrayContaining([1, 3, 5]))
   })
 })
 

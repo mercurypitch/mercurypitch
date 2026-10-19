@@ -14,6 +14,7 @@
 // thread for seconds at a time, and the lesson under them stops answering.
 
 import type { MercMountOptions, MercRenderer } from '@/lib/merc/renderer'
+import type { SparkleSide } from '@/lib/merc/sim'
 import { q } from './dom'
 import { WARM_LOOK, warmFragment } from './merc-warm'
 import { Motion, reducedMotion } from './motion-switch'
@@ -51,7 +52,11 @@ function syncPause(): void {
   }
 }
 
-function mountOne(which: Which, mount: MountFn): MercRenderer | null {
+function mountOne(
+  which: Which,
+  mount: MountFn,
+  o: MercDuoOptions,
+): MercRenderer | null {
   const el = mercEl(which)
   const host = q('.live', el)
   const warm = which === 'orange'
@@ -65,6 +70,7 @@ function mountOne(which: Which, mount: MountFn): MercRenderer | null {
       still: reducedMotion(),
       fragmentPatch: warm ? warmFragment : undefined,
       onFailure: () => el.classList.remove('is-live'),
+      ...(o.sparkles === undefined ? {} : { sparkles: o.sparkles }),
     })
     if (warm) m.setLook(WARM_LOOK)
     // turned towards each other
@@ -111,8 +117,19 @@ function gpuWebGL2(): boolean {
   }
 }
 
+export interface MercDuoOptions {
+  /**
+   * Where a celebration's sparkles land; 'none' for a quiet one (Lesson 5's
+   * WEB-SPEC: Merc celebrates "with no sparkles"). Default the renderer's.
+   */
+  readonly sparkles?: SparkleSide
+}
+
 /** Loads the renderer and mounts both Mercs; the stills stay if anything fails. */
-export async function initMercs(stage: HTMLElement): Promise<void> {
+export async function initMercs(
+  stage: HTMLElement,
+  o: MercDuoOptions = {},
+): Promise<void> {
   if (!gpuWebGL2()) {
     settle()
     return
@@ -125,8 +142,8 @@ export async function initMercs(stage: HTMLElement): Promise<void> {
     settle()
     return
   }
-  mercs.blue = mountOne('blue', mount)
-  mercs.orange = mountOne('orange', mount)
+  mercs.blue = mountOne('blue', mount, o)
+  mercs.orange = mountOne('orange', mount, o)
   // let the live canvases draw their first frame before the stills step aside
   await new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),

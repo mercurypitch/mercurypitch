@@ -13,6 +13,9 @@
 //
 // One component, many figures: Lesson 3's cold open, its octave toy, its
 // chase and drag, and Sing it's live line, and later Lessons 5, 7 and 9.
+// Lesson 5 adds what a held note needs: a level strip under the plot (its
+// push and its hook), and a hold's fixed frame with its seconds named,
+// 10 or 15 across (`setWindow`), both in band-chart-hold.ts.
 // Each figure is a controller that writes the chart's `scene` (the line, the
 // marks, the glow, the lit edge) and the chart paints it every frame while
 // it is on screen. The time window is fixed and the line draws across it,
@@ -22,11 +25,14 @@
 
 import type { BandSpec, CentsTick, ChartFrame, ChartMark, TracePoint, } from './band-chart-draw'
 import { BAND_COLOR, centsAt, drawBand, drawCentsGrid, drawHandle, drawHead, drawLineLabel, drawLitEdge, drawMark, drawNotesGrid, drawOctaveBracket, drawPlayhead, drawTrace, xOf, yOf, } from './band-chart-draw'
+import type { LevelPoint } from './band-chart-hold'
+import { drawLevelStrip, drawTimeTicks, STRIP_GAP, stripHeight, TICKS_ROOM, } from './band-chart-hold'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { q } from './dom'
 import { addDrawer, surface, watch } from './frame-loop'
 
 export type { CentsTick, ChartMark, TracePoint } from './band-chart-draw'
+export type { LevelPoint } from './band-chart-hold'
 export { BAND_COLOR }
 
 /** The chart's vertical axis: cents either side of Merc's note, or a span of notes. */
@@ -52,6 +58,10 @@ export interface BandChartOptions {
   readonly ticks?: readonly CentsTick[]
   /** When it draws: a deck's `toyActive(n)`; default while the canvas is on screen. */
   readonly active?: () => boolean
+  /** A level strip under the plot, for the scene's `level` (band-chart-hold.ts). */
+  readonly strip?: boolean
+  /** The seconds named under the plot: a hold's fixed frame. */
+  readonly timeTicks?: boolean
 }
 
 /** What the chart shows this frame; a figure's controller writes it. */
@@ -75,6 +85,8 @@ export interface BandScene {
   bracket: string | null
   /** A drag handle on the head. */
   handle: boolean
+  /** The level along the window, drawn in the strip under the plot (a chart with `strip`). */
+  level: LevelPoint[]
 }
 
 export interface BandChart {
@@ -84,6 +96,9 @@ export interface BandChart {
   readonly target: number
   /** Moves the band to another note (a round on C4): the line is cleared. */
   setTarget(midi: number): void
+  /** Seconds across the chart: a hold's fixed frame, 10 or 15. */
+  readonly window: number
+  setWindow(seconds: number): void
   /** Back to Merc's band alone: no line, no marks, nothing lit. */
   clear(): void
   /** The canvas's spoken summary of what it shows now. */
@@ -108,6 +123,7 @@ const blankScene = (): BandScene => ({
   label: null,
   bracket: null,
   handle: false,
+  level: [],
 })
 
 /** Room above and below the plot, px. */
@@ -127,10 +143,15 @@ export function mountBandChart(
   const cv = surface(canvas)
   const axis: BandAxis = opts.axis ?? { range: 150 }
   const notesAxis = !('range' in axis)
-  const window = opts.window ?? 4
+  let window = opts.window ?? 4
   let target = opts.target
   let [lo, hi] = reach(axis, target)
   let scene = blankScene()
+
+  /** The room under the plot, px: the level strip and the seconds, where the figure asks for them. */
+  const below = (h: number): number =>
+    (opts.strip === true ? STRIP_GAP + stripHeight(h) : 0) +
+    (opts.timeTicks === true ? TICKS_ROOM : 0)
 
   /** The plot inside a w by h canvas: room for the note letters at the left on a notes axis. */
   const frameOf = (
@@ -144,11 +165,22 @@ export function mountBandChart(
     x0: notesAxis ? 40 : 12,
     x1: w - 12,
     top: PAD,
-    bottom: h - PAD,
+    bottom: h - PAD - below(h),
     lo,
     hi,
     window,
   })
+
+  /** The strip and the seconds under the plot. */
+  function paintBelow(f: ChartFrame): void {
+    let y = f.bottom
+    if (opts.strip === true) {
+      const height = stripHeight(f.h)
+      drawLevelStrip(f, y + STRIP_GAP, height, scene.level)
+      y += STRIP_GAP + height
+    }
+    if (opts.timeTicks === true) drawTimeTicks(f, y + 4)
+  }
 
   function bands(): BandSpec[] {
     const main: BandSpec = { c: 0, half: HIT_TOLERANCE_CENTS, glow: scene.glow }
@@ -182,6 +214,7 @@ export function mountBandChart(
       drawLineLabel(f, scene.label.t, scene.label.c, scene.label.text)
     if (scene.bracket !== null && opts.echo !== undefined)
       drawOctaveBracket(f, 0, opts.echo, scene.bracket)
+    paintBelow(f)
   }
 
   addDrawer({
@@ -210,6 +243,12 @@ export function mountBandChart(
       target = midi
       ;[lo, hi] = reach(axis, target)
       scene = blankScene()
+    },
+    get window() {
+      return window
+    },
+    setWindow(seconds) {
+      window = seconds
     },
     clear() {
       scene = blankScene()

@@ -162,8 +162,11 @@ const freshLock = (): Lock => ({
   lastPulse: 0,
 })
 
-/** Where a celebration's sparkles land around him. */
-export type SparkleSide = 'around' | 'right' | 'left'
+/**
+ * Where a celebration's sparkles land around him; 'none' celebrates with no
+ * sparkles at all (a lesson whose celebration must stay quiet).
+ */
+export type SparkleSide = 'around' | 'right' | 'left' | 'none'
 
 /** A celebration's stars: angle (degrees), radius, size, delay (s). */
 const SPARKLES: readonly Q4[] = [
@@ -362,6 +365,10 @@ export class Sim {
   }
 
   sparkle(): void {
+    if (this.sparkleSide === 'none') {
+      this.sparks = []
+      return
+    }
     const A = this.sparkleSide === 'around' ? SPARKLES : SPARKLES_RIGHT
     const side = this.sparkleSide === 'left' ? -1 : 1
     this.sparks = A.map(([deg, r, s, delay], i) => {

@@ -1,0 +1,343 @@
+/* ============================================================
+   Lesson 5 — "Breath and a steady note": the hook stage, the toys, the holds
+   ============================================================
+   What only this page draws: a long hook in a smaller face, the two Mercs
+   either side of the hook's band chart with its level strip, the recall
+   open in the hero's copy column, the breath toy's two views, the three
+   starts' key, the hold demo's readouts, orange Merc's line beside her
+   still, the note finder and the hold's phases on the checkpoint card, and
+   the free-play stage. */
+
+/* ---------------------------------------------------------------- the hero */
+.l05-hero .hook {
+  font-size: clamp(30px, 3.3vw, 50px);
+  line-height: 1.06;
+  max-width: 15em;
+}
+.chip-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--hair-3);
+  text-underline-offset: 3px;
+}
+/* a 44 px target for a 28 px chip, reaching into the gaps above and below it only */
+.chip-link::after {
+  content: '';
+  position: absolute;
+  inset: -8px -4px;
+}
+.l05-hero .duo {
+  --merc: clamp(120px, 13vw, 188px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  /* room for the chart and its level strip under blue Merc's bubble */
+  height: calc(var(--merc) * 1.32);
+}
+/* the band chart between the Mercs, with room under its plot for the level strip */
+.hook-chart {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  height: calc(var(--merc) * 1.02);
+  /* clear of blue Merc's bubble, which reaches over the middle column */
+  margin-top: calc(var(--merc) * 0.24);
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+.l05-hero .stage-shot {
+  padding-bottom: 22px;
+}
+.hook-plays {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+.l05-hero .pq {
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.2;
+}
+div.reveal p {
+  margin: 0 0 10px;
+}
+div.reveal p:last-child {
+  margin-bottom: 0;
+}
+.reveal .small-print {
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.reveal .kind-line {
+  color: var(--ink-2);
+}
+
+/* the recall, open for everyone, in the hero's copy column */
+.l05-recall {
+  margin-top: 28px;
+}
+.recall-tempo {
+  margin: 0 0 6px;
+  font: italic 400 clamp(17px, 1.8vw, 20px) / 1.15 var(--f-serif);
+  color: var(--aqua);
+  word-spacing: 0.1em;
+}
+.recall-tempo > span {
+  color: var(--ink-3);
+  font-size: 0.86em;
+}
+.recall-title {
+  margin: 0 0 6px;
+  font: 600 clamp(24px, 2.6vw, 32px) / 1.08 var(--f-display);
+  letter-spacing: -0.02em;
+}
+
+/* one column in reading order, as LESSON.md runs: the header and the sound
+   gate, the recall, then the cold open, its first take right under the
+   chart it draws on */
+@media (max-width: 1080px) {
+  .l05-hero .hero-copy,
+  .l05-hero .hero-side {
+    display: block;
+  }
+  .l05-hero .duo {
+    --merc: clamp(120px, 22vw, 200px);
+  }
+  .l05-hero .recall {
+    max-width: none;
+  }
+  .l05-hero .stage-night {
+    margin-top: 24px;
+  }
+  .l05-hero .hook-plays,
+  .l05-hero .predict {
+    margin-top: 16px;
+  }
+}
+@media (max-width: 560px) {
+  .l05-hero .hook {
+    font-size: 30px;
+    line-height: 1.08;
+  }
+  .l05-hero .duo {
+    --merc: min(31vw, 124px);
+    grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+    grid-template-rows: auto auto;
+    height: auto;
+  }
+  .l05-hero .merc-blue {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .l05-hero .merc-orange {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .hook-chart {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 220px;
+    margin-top: 6px;
+  }
+}
+
+/* ---------------------------------------------------------------- four words */
+.tickets.four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* a long label wraps inside its ticket rather than running past it */
+.tickets.four .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
+}
+@media (max-width: 900px) {
+  .tickets.four {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------- the toys */
+/* a figure label is one 16 px line, as on Lessons 2 and 3 */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+.levels {
+  display: flex;
+  gap: 8px;
+}
+/* gold is the fit's alone (WEB-SPEC, Look): the pressed note takes the choices' aqua */
+.levels .btn[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--aqua) 14%, transparent);
+  border-color: color-mix(in srgb, var(--aqua) 70%, transparent);
+  color: var(--ink);
+}
+.ro .v.gauge-now {
+  font-size: var(--fs-16);
+  line-height: 1.2;
+}
+.gauge-phases {
+  margin: 10px 0 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 4px;
+  color: var(--ink-2);
+}
+.figure-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+}
+.figure-viz {
+  height: 300px;
+}
+.figure-ring.ring-sm {
+  width: 150px;
+}
+.starts-viz {
+  height: 280px;
+}
+.trace-key {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 10px 0 0;
+  padding: 0;
+  font: 500 var(--fs-12) / 1.35 var(--f-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.hold-readouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  margin-top: 12px;
+}
+@media (max-width: 560px) {
+  .figure-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .figure-viz {
+    height: 250px;
+  }
+  .figure-ring.ring-sm {
+    width: 128px;
+    margin-inline: auto;
+  }
+  .starts-viz {
+    height: 250px;
+  }
+}
+
+/* ---------------------------------------------------------------- the step text */
+.predict.in-step {
+  margin: 4px 0 16px;
+}
+.predict.in-step .pq {
+  font-size: clamp(20px, 2vw, 26px);
+}
+/* orange Merc's line after the reveal: a bubble beside her still */
+.merc-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+}
+.merc-says img {
+  width: 92px;
+  height: 92px;
+  flex: none;
+  object-fit: contain;
+}
+.merc-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.merc-says .bubble::after {
+  display: none;
+}
+.step .care {
+  margin-top: 16px;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.note-pick {
+  margin-top: 16px;
+}
+.note-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.sing-card .note-now {
+  margin: 0;
+  min-width: 9ch;
+  text-align: center;
+  font: 600 var(--fs-18) / 1.2 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.hold-chart {
+  height: 262px;
+}
+/* the hold's three phases, over the ring: the one under way lit */
+.sing-card .phases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 14px 0 0;
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sing-card .phases .is-now {
+  color: var(--aqua);
+}
+.sing-card .sing-readout .v {
+  font-size: var(--fs-18);
+}
+@media (max-width: 420px) {
+  .hold-chart {
+    height: 232px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.practise-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+.practise-card .dose {
+  color: var(--ink);
+  font-weight: 500;
+}
+.free-play {
+  margin-top: clamp(28px, 4vw, 44px);
+  padding: clamp(16px, 2.6vw, 26px);
+}
+.free-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.free-head .eyebrow {
+  margin: 0;
+}
+.free-head .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
