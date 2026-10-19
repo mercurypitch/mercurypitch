@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import type { GuidePoint, GuideRow } from './slide-guide'
-import { guideFrame, mountGuide, pathLength, pitchAt } from './slide-guide'
+import { guideFrame, inGap, mountGuide, pathLength, pathPieces, pitchAt, } from './slide-guide'
 
 /** Lesson 2's slide on A3 (FACTS 50): hold, up a semitone, hold, back, hold. */
 const SLIDE: readonly GuidePoint[] = [
@@ -48,6 +48,77 @@ describe('pitchAt', () => {
     expect(pitchAt(SLIDE, 2.95)).toBeCloseTo(57.5, 6)
     expect(pitchAt(SLIDE, 4.2)).toBe(57)
     expect(pathLength(SLIDE)).toBe(4.2)
+  })
+})
+
+/** Two phrases with a silence between: do held, a 2 s rest, then up a tone. */
+const PHRASES: readonly GuidePoint[] = [
+  { t: 0, midi: 50 },
+  { t: 1, midi: 50 },
+  { t: 3, midi: 52, gap: true },
+  { t: 4, midi: 52 },
+]
+
+describe('pathPieces', () => {
+  it("draws a path with no silence as one line through its points, as Lesson 2's slide always was", () => {
+    // Act
+    const whole = pathPieces(SLIDE, 0, pathLength(SLIDE))
+    const part = pathPieces(SLIDE, 1.45, 2.2)
+
+    // Assert
+    expect(whole).toEqual([SLIDE.map((p) => ({ t: p.t, midi: p.midi }))])
+    expect(part).toEqual([
+      [
+        { t: 1.45, midi: 57.5 },
+        { t: 1.7, midi: 58 },
+        { t: 2.2, midi: 58 },
+      ],
+    ])
+  })
+
+  it('lifts the pen over a silence, so each phrase is a line of its own', () => {
+    // Act
+    const pieces = pathPieces(PHRASES, 0, 4)
+
+    // Assert
+    expect(pieces).toEqual([
+      [
+        { t: 0, midi: 50 },
+        { t: 1, midi: 50 },
+      ],
+      [
+        { t: 3, midi: 52 },
+        { t: 4, midi: 52 },
+      ],
+    ])
+  })
+
+  it('draws a stretch that ends in a silence only as far as its phrase, and nothing of one inside a silence', () => {
+    // Act
+    const upToRest = pathPieces(PHRASES, 0, 2)
+    const insideRest = pathPieces(PHRASES, 1.5, 2.5)
+
+    // Assert
+    expect(upToRest).toEqual([
+      [
+        { t: 0, midi: 50 },
+        { t: 1, midi: 50 },
+      ],
+    ])
+    expect(insideRest).toEqual([])
+  })
+})
+
+describe('inGap', () => {
+  it('is true only strictly inside a silence', () => {
+    expect([0.5, 1, 2, 3, 3.5].map((t) => inGap(PHRASES, t))).toEqual([
+      false,
+      false,
+      true,
+      false,
+      false,
+    ])
+    expect(SLIDE.some((p) => inGap(SLIDE, p.t + 0.01))).toBe(false)
   })
 })
 

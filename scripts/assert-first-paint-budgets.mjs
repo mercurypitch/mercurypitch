@@ -102,6 +102,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // only while both boundaries hold.
   'learn/03.html': 125,
 
+  // Lesson 4, "The major scale and home": its own module on the same kit,
+  // the staircase drawn on canvas. Measured 101; the renderer is the same
+  // dynamic import as Lesson 1's.
+  'learn/04.html': 125,
+
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
   // than a claim that the number is good.
@@ -159,6 +164,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // lessons' sheet and its own, and the shared Inter and Outfit @font-face
   // rules.
   'learn/03.html': 96,
+
+  // Lesson 4. Measured 73: the kit's sheets (with the slide guide's and the
+  // parts Lessons 2 and 4 share), its own, and the shared Inter and Outfit
+  // @font-face rules.
+  'learn/04.html': 92,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

@@ -15,7 +15,10 @@
 //   `/learn/NN` at all, so no page on the site can link it;
 // - sitemap.xml and llms.txt: never list a draft (they gain it at release);
 // - the service worker: leaves the path to the network in both states, so a
-//   hidden draft's address reaches the 404 page, not the app shell.
+//   hidden draft's address reaches the 404 page, not the app shell;
+// - and no document still carries both readings of a lesson's state (a
+//   `data-if-live` or `data-if-planned` span the build should have kept or
+//   dropped).
 //
 // And every lesson page in the repository that is not a draft is in the
 // build either way, so releasing a lesson, which deletes its line from
@@ -108,6 +111,17 @@ for (const n of drafts) {
       `sw.js has no ${path} rule: the service worker would answer it with the app shell`,
     )
 }
+
+// A page that says which lessons are ready writes both readings, and the
+// build keeps the true one (lessonStatesPlugin, tools/draft-lessons.ts): a
+// document still carrying a reading would say both.
+const unresolved = documents.filter((file) =>
+  /data-if-(?:live|planned)=/.test(readFileSync(file, 'utf8')),
+)
+if (unresolved.length > 0)
+  failures.push(
+    `these documents still carry both readings of a lesson's state: ${unresolved.map(relative).join(', ')}`,
+  )
 
 // The repository's own lesson pages, learn/NN.html, not the dist's.
 const learn = new URL('../learn/', import.meta.url)

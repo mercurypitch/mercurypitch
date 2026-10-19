@@ -1,0 +1,338 @@
+/* ============================================================
+   Lesson 4 — The major scale and home: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-guide and lesson-parts). Here: the hero's staircase between the
+   Mercs, the cold open's card, the staircase stage with its buttons laid
+   over the drawing, the start slider, Sing it's guide and lines, the
+   practice card's figure and the free-play stage. */
+
+/* ---------------------------------------------------------------- hero: the staircase between the Mercs */
+.l4-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --stairs-h: clamp(220px, 21vw, 290px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--stairs-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the staircase's foot, where the Mercs stand */
+.l4-duo .floor {
+  top: var(--stairs-h);
+}
+.l4-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l4-duo .merc-blue {
+  grid-column: 1;
+}
+.l4-duo .merc-orange {
+  grid-column: 3;
+}
+.hero-stairs {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--stairs-h);
+  margin: 0;
+}
+.hero-stairs canvas,
+.cold-stairs canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.hero-plays {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l4-duo {
+    --merc: clamp(110px, 18vw, 170px);
+    --stairs-h: clamp(220px, 34vw, 300px);
+  }
+  /* under the stage, before the sound gate (the kit orders the hero's parts at this width) */
+  .hero-plays {
+    order: 4;
+    margin-top: 14px;
+  }
+}
+/* on a phone the Mercs stand smaller either side of the staircase */
+@media (max-width: 560px) {
+  .l4-duo {
+    --merc: min(22vw, 88px);
+    --stairs-h: 204px;
+    margin-top: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------- cold open */
+.cold-card {
+  padding: clamp(18px, 3vw, 28px);
+}
+.cold-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 44px);
+  align-items: start;
+}
+.cold-stage,
+.cold-talk {
+  min-width: 0;
+}
+.cold-stairs {
+  position: relative;
+  height: 260px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: radial-gradient(100% 90% at 50% 40%, #121927, #0b0f16);
+  overflow: hidden;
+}
+.cold-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+/* each bubble carries its Merc's still; the stage beside them is the staircase, not the pair */
+.cold-talk .bubble,
+.bubble.in-step {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: start;
+  max-width: none;
+  margin: 0 0 12px;
+}
+.cold-talk .bubble::after,
+.bubble.in-step::after {
+  display: none;
+}
+.bubble-merc {
+  grid-row: span 2;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+.cold-talk .eyebrow {
+  margin-top: 18px;
+}
+.bubble.in-step {
+  margin: 0 0 16px;
+  font-size: var(--fs-16);
+}
+@media (max-width: 860px) {
+  .cold-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .cold-stairs {
+    height: 224px;
+  }
+}
+
+/* ---------------------------------------------------------------- the staircase stage */
+/* free play, and the steps' stage while it sits above the text */
+.stairs-viz {
+  height: 476px;
+}
+/* Beside the text (over 960 px) the steps' stage is sticky and keeps to about
+   550 px at 1024 px wide, figure and controls together: the figure takes the
+   270 px the tallest step's controls leave, in the 13-row layout. It is set
+   as --viz-max, the ceiling a sticky stage fits its figure under. */
+@media (min-width: 961px) {
+  .steps-stage .stairs-viz {
+    --viz-max: 270px;
+    height: var(--viz-max);
+  }
+}
+/* on a phone each step's stage fits under the masthead at 390 x 844 (step 4's
+   with its names switch is the tallest, 774 px) */
+@media (max-width: 560px) {
+  .stairs-viz {
+    height: 424px;
+  }
+}
+.stairs-toy .controls {
+  margin-top: 10px;
+}
+.stairs-toy .names-bar {
+  margin-bottom: 8px;
+}
+/* the stairs and Group's brackets are buttons laid over the drawing, each on its tap zone */
+.stair-hits {
+  position: absolute;
+  inset: 0;
+}
+.stair-hit {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.stair-hit:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: -2px;
+}
+/* the readout sits in the drawing's top margin, clear of the stairs */
+.stairs-status {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 9px;
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  pointer-events: none;
+}
+.stairs-readout {
+  font: 600 var(--fs-16)/1.35 var(--f-display);
+  color: var(--ink);
+}
+.white-note,
+.white-hint {
+  font-size: var(--fs-14);
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.white-hint {
+  margin: 8px 0 0;
+  color: var(--ink-3);
+}
+.slide-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.start-slider {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px dashed var(--hair-2);
+  font: 600 var(--fs-16)/1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.start-slider:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+/* on a narrow phone the two buttons keep their words and give up their arrows, so the slider can show its note */
+@media (max-width: 420px) {
+  .slide-row {
+    gap: 8px;
+  }
+  .slide-row .btn {
+    padding: 0 10px;
+  }
+  .slide-row .btn .ico {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------- sing it */
+.l4-sing {
+  align-items: start;
+}
+.comfort {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  color: var(--ink);
+}
+.comfort .ico {
+  color: var(--aqua);
+  margin-top: 4px;
+}
+.stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sing-btns .move-do {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.move-lbl {
+  font: 500 var(--fs-12)/1.3 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.move-sep {
+  color: var(--ink-3);
+}
+.guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.referral {
+  margin: 18px 0 0;
+  font-size: var(--fs-14);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.scale-guide {
+  height: 300px;
+}
+.guide-row .sol {
+  color: var(--ink-2);
+  margin-right: 3px;
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l4-app {
+  align-items: start;
+}
+.l4-app .addr-line,
+.l4-app .second-drill {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l4-app .first-visit {
+  margin: 0 0 14px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l4-app a.addr {
+  vertical-align: middle;
+  text-decoration: none;
+}
+.ladder-fig {
+  margin: 0;
+  min-width: 0;
+}
+.ladder-fig svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ladder-fig figcaption {
+  margin-top: 8px;
+}
+.l4-next {
+  margin-top: 18px;
+}
