@@ -341,10 +341,11 @@ describe('the legal nav in every entry document', () => {
 })
 
 // The generated documents take their cross-links from the model, but nothing
-// generates the rooms nav in index.html and 404.html: a page added to the model
-// has to be added there by hand. The four search-intent pages reached the 404
-// page's nav that way and never reached the home page's. Glassworks is checked
-// too: the source lists it, and the production build strips the link
+// generates the rooms nav in index.html: a page added to the model has to be
+// added there by hand. The four search-intent pages reached the 404 page's nav
+// that way and never reached the home page's. 404.html is generated now
+// (src/error-kit/) and is checked beside it. Glassworks is checked too: the
+// source lists it, and the production build strips the link
 // (tools/glassworks-listing.ts).
 describe('the rooms nav in the hand-written documents', () => {
   function roomLinks(file: string): Map<string, string> {

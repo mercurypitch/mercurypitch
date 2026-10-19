@@ -14,7 +14,7 @@ import { ABOUT_URL, canonicalPath, DEFAULT_THEME_COLOR, navLinksFor, OG_IMAGE, O
 import { smartAppBannerTag } from './store-presence'
 
 /** Escape for an attribute value or text node. */
-function esc(value: string): string {
+export function esc(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

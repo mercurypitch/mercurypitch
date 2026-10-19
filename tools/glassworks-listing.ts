@@ -44,12 +44,12 @@ interface Stripped {
   removed: boolean
 }
 
-// One `<a href="/glass-game">Glassworks</a>` per line, as index.html and
-// 404.html write their prelude navs. The line goes with it so no blank line
+// One `<a href="/glass-game">Glassworks</a>` per line, as index.html and the
+// generated 404.html write their navs. The line goes with it so no blank line
 // is left where it stood.
 const NAV_LINK = /^[ \t]*<a href="\/glass-game">[^<]*<\/a>[ \t]*\r?\n/gm
 
-/** The prelude nav link in a hand-written document (index.html, 404.html). */
+/** The nav link in index.html, or in a 404.html written listed. */
 export function stripGlassworksNavLink(html: string): Stripped {
   const text = html.replace(NAV_LINK, '')
   return { text, removed: text !== html }
@@ -80,9 +80,9 @@ export function stripGlassworksFromLlms(text: string): Stripped {
 /**
  * Hides Glassworks from a build's discovery surfaces when `listed` is false,
  * and fails the build if any of them still points at /glass-game afterwards.
- * The entry pages themselves are rendered unlisted upstream, by
- * `writeEntryPages(root, { unlisted })`; this covers what they do not: the
- * hand-written index.html and 404.html, and the copied public/ files.
+ * The entry and error pages are rendered unlisted upstream, by
+ * `writeEntryPages` and `writeErrorPages` with `{ unlisted }`; this covers what
+ * they do not: the hand-written index.html, and the copied public/ files.
  */
 export function glassworksListingPlugin(listed: boolean): Plugin {
   let config: ResolvedConfig

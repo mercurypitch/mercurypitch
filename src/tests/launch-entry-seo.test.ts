@@ -585,9 +585,10 @@ describe('unmatched paths', () => {
     // No app shell: the 404 is a static document and must not boot the studio.
     expect(document.querySelector('#root')).toBeNull()
     expect(document.querySelector('script[type="module"]')).toBeNull()
+    // The error scene's sheet (src/error-kit/), not the entry prelude's.
     expect(
       document.querySelector('link[rel="stylesheet"]')?.getAttribute('href'),
-    ).toBe('/src/styles/entry-prelude.css')
+    ).toBe('/src/styles/error-scene.css')
 
     const links = [...document.querySelectorAll('nav a')].map((anchor) =>
       anchor.getAttribute('href'),

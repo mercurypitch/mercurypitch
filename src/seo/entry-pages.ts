@@ -779,13 +779,14 @@ export function allEntryPaths(): string[] {
  * The cross-links shown on `page`: Home, the released lessons, every other
  * entry, then About. The lessons come from the build (tools/lesson-links.ts),
  * which reads them off learn/; this file stays free of the file system.
+ * With no page (the error pages, src/error-kit/), every entry is linked.
  *
  * `unlisted` names entries this build serves but does not advertise — today
  * only Glassworks on the production web build (tools/glassworks-listing.ts).
  * Nothing links to them; they still link out to everything else.
  */
 export function navLinksFor(
-  page: EntryPage,
+  page: EntryPage | null,
   unlisted: readonly string[] = [],
   lessons: readonly { href: string; label: string }[] = [],
 ): { href: string; label: string }[] {
@@ -793,7 +794,7 @@ export function navLinksFor(
     { href: '/', label: 'Home' },
     ...lessons,
     ...ENTRY_PAGES.filter(
-      (other) => other.slug !== page.slug && !unlisted.includes(other.slug),
+      (other) => other.slug !== page?.slug && !unlisted.includes(other.slug),
     ).map((other) => ({
       href: canonicalPath(other),
       label: other.navLabel,

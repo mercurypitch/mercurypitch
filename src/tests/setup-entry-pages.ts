@@ -1,4 +1,5 @@
-// Vitest global setup: write the generated entry documents before any test runs.
+// Vitest global setup: write the generated entry and error documents before
+// any test runs.
 //
 // The crawlable entry documents (mirror.html, vocal-range-test.html, …) are
 // generated from src/seo/entry-pages.ts and git-ignored, so a fresh checkout
@@ -14,7 +15,11 @@
 
 import { fileURLToPath } from 'node:url'
 import { writeEntryPages } from '../../tools/generate-entry-pages'
+import { writeErrorPages } from '../../tools/generate-error-pages'
 
 export default function setup(): void {
-  writeEntryPages(fileURLToPath(new URL('../..', import.meta.url)))
+  const root = fileURLToPath(new URL('../..', import.meta.url))
+  writeEntryPages(root)
+  // 404.html, from src/error-kit/ (tools/generate-error-pages.ts).
+  writeErrorPages(root)
 }
