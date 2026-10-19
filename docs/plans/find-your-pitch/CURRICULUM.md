@@ -195,7 +195,9 @@ waits on the vocal coach's sign-off, and its page publishes after `/learn/04`)
   launch field, § 4); Ear Lab Leap (identify).
 - Facts: melody defined by intervals; song anchors per interval (choose public-domain tunes).
 
-**Lesson 7. Slides, sirens and your range**
+**Lesson 7. Slides, sirens and your range** (written: the lesson, its facts and its page spec are
+in [lessons/07-slides-sirens-range/](lessons/07-slides-sirens-range/), reviewed; no film yet; its
+voice lines wait on the vocal coach's sign-off, and its page publishes after `/learn/03`)
 
 - Objectives: warm up with sirens, lip trills and "ng" glides gently; find your comfortable middle;
   understand voice types as labels, not boxes.
@@ -205,7 +207,8 @@ waits on the vocal coach's sign-off, and its page publishes after `/learn/04`)
 - Checkpoint: one gentle siren up and down on "ng", after the "Sore, hoarse or unwell today?"
   line.
 - Practise: Vocal Range Test (`/vocal-range-test`); the warm-up's lip trill (needs a `pattern`
-  slug). No Ascent link until its "Reach New Notes" week, which says "extend your range", is
+  slug, and a warm-up that shows no grade and whose help makes no health claim: Lesson 7's
+  WEB-SPEC). No Ascent link until its "Reach New Notes" week, which says "extend your range", is
   rewritten (§ 4).
 - Facts: Titze's semi-occluded warm-ups (2006); voice-type ranges; SOVT evidence is modest. Never
   reward the widest span (the app's guided-voice rules).
