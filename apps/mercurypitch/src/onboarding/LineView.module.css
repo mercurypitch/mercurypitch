@@ -1,0 +1,140 @@
+/* The sung line (beat 8, LineView.tsx), on the onboarding's dark stage:
+   the layer, the stage, the bubble, Merc's spot and the foot are
+   NativeOnboarding.module.css's. Merc in the house violet while he sings,
+   the singer in the house teal. */
+
+/* Merc a little smaller than on the beats before: the line wants the room. */
+.merc {
+  width: min(36vw, 22vh, 180px);
+  width: min(36vw, 22dvh, 180px);
+}
+
+/* The lane: the ten notes as bars at their pitches and times. */
+.lane {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(100%, 640px);
+  height: clamp(96px, 14vh, 150px);
+  height: clamp(96px, 14dvh, 150px);
+}
+
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.bar {
+  stroke: rgba(230, 237, 243, 0.22);
+  stroke-width: 10px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 160ms ease;
+}
+
+/* Merc sings it. */
+.barCall {
+  stroke: #bc8cff;
+}
+
+/* The cursor has passed it on the singer's turn. */
+.barTurn {
+  stroke: rgba(230, 237, 243, 0.62);
+}
+
+.barHit {
+  stroke: #2dd4bf;
+}
+
+.barMiss {
+  stroke: rgba(230, 237, 243, 0.4);
+  stroke-dasharray: 2px 5px;
+}
+
+/* The singer's voice, folded to the octave of the note it is sung against. */
+.trace {
+  fill: none;
+  stroke: #5eead4;
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: rgba(230, 237, 243, 0.7);
+  pointer-events: none;
+}
+
+.cursorCall {
+  background: #bc8cff;
+}
+
+/* The words, lit as the cursor reaches them. */
+.words {
+  max-width: 640px;
+  margin: 0;
+  color: rgba(230, 237, 243, 0.38);
+  font: 600 clamp(22px, 3.2vh, 30px) / 1.25 var(--font-body, sans-serif);
+  text-align: center;
+  text-wrap: balance;
+}
+
+.words span {
+  transition: color 160ms ease;
+}
+
+.words .lit {
+  color: var(--text-primary);
+}
+
+/* "8 of 10 notes on pitch". */
+.score {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 16px;
+  border-radius: 18px;
+  background: rgba(45, 212, 191, 0.14);
+  color: #5eead4;
+  font: 600 16px/1 var(--font-body, sans-serif);
+}
+
+.still .bar,
+.still ~ .words span {
+  transition: none;
+}
+
+/* On its side and short: the stage beside the foot (the layer's own rule),
+   so the lane and Merc come down to fit. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .merc {
+    width: min(20vw, 22vh, 120px);
+    width: min(20vw, 22dvh, 120px);
+  }
+
+  .lane {
+    height: clamp(72px, 20vh, 110px);
+    height: clamp(72px, 20dvh, 110px);
+  }
+
+  .words {
+    font-size: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .words span {
+    transition: none;
+  }
+}
