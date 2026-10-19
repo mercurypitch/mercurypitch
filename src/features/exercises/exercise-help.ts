@@ -20,9 +20,9 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
     summary:
       'A coached vocal warmup: breathing, hums, lip trills, sirens, and a light scale.',
     body: [
-      'Warming up prepares your voice the way stretching prepares muscles — it protects your cords and makes everything after sound better.',
+      'A warmup is a gentle start: easy sounds, at about speaking volume, before anything harder. Stop immediately if anything feels uncomfortable.',
       'Follow each step: breathe with the timer, then echo the short reference lines with hums, lip trills ("brrr"), sirens, and a gentle five-note scale.',
-      'There are no grades here — the score just reflects that you sang along. Pick the block you need, or run the full warmup before practice.',
+      'There are no grades and no score here. The end screen just counts the steps you finished. Pick the block you need, or run the full warmup before practice.',
     ],
   },
   [EXERCISE_LONG_NOTE]: {

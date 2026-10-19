@@ -98,12 +98,13 @@ export function warmupTotalSeconds(steps: WarmupStep[]): number {
 }
 
 /**
- * What the warmup banks from a finished step. The card promises "no
- * grades here — the score just reflects that you sang along", so the
- * banked number is the run's coverage (the share of target time the
+ * What the warmup banks from a finished step. The warm-up is never graded
+ * (its help says "no grades and no score", and the shell shows none), so
+ * the banked number is the run's coverage (the share of target time the
  * singer actually voiced, whatever the pitch), never the accuracy-
- * weighted total. Steps with nothing scoreable (the breathing cycle)
- * produce no score object and bank nothing.
+ * weighted total. It is kept for the exercise history only. Steps with
+ * nothing scoreable (the breathing cycle) produce no score object and bank
+ * nothing.
  */
 export function warmupStepScore(
   score: { total: number; coverage: number } | undefined,

@@ -85,10 +85,11 @@ function seed(version) {
       localStorage.setItem(`pitchperfect_page_tour_offered_${t}`, 'true')
     }
     // A little history so the recent-scores strip renders on the setup screen.
+    // A graded drill's: the Guided Warmup is never scored, so it has no strip.
     localStorage.setItem(
       'mercurypitch_exercise_history',
       JSON.stringify([
-        { type: 'warmup', score: 78, metrics: {}, completedAt: 1 },
+        { type: 'long-note', score: 78, metrics: {}, completedAt: 1 },
       ]),
     )
   } catch {

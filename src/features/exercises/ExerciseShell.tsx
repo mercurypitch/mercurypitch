@@ -30,6 +30,7 @@ import { isNarrow } from '@/lib/use-viewport'
 import { getExerciseStats } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
 import { EXERCISE_HELP } from './exercise-help'
+import { exerciseReplayNote } from './exercise-replay-note'
 import { keepExerciseVoiceTake } from './exercise-voice-take'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
 import { gradeForScore } from './feedback'
@@ -103,6 +104,16 @@ export interface ExerciseShellProps {
    * this is omitted; an elapsed timer alone is not proof of a completed hold.
    */
   guidedCompletionReady?: () => boolean
+
+  /**
+   * A drill the app never grades: the Guided Warmup, whose hums and lip
+   * trills the house rules never score. Set, the shell shows no score
+   * anywhere. The header has no live percentage and no level, the setup
+   * screen no recent scores, and the result card leads with `resultTitle`
+   * where a graded drill shows its grade, its percentage, "New best!" and
+   * the change since last time. The drill's `resultSummary` still follows.
+   */
+  ungraded?: { resultTitle: () => string }
 
   /** Settings shown in idle (note pickers, scale selects). Optional. */
   idleSettings?: JSX.Element
@@ -203,6 +214,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const status = createMemo(() => props.status())
   const isActive = () => status() === 'active'
   const isComplete = () => status() === 'complete'
+  /** A guided dose and an ungraded drill both run without a visible score. */
+  const showsScore = (): boolean =>
+    props.guidedPractice === undefined && props.ungraded === undefined
   const guidedDurationSeconds = createMemo<number | null>(() => {
     const milliseconds = props.guidedPractice?.dose.durationMilliseconds
     return milliseconds !== null &&
@@ -288,11 +302,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         }
         guidedTimerCompletionPending = false
         const score = props.resultScore()
-        if (
-          props.guidedPractice === undefined &&
-          score !== null &&
-          score >= 80
-        ) {
+        if (showsScore() && score !== null && score >= 80) {
           haptics.success()
         } else {
           haptics.tapLight()
@@ -746,18 +756,22 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
           </h2>
         </div>
         <div class="exercise-header-right">
-          <span
-            class="exercise-level-chip"
-            title="Adaptive difficulty level (1-10) — adjusts to your recent scores"
-          >
-            {props.guidedPractice === undefined
-              ? `Lv ${getDifficulty(props.type)}`
-              : 'Guided'}
-          </span>
+          {/* An ungraded drill has no level: it is never scored, so there is
+              nothing for a level to adjust to. */}
+          <Show when={props.ungraded === undefined}>
+            <span
+              class="exercise-level-chip"
+              title="Adaptive difficulty level (1-10) — adjusts to your recent scores"
+            >
+              {props.guidedPractice === undefined
+                ? `Lv ${getDifficulty(props.type)}`
+                : 'Guided'}
+            </span>
+          </Show>
           <Show when={engines}>
             <MicButton active={micOn()} onClick={toggleMic} />
           </Show>
-          <Show when={props.guidedPractice === undefined}>
+          <Show when={showsScore()}>
             <span class="exercise-score-display">
               {isActive() ? `${Math.round(props.currentScore())}%` : '—'}
             </span>
@@ -805,7 +819,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       >
         <Show when={status() === 'count-in'}>{props.countInContent}</Show>
         <Show when={isIdleLike()}>
-          <Show when={props.guidedPractice === undefined}>
+          <Show when={showsScore()}>
             <ExerciseScoreHistory type={props.type} />
           </Show>
           {/* Description + settings + Start live together in the centre of the
@@ -822,7 +836,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 class="exercise-result-card"
                 classList={{
                   [`grade-${gradeForScore(props.resultScore()!).toLowerCase()}`]:
-                    props.guidedPractice === undefined,
+                    showsScore(),
                   'mid-reps': repRun() !== null,
                   'is-guided': props.guidedPractice !== undefined,
                 }}
@@ -832,7 +846,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 }
                 tabIndex={props.guidedPractice === undefined ? undefined : -1}
               >
-                <Show when={props.guidedPractice === undefined}>
+                <Show when={showsScore()}>
                   <div class="exercise-result-grade">
                     {gradeForScore(props.resultScore()!)}
                   </div>
@@ -852,27 +866,36 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                       </div>
                     }
                   >
-                    <div class="exercise-result-score">
-                      {props.resultScore()}%
-                      <Show when={isNewBest()}>
-                        <span class="exercise-result-best">New best!</span>
-                      </Show>
-                      <Show
-                        when={
-                          !isNewBest() &&
-                          deltaVsLast() !== null &&
-                          deltaVsLast() !== 0
-                        }
-                      >
-                        <span
-                          class="exercise-result-delta"
-                          classList={{ up: (deltaVsLast() ?? 0) > 0 }}
+                    <Show
+                      when={props.ungraded === undefined}
+                      fallback={
+                        <div class="exercise-result-title">
+                          {props.ungraded?.resultTitle()}
+                        </div>
+                      }
+                    >
+                      <div class="exercise-result-score">
+                        {props.resultScore()}%
+                        <Show when={isNewBest()}>
+                          <span class="exercise-result-best">New best!</span>
+                        </Show>
+                        <Show
+                          when={
+                            !isNewBest() &&
+                            deltaVsLast() !== null &&
+                            deltaVsLast() !== 0
+                          }
                         >
-                          {(deltaVsLast() ?? 0) > 0 ? '+' : ''}
-                          {deltaVsLast()} vs last
-                        </span>
-                      </Show>
-                    </div>
+                          <span
+                            class="exercise-result-delta"
+                            classList={{ up: (deltaVsLast() ?? 0) > 0 }}
+                          >
+                            {(deltaVsLast() ?? 0) > 0 ? '+' : ''}
+                            {deltaVsLast()} vs last
+                          </span>
+                        </Show>
+                      </div>
+                    </Show>
                   </Show>
                   <Show
                     when={guidedStopReason() !== 'discomfort'}
@@ -921,22 +944,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     <div class="exercise-result-voice-copy">
                       <strong>{voiceCaptureHeading()}</strong>
                       <span role="status" aria-live="polite">
-                        {voiceKeepState() === 'saving'
-                          ? 'Saving locally…'
-                          : voiceKeepState() === 'saved'
-                            ? 'Available in Hear Yourself on this device.'
-                            : voiceKeepState() === 'error'
-                              ? 'Could not keep it. The temporary replay is still available.'
-                              : props.voiceCapture!.state() === 'processing'
-                                ? 'Preparing the temporary local replay…'
-                                : props.voiceCapture!.state() === 'ready'
-                                  ? 'It stays temporary unless you explicitly keep it on this device.'
-                                  : props.voiceCapture!.state() ===
-                                      'unsupported'
-                                    ? 'This browser can score the run but cannot record a replay.'
-                                    : props.voiceCapture!.state() === 'error'
-                                      ? 'No replay was captured. Your score is unchanged.'
-                                      : 'Replay discarded. Your score is unchanged.'}
+                        {exerciseReplayNote(
+                          voiceKeepState(),
+                          props.voiceCapture!.state(),
+                          props.ungraded !== undefined,
+                        )}
                       </span>
                     </div>
                     <Show
@@ -1036,8 +1048,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 </Show>
                 <Show when={!isComplete() && props.voiceCapture !== undefined}>
                   <p class="exercise-capture-note">
-                    Scores save without audio. After the run, choose whether to
-                    keep its temporary local replay.
+                    {props.ungraded === undefined ? 'Scores' : 'Runs'} save
+                    without audio. After the run, choose whether to keep its
+                    temporary local replay.
                   </p>
                 </Show>
                 <Show
