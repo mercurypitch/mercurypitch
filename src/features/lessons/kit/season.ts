@@ -219,9 +219,20 @@ export const LESSONS: readonly Lesson[] = [
     title: 'The major scale and home',
     short: 'Major scale',
     topics: ['T09', 'T10'],
+    // a written lesson: its page, and no film yet
+    len: '10 minutes',
+    page: '/learn/04',
     hook: 'Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?',
-    sig: 'A staircase with two uneven steps that slides to start on any note.',
-    pr: { needs: 'Scale Runner at a beginner tempo (a data-only slug)' },
+    sig: 'A staircase with two short steps that slides to start on any note.',
+    pr: {
+      needs: 'Scale Runner at a beginner tempo (a data-only slug)',
+      link: {
+        href: '/pitch-training?lesson=04',
+        addr: 'mercurypitch.com/pitch-training',
+        label: 'Exercises',
+        note: 'then tap Scale Runner',
+      },
+    },
   },
   {
     n: 5,

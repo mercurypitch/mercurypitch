@@ -1,0 +1,150 @@
+/* ============================================================
+   Lesson parts — the small pieces more than one lesson page uses
+   ============================================================
+   Lesson 2's page built these in its own sheet; a later page imports them
+   from here, after lesson-stage.css: the prerequisite chip as a link, four
+   ticket cards in two columns, the segmented toggle and its note, a predict
+   inside a step's text, the Go deeper drawer, the slide guide beside the
+   breathing ring, and free play's card head. Lesson 2 still carries its
+   own copies, unchanged. */
+
+/* the prerequisite chip is a link: a 44 px target around a 28 px chip */
+.chip-link {
+  position: relative;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.chip-link::after {
+  content: '';
+  position: absolute;
+  inset: -8px -4px;
+}
+.chip-link:hover {
+  border-color: var(--hair-3);
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- four words */
+.tickets.four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* a long label wraps inside its ticket rather than running past it */
+.tickets.four .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
+}
+@media (max-width: 900px) {
+  .tickets.four {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------- a segmented toggle */
+.seg {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--hair-2);
+  overflow: hidden;
+}
+.seg .btn {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.seg .btn + .btn {
+  box-shadow: inset 1px 0 0 var(--hair-2);
+}
+.seg .btn[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--aqua) 16%, transparent);
+  color: var(--ink);
+}
+.names-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+}
+.names-note {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------- a predict inside a step's text */
+.predict.in-step {
+  margin: 4px 0 16px;
+}
+.predict.in-step .pq {
+  font-size: clamp(20px, 2vw, 26px);
+}
+div.reveal p {
+  margin: 0 0 10px;
+}
+div.reveal p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------------------------------------------------------------- Go deeper */
+details.deeper {
+  margin: 18px 0 0;
+  border-top: 1px solid var(--hair);
+}
+details.deeper summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  font: 600 var(--fs-16)/1.2 var(--f-display);
+  color: var(--ink);
+  list-style: none;
+}
+details.deeper summary::-webkit-details-marker {
+  display: none;
+}
+details.deeper summary .ico {
+  transition: transform 0.3s var(--ease);
+}
+details.deeper[open] summary .ico {
+  transform: rotate(90deg);
+}
+details.deeper ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  color: var(--ink-2);
+}
+details.deeper li {
+  margin: 0 0 10px;
+}
+details.deeper li b {
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- the guide beside the ring */
+.guide-side {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.guide-side .ring {
+  width: min(100%, 300px);
+}
+
+/* ---------------------------------------------------------------- free play */
+.free-play {
+  margin-top: 18px;
+}
+.fp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}

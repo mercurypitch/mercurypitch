@@ -11,7 +11,7 @@ import solidPlugin from 'vite-plugin-solid'
 import { ENTRY_PAGES } from './src/seo/entry-pages'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
 import { devLogRelayPlugin } from './tools/dev-log-relay'
-import { DRAFT_LESSONS_ENV, isDraftLessonsShown, lessonInputs, lessonPaths, } from './tools/draft-lessons'
+import { builtLessons, DRAFT_LESSONS_ENV, isDraftLessonsShown, lessonInputs, lessonPaths, lessonStatesPlugin, } from './tools/draft-lessons'
 import { fontAliasesPlugin } from './tools/font-aliases'
 import { writeEntryPages } from './tools/generate-entry-pages'
 import { writeErrorPages } from './tools/generate-error-pages'
@@ -304,6 +304,9 @@ export default defineConfig(({ command, mode }) => {
       // vertexFn/fragmentFn closures) — same setup as chaos-master.
       typegpuPlugin({}),
       standaloneEntryRewritePlugin(lessonPaths(__dirname, draftsShown)),
+      // A lesson page's words about which lessons are ready follow the
+      // build: a draft reads as ready only where its page is built.
+      lessonStatesPlugin(builtLessons(__dirname, draftsShown)),
       standaloneAliasFilesPlugin(),
       nonProductionNoindexPlugin(mode === 'production'),
       removeWasmAssetsPlugin(),

@@ -66,7 +66,8 @@ does it.
 ## Lessons
 
 Find Your Pitch, a free series on music theory and singing. Each lesson is a
-page with the whole lesson in its text, live sound examples and its episode.
+page with the whole lesson in its text and live sound examples, with its
+episode where the lesson has one.
 
 - [Lesson 1: What is a note?](https://mercurypitch.com/learn/01): Why 220 Hz
   and 440 Hz share a name. What a note is, why notes come back an octave
@@ -74,6 +75,10 @@ page with the whole lesson in its text, live sound examples and its episode.
 - [Lesson 2: Twelve notes](https://mercurypitch.com/learn/02): Where the other
   five notes come from. The twelve notes on a keyboard, a semitone and a tone by
   ear, why one key has two names, and what a cent is.
+- [Lesson 4: The major scale and home](https://mercurypitch.com/learn/04): Why
+  do-re-mi sounds finished on do and restless on ti. The major scale's pattern
+  of steps, starting it on any note, naming its notes do to ti, and hearing ti
+  lean towards home.
 
 ## Where it runs
 

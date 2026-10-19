@@ -258,7 +258,7 @@ describe('the standalone documents', () => {
       .map((name) => /^(\d{2})\.html$/.exec(name)?.[1])
       .filter((n): n is string => n !== undefined)
 
-    expect(lessons).toEqual(expect.arrayContaining(['01', '02', '03']))
+    expect(lessons).toEqual(expect.arrayContaining(['01', '02', '03', '04']))
     for (const n of lessons) {
       expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}`), n).toBe(true)
       expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}.html`), n).toBe(true)

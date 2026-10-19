@@ -31,9 +31,19 @@
 // finished dist either way. The service worker leaves every lesson path to
 // the network in both (src/lib/sw-runtime.ts), so a hidden draft's path
 // reaches the 404 page rather than the app shell.
+//
+// A page's own words can follow the build too. Where a lesson page says
+// whether another lesson is ready (a next-lesson card's "ready to read" or
+// "Coming later"), it writes both readings, each in a
+// `<span data-if-live="5">` or `<span data-if-planned="5">`, and
+// `lessonStatesPlugin` keeps the one that is true of the build: live where
+// Lesson 5's page is built, planned where it is not. So a page reads
+// correctly with or without its script, and releasing a draft changes its
+// words with everything else.
 
 import { existsSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
+import type { Plugin } from 'vite'
 import { DRAFT_LESSONS } from '../src/features/lessons/kit/drafts'
 
 export const DRAFT_LESSONS_ENV = 'VITE_DRAFT_LESSONS'
@@ -104,4 +114,41 @@ export function lessonPaths(
   drafts: DraftList = DRAFT_LESSONS,
 ): string[] {
   return builtLessons(root, shown, drafts).map(lessonPath)
+}
+
+// One reading of a lesson's state: plain text or inline markup, never
+// another span, since the first closing tag ends it.
+const STATE_SPAN =
+  /<span\s+data-if-(live|planned)="(\d+)"\s*>([\s\S]*?)<\/span\s*>/g
+
+/**
+ * Keeps, of each `data-if-live` and `data-if-planned` span, the reading that
+ * is true where the lessons `live` are the pages built, unwrapped; drops the
+ * other.
+ */
+export function resolveLessonStates(
+  html: string,
+  live: readonly number[],
+): string {
+  return html.replace(
+    STATE_SPAN,
+    (_all: string, state: string, n: string, inner: string) => {
+      if (inner.includes('<span'))
+        throw new Error(
+          `A data-if-${state}="${n}" reading holds a span; it must be text or inline markup without one.`,
+        )
+      return live.includes(Number(n)) === (state === 'live') ? inner : ''
+    },
+  )
+}
+
+/** Resolves every page's readings for this build, on the dev server as in a build. */
+export function lessonStatesPlugin(live: readonly number[]): Plugin {
+  return {
+    name: 'mercurypitch:lesson-states',
+    transformIndexHtml: {
+      order: 'pre',
+      handler: (html) => resolveLessonStates(html, live),
+    },
+  }
 }

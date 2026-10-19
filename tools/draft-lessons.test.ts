@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DRAFT_LESSONS } from '../src/features/lessons/kit/drafts'
-import { builtLessons, draftLessons, isDraftLessonsShown, lessonDocument, lessonInputs, lessonPages, lessonPath, lessonPaths, } from './draft-lessons'
+import { builtLessons, draftLessons, isDraftLessonsShown, lessonDocument, lessonInputs, lessonPages, lessonPath, lessonPaths, resolveLessonStates, } from './draft-lessons'
 
 const ROOT = resolve(__dirname, '..')
 
@@ -159,5 +159,48 @@ describe('the list of drafts', () => {
       expect(repoFile('public/sitemap.xml'), `${n}`).toContain(url)
       expect(repoFile('public/llms.txt'), `${n}`).toContain(url)
     }
+  })
+})
+
+describe("a page's words about which lessons are ready", () => {
+  const LINE =
+    'Next: Lesson 5 <span data-if-live="5">ready to read</span\n  ><span data-if-planned="5">Coming later</span>.'
+
+  /** A document's text, its whitespace runs closed up as a browser lays it out. */
+  const words = (html: string): string => html.replace(/\s+/g, ' ')
+
+  it('keeps the reading that is true of the build, unwrapped, and drops the other', () => {
+    // Act
+    const live = resolveLessonStates(LINE, [1, 2, 4, 5])
+    const planned = resolveLessonStates(LINE, [1, 2, 4])
+
+    // Assert
+    expect(live).toBe('Next: Lesson 5 ready to read.')
+    expect(planned).toBe('Next: Lesson 5 Coming later.')
+  })
+
+  it('refuses a reading that holds a span of its own, which would end it early', () => {
+    const nested = '<span data-if-live="3">a <span>b</span> c</span>'
+
+    expect(() => resolveLessonStates(nested, [3])).toThrow(/holds a span/)
+  })
+
+  it("says Lesson 5 is coming later on Lesson 4's next-lesson card until a build carries its page", () => {
+    // Arrange
+    const html = repoFile('learn/04.html')
+    const card = (live: readonly number[]): string => {
+      const text = words(resolveLessonStates(html, live))
+      const at = text.indexOf('05 · Breath and a steady note')
+      return text.slice(at, at + 140)
+    }
+    const reading = (shown: boolean): string =>
+      builtLessons(ROOT, shown).includes(5) ? 'ready to read' : 'Coming later'
+
+    // Act and assert
+    expect(card(builtLessons(ROOT, true))).toContain(reading(true))
+    expect(card(builtLessons(ROOT, false))).toContain(reading(false))
+    expect(card([1, 2, 4, 5])).toContain('ready to read')
+    expect(card([1, 2, 4])).toContain('Coming later')
+    expect(words(resolveLessonStates(html, [1, 2, 4]))).not.toMatch(/data-if-/)
   })
 })

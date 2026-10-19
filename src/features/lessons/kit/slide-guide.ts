@@ -12,10 +12,12 @@
 // breathing ring (sing.ts) and plays the sound itself.
 //
 // Any number of rows and a path of any length: Lesson 2's four lanes and its
-// 4.2 s slide, Lesson 4's thirteen rows and its seventeen-note scale. Between
-// runs the path rests in chrome (Lesson 2) or in amber (Lesson 4). Under
-// reduced motion the model lights the whole path at once, and the sweep
-// lights the path's segments one after another instead of a travelling line.
+// 4.2 s slide, Lesson 4's thirteen rows and its seventeen-note scale. A path
+// can fall silent (Lesson 4's rests): a point marked `gap` starts a new
+// phrase, and nothing is drawn from the point before it. Between runs the
+// path rests in chrome (Lesson 2) or in amber (Lesson 4). Under reduced
+// motion the model lights the whole path at once, and the sweep lights the
+// path's segments one after another instead of a travelling line.
 //
 // Mounted on a root holding a `canvas` and a `[data-guide-rows]` box, into
 // which the row labels are written as markup (so a ♯ is spoken), each at its
@@ -39,6 +41,8 @@ export interface GuideRow {
 export interface GuidePoint {
   readonly t: number
   readonly midi: number
+  /** Merc is silent from the point before this one: no line between them, and this point starts a phrase. */
+  readonly gap?: boolean
 }
 
 export interface GuideOptions {
@@ -139,7 +143,45 @@ function drawRows(
   }
 }
 
-/** Strokes the path from `from` to `to` seconds. */
+/** True while `t` falls in a silence: after the point before a `gap` point, before the gap point itself. */
+export function inGap(path: readonly GuidePoint[], t: number): boolean {
+  for (let i = 1; i < path.length; i++) {
+    const b = path[i]
+    if (t < b.t) return b.gap === true && t > path[i - 1].t
+  }
+  return false
+}
+
+/**
+ * The path from `from` to `to` seconds as the lines to stroke: one piece
+ * for a path with no silence in that stretch, a piece per phrase where it
+ * falls silent. Each piece starts and ends where the stretch or its phrase
+ * does, at the path's pitch there.
+ */
+export function pathPieces(
+  path: readonly GuidePoint[],
+  from: number,
+  to: number,
+): GuidePoint[][] {
+  const pieces: GuidePoint[][] = []
+  let piece: GuidePoint[] | null = inGap(path, from)
+    ? null
+    : [{ t: from, midi: pitchAt(path, from) }]
+  for (const p of path) {
+    if (p.t <= from || p.t >= to) continue
+    if (p.gap === true || piece === null) {
+      if (piece !== null && piece.length > 1) pieces.push(piece)
+      piece = []
+    }
+    piece.push({ t: p.t, midi: p.midi })
+  }
+  if (piece !== null && !inGap(path, to))
+    piece.push({ t: to, midi: pitchAt(path, to) })
+  if (piece !== null && piece.length > 1) pieces.push(piece)
+  return pieces
+}
+
+/** Strokes the path from `from` to `to` seconds, lifting the pen over its silences. */
 function tracePath(
   ctx: CanvasRenderingContext2D,
   f: Frame,
@@ -148,11 +190,12 @@ function tracePath(
   to: number,
 ): void {
   ctx.beginPath()
-  ctx.moveTo(f.xOf(from), f.yOf(pitchAt(path, from)))
-  for (const p of path) {
-    if (p.t > from && p.t < to) ctx.lineTo(f.xOf(p.t), f.yOf(p.midi))
+  for (const piece of pathPieces(path, from, to)) {
+    piece.forEach((p, i) => {
+      if (i === 0) ctx.moveTo(f.xOf(p.t), f.yOf(p.midi))
+      else ctx.lineTo(f.xOf(p.t), f.yOf(p.midi))
+    })
   }
-  ctx.lineTo(f.xOf(to), f.yOf(pitchAt(path, to)))
   ctx.stroke()
 }
 
@@ -234,7 +277,9 @@ function drawModel(
   }
   strokePath(ctx, f, path, [t, f.T], AMBER_AHEAD)
   strokePath(ctx, f, path, [0, t], AMBER_LIT)
-  drawHead(ctx, f.xOf(t), f.yOf(pitchAt(path, t)), COLOR.amber)
+  // through a silence nothing is sung, so no point marks where the voice is
+  if (!inGap(path, t))
+    drawHead(ctx, f.xOf(t), f.yOf(pitchAt(path, t)), COLOR.amber)
 }
 
 /** The viewer's turn, `t` seconds into the sweep: a vertical line, or under reduced motion the segments lit so far. */

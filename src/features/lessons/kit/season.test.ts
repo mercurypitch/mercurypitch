@@ -244,6 +244,23 @@ describe('a draft lesson (drafts.ts)', () => {
     expect(season.lessonStatus(L, false)).toBe('read')
   })
 
+  it('leaves a live lesson with no film ready to read in either build: Lesson 4', async () => {
+    for (const drafts of ['1', '0'] as const) {
+      // Act
+      const season = await seasonBuilt(drafts)
+
+      // Assert
+      const L = season.LESSONS[4]
+      expect([L.page, L.len, L.film], drafts).toEqual([
+        '/learn/04',
+        '10 minutes',
+        undefined,
+      ])
+      expect(season.lessonStatus(L, false), drafts).toBe('read')
+      expect(L.pr.link?.href, drafts).toBe('/pitch-training?lesson=04')
+    }
+  })
+
   it('is planned, with no page and no length, where the build hides drafts', async () => {
     // Act
     const season = await seasonBuilt('0')
