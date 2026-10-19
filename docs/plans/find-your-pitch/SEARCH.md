@@ -8,7 +8,7 @@ _(verified)_ were checked against Google's own documentation on 2026-10-19.
 
 It sits beside two other documents:
 
-- the YouTube upload guide, `youtube/YOUTUBE.md`, on its own branch for now;
+- the YouTube upload guide, [youtube/YOUTUBE.md](youtube/YOUTUBE.md);
 - the site-wide plan,
   [docs/plans/search-and-answer-engines.md](../search-and-answer-engines.md).
 
@@ -16,9 +16,10 @@ It sits beside two other documents:
 
 ## 0. The short version
 
-1. **Lesson 1 is not on mercurypitch.com yet.** It is on `main` but no release
-   carries it; v0.9.21 predates it. It can therefore launch search-ready, and
-   this PR does that (§1).
+1. **No lesson is on mercurypitch.com yet.** Lessons 1 and 2 are released on
+   `main`, and Lesson 3 is a draft (`src/features/lessons/kit/drafts.ts`), but
+   no release tag carries them; v0.9.21 predates all three. They can therefore
+   launch search-ready, and this PR does that (§1).
 2. **The lessons answer informational questions.** "What is a note", "how to
    match pitch", "intervals explained": AI Overviews already answer the generic
    form of each. Google's advice for its AI features is "valuable,
@@ -48,32 +49,33 @@ It sits beside two other documents:
 
 ## 1. This PR **[in review]**
 
-- **Lesson 1's structured data.** An `Article` node: a free beginner lesson,
-  first in the Find Your Pitch series, published by the organization. Plus a
-  `BreadcrumbList` from the home page. Every value repeats what the page says.
-- **`max-image-preview:large`** in Lesson 1's robots tag. Discover uses a large
-  image only when the page allows one _(verified)_. The share card is 1200×630,
-  which meets its 1200-pixel width.
-- **A description that fits.** It was 206 characters, and Google cuts near 160,
-  so the result ended "how to read A4…". It is 156 now, with the same facts.
-  This is the one copy change in the PR; drop it if the lesson's own process
-  should own it.
-- **Linked from every crawlable document.** Lesson 1 is now in the prelude nav
-  of index.html, 404.html and every generated entry document. Before, nothing a
-  crawler reaches first linked it; only the sitemap, llms.txt and the app's
-  Home did, and Home only after JavaScript runs.
-- **One list of published lessons.** `LESSON_PAGES` in `src/seo/entry-pages.ts`
-  feeds the navs, Vite's build inputs and the dev rewrite.
-  `src/tests/lesson-pages.test.ts` holds every listed lesson to:
+- **Structured data for Lessons 1 and 2.** An `Article` node each: a free
+  beginner lesson in the Find Your Pitch series, published by the
+  organization. Plus a `BreadcrumbList` from the home page. Every value
+  repeats what the page says.
+- **`max-image-preview:large`** in both robots tags. Discover uses a large
+  image only when the page allows one _(verified)_. The share cards are
+  1200×630, which meets its 1200-pixel width.
+- **Descriptions that fit.** They were 206 and 272 characters, and Google cuts
+  near 160, so each result lost its end. They are 156 and 159 now, with the
+  same facts. These are the PR's only copy changes; drop them if the lessons'
+  own process should own them.
+- **Linked from every crawlable document.** Every released lesson is now in the
+  prelude nav of every generated entry document, and index.html and 404.html
+  link Lesson 1, which links onward to the next. Before, nothing a crawler
+  reaches first linked a lesson; only the sitemap, llms.txt and the app's Home
+  did, and Home only after JavaScript runs.
+- **Nothing names a lesson.** `tools/lesson-links.ts` reads the released
+  lessons off `learn/` the way `tools/draft-lessons.ts` does, less the drafts,
+  and labels each with its structured-data headline. So releasing a lesson is
+  still deleting its line from `drafts.ts`: that alone links it from every
+  entry document. `src/tests/lesson-pages.test.ts` then holds it to:
   - a self-canonical head, the image directive and a description under 160
     characters;
   - the structured data;
   - the sitemap, llms.txt and the service worker;
-  - links from the crawlable documents;
+  - links from the generated entry documents;
   - the legal links.
-
-  Publishing Lesson 2 starts with its document and one line in the list. The
-  test and the build's budget check name everything else.
 
 ---
 
@@ -173,19 +175,19 @@ What a reader, a crawler and an answer engine all need:
   - previous and next lesson;
   - the room that practises it (§8).
 
-  Lesson 1 links only to the Voice Mirror today.
+  Lessons 1 and 2 link their practise room and the season map today.
 
 - **Words for every figure.** The toys explain by sound and motion; their
   captions and alt text are all a crawler gets.
 
 ### 3.4 Being found
 
-- **Add the lesson to `LESSON_PAGES`.** That links it from every entry document
-  and makes it a build input. The test then asks for the rest:
+- **Releasing the lesson** (deleting its line from `drafts.ts`) links it from
+  every entry document. The test then asks for the rest:
+  - the head and the two structured-data blocks;
   - the sitemap;
   - llms.txt, as one bullet with its one-line answer;
-  - the service worker's document list;
-  - index.html and 404.html's navs.
+  - the service worker's document list.
 - **Sitemap `lastmod`:** the release date when it ships, then the date its
   content changes. `/learn/01` says 2026-10-16 today; set it to its release day.
 - **On release day:**
@@ -383,12 +385,11 @@ exist beyond a definition.
 
 1. The head, as in §3.1.
 2. The two structured-data blocks, from Lesson 1's.
-3. A line in `LESSON_PAGES`. Run `src/tests/lesson-pages.test.ts`, and fix what
-   it names:
+3. Release it by deleting its line from `drafts.ts`. Run
+   `src/tests/lesson-pages.test.ts`, and fix what it names:
    - the sitemap;
    - llms.txt;
    - `STANDALONE_DOCUMENT_PATHS`;
-   - index.html and 404.html's navs;
    - the first-paint budget, which `scripts/assert-first-paint-budgets.mjs`
      asks for at build.
 4. Links out: home, hub, previous and next lesson, the room. Links in: the room
