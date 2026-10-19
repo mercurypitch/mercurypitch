@@ -6,7 +6,8 @@
 //   - "Not now" at the top right, a labelled text button, there from the
 //     first frame;
 //   - the singer's voiceprint card, small, when this phone holds one an
-//     account made here would adopt (keep-voiceprint.ts);
+//     account made here would adopt (keep-voiceprint.ts). Straight after a
+//     reveal (the onboarding's beat 7, or the range Keep ran) it flies in;
 //   - "Keep your voiceprint" over a measured range, else "Save your
 //     progress";
 //   - one icon and one line a row, each only where it is true: the
@@ -42,7 +43,7 @@ import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { ChevronIcon, GiftIcon, KaraokeIcon, MailIcon, MicIcon, ProgressIcon, WaveIcon, } from '../icons'
 import { KEEP, keepFact, keepGiftLine } from './account-copy'
-import { closeOffer, declineOffer, offerOpen, rangeFinder, } from './account-offer'
+import { closeOffer, declineOffer, keepArrival, offerOpen, rangeFinder, } from './account-offer'
 import { liveAppGift } from './keep-gift'
 import type { KeepableVoiceprint } from './keep-voiceprint'
 import { keepableVoiceprint, keepRange } from './keep-voiceprint'
@@ -242,6 +243,7 @@ export function AccountOfferSheet(): JSX.Element {
         class="mp-offer mp-offer--sheet mp-keep"
         data-testid="account-offer"
         data-variant={print() === null ? 'progress' : 'voiceprint'}
+        data-arrival={keepArrival()}
       >
         <div class="mp-keep__top">
           <button

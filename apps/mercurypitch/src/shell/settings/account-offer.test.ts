@@ -17,7 +17,7 @@ import type { SingTake } from '@/stores/sing-takes-store'
 import { clearSingTakes, keepSingTake, removeSingTake, SING_TAKES_KEPT, } from '@/stores/sing-takes-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { openMore, resetRunShell, runState } from '../run-shell-store'
-import { declineOffer, forgetAccountOffer, installAccountOffer, OFFER_BEAT_MS, offerOpen, openKeep, rangeFinder, registerRangeFinder, resetAccountOffer, } from './account-offer'
+import { declineOffer, forgetAccountOffer, installAccountOffer, keepArrival, noAccountYet, OFFER_BEAT_MS, offerOpen, openKeep, openKeepFromReveal, rangeFinder, registerRangeFinder, resetAccountOffer, } from './account-offer'
 import { resetSignIn, signInOpen } from './sign-in-state'
 
 const stand = vi.hoisted(() => ({ signedOutHere: false }))
@@ -278,6 +278,31 @@ describe('Not now, and the other ways in', () => {
     keep()
 
     expect(offerOpen()).toBe(false)
+  })
+
+  it('opens straight after a reveal with its card flying in, and plainly from anywhere else', () => {
+    openKeepFromReveal()
+    const fromReveal = keepArrival()
+    declineOffer()
+    openKeep()
+
+    expect(fromReveal).toBe('reveal')
+    expect(keepArrival()).toBe('plain')
+  })
+
+  it('says whether this phone has no account yet: none signed in, none signed out of', () => {
+    const none = noAccountYet()
+    setAuthToken(token('anonymous'))
+    const ownIdentity = noAccountYet()
+    setAuthToken(token('google'))
+    const signedIn = noAccountYet()
+    setAuthToken(null)
+    stand.signedOutHere = true
+
+    expect(none).toBe(true)
+    expect(ownIdentity).toBe(true)
+    expect(signedIn).toBe(false)
+    expect(noAccountYet()).toBe(false)
   })
 
   it('offers a range finder only while one is registered', () => {

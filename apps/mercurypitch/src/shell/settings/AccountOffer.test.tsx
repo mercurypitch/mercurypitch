@@ -23,7 +23,7 @@ import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { KEEP, keepFact } from './account-copy'
-import { forgetAccountOffer, offerOpen, openKeep, registerRangeFinder, } from './account-offer'
+import { declineOffer, forgetAccountOffer, offerOpen, openKeep, openKeepFromReveal, registerRangeFinder, } from './account-offer'
 import type * as AccountState from './account-state'
 import { AccountOfferSheet } from './AccountOffer'
 import { resetAppGift } from './keep-gift'
@@ -367,6 +367,22 @@ describe('what Keep says', () => {
     await open()
 
     expect(q('keep-find-range')).toBeNull()
+  })
+
+  it('flies the card in straight after a reveal, and only then', async () => {
+    stand.prints = [print()]
+    view = renderShell(() => <AccountOfferSheet />)
+
+    openKeepFromReveal()
+    await settle()
+    const fromReveal = q('account-offer')?.dataset.arrival
+    declineOffer()
+    openKeep()
+    await settle()
+
+    expect(fromReveal).toBe('reveal')
+    expect(q('account-offer')?.dataset.arrival).toBe('plain')
+    expect(q('keep-voiceprint')).not.toBeNull()
   })
 
   it('names the iPad in its fact line', async () => {
