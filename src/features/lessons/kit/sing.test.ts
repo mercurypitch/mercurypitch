@@ -4,7 +4,8 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
-import { mountRing, mountSing } from './sing'
+import type { RingRun } from './sing'
+import { mountRing, mountSing, ringPhase, swellAt } from './sing'
 import { Sound } from './sound'
 
 const STILLS = { blue: '/stills/blue.webp', orange: '/stills/orange.webp' }
@@ -80,5 +81,55 @@ describe('mountSing', () => {
     // Assert
     expect(text(root, '.ring-state')).toBe('Get ready')
     expect(ring.busy).toBe(true)
+  })
+})
+
+describe("a run's phases (Lesson 5's Listen · Breathe · Sing)", () => {
+  const hold: RingRun = {
+    which: 'blue',
+    label: 'A3 · 220 Hz',
+    listen: 2,
+    breathe: 2,
+    turn: 10,
+    exhale: true,
+  }
+
+  it("runs Merc's note, then the in-breath, then the turn, then rests", () => {
+    // Act
+    const at = [1, 2.5, 4.5, 14.5].map((s) => ringPhase(hold, s))
+
+    // Assert
+    expect(at).toEqual([
+      { phase: 'listen', h: 1 },
+      { phase: 'breathe', h: 0.5 },
+      { phase: 'turn', h: 0.5 },
+      { phase: 'done', h: 0.5 },
+    ])
+  })
+
+  it('keeps the old run, with no in-breath, exactly as it was: Merc, then the turn', () => {
+    // Arrange
+    const hum: RingRun = { which: 'orange', label: 'A4', listen: 2.4, turn: 4 }
+
+    // Act + Assert
+    expect(ringPhase(hum, 2.5).phase).toBe('turn')
+    expect(ringPhase(hum, 2.5).h).toBeCloseTo(0.1, 9)
+    expect(swellAt(hum, 'turn', 1)).toBeCloseTo(1, 9)
+    expect(swellAt(hum, 'turn', 2)).toBeCloseTo(0, 9)
+  })
+
+  it('swells once over the in-breath, then settles once over the held turn', () => {
+    // Act
+    const swell = [0, 1, 2].map((h) => swellAt(hold, 'breathe', h))
+    const settle = [0, 5, 10, 12].map((h) => swellAt(hold, 'turn', h))
+
+    // Assert
+    expect(swell[0]).toBeCloseTo(0, 9)
+    expect(swell[1]).toBeCloseTo(0.5, 9)
+    expect(swell[2]).toBeCloseTo(1, 9)
+    expect(settle[0]).toBeCloseTo(1, 9)
+    expect(settle[1]).toBeCloseTo(0.5, 9)
+    expect(settle[2]).toBeCloseTo(0, 9)
+    expect(settle[3]).toBeCloseTo(0, 9)
   })
 })

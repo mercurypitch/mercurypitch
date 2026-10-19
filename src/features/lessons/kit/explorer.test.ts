@@ -180,4 +180,31 @@ describe("a draft lesson on Lesson 1's map (drafts.ts)", () => {
     expect(card?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
     expect(card?.innerHTML).not.toContain('/learn/03')
   })
+
+  it('treats Lesson 5, a draft too, the same way either side of the switch', async () => {
+    // Arrange
+    const lessonFive = async (drafts: '1' | '0'): Promise<Element | null> => {
+      vi.stubEnv('VITE_DRAFT_LESSONS', drafts)
+      vi.resetModules()
+      const { createExplorer: explorerBuilt } = await import('./explorer')
+      explorerPage()
+      explorerBuilt({ current: 1 }).select(5, false)
+      return document.querySelector('#exCardHost .ex-card')
+    }
+
+    // Act
+    const shown = await lessonFive('1')
+    const shownLinks = cardLinks()
+    const hidden = await lessonFive('0')
+
+    // Assert: to read where drafts show; planned, and nothing to the page, where they do not
+    expect(shown?.querySelector('h3')?.textContent).toBe(
+      'Breath and a steady note',
+    )
+    expect(shownLinks).toEqual(['/learn/05#lesson'])
+    expect(hidden?.textContent).toContain('Planned')
+    expect(hidden?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
+    expect(hidden?.innerHTML).not.toContain('/learn/05')
+    expect(hidden?.innerHTML).toContain('/mirror?lesson=05')
+  })
 })

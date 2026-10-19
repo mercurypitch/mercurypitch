@@ -272,4 +272,32 @@ describe('a draft lesson (drafts.ts)', () => {
     expect(season.lessonStatus(L, false)).toBe('planned')
     expect(season.LESSONS[1].page).toBe('/learn/01')
   })
+
+  it('reads Lesson 5 as ready to read, its seventeen minutes and its page, where drafts are shown', async () => {
+    // Act
+    const season = await seasonBuilt('1')
+
+    // Assert
+    const L = season.LESSONS[5]
+    expect([L.page, L.len, L.film]).toEqual([
+      '/learn/05',
+      '17 minutes',
+      undefined,
+    ])
+    expect(season.lessonStatus(L, false)).toBe('read')
+  })
+
+  it('folds Lesson 5 to a planned lesson where drafts are hidden, its practise link kept', async () => {
+    // Act
+    const season = await seasonBuilt('0')
+
+    // Assert: Voice Mirror is live, so the link stays; the page does not
+    const L = season.LESSONS[5]
+    expect([L.page, L.len]).toEqual([undefined, undefined])
+    expect(season.lessonStatus(L, false)).toBe('planned')
+    expect(L.pr.link?.href).toBe('/mirror?lesson=05')
+    expect(L.pr.needs).toBe(
+      'Long Note with a fixed 10 or 15 s length (durationSec)',
+    )
+  })
 })

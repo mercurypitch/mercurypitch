@@ -33,9 +33,10 @@ import type { Which } from '@/features/lessons/kit/merc-duo'
 import { mercCelebrate, mercListen, mercSing, } from '@/features/lessons/kit/merc-duo'
 import { hz, nameHtml, sharpOf, signName } from '@/features/lessons/kit/notes'
 import type { RingStills } from '@/features/lessons/kit/sing'
-import { contourOf, playContour, playTone, Sound, } from '@/features/lessons/kit/sound'
+import { playContour, playTone, Sound } from '@/features/lessons/kit/sound'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
 import { bindVoiceButtons, homeOf, mercOf, VoiceChoice, } from '@/features/lessons/kit/voice-choice'
+import { warmUpContour } from '@/features/lessons/kit/warm-up'
 import type { ListenModule } from './sing-take'
 import { chartSummary, MERC_SEC, singOne } from './sing-take'
 import type { SingView } from './sing-view'
@@ -82,24 +83,6 @@ const newRun = (v: Voice): Run => ({
 
 const ringLabel = (midi: number): string =>
   `${nameHtml(sharpOf(midi))} · ${Math.round(hz(midi))} Hz`
-
-/** The warm-up's demonstrations in a voice: the sigh down a fifth, the slide up to it and back (FACTS 37, 46a). */
-function warmUp(
-  kind: 'sigh' | 'slide',
-  v: Voice,
-): ReturnType<typeof contourOf> {
-  const a = homeOf(v)
-  const e = a + 7
-  if (kind === 'sigh')
-    return contourOf(hz(e), [{ glide: 1.5, to: hz(a), level: 0.7 }])
-  return contourOf(hz(a), [
-    { hold: 0.3 },
-    { glide: 1, to: hz(e) },
-    { hold: 0.3 },
-    { glide: 1, to: hz(a) },
-    { hold: 0.3 },
-  ])
-}
 
 export function initSing(stills: RingStills): void {
   const view: SingView = createSingView(stills)
@@ -333,7 +316,8 @@ export function initSing(stills: RingStills): void {
     if (v === null || busyDemo) return
     busyDemo = true
     const which = mercOf(v)
-    const points = warmUp(kind, v)
+    // the sigh down a fifth, the slide up to it and back (FACTS 37, 46a)
+    const points = warmUpContour(kind, v)
     mercSing(which, homeOf(v), true)
     await playContour(points, { kind: 'merc' })
     await wait(0.3)

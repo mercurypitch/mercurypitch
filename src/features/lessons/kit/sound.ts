@@ -19,6 +19,9 @@
 // glides land on time whatever the main thread is doing. Its release is
 // scheduled at the contour's last point, and an early stop releases from
 // wherever the voice is.
+//
+// Noise is the one sound with no pitch (`playNoise`): band-passed, the air
+// of an "h" before a note; white and 3 ms long, the click of a catch.
 
 import { toast } from './toast'
 
@@ -33,6 +36,11 @@ export interface VoiceOptions {
   release?: number
   /** Stop by itself after this many seconds. */
   dur?: number
+  /**
+   * Start this many seconds from now, on the audio clock (default now): a
+   * note that begins under a burst of air (Lesson 5's three starts).
+   */
+  at?: number
 }
 
 export interface Voice {
@@ -137,7 +145,7 @@ interface Graph {
 function build(freq: number, o: VoiceOptions): Graph | null {
   if (ctx === null || master === null || state !== 'on' || hushed) return null
   const context = ctx
-  const t = context.currentTime
+  const t = context.currentTime + Math.max(0, o.at ?? 0)
   const merc = o.kind === 'merc'
   const osc = context.createOscillator()
   const wave = merc ? waves.merc : waves.soft
@@ -363,6 +371,75 @@ function tick(freq = 1500, gain = 0.09): void {
   g.connect(master)
   osc.start(t)
   osc.stop(t + 0.1)
+}
+
+/** A burst of noise: how long, how loud, its band and its envelope. */
+export interface NoiseOptions {
+  /** Seconds from its start to the start of its release. */
+  readonly dur: number
+  /** Peak level (default 0.06). */
+  readonly gain?: number
+  /** A band-pass around `hz` (an "h" is breath through an open mouth); white noise without one. */
+  readonly band?: { readonly hz: number; readonly q: number }
+  /** Attack and release, seconds (default 0.02 and 0.08). */
+  readonly attack?: number
+  readonly release?: number
+  /** Seconds from now, on the audio clock (default now). */
+  readonly at?: number
+}
+
+// One second of white noise per context, from a fixed seed, looped as long as a burst needs.
+let noiseBuf: AudioBuffer | null = null
+
+function noiseBuffer(context: AudioContext): AudioBuffer {
+  if (noiseBuf !== null && noiseBuf.sampleRate === context.sampleRate)
+    return noiseBuf
+  const length = Math.round(context.sampleRate)
+  const buf = context.createBuffer(1, length, context.sampleRate)
+  const data = buf.getChannelData(0)
+  let seed = 0x2f6b
+  for (let i = 0; i < length; i++) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+    data[i] = seed / 2147483648 - 1
+  }
+  noiseBuf = buf
+  return buf
+}
+
+/**
+ * Noise on the house envelope: an exponential attack from the floor, a
+ * setTargetAtTime release, and the source stopped only once the release has
+ * died away. The air of an "h" before a note, or a 3 ms click. Silent while
+ * sound is not on or a take is open, like every other sound here.
+ */
+export function playNoise(o: NoiseOptions): void {
+  if (ctx === null || master === null || state !== 'on' || hushed) return
+  const context = ctx
+  const t = context.currentTime + Math.max(0, o.at ?? 0)
+  const attack = o.attack ?? 0.02
+  const release = o.release ?? 0.08
+  const peak = o.gain ?? 0.06
+  const held = Math.max(attack, o.dur)
+  const src = context.createBufferSource()
+  src.buffer = noiseBuffer(context)
+  src.loop = true
+  const env = context.createGain()
+  rise(env.gain, t, peak, attack)
+  env.gain.setValueAtTime(peak, t + held)
+  env.gain.setTargetAtTime(0, t + held, release / 5)
+  let out: AudioNode = src
+  if (o.band !== undefined) {
+    const bp = context.createBiquadFilter()
+    bp.type = 'bandpass'
+    bp.frequency.value = o.band.hz
+    bp.Q.value = o.band.q
+    src.connect(bp)
+    out = bp
+  }
+  out.connect(env)
+  env.connect(master)
+  src.start(t)
+  src.stop(t + held + release + SLACK)
 }
 
 document.addEventListener('visibilitychange', () => {

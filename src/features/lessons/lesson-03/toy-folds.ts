@@ -12,7 +12,8 @@
 // Stretch is the dial's log slider, 110 to 440 Hz (FACTS 48): the folds
 // draw longer and thinner as it rises, and the rail's bead climbs in the
 // note's colour. Under reduced motion the singing folds are two stills,
-// open and closed, with the rate in words.
+// open and closed, with the rate in words. The folds themselves are the
+// kit's drawing (kit/folds.ts), which Lesson 5's three starts share.
 //
 // Mounted on a root, twice on the page (Step 1 and free play): inside it the
 // canvas, `[data-folds="breathe" | "sing" | "slow" | "stretch"]`, the
@@ -20,9 +21,10 @@
 // `[data-folds-note]` label and the `[data-folds-live]` line.
 
 import { clamp, lerp, q, TAU } from '@/features/lessons/kit/dom'
+import { drawFoldLabels, drawFoldPair, drawFoldText, foldShapeAt, } from '@/features/lessons/kit/folds'
 import { addDrawer, surface, watch } from '@/features/lessons/kit/frame-loop'
 import { reducedMotion } from '@/features/lessons/kit/motion-switch'
-import { COLOR, fmtHz, nameHtml, noteColor, rgba, sharpOf, wordName, } from '@/features/lessons/kit/notes'
+import { COLOR, fmtHz, nameHtml, noteColor, sharpOf, wordName, } from '@/features/lessons/kit/notes'
 import { createSlowClock, slowRate } from '@/features/lessons/kit/slow-motion'
 import type { Voice } from '@/features/lessons/kit/sound'
 import { Sound } from '@/features/lessons/kit/sound'
@@ -63,109 +65,7 @@ export interface Folds {
   stop(): void
 }
 
-/** One fold set's geometry: apex at the front (top), its back `len` below. */
-interface Shape {
-  cx: number
-  y0: number
-  len: number
-  /** Thickness at the back. */
-  th: number
-  /** Half the gap at the back: wide apart for breathing, about 1 when together. */
-  gap: number
-  /** How far the folds part along their middle in a vibration cycle. */
-  bulge: number
-}
-
 const MONO = '500 12px "JetBrains Mono", monospace'
-
-function edgeX(s: Shape, l: number, side: number, outer: boolean): number {
-  const g = 1 + (s.gap - 1) * l + s.bulge * Math.sin(Math.PI * l)
-  const w = outer ? s.th * (0.35 + 0.65 * l) + 2 : 0
-  return s.cx + side * (g + w)
-}
-
-/** One fold: its edge to the glottis, then its outer edge back to the front. */
-function drawFold(
-  ctx: CanvasRenderingContext2D,
-  s: Shape,
-  side: number,
-  alpha: number,
-): void {
-  ctx.beginPath()
-  for (let i = 0; i <= 24; i++) {
-    const l = i / 24
-    ctx.lineTo(edgeX(s, l, side, false), s.y0 + l * s.len)
-  }
-  for (let i = 24; i >= 0; i--) {
-    const l = i / 24
-    ctx.lineTo(edgeX(s, l, side, true), s.y0 + l * s.len)
-  }
-  ctx.closePath()
-  const g = ctx.createLinearGradient(
-    s.cx - side * 4,
-    0,
-    s.cx + side * s.th * 2,
-    0,
-  )
-  g.addColorStop(0, '#f4f8fd')
-  g.addColorStop(0.45, COLOR.chrome)
-  g.addColorStop(1, '#5b6b7b')
-  ctx.globalAlpha = alpha
-  ctx.fillStyle = g
-  ctx.fill()
-  ctx.strokeStyle = rgba(COLOR.chrome, 0.5)
-  ctx.lineWidth = 1
-  ctx.stroke()
-  ctx.globalAlpha = 1
-}
-
-function drawPair(ctx: CanvasRenderingContext2D, s: Shape, alpha = 1): void {
-  drawFold(ctx, s, -1, alpha)
-  drawFold(ctx, s, 1, alpha)
-}
-
-function label(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  align: CanvasTextAlign,
-): void {
-  ctx.font = MONO
-  ctx.fillStyle = COLOR.ink3
-  ctx.textAlign = align
-  ctx.textBaseline = 'middle'
-  ctx.fillText(text, x, y)
-}
-
-/** Front, back and the folds' name, around one fold set; the name only where it fits beside them. */
-function drawLabels(ctx: CanvasRenderingContext2D, s: Shape): void {
-  label(ctx, 'FRONT', s.cx, s.y0 - 12, 'center')
-  label(ctx, 'BACK', s.cx, s.y0 + s.len + 16, 'center')
-  const y = s.y0 + s.len * 0.62
-  const x = edgeX(s, 0.62, -1, true)
-  ctx.font = MONO
-  if (x - 22 - ctx.measureText('VOCAL FOLDS').width < 8) return
-  ctx.strokeStyle = 'rgba(195,204,214,.3)'
-  ctx.beginPath()
-  ctx.moveTo(x - 4, y)
-  ctx.lineTo(x - 18, y)
-  ctx.stroke()
-  label(ctx, 'VOCAL FOLDS', x - 22, y, 'right')
-}
-
-/** The geometry at stretch `s` (0 slack to 1 tight) in a plot `h` high, centred on `cx`. */
-function shapeAt(h: number, s: number, cx: number): Shape {
-  const len = h * (0.5 + 0.16 * s)
-  return {
-    cx,
-    y0: h * 0.5 - len / 2,
-    len,
-    th: 22 - 10 * s,
-    gap: 1,
-    bulge: 0,
-  }
-}
 
 export function mountFolds(root: HTMLElement, opts: FoldsOptions = {}): Folds {
   const cv = surface(q<HTMLCanvasElement>('canvas', root))
@@ -290,20 +190,20 @@ export function mountFolds(root: HTMLElement, opts: FoldsOptions = {}): Folds {
     dt: number,
   ): void {
     const s = clamp(Math.log2(f / 110) / 2, 0, 1)
-    const shape = shapeAt(h, s, (w - 70) / 2 + 6)
+    const shape = foldShapeAt(h, s, (w - 70) / 2 + 6)
     const o = openness(now, dt)
     shape.gap = lerp(1, shape.len * 0.3, clamp(o, 0, 1.3))
     const vib = 6 * (1 - 0.3 * s)
     if (singing && slow) {
       if (clock.advance(dt, f) && Sound.canPlay()) Sound.tick(1500, 0.06)
       shape.bulge = vib * Math.max(0, Math.sin(TAU * clock.phase))
-      drawPair(ctx, shape)
+      drawFoldPair(ctx, shape)
     } else if (singing) {
       // too fast to see: the blur between closed and open
-      drawPair(ctx, { ...shape, bulge: vib }, 0.35)
-      drawPair(ctx, shape, 0.75)
-    } else drawPair(ctx, shape)
-    drawLabels(ctx, shape)
+      drawFoldPair(ctx, { ...shape, bulge: vib }, 0.35)
+      drawFoldPair(ctx, shape, 0.75)
+    } else drawFoldPair(ctx, shape)
+    drawFoldLabels(ctx, shape)
   }
 
   // reduced motion: two stills while singing, open and closed; one still, apart, while breathing
@@ -315,18 +215,18 @@ export function mountFolds(root: HTMLElement, opts: FoldsOptions = {}): Folds {
     const s = clamp(Math.log2(f / 110) / 2, 0, 1)
     const plot = w - 70
     if (!singing) {
-      const shape = shapeAt(h, s, plot / 2 + 6)
+      const shape = foldShapeAt(h, s, plot / 2 + 6)
       shape.gap = shape.len * 0.3
-      drawPair(ctx, shape)
-      drawLabels(ctx, shape)
+      drawFoldPair(ctx, shape)
+      drawFoldLabels(ctx, shape)
       return
     }
     const vib = 6 * (1 - 0.3 * s)
     for (const [i, word] of ['OPEN', 'CLOSED'].entries()) {
-      const shape = shapeAt(h * 0.86, s, plot * (0.3 + 0.42 * i))
+      const shape = foldShapeAt(h * 0.86, s, plot * (0.3 + 0.42 * i))
       shape.bulge = i === 0 ? vib : 0
-      drawPair(ctx, shape)
-      label(ctx, word, shape.cx, shape.y0 + shape.len + 18, 'center')
+      drawFoldPair(ctx, shape)
+      drawFoldText(ctx, word, shape.cx, shape.y0 + shape.len + 18, 'center')
     }
   }
 

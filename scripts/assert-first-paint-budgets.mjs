@@ -101,6 +101,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // band edges sit in their own leaf chunk, so the page stays this light
   // only while both boundaries hold.
   'learn/03.html': 125,
+  // Lesson 5, a draft too, built only where drafts are shown. Measured 109.
+  // The listener and the hold reader arrive when Sing it's Start is pressed,
+  // the reader for the hold demo's readouts once Step 5 comes near: Voice
+  // Mirror's scorer stays off first paint only while both imports stay
+  // dynamic. The same headroom as Lessons 1 to 3, a quarter over.
+  'learn/05.html': 136,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 101; the renderer is the same
@@ -164,6 +170,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // lessons' sheet and its own, and the shared Inter and Outfit @font-face
   // rules.
   'learn/03.html': 96,
+  // Lesson 5 (a draft, as above). Measured 77: the kit's sheets, the voice
+  // lessons' sheet and its own, and the shared Inter and Outfit @font-face
+  // rules.
+  'learn/05.html': 96,
 
   // Lesson 4. Measured 73: the kit's sheets (with the slide guide's and the
   // parts Lessons 2 and 4 share), its own, and the shared Inter and Outfit

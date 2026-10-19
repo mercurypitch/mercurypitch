@@ -142,6 +142,9 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // the asset layer's 404 page, never the shell.
   '/learn/03',
   '/learn/03.html',
+  // Lesson 5, a draft as Lesson 3 is, for the same reason.
+  '/learn/05',
+  '/learn/05.html',
   '/jam-rooms',
   '/jam-rooms.html',
   // Search-intent entries (src/seo/entry-pages.ts). Each boots an existing
