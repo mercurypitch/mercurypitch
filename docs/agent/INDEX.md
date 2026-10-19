@@ -90,7 +90,7 @@ These are the rules that break things when ignored.
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 5.7k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
-| `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 5.2k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
+| `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 5.3k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 4.9k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
@@ -100,7 +100,7 @@ These are the rules that break things when ignored.
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.1k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 4.0k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
 | `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 3.9k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
-| `warm-up` | [warm-up-store.ts](../../src/features/warm-up/warm-up-store.ts) | 3.7k | The Warm-up's store: today's run, on this device The path screen is gone while a room is up (ShellScreens draws only the top screen), so... |
+| `warm-up` | [warm-up-store.ts](../../src/features/warm-up/warm-up-store.ts) | 3.8k | The Warm-up's store: today's run, on this device The path screen is gone while a room is up (ShellScreens draws only the top screen), so... |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
@@ -144,7 +144,7 @@ These are the rules that break things when ignored.
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.8k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
-| `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 4.4k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
+| `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 4.5k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.2k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.5k | Voice Mirror — pure metrics over F0 frame streams. |
