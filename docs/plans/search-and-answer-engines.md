@@ -72,7 +72,8 @@ Gaps the audit found:
 | Nothing on the site follows the store listings except the chips                                   | **[shipped]** #1107         |
 | Sitemap `lastmod` dates are stale (2026-09-08 on pages edited since), four pages have none        | **[next]** §4.3             |
 | `/exercises/<slug>` deep links are `noindex` (they serve the shell)                               | **[open]** needs real heads |
-| No IndexNow, no Bing Webmaster Tools                                                              | **[open]** §3.3, §3.4       |
+| No IndexNow                                                                                       | **[shipped]** §3.4          |
+| No Bing Webmaster Tools                                                                           | **[done]** owner, §3.3      |
 | No `.well-known` app-link files                                                                   | **[open]** §6.2             |
 
 ---
@@ -147,35 +148,41 @@ owner's policy to state, so it is not in any PR.
 - AI Overviews and AI Mode traffic is counted in the Performance report's Web
   search type. Google's AI optimization guide also points to a Generative AI
   performance report.
-- After #1106 merges, request indexing for `/karaoke-app`, `/jam` and
-  `/karaoke-night`.
+- Once a production release carries #1106, test each live URL in URL
+  Inspection, then request indexing for `/karaoke-app`, `/jam` and
+  `/karaoke-night`. Requested before the release, Google fetches the 404 page.
 
-### 3.3 Bing Webmaster Tools **[open]**
+### 3.3 Bing Webmaster Tools **[done]**
 
 Copilot answers from Bing. A 2025 study found ChatGPT's search citations
 matched Bing's top 10 far more often than Google's. Newer reports dispute this
 and say OpenAI now runs its own index, so treat it as likely, not settled.
 
-- Verify the site. It can be imported from Search Console.
+- Verify the site. It can be imported from Search Console. Done by the owner
+  in October 2026, for this site and the about site.
 - Submit the sitemap.
+- Its first SEO findings had two likely causes, both fixed: Piano Night had no
+  h1 once the room mounted, and a comment in every entry document spelled out
+  an image tag with no alt. IndexNow is §3.4.
 - Watch the **AI Performance** report: citations in Copilot and Bing's AI
   summaries, per page and by grounding query. Public preview since February
   2026 _(verified)_.
 
-### 3.4 IndexNow **[open]**
+### 3.4 IndexNow **[shipped]**
 
 IndexNow tells Bing, Yandex, Seznam, Naver, Yep, the Internet Archive and
 Amazonbot the moment a URL changes. Google does not use it.
 
-It takes three things:
-
-- a key file at the root;
-- a POST to `api.indexnow.org` after each production deploy;
-- a list of only the URLs that changed. Re-sending unchanged URLs on every
-  release is noise.
-
-The honest list needs the content stamp in §4.3. Until then, submit new or
-rewritten pages by hand in Bing Webmaster Tools.
+- The key file is `public/<key>.txt`. `scripts/indexnow.mjs` finds the key by
+  that file, so the key is written down once.
+- After each production deploy, the release workflow's "Notify IndexNow" step
+  sends the sitemap URLs added, removed or given a new `<lastmod>` since the
+  previous tag. The first release with the key sends every URL. The step
+  never fails a release.
+- So `<lastmod>` is the record of change: bump it when a page's words change
+  (§4.3). Re-sending unchanged URLs on every release is noise.
+- By hand, `pnpm indexnow <url> ...` sends exactly those URLs, and
+  `--dry-run` prints the request instead.
 
 ### 3.5 Measurement **[open]**
 
