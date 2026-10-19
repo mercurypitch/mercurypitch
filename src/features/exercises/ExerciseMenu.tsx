@@ -83,10 +83,9 @@ const CARDS: ExerciseCardDef[] = [
   {
     type: EXERCISE_LONG_NOTE,
     title: 'Long Note',
-    description:
-      'Hold a steady pitch as long as you can. Builds breath support and pitch stability.',
+    description: 'Hold one comfortable note, steady, for a length you choose.',
     icon: () => <IconTarget size={24} />,
-    tags: ['Stability', 'Breath Control'],
+    tags: ['Stability', 'Steady Note'],
     available: true,
   },
   {
@@ -129,16 +128,16 @@ const CARDS: ExerciseCardDef[] = [
     type: EXERCISE_PITCH_HOLD,
     title: 'Pitch Hold',
     description:
-      'Keep your pitch inside a shrinking target zone. How long can you stay locked in?',
+      'Keep your pitch inside a shrinking target zone, for a length you choose.',
     icon: () => <IconLock size={24} />,
-    tags: ['Endurance'],
+    tags: ['Precision'],
     available: true,
   },
   {
     type: EXERCISE_INTERVAL_TRAINER,
     title: 'Interval Trainer',
     description:
-      'Sing specific intervals above and below a reference note. Train your ear to internalize musical distances.',
+      'Sing specific intervals above a reference note. Train your ear to internalize musical distances.',
     icon: () => <IconArrowUpDown size={24} />,
     tags: ['Intervals', 'Ear Training'],
     available: true,
