@@ -2,7 +2,7 @@
   "id": "/",
   "name": "MercuryPitch",
   "short_name": "MercuryPitch",
-  "description": "Train your vocal pitch with real-time audio feedback, piano roll visualization, and accuracy scoring.",
+  "description": "See your vocal range and pitch accuracy, turn songs you own into karaoke with synced lyrics and live pitch scoring, and sing together in Jam Rooms.",
   "start_url": "/",
   "scope": "/",
   "launch_handler": { "client_mode": "navigate-existing" },

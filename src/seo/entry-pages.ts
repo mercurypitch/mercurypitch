@@ -101,6 +101,18 @@ export const OG_IMAGE = ogImage('og-image.png')
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const
 export const ABOUT_URL = 'https://about.mercurypitch.com/'
 
+/**
+ * The structured-data identities the documents share. index.html defines the
+ * organization, the website and the studio; an entry document links to them
+ * by `@id`, with the name and URL repeated so the page still describes itself
+ * to a reader that does not follow the link. The landing
+ * (about.mercurypitch.com) uses the same organization `@id`, so a search
+ * engine reads one MercuryPitch rather than two.
+ */
+export const ORGANIZATION_ID = `${SITE_ORIGIN}/#organization`
+export const WEBSITE_ID = `${SITE_ORIGIN}/#website`
+export const STUDIO_APP_ID = `${SITE_ORIGIN}/#app`
+
 export const ENTRY_PAGES: readonly EntryPage[] = [
   {
     slug: 'mirror',
@@ -126,6 +138,12 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Voice Mirror — see your voice in 60 seconds',
     lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then places your range in one of six voice types and names a famous singer of that type. Free, no account, and only you can hear you.',
+    app: {
+      name: 'Voice Mirror',
+      category: 'MusicApplication',
+      description:
+        'A browser vocal check: two sirens and one held note give back your vocal range, pitch accuracy in cents and steadiness as a shareable voiceprint, with a broad voice type.',
+    },
     faq: [
       {
         q: 'What is my vocal range?',
@@ -167,6 +185,12 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Free vocal range test',
     lede: 'Glide from your lowest comfortable note to your highest and get both notes, your span in semitones and a broad voice-type guide. It runs in your browser and needs no piano and no teacher. The timed part takes about a minute, and each step waits until you are ready.',
+    app: {
+      name: 'MercuryPitch Vocal Range Test',
+      category: 'MusicApplication',
+      description:
+        'A browser vocal range test: a glide from the lowest comfortable note to the highest gives both notes, the span in semitones and a broad voice-type guide.',
+    },
     faq: [
       {
         q: 'How do I test my vocal range?',
@@ -207,6 +231,12 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Karaoke Night — turn any song into karaoke',
     lede: 'Bring any song. The vocals lift away, the lyrics arrive in time, and every note you sing is drawn against the one you were aiming for. Loop the bar you keep missing, slow it down, and hear your own take back. The example song is free.',
+    app: {
+      name: 'Karaoke Night',
+      category: 'MusicApplication',
+      description:
+        'Browser karaoke from songs the singer owns or the free example songs: vocal separation, synced lyrics, live pitch scoring against the original melody, key change and playlists.',
+    },
     faq: [
       {
         q: 'How do I make a karaoke version of a song?',
@@ -284,6 +314,12 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Break glass with your voice',
     lede: 'The pane rings at a note picked from your own range. Sing up to it, hold it, and watch the cracks spread. A free in-browser challenge that plays your take back to you between attempts, with your audio never leaving your device.',
+    app: {
+      name: 'Break Glass',
+      category: 'GameApplication',
+      description:
+        'A sixty-second browser challenge: sing up to the note a glass rings at, picked from your own range, and hold it steady enough to shatter it.',
+    },
     faq: [
       {
         q: 'Can a human voice really break glass?',
