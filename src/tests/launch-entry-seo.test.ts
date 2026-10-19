@@ -525,6 +525,29 @@ describe('entry document prelude', () => {
     }
   })
 
+  // <lastmod> is the one sitemap field Google and Bing read, and only from a
+  // file whose dates look true. Five URLs once went in with none, and ten kept
+  // 2026-09-08 through a month of changes. A day of slack on "the future", so
+  // a date written in a time zone ahead of CI's UTC still passes.
+  it('dates every sitemap URL, and none in the future', () => {
+    const sitemap = repoFile('public/sitemap.xml').replace(
+      /<!--[\s\S]*?-->/g,
+      '',
+    )
+    const urls = [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map(
+      (match) => match[1],
+    )
+    const latest = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
+
+    expect(urls.length).toBeGreaterThan(0)
+    for (const url of urls) {
+      const loc = /<loc>([^<]+)<\/loc>/.exec(url)?.[1]
+      const lastmod = /<lastmod>([^<]+)<\/lastmod>/.exec(url)?.[1] ?? ''
+      expect(lastmod, `${loc} has no <lastmod>`).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(lastmod <= latest, `${loc} is dated ${lastmod}`).toBe(true)
+    }
+  })
+
   it('keeps non-production deploys out of the index', () => {
     const vite = repoFile('vite.config.ts')
 
