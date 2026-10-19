@@ -35,6 +35,12 @@
 // A live listing with a malformed ID fails store-listings.test.ts, and on the
 // page it falls back to the chip rather than linking to a 404.
 //
+// What follows the flip on its own: the chips, and Safari's Smart App Banner
+// on every generated entry document (src/seo/store-presence.ts). What
+// store-presence.test.ts then asks you to write by hand, naming the exact
+// text: index.html's banner tag and MobileApplication nodes, and the web
+// manifest's related_applications.
+//
 // Never rendered inside the native app: see StoreChips.tsx.
 
 /** One entry per store. `live` flips when the store publishes the listing. */
