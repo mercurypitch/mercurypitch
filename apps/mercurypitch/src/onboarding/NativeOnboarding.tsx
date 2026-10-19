@@ -11,7 +11,9 @@
 //
 //   first-note  beats 2 and 3 (useFirstNote.ts): one note, named. Then Find
 //               my range, or Skip for now: Merc says the range is there for
-//               later, and Keep comes a beat after
+//               later, and Keep comes a beat after. On a phone that already
+//               keeps a range (saved-range.ts): See my voice, its reveal,
+//               or Find my range again
 //   range       beat 4 (useRange.ts): a slide down, a slide up, the range
 //   reveal      beat 5 (useReveal.ts): the voiceprint card, the twin, Share
 //   keep        beat 7 (KeepView.tsx): Keep, the account offer, the shell's
@@ -55,6 +57,7 @@ import { ONBOARDING_COPY } from './onboarding-copy'
 import { leaveOnboarding, onboardingEntry, registerLayerRange, } from './onboarding-layer'
 import { rangeSays, RangeView } from './RangeView'
 import { RevealView } from './RevealView'
+import { savedRange } from './saved-range'
 import { ONBOARDING_AUDIO_OWNER, useFirstNote } from './useFirstNote'
 import { useRange } from './useRange'
 import { useReveal } from './useReveal'
@@ -85,8 +88,15 @@ export function NativeOnboarding(): JSX.Element {
     entry === 'range' ? 'range' : 'first-note',
   )
   const [skipped, setSkipped] = createSignal(false)
-  /** The range the reveal shows. */
+  /** The range the reveal shows: the one just measured, or the one kept. */
   const [revealed, setRevealed] = createSignal<RangeResult | null>(null)
+  /**
+   * A range this phone already keeps, measured from Keep before the first
+   * Sing door: the first note ends on it rather than on a second measuring.
+   * Only the onboarding opens on the first note; the range on its own
+   * measures. Read once: the layer is mounted fresh for each opening.
+   */
+  const saved = savedRange()
 
   let skipTimer: ReturnType<typeof setTimeout> | undefined
   onCleanup(() => clearTimeout(skipTimer))
@@ -149,6 +159,8 @@ export function NativeOnboarding(): JSX.Element {
     reveal.arrive()
   }
   const seeVoice = (): void => showReveal(untrack(range.state).range)
+  /** See my voice on the first note: the range this phone already keeps. */
+  const seeSaved = saved === null ? undefined : () => showReveal(saved)
 
   /** Continue on the reveal: Keep in the onboarding, back to Keep from it. */
   const continueOn = (): void => {
@@ -284,6 +296,7 @@ export function NativeOnboarding(): JSX.Element {
             line={said()}
             onRange={findRange}
             onSkip={skip}
+            onSeeSaved={seeSaved}
             skipped={skipped()}
             merc={merc}
           />

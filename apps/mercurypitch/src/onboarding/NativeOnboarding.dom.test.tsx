@@ -174,6 +174,29 @@ async function skipToKeep(s: Stand): Promise<void> {
   await settle()
 }
 
+/** E2 to G4, kept on this phone before, with nobody signed in. */
+function keepRangeBefore(): void {
+  localStorage.setItem(
+    'mercurypitch.voiceprints.v1',
+    JSON.stringify([
+      {
+        id: 'kept-before',
+        summary: {
+          lowMidi: 40,
+          highMidi: 67,
+          semitones: 27,
+          accuracy: null,
+          steadiness: null,
+        },
+        twin: 'Paul Robeson',
+        source: 'onboarding',
+        takenAt: '2026-10-18T09:00:00.000Z',
+        madeBy: 'anonymous',
+      },
+    ]),
+  )
+}
+
 /** A token for an account of `provider`'s, signed in on this phone. */
 function token(provider: string): string {
   const body = btoa(
@@ -480,5 +503,61 @@ describe('Keep, beat 7', () => {
 
     expect(offerOpen()).toBe(false)
     expect(onboardingExit()).toBe('not-now')
+  })
+})
+
+describe('a range this phone already keeps', () => {
+  it('ends the first note on See my voice and Find my range again, with no Skip for now', async () => {
+    keepRangeBefore()
+    const s = mount('onboarding')
+
+    await nameNote(s)
+
+    expect(q('onboarding-see-saved')?.textContent).toBe(
+      ONBOARDING_COPY.seeVoice,
+    )
+    expect(q('onboarding-find-range')?.textContent).toBe(
+      ONBOARDING_COPY.findRangeAgain,
+    )
+    expect(q('onboarding-skip')).toBeNull()
+  })
+
+  it('reveals the range kept, its twin the one it was kept with, then Keep', async () => {
+    keepRangeBefore()
+    const s = mount('onboarding')
+    await nameNote(s)
+
+    q('onboarding-see-saved')?.click()
+    q('onboarding-find-twin')?.click()
+
+    expect(beat()).toBe('reveal')
+    expect(q('onboarding-card-range')?.textContent).toBe('E2 to G4')
+    expect(q('onboarding-twin')?.textContent).toBe('Paul Robeson')
+    expect(s.calls.acquire).toBe(1)
+    q('onboarding-continue')?.click()
+    await settle()
+    expect(beat()).toBe('keep')
+    expect(k('account-offer')?.dataset.variant).toBe('voiceprint')
+  })
+
+  it('measures anew on Find my range again, its mic opened in that tap', async () => {
+    keepRangeBefore()
+    const s = mount('onboarding')
+    await nameNote(s)
+
+    q('onboarding-find-range')?.click()
+
+    expect(beat()).toBe('range')
+    expect(s.calls.acquire).toBe(2)
+    expect(said()).toBe(ONBOARDING_COPY.slideDown)
+  })
+
+  it('is not offered by the range on its own, which measures one', () => {
+    keepRangeBefore()
+
+    mount('range')
+
+    expect(beat()).toBe('range')
+    expect(q('onboarding-see-saved')).toBeNull()
   })
 })

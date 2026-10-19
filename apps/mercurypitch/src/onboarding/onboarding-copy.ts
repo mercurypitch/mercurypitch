@@ -11,8 +11,10 @@
 // The deck's lines are kept as written: the first note, the range's two
 // slides and its result, the reveal's card and Merc's line on it. The rest
 // are this build's own, in the same voice: the slides' nudges and the two
-// ways a range can come up short, See my voice (concept 03's button), and
-// what Share says when there is no share sheet.
+// ways a range can come up short, See my voice (concept 03's button), Find
+// my range again for a range this phone already keeps, and what Share says
+// when there is no share sheet. Keep, beat 7, says its own words
+// (account-copy.ts).
 
 import { noteArticle } from '@/lib/note-utils'
 
@@ -50,6 +52,8 @@ export const ONBOARDING_COPY = {
   /** The named note's two ways on (S7b §6.1, beat 3). */
   findRange: 'Find my range',
   skip: 'Skip for now',
+  /** With a range already kept on this phone, under See my voice. */
+  findRangeAgain: 'Find my range again',
   /** Merc, as a skipped range lets the singer go on. */
   skipped: "It's here when you want it.",
 
