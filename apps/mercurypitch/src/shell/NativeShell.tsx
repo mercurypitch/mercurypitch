@@ -123,6 +123,15 @@ const NgSlidesScreen: Component = PREMIUM_EXERCISES
     )
   : () => null
 
+/** The Warm-up's path: the same ternary as Long note's, for the same reason. */
+const WarmUpScreen: Component = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('./WarmUpScreen').then((module) => ({
+        default: module.WarmUpScreen,
+      })),
+    )
+  : () => null
+
 /**
  * The native onboarding (src/onboarding), on a build with it
  * (`NATIVE_ONBOARDING`) and no other: the same ternary as Long note's. It
@@ -424,6 +433,7 @@ export const NativeShell: Component = () => {
             echo={PREMIUM_EXERCISES ? EchoScreen : undefined}
             lipRoll={PREMIUM_EXERCISES ? LipRollScreen : undefined}
             ngSlides={PREMIUM_EXERCISES ? NgSlidesScreen : undefined}
+            warmUp={PREMIUM_EXERCISES ? WarmUpScreen : undefined}
           />
 
           {/* Inside the root, not beside it: the sheet copies the custom

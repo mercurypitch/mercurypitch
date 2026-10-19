@@ -18,8 +18,9 @@
 import { createSignal } from 'solid-js'
 import { routinePrefs } from './use-daily-routine'
 
-/** Long enough to stop, short enough not to feel like waiting. */
-export const AUTO_CONTINUE_SECONDS = 5
+// The countdown's length is shared with the native Warm-up's path, so it
+// lives below both features (src/lib/auto-continue.ts).
+export { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
 
 /** Cancels in one session before we offer to stop asking. */
 export const DISMISSALS_BEFORE_OFFER = 2

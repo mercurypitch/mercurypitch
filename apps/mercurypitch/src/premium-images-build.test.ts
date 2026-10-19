@@ -26,8 +26,8 @@ import { describe, expect, it } from 'vitest'
 const FEATURES = fileURLToPath(
   new URL('../../../src/features/', import.meta.url),
 )
-/** The premium rooms that paint pictures today, by folder. */
-const ROOMS = ['long-note', 'echo', 'ng-slides', 'lip-roll'] as const
+/** The premium rooms that paint pictures today, by folder, and the Warm-up's path. */
+const ROOMS = ['long-note', 'echo', 'ng-slides', 'lip-roll', 'warm-up'] as const
 
 /** Every .webp and .mp3 under `dir`, as paths relative to it. */
 function picturesIn(dir: string): string[] {

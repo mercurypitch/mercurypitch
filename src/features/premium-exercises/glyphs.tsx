@@ -84,6 +84,24 @@ export const WaveGlyph: Component = () => (
   </svg>
 )
 
+/** The Warm-up: a path winding up through three stops. */
+export const WarmUpGlyph: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12.6 19.4c-3.6 0-5.4-1.6-5.4-3.6s2.2-3 4.8-3.6 4.8-1.8 4.8-3.8-1.8-3.6-4.6-3.6" />
+    <circle cx="13" cy="19.4" r="2.2" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12.2" r="1.9" fill="currentColor" stroke="none" />
+    <circle cx="12.2" cy="4.8" r="1.9" fill="currentColor" stroke="none" />
+  </svg>
+)
+
 /** Play, filled: the triangle on the row's accent disc. */
 export const PlayGlyph: Component = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">

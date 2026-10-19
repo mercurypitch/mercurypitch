@@ -20,14 +20,30 @@
 // A room in the Warm-up is handed its stop (routineStopFor) by its screen
 // wrapper, which also pops the room once the stop is finished or skipped.
 //
+// Two things the path draws live in memory only, never in storage:
+//
+//   the last move   the stop just finished or skipped, for the path's card
+//                   ("Lip roll: 86% lit") and its countdown to the next
+//                   stop. After a restart there is none: the path opens on
+//                   the run as it was left (N4), not on a card
+//   the unlocks     the badges the routine earned while the path was open.
+//                   A room in warm-up mode does not claim its unlocks
+//                   (RoomShell.tsx), so they come here while a stop is
+//                   open, and to the path's own claim while it is on
+//                   screen; the path says what the routine unlocked
+//                   (decision (a), 13a review). Leaving the path lets go
+//                   of both
+//
 // Built on first read, not on import, as the last exercise is
 // (premium-exercises/last-exercise.ts).
 
-import type { Signal } from 'solid-js'
+import type { Accessor, Signal } from 'solid-js'
 import { createSignal } from 'solid-js'
 import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
 import { localDayString } from '@/lib/local-day'
 import { createPersistedSignal } from '@/lib/storage'
+import type { UnlockItem } from '@/stores/notifications-store'
+import { claimUnlocks } from '@/stores/notifications-store'
 import type { WarmUpDay } from './routine'
 import { canEnter, dayFor, finishStop, isWarmUpDay, nextStop, restartDay, roomIndex, skipStop, tally, } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
@@ -50,7 +66,42 @@ function keep(day: WarmUpDay): void {
 }
 
 /** The stop whose room is open: an index into the plan's stops. */
-const [open, setOpen] = createSignal<number | null>(null)
+const [open, setOpenSignal] = createSignal<number | null>(null)
+
+/** The stop the path's card is about: the one just finished or skipped. */
+export interface LastMove {
+  readonly index: number
+  readonly state: 'done' | 'skipped'
+}
+
+const [lastMove, setLastMove] = createSignal<LastMove | null>(null)
+
+/** What the routine unlocked while the path was open, in the order earned. */
+const [unlocked, setUnlocked] = createSignal<readonly UnlockItem[]>([])
+
+/** Take an unlock into the routine's list: a badge, said on the path. */
+function receive(item: UnlockItem): void {
+  setUnlocked((list) => [...list, item])
+}
+
+let roomClaim: (() => void) | null = null
+
+/**
+ * The open stop, and with it the routine's claim on the unlocks: held for
+ * as long as a stop's room is open, so a room's badges reach the path
+ * rather than a notice over the room.
+ */
+function setOpen(index: number | null): void {
+  setOpenSignal(index)
+  if (index !== null) {
+    roomClaim ??= claimUnlocks((claimed) => {
+      receive(claimed.unlock)
+    })
+    return
+  }
+  roomClaim?.()
+  roomClaim = null
+}
 
 /**
  * Today's run, as the path draws it: the stored run if it is today's,
@@ -67,6 +118,26 @@ export function openStop(): number | null {
 }
 
 /**
+ * Today counts as warmed up (N11): the end was reached with a stop
+ * finished. The picker card's "Warmed up today".
+ */
+export function warmedUpToday(): boolean {
+  return warmUpDay().warmedUp
+}
+
+/**
+ * The room the path opens next, or null at the end: the tap that opens
+ * the Warm-up starts loading its art too (premium-exercise-wiring.ts).
+ */
+export function nextWarmUpRoom(): WarmUpRoomId | null {
+  const day = warmUpDay()
+  const next = nextStop(day)
+  if (next === null) return null
+  const stop = day.plan.stops[next]
+  return isRoomStop(stop) ? stop.id : null
+}
+
+/**
  * Open a stop's room: the path's Start or Next, or Again on a finished
  * stop. False for a stop that cannot open (a skipped one, the song).
  */
@@ -74,8 +145,37 @@ export function enterStop(index: number): boolean {
   const day = warmUpDay()
   if (!canEnter(day, index)) return false
   if (stored()[0]() !== day) keep(day)
+  setLastMove(null)
   setOpen(index)
   return true
+}
+
+/** The stop the path's card is about, or null: none since the path opened. */
+export function warmUpLastMove(): LastMove | null {
+  return lastMove()
+}
+
+/** What the routine unlocked while the path was open. */
+export const routineUnlocks: Accessor<readonly UnlockItem[]> = unlocked
+
+/**
+ * The path's own claim on the unlocks, for as long as it is on screen: a
+ * grant pass that lands after its room has gone is said on the path too.
+ * Returns the release.
+ */
+export function claimPathUnlocks(): () => void {
+  return claimUnlocks((claimed) => {
+    receive(claimed.unlock)
+  })
+}
+
+/**
+ * Leaving the path, not for a room: Back, Done, Sing a song. Its card and
+ * what it said was unlocked go with it.
+ */
+export function leavePath(): void {
+  setLastMove(null)
+  setUnlocked([])
 }
 
 /**
@@ -93,6 +193,7 @@ function finishOpen(index: number, result: StopResult): void {
   const stop = day.plan.stops[index]
   if (!isRoomStop(stop) || stop.id !== result.id) return
   keep(finishStop(day, index, result))
+  setLastMove({ index, state: 'done' })
   setOpen(null)
 }
 
@@ -100,6 +201,7 @@ function skipOpen(index: number): void {
   const day = openRun(index)
   if (day === null) return
   keep(skipStop(day, index))
+  setLastMove({ index, state: 'skipped' })
   setOpen(null)
 }
 
@@ -131,12 +233,15 @@ export function leaveStop(): void {
 export function skipNextStop(): void {
   const day = warmUpDay()
   const next = nextStop(day)
-  if (next !== null) keep(skipStop(day, next))
+  if (next === null) return
+  keep(skipStop(day, next))
+  setLastMove({ index: next, state: 'skipped' })
 }
 
 /** "Warm up again": a fresh run today; the day stays warmed up. */
 export function warmUpAgain(): void {
   setOpen(null)
+  setLastMove(null)
   keep(restartDay(warmUpDay()))
 }
 
@@ -154,4 +259,5 @@ export function canStartWarmUp(): boolean {
 export function resetWarmUpForTests(): void {
   record = undefined
   setOpen(null)
+  leavePath()
 }

@@ -170,6 +170,28 @@ describe('the Lip roll room', () => {
   })
 })
 
+describe("the Warm-up's path", () => {
+  it('draws the screen passed in, titled Warm-up, full-bleed', () => {
+    view?.unmount()
+    view = renderShell(() => (
+      <ShellScreens warmUp={() => <div data-testid="warm-stub" />} />
+    ))
+
+    pushScreen('warm-up')
+    const path = screens()[0]
+    expect(path?.querySelector('[data-testid="warm-stub"]')).not.toBeNull()
+    expect(path?.classList.contains('mp-pushed--bleed')).toBe(true)
+    expect(path?.querySelector('.mp-pushed__title')?.textContent).toBe(
+      'Warm-up',
+    )
+  })
+
+  it('draws nothing on a build without the premium exercises', () => {
+    pushScreen('warm-up')
+    expect(screens()[0]?.querySelector('[data-testid="warm-stub"]')).toBeNull()
+  })
+})
+
 describe('the low-volume hint', () => {
   const stub = () => <div />
 

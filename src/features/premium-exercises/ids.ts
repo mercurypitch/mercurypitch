@@ -3,17 +3,18 @@
 // ============================================================
 //
 // The one list of exercises the Sing screen can open: Long note, Echo,
-// Lip roll and Ng slides today. A new exercise adds its id here, to the type in
+// Lip roll, Ng slides and the Warm-up today. A new exercise adds its id here, to the type in
 // exercise-contracts.ts, and an entry to the catalogue (catalogue.ts).
 
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 
 export const PREMIUM_EXERCISE_IDS: readonly PremiumExerciseId[] = [
   EXERCISE_LONG_NOTE_LANTERN,
   EXERCISE_ECHO_STARS,
   EXERCISE_LIP_ROLL_BAY,
   EXERCISE_NG_SLIDES_BRIDGE,
+  EXERCISE_WARM_UP_PATH,
 ]
 
 const KNOWN: ReadonlySet<string> = new Set(PREMIUM_EXERCISE_IDS)

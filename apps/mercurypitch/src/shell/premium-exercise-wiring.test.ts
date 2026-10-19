@@ -15,7 +15,22 @@ import { installPremiumExercises } from './premium-exercise-wiring'
 import { pushed, pushedStack, resetRunShell } from './run-shell-store'
 
 const build = vi.hoisted(() => ({ premium: false }))
-const art = vi.hoisted(() => ({ preloads: 0, ng: 0, lip: 0, long: 0 }))
+const art = vi.hoisted(() => ({
+  preloads: 0,
+  ng: 0,
+  lip: 0,
+  long: 0,
+  warm: 0,
+}))
+const warmUp = vi.hoisted(() => ({ next: 'lip-roll-bay' as string | null }))
+vi.mock('@/features/warm-up/path-art', () => ({
+  preloadWarmUpArt: () => {
+    art.warm += 1
+  },
+}))
+vi.mock('@/features/warm-up/warm-up-store', () => ({
+  nextWarmUpRoom: () => warmUp.next,
+}))
 vi.mock('@/features/long-note/long-note-art', () => ({
   preloadLongNoteArt: () => {
     art.long += 1
@@ -49,6 +64,8 @@ beforeEach(() => {
   art.ng = 0
   art.lip = 0
   art.long = 0
+  art.warm = 0
+  warmUp.next = 'lip-roll-bay'
   setActiveTab(TAB_SINGING)
   resetRunShell()
 })
@@ -149,5 +166,45 @@ describe('the shell in a build with the premium exercises', () => {
     api.openExercise?.('long-note-lantern')
 
     expect(pushedStack()).toEqual(['long-note'])
+  })
+})
+
+describe('the Warm-up', () => {
+  it("pushes its path for its id, loading the night and the first stop's room", async () => {
+    build.premium = true
+    const api = installPremiumExercises()
+
+    api.openExercise?.('warm-up-path')
+
+    expect(pushed()).toBe('warm-up')
+    await vi.waitFor(() => {
+      expect([art.warm, art.lip]).toEqual([1, 1])
+    })
+    expect([art.ng, art.long, art.preloads]).toEqual([0, 0, 0])
+  })
+
+  it('loads the room the run goes on with, the same day', async () => {
+    build.premium = true
+    warmUp.next = 'long-note-lantern'
+    const api = installPremiumExercises()
+
+    api.openExercise?.('warm-up-path')
+
+    await vi.waitFor(() => {
+      expect([art.warm, art.long]).toEqual([1, 1])
+    })
+    expect(art.lip).toBe(0)
+  })
+
+  it("loads no room at the end of the day's run", async () => {
+    build.premium = true
+    warmUp.next = null
+    const api = installPremiumExercises()
+
+    api.openExercise?.('warm-up-path')
+
+    await vi.dynamicImportSettled()
+    expect(art.warm).toBe(1)
+    expect([art.lip, art.ng, art.long, art.preloads]).toEqual([0, 0, 0, 0])
   })
 })

@@ -8,6 +8,8 @@
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { OWNER_ROUTINE } from '@/features/warm-up/warm-up-plan'
+import { localDayString } from '@/lib/local-day'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 
 interface Seed {
@@ -27,6 +29,8 @@ interface Seed {
   echoBest?: readonly [number, number]
   /** Ng slides' best at the Singer level: the bridge lit, per cent. */
   ngBest?: number
+  /** Today's warm-up reached its end with a stop finished. */
+  warmedUp?: boolean
 }
 
 beforeEach(() => {
@@ -86,6 +90,25 @@ async function openPicker(seed: Seed = {}) {
       }),
     )
   }
+  if (seed.warmedUp === true) {
+    localStorage.setItem(
+      'mp_warm_up_today',
+      JSON.stringify({
+        date: localDayString(),
+        plan: OWNER_ROUTINE,
+        marks: [
+          { state: 'done', line: '86% lit' },
+          { state: 'done', line: '92% lit' },
+          { state: 'done', line: '12.6 s' },
+          { state: 'done', line: '8 of 9 on pitch' },
+          { state: 'waiting' },
+        ],
+        settledNote: null,
+        warmedUp: true,
+        lastActiveAt: 1,
+      }),
+    )
+  }
   if (seed.level !== undefined) {
     const { setExerciseLevel } = await import('@/stores/exercise-level')
     setExerciseLevel(seed.level)
@@ -140,6 +163,9 @@ describe('the cards', () => {
     expect(card('ng-slides-bridge').textContent).toBe(
       'Ng slidesSingerHum five slides up a fifth and back, and light the bridge.',
     )
+    expect(card('warm-up-path').textContent).toBe(
+      'Warm-upSingerFour stops, about three minutes, then a song.',
+    )
   })
 
   it('is headed "Exercises", as a sheet of that name', async () => {
@@ -182,7 +208,7 @@ describe('the headings', () => {
     ])
     expect(groups().map(idsUnder)).toEqual([
       ['long-note-lantern', 'echo-stars'],
-      ['lip-roll-bay', 'ng-slides-bridge'],
+      ['warm-up-path', 'lip-roll-bay', 'ng-slides-bridge'],
     ])
   })
 
@@ -193,7 +219,7 @@ describe('the headings', () => {
     const warmUps = screen.getByRole('list', { name: 'Warm-ups' })
 
     expect(within(pitch).getAllByRole('button')).toHaveLength(2)
-    expect(within(warmUps).getAllByRole('button')).toHaveLength(2)
+    expect(within(warmUps).getAllByRole('button')).toHaveLength(3)
   })
 
   it('keeps the last exercise marked under its own heading', async () => {
@@ -207,7 +233,7 @@ describe('the headings', () => {
 
     expect([marked(pitch), marked(warmUps)]).toEqual([
       [null, null],
-      ['true', null],
+      [null, 'true', null],
     ])
   })
 })
@@ -278,6 +304,17 @@ describe("a card's third line", () => {
     expect(meta('ng-slides-bridge')).toBeNull()
   })
 
+  it('says "Warmed up today" on the Warm-up once today counts, and nothing before', async () => {
+    await openPicker()
+    expect(meta('warm-up-path')).toBeNull()
+
+    cleanup()
+    vi.resetModules()
+    localStorage.clear()
+    await openPicker({ warmedUp: true })
+    expect(meta('warm-up-path')).toBe('Warmed up today')
+  })
+
   it('says Merc sings Lip roll first until its demo is seen, before its first best', async () => {
     await openPicker()
     expect(meta('lip-roll-bay')).toBe('Merc sings it first')
@@ -294,13 +331,14 @@ describe("a card's level", () => {
   it('names the level the exercises are at: Singer, the accuracy tier it starts at', async () => {
     await openPicker()
 
-    expect(levels()).toEqual(['Singer', 'Singer', 'Singer', 'Singer'])
+    expect(levels()).toEqual(['Singer', 'Singer', 'Singer', 'Singer', 'Singer'])
   })
 
   it('names the level the singer picked', async () => {
     await openPicker({ level: 'professional' })
 
     expect(levels()).toEqual([
+      'Professional',
       'Professional',
       'Professional',
       'Professional',
@@ -318,6 +356,7 @@ describe('the last exercise opened', () => {
       null,
       null,
       null,
+      null,
     ])
   })
 
@@ -329,6 +368,7 @@ describe('the last exercise opened', () => {
       'true',
       null,
       null,
+      null,
     ])
   })
 
@@ -338,7 +378,20 @@ describe('the last exercise opened', () => {
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
       null,
       null,
+      null,
       'true',
+      null,
+    ])
+  })
+
+  it('marks the Warm-up when it was the last one opened', async () => {
+    await openPicker({ last: 'warm-up-path' })
+
+    expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
+      null,
+      'true',
+      null,
       null,
     ])
   })
@@ -350,6 +403,7 @@ describe('the last exercise opened', () => {
       null,
       null,
       null,
+      null,
       'true',
     ])
   })
@@ -358,6 +412,7 @@ describe('the last exercise opened', () => {
     await openPicker()
 
     expect(cards().map((one) => one.getAttribute('aria-current'))).toEqual([
+      null,
       null,
       null,
       null,

@@ -1,4 +1,4 @@
-import type { ExerciseType } from '@/features/exercises/types'
+import type { ExerciseType } from '@/lib/domain/exercise-contracts'
 
 export type SegmentKind = 'warmup' | 'exercise' | 'challenge-prep' | 'cooldown'
 

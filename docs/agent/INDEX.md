@@ -101,6 +101,7 @@ These are the rules that break things when ignored.
 | `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 3.9k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
+| `warm-up` | [warm-up-store.ts](../../src/features/warm-up/warm-up-store.ts) | 3.1k | The Warm-up's store: today's run, on this device The path screen is gone while a room is up (ShellScreens draws only the top screen), so... |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 2.0k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
@@ -114,12 +115,11 @@ These are the rules that break things when ignored.
 | `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 1.0k | useFallingNotesController — Game logic for Synthesia-style piano practice |
 | `sidebar` | [sidebar-registry.ts](../../src/features/sidebar/sidebar-registry.ts) | 1.0k | ── Sidebar panel registry One AppSidebar shell; WHAT it shows is this file's decision, per tab. |
 | `account` | [native-sign-in.ts](../../src/features/account/native-sign-in.ts) | 900 | Native sign-in — the phone's own Apple and Google ceremonies On the web, Google sign-in is a full-page redirect (the app's `COOP: same-or... |
-| `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 800 | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
+| `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 850 | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
 | `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 750 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
 | `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 750 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
 | `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 700 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 600 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
-| `warm-up` | [warm-up-store.ts](../../src/features/warm-up/warm-up-store.ts) | 600 | The Warm-up's store: today's run, on this device The path screen is gone while a room is up (ShellScreens draws only the top screen), so... |
 | `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 600 | What's New — the 0.9 line, in the visitor's terms One page for the whole release LINE, not one per version, because that is the granulari... |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 550 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
@@ -214,8 +214,8 @@ These are the rules that break things when ignored.
 | [sync-store.ts](../../src/stores/sync-store.ts) | 1.4k | ── Sync store One person, two devices, a room code between them. |
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 850 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 850 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
+| [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 650 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
 | [ear-lab-store.ts](../../src/stores/ear-lab-store.ts) | 600 | Ear Lab store — readings, ratings and calibration history. |
-| [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 600 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 600 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 550 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [notifications-store.ts](../../src/stores/notifications-store.ts) | 500 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |

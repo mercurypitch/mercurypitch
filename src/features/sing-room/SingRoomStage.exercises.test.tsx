@@ -18,7 +18,7 @@ import { resetLastExerciseForTests } from '@/features/premium-exercises/last-exe
 import type * as NativeBuild from '@/lib/native-build'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import type { NativeShellApi } from '@/stores/native-shell-store'
-import { holdRoomArrival, nativeRunControls, registerShellApi, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
+import { holdRoomArrival, nativeRunControls, registerShellApi, requestSongList, resetRoomArrivalHolds, songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
 import { clearSingTakes, lastSingTake, singTakes, } from '@/stores/sing-takes-store'
 import { dispatchSingRoom, resetSingRoom, singRoomContext, } from './sing-room-store'
 import { SingRoomStage } from './SingRoomStage'
@@ -226,6 +226,7 @@ describe('at rest', () => {
     expect(cards.map((card) => card.getAttribute('data-exercise'))).toEqual([
       'long-note-lantern',
       'echo-stars',
+      'warm-up-path',
       'lip-roll-bay',
       'ng-slides-bridge',
     ])
@@ -378,5 +379,35 @@ describe('closing the picker', () => {
     controls().park()
 
     expect(pickerOpen()).toBe(false)
+  })
+})
+
+// "Sing a song" at the end of the Warm-up pops back to this room and asks
+// for its song list (DESIGN-warm-up.md N15, native-shell-store.ts).
+describe('the song list, asked for by the Warm-up', () => {
+  afterEach(() => {
+    takeSongListRequest()
+    vi.restoreAllMocks()
+  })
+
+  it('opens once, and the request is taken', () => {
+    const open = vi.spyOn(picker, 'setIsModalOpen')
+    mountRoom()
+    expect(open).not.toHaveBeenCalled()
+
+    requestSongList()
+
+    expect(open.mock.calls).toEqual([[true]])
+    expect(songListRequested()).toBe(false)
+  })
+
+  it('asked before the room is on screen, opens as it arrives', () => {
+    const open = vi.spyOn(picker, 'setIsModalOpen')
+    requestSongList()
+
+    mountRoom()
+
+    expect(open.mock.calls).toEqual([[true]])
+    expect(songListRequested()).toBe(false)
   })
 })

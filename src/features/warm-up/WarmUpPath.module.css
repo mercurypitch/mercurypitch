@@ -1,0 +1,620 @@
+/* The Warm-up's path (WarmUpPath.tsx, PathColumn.tsx, PathActions.tsx).
+
+   A night scene in every theme (mp-dark-stage): the colours are the
+   storyboard's, measured (DESIGN-warm-up.md §1.2), not the app's. Pictures
+   move by transform and opacity only, and no large layer has a filter
+   (§11). */
+
+.path {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--sky-top) 0%,
+    var(--sky-bottom) 100%
+  );
+  color: #f8f9fa;
+  font-family: var(--font-body, sans-serif);
+}
+
+/* ── The path's column ───────────────────────────────────── */
+
+.scroller {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  scrollbar-width: none;
+}
+
+.scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.scroller[data-scrolls='true'] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.column {
+  position: relative;
+  margin: 0 auto;
+}
+
+/* The night's plate runs on below the column (its floor line sits on the
+   path's floor): clipped to the column, it cannot make the column scroll,
+   and the path stays where its frame put it. */
+.skyWindow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sky {
+  left: 0;
+  width: 100%;
+}
+
+/* A tablet: the phone's column on the night's colours, its sides fading
+   into them so the plate has no edge (option (a)). */
+.path[data-wide='true'] .sky {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
+}
+
+.pool {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(var(--pool), 0.5) 0%,
+    rgba(var(--pool), 0.18) 55%,
+    rgba(var(--pool), 0) 100%
+  );
+  pointer-events: none;
+}
+
+.sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.spark {
+  position: absolute;
+  border-radius: 50%;
+  background: #9cc8ff;
+  opacity: 0.7;
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+.spark[data-tint='violet'] {
+  background: #c9a8ff;
+}
+
+.spark[data-tint='white'] {
+  background: #fff;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* The path: three strokes a segment, resting violet to cyan, lit white. */
+.trail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.trail path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.trailGlow {
+  stroke: url(#warm-trail);
+  opacity: 0.14;
+}
+
+.trailCore {
+  stroke: url(#warm-trail);
+  opacity: 0.85;
+}
+
+.litGlow,
+.litCore {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 500ms ease-out;
+}
+
+.litGlow {
+  stroke: #7fe9ff;
+  opacity: 0.32;
+}
+
+.litCore {
+  stroke: #f2fdff;
+  opacity: 0.95;
+}
+
+/* The newest lit segment before it draws in toward the next stop. */
+.drawing {
+  stroke-dashoffset: 1;
+}
+
+/* ── The stops ───────────────────────────────────────────── */
+
+.stops {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A stop is its centre: everything in it is placed around that point. */
+.stop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+}
+
+.orb,
+.ring,
+.glyph,
+.songTap {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.orb {
+  display: block;
+  pointer-events: none;
+}
+
+.glyph {
+  color: #b3c7f9;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.stop[data-orb='next'] .glyph {
+  color: #c5e7fb;
+  opacity: 1;
+}
+
+.stop[data-orb='done'] .glyph {
+  color: #caebfb;
+  opacity: 1;
+}
+
+.stop[data-orb='lit'] .glyph {
+  color: #eef8ff;
+  opacity: 1;
+}
+
+.ring {
+  box-sizing: border-box;
+  border: 2px solid rgba(156, 247, 254, 0.9);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The tap that opens a stop: its ring pulses outward (§5.3). */
+.pulse {
+  animation: ring-pulse 280ms ease-out;
+}
+
+@keyframes ring-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+.label {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.name {
+  color: #f8f9fa;
+  font-weight: 500;
+  line-height: 1.2;
+  text-shadow: 0 1px 6px rgba(2, 6, 20, 0.9);
+}
+
+.result {
+  margin-top: 2px;
+  color: rgba(214, 228, 255, 0.78);
+  font-size: 13px;
+  line-height: 1.25;
+  text-shadow: 0 1px 6px rgba(2, 6, 20, 0.9);
+}
+
+.skipped {
+  color: rgba(190, 200, 225, 0.6);
+}
+
+/* The song stop at the end: the orb is the button (Sing a song). */
+.songTap {
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.songTap:focus-visible {
+  outline: 2px solid #9cf7fe;
+  outline-offset: 4px;
+}
+
+.merc {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: transform 650ms cubic-bezier(0.33, 0, 0.25, 1);
+  pointer-events: none;
+}
+
+/* ── Over the path: the glow, the top and the bottom ─────── */
+
+/* The light behind the title, as Echo's top light (§1.2). */
+.glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(100%, 430px);
+  height: 34%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse 42% 46% at 50% 34%,
+    rgba(92, 118, 214, 0.26) 0%,
+    rgba(92, 118, 214, 0) 100%
+  );
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.glow[data-end='true'] {
+  opacity: 1;
+}
+
+.top {
+  position: absolute;
+  top: var(--pushed-top, calc(var(--safe-top, 0px) + 56px));
+  right: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 8px;
+  pointer-events: none;
+}
+
+.top > * {
+  pointer-events: auto;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid #4f6a98;
+  border-radius: 999px;
+  background: rgba(20, 32, 55, 0.86);
+  color: #e1e4eb;
+  font: 600 14px/1 var(--font-body, sans-serif);
+}
+
+.title {
+  margin: 0;
+  color: #f4f6fb;
+  font: 700 30px/1.15 var(--font-body, sans-serif);
+  text-shadow: 0 2px 14px rgba(92, 118, 214, 0.55);
+}
+
+.today {
+  margin: 2px 0 0;
+  color: #d6e0f5;
+  font: 500 18px/1.25 var(--font-body, sans-serif);
+}
+
+/* The rooms' unlock chip (UnlockChip.tsx), flush in either zone: the
+   zones' own gaps space it. */
+.unlocks > div > * {
+  margin-top: 0;
+}
+
+.freeUsed {
+  margin: 8px 16px 0;
+  color: var(--text-secondary);
+  font: 400 15px/1.35 var(--font-body, sans-serif);
+  text-align: center;
+}
+
+.bottom {
+  position: absolute;
+  bottom: calc(var(--pushed-bottom, var(--safe-bottom, 0px)) + 12px);
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(calc(100% - 32px), 398px);
+  transform: translateX(-50%);
+}
+
+/* Where the safe area starts under the buttons: measured, never seen. */
+.bottomEdge {
+  position: absolute;
+  right: 0;
+  bottom: var(--pushed-bottom, var(--safe-bottom, 0px));
+  left: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.level {
+  display: inline-flex;
+}
+
+/* The card about the stop just finished (§5.5), rising in. */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 6px 0 14px;
+  box-sizing: border-box;
+  border: 1px solid #315572;
+  border-radius: 18px;
+  background: rgba(14, 20, 27, 0.92);
+  animation: card-in 200ms ease-out;
+}
+
+@keyframes card-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.check {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0febdf;
+  color: #04201f;
+}
+
+.skippedMark {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 1.5px dashed rgba(190, 200, 225, 0.55);
+  border-radius: 50%;
+}
+
+.cardLine {
+  flex: 1;
+  min-width: 0;
+  color: #f4f6fb;
+  font: 600 16px/1.25 var(--font-body, sans-serif);
+}
+
+.again {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: #b9a6ff;
+  font: 600 16px/1 var(--font-body, sans-serif);
+  animation: fade-in 200ms ease-out;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  animation: fade-in 200ms ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The room kit's pair (RoomControls.module.css): outlined and filled. */
+.primary,
+.secondary {
+  position: relative;
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  height: 52px;
+  padding: 0 16px;
+  overflow: hidden;
+  border-radius: 26px;
+  font: 600 17px/1 var(--font-body, sans-serif);
+  white-space: nowrap;
+}
+
+.primary {
+  border: 0;
+  background: #7c4dff;
+  box-shadow: 0 6px 20px rgba(124, 77, 255, 0.4);
+  color: #fff;
+}
+
+.secondary {
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: rgba(8, 12, 24, 0.4);
+  color: var(--text-primary);
+}
+
+/* A button alone under the path (Start, Next, the Premium ask) keeps its
+   height: in the zone's column, `flex: 1` would shrink it to its text. */
+.bottom > .primary {
+  flex: none;
+}
+
+.skip {
+  flex: 0 0 auto;
+  min-width: 92px;
+}
+
+.buttonText {
+  position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The countdown inside Next, draining from right to left. */
+.drain {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.2);
+  transform-origin: left center;
+  animation: drain linear forwards;
+  pointer-events: none;
+}
+
+@keyframes drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Stay here: the countdown's pause, a 52 px target beside Next. */
+.stay {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  background: rgba(8, 12, 24, 0.4);
+  color: var(--text-primary);
+}
+
+.stay svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* A short screen (320 x 568): the chip goes, the path keeps its room
+   (§3). */
+@media (max-height: 600px) {
+  .chip {
+    display: none;
+  }
+}
+
+/* Reduced motion: no twinkle, no pulse (a short fade), no rise, no
+   draw-in; the countdown still drains, it is the deadline (§10). */
+@media (prefers-reduced-motion: reduce) {
+  .spark,
+  .card,
+  .row,
+  .again {
+    animation: none;
+  }
+
+  .pulse {
+    animation: ring-fade 150ms ease-out;
+  }
+
+  .litGlow,
+  .litCore,
+  .merc {
+    transition: none;
+  }
+}
+
+@keyframes ring-fade {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* A fixture's frame: nothing moves. */
+.path[data-still='true'] .spark,
+.path[data-still='true'] .card,
+.path[data-still='true'] .row,
+.path[data-still='true'] .again {
+  animation: none;
+}

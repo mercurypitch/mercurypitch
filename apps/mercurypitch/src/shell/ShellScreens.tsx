@@ -55,6 +55,8 @@ export interface ShellScreensProps {
   lipRoll?: Component
   /** The Ng slides exercise, passed in as Long note is, for the same reason. */
   ngSlides?: Component
+  /** The Warm-up's path, passed in as Long note is, for the same reason. */
+  warmUp?: Component
 }
 
 const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
@@ -74,6 +76,7 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   echo: 'Echo',
   'lip-roll': 'Lip roll',
   'ng-slides': 'Ng slides',
+  'warm-up': 'Warm-up',
   developer: 'Developer',
 }
 
@@ -126,6 +129,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
       case 'ng-slides': {
         const NgSlides = props.ngSlides
         return NgSlides === undefined ? null : <NgSlides />
+      }
+      case 'warm-up': {
+        const WarmUp = props.warmUp
+        return WarmUp === undefined ? null : <WarmUp />
       }
       case 'developer': {
         const Developer = props.developer

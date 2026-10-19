@@ -38,7 +38,7 @@ describe('the exercise catalogue', () => {
       ]),
     ).toEqual([
       ['Pitch', ['Long note', 'Echo']],
-      ['Warm-ups', ['Lip roll', 'Ng slides']],
+      ['Warm-ups', ['Warm-up', 'Lip roll', 'Ng slides']],
     ])
   })
 
@@ -48,6 +48,17 @@ describe('the exercise catalogue', () => {
     for (const exercise of EXERCISE_CATALOGUE) {
       expect(headings.has(exercise.group), exercise.name).toBe(true)
     }
+  })
+
+  it('heads the Warm-ups with the Warm-up: four stops, then a song', () => {
+    const warmUp = catalogueEntry('warm-up-path')
+    expect(warmUp?.name).toBe('Warm-up')
+    expect(warmUp?.line).toBe('Four stops, about three minutes, then a song.')
+    expect([
+      warmUp?.note(),
+      warmUp?.demoAutoPlays(),
+      warmUp?.bestOnNote,
+    ]).toEqual([null, false, false])
   })
 
   it('finds an entry by its id', () => {
