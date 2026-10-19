@@ -19,9 +19,10 @@ import type * as VoiceprintService from '@/db/services/voiceprint-service'
 import type * as Funnel from '@/features/onboarding/funnel'
 import type * as MicSentinel from '@/lib/mic-sentinel'
 import { resetRoomArrivalHolds } from '@/stores/native-shell-store'
+import type * as Wiring from '../shell/premium-exercise-wiring'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
-import { onboardingShown, setOnboardingShown } from '../shell/run-shell-store'
+import { onboardingShown, pushed, resetRunShell, setOnboardingShown, } from '../shell/run-shell-store'
 import { KEEP } from '../shell/settings/account-copy'
 import { closeOffer, forgetAccountOffer, keepArrival, offerOpen, } from '../shell/settings/account-offer'
 import { AccountOfferSheet } from '../shell/settings/AccountOffer'
@@ -47,6 +48,16 @@ vi.mock('@/lib/merc/stage', () => ({
     destroy: () => undefined,
   }),
 }))
+
+// The landing's push, without the art its tap starts loading (the wiring's
+// own test has that).
+vi.mock('../shell/premium-exercise-wiring', async (importOriginal) => {
+  const { pushScreen } = await import('../shell/run-shell-store')
+  return {
+    ...(await importOriginal<typeof Wiring>()),
+    openPremiumExercise: () => pushScreen('warm-up'),
+  }
+})
 
 // The onboarding's counts (S7b §7), heard on their way to the funnel.
 const funnel = vi.hoisted(() => ({ sent: [] as string[] }))
@@ -125,6 +136,7 @@ beforeEach(() => {
 afterEach(() => {
   view?.unmount()
   view = null
+  resetRunShell()
   shell?.()
   shell = null
   bench.capture = null
@@ -587,6 +599,73 @@ describe('Keep, beat 7', () => {
 
     expect(offerOpen()).toBe(false)
     expect(onboardingExit()).toBe('not-now')
+  })
+})
+
+describe('a refused mic (REQ-NFL-043, S7b E5)', () => {
+  /** The first note's mic tapped, and refused. */
+  async function refuse(
+    s: Stand,
+    why: 'denied' | 'unavailable',
+  ): Promise<void> {
+    s.answer = async () => Promise.reject(new CaptureError(why))
+    q('onboarding-mic')?.click()
+    await settle()
+  }
+
+  it("goes on in one tap: Continue without the mic lands on the Warm-up's path, with no offer", async () => {
+    const s = mount('onboarding')
+    await refuse(s, 'denied')
+    expect(q('onboarding-retry')).not.toBeNull()
+    expect(q('onboarding-without-mic')?.textContent).toBe(
+      ONBOARDING_COPY.withoutMic,
+    )
+
+    q('onboarding-without-mic')?.click()
+    await settle()
+
+    expect(offerOpen()).toBe(false)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    expect(pushed()).toBe('warm-up')
+    expect(counted()).toEqual([
+      'native_onboarding_first_note_view',
+      'native_onboarding_mic_denied',
+      'native_onboarding_without_mic',
+      'native_onboarding_done',
+      'native_onboarding_path_view',
+    ])
+  })
+
+  it('goes on the same way from a mic that would not open', async () => {
+    const s = mount('onboarding')
+    await refuse(s, 'unavailable')
+
+    q('onboarding-without-mic')?.click()
+    await settle()
+
+    expect(pushed()).toBe('warm-up')
+  })
+
+  it('has no way on without the mic for the range on its own: its Not now goes back to Keep', async () => {
+    const s = mount('range')
+    s.answer = async () => Promise.reject(new CaptureError('denied'))
+    q('onboarding-mic')?.click()
+    await settle()
+
+    expect(q('onboarding-retry')).not.toBeNull()
+    expect(q('onboarding-without-mic')).toBeNull()
+  })
+
+  it('lands nowhere new on Not now: the Sing room, as before', async () => {
+    const s = mount('onboarding')
+    await refuse(s, 'denied')
+
+    q('onboarding-not-now')?.click()
+    await settle()
+
+    expect(pushed()).toBeNull()
   })
 })
 

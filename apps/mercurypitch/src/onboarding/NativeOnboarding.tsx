@@ -37,11 +37,14 @@
 // Keep or the Cloud offer is up: the sheet's own is the way out. Once Keep
 // has closed, and the sign-in sheet or the voiceprint ask it handed over to
 // has closed too, the layer goes on to the line. The line's Continue opens
-// the Cloud offer when beat 9's rules allow it, and the layer goes on to
-// the Sing room, live, once the offer and whatever it handed over to have
-// closed; else straight to the Sing room. Not now at any beat leaves with
-// no offer. Opened on its own from Keep's "Find your range first" over
-// anything else, the layer starts on the range and goes back to Keep.
+// the Cloud offer when beat 9's rules allow it, and the onboarding lands on
+// the Warm-up's path (beat 10, onboarding-landing.ts) once the offer and
+// whatever it handed over to have closed; else it lands there straight
+// away. A refused mic, or one that would not open, goes on in one tap
+// (Continue without the mic, REQ-NFL-043) to the same landing, with no
+// offer. Not now at any beat leaves for the Sing room, with no offer.
+// Opened on its own from Keep's "Find your range first" over anything
+// else, the layer starts on the range and goes back to Keep.
 //
 // The beats share one capture, so the mic the first note opened is the one
 // the range opens again, and one Merc, who moves from beat to beat with the
@@ -268,6 +271,20 @@ export function NativeOnboarding(): JSX.Element {
   /** See my voice on the first note: the range this phone already keeps. */
   const seeSaved = saved === null ? undefined : () => showReveal(saved)
 
+  /**
+   * Continue without the mic, after a refusal or a mic that would not open:
+   * the onboarding's one way on (REQ-NFL-043), straight to its landing,
+   * with no offer of either kind (S7b E5). The range on its own has none:
+   * its Not now goes back to Keep.
+   */
+  const withoutMic =
+    entry === 'onboarding'
+      ? (): void => {
+          count('native_onboarding_without_mic')
+          leaveOnboarding('finished')
+        }
+      : undefined
+
   /** Continue on the reveal: Keep in the onboarding, back to Keep from it. */
   const continueOn = (): void => {
     count('native_onboarding_reveal_complete')
@@ -282,14 +299,14 @@ export function NativeOnboarding(): JSX.Element {
   /**
    * Beat 9 has opened the Cloud offer. Its free account opens Keep, whose
    * "Find your range first" runs the range here and brings Keep back after
-   * the reveal: that Keep closing goes on to the Sing room, not to a
+   * the reveal: that Keep closing lands on the Warm-up's path, not on a
    * second line.
    */
   let offered = false
 
   // Keep has closed, and so has what it handed over to: on to the line.
   // The Cloud offer has closed, and so has what it handed over to: on to
-  // the Sing room. Checked once the tap that closed the sheet is over,
+  // the landing. Checked once the tap that closed the sheet is over,
   // because a sheet's ways close it and open what comes next in the one tap
   // (Use email, a sign-in and its voiceprint ask, Find your range first,
   // the offer's free account).
@@ -325,7 +342,7 @@ export function NativeOnboarding(): JSX.Element {
   /** Continue on the line was tapped, and beat 9 is being decided. */
   const [continuing, setContinuing] = createSignal(false)
 
-  /** Continue on the line: beat 9 when its rules allow it, else the Sing room. */
+  /** Continue on the line: beat 9 when its rules allow it, else the landing. */
   const continueLine = (): void => {
     if (untrack(continuing) || untrack(leaving)) return
     setContinuing(true)
@@ -538,6 +555,7 @@ export function NativeOnboarding(): JSX.Element {
             onRange={findRange}
             onSkip={skip}
             onSeeSaved={seeSaved}
+            onWithoutMic={withoutMic}
             skipped={skipped()}
             merc={merc}
           />
@@ -548,6 +566,7 @@ export function NativeOnboarding(): JSX.Element {
             line={said()}
             onSee={seeVoice}
             onSkip={skipRange}
+            onWithoutMic={withoutMic}
             skipped={skipped()}
             merc={merc}
           />
@@ -571,6 +590,7 @@ export function NativeOnboarding(): JSX.Element {
             line={said()}
             onContinue={continueLine}
             continuing={continuing()}
+            onWithoutMic={withoutMic}
             merc={merc}
           />
         </Match>

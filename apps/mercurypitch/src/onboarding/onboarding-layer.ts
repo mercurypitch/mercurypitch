@@ -17,6 +17,10 @@
 // It leaves once, by Not now or by its own last beat, and the flag records
 // that at once: it never opens again on this install. The shell is back as
 // it starts to fade (LEAVE_MS); the layer unmounts when the fade is over.
+// Its own end lands on the Warm-up's path (onboarding-landing.ts); Not now
+// leaves for the Sing room under it. Under the path the Sing room waits on:
+// arriving there it would open its mic on a remembered grant, under a
+// screen that wants the mic to itself. Back from the path lets it in.
 //
 // Keep's "Find your range first" (S7b §3.2), which the shell registers with
 // Keep for as long as the shell lives (account-offer.ts
@@ -30,16 +34,17 @@
 //     layer (`openRangeFinder`), then Keep again, however the layer leaves.
 //     That is not the onboarding, so the flag is left as it is.
 
-import { createEffect, createSignal, on, onCleanup, untrack } from 'solid-js'
+import { createEffect, createRoot, createSignal, on, onCleanup, untrack, } from 'solid-js'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { trackNativeOnboarding } from '@/features/onboarding/funnel'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { holdRoomArrival } from '@/stores/native-shell-store'
 import { welcomeSeen } from '../alley/alley-welcome'
-import { currentTab, onboardingShown, setOnboardingShown, } from '../shell/run-shell-store'
+import { currentTab, onboardingShown, pushed, setOnboardingShown, } from '../shell/run-shell-store'
 import { openKeep, openKeepFromReveal, registerRangeFinder, } from '../shell/settings/account-offer'
 import { registerOnboardingBack } from '../shell/shell-navigation'
 import { markOnboardingDone, onboardingDue, settleOnboarding, } from './onboarding-flag'
+import { landOnWarmUp } from './onboarding-landing'
 
 /** The layer's fade out, ms (the shell's --mp-in). */
 export const LEAVE_MS = 280
@@ -68,6 +73,8 @@ let lastExit: OnboardingExit | null = null
 let afterRange: ((exit: OnboardingExit) => void) | null = null
 /** The onboarding's own range, while its layer is up to run it. */
 let layerRange: (() => void) | null = null
+/** Lets the Sing room in under the landing's path, at once. */
+let letInNow: (() => void) | null = null
 
 function leaveMs(): number {
   return prefersReducedMotion() ? LEAVE_REDUCED_MS : LEAVE_MS
@@ -136,13 +143,39 @@ function findRangeFromKeep(): void {
 }
 
 /**
+ * The Sing room under the landing's path arrives once nothing is pushed
+ * over it any more: Back from the path, from any stop it went on to.
+ */
+function letInOnceUncovered(release: () => void): void {
+  createRoot((dispose) => {
+    const letIn = (): void => {
+      if (letInNow === letIn) letInNow = null
+      dispose()
+      release()
+    }
+    letInNow = letIn
+    createEffect(
+      on(
+        pushed,
+        (top) => {
+          if (top === null) letIn()
+        },
+        { defer: true },
+      ),
+    )
+  })
+}
+
+/**
  * The layer leaves: the onboarding done for good (the range on its own
- * leaves the flag be), the Sing room let in, the rail back, and the layer
- * gone once it has faded. True when it was up.
+ * leaves the flag be), the Sing room let in (after the landing's path, on
+ * the onboarding's own end), the rail back, and the layer gone once it has
+ * faded. True when it was up.
  */
 export function leaveOnboarding(exit: OnboardingExit): boolean {
   if (!untrack(onboardingShown)) return false
   lastExit = exit
+  const landing = untrack(entry) === 'onboarding' && exit === 'finished'
   if (untrack(entry) === 'onboarding') {
     markOnboardingDone()
     trackNativeOnboarding(
@@ -150,10 +183,17 @@ export function leaveOnboarding(exit: OnboardingExit): boolean {
         ? 'native_onboarding_not_now'
         : 'native_onboarding_done',
     )
+    // Pushed while the layer is still up: it fades off the path.
+    if (landing) landOnWarmUp()
   }
   setOnboardingShown(false)
-  releaseArrival?.()
+  const release = releaseArrival
   releaseArrival = null
+  if (release !== null && landing && untrack(pushed) !== null) {
+    letInOnceUncovered(release)
+  } else {
+    release?.()
+  }
   unmount = setTimeout(() => {
     unmount = null
     setMounted(false)
@@ -194,6 +234,7 @@ export function installNativeOnboarding(): void {
     unmount = null
     releaseArrival?.()
     releaseArrival = null
+    letInNow?.()
     afterRange = null
     layerRange = null
     setOnboardingShown(false)

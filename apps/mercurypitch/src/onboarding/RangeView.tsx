@@ -24,9 +24,13 @@ import type { LadderView } from './range-ladder'
 import { heightOf, pinName, rungColour, rungLit, rungsOf } from './range-ladder'
 import type { RangeLine } from './range-machine'
 import type { RangeController } from './useRange'
+import { WithoutMic } from './WithoutMic'
 
 export interface RangeViewProps {
   controller: RangeController
+  /** A refused or failed mic's one way on (WithoutMic.tsx): the
+   *  onboarding's, and none for the range on its own. */
+  onWithoutMic?: () => void
   /** Merc's line in the bubble (rangeSays), or null for none. */
   line: string | null
   /** See my voice: on to the reveal. */
@@ -215,6 +219,7 @@ export function RangeView(props: RangeViewProps): JSX.Element {
                 onRetry={() => props.controller.retry()}
                 retryTestId="onboarding-retry"
               />
+              <WithoutMic onWithoutMic={props.onWithoutMic} />
             </Match>
             <Match when={true}>
               <div class={styles.micWell}>

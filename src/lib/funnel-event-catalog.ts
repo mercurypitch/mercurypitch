@@ -267,6 +267,9 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   /** The onboarding's first ask for the microphone, and its answer. */
   'native_onboarding_mic_granted',
   'native_onboarding_mic_denied',
+  /** Continue without the mic, after a refused mic or one that would not
+   *  open: straight to the landing (REQ-NFL-043). */
+  'native_onboarding_without_mic',
   /** Beat 4: the range up, a range measured, or Skip for now. */
   'native_onboarding_range_view',
   'native_onboarding_range_complete',

@@ -24,9 +24,10 @@ import type * as MicSentinel from '@/lib/mic-sentinel'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { RESPONSE_GATE_SECONDS } from '@/lib/sequence/sequence-engine'
 import { resetRoomArrivalHolds } from '@/stores/native-shell-store'
+import type * as Wiring from '../shell/premium-exercise-wiring'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
-import { onboardingShown, setOnboardingShown } from '../shell/run-shell-store'
+import { onboardingShown, pushed, resetRunShell, setOnboardingShown, } from '../shell/run-shell-store'
 import { forgetAccountOffer, offerOpen, openKeep, } from '../shell/settings/account-offer'
 import { AccountOfferSheet } from '../shell/settings/AccountOffer'
 import { resetSignIn } from '../shell/settings/sign-in-state'
@@ -54,6 +55,16 @@ vi.mock('@/lib/merc/stage', () => ({
     destroy: () => undefined,
   }),
 }))
+
+// The landing's push, without the art its tap starts loading (the wiring's
+// own test has that).
+vi.mock('../shell/premium-exercise-wiring', async (importOriginal) => {
+  const { pushScreen } = await import('../shell/run-shell-store')
+  return {
+    ...(await importOriginal<typeof Wiring>()),
+    openPremiumExercise: () => pushScreen('warm-up'),
+  }
+})
 
 // The counts (S7b §7), heard on their way: the onboarding's own, and the
 // app's, which the Cloud offer's are.
@@ -206,6 +217,7 @@ beforeEach(() => {
 afterEach(() => {
   view?.unmount()
   view = null
+  resetRunShell()
   shell?.()
   shell = null
   bench.capture = null
@@ -454,7 +466,7 @@ describe('beat 9, the Cloud offer', () => {
     ).toBeNull()
   })
 
-  it("goes on to the Sing room once the offer's Not now closes it, the onboarding done", async () => {
+  it("lands on the Warm-up's path once the offer's Not now closes it, the onboarding done", async () => {
     setAuthToken(token('google'))
     const s = mount()
     await skipRange(s)
@@ -467,11 +479,12 @@ describe('beat 9, the Cloud offer', () => {
 
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
     expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
     expect(cloudOfferGuest()).toBeNull()
   })
 
-  it("takes Back as the offer's Not now, then goes on to the Sing room", async () => {
+  it("takes Back as the offer's Not now, then lands on the Warm-up's path", async () => {
     setAuthToken(token('google'))
     const s = mount()
     await skipRange(s)
@@ -489,9 +502,10 @@ describe('beat 9, the Cloud offer', () => {
     expect(cloudOfferOpen()).toBe(false)
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
   })
 
-  it('stays up while its free account hands over to Keep, then lands in the Sing room', async () => {
+  it("stays up while its free account hands over to Keep, then lands on the Warm-up's path", async () => {
     const s = mount()
     await skipRange(s)
     k('keep-not-now')?.click()
@@ -512,10 +526,11 @@ describe('beat 9, the Cloud offer', () => {
     expect(beat()).toBe('offer')
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
     expect(voice.sung).toHaveLength(1)
   })
 
-  it("runs the range from that Keep's Find your range first, then lands in the Sing room, not on a second line", async () => {
+  it("runs the range from that Keep's Find your range first, then lands on the Warm-up's path, not on a second line", async () => {
     const s = mount()
     await skipRange(s)
     k('keep-not-now')?.click()
@@ -542,6 +557,7 @@ describe('beat 9, the Cloud offer', () => {
 
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
     expect(voice.sung).toHaveLength(1)
   })
 
@@ -566,7 +582,7 @@ describe('beat 9, the Cloud offer', () => {
     expect(beat()).toBe('offer')
   })
 
-  it('is not opened for the install held out: on to the Sing room, nothing asked', async () => {
+  it("is not opened for the install held out: on to the Warm-up's path, nothing asked", async () => {
     localStorage.setItem(OFFER_GROUP_KEY, 'holdout')
     setAuthToken(token('google'))
     const s = mount()
@@ -579,9 +595,10 @@ describe('beat 9, the Cloud offer', () => {
     expect(identity.made).toBe(0)
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
   })
 
-  it('is not opened for a subscriber: on to the Sing room', async () => {
+  it("is not opened for a subscriber: on to the Warm-up's path", async () => {
     server.next = { ...free, subscribed: true, left: 20 }
     setAuthToken(token('google'))
     const s = mount()
@@ -593,6 +610,7 @@ describe('beat 9, the Cloud offer', () => {
     expect(cloudOfferOpen()).toBe(false)
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
   })
 
   it('is not opened twice on one install', async () => {
@@ -607,6 +625,7 @@ describe('beat 9, the Cloud offer', () => {
     expect(cloudOfferOpen()).toBe(false)
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
   })
 
   it('draws the install its group as the onboarding opens', () => {
@@ -641,7 +660,10 @@ describe('beats 8 and 9, counted (S7b §7)', () => {
       'native_onboarding_line_sung_all',
     ])
     expect(funnel.app).toEqual(['cloud_view_onboarding'])
-    expect(funnel.sent.at(-1)).toBe('native_onboarding_done')
+    expect(funnel.sent.slice(-2)).toEqual([
+      'native_onboarding_done',
+      'native_onboarding_path_view',
+    ])
   })
 
   it('counts a line half sung in its band', async () => {

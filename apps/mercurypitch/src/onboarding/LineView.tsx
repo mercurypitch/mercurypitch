@@ -32,6 +32,7 @@ import styles from './NativeOnboarding.module.css'
 import { lineScoreText, lineVerdict, ONBOARDING_COPY } from './onboarding-copy'
 import { LINE, LINE_SEC, LINE_SPAN, LINE_WORDS } from './sung-line'
 import type { LineController, TracePoint } from './useLine'
+import { WithoutMic } from './WithoutMic'
 
 /** The lane's lead before the first note, s: the count-in runs in from it. */
 export const LEAD_IN_SEC = 1
@@ -42,6 +43,9 @@ const PAD = 2
 
 export interface LineViewProps {
   controller: LineController
+  /** A refused or failed mic's one way on (WithoutMic.tsx): the
+   *  onboarding's, and none for the range on its own. */
+  onWithoutMic?: () => void
   /** Merc's line in the bubble (lineSaysText), or null for none. */
   line: string | null
   /** Continue: beat 9, or the Sing room. */
@@ -276,6 +280,7 @@ export function LineView(props: LineViewProps): JSX.Element {
               onRetry={() => props.controller.again()}
               retryTestId="onboarding-retry"
             />
+            <WithoutMic onWithoutMic={props.onWithoutMic} />
           </Match>
           <Match when={true}>
             <div class={styles.micWell}>

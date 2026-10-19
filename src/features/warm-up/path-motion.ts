@@ -28,6 +28,10 @@
 //   the day's first    the path draws in from the bottom stop up, each stop
 //   open               fading in as it reaches it (DRAW_IN_MS, §5.2, §10);
 //                      every later open that day arrives settled
+//   the onboarding's   the native onboarding ends here (S7b beat 10,
+//   landing            path-landing.ts): the path draws in, and as it is in
+//                      Merc hops from the floor beside the first stop
+//                      (LAND_AT_MS after the open when nothing draws in)
 //
 // Packed from the start, the end had Merc beside Echo on "Long note 12.6 s"
 // until he hopped: the rest places keep a full stop's gap on his side.
@@ -103,6 +107,11 @@ export type PackPhase = 'unpacked' | 'packing' | 'settled'
 
 /** The day's first open: the path draws in from the bottom stop up, ms (§10). */
 export const DRAW_IN_MS = 700
+/**
+ * The onboarding's landing on a path that does not draw in (reduced
+ * motion): Merc goes beside the first stop a beat after it opens, ms.
+ */
+export const LAND_AT_MS = 300
 /** Each stop's fade as the path reaches it, ms. */
 const DRAW_IN_FADE_MS = 220
 
@@ -140,6 +149,12 @@ export interface PathMotionSetup {
    * return from a stop, which arrives as that stop's card.
    */
   readonly drawIn?: boolean
+  /**
+   * The onboarding's landing (path-landing.ts): on a run not yet started,
+   * Merc hops from the floor beside the first stop once the path is in.
+   * Once, on the open it lands on.
+   */
+  readonly land?: boolean
   /** The countdown ran out: open the next stop. */
   readonly go: () => void
   /** A finished stop lights on the path (a light tick, §10). */
@@ -359,6 +374,30 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
     })
   }
 
+  /** The onboarding's landing, still to play: only on the open it lands on. */
+  let landing = setup.land === true && !setup.still
+  let landTimer: ReturnType<typeof setTimeout> | undefined
+  /** Merc from the floor beside the first stop, once the path is in. */
+  const land = (view: PathView): void => {
+    if (!landing) return
+    landing = false
+    if (view.state !== 'start' || view.merc.at !== 'floor') return
+    landTimer = setTimeout(
+      () => {
+        landTimer = undefined
+        moveMerc({ at: 'beside', index: 0 }, 'idle')
+      },
+      untrack(drawingIn) ? DRAW_IN_MS : LAND_AT_MS,
+    )
+  }
+  /** A tap on Start, or any move, before he has hopped: he stays put. */
+  const stopLanding = (): void => {
+    landing = false
+    clearTimeout(landTimer)
+    landTimer = undefined
+  }
+  onCleanup(stopLanding)
+
   // Each new last move is an arrival: a stop finished or skipped, on the
   // path's mount or (Skip on the path) while it is up.
   createEffect(
@@ -377,8 +416,10 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
           setMercState('idle')
           setMercFaded(false)
         })
+        land(view)
         return
       }
+      stopLanding()
       if (view.state === 'between') arriveBetween(last)
       else if (view.state === 'end') arriveAtEnd(last)
       else {
@@ -422,6 +463,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
     stay: stopCounting,
     lean: () => {
       stopCounting()
+      stopLanding()
       if (!setup.reduced()) setMercState('point')
     },
   }

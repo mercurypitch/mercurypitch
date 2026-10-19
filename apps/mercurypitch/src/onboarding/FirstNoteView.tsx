@@ -25,9 +25,13 @@ import type { LaneBox } from './note-lane'
 import { laneFor } from './note-lane'
 import { heardLine, ONBOARDING_COPY } from './onboarding-copy'
 import type { FirstNoteController } from './useFirstNote'
+import { WithoutMic } from './WithoutMic'
 
 export interface FirstNoteViewProps {
   controller: FirstNoteController
+  /** A refused or failed mic's one way on (WithoutMic.tsx): the
+   *  onboarding's, and none for the range on its own. */
+  onWithoutMic?: () => void
   /** Merc's line in the bubble (noteSays), or null for none. */
   line: string | null
   /** Find my range: on to the range, the mic opened inside this tap. */
@@ -237,6 +241,7 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
               onRetry={() => props.controller.retry()}
               retryTestId="onboarding-retry"
             />
+            <WithoutMic onWithoutMic={props.onWithoutMic} />
           </Match>
           <Match when={true}>
             <div class={styles.micWell}>
