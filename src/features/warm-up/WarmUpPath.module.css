@@ -41,6 +41,16 @@
   margin: 0 auto;
 }
 
+/* The night's plate runs on below the column (its floor line sits on the
+   path's floor): clipped to the column, it cannot make the column scroll,
+   and the path stays where its frame put it. */
+.skyWindow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .sky {
   left: 0;
   width: 100%;
@@ -350,6 +360,12 @@
   font: 500 18px/1.25 var(--font-body, sans-serif);
 }
 
+/* The rooms' unlock chip (UnlockChip.tsx), flush in either zone: the
+   zones' own gaps space it. */
+.unlocks > div > * {
+  margin-top: 0;
+}
+
 .freeUsed {
   margin: 8px 16px 0;
   color: var(--text-secondary);
@@ -501,6 +517,12 @@
   border: 1.5px solid rgba(255, 255, 255, 0.3);
   background: rgba(8, 12, 24, 0.4);
   color: var(--text-primary);
+}
+
+/* A button alone under the path (Start, Next, the Premium ask) keeps its
+   height: in the zone's column, `flex: 1` would shrink it to its text. */
+.bottom > .primary {
+  flex: none;
 }
 
 .skip {

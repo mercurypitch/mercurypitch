@@ -24,6 +24,8 @@ import { fixtureRun } from './fixture-runs'
 
 export interface WarmUpFixtureProps {
   name: WarmFixtureName
+  /** How many stand-in unlocks the run carries (fixture-runs.ts). */
+  unlocks?: number
 }
 
 const BAR: JSX.CSSProperties = {
@@ -45,7 +47,7 @@ const BAR: JSX.CSSProperties = {
 export function WarmUpFixture(props: WarmUpFixtureProps): JSX.Element {
   const [ready, setReady] = createSignal(false)
   // eslint-disable-next-line solid/reactivity -- a fixture is one frame
-  const source = pinnedSource(fixtureRun(props.name))
+  const source = pinnedSource(fixtureRun(props.name, props.unlocks))
   // Two frames after the sky, for the column's last layout to settle.
   const settled = (): void => {
     requestAnimationFrame(() => requestAnimationFrame(() => setReady(true)))

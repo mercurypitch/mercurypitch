@@ -60,8 +60,13 @@ const MERC_HALF_HEIGHT = 0.175
 const MERC_ON_SONG = { dx: -0.054, dy: 0.036 } as const
 /** On the floor at the start, left of the bottom stop (screen 1). */
 const MERC_ON_FLOOR = { x: 0.2075, y: 0 } as const
-/** His head above the song stop's centre at the end, W (screen 3). */
-const MERC_HEAD_OVER_SONG = 0.29
+/**
+ * His crown's tip above the song stop's centre at the end, W: as the
+ * renderer draws him there, measured in the end fixture (0.416 W at
+ * 390 x 844). Screen 3 draws a smaller Merc (0.311 W tall, his crown 0.29 W
+ * over the stop); at that height the end's titles ran into his crown.
+ */
+const MERC_HEAD_OVER_SONG = 0.42
 
 /** The clamp on the screen's one scale (§3). */
 export const MIN_K = 0.75
@@ -195,12 +200,19 @@ export const COLUMN_MAX_PX = 430
 export const TOP_REST_PX = 48
 /** Under the bar at the end: the two titles, px. */
 export const TOP_END_PX = 84
+/**
+ * Under the bar once the free run is used: the chip and "You've used your
+ * free warm-up." under it (§5.10), px.
+ */
+export const TOP_LOCKED_PX = 76
 /** The card (52), the gap (10) and Skip and Next (52), px. */
 export const BOTTOM_STACK_PX = 114
 /** Under the buttons, over the safe area, px (§3). */
 export const BOTTOM_MARGIN_PX = 12
 /** From the floor's line down to the stack's top, px. */
 export const FLOOR_GAP_PX = 16
+/** What a fit may miss by in floating point, px: far under a pixel. */
+const FIT_SLACK_PX = 1e-6
 
 /** The screen the path is drawn on, CSS px. */
 export interface ScreenBox {
@@ -236,15 +248,20 @@ function screenFloor(box: ScreenBox): number {
  * The path's frame on this screen in this mode: its scale (one for every
  * state, §3) and, when even the smallest scale does not fit under the top
  * zone, a taller column that scrolls, its floor still on the screen's.
+ *
+ * A path whose free run is used (`locked`) has a line under its chip, and
+ * fits under both at a scale of its own: no other state follows it on
+ * screen, so the one scale is kept wherever the singer can see it change.
  */
 export function pathFrame(
   box: ScreenBox,
   count: number,
   mode: PathMode,
+  locked = false,
 ): PathFrame {
   const column = Math.min(box.width, COLUMN_MAX_PX)
   const floorOnScreen = screenFloor(box)
-  const restTop = box.top + TOP_REST_PX
+  const restTop = box.top + (locked ? TOP_LOCKED_PX : TOP_REST_PX)
   const endTop = box.top + TOP_END_PX
   const { k } = fitScale({
     width: column,
@@ -255,7 +272,9 @@ export function pathFrame(
   const unit = column * k
   const zoneTop = mode === 'end' ? endTop : restTop
   const need = zoneTop + layoutTop(stopPlaces(count, mode), mode) * unit
-  const floor = Math.max(floorOnScreen, Math.ceil(need))
+  // k was chosen to fit exactly: a rounding error is not a 1 px scroll.
+  const floor =
+    need <= floorOnScreen + FIT_SLACK_PX ? floorOnScreen : Math.ceil(need)
   return {
     column,
     unit,

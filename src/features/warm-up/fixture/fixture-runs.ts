@@ -16,7 +16,10 @@
 //   locked    the free run used: the padlocked "Warm up with Premium"
 //
 // The results are the frames' own lines, from the rooms' result screens.
+// `&warmUnlocks=1` or `2` adds what the run unlocked: the chip, or the chip
+// that opens a list.
 
+import type { UnlockItem } from '@/lib/unlock-copy'
 import type { PinnedRun } from '../path-source'
 import type { StopMark, WarmUpDay } from '../routine'
 import { freshDay } from '../routine'
@@ -62,7 +65,19 @@ function dayWith(marks: readonly StopMark[], warmedUp = false): WarmUpDay {
   }
 }
 
-export function fixtureRun(name: WarmFixtureName): PinnedRun {
+/** Stand-ins for what a run unlocked, as the rooms' chip draws them. */
+const UNLOCKS: readonly UnlockItem[] = [
+  { kind: 'badge', name: 'Steady Hold', icon: 'leaf' },
+  { kind: 'achievement', name: 'First Week', icon: 'star' },
+]
+
+/** The named state's run, with the first `unlocks` of the stand-ins. */
+export function fixtureRun(name: WarmFixtureName, unlocks = 0): PinnedRun {
+  const run = stateRun(name)
+  return unlocks > 0 ? { ...run, unlocks: UNLOCKS.slice(0, unlocks) } : run
+}
+
+function stateRun(name: WarmFixtureName): PinnedRun {
   switch (name) {
     case 'start':
       return {

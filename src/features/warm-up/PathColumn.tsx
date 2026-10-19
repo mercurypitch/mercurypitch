@@ -344,17 +344,19 @@ export function PathColumn(props: PathColumnProps): JSX.Element {
         height: `${props.frame.height}px`,
       }}
     >
-      <PlateImage
-        spec={SKY_PLATE}
-        fallback={SKY_FALLBACK}
-        class={styles.sky}
-        style={{
-          top: `${props.frame.floor - SKY_FLOOR * plateHeight()}px`,
-          height: `${plateHeight()}px`,
-        }}
-        testId="warm-up-sky"
-        onSettled={() => props.onSkySettled?.()}
-      />
+      <div class={styles.skyWindow}>
+        <PlateImage
+          spec={SKY_PLATE}
+          fallback={SKY_FALLBACK}
+          class={styles.sky}
+          style={{
+            top: `${props.frame.floor - SKY_FLOOR * plateHeight()}px`,
+            height: `${plateHeight()}px`,
+          }}
+          testId="warm-up-sky"
+          onSettled={() => props.onSkySettled?.()}
+        />
+      </div>
       <Pools column={props} placed={placed()} />
       <div class={styles.sparkles} aria-hidden="true">
         <For each={sparkles(area(), props.mode)}>

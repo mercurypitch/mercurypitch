@@ -227,17 +227,29 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
     if (root && topZone && bottomEdge) screen.bind(root, topZone, bottomEdge)
   })
   const frame = createMemo(() =>
-    pathFrame(screen.box(), view().stops.length, mode()),
+    pathFrame(
+      screen.box(),
+      view().stops.length,
+      mode(),
+      view().state === 'locked',
+    ),
   )
   // A path taller than the screen opens at its floor, where the run is.
+  // One that fits stays put: its column is the screen, scrolled nowhere.
   createEffect(
     on(
-      () => frame().height,
-      () => {
-        if (scroller) scroller.scrollTop = scroller.scrollHeight
+      () => [frame().height, frame().scrolls] as const,
+      ([, scrolls]) => {
+        if (scroller) scroller.scrollTop = scrolls ? scroller.scrollHeight : 0
       },
     ),
   )
+
+  // What the routine unlocked goes where the path has room for it: on top
+  // between stops, where no chip is, and over the buttons otherwise, where
+  // the card's room is free. Under a chip or the end's titles it would
+  // stand on the top stop, or on Merc on the song.
+  const unlocksOnTop = (): boolean => view().state === 'between'
 
   const litTo = (): number => {
     const v = view()
@@ -280,7 +292,7 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
         />
       </div>
       <div class={styles.glow} data-end={mode() === 'end'} aria-hidden="true" />
-      <div ref={topZone} class={styles.top}>
+      <div ref={topZone} class={styles.top} data-testid="warm-up-top">
         <Show
           when={view().state === 'end'}
           fallback={
@@ -301,9 +313,18 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
         <Show when={view().state === 'locked'}>
           <p class={styles.freeUsed}>{PATH_WORDS.freeUsed}</p>
         </Show>
-        <UnlockList items={source.unlocks} testId="warm-up-unlock" />
+        <Show when={unlocksOnTop()}>
+          <div class={styles.unlocks}>
+            <UnlockList items={source.unlocks} testId="warm-up-unlock" />
+          </div>
+        </Show>
       </div>
-      <div class={styles.bottom}>
+      <div class={styles.bottom} data-testid="warm-up-bottom">
+        <Show when={!unlocksOnTop()}>
+          <div class={styles.unlocks}>
+            <UnlockList items={source.unlocks} testId="warm-up-unlock" />
+          </div>
+        </Show>
         <PathActions
           view={view()}
           card={motion.card()}

@@ -81,6 +81,13 @@ function mount(source?: Parameters<typeof WarmUpPath>[0]['source']): Mounted {
 
 const text = (id: string): string | null =>
   screen.queryByTestId(id)?.textContent ?? null
+/** Which of the path's two zones, the top or the buttons', holds a test id. */
+const zoneOf = (id: string): string | undefined =>
+  screen
+    .getByTestId(id)
+    .closest<HTMLElement>(
+      '[data-testid="warm-up-top"], [data-testid="warm-up-bottom"]',
+    )?.dataset.testid
 const said = (): string | null =>
   document.querySelector('[role="status"][aria-live="polite"]')?.textContent ??
   null
@@ -313,6 +320,27 @@ describe('leaving the path, and what the routine unlocked', () => {
     expect(text('warm-up-unlock-chip')).toBe('New badge: Steady Hold')
     expect(felt).toBe(1)
     stop()
+  })
+
+  it('says it at the top between stops, where no chip is', () => {
+    sing(0)
+    mount()
+    grant(STEADY)
+    expect(zoneOf('warm-up-unlock-chip')).toBe('warm-up-top')
+  })
+
+  it('says it over the buttons at the end, under the titles and Merc', () => {
+    for (const i of [0, 1, 2]) sing(i)
+    expect(enterStop(3)).toBe(true)
+    grant(STEADY)
+    routineStopFor(EXERCISE_ECHO_STARS)!.finish({
+      id: EXERCISE_ECHO_STARS,
+      line: LINES[3]!,
+      settledNote: null,
+    })
+    mount()
+    expect(text('warm-up-title')).toBe('Warmed up')
+    expect(zoneOf('warm-up-unlock-chip')).toBe('warm-up-bottom')
   })
 
   it('Back lets go of the card and the unlocks', () => {
