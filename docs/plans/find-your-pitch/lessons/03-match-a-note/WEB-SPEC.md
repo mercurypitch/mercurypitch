@@ -185,7 +185,7 @@ The signature: the singer's line chasing Merc's band, the gap shrinking in cents
   pins the line to the chart's top or bottom edge, with an arrow pointing off the chart, and the
   readout gives the distance in semitones, as the take's line does.
 - States: idle (Merc's band and line); chase playing, paused or scrubbed; drag; live.
-- Keyboard: the handle is `role="slider"`, −150 to +150 cents, with `aria-valuetext` such as "12
+- Keyboard: the handle is `role="slider"`, −150 to +150 cents, with `aria-valuetext` such as "20
   cents below Merc's note: in the band; nearest note A3"; arrows move 1 cent, Shift with an arrow
   10, Page Up and Page Down 100, as on toy 4.
 - Under reduced motion the chase lands in its end state with its three readings listed beside it.
