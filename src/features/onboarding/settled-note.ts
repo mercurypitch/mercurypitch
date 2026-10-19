@@ -10,15 +10,26 @@
 // Reuses the Mirror's `preprocess`, which drops unvoiced and
 // low-confidence frames and median-filters what's left, so a stray
 // octave flicker at the onset can't name the note.
+//
+// The reading is the take's middle value, and with an even count the
+// lower of the two middle values, never their mean. A take split evenly
+// between two notes (the voice moved on, or a slow screen's take closed
+// on exactly MIN_VOICED_FRAMES, which is even) has an A4 and a C5 in the
+// middle, and their mean is a note nobody sang. The lower middle value is
+// always a frame the voice gave, and an odd count reads as before. The
+// note held longest was the other choice; it splits a wide vibrato three
+// ways around its centre, where the middle value stays on the note heard.
 
 import type { F0Frame } from '@/lib/mirror/metrics'
-import { centsToMidi, median, preprocess } from '@/lib/mirror/metrics'
+import { centsToMidi, preprocess } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { midiFloatToFreq } from '@/lib/pitch-pipeline/log-pitch'
 
 export interface SettledNote {
   midi: number
   /** e.g. 'G3' */
   note: string
+  /** The Hz of the frame the note is named from. */
   hz: number
   /** How much voiced material backed the reading, in seconds. */
   voicedSeconds: number
@@ -48,16 +59,10 @@ export function settledNote(frames: readonly F0Frame[]): SettledNote | null {
   const usable = kept.length >= MIN_VOICED_FRAMES ? kept : voiced
   if (usable.length < MIN_VOICED_FRAMES) return null
 
-  const centsValues = usable.map((f) => f.cents)
-  const midi = Math.round(centsToMidi(median(centsValues)))
-
-  // Hz from the raw frames that survived preprocessing, so the number
-  // shown matches the note named.
-  const hzValues = frames
-    .filter((f) => f.f0 > 0)
-    .map((f) => f.f0)
-    .sort((a, b) => a - b)
-  const hz = hzValues.length > 0 ? median(hzValues) : 0
+  const cents = lowerMiddle(usable.map((f) => f.cents))
+  const midi = centsToMidi(cents)
+  // From the same frame as the note, so the number shown is the note named.
+  const hz = midiFloatToFreq(cents / 100)
 
   const span = usable[usable.length - 1].t - usable[0].t
 
@@ -67,4 +72,10 @@ export function settledNote(frames: readonly F0Frame[]): SettledNote | null {
     hz: Math.round(hz * 10) / 10,
     voicedSeconds: Math.round(span * 100) / 100,
   }
+}
+
+/** The middle value; for an even count, the lower of the two. */
+function lowerMiddle(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted[Math.floor((sorted.length - 1) / 2)]
 }

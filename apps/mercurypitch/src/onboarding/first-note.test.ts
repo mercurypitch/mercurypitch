@@ -97,6 +97,28 @@ describe('readTake', () => {
     expect(named).toMatchObject({ kind: 'done', note: { note: 'A3' } })
   })
 
+  it('names a note the voice held when a slow screen hears two', () => {
+    // The probe's voice: A4, a short silence, then C5. Three frames a
+    // second hear six of the A4 and, by the time the take has twelve, six
+    // of the C5: an even split, whose mean is a note nobody sang.
+    const at3 = (from: number, count: number, hz: number): PitchFrame[] =>
+      Array.from({ length: count }, (_, k) => ({
+        t: from + k / 3,
+        f0: hz,
+        conf: 0.95,
+        rms: 0.1,
+      }))
+    const frames = [
+      ...span(0, 1, quiet()),
+      ...at3(1, 6, 440),
+      ...at3(3, 6, 523.25),
+    ]
+    expect(readTake(frames)).toMatchObject({
+      kind: 'done',
+      note: { note: 'A4' },
+    })
+  })
+
   it("sets the bar by the room's own noise, within its limits", () => {
     // A noisy room: its floor sets a bar a quiet voice cannot clear.
     const noisy = [
