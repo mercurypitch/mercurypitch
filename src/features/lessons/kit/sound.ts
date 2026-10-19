@@ -9,6 +9,13 @@
 // start is an exponential rise from the 1e-4 floor, every stop a
 // setTargetAtTime decay (time constant release / 5) with the oscillators
 // stopped only after the release plus 60 ms of slack.
+//
+// A sung line (Merc's slide, a scale) is one voice along a contour: points
+// of pitch and level, held where two points share a pitch and glided
+// exponentially between them, all scheduled on the audio clock so the
+// glides land on time whatever the main thread is doing. Its release is
+// scheduled at the contour's last point, and an early stop releases from
+// wherever the voice is.
 
 import { toast } from './toast'
 
@@ -105,7 +112,23 @@ function rise(
   param.exponentialRampToValueAtTime(Math.max(FLOOR, peak), at + seconds)
 }
 
-function voice(freq: number, o: VoiceOptions = {}): Voice | null {
+/** One voice's nodes: oscillator, envelope, level, and everything to stop. */
+interface Graph {
+  readonly context: AudioContext
+  readonly osc: OscillatorNode
+  readonly env: GainNode
+  readonly level: GainNode
+  readonly parts: OscillatorNode[]
+  /** When it started, on the audio clock. */
+  readonly t: number
+  readonly merc: boolean
+  /** Attack and release, seconds. */
+  readonly attack: number
+  readonly release: number
+}
+
+/** Builds and starts a voice at `freq`, opening on the house attack; null while sound is not on. */
+function build(freq: number, o: VoiceOptions): Graph | null {
   if (ctx === null || master === null || state !== 'on') return null
   const context = ctx
   const t = context.currentTime
@@ -138,8 +161,32 @@ function voice(freq: number, o: VoiceOptions = {}): Voice | null {
     lfo.start(t)
     parts.push(lfo)
   }
-  rise(env.gain, t, 1, o.attack ?? (merc ? 0.09 : 0.035))
+  const attack = o.attack ?? (merc ? 0.09 : 0.035)
+  rise(env.gain, t, 1, attack)
   osc.start(t)
+  const release = o.release ?? (merc ? 0.34 : 0.22)
+  return { context, osc, env, level, parts, t, merc, attack, release }
+}
+
+/** Stops every part of the voice once a release of `rel` from `at` has died away. */
+function stopParts(g: Graph, at: number, rel: number): void {
+  g.parts.forEach((p) => {
+    try {
+      p.stop(at + rel + SLACK)
+    } catch {
+      // already stopped
+    }
+  })
+}
+
+/** A voice's handle, and `retire` for a voice that has ended by itself. */
+interface Live {
+  readonly handle: Voice
+  retire(): void
+}
+
+function handleOf(g: Graph): Live {
+  const { context, osc, env, level } = g
   let alive = true
   const handle: Voice = {
     get alive() {
@@ -157,22 +204,109 @@ function voice(freq: number, o: VoiceOptions = {}): Voice | null {
       if (!alive) return
       alive = false
       live.delete(handle)
-      const rel = release ?? o.release ?? (merc ? 0.34 : 0.22)
+      const rel = release ?? g.release
       const now = context.currentTime
       env.gain.cancelScheduledValues(now)
       env.gain.setValueAtTime(env.gain.value, now)
       env.gain.setTargetAtTime(0, now, rel / 5)
-      parts.forEach((p) => {
-        try {
-          p.stop(now + rel + SLACK)
-        } catch {
-          // already stopped
-        }
-      })
+      stopParts(g, now, rel)
     },
   }
   live.add(handle)
+  return {
+    handle,
+    retire() {
+      if (!alive) return
+      alive = false
+      live.delete(handle)
+    },
+  }
+}
+
+function voice(freq: number, o: VoiceOptions = {}): Voice | null {
+  const g = build(freq, o)
+  if (g === null) return null
+  const { handle } = handleOf(g)
   if (o.dur !== undefined) setTimeout(() => handle.stop(), o.dur * 1000)
+  return handle
+}
+
+/** A point of a sung line: the centre pitch, and the level, that the voice reaches at `t`. */
+export interface ContourPoint {
+  /** Seconds from the start of the line; the points run in time order. */
+  readonly t: number
+  /** Centre pitch, Hz (Merc's vibrato swings around it). */
+  readonly hz: number
+  /** Level, 0 to 1 of the voice's gain (default 1). */
+  readonly level?: number
+}
+
+/** A stretch of a contour: hold the pitch for `hold` seconds, or glide to `to` Hz in `glide` seconds. */
+export type ContourStep =
+  | { readonly hold: number; readonly level?: number }
+  | { readonly glide: number; readonly to: number; readonly level?: number }
+
+/**
+ * Holds and glides as contour points, from `hz` at time 0. Lesson 2's slide
+ * on A3 (FACTS 50) is `contourOf(220, [{ hold: 1.2 }, { glide: 0.5, to:
+ * 233.08 }, { hold: 1 }, { glide: 0.5, to: 220 }, { hold: 1 }])`.
+ */
+export function contourOf(
+  hz: number,
+  steps: readonly ContourStep[],
+  level = 1,
+): ContourPoint[] {
+  const points: ContourPoint[] = [{ t: 0, hz, level }]
+  let t = 0
+  let f = hz
+  let l = level
+  for (const s of steps) {
+    if ('glide' in s) {
+      t += s.glide
+      f = s.to
+    } else t += s.hold
+    l = s.level ?? l
+    points.push({ t, hz: f, level: l })
+  }
+  return points
+}
+
+/** Seconds from a contour's start to its last point. */
+export const contourLength = (points: readonly ContourPoint[]): number =>
+  points.length === 0 ? 0 : points[points.length - 1].t
+
+/**
+ * One voice along `points`: pitch and level glide exponentially from point
+ * to point (two points on one pitch hold it), all on the audio clock. It
+ * opens on the house attack, and its release starts at the last point, the
+ * oscillators stopping once the release has died away. Null while sound is
+ * not on; `playContour` is the version that asks, for a play button.
+ */
+export function contourVoice(
+  points: readonly ContourPoint[],
+  o: VoiceOptions = {},
+): Voice | null {
+  const first = points[0]
+  if (first === undefined) return null
+  const g = build(first.hz, o)
+  if (g === null) return null
+  const { osc, env, level, t } = g
+  const peak = level.gain.value
+  const levelAt = (p: ContourPoint): number =>
+    Math.max(FLOOR, peak * (p.level ?? 1))
+  level.gain.setValueAtTime(levelAt(first), t)
+  for (const p of points.slice(1)) {
+    osc.frequency.exponentialRampToValueAtTime(p.hz, t + p.t)
+    level.gain.exponentialRampToValueAtTime(levelAt(p), t + p.t)
+  }
+  const { handle, retire } = handleOf(g)
+  // the release is part of the schedule, so the line ends on the audio clock
+  const end = t + Math.max(contourLength(points), g.attack)
+  env.gain.setValueAtTime(1, end)
+  env.gain.setTargetAtTime(0, end, g.release / 5)
+  stopParts(g, end, g.release)
+  const settle = end - g.context.currentTime + g.release + SLACK
+  setTimeout(retire, settle * 1000)
   return handle
 }
 
@@ -275,4 +409,19 @@ export function playTone(
   const audible = o.audible ?? Sound.canPlay()
   const v = audible ? voice(freq, { ...o, dur }) : null
   return new Promise((resolve) => setTimeout(() => resolve(v), dur * 1000))
+}
+
+/**
+ * A sung line whose visuals run even when sound is off; resolves at its
+ * last point, as its release begins.
+ */
+export function playContour(
+  points: readonly ContourPoint[],
+  o: ToneOptions = {},
+): Promise<Voice | null> {
+  const audible = o.audible ?? Sound.canPlay()
+  const v = audible ? contourVoice(points, o) : null
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(v), contourLength(points) * 1000),
+  )
 }

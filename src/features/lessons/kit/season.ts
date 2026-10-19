@@ -11,6 +11,12 @@
 // Practise links are same-origin and carry the lesson that sent the viewer
 // (`?lesson=01`, before any hash route), so the app can tell where a session
 // came from. The printed address (`addr`) stays the public one.
+//
+// A lesson is live once it has a `page`; until then it is planned. A live
+// lesson whose film is published is ready to watch and read; one whose film
+// is made but not yet published is in production (read now, the film to
+// come); one with no film yet is ready to read. Only a published film ever
+// offers "Watch the episode".
 
 export const TOPICS = {
   T01: 'Sound and pitch: vibration, frequency, hertz; high is not loud',
@@ -78,16 +84,42 @@ export interface Lesson {
   /** The name on the map and in the links between cards. */
   readonly short: string
   readonly topics: readonly TopicId[]
-  /** Running time; a lesson without one reads as planned. */
+  /**
+   * The film's running time ("5:14"), or the page's reading time while there
+   * is no film ("15 minutes"); a lesson without one reads as planned.
+   */
   readonly len?: string
-  /** Live on this site: watch and read. */
-  readonly ready?: boolean
+  /** Its own page on this site, once it is live: `/learn/01`. */
+  readonly page?: string
+  /**
+   * Its film: 'published' plays on its page (watch and read); 'production'
+   * is made but not yet published (read now, the film to come). Absent while
+   * there is no film.
+   */
+  readonly film?: 'published' | 'production'
   /** The question the lesson opens with. */
   readonly hook: string
   /** The signature image. */
   readonly sig: string
   readonly pr: Practise
+  /** The figure beside its card; 'poster' shows the poster its page hands the explorer. */
   readonly fig?: 'poster' | 'metronome' | 'chladni'
+  /** The poster's alt text, for a card whose figure is the poster. */
+  readonly posterAlt?: string
+}
+
+/**
+ * How a lesson stands for this viewer: done (they marked it), ready (watch
+ * and read), production (read now, the film to come), read (ready to read,
+ * no film yet) or planned (no page yet).
+ */
+export type LessonStatus = 'done' | 'ready' | 'production' | 'read' | 'planned'
+
+export function lessonStatus(L: Lesson, done: boolean): LessonStatus {
+  if (done) return 'done'
+  if (L.page === undefined) return 'planned'
+  if (L.film === 'published') return 'ready'
+  return L.film === 'production' ? 'production' : 'read'
 }
 
 export const LESSONS: readonly Lesson[] = [
@@ -110,7 +142,8 @@ export const LESSONS: readonly Lesson[] = [
     short: 'What is a note?',
     topics: ['T01', 'T02'],
     len: '5:14',
-    ready: true,
+    page: '/learn/01',
+    film: 'published',
     hook: 'If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?',
     sig: 'The pitch line winds into a spiral; the spiral unrolls into the keyboard.',
     pr: {
@@ -122,6 +155,8 @@ export const LESSONS: readonly Lesson[] = [
       },
     },
     fig: 'poster',
+    posterAlt:
+      'The title card: Find Your Pitch, Lesson 01, What is a note?, above a five-line staff',
   },
   {
     n: 2,

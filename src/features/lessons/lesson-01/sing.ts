@@ -2,123 +2,24 @@
 // Lesson 1 sing it — Merc's A, a hum-along ring, Voice Mirror's rule
 // ============================================================
 //
-// Nothing listens and nothing is scored here: the ring plays Merc's note,
-// then breathes for four seconds while the visitor hums. The illustration
-// beside the practise card shows what Voice Mirror does for real: a reply an
+// The kit's sing card (kit/sing.ts): Merc's A, or the same A an octave up,
+// then four seconds of breathing while the visitor hums; nothing listens
+// and nothing is scored. The illustration beside the practise card is this
+// lesson's own: it shows what Voice Mirror does for real, that a reply an
 // octave below the note it plays still counts as a match.
 
-import { q, qa, svg, TAU } from '@/features/lessons/kit/dom'
-import { addDrawer, watch } from '@/features/lessons/kit/frame-loop'
-import { A3, A4, COLOR, hz, nameOf, rgba } from '@/features/lessons/kit/notes'
-import { Sound } from '@/features/lessons/kit/sound'
-
-interface Run {
-  t0: number
-  dur: number
-  hum: number
-  col: string
-  lastN: number
-}
+import { q, svg } from '@/features/lessons/kit/dom'
+import { A3, A4, COLOR, rgba } from '@/features/lessons/kit/notes'
+import { mountSing } from '@/features/lessons/kit/sing'
 
 export function initSing(stills: { blue: string; orange: string }): void {
-  const ringP = q<SVGCircleElement>('#ringProgress')
-  const breath = q<SVGCircleElement>('#ringBreath')
-  const ripples = q<SVGGElement>('#ringRipples')
-  const img = q<HTMLImageElement>('#ringMerc')
-  const noteL = q('#ringNote')
-  const stateL = q('#ringState')
-  const buttons = qa<HTMLButtonElement>('#singA3, #singA4')
-  const CIRC = 2 * Math.PI * 182
-  const ringSeen = watch(q('#ring'))
-  let run: Run | null = null
-  let rips: { t: number; c: SVGCircleElement }[] = []
-
-  function go(midi: number, which: 'blue' | 'orange'): void {
-    if (run) return
-    const audible = Sound.canPlay()
-    img.src = which === 'blue' ? stills.blue : stills.orange
-    noteL.textContent = `${nameOf(midi) ?? ''} · ${Math.round(hz(midi))} Hz`
-    noteL.style.color = which === 'blue' ? COLOR.blue : COLOR.orange
-    stateL.textContent = 'Listen'
-    run = {
-      t0: performance.now(),
-      dur: 2.4,
-      hum: 4,
-      col: which === 'blue' ? COLOR.blue : COLOR.orange,
-      lastN: -1,
-    }
-    if (audible) Sound.voice(hz(midi), { kind: 'merc', dur: run.dur })
-    buttons.forEach((b) => {
-      b.disabled = true
-    })
-  }
-  q('#singA3').addEventListener('click', () => go(A3, 'blue'))
-  q('#singA4').addEventListener('click', () => go(A4, 'orange'))
-
-  addDrawer({
-    active: () => run !== null && ringSeen(),
-    draw(now) {
-      if (!run) return
-      const t = (now - run.t0) / 1000
-      if (t < run.dur) {
-        const last = rips[rips.length - 1]
-        if (last === undefined || now - last.t > 420) {
-          const c = svg(
-            'circle',
-            {
-              cx: 200,
-              cy: 200,
-              r: 120,
-              fill: 'none',
-              stroke: run.col,
-              'stroke-width': 1.5,
-            },
-            ripples,
-          )
-          rips.push({ t: now, c })
-        }
-        breath.setAttribute('r', '150')
-        breath.setAttribute('opacity', '.55')
-      } else if (t < run.dur + run.hum) {
-        const h = t - run.dur
-        const n = Math.ceil(run.hum - h)
-        if (n !== run.lastN) {
-          run.lastN = n
-          stateL.textContent = `Hum it back · ${n}`
-        }
-        // breathe in and out, two seconds a breath
-        const b = 0.5 - 0.5 * Math.cos((TAU * h) / 2)
-        breath.setAttribute('r', (142 + 22 * b).toFixed(1))
-        breath.setAttribute('opacity', (0.45 + 0.45 * b).toFixed(2))
-        breath.setAttribute('stroke-width', (2 + 2 * b).toFixed(1))
-        ringP.setAttribute(
-          'stroke-dashoffset',
-          (CIRC * (1 - h / run.hum)).toFixed(1),
-        )
-      } else {
-        stateL.textContent = 'Again whenever you like'
-        ringP.setAttribute('stroke-dashoffset', String(CIRC))
-        breath.setAttribute('r', '150')
-        breath.setAttribute('opacity', '.55')
-        breath.setAttribute('stroke-width', '2')
-        run = null
-        buttons.forEach((b) => {
-          b.disabled = false
-        })
-      }
-      rips = rips.filter((r) => {
-        const a = (now - r.t) / 1600
-        if (a >= 1) {
-          r.c.remove()
-          return false
-        }
-        r.c.setAttribute('r', (118 + a * 72).toFixed(1))
-        r.c.setAttribute('opacity', (0.7 * (1 - a)).toFixed(2))
-        return true
-      })
-    },
+  mountSing(q('#sing'), {
+    stills,
+    notes: [
+      { button: q<HTMLButtonElement>('#singA3'), which: 'blue', midi: A3 },
+      { button: q<HTMLButtonElement>('#singA4'), which: 'orange', midi: A4 },
+    ],
   })
-
   drawMirrorFigure()
 }
 

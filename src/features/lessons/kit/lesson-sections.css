@@ -47,6 +47,14 @@
   font: 600 var(--fs-22)/1.25 var(--f-display);
   letter-spacing: -0.01em;
 }
+/* a question's own controls (a play button and the chips it lights), after its heading */
+.q-slot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: -2px 0 14px;
+}
 .opts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
@@ -366,6 +374,10 @@
 }
 .chap-card {
   padding: 10px 6px 8px;
+}
+/* "Watch on YouTube", once the episode is there (kit/episode.ts) */
+.yt {
+  margin: 14px 0 0;
 }
 .chap-card .eyebrow {
   padding: 8px 14px 4px;

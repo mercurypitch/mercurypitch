@@ -1,0 +1,164 @@
+// ============================================================
+// Lesson predict — commit to a guess, hear it, then the reveal
+// ============================================================
+//
+// A committed guess helps even when it is wrong (TEACHING-PLAYBOOK rule 2),
+// so the play buttons stay locked until a choice is in, and the choice
+// locks. The reveal appears only once the sound that answers it has
+// actually been heard, so it never describes a sound that a viewer with
+// sound off did not hear, and it never calls a choice wrong.
+//
+// Mounted on a root, any number per page. Inside the root: two to four
+// `.choice` buttons (each with `data-choice`), the `[data-play]` buttons,
+// the `.lock-hint` line and the `.reveal`, whose first `.mono` line says
+// what the viewer chose. A `[data-free]` play works before a choice (an
+// example the cold open's line already answers) and never reveals. What a
+// play sounds like is the lesson's own: `play` does it.
+
+import { q, qa } from './dom'
+import { reducedMotion } from './motion-switch'
+import { Sound } from './sound'
+
+const ICON = {
+  play: '<svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>',
+  speaker: '<svg class="ico" aria-hidden="true"><use href="#i-speaker"/></svg>',
+  check: '<svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>',
+} as const
+
+export interface PredictOptions {
+  /**
+   * Plays one example (the button's `data-play` value), its visuals running
+   * even when `audible` is false; resolves when it has finished.
+   */
+  readonly play: (what: string, audible: boolean) => Promise<void>
+  /** The lines the lock hint takes (text, after an icon the widget supplies). */
+  readonly hints: {
+    /** Once a choice is in. */
+    readonly chosen: string
+    /** After a play that sound off kept silent, until the reveal. */
+    readonly silent: string
+    /** After a heard play that does not reveal, until the reveal. */
+    readonly next?: string
+    /** After the reveal. */
+    readonly again: string
+  }
+  /** The plays (`data-play` values) whose sound reveals the answer; default every play but the free ones. */
+  readonly revealOn?: readonly string[]
+  /** The reveal's line about the choice ("You said: ..."), never "right" or "wrong". */
+  readonly guess?: (choice: string) => string
+  /** After the reveal shows (a Merc's celebration). */
+  readonly onReveal?: (choice: string) => void
+  /** Hears the choice the moment it locks. */
+  readonly onChoice?: (choice: string) => void
+  /** Controls elsewhere that the choice unlocks too (a stage's Sharp and Flat). */
+  readonly unlocks?: readonly HTMLButtonElement[]
+  /** The play buttons, when they are not the `[data-play]` buttons inside the root. */
+  readonly plays?: readonly HTMLButtonElement[]
+  /** What the reveal shows, when it is not the root's `.reveal` (one or several elements). */
+  readonly reveal?: HTMLElement | readonly HTMLElement[]
+}
+
+export interface Predict {
+  /** The locked choice, or null before one. */
+  readonly choice: string | null
+  readonly revealed: boolean
+}
+
+export function mountPredict(root: HTMLElement, opts: PredictOptions): Predict {
+  const choices = qa<HTMLButtonElement>('.choice', root)
+  const plays = opts.plays ?? qa<HTMLButtonElement>('[data-play]', root)
+  const hint = q('.lock-hint', root)
+  const given = opts.reveal
+  const reveals: readonly HTMLElement[] =
+    given === undefined
+      ? [q('.reveal', root)]
+      : given instanceof HTMLElement
+        ? [given]
+        : given
+  const free = (b: HTMLButtonElement): boolean => b.dataset.free !== undefined
+  const revealsAnswer = (what: string): boolean =>
+    opts.revealOn === undefined
+      ? !plays.some((p) => p.dataset.play === what && free(p))
+      : opts.revealOn.includes(what)
+  let choice: string | null = null
+  let busy = false
+  let revealed = false
+
+  choices.forEach((b) =>
+    b.addEventListener('click', () => {
+      if (choice !== null) return
+      choice = b.dataset.choice ?? null
+      choices.forEach((c) => {
+        c.setAttribute('aria-pressed', String(c === b))
+        c.disabled = true
+      })
+      plays.forEach((p) => {
+        p.disabled = false
+      })
+      opts.unlocks?.forEach((u) => {
+        u.disabled = false
+      })
+      hint.innerHTML = `${ICON.play}${opts.hints.chosen}`
+      plays.find((p) => !free(p))?.focus({ preventScroll: true })
+      if (choice !== null) opts.onChoice?.(choice)
+    }),
+  )
+
+  function showReveal(guessed: string): void {
+    revealed = true
+    const line = reveals[0]?.querySelector('.mono')
+    if (line && opts.guess !== undefined) line.textContent = opts.guess(guessed)
+    hint.innerHTML = `${ICON.check}${opts.hints.again}`
+    reveals.forEach((r) => {
+      r.hidden = false
+    })
+    opts.onReveal?.(guessed)
+    if (reducedMotion()) return
+    reveals.forEach((r) =>
+      r.animate([{ transform: 'translateY(10px)' }, { transform: 'none' }], {
+        duration: 700,
+        easing: 'cubic-bezier(.16, 1, .3, 1)',
+      }),
+    )
+  }
+
+  // after a play: the reveal once its sound was heard, else a hint saying why not yet
+  function heard(what: string, audible: boolean): void {
+    if (!audible || Sound.state !== 'on') {
+      if (!revealed) hint.innerHTML = `${ICON.speaker}${opts.hints.silent}`
+      return
+    }
+    if (!revealsAnswer(what) || choice === null) {
+      const next = opts.hints.next
+      if (!revealed && next !== undefined && choice !== null)
+        hint.innerHTML = `${ICON.play}${next}`
+      return
+    }
+    if (!revealed) showReveal(choice)
+  }
+
+  plays.forEach((p) =>
+    p.addEventListener('click', () => {
+      void (async () => {
+        if (busy || (choice === null && !free(p))) return
+        busy = true
+        plays.forEach((x) => x.classList.toggle('is-on', x === p))
+        const what = p.dataset.play ?? ''
+        const audible = Sound.canPlay()
+        await opts.play(what, audible)
+        plays.forEach((x) => x.classList.remove('is-on'))
+        busy = false
+        heard(what, audible)
+      })()
+    }),
+  )
+
+  return {
+    get choice() {
+      return choice
+    },
+    get revealed() {
+      return revealed
+    },
+  }
+}

@@ -2,7 +2,7 @@
 // Explorer figures — the drawings on a lesson card
 // ============================================================
 //
-// The figure beside a card (Lesson 1's poster, the metronome, the Chladni
+// The figure beside a card (a lesson's poster, the metronome, the Chladni
 // plate) and the string under its title. The metronome and the plate come
 // from the stats site. The metronome is instrument-figures.js's, recoloured
 // with the page tokens (its arm swings in CSS). The plate is
@@ -177,19 +177,24 @@ export function plateFigure(canvas: HTMLCanvasElement): PlateFigure | null {
   }
 }
 
-/** The figure beside a lesson's card. The poster URL is a property, never markup. */
+/**
+ * The figure beside a lesson's card, or null for none: a poster figure
+ * needs the poster's URL from the page, set as a property, never markup.
+ */
 export function cardFigure(
-  fig: NonNullable<Lesson['fig']>,
-  poster: string,
-): HTMLElement {
+  L: Lesson,
+  poster: string | undefined,
+): HTMLElement | null {
+  const fig = L.fig
+  if (fig === undefined || (fig === 'poster' && poster === undefined))
+    return null
   const f = document.createElement('figure')
   f.className = 'ex-fig'
   f.style.margin = '0'
   if (fig === 'poster') {
     const img = document.createElement('img')
-    img.src = poster
-    img.alt =
-      'The title card: Find Your Pitch, Lesson 01, What is a note?, above a five-line staff'
+    img.src = poster ?? ''
+    img.alt = L.posterAlt ?? ''
     img.setAttribute('loading', 'lazy')
     const cap = document.createElement('figcaption')
     cap.textContent = 'From the episode: the title card'

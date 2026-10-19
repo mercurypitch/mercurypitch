@@ -32,6 +32,8 @@
   --violet: #bc8cff;
   --chrome: #c3ccd6;
   --aqua: #2dd4bf;
+  /* the app's target amber (PITCH_VISUAL_COLORS.reference): a sung model, only while it plays */
+  --amber: #f59e0b;
   --chrome-100: #f4f8fd;
   --chrome-500: #8a97a6;
   --chrome-700: #5b6b7b;

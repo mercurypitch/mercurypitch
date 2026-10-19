@@ -8,7 +8,8 @@
 // the film is published (`film: null`) the player says it is coming and the
 // chapters and transcript, which need only the captions, still work.
 // Captions are a same-origin WebVTT track, on by default; the transcript is
-// the same text, one paragraph per speaker turn.
+// the same text, one paragraph per speaker turn. Once the episode is also on
+// YouTube, the section links there ("Watch on YouTube"); it never embeds it.
 
 import { clamp, lerp, q, qa } from './dom'
 import { toast } from './toast'
@@ -29,6 +30,8 @@ export interface EpisodeOptions {
   readonly chapters: readonly Chapter[]
   /** Hears the running time ("4:57") once the film's own metadata has loaded. */
   readonly onDuration?: (len: string) => void
+  /** The episode's YouTube address, once it is there: the section links to it. */
+  readonly youtube?: string
 }
 
 type Speaker = 'blue' | 'orange'
@@ -107,6 +110,24 @@ function paragraphs(vtt: string): Paragraph[] {
     else out.push({ at, text: body, who, sfx: false })
   }
   return out
+}
+
+/**
+ * The "Watch on YouTube" link: the page's own `a[data-youtube]` if its
+ * markup has one (hidden until now), else a small link after the player.
+ */
+function linkYouTube(href: string, grid: HTMLElement): void {
+  let a = document.querySelector<HTMLAnchorElement>('a[data-youtube]')
+  if (a === null) {
+    const p = document.createElement('p')
+    p.className = 'yt'
+    p.innerHTML =
+      '<a class="btn sm" data-youtube target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-out"/></svg>Watch on YouTube</a>'
+    grid.after(p)
+    a = q<HTMLAnchorElement>('a', p)
+  }
+  a.href = href
+  a.hidden = false
 }
 
 export function createEpisode(opts: EpisodeOptions): void {
@@ -297,6 +318,7 @@ export function createEpisode(opts: EpisodeOptions): void {
   }
   renderChapters()
   if (opts.vtt.trim() !== '') renderTranscript(opts.vtt)
+  if (opts.youtube !== undefined) linkYouTube(opts.youtube, grid)
 
   big.addEventListener('click', () => start(null))
   v.addEventListener('loadedmetadata', () => {

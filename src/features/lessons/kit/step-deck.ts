@@ -7,6 +7,12 @@
 // the stage becomes a one-card deck: buttons and a swipe on the text move
 // between steps. Each toy registers here and hears every step change, so it
 // can stop a note that belongs to a step the viewer has left.
+//
+// One toy per step (`toyFor`); a step's other parts, such as a game card in
+// its text, live in the text and hear the steps the same way. An address
+// that names a step (`/learn/02#step-3`, as a later lesson's recall check
+// links one) opens the deck there: the browser's own jump cannot reach a
+// step the phone deck hides.
 
 import { clamp, q, qa } from './dom'
 import { watch } from './frame-loop'
@@ -26,8 +32,21 @@ export interface StepDeckOptions {
 export interface StepDeck {
   readonly current: number
   show(step: number, options?: { scroll?: boolean }): void
+  /**
+   * Shows the step the address names (`#step-3`), or step 1, and from then
+   * on follows the address. Call once, after every toy has registered.
+   */
+  start(): void
   /** True while toy `n`'s stage is on screen and one of its steps is showing. */
   toyActive(n: number): () => boolean
+}
+
+/** The step an address names (`#step-3` is 3), or null for none of the deck's `count` steps. */
+export function stepFromHash(hash: string, count: number): number | null {
+  const m = /^#step-(\d+)$/.exec(hash)
+  if (m === null) return null
+  const n = Number(m[1])
+  return n >= 1 && n <= count ? n : null
 }
 
 const toys: Toy[] = []
@@ -150,12 +169,34 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
     { passive: true },
   )
 
+  /** A step opened from the address: the step beside the stage, or the stage above it. */
+  function openAt(n: number): void {
+    show(n)
+    requestAnimationFrame(() => {
+      if (deck) {
+        q('#stepsStage').scrollIntoView({ behavior: 'auto', block: 'start' })
+        return
+      }
+      lockUntil = performance.now() + 1100
+      steps[n - 1].scrollIntoView({ behavior: 'auto', block: 'center' })
+    })
+  }
+
   const stageSeen = watch(q('#stepsStage'))
   return {
     get current() {
       return current
     },
     show,
+    start() {
+      const n = stepFromHash(window.location.hash, count)
+      if (n === null) show(1)
+      else openAt(n)
+      window.addEventListener('hashchange', () => {
+        const next = stepFromHash(window.location.hash, count)
+        if (next !== null) openAt(next)
+      })
+    },
     toyActive(n) {
       return () => stageSeen() && opts.toyFor(current) === n
     },

@@ -1,15 +1,19 @@
 // ============================================================
-// Lesson 1 spiral keyboard — the piano the spiral unrolls into
+// Lesson spiral keyboard — the piano the spiral unrolls into
 // ============================================================
 //
 // A2 to A5 as keys, low notes left. On a wide canvas all 22 white keys fit;
 // on a phone one octave fills the width and the toy pans between octaves.
 // The same layout tells each bead where its key is as the spiral unrolls
-// (toy-spiral-draw.ts), and every key drawn is recorded, clipped to the
-// visible keyboard, so a tap lands on the key the viewer saw.
+// (spiral-draw.ts), and every key drawn is recorded, clipped to the visible
+// keyboard, so a tap lands on the key the viewer saw. Lesson 1 names only
+// the landmarks (the Cs, A3 and A4); a page can name every key, the black
+// ones by the page's sharps-or-flats choice (names.ts).
 
-import { clamp } from '@/features/lessons/kit/dom'
-import { COLOR, letterOf, nameOf, rgba } from '@/features/lessons/kit/notes'
+import { clamp } from './dom'
+import type { Spelling } from './names'
+import { namesFor } from './names'
+import { COLOR, letterOf, nameOf, rgba, signName } from './notes'
 
 /** A2, the lowest bead. */
 export const LO = 45
@@ -36,6 +40,9 @@ export interface KeyHit {
   white: boolean
 }
 
+/** Which keys carry their names: the landmarks (the Cs, A3 and A4), or every key. */
+export type KeyLabels = 'landmarks' | 'all'
+
 /** What the keyboard needs from the toy. */
 export interface KeyboardView {
   narrow: boolean
@@ -45,6 +52,11 @@ export interface KeyboardView {
   sel: number
   /** When each note last played, by MIDI number. */
   pulses: ReadonlyMap<number, number>
+  keyLabels: KeyLabels
+  /** The arc over A3 to A4, with its label; null for none. */
+  span: string | null
+  /** How the black keys are named, when every key carries its name. */
+  spelling: Spelling
 }
 
 type KeyPos = { x: number; y: number; white: boolean; wi: number }
@@ -139,7 +151,8 @@ function drawWhiteKeys(k: KeyFrame, hits: KeyHit[]): void {
     const x0 = Math.max(km, x)
     const x1 = Math.min(km + kbW, x + ww)
     hits.push({ s, x: x0, y: kbTop, w: x1 - x0, h: kbH, white: true })
-    if (m === 48 || m === 60 || m === 72 || m === 57 || m === 69) {
+    const landmark = m === 48 || m === 60 || m === 72 || m === 57 || m === 69
+    if (landmark || view.keyLabels === 'all') {
       const size = Math.max(10, Math.min(13, ww * 0.42))
       ctx.fillStyle = '#0d1117'
       ctx.font = `600 ${size}px Outfit, sans-serif`
@@ -148,6 +161,21 @@ function drawWhiteKeys(k: KeyFrame, hits: KeyHit[]): void {
       ctx.fillText(nameOf(m) ?? '', x + ww / 2, kbTop + kbH - 7)
     }
   }
+}
+
+/** A black key's names in its lower half, one per line, the sharp above the flat. */
+function drawBlackKeyNames(k: KeyFrame, m: number, x: number): void {
+  const { ctx, kb, view } = k
+  const names = namesFor(m, view.spelling)
+  const size = Math.max(9, Math.min(12, kb.bW * 0.44))
+  ctx.font = `600 ${size}px Outfit, sans-serif`
+  ctx.fillStyle = COLOR.chrome
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  names.forEach((n, i) => {
+    const y = kb.kbTop + kb.bH - 6 - (names.length - 1 - i) * (size + 2)
+    ctx.fillText(signName(n, { octave: false }), x + kb.bW / 2, y)
+  })
 }
 
 // the black keys go to the front of the hit list, so a tap tries them first
@@ -172,6 +200,7 @@ function drawBlackKeys(k: KeyFrame, hits: KeyHit[]): void {
       ctx.fillStyle = rgba(COLOR.chrome, 0.7 * pulse)
       ctx.fill()
     }
+    if (view.keyLabels === 'all') drawBlackKeyNames(k, m, x)
     hits.unshift({ s, x, y: kbTop, w: bW, h: bH, white: false })
   }
 }
@@ -226,8 +255,8 @@ function drawOctaveNumbers(k: KeyFrame): void {
   })
 }
 
-// A3 to A4: seven white keys (a chrome hairline: it is a distance, not a fit)
-function drawOctaveSpan(k: KeyFrame): void {
+// A3 to A4, labelled (a chrome hairline: it is a distance, not a fit)
+function drawOctaveSpan(k: KeyFrame, label: string): void {
   const { ctx, kb } = k
   const { km, kbW, kbTop, keyPos } = kb
   const a3 = keyPos(12)
@@ -244,7 +273,7 @@ function drawOctaveSpan(k: KeyFrame): void {
     ctx.font = '600 14px Outfit, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
-    ctx.fillText('A3 to A4: seven white keys', (a3.x + a4.x) / 2, ay - 9)
+    ctx.fillText(label, (a3.x + a4.x) / 2, ay - 9)
   }
 }
 
@@ -267,7 +296,7 @@ export function drawKeyboard(
   drawBlackKeys(k, hits)
   if (view.focused && ka > 0.5) drawKeyFocus(k)
   drawOctaveNumbers(k)
-  drawOctaveSpan(k)
+  if (view.span !== null) drawOctaveSpan(k, view.span)
   ctx.globalAlpha = 1
   ctx.restore()
   return hits

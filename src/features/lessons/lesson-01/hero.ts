@@ -2,15 +2,17 @@
 // Lesson 1 hero — the night sky, the living staff and the pitch rail
 // ============================================================
 //
-// The cold open's stage: stars, then a five-line staff pinned at both ends
-// (sin(pi x)) that breathes while idle and rings when a Merc sings, blue's
-// side at 220 Hz and orange's twice as fast and twice as dense, then the two
-// Mercs either side of a log-scale pitch rail (110 to 880 Hz, octaves
-// equally spaced). The entrance pushes the camera in: the far sky moves
-// least, the staff more, the Mercs in the DOM most (`heroCamera`).
+// The cold open's stage: the kit's stars (kit/hero-sky.ts), then a
+// five-line staff pinned at both ends (sin(pi x)) that breathes while idle
+// and rings when a Merc sings, blue's side at 220 Hz and orange's twice as
+// fast and twice as dense, then the two Mercs either side of a log-scale
+// pitch rail (110 to 880 Hz, octaves equally spaced). The entrance pushes
+// the camera in: the far sky moves least, the staff more, the Mercs in the
+// DOM most (`heroCamera`).
 
-import { lerp, mulberry32, q, svg, TAU } from '@/features/lessons/kit/dom'
+import { lerp, q, svg, TAU } from '@/features/lessons/kit/dom'
 import { addDrawer, surface, watch } from '@/features/lessons/kit/frame-loop'
+import { drawStars, makeStars } from '@/features/lessons/kit/hero-sky'
 import { energy } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { COLOR, logPos, rgba } from '@/features/lessons/kit/notes'
@@ -25,15 +27,7 @@ export function initHero(): void {
   const shot = q('#stageShot')
   const blue = q('#mercBlue')
   const visible = watch(stage)
-  const rnd = mulberry32(20261016)
-  const stars = Array.from({ length: 54 }, () => ({
-    x: rnd(),
-    y: rnd() ** 1.4 * 0.62,
-    r: 0.5 + rnd() * 1.1,
-    a: 0.25 + rnd() * 0.6,
-    s: 0.4 + rnd() * 1.4,
-    p: rnd() * TAU,
-  }))
+  const stars = makeStars()
   const shown = { blue: 0, orange: 0 }
   let idleT = 0
 
@@ -46,22 +40,8 @@ export function initHero(): void {
       const cam = heroCamera.cam
       const ox = W / 2
       const oy = H * 0.7
-      const sSky = lerp(1.025, 1, cam)
       const sStaff = lerp(1.05, 1, cam)
-      for (const st of stars) {
-        const a =
-          st.a * (0.75 + 0.25 * Math.sin(idleT * 0.001 * st.s + st.p) * twinkle)
-        ctx.fillStyle = `rgba(214,224,240,${a.toFixed(3)})`
-        ctx.beginPath()
-        ctx.arc(
-          ox + (st.x * W - ox) * sSky,
-          oy + (st.y * H - oy) * sSky + 5 * (1 - cam),
-          st.r,
-          0,
-          TAU,
-        )
-        ctx.fill()
-      }
+      drawStars(ctx, W, H, stars, { idleT, twinkle, cam })
       ctx.save()
       ctx.translate(ox, oy + 8 * (1 - cam))
       ctx.scale(sStaff, sStaff)

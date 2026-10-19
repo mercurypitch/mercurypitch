@@ -614,13 +614,13 @@
                     <div class="readout">
                       <div class="ro">
                         <span class="k">Frequency</span
-                        ><span class="v big" id="roHz"
+                        ><span class="v big" id="roHz" data-dial-hz
                           >220<small>Hz</small></span
                         >
                       </div>
                       <div class="ro">
                         <span class="k">One swing every</span
-                        ><span class="v" id="roPeriod"
+                        ><span class="v" id="roPeriod" data-dial-period
                           >4.55<small>ms</small></span
                         >
                       </div>
@@ -628,7 +628,7 @@
                   </div>
                   <div class="slider-row">
                     <label for="dial"
-                      >Hold and drag to hear it <b id="dialNote">A3</b></label
+                      >Hold and drag to hear it <b data-dial-note>A3</b></label
                     >
                     <input
                       class="range"
@@ -824,10 +824,12 @@
                     <div class="readout">
                       <div class="ro">
                         <span class="k" id="spiralK">Last note</span
-                        ><span class="v" id="roSpiral">&#8212;</span>
+                        ><span class="v" id="roSpiral" data-spiral-readout
+                          >&#8212;</span
+                        >
                       </div>
                     </div>
-                    <p class="hint" id="spiralHint">
+                    <p class="hint" id="spiralHint" data-spiral-hint>
                       Drag to turn &#183; tap a bead to hear it
                     </p>
                     <p class="sr" id="spiralDesc">
@@ -840,7 +842,12 @@
                     </p>
                   </div>
                   <div class="controls" id="spiralControls">
-                    <button class="btn sm" type="button" id="driftBtn">
+                    <button
+                      class="btn sm"
+                      type="button"
+                      id="driftBtn"
+                      data-spiral-drift
+                    >
                       <svg class="ico" aria-hidden="true">
                         <use href="#i-pause" /></svg
                       ><span>Pause turning</span>
@@ -857,7 +864,12 @@
                     </button>
                   </div>
                   <div class="controls" id="keysControls" hidden>
-                    <button class="btn primary" type="button" id="unrollBtn">
+                    <button
+                      class="btn primary"
+                      type="button"
+                      id="unrollBtn"
+                      data-spiral-unroll
+                    >
                       <svg class="ico" aria-hidden="true">
                         <use href="#i-spiral" /></svg
                       ><span>Unroll the spiral</span>
@@ -879,7 +891,7 @@
                       <span class="dot"></span>Play A4
                     </button>
                   </div>
-                  <div class="kb-pan" id="kbPan" hidden>
+                  <div class="kb-pan" id="kbPan" data-spiral-pan hidden>
                     <button
                       class="btn icon sm"
                       type="button"
@@ -890,7 +902,11 @@
                         <use href="#i-left" />
                       </svg>
                     </button>
-                    <span class="win" id="kbWin" aria-live="polite"
+                    <span
+                      class="win"
+                      id="kbWin"
+                      data-pan-window
+                      aria-live="polite"
                       >A3 to A4</span
                     >
                     <button
@@ -1202,6 +1218,7 @@
                   stroke="url(#ringStroke)"
                   stroke-width="2"
                   id="ringBreath"
+                  class="ring-breath"
                   opacity=".55"
                 />
                 <circle
@@ -1213,22 +1230,26 @@
                   stroke-width="3"
                   stroke-linecap="round"
                   id="ringProgress"
+                  class="ring-progress"
                   stroke-dasharray="1143.5"
                   stroke-dashoffset="1143.5"
                   transform="rotate(-90 200 200)"
                 />
-                <g id="ringRipples"></g>
+                <g id="ringRipples" class="ring-ripples"></g>
               </svg>
               <img
                 id="ringMerc"
+                class="ring-merc"
                 src="/src/features/lessons/lesson-01/assets/merc-blue.png"
                 alt=""
                 width="512"
                 height="512"
               />
               <div class="lbl" aria-live="polite">
-                <b id="ringNote">A3 · 220 Hz</b
-                ><span id="ringState">Ready when you are</span>
+                <b id="ringNote" class="ring-note">A3 · 220 Hz</b
+                ><span id="ringState" class="ring-state"
+                  >Ready when you are</span
+                >
               </div>
             </div>
           </div>
