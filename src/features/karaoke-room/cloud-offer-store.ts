@@ -3,9 +3,10 @@
 // ============================================================
 //
 // One offer, opened from several places (S7b §5): the Karaoke room's import
-// gate, Settings' "See the plan", and later the onboarding's beat 9. Each
-// opens the same sheet (CloudOffer.tsx, mounted once by the native shell), so
-// the caps live here, where every way in has to pass them.
+// gate, Settings' "See the plan", the onboarding's beat 9, and the
+// onboarding's own Not now (owner, 20 Oct 2026), each counted by its own
+// name. Each opens the same sheet (CloudOffer.tsx, mounted once by the
+// native shell), so the caps live here, where every way in has to pass them.
 //
 // THE CAPS (S7 §5, kept by S7b §5) are for an offer the singer did not ask
 // for. A tap on Import or on "See the plan" is the singer's own question and
@@ -41,8 +42,16 @@ import { CLOUD_VIEW_EVENT } from './cloud-measure'
 import type { KaraokeSongs } from './karaoke-songs'
 import { awaitSubscription, CLOUD_NAME, karaokeSongs, refreshKaraokeSongs, songsOnTheWay, } from './karaoke-songs'
 
-/** Where an offer was opened from. */
-export type CloudOfferSource = 'import' | 'settings' | 'onboarding'
+/**
+ * Where an offer was opened from. The onboarding opens it at its end (beat
+ * 9) and as its own Not now leaves (`onboarding-exit`), apart so the two
+ * are counted apart.
+ */
+export type CloudOfferSource =
+  | 'import'
+  | 'settings'
+  | 'onboarding'
+  | 'onboarding-exit'
 
 /** The offer itself, or what follows a yes from the store. */
 export type CloudOfferView = 'offer' | 'subscribed'
@@ -52,6 +61,7 @@ const ASKED_FOR: Readonly<Record<CloudOfferSource, boolean>> = {
   import: true,
   settings: true,
   onboarding: false,
+  'onboarding-exit': false,
 }
 
 /** After a Not now, no offer nobody asked for, for this long (S7 §5). */

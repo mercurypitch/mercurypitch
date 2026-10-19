@@ -38,6 +38,9 @@ import { installNativeOnboarding, LEAVE_MS, onboardingExit, onboardingMounted, o
 import { slideWindow } from './range-frames.test-fixtures'
 import { GREET_MS } from './useFirstNote'
 
+/** The Rooms home, the alley, as the hash router names it. */
+const ALLEY = '#/home'
+
 vi.mock('@/lib/merc/stage', () => ({
   mountMercStage: () => ({
     ok: false,
@@ -128,6 +131,7 @@ beforeEach(() => {
   })
   stubFrames()
   localStorage.clear()
+  window.location.hash = ''
   resetOnboardingFlagForTests()
   settleOnboarding(false)
   funnel.sent = []
@@ -325,6 +329,8 @@ describe('NativeOnboarding', () => {
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('not-now')
     expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    // A build without Cloud has no offer to bring: the alley, at once.
+    expect(window.location.hash).toBe(ALLEY)
     expect(layer()?.getAttribute('data-leaving')).toBe('on')
     // A property in Solid; a browser reflects it to the attribute.
     expect(layer()?.inert).toBe(true)
@@ -708,7 +714,7 @@ describe('a refused mic (REQ-NFL-043, S7b E5)', () => {
     expect(q('onboarding-without-mic')).toBeNull()
   })
 
-  it('lands nowhere new on Not now: the Sing room, as before', async () => {
+  it('lands Not now on the alley, with nothing pushed (owner, 20 Oct)', async () => {
     const s = mount('onboarding')
     await refuse(s, 'denied')
 
@@ -716,6 +722,7 @@ describe('a refused mic (REQ-NFL-043, S7b E5)', () => {
     await settle()
 
     expect(pushed()).toBeNull()
+    expect(window.location.hash).toBe(ALLEY)
   })
 })
 

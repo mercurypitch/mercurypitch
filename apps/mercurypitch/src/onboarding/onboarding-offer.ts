@@ -1,12 +1,14 @@
 // ============================================================
-// Beat 9: the Cloud offer, once, after the sung line (S7b §3.1, §5)
+// Beat 9: the Cloud offer, once, after the sung line or at Not now (S7b §5)
 // ============================================================
 //
 // The offer is the shell's one Cloud sheet (CloudOffer.tsx, paywall B "The
-// path"), opened through cloud-offer-store.ts as an offer nobody asked for
-// ('onboarding'), so every cap there holds: once a session, not for a week
-// after a Not now, never while the mic listens, never for a subscriber.
-// The onboarding adds its own rules:
+// path"), opened through cloud-offer-store.ts as an offer nobody asked for,
+// so every cap there holds: once a session, not for a week after a Not now,
+// never while the mic listens, never for a subscriber. It opens at the
+// onboarding's end ('onboarding'), and on its own Not now at any beat
+// ('onboarding-exit', owner, 20 Oct 2026), counted apart. The onboarding
+// adds its own rules, the same for both:
 //
 //   - once per install: marked as it opens (OFFER_SHOWN_KEY), so an
 //     onboarding begun again after the app was closed on the offer does
@@ -14,13 +16,15 @@
 //   - the holdout (S7 D13, kept by S7b §7): one install in ten never gets
 //     it, so what the offer costs in retention can be measured. The group
 //     is drawn once, as the onboarding first opens (OFFER_GROUP_KEY), for
-//     every install that starts it, whether or not it reaches beat 9;
-//   - only after the sung line: Not now on the layer, at any beat, leaves
-//     with no offer, and a refused mic never reaches the line (S7b E5);
+//     every install that starts it, whether or not it reaches an offer;
+//   - never after a refused mic, or one that would not open, and not
+//     granted since (S7b E5): the layer checks that itself, at its Not now
+//     (NativeOnboarding.tsx), and a refused mic never reaches the line;
 //   - never with the subscription held: askBeforeOffering asks the server
 //     and the store, which knows of a purchase first, after making the
 //     singer's identity (E11), within three seconds. Begun as the line's
-//     score shows, so it has its answer by the time Continue is tapped.
+//     score shows, so it has its answer by the time Continue is tapped;
+//     at Not now, begun in the tap, the layer up and waiting on them.
 //
 // A skipped range gets it all the same: its line is sung from a middle
 // key, and the offer follows the line.
@@ -29,7 +33,7 @@
 // as bare words so a walk can seed them (probe-onboarding.mjs). Where
 // storage is blocked, the session remembers.
 
-import type { UnaskedRefusal } from '@/features/karaoke-room/cloud-offer-store'
+import type { CloudOfferSource, UnaskedRefusal, } from '@/features/karaoke-room/cloud-offer-store'
 import { askBeforeOffering, openCloudOffer, unaskedRefusal, } from '@/features/karaoke-room/cloud-offer-store'
 import { trackNativeOnboarding } from '@/features/onboarding/funnel'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
@@ -37,7 +41,7 @@ import { KARAOKE_IMPORT } from '@/lib/native-build'
 /** This install's group: offered beat 9, or held out of it. */
 export const OFFER_GROUP_KEY = 'mp:onboarding-offer-group'
 
-/** 'shown' once beat 9 has opened the offer on this install. */
+/** 'shown' once the onboarding has opened the offer on this install. */
 export const OFFER_SHOWN_KEY = 'mp:onboarding-cloud-offer'
 
 /** The share of installs held out of beat 9. */
@@ -102,7 +106,7 @@ export function onboardingOfferGroup(
   return groupThisSession
 }
 
-/** Whether beat 9 has opened the offer on this install. */
+/** Whether the onboarding has opened the offer on this install. */
 export function onboardingOfferShown(): boolean {
   return shownThisSession || read(OFFER_SHOWN_KEY) === 'shown'
 }
@@ -135,17 +139,25 @@ export function prepareOnboardingOffer(): Promise<OfferSkip | null> {
   )
 }
 
+/** Where the onboarding opens the offer: its end, or its Not now. */
+export type OnboardingOfferSource = Extract<
+  CloudOfferSource,
+  'onboarding' | 'onboarding-exit'
+>
+
 /**
- * Beat 9, after Continue on the line: the offer, when the asks and the
- * offer's own caps allow it, and `stands` still holds once the asks have
- * answered (the layer may have been left meanwhile). True when it opened.
+ * Beat 9, after Continue on the line, or the onboarding's Not now: the
+ * offer, when the asks and the offer's own caps allow it, and `stands`
+ * still holds once the asks have answered (the layer may have been left
+ * meanwhile). True when it opened.
  */
 export async function openOnboardingOffer(
   prepared: Promise<OfferSkip | null>,
   stands: () => boolean = () => true,
+  source: OnboardingOfferSource = 'onboarding',
 ): Promise<boolean> {
   if ((await prepared) !== null || !stands()) return false
-  if (!openCloudOffer('onboarding')) return false
+  if (!openCloudOffer(source)) return false
   shownThisSession = true
   write(OFFER_SHOWN_KEY, 'shown')
   return true

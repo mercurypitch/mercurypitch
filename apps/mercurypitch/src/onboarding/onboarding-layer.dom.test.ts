@@ -18,7 +18,10 @@ import { moreOpen, onboardingShown, openMore, popScreen, pushed, pushScreen, rai
 import { keepArrival, offerOpen, rangeFinder, resetAccountOffer, } from '../shell/settings/account-offer'
 import { performBack, shellBackHost } from '../shell/shell-navigation'
 import { onboardingDue, resetOnboarding, resetOnboardingFlagForTests, } from './onboarding-flag'
-import { installNativeOnboarding, LEAVE_MS, leaveOnboarding, onboardingEntry, onboardingExit, onboardingMounted, openRangeFinder, registerLayerRange, } from './onboarding-layer'
+import { installNativeOnboarding, LEAVE_MS, leaveOnboarding, onboardingEntry, onboardingExit, onboardingMounted, openRangeFinder, registerLayerNotNow, registerLayerRange, } from './onboarding-layer'
+
+/** The Rooms home's address: the alley. */
+const ALLEY = '#/home'
 
 // The landing's push, without the art its tap starts loading (the wiring's
 // own test has that).
@@ -57,6 +60,7 @@ beforeEach(() => {
   resetRoomArrivalHolds()
   resetAccountOffer()
   setActiveTab(TAB_HOME)
+  window.location.hash = ''
   funnel.sent = []
   resetPathLandingForTests()
 })
@@ -85,13 +89,18 @@ describe('the onboarding layer', () => {
     expect(railVisible()).toBe(false)
   })
 
-  it('leaves once by Not now: done for good, the Sing room let in, the rail back, then gone', () => {
+  it('leaves once by Not now: done for good, for the alley, the rail back, then gone', () => {
     install()
     setActiveTab(TAB_SINGING)
     expect(leaveOnboarding('not-now')).toBe(true)
     expect(onboardingExit()).toBe('not-now')
     expect(onboardingDue()).toBe(false)
     expect(onboardingShown()).toBe(false)
+    expect(window.location.hash).toBe(ALLEY)
+    // The router follows the address a task later: the Sing room under the
+    // layer is never let in on the way.
+    expect(roomArrivalHeld()).toBe(true)
+    setActiveTab(TAB_HOME)
     expect(roomArrivalHeld()).toBe(false)
     expect(railVisible()).toBe(true)
     // Still drawn while it fades.
@@ -157,6 +166,34 @@ describe('the onboarding layer', () => {
     expect(onboardingMounted()).toBe(false)
     expect(roomArrivalHeld()).toBe(false)
   })
+
+  it('lets the Sing room go with the shell on the way to the alley', () => {
+    install()
+    setActiveTab(TAB_SINGING)
+    leaveOnboarding('not-now')
+    expect(roomArrivalHeld()).toBe(true)
+
+    dispose?.()
+    dispose = null
+
+    expect(roomArrivalHeld()).toBe(false)
+  })
+
+  it("hands Back to the layer's own Not now while it has one", () => {
+    install()
+    setActiveTab(TAB_SINGING)
+    const notNow = vi.fn()
+    const unregister = registerLayerNotNow(notNow)
+
+    expect(performBack(shellBackHost())).toBe('onboarding')
+    unregister()
+
+    // The layer decides how it leaves: the Cloud offer may come first.
+    expect(notNow).toHaveBeenCalledTimes(1)
+    expect(onboardingShown()).toBe(true)
+    expect(performBack(shellBackHost())).toBe('onboarding')
+    expect(onboardingShown()).toBe(false)
+  })
 })
 
 describe('the landing (S7b beat 10)', () => {
@@ -221,7 +258,7 @@ describe('the landing (S7b beat 10)', () => {
     expect(roomArrivalHeld()).toBe(false)
   })
 
-  it('leaves Not now in the Sing room, as before', () => {
+  it('lands Not now in the alley, with nothing pushed (owner, 20 Oct)', () => {
     install()
     setActiveTab(TAB_SINGING)
 
@@ -229,6 +266,7 @@ describe('the landing (S7b beat 10)', () => {
 
     expect(pushed()).toBeNull()
     expect(takePathLanding()).toBe(false)
+    expect(window.location.hash).toBe(ALLEY)
   })
 
   it('pushes nothing for the range on its own, which goes back to Keep', () => {

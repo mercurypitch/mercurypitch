@@ -188,6 +188,17 @@ describe('an offer nobody asked for', () => {
     expect(unaskedRefusal(NOW)).toBe('subscribed')
     expect(openCloudOffer('onboarding', 'offer', NOW)).toBe(false)
   })
+
+  it("holds the onboarding's exit to the same caps as its end", () => {
+    expect(openCloudOffer('onboarding-exit', 'offer', NOW)).toBe(true)
+    closeCloudOffer('done', NOW)
+
+    expect(openCloudOffer('onboarding-exit', 'offer', NOW + 1)).toBe(false)
+    expect(openCloudOffer('onboarding', 'offer', NOW + 1)).toBe(false)
+    resetCloudOfferForTests()
+    resetKaraokeSongsForTests({ ...free, left: 12, subscribed: true })
+    expect(openCloudOffer('onboarding-exit', 'offer', NOW)).toBe(false)
+  })
 })
 
 describe('counted (S7b §7)', () => {
@@ -203,6 +214,13 @@ describe('counted (S7b §7)', () => {
       'cloud_view_settings',
       'cloud_view_import',
     ])
+  })
+
+  it("counts the offer the onboarding's Not now opens apart from the one at its end", () => {
+    openCloudOffer('onboarding-exit', 'offer', NOW)
+
+    expect(counts.sent).toEqual(['cloud_view_onboarding_exit'])
+    expect(cloudOffer()).toEqual({ source: 'onboarding-exit', view: 'offer' })
   })
 
   it('counts no offer for what follows a yes, nor for one the caps hold back', () => {

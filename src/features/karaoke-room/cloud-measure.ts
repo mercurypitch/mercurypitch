@@ -12,13 +12,17 @@ import type { KaraokeSubscribeOutcome } from '@/stores/native-shell-store'
 import type { CloudOfferSource } from './cloud-offer-store'
 import type { ImportState } from './import-gate'
 
-/** The offer shown, by where it opened. */
+/**
+ * The offer shown, by where it opened: the onboarding's end (beat 9) and
+ * its Not now are two names, so the funnel tells the two offers apart.
+ */
 export const CLOUD_VIEW_EVENT: Readonly<
   Record<CloudOfferSource, AppFunnelEvent>
 > = {
   import: 'cloud_view_import',
   settings: 'cloud_view_settings',
   onboarding: 'cloud_view_onboarding',
+  'onboarding-exit': 'cloud_view_onboarding_exit',
 }
 
 /** What the store answered a Subscribe. */

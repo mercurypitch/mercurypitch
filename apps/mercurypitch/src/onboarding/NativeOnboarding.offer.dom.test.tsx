@@ -14,6 +14,7 @@ import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as Capture from '@/components/room-kit/useExerciseCapture'
 import type { ExerciseCapture } from '@/components/room-kit/useExerciseCapture'
+import { CaptureError } from '@/components/room-kit/useExerciseCapture'
 import { setAuthToken } from '@/db/services/user-service'
 import type { CallVoice } from '@/features/echo/merc-call'
 import type * as Songs from '@/features/karaoke-room/karaoke-songs'
@@ -164,6 +165,9 @@ const CLOCK = {
   baseLatency: 0,
 } as unknown as AudioContext
 
+/** The Rooms home, the alley, as the hash router names it. */
+const ALLEY = '#/home'
+
 /** Merc's call starts this far in: Echo's lead. */
 const LEAD = 0.35
 /** Merc's call is over, and the gate after it. */
@@ -199,6 +203,7 @@ beforeEach(() => {
   })
   stubFrames()
   localStorage.clear()
+  window.location.hash = ''
   resetOnboardingFlagForTests()
   settleOnboarding(false)
   resetOnboardingOfferForTests()
@@ -406,7 +411,7 @@ describe('beat 8, the sung line', () => {
     expect(identity.made).toBe(1)
   })
 
-  it('shuts its mic at once when Not now is tapped mid-line', async () => {
+  it('shuts its mic in the tap when Not now is tapped mid-line, then the offer comes', async () => {
     setAuthToken(token('google'))
     const s = mount()
     await skipRange(s)
@@ -415,26 +420,288 @@ describe('beat 8, the sung line', () => {
     const released = s.calls.release
 
     q('onboarding-not-now')?.click()
+    const shut = s.calls.release
+    await settleAll()
 
+    // Shut in the tap; the offer comes once the asks have answered.
     expect(singing).toBe('sing')
-    expect(s.calls.release).toBeGreaterThan(released)
-    expect(onboardingShown()).toBe(false)
-    expect(cloudOfferOpen()).toBe(false)
+    expect(shut).toBeGreaterThan(released)
+    expect(cloudOffer()?.source).toBe('onboarding-exit')
   })
+})
 
-  it('leaves on Not now with no offer, and marks none shown', async () => {
-    setAuthToken(token('google'))
+describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct)', () => {
+  /** The first note's mic tapped, and refused or failed. */
+  async function refuse(
+    s: Stand,
+    why: 'denied' | 'unavailable',
+  ): Promise<void> {
+    s.answer = async () => Promise.reject(new CaptureError(why))
+    q('onboarding-mic')?.click()
+    await settle()
+    expect(q('onboarding-retry')).not.toBeNull()
+  }
+
+  it('opens the offer from the first note, the layer up under it and Merc by its art', async () => {
     const s = mount()
-    await skipRange(s)
-    await singLine(s)
+    await nameNote(s)
+    const released = s.calls.release
 
     q('onboarding-not-now')?.click()
+    const shut = s.calls.release
+    await settleAll()
+
+    expect(cloudOffer()).toEqual({ source: 'onboarding-exit', view: 'offer' })
+    expect(beat()).toBe('offer')
+    expect(onboardingShown()).toBe(true)
+    // The mic shut in the tap; the offer marked shown; Not now said for good.
+    expect(shut).toBeGreaterThan(released)
+    expect(localStorage.getItem(OFFER_SHOWN_KEY)).toBe('shown')
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    // The sheet's Not now is the way out now, and the sheet says it all.
+    expect(outOfReach(q('onboarding-not-now'))).toBe(true)
+    expect(said()).toBe('')
+    expect(layer()?.getAttribute('aria-label')).toBe(ONBOARDING_COPY.title)
+    expect((cloudOfferGuest() as HTMLElement | null)?.dataset.testid).toBe(
+      'onboarding-merc',
+    )
+    expect(window.location.hash).toBe('')
+  })
+
+  it('closes onto the alley by its own Not now, the onboarding left as Not now, nothing pushed', async () => {
+    const s = mount()
+    await nameNote(s)
+    q('onboarding-not-now')?.click()
+    await settleAll()
+
+    closeCloudOffer('not-now')
     await settle()
 
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('not-now')
+    expect(window.location.hash).toBe(ALLEY)
+    expect(pushed()).toBeNull()
+    expect(cloudOfferGuest()).toBeNull()
+  })
+
+  it("takes Back as Not now, then Back as the offer's Not now, onto the alley", async () => {
+    const s = mount()
+    await nameNote(s)
+    const host = {
+      canGoBack: false,
+      back: () => undefined,
+      minimize: () => undefined,
+    }
+
+    const first = performBack(host)
+    await settleAll()
+    const offered = cloudOffer()?.source
+    const second = performBack(host)
+    await settle()
+
+    expect(first).toBe('onboarding')
+    expect(offered).toBe('onboarding-exit')
+    expect(second).toBe('sheet')
     expect(cloudOfferOpen()).toBe(false)
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('not-now')
-    expect(localStorage.getItem(OFFER_SHOWN_KEY)).toBeNull()
+    expect(window.location.hash).toBe(ALLEY)
+  })
+
+  it('counts its offer apart from the one at the end, and Not now once', async () => {
+    const s = mount()
+    await nameNote(s)
+    q('onboarding-not-now')?.click()
+    await settleAll()
+    closeCloudOffer('not-now')
+    await settle()
+
+    expect(funnel.app).toEqual(['cloud_view_onboarding_exit'])
+    expect(
+      funnel.sent.filter((event) => event === 'native_onboarding_not_now'),
+    ).toHaveLength(1)
+    expect(funnel.sent).not.toContain('native_onboarding_done')
+  })
+
+  it('goes straight to the alley for an install held out of it, asking nothing', async () => {
+    localStorage.setItem(OFFER_GROUP_KEY, 'holdout')
+    const s = mount()
+    await nameNote(s)
+
+    q('onboarding-not-now')?.click()
+
+    expect(onboardingShown()).toBe(false)
+    expect(window.location.hash).toBe(ALLEY)
+    await settleAll()
+    expect(cloudOfferOpen()).toBe(false)
+    expect(identity.made).toBe(0)
+  })
+
+  it('goes straight to the alley once the offer has been shown on this install', async () => {
+    localStorage.setItem(OFFER_SHOWN_KEY, 'shown')
+    const s = mount()
+    await nameNote(s)
+
+    q('onboarding-not-now')?.click()
+    await settleAll()
+
+    expect(cloudOfferOpen()).toBe(false)
+    expect(onboardingShown()).toBe(false)
+    expect(window.location.hash).toBe(ALLEY)
+  })
+
+  it('goes on to the alley without it for a subscriber, once the asks have answered', async () => {
+    server.next = { ...free, subscribed: true, left: 20 }
+    const s = mount()
+    await nameNote(s)
+
+    q('onboarding-not-now')?.click()
+    await settleAll()
+
+    expect(identity.made).toBe(1)
+    expect(cloudOfferOpen()).toBe(false)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('not-now')
+    expect(window.location.hash).toBe(ALLEY)
+  })
+
+  it('never comes after a refused mic (S7b E5)', async () => {
+    const s = mount()
+    await refuse(s, 'denied')
+
+    q('onboarding-not-now')?.click()
+    await settleAll()
+
+    expect(cloudOfferOpen()).toBe(false)
+    expect(onboardingShown()).toBe(false)
+    expect(window.location.hash).toBe(ALLEY)
+    expect(identity.made).toBe(0)
+  })
+
+  it('never comes after a mic that would not open (S7b E5)', async () => {
+    const s = mount()
+    await refuse(s, 'unavailable')
+
+    q('onboarding-not-now')?.click()
+    await settleAll()
+
+    expect(cloudOfferOpen()).toBe(false)
+    expect(onboardingShown()).toBe(false)
+    expect(window.location.hash).toBe(ALLEY)
+  })
+
+  it('comes once the mic has been granted after a refusal', async () => {
+    const s = mount()
+    await refuse(s, 'denied')
+    s.answer = async () => Promise.resolve()
+    q('onboarding-retry')?.click()
+    await settle()
+    s.frames = noteTake(220)
+    flushFrame()
+    expect(q('onboarding-find-range')).not.toBeNull()
+
+    q('onboarding-not-now')?.click()
+    await settleAll()
+
+    expect(cloudOffer()?.source).toBe('onboarding-exit')
+  })
+
+  it('leaves at once on a second Not now while the asks are out, and offers nothing after', async () => {
+    let answer = (): void => undefined
+    identity.hold = new Promise<void>((resolve) => {
+      answer = resolve
+    })
+    const s = mount()
+    await nameNote(s)
+
+    q('onboarding-not-now')?.click()
+    await settle()
+    const busy = q('onboarding-not-now')?.getAttribute('aria-busy')
+    const findRange = q('onboarding-find-range')
+    const stillUp = onboardingShown()
+    q('onboarding-not-now')?.click()
+    answer()
+    await settleAll()
+
+    expect(busy).toBe('true')
+    expect(outOfReach(findRange)).toBe(true)
+    expect(stillUp).toBe(true)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('not-now')
+    expect(cloudOfferOpen()).toBe(false)
+    expect(window.location.hash).toBe(ALLEY)
+  })
+
+  it("brings no Keep after Merc's word on a skip", async () => {
+    const s = mount()
+    await nameNote(s)
+    q('onboarding-skip')?.click()
+
+    q('onboarding-not-now')?.click()
+    await settleAll()
+    vi.advanceTimersByTime(SKIP_BEAT_MS)
+    await settle()
+
+    expect(cloudOffer()?.source).toBe('onboarding-exit')
+    expect(offerOpen()).toBe(false)
+    expect(beat()).toBe('offer')
+  })
+
+  it('closes onto the alley after its free account hands over to Keep', async () => {
+    const s = mount()
+    await nameNote(s)
+    q('onboarding-not-now')?.click()
+    await settleAll()
+
+    // The offer's "Sign up and confirm your email": it closes, and Keep
+    // opens in the same tap (ShellCloudOffer.tsx).
+    closeCloudOffer('done')
+    openKeep()
+    await settle()
+    const stayed = onboardingShown()
+    k('keep-not-now')?.click()
+    await settle()
+
+    expect(stayed).toBe(true)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('not-now')
+    expect(window.location.hash).toBe(ALLEY)
+    expect(pushed()).toBeNull()
+  })
+
+  it("opens its own offer, not the end's, when Not now comes while Continue waits on the asks", async () => {
+    setAuthToken(token('google'))
+    const s = mount()
+    await skipRange(s)
+    let answer = (): void => undefined
+    identity.hold = new Promise<void>((resolve) => {
+      answer = resolve
+    })
+    await singLine(s)
+    await continueLine()
+
+    q('onboarding-not-now')?.click()
+    answer()
+    await settleAll()
+
+    expect(cloudOffer()?.source).toBe('onboarding-exit')
+    expect(funnel.app).toEqual(['cloud_view_onboarding_exit'])
+    closeCloudOffer('not-now')
+    await settle()
+    expect(window.location.hash).toBe(ALLEY)
+    expect(pushed()).toBeNull()
+  })
+
+  it("leaves Keep's own Not now going on to the line", async () => {
+    const s = mount()
+    await skipRange(s)
+
+    k('keep-not-now')?.click()
+    await settle()
+
+    expect(beat()).toBe('line')
+    expect(cloudOfferOpen()).toBe(false)
+    expect(onboardingShown()).toBe(true)
   })
 })
 

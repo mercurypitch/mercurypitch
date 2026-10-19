@@ -12,15 +12,21 @@
 //     live if the singer granted the mic here;
 //   - the rail steps aside (run-shell-store.ts `onboardingShown`), and a
 //     phone stays upright (portrait-lock.ts);
-//   - Back is Not now (shell-navigation.ts `registerOnboardingBack`).
+//   - Back is Not now (shell-navigation.ts `registerOnboardingBack`): the
+//     layer's own (`registerLayerNotNow`), which may open the Cloud offer
+//     before it leaves.
 //
 // It leaves once, by Not now or by its own last beat, and the flag records
-// that at once: it never opens again on this install. The shell is back as
-// it starts to fade (LEAVE_MS); the layer unmounts when the fade is over.
-// Its own end lands on the Warm-up's path (onboarding-landing.ts); Not now
-// leaves for the Sing room under it. Under the path the Sing room waits on:
-// arriving there it would open its mic on a remembered grant, under a
-// screen that wants the mic to itself. Back from the path lets it in.
+// that at once: it never opens again on this install. Not now is recorded
+// as it is said (`markNotNow`), though the layer stays up under the Cloud
+// offer it may open (owner, 20 Oct 2026), and once said it is how the
+// layer leaves. The shell is back as it starts to fade (LEAVE_MS); the
+// layer unmounts when the fade is over. Its own end lands on the Warm-up's
+// path, and Not now on the alley (onboarding-landing.ts). Under the path
+// the Sing room waits on: arriving there it would open its mic on a
+// remembered grant, under a screen that wants the mic to itself. Back from
+// the path lets it in. On the way to the alley it waits until the tab has
+// changed, a task after the address does, and then there is no Sing room.
 //
 // Keep's "Find your range first" (S7b §3.2), which the shell registers with
 // Keep for as long as the shell lives (account-offer.ts
@@ -44,7 +50,7 @@ import { currentTab, onboardingShown, pushed, setOnboardingShown, } from '../she
 import { openKeep, openKeepFromReveal, registerRangeFinder, } from '../shell/settings/account-offer'
 import { registerOnboardingBack } from '../shell/shell-navigation'
 import { markOnboardingDone, onboardingDue, settleOnboarding, } from './onboarding-flag'
-import { landOnWarmUp } from './onboarding-landing'
+import { landInAlley, landOnWarmUp } from './onboarding-landing'
 
 /** The layer's fade out, ms (the shell's --mp-in). */
 export const LEAVE_MS = 280
@@ -73,8 +79,12 @@ let lastExit: OnboardingExit | null = null
 let afterRange: ((exit: OnboardingExit) => void) | null = null
 /** The onboarding's own range, while its layer is up to run it. */
 let layerRange: (() => void) | null = null
-/** Lets the Sing room in under the landing's path, at once. */
+/** Lets the Sing room in, waiting under the path or for the alley, at once. */
 let letInNow: (() => void) | null = null
+/** The onboarding's own Not now, while its layer is up. */
+let layerNotNow: (() => void) | null = null
+/** Not now has been said on this layer: it leaves as Not now. */
+let notNowSaid = false
 
 function leaveMs(): number {
   return prefersReducedMotion() ? LEAVE_REDUCED_MS : LEAVE_MS
@@ -89,6 +99,7 @@ function show(next: OnboardingEntry): void {
     setMounted(false)
   }
   setEntry(next)
+  notNowSaid = false
   releaseArrival ??= holdRoomArrival()
   setMounted(true)
   setOnboardingShown(true)
@@ -124,6 +135,40 @@ export function registerLayerRange(run: () => void): () => void {
   }
 }
 
+/**
+ * The layer registers its own Not now here while it is up, so Back is the
+ * same Not now as its button: the Cloud offer when it is due, then the
+ * alley. Registration returns its own unregister.
+ */
+export function registerLayerNotNow(run: () => void): () => void {
+  layerNotNow = run
+  return () => {
+    if (layerNotNow === run) layerNotNow = null
+  }
+}
+
+/** Back while the layer is up: its own Not now, else leave as Not now. */
+function backAsNotNow(): boolean {
+  if (!untrack(onboardingShown)) return false
+  if (layerNotNow === null) return leaveOnboarding('not-now')
+  layerNotNow()
+  return true
+}
+
+/**
+ * Not now, said on the onboarding: done for good, and counted, at once and
+ * once. The layer may stay up a moment longer, under the Cloud offer Not
+ * now opens when it is due, so an app closed on that offer never opens
+ * the onboarding again. The range on its own leaves the flag be.
+ */
+export function markNotNow(): void {
+  if (!untrack(onboardingShown) || untrack(entry) !== 'onboarding') return
+  if (notNowSaid) return
+  notNowSaid = true
+  markOnboardingDone()
+  trackNativeOnboarding('native_onboarding_not_now')
+}
+
 /** After the reveal's Continue the card flies in; any other way, it is there. */
 function keepAgain(exit: OnboardingExit): void {
   if (exit === 'finished') openKeepFromReveal()
@@ -143,10 +188,12 @@ function findRangeFromKeep(): void {
 }
 
 /**
- * The Sing room under the landing's path arrives once nothing is pushed
- * over it any more: Back from the path, from any stop it went on to.
+ * The Sing room's arrival, let go once `free` holds: under the landing's
+ * path, once nothing is pushed over it any more (Back from the path, from
+ * any stop it went on to); on the way to the alley, once the tab has left
+ * it, which unmounts it.
  */
-function letInOnceUncovered(release: () => void): void {
+function letInOnce(free: () => boolean, release: () => void): void {
   createRoot((dispose) => {
     const letIn = (): void => {
       if (letInNow === letIn) letInNow = null
@@ -156,9 +203,9 @@ function letInOnceUncovered(release: () => void): void {
     letInNow = letIn
     createEffect(
       on(
-        pushed,
-        (top) => {
-          if (top === null) letIn()
+        free,
+        (yes) => {
+          if (yes) letIn()
         },
         { defer: true },
       ),
@@ -168,35 +215,48 @@ function letInOnceUncovered(release: () => void): void {
 
 /**
  * The layer leaves: the onboarding done for good (the range on its own
- * leaves the flag be), the Sing room let in (after the landing's path, on
- * the onboarding's own end), the rail back, and the layer gone once it has
- * faded. True when it was up.
+ * leaves the flag be), the onboarding's landing (the Warm-up's path on its
+ * own end, the alley on Not now), the Sing room let in once nothing covers
+ * it or it has gone, the rail back, and the layer gone once it has faded.
+ * Not now, once said, is how it leaves, whatever `asked` says. True when
+ * it was up.
  */
-export function leaveOnboarding(exit: OnboardingExit): boolean {
+export function leaveOnboarding(asked: OnboardingExit): boolean {
   if (!untrack(onboardingShown)) return false
+  const exit: OnboardingExit = notNowSaid ? 'not-now' : asked
   lastExit = exit
-  const landing = untrack(entry) === 'onboarding' && exit === 'finished'
-  if (untrack(entry) === 'onboarding') {
+  const onboarding = untrack(entry) === 'onboarding'
+  const landing = onboarding && exit === 'finished'
+  const toAlley = onboarding && exit === 'not-now'
+  if (toAlley) markNotNow()
+  else if (onboarding) {
     markOnboardingDone()
-    trackNativeOnboarding(
-      exit === 'not-now'
-        ? 'native_onboarding_not_now'
-        : 'native_onboarding_done',
-    )
-    // Pushed while the layer is still up: it fades off the path.
-    if (landing) landOnWarmUp()
+    trackNativeOnboarding('native_onboarding_done')
   }
+  // Pushed while the layer is still up: it fades off the path.
+  if (landing) landOnWarmUp()
+  // The address now; the tab a task later, as the layer starts to fade.
+  if (toAlley) landInAlley()
   setOnboardingShown(false)
   const release = releaseArrival
   releaseArrival = null
   if (release !== null && landing && untrack(pushed) !== null) {
-    letInOnceUncovered(release)
+    letInOnce(() => pushed() === null, release)
+  } else if (
+    release !== null &&
+    toAlley &&
+    untrack(currentTab) === TAB_SINGING
+  ) {
+    letInOnce(() => currentTab() !== TAB_SINGING, release)
   } else {
     release?.()
   }
   unmount = setTimeout(() => {
     unmount = null
     setMounted(false)
+    // A tab that has not changed by the fade's end never will: the Sing
+    // room arrives, as it did before the alley.
+    if (toAlley) letInNow?.()
   }, leaveMs())
   const then = afterRange
   afterRange = null
@@ -219,7 +279,7 @@ export function installNativeOnboarding(): void {
   if (settleOnboarding(welcomeSeen()) === 'due') {
     trackNativeOnboarding('native_onboarding_install')
   }
-  onCleanup(registerOnboardingBack(() => leaveOnboarding('not-now')))
+  onCleanup(registerOnboardingBack(backAsNotNow))
   onCleanup(registerRangeFinder(findRangeFromKeep))
   // On the tab's arrival, not on the flag's change: "Replay the
   // onboarding" sets it due from a screen that may sit over the Sing tab,
@@ -237,6 +297,8 @@ export function installNativeOnboarding(): void {
     letInNow?.()
     afterRange = null
     layerRange = null
+    layerNotNow = null
+    notNowSaid = false
     setOnboardingShown(false)
     setMounted(false)
     setEntry('onboarding')
