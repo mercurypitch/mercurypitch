@@ -92,7 +92,7 @@ export function MercView(props: MercViewProps): JSX.Element {
       })
       if (!stage.ok) return
       frame = requestAnimationFrame(feed)
-      props.onReady?.()
+      untrack(() => props.onReady)?.()
     })
   })
 
