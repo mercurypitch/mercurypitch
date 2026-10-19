@@ -30,6 +30,7 @@ import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { installPwaInstallListeners } from '@/lib/pwa-install'
 import { registerServiceWorker } from '@/lib/pwa-service-worker'
 import { showActionNotification } from '@/stores/notifications-store'
+import { stepAsideForLesson } from '@/stores/onboarding-store'
 import { initTheme } from '@/stores/theme-store'
 import { armDeveloperConsole } from '@/components/developer-console-arming'
 
@@ -110,6 +111,10 @@ consumeEmailVerifyRedirect()
 // Friendly admin paths are canonicalized before App mounts so they open the
 // Content Studio directly instead of briefly booting the consumer surface.
 normalizeAdminEntryRoute()
+// A Find Your Pitch lesson's practise link (?lesson=NN) opens the room it
+// names, not the intro: First Light steps aside before App decides this is a
+// first run. Before /exercises/<slug> cleans the address, too.
+stepAsideForLesson(window.location.search)
 
 const root = document.getElementById('root')
 if (!root) {

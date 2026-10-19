@@ -8,7 +8,8 @@
 // Completion is a plain seen-flag. It is deliberately NOT keyed off
 // APP_VERSION — doing that is exactly what made the old welcome
 // overlay re-impose itself on every release. Version news belongs in
-// the changelog modal.
+// the changelog modal. A lesson's practise link (`?lesson=NN`) spends
+// it before the flow ever opens: see stepAsideForLesson.
 //
 // See docs/plans/onboarding-first-light.md.
 
@@ -16,11 +17,12 @@ import { batch, createSignal } from 'solid-js'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import type { Beat, FlowState, OnboardingTrack, } from '@/features/onboarding/flow'
 import { beatProgress, firstBeat, nextBeat, walkedBeats, } from '@/features/onboarding/flow'
+import { lessonFromSearch } from '@/lib/lesson-marker'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 // One-way: ui-store knows nothing about onboarding, so this is not a cycle.
-import { dismissWelcome } from '@/stores/ui-store'
+import { dismissWelcome, showWelcome, welcomeSeen } from '@/stores/ui-store'
 
 const DONE_KEY = 'pitchperfect_onboarding_done'
 
@@ -225,7 +227,8 @@ export function advanceBeat(): Beat | null {
 }
 
 /**
- * Close the flow and mark it seen — both "done" and "skip" land here.
+ * Close the flow and mark it seen — "done", "skip" and a lesson's link
+ * (stepAsideForLesson) all land here.
  *
  * Batched, and that is load-bearing rather than tidy. `showWelcome`
  * being true with the flow shut is what OPENS the flow now that the
@@ -255,6 +258,53 @@ export function closeOnboarding(): void {
   setFlowOpen(false)
 }
 
+// ── A lesson's practise link ────────────────────────────────────
+
+/** The lesson whose link stepped the flow aside on this page load. */
+const [lessonArrival, setLessonArrival] = createSignal<number | null>(null)
+
+export { lessonArrival }
+
+/**
+ * A Find Your Pitch lesson sent this visitor to one room (`?lesson=NN`,
+ * lib/lesson-marker.ts): First Light steps aside, for good, before App
+ * decides this is a first run. index.tsx calls it once, before the render.
+ *
+ * For good rather than for this visit, because the lesson pages told a
+ * first visitor to do exactly this by hand — "close it with the × at the
+ * top right" — and the × ends the flow for good. A step-aside that lasted
+ * one visit would bring "Welcome to MercuryPitch" back over the app on
+ * their next visit without a marker, or within this one: /exercises/<slug>
+ * cleans its address to `/`, so the next reload boots without the marker.
+ * The links that bring somebody to do one thing (a jam room, a sync code,
+ * a password reset) already spend the welcome flag the same way. Nothing
+ * is lost: Settings' "Replay the intro" and #/map still open it.
+ *
+ * Not counted as `onboarding_skipped`: nobody saw the flow, and that event
+ * is the skip rate of the people who did.
+ *
+ * Returns the lesson when the flow stepped aside; null when there was
+ * nothing to step aside: no valid marker, a visitor who was offered the
+ * flow before, or the native build, whose first run is the alley.
+ */
+export function stepAsideForLesson(search: string): number | null {
+  const lesson = lessonFromSearch(search)
+  if (lesson === null || !showWelcome()) return null
+  setLessonArrival(lesson)
+  finishOnboarding()
+  return lesson
+}
+
+/**
+ * Had this device been here before this page load? What's New asks, to
+ * tell a returning visitor from a first-ever one. The spent welcome flag
+ * says so — unless this load's lesson link is what spent it, which says
+ * nothing about having been here.
+ */
+export function returningVisitor(): boolean {
+  return welcomeSeen() !== '' && lessonArrival() === null
+}
+
 /** Test/e2e hook: forget the flow so the next load runs it again. */
 export function resetOnboarding(): void {
   setOnboardingDone('')
@@ -267,6 +317,7 @@ export function resetOnboarding(): void {
   setSavedVoiceprints([])
   setCurrentBeat('sky')
   setFlowOpen(false)
+  setLessonArrival(null)
 }
 
 // Not reactive scopes — these are e2e escape hatches invoked from the test

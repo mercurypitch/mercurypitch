@@ -251,6 +251,7 @@ import { MercurySingStage } from '@/features/mercury-sing/MercurySingStage'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
+import { useFirstLight } from '@/features/onboarding/useFirstLight'
 import { createLegacyPianoPerformanceAdapter } from '@/features/piano/legacy/createLegacyPianoPerformanceAdapter'
 import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
@@ -326,7 +327,7 @@ import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, welcomeSeen, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, sessionLostOnLeave, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
@@ -334,7 +335,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
-import { closeOnboarding, flowOpen, openBeat, startOrResumeOnboarding, } from '@/stores/onboarding-store'
+import { closeOnboarding, flowOpen, returningVisitor, } from '@/stores/onboarding-store'
 import { startPracticeTimer } from '@/stores/practice-timer-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
@@ -705,10 +706,6 @@ const AppShell: Component<AppProps> = (props) => {
       setShowWelcome(true)
     }
   }
-  // ── First Light onboarding ──────────────────────────────────
-  // A replay (#/map) reopens the Map without re-running the first-run
-  // bookkeeping, so closing it can't rewind anyone's seen-flag.
-  const [onboardingReplay, setOnboardingReplay] = createSignal(false)
 
   // ── The opening ─────────────────────────────────────────────
   // Every cold load opens on a branded backdrop for a moment —
@@ -817,11 +814,12 @@ const AppShell: Component<AppProps> = (props) => {
 
   // What's New: the release page. Announced once per release line to a
   // visitor who was already here for the last one, and reachable from the
-  // sidebar afterwards. `welcomeSeen` is the returning-visitor test — a
-  // first-ever arrival is mid-onboarding and has no "new" to be shown. Not
-  // under the native build, which has no What's New (use-whats-new.ts).
+  // sidebar afterwards. `returningVisitor` is the test — a first-ever
+  // arrival is mid-onboarding and has no "new" to be shown, and neither has
+  // one a lesson's link sent here for the first time. Not under the native
+  // build, which has no What's New (use-whats-new.ts).
   const whatsNew = createWhatsNewController({ native: IS_NATIVE_BUILD })
-  onMount(() => whatsNew.announceIfNew(welcomeSeen() !== ''))
+  onMount(() => whatsNew.announceIfNew(returningVisitor()))
 
   const closeVoiceConstellation = () => {
     const exit = leaveVoiceConstellation(activeTab())
@@ -830,29 +828,11 @@ const AppShell: Component<AppProps> = (props) => {
     if (exit !== 'history') setVoiceConstellationOpen(false)
   }
 
-  const startFirstLight = () => {
-    setOnboardingReplay(false)
-    // Not plain startOnboarding: a Google sign-in mid-flow is a full-page
-    // redirect, and this reopens the flow where it left (the map with the
-    // measured voiceprint) instead of restarting the visitor at beat one.
-    startOrResumeOnboarding()
-  }
-
-  // The welcome door is gone. It was beat 1 twice: the same greeting,
-  // the same two choices, one screen earlier — and the card's own CTA
-  // ("Show me around") named a tour of the interface rather than the
-  // thing that actually happens, which is that we listen to you sing
-  // and hand back a voiceprint. `showWelcome` now means "this visitor
-  // has not been offered the flow yet", and the answer is to open it.
-  createEffect(() => {
-    if (!showWelcome() || flowOpen() || voiceConstellationOpen()) return
-    startFirstLight()
-  })
-
-  const openOnboardingMap = () => {
-    setOnboardingReplay(true)
-    openBeat('map')
-  }
+  // ── First Light onboarding ──────────────────────────────────
+  // Opens whenever it is due, and waits while the constellation owns the
+  // screen. A lesson's practise link (?lesson=NN) has already stepped it
+  // aside by now: index.tsx does that before the render.
+  const firstLight = useFirstLight(voiceConstellationOpen)
 
   const startGuideTour = (sectionIds: string[]) => {
     // Start before closing the dialog so a tour surface stays open across the
@@ -1284,7 +1264,7 @@ const AppShell: Component<AppProps> = (props) => {
     openResetPassword: (token) => setResetPasswordView({ token }),
     showResetPassword: () => resetPasswordView() != null,
     closeResetPassword: () => setResetPasswordView(null),
-    openOnboardingMap,
+    openOnboardingMap: firstLight.openMap,
     setVoiceConstellationOpen,
     voiceConstellationOpen,
     setWhatsNewOpen: whatsNew.setOpen,
@@ -3240,7 +3220,7 @@ const AppShell: Component<AppProps> = (props) => {
               }}
             >
               <FirstLight
-                replay={onboardingReplay()}
+                replay={firstLight.replay()}
                 onReady={dropOpeningAfterHold}
               />
             </ErrorBoundary>
