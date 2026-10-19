@@ -92,6 +92,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // the renderer is the same dynamic import as Lesson 1's.
   'learn/02.html': 165,
 
+  // Lesson 3, a draft lesson: emitted only by builds that show drafts
+  // (build:e2e, which runs this check; src/features/lessons/kit/drafts.ts).
+  // Measured 100. The listener, the pitch detector and Voice Mirror's scorer
+  // arrive through a dynamic import when Sing it's Start is pressed, and the
+  // band edges sit in their own leaf chunk, so the page stays this light
+  // only while both boundaries hold.
+  'learn/03.html': 125,
+
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
   // than a claim that the number is good.
@@ -142,6 +150,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   'learn/01.html': 90,
   // Lesson 2. Measured 75: the kit's sheets, its own and the slide guide's.
   'learn/02.html': 95,
+
+  // Lesson 3 (a draft, as above). Measured 77: the kit's sheets, the voice
+  // lessons' sheet and its own, and the shared Inter and Outfit @font-face
+  // rules.
+  'learn/03.html': 96,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

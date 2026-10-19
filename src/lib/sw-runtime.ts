@@ -135,6 +135,11 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/learn/01.html',
   '/learn/02',
   '/learn/02.html',
+  // A draft lesson too (src/features/lessons/kit/drafts.ts). The production
+  // build leaves its document out, and then the right answer for its path is
+  // the asset layer's 404 page, never the shell.
+  '/learn/03',
+  '/learn/03.html',
   '/jam-rooms',
   '/jam-rooms.html',
   // Search-intent entries (src/seo/entry-pages.ts). Each boots an existing

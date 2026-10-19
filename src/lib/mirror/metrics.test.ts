@@ -7,8 +7,9 @@
 
 import { describe, expect, it } from 'vitest'
 import { VOICE_TYPE_BANDS } from './legend-catalog'
+import * as bands from './match-bands'
 import type { F0Frame } from './metrics'
-import { computeAccuracy, computeDelta, computeMirrorResult, computeRange, computeSteadiness, foldCents, hzToCents, matchScore, medianFilter, pickMatchTargets, preprocess, scoreMatchTake, steadinessScore, summarize, voiceTypeHint, } from './metrics'
+import { BULLSEYE_TOLERANCE_CENTS, CLOSE_TOLERANCE_CENTS, computeAccuracy, computeDelta, computeMirrorResult, computeRange, computeSteadiness, foldCents, HIT_TOLERANCE_CENTS, hzToCents, matchScore, medianFilter, pickMatchTargets, preprocess, scoreMatchTake, steadinessScore, summarize, voiceTypeHint, } from './metrics'
 
 const HOP = 0.016
 
@@ -313,6 +314,67 @@ describe('scoreMatchTake', () => {
     expect(take.band).toBe('miss')
     expect(take.deviationCents).toBeCloseTo(90, 0)
     expect(take.score).toBeCloseTo(20, 0)
+  })
+})
+
+describe('the match bands (§4.2)', () => {
+  it('names its edges 15, 35 and 60 cents, the same numbers the lesson pages draw', () => {
+    // Act
+    const edges = [
+      BULLSEYE_TOLERANCE_CENTS,
+      HIT_TOLERANCE_CENTS,
+      CLOSE_TOLERANCE_CENTS,
+    ]
+
+    // Assert: metrics re-exports the leaf's own values, never a copy
+    expect(edges).toEqual([15, 35, 60])
+    expect(edges).toEqual([
+      bands.BULLSEYE_TOLERANCE_CENTS,
+      bands.HIT_TOLERANCE_CENTS,
+      bands.CLOSE_TOLERANCE_CENTS,
+    ])
+  })
+
+  it('keeps a take just inside the bullseye edge a bullseye, and one just past it a hit', () => {
+    // Act
+    const inside = scoreMatchTake(
+      tone(57, 2, { offsetCents: BULLSEYE_TOLERANCE_CENTS - 0.5 }),
+      57,
+    )
+    const past = scoreMatchTake(
+      tone(57, 2, { offsetCents: BULLSEYE_TOLERANCE_CENTS + 0.5 }),
+      57,
+    )
+
+    // Assert
+    expect(inside.band).toBe('bullseye')
+    expect(past.band).toBe('hit')
+  })
+
+  it('keeps a take just inside the close edge close, and a locked take just past it a miss', () => {
+    // Arrange: past the close edge a take never locks, so it locks on the
+    // note first and then sits past the edge
+    const locked = tone(57, 0.3)
+
+    // Act
+    const inside = scoreMatchTake(
+      tone(57, 2, { offsetCents: CLOSE_TOLERANCE_CENTS - 0.5 }),
+      57,
+    )
+    const past = scoreMatchTake(
+      [
+        ...locked,
+        ...tone(57, 2, {
+          offsetCents: CLOSE_TOLERANCE_CENTS + 0.5,
+          tStart: 0.3,
+        }),
+      ],
+      57,
+    )
+
+    // Assert
+    expect(inside.band).toBe('close')
+    expect(past.band).toBe('miss')
   })
 })
 

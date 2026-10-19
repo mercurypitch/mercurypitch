@@ -11,6 +11,7 @@ import solidPlugin from 'vite-plugin-solid'
 import { ENTRY_PAGES } from './src/seo/entry-pages'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
 import { devLogRelayPlugin } from './tools/dev-log-relay'
+import { DRAFT_LESSONS_ENV, isDraftLessonsShown, lessonInputs, lessonPaths, } from './tools/draft-lessons'
 import { fontAliasesPlugin } from './tools/font-aliases'
 import { writeEntryPages } from './tools/generate-entry-pages'
 import { glassGameAssetsPlugin } from './tools/glass-game-assets'
@@ -77,10 +78,12 @@ const DELETE_ACCOUNT_PATH = '/delete-account'
 // with the whole lesson in its markup and a module that adds the sound and
 // the toys. Production serves /learn/01 from learn/01.html through
 // html_handling; dev and preview need the rewrite below, and the service
-// worker must leave the path alone (STANDALONE_DOCUMENT_PATHS). Lesson 2,
-// /learn/02, is served the same way.
-const LESSON_01_PATH = '/learn/01'
-const LESSON_02_PATH = '/learn/02'
+// worker must leave the path alone (STANDALONE_DOCUMENT_PATHS). Every
+// learn/NN.html is a lesson page, served the same way (Lessons 1 and 2 on
+// every build); one still waiting on a sign-off
+// (src/features/lessons/kit/drafts.ts) is built and routed only where the
+// build shows drafts: in development mode and the e2e bundle, never in
+// production (tools/draft-lessons.ts).
 
 // Clean path -> generated document, straight off the model in
 // src/seo/entry-pages.ts. Production does this at Cloudflare's asset layer
@@ -99,7 +102,8 @@ const ENTRY_REWRITES = new Map<string, string>(
 // + src/worker.ts) — deliberately NO alias HTML files are emitted for them,
 // unlike /karaoke-night and /jam-rooms (standaloneAliasFilesPlugin below).
 
-function standaloneEntryRewritePlugin() {
+function standaloneEntryRewritePlugin(lessonPaths: readonly string[]) {
+  const lessons = new Set(lessonPaths)
   const rewrite = (server: {
     middlewares: {
       use: (
@@ -131,11 +135,8 @@ function standaloneEntryRewritePlugin() {
         if (path === DELETE_ACCOUNT_PATH) {
           req.url = `${DELETE_ACCOUNT_PATH}.html${search}`
         }
-        if (path === LESSON_01_PATH) {
-          req.url = `${LESSON_01_PATH}.html${search}`
-        }
-        if (path === LESSON_02_PATH) {
-          req.url = `${LESSON_02_PATH}.html${search}`
+        if (lessons.has(path)) {
+          req.url = `${path}.html${search}`
         }
         const entry = ENTRY_REWRITES.get(path)
         if (entry !== undefined) req.url = entry
@@ -248,6 +249,14 @@ export default defineConfig(({ command, mode }) => {
     process.env[GLASSWORKS_LISTED_ENV] ?? modeEnv[GLASSWORKS_LISTED_ENV],
   )
 
+  // Whether this build shows the Find Your Pitch lessons that still wait on
+  // a sign-off: built, routed and linked in development mode (`pnpm dev`,
+  // `build:dev`: the dev deploy and PR previews) and in `build:e2e`; left out
+  // of the production build. See tools/draft-lessons.ts.
+  const draftsShown = isDraftLessonsShown(
+    process.env[DRAFT_LESSONS_ENV] ?? modeEnv[DRAFT_LESSONS_ENV],
+  )
+
   // Written before Vite resolves the inputs below, so dev, preview, build and
   // the tests all read the same documents. Git-ignored; the model is the
   // reviewable artefact.
@@ -289,7 +298,7 @@ export default defineConfig(({ command, mode }) => {
       // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
       // vertexFn/fragmentFn closures) — same setup as chaos-master.
       typegpuPlugin({}),
-      standaloneEntryRewritePlugin(),
+      standaloneEntryRewritePlugin(lessonPaths(__dirname, draftsShown)),
       standaloneAliasFilesPlugin(),
       nonProductionNoindexPlugin(mode === 'production'),
       removeWasmAssetsPlugin(),
@@ -449,10 +458,11 @@ export default defineConfig(({ command, mode }) => {
           notFound: resolve(__dirname, '404.html'),
           // Plain, like the 404, but answered with a 200 at its clean path.
           deleteAccount: resolve(__dirname, 'delete-account.html'),
-          // Lesson 1 of Find Your Pitch, at /learn/01 (LESSON_01_PATH).
-          lesson01: resolve(__dirname, 'learn/01.html'),
-          // Lesson 2, "Twelve notes", at /learn/02 (LESSON_02_PATH).
-          lesson02: resolve(__dirname, 'learn/02.html'),
+          // Find Your Pitch's lesson pages, learn/NN.html at /learn/NN
+          // (lesson01, lesson02, lesson03): every one, less the lessons still
+          // waiting on a sign-off where the build hides them, as production
+          // does.
+          ...lessonInputs(__dirname, draftsShown),
         },
         output: {
           manualChunks(id) {
@@ -486,6 +496,14 @@ export default defineConfig(({ command, mode }) => {
             // standalone rooms and the full mixer. Pin it before `advanced`
             // so a route-local gain write cannot preload stores/DB/media.
             if (id.includes('/src/lib/volume-curve.')) return 'volume-curve'
+            // Voice Mirror's band edges (15, 35, 60 cents): a leaf with no
+            // imports. The lesson pages draw the band on first paint and load
+            // the scorer only when someone presses Start; left to the
+            // `pitch-core` rule below, three numbers would bring the whole
+            // chunk (the scorer, the mic, consent, auth) onto their first
+            // paint.
+            if (id.includes('/src/lib/mirror/match-bands.'))
+              return 'match-bands'
             // These dependency-free UI leaves are shared by the app and
             // standalone rooms. If Rollup co-locates either one with
             // LibraryModal, a standalone first paint inherits the complete
@@ -852,6 +870,12 @@ export default defineConfig(({ command, mode }) => {
       // env file used (src/lib/glassworks-listing.ts).
       [`import.meta.env.${GLASSWORKS_LISTED_ENV}`]: JSON.stringify(
         glassworksListed ? '1' : '0',
+      ),
+      // The same for the draft lessons: a hidden build folds every draft's
+      // season entry to a planned lesson, with no page to link
+      // (src/features/lessons/kit/draft-switch.ts).
+      [`import.meta.env.${DRAFT_LESSONS_ENV}`]: JSON.stringify(
+        draftsShown ? '1' : '0',
       ),
     },
     optimizeDeps: {

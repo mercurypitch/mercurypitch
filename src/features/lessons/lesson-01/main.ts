@@ -20,6 +20,7 @@ import { createEpisode } from '@/features/lessons/kit/episode'
 import { createExplorer } from '@/features/lessons/kit/explorer'
 import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
 import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
+import { mountLoud } from '@/features/lessons/kit/loud'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
@@ -37,7 +38,6 @@ import { initHero } from './hero'
 import { initPredict } from './predict'
 import { QUIZ_QUESTIONS } from './quiz-questions'
 import { initSing } from './sing'
-import { initLoudToy } from './toy-loud'
 import { initOctaveToy } from './toy-octave'
 import { initSpiralToy } from './toy-spiral'
 import { initStringToy } from './toy-string'
@@ -63,7 +63,12 @@ registerToy({
     if (n !== 2) dial.stop()
   },
 })
-initLoudToy(deck)
+const loud = mountLoud(q('[data-toy="3"]'), { active: deck.toyActive(3) })
+registerToy({
+  onStep: (n) => {
+    if (n !== 3) loud.stop()
+  },
+})
 initOctaveToy(deck)
 initSpiralToy(deck)
 deck.start()

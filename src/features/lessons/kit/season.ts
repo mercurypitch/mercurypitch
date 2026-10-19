@@ -16,7 +16,12 @@
 // lesson whose film is published is ready to watch and read; one whose film
 // is made but not yet published is in production (read now, the film to
 // come); one with no film yet is ready to read. Only a published film ever
-// offers "Watch the episode".
+// offers "Watch the episode". A lesson whose page waits on a sign-off is a
+// draft (drafts.ts): live where the build shows drafts, planned where it
+// hides them.
+
+import { DRAFTS_SHOWN } from './draft-switch'
+import { DRAFT_LESSONS } from './drafts'
 
 export const TOPICS = {
   T01: 'Sound and pitch: vibration, frequency, hertz; high is not loud',
@@ -189,6 +194,14 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Match a note',
     short: 'Match a note',
     topics: ['S01', 'S05'],
+    // A draft until its sign-off (drafts.ts). Written as one constant
+    // expression, never a function call, so a build that hides drafts folds
+    // it to nothing: the lesson reads as planned and no page that build
+    // ships carries the document it leaves out. Once its line leaves
+    // drafts.ts, the same expression folds to its page.
+    ...(DRAFT_LESSONS[3] !== undefined && !DRAFTS_SHOWN
+      ? {}
+      : { len: '15 minutes', page: '/learn/03' }),
     hook: "Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going on?",
     sig: "The singer's line chasing Merc's target band, the gap shrinking in cents.",
     pr: {

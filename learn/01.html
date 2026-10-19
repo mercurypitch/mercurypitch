@@ -663,11 +663,13 @@
                     <div class="readout">
                       <div class="ro">
                         <span class="k">Loudness</span
-                        ><span class="v" id="roLoud">50<small>%</small></span>
+                        ><span class="v" id="roLoud" data-loud-ro="loud"
+                          >50<small>%</small></span
+                        >
                       </div>
                       <div class="ro">
                         <span class="k">Pitch</span
-                        ><span class="v" id="roPitch"
+                        ><span class="v" id="roPitch" data-loud-ro="pitch"
                           >220<small>Hz</small></span
                         >
                       </div>
@@ -675,15 +677,22 @@
                   </div>
                   <p class="viz-status" id="loudStatus">
                     <span class="vs-hint">Hold a slider to hear it</span
-                    ><span class="flag" id="loudFlag" style="opacity: 0"></span>
+                    ><span
+                      class="flag"
+                      id="loudFlag"
+                      data-loud-flag
+                      style="opacity: 0"
+                    ></span>
                   </p>
                   <div class="slider-row">
                     <label for="amp"
-                      >How far (amplitude) <b id="ampVal">50%</b></label
+                      >How far (amplitude)
+                      <b id="ampVal" data-loud-far-value>50%</b></label
                     >
                     <input
                       class="range"
                       id="amp"
+                      data-loud="far"
                       type="range"
                       min="5"
                       max="100"
@@ -693,11 +702,13 @@
                   </div>
                   <div class="slider-row">
                     <label for="fast"
-                      >How fast (frequency) <b id="fastVal">220 Hz</b></label
+                      >How fast (frequency)
+                      <b id="fastVal" data-loud-fast-value>220 Hz</b></label
                     >
                     <input
                       class="range"
                       id="fast"
+                      data-loud="fast"
                       type="range"
                       min="0"
                       max="1000"

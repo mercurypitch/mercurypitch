@@ -66,7 +66,17 @@ export default defineConfig({
     // Home. The unlisted production build is covered by stubbing this back to
     // "0" (src/tests/home-destinations.test.tsx) and by
     // scripts/assert-glassworks-listing.mjs on every build.
-    env: { VITE_API_BASE_URL: '', VITE_GLASSWORKS_LISTED: '1' },
+    //
+    // Draft lessons shown, as on the dev deploy and in the e2e bundle: the
+    // lesson suites describe the pages being built. The production build,
+    // which hides them, is covered by stubbing this back to "0"
+    // (src/features/lessons/kit/season.test.ts) and by
+    // scripts/assert-draft-lessons.mjs on every build.
+    env: {
+      VITE_API_BASE_URL: '',
+      VITE_GLASSWORKS_LISTED: '1',
+      VITE_DRAFT_LESSONS: '1',
+    },
     // ALL_TESTS is one glob set for src, rather than a per-directory list. The
     // old list silently dropped whole categories: src/components/__tests__
     // matched only .test.tsx, so a .test.ts placed there ran nowhere and
