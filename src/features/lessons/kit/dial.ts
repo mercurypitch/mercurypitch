@@ -1,72 +1,66 @@
 // ============================================================
-// Lesson 1 dial toy — Fig. 2, a frequency dial from 110 to 880 Hz
+// Lesson dial — a frequency dial from 110 to 880 Hz, sounding while held
 // ============================================================
 //
 // The dial is logarithmic, 110 * 8^(value / 1000), so each octave takes the
 // same travel, as the ear hears it. The canvas holds 20 ms of air still, with
 // one swing bracketed, so the squeeze is read against a fixed time axis while
 // the bead on the pitch rail climbs. The note sounds only while the slider is
-// held, and stops if the viewer leaves the step mid-hold.
+// held (`holdTone`), and a page stops it when the viewer leaves its step.
+//
+// Mounted on a root, any number per page. Inside the root: the canvas, the
+// range input, and optionally the `[data-dial-hz]` and `[data-dial-period]`
+// readouts and the `[data-dial-note]` name. Lesson 2's semitone ruler and
+// Lesson 3's match toy reuse its parts (the log slider, `holdTone`, the
+// rail) under drawings of their own.
 
-import { q, TAU } from '@/features/lessons/kit/dom'
-import { addDrawer, surface } from '@/features/lessons/kit/frame-loop'
-import { COLOR, fmtHz, nameOf, rgba } from '@/features/lessons/kit/notes'
-import type { Voice } from '@/features/lessons/kit/sound'
-import { Sound } from '@/features/lessons/kit/sound'
-import type { StepDeck } from '@/features/lessons/kit/step-deck'
-import { registerToy } from '@/features/lessons/kit/step-deck'
-import { drawRail, glowStroke, holdToPlay, rangeFill, } from '@/features/lessons/kit/toy-helpers'
+import { q, TAU } from './dom'
+import { addDrawer, surface, watch } from './frame-loop'
+import { COLOR, fmtHz, nameOf, rgba } from './notes'
+import { drawRail, glowStroke, holdTone, rangeFill } from './toy-helpers'
 
-export function initDialToy(deck: StepDeck): void {
-  const cv = surface(q<HTMLCanvasElement>('#cvDial'))
-  const input = q<HTMLInputElement>('#dial')
-  const roHz = q('#roHz')
-  const roPeriod = q('#roPeriod')
-  const dialNote = q('#dialNote')
+export interface DialOptions {
+  /** When the figure draws: a deck's `toyActive(n)`; default while its root is on screen. */
+  readonly active?: () => boolean
+}
+
+export interface Dial {
+  /** The dial's frequency, Hz. */
+  readonly frequency: number
+  /** Stops a held note now (the viewer left its step). */
+  stop(): void
+}
+
+export function mountDial(root: HTMLElement, opts: DialOptions = {}): Dial {
+  const cv = surface(q<HTMLCanvasElement>('canvas', root))
+  const input = q<HTMLInputElement>('input[type="range"]', root)
+  const roHz = root.querySelector('[data-dial-hz]')
+  const roPeriod = root.querySelector('[data-dial-period]')
+  const dialNote = root.querySelector('[data-dial-note]')
   let f = 220
-  let v: Voice | null = null
-  let playing = false
   const toF = (): number => 110 * Math.pow(8, Number(input.value) / 1000)
+  const tone = holdTone(input, () => f)
 
   function update(): void {
     f = toF()
     rangeFill(input)
-    roHz.innerHTML = `${fmtHz(f)}<small>Hz</small>`
-    roPeriod.innerHTML = `${(1000 / f).toFixed(2)}<small>ms</small>`
+    if (roHz !== null) roHz.innerHTML = `${fmtHz(f)}<small>Hz</small>`
+    if (roPeriod !== null)
+      roPeriod.innerHTML = `${(1000 / f).toFixed(2)}<small>ms</small>`
     const m = 69 + 12 * Math.log2(f / 440)
     const mr = Math.round(m)
     const nm = Math.abs(m - mr) < 0.18 ? nameOf(mr) : null
-    dialNote.textContent = nm ?? 'between letters'
+    if (dialNote !== null) dialNote.textContent = nm ?? 'between letters'
     input.setAttribute('aria-valuetext', `${Math.round(f)} hertz`)
-    if (v) v.setFreq(f, 0.015)
+    tone.follow()
   }
   input.addEventListener('input', update)
-  holdToPlay(input, {
-    start() {
-      playing = true
-      if (Sound.canPlay()) v = Sound.voice(f, { gain: 0.13 })
-    },
-    stop() {
-      playing = false
-      if (v) {
-        v.stop()
-        v = null
-      }
-    },
-  })
   update()
-  registerToy({
-    onStep(n) {
-      if (n !== 2 && v) {
-        v.stop()
-        v = null
-      }
-    },
-  })
 
   addDrawer({
-    active: deck.toyActive(2),
+    active: opts.active ?? watch(root),
     draw() {
+      const playing = tone.holding
       const { ctx, w: W, h: H } = cv.fit()
       const railX = W - 30
       const wx0 = 18
@@ -126,4 +120,11 @@ export function initDialToy(deck: StepDeck): void {
       })
     },
   })
+
+  return {
+    get frequency() {
+      return f
+    },
+    stop: () => tone.stop(),
+  }
 }

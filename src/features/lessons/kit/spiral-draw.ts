@@ -1,19 +1,25 @@
 // ============================================================
-// Lesson 1 spiral drawing — one frame of the helix, its beads and the keyboard
+// Lesson spiral drawing — one frame of the helix, its beads and the keyboard
 // ============================================================
 //
 // The beads sit on a helix at 30 degrees per semitone, so every A faces the
 // front one turn apart and every C sits on one seam, where the octave number
-// goes up. Unrolling moves each bead onto its piano key (toy-spiral-keys.ts),
+// goes up. Unrolling moves each bead onto its piano key (spiral-keys.ts),
 // the low notes first, while the camera tilts down to the keyboard's plane.
 // The helix is drawn back to front by depth, and a frame returns where it
 // drew each bead and key, so the toy tests a tap against exactly what the
 // viewer saw. The focus ring and the name tag go on top, last.
+//
+// A black key's bead stays a faint disc with a "?" (Lesson 1's five notes
+// with no letter) until its copy of the spiral lights it; a lit bead glows
+// and carries its names in the page's spelling (names.ts).
 
-import { clamp, easeInOut, lerp, smooth, TAU } from '@/features/lessons/kit/dom'
-import { COLOR, fmtHz, hz, letterOf, nameOf, noteColor, rgba, } from '@/features/lessons/kit/notes'
-import type { Keyboard, KeyboardView, KeyHit } from './toy-spiral-keys'
-import { drawKeyboard, keyboardLayout, LO, N, pulseOf, roundedRect, } from './toy-spiral-keys'
+import { clamp, easeInOut, lerp, smooth, TAU } from './dom'
+import type { Spelling } from './names'
+import { namesFor } from './names'
+import { COLOR, letterOf, nameOf, noteColor, rgba, signName } from './notes'
+import type { Keyboard, KeyboardView, KeyHit } from './spiral-keys'
+import { drawKeyboard, keyboardLayout, LO, N, pulseOf, roundedRect, } from './spiral-keys'
 
 /** Where a bead was drawn: its semitone from A2, centre, radius and depth. */
 export interface BeadHit {
@@ -24,21 +30,28 @@ export interface BeadHit {
   z: number
 }
 
+/** Beads with a letter carry it on the bead ('letter'), or their full name beside it ('name'). */
+export type BeadLabels = 'letter' | 'name'
+
 /** What one frame needs from the toy. */
 export interface SpiralView extends KeyboardView {
   yaw: number
   /** 0 is the spiral, 1 the keyboard. */
   u: number
-  step6: boolean
+  labels: BeadLabels
+  /** The black keys lit on this copy, by MIDI number. */
+  lit: ReadonlySet<number>
 }
 
-/** What the overlays need: the selection, the pointer's hover and the last tap. */
+/** What the overlays need: the selection, the pointer's hover, the last tap and the tag's text. */
 export interface OverlayView {
   u: number
   focused: boolean
   sel: number
   hover: number | null
   tapLabel: { s: number; t: number } | null
+  /** A bead's name tag: "A3 · 220 Hz". */
+  tag: (midi: number) => string
 }
 
 type Point = { x: number; y: number; z: number; p: number }
@@ -195,13 +208,14 @@ function drawCName(sc: Scene, b: BeadLook): void {
   ctx.globalAlpha = alpha
 }
 
-// in step 5 the letter sits on the bead; in step 6 the full name sits beside it (a C has its own)
+// the letter sits on the bead, or the full name beside it (a C has its own)
 function drawBeadLetter(sc: Scene, b: BeadLook, L: string): void {
   const { ctx, view } = sc
   const { m, x, y, p, r0 } = b
-  const lab = view.step6 ? (nameOf(m) ?? '') : L
+  const beside = view.labels === 'name'
+  const lab = beside ? (nameOf(m) ?? '') : L
   ctx.textBaseline = 'middle'
-  if (!view.step6) {
+  if (!beside) {
     ctx.font = `600 ${Math.round(11 * p)}px Outfit, sans-serif`
     ctx.fillStyle = '#0d1117'
     ctx.textAlign = 'center'
@@ -267,6 +281,49 @@ function drawPlainBead(sc: Scene, b: BeadLook): void {
   }
 }
 
+/** A lit black-key bead's names beside it, one per line, in the page's spelling. */
+function drawLitNames(sc: Scene, b: BeadLook, spelling: Spelling): void {
+  const { ctx } = sc
+  const { m, x, y, p, r0 } = b
+  const names = namesFor(m, spelling)
+  const size = Math.round(12 * p)
+  ctx.font = `600 ${size}px Outfit, sans-serif`
+  ctx.fillStyle = COLOR.ink
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  const top = y - ((names.length - 1) * (size + 1)) / 2
+  names.forEach((n, i) => {
+    ctx.fillText(
+      signName(n, { octave: sc.view.labels === 'name' }),
+      x + r0 + 4,
+      top + i * (size + 1),
+    )
+  })
+}
+
+// a black key its copy has heard: a chrome sphere with a glow, and its names beside it
+function drawLitBead(sc: Scene, b: BeadLook): void {
+  const { ctx, ka, view } = sc
+  const { x, y, r0, pulse } = b
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, r0 * 2.6)
+  glow.addColorStop(0, rgba(COLOR.chrome, 0.34 + 0.3 * pulse))
+  glow.addColorStop(1, 'rgba(0,0,0,0)')
+  ctx.fillStyle = glow
+  ctx.beginPath()
+  ctx.arc(x, y, r0 * 2.6, 0, TAU)
+  ctx.fill()
+  const hl = r0 * 0.35
+  const g = ctx.createRadialGradient(x - hl, y - hl, r0 * 0.1, x, y, r0)
+  g.addColorStop(0, '#ffffff')
+  g.addColorStop(0.45, COLOR.chrome)
+  g.addColorStop(1, '#4a5563')
+  ctx.fillStyle = g
+  ctx.beginPath()
+  ctx.arc(x, y, r0, 0, TAU)
+  ctx.fill()
+  if (ka < 0.4 && b.p > 0.92) drawLitNames(sc, b, view.spelling)
+}
+
 /** One bead; null when it has faded out and is neither drawn nor tappable. */
 function drawBead(sc: Scene, it: Bead): BeadHit | null {
   const { ctx, now, view, R, ka } = sc
@@ -286,6 +343,7 @@ function drawBead(sc: Scene, it: Bead): BeadHit | null {
   const look: BeadLook = { m, x, y, p, r0, pulse, alpha }
   ctx.globalAlpha = alpha
   if (L !== null) drawNamedBead(sc, look, L)
+  else if (view.lit.has(m)) drawLitBead(sc, look)
   else drawPlainBead(sc, look)
   ctx.globalAlpha = 1
   return { s, x, y, r: r0, z }
@@ -329,9 +387,10 @@ function drawNameTag(
   ctx: CanvasRenderingContext2D,
   W: number,
   th: BeadHit,
+  tag: (midi: number) => string,
 ): void {
   const m = LO + th.s
-  const txt = `${nameOf(m) ?? 'unnamed (Lesson 2)'} · ${fmtHz(hz(m))} Hz`
+  const txt = tag(m)
   ctx.font = '600 14px Outfit, sans-serif'
   const tw = ctx.measureText(txt).width + 20
   let tx = th.x - tw / 2
@@ -359,7 +418,7 @@ export function drawOverlays(
   hits: BeadHit[],
   o: OverlayView,
 ): void {
-  const { u, focused, sel, hover, tapLabel } = o
+  const { u, focused, sel, hover, tapLabel, tag } = o
   // the keyboard's own focus on the spiral: an aqua ring round the selected bead
   if (focused && u < 0.6) {
     const h = hits.find((b) => b.s === sel)
@@ -380,5 +439,5 @@ export function drawOverlays(
         ? sel
         : null)
   const th = hits.find((h) => h.s === tipS)
-  if (th && u < 0.6) drawNameTag(ctx, W, th)
+  if (th && u < 0.6) drawNameTag(ctx, W, th, tag)
 }

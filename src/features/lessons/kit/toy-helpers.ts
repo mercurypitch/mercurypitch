@@ -4,6 +4,8 @@
 
 import { TAU } from './dom'
 import { COLOR, logPos } from './notes'
+import type { Voice, VoiceOptions } from './sound'
+import { Sound } from './sound'
 
 /** Paints a range input's filled part (the CSS reads --p and --fill). */
 export function rangeFill(input: HTMLInputElement, color?: string): void {
@@ -62,6 +64,57 @@ export function holdToPlay(
     window.clearTimeout(keyTimer)
     keyTimer = window.setTimeout(end, 700)
   })
+}
+
+/** A held tone's controls: follow the slider, and stop early. */
+export interface HeldTone {
+  /** True from the press until the release. */
+  readonly holding: boolean
+  /** Moves a sounding tone to the slider's current frequency. */
+  follow(): void
+  /** Stops the tone now (a step left mid-hold); the hold itself ends on release. */
+  stop(): void
+}
+
+/**
+ * A slider that sounds its frequency while held, the tone following it as
+ * it moves (`follow`, from the slider's input handler). Sound off keeps it
+ * silent and the slider still works.
+ */
+export function holdTone(
+  input: HTMLInputElement,
+  freq: () => number,
+  voice: VoiceOptions = { gain: 0.13 },
+): HeldTone {
+  let v: Voice | null = null
+  let holding = false
+  holdToPlay(input, {
+    start() {
+      holding = true
+      if (Sound.canPlay()) v = Sound.voice(freq(), voice)
+    },
+    stop() {
+      holding = false
+      if (v) {
+        v.stop()
+        v = null
+      }
+    },
+  })
+  return {
+    get holding() {
+      return holding
+    },
+    follow() {
+      if (v) v.setFreq(freq(), 0.015)
+    },
+    stop() {
+      if (v) {
+        v.stop()
+        v = null
+      }
+    },
+  }
 }
 
 export interface RailSpec {

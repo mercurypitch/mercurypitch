@@ -5,11 +5,14 @@
 // Copied exactly from the reviewed page, in authored order: the stored seed
 // shuffles by position, so reordering the options here would reshuffle every
 // returning viewer's answers. The strings are markup, so they stay in code.
+// The ids are the telemetry's question_id on every page that asks them:
+// Lesson 2's recall check asks questions 2 and 4 as `l01-q2` and `l01-q4`.
 
 import type { QuizQuestion } from '@/features/lessons/kit/quiz'
 
 export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
   {
+    id: 'l01-q1',
     question: 'What makes a note higher?',
     options: [
       {
@@ -29,6 +32,7 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
     ],
   },
   {
+    id: 'l01-q2',
     question: "You double a note's frequency. What do you get?",
     options: [
       {
@@ -49,6 +53,7 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
     ],
   },
   {
+    id: 'l01-q3',
     question: 'Why do A3 and A4 share a letter?',
     options: [
       {
@@ -70,6 +75,7 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
     ],
   },
   {
+    id: 'l01-q4',
     question: 'Which note comes right after B3?',
     options: [
       {

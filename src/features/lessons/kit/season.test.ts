@@ -3,7 +3,21 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { ancestors, EDGES, lessonPath, LESSONS, unlocks } from './season'
+import type { Lesson } from './season'
+import { ancestors, EDGES, lessonPath, LESSONS, lessonStatus, unlocks, } from './season'
+
+/** A lesson for a status test, live or planned as `extra` makes it. */
+const lesson = (extra: Partial<Lesson> = {}): Lesson => ({
+  n: 9,
+  lane: 'theory',
+  title: 'Lesson nine',
+  short: 'Nine',
+  topics: [],
+  hook: 'Why?',
+  sig: 'A figure.',
+  pr: {},
+  ...extra,
+})
 
 /** Lesson n's lit edges as { 'a-b': role }, leaving out the edges off its path. */
 function litEdges(n: number): Record<string, string> {
@@ -169,5 +183,35 @@ describe('LESSONS', () => {
         String(L.n).padStart(2, '0'),
       )
     }
+  })
+})
+
+describe('lessonStatus', () => {
+  it('reads a live lesson from its film, and a lesson with no page as planned', () => {
+    // Arrange
+    const lessons = [
+      lesson({ page: '/learn/09', film: 'published' }),
+      lesson({ page: '/learn/09', film: 'production' }),
+      lesson({ page: '/learn/09' }),
+      lesson(),
+    ]
+
+    // Act
+    const states = lessons.map((L) => lessonStatus(L, false))
+
+    // Assert
+    expect(states).toEqual(['ready', 'production', 'read', 'planned'])
+  })
+
+  it('says done once the viewer marks it, whatever its film', () => {
+    // Act
+    const states = [
+      lesson({ page: '/learn/09', film: 'published' }),
+      lesson({ page: '/learn/09', film: 'production' }),
+      lesson(),
+    ].map((L) => lessonStatus(L, true))
+
+    // Assert
+    expect(states).toEqual(['done', 'done', 'done'])
   })
 })

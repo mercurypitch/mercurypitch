@@ -12,7 +12,9 @@ import '@fontsource-variable/outfit'
 import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
+import '@/features/lessons/kit/lesson-stage.css'
 import './lesson-01.css'
+import { mountDial } from '@/features/lessons/kit/dial'
 import { q } from '@/features/lessons/kit/dom'
 import { createEpisode } from '@/features/lessons/kit/episode'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -23,7 +25,7 @@ import { Motion } from '@/features/lessons/kit/motion-switch'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
-import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { createStepDeck, registerToy } from '@/features/lessons/kit/step-deck'
 import vttUrl from './assets/lesson-01.en.vtt?url'
 import mercBlue from './assets/merc-blue.png'
 import mercOrange from './assets/merc-orange.png'
@@ -35,7 +37,6 @@ import { initHero } from './hero'
 import { initPredict } from './predict'
 import { QUIZ_QUESTIONS } from './quiz-questions'
 import { initSing } from './sing'
-import { initDialToy } from './toy-dial'
 import { initLoudToy } from './toy-loud'
 import { initOctaveToy } from './toy-octave'
 import { initSpiralToy } from './toy-spiral'
@@ -56,11 +57,16 @@ const deck = createStepDeck({
   after: { label: 'Sing it', selector: '#sing' },
 })
 initStringToy(deck)
-initDialToy(deck)
+const dial = mountDial(q('[data-toy="2"]'), { active: deck.toyActive(2) })
+registerToy({
+  onStep: (n) => {
+    if (n !== 2) dial.stop()
+  },
+})
 initLoudToy(deck)
 initOctaveToy(deck)
 initSpiralToy(deck)
-deck.show(1)
+deck.start()
 
 initSing({ blue: mercBlue, orange: mercOrange })
 createQuiz({
@@ -69,7 +75,7 @@ createQuiz({
   keys: { seed: 'fyp-l01-seed', record: 'fyp-l01-quiz-v3' },
   deck,
 })
-const explorer = createExplorer({ poster })
+const explorer = createExplorer({ current: 1, posters: { 1: poster } })
 createEpisode({
   film: FILM_SOURCES,
   captions: vttUrl,
