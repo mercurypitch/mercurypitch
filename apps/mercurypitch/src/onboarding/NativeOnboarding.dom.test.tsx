@@ -15,6 +15,7 @@ import type * as Capture from '@/components/room-kit/useExerciseCapture'
 import type { ExerciseCapture } from '@/components/room-kit/useExerciseCapture'
 import { CaptureError } from '@/components/room-kit/useExerciseCapture'
 import { setAuthToken } from '@/db/services/user-service'
+import type * as VoiceprintService from '@/db/services/voiceprint-service'
 import type * as MicSentinel from '@/lib/mic-sentinel'
 import { resetRoomArrivalHolds } from '@/stores/native-shell-store'
 import type { RenderedShell } from '../shell/render-for-test'
@@ -24,7 +25,8 @@ import { KEEP } from '../shell/settings/account-copy'
 import { closeOffer, forgetAccountOffer, keepArrival, offerOpen, } from '../shell/settings/account-offer'
 import { AccountOfferSheet } from '../shell/settings/AccountOffer'
 import { closeSignIn, resetSignIn, signInOpen, } from '../shell/settings/sign-in-state'
-import { ASK_BEAT_MS, askAfterSignIn, resetVoiceprintAsk, } from '../shell/settings/voiceprint-ask'
+import { ASK_BEAT_MS, askAfterSignIn, resetVoiceprintAsk, voiceprintAskOpen, voiceprintAskUp, } from '../shell/settings/voiceprint-ask'
+import { performBack } from '../shell/shell-navigation'
 import { NativeOnboarding, SKIP_BEAT_MS } from './NativeOnboarding'
 import type { Stand } from './onboarding-capture.test-fixtures'
 import { flushFrame, noteTake, settle, stand, stubFrames, } from './onboarding-capture.test-fixtures'
@@ -48,6 +50,22 @@ vi.mock('@/lib/merc/stage', () => ({
 vi.mock('@/lib/mic-sentinel', async (importOriginal) => ({
   ...(await importOriginal<typeof MicSentinel>()),
   registerMicIndicator: () => () => undefined,
+}))
+
+// The takes an account could adopt. The suites have no API, so the real
+// list is always empty; a test that needs the voiceprint ask up fills it.
+const adoption = vi.hoisted(() => ({
+  takes: [] as ReturnType<typeof VoiceprintService.listAdoptableVoiceprints>,
+  declined: false,
+}))
+
+vi.mock('@/db/services/voiceprint-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof VoiceprintService>()),
+  listAdoptableVoiceprints: () => adoption.takes,
+  adoptionNoticeDue: () => adoption.takes.length > 0 && !adoption.declined,
+  declineAdoption: () => {
+    adoption.declined = true
+  },
 }))
 
 const bench = vi.hoisted(() => ({ capture: null as ExerciseCapture | null }))
@@ -108,6 +126,8 @@ afterEach(() => {
   forgetAccountOffer()
   resetSignIn()
   resetVoiceprintAsk()
+  adoption.takes = []
+  adoption.declined = false
   setAuthToken(null)
   localStorage.clear()
   resetOnboardingFlagForTests()
@@ -452,6 +472,53 @@ describe('Keep, beat 7', () => {
     await settle()
 
     expect(stayed).toBe(true)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+  })
+
+  it('closes the voiceprint ask on Back before anything under it, then goes on to the Sing room', async () => {
+    const s = mount('onboarding')
+    await continueFromReveal(s)
+
+    // A sign-in from Keep to an account that already existed: Keep closes,
+    // and a beat later the ask rises for the voiceprint just measured.
+    setAuthToken(token('google'))
+    adoption.takes = [
+      {
+        id: 'measured',
+        summary: {
+          lowMidi: 40,
+          highMidi: 67,
+          semitones: 27,
+          accuracy: null,
+          steadiness: null,
+        },
+        twin: 'Paul Robeson',
+        source: 'onboarding',
+        takenAt: '2026-10-19T09:00:00.000Z',
+        madeBy: 'anonymous',
+      },
+    ]
+    closeOffer()
+    askAfterSignIn('user-1')
+    vi.advanceTimersByTime(ASK_BEAT_MS)
+    await settle()
+    const askUp = voiceprintAskUp()
+    const stayed = onboardingShown()
+
+    const outcome = performBack({
+      canGoBack: true,
+      back: vi.fn(),
+      minimize: vi.fn(),
+    })
+    await settle()
+
+    expect(askUp).toBe(true)
+    expect(stayed).toBe(true)
+    expect(outcome).toBe('sheet')
+    expect(voiceprintAskOpen()).toBe(false)
+    expect(adoption.declined).toBe(true)
+    // The ask was the last of what Keep handed over to: the layer goes on.
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
   })
