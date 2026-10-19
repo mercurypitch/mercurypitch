@@ -8,8 +8,10 @@
 // Relative, not '@/': vite.config.ts loads this file through
 // tools/generate-entry-pages.ts, before the alias exists.
 import { LEGAL_DOCUMENT_LINKS } from '../lib/legal-links'
+import type { StoreListings } from '../lib/store-listings'
 import type { EntryPage } from './entry-pages'
 import { ABOUT_URL, canonicalPath, DEFAULT_THEME_COLOR, navLinksFor, OG_IMAGE, OG_IMAGE_SIZE, ORGANIZATION_ID, SITE_ORIGIN, STUDIO_APP_ID, } from './entry-pages'
+import { smartAppBannerTag } from './store-presence'
 
 /** Escape for an attribute value or text node. */
 function esc(value: string): string {
@@ -73,6 +75,9 @@ export interface RenderEntryPageOptions {
    * tools/glassworks-listing.ts.
    */
   unlisted?: readonly string[]
+  /** The store listings the banner is worked out from. Tests only; the build
+   *  uses the shipped ones (src/lib/store-listings.ts). */
+  listings?: StoreListings
 }
 
 export function renderEntryPage(
@@ -84,6 +89,9 @@ export function renderEntryPage(
   const image = page.og.image ?? OG_IMAGE
   const imageSize = page.og.imageSize ?? OG_IMAGE_SIZE
   const ld = structuredData(page)
+  // Safari's Smart App Banner, only once the App Store listing is live
+  // (src/seo/store-presence.ts).
+  const banner = smartAppBannerTag(options.listings)
   const robots = unlisted.includes(page.slug)
     ? 'noindex, follow'
     : 'index, follow'
@@ -148,16 +156,16 @@ ${page.faq
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="${esc(page.themeColor ?? DEFAULT_THEME_COLOR)}" />
-${ld
-  .map(
-    (node) => `    <script type="application/ld+json">
+${banner === undefined ? '' : `    ${banner}\n`}${ld
+    .map(
+      (node) => `    <script type="application/ld+json">
 ${JSON.stringify(node, null, 2)
   .split('\n')
   .map((line) => `      ${line}`)
   .join('\n')}
     </script>`,
-  )
-  .join('\n')}
+    )
+    .join('\n')}
 
     <!-- The opening plates are NOT preloaded here, deliberately.
          They were, at high fetch priority, which queued 173 KB of decoration
