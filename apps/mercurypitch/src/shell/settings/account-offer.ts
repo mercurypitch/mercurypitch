@@ -131,8 +131,33 @@ export function openKeepFromReveal(): void {
   open('reveal')
 }
 
+/** What a singer chose on Keep: a way in, Find your range first, Not now. */
+export type KeepChoice = 'apple' | 'google' | 'email' | 'find-range' | 'not-now'
+
+let heard: ((choice: KeepChoice) => void) | null = null
+
+/**
+ * Hear each choice made on Keep while registered: the onboarding counts
+ * them on its beat 7 (S7b §7). One listener at a time; registration
+ * returns its own unregister.
+ */
+export function onKeepChoice(
+  listener: (choice: KeepChoice) => void,
+): () => void {
+  heard = listener
+  return () => {
+    if (heard === listener) heard = null
+  }
+}
+
+/** Keep's sheet: the singer chose. */
+export function keepChose(choice: KeepChoice): void {
+  heard?.(choice)
+}
+
 /** Not now; and Back, the backdrop or a swipe on the sheet. */
 export function declineOffer(): void {
+  if (untrack(sheetOpen)) keepChose('not-now')
   setSheetOpen(false)
 }
 

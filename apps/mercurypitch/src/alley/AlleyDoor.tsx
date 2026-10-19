@@ -29,6 +29,11 @@ export interface AlleyDoorProps {
   selected: () => boolean
   alive: () => boolean
   settling: () => boolean
+  /**
+   * Lit for Merc's welcome (the onboarding's AlleyGuide): the rim and the
+   * spill of a picked door, without its lift. None on a build without it.
+   */
+  lit?: () => boolean
   /** The Sing door's clip, for the tap that plays it. */
   clipRef: (element: HTMLVideoElement) => void
 }
@@ -60,6 +65,7 @@ export function AlleyDoor(props: AlleyDoorProps): JSX.Element {
         'is-alive': props.alive(),
         'is-settling': props.settling(),
         'is-drifting': props.spec.drift,
+        'is-lit': props.lit?.() ?? false,
       }}
       style={{
         left: `${box().x}px`,

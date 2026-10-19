@@ -18,6 +18,7 @@ import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN,
 import { haptics } from '@/lib/haptics'
 import type { UnlockItem } from '@/stores/notifications-store'
 import { onUnlockShown, resetNotifications, setNotificationPresenter, showNotification, } from '@/stores/notifications-store'
+import { askPathLanding, resetPathLandingForTests } from './path-landing'
 import type { PathMode } from './path-layout'
 import { columnX, columnY, pathFrame, segmentD, stopPlaces, } from './path-layout'
 import { ACTIONS_MS, DRAW_IN_MS, END_HOP_ACROSS_EASE, END_SONG_MS, END_STEP_MS, HOP_AT_MS, HOP_EASE, LIGHT_MS, PACK_AFTER_HOP_MS, PACK_MS, } from './path-motion'
@@ -115,6 +116,7 @@ beforeEach(() => {
   vi.setSystemTime(new Date(2026, 9, 19, 9, 0))
   localStorage.clear()
   resetWarmUpForTests()
+  resetPathLandingForTests()
   resetNotifications()
   setNotificationPresenter('pill')
 })
@@ -232,6 +234,44 @@ describe("the day's first open (§5.2, §10)", () => {
     leavePath()
     mount()
     expect(drawing()).not.toBeNull()
+  })
+})
+
+describe("the onboarding's landing (S7b beat 10)", () => {
+  const drawing = (): HTMLElement | null =>
+    document.querySelector<HTMLElement>('[data-draw="in"]')
+
+  it('draws in even on a later open that day, and Merc hops beside the first stop as it is in', () => {
+    const first = mount()
+    first.leave()
+    askPathLanding()
+
+    mount()
+    const track = screen.getByTestId('warm-up-merc-track')
+    const onFloor = track.style.transform
+    expect(drawing()).not.toBeNull()
+    expect(track.style.transition).toBe('none')
+    vi.advanceTimersByTime(DRAW_IN_MS)
+
+    expect(drawing()).toBeNull()
+    expect(track.style.transition).toContain(`${HOP_MS}ms`)
+    expect(track.style.transform).not.toBe(onFloor)
+    vi.advanceTimersByTime(HOP_MS)
+    expect(track.style.transition).toBe('none')
+  })
+
+  it('is taken by the one open it lands on: the next is the path as it always is', () => {
+    askPathLanding()
+    const landed = mount()
+    landed.leave()
+
+    mount()
+    const track = screen.getByTestId('warm-up-merc-track')
+    const onFloor = track.style.transform
+    vi.advanceTimersByTime(DRAW_IN_MS + HOP_MS)
+
+    expect(drawing()).toBeNull()
+    expect(track.style.transform).toBe(onFloor)
   })
 })
 

@@ -13,7 +13,7 @@
 // arithmetic as it is unless you mean to change how Merc moves.
 
 import type { MercState } from './constants'
-import { SHAPE } from './constants'
+import { REACH_CENTS, SHAPE } from './constants'
 import type { GlideMouth } from './sim-glide'
 import { rideLean } from './sim-glide'
 import type { Q3, Q4 } from './sim-math'
@@ -614,6 +614,27 @@ function ride(c: Cue): void {
   T.lookY = 0.08 + 1.6 * lean
 }
 
+/** How far `reach` squashes him at the foot of the range and stretches him at its top. */
+export const REACH_STRETCH = 0.16
+
+// Climbs with the voice (S7b §3.3, the onboarding's range): ride's lean
+// with the slope, and the pitch's height in the singer's range besides,
+// handed over as `cents` from its middle (REACH_CENTS at either end). Low
+// he squashes, high he stretches tall, his gradient leans teal on a low
+// note and violet on a high one, and his eyes go up and down with it. In
+// a silence he settles back to his own height. Under reduced motion he
+// keeps his height and only his colour follows the voice.
+function reach(c: Cue): void {
+  ride(c)
+  const { T, sim } = c
+  const v = sim.vs
+  const h = v.voiced * clamp(v.cents / REACH_CENTS, -1, 1)
+  T.hue = h
+  if (sim.still) return
+  T.sq = 1 + REACH_STRETCH * h + breathe(c, 0.012)
+  T.lookY = 0.08 + 1.6 * rideLean(v.slope) + 0.45 * h
+}
+
 const MOVES: Record<MercState, (c: Cue) => void> = {
   drop,
   idle,
@@ -627,6 +648,7 @@ const MOVES: Record<MercState, (c: Cue) => void> = {
   hop,
   hum,
   ride,
+  reach,
 }
 
 /** This step's spring targets and effects for the sim's current state. */

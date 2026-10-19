@@ -4,14 +4,16 @@
 //
 // S7b beat 4 draws the range as a climb: a ladder of rungs, one a whole
 // tone, that light as the voice dwells on them, and two pins, the lowest
-// note and the highest, that lock when the range is measured. Merc rides
-// beside it at the height of the voice.
+// note and the highest, that lock when the range is measured. Merc climbs
+// beside it at the height of the voice, and his `reach` squashes him low on
+// it and stretches him tall high up (reachCents).
 //
 // The ladder starts two octaves tall, centred on the note the singer held
 // on the first beat (A3 with none), and grows to keep the voice on it with
 // a tone to spare. It never shrinks while it is up, so a rung the singer
 // lit stays where they saw it light.
 
+import { REACH_CENTS } from '@/lib/merc/constants'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 
 /** Semitones a rung stands for: a whole tone. */
@@ -101,6 +103,14 @@ export function rungsOf(span: LadderSpan): number[] {
 export function heightOf(midi: number, span: LadderSpan): number {
   const tall = Math.max(1, span.top - span.base)
   return Math.min(1, Math.max(0, (midi - span.base) / tall))
+}
+
+/**
+ * A pitch's height as Merc's `reach` reads it: cents from the ladder's
+ * middle, -REACH_CENTS at its lowest rung and +REACH_CENTS at its top.
+ */
+export function reachCents(midi: number, span: LadderSpan): number {
+  return (heightOf(midi, span) * 2 - 1) * REACH_CENTS
 }
 
 /**

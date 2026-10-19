@@ -37,6 +37,12 @@ vi.mock('./karaoke-songs', async (importOriginal) => {
   }
 })
 
+// The app's counts (S7b §7), heard on their way to the funnel.
+const counts = vi.hoisted(() => ({ sent: [] as string[] }))
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: (event: string) => counts.sent.push(event),
+}))
+
 const auth = vi.hoisted(() => ({ account: false }))
 vi.mock('@/db/services/auth-service', () => ({
   accountHeld: () => auth.account,
@@ -90,7 +96,7 @@ function accountSays(user: {
 import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
-import { cloudOffer, openCloudOffer, resetCloudOfferForTests, unaskedRefusal, } from './cloud-offer-store'
+import { closeCloudOffer, cloudOffer, cloudOfferGuest, openCloudOffer, resetCloudOfferForTests, setCloudOfferGuest, unaskedRefusal, } from './cloud-offer-store'
 import { CloudOffer } from './CloudOffer'
 import { karaokeSongs, resetKaraokeSongsForTests, songsOnTheWay, } from './karaoke-songs'
 
@@ -138,6 +144,7 @@ function withStore(
 }
 
 beforeEach(() => {
+  counts.sent = []
   server.next = null
   server.hold = null
   auth.account = false
@@ -513,6 +520,49 @@ describe('Subscribe', () => {
   })
 })
 
+describe('counted (S7b §7)', () => {
+  it('counts the offer shown by where it opened, each Subscribe, and what the store answered', async () => {
+    const subscribe = vi
+      .fn<KaraokeSubscriptionApi['subscribe']>()
+      .mockResolvedValueOnce('cancelled')
+      .mockResolvedValueOnce('purchased')
+    withStore(store({ subscribe }))
+    const offer = await open()
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+
+    fireEvent.click(subscribeButton(offer))
+    await waitFor(() => expect(counts.sent).toHaveLength(3))
+    fireEvent.click(subscribeButton(offer))
+    await waitFor(() => expect(counts.sent).toHaveLength(5))
+
+    expect(counts.sent).toEqual([
+      'cloud_view_import',
+      'cloud_subscribe_tap',
+      'cloud_purchase_cancelled',
+      'cloud_subscribe_tap',
+      'cloud_purchase_success',
+    ])
+  })
+
+  it('counts a store that throws as a failed purchase', async () => {
+    withStore(
+      store({ subscribe: async () => Promise.reject(new Error('gone')) }),
+    )
+    const offer = await open()
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+
+    fireEvent.click(subscribeButton(offer))
+
+    await waitFor(() =>
+      expect(counts.sent).toEqual([
+        'cloud_view_import',
+        'cloud_subscribe_tap',
+        'cloud_purchase_failed',
+      ]),
+    )
+  })
+})
+
 describe('who is offered what', () => {
   it('offers a singer without an account the free song an account brings', async () => {
     const onAccount = vi.fn()
@@ -619,6 +669,35 @@ describe('who is offered what', () => {
     await waitFor(() => expect(account.reads).toBe(1))
     expect(offer.textContent).not.toContain('Your next free song')
     expect(offer.textContent).not.toContain('Confirm your email')
+  })
+})
+
+describe('Merc by the art', () => {
+  it('stands the guest the onboarding hands over by the art, hidden from a screen reader, and lets him go as the offer closes', async () => {
+    withStore(store())
+    const offer = await open()
+    const merc = document.createElement('div')
+    merc.dataset.testid = 'onboarding-merc'
+
+    setCloudOfferGuest(merc)
+
+    const slot = await waitFor(() => {
+      const found = offer.querySelector('[data-testid="cloud-offer-guest"]')
+      expect(found).not.toBeNull()
+      return found
+    })
+    expect(slot?.contains(merc)).toBe(true)
+    expect(slot?.closest('[aria-hidden="true"]')).not.toBeNull()
+    closeCloudOffer('not-now')
+    expect(cloudOfferGuest()).toBeNull()
+    expect(merc.isConnected).toBe(false)
+  })
+
+  it('has nobody by the art on an offer nobody handed a guest to', async () => {
+    withStore(store())
+    const offer = await open()
+
+    expect(offer.querySelector('[data-testid="cloud-offer-guest"]')).toBeNull()
   })
 })
 

@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CHEER_MS, HOP_MS } from '@/components/room-kit/merc-moves'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
 import type { PathMotion } from './path-motion'
-import { ACTIONS_MS, createPathMotion, DRAW_IN_MS, drawInSchedule, END_SONG_MS, END_STEP_MS, HOP_AT_MS, LIGHT_MS, MERC_FADE_MS, PACK_AFTER_HOP_MS, PACK_MS, TRAIL_MS, } from './path-motion'
+import { ACTIONS_MS, createPathMotion, DRAW_IN_MS, drawInSchedule, END_SONG_MS, END_STEP_MS, HOP_AT_MS, LAND_AT_MS, LIGHT_MS, MERC_FADE_MS, PACK_AFTER_HOP_MS, PACK_MS, TRAIL_MS, } from './path-motion'
 import type { PathView } from './path-view'
 import { pathView } from './path-view'
 import type { WarmUpDay } from './routine'
@@ -43,7 +43,12 @@ interface Rig {
 function rig(
   day: WarmUpDay,
   last: LastMove | null,
-  options: { still?: boolean; reduced?: boolean; drawIn?: boolean } = {},
+  options: {
+    still?: boolean
+    reduced?: boolean
+    drawIn?: boolean
+    land?: boolean
+  } = {},
 ): Rig {
   const go = vi.fn()
   const lit = vi.fn()
@@ -59,6 +64,7 @@ function rig(
       still: options.still === true,
       reduced: () => options.reduced === true,
       drawIn: options.drawIn === true,
+      land: options.land === true,
       go,
       onLit: lit,
       onEnd: end,
@@ -382,5 +388,79 @@ describe("the day's first open: the path draws in (§5.2, §10)", () => {
     expect(plan.stops).toHaveLength(9)
     expect(plan.stops[8]! + plan.fade).toBeCloseTo(DRAW_IN_MS, 6)
     expect(drawInSchedule(1).stops).toEqual([0])
+  })
+})
+
+describe("the onboarding's landing (S7b beat 10)", () => {
+  const BESIDE_FIRST = { at: 'beside', index: 0 }
+
+  it('Merc hops from the floor beside the first stop once the path has drawn in', () => {
+    current = rig(fresh(), null, { drawIn: true, land: true })
+    expect(current.motion.merc()).toEqual({ at: 'floor' })
+
+    vi.advanceTimersByTime(DRAW_IN_MS - 1)
+    expect(current.motion.merc()).toEqual({ at: 'floor' })
+    expect(current.motion.hopping()).toBe(false)
+    vi.advanceTimersByTime(1)
+    expect(current.motion.merc()).toEqual(BESIDE_FIRST)
+    expect(current.motion.hopping()).toBe(true)
+    expect(current.motion.mercState()).toBe('hop')
+    vi.advanceTimersByTime(HOP_MS)
+    expect(current.motion.hopping()).toBe(false)
+    expect(current.motion.mercState()).toBe('idle')
+  })
+
+  it('hops a beat after the path opens when it does not draw in', () => {
+    current = rig(fresh(), null, { land: true })
+    vi.advanceTimersByTime(LAND_AT_MS - 1)
+    expect(current.motion.merc()).toEqual({ at: 'floor' })
+    vi.advanceTimersByTime(1)
+    expect(current.motion.merc()).toEqual(BESIDE_FIRST)
+    expect(current.motion.hopping()).toBe(true)
+  })
+
+  it('reduced motion: he fades out on the floor and in beside the first stop, no hop', () => {
+    current = rig(fresh(), null, { land: true, reduced: true })
+    vi.advanceTimersByTime(LAND_AT_MS)
+    expect(current.motion.mercFaded()).toBe(true)
+    expect(current.motion.merc()).toEqual({ at: 'floor' })
+    vi.advanceTimersByTime(MERC_FADE_MS)
+    expect(current.motion.mercFaded()).toBe(false)
+    expect(current.motion.merc()).toEqual(BESIDE_FIRST)
+    expect(current.motion.hopping()).toBe(false)
+  })
+
+  it('leaves Merc where the view has him on a run under way, and in a fixture', () => {
+    current = rig(sung(fresh(), 0), null, { land: true })
+    const spot = current.motion.merc()
+    vi.advanceTimersByTime(5000)
+    expect(current.motion.merc()).toEqual(spot)
+    expect(current.motion.hopping()).toBe(false)
+    current.dispose()
+
+    current = rig(fresh(), null, { land: true, still: true })
+    vi.advanceTimersByTime(5000)
+    expect(current.motion.merc()).toEqual({ at: 'floor' })
+  })
+
+  it('stays on the floor, pointing, when Start is tapped before he has hopped', () => {
+    current = rig(fresh(), null, { drawIn: true, land: true })
+    vi.advanceTimersByTime(DRAW_IN_MS - 100)
+    current.motion.lean()
+    vi.advanceTimersByTime(5000)
+
+    expect(current.motion.merc()).toEqual({ at: 'floor' })
+    expect(current.motion.mercState()).toBe('point')
+  })
+
+  it('lands once: a Warm up again later starts him on the floor, as any open does', () => {
+    current = rig(fresh(), null, { land: true })
+    vi.advanceTimersByTime(LAND_AT_MS + HOP_MS)
+    current.move(sung(fresh(), 0), { index: 0, state: 'done' })
+    vi.advanceTimersByTime(ACTIONS_MS)
+    current.move(fresh(), null)
+    vi.advanceTimersByTime(5000)
+
+    expect(current.motion.merc()).toEqual({ at: 'floor' })
   })
 })

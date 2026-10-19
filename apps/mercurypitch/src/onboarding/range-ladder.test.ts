@@ -3,8 +3,9 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { REACH_CENTS } from '@/lib/merc/constants'
 import type { LadderView } from './range-ladder'
-import { emptyLadder, growLadder, heightOf, LADDER_HOME, LADDER_MARGIN, LADDER_MIN_SPAN, ladderAround, pinName, RUNG_SEMITONES, rungColour, rungLit, rungsOf, } from './range-ladder'
+import { emptyLadder, growLadder, heightOf, LADDER_HOME, LADDER_MARGIN, LADDER_MIN_SPAN, ladderAround, pinName, reachCents, RUNG_SEMITONES, rungColour, rungLit, rungsOf, } from './range-ladder'
 
 function view(over: Partial<LadderView>): LadderView {
   return { ...emptyLadder(null), ...over }
@@ -48,6 +49,16 @@ describe('the ladder', () => {
     expect(heightOf(52, span)).toBe(0.5)
     expect(heightOf(30, span)).toBe(0)
     expect(heightOf(80, span)).toBe(1)
+  })
+
+  it("hands Merc's reach the height as cents from the middle, the ends at full reach", () => {
+    const span = { base: 40, top: 64 }
+
+    expect(reachCents(52, span)).toBe(0)
+    expect(reachCents(40, span)).toBe(-REACH_CENTS)
+    expect(reachCents(64, span)).toBe(REACH_CENTS)
+    expect(reachCents(58, span)).toBe(REACH_CENTS / 2)
+    expect(reachCents(80, span)).toBe(REACH_CENTS)
   })
 })
 

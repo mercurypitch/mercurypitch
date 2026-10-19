@@ -2,7 +2,9 @@
 // useFirstNote: the first note's controller (S7b beats 2 and 3)
 // ============================================================
 //
-// Merc says hello and asks for one note. Until the singer taps, the lane
+// Merc says hello and asks for one note: drops in and says it, unless he
+// said hello in the alley this session (S7b beat 1, alley-greeting.ts),
+// when he is there already and asks at once. Until the singer taps, the lane
 // plays a silent example line and nothing is captured: no mic, no audio
 // clock, no prompt (REQ-NFL-019, REQ-NFL-020). The tap opens the mic inside
 // itself (room-kit room-mic.ts, REQ-NFL-028), through the room kit's
@@ -42,6 +44,7 @@ import type { MercVoice } from '@/lib/merc/sim'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { CONF_MIN } from '@/lib/pitch-measurements/f0'
 import { exposeForE2E } from '@/lib/test-utils'
+import { alleyGreeted } from './alley-greeting'
 import type { TakeReading } from './first-note'
 import { readTake } from './first-note'
 import type { NoteEvent, NoteLine, NoteState } from './first-note-machine'
@@ -97,6 +100,11 @@ export interface FirstNoteOptions {
   readonly capture?: ExerciseCapture
   /** Reduced motion; defaults to the phone's own setting. */
   readonly still?: () => boolean
+  /**
+   * Merc has said hello in the alley this session: no drop, no hello, the
+   * ask at once. Defaults to alley-greeting.ts.
+   */
+  readonly greeted?: boolean
 }
 
 export function useFirstNote(
@@ -109,7 +117,8 @@ export function useFirstNote(
 
   const [state, setState] = createSignal<NoteState>(FIRST_NOTE_START)
   const [reading, setReading] = createSignal<TakeReading | null>(null)
-  const [greeted, setGreeted] = createSignal(false)
+  const metInAlley = options.greeted ?? alleyGreeted()
+  const [greeted, setGreeted] = createSignal(metInAlley)
   const [demo, setDemo] = createSignal(true)
   const dispatch = (event: NoteEvent): void => {
     setState((now) => firstNoteReducer(now, event))
@@ -120,10 +129,13 @@ export function useFirstNote(
     still,
     afterCheer: () => 'idle',
   })
-  life.later(LANDED_MS, () => {
-    if (untrack(merc.state) === 'drop') merc.set('idle')
-  })
-  life.later(GREET_MS, () => setGreeted(true))
+  if (metInAlley) merc.set('idle')
+  else {
+    life.later(LANDED_MS, () => {
+      if (untrack(merc.state) === 'drop') merc.set('idle')
+    })
+    life.later(GREET_MS, () => setGreeted(true))
+  }
 
   let level = 0
   let voice: MercVoice = SILENT_VOICE

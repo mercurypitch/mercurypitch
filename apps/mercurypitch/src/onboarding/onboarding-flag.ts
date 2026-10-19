@@ -44,11 +44,14 @@ export function onboardingDue(): boolean {
 
 /**
  * Settle the flag once: due on a new install, done on one that has opened
- * a door (`seenWelcome`). A flag already settled is left as it is.
+ * a door (`seenWelcome`). A flag already settled is left as it is. What it
+ * settled to, or null when it was settled already: 'due' is a new install.
  */
-export function settleOnboarding(seenWelcome: boolean): void {
-  if (resolve()[0]() !== '') return
-  resolve()[1](seenWelcome ? 'done' : 'due')
+export function settleOnboarding(seenWelcome: boolean): OnboardingFlag | null {
+  if (resolve()[0]() !== '') return null
+  const settled: OnboardingFlag = seenWelcome ? 'done' : 'due'
+  resolve()[1](settled)
+  return settled
 }
 
 /** Finished, or left with Not now. Idempotent. */

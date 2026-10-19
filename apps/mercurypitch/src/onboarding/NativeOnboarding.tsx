@@ -27,7 +27,8 @@
 //               Karaoke engine
 //   offer       beat 9: the Cloud offer, the shell's own sheet over this
 //               layer (CloudOffer.tsx), once an install, held out of one
-//               install in ten, never to a subscriber (onboarding-offer.ts)
+//               install in ten, never to a subscriber (onboarding-offer.ts).
+//               Merc goes with it, small by its art (cloudOfferGuest)
 //
 // Keep comes only to a phone with no account yet (signed in, or signed out
 // of one, the layer goes straight on to the line), and only after a range
@@ -36,37 +37,55 @@
 // Keep or the Cloud offer is up: the sheet's own is the way out. Once Keep
 // has closed, and the sign-in sheet or the voiceprint ask it handed over to
 // has closed too, the layer goes on to the line. The line's Continue opens
-// the Cloud offer when beat 9's rules allow it, and the layer goes on to
-// the Sing room, live, once the offer and whatever it handed over to have
-// closed; else straight to the Sing room. Not now at any beat leaves with
-// no offer. Opened on its own from Keep's "Find your range first" over
-// anything else, the layer starts on the range and goes back to Keep.
+// the Cloud offer when beat 9's rules allow it, and the onboarding lands on
+// the Warm-up's path (beat 10, onboarding-landing.ts) once the offer and
+// whatever it handed over to have closed; else it lands there straight
+// away. A refused mic, or one that would not open, goes on in one tap
+// (Continue without the mic, REQ-NFL-043) to the same landing, with no
+// offer. Not now at any beat leaves for the Sing room, with no offer.
+// Opened on its own from Keep's "Find your range first" over anything
+// else, the layer starts on the range and goes back to Keep.
 //
 // The beats share one capture, so the mic the first note opened is the one
 // the range opens again, and one Merc, who moves from beat to beat with the
 // singer instead of landing again on each. One live region reads Merc's
 // lines across the beats, so a beat's first line is read as it arrives.
 //
+// A beat gives way to the next by a View Transition, or by a cross-fade
+// where the WebView has none or a sheet comes up with the next beat, and
+// Merc moves across from his old place to his new one (beat-swap.ts).
+//
+// Each beat is counted as it shows and as it is done (S7b §7,
+// onboarding-measure.ts): the onboarding's own, not the range on its own.
+//
 // NativeShell loads this file lazily, and only on a build with the
 // onboarding (NATIVE_ONBOARDING), so the store build carries none of it.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, Match, on, onCleanup, onMount, Switch, untrack, } from 'solid-js'
+import './beat-swap.css'
 import { MercView } from '@/components/room-kit/MercView'
+import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import { useExerciseCapture } from '@/components/room-kit/useExerciseCapture'
-import { cloudOfferOpen } from '@/features/karaoke-room/cloud-offer-store'
+import { cloudOfferGuest, cloudOfferOpen, setCloudOfferGuest, } from '@/features/karaoke-room/cloud-offer-store'
+import type { NativeOnboardingEvent } from '@/features/onboarding/funnel'
+import { trackNativeOnboarding } from '@/features/onboarding/funnel'
 import type { RangeResult } from '@/lib/mirror/metrics'
 import { onboardingShown } from '../shell/run-shell-store'
-import { noAccountYet, offerOpen, openKeep, openKeepFromReveal, } from '../shell/settings/account-offer'
+import { noAccountYet, offerOpen, onKeepChoice, openKeep, openKeepFromReveal, } from '../shell/settings/account-offer'
+import { keepableVoiceprint } from '../shell/settings/keep-voiceprint'
 import { signInOpen } from '../shell/settings/sign-in-state'
 import { voiceprintAskAsking } from '../shell/settings/voiceprint-ask'
+import type { SwapDone } from './beat-swap'
+import { createBeatSwap, GHOST_ATTR, MERC_CLASS } from './beat-swap'
 import { FirstNoteView, noteSays } from './FirstNoteView'
 import { KeepView } from './KeepView'
 import { lineSaysText, LineView } from './LineView'
 import styles from './NativeOnboarding.module.css'
 import { ONBOARDING_COPY } from './onboarding-copy'
 import { leaveOnboarding, onboardingEntry, registerLayerRange, } from './onboarding-layer'
+import { KEEP_CHOICE_EVENT, lineBandEvent } from './onboarding-measure'
 import type { OfferSkip } from './onboarding-offer'
 import { onboardingOfferGroup, openOnboardingOffer, prepareOnboardingOffer, } from './onboarding-offer'
 import { rangeSays, RangeView } from './RangeView'
@@ -115,6 +134,54 @@ export function NativeOnboarding(): JSX.Element {
   const [beat, setBeat] = createSignal<OnboardingBeat>(
     entry === 'range' ? 'range' : 'first-note',
   )
+  /** How the last beat gave way, for the probe. */
+  const [swapped, setSwapped] = createSignal<SwapDone | 'none'>('none')
+  let root: HTMLDivElement | undefined
+  /** The beat on screen: the root its view draws in the layer. */
+  const beatOnScreen = (): HTMLElement | undefined => {
+    for (const child of root?.children ?? []) {
+      if (
+        child instanceof HTMLElement &&
+        child.classList.contains(styles.beat) &&
+        !child.hasAttribute(GHOST_ATTR)
+      ) {
+        return child
+      }
+    }
+    return undefined
+  }
+  /**
+   * The beat asked for. A View Transition draws it a frame after it is
+   * asked for, so whatever decides what comes next reads this, never the
+   * beat drawn: Keep's "Find your range first" closes Keep and asks for
+   * the range in one tap, and Keep's close, checked once that tap is over,
+   * must see the range coming, not Keep still drawn.
+   */
+  let headed: OnboardingBeat = untrack(beat)
+  /**
+   * On to `next` (beat-swap.ts): by a cross-fade when a sheet comes up with
+   * it, so the sheet answers from its first frame; else by a View
+   * Transition, where the WebView has one. The last beat asked for wins: a
+   * transition's late draw of a beat since left draws nothing.
+   */
+  const go = (next: OnboardingBeat): void => {
+    if (headed === next) return
+    headed = next
+    swaps.swap(
+      () => {
+        if (headed === next) setBeat(next)
+      },
+      next === 'keep' || next === 'offer' ? 'fade' : 'view',
+    )
+  }
+
+  /** Counted once a layer: the onboarding's steps, not the range's own. */
+  const counted = new Set<NativeOnboardingEvent>()
+  const count = (event: NativeOnboardingEvent): void => {
+    if (entry !== 'onboarding' || counted.has(event)) return
+    counted.add(event)
+    trackNativeOnboarding(event)
+  }
   const [skipped, setSkipped] = createSignal(false)
   /** The range the reveal shows: the one just measured, or the one kept. */
   const [revealed, setRevealed] = createSignal<RangeResult | null>(null)
@@ -155,7 +222,7 @@ export function NativeOnboarding(): JSX.Element {
   /** Find my range, or again: the range, its mic opened inside this tap. */
   const findRange = (): void => {
     setSkipped(false)
-    setBeat('range')
+    go('range')
     range.start()
   }
 
@@ -165,7 +232,7 @@ export function NativeOnboarding(): JSX.Element {
    */
   const toLine = (): void => {
     if (untrack(leaving)) return
-    setBeat('line')
+    go('line')
     line.arrive()
   }
 
@@ -182,15 +249,21 @@ export function NativeOnboarding(): JSX.Element {
       toLine()
       return
     }
-    setBeat('keep')
+    go('keep')
     if (after === 'reveal') openKeepFromReveal()
     else openKeep()
+    count(
+      keepableVoiceprint() === null
+        ? 'native_onboarding_keep_view_progress'
+        : 'native_onboarding_keep_view_voiceprint',
+    )
   }
 
   /** Skip for now: Merc's word, then Keep. */
   const skip = (): void => {
     if (untrack(skipped)) return
     setSkipped(true)
+    count('native_onboarding_range_skipped')
     skipTimer = setTimeout(() => {
       skipTimer = undefined
       toKeep('skip')
@@ -203,15 +276,30 @@ export function NativeOnboarding(): JSX.Element {
   const showReveal = (shown: RangeResult | null): void => {
     if (shown === null) return
     setRevealed(shown)
-    setBeat('reveal')
+    go('reveal')
     reveal.arrive()
   }
   const seeVoice = (): void => showReveal(untrack(range.state).range)
   /** See my voice on the first note: the range this phone already keeps. */
   const seeSaved = saved === null ? undefined : () => showReveal(saved)
 
+  /**
+   * Continue without the mic, after a refusal or a mic that would not open:
+   * the onboarding's one way on (REQ-NFL-043), straight to its landing,
+   * with no offer of either kind (S7b E5). The range on its own has none:
+   * its Not now goes back to Keep.
+   */
+  const withoutMic =
+    entry === 'onboarding'
+      ? (): void => {
+          count('native_onboarding_without_mic')
+          leaveOnboarding('finished')
+        }
+      : undefined
+
   /** Continue on the reveal: Keep in the onboarding, back to Keep from it. */
   const continueOn = (): void => {
+    count('native_onboarding_reveal_complete')
     if (entry === 'onboarding') toKeep('reveal')
     else leaveOnboarding('finished')
   }
@@ -223,14 +311,14 @@ export function NativeOnboarding(): JSX.Element {
   /**
    * Beat 9 has opened the Cloud offer. Its free account opens Keep, whose
    * "Find your range first" runs the range here and brings Keep back after
-   * the reveal: that Keep closing goes on to the Sing room, not to a
+   * the reveal: that Keep closing lands on the Warm-up's path, not on a
    * second line.
    */
   let offered = false
 
   // Keep has closed, and so has what it handed over to: on to the line.
   // The Cloud offer has closed, and so has what it handed over to: on to
-  // the Sing room. Checked once the tap that closed the sheet is over,
+  // the landing. Checked once the tap that closed the sheet is over,
   // because a sheet's ways close it and open what comes next in the one tap
   // (Use email, a sign-in and its voiceprint ask, Find your range first,
   // the offer's free account).
@@ -241,9 +329,8 @@ export function NativeOnboarding(): JSX.Element {
         if ((now !== 'keep' && now !== 'offer') || up) return
         queueMicrotask(() => {
           if (untrack(sheetUp)) return
-          const still = untrack(beat)
-          if (still === 'keep' && !offered) toLine()
-          else if (still === 'keep' || still === 'offer') {
+          if (headed === 'keep' && !offered) toLine()
+          else if (headed === 'keep' || headed === 'offer') {
             leaveOnboarding('finished')
           }
         })
@@ -266,7 +353,7 @@ export function NativeOnboarding(): JSX.Element {
   /** Continue on the line was tapped, and beat 9 is being decided. */
   const [continuing, setContinuing] = createSignal(false)
 
-  /** Continue on the line: beat 9 when its rules allow it, else the Sing room. */
+  /** Continue on the line: beat 9 when its rules allow it, else the landing. */
   const continueLine = (): void => {
     if (untrack(continuing) || untrack(leaving)) return
     setContinuing(true)
@@ -279,9 +366,62 @@ export function NativeOnboarding(): JSX.Element {
         return
       }
       offered = true
-      setBeat('offer')
+      // Merc goes with the offer, small by its art (S7b beat 9).
+      setCloudOfferGuest(mercEl() ?? null)
+      go('offer')
     })
   }
+
+  // Counted: each beat as it shows, and as it is done (S7b §7).
+  createEffect(
+    on(beat, (now) => {
+      if (now === 'range') count('native_onboarding_range_view')
+      else if (now === 'reveal') count('native_onboarding_reveal_view')
+      else if (now === 'line') count('native_onboarding_line_view')
+    }),
+  )
+  createEffect(() => {
+    if (note.state().phase === 'heard') {
+      count('native_onboarding_first_note_complete')
+    }
+  })
+  createEffect(() => {
+    if (range.state().phase === 'done')
+      count('native_onboarding_range_complete')
+  })
+  // The first scored take: the line done, and its band. Once more sings it
+  // again, uncounted.
+  createEffect(() => {
+    const now = line.state()
+    if (now.phase !== 'done' || now.score === null) return
+    if (counted.has('native_onboarding_line_complete')) return
+    count('native_onboarding_line_complete')
+    count(lineBandEvent(now.score.hit, now.score.total))
+  })
+  // The onboarding's first ask for the mic, and its answer.
+  createEffect(() => {
+    if (
+      counted.has('native_onboarding_mic_granted') ||
+      counted.has('native_onboarding_mic_denied')
+    ) {
+      return
+    }
+    const listening = [note, range, line].some(
+      (beatOf) => beatOf.micState() === 'sing',
+    )
+    const refused = [note.state(), range.state(), line.state()].some(
+      (state) => state.phase === 'blocked' && state.block === 'denied',
+    )
+    if (listening) count('native_onboarding_mic_granted')
+    else if (refused) count('native_onboarding_mic_denied')
+  })
+  // Keep's choices, on the onboarding's beat 7 only: not Keep from the
+  // Cloud offer's free account.
+  onCleanup(
+    onKeepChoice((choice) => {
+      if (headed === 'keep') count(KEEP_CHOICE_EVENT[choice])
+    }),
+  )
 
   /** The beat on screen's controller: Merc's state and voice are its. */
   const active = () => {
@@ -350,14 +490,32 @@ export function NativeOnboarding(): JSX.Element {
       voice={() => active().mercVoice()}
       still={() => active().still()}
       rings={false}
-      class={styles.mercView}
+      class={`${styles.mercView} ${MERC_CLASS}`}
       testId="onboarding-merc"
     />
   )
+  const mercEl = (): HTMLElement | undefined =>
+    merc instanceof HTMLElement ? merc : undefined
+  const swaps = createBeatSwap({
+    layer: () => root,
+    beat: beatOnScreen,
+    merc: mercEl,
+    reduced: prefersReducedMotion,
+    done: (how) => setSwapped(how),
+  })
+  onCleanup(() => {
+    swaps.dispose()
+    // A layer gone with the offer still up takes its Merc back from it.
+    if (cloudOfferGuest() === merc) setCloudOfferGuest(null)
+  })
 
-  let root: HTMLDivElement | undefined
   // Into the dialog, for a screen reader; nothing is drawn for it.
-  onMount(() => root?.focus({ preventScroll: true }))
+  onMount(() => {
+    root?.focus({ preventScroll: true })
+    if (untrack(beat) === 'first-note') {
+      count('native_onboarding_first_note_view')
+    }
+  })
 
   return (
     <div
@@ -373,6 +531,7 @@ export function NativeOnboarding(): JSX.Element {
       data-beat={beat()}
       data-entry={entry}
       data-leaving={leaving() ? 'on' : 'off'}
+      data-swap={swapped()}
     >
       {/* Under Keep or the Cloud offer, the sheet's own Not now is the way
           out: this one stands aside, in place, so nothing moves when the
@@ -407,6 +566,7 @@ export function NativeOnboarding(): JSX.Element {
             onRange={findRange}
             onSkip={skip}
             onSeeSaved={seeSaved}
+            onWithoutMic={withoutMic}
             skipped={skipped()}
             merc={merc}
           />
@@ -417,6 +577,7 @@ export function NativeOnboarding(): JSX.Element {
             line={said()}
             onSee={seeVoice}
             onSkip={skipRange}
+            onWithoutMic={withoutMic}
             skipped={skipped()}
             merc={merc}
           />
@@ -440,11 +601,12 @@ export function NativeOnboarding(): JSX.Element {
             line={said()}
             onContinue={continueLine}
             continuing={continuing()}
+            onWithoutMic={withoutMic}
             merc={merc}
           />
         </Match>
         <Match when={beat() === 'offer'}>
-          <KeepView merc={merc} testId="onboarding-offer" />
+          <KeepView testId="onboarding-offer" />
         </Match>
       </Switch>
     </div>

@@ -2,6 +2,7 @@
 //
 //   node scripts/probe-bundle.mjs --base-url http://127.0.0.1:4179
 //   node scripts/probe-bundle.mjs --base-url … --shots <dir> --theme light
+//   node scripts/probe-bundle.mjs --base-url … --angle gl   (Merc's GL, for shots)
 //
 // What it is for: `pnpm build` proves the bundle compiles, and
 // `assert-bundle.mjs` proves it carries what it should. Neither opens it.
@@ -144,6 +145,7 @@ function parseArgs(argv) {
     noticeRoomsOnly: false,
     baseline: false,
     dist: null,
+    angle: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i]
@@ -166,6 +168,7 @@ function parseArgs(argv) {
     else if (flag === '--notice-rooms-only') args.noticeRoomsOnly = true
     else if (flag === '--baseline') args.baseline = true
     else if (flag === '--dist') args.dist = argv[(i += 1)]
+    else if (flag === '--angle') args.angle = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
   }
   if (args.theme !== 'dark' && args.theme !== 'light') {
@@ -5043,6 +5046,12 @@ async function main() {
       `--use-file-for-fake-audio-capture=${tone}`,
       '--autoplay-policy=no-user-gesture-required',
       '--mute-audio',
+      // `--angle gl`: Merc's WebGL drawn as on a device, for a shot of him.
+      // On a real GL the hardware video decoder (the Sing door's clip) takes
+      // WebGL down for the rest of the run, so it decodes in software.
+      ...(args.angle === null
+        ? []
+        : [`--use-angle=${args.angle}`, '--disable-accelerated-video-decode']),
     ],
   })
 

@@ -60,6 +60,9 @@ export const ONBOARDING_COPY = {
   findRangeAgain: 'Find my range again',
   /** Merc, as a skipped range lets the singer go on. */
   skipped: "It's here when you want it.",
+  /** Under a refused mic's Try again: the one way on (REQ-NFL-043), in the
+   *  web's words (BeatFirstLight.tsx). */
+  withoutMic: 'Continue without the mic',
 
   // ── The range (S7b beat 4) ──
   /** The layer's accessible name on the range. */

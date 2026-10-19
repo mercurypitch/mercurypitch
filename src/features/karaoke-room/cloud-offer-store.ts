@@ -32,10 +32,12 @@
 
 import { createSignal } from 'solid-js'
 import { ensureSingerIdentity } from '@/db/services/singer-identity'
+import { trackEvent } from '@/lib/analytics'
 import { micActive, singingCaptureActive } from '@/stores/mic-store'
 import type { KaraokeCarryOutcome } from '@/stores/native-shell-store'
 import { nativeRunControls, nativeShellApi } from '@/stores/native-shell-store'
 import { showNotification } from '@/stores/notifications-store'
+import { CLOUD_VIEW_EVENT } from './cloud-measure'
 import type { KaraokeSongs } from './karaoke-songs'
 import { awaitSubscription, CLOUD_NAME, karaokeSongs, refreshKaraokeSongs, songsOnTheWay, } from './karaoke-songs'
 
@@ -70,6 +72,21 @@ const [current, setCurrent] = createSignal<CloudOfferState | null>(null)
 
 /** The offer that is up, or null. Reactive. */
 export const cloudOffer = current
+
+const [guest, setGuest] = createSignal<Node | null>(null)
+
+/**
+ * Who stands by the offer's art while it is up, or null (S7b beat 9): the
+ * onboarding's Merc, small beside the two lights, on the offer it opened.
+ * The one Merc is moved into the sheet, not copied, and the sheet lets him
+ * go as the offer closes. Reactive.
+ */
+export const cloudOfferGuest = guest
+
+/** Merc by the art of the offer just opened; null to let him go. */
+export function setCloudOfferGuest(node: Node | null): void {
+  setGuest(node)
+}
 
 /** Whether the offer's sheet is up. Reactive. */
 export function cloudOfferOpen(): boolean {
@@ -153,6 +170,7 @@ export function openCloudOffer(
     unaskedThisSession += 1
   }
   setCurrent({ source, view })
+  if (view === 'offer') trackEvent(CLOUD_VIEW_EVENT[source])
   if (view === 'subscribed' && !karaokeSongs().subscribed) void waitForSongs()
   return true
 }
@@ -179,6 +197,7 @@ export function closeCloudOffer(
 ): void {
   const open = current()
   setCurrent(null)
+  setGuest(null)
   if (how === 'not-now' && open?.view === 'offer') rememberNotNow(now)
 }
 
@@ -263,5 +282,6 @@ export function forgetUnaskedOffers(): void {
 /** Tests: nothing open, nothing offered this session, no Not now kept. */
 export function resetCloudOfferForTests(): void {
   setCurrent(null)
+  setGuest(null)
   forgetUnaskedOffers()
 }

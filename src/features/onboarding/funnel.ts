@@ -41,6 +41,26 @@ export const trackOnboarding = createFunnel<OnboardingEvent>({
   },
 })
 
+/**
+ * The native app's own onboarding (apps/mercurypitch/src/onboarding, S7b
+ * §7): its names in this same vocabulary, beside First Light's.
+ */
+export type NativeOnboardingEvent = Extract<
+  OnboardingEvent,
+  `native_onboarding_${string}`
+>
+
+/**
+ * One step of the native onboarding, through this funnel: the device's
+ * anonymous id and the app's own sink (/api/mirror/event), where the app
+ * already counts app_open and signup. None of these is an Ads conversion,
+ * and the native build ships no Google tag (apps/mercurypitch main.tsx), so
+ * the GA4 mirror (trackFunnelTags) does nothing there.
+ */
+export function trackNativeOnboarding(event: NativeOnboardingEvent): void {
+  trackOnboarding(event)
+}
+
 /** The per-beat event for a beat id. */
 export const BEAT_EVENT: Record<string, OnboardingEvent> = {
   sky: 'onboarding_sky',

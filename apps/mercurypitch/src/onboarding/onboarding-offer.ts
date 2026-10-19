@@ -31,6 +31,7 @@
 
 import type { UnaskedRefusal } from '@/features/karaoke-room/cloud-offer-store'
 import { askBeforeOffering, openCloudOffer, unaskedRefusal, } from '@/features/karaoke-room/cloud-offer-store'
+import { trackNativeOnboarding } from '@/features/onboarding/funnel'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 
 /** This install's group: offered beat 9, or held out of it. */
@@ -87,7 +88,16 @@ export function onboardingOfferGroup(
 ): OfferGroup {
   const kept = read(OFFER_GROUP_KEY)
   if (isGroup(kept)) return kept
-  groupThisSession ??= random() < HOLDOUT_SHARE ? 'holdout' : 'offer'
+  if (groupThisSession === null) {
+    groupThisSession = random() < HOLDOUT_SHARE ? 'holdout' : 'offer'
+    // Counted as it is drawn, so the held-out installs can be told apart
+    // when their retention is read (S7b §7).
+    trackNativeOnboarding(
+      groupThisSession === 'holdout'
+        ? 'native_onboarding_group_holdout'
+        : 'native_onboarding_group_offer',
+    )
+  }
   write(OFFER_GROUP_KEY, groupThisSession)
   return groupThisSession
 }

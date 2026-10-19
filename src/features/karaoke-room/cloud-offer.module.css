@@ -127,6 +127,18 @@
   object-position: 50% 0%;
 }
 
+/* Merc, small by the art (S7b beat 9): standing beside the two lights, his
+   feet where the art meets the night. The onboarding's own Merc, moved in
+   (cloud-offer-store.ts cloudOfferGuest); his canvas fills this box. */
+.heroGuest {
+  position: absolute;
+  z-index: 1;
+  right: max(18px, 7%);
+  bottom: 22%;
+  width: clamp(60px, 9dvh, 88px);
+  aspect-ratio: 1;
+}
+
 .head {
   position: relative;
   margin-top: -36px;
@@ -585,6 +597,11 @@
 
 .moving .step:nth-child(2) .strand {
   animation-delay: 580ms;
+}
+
+/* Merc steps in by the art once it has opened. */
+.moving .heroGuest {
+  animation: cloudFade 360ms ease-out 720ms backwards;
 }
 
 .moving .freeLine,

@@ -52,6 +52,12 @@ const free: KaraokeSongs = {
 const beatNine = async (): Promise<boolean> =>
   openOnboardingOffer(prepareOnboardingOffer())
 
+// The onboarding's counts (S7b §7), heard on their way to the funnel.
+const funnel = vi.hoisted(() => ({ sent: [] as string[] }))
+vi.mock('@/features/onboarding/funnel', () => ({
+  trackNativeOnboarding: (event: string) => funnel.sent.push(event),
+}))
+
 let unregister: (() => void) | null = null
 
 beforeEach(() => {
@@ -62,6 +68,7 @@ beforeEach(() => {
   identity.made = 0
   server.next = null
   build.cloud = true
+  funnel.sent = []
 })
 
 afterEach(() => {
@@ -80,16 +87,20 @@ describe('the holdout', () => {
     expect(localStorage.getItem(OFFER_GROUP_KEY)).toBe('holdout')
     // Kept: a later draw changes nothing.
     expect(onboardingOfferGroup(() => 0.99)).toBe('holdout')
+    // Counted once, as it is drawn, so its retention can be read apart.
+    expect(funnel.sent).toEqual(['native_onboarding_group_holdout'])
   })
 
   it('offers it to the other nine', () => {
     expect(onboardingOfferGroup(() => 0.1)).toBe('offer')
     expect(onboardingOfferGroup(() => 0)).toBe('offer')
+    expect(funnel.sent).toEqual(['native_onboarding_group_offer'])
   })
 
-  it('reads a group already kept, as a walk seeds it', () => {
+  it('reads a group already kept, as a walk seeds it, and counts no draw', () => {
     localStorage.setItem(OFFER_GROUP_KEY, 'holdout')
     expect(onboardingOfferGroup(() => 0.9)).toBe('holdout')
+    expect(funnel.sent).toEqual([])
   })
 
   it('opens no offer for the holdout, and makes no identity for it', async () => {

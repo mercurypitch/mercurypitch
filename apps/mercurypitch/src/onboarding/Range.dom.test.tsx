@@ -166,6 +166,26 @@ describe('the range', () => {
     expect(localStorage.getItem(GRANT)).toBe('true')
   })
 
+  it('has Merc climb with the voice: his reach, high on the ladder for a high note, low for a low one', async () => {
+    const s = stand()
+    show(s)
+    await listen()
+    expect(controller?.mercState()).toBe('reach')
+
+    s.frames = [...room(0, 1), ...glide(1, 64, 64, 1)]
+    flushFrame()
+    const high = controller?.mercVoice()
+    s.frames = [...room(0, 1), ...glide(1, 47, 47, 1)]
+    flushFrame()
+    const low = controller?.mercVoice()
+
+    expect(controller?.state().phase).toBe('down')
+    expect(high?.voiced).toBe(true)
+    expect(high?.cents ?? 0).toBeGreaterThan(200)
+    expect(low?.voiced).toBe(true)
+    expect(low?.cents ?? 0).toBeLessThan(-200)
+  })
+
   it('measures the two slides: E2 to G4, the pins locked and See my voice', async () => {
     const s = stand()
     const onSee = vi.fn()

@@ -31,6 +31,9 @@
 // What the singer feels (§10): a light tick when a stop lights or opens, a
 // success as Merc lands on the song. Through `@/lib/haptics`, as the rooms'
 // own: the device's haptics in the app, which installs them at boot.
+//
+// The native onboarding ends here (S7b beat 10, path-landing.ts): that open
+// draws in as the day's first does, and Merc hops beside the first stop.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -45,6 +48,7 @@ import { exerciseLevel } from '@/stores/exercise-level'
 import { unlockShown } from '@/stores/notifications-store'
 import { warmUpMinutes } from './estimate'
 import { SKY_BOTTOM, SKY_TOP } from './path-art'
+import { takePathLanding } from './path-landing'
 import type { PathMode, ScreenBox } from './path-layout'
 import { openingScroll, pathFrame } from './path-layout'
 import { createPathMotion } from './path-motion'
@@ -175,11 +179,13 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
 
   // The day's first open draws the path in; a return from a stop arrives as
   // its card instead. Asked as the path opens, so under reduced motion the
-  // open still counts for the day, though nothing draws in.
+  // open still counts for the day, though nothing draws in. The
+  // onboarding's landing draws in too, whichever open of the day it is.
+  const landing = !still && takePathLanding()
   const drawIn =
     !still &&
     untrack(source.last) === null &&
-    source.firstOpenToday() &&
+    (source.firstOpenToday() || landing) &&
     !prefersReducedMotion()
   const motion = createPathMotion({
     view,
@@ -187,6 +193,7 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
     still,
     reduced: prefersReducedMotion,
     drawIn,
+    land: landing,
     go: () => enter(untrack(view).next),
     onLit: () => haptics.tapLight(),
     onEnd: () => haptics.success(),
