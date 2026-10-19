@@ -487,7 +487,7 @@ the buttons and the reveal carry the moment.
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand (18 October 2026, read at `4804c9a62`). Each item says
+Found in the kit and the app as they stand (18 October 2026, read at `4d5891ac0`). Each item says
 what it must do. The kit items move Lesson 1's code into `src/features/lessons/kit/`, and Lesson
 1's page then imports them from there; nothing is copied.
 

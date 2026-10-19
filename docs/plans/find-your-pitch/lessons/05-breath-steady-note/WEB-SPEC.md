@@ -5,7 +5,7 @@ predicts, a sung checkpoint of two fixed-length holds, and a quiz. There is no e
 is a text-only page. Copy is in [LESSON.md](LESSON.md); every claim is in [FACTS.md](FACTS.md). It
 is the second page with a microphone, so it runs on the kit parts Lesson 3's spec adds (the band
 chart, the listener, the take reader and the comfort check: [Lesson 3
-WEB-SPEC](../03-match-a-note/WEB-SPEC.md), Toys 6 and 7, as committed at `4804c9a62`) and extends
+WEB-SPEC](../03-match-a-note/WEB-SPEC.md), Toys 6 and 7, as committed at `4d5891ac0`) and extends
 them for holds. Where a part still lives in Lesson 1's or Lesson 3's page module, it is promoted
 into the kit (`src/features/lessons/kit/`), never copied; if the page that owns it has not
 promoted it first, this page does. Where this page shares a behaviour with Lesson 3's checkpoint

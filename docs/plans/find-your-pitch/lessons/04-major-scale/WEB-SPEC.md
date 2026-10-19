@@ -366,7 +366,7 @@ into the kit (Toys table):
   `lesson01` (`:447-448`).
 - `src/lib/sw-runtime.ts`: `/learn/04` and `/learn/04.html` in `STANDALONE_DOCUMENT_PATHS`, as
   `/learn/01` is (`sw-runtime.ts:131-135`), so the service worker leaves the lesson alone.
-- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, as at `:66`): Lesson 4's entry.
+- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, as at `:67`): Lesson 4's entry.
 - `public/learn/lesson-04-og.jpg`: the share card, 1200 x 630. With no film to cut a frame from,
   it is a still of the hero: the title over the staircase on C, do's house glyph lit.
 - The page's head, as Lesson 1's (`learn/01.html:9-58`):

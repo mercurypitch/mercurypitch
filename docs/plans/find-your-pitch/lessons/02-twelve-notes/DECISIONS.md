@@ -288,7 +288,7 @@ Script critic (`review/script-02/report.md`, SHIP once S1 to S3 are applied):
 - Script N7 (decision 7's reason; the page's bubble): CHANGED. Decision 7 now says the guess is the intuitive picture that blue's count exposes; the page's bubble drops "but twelve notes", so the climb is the reveal.
 - Script N8 ("warm-up" with two meanings): CHANGED. MASTER-PLAN § 4.2's item 3 is now a "recall check" (that one line), LESSON's section is "Recall from Lesson 1", the page's Contour line says "For an easier first drill", and BRIEF, WEB-SPEC, FACTS 35 and decisions 1, 3, 5, 33 and 49 follow; "warm-up" now means only a vocal warm-up in Lesson 2's documents.
 - Script N9 (standing decisions in the change log): CHANGED. Decisions 54 to 66 now sit in the topical sections; the numbers stay as stable ids, so every reference (SCRIPT.md, BRIEF, decisions 7 and 28, owner question 1) still holds.
-- Script N10 (FACTS's comparison point is on no branch): CHANGED. The header names `cb22c656`'s rebased twin, `971ea8bb`, and pins the claims at the branch's current `601436c3f`; no cited file changed between the two.
+- Script N10 (FACTS's comparison point is on no branch): CHANGED. The header names `cb22c656`'s rebased twin, `9b2845295`, and pins the claims at the branch's current `abda04949`; no cited file changed between the two.
 - Script N11 (the hundred cents unscoped on the page): CHANGED. The term card reads "a hundredth of an equal semitone", quiz 4's feedback "a hundred cents to an equal semitone", and the wrap "an equal semitone is 100 cents" (decision 23).
 - Script N12 (four recap questions): CHANGED. Recorded as a deviation (decision 67).
 - Script 27, residue (the bare "A" in b43): CHANGED. b43 ends "Then back again."; b55's "one in ten to one in six" and the other bare "A"s stay on the scratch-pass checklist.
@@ -585,7 +585,7 @@ No sweep for holds this round: critic 10's recount replaces the board's own esti
 ## Written lesson, review 1 response
 
 One line per finding of the written lesson's first review (18 October 2026, on LESSON.md,
-WEB-SPEC.md and FACTS.md at `a549e58f7`; verdict ONE MORE PASS, with 8 blocking and 12 optional
+WEB-SPEC.md and FACTS.md at `8af8b2fac`; verdict ONE MORE PASS, with 8 blocking and 12 optional
 findings). The film is unchanged.
 
 Blocking:
