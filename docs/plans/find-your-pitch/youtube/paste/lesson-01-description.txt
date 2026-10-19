@@ -1,0 +1,32 @@
+If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?
+The interactive lesson, with sound toys and a quick check: https://mercurypitch.com/learn/01
+
+Find Your Pitch, Lesson 1: What is a note? Blue Merc teaches and orange Merc asks the questions. Every note starts with something shaking. You'll hear why faster swings sound higher, and why loud is something else; why doubling the frequency gives the same note an octave up; why pitch is more like a spiral than a straight line; and how note names such as A4 and C4 work.
+
+Chapters
+00:00 The puzzle
+00:26 A note is something shaking
+01:05 Faster, not louder
+01:28 Twice as fast
+02:04 The simplest fit
+02:36 The octave ladder
+02:55 Pitch is a spiral
+03:25 Names, numbers and the piano
+03:52 Sing it
+04:32 Quick check
+05:01 Next time
+
+Practise
+Sing a note back in Voice Mirror. It is free, needs no account, and counts a match in any octave: https://mercurypitch.com/mirror
+Keep it gentle. Never push.
+
+Next: Lesson 2, Twelve notes: [PASTE LESSON 2 LINK]
+Season 1 playlist: [PASTE PLAYLIST LINK]
+
+Credits
+Hosts: blue Merc and orange Merc, animated in code.
+Voices: ElevenLabs (Eleven v3). Merc's sung notes: re-pitched from ElevenLabs takes. Every other musical example is synthesised in code at its exact pitch; there is no recorded music.
+Fonts: Outfit, Inter, Instrument Serif, JetBrains Mono and Noto Music, all under the SIL Open Font Licence 1.1.
+Made by MercuryPitch, a free singing and playing studio: https://mercurypitch.com
+
+#MusicTheory #Singing #FindYourPitch

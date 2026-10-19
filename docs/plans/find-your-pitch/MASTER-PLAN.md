@@ -404,7 +404,8 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   each under two seconds, for a later render. Its 1080p and 720p web encodes go to R2 (§ 12 item
   7); the film is never committed.
 - The web lesson and explorer: built in the app at `/learn/01` (`learn/01.html`,
-  `src/features/lessons/`), not yet merged. Until the film is on R2 the page shows the poster,
+  `src/features/lessons/`), merged on 19 October 2026 and live on the dev site; it reaches
+  `mercurypitch.com` with the next release. Until the film is on R2 the page shows the poster,
   the chapters and the transcript. A private preview page, which also plays the film, stays for
   review.
 - Lesson 2: [`lessons/02-twelve-notes/`](lessons/02-twelve-notes/) holds the same set, plus the
@@ -412,13 +413,18 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   storyboard, five on the film). Its film project is `output/motion/lesson-02/` (gitignored); the
   master is `rc-04` (7:11, 60 fps, with the owner's ElevenLabs voices), which round 15 passed with
   four polish items for a later render. Its web lesson is specified and reviewed, and is not built
-  yet; it waits on Lesson 1's page shipping and the kit work its spec lists.
+  yet; it waits on the kit work its spec lists.
 - Lessons 3 to 6: written lessons, text only and reviewed, in
   [`lessons/03-match-a-note/`](lessons/03-match-a-note/),
   [`lessons/04-major-scale/`](lessons/04-major-scale/),
   [`lessons/05-breath-steady-note/`](lessons/05-breath-steady-note/) and
   [`lessons/06-intervals/`](lessons/06-intervals/) (facts, copy and page spec). Lessons 3 and 5
   wait on the vocal coach (§ 12 item 8), and so does Lesson 6's sing-along.
+- YouTube: [`youtube/YOUTUBE.md`](youtube/YOUTUBE.md) is the upload guide for Lessons 1 and 2
+  (every Studio field, chapters, end screens, cards and pinned comments, checked against YouTube's
+  help pages on 19 October 2026), with three thumbnails per film, end-screen maps, paste-ready
+  descriptions and tags, and titles, thumbnail ideas, opening lines and tags for the trailer and
+  Lessons 3 to 14. Nothing is uploaded; its four gates and its owner decisions come first.
 
 ## 12. Owner decisions
 
