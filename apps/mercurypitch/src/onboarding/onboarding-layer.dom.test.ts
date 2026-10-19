@@ -13,10 +13,10 @@ import { resetRoomArrivalHolds, roomArrivalHeld, } from '@/stores/native-shell-s
 import { setActiveTab } from '@/stores/ui-store'
 import { markWelcomeSeen, resetWelcome } from '../alley/alley-welcome'
 import { moreOpen, onboardingShown, openMore, railVisible, resetRunShell, } from '../shell/run-shell-store'
-import { offerOpen, rangeFinder, resetAccountOffer, } from '../shell/settings/account-offer'
+import { keepArrival, offerOpen, rangeFinder, resetAccountOffer, } from '../shell/settings/account-offer'
 import { performBack, shellBackHost } from '../shell/shell-navigation'
 import { onboardingDue, resetOnboarding, resetOnboardingFlagForTests, } from './onboarding-flag'
-import { installNativeOnboarding, LEAVE_MS, leaveOnboarding, onboardingEntry, onboardingExit, onboardingMounted, } from './onboarding-layer'
+import { installNativeOnboarding, LEAVE_MS, leaveOnboarding, onboardingEntry, onboardingExit, onboardingMounted, registerLayerRange, } from './onboarding-layer'
 
 let dispose: (() => void) | null = null
 
@@ -154,7 +154,7 @@ describe('the range on its own, from Keep', () => {
     expect(rangeFinder()).toBeNull()
   })
 
-  it('comes up over any tab, leaves the onboarding due, and opens Keep again', () => {
+  it('comes up over any tab, leaves the onboarding due, and opens Keep again, its card flying in from the reveal', () => {
     install()
     findRangeFirst()
     expect(onboardingShown()).toBe(true)
@@ -165,18 +165,35 @@ describe('the range on its own, from Keep', () => {
     leaveOnboarding('finished')
 
     expect(offerOpen()).toBe(true)
+    expect(keepArrival()).toBe('reveal')
     expect(onboardingDue()).toBe(true)
     expect(railVisible()).toBe(true)
   })
 
-  it('opens Keep again when it leaves by Back', () => {
+  it('opens Keep again when it leaves by Back, with no reveal to fly from', () => {
     install()
     findRangeFirst()
 
     expect(performBack(shellBackHost())).toBe('onboarding')
 
     expect(offerOpen()).toBe(true)
+    expect(keepArrival()).toBe('plain')
     expect(onboardingDue()).toBe(true)
+  })
+
+  it("runs the onboarding's own range when Keep is over the onboarding (beat 7)", () => {
+    install()
+    setActiveTab(TAB_SINGING)
+    const run = vi.fn()
+    const unregister = registerLayerRange(run)
+
+    findRangeFirst()
+    unregister()
+    findRangeFirst()
+
+    expect(run).toHaveBeenCalledTimes(1)
+    expect(onboardingEntry()).toBe('onboarding')
+    expect(onboardingShown()).toBe(true)
   })
 
   it('does not come up over the onboarding, nor open Keep when that leaves', () => {

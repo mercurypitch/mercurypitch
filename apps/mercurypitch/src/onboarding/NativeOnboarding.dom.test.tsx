@@ -5,22 +5,32 @@
 //
 // The beats run on the stand-in capture (onboarding-capture.test-fixtures),
 // handed to the layer in place of the mic's: the one thing it reaches that
-// jsdom has not got.
+// jsdom has not got. Keep (beat 7) is the shell's own sheet, drawn beside
+// the layer as the shell draws it, with the shell's half of the onboarding
+// installed, so its "Find your range first" is the shell's.
 
+import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as Capture from '@/components/room-kit/useExerciseCapture'
 import type { ExerciseCapture } from '@/components/room-kit/useExerciseCapture'
+import { CaptureError } from '@/components/room-kit/useExerciseCapture'
+import { setAuthToken } from '@/db/services/user-service'
 import type * as MicSentinel from '@/lib/mic-sentinel'
 import { resetRoomArrivalHolds } from '@/stores/native-shell-store'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
 import { onboardingShown, setOnboardingShown } from '../shell/run-shell-store'
+import { KEEP } from '../shell/settings/account-copy'
+import { closeOffer, forgetAccountOffer, keepArrival, offerOpen, } from '../shell/settings/account-offer'
+import { AccountOfferSheet } from '../shell/settings/AccountOffer'
+import { closeSignIn, resetSignIn, signInOpen, } from '../shell/settings/sign-in-state'
+import { ASK_BEAT_MS, askAfterSignIn, resetVoiceprintAsk, } from '../shell/settings/voiceprint-ask'
 import { NativeOnboarding, SKIP_BEAT_MS } from './NativeOnboarding'
 import type { Stand } from './onboarding-capture.test-fixtures'
 import { flushFrame, noteTake, settle, stand, stubFrames, } from './onboarding-capture.test-fixtures'
 import { ONBOARDING_COPY } from './onboarding-copy'
 import { ONBOARDING_KEY, resetOnboardingFlagForTests, settleOnboarding, } from './onboarding-flag'
-import { LEAVE_MS, onboardingExit, onboardingMounted, openOnboarding, openRangeFinder, } from './onboarding-layer'
+import { installNativeOnboarding, LEAVE_MS, onboardingExit, onboardingMounted, openOnboarding, openRangeFinder, } from './onboarding-layer'
 import { slideWindow } from './range-frames.test-fixtures'
 import { GREET_MS } from './useFirstNote'
 
@@ -53,14 +63,24 @@ vi.mock('@/components/room-kit/useExerciseCapture', async (importOriginal) => {
 })
 
 let view: RenderedShell | null = null
+let shell: (() => void) | null = null
 
-/** The layer up for `entry`, on a stand-in capture. */
+/** The layer up for `entry`, on a stand-in capture, with Keep beside it. */
 function mount(entry: 'onboarding' | 'range', then = () => undefined): Stand {
   const s = stand()
   bench.capture = s.capture
+  createRoot((dispose) => {
+    shell = dispose
+    installNativeOnboarding()
+  })
   if (entry === 'onboarding') openOnboarding()
   else openRangeFinder(then)
-  view = renderShell(() => <NativeOnboarding />)
+  view = renderShell(() => (
+    <>
+      <NativeOnboarding />
+      <AccountOfferSheet />
+    </>
+  ))
   return s
 }
 
@@ -77,12 +97,18 @@ beforeEach(() => {
 afterEach(() => {
   view?.unmount()
   view = null
+  shell?.()
+  shell = null
   bench.capture = null
   vi.advanceTimersByTime(LEAVE_MS)
   vi.unstubAllGlobals()
   vi.useRealTimers()
   setOnboardingShown(false)
   resetRoomArrivalHolds()
+  forgetAccountOffer()
+  resetSignIn()
+  resetVoiceprintAsk()
+  setAuthToken(null)
   localStorage.clear()
   resetOnboardingFlagForTests()
 })
@@ -92,6 +118,10 @@ const layer = (): HTMLElement | null =>
 const q = (id: string): HTMLElement | null =>
   view?.container.querySelector(`[data-testid="${id}"]`) ?? null
 const said = (): string | null => q('onboarding-said')?.textContent ?? null
+/** Keep is portalled to the document, as the shell's sheets are. */
+const k = (id: string): HTMLElement | null =>
+  document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+const beat = (): string | null => layer()?.getAttribute('data-beat') ?? null
 
 /** Inert, or inside something inert. Solid sets the property, and jsdom
  *  does not reflect it to the attribute, so `[inert]` would not find it. */
@@ -111,15 +141,52 @@ async function nameNote(s: Stand): Promise<void> {
   expect(q('onboarding-find-range')).not.toBeNull()
 }
 
-/** Find my range, then both slides: the range is measured. */
-async function measureRange(s: Stand): Promise<void> {
-  q('onboarding-find-range')?.click()
+/** Both slides, with the mic open: the range is measured, E2 to G4. */
+async function slideBoth(s: Stand): Promise<void> {
   await settle()
   s.frames = slideWindow(52, 40)
   flushFrame()
   s.frames = slideWindow(45, 67)
   flushFrame()
   expect(q('onboarding-see-voice')).not.toBeNull()
+}
+
+/** Find my range, then both slides: the range is measured. */
+async function measureRange(s: Stand): Promise<void> {
+  q('onboarding-find-range')?.click()
+  await slideBoth(s)
+}
+
+/** One note, the range, the reveal, and Continue. */
+async function continueFromReveal(s: Stand): Promise<void> {
+  await nameNote(s)
+  await measureRange(s)
+  q('onboarding-see-voice')?.click()
+  q('onboarding-continue')?.click()
+  await settle()
+}
+
+/** One note, then Skip for now, and Merc's word: Keep comes after it. */
+async function skipToKeep(s: Stand): Promise<void> {
+  await nameNote(s)
+  q('onboarding-skip')?.click()
+  vi.advanceTimersByTime(SKIP_BEAT_MS)
+  await settle()
+}
+
+/** A token for an account of `provider`'s, signed in on this phone. */
+function token(provider: string): string {
+  const body = btoa(
+    JSON.stringify({
+      sub: 'user-1',
+      provider,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    }),
+  )
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+  return `header.${body}.signature`
 }
 
 describe('NativeOnboarding', () => {
@@ -182,7 +249,7 @@ describe('NativeOnboarding', () => {
     expect(q('onboarding-merc')).toBe(merc)
   })
 
-  it('skips the range: Merc says it is there for later, then the onboarding goes', async () => {
+  it('skips the range: Merc says it is there for later, then Keep comes', async () => {
     const s = mount('onboarding')
     await nameNote(s)
 
@@ -190,14 +257,15 @@ describe('NativeOnboarding', () => {
 
     expect(said()).toBe(ONBOARDING_COPY.skipped)
     expect(outOfReach(q('onboarding-skip'))).toBe(true)
-    expect(onboardingShown()).toBe(true)
+    expect(offerOpen()).toBe(false)
     vi.advanceTimersByTime(SKIP_BEAT_MS)
-    expect(onboardingShown()).toBe(false)
-    expect(onboardingExit()).toBe('finished')
-    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    expect(beat()).toBe('keep')
+    expect(offerOpen()).toBe(true)
+    expect(onboardingShown()).toBe(true)
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('due')
   })
 
-  it('reveals the voice a range measures, and Continue ends the onboarding', async () => {
+  it('reveals the voice a range measures, and Continue brings Keep', async () => {
     const s = mount('onboarding')
     await nameNote(s)
     await measureRange(s)
@@ -211,8 +279,9 @@ describe('NativeOnboarding', () => {
     expect(q('onboarding-card-range')?.textContent).toBe('E2 to G4')
     expect(said()).toBe(ONBOARDING_COPY.voiceprint)
     q('onboarding-continue')?.click()
-    expect(onboardingExit()).toBe('finished')
-    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    expect(beat()).toBe('keep')
+    expect(offerOpen()).toBe(true)
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('due')
   })
 
   it('shuts the range mic at once when Not now is tapped mid-slide', async () => {
@@ -240,5 +309,176 @@ describe('NativeOnboarding', () => {
     expect(s.calls.acquire).toBe(0)
     q('onboarding-not-now')?.click()
     expect(then).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Keep, beat 7', () => {
+  it('comes over the layer after the reveal: the voiceprint, its card flown in, and the layer still up', async () => {
+    const s = mount('onboarding')
+
+    await continueFromReveal(s)
+
+    expect(beat()).toBe('keep')
+    expect(k('account-offer')?.dataset.variant).toBe('voiceprint')
+    expect(k('account-offer')?.dataset.arrival).toBe('reveal')
+    expect(keepArrival()).toBe('reveal')
+    expect(k('keep-voiceprint')?.textContent).toContain('E2–G4')
+    expect(onboardingShown()).toBe(true)
+    // Nothing of the layer is in reach under Keep, and Merc says nothing.
+    expect(outOfReach(q('onboarding-not-now'))).toBe(true)
+    expect(outOfReach(q('onboarding-keep'))).toBe(true)
+    expect(said()).toBe('')
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('due')
+  })
+
+  it("goes on to the Sing room once Keep's Not now closes it, the onboarding done", async () => {
+    const s = mount('onboarding')
+    await continueFromReveal(s)
+
+    k('keep-not-now')?.click()
+    expect(onboardingShown()).toBe(true)
+    await settle()
+
+    expect(offerOpen()).toBe(false)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+  })
+
+  it('is Save your progress after a skipped range, with Find your range first and no card', async () => {
+    const s = mount('onboarding')
+
+    await skipToKeep(s)
+
+    expect(k('account-offer')?.dataset.variant).toBe('progress')
+    expect(keepArrival()).toBe('plain')
+    expect(k('keep-voiceprint')).toBeNull()
+    expect(k('keep-find-range')?.textContent).toBe(KEEP.findRange)
+    // Merc's word on the skip has had its moment.
+    expect(said()).toBe('')
+  })
+
+  it("runs the range here from Keep's Find your range first, the mic opened in that tap, then comes back to Keep", async () => {
+    const s = mount('onboarding')
+    await skipToKeep(s)
+    const acquired = s.calls.acquire
+
+    k('keep-find-range')?.click()
+
+    expect(beat()).toBe('range')
+    expect(s.calls.acquire).toBe(acquired + 1)
+    expect(offerOpen()).toBe(false)
+    expect(said()).toBe(ONBOARDING_COPY.slideDown)
+    await slideBoth(s)
+    expect(onboardingShown()).toBe(true)
+    q('onboarding-see-voice')?.click()
+    q('onboarding-continue')?.click()
+    await settle()
+    expect(beat()).toBe('keep')
+    expect(k('account-offer')?.dataset.variant).toBe('voiceprint')
+    expect(keepArrival()).toBe('reveal')
+    expect(k('keep-find-range')).toBeNull()
+  })
+
+  it("brings Keep back from the range's own Skip for now, when Keep ran it", async () => {
+    const s = mount('onboarding')
+    await skipToKeep(s)
+    k('keep-find-range')?.click()
+    await settle()
+    // Stopped mid-slide: the mic is down, and Skip for now is back.
+    q('onboarding-mic')?.click()
+
+    q('onboarding-skip')?.click()
+    expect(said()).toBe(ONBOARDING_COPY.skipped)
+    vi.advanceTimersByTime(SKIP_BEAT_MS)
+    await settle()
+
+    expect(beat()).toBe('keep')
+    expect(offerOpen()).toBe(true)
+    expect(k('account-offer')?.dataset.variant).toBe('progress')
+  })
+
+  it('stays up while Keep hands over to the sign-in sheet, and goes when that closes', async () => {
+    const s = mount('onboarding')
+    await skipToKeep(s)
+
+    k('keep-email')?.click()
+    await settle()
+    const handedOver = signInOpen()
+    const stayed = onboardingShown()
+    closeSignIn()
+    await settle()
+
+    expect(handedOver).toBe(true)
+    expect(stayed).toBe(true)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+  })
+
+  it('stays up for the voiceprint ask a sign-in brings, and goes once it is over', async () => {
+    const s = mount('onboarding')
+    await continueFromReveal(s)
+
+    // As a sign-in to an account that already existed ends: Keep closes,
+    // and the ask is due a beat later, in the same turn.
+    closeOffer()
+    askAfterSignIn('user-1')
+    await settle()
+    const stayed = onboardingShown()
+    vi.advanceTimersByTime(ASK_BEAT_MS)
+    await settle()
+
+    expect(stayed).toBe(true)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+  })
+
+  it('is skipped on a phone signed in to an account: Continue goes on to the Sing room', async () => {
+    setAuthToken(token('google'))
+    const s = mount('onboarding')
+
+    await continueFromReveal(s)
+
+    expect(offerOpen()).toBe(false)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+  })
+
+  it('is skipped after a skipped range too, on a phone signed in', async () => {
+    setAuthToken(token('apple'))
+    const s = mount('onboarding')
+
+    await skipToKeep(s)
+
+    expect(offerOpen()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+  })
+
+  it("does not come over a layer left by Not now during Merc's word on a skip", async () => {
+    const s = mount('onboarding')
+    await nameNote(s)
+    q('onboarding-skip')?.click()
+
+    q('onboarding-not-now')?.click()
+    vi.advanceTimersByTime(SKIP_BEAT_MS)
+    await settle()
+
+    expect(offerOpen()).toBe(false)
+    expect(onboardingExit()).toBe('not-now')
+  })
+
+  it('never comes after a refused mic: Not now leaves with no offer (S7b E5)', async () => {
+    const s = mount('onboarding')
+    s.answer = async () => Promise.reject(new CaptureError('denied'))
+    q('onboarding-mic')?.click()
+    await settle()
+    expect(q('onboarding-retry')).not.toBeNull()
+
+    q('onboarding-not-now')?.click()
+    await settle()
+
+    expect(offerOpen()).toBe(false)
+    expect(onboardingExit()).toBe('not-now')
   })
 })
