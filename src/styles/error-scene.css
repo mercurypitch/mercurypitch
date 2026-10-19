@@ -1,0 +1,401 @@
+/*
+ * The error scene: the room every "that did not work" page hangs in
+ * (docs/plans/error-pages.md). A night sky over the mercury sea, a stave of
+ * light across the sky (src/error-kit/staves.ts), and one glass card with
+ * the words, the way on, and every room.
+ *
+ * Built in layers so it never looks unfinished: the sky is CSS alone and
+ * paints with no image at all; the First Light plate, the same art as the
+ * app's opening and the entry prelude, lands on top when it arrives, and a
+ * returning visitor already has it cached.
+ *
+ * Linked only by the generated error documents (tools/generate-error-pages.ts)
+ * and, through a copy, by the about site's 404. The colours are custom
+ * properties for that copy: another site recolours the scene by overriding
+ * them, never by editing the rules.
+ *
+ * Dark in both themes: this is the night scene, not a page in the app's
+ * palette.
+ */
+
+:root {
+  --es-ink: #c9d1d9;
+  --es-ink-strong: #f0f6fc;
+  --es-ground: #0d1117;
+  --es-link: #7dd3c8;
+  --es-accent: #2dd4bf;
+  --es-note-a: #58a6ff;
+  --es-note-b: #bc8cff;
+  --es-staff: rgba(201, 209, 217, 0.3);
+  --es-phrase: rgba(201, 209, 217, 0.5);
+  --es-card: rgba(13, 17, 23, 0.62);
+  --es-card-edge: rgba(240, 246, 252, 0.09);
+  --es-plate-wide: url('/opening/first-light-wide.webp');
+  --es-plate-tall: url('/opening/first-light-tall.webp');
+}
+
+body {
+  margin: 0;
+  background: var(--es-ground);
+}
+
+.error-scene {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: clamp(8px, 3vh, 40px) 1rem 0.75rem;
+  color: var(--es-ink);
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  line-height: 1.6;
+  text-align: center;
+  /* The stave is wider than a phone on purpose (below); clipped here, never
+     scrolled to. */
+  overflow-x: hidden;
+  overflow-x: clip;
+  /* Clear sky where the stave hangs, closing over the water where the card
+     sits, so the words never read against rippling chrome. Under it the
+     plate; under that a sky drawn in CSS, which is all a visitor sees until
+     the plate arrives, and all there is offline with nothing cached. */
+  background:
+    linear-gradient(
+        180deg,
+        rgba(13, 17, 23, 0.1) 0%,
+        rgba(13, 17, 23, 0.35) 30%,
+        rgba(13, 17, 23, 0.85) 62%,
+        var(--es-ground) 100%
+      )
+      no-repeat,
+    var(--es-plate-wide) center / cover no-repeat,
+    radial-gradient(
+        120% 60% at 50% 46%,
+        rgba(45, 212, 191, 0.16) 0%,
+        rgba(45, 212, 191, 0) 60%
+      )
+      no-repeat,
+    radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%),
+    radial-gradient(
+      1px 1px at 27% 8%,
+      rgba(255, 255, 255, 0.8) 50%,
+      transparent 51%
+    ),
+    radial-gradient(1.5px 1.5px at 41% 22%, #fff 50%, transparent 51%),
+    radial-gradient(
+      1px 1px at 58% 12%,
+      rgba(255, 255, 255, 0.7) 50%,
+      transparent 51%
+    ),
+    radial-gradient(1px 1px at 73% 26%, #fff 50%, transparent 51%),
+    radial-gradient(
+      1.5px 1.5px at 86% 9%,
+      rgba(255, 255, 255, 0.85) 50%,
+      transparent 51%
+    ),
+    radial-gradient(1px 1px at 93% 31%, #fff 50%, transparent 51%),
+    linear-gradient(180deg, #05070d 0%, #0b1424 48%, #0d1117 100%);
+}
+/* A phone gets the tall plate: the wide one would be its middle quarter,
+   upscaled. The same wide and tall tiers as the entry prelude. */
+@media (max-aspect-ratio: 1/1) {
+  .error-scene {
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(13, 17, 23, 0.1) 0%,
+        rgba(13, 17, 23, 0.35) 30%,
+        rgba(13, 17, 23, 0.85) 62%,
+        var(--es-ground) 100%
+      ),
+      var(--es-plate-tall),
+      radial-gradient(
+        120% 60% at 50% 46%,
+        rgba(45, 212, 191, 0.16) 0%,
+        rgba(45, 212, 191, 0) 60%
+      ),
+      linear-gradient(180deg, #05070d 0%, #0b1424 48%, #0d1117 100%);
+  }
+}
+
+/* ── The stave ──────────────────────────────────────────────────────── */
+
+.error-scene__stave {
+  display: block;
+  flex: none;
+  /* Fitted to its height, so a wide window gets the whole phrase at full
+     size with the lines running on to the edges. A phone gets a box wider
+     than itself, centred, so the notes keep their size and the sides of the
+     phrase fall off the screen rather than everything shrinking. */
+  width: max(100%, 760px);
+  height: clamp(140px, 23vh, 280px);
+  overflow: visible;
+  /* The lines fade out toward the window's edges rather than stopping. */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+}
+.error-scene__lines line,
+.error-scene__bars line {
+  stroke: var(--es-staff);
+  stroke-width: 1.6;
+}
+.error-scene__bars .error-scene__final {
+  stroke-width: 4;
+}
+.error-scene__clef {
+  fill: var(--es-phrase);
+}
+.error-scene__phrase ellipse {
+  fill: var(--es-phrase);
+}
+.error-scene__phrase line {
+  stroke: var(--es-phrase);
+  stroke-width: 2.2;
+}
+.error-scene__ghost ellipse {
+  fill: none;
+  stroke: var(--es-accent);
+  stroke-opacity: 0.75;
+  stroke-width: 1.6;
+  stroke-dasharray: 3 4;
+}
+.error-scene__glide {
+  fill: none;
+  stroke: var(--es-accent);
+  stroke-opacity: 0.7;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 9;
+  animation: errorSceneGlide 2.6s linear infinite;
+}
+.error-scene__stop-a {
+  stop-color: var(--es-note-a);
+}
+.error-scene__stop-b {
+  stop-color: var(--es-note-b);
+}
+.error-scene__note ellipse {
+  fill: url(#es-note-fill);
+}
+.error-scene__note line {
+  stroke: var(--es-note-a);
+  stroke-width: 2.6;
+}
+.error-scene__halo ellipse {
+  fill: var(--es-note-a);
+  opacity: 1;
+}
+.error-scene__drift {
+  transform-box: fill-box;
+  transform-origin: 50% 70%;
+  animation: errorSceneDrift 5.5s ease-in-out infinite alternate;
+}
+
+@keyframes errorSceneDrift {
+  from {
+    transform: translateY(-5px) rotate(-5deg);
+  }
+  to {
+    transform: translateY(7px) rotate(4deg);
+  }
+}
+@keyframes errorSceneGlide {
+  to {
+    stroke-dashoffset: -18.2;
+  }
+}
+
+/* ── The card ───────────────────────────────────────────────────────── */
+
+.error-scene__card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  width: min(40rem, 100%);
+  margin-top: clamp(4px, 1.5vh, 16px);
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(1rem, 4vw, 2.25rem) 1.5rem;
+  border: 1px solid var(--es-card-edge);
+  border-radius: 22px;
+  background: var(--es-card);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  animation: errorSceneRise 360ms ease both;
+}
+.error-scene__card > * {
+  margin: 0;
+}
+
+.error-scene__lockup {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+}
+.error-scene__lockup img {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+.error-scene__wordmark {
+  color: #e6edf3;
+  font-family: Outfit, Inter, system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.error-scene__wordmark > span {
+  background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* The readout: a tuner's dial, its needle hard over, and the reading. */
+.error-scene__tag {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 14px 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--es-accent) 40%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--es-accent) 9%, transparent);
+  color: var(--es-accent);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+}
+.error-scene__gauge {
+  width: 24px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.error-scene__gauge circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.error-scene h1 {
+  color: var(--es-ink-strong);
+  font-size: clamp(1.4rem, 3.6vw, 2rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.error-scene__line {
+  max-width: 34rem;
+  text-wrap: pretty;
+}
+
+.error-scene__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #58a6ff 0%, #6c8cff 50%, #bc8cff 100%);
+  color: #0d1117;
+  font-weight: 650;
+  text-decoration: none;
+  box-shadow: 0 6px 24px rgba(88, 166, 255, 0.35);
+}
+.error-scene__primary:hover {
+  filter: brightness(1.08);
+}
+
+/* Every room, as a wrap of links. Plain anchors, no classes: the
+   production build drops the unlisted museum's line by matching it exactly
+   (tools/glassworks-listing.ts). */
+.error-scene__card nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+  margin-top: 0.4rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--es-card-edge);
+}
+.error-scene__card nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--es-link) 26%, transparent);
+  border-radius: 999px;
+  color: var(--es-link);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+.error-scene__card nav a:hover {
+  background: color-mix(in srgb, var(--es-link) 12%, transparent);
+}
+@media (pointer: coarse) {
+  .error-scene__card nav a {
+    min-height: 44px;
+  }
+}
+
+.error-scene a:focus-visible {
+  outline: 2px solid var(--es-note-a);
+  outline-offset: 2px;
+}
+
+/* Privacy, Terms and Imprint close every document a visitor can land on.
+   Smaller than the rooms, and each one still a full 44 px target. */
+.error-scene__legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 0.5rem;
+  font-size: 0.8125rem;
+}
+.error-scene__legal a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--es-link);
+}
+
+@keyframes errorSceneRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .error-scene__drift,
+  .error-scene__glide,
+  .error-scene__card {
+    animation: none;
+  }
+}

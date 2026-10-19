@@ -120,6 +120,10 @@ public/marketing/
 /which-singer-has-my-vocal-range.html
 /karaoke-app.html
 
+# The error documents, generated from src/error-kit/ by
+# tools/generate-error-pages.ts on every vite invocation, for the same reason.
+/404.html
+
 # Private local authoring tool; the app consumes authored level data only.
 /art/glass-adventure/level-studio/v1
 

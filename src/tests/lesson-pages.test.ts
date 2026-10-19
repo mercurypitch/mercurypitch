@@ -182,9 +182,10 @@ describe.each(RELEASED)('released lesson %i', (n) => {
   })
 })
 
-// The hand-written documents link the series' first lesson, which never
-// changes: each lesson links the next, so a release needs no edit here.
-describe('the hand-written documents', () => {
+// index.html links the series' first lesson by hand, which never changes:
+// each lesson links the next, so a release needs no edit there. The 404 page
+// is generated (src/error-kit/) and links every released lesson.
+describe('the documents outside the entry model', () => {
   it.each(['index.html', '404.html'])('%s links Lesson 1', (file) => {
     const hrefs = Array.from(
       parse(file).querySelectorAll(

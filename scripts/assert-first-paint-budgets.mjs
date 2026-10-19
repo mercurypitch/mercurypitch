@@ -120,8 +120,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
  * ordinary growth while still failing loudly if the 871 KB global sheet ever
  * reaches one. Measured values are in the comments.
  *
- * `404.html` is absent on purpose: it links the 3 KB prelude but runs no
- * script, and `measureFirstPaint` only weighs documents that run one.
+ * `404.html` is absent on purpose: it links the error scene's sheet but runs
+ * no script, and `measureFirstPaint` only weighs documents that run one.
  */
 export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // The Voice Mirror and its three doors, and the glass room. Measured 26,

@@ -14,6 +14,7 @@ import { devLogRelayPlugin } from './tools/dev-log-relay'
 import { DRAFT_LESSONS_ENV, isDraftLessonsShown, lessonInputs, lessonPaths, } from './tools/draft-lessons'
 import { fontAliasesPlugin } from './tools/font-aliases'
 import { writeEntryPages } from './tools/generate-entry-pages'
+import { writeErrorPages } from './tools/generate-error-pages'
 import { glassGameAssetsPlugin } from './tools/glass-game-assets'
 import { GLASSWORKS_LISTED_ENV, glassworksListingPlugin, isGlassworksListed, unlistedEntrySlugs, } from './tools/glassworks-listing'
 
@@ -263,6 +264,10 @@ export default defineConfig(({ command, mode }) => {
   const entryInputs = writeEntryPages(__dirname, {
     unlisted: unlistedEntrySlugs(glassworksListed),
   })
+  // The error documents, the same way, from src/error-kit/.
+  writeErrorPages(__dirname, {
+    unlisted: unlistedEntrySlugs(glassworksListed),
+  })
 
   const configuredApiBase =
     process.env.VITE_API_BASE_URL ?? modeEnv.VITE_API_BASE_URL
@@ -452,9 +457,9 @@ export default defineConfig(({ command, mode }) => {
           // in step by hand.
           ...entryInputs,
           // Served by the asset layer for every unmatched path, with a 404
-          // status (wrangler.jsonc `not_found_handling`). A build input rather
-          // than a public/ file so it shares the entry-prelude stylesheet
-          // instead of carrying its own copy.
+          // status (wrangler.jsonc `not_found_handling`). Generated just above
+          // from src/error-kit/, and a build input rather than a public/ file
+          // so its stylesheet goes through the build like every other.
           notFound: resolve(__dirname, '404.html'),
           // Plain, like the 404, but answered with a 200 at its clean path.
           deleteAccount: resolve(__dirname, 'delete-account.html'),
