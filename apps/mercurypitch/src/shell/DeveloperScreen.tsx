@@ -27,11 +27,13 @@
 
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
+import { forgetUnaskedOffers } from '@/features/karaoke-room/cloud-offer-store'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { developerSections } from '@/lib/developer-sections'
 import { NATIVE_ONBOARDING } from '@/lib/native-build'
 import { resetWelcome, WELCOME_SEEN_KEY } from '../alley/alley-welcome'
 import { ONBOARDING_KEY, resetOnboarding } from '../onboarding/onboarding-flag'
+import { replayOnboardingOffer } from '../onboarding/onboarding-offer'
 import { goToTab } from './shell-navigation'
 
 /**
@@ -47,10 +49,14 @@ const replayWelcome = (): void => {
 /**
  * "Replay the onboarding": due again, and the welcome with it, so Rooms
  * shows its first-run headline and the next Sing door opens the onboarding,
- * as on a new install. Only on a build that has it (NATIVE_ONBOARDING).
+ * as on a new install. Its Cloud offer (beat 9) comes again too, whatever
+ * this phone's group, and past the offer's own caps: a tester who replays
+ * it is there to see it. Only on a build that has it (NATIVE_ONBOARDING).
  */
 const replayOnboarding = (): void => {
   resetOnboarding()
+  replayOnboardingOffer()
+  forgetUnaskedOffers()
   resetWelcome()
   goToTab(TAB_HOME)
 }
@@ -81,7 +87,8 @@ export const DeveloperScreen: Component = () => (
           <span class="mp-dev__row-title">Replay the onboarding</span>
           <span class="mp-dev__row-sub">
             Sets {ONBOARDING_KEY} due and clears {WELCOME_SEEN_KEY}, then opens
-            Rooms: the next Sing door opens the onboarding, as on a new install.
+            Rooms: the next Sing door opens the onboarding, as on a new install,
+            with its Cloud offer after the sung line.
           </span>
         </button>
       ) : null}

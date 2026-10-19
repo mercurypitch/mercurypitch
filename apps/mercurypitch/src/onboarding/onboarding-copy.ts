@@ -9,14 +9,18 @@
 // microphone's promise is the house one, "Only you can hear you."
 //
 // The deck's lines are kept as written: the first note, the range's two
-// slides and its result, the reveal's card and Merc's line on it. The rest
-// are this build's own, in the same voice: the slides' nudges and the two
-// ways a range can come up short, See my voice (concept 03's button), Find
-// my range again for a range this phone already keeps, and what Share says
-// when there is no share sheet. Keep, beat 7, says its own words
-// (account-copy.ts).
+// slides and its result, the reveal's card and Merc's line on it, the sung
+// line's ask, its chip and Merc's four lines by band. The rest are this
+// build's own, in the same voice: the slides' nudges and the two ways a
+// range can come up short, See my voice (concept 03's button), Find my
+// range again for a range this phone already keeps, what Share says when
+// there is no share sheet, the sung line's turn, its no-voice line, and
+// the words Merc's band lines take where the data says something other
+// than the deck's example (lineVerdict). Keep, beat 7, says its own words
+// (account-copy.ts); the Cloud offer, beat 9, its own (CloudOffer.tsx).
 
 import { noteArticle } from '@/lib/note-utils'
+import type { LineFacts } from './line-score'
 
 export const ONBOARDING_COPY = {
   /** The layer's accessible name. */
@@ -88,7 +92,89 @@ export const ONBOARDING_COPY = {
   linkCopied: 'Link copied.',
   /** Neither the sheet nor the clipboard would take it. */
   shareFailed: "Couldn't open the share sheet.",
+
+  // ── The sung line (S7b beat 8) ──
+  /** The layer's accessible name on the line. */
+  lineTitle: 'Sing one line',
+  /** Merc's ask (S7b §6.1), through his call. */
+  lineAsk: 'Sing this line with me.',
+  /** Under the mic before the first tap: what the tap starts. */
+  lineHow: "Merc sings it first, then it's your turn.",
+  /** The mic's name: what a tap does. */
+  singLine: 'Sing the line',
+  /** His call is over: the singer's turn, counted in. */
+  yourTurn: 'Your turn.',
+  /** No voice at all in the turn: the mic is shut, a tap tries again. */
+  lineUnheard: "I couldn't hear that one. Tap the mic and sing it back.",
+  /** Sing it again, from Merc's call. */
+  again: 'Once more',
 } as const
+
+/** "8 of 10 notes on pitch": the sung line's chip (S7b §6.1). */
+export function lineScoreText(hit: number, total: number): string {
+  return `${hit} of ${total} notes on pitch`
+}
+
+const COUNTS = [
+  'none',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+]
+
+/**
+ * Merc's word on a sung line, by S7b's bands (§3.6): all ten, 7 to 9, 4 to
+ * 6, 0 to 3. The deck's lines are its examples, kept where the data says
+ * the same; where it says otherwise, the same line with the data's word:
+ * sharp for flat, no "hair" past a semitone, and no pitch at all for notes
+ * nobody sang or for a mix.
+ */
+export function lineVerdict(facts: LineFacts): string {
+  const { hit, total, trend, slight } = facts
+  if (trend === null || hit >= total) {
+    return `All ${COUNTS[total] ?? String(total)}. Clean.`
+  }
+  const share = hit / total
+  if (share >= 0.7) {
+    switch (trend) {
+      case 'flat':
+        return slight
+          ? 'Nearly all. The rest sat a hair flat.'
+          : 'Nearly all. The rest sat flat. Sing them higher.'
+      case 'sharp':
+        return slight
+          ? 'Nearly all. The rest sat a hair sharp.'
+          : 'Nearly all. The rest sat sharp. Sing them lower.'
+      case 'unsung':
+        return 'Nearly all. The rest went by unsung.'
+      case 'mixed':
+        return 'Nearly all. Listen once more for the rest.'
+    }
+  }
+  if (share >= 0.4) {
+    if (facts.highFlat) {
+      return 'Good start. The high notes want a little more lift.'
+    }
+    switch (trend) {
+      case 'flat':
+        return `Good start. Some notes sat flat. Sing them ${slight ? 'a little ' : ''}higher.`
+      case 'sharp':
+        return `Good start. Some notes sat sharp. Sing them ${slight ? 'a little ' : ''}lower.`
+      case 'unsung':
+        return 'Good start. Some notes went by unsung. Sing every one.'
+      case 'mixed':
+        return 'Good start. Listen once more, then match Merc note for note.'
+    }
+  }
+  return 'Your voice is still warming up. Once more?'
+}
 
 /** "That's an A3." The note named back, with its article. */
 export function heardLine(note: string): string {
