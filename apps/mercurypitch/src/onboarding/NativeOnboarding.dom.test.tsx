@@ -374,7 +374,7 @@ describe('Keep, beat 7', () => {
     expect(localStorage.getItem(ONBOARDING_KEY)).toBe('due')
   })
 
-  it("goes on to the Sing room once Keep's Not now closes it, the onboarding done", async () => {
+  it("goes on to the sung line once Keep's Not now closes it, the layer still up", async () => {
     const s = mount('onboarding')
     await continueFromReveal(s)
 
@@ -383,9 +383,12 @@ describe('Keep, beat 7', () => {
     await settle()
 
     expect(offerOpen()).toBe(false)
-    expect(onboardingShown()).toBe(false)
-    expect(onboardingExit()).toBe('finished')
-    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    expect(beat()).toBe('line')
+    expect(q('onboarding-sung-line')).not.toBeNull()
+    expect(said()).toBe(ONBOARDING_COPY.lineAsk)
+    expect(outOfReach(q('onboarding-not-now'))).toBe(false)
+    expect(onboardingShown()).toBe(true)
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('due')
   })
 
   it('is Save your progress after a skipped range, with Find your range first and no card', async () => {
@@ -441,24 +444,24 @@ describe('Keep, beat 7', () => {
     expect(k('account-offer')?.dataset.variant).toBe('progress')
   })
 
-  it('stays up while Keep hands over to the sign-in sheet, and goes when that closes', async () => {
+  it('stays on Keep while it hands over to the sign-in sheet, and goes on to the line when that closes', async () => {
     const s = mount('onboarding')
     await skipToKeep(s)
 
     k('keep-email')?.click()
     await settle()
     const handedOver = signInOpen()
-    const stayed = onboardingShown()
+    const stayed = beat()
     closeSignIn()
     await settle()
 
     expect(handedOver).toBe(true)
-    expect(stayed).toBe(true)
-    expect(onboardingShown()).toBe(false)
-    expect(onboardingExit()).toBe('finished')
+    expect(stayed).toBe('keep')
+    expect(beat()).toBe('line')
+    expect(onboardingShown()).toBe(true)
   })
 
-  it('stays up for the voiceprint ask a sign-in brings, and goes once it is over', async () => {
+  it('stays on Keep for the voiceprint ask a sign-in brings, and goes on to the line once it is over', async () => {
     const s = mount('onboarding')
     await continueFromReveal(s)
 
@@ -467,16 +470,16 @@ describe('Keep, beat 7', () => {
     closeOffer()
     askAfterSignIn('user-1')
     await settle()
-    const stayed = onboardingShown()
+    const stayed = beat()
     vi.advanceTimersByTime(ASK_BEAT_MS)
     await settle()
 
-    expect(stayed).toBe(true)
-    expect(onboardingShown()).toBe(false)
-    expect(onboardingExit()).toBe('finished')
+    expect(stayed).toBe('keep')
+    expect(beat()).toBe('line')
+    expect(onboardingShown()).toBe(true)
   })
 
-  it('closes the voiceprint ask on Back before anything under it, then goes on to the Sing room', async () => {
+  it('closes the voiceprint ask on Back before anything under it, then goes on to the sung line', async () => {
     const s = mount('onboarding')
     await continueFromReveal(s)
 
@@ -519,20 +522,20 @@ describe('Keep, beat 7', () => {
     expect(voiceprintAskOpen()).toBe(false)
     expect(adoption.declined).toBe(true)
     // The ask was the last of what Keep handed over to: the layer goes on.
-    expect(onboardingShown()).toBe(false)
-    expect(onboardingExit()).toBe('finished')
+    expect(onboardingShown()).toBe(true)
+    expect(beat()).toBe('line')
   })
 
-  it('is skipped on a phone signed in to an account: Continue goes on to the Sing room', async () => {
+  it('is skipped on a phone signed in to an account: Continue goes on to the sung line', async () => {
     setAuthToken(token('google'))
     const s = mount('onboarding')
 
     await continueFromReveal(s)
 
     expect(offerOpen()).toBe(false)
-    expect(onboardingShown()).toBe(false)
-    expect(onboardingExit()).toBe('finished')
-    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    expect(beat()).toBe('line')
+    expect(onboardingShown()).toBe(true)
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('due')
   })
 
   it('is skipped after a skipped range too, on a phone signed in', async () => {
@@ -542,7 +545,7 @@ describe('Keep, beat 7', () => {
     await skipToKeep(s)
 
     expect(offerOpen()).toBe(false)
-    expect(onboardingExit()).toBe('finished')
+    expect(beat()).toBe('line')
   })
 
   it("does not come over a layer left by Not now during Merc's word on a skip", async () => {

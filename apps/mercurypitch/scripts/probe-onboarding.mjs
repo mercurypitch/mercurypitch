@@ -10,13 +10,18 @@
 // a range measured between two of them, the pins and the voiceprint kept;
 // See my voice: the card, its twin found; Continue brings Keep (beat 7) over
 // the layer, the voiceprint on it, and the anonymous identity is asked for
-// as it opens and not before (S7b E11); Keep's Not now lands in the Sing
-// room, live, with the flag done. Then, each on an install of its own: Skip
-// for now (Keep, its "Find your range first" run in the layer, and Keep
-// again with the voiceprint), Keep's "Find your range first" from Settings
-// (the range on its own, Keep again, and the first note then ending on the
-// range kept), Not now, Back, and a refused microphone. Every visible part
-// is measured on each frame: inside the screen, apart from one another, and
+// as it opens and not before (S7b E11); Keep's Not now brings the sung line
+// (beat 8): Merc's call, then the probe's voice on the singer's turn, and a
+// score the lane agrees with; its Continue opens the Cloud offer (beat 9)
+// over the layer, paywall B with no "stays free" line, and the offer's Not
+// now lands in the Sing room, live, with the flag done. Then, each on an
+// install of its own: Skip for now (Keep, its "Find your range first" run
+// in the layer, Keep again with the voiceprint, and the line, on an install
+// held out of the offer: Continue goes straight to the room), Keep's "Find
+// your range first" from Settings (the range on its own, Keep again, the
+// first note then ending on the range kept, and Not now on the line: no
+// offer), Not now, Back, and a refused microphone. Every visible part is
+// measured on each frame: inside the screen, apart from one another, and
 // every control at least 44 px. With --shots, the screens this part added
 // are shot once each, after their motion has played out.
 //
@@ -43,6 +48,14 @@ const SEE_SAVED = '[data-testid="onboarding-see-saved"]'
 const KEEP = '[data-testid="account-offer"]'
 const KEEP_NOT_NOW = '[data-testid="keep-not-now"]'
 const KEEP_FIND_RANGE = '[data-testid="keep-find-range"]'
+/** Beat 8, the sung line (LineView.tsx), and its score. */
+const SUNG = '[data-testid="onboarding-sung-line"]'
+const SUNG_SCORE = '[data-testid="onboarding-sung-score"]'
+/** Beat 9: the shell's Cloud offer, paywall B (CloudOffer.tsx). */
+const OFFER = '[role="dialog"][aria-label="Sing your own songs"]'
+/** This install's beat 9 group, and its once-an-install mark. */
+const OFFER_GROUP = 'mp:onboarding-offer-group'
+const OFFER_SHOWN = 'mp:onboarding-cloud-offer'
 /** The anonymous identity's request (auth-service.ts, S7b E11). */
 const MINT = '/api/auth/anonymous'
 const FLAG = 'mp:native-onboarding'
@@ -56,6 +69,13 @@ const VOICEPRINTS = 'mercurypitch.voiceprints.v1'
  */
 const RANGE_TIMEOUT_MS = 60_000
 
+/**
+ * The line from the tap: the mic, Merc's call (7.7 s from 0.35 s in), the
+ * gate and two beats, the singer's 7.7 s and a tail, about 19 s; more on a
+ * page that draws few frames.
+ */
+const LINE_TIMEOUT_MS = 60_000
+
 /** A phone, an iPad upright and an iPad on its side. */
 export const ONBOARDING_FRAMES = [
   { width: 390, height: 844 },
@@ -66,12 +86,18 @@ export const ONBOARDING_FRAMES = [
 /** The note names the tone file can be heard as (writeToneWav). */
 const TONE_NOTES = ['A4', 'C5', 'E5']
 
-/** Runs after the probe's seed: a new install, once per page load. */
-function fresh(flag) {
+/**
+ * Runs after the probe's seed: a new install, once per page load, in the
+ * beat 9 group the walk names (never drawn at random here), not offered
+ * the Cloud offer yet.
+ */
+function fresh({ flag, group, groupKey, shownKey }) {
   try {
     localStorage.removeItem(flag)
     localStorage.removeItem('pitchperfect_native_welcome_seen')
     localStorage.removeItem('pitchperfect_sing_mic_granted')
+    localStorage.setItem(groupKey, group)
+    localStorage.removeItem(shownKey)
   } catch {
     /* storage blocked: the walk fails on the flag and says so */
   }
@@ -87,7 +113,13 @@ function refuseMic() {
   }
 }
 
-async function boot(browser, args, frame, kit, { refuse = false } = {}) {
+async function boot(
+  browser,
+  args,
+  frame,
+  kit,
+  { refuse = false, group = 'offer' } = {},
+) {
   const context = await kit.isolate(
     await browser.newContext({
       viewport: frame,
@@ -109,7 +141,12 @@ async function boot(browser, args, frame, kit, { refuse = false } = {}) {
     if (request.url().includes(MINT)) mints.push(request.url())
   })
   await page.addInitScript(kit.seed, args.theme)
-  await page.addInitScript(fresh, FLAG)
+  await page.addInitScript(fresh, {
+    flag: FLAG,
+    group,
+    groupKey: OFFER_GROUP,
+    shownKey: OFFER_SHOWN,
+  })
   if (refuse) await page.addInitScript(refuseMic)
   await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
   await page
@@ -239,6 +276,10 @@ const readLayout = () => {
     continue: id('continue'),
     share: id('share'),
     retry: id('retry'),
+    sungLane: id('sung-lane'),
+    words: id('sung-words'),
+    score: id('sung-score'),
+    again: id('sung-again'),
   }
   const problems = []
   const w = window.innerWidth
@@ -260,6 +301,7 @@ const readLayout = () => {
     'continue',
     'share',
     'retry',
+    'again',
   ]) {
     const b = parts[name]
     if (b !== null && (b.width < 44 || b.height < 44)) {
@@ -292,6 +334,17 @@ const readLayout = () => {
     ['card', 'continue'],
     ['line', 'continue'],
     ['continue', 'share'],
+    ['notNow', 'sungLane'],
+    ['line', 'sungLane'],
+    ['merc', 'sungLane'],
+    ['sungLane', 'words'],
+    ['sungLane', 'mic'],
+    ['words', 'score'],
+    ['words', 'mic'],
+    ['score', 'mic'],
+    ['score', 'continue'],
+    ['score', 'again'],
+    ['continue', 'again'],
   ]) {
     if (!apart(parts[a], parts[b])) problems.push(`${a} overlaps ${b}`)
   }
@@ -706,6 +759,236 @@ async function expectKeep(
   return `${kit.keepShapeLine(shape)}; ${card}; the free song with its email line${over ? '; over the layer, its Not now hidden, the room held' : ''}${merc}`
 }
 
+/** Merc's words in his bubble are `text`, within a step. */
+async function expectSaid(page, kit, text, how) {
+  await page
+    .waitForFunction(
+      ([selector, want]) =>
+        document.querySelector(selector)?.textContent === want,
+      [LINE, text],
+      { timeout: kit.stepTimeoutMs },
+    )
+    .catch(async () => {
+      const said = await page.locator(LINE).textContent()
+      throw new Error(`${how}: Merc says "${said}", not "${text}"`)
+    })
+}
+
+/**
+ * Beat 8, the sung line: Merc asks, the lane, the words and the mic, all
+ * in the screen and apart.
+ */
+async function expectLine(page, kit, how) {
+  await expectBeat(page, kit, 'line', how)
+  await expectSaid(page, kit, 'Sing this line with me.', how)
+  await settleAnimations(page, SUNG)
+  const parts = await expectLayout(page, how)
+  if (parts.sungLane === null || parts.words === null || parts.mic === null) {
+    throw new Error(
+      `${how}: the line is not all there ${JSON.stringify(parts)}`,
+    )
+  }
+  const words = (
+    await page.locator('[data-testid="onboarding-sung-words"]').textContent()
+  )?.trim()
+  if (words !== 'Open the window, let the morning in') {
+    throw new Error(`${how}: the words read "${words}"`)
+  }
+}
+
+/**
+ * The line sung: the mic opened inside the tap, Merc's call, then the
+ * probe's voice on the singer's turn, and the score, which the lane
+ * agrees with: a bar lit for every note on pitch. Merc says what it means;
+ * Continue and Once more come, and the mic is shut.
+ */
+async function singLine(page, kit, how) {
+  await page.locator(MIC).tap()
+  await page
+    .waitForFunction(
+      (selector) => {
+        const state = document
+          .querySelector(selector)
+          ?.getAttribute('data-state')
+        return state === 'wait' || state === 'sing'
+      },
+      MIC,
+      { timeout: kit.stepTimeoutMs },
+    )
+    .catch(() => {
+      throw new Error(`${how}: the mic never opened`)
+    })
+  await page
+    .waitForFunction(
+      (selector) =>
+        document.querySelector(selector)?.getAttribute('data-shown') === 'on',
+      SUNG_SCORE,
+      { timeout: LINE_TIMEOUT_MS },
+    )
+    .catch(async () => {
+      const line = await page.evaluate(() => window.mpOnboardingLine?.())
+      const said = await page.locator(LINE).textContent()
+      throw new Error(
+        `${how}: no score (Merc: "${said}", the line: ${JSON.stringify(line)})`,
+      )
+    })
+  await page
+    .locator(CONTINUE)
+    .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
+    .catch(() => {
+      throw new Error(`${how}: no Continue under the score`)
+    })
+  const seen = await page.evaluate(
+    ([score, line]) => ({
+      score: document.querySelector(score)?.textContent?.trim() ?? null,
+      said: document.querySelector(line)?.textContent ?? null,
+      line: window.mpOnboardingLine?.() ?? null,
+      hits: document.querySelectorAll(
+        '[data-testid="onboarding-sung-lane"] [data-hit="on"]',
+      ).length,
+      judged: document.querySelectorAll(
+        '[data-testid="onboarding-sung-lane"] [data-hit]',
+      ).length,
+      micOn: document.querySelector('[data-testid="onboarding-mic"]') !== null,
+      // The voice's strokes on screen, against the lane they are drawn on.
+      lane: (() => {
+        const lane = document.querySelector(
+          '[data-testid="onboarding-sung-lane"]',
+        )
+        if (lane === null) return null
+        const box = lane.getBoundingClientRect()
+        const strokes = [...lane.querySelectorAll('polyline')].map((stroke) =>
+          stroke.getBoundingClientRect(),
+        )
+        return {
+          strokes: strokes.length,
+          inside: Math.min(
+            ...strokes.map((r) =>
+              Math.min(
+                r.left - box.left,
+                box.right - r.right,
+                r.top - box.top,
+                box.bottom - r.bottom,
+              ),
+            ),
+          ),
+        }
+      })(),
+    }),
+    [SUNG_SCORE, LINE],
+  )
+  if (seen.lane === null || seen.lane.strokes === 0) {
+    throw new Error(`${how}: the lane drew no voice for "${seen.score}"`)
+  }
+  if (seen.lane.inside < -1) {
+    throw new Error(
+      `${how}: the voice's trace runs ${Math.round(-seen.lane.inside)} px outside the lane`,
+    )
+  }
+  const match = /^(\d+) of 10 notes on pitch$/u.exec(seen.score ?? '')
+  if (match === null) {
+    throw new Error(`${how}: the score reads "${seen.score}"`)
+  }
+  const hit = Number(match[1])
+  if (seen.line?.phase !== 'done' || seen.line.hit !== hit) {
+    throw new Error(`${how}: the line is ${JSON.stringify(seen.line)}`)
+  }
+  if (seen.hits !== hit || seen.judged !== 10) {
+    throw new Error(
+      `${how}: the lane lights ${seen.hits} of ${seen.judged} bars for "${seen.score}"`,
+    )
+  }
+  if (!seen.said || seen.said === 'Sing this line with me.') {
+    throw new Error(`${how}: Merc says "${seen.said}" of the score`)
+  }
+  if (seen.micOn) throw new Error(`${how}: the mic is still there`)
+  const parts = await expectLayout(page, `${how}, the score`)
+  if (parts.again === null || parts.continue === null) {
+    throw new Error(`${how}: no Once more beside Continue`)
+  }
+  return {
+    score: seen.score,
+    said: seen.said,
+    tonic: seen.line.tonic,
+    heard: seen.line.heard,
+  }
+}
+
+/**
+ * Beat 9: the Cloud offer over the layer, as the import's gate opens it:
+ * paywall B, its one Subscribe wide and centred, no "stays free" line, the
+ * layer's own Not now aside under it, and the install marked as offered.
+ */
+async function expectOffer(page, kit, how) {
+  await page
+    .locator(OFFER)
+    .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
+    .catch(() => {
+      throw new Error(`${how}: no Cloud offer came up`)
+    })
+  await settleAnimations(page, OFFER)
+  const seen = await page.evaluate(
+    ([offer, layer, notNow, shownKey]) => {
+      const sheet = document.querySelector(offer)
+      const buttons = [...(sheet?.querySelectorAll('button') ?? [])]
+      const subscribe = buttons.find(
+        (button) => button.textContent?.trim() === 'Subscribe',
+      )
+      const box = (element) => {
+        const r = element?.getBoundingClientRect()
+        return r === undefined
+          ? null
+          : {
+              left: Math.round(r.left),
+              right: Math.round(r.right),
+              width: Math.round(r.width),
+            }
+      }
+      let aside = false
+      for (let at = document.querySelector(notNow); at; at = at.parentElement) {
+        if (at.inert) aside = true
+      }
+      return {
+        beat: document.querySelector(layer)?.getAttribute('data-beat'),
+        paywall:
+          sheet !== null &&
+          sheet.querySelector('[data-testid="cloud-offer"]') !== null,
+        title: sheet?.querySelector('h2')?.textContent ?? null,
+        free: /stays free/iu.test(sheet?.textContent ?? ''),
+        notNow: buttons.some((b) => b.textContent?.trim() === 'Not now'),
+        subscribe: box(subscribe),
+        panel: box(sheet?.querySelector('[data-testid="cloud-offer"]')),
+        aside,
+        shown: localStorage.getItem(shownKey),
+      }
+    },
+    [OFFER, LAYER, NOT_NOW, OFFER_SHOWN],
+  )
+  const problems = []
+  if (seen.beat !== 'offer') problems.push(`the layer is on ${seen.beat}`)
+  if (!seen.paywall) problems.push('not paywall B')
+  if (seen.title !== 'Sing your own songs')
+    problems.push(`titled "${seen.title}"`)
+  if (seen.free) problems.push('it says what stays free')
+  if (!seen.notNow) problems.push('no Not now')
+  if (!seen.aside) problems.push("the layer's Not now is in reach")
+  if (seen.shown !== 'shown')
+    problems.push(`the install is marked ${seen.shown}`)
+  const sub = seen.subscribe
+  const panel = seen.panel
+  if (sub === null || panel === null) {
+    problems.push('no Subscribe')
+  } else {
+    const off = Math.abs(sub.left - panel.left - (panel.right - sub.right))
+    if (off > 2) problems.push(`Subscribe sits ${off} px off centre`)
+    if (sub.width < 0.7 * panel.width) {
+      problems.push(`Subscribe is ${sub.width} px of ${panel.width}`)
+    }
+  }
+  if (problems.length > 0) throw new Error(`${how}: ${problems.join('; ')}`)
+  return `paywall B over the layer, its Not now aside; Subscribe ${sub.width} of ${panel.width} px, centred; nothing about what stays free; the install marked offered`
+}
+
 /**
  * The anonymous identity, asked for once Keep has opened (S7b E11). The
  * probe answers no API, so the request going out is the whole proof.
@@ -756,10 +1039,22 @@ async function walkRange(browser, args, frame, kit) {
     await expectMint(page, kit, mints, 'Keep')
     await kit.shoot(page, shotsFor(args, frame), 'onboarding-keep')
 
-    // ── Keep's Not now: the Sing room, live, no priming screen ──
+    // ── Keep's Not now: the sung line, beat 8 ─────────────────
     await page.locator(KEEP_NOT_NOW).tap()
-    await expectRoomLive(page, kit, "Keep's Not now")
-    await expectGone(page, kit, "Keep's Not now", 'transport')
+    await expectLine(page, kit, "Keep's Not now")
+    await kit.shoot(page, shotsFor(args, frame), 'onboarding-line')
+    const sung = await singLine(page, kit, 'the line')
+    await kit.shoot(page, shotsFor(args, frame), 'onboarding-line-result')
+
+    // ── Continue: the Cloud offer, beat 9, over the layer ─────
+    await page.locator(CONTINUE).tap()
+    const offer = await expectOffer(page, kit, 'Continue on the line')
+    await kit.shoot(page, shotsFor(args, frame), 'onboarding-offer')
+
+    // ── The offer's Not now: the Sing room, live ──────────────
+    await page.locator(`${OFFER} button`, { hasText: /^Not now$/u }).tap()
+    await expectRoomLive(page, kit, "the offer's Not now")
+    await expectGone(page, kit, "the offer's Not now", 'transport')
 
     // ── Never again on this install ───────────────────────────
     // The run is live, so the corner chip's column is the way to Rooms: it
@@ -779,7 +1074,7 @@ async function walkRange(browser, args, frame, kit) {
     }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     return [
-      `the Sing door: up over the held room, rail aside; hello and the example; ${note} named ("${said}", tap ${tries}); Find my range: ${range.low} to ${range.high} from two slides, kept as a voiceprint; the reveal: ${card}, no identity asked for yet; Continue: Keep, ${keep}; the anonymous identity asked for as it opened; Keep's Not now: the room live under the transport, flag done; parked and back, not again`,
+      `the Sing door: up over the held room, rail aside; hello and the example; ${note} named ("${said}", tap ${tries}); Find my range: ${range.low} to ${range.high} from two slides, kept as a voiceprint; the reveal: ${card}, no identity asked for yet; Continue: Keep, ${keep}; the anonymous identity asked for as it opened; Keep's Not now: the sung line, from MIDI ${sung.tonic}, "${sung.score}" (Merc: "${sung.said}"), the lane agreeing, the mic shut; Continue: ${offer}; its Not now: the room live under the transport, flag done; parked and back, not again`,
     ]
   } finally {
     await context.close()
@@ -793,7 +1088,15 @@ async function walkRange(browser, args, frame, kit) {
  * Keep's Not now to the Sing room, live.
  */
 async function walkSkip(browser, args, frame, kit) {
-  const { context, page, errors, mints } = await boot(browser, args, frame, kit)
+  const { context, page, errors, mints } = await boot(
+    browser,
+    args,
+    frame,
+    kit,
+    {
+      group: 'holdout',
+    },
+  )
   try {
     await openAtSingDoor(page, frame, kit)
     const { note } = await nameOneNote(page, kit)
@@ -847,11 +1150,26 @@ async function walkSkip(browser, args, frame, kit) {
       range,
     })
     await page.locator(KEEP_NOT_NOW).tap()
-    await expectRoomLive(page, kit, "Keep's Not now")
-    await expectGone(page, kit, "Keep's Not now", 'transport')
+
+    // ── The line, on an install held out of the offer ─────────
+    await expectLine(page, kit, "Keep's Not now")
+    const sung = await singLine(page, kit, 'the line, held out')
+    await page.locator(CONTINUE).tap()
+    await expectRoomLive(page, kit, 'Continue, held out')
+    await expectGone(page, kit, 'Continue, held out', 'transport')
+    const held = await page.evaluate(
+      ([offer, shownKey]) => ({
+        offer: document.querySelector(offer) !== null,
+        shown: localStorage.getItem(shownKey),
+      }),
+      [OFFER, OFFER_SHOWN],
+    )
+    if (held.offer || held.shown !== null) {
+      throw new Error(`Continue, held out: ${JSON.stringify(held)}`)
+    }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     return [
-      `${note} named, then Skip for now: "It's here when you want it.", no identity asked for yet; Keep: ${keep}; the anonymous identity asked for as it opened; Find your range first: the layer's own range (entry onboarding), its mic opened in that tap, ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${again}; Keep's Not now: gone, flag done, the room live under the transport`,
+      `${note} named, then Skip for now: "It's here when you want it.", no identity asked for yet; Keep: ${keep}; the anonymous identity asked for as it opened; Find your range first: the layer's own range (entry onboarding), its mic opened in that tap, ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${again}; Keep's Not now: the sung line, "${sung.score}"; Continue on an install held out: no offer, nothing marked, gone, flag done, the room live under the transport`,
     ]
   } finally {
     await context.close()
@@ -960,11 +1278,27 @@ async function walkKeepRange(browser, args, frame, kit) {
       range,
     })
     await page.locator(KEEP_NOT_NOW).tap()
-    await expectRoomLive(page, kit, "Keep's Not now")
-    await expectGone(page, kit, "Keep's Not now", 'transport')
+
+    // ── The line, and Not now on it: no offer ─────────────────
+    // The mic was granted on the first note, so the room arrives live.
+    await expectLine(page, kit, "Keep's Not now")
+    await page.locator(NOT_NOW).tap()
+    await expectRoomLive(page, kit, 'Not now on the line')
+    await expectGone(page, kit, 'Not now on the line', 'transport')
+    const left = await page.evaluate(
+      ([offer, shownKey]) => ({
+        offer: document.querySelector(offer) !== null,
+        shown: localStorage.getItem(shownKey),
+        room: window.mpSingRoom?.().state ?? null,
+      }),
+      [OFFER, OFFER_SHOWN],
+    )
+    if (left.offer || left.shown !== null || left.room !== 'live') {
+      throw new Error(`Not now on the line: ${JSON.stringify(left)}`)
+    }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     return [
-      `Keep from Settings, the anonymous identity asked for as it opened; "Find your range first": the range on its own (no Skip for now), ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${keep}; the onboarding still due. Then the rail's Sing: ${note} named, the first note ending on See my voice and Find my range again, no Skip for now; See my voice: ${kept}, as kept; Continue: Keep, ${again}; Keep's Not now: gone, flag done, the room live under the transport`,
+      `Keep from Settings, the anonymous identity asked for as it opened; "Find your range first": the range on its own (no Skip for now), ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${keep}; the onboarding still due. Then the rail's Sing: ${note} named, the first note ending on See my voice and Find my range again, no Skip for now; See my voice: ${kept}, as kept; Continue: Keep, ${again}; Keep's Not now: the sung line; its Not now: no offer, nothing marked, gone, flag done, the room live under the transport`,
     ]
   } finally {
     await context.close()

@@ -245,9 +245,12 @@ export async function settleCloudAfterSignIn(): Promise<KaraokeCarryOutcome> {
   return carried
 }
 
-/** Tests: nothing open, nothing offered this session, no Not now kept. */
-export function resetCloudOfferForTests(): void {
-  setCurrent(null)
+/**
+ * "Replay the onboarding" (the Developer screen, test builds only): the
+ * caps on an offer nobody asked for start over, nothing offered this
+ * session and no Not now kept, so its beat 9 can open again.
+ */
+export function forgetUnaskedOffers(): void {
   unaskedThisSession = 0
   notNowThisSession = null
   try {
@@ -255,4 +258,10 @@ export function resetCloudOfferForTests(): void {
   } catch {
     // Nothing was kept.
   }
+}
+
+/** Tests: nothing open, nothing offered this session, no Not now kept. */
+export function resetCloudOfferForTests(): void {
+  setCurrent(null)
+  forgetUnaskedOffers()
 }

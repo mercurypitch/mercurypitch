@@ -45,7 +45,7 @@ vi.mock('@/stores/notifications-store', async (importOriginal) => ({
 import { setMicActive } from '@/stores/mic-store'
 import type { KaraokeCarryOutcome } from '@/stores/native-shell-store'
 import { registerRunControls, registerShellApi, } from '@/stores/native-shell-store'
-import { askBeforeOffering, BEFORE_OFFER_MS, CARRIED_LINE, closeCloudOffer, cloudOffer, NOT_NOW_QUIET_MS, openCloudOffer, resetCloudOfferForTests, settleCloudAfterSignIn, showCloudSubscribed, unaskedRefusal, } from './cloud-offer-store'
+import { askBeforeOffering, BEFORE_OFFER_MS, CARRIED_LINE, closeCloudOffer, cloudOffer, forgetUnaskedOffers, NOT_NOW_QUIET_MS, openCloudOffer, resetCloudOfferForTests, settleCloudAfterSignIn, showCloudSubscribed, unaskedRefusal, } from './cloud-offer-store'
 import { awaitSubscription, resetKaraokeSongsForTests } from './karaoke-songs'
 
 const NOW = Date.UTC(2026, 9, 16, 12)
@@ -118,6 +118,18 @@ describe('an offer nobody asked for', () => {
     if (kept !== null) localStorage.setItem('mp:cloud-offer-not-now', kept)
 
     expect(unaskedRefusal(NOW + DAY_MS)).toBe('not-now')
+  })
+
+  it('starts over for a replayed onboarding: nothing offered, no Not now', () => {
+    openCloudOffer('onboarding', 'offer', NOW)
+    closeCloudOffer('not-now', NOW)
+    expect(unaskedRefusal(NOW + 1)).toBe('session')
+
+    forgetUnaskedOffers()
+
+    expect(unaskedRefusal(NOW + 1)).toBeNull()
+    expect(localStorage.getItem('mp:cloud-offer-not-now')).toBeNull()
+    expect(openCloudOffer('onboarding', 'offer', NOW + 1)).toBe(true)
   })
 
   it('takes a closing after a yes from the store as no Not now', () => {

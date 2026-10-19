@@ -349,6 +349,19 @@ const KARAOKE_STAGE_2 = [
     "the native onboarding's See my voice, a range kept",
   ],
   ['Find my range again', "the native onboarding's Find my range again"],
+  // Beat 8, the sung line (useLine.ts, LineView.tsx), and beat 9's rules
+  // for the Cloud offer (onboarding-offer.ts), in the same lazy chunk. The
+  // offer's sheet is the import's (CloudOffer.tsx), marked above with it.
+  ['Sing this line with me.', "the native onboarding's sung line"],
+  ['onboarding-sung-line', "the native onboarding's sung line beat"],
+  [
+    'mp:onboarding-offer-group',
+    "the native onboarding's Cloud offer holdout group",
+  ],
+  [
+    'mp:onboarding-cloud-offer',
+    "the native onboarding's Cloud offer, once an install",
+  ],
 ]
 
 /**

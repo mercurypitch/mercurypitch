@@ -162,9 +162,9 @@ describe('beat 9 for the offer group', () => {
 describe('a layer left while the asks answer', () => {
   it('opens no offer over what is under it, and marks nothing', async () => {
     onboardingOfferGroup(() => 0.5)
-    expect(await openOnboardingOffer(prepareOnboardingOffer(), () => false)).toBe(
-      false,
-    )
+    expect(
+      await openOnboardingOffer(prepareOnboardingOffer(), () => false),
+    ).toBe(false)
     expect(cloudOffer()).toBeNull()
     expect(onboardingOfferShown()).toBe(false)
   })
