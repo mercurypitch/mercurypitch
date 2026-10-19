@@ -27,6 +27,8 @@ export const COLOR = {
   ink3: '#8d97a3',
   bg: '#0d1117',
   card: '#12171e',
+  /** The app's target amber: a sung model, only while it plays (--amber). */
+  amber: '#f59e0b',
 } as const
 
 export const A3 = 57

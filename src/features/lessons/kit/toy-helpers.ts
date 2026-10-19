@@ -18,10 +18,11 @@ export function rangeFill(input: HTMLInputElement, color?: string): void {
 
 /**
  * A slider that sounds while it is held: pointer down to up, or a run of
- * arrow keys (the note ends 0.7 s after the last key).
+ * arrow keys (the note ends 0.7 s after the last key). A range input, or any
+ * element that is one (`role="slider"`, as Lesson 2's vertical ruler is).
  */
 export function holdToPlay(
-  input: HTMLInputElement,
+  input: HTMLElement,
   handlers: { start: () => void; stop: () => void },
 ): void {
   let holding = false
@@ -82,7 +83,7 @@ export interface HeldTone {
  * silent and the slider still works.
  */
 export function holdTone(
-  input: HTMLInputElement,
+  input: HTMLElement,
   freq: () => number,
   voice: VoiceOptions = { gain: 0.13 },
 ): HeldTone {

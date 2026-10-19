@@ -13,12 +13,18 @@
 // A black key's bead stays a faint disc with a "?" (Lesson 1's five notes
 // with no letter) until its copy of the spiral lights it; a lit bead glows
 // and carries its names in the page's spelling (names.ts).
+//
+// Two things a page may add. Looking down the axis (`top`, 0 to 1) tilts the
+// camera over the spiral and flattens its turns, so one turn becomes a ring
+// of twelve and the other two fade. And a page may draw the unrolled keys
+// itself (`layer`): it says where each note's key is, so the beads unroll
+// onto it, draws it, and hands back the tap targets.
 
 import { clamp, easeInOut, lerp, smooth, TAU } from './dom'
 import type { Spelling } from './names'
 import { namesFor } from './names'
 import { COLOR, letterOf, nameOf, noteColor, rgba, signName } from './notes'
-import type { Keyboard, KeyboardView, KeyHit } from './spiral-keys'
+import type { KeyboardView, KeyHit } from './spiral-keys'
 import { drawKeyboard, keyboardLayout, LO, N, pulseOf, roundedRect, } from './spiral-keys'
 
 /** Where a bead was drawn: its semitone from A2, centre, radius and depth. */
@@ -33,6 +39,14 @@ export interface BeadHit {
 /** Beads with a letter carry it on the bead ('letter'), or their full name beside it ('name'). */
 export type BeadLabels = 'letter' | 'name'
 
+/** A page's own drawing of the unrolled keys, in place of the kit's keyboard. */
+export interface KeysLayer {
+  /** Where note `s` (semitones from A2) sits once unrolled: its bead lands here. */
+  keyPos(s: number): { x: number; y: number }
+  /** Draws the keys, faded in by `ka`, and returns where each one takes taps. */
+  draw(ctx: CanvasRenderingContext2D, ka: number): KeyHit[]
+}
+
 /** What one frame needs from the toy. */
 export interface SpiralView extends KeyboardView {
   yaw: number
@@ -41,6 +55,12 @@ export interface SpiralView extends KeyboardView {
   labels: BeadLabels
   /** The black keys lit on this copy, by MIDI number. */
   lit: ReadonlySet<number>
+  /** 0 looks at the spiral from the side, 1 straight down its axis (default 0). */
+  top?: number
+  /** The first note of the turn that stays lit from above, semitones from A2 (default 12, A3). */
+  ringFrom?: number
+  /** The page's own keys; default the kit's keyboard. */
+  layer?: KeysLayer
 }
 
 /** What the overlays need: the selection, the pointer's hover, the last tap and the tag's text. */
@@ -55,7 +75,14 @@ export interface OverlayView {
 }
 
 type Point = { x: number; y: number; z: number; p: number }
-type Line = { kind: 'seg' | 'seam' | 'col'; z: number; a: Point; b: Point }
+/** A stretch of the helix line (`sf`, where it starts), the C seam, or the column of As. */
+type Line = {
+  kind: 'seg' | 'seam' | 'col'
+  z: number
+  a: Point
+  b: Point
+  sf?: number
+}
 type Bead = Point & { kind: 'bead'; s: number; e: number }
 
 /** One frame: the canvas, the toy's state, the helix and the keyboard on it. */
@@ -69,7 +96,20 @@ interface Scene {
   /** How far the keyboard has faded in. */
   ka: number
   proj: (sf: number) => Point
-  kb: Keyboard
+  /** Where each note's key is, for the beads that unroll onto it. */
+  keyPos: (s: number) => { x: number; y: number }
+}
+
+/**
+ * How much of a part outside the lit turn shows from above: all of it from
+ * the side, none from straight down. The turn's twelve beads run from
+ * `ringFrom` to 11 semitones above it; its line runs on to close the ring.
+ */
+function ringFade(view: SpiralView, sf: number, upTo = 11): number {
+  const top = view.top ?? 0
+  if (top === 0) return 1
+  const from = view.ringFrom ?? 12
+  return sf >= from - 0.001 && sf <= from + upTo + 0.001 ? 1 : 1 - top
 }
 
 /** A bead as drawn this frame. */
@@ -87,11 +127,13 @@ interface BeadLook {
 /** 30 degrees per semitone; A at 0 (the front), B 60, C 90, D 150, E 210, F 240, G 300. */
 const angleOf = (s: number): number => (s * Math.PI) / 6
 
-// helix projection; the camera tilts down towards the keyboard's plane as the spiral unrolls
-function helix(W: number, H: number, yaw: number, eu: number) {
+// helix projection; the camera tilts down towards the keyboard's plane as the spiral unrolls,
+// and looking down (`top`) tilts it over the axis while the turns flatten into one ring
+function helix(W: number, H: number, yaw: number, eu: number, top = 0) {
   const R = Math.min(W * 0.27, H * 0.29)
-  const turnH = H * 0.185
-  const tilt = 0.34 + 0.55 * eu
+  const turnH = H * 0.185 * (1 - top)
+  const side = 0.34 + 0.55 * eu
+  const tilt = side + (Math.PI / 2 - side) * top
   const fdist = R * 4.2
   const cx = W / 2
   const cy = H * 0.52
@@ -102,7 +144,8 @@ function helix(W: number, H: number, yaw: number, eu: number) {
     const Y = ((sf - 18) * turnH) / 12
     const yy = Y * Math.cos(tilt) - Z * Math.sin(tilt)
     const z = Z * Math.cos(tilt) + Y * Math.sin(tilt)
-    const p = fdist / (fdist - z)
+    // never behind the eye, even on a canvas not yet laid out (a sliver wide)
+    const p = fdist / Math.max(fdist - z, fdist * 0.2)
     return { x: cx + X * p, y: cy - yy * p, z, p }
   }
   return { R, proj }
@@ -110,14 +153,20 @@ function helix(W: number, H: number, yaw: number, eu: number) {
 
 /** The helix line in short segments, every bead, the column of As and the C seam, back to front. */
 function helixItems(sc: Scene, la: number): (Line | Bead)[] {
-  const { view, R, eu, proj, kb } = sc
+  const { view, R, eu, proj } = sc
   const items: (Line | Bead)[] = []
   if (la > 0) {
     let prev = proj(0)
     for (let i = 1; i <= 36 * 6; i++) {
       const sf = i / 6
       const p = proj(sf)
-      items.push({ kind: 'seg', z: (p.z + prev.z) / 2, a: prev, b: p })
+      items.push({
+        kind: 'seg',
+        z: (p.z + prev.z) / 2,
+        a: prev,
+        b: p,
+        sf: (i - 1) / 6,
+      })
       prev = p
     }
   }
@@ -129,7 +178,7 @@ function helixItems(sc: Scene, la: number): (Line | Bead)[] {
     let y = hp.y
     let p = hp.p
     if (view.u > 0) {
-      const kp = kb.keyPos(s)
+      const kp = sc.keyPos(s)
       x = lerp(hp.x, kp.x, e)
       y = lerp(hp.y, kp.y, e)
       p = lerp(hp.p, 1, e)
@@ -334,7 +383,7 @@ function drawBead(sc: Scene, it: Bead): BeadHit | null {
   const dn = clamp((z + R) / (2 * R), 0, 1)
   const depthA = lerp(0.38 + 0.62 * dn, 1, e)
   const fadeOnKeys = isA ? 1 : 1 - ka
-  const alpha = depthA * fadeOnKeys
+  const alpha = depthA * fadeOnKeys * ringFade(view, s)
   if (alpha < 0.02) return null
   const pulse = pulseOf(view.pulses, m, now)
   const grow = 1 + 0.35 * pulse
@@ -349,13 +398,19 @@ function drawBead(sc: Scene, it: Bead): BeadHit | null {
   return { s, x, y, r: r0, z }
 }
 
+/** A line's share of the light from above: a helix stretch on the lit turn keeps it, the seam and the column fade. */
+function lineFade(view: SpiralView, it: Line): number {
+  if (it.kind === 'seg') return ringFade(view, it.sf ?? 0, 11.84)
+  return 1 - (view.top ?? 0)
+}
+
 function drawHelix(sc: Scene): BeadHit[] {
   // helix line (fades as it unrolls)
   const la = 1 - smooth(0, 0.4, sc.view.u)
   const drawn: BeadHit[] = []
   for (const it of helixItems(sc, la)) {
     if (it.kind !== 'bead') {
-      drawLine(sc.ctx, it, sc.R, la)
+      drawLine(sc.ctx, it, sc.R, la * lineFade(sc.view, it))
       continue
     }
     const hit = drawBead(sc, it)
@@ -373,12 +428,20 @@ export function drawSpiral(
   view: SpiralView,
 ): { hits: BeadHit[]; keyHits: KeyHit[] } {
   const eu = easeInOut(view.u)
-  const { R, proj } = helix(W, H, view.yaw, eu)
+  const { R, proj } = helix(W, H, view.yaw, eu, view.top)
+  const layer = view.layer
   const kb = keyboardLayout(W, H, view.narrow, view.pan)
   const ka = smooth(0.45, 1, view.u)
-  // draw the keyboard under everything
-  const keyHits = ka > 0 ? drawKeyboard(ctx, kb, view, now, ka) : []
-  const hits = drawHelix({ ctx, now, view, R, eu, ka, proj, kb })
+  // draw the keys under everything
+  let keyHits: KeyHit[] = []
+  if (ka > 0)
+    keyHits =
+      layer === undefined
+        ? drawKeyboard(ctx, kb, view, now, ka)
+        : layer.draw(ctx, ka)
+  const keyPos =
+    layer === undefined ? kb.keyPos : (s: number) => layer.keyPos(s)
+  const hits = drawHelix({ ctx, now, view, R, eu, ka, proj, keyPos })
   return { hits, keyHits }
 }
 

@@ -67,6 +67,9 @@ page with the whole lesson in its text, live sound examples and its episode.
 - [Lesson 1: What is a note?](https://mercurypitch.com/learn/01): Why 220 Hz
   and 440 Hz share a name. What a note is, why notes come back an octave
   higher, and how to read names like A4 and C4.
+- [Lesson 2: Twelve notes](https://mercurypitch.com/learn/02): Where the other
+  five notes come from. The twelve notes on a keyboard, a semitone and a tone by
+  ear, why one key has two names, and what a cent is.
 
 ## About the project
 

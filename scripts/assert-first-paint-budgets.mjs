@@ -83,10 +83,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Measured 1432 (was 3822). Most of it is the room itself.
   'guitar-night.html': 1800,
 
-  // Find Your Pitch, Lesson 1: the lesson's own module and Vite's helper.
-  // Measured 97. Merc's renderer arrives through a dynamic import, so the
-  // page stays this light only while that boundary holds.
+  // Find Your Pitch, Lesson 1: the lesson's own module, the shared lesson
+  // kit and Vite's helper. Measured 113. Merc's renderer arrives through a
+  // dynamic import, so the page stays this light only while that boundary
+  // holds.
   'learn/01.html': 125,
+  // Lesson 2, "Twelve notes": its own module on the same kit. Measured 131;
+  // the renderer is the same dynamic import as Lesson 1's.
+  'learn/02.html': 165,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -133,9 +137,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   'drum-night.html': 125,
   'guitar-night.html': 400,
 
-  // Lesson 1. Measured 68: its own sheet (56) and the shared Inter and
-  // Outfit @font-face rules (13).
+  // Lesson 1. Measured 69: the kit's sheets and its own (56), and the shared
+  // Inter and Outfit @font-face rules (13).
   'learn/01.html': 90,
+  // Lesson 2. Measured 75: the kit's sheets, its own and the slide guide's.
+  'learn/02.html': 95,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

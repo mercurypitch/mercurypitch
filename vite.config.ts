@@ -77,8 +77,10 @@ const DELETE_ACCOUNT_PATH = '/delete-account'
 // with the whole lesson in its markup and a module that adds the sound and
 // the toys. Production serves /learn/01 from learn/01.html through
 // html_handling; dev and preview need the rewrite below, and the service
-// worker must leave the path alone (STANDALONE_DOCUMENT_PATHS).
+// worker must leave the path alone (STANDALONE_DOCUMENT_PATHS). Lesson 2,
+// /learn/02, is served the same way.
 const LESSON_01_PATH = '/learn/01'
+const LESSON_02_PATH = '/learn/02'
 
 // Clean path -> generated document, straight off the model in
 // src/seo/entry-pages.ts. Production does this at Cloudflare's asset layer
@@ -131,6 +133,9 @@ function standaloneEntryRewritePlugin() {
         }
         if (path === LESSON_01_PATH) {
           req.url = `${LESSON_01_PATH}.html${search}`
+        }
+        if (path === LESSON_02_PATH) {
+          req.url = `${LESSON_02_PATH}.html${search}`
         }
         const entry = ENTRY_REWRITES.get(path)
         if (entry !== undefined) req.url = entry
@@ -446,6 +451,8 @@ export default defineConfig(({ command, mode }) => {
           deleteAccount: resolve(__dirname, 'delete-account.html'),
           // Lesson 1 of Find Your Pitch, at /learn/01 (LESSON_01_PATH).
           lesson01: resolve(__dirname, 'learn/01.html'),
+          // Lesson 2, "Twelve notes", at /learn/02 (LESSON_02_PATH).
+          lesson02: resolve(__dirname, 'learn/02.html'),
         },
         output: {
           manualChunks(id) {

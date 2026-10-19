@@ -240,6 +240,25 @@ describe('the standalone documents', () => {
     }
   })
 
+  it('leaves every lesson page alone, at its clean path and as its document', () => {
+    // Each Find Your Pitch lesson is a build input of its own (learn/NN.html)
+    // and is linked at both addresses; the shell in its place would be a page
+    // with no lesson on it.
+    const config = readFileSync(
+      resolve(process.cwd(), 'vite.config.ts'),
+      'utf8',
+    )
+    const lessons = [...config.matchAll(/'learn\/(\d{2})\.html'/g)].map(
+      (match) => match[1],
+    )
+
+    expect(lessons).toEqual(expect.arrayContaining(['01', '02']))
+    for (const n of lessons) {
+      expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}`)).toBe(true)
+      expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}.html`)).toBe(true)
+    }
+  })
+
   it('does not claim the app shell itself', () => {
     expect(STANDALONE_DOCUMENT_PATHS.has('/')).toBe(false)
     expect(STANDALONE_DOCUMENT_PATHS.has('/index.html')).toBe(false)

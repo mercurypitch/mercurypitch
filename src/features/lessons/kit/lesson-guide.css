@@ -1,0 +1,43 @@
+/* ============================================================
+   Lesson guide — the slide guide's rows and labels (kit/slide-guide.ts)
+   ============================================================
+   A canvas of pitch rows with Merc's path on them, and a column of row
+   labels written as markup at each row's height. Import after
+   lesson-stage.css. */
+
+.guide {
+  position: relative;
+  min-width: 0;
+  height: 190px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: radial-gradient(100% 90% at 50% 40%, #121927, #0b0f16);
+  overflow: hidden;
+}
+.guide canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.guide [data-guide-rows] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 64px;
+  pointer-events: none;
+}
+.guide-row {
+  position: absolute;
+  left: 10px;
+  transform: translateY(-50%);
+  font: 600 var(--fs-14) / 1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--chrome);
+  white-space: nowrap;
+}
+.guide-row.faint {
+  color: var(--ink-3);
+}

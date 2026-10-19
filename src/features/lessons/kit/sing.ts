@@ -47,6 +47,8 @@ export interface RingRun {
   readonly turn: number
   /** Ripples while Merc's note plays (default true); a silent count-in has none. */
   readonly ripples?: boolean
+  /** This run's own state lines, over the ring's (a count-in's "Get ready"). */
+  readonly words?: Partial<RingWords>
 }
 
 export interface RingOptions {
@@ -76,6 +78,8 @@ interface Running {
   run: RingRun
   colour: string
   lastN: number
+  /** The ring's words with the run's own over them. */
+  words: RingWords
   resolve: () => void
 }
 
@@ -126,7 +130,7 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
     const n = Math.ceil(r.run.turn - h)
     if (n !== r.lastN) {
       r.lastN = n
-      state.textContent = words.turn(n)
+      state.textContent = r.words.turn(n)
     }
     // breathe in and out, two seconds a breath
     const b = still() ? 0.5 : 0.5 - 0.5 * Math.cos((TAU * h) / 2)
@@ -140,7 +144,7 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
   }
 
   function finish(r: Running): void {
-    state.textContent = words.done
+    state.textContent = r.words.done
     progress.setAttribute('stroke-dashoffset', String(circ))
     rest()
     breath.setAttribute('stroke-width', '2')
@@ -181,15 +185,17 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
     run(run) {
       return new Promise<void>((resolve) => {
         const blue = run.which === 'blue'
+        const runWords: RingWords = { ...words, ...run.words }
         img.src = blue ? opts.stills.blue : opts.stills.orange
         note.innerHTML = run.label
         note.style.color = blue ? COLOR.blue : COLOR.orange
-        state.textContent = words.listen
+        state.textContent = runWords.listen
         now = {
           t0: performance.now(),
           run,
           colour: blue ? COLOR.blue : COLOR.orange,
           lastN: -1,
+          words: runWords,
           resolve,
         }
       })
