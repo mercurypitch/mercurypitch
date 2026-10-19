@@ -133,7 +133,38 @@ beforeEach(() => {
   funnel.sent = []
 })
 
+/** jsdom's own: none, so a swap cuts unless a case stands one in. */
+const ANIMATE = Element.prototype.animate
+
+/**
+ * A WebView with View Transitions: element.animate, and a transition whose
+ * update waits for the frame the case draws with the returned call.
+ */
+function standInViewTransitions(): () => void {
+  const updates: (() => void)[] = []
+  const never = new Promise<void>(() => undefined)
+  Element.prototype.animate = function animate(): Animation {
+    return { finished: never, cancel: () => undefined } as unknown as Animation
+  }
+  Object.defineProperty(document, 'startViewTransition', {
+    configurable: true,
+    value: (update: () => void) => {
+      updates.push(update)
+      return {
+        ready: Promise.resolve(),
+        updateCallbackDone: Promise.resolve(),
+        finished: never,
+      }
+    },
+  })
+  return () => {
+    for (const update of updates.splice(0)) update()
+  }
+}
+
 afterEach(() => {
+  Element.prototype.animate = ANIMATE
+  Reflect.deleteProperty(document, 'startViewTransition')
   view?.unmount()
   view = null
   resetRunShell()
@@ -450,6 +481,25 @@ describe('Keep, beat 7', () => {
     expect(k('account-offer')?.dataset.variant).toBe('voiceprint')
     expect(keepArrival()).toBe('reveal')
     expect(k('keep-find-range')).toBeNull()
+  })
+
+  it("runs the range from Keep's Find your range first where a View Transition draws it a frame later, and not the line", async () => {
+    const s = mount('onboarding')
+    await skipToKeep(s)
+    const acquired = s.calls.acquire
+    const draw = standInViewTransitions()
+
+    k('keep-find-range')?.click()
+    // Keep's close is checked once its tap is over, before the frame that
+    // draws the range.
+    await settle()
+    draw()
+    await settle()
+
+    expect(beat()).toBe('range')
+    expect(q('onboarding-sung-line')).toBeNull()
+    expect(s.calls.acquire).toBe(acquired + 1)
+    expect(said()).toBe(ONBOARDING_COPY.slideDown)
   })
 
   it("brings Keep back from the range's own Skip for now, when Keep ran it", async () => {

@@ -151,14 +151,26 @@ export function NativeOnboarding(): JSX.Element {
     return undefined
   }
   /**
+   * The beat asked for. A View Transition draws it a frame after it is
+   * asked for, so whatever decides what comes next reads this, never the
+   * beat drawn: Keep's "Find your range first" closes Keep and asks for
+   * the range in one tap, and Keep's close, checked once that tap is over,
+   * must see the range coming, not Keep still drawn.
+   */
+  let headed: OnboardingBeat = untrack(beat)
+  /**
    * On to `next` (beat-swap.ts): by a cross-fade when a sheet comes up with
    * it, so the sheet answers from its first frame; else by a View
-   * Transition, where the WebView has one.
+   * Transition, where the WebView has one. The last beat asked for wins: a
+   * transition's late draw of a beat since left draws nothing.
    */
   const go = (next: OnboardingBeat): void => {
-    if (untrack(beat) === next) return
+    if (headed === next) return
+    headed = next
     swaps.swap(
-      () => setBeat(next),
+      () => {
+        if (headed === next) setBeat(next)
+      },
       next === 'keep' || next === 'offer' ? 'fade' : 'view',
     )
   }
@@ -317,9 +329,8 @@ export function NativeOnboarding(): JSX.Element {
         if ((now !== 'keep' && now !== 'offer') || up) return
         queueMicrotask(() => {
           if (untrack(sheetUp)) return
-          const still = untrack(beat)
-          if (still === 'keep' && !offered) toLine()
-          else if (still === 'keep' || still === 'offer') {
+          if (headed === 'keep' && !offered) toLine()
+          else if (headed === 'keep' || headed === 'offer') {
             leaveOnboarding('finished')
           }
         })
@@ -408,7 +419,7 @@ export function NativeOnboarding(): JSX.Element {
   // Cloud offer's free account.
   onCleanup(
     onKeepChoice((choice) => {
-      if (untrack(beat) === 'keep') count(KEEP_CHOICE_EVENT[choice])
+      if (headed === 'keep') count(KEEP_CHOICE_EVENT[choice])
     }),
   )
 
