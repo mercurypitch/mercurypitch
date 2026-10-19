@@ -363,6 +363,21 @@ const KARAOKE_STAGE_2 = [
     'mp:onboarding-cloud-offer',
     "the native onboarding's Cloud offer, once an install",
   ],
+  // Part 5: beat 1, Merc's welcome in the alley (AlleyGuide.tsx, a lazy
+  // chunk of its own behind the switch), the beats giving way by a View
+  // Transition (beat-swap.ts), the one way on from a refused mic, and Merc
+  // by the Cloud offer's art. The onboarding's counts and the Cloud offer's
+  // and the import gate's (S7b §7) go with what they count.
+  ['alley-guide', "beat 1, Merc's welcome in the alley"],
+  ['mp-beat-swap', "the native onboarding's beats giving way"],
+  [
+    'onboarding-without-mic',
+    "the native onboarding's Continue without the mic",
+  ],
+  ['cloud-offer-guest', "Merc by the Cloud offer's art"],
+  ['native_onboarding_', "the native onboarding's counts"],
+  ['cloud_view_', "the Cloud offer's counts"],
+  ['import_tap_', "the import gate's counts"],
 ]
 
 /**
