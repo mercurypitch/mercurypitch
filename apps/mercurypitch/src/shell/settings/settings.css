@@ -1036,6 +1036,19 @@
   color: var(--text-secondary);
 }
 
+/* A row with a sentence under its line: the free song. */
+.mp-keep__row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mp-keep__row-sub {
+  font: 400 14px/19px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
 /* "Find your range first": a row that leads somewhere. */
 .mp-keep__find {
   display: flex;

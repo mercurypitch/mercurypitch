@@ -8,6 +8,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
+import { SLIDE_MAX_SEC } from '../../onboarding/range-take'
 import { ACCOUNT_OFFLINE, ACCOUNT_ROW, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, accountDeleted, accountPromises, DELETE_ACCOUNT, FILL_NOTE, KEEP, keepFact, keepGiftLine, SIGN_OUT_QUESTION, signInEverywhere, STORAGE_COPY, takesLine, takesStayHere, TWO_STEP, } from './account-copy'
 
 /** Every line in the module that names where the practice is kept. */
@@ -57,10 +58,14 @@ describe('account copy', () => {
     )
   })
 
-  it("names the confirmed email in Keep's free song row: the server gives the month's song to no other account", () => {
-    expect(KEEP.freeSong).toBe(
-      '1 free karaoke song a month with a confirmed email',
-    )
+  it("says Keep's free song, and in one sentence under it that it needs a confirmed email: the server gives the month's song to no other account", () => {
+    expect(KEEP.freeSong).toBe('1 free karaoke song every month')
+    expect(KEEP.freeSongEmail).toBe('Yours once your email is confirmed.')
+  })
+
+  it('says the range takes under a minute: two slides of at most eight seconds each', () => {
+    expect(KEEP.findRange).toBe('Find your range first. Takes under a minute.')
+    expect(SLIDE_MAX_SEC * 2).toBeLessThan(60)
   })
 
   it('says "this phone" on a phone, as it always has', () => {

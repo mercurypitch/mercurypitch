@@ -12,9 +12,10 @@
 //   - one icon and one line a row, each only where it is true: the
 //     voiceprint saved (with one); "Find your range first" (without one,
 //     while a range finder is registered); progress everywhere; the free
-//     song and the launch gift (a build that splits songs, for a singer
-//     without the subscription; the gift only while the server says it
-//     runs, keep-gift.ts);
+//     song, with the one sentence that says it needs a confirmed email, and
+//     the launch gift (a build that splits songs, for a singer without the
+//     subscription; the gift only while the server says it runs,
+//     keep-gift.ts);
 //   - the one fact line, the whole of the loss framing;
 //   - Apple first on iOS in Apple's own style, Google first on Android,
 //     then Use email, which hands over to the sign-in sheet's email pane.
@@ -131,9 +132,12 @@ function Rows(props: { print: KeepableVoiceprint | null }): JSX.Element {
         <span>{KEEP.everywhere}</span>
       </li>
       <Show when={songsOffered()}>
-        <li>
+        <li data-testid="keep-free-song">
           <KaraokeIcon size={22} />
-          <span>{KEEP.freeSong}</span>
+          <span class="mp-keep__row-text">
+            <span>{KEEP.freeSong}</span>
+            <span class="mp-keep__row-sub">{KEEP.freeSongEmail}</span>
+          </span>
         </li>
       </Show>
       <Show when={giftLine()}>

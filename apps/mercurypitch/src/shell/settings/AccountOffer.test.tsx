@@ -96,6 +96,9 @@ const SESSION = {
 
 const GIFT = { songs: 5, endsAt: '2099-01-01T23:59:59.000Z' }
 
+/** The free song's row as it reads: its line, then the sentence under it. */
+const FREE_SONG_ROW = `${KEEP.freeSong}${KEEP.freeSongEmail}`
+
 /** E2 to G4, with a twin: the take creating an account would adopt. */
 function print(fields: Record<string, unknown> = {}): unknown {
   return {
@@ -275,9 +278,31 @@ describe('what Keep says', () => {
 
     expect(rows()).toEqual([
       KEEP.everywhere,
-      KEEP.freeSong,
+      FREE_SONG_ROW,
       'Launch gift for new accounts: 5 more songs, until 1 January',
     ])
+  })
+
+  it('says under the free song, in one sentence, that it needs a confirmed email', async () => {
+    stand.importing = true
+
+    await open()
+
+    const row = q('keep-free-song')
+    const lines = [
+      ...(row?.querySelectorAll('.mp-keep__row-text > span') ?? []),
+    ]
+    expect(lines.map((line) => line.textContent)).toEqual([
+      KEEP.freeSong,
+      KEEP.freeSongEmail,
+    ])
+    expect(lines[1]?.className).toBe('mp-keep__row-sub')
+  })
+
+  it('has no free song row in a build that splits no songs: there is nothing to spend it on', async () => {
+    await open()
+
+    expect(q('keep-free-song')).toBeNull()
   })
 
   it('has no gift row while the server says no gift runs', async () => {
@@ -285,7 +310,7 @@ describe('what Keep says', () => {
 
     await open()
 
-    expect(rows()).toEqual([KEEP.everywhere, KEEP.freeSong])
+    expect(rows()).toEqual([KEEP.everywhere, FREE_SONG_ROW])
   })
 
   it('has no gift row once the gift has ended', async () => {
@@ -294,7 +319,7 @@ describe('what Keep says', () => {
 
     await open()
 
-    expect(rows()).toEqual([KEEP.everywhere, KEEP.freeSong])
+    expect(rows()).toEqual([KEEP.everywhere, FREE_SONG_ROW])
   })
 
   it('has no gift row on a phone signed out of its account: signing back in gets none', async () => {
@@ -304,7 +329,7 @@ describe('what Keep says', () => {
 
     await open()
 
-    expect(rows()).toEqual([KEEP.everywhere, KEEP.freeSong])
+    expect(rows()).toEqual([KEEP.everywhere, FREE_SONG_ROW])
   })
 
   it('offers a subscriber neither the free song nor the gift: they have their 20', async () => {
