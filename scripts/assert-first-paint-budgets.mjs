@@ -75,10 +75,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Measured 1159 KB including Three.js; unrelated rooms must not inherit it.
   'glass-game.html': 1450,
 
-  // Karaoke Night and its two other doors. Measured 352 (was 3063).
+  // Karaoke Night and its three other doors. Measured 352 (was 3063), and
+  // 361 for all four on 2026-10-19.
   'karaoke-night.html': 440,
   'karaoke.html': 440,
   'vocal-remover.html': 440,
+  'karaoke-app.html': 440,
 
   // Measured 1432 (was 3822). Most of it is the room itself.
   'guitar-night.html': 1800,
@@ -122,10 +124,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // sheet, the entry prelude and vendor CSS.
   'glass-game.html': 60,
 
-  // Karaoke Night and its two other doors. Measured 67.
+  // Karaoke Night and its three other doors. Measured 67, and 64 for all
+  // four on 2026-10-19.
   'karaoke-night.html': 90,
   'karaoke.html': 90,
   'vocal-remover.html': 90,
+  'karaoke-app.html': 90,
 
   // The night rooms. Measured 74, 98 and 316; the room's own sheet is 48,
   // 82 and 262 KB of that, which is where any reduction has to come from.
