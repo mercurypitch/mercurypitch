@@ -473,8 +473,8 @@ replace it only on the lesson page, not on YouTube (owner decision 1).
 
 ## C. The other lessons: packaging for Lessons 3 to 14 and the trailer
 
-Each row rests on its CURRICULUM card and season hook. Lessons 3 to 6 also have a FACTS.md, which
-the row was checked against; Lessons 7 to 14 and the trailer have no FACTS.md yet, so re-check every
+Each row rests on its CURRICULUM card and season hook. Lessons 3 to 7 also have a FACTS.md, which
+the row was checked against; Lessons 8 to 14 and the trailer have no FACTS.md yet, so re-check every
 title and thumbnail word against theirs when they are written. Line 1 of each description is the
 CURRICULUM hook, word for word; line 2 is the lesson page (§ 12 item 9: `mercurypitch.com/learn/NN`).
 Voice lessons (3, 5, 7, 9, 11, 13, 14) publish only after the vocal coach signs them off (§ 7).
