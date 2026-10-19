@@ -92,8 +92,14 @@ describe('onboarding resume across a sign-in redirect', () => {
 
 describe('the boot path and the sign-in button are wired to it', () => {
   it('App boots the flow through startOrResumeOnboarding', () => {
-    const source = readFileSync('src/App.tsx', 'utf8')
-    expect(source).toContain('startOrResumeOnboarding()')
+    // App mounts the gate (useFirstLight), and the gate is what opens it.
+    const app = readFileSync('src/App.tsx', 'utf8')
+    const gate = readFileSync(
+      'src/features/onboarding/useFirstLight.ts',
+      'utf8',
+    )
+    expect(app).toContain('useFirstLight(')
+    expect(gate).toContain('startOrResumeOnboarding()')
   })
 
   it('AuthModal arms the marker before leaving for Google', () => {

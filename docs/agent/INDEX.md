@@ -88,8 +88,8 @@ These are the rules that break things when ignored.
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.3k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
+| `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 5.7k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
-| `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 5.6k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 5.2k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 4.9k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
@@ -223,8 +223,8 @@ These are the rules that break things when ignored.
 | [session-store.ts](../../src/stores/session-store.ts) | 500 | Session Store — Unified session management with localStorage |
 | [jam-diagnostics-store.ts](../../src/stores/jam-diagnostics-store.ts) | 400 | ── Jam diagnostics store The numbers behind the Jam network panel, and the loop that collects them. |
 | [launch-gift-store.ts](../../src/stores/launch-gift-store.ts) | 400 | launch-gift-store — the launch gift, as this browser sees it The server claims the featured promo code the moment an account's email is c... |
+| [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 350 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
 | [jam-pitch-provision-store.ts](../../src/stores/jam-pitch-provision-store.ts) | 300 | ── Working out a room song's pitch line A song that has never been opened in the stem mixer has no stored analysis, so `sessionSongNotes`... |
-| [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 300 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 300 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [theme-store.ts](../../src/stores/theme-store.ts) | 300 | Theme Store — the nine colour presets and how one gets picked Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`, `THEME_CHROME_... |
 | [jam-picker-store.ts](../../src/stores/jam-picker-store.ts) | 250 | ── What a room can sing, and the act of picking it The picker used to live inside JamPanel: its shelves, the fetches that fill them, the... |
