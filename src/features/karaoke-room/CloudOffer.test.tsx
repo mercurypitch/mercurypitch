@@ -37,6 +37,12 @@ vi.mock('./karaoke-songs', async (importOriginal) => {
   }
 })
 
+// The app's counts (S7b §7), heard on their way to the funnel.
+const counts = vi.hoisted(() => ({ sent: [] as string[] }))
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: (event: string) => counts.sent.push(event),
+}))
+
 const auth = vi.hoisted(() => ({ account: false }))
 vi.mock('@/db/services/auth-service', () => ({
   accountHeld: () => auth.account,
@@ -138,6 +144,7 @@ function withStore(
 }
 
 beforeEach(() => {
+  counts.sent = []
   server.next = null
   server.hold = null
   auth.account = false
@@ -510,6 +517,49 @@ describe('Subscribe', () => {
     expect(
       within(offer).getByRole('button', { name: 'Restore purchase' }),
     ).toBeTruthy()
+  })
+})
+
+describe('counted (S7b §7)', () => {
+  it('counts the offer shown by where it opened, each Subscribe, and what the store answered', async () => {
+    const subscribe = vi
+      .fn<KaraokeSubscriptionApi['subscribe']>()
+      .mockResolvedValueOnce('cancelled')
+      .mockResolvedValueOnce('purchased')
+    withStore(store({ subscribe }))
+    const offer = await open()
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+
+    fireEvent.click(subscribeButton(offer))
+    await waitFor(() => expect(counts.sent).toHaveLength(3))
+    fireEvent.click(subscribeButton(offer))
+    await waitFor(() => expect(counts.sent).toHaveLength(5))
+
+    expect(counts.sent).toEqual([
+      'cloud_view_import',
+      'cloud_subscribe_tap',
+      'cloud_purchase_cancelled',
+      'cloud_subscribe_tap',
+      'cloud_purchase_success',
+    ])
+  })
+
+  it('counts a store that throws as a failed purchase', async () => {
+    withStore(
+      store({ subscribe: async () => Promise.reject(new Error('gone')) }),
+    )
+    const offer = await open()
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+
+    fireEvent.click(subscribeButton(offer))
+
+    await waitFor(() =>
+      expect(counts.sent).toEqual([
+        'cloud_view_import',
+        'cloud_subscribe_tap',
+        'cloud_purchase_failed',
+      ]),
+    )
   })
 })
 

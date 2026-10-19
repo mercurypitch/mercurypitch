@@ -32,10 +32,12 @@
 
 import { createSignal } from 'solid-js'
 import { ensureSingerIdentity } from '@/db/services/singer-identity'
+import { trackEvent } from '@/lib/analytics'
 import { micActive, singingCaptureActive } from '@/stores/mic-store'
 import type { KaraokeCarryOutcome } from '@/stores/native-shell-store'
 import { nativeRunControls, nativeShellApi } from '@/stores/native-shell-store'
 import { showNotification } from '@/stores/notifications-store'
+import { CLOUD_VIEW_EVENT } from './cloud-measure'
 import type { KaraokeSongs } from './karaoke-songs'
 import { awaitSubscription, CLOUD_NAME, karaokeSongs, refreshKaraokeSongs, songsOnTheWay, } from './karaoke-songs'
 
@@ -168,6 +170,7 @@ export function openCloudOffer(
     unaskedThisSession += 1
   }
   setCurrent({ source, view })
+  if (view === 'offer') trackEvent(CLOUD_VIEW_EVENT[source])
   if (view === 'subscribed' && !karaokeSongs().subscribed) void waitForSongs()
   return true
 }

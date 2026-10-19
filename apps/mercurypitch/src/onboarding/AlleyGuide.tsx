@@ -24,14 +24,17 @@
 // His hello is remembered for the session (alley-greeting.ts), so the
 // first note does not say it again.
 //
+// Counted (S7b §7): the welcome shown, and a door opened from it.
+//
 // Loaded lazily by RoomsAlley on a build with the onboarding only
 // (NATIVE_ONBOARDING), so the store build carries none of it.
 
-import './alley-guide.css'
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, on, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, Show, untrack, } from 'solid-js'
+import './alley-guide.css'
 import { MercView } from '@/components/room-kit/MercView'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
+import { trackNativeOnboarding } from '@/features/onboarding/funnel'
 import type { MercState } from '@/lib/merc/constants'
 import type { DoorKey } from '../alley/alley-plate'
 import { DOORS, isEnterable } from '../alley/alley-plate'
@@ -82,13 +85,17 @@ export interface AlleyGuideProps {
   reduced: () => boolean
   /** A door is picked, opening or open: he steps aside. */
   aside: () => boolean
+  /** A door is opening: the welcome is done. */
+  opened: () => boolean
   /** The door lit for him, one at a time, or none. */
   light: (door: DoorKey | null) => void
 }
 
 export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
   // Read once: the beat is timed from the start for one or the other.
-  const still = props.reduced()
+  const still = untrack(() => props.reduced())
+  // The door to light: a plain callback, read once.
+  const light = untrack(() => props.light)
   const times = still ? GUIDE_STILL_TIMES : GUIDE_TIMES
   const place = createMemo(() => guidePlace(props.input()))
   const [state, setState] = createSignal<MercState>(still ? 'idle' : 'drop')
@@ -108,7 +115,7 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
   }
   onCleanup(() => {
     quiet()
-    props.light(null)
+    light(null)
   })
 
   let lighting = false
@@ -118,9 +125,9 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
     if (lighting) return
     lighting = true
     DOORS_IN_TURN.forEach((door, index) => {
-      later(from + index * times.every, () => props.light(door))
+      later(from + index * times.every, () => light(door))
     })
-    later(from + DOORS_IN_TURN.length * times.every, () => props.light(null))
+    later(from + DOORS_IN_TURN.length * times.every, () => light(null))
   }
   /** He is drawn: his hello once he has landed, then he points. */
   const meet = (): void => {
@@ -140,17 +147,32 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
   // the same, and he says hello if he arrives after all.
   later(UNDRAWN_MS, () => lightDoors(0))
 
+  // Counted once each: the welcome on a due install, and a door opened
+  // from it.
+  let viewed = false
+  let completed = false
+  createEffect(() => {
+    if (viewed || !onboardingDue()) return
+    viewed = true
+    trackNativeOnboarding('native_onboarding_welcome_view')
+  })
+  createEffect(() => {
+    if (completed || !viewed || !props.opened()) return
+    completed = true
+    trackNativeOnboarding('native_onboarding_welcome_complete')
+  })
+
   // A door picked: what is still to come is called off, and the lit door
   // goes out. He is back, in his idle, when the door goes back.
   createEffect(
     on(
-      props.aside,
+      () => props.aside(),
       (aside) => {
         if (!aside) return
         quiet()
         lighting = true
         drawn = true
-        props.light(null)
+        light(null)
         setState('idle')
       },
       { defer: true },

@@ -771,6 +771,7 @@ export const RoomsAlley: Component = () => {
             })}
             reduced={reduced}
             aside={() => alley().phase !== 'rest'}
+            opened={() => alley().phase === 'opening'}
             light={setLit}
           />
         </Show>

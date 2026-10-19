@@ -55,11 +55,13 @@ import { createEffect, createResource, createSignal, For, Match, on, onCleanup, 
 import { Sheet } from '@/components/mobile/Sheet'
 import { readMe } from '@/db/services/auth-me-service'
 import { accountHeld } from '@/db/services/auth-service'
+import { trackEvent } from '@/lib/analytics'
 import { deviceNoun, thisDeviceLower, yourDevice } from '@/lib/device-noun'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import type { KaraokeOffer } from '@/stores/native-shell-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
 import heroArt from './assets/paywall-two-lights.webp'
+import { PURCHASE_EVENT } from './cloud-measure'
 import styles from './cloud-offer.module.css'
 import { closeCloudOffer, cloudOffer, cloudOfferGuest, showCloudSubscribed, } from './cloud-offer-store'
 import { awaitSubscription, CLOUD_NAME, CONFIRM_FOR_FREE_SONG_LINE, confirmEmailForFreeSong, freeSongUsed, freeSongWithheld, KARAOKE_PLAN, karaokeSongs, nextFreeSongLine, refreshKaraokeSongs, restoreNote, songsOnTheWay, } from './karaoke-songs'
@@ -321,11 +323,13 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
     const api = nativeShellApi()?.karaokeSubscription
     setNote(null)
     setBuying(true)
+    trackEvent('cloud_subscribe_tap')
     const outcome =
       api === undefined
         ? 'unavailable'
         : await api.subscribe().catch(() => 'failed' as const)
     setBuying(false)
+    trackEvent(PURCHASE_EVENT[outcome])
     switch (outcome) {
       case 'purchased':
       case 'moved':

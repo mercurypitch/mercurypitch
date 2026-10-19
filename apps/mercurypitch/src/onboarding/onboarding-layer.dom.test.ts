@@ -18,6 +18,12 @@ import { performBack, shellBackHost } from '../shell/shell-navigation'
 import { onboardingDue, resetOnboarding, resetOnboardingFlagForTests, } from './onboarding-flag'
 import { installNativeOnboarding, LEAVE_MS, leaveOnboarding, onboardingEntry, onboardingExit, onboardingMounted, registerLayerRange, } from './onboarding-layer'
 
+// The onboarding's counts (S7b §7), heard on their way to the funnel.
+const funnel = vi.hoisted(() => ({ sent: [] as string[] }))
+vi.mock('@/features/onboarding/funnel', () => ({
+  trackNativeOnboarding: (event: string) => funnel.sent.push(event),
+}))
+
 let dispose: (() => void) | null = null
 
 /** The shell's half, as NativeShell runs it. */
@@ -37,6 +43,7 @@ beforeEach(() => {
   resetRoomArrivalHolds()
   resetAccountOffer()
   setActiveTab(TAB_HOME)
+  funnel.sent = []
 })
 
 afterEach(() => {
@@ -133,6 +140,39 @@ describe('the onboarding layer', () => {
     expect(onboardingShown()).toBe(false)
     expect(onboardingMounted()).toBe(false)
     expect(roomArrivalHeld()).toBe(false)
+  })
+})
+
+describe('counted (S7b §7)', () => {
+  it('counts a new install once, as its flag first settles, and the end', () => {
+    install()
+    dispose?.()
+    install()
+    setActiveTab(TAB_SINGING)
+    leaveOnboarding('finished')
+
+    expect(funnel.sent).toEqual([
+      'native_onboarding_install',
+      'native_onboarding_done',
+    ])
+  })
+
+  it('counts a Not now as its own way out', () => {
+    install()
+    setActiveTab(TAB_SINGING)
+    performBack(shellBackHost())
+
+    expect(funnel.sent).toEqual([
+      'native_onboarding_install',
+      'native_onboarding_not_now',
+    ])
+  })
+
+  it('counts no install for one that has opened a door already', () => {
+    markWelcomeSeen()
+    install()
+
+    expect(funnel.sent).toEqual([])
   })
 })
 

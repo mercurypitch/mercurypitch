@@ -84,6 +84,12 @@ vi.mock('./karaoke-songs', async (importOriginal) => {
   }
 })
 
+// The app's counts (S7b §7), heard on their way to the funnel.
+const counts = vi.hoisted(() => ({ sent: [] as string[] }))
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: (event: string) => counts.sent.push(event),
+}))
+
 const auth = vi.hoisted(() => ({ registered: false, token: true }))
 vi.mock('@/db/services/auth-service', () => ({
   accountHeld: () => auth.registered,
@@ -126,6 +132,7 @@ function song(name: string): File {
 let clicks: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
+  counts.sent = []
   queue.enqueued = []
   queue.gate = null
   queue.duplicate = null
@@ -525,6 +532,43 @@ describe('the confirm sheet', () => {
     expect(
       screen.queryByRole('dialog', { name: 'Separate this song?' }),
     ).toBeNull()
+  })
+})
+
+describe('counted (S7b §7)', () => {
+  it('counts Import by the gate the singer was in, and the songs sent', async () => {
+    const input = mount()
+    fireEvent.click(importButton())
+    pick(input, [song('Harbour Lights.mp3')])
+    const confirm = await sheet('Separate this song?')
+
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Separate' }))
+
+    await waitFor(() =>
+      expect(counts.sent).toEqual(['import_tap_songs_left', 'import_sent']),
+    )
+  })
+
+  it('counts the tap that opens the offer, and the offer by where it opened', async () => {
+    resetKaraokeSongsForTests(noSongs)
+    mount()
+
+    fireEvent.click(importButton())
+
+    await sheet('Sing your own songs')
+    expect(counts.sent).toEqual(['import_tap_no_account', 'cloud_view_import'])
+  })
+
+  it('counts nothing sent when the queue turns every song away', async () => {
+    queue.refuseAtQueue = true
+    const input = mount()
+    pick(input, [song('Harbour Lights.mp3')])
+    const confirm = await sheet('Separate this song?')
+
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Separate' }))
+
+    await waitFor(() => expect(queue.enqueued).toHaveLength(1))
+    expect(counts.sent).toEqual([])
   })
 })
 

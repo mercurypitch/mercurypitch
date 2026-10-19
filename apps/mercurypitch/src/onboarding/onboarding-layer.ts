@@ -32,6 +32,7 @@
 
 import { createEffect, createSignal, on, onCleanup, untrack } from 'solid-js'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
+import { trackNativeOnboarding } from '@/features/onboarding/funnel'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { holdRoomArrival } from '@/stores/native-shell-store'
 import { welcomeSeen } from '../alley/alley-welcome'
@@ -142,7 +143,14 @@ function findRangeFromKeep(): void {
 export function leaveOnboarding(exit: OnboardingExit): boolean {
   if (!untrack(onboardingShown)) return false
   lastExit = exit
-  if (untrack(entry) === 'onboarding') markOnboardingDone()
+  if (untrack(entry) === 'onboarding') {
+    markOnboardingDone()
+    trackNativeOnboarding(
+      exit === 'not-now'
+        ? 'native_onboarding_not_now'
+        : 'native_onboarding_done',
+    )
+  }
   setOnboardingShown(false)
   releaseArrival?.()
   releaseArrival = null
@@ -167,7 +175,10 @@ export function onboardingExit(): OnboardingExit | null {
  * starts on it), Back, and the range Keep links to.
  */
 export function installNativeOnboarding(): void {
-  settleOnboarding(welcomeSeen())
+  // A new install, counted once: the flag settles only on the first mount.
+  if (settleOnboarding(welcomeSeen()) === 'due') {
+    trackNativeOnboarding('native_onboarding_install')
+  }
   onCleanup(registerOnboardingBack(() => leaveOnboarding('not-now')))
   onCleanup(registerRangeFinder(findRangeFromKeep))
   // On the tab's arrival, not on the flag's change: "Replay the

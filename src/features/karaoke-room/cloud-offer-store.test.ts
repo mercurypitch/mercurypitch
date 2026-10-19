@@ -34,6 +34,12 @@ vi.mock('./karaoke-songs', async (importOriginal) => {
   }
 })
 
+// The app's counts (S7b §7), heard on their way to the funnel.
+const counts = vi.hoisted(() => ({ sent: [] as string[] }))
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: (event: string) => counts.sent.push(event),
+}))
+
 const said = vi.hoisted(() => ({ lines: [] as string[] }))
 vi.mock('@/stores/notifications-store', async (importOriginal) => ({
   ...(await importOriginal<typeof Notifications>()),
@@ -65,6 +71,7 @@ beforeEach(() => {
   identity.answer = Promise.resolve(true)
   server.next = null
   said.lines = []
+  counts.sent = []
   vi.mocked(awaitSubscription).mockClear()
 })
 
@@ -180,6 +187,33 @@ describe('an offer nobody asked for', () => {
 
     expect(unaskedRefusal(NOW)).toBe('subscribed')
     expect(openCloudOffer('onboarding', 'offer', NOW)).toBe(false)
+  })
+})
+
+describe('counted (S7b §7)', () => {
+  it('counts the offer each time it shows, by where it opened', () => {
+    openCloudOffer('onboarding', 'offer', NOW)
+    closeCloudOffer('done', NOW)
+    openCloudOffer('settings', 'offer', NOW)
+    closeCloudOffer('not-now', NOW)
+    openCloudOffer('import', 'offer', NOW)
+
+    expect(counts.sent).toEqual([
+      'cloud_view_onboarding',
+      'cloud_view_settings',
+      'cloud_view_import',
+    ])
+  })
+
+  it('counts no offer for what follows a yes, nor for one the caps hold back', () => {
+    openCloudOffer('import', 'subscribed', NOW)
+    closeCloudOffer('done', NOW)
+    openCloudOffer('onboarding', 'offer', NOW)
+    closeCloudOffer('not-now', NOW)
+    counts.sent = []
+
+    expect(openCloudOffer('onboarding', 'offer', NOW + DAY_MS)).toBe(false)
+    expect(counts.sent).toEqual([])
   })
 })
 

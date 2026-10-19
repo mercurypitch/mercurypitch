@@ -52,22 +52,28 @@
 // where the WebView has none or a sheet comes up with the next beat, and
 // Merc moves across from his old place to his new one (beat-swap.ts).
 //
+// Each beat is counted as it shows and as it is done (S7b §7,
+// onboarding-measure.ts): the onboarding's own, not the range on its own.
+//
 // NativeShell loads this file lazily, and only on a build with the
 // onboarding (NATIVE_ONBOARDING), so the store build carries none of it.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, Match, on, onCleanup, onMount, Switch, untrack, } from 'solid-js'
+import './beat-swap.css'
 import { MercView } from '@/components/room-kit/MercView'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import { useExerciseCapture } from '@/components/room-kit/useExerciseCapture'
 import { cloudOfferGuest, cloudOfferOpen, setCloudOfferGuest, } from '@/features/karaoke-room/cloud-offer-store'
+import type { NativeOnboardingEvent } from '@/features/onboarding/funnel'
+import { trackNativeOnboarding } from '@/features/onboarding/funnel'
 import type { RangeResult } from '@/lib/mirror/metrics'
 import { onboardingShown } from '../shell/run-shell-store'
-import { noAccountYet, offerOpen, openKeep, openKeepFromReveal, } from '../shell/settings/account-offer'
+import { noAccountYet, offerOpen, onKeepChoice, openKeep, openKeepFromReveal, } from '../shell/settings/account-offer'
+import { keepableVoiceprint } from '../shell/settings/keep-voiceprint'
 import { signInOpen } from '../shell/settings/sign-in-state'
 import { voiceprintAskAsking } from '../shell/settings/voiceprint-ask'
-import './beat-swap.css'
 import type { SwapDone } from './beat-swap'
 import { createBeatSwap, GHOST_ATTR, MERC_CLASS } from './beat-swap'
 import { FirstNoteView, noteSays } from './FirstNoteView'
@@ -76,6 +82,7 @@ import { lineSaysText, LineView } from './LineView'
 import styles from './NativeOnboarding.module.css'
 import { ONBOARDING_COPY } from './onboarding-copy'
 import { leaveOnboarding, onboardingEntry, registerLayerRange, } from './onboarding-layer'
+import { KEEP_CHOICE_EVENT, lineBandEvent } from './onboarding-measure'
 import type { OfferSkip } from './onboarding-offer'
 import { onboardingOfferGroup, openOnboardingOffer, prepareOnboardingOffer, } from './onboarding-offer'
 import { rangeSays, RangeView } from './RangeView'
@@ -152,6 +159,14 @@ export function NativeOnboarding(): JSX.Element {
       next === 'keep' || next === 'offer' ? 'fade' : 'view',
     )
   }
+
+  /** Counted once a layer: the onboarding's steps, not the range's own. */
+  const counted = new Set<NativeOnboardingEvent>()
+  const count = (event: NativeOnboardingEvent): void => {
+    if (entry !== 'onboarding' || counted.has(event)) return
+    counted.add(event)
+    trackNativeOnboarding(event)
+  }
   const [skipped, setSkipped] = createSignal(false)
   /** The range the reveal shows: the one just measured, or the one kept. */
   const [revealed, setRevealed] = createSignal<RangeResult | null>(null)
@@ -222,12 +237,18 @@ export function NativeOnboarding(): JSX.Element {
     go('keep')
     if (after === 'reveal') openKeepFromReveal()
     else openKeep()
+    count(
+      keepableVoiceprint() === null
+        ? 'native_onboarding_keep_view_progress'
+        : 'native_onboarding_keep_view_voiceprint',
+    )
   }
 
   /** Skip for now: Merc's word, then Keep. */
   const skip = (): void => {
     if (untrack(skipped)) return
     setSkipped(true)
+    count('native_onboarding_range_skipped')
     skipTimer = setTimeout(() => {
       skipTimer = undefined
       toKeep('skip')
@@ -249,6 +270,7 @@ export function NativeOnboarding(): JSX.Element {
 
   /** Continue on the reveal: Keep in the onboarding, back to Keep from it. */
   const continueOn = (): void => {
+    count('native_onboarding_reveal_complete')
     if (entry === 'onboarding') toKeep('reveal')
     else leaveOnboarding('finished')
   }
@@ -321,6 +343,57 @@ export function NativeOnboarding(): JSX.Element {
       go('offer')
     })
   }
+
+  // Counted: each beat as it shows, and as it is done (S7b §7).
+  createEffect(
+    on(beat, (now) => {
+      if (now === 'range') count('native_onboarding_range_view')
+      else if (now === 'reveal') count('native_onboarding_reveal_view')
+      else if (now === 'line') count('native_onboarding_line_view')
+    }),
+  )
+  createEffect(() => {
+    if (note.state().phase === 'heard') {
+      count('native_onboarding_first_note_complete')
+    }
+  })
+  createEffect(() => {
+    if (range.state().phase === 'done')
+      count('native_onboarding_range_complete')
+  })
+  // The first scored take: the line done, and its band. Once more sings it
+  // again, uncounted.
+  createEffect(() => {
+    const now = line.state()
+    if (now.phase !== 'done' || now.score === null) return
+    if (counted.has('native_onboarding_line_complete')) return
+    count('native_onboarding_line_complete')
+    count(lineBandEvent(now.score.hit, now.score.total))
+  })
+  // The onboarding's first ask for the mic, and its answer.
+  createEffect(() => {
+    if (
+      counted.has('native_onboarding_mic_granted') ||
+      counted.has('native_onboarding_mic_denied')
+    ) {
+      return
+    }
+    const listening = [note, range, line].some(
+      (beatOf) => beatOf.micState() === 'sing',
+    )
+    const refused = [note.state(), range.state(), line.state()].some(
+      (state) => state.phase === 'blocked' && state.block === 'denied',
+    )
+    if (listening) count('native_onboarding_mic_granted')
+    else if (refused) count('native_onboarding_mic_denied')
+  })
+  // Keep's choices, on the onboarding's beat 7 only: not Keep from the
+  // Cloud offer's free account.
+  onCleanup(
+    onKeepChoice((choice) => {
+      if (untrack(beat) === 'keep') count(KEEP_CHOICE_EVENT[choice])
+    }),
+  )
 
   /** The beat on screen's controller: Merc's state and voice are its. */
   const active = () => {
@@ -409,7 +482,12 @@ export function NativeOnboarding(): JSX.Element {
   })
 
   // Into the dialog, for a screen reader; nothing is drawn for it.
-  onMount(() => root?.focus({ preventScroll: true }))
+  onMount(() => {
+    root?.focus({ preventScroll: true })
+    if (untrack(beat) === 'first-note') {
+      count('native_onboarding_first_note_view')
+    }
+  })
 
   return (
     <div

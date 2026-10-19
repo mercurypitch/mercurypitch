@@ -18,6 +18,8 @@ import { setAuthToken } from '@/db/services/user-service'
 import type { CallVoice } from '@/features/echo/merc-call'
 import type * as Songs from '@/features/karaoke-room/karaoke-songs'
 import type { KaraokeSongs } from '@/features/karaoke-room/karaoke-songs'
+import type * as Funnel from '@/features/onboarding/funnel'
+import type * as Analytics from '@/lib/analytics'
 import type * as MicSentinel from '@/lib/mic-sentinel'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { RESPONSE_GATE_SECONDS } from '@/lib/sequence/sequence-engine'
@@ -51,6 +53,20 @@ vi.mock('@/lib/merc/stage', () => ({
     setStill: () => undefined,
     destroy: () => undefined,
   }),
+}))
+
+// The counts (S7b §7), heard on their way: the onboarding's own, and the
+// app's, which the Cloud offer's are.
+const funnel = vi.hoisted(() => ({ sent: [] as string[], app: [] as string[] }))
+
+vi.mock('@/features/onboarding/funnel', async (importOriginal) => ({
+  ...(await importOriginal<typeof Funnel>()),
+  trackNativeOnboarding: (event: string) => funnel.sent.push(event),
+}))
+
+vi.mock('@/lib/analytics', async (importOriginal) => ({
+  ...(await importOriginal<typeof Analytics>()),
+  trackEvent: (event: string) => funnel.app.push(event),
 }))
 
 vi.mock('@/lib/mic-sentinel', async (importOriginal) => ({
@@ -183,6 +199,8 @@ beforeEach(() => {
   identity.made = 0
   identity.hold = null
   server.next = null
+  funnel.sent = []
+  funnel.app = []
 })
 
 afterEach(() => {
@@ -599,5 +617,58 @@ describe('beat 9, the Cloud offer', () => {
     expect(['offer', 'holdout']).toContain(
       localStorage.getItem(OFFER_GROUP_KEY),
     )
+  })
+})
+
+describe('beats 8 and 9, counted (S7b §7)', () => {
+  it('counts the line as it shows, once scored, and its band, then the offer it opens and the end', async () => {
+    const s = mount()
+    await skipRange(s)
+    k('keep-not-now')?.click()
+    await settle()
+    await singLine(s)
+    await continueLine()
+    expect(beat()).toBe('offer')
+
+    closeCloudOffer('not-now')
+    await settle()
+
+    expect(
+      funnel.sent.filter((event) => event.startsWith('native_onboarding_line')),
+    ).toEqual([
+      'native_onboarding_line_view',
+      'native_onboarding_line_complete',
+      'native_onboarding_line_sung_all',
+    ])
+    expect(funnel.app).toEqual(['cloud_view_onboarding'])
+    expect(funnel.sent.at(-1)).toBe('native_onboarding_done')
+  })
+
+  it('counts a line half sung in its band', async () => {
+    const s = mount()
+    await skipRange(s)
+    k('keep-not-now')?.click()
+    await settle()
+    q('onboarding-mic')?.click()
+    await settle()
+    await settle()
+    // The first five notes on pitch, then nothing to the turn's end.
+    const turn = lineNotes(60, TURN_AT + COUNT_IN_SEC)
+    const frames = take(
+      turn[turn.length - 1].to + TURN_TAIL_SEC,
+      turn.slice(0, 5),
+    )
+    s.frames = frames.filter((frame) => frame.t <= TURN_AT)
+    flushFrame()
+    s.frames = frames
+    flushFrame()
+    await settle()
+    expect(q('onboarding-sung-score')?.textContent).toBe(lineScoreText(5, 10))
+
+    expect(
+      funnel.sent.filter((event) =>
+        event.startsWith('native_onboarding_line_sung'),
+      ),
+    ).toEqual(['native_onboarding_line_sung_4_6'])
   })
 })

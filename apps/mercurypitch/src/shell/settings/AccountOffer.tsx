@@ -43,7 +43,7 @@ import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { ChevronIcon, GiftIcon, KaraokeIcon, MailIcon, MicIcon, ProgressIcon, WaveIcon, } from '../icons'
 import { KEEP, keepFact, keepGiftLine } from './account-copy'
-import { closeOffer, declineOffer, keepArrival, offerOpen, rangeFinder, } from './account-offer'
+import { closeOffer, declineOffer, keepArrival, keepChose, offerOpen, rangeFinder, } from './account-offer'
 import { liveAppGift } from './keep-gift'
 import type { KeepableVoiceprint } from './keep-voiceprint'
 import { keepableVoiceprint, keepRange } from './keep-voiceprint'
@@ -117,6 +117,7 @@ function Rows(props: { print: KeepableVoiceprint | null }): JSX.Element {
               class="mp-keep__find"
               data-testid="keep-find-range"
               onClick={() => {
+                keepChose('find-range')
                 closeOffer()
                 run()()
               }}
@@ -188,7 +189,10 @@ function Ways(): JSX.Element {
             type="button"
             class="mp-provider mp-provider--apple"
             disabled={flow.busy()}
-            onClick={() => void flow.continueWith('apple')}
+            onClick={() => {
+              keepChose('apple')
+              void flow.continueWith('apple')
+            }}
             data-testid="keep-apple"
           >
             <AppleMark />
@@ -200,7 +204,10 @@ function Ways(): JSX.Element {
             type="button"
             class="mp-provider mp-provider--google"
             disabled={flow.busy()}
-            onClick={() => void flow.continueWith('google')}
+            onClick={() => {
+              keepChose('google')
+              void flow.continueWith('google')
+            }}
             data-testid="keep-google"
           >
             <GoogleMark />
@@ -212,6 +219,7 @@ function Ways(): JSX.Element {
           class="mp-provider"
           disabled={flow.busy()}
           onClick={() => {
+            keepChose('email')
             closeOffer()
             openSignInByEmail()
           }}

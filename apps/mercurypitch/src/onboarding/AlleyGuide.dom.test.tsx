@@ -31,6 +31,10 @@ vi.mock('@/lib/merc/stage', () => ({
   },
 }))
 vi.mock('./alley-guide.css', () => ({}))
+const track = vi.hoisted(() => vi.fn())
+vi.mock('@/features/onboarding/funnel', () => ({
+  trackNativeOnboarding: track,
+}))
 
 /** A phone upright, the doors stepping down to the right. */
 const INPUT: GuideInput = {
@@ -52,17 +56,26 @@ let lights: (DoorKey | null)[] = []
 function show({
   reduced = false,
   aside = () => false,
-}: { reduced?: boolean; aside?: () => boolean } = {}): HTMLElement {
+  opened = () => false,
+}: {
+  reduced?: boolean
+  aside?: () => boolean
+  opened?: () => boolean
+} = {}): HTMLElement {
   const { container } = render(() => (
     <AlleyGuide
       input={() => INPUT}
       reduced={() => reduced}
       aside={aside}
+      opened={opened}
       light={(door) => lights.push(door)}
     />
   ))
   return container
 }
+
+/** The onboarding's names sent, in order. */
+const sent = (): string[] => track.mock.calls.map(([event]) => event as string)
 
 const q = (root: HTMLElement, id: string): HTMLElement | null =>
   root.querySelector(`[data-testid="${id}"]`)
@@ -82,6 +95,7 @@ beforeEach(() => {
   resetOnboardingFlagForTests()
   resetAlleyGreetingForTests()
   lights = []
+  track.mockClear()
   stage.ok = true
   stage.states = []
 })
@@ -118,7 +132,7 @@ describe("Merc's welcome in the alley", () => {
     expect(mercState(root)).toBe('idle')
   })
 
-  it('shows nothing on an install whose onboarding is done', async () => {
+  it('shows nothing on an install whose onboarding is done, and counts nothing', async () => {
     localStorage.setItem(ONBOARDING_KEY, 'done')
     resetOnboardingFlagForTests()
     const root = show()
@@ -127,6 +141,23 @@ describe("Merc's welcome in the alley", () => {
 
     expect(q(root, 'alley-guide')).toBeNull()
     expect(q(root, 'alley-merc')).toBeNull()
+    expect(sent()).toEqual([])
+  })
+
+  it('counts the welcome once as it shows, and once more as a door opens from it', async () => {
+    const [opened, setOpened] = createSignal(false)
+    show({ opened })
+    await drawn()
+    expect(sent()).toEqual(['native_onboarding_welcome_view'])
+
+    setOpened(true)
+    setOpened(false)
+    setOpened(true)
+
+    expect(sent()).toEqual([
+      'native_onboarding_welcome_view',
+      'native_onboarding_welcome_complete',
+    ])
   })
 
   it('steps aside while a door is picked, and lights nothing more', async () => {

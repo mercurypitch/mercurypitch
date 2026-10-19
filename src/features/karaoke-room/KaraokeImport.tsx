@@ -34,8 +34,10 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
 import { accountHeld, hasUpgradedAccount, hasValidToken, } from '@/db/services/auth-service'
+import { trackEvent } from '@/lib/analytics'
 import { thisDeviceLower } from '@/lib/device-noun'
 import { balanceVersion } from '@/stores/billing-store'
+import { IMPORT_TAP_EVENT } from './cloud-measure'
 import { askBeforeOffering, openCloudOffer } from './cloud-offer-store'
 import type { ImportWho } from './import-gate'
 import { importAction, importState } from './import-gate'
@@ -186,7 +188,9 @@ export const KaraokeImport: Component = () => {
   )
 
   const choose = (): void => {
-    switch (importAction(importState(karaokeSongs(), who()))) {
+    const state = importState(karaokeSongs(), who())
+    trackEvent(IMPORT_TAP_EVENT[state])
+    switch (importAction(state)) {
       case 'files':
         openPicker()
         return
@@ -240,6 +244,7 @@ export const KaraokeImport: Component = () => {
     setSending(true)
     try {
       const result = await enqueueImports(files)
+      if (result.queued.length > 0) trackEvent('import_sent')
       const first = result.refused[0]
       if (first !== undefined) {
         setSheet({ kind: 'refused', refusal: first.refusal })

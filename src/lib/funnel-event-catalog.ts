@@ -121,6 +121,33 @@ export const APP_FUNNEL_EVENTS = [
   'offer_unlocked_view',
   /** "See the packs", on the reward sheet or under the progress. */
   'offer_packs_tap',
+  /** The native app's Cloud offer (paywall B, CloudOffer.tsx) shown, one
+   *  name for each place that opens it (S7b §7). Not `pricing_view`, which
+   *  is the web's own pricing page. */
+  'cloud_view_import',
+  'cloud_view_settings',
+  'cloud_view_onboarding',
+  /** Subscribe tapped on it, and what the store answered: one name an
+   *  answer (KaraokeSubscribeOutcome), `purchased` as success. */
+  'cloud_subscribe_tap',
+  'cloud_purchase_success',
+  'cloud_purchase_moved',
+  'cloud_purchase_held_elsewhere',
+  'cloud_purchase_pending',
+  'cloud_purchase_cancelled',
+  'cloud_purchase_unavailable',
+  'cloud_purchase_failed',
+  /** Import a song tapped in the Karaoke room, one name for each row of
+   *  the gate the singer was in at the tap (import-gate.ts ImportState). */
+  'import_tap_songs_left',
+  'import_tap_free_song',
+  'import_tap_none_left',
+  'import_tap_free_used',
+  'import_tap_no_account',
+  'import_tap_unknown',
+  /** Songs sent to be separated. A client's first is the onboarding
+   *  funnel's last step, the first import (S7b §7). */
+  'import_sent',
 ] as const
 
 /** Karaoke Night (src/features/karaoke-night/funnel.ts). */
@@ -218,6 +245,57 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   'onboarding_map_app_store_tap',
   /** The Map's Google Play chip or badge, the same way. */
   'onboarding_map_google_play_tap',
+  // The native app's own onboarding (apps/mercurypitch/src/onboarding, S7b
+  // §7), beside First Light's. The ingest keeps a name and no properties,
+  // so the beat, its variant and a score's band are in the name, and a
+  // beat's time is its `_complete` row's createdAt less its `_view` row's.
+  // The funnel: install, first note, range, Keep shown, `signup` (the
+  // account made, from any sign-in), `cloud_view_onboarding`,
+  // `cloud_purchase_success`, the first `import_sent`.
+  /** A new install: the onboarding flag settled due as the shell first mounts. */
+  'native_onboarding_install',
+  /** This install's beat 9 group, drawn as its onboarding first opens: the
+   *  one in ten held out of the Cloud offer (S7 D13) is told apart here. */
+  'native_onboarding_group_offer',
+  'native_onboarding_group_holdout',
+  /** Beat 1: Merc's welcome in the alley shown, and a door opened from it. */
+  'native_onboarding_welcome_view',
+  'native_onboarding_welcome_complete',
+  /** Beats 2 and 3: the layer up on the first note, and a note named. */
+  'native_onboarding_first_note_view',
+  'native_onboarding_first_note_complete',
+  /** The onboarding's first ask for the microphone, and its answer. */
+  'native_onboarding_mic_granted',
+  'native_onboarding_mic_denied',
+  /** Beat 4: the range up, a range measured, or Skip for now. */
+  'native_onboarding_range_view',
+  'native_onboarding_range_complete',
+  'native_onboarding_range_skipped',
+  /** Beat 5: the reveal up, and its Continue. */
+  'native_onboarding_reveal_view',
+  'native_onboarding_reveal_complete',
+  /** Beat 7: Keep shown with the voiceprint on it, or as Save your
+   *  progress after a skipped range; then what was chosen on it. */
+  'native_onboarding_keep_view_voiceprint',
+  'native_onboarding_keep_view_progress',
+  'native_onboarding_keep_apple',
+  'native_onboarding_keep_google',
+  'native_onboarding_keep_email',
+  'native_onboarding_keep_find_range',
+  'native_onboarding_keep_not_now',
+  /** Beat 8: the line up, scored, and its score in S7b §3.6's bands: all
+   *  ten, 7 to 9, 4 to 6, 0 to 3 notes on pitch. */
+  'native_onboarding_line_view',
+  'native_onboarding_line_complete',
+  'native_onboarding_line_sung_all',
+  'native_onboarding_line_sung_7_9',
+  'native_onboarding_line_sung_4_6',
+  'native_onboarding_line_sung_0_3',
+  /** Beat 10: landed on the Warm-up's path. */
+  'native_onboarding_path_view',
+  /** Left by Not now (or Back) at any beat, or by its own last beat. */
+  'native_onboarding_not_now',
+  'native_onboarding_done',
 ] as const
 
 /**

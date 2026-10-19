@@ -16,6 +16,7 @@ import type { ExerciseCapture } from '@/components/room-kit/useExerciseCapture'
 import { CaptureError } from '@/components/room-kit/useExerciseCapture'
 import { setAuthToken } from '@/db/services/user-service'
 import type * as VoiceprintService from '@/db/services/voiceprint-service'
+import type * as Funnel from '@/features/onboarding/funnel'
 import type * as MicSentinel from '@/lib/mic-sentinel'
 import { resetRoomArrivalHolds } from '@/stores/native-shell-store'
 import type { RenderedShell } from '../shell/render-for-test'
@@ -45,6 +46,14 @@ vi.mock('@/lib/merc/stage', () => ({
     setStill: () => undefined,
     destroy: () => undefined,
   }),
+}))
+
+// The onboarding's counts (S7b §7), heard on their way to the funnel.
+const funnel = vi.hoisted(() => ({ sent: [] as string[] }))
+
+vi.mock('@/features/onboarding/funnel', async (importOriginal) => ({
+  ...(await importOriginal<typeof Funnel>()),
+  trackNativeOnboarding: (event: string) => funnel.sent.push(event),
 }))
 
 vi.mock('@/lib/mic-sentinel', async (importOriginal) => ({
@@ -110,6 +119,7 @@ beforeEach(() => {
   localStorage.clear()
   resetOnboardingFlagForTests()
   settleOnboarding(false)
+  funnel.sent = []
 })
 
 afterEach(() => {
@@ -193,6 +203,10 @@ async function skipToKeep(s: Stand): Promise<void> {
   vi.advanceTimersByTime(SKIP_BEAT_MS)
   await settle()
 }
+
+/** The beats' counts, without the beat 9 group drawn as the layer opens. */
+const counted = (): string[] =>
+  funnel.sent.filter((event) => !event.startsWith('native_onboarding_group'))
 
 /** E2 to G4, kept on this phone before, with nobody signed in. */
 function keepRangeBefore(): void {
@@ -629,5 +643,69 @@ describe('a range this phone already keeps', () => {
 
     expect(beat()).toBe('range')
     expect(q('onboarding-see-saved')).toBeNull()
+  })
+})
+
+describe('counted (S7b §7)', () => {
+  it('counts each beat once as it shows and once as it is done, and what was chosen on Keep', async () => {
+    const s = mount('onboarding')
+    await continueFromReveal(s)
+    k('keep-not-now')?.click()
+    await settle()
+
+    expect(counted()).toEqual([
+      'native_onboarding_first_note_view',
+      'native_onboarding_mic_granted',
+      'native_onboarding_first_note_complete',
+      'native_onboarding_range_view',
+      'native_onboarding_range_complete',
+      'native_onboarding_reveal_view',
+      'native_onboarding_reveal_complete',
+      'native_onboarding_keep_view_voiceprint',
+      'native_onboarding_keep_not_now',
+      'native_onboarding_line_view',
+    ])
+  })
+
+  it('counts a skipped range, and Keep as Save your progress', async () => {
+    const s = mount('onboarding')
+    await skipToKeep(s)
+
+    expect(counted()).toEqual([
+      'native_onboarding_first_note_view',
+      'native_onboarding_mic_granted',
+      'native_onboarding_first_note_complete',
+      'native_onboarding_range_skipped',
+      'native_onboarding_keep_view_progress',
+    ])
+  })
+
+  it('counts a refused mic once, however often it is asked again, and Not now', async () => {
+    const s = mount('onboarding')
+    s.answer = async () => Promise.reject(new CaptureError('denied'))
+    q('onboarding-mic')?.click()
+    await settle()
+    q('onboarding-retry')?.click()
+    await settle()
+
+    q('onboarding-not-now')?.click()
+    await settle()
+
+    expect(counted()).toEqual([
+      'native_onboarding_first_note_view',
+      'native_onboarding_mic_denied',
+      'native_onboarding_not_now',
+    ])
+  })
+
+  it('counts nothing for the range on its own, run from Keep', async () => {
+    const s = mount('range')
+    q('onboarding-mic')?.click()
+    await slideBoth(s)
+    q('onboarding-see-voice')?.click()
+    q('onboarding-continue')?.click()
+    await settle()
+
+    expect(funnel.sent).toEqual([])
   })
 })
