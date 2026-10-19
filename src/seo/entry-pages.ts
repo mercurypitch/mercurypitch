@@ -103,28 +103,6 @@ export const OG_IMAGE = ogImage('og-image.png')
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const
 export const ABOUT_URL = 'https://about.mercurypitch.com/'
 
-/**
- * The answer to "is there an app for iPhone or Android?", worked out from the
- * store listings rather than typed into a page. The day a listing goes live
- * (src/lib/store-listings.ts), every document that asks says so, and none
- * keeps promising an app that has already shipped. A listing counts only once
- * it can be linked, the same rule the store chips follow.
- */
-export function nativeAppsAnswer(
-  listings: StoreListings = STORE_LISTINGS,
-): string {
-  const links = storeLinks(listings)
-  const iphone = links.appStore !== undefined
-  const android = links.googlePlay !== undefined
-  if (iphone && android)
-    return 'Yes. MercuryPitch is on the App Store for iPhone and on Google Play for Android, and the browser version still works everywhere with nothing to install.'
-  if (iphone)
-    return 'MercuryPitch is on the App Store for iPhone. An Android app is on the way; until it arrives, the browser version works on Android with nothing to install.'
-  if (android)
-    return 'MercuryPitch is on Google Play for Android. An iPhone app is on the way; until it arrives, the browser version works on iPhone with nothing to install.'
-  return 'Apps for iPhone and Android are on the way. Until they arrive, the browser version works on both with nothing to install, and you can add it to your home screen.'
-}
-
 export const ENTRY_PAGES: readonly EntryPage[] = [
   {
     slug: 'mirror',
@@ -782,4 +760,26 @@ export function navLinksFor(
     })),
     { href: ABOUT_URL, label: 'About MercuryPitch' },
   ]
+}
+
+/**
+ * The answer to "is there an app for iPhone or Android?", worked out from the
+ * store listings rather than typed into a page. The day a listing goes live
+ * (src/lib/store-listings.ts), every document that asks says so, and none
+ * keeps promising an app that has already shipped. A listing counts only once
+ * it can be linked, the same rule the store chips follow.
+ */
+export function nativeAppsAnswer(
+  listings: StoreListings = STORE_LISTINGS,
+): string {
+  const links = storeLinks(listings)
+  const iphone = links.appStore !== undefined
+  const android = links.googlePlay !== undefined
+  if (iphone && android)
+    return 'Yes. MercuryPitch is on the App Store for iPhone and on Google Play for Android, and the browser version still works everywhere with nothing to install.'
+  if (iphone)
+    return 'MercuryPitch is on the App Store for iPhone. An Android app is on the way; until it arrives, the browser version works on Android with nothing to install.'
+  if (android)
+    return 'MercuryPitch is on Google Play for Android. An iPhone app is on the way; until it arrives, the browser version works on iPhone with nothing to install.'
+  return 'Apps for iPhone and Android are on the way. Until they arrive, the browser version works on both with nothing to install, and you can add it to your home screen.'
 }
