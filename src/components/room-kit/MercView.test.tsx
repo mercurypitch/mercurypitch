@@ -11,12 +11,13 @@ import { MercView } from './MercView'
 const merc = vi.hoisted(() => ({
   options: [] as unknown[],
   still: [] as boolean[],
+  ok: true,
 }))
 vi.mock('@/lib/merc/stage', () => ({
   mountMercStage: (_host: HTMLElement, options: unknown) => {
     merc.options.push(options)
     return {
-      ok: true,
+      ok: merc.ok,
       setState: () => undefined,
       setVoice: () => undefined,
       setPaused: () => undefined,
@@ -37,6 +38,7 @@ const SILENT: MercVoice = {
 afterEach(() => {
   merc.options = []
   merc.still = []
+  merc.ok = true
 })
 
 describe('MercView', () => {
@@ -101,6 +103,37 @@ describe('MercView', () => {
     // Assert: none is the closed smile (the stage's default).
     expect(merc.options[0]).toMatchObject({ state: 'ride', mouth: 'buzz' })
     expect(merc.options[1]).toMatchObject({ state: 'hum', mouth: undefined })
+  })
+
+  it('says when his stage starts drawing, once, and never without WebGL', async () => {
+    // Arrange
+    const drawing = vi.fn()
+    const without = vi.fn()
+
+    // Act
+    render(() => (
+      <MercView
+        state={() => 'drop'}
+        voice={() => SILENT}
+        onReady={drawing}
+        testId="alley-merc"
+      />
+    ))
+    await vi.waitFor(() => expect(merc.options).toHaveLength(1))
+    merc.ok = false
+    render(() => (
+      <MercView
+        state={() => 'drop'}
+        voice={() => SILENT}
+        onReady={without}
+        testId="alley-merc"
+      />
+    ))
+    await vi.waitFor(() => expect(merc.options).toHaveLength(2))
+
+    // Assert
+    expect(drawing).toHaveBeenCalledTimes(1)
+    expect(without).not.toHaveBeenCalled()
   })
 
   it('hands the stage his rings when the room turns them off', async () => {

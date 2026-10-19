@@ -28,13 +28,15 @@
 import { fetchAssetRead } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import { hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
-import { batch, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, For, lazy, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import './alley.css'
 import { roomName } from '@/features/rooms/room-names'
 import { audioReporter } from '@/lib/audio-diagnostics'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
+import { NATIVE_ONBOARDING } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { holdRoomArrival, registerSkipTarget, roomArrivalHeld, } from '@/stores/native-shell-store'
+import type { AlleyGuideProps } from '../onboarding/AlleyGuide'
 import { currentTab, shellCovered } from '../shell/run-shell-store'
 import { goToTab, registerDoorClear, registerDoorOpen, } from '../shell/shell-navigation'
 import type { AlleyAmbient } from './alley-audio'
@@ -63,6 +65,19 @@ const CLEAR_MS = 320
 const SETTLE_MS = 360
 /** A measured edge that moved by less than this has not moved. */
 const MEASURE_EPSILON = 0.5
+
+/**
+ * Merc's welcome on a new install's first alley (S7b beat 1), on a build
+ * with the onboarding (`NATIVE_ONBOARDING`) and no other: the shell's
+ * ternary, so the store build keeps no chunk of it.
+ */
+const AlleyGuide: Component<AlleyGuideProps> = NATIVE_ONBOARDING
+  ? lazy(async () =>
+      import('../onboarding/AlleyGuide').then((module) => ({
+        default: module.AlleyGuide,
+      })),
+    )
+  : () => null
 
 // The alley's state outlives the component: the open unmounts it (the tab
 // changes under the clone), and Back has to find the door it opened.
@@ -230,6 +245,8 @@ export const RoomsAlley: Component = () => {
   createEffect(() => {
     if (!welcomeSeen()) setFirst(true)
   })
+  /** The door lit for Merc's welcome, one at a time (AlleyGuide). */
+  const [lit, setLit] = createSignal<DoorKey | null>(null)
 
   /**
    * The Sing door's clip lets go of its source and its decoder. It has one
@@ -652,6 +669,7 @@ export const RoomsAlley: Component = () => {
       data-phase={alley().phase}
       data-door={alley().door ?? ''}
       data-first={first() ? 'on' : 'off'}
+      data-lit={lit() ?? ''}
       onClick={onRoot}
     >
       <div class="mp-alley__plate" aria-hidden="true">
@@ -716,6 +734,7 @@ export const RoomsAlley: Component = () => {
               settling={() =>
                 alley().phase === 'settling' && alley().door === spec.key
               }
+              lit={() => lit() === spec.key}
               clipRef={(element) => {
                 singVideo = element
               }}
@@ -735,6 +754,27 @@ export const RoomsAlley: Component = () => {
           />
         </svg>
       </div>
+
+      {/* Merc's welcome, under the headline on a new install only. */}
+      {NATIVE_ONBOARDING ? (
+        <Show when={first()}>
+          <AlleyGuide
+            input={() => ({
+              w: size().w,
+              h: size().h,
+              landscape: landscape(),
+              floor: floor(),
+              top: topBottom(),
+              left: columnLeft(),
+              right: topRight(),
+              doors: doors(),
+            })}
+            reduced={reduced}
+            aside={() => alley().phase !== 'rest'}
+            light={setLit}
+          />
+        </Show>
+      ) : null}
 
       <div
         class="mp-alley__hit"

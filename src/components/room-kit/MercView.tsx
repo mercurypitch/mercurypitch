@@ -52,6 +52,12 @@ export interface MercViewProps {
   style?: JSX.CSSProperties
   /** The room's own id for him ("long-note-merc"). */
   testId: string
+  /**
+   * Called once, as his stage starts drawing: his chunk has arrived and
+   * WebGL is up. Never called without WebGL. A room that times what he
+   * does from the moment he is seen (the alley's welcome) starts there.
+   */
+  onReady?: () => void
 }
 
 export function MercView(props: MercViewProps): JSX.Element {
@@ -84,7 +90,9 @@ export function MercView(props: MercViewProps): JSX.Element {
         rings: untrack(() => props.rings),
         mouth: untrack(() => props.mouth),
       })
-      if (stage.ok) frame = requestAnimationFrame(feed)
+      if (!stage.ok) return
+      frame = requestAnimationFrame(feed)
+      props.onReady?.()
     })
   })
 

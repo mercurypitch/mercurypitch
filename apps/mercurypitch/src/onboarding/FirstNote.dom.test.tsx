@@ -51,9 +51,14 @@ interface Ways {
 function show(
   s: Stand,
   ways: Ways = { onRange: () => undefined, onSkip: () => undefined },
+  greeted = false,
 ): void {
   const Harness = (): JSX.Element => {
-    const note = useFirstNote({ capture: s.capture, still: () => false })
+    const note = useFirstNote({
+      capture: s.capture,
+      still: () => false,
+      greeted,
+    })
     controller = note
     return (
       <FirstNoteView
@@ -106,6 +111,17 @@ afterEach(() => {
 })
 
 describe('the first note', () => {
+  it("asks at once after Merc's hello in the alley: no second drop, no second hello", () => {
+    const s = stand()
+    show(s, undefined, true)
+
+    expect(line()).toBe(ONBOARDING_COPY.ask)
+    expect(controller?.mercState()).toBe('idle')
+    vi.advanceTimersByTime(GREET_MS)
+    expect(line()).toBe(ONBOARDING_COPY.ask)
+    expect(s.calls.acquire).toBe(0)
+  })
+
   it('says hello, then asks, with the example labelled and nothing captured', () => {
     const s = stand()
     show(s)

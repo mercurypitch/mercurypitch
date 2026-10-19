@@ -1,0 +1,125 @@
+/* ============================================================
+   Merc's welcome in the alley (AlleyGuide.tsx, S7b beat 1)
+   ============================================================
+
+   Loaded with the guide's chunk, so the store build carries none of it.
+   Over the doors' stage and under the headline, the tap surface and the
+   picked door's card (alley.css's order), and never in a tap's way.
+   Transforms and opacity only, as the alley's own motion. */
+
+.mp-alley-guide {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+
+/* A door picked: he steps aside while its card is up. */
+.mp-alley-guide[data-aside='on'] {
+  opacity: 0;
+}
+
+.mp-alley-guide__merc {
+  position: absolute;
+}
+
+/* The light on the cobbles under his feet (MERC_FEET of his box). */
+.mp-alley-guide__merc::before {
+  content: '';
+  position: absolute;
+  top: 81%;
+  left: 50%;
+  width: 120%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(188, 140, 255, 0.34) 0%,
+    rgba(88, 166, 255, 0.12) 55%,
+    rgba(11, 13, 18, 0) 100%
+  );
+  transform: translate(-50%, -50%);
+}
+
+.mp-alley-guide__view {
+  position: absolute;
+  inset: 0;
+}
+
+/* His line beside him, its middle at his face, on a dark pane so it reads
+   over the picture. */
+.mp-alley-guide__line {
+  position: absolute;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(11, 13, 18, 0.74);
+  color: #e6edf3;
+  font: 500 16px/1.3 var(--font-body, sans-serif);
+  text-wrap: balance;
+  opacity: 0;
+  transform: translateY(calc(-50% + 6px));
+  transition:
+    opacity 280ms ease,
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mp-alley-guide__line[data-shown='on'] {
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
+/* His hello for a screen reader, read once. */
+.mp-alley-guide__said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The doors he points at, lit one after another: the rim and the light on
+   the cobbles a picked door has, without the lift or the dim. */
+.mp-alley__door.is-lit .mp-alley__rim,
+.mp-alley__door.is-lit .mp-alley__spill {
+  opacity: 1;
+  transition-duration: 360ms;
+}
+
+/* Reduced motion: no rise, only 150 ms fades, his and the doors'. */
+@media (prefers-reduced-motion: reduce) {
+  .mp-alley-guide,
+  .mp-alley-guide__line {
+    transition-duration: 150ms;
+  }
+
+  .mp-alley-guide__line,
+  .mp-alley-guide__line[data-shown='on'] {
+    transform: translateY(-50%);
+  }
+
+  .mp-alley__door.is-lit .mp-alley__rim,
+  .mp-alley__door.is-lit .mp-alley__spill {
+    transition-duration: 150ms;
+  }
+}
+
+.mp-shell[data-reduced='on'] .mp-alley-guide,
+.mp-shell[data-reduced='on'] .mp-alley-guide__line {
+  transition-duration: 150ms;
+}
+
+.mp-shell[data-reduced='on'] .mp-alley-guide__line {
+  transform: translateY(-50%);
+}
+
+.mp-shell[data-reduced='on'] .mp-alley__door.is-lit .mp-alley__rim,
+.mp-shell[data-reduced='on'] .mp-alley__door.is-lit .mp-alley__spill {
+  transition-duration: 150ms;
+}
