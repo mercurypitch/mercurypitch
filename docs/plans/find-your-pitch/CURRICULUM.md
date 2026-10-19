@@ -97,8 +97,8 @@ waits on a person's listen to the new voices; the web lesson is built at `/learn
 - Facts: [lessons/01-what-is-a-note/FACTS.md](lessons/01-what-is-a-note/FACTS.md).
 
 **Lesson 2. Twelve notes** (made: the film's master, `rc-04`, passed its last critic round and waits
-on a person's listen and watch; the web lesson is specified and reviewed in
-[lessons/02-twelve-notes/](lessons/02-twelve-notes/), not built yet; 7:11)
+on a person's listen and watch; the web lesson is built at `/learn/02`, from its spec in
+[lessons/02-twelve-notes/](lessons/02-twelve-notes/); 7:11)
 
 - Objectives: find the twelve notes on a keyboard and on the spiral; tell a semitone from a whole
   tone by ear; know why one key has two names (C sharp, D flat); know a semitone is 100 cents, the
@@ -119,8 +119,8 @@ on a person's listen and watch; the web lesson is specified and reviewed in
   keys).
 
 **Lesson 3. Match a note** (written: the lesson, its facts and its page spec are in
-[lessons/03-match-a-note/](lessons/03-match-a-note/), reviewed; no film yet; its voice lines wait
-on the vocal coach's sign-off, and its page publishes after `/learn/02`, which its recall links to)
+[lessons/03-match-a-note/](lessons/03-match-a-note/), reviewed; no film yet; its page is built at
+`/learn/03` as a draft, on the dev site only, until the vocal coach signs off its voice lines)
 
 - YouTube title: "Can you really be tone deaf?" (the full hook goes in the thumbnail, the
   description's first line and the cold open).
