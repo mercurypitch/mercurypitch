@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HOP_MS } from '@/components/room-kit/merc-moves'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
 import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { haptics } from '@/lib/haptics'
 import type { UnlockItem } from '@/stores/notifications-store'
 import { onUnlockShown, resetNotifications, setNotificationPresenter, showNotification, } from '@/stores/notifications-store'
 import { ACTIONS_MS, END_SONG_MS, END_STEP_MS, HOP_AT_MS, LIGHT_MS, } from './path-motion'
@@ -23,7 +24,6 @@ import { freshDay } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
 import { OWNER_ROUTINE } from './warm-up-plan'
 import { enterStop, leavePath, openStop, resetWarmUpForTests, routineStopFor, routineUnlocks, skipNextStop, warmUpDay, warmUpLastMove, } from './warm-up-store'
-import type { PathHaptics } from './WarmUpPath'
 import { PULSE_MS, WarmUpPath } from './WarmUpPath'
 
 vi.mock('@/lib/haptics', () => ({
@@ -64,10 +64,7 @@ interface Mounted {
   leave: () => void
 }
 
-function mount(
-  source?: Parameters<typeof WarmUpPath>[0]['source'],
-  haptics?: PathHaptics,
-): Mounted {
+function mount(source?: Parameters<typeof WarmUpPath>[0]['source']): Mounted {
   const [shown, setShown] = createSignal(true)
   const handlers = {
     onOpenRoom: vi.fn(),
@@ -78,7 +75,7 @@ function mount(
   }
   render(() => (
     <Show when={shown()}>
-      <WarmUpPath source={source} haptics={haptics} {...handlers} />
+      <WarmUpPath source={source} {...handlers} />
     </Show>
   ))
   return { ...handlers, leave: () => setShown(false) }
@@ -98,6 +95,7 @@ const said = (): string | null =>
   null
 
 beforeEach(() => {
+  vi.clearAllMocks()
   vi.useFakeTimers()
   vi.setSystemTime(new Date(2026, 9, 19, 9, 0))
   localStorage.clear()
@@ -164,13 +162,12 @@ describe('back from a stop', () => {
     sing(0)
   })
 
-  it('the stop lights with the tick the shell hands it', () => {
-    const felt = { tick: vi.fn(), success: vi.fn() }
-    mount(undefined, felt)
-    expect(felt.tick).not.toHaveBeenCalled()
+  it('the stop lights with a tick', () => {
+    mount()
+    expect(haptics.tapLight).not.toHaveBeenCalled()
     vi.advanceTimersByTime(LIGHT_MS)
-    expect(felt.tick).toHaveBeenCalledTimes(1)
-    expect(felt.success).not.toHaveBeenCalled()
+    expect(haptics.tapLight).toHaveBeenCalledTimes(1)
+    expect(haptics.success).not.toHaveBeenCalled()
   })
 
   it('raises the card at 0.3 s and says it once, politely', () => {
@@ -274,14 +271,13 @@ describe('the end', () => {
   })
 
   it('the song lights with its burst, and Merc lands on it with a success', () => {
-    const felt = { tick: vi.fn(), success: vi.fn() }
-    mount(undefined, felt)
+    mount()
     expect(screen.queryByTestId('warm-up-burst')).toBeNull()
     vi.advanceTimersByTime(4 * END_STEP_MS + END_SONG_MS)
     expect(screen.queryByTestId('warm-up-burst')).not.toBeNull()
-    expect(felt.success).not.toHaveBeenCalled()
+    expect(haptics.success).not.toHaveBeenCalled()
     vi.advanceTimersByTime(HOP_MS)
-    expect(felt.success).toHaveBeenCalledTimes(1)
+    expect(haptics.success).toHaveBeenCalledTimes(1)
   })
 
   it('Done leaves; Sing a song and the song stop open the song list', () => {

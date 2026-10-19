@@ -17,6 +17,7 @@ import { ROUTINE_RESULT_HOLD_MS } from '@/components/room-kit/routine-stop'
 import { EXERCISE_ECHO_STARS } from '@/lib/domain/exercise-contracts'
 import { silence, tone } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import { installHaptics } from '@/lib/platform'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { CLOUD_LAYER } from './echo-geometry'
@@ -153,17 +154,18 @@ vi.mock('@/db/services/voiceprint-service', () => ({
   loadLocalVoiceprints: () => [],
 }))
 
-const felt = vi.hoisted(() => ({ taps: 0, successes: 0 }))
-vi.mock('@/lib/haptics', () => ({
-  haptics: {
-    tapLight: () => {
-      felt.taps += 1
-    },
-    success: () => {
-      felt.successes += 1
-    },
+// The room's haptics, counted through the seam the native app fills with
+// the device's own at boot (installHaptics, main.tsx): what an iPhone feels.
+const felt = { taps: 0, successes: 0 }
+installHaptics({
+  tapLight: () => {
+    felt.taps += 1
   },
-}))
+  success: () => {
+    felt.successes += 1
+  },
+  warning: () => undefined,
+})
 
 const { CaptureError } = await import('./useEchoCapture')
 const { EchoRoom } = await import('./EchoRoom')

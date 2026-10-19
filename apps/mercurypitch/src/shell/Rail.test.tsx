@@ -66,8 +66,7 @@ describe('Rail', () => {
 
     expect(onPick).toHaveBeenCalledTimes(1)
     expect(onPick.mock.calls[0]?.[0]).toMatchObject({ id: 'ear' })
-    // The platform haptic, not src/lib/haptics — navigator.vibrate is dead
-    // on iOS and this is an iOS-first surface.
+    // The platform haptic: the smallest the device has.
     expect(platform.hapticTap).toHaveBeenCalledTimes(1)
   })
 

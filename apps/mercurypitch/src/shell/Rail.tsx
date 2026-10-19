@@ -6,8 +6,7 @@
 // separated circle beside it (kit contract §9). Every target is at least
 // 44 pt, the selected item is marked by a filled symbol AND a tinted plate
 // AND `aria-current`, and every pick answers with the smallest haptic the
-// device has — `hapticTap()` from the platform package, never
-// `src/lib/haptics.ts`, whose `navigator.vibrate` does nothing on iOS.
+// device has — `hapticTap()` from the platform package.
 //
 // The rail's composition is fixed (build brief §2): it does not consult
 // `mobileBarTabs()` or `isTabVisible()`, so the Ear Lab cannot vanish from it
