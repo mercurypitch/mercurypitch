@@ -181,6 +181,21 @@ export function mercSing(which: Which, midi: number, on: boolean): void {
   }
 }
 
+/**
+ * Turns a Merc to listen while `on` (the other Merc sings, or the viewer
+ * does) and back to idle after. Like every reaction it is skipped while
+ * animations are paused or reduced: the still image carries the moment.
+ */
+export function mercListen(which: Which, on: boolean): void {
+  const m = mercs[which]
+  if (!m || Motion.paused) return
+  try {
+    m.setState(on ? 'listen' : 'idle')
+  } catch {
+    // the still image carries on
+  }
+}
+
 export function mercCelebrate(which: Which, ms = 1600): void {
   const m = mercs[which]
   if (!m || Motion.paused) return

@@ -2,7 +2,8 @@
 // Season map tests — what a lesson builds on, opens and lights
 // ============================================================
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type * as Season from './season'
 import type { Lesson } from './season'
 import { ancestors, EDGES, lessonPath, LESSONS, lessonStatus, unlocks, } from './season'
 
@@ -213,5 +214,45 @@ describe('lessonStatus', () => {
 
     // Assert
     expect(states).toEqual(['done', 'done', 'done'])
+  })
+})
+
+describe('a draft lesson (drafts.ts)', () => {
+  /** The season as a build with drafts shown ("1") or hidden ("0") reads it. */
+  async function seasonBuilt(drafts: '1' | '0'): Promise<typeof Season> {
+    vi.stubEnv('VITE_DRAFT_LESSONS', drafts)
+    vi.resetModules()
+    return import('./season')
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it('is ready to read where the build shows drafts, with its page and its fifteen minutes', async () => {
+    // Act
+    const season = await seasonBuilt('1')
+
+    // Assert
+    const L = season.LESSONS[3]
+    expect([L.page, L.len, L.film]).toEqual([
+      '/learn/03',
+      '15 minutes',
+      undefined,
+    ])
+    expect(season.lessonStatus(L, false)).toBe('read')
+  })
+
+  it('is planned, with no page and no length, where the build hides drafts', async () => {
+    // Act
+    const season = await seasonBuilt('0')
+
+    // Assert: exactly what the season map said before the page existed
+    const L = season.LESSONS[3]
+    expect(L.page).toBeUndefined()
+    expect(L.len).toBeUndefined()
+    expect(season.lessonStatus(L, false)).toBe('planned')
+    expect(season.LESSONS[1].page).toBe('/learn/01')
   })
 })

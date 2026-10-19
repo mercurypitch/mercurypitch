@@ -3,8 +3,11 @@
 // ============================================================
 //
 // One AudioContext, made on the first tap that asks for sound; nothing plays
-// before a play button is pressed. The page boots no framework, so it keeps
-// its own small graph rather than the app's audio engine, and follows the
+// before a play button is pressed. A page that listens through the
+// microphone hands the same context to its analysis (`Sound.context()`),
+// and holds every sound off while a take is open (`Sound.hush`). The page
+// boots no framework, so it keeps its own small graph rather than the app's
+// audio engine, and follows the
 // house envelope rules (.claude/memory/audio-pop-free-playback.md): every
 // start is an exponential rise from the 1e-4 floor, every stop a
 // setTargetAtTime decay (time constant release / 5) with the oscillators
@@ -47,6 +50,9 @@ type AudioContextClass = typeof AudioContext
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
 let state: SoundState = 'unset'
+// While a microphone take is open nothing may sound, or the take would hear
+// the page instead of the singer (`Sound.hush`).
+let hushed = false
 const waves: { soft?: PeriodicWave; merc?: PeriodicWave } = {}
 const listeners = new Set<(s: SoundState) => void>()
 const live = new Set<Voice>()
@@ -129,7 +135,7 @@ interface Graph {
 
 /** Builds and starts a voice at `freq`, opening on the house attack; null while sound is not on. */
 function build(freq: number, o: VoiceOptions): Graph | null {
-  if (ctx === null || master === null || state !== 'on') return null
+  if (ctx === null || master === null || state !== 'on' || hushed) return null
   const context = ctx
   const t = context.currentTime
   const merc = o.kind === 'merc'
@@ -312,7 +318,7 @@ export function contourVoice(
 
 /** A plucked string: harmonic n at sin(n pi p) / n^2 for a pluck at p, the higher ones dying faster. */
 function pluck(freq: number, gain = 0.3): void {
-  if (ctx === null || master === null || state !== 'on') return
+  if (ctx === null || master === null || state !== 'on' || hushed) return
   const t = ctx.currentTime
   const out = ctx.createGain()
   const lp = ctx.createBiquadFilter()
@@ -345,7 +351,7 @@ function pluck(freq: number, gain = 0.3): void {
 }
 
 function tick(freq = 1500, gain = 0.09): void {
-  if (ctx === null || master === null || state !== 'on') return
+  if (ctx === null || master === null || state !== 'on' || hushed) return
   const t = ctx.currentTime
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
@@ -378,12 +384,35 @@ export const Sound = {
    * says so, offering to turn it on, and the visuals play silently.
    */
   canPlay(): boolean {
+    if (hushed) return false
     if (state === 'off') {
       toast('Sound is off, so this one plays silently.', true)
       return false
     }
     if (state === 'unset') Sound.set('on')
     return ensure() !== null
+  },
+  /**
+   * The page's one AudioContext, made now if no tap has made it yet, for a
+   * consumer that listens rather than plays: the microphone's analysis runs
+   * on the same clock as every note the page sings (kit/listen.ts). It is
+   * made whatever the sound switch says, since listening plays nothing, and
+   * must be asked for inside a tap. Null where the browser has no Web Audio.
+   */
+  context(): AudioContext | null {
+    return ensure()
+  },
+  /**
+   * Holds every sound off while `on`: a microphone take is open, and the
+   * page must play nothing into it. Anything sounding stops at once; plays
+   * meanwhile run their visuals silently, as with sound off, but say nothing.
+   */
+  hush(on: boolean): void {
+    hushed = on
+    if (on) stopAll()
+  },
+  get hushed(): boolean {
+    return hushed
   },
   voice,
   pluck,

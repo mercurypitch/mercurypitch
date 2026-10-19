@@ -1,0 +1,390 @@
+/* ============================================================
+   Lesson voice — the parts every voice lesson shares
+   ============================================================
+   The band chart's frames, the care card, the comfort check, the warm-up,
+   the briefing, the checkpoint's card and its states, the four feelings,
+   the voice choice, the recall box and the Go deeper drawer (Lesson 3
+   WEB-SPEC; Lessons 5, 7 and 9 reuse them). The app's pitch-canvas set
+   joins the series code as tokens: target amber is lesson-base's --amber,
+   the singer's violet and the in-tune mint are here, and mint is only ever
+   drawn beside the words "in the band". Long labels wrap: a voice lesson's
+   buttons say whole sentences ("Lower: sing with blue Merc, around A3"). */
+
+:root {
+  /* the singer's line (src/features/stem-mixer/pitch-canvas-visuals.ts) */
+  --singer: #a78bfa;
+  /* in tune: the band's lit edge */
+  --mint: #80ffca;
+}
+
+.choice,
+.voice-btn,
+.sing-card .btn,
+.ticket .btn,
+.warm-card .btn {
+  white-space: normal;
+  line-height: 1.25;
+  padding-block: 9px;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------- the band chart's frames */
+.band-chart {
+  position: relative;
+}
+.band-chart > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sing-chart {
+  height: 240px;
+  border-radius: var(--r-md);
+  background: radial-gradient(100% 90% at 50% 40%, #121927, #0b0f16);
+  border: 1px solid var(--hair);
+  overflow: hidden;
+}
+.octave-tag {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: 500 var(--fs-12) / 1.2 var(--f-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--singer);
+  border: 1px solid color-mix(in srgb, var(--singer) 45%, transparent);
+  background: rgba(13, 17, 23, 0.8);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- the care card */
+.care {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 16px;
+  display: grid;
+  gap: 8px;
+}
+.care li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--ink);
+}
+.care .ico {
+  color: var(--aqua);
+  margin-top: 3px;
+}
+.comfort-line b {
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- Go deeper and the recall: disclosures */
+.deeper {
+  margin-top: 12px;
+  border-top: 1px dashed var(--hair-2);
+}
+.deeper > summary,
+.recall-box > summary,
+.warmup > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.deeper > summary::-webkit-details-marker,
+.recall-box > summary::-webkit-details-marker,
+.warmup > summary::-webkit-details-marker {
+  display: none;
+}
+.deeper > summary .ico,
+.recall-box > summary .ico,
+.warmup > summary .ico {
+  transition: transform 0.25s var(--ease);
+}
+.deeper[open] > summary .ico,
+.recall-box[open] > summary .ico,
+.warmup[open] > summary .ico {
+  transform: rotate(90deg);
+}
+.deeper > summary {
+  font: 500 var(--fs-12) / 1 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.deeper p {
+  margin: 4px 0 6px;
+  font-size: var(--fs-16);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.deeper p b {
+  color: var(--ink);
+}
+.recall {
+  margin-top: 18px;
+  max-width: 560px;
+}
+.recall-box > summary {
+  padding: 0 16px;
+  border-radius: var(--r-md);
+  border: 1px dashed var(--hair-2);
+  color: var(--ink-2);
+}
+.recall-box[open] > summary {
+  border-style: solid;
+  color: var(--ink);
+}
+.recall-quiz {
+  margin-top: 10px;
+}
+.quiz-score {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ---------------------------------------------------------------- the voice choice */
+.voice-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.voice-choice .voice-btn {
+  --c: var(--chrome);
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 64px;
+  padding: 8px 16px 8px 8px;
+  border-radius: var(--r-md);
+  text-align: left;
+}
+.voice-btn img {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  object-fit: contain;
+}
+.voice-btn b {
+  color: var(--c);
+}
+.voice-btn[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--c) 75%, transparent);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent);
+}
+
+/* ---------------------------------------------------------------- Sing it: the checkpoint */
+.sing3 {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: start;
+}
+.sing3-copy p {
+  max-width: 58ch;
+}
+.sing-status {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--aqua);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: color-mix(in srgb, var(--aqua) 6%, transparent);
+  font-size: var(--fs-16);
+  line-height: 1.45;
+  color: var(--ink);
+}
+.sing-card {
+  display: grid;
+  gap: 18px;
+  padding: clamp(16px, 2.6vw, 26px);
+  scroll-margin-top: calc(var(--mast) + 12px);
+}
+.sing-panel > :first-child,
+.sing-live > :first-child {
+  margin-top: 0;
+}
+.sing-card .sing-btns {
+  margin: 14px 0 0;
+}
+.sing-card p {
+  margin: 0 0 12px;
+}
+.comfort-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.comfort-head .ico {
+  color: var(--aqua);
+  margin-top: 3px;
+}
+.listen-line {
+  font-size: var(--fs-18);
+  color: var(--ink);
+}
+.doctor {
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair-2);
+  color: var(--ink-2);
+}
+.warmup {
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  padding: 4px 14px 14px;
+}
+.warmup:not([open]) {
+  padding-bottom: 4px;
+}
+.warm-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  margin: 4px 0 12px;
+}
+.warm-card {
+  display: grid;
+  gap: 10px;
+  align-content: space-between;
+  padding: 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(255, 255, 255, 0.02);
+}
+.warm-card p {
+  margin: 0;
+}
+.warm-card .btn {
+  justify-self: start;
+}
+.warm-rules {
+  color: var(--ink);
+}
+.brief {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--aqua) 30%, transparent);
+  background: color-mix(in srgb, var(--aqua) 6%, transparent);
+}
+.brief p {
+  margin: 0;
+}
+.brief-how {
+  margin-top: 14px;
+}
+.brief-lines {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  color: var(--ink-2);
+}
+/* listening only: Merc's notes on a tap, no take to count or read */
+.sing-live[data-mode='listen'] .note-head,
+.sing-live[data-mode='listen'] .sing-readout {
+  display: none;
+}
+.note-head {
+  font: 500 var(--fs-12) / 1.2 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sing-meter {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 14px;
+}
+.ring.ring-sm {
+  width: 156px;
+  margin: 0;
+  flex: none;
+}
+.ring-sm .lbl {
+  left: 10%;
+  right: 10%;
+}
+.ring-sm .lbl b {
+  font-size: var(--fs-14);
+}
+.ring-sm .lbl span {
+  display: block;
+  font-size: var(--fs-12);
+  line-height: 1.25;
+}
+.sing-readout .k {
+  margin: 0 0 4px;
+  font: 500 var(--fs-12) / 1 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sing-readout .v {
+  margin: 0;
+  font: 600 var(--fs-22) / 1.15 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.note-reading {
+  margin-top: 14px;
+}
+.reading-line {
+  font: 500 var(--fs-18) / 1.4 var(--f-display);
+  color: var(--ink);
+}
+.octave-line {
+  color: var(--singer);
+}
+.feel-q {
+  font-size: var(--fs-18);
+}
+.feelings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.feelings .btn {
+  flex: 1 1 130px;
+}
+.feelings .btn[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--aqua) 70%, transparent);
+  background: color-mix(in srgb, var(--aqua) 14%, transparent);
+  opacity: 1;
+}
+.count-line {
+  font: 500 var(--fs-22) / 1.3 var(--f-display);
+  color: var(--ink);
+}
+.closing {
+  font-size: var(--fs-18);
+  color: var(--ink);
+}
+.listen-notes .btn {
+  flex: 1 1 90px;
+}
+@media (max-width: 860px) {
+  .sing3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 420px) {
+  .sing-chart {
+    height: 210px;
+  }
+  .ring.ring-sm {
+    width: 128px;
+  }
+}

@@ -3,7 +3,7 @@
 // ============================================================
 
 import { TAU } from './dom'
-import { COLOR, logPos } from './notes'
+import { COLOR, logPos, rgba } from './notes'
 import type { Voice, VoiceOptions } from './sound'
 import { Sound } from './sound'
 
@@ -19,7 +19,8 @@ export function rangeFill(input: HTMLInputElement, color?: string): void {
 /**
  * A slider that sounds while it is held: pointer down to up, or a run of
  * arrow keys (the note ends 0.7 s after the last key). A range input, or any
- * element that is one (`role="slider"`, as Lesson 2's vertical ruler is).
+ * element that is one (`role="slider"`, as Lesson 2's vertical ruler and
+ * Lesson 3's drawn handles are).
  */
 export function holdToPlay(
   input: HTMLElement,
@@ -126,6 +127,8 @@ export interface RailSpec {
   f: number
   glow?: number
   label?: boolean
+  /** The bead's colour (default chrome): a voice lesson colours it by note (notes.ts `noteColor`). */
+  color?: string
 }
 
 /** A vertical pitch rail (110 to 880 Hz, octaves equally spaced) with a chrome bead; returns the bead's y. */
@@ -161,16 +164,17 @@ export function drawRail(
     }
   }
   const y = yOf(f)
+  const tint = spec.color ?? COLOR.chrome
   const halo = ctx.createRadialGradient(x, y, 0, x, y, 22 + glow * 14)
-  halo.addColorStop(0, `rgba(195,204,214,${0.35 + glow * 0.3})`)
-  halo.addColorStop(1, 'rgba(195,204,214,0)')
+  halo.addColorStop(0, rgba(tint, 0.35 + glow * 0.3))
+  halo.addColorStop(1, rgba(tint, 0))
   ctx.fillStyle = halo
   ctx.beginPath()
   ctx.arc(x, y, 22 + glow * 14, 0, TAU)
   ctx.fill()
   const bead = ctx.createRadialGradient(x - 2.5, y - 2.5, 1, x, y, 8)
   bead.addColorStop(0, '#ffffff')
-  bead.addColorStop(0.5, COLOR.chrome)
+  bead.addColorStop(0.5, tint)
   bead.addColorStop(1, '#5b6b7b')
   ctx.fillStyle = bead
   ctx.beginPath()

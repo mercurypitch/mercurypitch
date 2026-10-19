@@ -8,26 +8,36 @@ import { A3, A4, hz } from './notes'
 import { Sound } from './sound'
 import { hideToast, toast } from './toast'
 
+/** The sound gate's two lines: before sound is on, and once it is. */
+export interface GateLines {
+  readonly off: string
+  readonly on: string
+}
+
 /**
  * The masthead's Sound switch, the hero's gate and the toast's "Turn on" all
  * drive one state. The gate's line while sound is off is the page's own, as
- * its markup words it (each lesson says what its sound is about).
+ * its markup words it (each lesson says what its sound is about). A lesson
+ * whose gate says more once sound is on (a voice lesson names the
+ * microphone) passes its own line.
  */
-export function initSoundSwitch(): void {
+export function initSoundSwitch(lines: Partial<GateLines> = {}): void {
   const sw = q('#soundSwitch')
   const gate = q('#gate')
   const gateText = q('#gateText')
   const gateBtn = q('#gateBtn')
   const offText =
-    (gateText.textContent ?? '').replace(/\s+/g, ' ').trim() ||
-    'This lesson is about sound. Tap to turn it on: nothing plays until you press a play button.'
+    lines.off ??
+    ((gateText.textContent ?? '').replace(/\s+/g, ' ').trim() ||
+      'This lesson is about sound. Tap to turn it on: nothing plays until you press a play button.')
+  const onText =
+    lines.on ??
+    'Sound is on. Each example plays only when you press its button.'
   Sound.subscribe((state) => {
     const on = state === 'on'
     sw.setAttribute('aria-pressed', String(on))
     gate.classList.toggle('is-on', on)
-    gateText.textContent = on
-      ? 'Sound is on. Each example plays only when you press its button.'
-      : offText
+    gateText.textContent = on ? onText : offText
     gateBtn.textContent = on ? 'Turn sound off' : 'Turn sound on'
   })
   const toggle = (): void => {

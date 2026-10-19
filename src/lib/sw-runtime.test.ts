@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { allEntryPaths } from '@/seo/entry-pages'
@@ -240,22 +240,28 @@ describe('the standalone documents', () => {
     }
   })
 
-  it('leaves every lesson page alone, at its clean path and as its document', () => {
-    // Each Find Your Pitch lesson is a build input of its own (learn/NN.html)
-    // and is linked at both addresses; the shell in its place would be a page
-    // with no lesson on it.
+  it('leaves every lesson page alone, at its clean path and as its document, a draft as much as a live one', () => {
+    // Each Find Your Pitch lesson is a build input of its own and is linked
+    // at both addresses; the shell in its place would be a page with no
+    // lesson on it. vite.config.ts takes every learn/NN.html as an input
+    // (tools/draft-lessons.ts), so the documents themselves are the list,
+    // and that list holds the drafts as well: a production build leaves a
+    // draft's document out (src/features/lessons/kit/drafts.ts), and the
+    // right answer for its path is then the asset layer's 404 page, which
+    // the shell would hide.
     const config = readFileSync(
       resolve(process.cwd(), 'vite.config.ts'),
       'utf8',
     )
-    const lessons = [...config.matchAll(/'learn\/(\d{2})\.html'/g)].map(
-      (match) => match[1],
-    )
+    expect(config).toContain('...lessonInputs(__dirname, draftsShown)')
+    const lessons = readdirSync(resolve(process.cwd(), 'learn'))
+      .map((name) => /^(\d{2})\.html$/.exec(name)?.[1])
+      .filter((n): n is string => n !== undefined)
 
-    expect(lessons).toEqual(expect.arrayContaining(['01', '02']))
+    expect(lessons).toEqual(expect.arrayContaining(['01', '02', '03']))
     for (const n of lessons) {
-      expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}`)).toBe(true)
-      expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}.html`)).toBe(true)
+      expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}`), n).toBe(true)
+      expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}.html`), n).toBe(true)
     }
   })
 

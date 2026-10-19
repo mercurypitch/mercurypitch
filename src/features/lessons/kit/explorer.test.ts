@@ -2,7 +2,7 @@
 // Lesson explorer tests — a card's links from any lesson's page
 // ============================================================
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { cardActions, createExplorer } from './explorer'
 import type { Lesson } from './season'
@@ -140,5 +140,44 @@ describe('createExplorer', () => {
       'What is a note?',
     )
     expect(cardLinks()).toEqual(['/learn/01#watch', '/learn/01#lesson'])
+  })
+})
+
+describe("a draft lesson on Lesson 1's map (drafts.ts)", () => {
+  /** Lesson 1's explorer as a build with drafts shown ("1") or hidden ("0") draws it, Lesson 3 selected. */
+  async function lessonThreeFromLessonOne(drafts: '1' | '0'): Promise<void> {
+    vi.stubEnv('VITE_DRAFT_LESSONS', drafts)
+    vi.resetModules()
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    explorerPage()
+    explorerBuilt({ current: 1 }).select(3, false)
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it('links a shown draft to its own page, to read and never to watch', async () => {
+    // Act
+    await lessonThreeFromLessonOne('1')
+
+    // Assert
+    expect(document.querySelector('#exCardHost h3')?.textContent).toBe(
+      'Match a note',
+    )
+    expect(cardLinks()).toEqual(['/learn/03#lesson'])
+  })
+
+  it('shows a hidden draft as planned, with no link to the page the build leaves out', async () => {
+    // Act
+    await lessonThreeFromLessonOne('0')
+
+    // Assert
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(card?.querySelector('h3')?.textContent).toBe('Match a note')
+    expect(card?.textContent).toContain('Planned')
+    expect(card?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
+    expect(card?.innerHTML).not.toContain('/learn/03')
   })
 })
