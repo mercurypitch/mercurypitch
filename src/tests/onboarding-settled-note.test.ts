@@ -72,4 +72,23 @@ describe('settledNote', () => {
     const note = settledNote(tone(440, 120))
     expect(note?.voicedSeconds).toBeGreaterThan(0)
   })
+
+  it('names a note the take held when it splits evenly between two', () => {
+    // A4 past the onset trim (its first 22 frames fall inside it), then C5
+    // for as long: 50 frames of each. The mean of the two middle values
+    // lies halfway, a note nobody sang; the lower of them is an A4.
+    const take = [...tone(440, 72), ...tone(523.25, 50, 72 * HOP)]
+    const note = settledNote(take)
+    expect(note?.note).toBe('A4')
+    expect(note?.hz).toBeCloseTo(440, 0)
+  })
+
+  it('reads the Hz from the note it names, never from between two', () => {
+    // 50 frames of each, but the onset trim leaves 28 of the A4: the take
+    // is a C5. Its Hz is the C5's, not the 481.6 between the two.
+    const take = [...tone(440, 50), ...tone(523.25, 50, 50 * HOP)]
+    const note = settledNote(take)
+    expect(note?.note).toBe('C5')
+    expect(note?.hz).toBeCloseTo(523.25, 0)
+  })
 })

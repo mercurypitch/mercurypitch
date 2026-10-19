@@ -22,7 +22,7 @@ import { WaveIcon } from '../icons'
 import { VOICEPRINT_ASK, voiceprintAskBody, voiceprintAskTitle, } from './account-copy'
 import { VoiceprintCard } from './AccountOffer'
 import { keepableVoiceprint } from './keep-voiceprint'
-import { addableVoiceprints, keepVoiceprints, voiceprintAskAsking, voiceprintAskNotNow, voiceprintAskOpen, voiceprintAskSaving, } from './voiceprint-ask'
+import { addableVoiceprints, keepVoiceprints, voiceprintAskAsking, voiceprintAskNotNow, voiceprintAskOpen, voiceprintAskSaving, voiceprintAskUp, } from './voiceprint-ask'
 
 /** The ask, over whatever the sign-in landed on. */
 export function VoiceprintAskSheet(): JSX.Element {
@@ -33,13 +33,9 @@ export function VoiceprintAskSheet(): JSX.Element {
   const print = createMemo(() =>
     voiceprintAskOpen() ? keepableVoiceprint() : null,
   )
-  // Only over the account it asked for: a sign-out closes it unanswered.
-  const isOpen = (): boolean =>
-    voiceprintAskOpen() && accountHeld() && count() > 0
-
   return (
     <Sheet
-      isOpen={isOpen()}
+      isOpen={voiceprintAskUp()}
       close={voiceprintAskNotNow}
       ariaLabel={voiceprintAskTitle(count())}
       class="mp-offer-sheet"

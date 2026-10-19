@@ -29,6 +29,7 @@ import { declineOffer, offerOpen } from './settings/account-offer'
 import { closeLatencySheet, latencySheetOpen } from './settings/latency-sheet'
 import { dismissSettingsAlert, settingsAlertOpen, } from './settings/settings-alert'
 import { signInBack, signInOpen } from './settings/sign-in-state'
+import { voiceprintAskNotNow, voiceprintAskUp } from './settings/voiceprint-ask'
 
 export type RailItemId = 'rooms' | 'stage' | 'ear' | 'progress' | 'more'
 
@@ -206,7 +207,8 @@ function shellOverlayOpen(): boolean {
     signInOpen() ||
     latencySheetOpen() ||
     cloudOfferUp() ||
-    offerOpen()
+    offerOpen() ||
+    voiceprintAskUp()
   )
 }
 
@@ -233,7 +235,8 @@ export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
     signInOpen() ||
     latencySheetOpen() ||
     cloudOfferUp() ||
-    offerOpen()
+    offerOpen() ||
+    voiceprintAskUp()
   ) {
     return 'sheet'
   }
@@ -305,10 +308,13 @@ export function performBack(host: BackHost): BackOutcome {
       // The sign-in and latency sheets open over More's screens, and Keep,
       // the account offer, over the Sing room or Settings, never beside
       // the More sheet itself, so whichever is up is the one this press is
-      // for. The sign-in sheet steps back a pane before it closes; closing
-      // the latency sheet ends a run in flight; Keep and the Cloud offer
-      // take Back as Not now.
-      if (signInOpen()) signInBack()
+      // for. The voiceprint ask rises over whatever a sign-in landed on,
+      // once the sheet that signed in has gone, and is drawn over every
+      // other sheet, so it is first. The sign-in sheet steps back a pane
+      // before it closes; closing the latency sheet ends a run in flight;
+      // Keep, the Cloud offer and the voiceprint ask take Back as Not now.
+      if (voiceprintAskUp()) voiceprintAskNotNow()
+      else if (signInOpen()) signInBack()
       else if (latencySheetOpen()) closeLatencySheet()
       else if (cloudOfferUp()) closeCloudOffer('not-now')
       else if (offerOpen()) declineOffer()

@@ -20,6 +20,7 @@
 // there while this phone holds takes the account could add, declined or not.
 
 import { batch, createSignal } from 'solid-js'
+import { accountHeld } from '@/db/services/auth-service'
 import { getUserId } from '@/db/services/user-service'
 import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, } from '@/db/services/voiceprint-service'
 import { showNotification } from '@/stores/notifications-store'
@@ -54,6 +55,18 @@ export const voiceprintAskSaving = saving
 export function addableVoiceprints(): number {
   kept()
   return listAdoptableVoiceprints().length
+}
+
+/**
+ * Whether the ask is on screen: open, over the account it asked for (a
+ * sign-out closes it unanswered), with takes left to add or being added
+ * (a keep retags them before it uploads, and the sheet stays up, saving,
+ * until it ends). The sheet is drawn by this and Back answers by it
+ * (shell-navigation.ts), so a press never goes to an ask nobody can see,
+ * nor past one somebody can. Reactive.
+ */
+export function voiceprintAskUp(): boolean {
+  return open() && accountHeld() && (saving() || addableVoiceprints() > 0)
 }
 
 /**
