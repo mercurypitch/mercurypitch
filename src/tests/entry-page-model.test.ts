@@ -340,6 +340,28 @@ describe('the legal nav in every entry document', () => {
   )
 })
 
+// Bing's SEO scan reports an image with no alt attribute, and a scanner that
+// reads raw markup counts an image tag inside a comment too. Decorative
+// images keep alt="" (an alt attribute, read as "skip this"); none may lack
+// the attribute, and no comment may spell out the tag.
+describe('the images a crawler reads in the raw markup', () => {
+  const tagsWithoutAlt = (html: string) =>
+    (html.match(/<img\b[^>]*>/gi) ?? []).filter((tag) => !/\salt=/i.test(tag))
+
+  it('gives every image in every generated entry an alt attribute', () => {
+    for (const page of ENTRY_PAGES) {
+      expect(tagsWithoutAlt(renderEntryPage(page)), page.slug).toEqual([])
+    }
+  })
+
+  it.each(['index.html', '404.html', 'delete-account.html'])(
+    'gives every image in the hand-written %s an alt attribute',
+    (file) => {
+      expect(tagsWithoutAlt(repoFile(file))).toEqual([])
+    },
+  )
+})
+
 // The generated documents take their cross-links from the model, but nothing
 // generates the rooms nav in index.html: a page added to the model has to be
 // added there by hand. The four search-intent pages reached the 404 page's nav

@@ -182,7 +182,9 @@ ${JSON.stringify(node, null, 2)
          hidden element, so a fast boot now pays nothing while a slow boot —
          the one the prelude exists for — still gets the art while it is up.
          index.html keeps its preload: there the curtain really does paint it.
-         The mark below is a real <img> the preload scanner finds anyway. -->
+         The mark below is a real image element, which the preload scanner
+         finds anyway. (Named without its tag: an SEO scanner that reads raw
+         markup counts a tag here as an image with no alt text.) -->
     <link rel="preload" as="image" href="/brand-mark.svg" />
     <link rel="stylesheet" href="/src/styles/entry-prelude.css" />
   </head>

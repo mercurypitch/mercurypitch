@@ -268,6 +268,16 @@ describe('PianoNightApp', () => {
     expectSilentBrowserBoundary()
   })
 
+  // The entry document's heading hides once the room mounts, so the room
+  // names itself: a crawler that renders the page found no h1 without this.
+  it('names the room in its one top-level heading', () => {
+    render(() => <PianoNightApp />)
+
+    const headings = screen.getAllByRole('heading', { level: 1 })
+    expect(headings).toHaveLength(1)
+    expect(headings[0]).toHaveTextContent('Piano Night')
+  })
+
   it('activates one audio clock and the fallback synth only after Play', async () => {
     render(() => <PianoNightApp />)
 

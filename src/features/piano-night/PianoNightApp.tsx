@@ -909,6 +909,9 @@ export function PianoNightApp(): JSX.Element {
         data-testid="piano-night-stage"
         inert={blockingModal()}
       >
+        {/* The room's one heading. The stage is the page, so it is named for
+            assistive tech and search rather than shown. */}
+        <h1 class={styles.srOnly}>Piano Night</h1>
         <div
           class={styles.roomPlate}
           style={background.resolvedStyle()}
