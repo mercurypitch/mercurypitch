@@ -489,8 +489,8 @@ other, paused off screen, and the still images when WebGL fails or would run on 
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand (18 October 2026, `4804c9a62`, with `src/`, `public/`
-and `learn/` unchanged at `465ff0fa9`), beyond the parts Lessons 2 to 4 promote into the kit (Toys
+Found in the kit and the app as they stand (18 October 2026, `4d5891ac0`, with `src/`, `public/`
+and `learn/` unchanged at `0f416f33a`), beyond the parts Lessons 2 to 4 promote into the kit (Toys
 table):
 
 - `kit/quiz.ts`: Lesson 2's three changes, which this page's two quizzes need, and its slot for a
@@ -531,7 +531,7 @@ table):
   (`:447-448`).
 - `src/lib/sw-runtime.ts`: `/learn/06` and `/learn/06.html` in `STANDALONE_DOCUMENT_PATHS`, as
   `/learn/01` is (`sw-runtime.ts:131-135`).
-- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, `:61-66`): Lesson 6's entry.
+- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, `:62-67`): Lesson 6's entry.
 - `public/learn/lesson-06-og.jpg`: the share card, 1200 x 630, a still of the hero: the title over
   the tune line on C with its leap bracketed.
 - The page's head, as Lesson 1's (`learn/01.html:9-58`):

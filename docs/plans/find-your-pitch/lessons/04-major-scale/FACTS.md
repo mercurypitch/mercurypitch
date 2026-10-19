@@ -1,12 +1,12 @@
 # Facts: Lesson 4, The major scale and home
 
 `claim | source | how it was verified`. Everything the page says, shows or plays must be here. App
-claims cite the source at `8a0e8f069` on the branch `claude/music-theory-tutorial-curriculum-cej8h7`
-by `file:line`, and none of the cited app files changed up to `b23da0be0`; lines added in the
-review pass (18 Oct 2026) cite `6b075c23f` on the same branch, where `learn/01.html` stands as
-`40c240341` left it. Earlier lessons' facts are cited by lesson and number. Web sources were
-fetched and read on 18 Oct 2026, and quotations are verbatim. Lesson 4 is a text-only package (no
-film), so nothing here is narrated: every line is page copy or a page sound.
+claims cite the source at `51f1c53de` on main by `file:line`; they were read at `aae9fcf78`, and
+none of the cited app files changed up to `edafcbdd5`; lines added in the review pass (18 Oct 2026)
+were read at `ce832dd8a`, where `learn/01.html` stands as `10d549d5f` left it. Earlier lessons'
+facts are cited by lesson and number. Web sources were fetched and read on 18 Oct 2026, and
+quotations are verbatim. Lesson 4 is a text-only package (no film), so nothing here is narrated:
+every line is page copy or a page sound.
 
 ## Sources
 
@@ -89,7 +89,7 @@ Full references. The facts below use the short names in bold, with the section o
 44. A slug carrying `scaleId: 'scale-major-c4'` would start sopranos on C5 (top note C6) and tenors on C4 (top note C5), the top notes of those presets; a slug with no notes starts each voice on its preset's anchor, a fourth or so above the bottom of the range (bass A2, baritone C3, tenor E3, alto A3, mezzo-soprano C4, soprano E4), so each run's top note sits seven to nine semitones under the top of the range | the seeded `scale-major-c4` is C4 to B4 (its seed, `src/stores/melody-store.ts:391-397` with the degrees at `:364`, named at `:471`); `applyExerciseSlug` moves it into the range by whole octaves (`src/App.tsx:605-620`; `octaveShiftIntoRange` and `fitPhraseToRange`, `src/lib/vocal-range.ts:36-101`), then Scale Runner folds the start down if the top would not fit (`:114-122`); with no notes it starts on the anchor (`ScaleRunnerExercise.tsx:39-47`; `getDefaultNote`, `vocal-range.ts:132-134`), which the code describes as "A natural note a fourth or so above the bottom, so that a one-octave run up from it stays clear of BOTH ends" (`src/stores/settings-store.ts:63-65`) | code, re-run for all six presets as a script replica (scratchpad `startnotes.py`); the seven to nine semitones are counted from `VOCAL_RANGES`
 45. A slug's difficulty holds for every run until the viewer leaves Scale Runner | Scale Runner reads the launch difficulty at each start (`use-scale-runner-controller.ts:69-80`); the override is cleared when the exercise is exited (`resetExerciseLaunchState`, `src/App.tsx:550-558`; `src/features/practice-intelligence/launch-override.ts:7-10`) | code (WEB-SPEC)
 46. Ear Lab is at mercurypitch.com/ear-lab | `src/seo/entry-pages.ts:397-402`; Lesson 2 FACTS 31 | code
-47. Ear Lab's Home: "A cadence, one note — name the degree, tap or sing"; "A short cadence tells your ear where home is. Then one note sounds — name its scale degree."; seven pads numbered 1 to 7, with Do, Re, Mi, Fa, Sol, La, Ti under them; answers by Tap or by "Sing or play" ("Octave does not matter; sing or play the degree anywhere comfortable"); a new key every round (a tonic from C3 to B3); 12 rounds; a miss replays the note "— hear it fall home" | `src/features/ear-lab/instruments.ts:75-82`; `src/features/ear-lab/HomeDrill.tsx:53-64`, `:73-76`, `:208`, `:368-373`, `:419-430`; `src/lib/ear/item-bank.ts:48-56`, `:161-166`; `src/features/ear-lab/use-home-controller.ts:72` | code; the page calls the cadence "a few chords that set home" (chords are Lesson 12)
+47. Ear Lab's Home: "A cadence, one note: name the degree, tap or sing"; "A short cadence tells your ear where home is. Then one note sounds. Name its scale degree."; seven pads numbered 1 to 7, with Do, Re, Mi, Fa, Sol, La, Ti under them; answers by Tap or by "Sing or play" ("Octave does not matter; sing or play the degree anywhere comfortable"); a new key every round (a tonic from C3 to B3); 12 rounds; a miss replays the note "Hear it fall home" | `src/features/ear-lab/instruments.ts:75-82`; `src/features/ear-lab/HomeDrill.tsx:53-64`, `:73-76`, `:208`, `:368-373`, `:419-430`; `src/lib/ear/item-bank.ts:48-56`, `:161-166`; `src/features/ear-lab/use-home-controller.ts:72` | code; the page calls the cadence "a few chords that set home" (chords are Lesson 12)
 48. Ear Lab's The Pull: "A cadence plants the key, then two degrees sound, one after the other. Which one wants to move? The leading tone leans hardest, up to home; ..." | `src/features/ear-lab/PullDrill.tsx:131`; `src/features/ear-lab/instruments.ts:91-98`; its table (`src/lib/ear/tendency.ts:24-32`) agrees with 22 and 26 on ti | code; Go deeper, one line, which claims nothing about the other degrees
 49. MercuryPitch's pitch line names black keys with sharps, so Scale Runner labels D major's notes D, E, F#, G, A, B, C# | Lesson 2 FACTS 28; Scale Runner's note label is `midiToNoteName` (`ScaleRunnerExercise.tsx:197`, `:239`), whose names are sharps (`src/lib/frequency-to-note.ts:71-89`) | code; WEB-SPEC only (the staircase spells each scale as 13 does)
 

@@ -20,7 +20,7 @@ from 1; to keep the two apart, these are numbered B1, B2 and so on. Newest last.
   A move keeps its storyboard length and is anchored by its start (a drop is 0.4 s, a hop 0.6 s,
   a push 2.0 s), never by two mapped ends, which would stretch or squeeze it.
 - **B4.** The Merc bundles are built from `src/lib/merc` as it stands at the repository's HEAD
-  (`0f82eabed`; the folder last changed in `23be86cd0`), read-only, by Lesson 1's
+  (`71e709ed2`; the folder last changed in `af4018810`), read-only, by Lesson 1's
   `tools/build-merc.mjs`; every shader swap still matched once. This build has `glideMouth`,
   which the slides' `ride` needs for the "ooh" mouth (Lesson 1's 6ef814b06 build did not).
 - **B5.** No Merc pass is rendered in phase 1: the talking mouth follows each line's envelope, and
