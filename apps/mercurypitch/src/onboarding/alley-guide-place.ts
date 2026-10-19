@@ -12,6 +12,10 @@
 //
 // His box is square, his feet at MERC_FEET of its height (MercView): the
 // box can run on past his feet, over the dock, where nothing is drawn.
+//
+// He is never so big that his line has no room beside him: an iPad on its
+// side gives him a smaller share than its short side would, so his hello
+// still fits in the headline's column.
 
 import { MERC_FEET } from '@/components/room-kit/MercView'
 
@@ -76,14 +80,20 @@ function sideFor(room: number, most: number): number | null {
 
 /** Where he stands for the welcome, or null where there is no room. */
 export function guidePlace(input: GuideInput): GuidePlace | null {
-  const most = Math.min(
-    GUIDE_MAX,
-    Math.round(GUIDE_SHARE * Math.min(input.w, input.h)),
-  )
   const feet = input.floor - FEET_OVER_DOCK
   const x = input.left
   // The column on its side; upright, the screen less its gutter.
   const right = input.landscape ? input.right - 16 : input.w - 16
+  // His share of the screen, but no wider than leaves his line its least
+  // room beside him: on its side the headline's column is 236 px, and an
+  // iPad's share of him (180 px) would leave his hello none. Where even
+  // GUIDE_MIN would, he stands at his share without it.
+  const share = Math.min(
+    GUIDE_MAX,
+    Math.round(GUIDE_SHARE * Math.min(input.w, input.h)),
+  )
+  const roomy = Math.floor((right - LINE_MIN - LINE_GAP - x) / BODY_RIGHT)
+  const most = roomy >= GUIDE_MIN ? Math.min(share, roomy) : share
   // Upright, whatever door stands over him or his line at his biggest is
   // what he stands under; on his side only the headline is.
   const reach = x + most * BODY_RIGHT + LINE_GAP + LINE_MAX

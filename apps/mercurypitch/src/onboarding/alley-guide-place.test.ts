@@ -113,11 +113,33 @@ describe('Merc in the alley', () => {
     )
   })
 
+  it('on an iPad on its side, is no bigger than leaves his line room beside him in the column', () => {
+    const place = guidePlace({
+      w: 1180,
+      h: 820,
+      landscape: true,
+      floor: 730,
+      top: 300,
+      left: 16,
+      right: 268,
+      doors: [{ x0: 300, x1: 420, y1: 600 }],
+    })
+
+    expect(place).not.toBeNull()
+    if (place === null) return
+    expect(place.size).toBeGreaterThanOrEqual(GUIDE_MIN)
+    expect(place.size).toBeLessThan(GUIDE_MAX)
+    expect(place.line).not.toBeNull()
+    expect((place.line?.x ?? 0) + (place.line?.width ?? 0)).toBeLessThanOrEqual(
+      268 - 16,
+    )
+  })
+
   it('is not there at all where the room under the doors is too small for him', () => {
     expect(guidePlace({ ...PHONE, floor: 640 })).toBeNull()
   })
 
-  it('stands without his line where there is no room beside him', () => {
+  it('stands without his line where there is no room beside him even at his least', () => {
     const place = guidePlace({
       w: 844,
       h: 390,
@@ -125,7 +147,7 @@ describe('Merc in the alley', () => {
       floor: 326,
       top: 150,
       left: 16,
-      right: 200,
+      right: 160,
       doors: [],
     })
 
