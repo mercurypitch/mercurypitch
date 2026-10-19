@@ -78,6 +78,9 @@ export interface RenderEntryPageOptions {
   /** The store listings the banner is worked out from. Tests only; the build
    *  uses the shipped ones (src/lib/store-listings.ts). */
   listings?: StoreListings
+  /** The released Find Your Pitch lessons, linked after Home in the nav.
+   *  The build reads them off learn/ (tools/lesson-links.ts). */
+  lessons?: readonly { href: string; label: string }[]
 }
 
 export function renderEntryPage(
@@ -95,7 +98,7 @@ export function renderEntryPage(
   const robots = unlisted.includes(page.slug)
     ? 'noindex, follow'
     : 'index, follow'
-  const nav = navLinksFor(page, unlisted)
+  const nav = navLinksFor(page, unlisted, options.lessons)
     .map((link) => `        <a href="${esc(link.href)}">${esc(link.label)}</a>`)
     .join('\n')
   const legalNav = LEGAL_DOCUMENT_LINKS.map(

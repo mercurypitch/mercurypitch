@@ -9,10 +9,12 @@
     <title>What is a note? Find Your Pitch, Lesson 1 | MercuryPitch</title>
     <meta
       name="description"
-      content="Why do 220 Hz and 440 Hz have the same name? A ten-minute lesson with live sound toys: what a note is, why notes come back an octave higher, and how to read A4 and C4. With the episode and the Season 1 map."
+      content="Why do 220 Hz and 440 Hz share a name? A ten-minute lesson with sound toys: what a note is, why notes come back an octave higher, and how to read A4 and C4."
     />
     <link rel="canonical" href="https://mercurypitch.com/learn/01" />
-    <meta name="robots" content="index, follow" />
+    <!-- max-image-preview:large lets Search and Discover show the share card
+         at full width; Discover asks for it before it uses a large image. -->
+    <meta name="robots" content="index, follow, max-image-preview:large" />
 
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -56,6 +58,74 @@
       name="twitter:image:alt"
       content="The title card: Find Your Pitch, Lesson 01, What is a note?, above a glowing five-line staff with a blue note, an orange note and chrome notes."
     />
+    <!-- What a search engine or an assistant reads this page as: a free lesson
+         in the Find Your Pitch series, from the organization index.html
+         defines. Every value repeats something the page already says, so it
+         changes when they do; the headline is also this lesson's link text
+         in every entry document's nav (tools/lesson-links.ts). No
+         datePublished until the release that puts the lesson on
+         mercurypitch.com; no VideoObject until the episode plays here
+         (docs/plans/find-your-pitch/SEARCH.md). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "@id": "https://mercurypitch.com/learn/01#lesson",
+        "headline": "What is a note?",
+        "alternativeHeadline": "If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?",
+        "description": "Why do 220 Hz and 440 Hz share a name? A ten-minute lesson with sound toys: what a note is, why notes come back an octave higher, and how to read A4 and C4.",
+        "url": "https://mercurypitch.com/learn/01",
+        "mainEntityOfPage": "https://mercurypitch.com/learn/01",
+        "image": "https://mercurypitch.com/learn/lesson-01-og.jpg",
+        "inLanguage": "en-GB",
+        "learningResourceType": "Lesson",
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT10M",
+        "teaches": [
+          "What a note is",
+          "Pitch and frequency in hertz",
+          "The octave",
+          "Note names such as A4 and C4"
+        ],
+        "isAccessibleForFree": true,
+        "position": 1,
+        "isPartOf": {
+          "@type": "CreativeWorkSeries",
+          "name": "Find Your Pitch"
+        },
+        "author": {
+          "@type": "Organization",
+          "@id": "https://mercurypitch.com/#organization",
+          "name": "MercuryPitch",
+          "url": "https://mercurypitch.com/"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "@id": "https://mercurypitch.com/#organization",
+          "name": "MercuryPitch",
+          "url": "https://mercurypitch.com/"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "MercuryPitch",
+            "item": "https://mercurypitch.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "What is a note?"
+          }
+        ]
+      }
+    </script>
     <!-- A lesson is its own document, like delete-account.html: every word of
          it is in this markup, so it reads without the script; the module adds
          the sound, the toys, the Mercs and the motion. The service worker

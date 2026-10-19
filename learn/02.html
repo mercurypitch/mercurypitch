@@ -9,10 +9,12 @@
     <title>Twelve notes: Find Your Pitch, Lesson 2 | MercuryPitch</title>
     <meta
       name="description"
-      content="Musicians only use seven letters, so where do the other five notes come from? A ten-minute lesson with live sound toys: find the twelve notes on a keyboard, tell a semitone from a tone by ear, see why one key has two names, and learn what a cent is. With the Season 1 map."
+      content="Musicians use seven letters, so where do the other five notes come from? A ten-minute lesson on the twelve notes, semitones and tones, sharps, flats and cents."
     />
     <link rel="canonical" href="https://mercurypitch.com/learn/02" />
-    <meta name="robots" content="index, follow" />
+    <!-- max-image-preview:large lets Search and Discover show the share card
+         at full width; Discover asks for it before it uses a large image. -->
+    <meta name="robots" content="index, follow, max-image-preview:large" />
 
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -56,6 +58,74 @@
       name="twitter:image:alt"
       content="The title card: Find Your Pitch, Lesson 02, Twelve notes, above a glowing five-line staff with a blue note, an orange note, a chrome bead and chrome notes, one of them sharp."
     />
+    <!-- What a search engine or an assistant reads this page as: a free lesson
+         in the Find Your Pitch series, from the organization index.html
+         defines. Every value repeats something the page already says, so it
+         changes when they do; the headline is also this lesson's link text
+         in every entry document's nav (tools/lesson-links.ts). No
+         datePublished until the release that puts the lesson on
+         mercurypitch.com; no VideoObject until the episode plays here
+         (docs/plans/find-your-pitch/SEARCH.md). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "@id": "https://mercurypitch.com/learn/02#lesson",
+        "headline": "Twelve notes",
+        "alternativeHeadline": "Musicians only use seven letters, so where do the other five notes come from?",
+        "description": "Musicians use seven letters, so where do the other five notes come from? A ten-minute lesson on the twelve notes, semitones and tones, sharps, flats and cents.",
+        "url": "https://mercurypitch.com/learn/02",
+        "mainEntityOfPage": "https://mercurypitch.com/learn/02",
+        "image": "https://mercurypitch.com/learn/lesson-02-og.jpg",
+        "inLanguage": "en-GB",
+        "learningResourceType": "Lesson",
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT10M",
+        "teaches": [
+          "The twelve notes on a keyboard",
+          "Semitones and tones",
+          "Sharps and flats",
+          "Cents"
+        ],
+        "isAccessibleForFree": true,
+        "position": 2,
+        "isPartOf": {
+          "@type": "CreativeWorkSeries",
+          "name": "Find Your Pitch"
+        },
+        "author": {
+          "@type": "Organization",
+          "@id": "https://mercurypitch.com/#organization",
+          "name": "MercuryPitch",
+          "url": "https://mercurypitch.com/"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "@id": "https://mercurypitch.com/#organization",
+          "name": "MercuryPitch",
+          "url": "https://mercurypitch.com/"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "MercuryPitch",
+            "item": "https://mercurypitch.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Twelve notes"
+          }
+        ]
+      }
+    </script>
     <!-- A lesson is its own document, like learn/01.html: every word of it is
          in this markup, so it reads without the script; the module adds the
          sound, the toys, the Mercs and the motion. The service worker leaves
