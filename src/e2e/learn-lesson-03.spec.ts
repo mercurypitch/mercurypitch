@@ -216,6 +216,10 @@ test.describe('Sing it, on a steady A3 from the fake microphone', () => {
   }) => {
     const sent: string[] = []
     page.on('request', (r) => {
+      // A host behind Cloudflare's proxy, such as dev.mercurypitch.com, gets
+      // the edge's own scripts on every page (Web Analytics, bot checks), which
+      // post under /cdn-cgi/. They carry no audio and are not the page's.
+      if (new URL(r.url()).pathname.startsWith('/cdn-cgi/')) return
       if (r.method() !== 'GET') sent.push(`${r.method()} ${r.url()}`)
     })
     await page.goto('/learn/03#sing')
