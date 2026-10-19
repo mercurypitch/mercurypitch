@@ -5047,7 +5047,11 @@ async function main() {
       '--autoplay-policy=no-user-gesture-required',
       '--mute-audio',
       // `--angle gl`: Merc's WebGL drawn as on a device, for a shot of him.
-      ...(args.angle === null ? [] : [`--use-angle=${args.angle}`]),
+      // On a real GL the hardware video decoder (the Sing door's clip) takes
+      // WebGL down for the rest of the run, so it decodes in software.
+      ...(args.angle === null
+        ? []
+        : [`--use-angle=${args.angle}`, '--disable-accelerated-video-decode']),
     ],
   })
 
