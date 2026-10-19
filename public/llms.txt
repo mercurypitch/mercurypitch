@@ -58,6 +58,10 @@ does it.
 - [Which Singer Has My Vocal Range](https://mercurypitch.com/which-singer-has-my-vocal-range):
   Matches your measured range against the ranges well-known singers cover. It
   compares notes, not timbre — a shared range is not a shared sound.
+- [Karaoke App](https://mercurypitch.com/karaoke-app): The karaoke side in one
+  place: example songs or songs you own, synced lyrics, live pitch scoring,
+  key change, playlists with a singer per song, and Jam Rooms for singing
+  together. Opens Karaoke Night.
 
 ## Lessons
 
@@ -67,6 +71,15 @@ page with the whole lesson in its text, live sound examples and its episode.
 - [Lesson 1: What is a note?](https://mercurypitch.com/learn/01): Why 220 Hz
   and 440 Hz share a name. What a note is, why notes come back an octave
   higher, and how to read names like A4 and C4.
+
+## Where it runs
+
+- In a current browser on phones, tablets and computers, with nothing to
+  install. It can also be added to a home screen and opened like an app.
+- Apps for iPhone and Android are in development and not yet in the stores.
+- A TV's browser can play songs prepared on a phone or computer, with the
+  lyrics on screen. Most TV browsers cannot use a microphone, so singing with
+  live scoring needs a phone, a tablet or a computer.
 
 ## About the project
 
