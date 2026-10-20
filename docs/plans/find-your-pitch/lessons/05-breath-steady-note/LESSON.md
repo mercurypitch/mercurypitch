@@ -202,8 +202,8 @@ If hoarseness or discomfort lasts more than a couple of weeks, see a doctor (a G
 and throat specialist). If it's very painful, or breathing or swallowing is hard, get help straight
 away."
 
-Keep the voice you chose in Lesson 3, or choose now: [ Lower: sing with blue Merc, around A3 ]
-[ Higher: sing with orange Merc, around A4 ]
+Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
+[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
 
 **Warm-up, optional, about a minute.** Three sighs: a quiet "hoo" sliding down, like a relieved
 sigh. Then, if you like, lip trills ("brrr", lips loose, up a little and back), or hum, or sing a
@@ -429,10 +429,13 @@ thing as before, more plainly.
   easily, at about speaking volume. Hold the note until the ring closes, or stop sooner if you
   need to."
 - The voice line, shared with Lessons 6 and 7. Before: "Your voice from Lesson 3, or choose now:"
-  After: "Keep the voice you chose in Lesson 3, or choose now:" On this page the line shows only
-  when no choice is stored (WEB-SPEC, Toys 6, state 2), so here it asks the singer to pick the
-  same voice again or a new one; Lessons 6 and 7 plan to show a stored choice pressed. If the coach
-  or the owner would rather this page say only what it asks, "Choose a voice:" is the short form.
+  After: "Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:" On
+  this page the line shows only when no choice is stored (WEB-SPEC, Toys 6, state 2), so it asks
+  for a choice and assumes none. The review's first rewrite, "Keep the voice you chose in Lesson 3,
+  or choose now:", assumed a stored one; the page still prints it (`learn/05.html:1295`) until it
+  takes this line. Lessons 6 and 7 show a stored choice pressed, under "Keep the voice you chose
+  before, or change it:". If the coach or the owner would rather this page say only what it asks,
+  "Choose a voice:" is the short form.
 - The warm-up's cue, shared with Lessons 3 and 7. Before: "Follow the shape, not Merc's notes."
   After: "Copy the way Merc's voice slides, not the exact notes."
 

@@ -325,11 +325,13 @@ States:
    its list naming all six of REQ-GVC-020's conditions, and its two buttons (FACTS 50), through the
    kit's comfort check that Lesson 3 adds (`kit/comfort.ts`), with no microphone step after it.
 2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
-   (`aria-pressed`, at least 44 px), under LESSON.md's "Keep the voice you chose in Lesson 3, or
-   choose now", read from and stored in `fyp-voice` inside try/catch (FACTS 52). A stored choice
-   shows pressed and can be changed, and nothing waits on it. With none stored, neither is pressed
-   and the next state waits for a choice, before "Just listen today" plays anything too, because the
-   voice picks the Merc who sings, as on Lesson 5's page (its WEB-SPEC, Toys 6).
+   (`aria-pressed`, at least 44 px), under LESSON.md's line, in two forms: "Keep the voice you chose
+   before, or change it:" with a choice stored, and "Choose a voice to sing with. If you chose one
+   in an earlier lesson, pick it again:" with none. Read from and stored in `fyp-voice` inside
+   try/catch (FACTS 52). A stored choice shows pressed and can be changed, and nothing waits on it.
+   With none stored, neither is pressed and the next state waits for a choice, before "Just listen
+   today" plays anything too, because the voice picks the Merc who sings, as on Lesson 5's page (its
+   WEB-SPEC, Toys 6).
 3. **Just listen today** (listen-only mode): LESSON.md's line with the doctor lines (FACTS 51, 55);
    Play the first version and Play the second version sing Merc's versions on a tap in the chosen
    voice, the path lighting as each plays; Start the guide and Move do are not shown, and nothing
