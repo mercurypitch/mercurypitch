@@ -2194,8 +2194,12 @@ function closeRunningTour(): void {
   // Untracked: `startTour` writes both signals right after this, and a caller
   // inside a tracked scope must not subscribe to what it is about to write.
   const step = untrack(walkthroughStep)
-  const onLast = step >= untrack(tourSteps).length - 1
-  trackTour(onLast ? 'tour_done' : 'tour_exit', runningTourKey, step + 1)
+  const shown = untrack(tourSteps).length
+  const onLast = step >= shown - 1
+  trackTour(onLast ? 'tour_done' : 'tour_exit', runningTourKey, {
+    step: step + 1,
+    of: shown,
+  })
   runningTourKey = null
 }
 
@@ -2223,7 +2227,7 @@ export function startTour(steps: WalkthroughStep[], key: TourKey): void {
   setWalkthroughActive(true)
   setWalkthroughStep(0)
   runningTourKey = key
-  trackTour('tour_start', key)
+  trackTour('tour_start', key, { of: shown.length })
 }
 
 /** Start the spotlight tour for a given tab (no-op if it has none). */
@@ -2300,11 +2304,10 @@ export function prevWalkthroughStep(): void {
  */
 export function endWalkthrough(reason: 'done' | 'exit' = 'exit'): void {
   if (runningTourKey !== null) {
-    trackTour(
-      reason === 'done' ? 'tour_done' : 'tour_exit',
-      runningTourKey,
-      walkthroughStep() + 1,
-    )
+    trackTour(reason === 'done' ? 'tour_done' : 'tour_exit', runningTourKey, {
+      step: walkthroughStep() + 1,
+      of: tourSteps().length,
+    })
   }
   runningTourKey = null
   // Mark the guide section of the step the tour ends on as completed

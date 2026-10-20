@@ -27,8 +27,15 @@ export const MIRROR_METRIC_KEYS: ReadonlySet<string> = new Set([
   'steadiness',
 ])
 
-/** Which tour, and which step of it. Tour ids never change and are integers. */
-export const TOUR_METRIC_KEYS: ReadonlySet<string> = new Set(['tour', 'step'])
+/**
+ * Which tour, which step of it, and how many steps that run showed. Tour ids
+ * never change and are integers.
+ */
+export const TOUR_METRIC_KEYS: ReadonlySet<string> = new Set([
+  'tour',
+  'step',
+  'of',
+])
 
 // Typed against the catalog: renaming `results_view` breaks the typecheck here
 // instead of silently dropping its metrics. The tour entries are built from

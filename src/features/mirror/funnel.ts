@@ -30,7 +30,7 @@ export const trackFunnel = createFunnel<FunnelEvent>({
     card_shared: AD_CONVERSIONS.card_shared,
   },
   // The worker keeps metrics for results_view (its voice numbers) and for
-  // the tour events (tour and step).
+  // the tour events (tour, step and of).
   metricEvents: ['results_view'],
 })
 

@@ -10,11 +10,15 @@ vi.mock('@/lib/defaults', async (importOriginal) => ({
 
 describe('tourMetrics', () => {
   it('turns a tour key into its number', () => {
-    expect(tourMetrics('exercises', 3)).toEqual({ tour: 8, step: 3 })
+    expect(tourMetrics('exercises', 3, 6)).toEqual({ tour: 8, step: 3, of: 6 })
   })
 
-  it('carries a null step for an event with no step', () => {
-    expect(tourMetrics('home', null)).toEqual({ tour: 2, step: null })
+  it('carries nulls for an event with no place in a tour', () => {
+    expect(tourMetrics('home', null, null)).toEqual({
+      tour: 2,
+      step: null,
+      of: null,
+    })
   })
 })
 
@@ -40,17 +44,24 @@ describe('trackTour on the wire', () => {
     vi.restoreAllMocks()
   })
 
-  it('sends the tour number and step as the request body metrics on an exit', () => {
-    trackTour('tour_exit', 'home', 3)
+  it('sends the tour number, step and steps shown as the body metrics on an exit', () => {
+    trackTour('tour_exit', 'home', { step: 3, of: 7 })
     const body = sentBody()
     expect(body.event).toBe('tour_exit')
-    expect(body.metrics).toEqual({ tour: 2, step: 3 })
+    expect(body.metrics).toEqual({ tour: 2, step: 3, of: 7 })
   })
 
-  it('sends a null step when a tour event has none', () => {
-    trackTour('tour_start', 'home')
+  it('sends the steps shown and a null step on a start', () => {
+    trackTour('tour_start', 'home', { of: 7 })
     const body = sentBody()
     expect(body.event).toBe('tour_start')
-    expect(body.metrics).toEqual({ tour: 2, step: null })
+    expect(body.metrics).toEqual({ tour: 2, step: null, of: 7 })
+  })
+
+  it('sends neither a step nor steps shown on an offer', () => {
+    trackTour('tour_offer', 'home')
+    const body = sentBody()
+    expect(body.event).toBe('tour_offer')
+    expect(body.metrics).toEqual({ tour: 2, step: null, of: null })
   })
 })

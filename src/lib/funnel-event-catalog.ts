@@ -315,7 +315,7 @@ export const ONBOARDING_FUNNEL_EVENTS = [
 ] as const
 
 /**
- * The tour events, the ones whose `tour` and `step` numbers ride along as
+ * The tour events, the ones whose `tour`, `step` and `of` numbers ride along as
  * metrics (the worker's `cleanMirrorMetrics` keeps them). One list for both
  * halves: the client passes it as `metricEvents` and the worker builds its
  * allowlist entries from it, so they cannot drift.

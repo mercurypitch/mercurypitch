@@ -44,34 +44,59 @@ describe('tour events', () => {
     nextWalkthroughStep()
     nextWalkthroughStep()
     endWalkthrough()
-    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'home', 3)
+    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'home', {
+      step: 3,
+      of: 5,
+    })
   })
 
   it('reports a finish when Next runs past the last step', () => {
     startTour(steps(2), 'path')
     nextWalkthroughStep()
     nextWalkthroughStep()
-    expect(trackTour).toHaveBeenLastCalledWith('tour_done', 'path', 2)
+    expect(trackTour).toHaveBeenLastCalledWith('tour_done', 'path', {
+      step: 2,
+      of: 2,
+    })
   })
 
   it('reports a finish when the close is told the tour is done', () => {
     startTour(steps(3), 'guide')
     endWalkthrough('done')
-    expect(trackTour).toHaveBeenLastCalledWith('tour_done', 'guide', 1)
+    expect(trackTour).toHaveBeenLastCalledWith('tour_done', 'guide', {
+      step: 1,
+      of: 3,
+    })
   })
 
-  it('reports the start of a tour with its key and no step', () => {
+  it('reports the start of a tour with the steps it shows and no step', () => {
     startTour(steps(2), 'mixer')
-    expect(vi.mocked(trackTour).mock.calls).toEqual([['tour_start', 'mixer']])
+    expect(vi.mocked(trackTour).mock.calls).toEqual([
+      ['tour_start', 'mixer', { of: 2 }],
+    ])
+  })
+
+  it('counts only the steps a tour shows, not a step whose target is missing', () => {
+    const shown = steps(3)
+    startTour(
+      [
+        ...shown,
+        { ...shown[0], targetSelector: '#not-on-this-page', whenPresent: true },
+      ],
+      'home',
+    )
+    expect(vi.mocked(trackTour).mock.calls).toEqual([
+      ['tour_start', 'home', { of: 3 }],
+    ])
   })
 
   it('closes a running tour before the next one starts', () => {
     startTour(steps(3), 'home')
     startTour(steps(2), 'exercises')
     expect(vi.mocked(trackTour).mock.calls).toEqual([
-      ['tour_start', 'home'],
-      ['tour_exit', 'home', 1],
-      ['tour_start', 'exercises'],
+      ['tour_start', 'home', { of: 3 }],
+      ['tour_exit', 'home', { step: 1, of: 3 }],
+      ['tour_start', 'exercises', { of: 2 }],
     ])
   })
 
@@ -80,9 +105,9 @@ describe('tour events', () => {
     nextWalkthroughStep()
     startTour(steps(3), 'guide')
     expect(vi.mocked(trackTour).mock.calls).toEqual([
-      ['tour_start', 'guide'],
-      ['tour_done', 'guide', 2],
-      ['tour_start', 'guide'],
+      ['tour_start', 'guide', { of: 2 }],
+      ['tour_done', 'guide', { step: 2, of: 2 }],
+      ['tour_start', 'guide', { of: 3 }],
     ])
   })
 
@@ -93,7 +118,10 @@ describe('tour events', () => {
     expect(trackTour).not.toHaveBeenCalled()
     expect(walkthroughActive()).toBe(true)
     endWalkthrough()
-    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'home', 1)
+    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'home', {
+      step: 1,
+      of: 3,
+    })
   })
 
   it('writes no walkthrough-seen key and completes no section on a handover', () => {
@@ -107,7 +135,10 @@ describe('tour events', () => {
     startTour(steps(3, 'practice'), 'guide')
     nextWalkthroughStep()
     skipSection()
-    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'guide', 2)
+    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'guide', {
+      step: 2,
+      of: 3,
+    })
     expect(walkthroughActive()).toBe(false)
   })
 
@@ -122,8 +153,8 @@ describe('tour events', () => {
     endWalkthrough()
     endWalkthrough()
     expect(vi.mocked(trackTour).mock.calls).toEqual([
-      ['tour_start', 'home'],
-      ['tour_exit', 'home', 1],
+      ['tour_start', 'home', { of: 2 }],
+      ['tour_exit', 'home', { step: 1, of: 2 }],
     ])
   })
 

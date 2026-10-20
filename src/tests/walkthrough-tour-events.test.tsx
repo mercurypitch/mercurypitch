@@ -42,7 +42,10 @@ describe('the tour controls and the funnel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
 
-    expect(trackTour).toHaveBeenLastCalledWith('tour_done', 'home', 3)
+    expect(trackTour).toHaveBeenLastCalledWith('tour_done', 'home', {
+      step: 3,
+      of: 3,
+    })
   })
 
   it('reports an exit, on the step it was left on, when Skip tour is clicked', () => {
@@ -51,7 +54,10 @@ describe('the tour controls and the funnel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     fireEvent.click(screen.getByRole('button', { name: 'Skip tour' }))
 
-    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'path', 2)
+    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'path', {
+      step: 2,
+      of: 3,
+    })
   })
 
   it('reports an exit when the overlay behind the tooltip is clicked', () => {
@@ -61,7 +67,10 @@ describe('the tour controls and the funnel', () => {
       .parentElement?.parentElement as HTMLElement
     fireEvent.click(overlay)
 
-    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'exercises', 1)
+    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'exercises', {
+      step: 1,
+      of: 3,
+    })
   })
 
   it('reports an exit when Escape is pressed', () => {
@@ -69,6 +78,9 @@ describe('the tour controls and the funnel', () => {
     render(() => <Walkthrough />)
     fireEvent.keyDown(document.body, { key: 'Escape' })
 
-    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'guitar', 1)
+    expect(trackTour).toHaveBeenLastCalledWith('tour_exit', 'guitar', {
+      step: 1,
+      of: 3,
+    })
   })
 })

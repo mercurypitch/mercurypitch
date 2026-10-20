@@ -9,10 +9,15 @@ import worker from './index'
 import { cleanMirrorMetrics, MIRROR_METRIC_KEYS, TOUR_METRIC_KEYS, } from './mirror-metrics'
 
 describe('cleanMirrorMetrics', () => {
-  it('keeps tour and step on a tour event and drops every other key', () => {
+  it('keeps tour, step and of on a tour event and drops every other key', () => {
     expect(
-      cleanMirrorMetrics('tour_exit', { tour: 3, step: 2, accuracy: 90 }),
-    ).toBe('{"tour":3,"step":2}')
+      cleanMirrorMetrics('tour_exit', {
+        tour: 3,
+        step: 2,
+        of: 7,
+        accuracy: 90,
+      }),
+    ).toBe('{"tour":3,"step":2,"of":7}')
   })
 
   it('drops a metric that arrives as a string', () => {
@@ -90,7 +95,7 @@ describe('cleanMirrorMetrics', () => {
   })
 
   it('exposes the two key sets the events draw from', () => {
-    expect([...TOUR_METRIC_KEYS].sort()).toEqual(['step', 'tour'])
+    expect([...TOUR_METRIC_KEYS].sort()).toEqual(['of', 'step', 'tour'])
     expect([...MIRROR_METRIC_KEYS].sort()).toEqual([
       'accuracy',
       'highMidi',
@@ -141,12 +146,12 @@ describe('POST /api/mirror/event', () => {
       {} as ExecutionContext,
     )
 
-  it('stores a tour event with its tour and step as the metrics JSON', async () => {
+  it('stores a tour event with its tour, step and steps shown as the metrics JSON', async () => {
     const { env, inserts } = envRecordingInserts()
     const response = await post(env, {
       clientId: 'client-0001',
       event: 'tour_exit',
-      metrics: { tour: 2, step: 3 },
+      metrics: { tour: 2, step: 3, of: 7 },
     })
     expect(response.status).toBe(201)
     expect(inserts).toHaveLength(1)
@@ -155,7 +160,7 @@ describe('POST /api/mirror/event', () => {
     expect(inserts[0].slice(2)).toEqual([
       'client-0001',
       'tour_exit',
-      '{"tour":2,"step":3}',
+      '{"tour":2,"step":3,"of":7}',
     ])
   })
 })
