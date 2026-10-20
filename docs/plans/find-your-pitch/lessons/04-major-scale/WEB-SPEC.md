@@ -96,8 +96,8 @@ headings").
 
 | Toy                       | Reuses                                                                                                                                                                                                                                                                                                                                                | New in Lesson 4                                                                                                                                         |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. The staircase          | The kit's sound (`kit/sound.ts`: `playTone`, the soft tone, Merc's "ooh"), notes (`kit/notes.ts`: `hz`, `COLOR`), frame loop and step deck (`kit/frame-loop.ts`, `kit/step-deck.ts`); Lesson 1's keyboard drawing (`lesson-01/toy-spiral-keys.ts`) and its canvas-as-slider keys (`lesson-01/toy-spiral.ts`), promoted into the kit as Lesson 2 plans | Stairs on semitone rows; the compact state; Group; Slide; White keys only; the names switch; Stop on ti and Land on do; a spelling helper; a house icon |
-| 2. Predict widgets        | Lesson 1's predict (`lesson-01/predict.ts`), promoted into the kit as Lesson 2 plans (its Toys 7)                                                                                                                                                                                                                                                     | A play button that works before the choice (Play from C) beside one that unlocks after it                                                               |
+| 1. The staircase          | The kit's sound (`kit/sound.ts`: `playTone`, the soft tone, Merc's "ooh"), notes (`kit/notes.ts`: `hz`, `COLOR`), frame loop and step deck (`kit/frame-loop.ts`, `kit/step-deck.ts`); Lesson 1's keyboard drawing and its canvas-as-slider keys, now in the kit (`kit/spiral-keys.ts`, `kit/spiral.ts`); the staircase draws using `kit/key-strip.ts` | Stairs on semitone rows; the compact state; Group; Slide; White keys only; the names switch; Stop on ti and Land on do; a spelling helper; a house icon |
+| 2. Predict widgets        | Lesson 1's predict, now in the kit (`kit/predict.ts`; Lesson 2's Toys 7)                                                                                                                                                                                                                                                                              | A play button that works before the choice (Play from C) beside one that unlocks after it                                                               |
 | 3. Four words             | Lesson 1's strip of figure, word, definition and play button (`lesson-01/words.ts`)                                                                                                                                                                                                                                                                   | Four new figures                                                                                                                                        |
 | 4. Scale guide (Sing it)  | Lesson 2's slide guide (its Toys 5, in build) and Lesson 1's breathing ring (`lesson-01/sing.ts`)                                                                                                                                                                                                                                                     | Thirteen rows instead of four, a 17-note path, a count-in on do, Move do                                                                                |
 | 5. Recall and quick check | The kit's quiz (`kit/quiz.ts`) with the three changes Lesson 2 makes to it, and Lesson 2's questions                                                                                                                                                                                                                                                  | Nothing more, once Lesson 2's changes land                                                                                                              |
@@ -125,7 +125,7 @@ transforms is one object on the page.
 - **One action per tap.** A tap on a stair plays its note in the soft tone, in every state but the
   compact one. A tap on a key of the strip plays that key in steps 1 and 2; from step 3 on, and in
   free play, it makes that key do instead. A pointer that moves more than 6 px before it lifts is a
-  drag, not a tap, as on Lesson 1's spiral (`lesson-01/toy-spiral.ts:283`).
+  drag, not a tap, as on Lesson 1's spiral (`kit/spiral.ts:421`).
 - **Play up** and **Play down** (FACTS 57) light each stair and key as it sounds; **Slow** doubles
   every length (MASTER-PLAN § 4.2 item 5).
 - **Step sizes** (step 1): the T and S labels show, and the two semitone steps light gold once
@@ -136,7 +136,7 @@ transforms is one object on the page.
 - **Slide** (steps 3 to 5, and free play): Start lower and Start higher (a semitone each), a tap on
   a key of the strip, or, with a mouse or pen, a vertical drag on the staircase; starts run from C4
   to B4. On touch the stage keeps `touch-action: pan-y`, as Lesson 1's does
-  (`lesson-01/lesson-01.css:770-777`), so a vertical swipe still scrolls the page, and the buttons
+  (`kit/lesson-stage.css:769-776`), so a vertical swipe still scrolls the page, and the buttons
   and keys do the sliding. A slide is silent: Play up plays the scale from its new start. The
   staircase keeps its shape: only its height, its letters and the lit keys change. On desktop the
   stage shows all twenty-five rows from C4 to C6, so the climb is visible; on a phone it shows the
@@ -156,8 +156,9 @@ transforms is one object on the page.
   | F     | F G A B♭ C D E F      | B     | B C♯ D♯ E F♯ G♯ A♯ B   |
 
   In F♯ major the strip's white key F reads E♯, the only white key any start renames. The kit's
-  `letterOf` and `nameOf` know only the seven letters (`kit/notes.ts:36-61`), so a small spelling
-  helper is new; Lesson 2's two-names toggle may land one first.
+  `letterOf` and `nameOf` know only the seven letters (`kit/notes.ts:45-70`), so a small spelling
+  helper is new; Lesson 2's two-names toggle may land one first. On main it is the kit's (`spellOn`,
+  `sharpOf`, `flatOf`, `kit/notes.ts:151-163`).
 
 - **White keys only** (step 3): from the current start, the white keys up an octave, drawn over
   the real staircase as a dashed ink-2 staircase with a "?", the steps where it leaves the pattern
@@ -178,7 +179,7 @@ transforms is one object on the page.
   Play white keys from D and Play the pattern from D, each sliding the staircase to D first; with
   sound off, LESSON.md's hint shows and the reveal waits; the reveal never calls a choice wrong.
 - **The house glyph** is a new symbol, `#i-home`, in the page's inline icon sprite (Lesson 1's
-  sprite, `learn/01.html:69-173`, has no house). The glyph itself is `aria-hidden`; do's stair
+  sprite, `learn/01.html:139-235`, has no house). The glyph itself is `aria-hidden`; do's stair
   buttons say it instead ("Stair 1, do, D 4, home").
 - **Keyboard and screen readers.** The staircase is a group whose live summary names the scale,
   its notes and its steps: "D major: D, E, F sharp, G, A, B, C sharp, D. Tone, tone, semitone,
@@ -216,7 +217,7 @@ button (FACTS 61).
 - **Play Merc's scale** (do = D3) and **Play it an octave up** (do = D4) sing in Merc's "ooh". The
   path lights in step as each plays, while the breathing ring beside the guide shows the still of
   the Merc singing it, blue for D3 and orange for D4, as Lesson 1's ring does
-  (`lesson-01/sing.ts:23-39`).
+  (`kit/sing.ts:243-249`).
 - **Start the guide** is enabled once either scale has played (hear it first: playbook rule 16);
   until then it is `aria-disabled`, with the hint "Play Merc's scale first". It is the viewer's
   turn, so nothing of the app's drawing stays, as in Lesson 2 (its DECISIONS 68): the amber goes,
@@ -238,14 +239,14 @@ button (FACTS 61).
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
 (its WEB-SPEC, "What the kit and the app still need"):
 
-- a root element or id prefix, because the kit binds to `#qs`, `#scoreN` and `#quizReset` and
-  writes the ids `q0` and `fb0` onwards (`kit/quiz.ts:104-108`, `:155-165`);
-- `lesson` optional, because the kit marks `lesson` done once every question has an answer
-  (`:174-175`);
-- a question `id`, the telemetry's `question_id` (`QuizQuestion` has none, `:31-36`).
+- a root element or id prefix, because the kit bound to `#qs`, `#scoreN` and `#quizReset` and
+  wrote the ids `q0` and `fb0` onwards;
+- `lesson` optional, because the kit marked `lesson` done once every question had an answer;
+- a question `id`, the telemetry's `question_id`, which `QuizQuestion` lacked.
 
 If Lesson 2's page has not landed them when this one is built, this page lands them, in the shape
-Lesson 2 describes.
+Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:78-83`, `:195-199`), an
+optional `lesson` (`:72-73`, `:295-300`) and the question `id` (`:40-44`).
 
 - **Recall**: Lesson 2's questions 1 and 3, word for word with their feedback (LESSON.md; FACTS
   30), under their Lesson 2 ids, `l02-q1` and `l02-q3`. It is reshuffled from a seed of its own
@@ -259,7 +260,7 @@ Lesson 2 describes.
   `fyp-l04-quiz-v1`, and `lesson: 4`, so answering all four marks Lesson 4 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. Question 3's play button plays
-  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:148-150`), so
+  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:272-274`), so
   that button is handled by a listener on the quiz's root (`#qs` today), as the step links are.
   "Try Step 1 again" and "Try Step 3 again" use the kit's `data-goto-step`. Answers stay in the
   viewer's browser until the telemetry track exists.
@@ -280,7 +281,7 @@ Merc's singing in Merc's "ooh", and the guide's count-in in the soft tone at hal
 
 Lesson 1's setup through the kit (`kit/merc-duo.ts`, `kit/merc-warm.ts`): the app's renderer
 loaded after first paint, one WebGL context per Merc, medium quality on phones, turned towards each
-other, paused off screen (`merc-duo.ts:42-52`), and the still images when WebGL fails or would run
+other, paused off screen (`merc-duo.ts:43-53`), and the still images when WebGL fails or would run
 on the CPU.
 
 - They live in the hero, and their reactions are the hero pair's: blue `sing` while the hero's
@@ -288,8 +289,8 @@ on the CPU.
   from D sounds; and orange `celebrate` once after the cold-open reveal (no sparkles).
 - The cold open sits below the recall, so the live pair is often off screen and paused while it
   plays. The bubbles carry each Merc's still, and the compact staircase carries the moment.
-- `merc-duo.ts` has `mercSing` and `mercCelebrate` only (`:147`, `:184`), so this page asks for no
-  other state: the Merc who is not singing idles.
+- `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:216`), and `mercListen` (`:206`)
+  since Lesson 3's page; this page asks for no other state: the Merc who is not singing idles.
 - In Sing it, far below the hero, the ring shows the still of the Merc singing (Toys 4), so the
   live pair needs nothing more.
 - Under reduced motion or Pause animations each Merc holds a still frame and skips the reactions.
@@ -335,42 +336,48 @@ on the CPU.
 ## What the kit and the app still need
 
 Found in the kit and the app as they stand (18 October 2026), beyond the parts Lesson 2 promotes
-into the kit (Toys table):
+into the kit (Toys table). The page is on main at `/learn/04`. Read again on main at `31b7f53e9`
+(20 October 2026): an item with a line reference says what main has, and its references are
+main's.
 
-- `kit/quiz.ts`: Lesson 2's three changes, which this page's two quizzes need (Toys 5).
+- `kit/quiz.ts`: Lesson 2's three changes, which this page's two quizzes need (Toys 5), on main.
 - `kit/explorer.ts`, shared with Lesson 3 and worded as its WEB-SPEC words it ("New engineering,
   in one list", item 4), with this page's address: an explorer state for a lesson with a page and
   no film: its card offers "Read the lesson" (`/learn/04`) without "Watch the episode" and shows
   "10 minutes" (`kit/explorer.ts` knows only done, ready and planned). One optional field on
   `Lesson` serves both lessons, added by whichever page ships first; the card's status line,
-  "Ready · watch and read" today (`kit/explorer.ts:72-74`), then reads "Ready · read", and the
-  phone list and the graph read the same field.
-- `kit/explorer.ts`, the current lesson: it selects Lesson 1 when it opens (`let sel = 1`,
-  `kit/explorer.ts:115`). Lesson 2's page adds the option (its WEB-SPEC lists it), and this page
-  passes 4.
-- `kit/explorer.ts`, links between pages: a ready card's actions are the same-page anchors
-  `#watch` and `#lesson` (`kit/explorer.ts:105`), right only for the page's own lesson, so a card
-  for another ready lesson links to that lesson's page, `/learn/NN` (Lesson 2 lists the same gap).
+  "Ready · watch and read" on 18 October, then reads "Ready · read", and the phone list and the
+  graph read the same field. On main the chip reads "Ready · read" unless the lesson's film is
+  published (`kit/explorer.ts:74-81`).
+- `kit/explorer.ts`, the current lesson: it selected Lesson 1 when it opened (`let sel = 1`).
+  Lesson 2's page added the option, `current` (`kit/explorer.ts:38-40`, `:180-181`), and this page
+  passes 4 (`lesson-04/main.ts:94`).
+- `kit/explorer.ts`, links between pages: a ready card's actions were the same-page anchors
+  `#watch` and `#lesson`, right only for the page's own lesson, so a card for another ready lesson
+  links to that lesson's page, `/learn/NN` (Lesson 2 lists the same gap). On main it does
+  (`cardActions`, `kit/explorer.ts:111-127`).
 - `kit/season.ts`, Lesson 4's entry: the practice link, `href` `/pitch-training?lesson=04`,
   `addr` `mercurypitch.com/pitch-training`, `label` "Exercises" and `note` "then tap Scale
   Runner", which the card prints as "Exercises, then tap Scale Runner" after the address
-  (`practiseMarkup`, `kit/explorer.ts:51-56`). It keeps its `needs` until the slug ships. Its
+  (`practiseMarkup`, `kit/explorer.ts:98-103`). It keeps its `needs` until the slug ships. Its
   `sig` becomes "A staircase with two short steps that slides to start on any note.", since "two
-  uneven steps" did not say which.
+  uneven steps" did not say which. On main the entry reads so (`kit/season.ts:219-239`).
 - `kit/notes.ts`: the spelling helper (Toys 1).
 - The icon sprite: `#i-home`, the house glyph (Toys 1).
 - Lesson 2's slide guide, generalised to any number of rows and a path of any length, with the
   count-in on do (Toys 4).
 - Lesson 1's predict widget, promoted into the kit if Lesson 2 has not done it (Toys 2).
-- `vite.config.ts`: `/learn/04` served from `learn/04.html` in dev and preview, as
-  `LESSON_01_PATH` is (`vite.config.ts:78-133`), and `learn/04.html` as a build input beside
-  `lesson01` (`:447-448`).
+- `vite.config.ts`: `/learn/04` served from `learn/04.html` in dev and preview, and `learn/04.html`
+  as a build input. On main every `learn/NN.html` is both, with no entry of its own
+  (`vite.config.ts:77-87`, `:139-141`, `:473`).
 - `src/lib/sw-runtime.ts`: `/learn/04` and `/learn/04.html` in `STANDALONE_DOCUMENT_PATHS`, as
-  `/learn/01` is (`sw-runtime.ts:131-135`), so the service worker leaves the lesson alone.
-- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, as at `:67`): Lesson 4's entry.
+  `/learn/01` is (`sw-runtime.ts:131-135`), so the service worker leaves the lesson alone. On main
+  they are there (`:138-139`).
+- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, as at `:72`): Lesson 4's entry, on
+  main (`public/sitemap.xml:101`, `public/llms.txt:78-81`).
 - `public/learn/lesson-04-og.jpg`: the share card, 1200 x 630. With no film to cut a frame from,
   it is a still of the hero: the title over the staircase on C, do's house glyph lit.
-- The page's head, as Lesson 1's (`learn/01.html:9-58`):
+- The page's head, as Lesson 1's (`learn/01.html:9-60`):
   - title: "The major scale and home · Find Your Pitch, Lesson 4 | MercuryPitch";
   - meta description: "Why does do-re-mi sound finished when it lands on do, and restless when
     it stops on ti? A ten-minute lesson with live sound toys: the major scale's pattern of steps,
