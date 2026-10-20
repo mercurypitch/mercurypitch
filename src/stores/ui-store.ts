@@ -336,6 +336,7 @@ export type AdminSection =
   | 'achievements'
   | 'demo-song'
   | 'premium-perks'
+  | 'lessons'
 export type AdminContentLeaveIntent =
   | { type: 'section'; section: AdminSection }
   | { type: 'close' }

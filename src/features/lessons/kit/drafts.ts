@@ -16,6 +16,9 @@
 // going live, list it in public/sitemap.xml and public/llms.txt, which keep
 // drafts out. Lesson 5 joined with its page, its season entry under the
 // same gate; Lesson 7, a voice lesson too, joins when its page is built.
+// The Content Studio's Lessons page (/admin/lessons) shows this list as it
+// stands, what the site it runs on serves, and each lesson's release
+// checklist; it reads, and never changes, what is decided here.
 //
 // An object keyed by lesson number, not an array, so that a season entry's
 // `DRAFT_LESSONS[3]` is a constant the bundler folds away. Nothing here may

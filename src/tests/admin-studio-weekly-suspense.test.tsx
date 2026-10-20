@@ -65,6 +65,11 @@ vi.mock('@/features/admin/AdminPremiumPerksPage', () => ({
     <div data-testid="stub-perks">{p.adminKey}</div>
   ),
 }))
+// Read-only and keyless: it takes no props, and asks the site for its
+// lesson pages and listings on mount.
+vi.mock('@/features/admin/AdminLessonsPage', () => ({
+  AdminLessonsPage: () => <div data-testid="stub-lessons" />,
+}))
 vi.mock('@/features/zen/guided-content-store', () => ({
   refreshGuidedContent: vi.fn(),
 }))
@@ -125,6 +130,7 @@ describe('AdminContentStudio section switching under a slow fetch', () => {
       [/^Achievements\b/, 'stub-achievements'],
       [/^Demo\b/, 'stub-demo'],
       [/^Perks\b/, 'stub-perks'],
+      [/^Lessons\b/, 'stub-lessons'],
       [/^Exercises\b/, 'stub-exercises'],
     ] as const
     for (const [name, testid] of rounds) {

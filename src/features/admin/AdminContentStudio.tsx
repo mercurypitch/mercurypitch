@@ -14,6 +14,7 @@ import { AdminAscentPage } from './AdminAscentPage'
 import styles from './AdminContentStudio.module.css'
 import { AdminDemoSongPage } from './AdminDemoSongPage'
 import { AdminExercisesPage } from './AdminExercisesPage'
+import { AdminLessonsPage } from './AdminLessonsPage'
 import { AdminPremiumPerksPage } from './AdminPremiumPerksPage'
 
 type AuthStatus = 'locked' | 'checking' | 'unlocked' | 'failed'
@@ -75,6 +76,13 @@ const SECTIONS: readonly SectionMeta[] = [
     shortLabel: 'Perks',
     description:
       'Ship protected stage art, assign supporter access, and audit room passes.',
+  },
+  {
+    id: 'lessons',
+    label: 'Find Your Pitch Lessons',
+    shortLabel: 'Lessons',
+    description:
+      'See where each lesson stands, what the site serves, and what its release still needs.',
   },
 ] as const
 
@@ -456,6 +464,9 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
                         adminKey={verifiedKey()}
                         onDirtyChange={setContentDirty}
                       />
+                    </Match>
+                    <Match when={props.section === 'lessons'}>
+                      <AdminLessonsPage />
                     </Match>
                   </Switch>
                 </Suspense>

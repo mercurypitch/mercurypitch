@@ -437,6 +437,7 @@ describe('parseHash', () => {
       'achievements',
       'demo-song',
       'premium-perks',
+      'lessons',
     ]) {
       expect(parseHash(`#/admin/${section}`)).toEqual({
         type: 'admin',
