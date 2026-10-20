@@ -6,9 +6,12 @@
 // is opened with `?warmFixture=<name>` (WarmUpFixture.tsx), so it exists
 // only on the dev server and no build carries it. `&warmLive=1` plays the
 // state's arrival (the end's sequence, the card and countdown) instead of
-// settling it.
+// settling it; with `&warmLand=1` as well, `start` opens as the native
+// onboarding's landing (path-landing.ts): the path draws in and Merc hops
+// from the floor beside the first stop.
 
 import { render } from 'solid-js/web'
+import { askPathLanding } from '../path-landing'
 import { isWarmFixtureName } from './fixture-runs'
 import { WarmUpFixture } from './WarmUpFixture'
 
@@ -22,6 +25,7 @@ export function mountWarmFixture(root: HTMLElement, name: string): boolean {
   if (!isWarmFixtureName(name)) return false
   const query = new URLSearchParams(window.location.search)
   const unlocks = Number(query.get('warmUnlocks') ?? 0)
+  if (query.get('warmLand') === '1') askPathLanding()
   render(
     () => (
       <WarmUpFixture

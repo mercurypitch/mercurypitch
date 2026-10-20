@@ -87,7 +87,7 @@ export const PACK_MS = 600
 /** The pack's pace: a slow start, so the song's name stays up as he leaves. */
 export const PACK_EASE = 'cubic-bezier(0.45, 0, 0.25, 1)'
 
-/** Merc's hop, across and up at once: a straight glide (HOP_MS). */
+/** A straight glide over HOP_MS: the landing's way across. */
 export const HOP_EASE = 'cubic-bezier(0.33, 0, 0.25, 1)'
 /**
  * The end's hop goes across first and up after. He starts beside the last
@@ -97,6 +97,36 @@ export const HOP_EASE = 'cubic-bezier(0.33, 0, 0.25, 1)'
  */
 export const END_HOP_ACROSS_EASE = 'cubic-bezier(0.2, 0.75, 0.3, 1)'
 export const END_HOP_UP_EASE = 'cubic-bezier(0.55, 0, 0.6, 1)'
+/**
+ * Between stops he rises first, then crosses (owner, 20 Oct): he is up at
+ * the next stop's height by mid-hop and crosses over to it after, high
+ * above the name of the stop he leaves. Not straight up: the next stop's
+ * name stands over him (the names alternate sides, and he stands on the
+ * side away from his stop's name), so he leans out from under it as he
+ * rises.
+ */
+export const BETWEEN_HOP_ACROSS_EASE = 'cubic-bezier(0.15, 0.3, 0.8, 1)'
+export const BETWEEN_HOP_UP_EASE = 'cubic-bezier(0.35, 0.4, 0.15, 1)'
+/**
+ * The landing drops first: from the floor he hops beside the first stop, a
+ * little lower, with the second stop's name over him. Down at once, he is
+ * at his new height by the top of his jump; with a straight glide he was
+ * still a third of the drop above it there, and at 320 x 568 his crown
+ * touched the name (13g). Across, the straight glide.
+ */
+export const LAND_HOP_UP_EASE = 'cubic-bezier(0.2, 0.9, 0.3, 1)'
+
+/** How a hop takes its two directions: across (his track) and up (Merc). */
+export type HopPace = 'between' | 'end' | 'land'
+
+/** Each pace's two eases, over HOP_MS. */
+export const HOP_PACES: Readonly<
+  Record<HopPace, { readonly across: string; readonly up: string }>
+> = {
+  between: { across: BETWEEN_HOP_ACROSS_EASE, up: BETWEEN_HOP_UP_EASE },
+  end: { across: END_HOP_ACROSS_EASE, up: END_HOP_UP_EASE },
+  land: { across: HOP_EASE, up: LAND_HOP_UP_EASE },
+}
 
 /**
  * Where the end's stops stand: at their rest places (the end arriving, so
@@ -186,6 +216,8 @@ export interface PathMotion {
   readonly mercState: Accessor<MercState>
   /** Merc is on his way between two spots (his transform eases). */
   readonly hopping: Accessor<boolean>
+  /** The pace of his hop (HOP_PACES), or of his last one. */
+  readonly hopPace: Accessor<HopPace>
   /** Merc is faded out between two spots: reduced motion's crossfade. */
   readonly mercFaded: Accessor<boolean>
   /** Stop the countdown, and keep the path as it is. */
@@ -233,6 +265,8 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
   const [merc, setMerc] = createSignal<MercSpot>(settled.merc)
   const [mercState, setMercState] = createSignal<MercState>('idle')
   const [hopping, setHopping] = createSignal(false)
+  // Each hop sets its own pace, and it is read only while he hops.
+  const [hopPace, setHopPace] = createSignal<HopPace>('between')
   const [mercFaded, setMercFaded] = createSignal(false)
 
   // Its own timer: the arrivals below clear theirs on every last move,
@@ -266,13 +300,14 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
   }
 
   /**
-   * Merc to `spot`, ending in `then`: a hop, or under reduced motion a
-   * crossfade (out where he is, in where he goes). `arrived` once he is
-   * there.
+   * Merc to `spot`, ending in `then`: a hop at `pace`, or under reduced
+   * motion a crossfade (out where he is, in where he goes). `arrived` once
+   * he is there.
    */
   const moveMerc = (
     spot: MercSpot,
     then: MercState,
+    pace: HopPace,
     arrived?: () => void,
   ): void => {
     if (setup.reduced()) {
@@ -288,6 +323,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
       return
     }
     batch(() => {
+      setHopPace(pace)
       setHopping(true)
       setMerc(spot)
       setMercState('hop')
@@ -319,7 +355,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
     later(TRAIL_MS, () => setTrailIn(true))
     later(HOP_AT_MS, () => {
       setCard(true)
-      moveMerc(view.merc, 'idle')
+      moveMerc(view.merc, 'idle', 'between')
     })
     later(ACTIONS_MS, () => {
       setActions(true)
@@ -368,7 +404,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
         landed()
         return
       }
-      moveMerc(view.merc, 'celebrate', landed)
+      moveMerc(view.merc, 'celebrate', 'end', landed)
       later(PACK_AFTER_HOP_MS, () => setPack('packing'))
       later(PACK_AFTER_HOP_MS + PACK_MS, () => setPack('settled'))
     })
@@ -385,7 +421,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
     landTimer = setTimeout(
       () => {
         landTimer = undefined
-        moveMerc({ at: 'beside', index: 0 }, 'idle')
+        moveMerc({ at: 'beside', index: 0 }, 'idle', 'land')
       },
       untrack(drawingIn) ? DRAW_IN_MS : LAND_AT_MS,
     )
@@ -459,6 +495,7 @@ export function createPathMotion(setup: PathMotionSetup): PathMotion {
     merc,
     mercState,
     hopping,
+    hopPace,
     mercFaded,
     stay: stopCounting,
     lean: () => {

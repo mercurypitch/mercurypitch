@@ -18,18 +18,19 @@
 // "Ng slides, next", "Long note, waiting".
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Index, on, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, Show, untrack, } from 'solid-js'
 import { HOP_MS } from '@/components/room-kit/merc-moves'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import { PlateImage } from '@/components/room-kit/PlateImage'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
 import type { MercState } from '@/lib/merc/constants'
+import { holdHopInPlace } from './hop-drift'
 import { ORB_SPRITES, SKY_FALLBACK, SKY_FLOOR, SKY_PLATE, SKY_PX, } from './path-art'
 import type { PathFrame, PathMode, StopPlace } from './path-layout'
 import type { MercSpot } from './path-layout'
 import { columnX, columnY, MERC_CANVAS_W, MERC_SONG_SCALE, mercFeet, NAME_GAP_W, ORB_BOX_W, RIM_W, segmentD, sparkleCount, sparkles, stopPlaces, } from './path-layout'
-import type { PackPhase } from './path-motion'
-import { drawInSchedule, END_HOP_ACROSS_EASE, END_HOP_UP_EASE, HOP_EASE, ORB_FADE_MS, PACK_EASE, PACK_MS, } from './path-motion'
+import type { HopPace, PackPhase } from './path-motion'
+import { drawInSchedule, HOP_PACES, ORB_FADE_MS, PACK_EASE, PACK_MS, } from './path-motion'
 import type { OrbState, StopView } from './path-view'
 import { PATH_WORDS } from './path-view'
 import { PathGlyph } from './PathGlyph'
@@ -67,6 +68,8 @@ export interface PathColumnProps {
   merc: MercSpot
   mercState: MercState
   hopping: boolean
+  /** How his hop takes across and up (path-motion.ts HOP_PACES). */
+  hopPace: HopPace
   /** Faded out between two spots: reduced motion's crossfade. */
   mercFaded: boolean
   still: boolean
@@ -423,31 +426,47 @@ function Pools(props: {
 
 /**
  * Merc, placed across by his track and up (with his size) by himself, so
- * a hop can take the two at its own paces: the end's goes across first
- * (END_HOP_ACROSS_EASE), every other hop glides straight. Between hops he
- * does not glide; a crossfade still fades.
+ * a hop can take the two at its own paces (path-motion.ts HOP_PACES): the
+ * end's goes across first, a hop between stops rises first, the landing
+ * drops first. Between hops he does not glide; a crossfade still
+ * fades. As he hops, his canvas slides against the drift his hop has
+ * inside it (hop-drift.ts), so his body is where the path puts him on
+ * every frame.
  */
 function Merc(props: {
   column: PathColumnProps
   places: readonly StopPlace[]
 }): JSX.Element {
+  let track: HTMLDivElement | undefined
+  let drift: Animation | null = null
+  createEffect(
+    on(
+      () => props.column.hopping,
+      (hopping) => {
+        if (!hopping) return
+        drift?.cancel()
+        drift = holdHopInPlace(track?.querySelector('canvas') ?? null)
+      },
+    ),
+  )
+  onCleanup(() => drift?.cancel())
   const size = (): number => MERC_CANVAS_W * props.column.frame.unit
   const feet = (): { x: number; y: number } =>
     mercFeet(props.places, props.column.merc)
-  const glide = (end: string): string | undefined =>
+  const glide = (way: 'across' | 'up'): string | undefined =>
     props.column.hopping
-      ? `transform ${HOP_MS}ms ${props.column.mode === 'end' ? end : HOP_EASE}`
+      ? `transform ${HOP_MS}ms ${HOP_PACES[props.column.hopPace][way]}`
       : undefined
   const across = (): JSX.CSSProperties => ({
     transform: `translateX(${columnX(feet().x, props.column.frame) - size() / 2}px)`,
-    transition: glide(END_HOP_ACROSS_EASE) ?? 'none',
+    transition: glide('across') ?? 'none',
   })
   const up = (): JSX.CSSProperties => {
     const top = columnY(feet().y, props.column.frame) - MERC_FEET * size()
     // On the song, screen 3's size (option B), about his feet.
     const scale =
       props.column.merc.at === 'on' ? ` scale(${MERC_SONG_SCALE})` : ''
-    const up = glide(END_HOP_UP_EASE)
+    const up = glide('up')
     return {
       width: `${size()}px`,
       height: `${size()}px`,
@@ -461,6 +480,7 @@ function Merc(props: {
   }
   return (
     <div
+      ref={track}
       class={styles.mercTrack}
       style={across()}
       data-testid="warm-up-merc-track"

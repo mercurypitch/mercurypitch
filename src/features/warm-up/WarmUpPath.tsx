@@ -327,6 +327,7 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
           merc={motion.merc()}
           mercState={motion.mercState()}
           hopping={motion.hopping()}
+          hopPace={motion.hopPace()}
           mercFaded={motion.mercFaded()}
           still={still || prefersReducedMotion()}
           onSong={() => props.onSong()}
