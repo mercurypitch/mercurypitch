@@ -112,7 +112,7 @@ predict, runs 98 to 120 words (Steps 1 to 5: 112, 120, 109, 98 and 120), inside 
 a step. Three steps carry more beside it, for these reasons:
 
 - **Step 2, about 180 words.** Its Go deeper drawer (about 60 words) names the evidence behind
-  "Those studies are still few", and is closed by default.
+  "Studies that test singers are still few", and is closed by default.
 - **Step 4, about 215 words.** Its mix-up card (about 90 words) sits in the step whose toy refutes
   it, as in Lessons 2 to 6, and its one-item Go deeper drawer is closed by default.
 - **Step 5, about 170 words.** Its predict and reveal, the lesson's second, come before the text,
@@ -277,19 +277,19 @@ States:
    its list naming all six of REQ-GVC-020's conditions, and its two buttons (FACTS 48, 50), through
    the kit's comfort check (`kit/comfort.ts`).
 2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
-   (`aria-pressed`, at least 44 px), under LESSON.md's "Your voice from Lesson 3, or choose now",
-   read from and written to `fyp-voice` inside try/catch (FACTS 54). A stored choice shows pressed
-   and can be changed; with none stored, neither is pressed and the next state waits for a choice,
-   before "Just listen today" plays anything too, because the voice picks the Merc who sings, as on
-   Lessons 5 and 6's pages.
+   (`aria-pressed`, at least 44 px), under LESSON.md's "Keep the voice you chose in Lesson 3, or
+   choose now", read from and written to `fyp-voice` inside try/catch (FACTS 54). A stored choice
+   shows pressed and can be changed; with none stored, neither is pressed and the next state waits
+   for a choice, before "Just listen today" plays anything too, because the voice picks the Merc who
+   sings, as on Lessons 5 and 6's pages.
 3. **Just listen today** (listen-only mode): LESSON.md's line with the doctor lines (FACTS 52, 53);
    **Play Merc's siren** sings it on a tap in the chosen voice, the chart drawing Merc's line;
    nothing listens, the warm-up and Start are not shown, and nothing asks the viewer to sing
    (REQ-GVC-021). The Wrap shows the rest card.
 4. **Warm-up**, optional, with Skip: Lesson 3's two cards and words, each with a play button for
-   Merc's demonstration in the chosen voice, with "Follow the shape, not Merc's notes" and the stop
-   line (FACTS 55). Nothing listens and nothing is scored (REQ-GVC-074, REQ-GVC-075). The Skip is
-   stored as `fyp-l07-warmup`, as Lessons 3 and 5 store theirs.
+   Merc's demonstration in the chosen voice, with "Copy the way Merc's voice slides, not the exact
+   notes" and the stop line (FACTS 55). Nothing listens and nothing is scored (REQ-GVC-074,
+   REQ-GVC-075). The Skip is stored as `fyp-l07-warmup`, as Lessons 3 and 5 store theirs.
 5. **Your turn and briefing**: LESSON.md's Your turn text, the stop line on its own line, the "What
    this does" box (REQ-GVC-002, REQ-GVC-003, REQ-GVC-012, REQ-GVC-026), **Play Merc's siren** and
    **Start**, the only control that asks for the microphone (MASTER-PLAN § 4.2 item 2). Start is
@@ -298,8 +298,8 @@ States:
    plays nothing, so Start stays unavailable and the hint says why: "Sound is off, so nothing
    played. Turn sound on to hear Merc's siren, then press Start." That is Lesson 1's rule, as
    Lessons 5 and 6 apply it: what waits on hearing a sound waits while the sound is off.
-6. **Take**: the status reads "Breathe, then hum one siren on "ng", up and back. The take ends when
-   you stop." The take opens when the microphone is ready, waits up to 6 s for the first voiced
+6. **Take**: the status reads "Breathe, then hum one siren on "ng", up and back. We stop listening
+   when you stop." The take opens when the microphone is ready, waits up to 6 s for the first voiced
    frame, then runs until the voice has been quiet for 1.0 s after at least 2.0 s of voice, or for
    10 s from the first voiced frame, whichever comes first; nothing on the page extends it (FACTS
    58). The violet line draws live on the window from the left; a frame outside the window pins to
@@ -322,14 +322,14 @@ States:
    (REQ-GVC-022).
 8. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, a 2 x 2 grid on
    phones), asked afresh after each take with voice (FACTS 60):
-   - Easy or Workable after a reading with a band: LESSON.md's line, "That's the checkpoint: one
-     gentle siren. The lit band shows where its middle notes sat today.", with **Again** if the
-     visit's one Again is unused and fewer than three takes have been made, and **Done**. The Wrap
+   - Easy or Workable after a reading with a band: LESSON.md's line, "That's it: one gentle siren,
+     done. The lit band shows where its middle notes sat today.", with **Again** if the visit's one
+     Again is unused and fewer than three takes have been made, and **Done for today**. The Wrap
      shows the Vocal Range Test card.
-   - Easy or Workable after an unsteady take, which lit no band: "That's the checkpoint: one gentle
-     siren." alone, naming no band; when Again is offered, on the same two conditions, "Try again
-     at about speaking volume." follows it, and otherwise nothing does; then **Done**. The Wrap
-     shows the Vocal Range Test card.
+   - Easy or Workable after an unsteady take, which lit no band: "That's it: one gentle siren,
+     done." alone, naming no band; when Again is offered, on the same two conditions, "Try again at
+     about speaking volume." follows it, and otherwise nothing does; then **Done for today**. The
+     Wrap shows the Vocal Range Test card.
    - Effortful: Lesson 3's "Keep it gentle: rest before you sing again.", no Again and no further
      siren this visit (REQ-GVC-021: a report of effort suppresses immediate-repeat encouragement).
      The Wrap shows the rest card, because the practice card asks for two more glides and more
@@ -418,7 +418,7 @@ track exists (REQ-GVC-090; FACTS 62).
 
 Accessibility and motion: the band is words plus the lit fill, never colour alone (REQ-GVC-082).
 After a take the chart's text summary reads, for example, "Your siren, drawn as a line; the middle
-half of it lit, about G 3 to C 4" (REQ-GVC-085). Start, Again, Done, Done for today, the comfort and
+half of it lit, about G 3 to C 4" (REQ-GVC-085). Start, Again, Done for today, the comfort and
 voice buttons and the four feelings are real buttons of at least 44 px in a keyboard order that
 follows the flow; a button the flow does not offer is absent, not disabled, except Start's wait for
 Merc's siren; Space never starts a take by itself (REQ-GVC-080). Under reduced motion the live line
@@ -501,8 +501,8 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   range the glides found; it shows the range first, with the span and the overlapping voice type as
   "a broad guide, not a verdict", then Accuracy and Steadiness scores (FACTS 65 to 69). The card
   comes in two versions, picked by how Sing it ended (Toys 4), and both link the same address. The
-  `?lesson=` marker records nothing until CURRICULUM § 4 item 6 ships (FACTS 72), and the test's
-  intent reads only the path, so the marker changes nothing in it.
+  `?lesson=` marker changes nothing in the test: the main app's step-aside never runs in the test's
+  own document, and the test's intent reads only the path (FACTS 64, 72a).
 - **App content, small** (the App content track), proposed:
   - The twin screen after the hold (FACTS 69). Its line, "{Legend} shares your voice type. That is
     yours now: it is on your voiceprint whatever happens next.", assigns a voice type from range
@@ -541,8 +541,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     5 chose not to link (FACTS 74; Lesson 5 FACTS 65). If the coach says no, the slug needs a new
     routine without it, added under a new pattern name, since routine segments are keyed off the six
     existing names, which therefore do not change (`warmup-exercises.ts:338-345`);
-  - the `?lesson=07` marker, because a slug boots the main app, where First Light opens on a first
-    visit; until it ships, LESSON.md's editorial copy carries the series' first-visit line.
+  - `?lesson=07` on the link, because a slug boots the main app, where First Light opens on a first
+    visit unless the marker steps it aside (FACTS 72a), so LESSON.md's editorial copy carries no
+    first-visit line.
   - Not a condition, for the director: the warm-up also saves its score to the exercise history and
     moves the exercise's difficulty (`WarmupExercise.tsx:306-319`), which no screen the link opens
     would show.
@@ -640,8 +641,8 @@ What the page does where nothing above says:
 - **A siren that only rises, or a hum that hardly moves**: the band is the middle half of whatever
   was held, or under three semitones its centre: a steady A3 gives "The lit band is the middle of
   your siren: about A3.", and a hum between A3 and B3 gives "about A♯3".
-- **Three takes used**: Again is gone and Start does not come back; Done remains, and an unsteady
-  third take's line carries no "Try again".
+- **Three takes used**: Again is gone and Start does not come back; Done for today remains, and an
+  unsteady third take's line carries no "Try again".
 - **No WebGL, or a slow device**: the Mercs' stills (`kit/merc-warm.ts`).
 - **Lesson 3 never marked done**: the recall still shows, as a prerequisite's does. Until
   `/learn/03` is live, this page does not publish.
@@ -688,7 +689,7 @@ parts:
    listen-only with no Start; a take with no voice brings no feeling question and offers Again
    while fewer than three takes have been made, leaving the visit's one Again unused; "Easy" and
    "Workable" after a band offer Again once a visit, then not; after an unsteady take they give
-   "That's the checkpoint: one gentle siren." with "Try again at about speaking volume." and Again
+   "That's it: one gentle siren, done." with "Try again at about speaking volume." and Again
    only while the one Again is unused and fewer than three takes have been made, and pressing that
    Again uses it up; an abandoned take counts, and uses the one Again up if it had voice; a walk
    over every sequence of take outcomes and answers never reaches a fourth take or a third sung
@@ -730,7 +731,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
 6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`): with sound off,
    Start stays `aria-disabled` after Play Merc's siren and the hint says sound is off; with sound
    on, a steady A3 (`writeToneWav(220)`) in the lower voice reads "The lit band is the middle of
-   your siren: about A3."; "Easy" shows "That's the checkpoint: one gentle siren. The lit band
+   your siren: about A3."; "Easy" shows "That's it: one gentle siren, done. The lit band
    shows where its middle notes sat today." and Again, and after a second take Again is gone; the
    Wrap shows the Vocal Range Test card with "Ten minutes, gently, most days". A glide from E3 up to
    E4 and back (`writeGlideWav(164.81, 329.63, 3)`) reads "about G3 to C♯4", spoken "C sharp 4" in
