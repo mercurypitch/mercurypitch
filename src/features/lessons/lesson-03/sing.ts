@@ -54,8 +54,7 @@ export function notesFor(v: Voice): number[] {
 }
 
 const STATUS = {
-  listen:
-    'Just listening today: nothing listens, and the microphone stays off.',
+  listen: 'Just listening today: the microphone stays off.',
   nomic:
     'No microphone? Sing along anyway: Merc sings each note, and nothing listens.',
   voice: "Choose the voice you'll sing with.",

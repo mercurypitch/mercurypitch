@@ -90,7 +90,7 @@ test('the lesson boots: the predict reveals, a step unlocks its sound, the explo
   await page.locator('#predict [data-choice="most"]').click()
   await expect(page.locator('#answer')).toBeVisible()
   await expect(page.locator('#revealCards .rcard').first()).toContainText(
-    "Saying it didn't predict it.",
+    "Saying so didn't predict how they sang.",
   )
 
   // an address that names a step opens the deck there; Step 4's plays wait for a committed guess

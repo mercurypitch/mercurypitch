@@ -40,8 +40,8 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
 
 1. **Masthead**: Lesson 1's, with "Season 1 · Lesson 03" and the anchors Lesson, Sing and Explorer.
 2. **Hero**: kicker, title, LESSON.md's meta as chips ("15 minutes", FACTS 61; the Lesson 1 chip,
-   a link to `/learn/01`; "Helps: Lesson 2"; Sound on; Microphone optional), the promise, and the
-   two Mercs either side of the hook stage (Toys, 1).
+   a link to `/learn/01`; "Also useful: Lesson 2"; Sound on; Microphone optional), the promise, and
+   the two Mercs either side of the hook stage (Toys, 1).
 3. **Recall from Lesson 2**, open only when Lesson 2 is marked done (Toys, 8).
 4. **Cold open: predict**: the bubbles, the two figures, the sound pair, the predict and the reveal
    (Toys, 1).
@@ -109,7 +109,7 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
   220 Hz, twice at 440 Hz (FACTS 22).
 - **Stretch** is a log slider from 110 to 440 Hz (A2 to A4; FACTS 48). The folds draw longer and
   thinner as it rises, and a bead climbs the pitch rail in the kit's note colour (blue at A3, orange
-  at A4, chrome elsewhere: `kit/notes.ts`). Readout: "220 Hz: 220 cycles a second", and in slow
+  at A4, chrome elsewhere: `kit/notes.ts`). Readout: "220 Hz: 220 swings a second", and in slow
   motion "slowed 220 times: 1 a second".
 - States: breathing; singing (sounding); slow motion on or off; any Stretch value.
 - Accessible text: Sing has `aria-pressed`; Stretch is `role="slider"` with `aria-valuetext` such
@@ -209,9 +209,9 @@ States:
    voice.
 3. **Warm-up**, optional, with Skip: two cards, each with a play button for Merc's demonstration in
    the chosen voice (the sigh: a 1.5 s "ooh" glide down from E4 to A3, or from E5 to A4; the slide:
-   up from A to E and back, the lip trill's path; FACTS 37, 46a), the instructions with "Follow the
-   shape, not Merc's notes", and the stop line. Nothing listens and nothing is scored (REQ-GVC-074,
-   REQ-GVC-075).
+   up from A to E and back, the lip trill's path; FACTS 37, 46a), the instructions with "Copy the
+   way Merc's voice slides, not the exact notes", and the stop line. Nothing listens and nothing is
+   scored (REQ-GVC-074, REQ-GVC-075).
 4. **Briefing**: the "What this does" box (REQ-GVC-002, REQ-GVC-003, REQ-GVC-012, REQ-GVC-026;
    FACTS 52, 60) and **Start**, the only control that asks for the microphone (MASTER-PLAN § 4.2,
    item 2).
