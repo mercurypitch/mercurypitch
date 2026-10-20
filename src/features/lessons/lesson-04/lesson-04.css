@@ -312,11 +312,6 @@
   margin: 0 0 8px;
   color: var(--ink-2);
 }
-.l4-app .first-visit {
-  margin: 0 0 14px;
-  font-size: var(--fs-14);
-  color: var(--ink-3);
-}
 .l4-app a.addr {
   vertical-align: middle;
   text-decoration: none;

@@ -125,10 +125,10 @@ describe("the staircase's lines", () => {
 
   it('names ti where Stop on ti stops', () => {
     expect(stopSaid(62)).toBe(
-      'Stopped on ti, C sharp 5. Land on do finishes the scale.',
+      'Stopped on ti, C sharp 5. Landing on do finishes the scale.',
     )
     expect(stopSaid(60)).toBe(
-      'Stopped on ti, B4. Land on do finishes the scale.',
+      'Stopped on ti, B4. Landing on do finishes the scale.',
     )
   })
 })

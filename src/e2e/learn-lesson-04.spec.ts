@@ -108,12 +108,12 @@ test('the lesson boots: a guess unlocks Play from D, and Merc stops on ti @smoke
 
   // seven notes from D, ti held: then the stop is said and the reveal follows
   await expect(page.locator('#predict [data-cold-said]')).toHaveText(
-    'Stopped on ti. Land on do finishes the scale.',
+    'Stopped on ti. Landing on do finishes the scale.',
     { timeout: 10_000 },
   )
   await expect(page.locator('#predict .reveal')).toBeVisible()
   await expect(page.locator('#predict .reveal')).toContainText(
-    'Still unfinished, and Land on do finishes it on D.',
+    'Still unfinished, and landing on do finishes it, this time on D.',
   )
   // the explorer opens on this lesson: ready to read, with no film to watch
   await page.locator('#explorer').scrollIntoViewIfNeeded()
@@ -325,7 +325,7 @@ test.describe('page QA (WEB-SPEC, Contract)', () => {
     await page.keyboard.press('Enter')
 
     await expect(said(page)).toHaveText(
-      'Stopped on ti, C sharp 5. Land on do finishes the scale.',
+      'Stopped on ti, C sharp 5. Landing on do finishes the scale.',
       { timeout: 10_000 },
     )
     await expect(page.locator(`${TOY} [data-stairs-play="land"]`)).toBeVisible()

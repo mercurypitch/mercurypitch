@@ -114,7 +114,7 @@ export function whiteKeysSaid(start: number): string | null {
   return `White keys from ${from}: ${steps}. ${verdict}`
 }
 
-/** Stop on ti's line: "Stopped on ti, C sharp 5. Land on do finishes the scale." */
+/** Stop on ti's line: "Stopped on ti, C sharp 5. Landing on do finishes the scale." */
 export function stopSaid(tonic: number): string {
-  return `Stopped on ti, ${wordName(majorScale(tonic)[6])}. Land on do finishes the scale.`
+  return `Stopped on ti, ${wordName(majorScale(tonic)[6])}. Landing on do finishes the scale.`
 }

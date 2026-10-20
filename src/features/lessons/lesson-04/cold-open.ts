@@ -64,7 +64,7 @@ export function initColdOpen(): void {
         sing(e, i, events.length)
         if (i !== events.length - 1) return
         stairs.set({ waiting: true })
-        said.textContent = 'Stopped on ti. Land on do finishes the scale.'
+        said.textContent = 'Stopped on ti. Landing on do finishes the scale.'
       },
     })
   }
