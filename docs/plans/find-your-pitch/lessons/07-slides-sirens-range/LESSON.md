@@ -200,12 +200,12 @@ hoarseness or discomfort lasts more than a couple of weeks, see a doctor (a GP o
 throat specialist). If it's very painful, or breathing or swallowing is hard, get help straight
 away."
 
-Keep the voice you chose in Lesson 3, or choose now: [ Lower: sing with blue Merc, around A3 ]
-[ Higher: sing with orange Merc, around A4 ]
+Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
+[ Lower: sing with blue Merc, around A3 ] [ Higher: sing with orange Merc, around A4 ]
 
-(A stored voice shows pressed and can be changed. With none stored, this choice comes after either
-answer above and before anything plays, because it picks the Merc who sings, as in Lessons 5 and
-6.)
+(A stored voice shows pressed and can be changed, and the line above reads "Keep the voice you
+chose before, or change it:" instead. With none stored, this choice comes after either answer
+above and before anything plays, because it picks the Merc who sings, as in Lessons 5 and 6.)
 
 **Warm-up, optional, about a minute.** Three sighs: a quiet "hoo" sliding down, like a relieved
 sigh. Then, if you like, lip trills ("brrr", lips loose, up a little and back), or hum, or sing a
@@ -432,7 +432,10 @@ thing as before, more plainly.
   "ng", up and back. The take ends when you stop." After: "Breathe, then hum one siren on "ng", up
   and back. We stop listening when you stop."
 - The voice line, shared with Lessons 5 and 6. Before: "Your voice from Lesson 3, or choose now:"
-  After: "Keep the voice you chose in Lesson 3, or choose now:"
+  After, in two forms: "Keep the voice you chose before, or change it:" with a choice stored, and
+  "Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:" with none.
+  The review's first rewrite, "Keep the voice you chose in Lesson 3, or choose now:", was wrong
+  with no choice stored.
 - The practice card's Vocal Range Test, in shorter sentences with the same tasks. Before: "The Vocal
   Range Test has you glide up and back down and hold one comfortable note, then plays five notes
   from the middle of your range to sing back, and scores those notes and the hold. It shows the
