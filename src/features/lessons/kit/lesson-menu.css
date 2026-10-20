@@ -172,10 +172,18 @@ html.lm-open {
   font: 600 var(--fs-22)/1.2 var(--f-display);
   letter-spacing: -0.01em;
 }
+/* short lines wrap into even halves, so no word is left alone on a line */
 .lm-head small {
   display: block;
   margin-top: 4px;
   color: var(--ink-3);
+  text-wrap: balance;
+}
+/* a phone's heading reads "Season 1": "0 of 14 done" beside it gives the 14 */
+@media (max-width: 419px) {
+  .lm-size {
+    display: none;
+  }
 }
 .lm-count {
   margin: 0;
@@ -242,6 +250,7 @@ html.lm-open {
 .lm-here-t b {
   display: block;
   font: 600 var(--fs-16)/1.25 var(--f-display);
+  text-wrap: balance;
 }
 .lm-here-t span {
   display: block;
@@ -249,6 +258,7 @@ html.lm-open {
   color: var(--ink-2);
   font-size: var(--fs-14);
   line-height: 1.35;
+  text-wrap: balance;
 }
 
 /* ---------------------------------------------------------------- the lessons */
