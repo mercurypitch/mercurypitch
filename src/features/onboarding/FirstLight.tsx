@@ -41,11 +41,11 @@ import { BeatSky } from './beats/BeatSky'
 import { BeatTwin } from './beats/BeatTwin'
 import { BeatVoiceprint } from './beats/BeatVoiceprint'
 import type { Beat, OnboardingTrack } from './flow'
-import { BEAT_EVENT, MAP_STORE_EVENT, trackOnboarding } from './funnel'
+import { BEAT_EVENT, MAP_ROOM_EVENT, MAP_STORE_EVENT, trackOnboarding, } from './funnel'
 import styles from './onboarding.module.css'
 import type { Plate } from './plates'
 import { plateFor, platesAhead, plateSrc, TALL_QUERY } from './plates'
-import type { EnteredRoomId, RoomTarget } from './rooms'
+import type { EnteredRoomId, RoomId, RoomTarget } from './rooms'
 import { SIDE_DOORS } from './rooms'
 import type { SettledNote } from './settled-note'
 import { StarField } from './StarField'
@@ -309,8 +309,13 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
    * the overlay first is enough — a hand-rolled frame of delay would
    * be a second, weaker copy of a budget the engine owns.
    */
-  const handleRoomTour = (target: RoomTarget, tab: ActiveTab) => {
+  const handleRoomTour = (
+    target: RoomTarget,
+    tab: ActiveTab,
+    roomId: RoomId,
+  ) => {
     trackOnboarding('onboarding_map_room')
+    trackOnboarding(MAP_ROOM_EVENT[roomId])
     if (target.kind === 'tab') setActiveTab(target.tab as ActiveTab)
     leave()
     startPageTour(tab)
@@ -418,9 +423,13 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     leave()
   }
 
+  const isRoomId = (id: EnteredRoomId): id is RoomId =>
+    Object.hasOwn(MAP_ROOM_EVENT, id)
+
   const handleEnterRoom = (target: RoomTarget, roomId: EnteredRoomId) => {
     trackOnboarding('onboarding_map_room')
-    // A door under the grid also counts which door it was.
+    // A room counts which room it was, a door under the grid which door.
+    if (isRoomId(roomId)) trackOnboarding(MAP_ROOM_EVENT[roomId])
     const door = SIDE_DOORS.find((d) => d.id === roomId)
     if (door !== undefined) trackOnboarding(door.event)
     console.info('[onboarding] entering room', roomId)
