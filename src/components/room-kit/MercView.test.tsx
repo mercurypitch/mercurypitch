@@ -11,6 +11,7 @@ import { MercView } from './MercView'
 const merc = vi.hoisted(() => ({
   options: [] as unknown[],
   still: [] as boolean[],
+  paused: [] as boolean[],
   ok: true,
 }))
 vi.mock('@/lib/merc/stage', () => ({
@@ -20,7 +21,7 @@ vi.mock('@/lib/merc/stage', () => ({
       ok: merc.ok,
       setState: () => undefined,
       setVoice: () => undefined,
-      setPaused: () => undefined,
+      setPaused: (paused: boolean) => merc.paused.push(paused),
       setStill: (still: boolean) => merc.still.push(still),
       destroy: () => undefined,
     }
@@ -38,6 +39,7 @@ const SILENT: MercVoice = {
 afterEach(() => {
   merc.options = []
   merc.still = []
+  merc.paused = []
   merc.ok = true
 })
 
@@ -64,6 +66,40 @@ describe('MercView', () => {
     // Rings on unless the room says otherwise.
     expect(merc.options[0]).toMatchObject({ rings: undefined })
     expect(merc.still).toEqual([false])
+  })
+
+  it('stops his frame loop while the room says so, from mount and on a change', async () => {
+    // Arrange
+    const [paused, setPaused] = createSignal(true)
+    render(() => (
+      <MercView
+        state={() => 'idle'}
+        voice={() => SILENT}
+        paused={paused}
+        testId="alley-merc"
+      />
+    ))
+    await vi.waitFor(() => expect(merc.options).toHaveLength(1))
+
+    // Act
+    setPaused(false)
+    setPaused(true)
+
+    // Assert
+    expect(merc.paused).toEqual([true, false, true])
+  })
+
+  it('never pauses the stage of a room that names no pause', async () => {
+    // Arrange
+    render(() => (
+      <MercView state={() => 'idle'} voice={() => SILENT} testId="glide-merc" />
+    ))
+
+    // Act
+    await vi.waitFor(() => expect(merc.options).toHaveLength(1))
+
+    // Assert
+    expect(merc.paused).toEqual([])
   })
 
   it("follows the phone's own setting when the room names none", async () => {
