@@ -1867,10 +1867,26 @@ the last one empty, so a handler that edits one chunk sees part of the JSON.
 `>` yourself before `setAttribute`, and buffer a script's chunks until
 `lastInTextNode`. A jsdom test double hides all three, so make the double
 behave the same way and check its claims under `wrangler dev`.
-Separately, `wrangler dev`'s `ASSETS.fetch` serves `/x.html` with a 200 where
-production answers a 307 to `/x`. A local run cannot show the redirect.
 **See:** `src/lesson-gate.ts` (`decodeHtml`, `escapeAttribute`,
 `retellScripts`), `src/html-rewriter.test-fixtures.ts`
+
+### A Request you build in a Worker follows redirects
+
+**Symptom:** on the site worker's PR preview, `/learn/01.html` and
+`/learn/01/` answered with the page and a 200, where the dev site answers a
+307 to `/learn/01`. The unit test that expected the 307 passed, and a local
+`wrangler dev` showed the same 200, which read as a local quirk.
+**Cause:** the worker asked the asset layer with
+`new Request(url, { method, headers })`. A built Request's `redirect`
+defaults to `'follow'`, so the runtime followed the asset layer's 307 and
+handed back the page. The incoming request takes its redirects by hand
+(`'manual'`), so passing it on as it came would have kept the 307. The test's
+stand-in answered the 307 whatever the request's mode.
+**Rule:** give a Request you build for `ASSETS.fetch` or a service binding
+`redirect: 'manual'` whenever its answer goes back to the browser, and make a
+test's stand-in follow redirects for any other mode, as the runtime does.
+**See:** `src/lesson-gate.ts` (`unconditional`), `src/lesson-gate.test.ts`
+(`assetLayer`)
 
 ## Process
 
