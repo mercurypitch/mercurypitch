@@ -7,6 +7,7 @@ const ADMIN_PATHS: Readonly<Record<string, AdminSection>> = {
   '/admin/achievements': 'achievements',
   '/admin/demo-song': 'demo-song',
   '/admin/premium-perks': 'premium-perks',
+  '/admin/lessons': 'lessons',
 }
 
 /**
