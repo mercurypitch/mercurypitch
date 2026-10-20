@@ -9,6 +9,7 @@ const store = vi.hoisted(() => ({
   removeNotification: vi.fn(),
   removeNotificationsByChannel: vi.fn(),
   startPageTour: vi.fn(),
+  trackTour: vi.fn(),
   walkthrough: (() => false) as () => boolean,
   setWalkthrough: ((_v: boolean) => undefined) as (v: boolean) => void,
 }))
@@ -25,10 +26,16 @@ vi.mock('@/stores', async () => {
     removeNotificationsByChannel: (channel: string) =>
       store.removeNotificationsByChannel(channel),
     startPageTour: (tab: string) => store.startPageTour(tab),
+    pageTourKey: (tab: string) =>
+      tab === 'guitar' ? null : tab === 'home' ? 'home' : 'ear-lab',
     walkthroughActive,
     TOUR_OFFER_CHANNEL: 'page-tour-offer',
   }
 })
+
+vi.mock('@/lib/guide-funnel', () => ({
+  trackTour: (...args: unknown[]) => store.trackTour(...args),
+}))
 
 import { usePageTourOffer } from './usePageTourOffer'
 
@@ -37,6 +44,7 @@ describe('usePageTourOffer', () => {
     localStorage.clear()
     store.showActionNotification.mockClear()
     store.removeNotificationsByChannel.mockClear()
+    store.trackTour.mockClear()
     store.setWalkthrough(false)
   })
 
@@ -59,6 +67,23 @@ describe('usePageTourOffer', () => {
     const { dispose } = mount('home' as ActiveTab)
     expect(store.showActionNotification).toHaveBeenCalledTimes(1)
     expect(localStorage.getItem('pitchperfect_page_tour_offered_home')).toBe(
+      'true',
+    )
+    dispose()
+  })
+
+  it('reports an offer once, when the toast shows', () => {
+    const { dispose } = mount('home' as ActiveTab)
+    expect(store.trackTour).toHaveBeenCalledTimes(1)
+    expect(store.trackTour).toHaveBeenCalledWith('tour_offer', 'home')
+    dispose()
+  })
+
+  it('still shows the offer when the tab has no tour key to report', () => {
+    const { dispose } = mount('guitar' as ActiveTab)
+    expect(store.showActionNotification).toHaveBeenCalledTimes(1)
+    expect(store.trackTour).not.toHaveBeenCalled()
+    expect(localStorage.getItem('pitchperfect_page_tour_offered_guitar')).toBe(
       'true',
     )
     dispose()

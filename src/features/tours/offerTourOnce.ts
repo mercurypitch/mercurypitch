@@ -1,3 +1,5 @@
+import { trackTour } from '@/lib/guide-funnel'
+import type { TourKey } from '@/lib/tour-ids'
 import type { WalkthroughStep } from '@/stores'
 import { removeNotification, showActionNotification, startTour, TOUR_OFFER_CHANNEL, TOURS_AVAILABLE, } from '@/stores'
 
@@ -12,6 +14,7 @@ export function offerTourOnce(
   storageKey: string,
   message: string,
   steps: WalkthroughStep[],
+  key: TourKey,
 ): void {
   // Asked before the toast, not only before the tour. `startTour` already
   // refuses in a build with no spotlights, but a toast whose button does
@@ -32,11 +35,12 @@ export function offerTourOnce(
       label: 'Start tour',
       onClick: () => {
         removeNotification(id)
-        startTour(steps)
+        startTour(steps, key)
       },
     },
     // Share the single tour-offer slot so a contextual (e.g. stem-mixer) offer
     // and a per-page offer never stack on top of each other.
     { channel: TOUR_OFFER_CHANNEL },
   )
+  trackTour('tour_offer', key)
 }

@@ -130,7 +130,7 @@ export const Walkthrough: Component = () => {
   }
 
   const advance = () => {
-    if (isLast()) endWalkthrough()
+    if (isLast()) endWalkthrough('done')
     else nextWalkthroughStep()
   }
 
@@ -659,7 +659,7 @@ export const Walkthrough: Component = () => {
 
   return (
     <Show when={walkthroughActive()}>
-      <div class={styles.walkthroughOverlay} onClick={endWalkthrough}>
+      <div class={styles.walkthroughOverlay} onClick={() => endWalkthrough()}>
         <div ref={highlightRef} class={styles.walkthroughHighlight} />
 
         <div
@@ -672,7 +672,7 @@ export const Walkthrough: Component = () => {
           {/* Skip the whole tour (sits like a dialog close). */}
           <button
             class={styles.walkthroughClose}
-            onClick={endWalkthrough}
+            onClick={() => endWalkthrough()}
             title="Skip tour"
             aria-label="Skip tour"
           >

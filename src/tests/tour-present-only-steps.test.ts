@@ -34,7 +34,7 @@ afterEach(() => {
 
 describe('a step only some hosts can show', () => {
   it('drops out when its target is not on the page', () => {
-    startTour(steps)
+    startTour(steps, 'mixer')
 
     expect(tourSteps().map((step) => step.title)).toEqual(['Always'])
   })
@@ -42,7 +42,7 @@ describe('a step only some hosts can show', () => {
   it('stays when its target is there', () => {
     document.body.innerHTML = '<button data-tour="sometimes"></button>'
 
-    startTour(steps)
+    startTour(steps, 'mixer')
 
     expect(tourSteps().map((step) => step.title)).toEqual([
       'Always',

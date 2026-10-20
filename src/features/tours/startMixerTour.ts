@@ -12,7 +12,7 @@ export function startMixerTourIfReady(): void {
     typeof document !== 'undefined' &&
     document.querySelector('[data-tour="mixer.stems"]') !== null
   if (ready) {
-    startTour(STEM_MIXER_TOUR_STEPS)
+    startTour(STEM_MIXER_TOUR_STEPS, 'mixer')
   } else {
     showNotification(
       'Open a song in the Karaoke mixer first, then take this tour.',

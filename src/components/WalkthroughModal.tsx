@@ -131,7 +131,8 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   // Per-tutorial-id overrides (more specific than the tab default).
   const TOUR_BY_ID: Record<string, () => void> = {
     'practice-toolbar': () => startSectionTour(['toolbar']),
-    'practice-modes': () => startTour(PRACTICE_MODES_TOUR_STEPS),
+    'practice-modes': () =>
+      startTour(PRACTICE_MODES_TOUR_STEPS, 'practice-modes'),
   }
 
   const tourAvailable = () => {

@@ -18,7 +18,7 @@
 // This file re-exports all of ./uvr-store, so importing from '@/stores' pulls
 // that in too. Prefer importing the specific store module directly.
 
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
@@ -26,8 +26,10 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
 import { GLASSWORKS_LISTED } from '@/lib/glassworks-listing'
+import { trackTour } from '@/lib/guide-funnel'
 import { jamRoomIsOpen } from '@/lib/jam/jam-room-presence'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
+import type { TourKey } from '@/lib/tour-ids'
 import { isNarrow } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
@@ -1015,7 +1017,7 @@ function buildStepsFromSections(sectionIds: string[]): WalkthroughStep[] {
  */
 export function startWalkthrough(sectionIds?: string[]): void {
   const sections = sectionIds ?? GUIDE_SECTIONS.map((s) => s.id)
-  startTour(buildStepsFromSections(sections))
+  startTour(buildStepsFromSections(sections), 'guide')
 }
 
 // Focused "practice modes" tour for the Singing toolbar — distinct from the
@@ -2129,13 +2131,35 @@ export function pageTourSteps(tab: ActiveTab): WalkthroughStep[] | undefined {
   return PAGE_TOURS[tab]
 }
 
+const PAGE_TOUR_KEYS: Partial<Record<ActiveTab, TourKey>> = {
+  [TAB_HOME]: 'home',
+  [TAB_PATH]: 'path',
+  [TAB_EAR_LAB]: 'ear-lab',
+  [TAB_GUITAR]: 'guitar',
+  [TAB_PIANO]: 'piano',
+  [TAB_ANALYSIS]: 'analysis',
+  [TAB_EXERCISES]: 'exercises',
+  [TAB_JAM]: 'jam',
+  [TAB_COMMUNITY]: 'community',
+  [TAB_LEADERBOARD]: 'leaderboard',
+  [TAB_CHALLENGES]: 'challenges',
+}
+
+/**
+ * The tour key for the screen a tab is showing, or null when it has no tour.
+ * Follows `pageTourSteps`: the Jam tab is `'jam-room'` once a room is open.
+ */
+export function pageTourKey(tab: ActiveTab): TourKey | null {
+  if (tab === TAB_JAM && jamRoomIsOpen()) return 'jam-room'
+  return PAGE_TOUR_KEYS[tab] ?? null
+}
+
 export function hasPageTour(tab: ActiveTab): boolean {
   if (!TOURS_AVAILABLE) return false
   const steps = pageTourSteps(tab)
   return steps !== undefined && forThisViewport(steps).length > 0
 }
 
-/** Start an arbitrary spotlight tour from a list of steps (no-op if empty). */
 /**
  * True while the mixer's own tour runs. The studio host hands it to the
  * mixer (StemMixer's tourRunning), which takes the layout the tour's steps
@@ -2148,7 +2172,44 @@ export function stemMixerTourRunning(): boolean {
   )
 }
 
-export function startTour(steps: WalkthroughStep[]): void {
+/**
+ * The tour that is running, for the funnel. Set in `startTour`; cleared by
+ * `endWalkthrough` and by `closeRunningTour` (a handover), so a set key means
+ * a tour is on screen.
+ */
+let runningTourKey: TourKey | null = null
+
+/**
+ * Close the running tour in the funnel, for a tour that is about to replace
+ * it. Reports through the funnel only: `endWalkthrough` would also mark a
+ * guide section completed and write the walkthrough-seen key, which a tour
+ * handing over to the next one has never done.
+ *
+ * A tour found on its last step finished: "Continue to <next section>" chains
+ * guide sections through `startTour`, and a section the singer read to the end
+ * must not count as one they left.
+ */
+function closeRunningTour(): void {
+  if (runningTourKey === null) return
+  // Untracked: `startTour` writes both signals right after this, and a caller
+  // inside a tracked scope must not subscribe to what it is about to write.
+  const step = untrack(walkthroughStep)
+  const onLast = step >= untrack(tourSteps).length - 1
+  trackTour(onLast ? 'tour_done' : 'tour_exit', runningTourKey, step + 1)
+  runningTourKey = null
+}
+
+/**
+ * Start an arbitrary spotlight tour from a list of steps (no-op if none is
+ * left to show).
+ *
+ * `key` names the tour for the funnel and is required, so a launcher that
+ * forgets one fails typecheck. A tour already running is closed first, and
+ * only when this one will really start: it is reported through the funnel
+ * (done on its last step, exit on any other) and nothing else, so no guide
+ * section is marked completed and the walkthrough-seen key is not written.
+ */
+export function startTour(steps: WalkthroughStep[], key: TourKey): void {
   if (!TOURS_AVAILABLE) return
   const shown = steps.filter(
     (step) =>
@@ -2157,18 +2218,23 @@ export function startTour(steps: WalkthroughStep[]): void {
         document.querySelector(step.targetSelector) !== null),
   )
   if (shown.length === 0) return
+  closeRunningTour()
   setTourSteps(shown)
   setWalkthroughActive(true)
   setWalkthroughStep(0)
+  runningTourKey = key
+  trackTour('tour_start', key)
 }
 
 /** Start the spotlight tour for a given tab (no-op if it has none). */
 export function startPageTour(tab: ActiveTab): void {
   const steps = pageTourSteps(tab)
   if (steps === undefined) return
+  const key = pageTourKey(tab)
+  if (key === null) return
   const forView = forThisViewport(steps)
   if (forView.length === 0) return
-  startTour(forView)
+  startTour(forView, key)
 }
 
 /**
@@ -2180,7 +2246,7 @@ export function startPageTour(tab: ActiveTab): void {
  * is not there and then the same pill again.
  */
 export function startVoiceTour(): void {
-  startTour(forThisViewport(VOICE_TOUR_STEPS))
+  startTour(forThisViewport(VOICE_TOUR_STEPS), 'voice')
 }
 
 export function nextWalkthroughStep(): void {
@@ -2188,7 +2254,7 @@ export function nextWalkthroughStep(): void {
   if (walkthroughStep() < steps.length - 1) {
     setWalkthroughStep((s) => s + 1)
   } else {
-    endWalkthrough()
+    endWalkthrough('done')
   }
 }
 
@@ -2227,8 +2293,21 @@ export function prevWalkthroughStep(): void {
   }
 }
 
-export function endWalkthrough(): void {
-  // Mark all remaining sections as completed when finishing the tour
+/**
+ * Close the tour. `reason` is what the funnel hears: `'done'` when the singer
+ * reached the end, `'exit'` (the default) for every other way out. Nothing is
+ * sent when no tour is running, and the key is cleared either way.
+ */
+export function endWalkthrough(reason: 'done' | 'exit' = 'exit'): void {
+  if (runningTourKey !== null) {
+    trackTour(
+      reason === 'done' ? 'tour_done' : 'tour_exit',
+      runningTourKey,
+      walkthroughStep() + 1,
+    )
+  }
+  runningTourKey = null
+  // Mark the guide section of the step the tour ends on as completed
   const steps = tourSteps()
   if (steps.length > 0 && walkthroughStep() >= 0) {
     const current = steps[walkthroughStep()]
