@@ -288,6 +288,14 @@ function rowMarkup(r: MenuRow): string {
   return `<li>${row}${stepsMarkup(r)}</li>`
 }
 
+/** "Season 1 · 14 lessons" with the count in its own span, which a phone leaves out: the count beside it gives the 14. */
+function seasonMarkup(season: string): string {
+  const at = season.indexOf(' · ')
+  return at < 0
+    ? season
+    : `${season.slice(0, at)}<span class="lm-size">${season.slice(at)}</span>`
+}
+
 /** The panel's contents: heading, season bar, sections (phones), where the viewer is, the lessons, the foot. */
 export function menuMarkup(
   m: MenuModel,
@@ -323,7 +331,7 @@ export function menuMarkup(
     foot.practise === null
       ? ''
       : `<a class="btn sm" href="${esc(foot.practise)}" target="_blank" rel="noopener">Practise in MercuryPitch${icon('i-out')}<span class="sr">, opens in a new tab</span></a>`
-  return `<div class="lm-in"><div class="lm-head"><h2 id="lessonMenuTitle">Find Your Pitch <small>${m.season}</small></h2><p class="lm-count">${m.count}</p><button class="btn icon lm-x" type="button" data-close aria-label="Close">${icon('i-x')}</button></div><div class="lm-bar" aria-hidden="true">${bars}</div>${onPage}<a class="lm-here" href="${m.here.href}" aria-label="${esc(m.here.label)}">${ring(m.here.fill)}<span class="lm-here-t"><b>${esc(m.here.title)}</b><span>${esc(m.here.line)}</span></span><span class="btn primary sm" aria-hidden="true">Continue</span></a><nav class="lm-season" aria-label="${SEASON} lessons">${arcs}</nav><div class="lm-foot">${map}${practise}<a class="btn sm" href="/">MercuryPitch home</a></div></div>`
+  return `<div class="lm-in"><div class="lm-head"><h2 id="lessonMenuTitle">Find Your Pitch <small>${seasonMarkup(m.season)}</small></h2><p class="lm-count">${m.count}</p><button class="btn icon lm-x" type="button" data-close aria-label="Close">${icon('i-x')}</button></div><div class="lm-bar" aria-hidden="true">${bars}</div>${onPage}<a class="lm-here" href="${m.here.href}" aria-label="${esc(m.here.label)}">${ring(m.here.fill)}<span class="lm-here-t"><b>${esc(m.here.title)}</b><span>${esc(m.here.line)}</span></span><span class="btn primary sm" aria-hidden="true">Continue</span></a><nav class="lm-season" aria-label="${SEASON} lessons">${arcs}</nav><div class="lm-foot">${map}${practise}<a class="btn sm" href="/">MercuryPitch home</a></div></div>`
 }
 
 // ---------------------------------------------------------------- the menu on a page
