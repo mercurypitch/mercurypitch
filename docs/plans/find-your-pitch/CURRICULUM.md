@@ -249,9 +249,10 @@ voice lines wait on the vocal coach's sign-off, and its page publishes after `/l
 - Practise: Drone Intonation (major and minor thirds against a drone; needs the `intervals` launch
   field to keep only its Major 3rd and Minor 3rd); Ear Lab Stack.
 - Facts: major and minor thirds differ by one semitone; the RCM Preparatory chord-quality test.
-- Open decision, before the script (MASTER-PLAN § 12 item 12): do-based minor (do-me-so, as
-  above) or la-based minor (la-do-mi, the Kodály choice). Season 2's movable-do sight-singing
-  (S11) inherits it.
+- Decided (19 October 2026, MASTER-PLAN § 12 item 12): do-based minor, do-me-so as above, with
+  the natural minor scale sung do re me fa so le te do. La-based minor (la-do-mi, the Kodály
+  choice) is named once in Go deeper and never taught. Season 2's movable-do sight-singing (S11)
+  inherits it.
 
 **Lesson 11. Registers and the break**
 
