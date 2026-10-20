@@ -51,6 +51,15 @@ const answered = (status: number): PageCheck => ({ kind: 'answered', status })
 const states = (steps: readonly ReleaseStep[]) =>
   steps.map((step) => [step.id, step.state])
 
+/** What the steps that ask the site say: both listings, then the page. */
+const siteSteps = (steps: readonly ReleaseStep[]) =>
+  steps
+    .filter(
+      (step) =>
+        step.id === 'sitemap' || step.id === 'llms' || step.id === 'live',
+    )
+    .map((step) => [step.id, step.state, step.detail])
+
 describe('lessonRows', () => {
   it('gives every Season 1 lesson one row, the trailer first', () => {
     expect(lessonRows().map((row) => row.lesson.n)).toEqual([
@@ -319,6 +328,62 @@ describe('releaseChecklist', () => {
     expect(states(steps).filter(([, state]) => state === 'problem')).toEqual([
       ['sitemap', 'problem'],
       ['live', 'problem'],
+    ])
+  })
+
+  it('holds a lesson unpublished here to leaving both listings and the site', () => {
+    const steps = releaseChecklist(
+      released,
+      { page: answered(200), sitemap: read('/learn/01'), llms: read() },
+      false,
+    )
+
+    expect(siteSteps(steps)).toEqual([
+      ['sitemap', 'problem', 'Listed, though it is unpublished here.'],
+      ['llms', 'todo', 'Unpublished here.'],
+      [
+        'live',
+        'problem',
+        'Unpublished here, yet the site serves it. The site follows within about a minute of a save.',
+      ],
+    ])
+    expect(
+      siteSteps(
+        releaseChecklist(
+          released,
+          { page: answered(404), sitemap: read(), llms: read() },
+          false,
+        ),
+      ).at(-1),
+    ).toEqual(['live', 'todo', 'Unpublished here, so it answers 404.'])
+  })
+
+  it('holds a draft published here to being listed and served, and says when this build cannot serve it', () => {
+    const shownDraft = rowFor(3)
+    const shown = releaseChecklist(
+      shownDraft,
+      { page: answered(200), sitemap: read('/learn/03'), llms: read() },
+      true,
+    )
+    const hidden = releaseChecklist(
+      hiddenDraft,
+      { page: answered(404), sitemap: read(), llms: read() },
+      true,
+    )
+
+    expect(siteSteps(shown)).toEqual([
+      ['sitemap', 'done', undefined],
+      ['llms', 'todo', 'Published here, not listed yet.'],
+      ['live', 'done', undefined],
+    ])
+    expect(siteSteps(hidden).at(-1)).toEqual([
+      'live',
+      'todo',
+      'Published here, but it answers 404: this build leaves its page out.',
+    ])
+    expect(states(shown).find(([id]) => id === 'release')).toEqual([
+      'release',
+      'todo',
     ])
   })
 
