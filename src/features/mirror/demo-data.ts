@@ -33,6 +33,7 @@ export const DEMO_PROFILES: Record<string, DemoProfile> = {
   alto: { lowMidi: 53, highMidi: 79, holdMidi: 65 }, // Amy Winehouse
   mezzo: { lowMidi: 57, highMidi: 83, holdMidi: 69 }, // Adele
   soprano: { lowMidi: 60, highMidi: 86, holdMidi: 72 }, // Mariah Carey
+  'bass-baritone': { lowMidi: 40, highMidi: 67, holdMidi: 52 }, // Paul Robeson: E2–G4 ties Bass and Baritone
   // Legend keys (seed mod walks each type's options).
   cash: { lowMidi: 40, highMidi: 60, holdMidi: 48 }, // 180 % 2 = 0
   barry: { lowMidi: 40, highMidi: 61, holdMidi: 50 }, // 181 % 2 = 1

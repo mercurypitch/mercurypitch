@@ -7,7 +7,7 @@
 // cannot drift apart.
 // ============================================================
 
-import { VOICE_LEGENDS, VOICE_TYPE_BANDS } from './legend-catalog'
+import { VOICE_LEGENDS, VOICE_TYPE_BANDS, voiceTypeBand, } from './legend-catalog'
 import type { RangeResult } from './metrics'
 
 /**
@@ -31,16 +31,18 @@ export const SINGERS_BY_VOICE_TYPE: Record<string, readonly string[]> =
  * A legendary singer whose range overlaps this voice type, chosen
  * deterministically from the singer's DETECTED range (lowMidi+highMidi):
  * varied across different voices, but stable for one person — the same singer
- * shows on the card, the on-screen chip, and every re-share. Returns null for
- * an unknown / unmapped voice type.
+ * shows on the card, the on-screen chip, and every re-share. A bass-baritone
+ * draws from the Bass roster (voiceTypeBand). Returns null for an unknown /
+ * unmapped voice type.
  */
 export function singerForVoiceType(
   voiceHint: string | null,
   lowMidi = 0,
   highMidi = 0,
 ): string | null {
-  if (voiceHint === null) return null
-  const options = SINGERS_BY_VOICE_TYPE[voiceHint]
+  const band = voiceTypeBand(voiceHint)
+  if (band === null) return null
+  const options = SINGERS_BY_VOICE_TYPE[band]
   // The length guard keeps a future empty roster from turning `seed % 0`
   // into options[NaN] === undefined, which would leak past `=== null` checks.
   if (options === undefined || options.length === 0) return null

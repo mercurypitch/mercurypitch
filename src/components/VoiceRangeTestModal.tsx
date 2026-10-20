@@ -13,6 +13,8 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
+import type { VoiceTypeBandId } from '@/lib/mirror/legend-catalog'
+import { voiceTypeBand } from '@/lib/mirror/legend-catalog'
 import type { F0Frame, RangeResult } from '@/lib/mirror/metrics'
 import { computeRange } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -64,8 +66,8 @@ const TASKS: readonly TaskSpec[] = [
   },
 ]
 
-/** Voice-hint names from the mirror metrics table → app presets. */
-const HINT_TO_PRESET: Record<string, VocalRangePreset> = {
+/** The mirror's voice bands → app presets (a bass-baritone takes Bass's). */
+const BAND_TO_PRESET: Record<VoiceTypeBandId, VocalRangePreset> = {
   Bass: 'bass',
   Baritone: 'baritone',
   Tenor: 'tenor',
@@ -229,8 +231,8 @@ export const VoiceRangeTestModal: Component<VoiceRangeTestModalProps> = (
   }
 
   const recommendedPreset = (): VocalRangePreset | null => {
-    const hint = result()?.voiceHint
-    return hint != null ? (HINT_TO_PRESET[hint] ?? null) : null
+    const band = voiceTypeBand(result()?.voiceHint ?? null)
+    return band !== null ? BAND_TO_PRESET[band] : null
   }
 
   const handleApply = () => {

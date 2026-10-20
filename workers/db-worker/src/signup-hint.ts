@@ -13,7 +13,7 @@
 // sign-up. A forged hint can change only what a person's own mail says about
 // them, and only to a catalogue legend and bounded numbers.
 
-import { VOICE_LEGENDS, VOICE_TYPE_BANDS, } from '../../../src/lib/mirror/legend-catalog'
+import { BASS_BARITONE, VOICE_LEGENDS, VOICE_TYPE_BANDS, voiceTypeBand, voiceTypeHint, } from '../../../src/lib/mirror/legend-catalog'
 import { midiToNoteNameOctave } from '../../../src/lib/note-utils'
 
 /** A validated voiceprint, in the shape the mail renderers take. */
@@ -22,7 +22,9 @@ export interface SignupVoiceprint {
   legendId: string
   /** The legend's display name, exactly as the catalogue spells it. */
   twin: string
-  /** The legend's broad voice band, for example "Baritone". */
+  /** The legend's broad voice band, for example "Baritone", or
+   *  "Bass-baritone" for a range that ties Bass and Baritone, as the app's
+   *  card names it, when the twin is a Bass legend. */
   voiceType: string
   lowMidi: number
   highMidi: number
@@ -73,10 +75,12 @@ export function parseVoiceprintHint(raw: unknown): SignupVoiceprint | null {
   const steadiness = score(hint.steadiness)
   if (accuracy === undefined || steadiness === undefined) return null
   const band = VOICE_TYPE_BANDS.find((entry) => entry.id === legend.band)
+  const named = voiceTypeHint(lowMidi, highMidi)
+  const tie = named === BASS_BARITONE && voiceTypeBand(named) === legend.band
   return {
     legendId: legend.id,
     twin: legend.name,
-    voiceType: band?.label ?? legend.band,
+    voiceType: tie ? BASS_BARITONE : (band?.label ?? legend.band),
     lowMidi,
     highMidi,
     accuracy,

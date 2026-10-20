@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { LEGENDS } from '@/features/mirror/LegendCaricature'
 import { VOICE_LEGENDS, VOICE_TYPE_BANDS } from './legend-catalog'
 import { voiceTypeHint } from './metrics'
-import { singerForVoiceType, SINGERS_BY_VOICE_TYPE } from './singer-match'
+import { singerForRange, singerForVoiceType, SINGERS_BY_VOICE_TYPE, } from './singer-match'
 
 // The roster is imported, not restated. It used to be copied into this
 // file, which meant adding a legend passed a test suite that was still
@@ -27,6 +27,15 @@ describe('singerForVoiceType', () => {
     for (const [type, options] of Object.entries(OPTIONS)) {
       expect(options).toContain(singerForVoiceType(type, 43, 67))
     }
+  })
+
+  it('finds a bass-baritone the twin the tie found when it read Bass', () => {
+    const twin = singerForVoiceType('Bass-baritone', 40, 67)
+    expect(OPTIONS.Bass).toContain(twin)
+    expect(twin).toBe(singerForVoiceType('Bass', 40, 67))
+    expect(
+      singerForRange({ voiceHint: 'Bass-baritone', lowMidi: 40, highMidi: 67 }),
+    ).toBe(twin)
   })
 
   it('is deterministic for a given range (card + chip + re-share match)', () => {
