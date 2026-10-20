@@ -335,6 +335,16 @@ test('three protected rooms open real doors and a walkable escape, with a failed
   const root = page.getByTestId('glass-adventure')
   const centerZs = [0, 14.942239828, 29.884479656]
   const rooms = ['diadem', 'tide', 'lotus']
+  // CI renders each protected room. Extra approach/retry/exit captures belong
+  // to the continuous GPU run so software screenshots do not consume the route deadline.
+  const captureRoom = async (name: string, supplemental = false) => {
+    if (supplemental && process.env.GLASS_E2E_FULL_RASTER !== '1') return
+    await renderMuseumCheckpoint(page)
+    await testInfo.attach(name, {
+      body: await page.screenshot(),
+      contentType: 'image/png',
+    })
+  }
   const solve = async (curtain: boolean) => {
     await page
       .getByRole('button', { name: 'Start listening', exact: true })
@@ -367,11 +377,7 @@ test('three protected rooms open real doors and a walkable escape, with a failed
     await expectArchiveMicrophoneOff(page)
     await walkArchiveTo(page, 0, centerZs[index]! - 0.8)
     await page.getByTestId('archive-aim-0').click()
-    await renderMuseumCheckpoint(page)
-    await testInfo.attach(`room-${index + 1}-entry`, {
-      body: await page.screenshot(),
-      contentType: 'image/png',
-    })
+    await captureRoom(`room-${index + 1}-entry`, true)
     if (index === 1) {
       await solve(false)
       await expect(panel).toHaveAttribute('data-mode', 'retry', {
@@ -379,11 +385,7 @@ test('three protected rooms open real doors and a walkable escape, with a failed
       })
       await expect(root).toHaveAttribute('data-completed', '3')
       await expectArchiveMicrophoneOff(page)
-      await renderMuseumCheckpoint(page)
-      await testInfo.attach('room-2-open-curtain-retry', {
-        body: await page.screenshot(),
-        contentType: 'image/png',
-      })
+      await captureRoom('room-2-open-curtain-retry', true)
       await page.getByRole('button', { name: 'Reset this arrangement' }).click()
     }
     await solve(index > 0)
@@ -397,11 +399,7 @@ test('three protected rooms open real doors and a walkable escape, with a failed
       timeout: 8_000,
     })
     await expectArchiveMicrophoneOff(page)
-    await renderMuseumCheckpoint(page)
-    await testInfo.attach(`room-${index + 1}-protected`, {
-      body: await page.screenshot(),
-      contentType: 'image/png',
-    })
+    await captureRoom(`room-${index + 1}-protected`)
     await expect(root).toHaveAttribute(
       'data-completed',
       String([3, 7, 12][index]),
@@ -447,7 +445,6 @@ test('three protected rooms open real doors and a walkable escape, with a failed
         })
         await expect(root).toHaveAttribute('data-completed', '3')
         await expectArchiveMicrophoneOff(page)
-        await renderMuseumCheckpoint(page)
       }
     }
   }
@@ -458,10 +455,6 @@ test('three protected rooms open real doors and a walkable escape, with a failed
   ).toBeVisible({ timeout: 10_000 })
   expect((await archivePlayer(page)).z).toBeGreaterThan(39.305)
   await expectArchiveMicrophoneOff(page)
-  await renderMuseumCheckpoint(page)
-  await testInfo.attach('archive-escaped', {
-    body: await page.screenshot(),
-    contentType: 'image/png',
-  })
+  await captureRoom('archive-escaped', true)
   expect(errors).toEqual([])
 })
