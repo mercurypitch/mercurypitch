@@ -58,9 +58,9 @@ export function initOctaveToy(deck: StepDeck): void {
     if (r === 2) {
       txt = 'Octave: 2 : 1'
       col = COLOR.gold
-    } else if (r === 1) txt = 'Unison · 1 : 1'
+    } else if (r === 1) txt = 'Same note · 1 : 1'
     else if (r === 3) txt = '3 : 1 fits too: a different note (E5)'
-    else if (r === 1.5) txt = '3 : 2 · meets every second peak'
+    else if (r === 1.5) txt = '3 : 2 · meets on every other slow peak'
     else if (near126) {
       txt = '277 Hz · a different note'
       col = COLOR.violet

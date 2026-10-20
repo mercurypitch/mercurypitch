@@ -52,8 +52,8 @@ export function initPredict(): void {
     },
     guess: (choice) =>
       choice === 'same'
-        ? 'You said: the same note · you heard something real'
-        : 'You said: two different notes · you heard something real',
+        ? 'You said: the same note · they do share one name'
+        : 'You said: two different notes · 440 does sound higher',
     onReveal: () => mercCelebrate('orange', 1600),
   })
 }

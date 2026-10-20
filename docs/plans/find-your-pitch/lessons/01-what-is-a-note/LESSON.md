@@ -32,13 +32,14 @@ Blue Merc: "Is it? Mine shook the air 220 times a second. Yours shook it 440."
 
 Reveal (shown after Play both, so it describes what was heard): One after the other, 440 sounds
 higher. Played together, they melt into one sound. Alike enough that music gives them one name:
-by the end of this lesson you'll know why. (Whichever you chose, you heard something real.)
+by the end of this lesson you'll know why. (Whichever you chose, you heard something real: 440
+sounds higher, and the two share a name.)
 
 ## Three words you'll meet
 
 - **Pitch**: how high or low a sound is.
 - **Hertz (Hz)**: swings per second.
-- **Octave**: the jump to twice the frequency, the same note one level higher.
+- **Octave**: the jump to twice as many swings per second: the same note, one level higher.
 
 ## Step 1 of 6: A note is something shaking
 
@@ -61,8 +62,8 @@ per second. This string swings 220 times a second, so its note is 220 Hz.
 
 > **Common mix-up:** "A high note is just a loud note."
 > It seems right because we use "high" and "up" for volume too ("turn it up"). But try it:
-> make the swing bigger and the note gets louder without moving at all. Make it faster and the
-> note climbs, however soft it is. Loud is how far it swings. High is how fast.
+> make the swing bigger and the note gets louder, but no higher. Make it faster and the note climbs,
+> however soft it is. Loud is how far it swings. High is how fast.
 
 **Try:** move the "how far" slider, then the "how fast" one.
 **Notice:** only "how fast" moves the bead. That's why MercuryPitch draws your voice as a line
@@ -70,17 +71,18 @@ that climbs when you go higher, soft or loud.
 
 ## Step 4 of 6: Twice as fast
 
-Back to the puzzle. 440 is exactly twice 220. Lay the two waves on top of each other: every second
+Back to the puzzle. 440 is exactly twice 220. Lay the two waves on top of each other: every other
 peak of the fast one lands right on a peak of the slow one, again and again, forever. Two for one:
 the simplest fit there is. That jump is called an **octave**.
 
 **Try:** slide the ratio from 1 to 3 and listen.
 **Notice:** at exactly 2 the waves meet on every slow peak, two for one. At 1.26 (277 Hz, a
 different note) they drift in and out of step. At 3 they meet again, three for one, but that's a
-different note too (E5): of all the fits, two for one is the simplest, and that's the octave.
+different note too. Of all the fits, two for one is the simplest: that's the octave.
 
 The octave keeps going: 110, 220, 440, 880. Each doubling sounds like the same size of jump, even
-though the gap in hertz doubles every time. Your ear hears multiplying, not adding.
+though the gap in hertz doubles every time. From 110 to 220 is 110 Hz; from 440 to 880 is 440 Hz.
+Your ear hears multiplying, not adding.
 
 ## Step 5 of 6: Pitch is a spiral
 
@@ -94,9 +96,9 @@ notes without a letter of their own. Twelve in all: that's Lesson 2.
 
 ## Step 6 of 6: Names and numbers
 
-A number tells you which turn a note is on, and the number goes up at C, not at A: B3 is followed
-by C4. So the A that orchestras tune to is A4, 440 Hz, and middle C on a piano is C4. A3 and A4
-share a letter because A4 swings exactly twice as fast: they're an octave apart, same spot on the
+The number tells you which turn of the spiral a note is on. It goes up at C, not at A, so B3 is
+followed by C4. The A that orchestras tune to is A4, 440 Hz, and middle C on a piano is C4. A3 and
+A4 share a letter because A4 swings exactly twice as fast: they're an octave apart, same spot on the
 spiral, one turn higher. Unroll the spiral and you get the piano: the same seven letters, octave
 after octave.
 
@@ -111,14 +113,15 @@ tune. So when you match a note, an octave up or down counts.
 **Your turn:** play Merc's A. Hum it back, wherever it feels easy. Keep it gentle. Never push, and
 stop if anything feels uncomfortable.
 
-Humming along here is just for you: nothing listens and nothing is scored. To be scored, sing it:
-in MercuryPitch, Voice Mirror finds your comfortable range, then plays five notes for you to sing
+Humming along here is just for you: nothing listens and nothing is scored. Want a score? Try
+MercuryPitch's Voice Mirror. It finds your comfortable range, then plays five notes for you to sing
 back on "ooh", and counts a match in any octave. Free, no account:
 **mercurypitch.com/mirror**
 
 ## Quick check
 
-Each question has three answers, shown in a shuffled order, so a guess scores a third, not half.
+_[Editorial: each question has three answers, shown in a shuffled order, so a guess scores a third,
+not half.]_
 
 1. What makes a note higher?
    - Faster swings (a higher frequency) **[correct]** · Feedback: "Yes. Speed is pitch; size is
