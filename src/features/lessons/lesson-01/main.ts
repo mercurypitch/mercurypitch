@@ -31,7 +31,6 @@ import vttUrl from './assets/lesson-01.en.vtt?url'
 import mercBlue from './assets/merc-blue.png'
 import mercOrange from './assets/merc-orange.png'
 import poster from './assets/poster.jpg'
-import { createBlueprint } from './blueprint'
 import { initEntrance } from './entrance'
 import { FILM_CAPTIONS_TEXT, FILM_CHAPTERS, FILM_SOURCES } from './film'
 import { initHero } from './hero'
@@ -88,7 +87,6 @@ createEpisode({
   chapters: FILM_CHAPTERS,
   onDuration: (len) => explorer.setLength(1, len),
 })
-createBlueprint()
 
 engraveClefs(G_CLEF_PATH)
 initMasthead({
@@ -98,7 +96,6 @@ initMasthead({
   check: '#lesson',
   watch: '#watch',
   explorer: '#explorer',
-  blueprint: '#blueprint',
 })
 initEntrance()
 initReveals()

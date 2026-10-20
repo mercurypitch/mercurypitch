@@ -51,7 +51,7 @@ refutes it. New against Lesson 1: the recall check (item 3) runs for the first t
 straight after the hero, because the cold open (item 4) plays in the hero, beside the spiral it
 lights, as Lesson 1's does: items 3 and 4 swap (DECISIONS 80). The practice link sits in the Wrap,
 as the anatomy has it; the page has two mix-up cards, one per concept (playbook rule 3); and there
-is no series blueprint section (Lesson 1's page carries it for the team), so the masthead's anchors
+is no series blueprint section (it is the team's, in the Content Studio), so the masthead's anchors
 are Lesson, Watch and Explorer. Each section's heading, and the line above it, are in LESSON.md
 ("Section headings"); the step headings are orange's questions (DECISIONS 86).
 

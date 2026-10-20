@@ -275,8 +275,6 @@ button {
 .ex-arc small,
 .ex-lanes-head,
 .ex-row .it small,
-.ph .t,
-.ph4 .t,
 .foot h4,
 .big-play .cap small,
 .kb-pan .win,
@@ -292,10 +290,8 @@ button {
 .chapters time,
 .tx .t,
 .ex-rows .topic b,
-.beatlist time,
 .ro .v small,
 .flag,
-.chain li::before,
 .opt .mk,
 .slider-row label b {
   font: 500 var(--fs-12)/1.2 var(--f-mono);

@@ -86,9 +86,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'guitar-night.html': 1800,
 
   // Find Your Pitch, Lesson 1: the lesson's own module, the shared lesson
-  // kit and Vite's helper. Measured 113. Merc's renderer arrives through a
-  // dynamic import, so the page stays this light only while that boundary
-  // holds.
+  // kit and Vite's helper. Measured 114 on 2026-10-20 (116 until the Series
+  // blueprint left the page). Merc's renderer arrives through a dynamic
+  // import, so the page stays this light only while that boundary holds.
   'learn/01.html': 125,
   // Lesson 2, "Twelve notes": its own module on the same kit. Measured 131;
   // the renderer is the same dynamic import as Lesson 1's.
@@ -160,9 +160,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   'drum-night.html': 125,
   'guitar-night.html': 400,
 
-  // Lesson 1. Measured 69: the kit's sheets and its own (56), and the shared
-  // Inter and Outfit @font-face rules (13).
-  'learn/01.html': 90,
+  // Lesson 1. Measured 64 on 2026-10-20 (69 until the Series blueprint and
+  // its rules left the page): the kit's sheets and its own (51), and the
+  // shared Inter and Outfit @font-face rules (12).
+  'learn/01.html': 80,
   // Lesson 2. Measured 75: the kit's sheets, its own and the slide guide's.
   'learn/02.html': 95,
 

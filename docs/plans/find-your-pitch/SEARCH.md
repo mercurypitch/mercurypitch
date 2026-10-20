@@ -252,9 +252,10 @@ A crawlable index of the series is worth building when Lesson 2 ships.
   `hasPart` pointing at each published lesson's `#lesson`. `Course` or
   `CreativeWorkSeries`; neither earns a rich result any more, so it is a
   wording choice.
-- **Lesson 1's "Series blueprint" section** (the pipeline, the plan files) fits
-  the hub, or the about site, better than a lesson. A lesson page reads best
-  when everything on it teaches its topic.
+- **Not the "Series blueprint"** (the pipeline, the plan files). It left
+  Lesson 1's page for the Content Studio's Lessons page, because the owner
+  keeps the plan off public pages, the hub and the about site included. A
+  lesson page reads best when everything on it teaches its topic.
 
 ---
 
