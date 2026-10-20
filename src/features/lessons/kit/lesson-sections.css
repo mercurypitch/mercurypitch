@@ -194,6 +194,17 @@
   word-spacing: 0.06em;
   text-wrap: balance;
 }
+/* its way on (next-card.ts): aqua to a lesson, ink to read one again, chrome
+   to the map for a lesson coming later */
+.next-card .chip i {
+  --c: var(--aqua);
+}
+.next-card.is-again .chip i {
+  --c: var(--ink);
+}
+.next-card.is-later .chip i {
+  --c: var(--chrome);
+}
 @media (max-width: 860px) {
   .wrapup {
     grid-template-columns: minmax(0, 1fr);

@@ -81,22 +81,6 @@
   }
 }
 
-/* the prerequisite chip is a link: a 44 px target around a 28 px chip */
-.chip-link {
-  position: relative;
-  color: var(--ink-2);
-  text-decoration: none;
-}
-.chip-link::after {
-  content: '';
-  position: absolute;
-  inset: -8px -4px;
-}
-.chip-link:hover {
-  border-color: var(--hair-3);
-  color: var(--ink);
-}
-
 /* ---------------------------------------------------------------- four words */
 .tickets.four {
   grid-template-columns: repeat(2, minmax(0, 1fr));

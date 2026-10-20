@@ -3,7 +3,7 @@
 // ============================================================
 //
 // Every surface that lists lessons asks this one function: the explorer's
-// card, the masthead's lesson menu and, later, the next-lesson card. A
+// card, the masthead's lesson menu and the Wrap's next-lesson card. A
 // lesson is done (the viewer marked it), here (this page's own lesson), in
 // progress (a step remembered from its page, position.ts), up next (the
 // first live lesson not done whose prerequisites are), ready (live), or
@@ -130,4 +130,19 @@ export function lessonViews(
       action: actionFor(L, done, step, viewer.current),
     }
   })
+}
+
+const minutes = (L: Lesson): string =>
+  L.minutes === undefined ? '' : ` · ${L.minutes} min`
+
+/**
+ * Where the viewer stands with a lesson other than this page's, in the
+ * words a list row or a card says it: "Ready · 10 min", "Step 3 of 6",
+ * "Done · 10 min" or "Coming later".
+ */
+export function stateWords(v: LessonView): string {
+  if (v.state === 'later') return 'Coming later'
+  if (v.done) return `Done${minutes(v.lesson)}`
+  if (v.step !== null) return `Step ${v.step.step} of ${v.step.of}`
+  return `Ready${minutes(v.lesson)}`
 }

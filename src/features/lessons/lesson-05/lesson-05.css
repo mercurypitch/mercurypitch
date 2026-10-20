@@ -14,21 +14,6 @@
   line-height: 1.06;
   max-width: 15em;
 }
-/* the prerequisite chip is a link: a 44 px target around a 28 px chip */
-.chip-link {
-  position: relative;
-  color: var(--ink-2);
-  text-decoration: none;
-}
-.chip-link::after {
-  content: '';
-  position: absolute;
-  inset: -8px -4px;
-}
-.chip-link:hover {
-  border-color: var(--hair-3);
-  color: var(--ink);
-}
 /* two prerequisite chips, which can wrap one above the other: rows 16 px
    apart keep their 44 px targets from overlapping */
 .l05-hero .meta {

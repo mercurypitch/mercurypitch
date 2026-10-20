@@ -87,12 +87,13 @@ line above it, are in LESSON.md ("Section headings").
    rules never score a hum or reward a wide range; the reading only describes where the take's
    middle half sat (FACTS 59).
 8. **Quick check**: LESSON.md's four questions (Toys 5).
-9. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's
-   ending picks, and the next lesson's hook on a card that opens Lesson 8 in the explorer. The card
-   is the Vocal Range Test card, with "Ten minutes, gently, most days" under it; after "Effortful",
-   "Uncomfortable" or "Just listen today" it is the rest card instead, without that line (Toys 4).
-   Its address links `/vocal-range-test?lesson=07` in a new tab. Free play unlocks here: every
-   chart control on one stage (playbook rule 17).
+9. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
+   picks, and the kit's next-lesson card (`kit/next-card.ts`): Lesson 8's hook, "Coming later" and
+   the explorer until Lesson 8 is live, then "Start lesson" to its page. The card is the Vocal Range
+   Test card, with "Ten minutes, gently, most days" under it; after "Effortful", "Uncomfortable" or
+   "Just listen today" it is the rest card instead, without that line (Toys 4). Its address links
+   `/vocal-range-test?lesson=07` in a new tab. Free play unlocks here: every chart control on one
+   stage (playbook rule 17).
 10. **Lesson explorer**: the kit's, with Lesson 7 as the current node, the line under its heading
     from LESSON.md, and the state for a lesson with a page and no film (What the kit and the app
     still need).
@@ -613,9 +614,10 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
    another, for the end-to-end tests (Tests).
 10. App: the `pattern` slug and its test (Practice links), and the App content list's one open
     sentence. The two warm-up changes the lip-trill link waited on are on main (Practice links).
-11. Lessons 1 to 6's pages, when this one goes live: nothing to edit in their explorers, which read
-    each lesson's state from the season (`kit/season.ts`). Lesson 6's next-lesson card turns from
-    "coming later" to "ready to read".
+11. Lessons 1 to 6's pages, when this one goes live: nothing to edit. Their explorers and their
+    Wraps' next-lesson cards (`kit/next-card.ts`) read each lesson's state from the season
+    (`kit/season.ts`), so Lesson 6's card turns from "Coming later" to "Start lesson" and links
+    this page.
 
 ## Edge cases
 

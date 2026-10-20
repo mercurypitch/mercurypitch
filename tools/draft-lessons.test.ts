@@ -166,9 +166,6 @@ describe("a page's words about which lessons are ready", () => {
   const LINE =
     'Next: Lesson 5 <span data-if-live="5">ready to read</span\n  ><span data-if-planned="5">coming later</span>.'
 
-  /** A document's text, its whitespace runs closed up as a browser lays it out. */
-  const words = (html: string): string => html.replace(/\s+/g, ' ')
-
   it('keeps the reading that is true of the build, unwrapped, and drops the other', () => {
     // Act
     const live = resolveLessonStates(LINE, [1, 2, 4, 5])
@@ -184,35 +181,4 @@ describe("a page's words about which lessons are ready", () => {
 
     expect(() => resolveLessonStates(nested, [3])).toThrow(/holds a span/)
   })
-
-  // each page that names a draft as its next lesson: [page, its next lesson, the title its card names]
-  const NEXT_DRAFTS = [
-    ['learn/02.html', 3, '03 · Match a note'],
-    ['learn/04.html', 5, '05 · Breath and a steady note'],
-  ] as const
-
-  it.each(NEXT_DRAFTS)(
-    "says %s's next lesson, %i, is coming later until a build carries its page",
-    (page, next, title) => {
-      // Arrange
-      const html = repoFile(page)
-      const card = (live: readonly number[]): string => {
-        const text = words(resolveLessonStates(html, live))
-        const at = text.indexOf(title)
-        return text.slice(at, at + 140)
-      }
-      const reading = (shown: boolean): string =>
-        builtLessons(ROOT, shown).includes(next)
-          ? 'ready to read'
-          : 'coming later'
-      const without = [1, 2, 3, 4, 5].filter((n) => n !== next)
-
-      // Act and assert
-      expect(card(builtLessons(ROOT, true))).toContain(reading(true))
-      expect(card(builtLessons(ROOT, false))).toContain(reading(false))
-      expect(card([...without, next])).toContain('ready to read')
-      expect(card(without)).toContain('coming later')
-      expect(words(resolveLessonStates(html, without))).not.toMatch(/data-if-/)
-    },
-  )
 })

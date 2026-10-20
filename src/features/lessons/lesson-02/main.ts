@@ -24,6 +24,7 @@ import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
 import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
+import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
@@ -79,6 +80,8 @@ const quiz = createQuiz({
 bindQuizPair(quiz.host)
 initFreePlay()
 
+// the next lesson's card first: the explorer binds its link to the map
+createNextCard(2)
 const explorer = createExplorer({
   current: 2,
   posters: { 1: posterLesson1, 2: poster },

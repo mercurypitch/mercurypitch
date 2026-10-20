@@ -23,6 +23,7 @@ import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 import { mountLoud } from '@/features/lessons/kit/loud'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
+import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
@@ -79,6 +80,8 @@ createQuiz({
   keys: { seed: 'fyp-l01-seed', record: 'fyp-l01-quiz-v3' },
   deck,
 })
+// the next lesson's card first: the explorer binds its link to the map
+createNextCard(1)
 const explorer = createExplorer({ current: 1, posters: { 1: poster } })
 createEpisode({
   film: FILM_SOURCES,

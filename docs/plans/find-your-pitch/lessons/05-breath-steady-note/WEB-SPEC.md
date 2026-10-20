@@ -69,7 +69,8 @@ above it, are in LESSON.md ("Section headings").
 8. **Quick check** (Toys, 7).
 9. **Wrap**: the recap, the challenge, the practice card in the version the checkpoint's ending
    picks (Toys, 6: the Voice Mirror card with "Ten minutes, gently, most days", or Lesson 3's rest
-   card without it), and the next hook on a card that opens Lesson 6 in the explorer. Free play
+   card without it), and the kit's next-lesson card (`kit/next-card.ts`): Lesson 6's hook, "Coming
+   later" and the explorer until Lesson 6 is live, then "Start lesson" to its page. Free play
    unlocks here: Push, the gauge and the three starts on one stage (playbook rule 17).
 10. **Lesson explorer**: the kit's, with Lesson 5 current (Explorer and season data, below).
 11. **Footer**: LESSON.md's ("Footer"): "Season 1 · Lesson 05 · Breath and a steady note"; the

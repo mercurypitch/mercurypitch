@@ -32,14 +32,16 @@
 // the network in both (src/lib/sw-runtime.ts), so a hidden draft's path
 // reaches the 404 page rather than the app shell.
 //
-// A page's own words can follow the build too. Where a lesson page says
-// whether another lesson is ready (a next-lesson card's "ready to read" or
-// "coming later"), it writes both readings, each in a
-// `<span data-if-live="5">` or `<span data-if-planned="5">`, and
+// A page's own words can follow the build too. Where a lesson page's
+// markup says whether another lesson is ready, it writes both readings,
+// each in a `<span data-if-live="5">` or `<span data-if-planned="5">`, and
 // `lessonStatesPlugin` keeps the one that is true of the build: live where
 // Lesson 5's page is built, planned where it is not. So a page reads
 // correctly with or without its script, and releasing a draft changes its
-// words with everything else.
+// words with everything else. No page needs it today: the Wrap's
+// next-lesson card, which did, is drawn from the season by
+// src/features/lessons/kit/next-card.ts, where a hidden draft is already a
+// lesson coming later.
 
 import { existsSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
