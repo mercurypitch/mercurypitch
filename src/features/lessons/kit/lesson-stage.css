@@ -1223,7 +1223,28 @@
   min-height: 44px;
   font: 500 var(--fs-16)/1.2 var(--f-mono);
   color: var(--aqua);
-  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+/* inside a sentence an address flows as text, so it wraps after its slash or hyphen and the words
+   after it follow its last line; the padding keeps a link's tap target 44 px tall */
+p .addr {
+  display: inline;
+  padding-block: 12px;
+}
+p .addr .ico {
+  margin-left: 6px;
+  vertical-align: -3px;
+}
+/* the address and the comma after it, so a line never starts with the comma; inside, the address
+   still wraps after its last slash, and its last part keeps its icon */
+.addr-tail {
+  white-space: nowrap;
+}
+.addr-tail .addr {
+  white-space: normal;
+}
+.addr-end {
+  white-space: nowrap;
 }
 .app-card .fig svg {
   width: 100%;
