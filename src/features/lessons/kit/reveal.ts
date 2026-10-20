@@ -130,37 +130,4 @@ export function initReveals(): void {
       from(card, { transform: 'translateY(20px) scale(.975)' }, 1),
     )
   }
-  // the blueprint: panels rise in reading order, the beat bar draws out along its time line, the phases step in
-  for (const panel of qa('.bp > *')) {
-    onEnter(panel, 94, () =>
-      from(panel, { transform: 'translateY(22px)' }, 0.9),
-    )
-  }
-  const bar = document.getElementById('beatbar')
-  if (bar) {
-    onEnter(bar, 94, () =>
-      qa('i', bar).forEach((seg, i) =>
-        seg.animate(
-          [
-            { transform: 'scaleX(0)', transformOrigin: '0 50%' },
-            { transform: 'none', transformOrigin: '0 50%' },
-          ],
-          {
-            duration: 500,
-            delay: i * 60,
-            easing: EASE.power2Out,
-            fill: 'backwards',
-          },
-        ),
-      ),
-    )
-  }
-  const phases = document.querySelector('.phases')
-  if (phases) {
-    onEnter(phases, 94, () =>
-      qa('.ph, .ph4', phases).forEach((ph, i) =>
-        from(ph, { transform: 'translateX(-14px)' }, 0.7, { delay: i * 0.06 }),
-      ),
-    )
-  }
 }

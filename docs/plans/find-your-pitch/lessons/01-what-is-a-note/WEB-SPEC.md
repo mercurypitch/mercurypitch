@@ -3,7 +3,8 @@
 One self-contained page that does three jobs: the **web lesson** for Lesson 1 (written steps,
 live toys, predict, checkpoint, quiz), the **episode** (the film embedded with chapters and
 captions), and the **lesson explorer** for Season 1 (all lessons, Lesson 1 live, the rest as
-placeholders). A short **series blueprint** section closes it for the team. Copy is in
+placeholders). The team's **series blueprint** is not on it: planning stays off a learner's
+page, and the blueprint is kept for the Content Studio's Lessons page (item 10). Copy is in
 [LESSON.md](LESSON.md); the curriculum is [../../CURRICULUM.md](../../CURRICULUM.md).
 
 It was built first as a private preview page, which is the **proof preview** only (MASTER-PLAN
@@ -51,7 +52,7 @@ the practise link (item 11) sits in the Sing it card and the footer, not in the 
 in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
 
 1. **Masthead** (sticky, slim): wordmark, "Season 1 · Lesson 01", anchors (Lesson, Watch,
-   Explorer, Blueprint), a Sound toggle (off by default; nothing plays without a tap), and a
+   Explorer), a Sound toggle (off by default; nothing plays without a tap), and a
    **Pause animations** toggle for everyone (an SVG icon with a text label, `aria-pressed`, at
    least 44 px). On, it freezes the Merc idle loops, the staff vibration and the spiral drift.
    Without reduced motion it starts off, and the viewer's choice is remembered in localStorage.
@@ -129,12 +130,12 @@ in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
    list with chips. Remember "done" per lesson in localStorage (Lesson 1
    marks done when the quiz is finished); on the public host it syncs on sign-in (MASTER-PLAN
    § 4.3).
-10. **Series blueprint** (for the team, compact): the promise; the format (episode beat sheet and
-    page anatomy as two small diagrams); the five teaching rules that matter most; the pipeline in
-    eight steps (MASTER-PLAN § 6's eleven, condensed); the phases 0 to 5 as a horizontal timeline,
-    with their status from MASTER-PLAN § 7 (Phase 0 is in progress until Lesson 1's delivery
-    master and LEDGER exist); links to the plan files on the branch
-    (`docs/plans/find-your-pitch/`).
+10. **No series blueprint.** The page closed with one for the team until October 2026: the
+    promise; the episode beat sheet and the page anatomy; the five teaching rules that matter
+    most; the pipeline in eight steps; the phases 0 to 5; links to the plan files
+    (`docs/plans/find-your-pitch/`). It is planning, which no learner's page carries, so it moved
+    word for word to `src/features/admin/lessons/blueprint-data.ts`, which the Content Studio's
+    Lessons page (`/admin/lessons`) shows. Change it there.
 11. **Footer**: practise link (Voice Mirror, `mercurypitch.com/mirror`, with `?lesson=01` on the
     public host, as in the Sing it card); credits (fonts SIL OFL; scratch voices: local
     Kokoro-82M, Apache 2.0, to be re-voiced; every musical example synthesised; Merc's sung notes

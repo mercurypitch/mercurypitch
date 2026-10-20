@@ -54,6 +54,28 @@ test('the lesson boots: a guess unlocks the sounds, the explorer lights a path @
   expect(errors).toEqual([])
 })
 
+// The Series blueprint is the team's plan, not part of the lesson: it lives
+// in the Content Studio's Lessons page now. Every masthead anchor must still
+// land on a section of this page.
+test('the page has no blueprint and no link to one, and every masthead anchor lands @smoke', async ({
+  page,
+}) => {
+  await page.goto('/learn/01')
+  // the module has run: the explorer opened on this lesson's card
+  await expect(page.locator('#exCardHost h3')).toHaveText('What is a note?')
+
+  await expect(page.locator('#blueprint')).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /blueprint/i })).toHaveCount(0)
+  const anchors = await page
+    .locator('#mastNav a')
+    .evaluateAll((links) => links.map((a) => a.getAttribute('href') ?? ''))
+  expect(anchors.length).toBeGreaterThan(0)
+  for (const href of anchors) {
+    expect(href).toMatch(/^#[a-z]/)
+    await expect(page.locator(href)).toHaveCount(1)
+  }
+})
+
 test("Home's Lessons link, beside Learn and What's new, opens the lesson @smoke", async ({
   page,
 }) => {
