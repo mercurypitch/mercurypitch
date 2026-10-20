@@ -213,14 +213,18 @@ voice lines wait on the vocal coach's sign-off, and its page publishes after `/l
 - Facts: Titze's semi-occluded warm-ups (2006); voice-type ranges; SOVT evidence is modest. Never
   reward the widest span (the app's guided-voice rules).
 
-**Lesson 8. Beat, tempo and the backbeat**
+**Lesson 8. Beat, tempo and the backbeat** (written: the lesson, its facts and its page spec are
+in [lessons/08-beat-tempo-backbeat/](lessons/08-beat-tempo-backbeat/), awaiting review; no film yet;
+its sung line waits on the vocal coach's sign-off, and its page publishes after `/learn/06`)
 
 - Objectives: find the pulse; count bars of 2, 3 and 4; hear and clap a backbeat.
 - Misconception: "Rhythm is just how fast the song goes."
 - Signature: a metronome whose arm becomes the beat grid of a step sequencer (the stats site's
   metronome and sequencer motifs).
-- Checkpoint: clap on 2 and 4 under a groove, then sing a phrase on the beat.
-- Practise: Ear Lab Time drills (needs an `ear-drill` launch); Drum Night (`/drum-night`).
+- Checkpoint: tap on 2 and 4 under a groove, then sing a phrase on the beat.
+- Practise: Drum Night's First Pocket (`/drum-night?drawer=learn&lesson=08`); Ear Lab's Subdivide
+  (`/ear-lab?lesson=08`, then tap Subdivide; a run of only its 3/4 and 4/4 bars needs the
+  `ear-drill` launch kind).
 - Facts: backbeat (Ableton Learning Music). Show the march-versus-rock feel; don't state it as a
   statistic.
 
