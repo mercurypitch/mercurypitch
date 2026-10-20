@@ -2,8 +2,10 @@
 // ============================================================
 
 import { createRoot } from 'solid-js'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, } from '@/features/guitar/backing/guitar-room-band'
+import { resetFirstValueForTests } from '@/lib/first-value'
+import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { DEFAULT_GUITAR_FIRST_WIN_CONFIG } from './first-win-config'
 import { completeGuitarFirstWinStep, readGuitarFirstWinProgress, writeGuitarFirstWinProgress, } from './first-win-progress'
 import { buildGuitarFirstWinNotes, useGuitarFirstWinController, } from './useGuitarFirstWinController'
@@ -35,7 +37,41 @@ function createBandHarness(expectedHitTimesMs = [1_000, 1_500, 2_000, 2_500]) {
 }
 
 describe('useGuitarFirstWinController', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    resetFirstValueForTests()
+  })
   afterEach(() => localStorage.clear())
+
+  const sentFunnelEvents = (): string[] =>
+    (
+      JSON.parse(localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]') as {
+        event: string
+      }[]
+    ).map((e) => e.event)
+
+  it('sends first_value_guitar once, when the final step completes and not after step one or a replay', () => {
+    createRoot((dispose) => {
+      const controller = useGuitarFirstWinController({
+        config: () => DEFAULT_GUITAR_FIRST_WIN_CONFIG,
+        createBand: () => createBandHarness().band,
+      })
+
+      for (let hit = 0; hit < 3; hit += 1) controller.registerHit('touch')
+      expect(controller.progress().completedStepIds).toEqual(['open-low-e'])
+      expect(sentFunnelEvents()).toEqual([])
+
+      controller.advanceStep()
+      for (let hit = 0; hit < 15; hit += 1) controller.registerHit('touch')
+      expect(controller.progress().status).toBe('completed')
+      expect(sentFunnelEvents()).toEqual(['first_value_guitar'])
+
+      controller.restartStep()
+      controller.registerHit('touch')
+      expect(sentFunnelEvents()).toEqual(['first_value_guitar'])
+      dispose()
+    })
+  })
 
   it('keeps audio inert while touch advances through both beginner steps', () => {
     const harness = createBandHarness()

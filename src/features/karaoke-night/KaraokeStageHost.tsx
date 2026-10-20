@@ -7,6 +7,7 @@ import { LyricsUploaderStyles } from '@/components/LyricsUploader'
 import { StemMixer, StemMixerStyles } from '@/components/StemMixer'
 import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
+import { trackFirstValue } from '@/lib/first-value'
 import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { getUvrSession } from '@/stores/uvr-store'
@@ -100,7 +101,10 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
       }
       onMicGranted={() => trackKaraokeSessionOnce('karaoke_mic_granted')}
       onValidMicPitch={() => trackKaraokeSessionOnce('karaoke_first_pitch')}
-      onScoreCreated={() => trackKaraokeSessionOnce('karaoke_first_score')}
+      onScoreCreated={() => {
+        trackKaraokeSessionOnce('karaoke_first_score')
+        trackFirstValue('karaoke')
+      }}
       onScorecardViewed={() =>
         trackKaraokeSessionOnce('karaoke_scorecard_view')
       }

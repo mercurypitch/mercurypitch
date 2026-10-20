@@ -17,6 +17,7 @@ import { bankItemState, pickBankItem } from '@/lib/ear/banks'
 import type { IdentificationDrill } from '@/lib/ear/drills'
 import { guessRate } from '@/lib/ear/drills'
 import type { Rating } from '@/lib/ear/elo'
+import { trackFirstValue } from '@/lib/first-value'
 import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, takeSprintRunLength, } from '@/stores/ear-lab-store'
 import { createRevealPacer } from './reveal-pacing'
 
@@ -222,7 +223,10 @@ export function useIdentificationController(
     creditEarSession(performance.now() - startedAt)
     // A segment counts when the run reached its end, not when it was
     // abandoned part-way.
-    if (complete) markSprintSegmentDone(drill.id)
+    if (complete) {
+      markSprintSegmentDone(drill.id)
+      trackFirstValue('ear')
+    }
     setPhase('done')
   }
 

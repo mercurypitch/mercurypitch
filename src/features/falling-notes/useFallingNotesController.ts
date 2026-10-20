@@ -12,6 +12,7 @@ import { matchLegacyPianoInputPitch } from '@/features/piano/legacy/piano-input-
 import type { AudioEngine } from '@/lib/audio-engine'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
+import { trackFirstValue } from '@/lib/first-value'
 import { rmsOfTimeData } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
@@ -194,6 +195,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   let gameStartTime = 0
   let judgedNotes = new Set<number>()
   let playedNotes = new Set<number>()
+  // Whether any note was hit since Play was pressed. Run-scoped: only
+  // startGame clears it, so a repeat cycle, an A-B lap wrap or a track switch
+  // (each of which empties hitResults) does not forget an earlier hit.
+  let runHadHit = false
   // A seek made while stopped/finished is a start position, not stale state:
   // the next startGame() begins there instead of snapping back to beat 0.
   let pendingStartBeat: number | null = null
@@ -475,6 +480,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     }
 
     judgedNotes.add(note.id)
+    runHadHit = true
     setHitResults((prev) => [...prev, judgment])
     setScore((s) => s + finalScore)
     const newCombo = combo() + 1
@@ -621,6 +627,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setCombo(0)
     setMaxCombo(0)
     setHitResults([])
+    runHadHit = false
     setNotesMissed(0)
 
     // Respect a seek made while stopped: start from there instead of 0.
@@ -715,6 +722,9 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       setPianoCurrentCycle(1)
     }
     setGameState('finished')
+    // A run nobody played (Play with no input, a seek to the end) is finished
+    // but is not a result.
+    if (runHadHit) trackFirstValue('piano')
   }
 
   const resetGame = () => {
