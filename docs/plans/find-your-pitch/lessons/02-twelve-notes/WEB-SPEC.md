@@ -120,18 +120,16 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
    - **The practice card** (LESSON.md): Lesson 1's app card, with Leap's text, today's caveat and
      Contour as an optional first drill; the address line "Practise it free:
      mercurypitch.com/ear-lab, then tap Leap", as the film's end card prints the address, linking
-     `/ear-lab?lesson=02` in a new tab, as Lesson 1's card links Voice Mirror; and the first-visit
-     line, "First visit? MercuryPitch opens with its intro: close it with the × at the top right
-     ("Skip the intro")."
-     (Practice link, below; FACTS 33a). Its figure is a house-style drawing of Leap's twelve answer
-     pads in the app's six columns, each its label over its name (FACTS 32), in the page's own
-     colours (DECISIONS 87): m2 and M2 lit, their labels and names in ink on a brighter fill; the
-     other ten ghosted, with no fill and a faint outline (ink at 20 %), their labels and names in
-     ink-2, 7.7:1 to 8.5:1 on the card's gradient (`--ink-2` #a8b3bf on `--card` #12171e and on the
-     gradient's lighter top, `kit/lesson-base.css:17`, `:25`, `:53-57`). It is drawn at the card's
-     width, never scaled down, so its text keeps the type scale's 12 px floor; on phones a pad's
-     name may take two lines. Its caption: "Illustration: Leap's twelve answers. In Leap: m2 =
-     semitone · M2 = tone."
+     `/ear-lab?lesson=02` in a new tab, as Lesson 1's card links Voice Mirror, so a first visit
+     meets no intro (Practice link, below; FACTS 33b). Its figure is a house-style drawing of Leap's
+     twelve answer pads in the app's six columns, each its label over its name (FACTS 32), in the
+     page's own colours (DECISIONS 87): m2 and M2 lit, their labels and names in ink on a brighter
+     fill; the other ten ghosted, with no fill and a faint outline (ink at 20 %), their labels and
+     names in ink-2, 7.7:1 to 8.5:1 on the card's gradient (`--ink-2` #a8b3bf on `--card` #12171e
+     and on the gradient's lighter top, `kit/lesson-base.css:17`, `:25`, `:53-57`). It is drawn at
+     the card's width, never scaled down, so its text keeps the type scale's 12 px floor; on phones
+     a pad's name may take two lines. Its caption: "Illustration: Leap's twelve answers. In Leap:
+     m2 = semitone · M2 = tone."
    - **The next-lesson card**: the next lesson's hook on a card that opens Lesson 3 in the
      explorer, with the tease's two figures side by side: ASKED, 59 %, of 1,105; TESTED, 10–16 %, a
      semitone or more off (FACTS 36). The film prints the second label "≥ 1 semitone off"; the page
@@ -160,10 +158,10 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
     team's (`pr.needs`), kept for the admin console and never drawn on the card.
 11. **Footer**: Lesson 1's, with every string as LESSON.md gives it ("Head and footer"): "Season 1
     · Lesson 02 · Twelve notes"; the practice link, printed `mercurypitch.com/ear-lab` and linking
-    `/ear-lab?lesson=02`, with "Ear Lab is free: tap Leap." and the first-visit line; and the
-    credits as Lesson 1's built footer words them ("Voices in the episode: ElevenLabs (Eleven
-    v3).", `learn/01.html:1702-1707`), with the episode's sung notes, its synthesised examples and
-    this page's synthesised sound (FACTS 41, 50, 51; FACTS, Labels).
+    `/ear-lab?lesson=02`, with "Ear Lab is free: tap Leap."; and the credits as Lesson 1's built
+    footer words them ("Voices in the episode: ElevenLabs (Eleven v3).", `learn/01.html:1702-1707`),
+    with the episode's sung notes, its synthesised examples and this page's synthesised sound
+    (FACTS 41, 50, 51; FACTS, Labels).
 
 ## The episode
 
@@ -250,9 +248,9 @@ step 4's; step 5's; and free play's.
   A3 to A4 at the film's timing (FACTS 43), lights each bead in turn, runs a step counter from 0 on
   A3 to 12 on A4 (steps, not notes: thirteen notes make twelve steps, FACTS 16; DECISIONS 11) and
   shows each note's frequency in whole hertz as it lights (220 Hz up to 440 Hz, FACTS 43), with a
-  gold "× 2" at the end. **Look down** moves the camera to the spiral's axis: one turn becomes the
-  ring of twelve, its wedges lit in gold; press again to return. Under reduced motion both land in
-  their end state at once.
+  gold "· Hz × 2" at the end (the hertz doubled, not "12 × 2"). **Look down** moves the camera to
+  the spiral's axis: one turn becomes the ring of twelve, its wedges lit in gold; press again to
+  return. Under reduced motion both land in their end state at once.
 - **Keyboard** (step 3): Lesson 1's Unroll button and keyboard (A2 to A5 on a wide stage, low notes
   left, A3 blue, A4 orange; its labels "Unroll the spiral" and "Roll it back up",
   `lesson-01/toy-spiral.ts:166-170`), now with every key lit and playable, the black keys named by
@@ -460,21 +458,14 @@ the buttons and the reveal carry the moment.
   33). The page says so in the Wrap, whose address line reads "Practise it free:
   mercurypitch.com/ear-lab, then tap Leap". The link carries `?lesson=02` (`/ear-lab?lesson=02`),
   which keeps the bench's own `#/ear-lab` boot (`src/seo/render-entry-page.ts` adds the hash only
-  when there is none) and is ignored until the lesson marker ships.
-- First visit (FACTS 33a): `/ear-lab` boots the full studio, and a visitor with no stored welcome
-  flag meets First Light, the studio's intro, before the Ear Lab, because the tab route sets the
-  tab without spending the flag and nothing reads `?lesson=02` yet. The intro's first screen has
-  one way out, an × at the top right whose accessible name is "Skip the intro"; it ends the intro
-  for good and leaves the Ear Lab on screen. Every later screen's "Not now" opens the intro's Map
-  instead, whose rooms and doors do not include the Ear Lab; entering any of them ends the intro
-  too, after which the link opens the Ear Lab. So the practice card carries "First visit?
-  MercuryPitch opens with its intro: close it with the × at the top right ("Skip the intro").", the
-  footer "On a first visit, close the intro first, with the × at the top right ("Skip the
-  intro").", and the explorer card the
-  short form in `season.ts` (Lesson explorer, above). Lesson 1's link, `/mirror`, boots Voice
-  Mirror's own page, which has no intro, so the line is new with Lesson 2. It goes when the
-  `?lesson=` step-aside ships (What the kit and the app still need, 18); the page does not wait for
-  it (DECISIONS 84).
+  when there is none) and lets First Light step aside on a first visit (FACTS 33b).
+- First visit (FACTS 33a, 33b): `/ear-lab` boots the full studio, where a visitor with no stored
+  welcome flag meets First Light, the studio's intro, before the Ear Lab. A link that carries
+  `?lesson=02` steps the intro aside for good before the app renders (the step-aside, shipped in
+  `152aad288`), so the page's links open the Ear Lab, and the practice card and the footer carry no
+  first-visit line, as DECISIONS 84 planned; nor does the explorer card's note in `season.ts`,
+  "then tap Leap" (Lesson explorer, above). Lesson 1's link, `/mirror`, boots Voice Mirror's own
+  page, which has no intro.
 - Needed (CURRICULUM § 4 item 5, Phase 1 App track): an `ear-drill` launch kind that accepts a bank
   subset, so `/exercises/semitone-or-tone` (proposed slug) opens Leap with only `leap:m2` and
   `leap:M2`. How such a run is rated is decided, pending this App track work (DECISIONS 73): it rates
@@ -583,10 +574,12 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
     marked planned, opening the explorer) links to `/learn/02`, marked "ready to read". Its
     explorer needs no edit: each lesson's state comes from the season.
 18. **The `?lesson=` step-aside** (CURRICULUM § 4 item 6; MASTER-PLAN § 7, the Phase 1 App track):
-    a launch that carries `?lesson=02` skips First Light and records which lesson sent the viewer.
-    It is the proper fix for the first visit (Practice link, above), and when it ships the
-    first-visit line goes from the practice card, the footer and the explorer card. It is not a
-    launch dependency of `/learn/02` (DECISIONS 84).
+    shipped in `152aad288`. A launch that carries `?lesson=02` skips First Light (FACTS 33b), so the
+    first-visit line has gone from the practice card, the footer and the explorer card's note
+    (item 10). Recording which lesson sent the viewer has not shipped: the step-aside sends no
+    analytics event and stores no lesson number; it holds the number in memory for that page load
+    only, so What's New can tell a lesson's first visit from a return
+    (`src/stores/onboarding-store.ts:263-266`, `:298-306`).
 19. **The `ear-drill` launch kind with a bank subset** (CURRICULUM § 4 item 5): Practice link,
     above.
 

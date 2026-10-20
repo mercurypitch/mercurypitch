@@ -59,7 +59,7 @@ describe('slideLanes', () => {
 describe('guideLabel', () => {
   it('says the lanes and the path in words', () => {
     expect(guideLabel(57)).toBe(
-      "Four lanes, G sharp 3, A3, A sharp 3 and B3, pitch as height, with Merc's path: A3 held, up one lane to A sharp 3, held, and back to A3.",
+      "Four rows, G sharp 3, A3, A sharp 3 and B3, pitch as height, with Merc's path: A3 held, up one row to A sharp 3, held, and back to A3.",
     )
     Names.set('both')
     expect(guideLabel(57)).toContain('A sharp 3 or B flat 3')

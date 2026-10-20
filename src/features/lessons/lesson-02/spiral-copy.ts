@@ -9,7 +9,7 @@
 //     (FACTS 43), lights each bead as it sounds, draws a trail up the turn,
 //     counts the steps from 0 on A3 to 12 on A4 (steps, not notes: FACTS 16)
 //     and shows each note's frequency in whole hertz (the kit's readout),
-//     with a gold "× 2" at the end.
+//     with a gold "· Hz × 2" (the hertz doubled) at the end.
 //   - Look down moves the camera onto the spiral's axis: one turn becomes the
 //     ring of twelve, its wedges lit in gold; pressed again it returns.
 // Under reduced motion the trail and the camera land at once.
@@ -165,7 +165,7 @@ export interface CopyOptions extends Omit<
   readonly onClimbNote?: (e: NoteEvent, k: number) => void
 }
 
-/** The parts of the climb's readout a copy has: the steps line, its count, the gold "× 2" and the spoken line. */
+/** The parts of the climb's readout a copy has: the steps line, its count, the gold "· Hz × 2" and the spoken line. */
 interface ClimbParts {
   readonly row: HTMLElement | null
   readonly steps: HTMLElement | null
