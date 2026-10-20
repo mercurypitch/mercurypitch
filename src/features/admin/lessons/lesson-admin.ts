@@ -2,14 +2,16 @@
 // Lesson admin — where each Find Your Pitch lesson stands, for the Lessons page
 // ============================================================
 //
-// The Content Studio's Lessons page is read-only. A lesson is published in
-// code: its line in drafts.ts holds it back, and the release tag that ships
-// the build makes it public (docs/plans/find-your-pitch/SEARCH.md § 12).
-// This module turns the season's own data (season.ts, drafts.ts, films.ts)
-// into one row per lesson, reads what the site it runs on really serves
-// (each lesson's page, /sitemap.xml and /llms.txt), and derives each
-// lesson's release checklist from the two. No DOM, so the page and its
-// tests share every rule.
+// A lesson is published one of two ways. In code: its line in drafts.ts
+// holds it back, and once the line is gone the release tag that ships the
+// build makes it public (docs/plans/find-your-pitch/SEARCH.md § 12). Or from
+// the Content Studio: an override in the lesson state (src/lib/lesson-state.ts)
+// publishes or unpublishes it on one site whatever the code says, and the
+// site follows within about a minute. This module turns the season's own data
+// (season.ts, drafts.ts, films.ts) into one row per lesson, reads what the
+// site it runs on really serves (each lesson's page, /sitemap.xml and
+// /llms.txt), and derives each lesson's release checklist from the two and
+// from its override. No DOM, so the page and its tests share every rule.
 //
 // Two rules keep a hidden draft out of a production build, which
 // scripts/assert-draft-lessons.mjs fails if any script there names a hidden
@@ -23,10 +25,10 @@
 //      stops folding, and season.ts's draft entries need that fold to leave
 //      a hidden draft's page out (kit/drafts.test.ts holds the rule).
 //
-// Seam for a runtime toggle (PLAN Option B, docs/plans/find-your-pitch/):
-// publish state kept in D1 would arrive as one more input to `lessonRows`,
-// laid over `build`. It could only narrow what the build decided, never
-// widen it: a lesson the build left out has no document to list.
+// An override changes what the site is meant to serve and list, not what
+// this build holds: a draft the build leaves out has no document here, so
+// publishing it cannot make this site serve it. The checklist says so when
+// the site disagrees, and the live check shows what the site really does.
 
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { FilmRegistry, FilmSources, FilmState, } from '@/features/lessons/kit/films'
@@ -55,6 +57,11 @@ export interface LessonRow {
   /** Its film, from films.ts: undefined while it has none. */
   readonly film: FilmState | undefined
   readonly sources: FilmSources | null
+}
+
+/** "Lesson 3", or "Trailer" for the season's film. */
+export function lessonName(lesson: Lesson): string {
+  return lesson.kind === 'Trailer' ? 'Trailer' : `Lesson ${lesson.n}`
 }
 
 /** Lesson `n`'s address on the site, `/learn/NN`, built at run time (see the banner). */
@@ -257,6 +264,7 @@ function listingStep(
   file: string,
   row: LessonRow,
   check: ListingCheck,
+  published: boolean | null,
 ): ReleaseStep {
   const text = `Listed in ${file}`
   const listed = listedIn(check, row.path)
@@ -265,18 +273,39 @@ function listingStep(
       ? { id, text, state: 'checking' }
       : { id, text, state: 'unknown', detail: `Could not read ${file}.` }
   }
-  if (listed && row.build !== 'released') {
+  // An override decides what the site should list; without one, the code
+  // lists a released lesson and no other.
+  const expected = published ?? row.build === 'released'
+  if (listed && !expected) {
     return {
       id,
       text,
       state: 'problem',
-      detail: 'Listed before its release: a draft stays out of both listings.',
+      detail:
+        published === false
+          ? 'Listed, though it is unpublished here.'
+          : 'Listed before its release: a draft stays out of both listings.',
     }
   }
-  return { id, text, state: listed ? 'done' : 'todo' }
+  if (listed) return { id, text, state: 'done' }
+  if (published === true) {
+    return {
+      id,
+      text,
+      state: 'todo',
+      detail: 'Published here, not listed yet.',
+    }
+  }
+  return published === false
+    ? { id, text, state: 'todo', detail: 'Unpublished here.' }
+    : { id, text, state: 'todo' }
 }
 
-function liveStep(row: LessonRow, page: PageCheck | null): ReleaseStep {
+function liveStep(
+  row: LessonRow,
+  page: PageCheck | null,
+  published: boolean | null,
+): ReleaseStep {
   const text = `${row.path ?? 'Its page'} answers 200 on this site`
   if (page === null) {
     return { id: 'live', text, state: 'todo', detail: 'It has no page yet.' }
@@ -290,6 +319,7 @@ function liveStep(row: LessonRow, page: PageCheck | null): ReleaseStep {
       detail: 'The request failed before the site answered.',
     }
   }
+  if (published !== null) return overriddenLive(row, page.status, published)
   if (page.status === 200) {
     return row.build === 'draft' && !row.built
       ? {
@@ -311,14 +341,50 @@ function liveStep(row: LessonRow, page: PageCheck | null): ReleaseStep {
   }
 }
 
+/** The live step of a lesson published or unpublished here: the site should agree. */
+function overriddenLive(
+  row: LessonRow,
+  status: number,
+  published: boolean,
+): ReleaseStep {
+  const text = `${row.path ?? 'Its page'} answers 200 on this site`
+  if (published) {
+    if (status === 200) return { id: 'live', text, state: 'done' }
+    return {
+      id: 'live',
+      text,
+      state: 'todo',
+      detail: row.built
+        ? `Published here, but it answers ${status}. The site follows within about a minute of a save.`
+        : `Published here, but it answers ${status}: this build leaves its page out.`,
+    }
+  }
+  return status === 200
+    ? {
+        id: 'live',
+        text,
+        state: 'problem',
+        detail:
+          'Unpublished here, yet the site serves it. The site follows within about a minute of a save.',
+      }
+    : {
+        id: 'live',
+        text,
+        state: 'todo',
+        detail: `Unpublished here, so it answers ${status}.`,
+      }
+}
+
 /**
  * Lesson `row`'s release checklist, SEARCH.md § 12 in order, each step
- * marked from the build and from what the site said. The trailer is a film
- * with no page, so it has none.
+ * marked from the build, from what the site said, and from its publish
+ * override (`published`; null where the code decides). The trailer is a
+ * film with no page, so it has none.
  */
 export function releaseChecklist(
   row: LessonRow,
   site: SiteFindings,
+  published: boolean | null = null,
 ): ReleaseStep[] {
   if (row.path === null) return []
   const file = `learn/${row.path.slice('/learn/'.length)}.html`
@@ -347,8 +413,8 @@ export function releaseChecklist(
   }
 
   steps.push(
-    listingStep('sitemap', 'public/sitemap.xml', row, site.sitemap),
-    listingStep('llms', 'public/llms.txt', row, site.llms),
+    listingStep('sitemap', 'public/sitemap.xml', row, site.sitemap, published),
+    listingStep('llms', 'public/llms.txt', row, site.llms, published),
     {
       id: 'service-worker',
       text: `The service worker leaves ${row.path} to the network (STANDALONE_DOCUMENT_PATHS in src/lib/sw-runtime.ts)`,
@@ -386,7 +452,7 @@ export function releaseChecklist(
     })
   }
 
-  steps.push(liveStep(row, site.page), {
+  steps.push(liveStep(row, site.page, published), {
     id: 'release-day',
     text: 'Release day: set datePublished and the sitemap date, request indexing in Search Console and Bing, and publish the episode on YouTube with the lesson link first',
     state: 'by-hand',
