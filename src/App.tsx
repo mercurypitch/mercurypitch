@@ -1688,8 +1688,12 @@ const AppShell: Component<AppProps> = (props) => {
     playMode,
     setPlayMode,
     activeTab,
+    // The Content Studio covers the app as Zen and the challenge stage do,
+    // so its buttons keep Space and the hidden transport keeps still.
     isSuspended: () =>
-      singingZenLaunch() !== null || challengeStageLaunch() !== null,
+      singingZenLaunch() !== null ||
+      challengeStageLaunch() !== null ||
+      showAdminContentStudio(),
     piano: {
       isPlaying: pianoIsPlaying,
       isPaused: pianoIsPaused,
