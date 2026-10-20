@@ -26,6 +26,11 @@
 // (docs/plans/search-and-answer-engines.md §3.4), so a page's <lastmod> is
 // what marks it changed: bump it when the page's words change.
 //
+// It sends the sitemap as production lists it. public/sitemap.xml names
+// /glass-game, but the production build leaves it out of dist/sitemap.xml
+// while VITE_GLASSWORKS_LISTED is off (tools/glassworks-listing.ts), so a
+// release must not announce it either.
+//
 // Usage: node scripts/indexnow.mjs [--dry-run] [--since <git-ref> | <url> ...]
 
 import { execFileSync } from 'node:child_process'
@@ -38,6 +43,8 @@ const HOST = new URL(SITE).host
 const ENDPOINT = 'https://api.indexnow.org/indexnow'
 const KEY_FILE = /^([a-f0-9]{32})\.txt$/
 const SITEMAP = 'public/sitemap.xml'
+const ENV_PRODUCTION = '.env.production'
+const GLASSWORKS_URL = `${SITE}/glass-game`
 
 const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 
@@ -74,8 +81,30 @@ export function sitemapEntries(xml) {
   return entries
 }
 
+/** The sitemap URLs production serves but does not list, from the contents
+ *  of .env.production. As in tools/glassworks-listing.ts, only "1" or "true"
+ *  lists the museum; a lost variable hides it rather than advertising it. */
+export function unlistedUrls(envProduction) {
+  const value =
+    /^[ \t]*VITE_GLASSWORKS_LISTED[ \t]*=(.*)$/m.exec(envProduction)?.[1] ?? ''
+  const listed = value
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .toLowerCase()
+  return listed === '1' || listed === 'true'
+    ? new Set()
+    : new Set([GLASSWORKS_URL])
+}
+
+/** The sitemap as production lists it: its entries minus the unlisted URLs. */
+export function listedEntries(xml, envProduction) {
+  const unlisted = unlistedUrls(envProduction)
+  return new Map([...sitemapEntries(xml)].filter(([loc]) => !unlisted.has(loc)))
+}
+
 /** The URLs added, removed or re-dated between two sitemaps. A removed URL
- *  is sent too: the engine fetches it, finds the 404, and drops it. */
+ *  is sent too: the engine fetches it, finds the 404 or the noindex, and
+ *  drops it. */
 export function changedUrls(before, after) {
   const changed = []
   for (const [loc, lastmod] of after) {
@@ -116,13 +145,26 @@ function fileAt(ref, path) {
 }
 
 const currentSitemap = () => readFileSync(join(repoRoot, SITEMAP), 'utf8')
+const currentEnvProduction = () =>
+  readFileSync(join(repoRoot, ENV_PRODUCTION), 'utf8')
 
 /** What --since sends: the changes since `ref`, or everything when the key
- *  was not live at `ref`. */
-export function urlsSince(ref, key, read = fileAt, sitemap = currentSitemap()) {
-  const now = sitemapEntries(sitemap)
+ *  was not live at `ref`. Each side is read as production listed it then, so
+ *  a URL whose listing flips is sent as added or removed. */
+export function urlsSince(
+  ref,
+  key,
+  read = fileAt,
+  sitemap = currentSitemap(),
+  envProduction = currentEnvProduction(),
+) {
+  const now = listedEntries(sitemap, envProduction)
   if (read(ref, `public/${key}.txt`) === undefined) return [...now.keys()]
-  return changedUrls(sitemapEntries(read(ref, SITEMAP) ?? ''), now)
+  const before = listedEntries(
+    read(ref, SITEMAP) ?? '',
+    read(ref, ENV_PRODUCTION) ?? '',
+  )
+  return changedUrls(before, now)
 }
 
 export function parseArgs(args) {
@@ -152,7 +194,7 @@ if (invokedPath === fileURLToPath(import.meta.url)) {
         ? urlsSince(since, key)
         : given.length > 0
           ? given
-          : [...sitemapEntries(currentSitemap()).keys()]
+          : [...listedEntries(currentSitemap(), currentEnvProduction()).keys()]
     if (urls.length === 0) {
       console.log(`[indexnow] Nothing changed in the sitemap since ${since}.`)
       process.exit(0)

@@ -70,7 +70,7 @@ Gaps the audit found:
 | Nothing answered "karaoke app", "karaoke with friends online", "karaoke on TV", "is there an app" | **[shipped]** #1106         |
 | Jam Rooms had no FAQ                                                                              | **[shipped]** #1106         |
 | Nothing on the site follows the store listings except the chips                                   | **[shipped]** #1107         |
-| Sitemap `lastmod` dates are stale (2026-09-08 on pages edited since), four pages have none        | **[next]** §4.3             |
+| Sitemap `lastmod` dates are stale (2026-09-08 on pages edited since), four pages have none        | **[shipped]** #1122         |
 | `/exercises/<slug>` deep links are `noindex` (they serve the shell)                               | **[open]** needs real heads |
 | No IndexNow                                                                                       | **[shipped]** §3.4          |
 | No Bing Webmaster Tools                                                                           | **[done]** owner, §3.3      |
@@ -179,6 +179,9 @@ Amazonbot the moment a URL changes. Google does not use it.
   sends the sitemap URLs added, removed or given a new `<lastmod>` since the
   previous tag. The first release with the key sends every URL. The step
   never fails a release.
+- It sends the sitemap as production lists it: `/glass-game` stays out while
+  `.env.production` keeps Glassworks unlisted, and a listing that flips is
+  sent as an addition or a removal.
 - So `<lastmod>` is the record of change: bump it when a page's words change
   (§4.3). Re-sending unchanged URLs on every release is noise.
 - By hand, `pnpm indexnow <url> ...` sends exactly those URLs, and
