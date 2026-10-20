@@ -60,9 +60,9 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
    here: the folds, the slider match with its rounds on C4 and F3, and the band chart in drag mode
    on one stage (playbook rule 17).
 10. **Lesson explorer**: Lesson 1's, with Lesson 3 current and marked done when its quick check is
-    finished (the recall marks nothing). Its card reads "15 minutes" and offers "Read the lesson"
-    with no film (New engineering, 4); its practise link is already `season.ts`'s
-    (`/mirror?lesson=03`).
+    finished (the recall marks nothing). Its card reads "Ready · read", with a Length of 15 min
+    (`minutes: 15`), and offers "Start lesson" with no film (New engineering, 4); its practise link
+    is already `season.ts`'s (`/mirror?lesson=03`).
 11. **Footer**: the practise link, the font credits, and "Every sound on this page is synthesised in
     your browser" (FACTS, Labels).
 

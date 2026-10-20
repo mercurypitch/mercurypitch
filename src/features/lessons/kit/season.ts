@@ -12,13 +12,19 @@
 // (`?lesson=01`, before any hash route), so the app can tell where a session
 // came from. The printed address (`addr`) stays the public one.
 //
-// A lesson is live once it has a `page`; until then it is planned. A live
-// lesson whose film is published is ready to watch and read; one whose film
-// is made but not yet published is in production (read now, the film to
-// come); one with no film yet is ready to read. Only a published film ever
-// offers "Watch the episode". A lesson whose page waits on a sign-off is a
-// draft (drafts.ts): live where the build shows drafts, planned where it
-// hides them.
+// A lesson is live once it has a `page`; until then it is coming later.
+// Where a lesson stands for a viewer (done, in progress, up next) is
+// lesson-state.ts's to say. Only a published film ever offers "Watch the
+// episode". A lesson whose page waits on a sign-off is a draft (drafts.ts):
+// live where the build shows drafts, coming later where it hides them.
+//
+// Some fields are the team's and never drawn on a lesson page: the
+// signature image (`sig`), the drill a practise link still needs
+// (`pr.needs`), why a lesson has no drill (`pr.none`), a film that is made
+// but not published (`film: 'production'`) and a film's running time
+// (`len`). They stay here for the team and the admin console. A note on a
+// practise link (`pr.link.note`) is printed on the card, so it speaks to
+// the learner: "then tap Scale Runner", never what the drill still lacks.
 
 import { DRAFTS_SHOWN } from './draft-switch'
 import { DRAFT_LESSONS } from './drafts'
@@ -72,11 +78,12 @@ export interface Practise {
     /** The address as the card prints it. */
     readonly addr: string
     readonly label: string
+    /** Printed after the label, in the learner's words: what to tap, or what the drill does. */
     readonly note?: string
   }
-  /** The deep link the lesson's own drill still needs. */
+  /** The deep link the lesson's own drill still needs. Admin only, never drawn on a lesson page. */
   readonly needs?: string
-  /** Why the lesson has no drill at all. */
+  /** Why the lesson has no drill at all. Admin only, never drawn on a lesson page. */
   readonly none?: string
 }
 
@@ -89,42 +96,31 @@ export interface Lesson {
   /** The name on the map and in the links between cards. */
   readonly short: string
   readonly topics: readonly TopicId[]
+  /** Its page's reading time in minutes, as its hero says; only a live lesson has one. */
+  readonly minutes?: number
   /**
-   * The film's running time ("5:14"), or the page's reading time while there
-   * is no film ("15 minutes"); a lesson without one reads as planned.
+   * Its film's running time as made ("5:14"), or as planned for the
+   * trailer. Admin only: a card shows a film's length only once that film
+   * plays on its page, which reports it (explorer.ts `setLength`).
    */
   readonly len?: string
   /** Its own page on this site, once it is live: `/learn/01`. */
   readonly page?: string
   /**
-   * Its film: 'published' plays on its page (watch and read); 'production'
-   * is made but not yet published (read now, the film to come). Absent while
-   * there is no film.
+   * Its film, for the team: 'published' plays on its page, so its card
+   * offers "Watch the episode"; 'production' is made but not yet published,
+   * and is never drawn on a lesson page. Absent while there is no film.
    */
   readonly film?: 'published' | 'production'
   /** The question the lesson opens with. */
   readonly hook: string
-  /** The signature image. */
+  /** The signature image, the team's shorthand for the lesson's look. Admin only, never drawn on a lesson page. */
   readonly sig: string
   readonly pr: Practise
   /** The figure beside its card; 'poster' shows the poster its page hands the explorer. */
   readonly fig?: 'poster' | 'metronome' | 'chladni'
   /** The poster's alt text, for a card whose figure is the poster. */
   readonly posterAlt?: string
-}
-
-/**
- * How a lesson stands for this viewer: done (they marked it), ready (watch
- * and read), production (read now, the film to come), read (ready to read,
- * no film yet) or planned (no page yet).
- */
-export type LessonStatus = 'done' | 'ready' | 'production' | 'read' | 'planned'
-
-export function lessonStatus(L: Lesson, done: boolean): LessonStatus {
-  if (done) return 'done'
-  if (L.page === undefined) return 'planned'
-  if (L.film === 'published') return 'ready'
-  return L.film === 'production' ? 'production' : 'read'
 }
 
 export const LESSONS: readonly Lesson[] = [
@@ -146,6 +142,7 @@ export const LESSONS: readonly Lesson[] = [
     title: 'What is a note?',
     short: 'What is a note?',
     topics: ['T01', 'T02'],
+    minutes: 10,
     len: '5:14',
     page: '/learn/01',
     film: 'published',
@@ -169,6 +166,7 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Twelve notes',
     short: 'Twelve notes',
     topics: ['T03', 'T04'],
+    minutes: 10,
     len: '7:11',
     page: '/learn/02',
     film: 'production',
@@ -181,7 +179,7 @@ export const LESSONS: readonly Lesson[] = [
         href: '/ear-lab?lesson=02',
         addr: 'mercurypitch.com/ear-lab',
         label: 'Ear Lab',
-        note: 'for now, then tap Leap (on a first visit, close the intro first)',
+        note: 'then tap Leap',
       },
     },
     fig: 'poster',
@@ -196,20 +194,20 @@ export const LESSONS: readonly Lesson[] = [
     topics: ['S01', 'S05'],
     // A draft until its sign-off (drafts.ts). Written as one constant
     // expression, never a function call, so a build that hides drafts folds
-    // it to nothing: the lesson reads as planned and no page that build
+    // it to nothing: the lesson reads as coming later and no page that build
     // ships carries the document it leaves out. Once its line leaves
     // drafts.ts, the same expression folds to its page.
     ...(DRAFT_LESSONS[3] !== undefined && !DRAFTS_SHOWN
       ? {}
-      : { len: '15 minutes', page: '/learn/03' }),
+      : { minutes: 15, page: '/learn/03' }),
     hook: "Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going on?",
     sig: "The singer's line chasing Merc's target band, the gap shrinking in cents.",
     pr: {
+      needs: 'Pitch Hold (a slug)',
       link: {
         href: '/mirror?lesson=03',
         addr: 'mercurypitch.com/mirror',
         label: 'Voice Mirror',
-        note: 'Pitch Hold still needs a slug',
       },
     },
   },
@@ -220,7 +218,7 @@ export const LESSONS: readonly Lesson[] = [
     short: 'Major scale',
     topics: ['T09', 'T10'],
     // a written lesson: its page, and no film yet
-    len: '10 minutes',
+    minutes: 10,
     page: '/learn/04',
     hook: 'Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?',
     sig: 'A staircase with two short steps that slides to start on any note.',
@@ -245,7 +243,7 @@ export const LESSONS: readonly Lesson[] = [
     // carries no trace of the page.
     ...(DRAFT_LESSONS[5] !== undefined && !DRAFTS_SHOWN
       ? {}
-      : { len: '17 minutes', page: '/learn/05' }),
+      : { minutes: 17, page: '/learn/05' }),
     hook: 'Singers are told to "support" a long note. If that doesn\'t mean pushing, what keeps it steady?',
     sig: 'The pitch line of a held note settling from a wobble into a narrow band.',
     pr: {
@@ -302,11 +300,11 @@ export const LESSONS: readonly Lesson[] = [
     hook: 'Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?',
     sig: 'A metronome whose arm becomes the beat grid of a step sequencer.',
     pr: {
+      needs: 'Ear Lab Time (an ear-drill link)',
       link: {
         href: '/drum-night?lesson=08',
         addr: 'mercurypitch.com/drum-night',
         label: 'Drum Night',
-        note: 'Ear Lab Time needs an ear-drill link',
       },
     },
     fig: 'metronome',

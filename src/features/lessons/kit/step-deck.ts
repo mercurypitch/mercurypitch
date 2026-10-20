@@ -6,7 +6,9 @@
 // stage; the step in the middle of the viewport picks the toy. Below 960 px
 // the stage becomes a one-card deck: buttons and a swipe on the text move
 // between steps. Each toy registers here and hears every step change, so it
-// can stop a note that belongs to a step the viewer has left.
+// can stop a note that belongs to a step the viewer has left; anything else
+// that follows the steps (position.ts, which remembers how far the viewer
+// got) subscribes to the deck itself.
 //
 // One toy per step (`toyFor`); a step's other parts, such as a game card in
 // its text, live in the text and hear the steps the same way. An address
@@ -31,7 +33,14 @@ export interface StepDeckOptions {
 
 export interface StepDeck {
   readonly current: number
+  /** How many steps the deck has. */
+  readonly count: number
   show(step: number, options?: { scroll?: boolean }): void
+  /**
+   * Calls `fn` with the new step whenever the step changes, not for the
+   * step showing now; returns the unsubscribe.
+   */
+  subscribe(fn: (step: number) => void): () => void
   /**
    * Shows the step the address names (`#step-3`), or step 1, and from then
    * on follows the address. Call once, after every toy has registered.
@@ -66,6 +75,7 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
   let current = 1
   let deck = false
   let lockUntil = 0
+  const listeners = new Set<(step: number) => void>()
   const behavior = (): ScrollBehavior => (reducedMotion() ? 'auto' : 'smooth')
 
   function show(n: number, o: { scroll?: boolean } = {}): void {
@@ -96,6 +106,7 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
     q('#deckNextLabel').textContent =
       next < count ? `Next: ${titles[next]}` : `Next: ${opts.after.label}`
     toys.forEach((t) => t.onStep?.(next, previous))
+    if (next !== previous) listeners.forEach((fn) => fn(next))
     if (o.scroll === true) {
       if (!deck) {
         lockUntil = performance.now() + 1100
@@ -187,7 +198,14 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
     get current() {
       return current
     },
+    count,
     show,
+    subscribe(fn) {
+      listeners.add(fn)
+      return () => {
+        listeners.delete(fn)
+      }
+    },
     start() {
       const n = stepFromHash(window.location.hash, count)
       if (n === null) show(1)

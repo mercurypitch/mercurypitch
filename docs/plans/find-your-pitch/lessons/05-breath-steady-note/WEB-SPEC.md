@@ -481,11 +481,12 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
 
 - **Season data**: Lesson 5's entry in `kit/season.ts` (`:173-181`) gains today's link, `href`
   `/mirror?lesson=05`, `addr` `mercurypitch.com/mirror`, `label` "Voice Mirror" and `note` "its
-  Hold, until Long Note has a slug", and `len: '17 minutes'` (FACTS 2, 70), and keeps its `needs`
-  until the slug ships, with the owner's lengths: "Long Note with a fixed 10 or 15 s length
-  (durationSec)" (FACTS 63, 70). Its `sig` already reads the signature.
+  Hold: a comfortable note, held steady" (a note is printed on the card, so it speaks to the
+  learner), and `minutes: 17` (FACTS 2, 70), and keeps its `needs` until the slug ships, with the
+  owner's lengths: "Long Note with a fixed 10 or 15 s length (durationSec)" (FACTS 63, 70), for
+  the team and the admin console, never drawn on the card. Its `sig` already reads the signature.
 - **A text-only lesson**: the "Ready · read" state Lesson 4's spec proposes (no Watch button, the
-  card's length from `len`), and cards for other lessons linking to their own `/learn/NN`.
+  card's length from `minutes`), and cards for other lessons linking to their own `/learn/NN`.
 
 ## New engineering, in one list
 
@@ -505,7 +506,7 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
    Toys 6.
 6. For the Long Note link: the slug, `durationSec`, Long Note's effective length, its new copy, the
    octave note or option, and the `?lesson=` marker (Practice links).
-7. The season entry's link, `len` and `needs`, and the explorer's text-only state.
+7. The season entry's link, `minutes` and `needs`, and the explorer's text-only state.
 
 ## Contract and page QA
 

@@ -299,9 +299,10 @@ same as Lesson 2's, so are its words.
 | Wrap        | Coda: the closing bars                                                  | Three lines to keep                 |
 | Explorer    | Season 1, fourteen lessons and a trailer: theory and voice, alternating | The season, mapped                  |
 
-The explorer's line under its heading ends "Lessons 1 and 2 are ready to watch and read, and
-Lesson 4 to read; the rest are planned." If Lesson 3's page is live by then, it reads "Lessons 1
-and 2 are ready to watch and read, and Lessons 3 and 4 to read; the rest are planned."
+The explorer's line under its heading is Lesson 1's, "Each lesson's closing question opens the
+next. Pick a lesson to light up the path of lessons it builds on.", and names no lesson's state:
+the legend (Ready, Coming later, Done) and the cards say that, from the season (`kit/season.ts`),
+so a lesson going live edits no page's line.
 
 ## For the vocal coach
 

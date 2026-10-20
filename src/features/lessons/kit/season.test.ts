@@ -4,21 +4,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type * as Season from './season'
-import type { Lesson } from './season'
-import { ancestors, EDGES, lessonPath, LESSONS, lessonStatus, unlocks, } from './season'
-
-/** A lesson for a status test, live or planned as `extra` makes it. */
-const lesson = (extra: Partial<Lesson> = {}): Lesson => ({
-  n: 9,
-  lane: 'theory',
-  title: 'Lesson nine',
-  short: 'Nine',
-  topics: [],
-  hook: 'Why?',
-  sig: 'A figure.',
-  pr: {},
-  ...extra,
-})
+import { ancestors, EDGES, lessonPath, LESSONS, unlocks } from './season'
 
 /** Lesson n's lit edges as { 'a-b': role }, leaving out the edges off its path. */
 function litEdges(n: number): Record<string, string> {
@@ -185,35 +171,30 @@ describe('LESSONS', () => {
       )
     }
   })
-})
 
-describe('lessonStatus', () => {
-  it('reads a live lesson from its film, and a lesson with no page as planned', () => {
-    // Arrange
-    const lessons = [
-      lesson({ page: '/learn/09', film: 'published' }),
-      lesson({ page: '/learn/09', film: 'production' }),
-      lesson({ page: '/learn/09' }),
-      lesson(),
-    ]
-
-    // Act
-    const states = lessons.map((L) => lessonStatus(L, false))
+  it("words every practise note for the learner, never as the team's to-do", () => {
+    // Act: the notes a card prints after its practise link
+    const notes = LESSONS.flatMap((L) =>
+      L.pr.link?.note === undefined ? [] : [[L.n, L.pr.link.note] as const],
+    )
 
     // Assert
-    expect(states).toEqual(['ready', 'production', 'read', 'planned'])
+    expect(notes.length).toBeGreaterThan(0)
+    for (const [n, note] of notes) {
+      expect(note, `lesson ${n}`).not.toMatch(
+        /needs|slug|deep link|launch|durationSec|placeholder|for now|first visit/i,
+      )
+    }
   })
 
-  it('says done once the viewer marks it, whatever its film', () => {
-    // Act
-    const states = [
-      lesson({ page: '/learn/09', film: 'published' }),
-      lesson({ page: '/learn/09', film: 'production' }),
-      lesson(),
-    ].map((L) => lessonStatus(L, true))
+  it('gives every live lesson a reading time, and a lesson coming later none', () => {
+    for (const L of LESSONS) {
+      // Act
+      const hasTime = L.minutes !== undefined
 
-    // Assert
-    expect(states).toEqual(['done', 'done', 'done'])
+      // Assert
+      expect(hasTime, `lesson ${L.n}`).toBe(L.page !== undefined)
+    }
   })
 })
 
@@ -230,71 +211,57 @@ describe('a draft lesson (drafts.ts)', () => {
     vi.resetModules()
   })
 
-  it('is ready to read where the build shows drafts, with its page and its fifteen minutes', async () => {
+  it('is live where the build shows drafts, with its page and its fifteen minutes', async () => {
     // Act
     const season = await seasonBuilt('1')
 
     // Assert
     const L = season.LESSONS[3]
-    expect([L.page, L.len, L.film]).toEqual([
-      '/learn/03',
-      '15 minutes',
-      undefined,
-    ])
-    expect(season.lessonStatus(L, false)).toBe('read')
+    expect([L.page, L.minutes, L.film]).toEqual(['/learn/03', 15, undefined])
   })
 
-  it('leaves a live lesson with no film ready to read in either build: Lesson 4', async () => {
+  it('leaves a live lesson with no film live in either build: Lesson 4', async () => {
     for (const drafts of ['1', '0'] as const) {
       // Act
       const season = await seasonBuilt(drafts)
 
       // Assert
       const L = season.LESSONS[4]
-      expect([L.page, L.len, L.film], drafts).toEqual([
+      expect([L.page, L.minutes, L.film], drafts).toEqual([
         '/learn/04',
-        '10 minutes',
+        10,
         undefined,
       ])
-      expect(season.lessonStatus(L, false), drafts).toBe('read')
       expect(L.pr.link?.href, drafts).toBe('/pitch-training?lesson=04')
     }
   })
 
-  it('is planned, with no page and no length, where the build hides drafts', async () => {
+  it('is coming later, with no page and no reading time, where the build hides drafts', async () => {
     // Act
     const season = await seasonBuilt('0')
 
     // Assert: exactly what the season map said before the page existed
     const L = season.LESSONS[3]
-    expect(L.page).toBeUndefined()
-    expect(L.len).toBeUndefined()
-    expect(season.lessonStatus(L, false)).toBe('planned')
+    expect([L.page, L.minutes]).toEqual([undefined, undefined])
     expect(season.LESSONS[1].page).toBe('/learn/01')
   })
 
-  it('reads Lesson 5 as ready to read, its seventeen minutes and its page, where drafts are shown', async () => {
+  it('reads Lesson 5 as live, its seventeen minutes and its page, where drafts are shown', async () => {
     // Act
     const season = await seasonBuilt('1')
 
     // Assert
     const L = season.LESSONS[5]
-    expect([L.page, L.len, L.film]).toEqual([
-      '/learn/05',
-      '17 minutes',
-      undefined,
-    ])
-    expect(season.lessonStatus(L, false)).toBe('read')
+    expect([L.page, L.minutes, L.film]).toEqual(['/learn/05', 17, undefined])
   })
 
-  it('folds Lesson 5 to a planned lesson where drafts are hidden, its practise link kept', async () => {
+  it("folds Lesson 5 to a lesson coming later where drafts are hidden, its practise link and the team's notes kept", async () => {
     // Act
     const season = await seasonBuilt('0')
 
     // Assert: Voice Mirror is live, so the link stays; the page does not
     const L = season.LESSONS[5]
-    expect([L.page, L.len]).toEqual([undefined, undefined])
-    expect(season.lessonStatus(L, false)).toBe('planned')
+    expect([L.page, L.minutes]).toEqual([undefined, undefined])
     expect(L.pr.link?.href).toBe('/mirror?lesson=05')
     expect(L.pr.needs).toBe(
       'Long Note with a fixed 10 or 15 s length (durationSec)',

@@ -377,8 +377,8 @@ into the kit (Toys table):
     Season 1 map.";
   - canonical and `og:url`: `https://mercurypitch.com/learn/04`; `og:image`: the share card, with
     alt text naming what it shows.
-- Lessons 1 and 2's pages, when this one goes live: their explorer lines name Lesson 4, as this
-  page's does (LESSON.md, Section headings).
+- Lessons 1 and 2's pages, when this one goes live: nothing to edit in their explorers, which read
+  each lesson's state from the season (`kit/season.ts`; LESSON.md, Section headings).
 
 ## Contract
 

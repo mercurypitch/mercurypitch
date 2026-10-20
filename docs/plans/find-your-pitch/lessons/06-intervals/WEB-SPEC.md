@@ -496,13 +496,11 @@ table):
 - `kit/quiz.ts`: Lesson 2's three changes, which this page's two quizzes need, and its slot for a
   question's own controls, which quiz questions 1 and 3 need (Lesson 2 WEB-SPEC, "What the kit and
   the app still need", item 9; Toys 7).
-- `kit/explorer.ts`, shared with Lessons 3 and 4: the state for a lesson with a page and no film
-  (its card offers "Read the lesson", `/learn/06`, without "Watch the episode", and shows "15
-  minutes"; `kit/explorer.ts` knows only done, ready and planned, `:41`, `:72-74`); the current
-  lesson (it selects Lesson 1 when it opens, `let sel = 1`, `:115`), which this page sets to 6; and
-  links to other lessons' pages (a ready card's actions are the same-page anchors `#watch` and
-  `#lesson`, `:105`). Whichever page ships first adds them.
-- `kit/season.ts`, Lesson 6's entry (`:182-200`): `len: '15 minutes'` (FACTS 3). The practice link
+- `kit/explorer.ts`, shared with Lessons 3 and 4, needs nothing new: a lesson with a page and no
+  film reads "Ready · read", its card offers "Start lesson" (`/learn/06`) without "Watch the
+  episode" and shows its Length, "15 min"; the page passes `current: 6`, and other lessons' cards
+  link to their own pages.
+- `kit/season.ts`, Lesson 6's entry (`:182-200`): `minutes: 15` (FACTS 3). The practice link
   stays Ear Lab's (`href` `/ear-lab?lesson=06`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
   Lab"), and, proposed for when this page is built, its `note` becomes "then tap Leap to name them
   (on a first visit, close the intro first)", the short form Lesson 2's spec sets for an Ear Lab
@@ -541,7 +539,9 @@ table):
     leaps, transposing, and intervals named by tunes you know. With the Season 1 map.";
   - canonical and `og:url`: `https://mercurypitch.com/learn/06`; `og:image`: the share card, with
     alt text naming what it shows.
-- Lessons 1 to 5's pages, when this one goes live: their explorer lines name Lesson 6.
+- Lessons 1 to 5's pages, when this one goes live: nothing to edit in their explorers, which read
+  each lesson's state from the season (`kit/season.ts`). Lesson 5's next-lesson card turns from
+  "coming later" to "ready to read".
 - App content (the App content track): Interval Trainer's menu card, "above and below" (FACTS 48).
 
 ## Tests

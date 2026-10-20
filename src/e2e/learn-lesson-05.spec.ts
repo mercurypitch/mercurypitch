@@ -150,14 +150,16 @@ test('the lesson boots: the takes play, the predict reveals, the demo reads, the
   )
   await expect(page.locator('[data-orange-says]')).toBeVisible()
 
-  // the explorer opens on this page's own lesson, ready to read, with no film
+  // the explorer opens on this page's own lesson, with no film, and goes on
+  // from the furthest step the viewer reached (kit/position.ts): Step 5, not
+  // Step 2, the last one opened
   await page.locator('#explorer').scrollIntoViewIfNeeded()
   await expect(page.locator('#exCardHost h3')).toHaveText(
     'Breath and a steady note',
   )
   await expect(
-    page.locator('#exCardHost').getByRole('link', { name: 'Read the lesson' }),
-  ).toHaveAttribute('href', '#lesson')
+    page.locator('#exCardHost').getByRole('link', { name: 'Continue: step 5' }),
+  ).toHaveAttribute('href', '#step-5')
   await expect(
     page
       .locator('#exCardHost')
@@ -373,7 +375,10 @@ test.describe('Sing it, on a steady A3 from the fake microphone', () => {
 
     await expect.poll(() => micState(page), { timeout: 8000 }).toBe('0 false')
     expect(sent).toEqual([])
-    const added = (await keys()).filter((k) => !before.includes(k))
+    // the page's memory of the furthest step (kit/position.ts) is not the take's
+    const added = (await keys()).filter(
+      (k) => !before.includes(k) && k !== 'fyp-pos',
+    )
     expect(added).toEqual(['fyp-l05-warmup', 'fyp-voice'])
   })
 })

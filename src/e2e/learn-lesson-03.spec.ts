@@ -100,12 +100,15 @@ test('the lesson boots: the predict reveals, a step unlocks its sound, the explo
   await page.locator('#octaveToy [data-choice="yes"]').click()
   await expect(playBoth).toBeEnabled()
 
-  // the explorer opens on this page's own lesson, ready to read, with no film
+  // the explorer opens on this page's own lesson, with no film, and goes on
+  // from the furthest step the viewer reached (kit/position.ts): Step 4, or
+  // Step 5 where the scroll down to the map passed it
   await page.locator('#explorer').scrollIntoViewIfNeeded()
   await expect(page.locator('#exCardHost h3')).toHaveText('Match a note')
-  await expect(
-    page.locator('#exCardHost').getByRole('link', { name: 'Read the lesson' }),
-  ).toHaveAttribute('href', '#lesson')
+  const resume = page.locator('#exCardHost a.btn.primary')
+  await expect(resume).toHaveText(/^Continue: step [45]$/)
+  const step = /\d+$/.exec((await resume.textContent()) ?? '')?.[0]
+  await expect(resume).toHaveAttribute('href', `#step-${step}`)
   await expect(
     page
       .locator('#exCardHost')
@@ -255,7 +258,10 @@ test.describe('Sing it, on a steady A3 from the fake microphone', () => {
       )
       .toBe('0 false')
     expect(sent).toEqual([])
-    const added = (await keys()).filter((k) => !before.includes(k))
+    // the page's memory of the furthest step (kit/position.ts) is not the take's
+    const added = (await keys()).filter(
+      (k) => !before.includes(k) && k !== 'fyp-pos',
+    )
     expect(added).toEqual(['fyp-l03-warmup', 'fyp-voice'])
   })
 

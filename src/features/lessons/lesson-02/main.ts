@@ -25,6 +25,7 @@ import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
+import { rememberSteps } from '@/features/lessons/kit/position'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
@@ -68,6 +69,7 @@ const deck = createStepDeck({
 })
 initSteps(deck)
 deck.start()
+rememberSteps(2, deck)
 
 initSing({ blue: mercBlue, orange: mercOrange })
 const quiz = createQuiz({

@@ -165,8 +165,8 @@ Every example is synthesised in `tools/mix.py` at the frequencies in 6, with Les
   (41), and only in the cold open; the slides and every other example are synthesised (9, 50, 51);
   on the page every sound is synthesised in the browser. The page's footer credits say so in Lesson
   1's built words, "Voices in the episode: ElevenLabs (Eleven v3)." and "Merc's sung notes in the
-  film: development placeholders re-pitched from ElevenLabs takes." (`learn/01.html:1702-1707`;
-  the Echo set's own note, `src/features/echo/merc-voice-set.ts:8-9`), with its fonts line, and
+  film: stand-ins for now, made with ElevenLabs and retuned." (Lesson 1's footer; the Echo set's
+  own note, `src/features/echo/merc-voice-set.ts:8-9`), with its fonts line, and
   name no voice by its internal name. The final cut carries no generated imagery, so no "concept"
   label is needed on screen.
 - The "10 minutes" chip and the description's "ten-minute lesson" are the page's estimate of its

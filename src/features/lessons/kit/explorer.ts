@@ -9,9 +9,12 @@
 // links lead, the rest of its path glows under them, the map stays faint.
 //
 // Any lesson page can host it: it opens on that page's own lesson, whose
-// card links to the same page's #watch and #lesson, while another live
-// lesson's card links to its own page. A live lesson offers "Read the
-// lesson", and "Watch the episode" only once its film is published.
+// card's actions stay within the page, while another live lesson's card
+// links to its own page. A live lesson's main action is the one
+// lesson-state.ts gives it ("Start lesson", "Continue: step N" or "Read
+// again"), right under its hook; "Watch the episode" joins it only once
+// its film is published. A card draws only what a learner can use: the
+// season's planning fields (season.ts) stay in the data.
 //
 // Cards are markup strings, which is safe only because every value they
 // interpolate is defined in season.ts or here; poster URLs, which come from
@@ -24,13 +27,16 @@ import { cardFigure, plateFigure, pluckString } from './explorer-figures'
 import type { Look, Pos } from './explorer-graph'
 import { addArcs, addEdges, addLaneBands, labelLeans, LANE_Y, nodeLabel, paintLabel, paintNode, paintRow, } from './explorer-graph'
 import { addDrawer, watch } from './frame-loop'
+import type { LessonView } from './lesson-state'
+import { lessonViews } from './lesson-state'
 import { reducedMotion } from './motion-switch'
+import { Positions } from './position'
 import { Done } from './progress'
-import type { Lane, Lesson, LessonStatus, Practise } from './season'
-import { EDGES, lessonPath, LESSONS, lessonStatus, PREREQ, TOPICS, unlocks, } from './season'
+import type { Lane, Lesson, Practise } from './season'
+import { EDGES, lessonPath, LESSONS, PREREQ, TOPICS, unlocks } from './season'
 
 export interface ExplorerOptions {
-  /** This page's lesson: selected when the page opens, its card linking within the page. Default 1. */
+  /** This page's lesson: selected when the page opens, its card's actions within the page. Default 1. */
   readonly current?: number
   /** Episode posters by lesson, for cards whose figure is the poster. */
   readonly posters?: Readonly<Partial<Record<number, string>>>
@@ -47,74 +53,85 @@ export interface Explorer {
 
 type LaneFilter = 'all' | Exclude<Lane, 'both'>
 
-/** Each status as the card's chip says it, as the phone list's row says it, and the chip's colour. */
-const STATUS: Readonly<
-  Record<LessonStatus, { chip: string; row: string; colour: string }>
-> = {
-  ready: {
-    chip: 'Ready · watch and read',
-    row: 'Ready',
-    colour: 'var(--aqua)',
-  },
-  production: {
-    chip: 'In production',
-    row: 'In production',
-    colour: 'var(--aqua)',
-  },
-  read: { chip: 'Ready · read', row: 'Ready', colour: 'var(--aqua)' },
-  done: { chip: 'Done', row: 'Done', colour: 'var(--ink)' },
-  planned: { chip: 'Planned', row: 'Planned', colour: 'var(--chrome)' },
+/** A lesson as the legend names it: ready, coming later or done. */
+type Availability = 'ready' | 'later' | 'done'
+
+const availability = (v: LessonView): Availability =>
+  v.state === 'later' ? 'later' : v.done ? 'done' : 'ready'
+
+/** An availability as the phone list's row says it, and the card chip's colour. */
+interface Shown {
+  readonly row: string
+  readonly colour: string
+}
+
+const AVAILABLE: Readonly<Record<Availability, Shown>> = {
+  ready: { row: 'Ready', colour: 'var(--aqua)' },
+  later: { row: 'Coming later', colour: 'var(--chrome)' },
+  done: { row: 'Done', colour: 'var(--ink)' },
+}
+
+/** The card's chip: a ready lesson says whether there is a film to watch. */
+function chipText(v: LessonView): string {
+  const a = availability(v)
+  if (a !== 'ready') return AVAILABLE[a].row
+  return v.lesson.film === 'published'
+    ? 'Ready · watch and read'
+    : 'Ready · read'
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0')
+const icon = (id: string): string =>
+  `<svg class="ico" aria-hidden="true"><use href="#${id}"/></svg>`
+
+/** A phone list row's second line: "Coming later · after 2, 3". */
+function rowText(L: Lesson, a: Availability): string {
+  const pre = PREREQ[L.n] ?? []
+  return `${AVAILABLE[a].row}${pre.length > 0 ? ` · after ${pre.join(', ')}` : ''}`
+}
 
 function laneName(L: Lesson): string {
-  if (L.lane === 'both') return L.n === 0 ? 'Trailer' : 'Voice and theory'
+  if (L.lane === 'both') return 'Voice and theory'
   return L.lane === 'theory' ? 'Theory' : 'Voice'
 }
 
+/** The practise link and its note; empty for a lesson with no drill to link yet. */
 function practiseMarkup(pr: Practise): string {
-  let html = ''
-  if (pr.link !== undefined) {
-    const { href, addr, label, note } = pr.link
-    html += `<a class="addr" href="${href}" target="_blank" rel="noopener">${addr}<svg class="ico" aria-hidden="true"><use href="#i-out"/></svg></a> <span>${label}${note === undefined ? '' : `, ${note}`}</span>`
-  }
-  if (pr.needs !== undefined)
-    html += `<span class="needs">Needs a deep link: ${pr.needs}.</span>`
-  if (pr.none !== undefined) html += `<span>${pr.none}</span>`
-  return html
+  if (pr.link === undefined) return ''
+  const { href, addr, label, note } = pr.link
+  return `<a class="addr" href="${href}" target="_blank" rel="noopener">${addr}${icon('i-out')}</a> <span>${label}${note === undefined ? '' : `, ${note}`}</span>`
+}
+
+/** A live lesson's reading time, and its film's once the film plays on its page. */
+function lengthText(L: Lesson, film: string | undefined): string {
+  if (L.minutes === undefined) return ''
+  return `${L.minutes} min${film === undefined ? '' : ` · film ${film}`}`
 }
 
 /**
- * A live lesson's buttons: Watch the episode (once its film is published)
- * and Read the lesson, within this page for its own lesson and on the
- * lesson's own page otherwise, and Mark as done. Empty for a planned lesson.
+ * A live lesson's buttons: its main action (lesson-state.ts), "Watch the
+ * episode" once its film is published, and Mark as done. Empty for a
+ * lesson coming later.
  */
-export function cardActions(
-  L: Lesson,
-  st: LessonStatus,
-  current: number,
-): string {
-  if (L.page === undefined) return ''
+export function cardActions(v: LessonView, current: number): string {
+  const L = v.lesson
+  if (L.page === undefined || v.action === null) return ''
   const at = L.n === current ? '' : L.page
-  const done =
-    st === 'done'
-      ? '<svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Done'
-      : 'Mark as done'
+  const main = `<a class="btn primary" href="${v.action.href}">${icon(v.action.kind === 'again' ? 'i-redo' : 'i-right')}${v.action.label}</a>`
   const watch =
     L.film === 'published'
-      ? `<a class="btn primary" href="${at}#watch"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Watch the episode</a>`
+      ? `<a class="btn" href="${at}#watch">${icon('i-play')}Watch the episode</a>`
       : ''
-  const read = `<a class="btn${watch === '' ? ' primary' : ''}" href="${at}#lesson"><svg class="ico" aria-hidden="true"><use href="#i-book"/></svg>Read the lesson</a>`
-  return `<div class="ex-actions">${watch}${read}<button class="btn" type="button" data-done="${L.n}" aria-pressed="${st === 'done'}">${done}</button></div>`
+  const done = v.done ? `${icon('i-check')}Done` : 'Mark as done'
+  return `<div class="ex-actions">${main}${watch}<button class="btn" type="button" data-done="${L.n}" aria-pressed="${v.done}">${done}</button></div>`
 }
 
 function cardMarkup(
-  L: Lesson,
-  st: LessonStatus,
-  len: string | undefined,
+  v: LessonView,
+  film: string | undefined,
   current: number,
 ): string {
+  const L = v.lesson
   const pre = PREREQ[L.n] ?? []
   const un = unlocks(L.n)
   const links = (ns: readonly number[]): string =>
@@ -125,22 +142,32 @@ function cardMarkup(
       )
       .join('')
   const topics = L.topics
-    .map((t) => `<span class="topic"><b>${t}</b>${TOPICS[t]}</span>`)
+    .map((t) => `<span class="topic" data-topic="${t}">${TOPICS[t]}</span>`)
     .join('')
+  const practise = practiseMarkup(L.pr)
+  const length = lengthText(L, film)
+  // the trailer is its hook and nothing else until it exists
+  const rows =
+    L.kind === 'Trailer'
+      ? ''
+      : `<dl class="ex-rows">
+        ${topics === '' ? '' : `<dt>Topics</dt><dd>${topics}</dd>`}
+        <dt>Builds on</dt><dd>${pre.length > 0 ? links(pre) : '<span>Nothing: start here</span>'}</dd>
+        ${un.length > 0 ? `<dt>Opens</dt><dd>${links(un)}</dd>` : ''}
+        ${practise === '' ? '' : `<dt>Practise</dt><dd>${practise}</dd>`}
+        ${length === '' ? '' : `<dt>Length</dt><dd><span>${length}</span></dd>`}
+      </dl>`
+  const kicker =
+    L.kind === 'Trailer'
+      ? '<span class="fig">Trailer</span>'
+      : `<span class="fig">Lesson ${pad(L.n)}</span> ${laneName(L)}`
   return `<div class="main">
-      <p class="eyebrow"><span class="fig">${L.n === 0 ? 'Trailer' : `Lesson ${pad(L.n)}`}</span> ${laneName(L)} <span class="chip" style="letter-spacing:0;text-transform:none"><i style="--c:${STATUS[st].colour}"></i>${STATUS[st].chip}</span></p>
+      <p class="eyebrow">${kicker} <span class="chip" style="letter-spacing:0;text-transform:none"><i style="--c:${AVAILABLE[availability(v)].colour}"></i>${chipText(v)}</span></p>
       <h3>${L.title}</h3>
       <svg class="string" viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0 12 L1000 12"/></svg>
       <p class="hookq">${L.hook}</p>
-      <dl class="ex-rows">
-        ${L.topics.length > 0 ? `<dt>Topics</dt><dd>${topics}</dd>` : ''}
-        <dt>Builds on</dt><dd>${pre.length > 0 ? links(pre) : '<span>Nothing: start here</span>'}</dd>
-        ${un.length > 0 ? `<dt>Opens</dt><dd>${links(un)}</dd>` : ''}
-        <dt>Practise</dt><dd>${practiseMarkup(L.pr)}</dd>
-        <dt>Signature</dt><dd><span>${L.sig}</span></dd>
-        <dt>Length</dt><dd><span>${len ?? 'Planned, 6 to 9 minutes'}</span></dd>
-      </dl>
-      ${cardActions(L, st, current)}
+      ${cardActions(v, current)}
+      ${rows}
     </div>`
 }
 
@@ -158,7 +185,13 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   let edgeEls: SVGPathElement[] = []
   let plate: PlateFigure | null = null
 
-  const status = (L: Lesson): LessonStatus => lessonStatus(L, Done.has(L.n))
+  /** Every lesson as this viewer stands with it, read fresh from storage. */
+  const views = (): LessonView[] =>
+    lessonViews(LESSONS, {
+      done: new Set(Done.list()),
+      steps: Positions.all(),
+      current,
+    })
   const matches = (L: Lesson): boolean =>
     lane === 'all' || L.lane === lane || L.lane === 'both'
   const behavior = (): ScrollBehavior => (reducedMotion() ? 'auto' : 'smooth')
@@ -166,7 +199,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   function card(L: Lesson): HTMLElement {
     const el = document.createElement('article')
     el.className = 'card ex-card'
-    el.innerHTML = cardMarkup(L, status(L), lengths.get(L.n) ?? L.len, current)
+    el.innerHTML = cardMarkup(views()[L.n], lengths.get(L.n), current)
     const fig = cardFigure(L, opts.posters?.[L.n])
     if (fig !== null) el.appendChild(fig)
     el.addEventListener('click', (e) => {
@@ -268,6 +301,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   }
 
   function renderList(): void {
+    const all = views()
     list.textContent = ''
     const head = document.createElement('li')
     head.className = 'ex-lanes-head'
@@ -286,9 +320,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
       const li = document.createElement('li')
       li.className = `ex-row lane-${L.lane}`
       li.dataset.n = String(L.n)
-      const pre = PREREQ[L.n] ?? []
-      const st = status(L)
-      li.innerHTML = `<button type="button" class="it" aria-expanded="false"><span class="nb">${L.n}</span><span>${L.short}</span><small>${STATUS[st].row}${pre.length > 0 ? ` · after ${pre.join(', ')}` : ''}</small></button>`
+      li.innerHTML = `<button type="button" class="it" aria-expanded="false"><span class="nb">${L.n}</span><span>${L.short}</span><small>${rowText(L, availability(all[L.n]))}</small></button>`
       const row = q('button', li)
       row.addEventListener('click', () => {
         // a second tap on the open row folds its card away
@@ -308,18 +340,21 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   function paint(): void {
     const { ancestors, roles } = lessonPath(sel)
     const open = list.querySelector('.ex-detail') !== null
+    const all = views()
     for (const L of LESSONS) {
-      const st = status(L)
+      const a = availability(all[L.n])
       const look: Look = {
-        done: st === 'done',
+        done: a === 'done',
         // every live lesson shows as ready on the map: it can be read now
-        stClass: st === 'planned' ? '' : st === 'done' ? ' done' : ' ready',
+        stClass: a === 'later' ? '' : ` ${a}`,
         on: matches(L),
         selected: L.n === sel,
       }
       paintNode(nodes.get(L.n), L.n, look, ancestors.has(L.n))
       paintLabel(labels.get(L.n), look)
       paintRow(list.querySelector(`[data-n="${L.n}"] .it`), L.n, look, open)
+      const says = list.querySelector(`[data-n="${L.n}"] .it small`)
+      if (says !== null) says.textContent = rowText(L, a)
     }
     edgeEls.forEach((el, i) => {
       const [a, b] = EDGES[i]
@@ -379,6 +414,8 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     )
   }
   Done.subscribe(refresh)
+  // "Continue: step N" follows the steps this page's deck reaches
+  Positions.subscribe(refresh)
 
   return {
     refresh,
