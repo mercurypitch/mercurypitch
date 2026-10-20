@@ -171,6 +171,17 @@ test('--since takes a ref, and URLs are not mixed with it', () => {
   assert.throws(() => parseArgs(['--since', 'v1', `${SITE}/jam`]), /not both/)
 })
 
+test('a --since ref that is not a commit is refused, not read as a first release', () => {
+  const result = spawnSync(
+    process.execPath,
+    [SCRIPT, '--dry-run', '--since', 'v0.0.0-no-such-tag'],
+    { encoding: 'utf8' },
+  )
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /--since v0\.0\.0-no-such-tag is not a commit/)
+  assert.equal(result.stdout, '')
+})
+
 test('a dry run prints the request and sends nothing', () => {
   const result = spawnSync(
     process.execPath,
