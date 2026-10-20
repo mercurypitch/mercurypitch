@@ -72,7 +72,8 @@ export function readingLine(d: number): string {
   const band = bandOf(d)
   if (band === 'middle') return `Right in the middle: ${gapWords(d)}.`
   if (band === 'band') return `In the band: ${gapWords(d)}.`
-  if (band === 'close') return `Close: ${gapWords(d)}.`
+  if (band === 'close')
+    return `Close: ${gapWords(d)}. Listen again, then aim a touch ${d > 0 ? 'lower' : 'higher'}.`
   return `${semitonesAway(d)}, nearer a different note. Listen again, then slide ${d > 0 ? 'down' : 'up'} to the band.`
 }
 

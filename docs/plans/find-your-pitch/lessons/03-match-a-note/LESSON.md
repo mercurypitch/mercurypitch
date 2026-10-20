@@ -327,7 +327,7 @@ the coach reviews Lessons 3 and 5):
 ### Changed in the plain-language review
 
 The review of October 2026 reworded these voice lines, for the coach to check. Each says the same
-thing as before, more plainly.
+thing as before, more plainly, except the last, the "close" reading, which also gains a next step.
 
 - Step 1's Notice. Before: "When you sing, don't think about your folds: aim at the sound." After:
   "When you sing, don't think about your folds: aim for the note you hear." Still a cue about the
@@ -349,6 +349,10 @@ thing as before, more plainly.
   each." After: "For each note, listen, then sing it back for about three seconds, at about
   speaking volume. The notes are A, then G a tone below, then B a tone above, with up to three
   tries each."
+- The "close" reading, which alone gave no next step. Before: "Close: 45 cents above Merc's note."
+  After: "Close: 45 cents above Merc's note. Listen again, then aim a touch lower." (or "higher",
+  for a note below). It now says which way to go, as the readings further off do ("Listen again,
+  then slide down to the band") and as Lesson 5's close line does.
 
 Also changed around the sung part, though they are not voice instructions: the sound gate's "The
 microphone is asked for only if you choose to sing." is now "We ask for the microphone only if you

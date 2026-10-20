@@ -265,7 +265,7 @@ export function createEpisode(opts: EpisodeOptions): void {
   function attach(): boolean {
     if (attached) return true
     if (v.canPlayType('video/mp4') === '') {
-      toast('This browser cannot play the stream.')
+      toast("This browser can't play the film.")
       return false
     }
     v.src = window.matchMedia('(max-width: 900px)').matches ? film.sd : film.hd

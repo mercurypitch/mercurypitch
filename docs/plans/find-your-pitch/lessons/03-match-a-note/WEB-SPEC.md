@@ -253,10 +253,11 @@ Reading a take (`kit/take.ts`, pure, unit-tested):
   between −600 and +600 cents; the octave count comes from the median of the unfolded difference,
   rounded to whole octaves.
 - The line by |d|: 15 or less, "Right in the middle"; 35 or less, "In the band"; 60 or less,
-  "Close"; beyond 60, the direction and the size in semitones ("about a semitone" up to 150 cents,
-  then "about N semitones"), always with "nearer a different note". The octave line ("You sang it
-  an octave lower: same note") is added only when |d| is 50 or less, where the nearest note is
-  still Merc's, so a different note is never called the same one (FACTS 39, 41).
+  "Close", with "Listen again, then aim a touch lower" (or higher, for a note below); beyond 60,
+  the direction and the size in semitones ("about a semitone" up to 150 cents, then "about N
+  semitones"), always with "nearer a different note". The octave line ("You sang it an octave
+  lower: same note") is added only when |d| is 50 or less, where the nearest note is still Merc's,
+  so a different note is never called the same one (FACTS 39, 41).
 - The edges come from Voice Mirror, not from copies: `HIT_TOLERANCE_CENTS` is exported already, and
   the 15 and 60 inside `matchBand` (`src/lib/mirror/metrics.ts:253-258`) become exports beside it.
   A unit test checks that, on steady synthetic takes within 60 cents, the page's band matches

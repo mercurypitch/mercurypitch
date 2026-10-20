@@ -99,7 +99,7 @@ export function mountOctaves(
     play,
     revealOn: ['both'],
     hints: {
-      chosen: "Locked in. Play both plays blue's A3, then orange's A4.",
+      chosen: "Locked in. Now press Play both: blue's A3, then orange's A4.",
       silent:
         'Sound is off, so nothing played. Turn sound on to hear them, then press Play both.',
       next: "Now press Play both: blue's A3, then orange's A4.",
