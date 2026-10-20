@@ -9,6 +9,7 @@ import { addScoredMs, NOMINAL_RUN_MS } from '@/db/services/practice-minutes'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { getUserId } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
+import { firstValueForSession, trackFirstValue } from '@/lib/first-value'
 import { showNotification } from '@/stores/notifications-store'
 
 /**
@@ -143,6 +144,7 @@ export async function saveSessionRecord(
     }
     if (getUserId() !== ownerId) return null
     trackEvent('session_complete')
+    trackFirstValue(firstValueForSession(record.source ?? 'practice'))
     bumpSessionRecordVersion((v) => v + 1)
     return record
   } catch (error) {

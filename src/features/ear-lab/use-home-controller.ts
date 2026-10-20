@@ -23,6 +23,7 @@ import type { HomeDegree } from '@/lib/ear/item-bank'
 import type { DegreeSet } from '@/lib/ear/item-bank'
 import { cadenceChordMidis, HOME_SET, homeItemState, pickHomeItem, probeMidi, roveRootMidi, } from '@/lib/ear/item-bank'
 import { HOME_TIMING } from '@/lib/ear/timing'
+import { trackFirstValue } from '@/lib/first-value'
 import { midiToFreq } from '@/lib/scale-data'
 import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, takeSprintRunLength, } from '@/stores/ear-lab-store'
 import { createRevealPacer } from './reveal-pacing'
@@ -377,7 +378,11 @@ export function useHomeController(
     // Always the tap id: the sprint schedules the drill, not the way
     // you chose to answer it, and singing your answers is still Home. A
     // segment counts when the run reached its end, not when abandoned.
-    if (complete) markSprintSegmentDone(set.tapDrillId)
+    if (complete) {
+      markSprintSegmentDone(set.tapDrillId)
+      // A run of skipped rounds (no clear sung answer) got no result.
+      if (outcomes.some((o) => o.answered > 0)) trackFirstValue('ear')
+    }
     setPhase('done')
   }
 

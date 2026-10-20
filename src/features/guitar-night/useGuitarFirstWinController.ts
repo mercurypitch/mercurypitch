@@ -6,6 +6,7 @@ import { createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import { nextGuitarRoomRhythmVariant, resolveGuitarRoomRhythmPreset, resolveGuitarRoomRhythmPresets, } from '@/features/guitar/backing/guitar-room-rhythm'
+import { trackFirstValue } from '@/lib/first-value'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { GuitarFirstWinConfigV1, GuitarFirstWinExerciseStepV1, GuitarFirstWinInputKind, } from './first-win-config'
@@ -244,6 +245,7 @@ export function useGuitarFirstWinController(
       step.id,
     )
     persist(next)
+    if (next.completedAt !== null) trackFirstValue('guitar')
     return next
   }
 

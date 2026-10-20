@@ -6,8 +6,8 @@
 // trackNativeOnboarding) and so the app's own anonymous sink, where it
 // already counts app_open and signup: no new SDK, and nothing a consent
 // rule of the native app's holds back (it ships no Google tag; see the
-// funnel). The ingest keeps a name and no properties (db-worker
-// handleMirrorEvent), so whatever a step says, its choice or its band, is
+// funnel). These events carry no metrics (db-worker cleanMirrorMetrics
+// stores none for them), so whatever a step says, its choice or its band, is
 // in its name: no scores and no audio leave the phone.
 
 import type { NativeOnboardingEvent } from '@/features/onboarding/funnel'

@@ -1,6 +1,7 @@
 import { createEffect, on } from 'solid-js'
 import { tabLabel } from '@/features/tabs/constants'
-import { hasPageTour, removeNotification, removeNotificationsByChannel, showActionNotification, startPageTour, TOUR_OFFER_CHANNEL, walkthroughActive, } from '@/stores'
+import { trackTour } from '@/lib/guide-funnel'
+import { hasPageTour, pageTourKey, removeNotification, removeNotificationsByChannel, showActionNotification, startPageTour, TOUR_OFFER_CHANNEL, walkthroughActive, } from '@/stores'
 import type { ActiveTab } from '@/types'
 
 /**
@@ -62,5 +63,8 @@ export function usePageTourOffer(
       },
       { channel: TOUR_OFFER_CHANNEL },
     )
+    // The offer above does not depend on the key; only the report does.
+    const tourKey = pageTourKey(tab)
+    if (tourKey !== null) trackTour('tour_offer', tourKey)
   }
 }

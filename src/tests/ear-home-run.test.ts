@@ -12,11 +12,13 @@
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SingCapture } from '@/features/ear-lab/use-home-controller'
-import { useHomeController } from '@/features/ear-lab/use-home-controller'
+import { HOME_ROUNDS, useHomeController, } from '@/features/ear-lab/use-home-controller'
 import type { SungFrame } from '@/lib/ear/degree-detect'
 import type * as ItemBank from '@/lib/ear/item-bank'
 import { HOME_DRILL_ID, HOME_SING_DRILL_ID, homeItemId, probeMidi, } from '@/lib/ear/item-bank'
 import { HOME_TIMING, REVEAL_HOLD } from '@/lib/ear/timing'
+import { resetFirstValueForTests } from '@/lib/first-value'
+import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { midiToFreq } from '@/lib/scale-data'
 import { earItemStates, earPlayerRating, resetEarLabStore, } from '@/stores/ear-lab-store'
 
@@ -49,6 +51,8 @@ function frames(f0: number, count = 12): SungFrame[] {
 
 beforeEach(() => {
   resetEarLabStore()
+  localStorage.clear()
+  resetFirstValueForTests()
   vi.clearAllMocks()
   vi.useFakeTimers()
 })
@@ -235,6 +239,52 @@ describe('stopping', () => {
       expect(home.phase()).toBe('idle')
       expect(home.result()).toBeNull()
 
+      dispose()
+    })
+  })
+})
+
+describe('the first value of a run', () => {
+  const sentFunnelEvents = (): string[] =>
+    (
+      JSON.parse(localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]') as {
+        event: string
+      }[]
+    ).map((e) => e.event)
+
+  const ROUND_MS = CADENCE_MS + HOME_TIMING.probeMs
+
+  it('sends one first_value_ear when a run reaches its end with answers', async () => {
+    await createRoot(async (dispose) => {
+      const home = useHomeController(audio)
+      home.start('tap')
+      for (let i = 0; i < HOME_ROUNDS; i++) {
+        await vi.advanceTimersByTimeAsync(ROUND_MS)
+        home.answer(home.currentDegree()?.degree as number)
+        await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
+      }
+      expect(home.phase()).toBe('done')
+      expect(sentFunnelEvents()).toEqual(['first_value_ear'])
+      dispose()
+    })
+  })
+
+  it('sends nothing when a run reaches its end with every round skipped', async () => {
+    await createRoot(async (dispose) => {
+      const mic: SingCapture = {
+        startWindow: () => undefined,
+        takeFrames: () => [],
+      }
+      const home = useHomeController(audio, mic)
+      home.start('mic')
+      for (let i = 0; i < HOME_ROUNDS; i++) {
+        await vi.advanceTimersByTimeAsync(
+          ROUND_MS + 2 * HOME_TIMING.singWindowMs + REVEAL_HOLD.defaultMs,
+        )
+      }
+      expect(home.phase()).toBe('done')
+      expect(home.result()?.skipped).toBe(HOME_ROUNDS)
+      expect(sentFunnelEvents()).toEqual([])
       dispose()
     })
   })

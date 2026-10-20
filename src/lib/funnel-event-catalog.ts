@@ -222,9 +222,18 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   'onboarding_mic_granted',
   'onboarding_mic_denied',
   'onboarding_map_room',
+  /** A tap on one Map room, one name a room, beside `onboarding_map_room`
+   *  for the same reason as the doors below: these events carry no metrics,
+   *  so which room it was has to be in the name. */
+  'onboarding_map_room_practice',
+  'onboarding_map_room_exercises',
+  'onboarding_map_room_ascent',
+  'onboarding_map_room_karaoke',
+  'onboarding_map_room_jam',
+  'onboarding_map_room_analysis',
   /** A tap on one of the Map's four doors under the room grid, one name a
-   *  door: the ingest stores a name and no properties, so the door has to
-   *  be in the name. Sent beside `onboarding_map_room`, which still counts
+   *  door: these events carry no metrics, so which door it was has to be
+   *  in the name. Sent beside `onboarding_map_room`, which still counts
    *  every way into a room. From the follow-up to PR 977. */
   'onboarding_map_door_challenges',
   'onboarding_map_door_guitar',
@@ -249,9 +258,9 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   /** The Map's Google Play chip or badge, the same way. */
   'onboarding_map_google_play_tap',
   // The native app's own onboarding (apps/mercurypitch/src/onboarding, S7b
-  // §7), beside First Light's. The ingest keeps a name and no properties,
-  // so the beat, its variant and a score's band are in the name, and a
-  // beat's time is its `_complete` row's createdAt less its `_view` row's.
+  // §7), beside First Light's. These events carry no metrics, so the beat,
+  // its variant and a score's band are in the name, and a beat's time is its
+  // `_complete` row's createdAt less its `_view` row's.
   // The funnel: install, first note, range, Keep shown, `signup` (the
   // account made, from any sign-in), `cloud_view_onboarding`,
   // `cloud_purchase_success`, the first `import_sent`. An install that
@@ -306,6 +315,42 @@ export const ONBOARDING_FUNNEL_EVENTS = [
 ] as const
 
 /**
+ * The tour events, the ones whose `tour`, `step` and `of` numbers ride along as
+ * metrics (the worker's `cleanMirrorMetrics` keeps them). One list for both
+ * halves: the client passes it as `metricEvents` and the worker builds its
+ * allowlist entries from it, so they cannot drift.
+ */
+export const TOUR_FUNNEL_EVENTS = [
+  /** A tour was offered to the visitor, before they chose. */
+  'tour_offer',
+  /** The visitor started a tour. */
+  'tour_start',
+  /** The visitor reached the end of a tour. */
+  'tour_done',
+  /** The visitor left a tour before its end; `step` is where. */
+  'tour_exit',
+] as const
+
+/**
+ * Guided tours and first-value moments. Web only: a native build sends none
+ * of them. The room a first-value event is about is in its name, since those
+ * events carry no metrics.
+ */
+export const GUIDE_FUNNEL_EVENTS = [
+  ...TOUR_FUNNEL_EVENTS,
+  /** A device's first real result in a room (a saved run, a first Karaoke
+   *  score, a finished Ear Lab drill, a finished guitar or piano song or
+   *  take), sent once per device per room. One name a room, for the same
+   *  reason as the Map rooms. */
+  'first_value_sing',
+  'first_value_karaoke',
+  'first_value_drill',
+  'first_value_ear',
+  'first_value_guitar',
+  'first_value_piano',
+] as const
+
+/**
  * Accepted by the worker but emitted by no client yet.
  *
  * Registering a name early means the client rollout that starts emitting it
@@ -322,6 +367,7 @@ export const FUNNEL_EVENT_NAMES = [
   ...KARAOKE_FUNNEL_EVENTS,
   ...GLASS_FUNNEL_EVENTS,
   ...ONBOARDING_FUNNEL_EVENTS,
+  ...GUIDE_FUNNEL_EVENTS,
   ...RESERVED_FUNNEL_EVENTS,
 ] as const
 
@@ -330,4 +376,6 @@ export type AppFunnelEventName = (typeof APP_FUNNEL_EVENTS)[number]
 export type KaraokeFunnelEventName = (typeof KARAOKE_FUNNEL_EVENTS)[number]
 export type GlassFunnelEventName = (typeof GLASS_FUNNEL_EVENTS)[number]
 export type OnboardingFunnelEvent = (typeof ONBOARDING_FUNNEL_EVENTS)[number]
+export type TourFunnelEvent = (typeof TOUR_FUNNEL_EVENTS)[number]
+export type GuideFunnelEvent = (typeof GUIDE_FUNNEL_EVENTS)[number]
 export type FunnelEventName = (typeof FUNNEL_EVENT_NAMES)[number]

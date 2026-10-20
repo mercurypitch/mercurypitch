@@ -209,7 +209,7 @@ These are the rules that break things when ignored.
 | File | LOC | What it is |
 |---|---|---|
 | [jam-store.ts](../../src/stores/jam-store.ts) | 3.3k | ── Jam store Reactive state management for P2P jam sessions. |
-| [app-store.ts](../../src/stores/app-store.ts) | 2.3k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
+| [app-store.ts](../../src/stores/app-store.ts) | 2.4k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.7k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
 | [sync-store.ts](../../src/stores/sync-store.ts) | 1.4k | ── Sync store One person, two devices, a room code between them. |
@@ -384,7 +384,7 @@ Grep for the symbol and read the surrounding range instead.
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 4.6k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.6k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.3k |
-| [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 3.1k |
+| [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 3.0k |
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.9k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.8k |
@@ -394,9 +394,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.5k |
 | [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 2.5k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.4k |
+| [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.4k |
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.3k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 2.3k |
-| [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.3k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/features/piano-night/PianoNightApp.tsx](../../src/features/piano-night/PianoNightApp.tsx) | 2.1k |
 | [src/features/piano-night/usePianoNightController.ts](../../src/features/piano-night/usePianoNightController.ts) | 2.0k |

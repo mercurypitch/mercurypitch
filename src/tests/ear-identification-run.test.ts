@@ -16,6 +16,8 @@ import type { EarBankItem } from '@/lib/ear/banks'
 import { CONTOUR_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
+import { resetFirstValueForTests } from '@/lib/first-value'
+import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { armSprintSegment, earPlayerRating, resetEarLabStore, sprintProgress, } from '@/stores/ear-lab-store'
 
 vi.mock('@/features/exercises/feedback', () => ({ playTierSfx: vi.fn() }))
@@ -63,6 +65,8 @@ const flush = () => vi.advanceTimersByTimeAsync(0)
 
 beforeEach(() => {
   resetEarLabStore()
+  localStorage.clear()
+  resetFirstValueForTests()
   vi.useFakeTimers()
 })
 
@@ -377,6 +381,53 @@ describe('stopping before anything was answered', () => {
       run.stop()
       expect(run.result()?.total).toBe(1)
       expect(sprintProgress().done).toEqual([])
+      dispose()
+    })
+  })
+})
+
+describe('the first value of a run', () => {
+  const sentFunnelEvents = (): string[] =>
+    (
+      JSON.parse(localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]') as {
+        event: string
+      }[]
+    ).map((e) => e.event)
+
+  it('sends no first_value_ear for an abandoned run', async () => {
+    await createRoot(async (dispose) => {
+      const trials = instantTrials()
+      const run = useIdentificationController(
+        drill,
+        CONTOUR_BANK,
+        trials.makeTrial,
+      )
+      run.start()
+      await flush()
+      run.answer(run.expectedId() as string)
+      run.stop()
+      expect(run.result()?.total).toBe(1)
+      expect(sentFunnelEvents()).toEqual([])
+      dispose()
+    })
+  })
+
+  it('sends one first_value_ear when a run reaches its end', async () => {
+    await createRoot(async (dispose) => {
+      const trials = instantTrials()
+      const run = useIdentificationController(
+        drill,
+        CONTOUR_BANK,
+        trials.makeTrial,
+      )
+      run.start()
+      for (let i = 0; i < IDENTIFICATION_ROUNDS; i++) {
+        await flush()
+        run.answer(run.expectedId() as string)
+        await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
+      }
+      expect(run.phase()).toBe('done')
+      expect(sentFunnelEvents()).toEqual(['first_value_ear'])
       dispose()
     })
   })

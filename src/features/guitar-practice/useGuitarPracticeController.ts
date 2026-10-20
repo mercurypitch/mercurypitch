@@ -6,6 +6,7 @@ import { createEffect, createSignal, onCleanup } from 'solid-js'
 import type { GuitarHitResult } from '@/features/guitar/runtime/guitar-performance-contract'
 import { clampRate, rampedRate } from '@/features/guitar-practice/practice-rate'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
+import { trackFirstValue } from '@/lib/first-value'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { melodyToGuitarNotes } from '@/lib/guitar/guitar-synth'
 import { rmsOfTimeData } from '@/lib/mic-level'
@@ -404,6 +405,10 @@ export function useGuitarPracticeController(
   let animFrameId: number | null = null
   let gameStartTime = 0
   let judgedIndices = new Set<string>()
+  // Whether any note was hit since Play was pressed. Run-scoped: only
+  // startGame clears it, so a track switch (which empties hitResults) does
+  // not forget an earlier hit.
+  let runHadHit = false
   let audioJudgedIndices = new Set<string>()
   let playedIndices = new Set<string>()
   let countInTicks = 0
@@ -847,6 +852,7 @@ export function useGuitarPracticeController(
     }
 
     judgedIndices.add(note.id)
+    runHadHit = true
     setHitResults((prev) => [...prev, judgment])
     setScore((s) => s + timingScore)
     const newCombo = combo() + 1
@@ -878,6 +884,9 @@ export function useGuitarPracticeController(
   const finishGame = () => {
     setGameState('finished')
     stopLoop()
+    // A song nobody played (Play with no input, a seek to the end) is
+    // finished but is not a result.
+    if (runHadHit) trackFirstValue('guitar')
   }
 
   // ── Continuous Mic Pitch Detection Loop ──────────────────────
@@ -1109,6 +1118,7 @@ export function useGuitarPracticeController(
     heldMidi = null
     playedBackingIndices = new Set()
     setHitResults([])
+    runHadHit = false
     setScore(0)
     setCombo(0)
     setMaxCombo(0)

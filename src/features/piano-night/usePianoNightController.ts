@@ -425,6 +425,17 @@ export function usePianoNightController() {
   ): void => {
     const finished = performanceTakeRecorder.finish(performance.now())
     const generation = ++performanceTakeGeneration
+    // Only a pass that kept player notes is a result. A refusal does not say
+    // notes were played: the recorder returns 'duration-limit' before it
+    // checks for an empty pass, so a silent pass over five minutes gets it too.
+    // Loaded here rather than imported: the funnel reaches consent and
+    // defaults, which ship in the app's pitch-core chunk, and Piano Night's
+    // first paint stays out of it (scripts/assert-piano-night-bundle.mjs).
+    if (finished.ok) {
+      void import('@/lib/first-value')
+        .then(({ trackFirstValue }) => trackFirstValue('piano'))
+        .catch(() => undefined)
+    }
     if (!finished.ok) {
       if (finished.reason === 'empty') {
         performanceTake.unsupported(

@@ -30,21 +30,21 @@ afterEach(() => {
 
 describe('the tour progress readout', () => {
   it('counts a short tour, not only a long one', () => {
-    startTour(tour(4))
+    startTour(tour(4), 'home')
     render(() => <Walkthrough />)
 
     expect(screen.getByText('1/4')).toBeInTheDocument()
   })
 
   it('counts a long tour the same way', () => {
-    startTour(tour(11))
+    startTour(tour(11), 'home')
     render(() => <Walkthrough />)
 
     expect(screen.getByText('1/11')).toBeInTheDocument()
   })
 
   it('leads the marks rather than trailing them', () => {
-    startTour(tour(5))
+    startTour(tour(5), 'home')
     render(() => <Walkthrough />)
 
     const marks = screen.getByRole('group', { name: /Tour steps/ })
@@ -54,7 +54,7 @@ describe('the tour progress readout', () => {
   })
 
   it('spells the position out for a screen reader instead of a fraction', () => {
-    startTour(tour(5))
+    startTour(tour(5), 'home')
     render(() => <Walkthrough />)
 
     expect(

@@ -30,6 +30,7 @@ import type { ThresholdDrill } from '@/lib/ear/drills'
 import { INDEX_MAX, scoreReading } from '@/lib/ear/mercury-index'
 import type { StaircaseState, ThresholdEstimate } from '@/lib/ear/staircase'
 import { createStaircase, recordTrial, thresholdOf } from '@/lib/ear/staircase'
+import { trackFirstValue } from '@/lib/first-value'
 import { completeCalibrationRun, creditEarSession, latestThresholdReading, markSprintSegmentDone, recordThresholdReading, takeSprintRunLength, } from '@/stores/ear-lab-store'
 import { createRevealPacer } from './reveal-pacing'
 
@@ -296,7 +297,10 @@ export function useThresholdRun(
     // into it. Idempotent, so a second run cannot double-book.
     // A segment counts when the run reached its end, not when it was
     // abandoned part-way.
-    if (complete) markSprintSegmentDone(drill.id)
+    if (complete) {
+      markSprintSegmentDone(drill.id)
+      trackFirstValue('ear')
+    }
     setPhase('done')
   }
 

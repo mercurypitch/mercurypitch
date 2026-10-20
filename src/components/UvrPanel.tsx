@@ -2990,9 +2990,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         'pitchperfect_mixer_tour_offered',
                         'New to the mixer? Take a quick tour.',
                         STEM_MIXER_TOUR_STEPS,
+                        'mixer',
                       )
                     } else {
-                      startTour(STEM_MIXER_TOUR_STEPS)
+                      startTour(STEM_MIXER_TOUR_STEPS, 'mixer')
                     }
                   }}
                   onPickSession={(sessionId) => {

@@ -73,7 +73,9 @@ import { currentBeat, flowOpen, openBeat, recordFirstNote, recordVoiceprint, res
 import { VOICE_RIDGE } from './beats/KeepChips'
 import { FirstLight } from './FirstLight'
 import type { Beat } from './flow'
+import { MAP_ROOM_EVENT } from './funnel'
 import { plateSrc } from './plates'
+import { ROOMS } from './rooms'
 import { ridgeShape } from './voice-strip'
 
 const VOICEPRINT: MirrorResult = {
@@ -463,6 +465,64 @@ describe('a tap on a Map door, counted per door', () => {
     // Assert
     expect(tracked().slice(-2)).toEqual(['onboarding_map_room', event])
     expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
+  })
+})
+
+// `onboarding_map_room` says a room was entered, never which. Each of the
+// six rooms now has its own name beside it, whether the card or its tour link
+// was tapped. A side door keeps only its own event (tested above).
+describe('a tap on a Map room, counted per room', () => {
+  it('sends the room after onboarding_map_room when a room card is tapped', async () => {
+    // Arrange: Karaoke is a page room, which navigates; jsdom cannot.
+    vi.stubGlobal('location', { href: '' })
+    const map = await at('map')
+    const card = map.querySelector<HTMLElement>('[data-room="karaoke"]')
+    if (card === null) throw new Error('the Map has a Karaoke card')
+
+    // Act
+    fireEvent.click(card)
+
+    // Assert
+    expect(tracked().slice(-2)).toEqual([
+      'onboarding_map_room',
+      'onboarding_map_room_karaoke',
+    ])
+  })
+
+  it('sends the room for Take the tour too', async () => {
+    // Arrange
+    const map = await at('map')
+    const card = map.querySelector<HTMLElement>('[data-room="exercises"]')
+    const tour = card?.querySelector<HTMLElement>('[role="button"]')
+    if (tour === null || tour === undefined) {
+      throw new Error('the Exercises card has a tour link')
+    }
+
+    // Act
+    fireEvent.click(tour)
+
+    // Assert
+    expect(tracked().slice(-2)).toEqual([
+      'onboarding_map_room',
+      'onboarding_map_room_exercises',
+    ])
+  })
+
+  it('has a catalog name for every room', () => {
+    // Assert
+    expect(Object.keys(MAP_ROOM_EVENT).sort()).toEqual(
+      ROOMS.map((room) => room.id).sort(),
+    )
+    expect(ONBOARDING_FUNNEL_EVENTS).toEqual(
+      expect.arrayContaining(Object.values(MAP_ROOM_EVENT)),
+    )
+  })
+
+  it('counts every room under its own name', () => {
+    // Assert
+    for (const room of ROOMS) {
+      expect(MAP_ROOM_EVENT[room.id]).toBe(`onboarding_map_room_${room.id}`)
+    }
   })
 })
 

@@ -18,6 +18,7 @@ import type { StoreId } from '@/components/shared/StoreChips'
 import { AD_CONVERSIONS } from '@/lib/consent'
 import { createFunnel } from '@/lib/funnel'
 import type { OnboardingFunnelEvent } from '@/lib/funnel-event-catalog'
+import type { RoomId } from './rooms'
 
 export type OnboardingEvent = OnboardingFunnelEvent
 
@@ -80,4 +81,18 @@ export const BEAT_EVENT: Record<string, OnboardingEvent> = {
 export const MAP_STORE_EVENT: Record<StoreId, OnboardingEvent> = {
   'app-store': 'onboarding_map_app_store_tap',
   'google-play': 'onboarding_map_google_play_tap',
+}
+
+/**
+ * The Map's rooms, one event per room. `onboarding_map_room` says a room was
+ * entered and these say which: events carry no metrics, so the room goes in
+ * the name, as it does for `onboarding_map_door_*`.
+ */
+export const MAP_ROOM_EVENT: Readonly<Record<RoomId, OnboardingEvent>> = {
+  practice: 'onboarding_map_room_practice',
+  exercises: 'onboarding_map_room_exercises',
+  ascent: 'onboarding_map_room_ascent',
+  karaoke: 'onboarding_map_room_karaoke',
+  jam: 'onboarding_map_room_jam',
+  analysis: 'onboarding_map_room_analysis',
 }

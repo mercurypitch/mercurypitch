@@ -6,10 +6,16 @@
 // when the status-bar mute controls update the in-memory song projection.
 
 import { createRoot } from 'solid-js'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AudioEngine } from '@/lib/audio-engine'
+import type * as AudioUnlock from '@/lib/audio-unlock'
+import { resetFirstValueForTests } from '@/lib/first-value'
+import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import type { MidiSongTrack } from '@/lib/midi-song'
+import type { FallingNote } from '@/stores/falling-notes-store'
+import { setHitResults } from '@/stores/falling-notes-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
+import { setBpm, setCountIn } from '@/stores/transport-store'
 import { useFallingNotesController } from './useFallingNotesController'
 
 const persistPianoCompatibilitySelection = vi.hoisted(() =>
@@ -20,9 +26,16 @@ vi.mock('@/features/piano-project/import-piano-project-for-legacy', () => ({
   persistPianoCompatibilitySelection,
 }))
 
+// jsdom cannot play the silent unlock clip; the unlock is a browser edge.
+vi.mock('@/lib/audio-unlock', async (importOriginal) => ({
+  ...(await importOriginal<typeof AudioUnlock>()),
+  activateAudioPlayback: vi.fn(async () => undefined),
+}))
+
 function mockAudioEngine(): AudioEngine {
   return {
     getAudioContext: () => null,
+    init: async () => undefined,
     getBufferSize: () => 2048,
     getInputLevel: () => 0,
     getSampleRate: () => 44_100,
@@ -32,6 +45,7 @@ function mockAudioEngine(): AudioEngine {
     playClick: () => undefined,
     playMetronomeClick: () => undefined,
     playNote: async () => undefined,
+    playTone: async () => undefined,
     resume: async () => undefined,
     setInstrument: () => undefined,
     stopAllNotes: () => undefined,
@@ -50,6 +64,12 @@ function track(id: string): MidiSongTrack {
     notes: [{ midi: 60, startBeat: 0, duration: 1 }],
   }
 }
+
+beforeEach(() => {
+  localStorage.clear()
+  resetFirstValueForTests()
+  setHitResults([])
+})
 
 afterEach(() => {
   persistPianoCompatibilitySelection.mockClear()
@@ -97,5 +117,108 @@ describe('useFallingNotesController track persistence', () => {
     })
     expect(localStorage.getItem('pitchperfect_guitar_songs')).toBeNull()
     dispose()
+  })
+})
+
+describe('useFallingNotesController first value', () => {
+  const sentFunnelEvents = (): string[] =>
+    (
+      JSON.parse(localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]') as {
+        event: string
+      }[]
+    ).map((e) => e.event)
+
+  // One scored note, C4 on the first beat, at 60 bpm: a beat is a second.
+  const NOTE: FallingNote = {
+    id: 0,
+    midi: 60,
+    name: 'C4',
+    startBeat: 1,
+    duration: 1,
+    targetFreq: 261.63,
+  }
+
+  let nowMs = 0
+  let frame: FrameRequestCallback | null = null
+  let controller!: ReturnType<typeof useFallingNotesController>
+  let dispose: () => void = () => undefined
+
+  /** Move the clock to `ms` and run one animation frame. */
+  const frameAt = (ms: number): void => {
+    nowMs = ms
+    const callback = frame
+    frame = null
+    callback?.(ms)
+  }
+
+  beforeEach(() => {
+    nowMs = 1_000
+    frame = null
+    vi.spyOn(performance, 'now').mockImplementation(() => nowMs)
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      frame = cb
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => {
+      frame = null
+    })
+    setCountIn(0)
+    setBpm(60)
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useFallingNotesController(mockAudioEngine())
+      controller.loadSong([NOTE], 'One note', 60)
+    })
+  })
+
+  afterEach(() => {
+    dispose()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  /** Play one pass from `startMs`, hitting the note or leaving it to be missed. */
+  const playPass = (startMs: number, hit: boolean): void => {
+    nowMs = startMs
+    if (hit) {
+      frameAt(startMs + 1_000)
+      controller.clickPianoNoteOn(60)
+      frameAt(startMs + 1_010)
+      controller.clickPianoNoteOff()
+    }
+    // Past the note's late window and its end: the pass finishes.
+    frameAt(startMs + 3_000)
+  }
+
+  it('sends no first_value_piano when a finished run had no hit', async () => {
+    await controller.startGame()
+    playPass(1_000, false)
+    expect(controller.gameState()).toBe('finished')
+    expect(controller.hitResults().map((h) => h.timing)).toEqual(['miss'])
+    expect(sentFunnelEvents()).toEqual([])
+  })
+
+  it('sends first_value_piano when a finished run had a hit', async () => {
+    await controller.startGame()
+    playPass(1_000, true)
+    expect(controller.gameState()).toBe('finished')
+    expect(sentFunnelEvents()).toEqual(['first_value_piano'])
+  })
+
+  it('still sends one first_value_piano when only an earlier repeat cycle had a hit', async () => {
+    controller.setPianoPlayMode('repeat')
+    controller.setPianoRepeatCycles(2)
+    await controller.startGame()
+
+    playPass(1_000, true)
+    // Cycle 1 ended: the second cycle began with its own empty results.
+    expect(controller.pianoCurrentCycle()).toBe(2)
+    expect(controller.hitResults()).toEqual([])
+    expect(sentFunnelEvents()).toEqual([])
+
+    playPass(nowMs, false)
+    expect(controller.gameState()).toBe('finished')
+    expect(controller.hitResults().map((h) => h.timing)).toEqual(['miss'])
+    expect(sentFunnelEvents()).toEqual(['first_value_piano'])
   })
 })

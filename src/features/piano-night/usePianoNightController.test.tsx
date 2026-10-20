@@ -6,6 +6,8 @@ import { cleanup, render } from '@solidjs/testing-library'
 import type { Component } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { compilePianoTempoMap } from '@/features/piano/runtime/piano-tempo-map'
+import { resetFirstValueForTests } from '@/lib/first-value'
+import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import { applyPersistedValue, onPersistedWrite } from '@/lib/storage'
 import { COUNT_IN_LEAD_SECONDS } from './piano-night-count-in'
 import type { PianoNightSource } from './piano-night-source'
@@ -81,6 +83,7 @@ function mountController(): ReturnType<typeof usePianoNightController> {
 
 beforeEach(() => {
   localStorage.clear()
+  resetFirstValueForTests()
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
 })
 
@@ -858,5 +861,95 @@ describe('usePianoNightController practice controls', () => {
     expect(controller.statusMessage()).toBe(
       'Practice will finish after 100 passes.',
     )
+  })
+})
+
+describe('usePianoNightController first value', () => {
+  const sentFunnelEvents = (): string[] =>
+    (
+      JSON.parse(localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]') as {
+        event: string
+      }[]
+    ).map((e) => e.event)
+
+  class ImmediateAudioContext {
+    currentTime = 0
+    state: AudioContextState = 'running'
+    readonly resume = vi.fn(async () => undefined)
+    readonly close = vi.fn(async () => {
+      this.state = 'closed'
+    })
+  }
+
+  it('sends first_value_piano when a take finishes', async () => {
+    const context = new ImmediateAudioContext()
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function AudioContextConstructor() {
+        return context
+      }),
+    )
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+    const controller = mountController()
+
+    await expect(controller.play()).resolves.toBe(true)
+    context.currentTime = 1
+    controller.playKeyboardKey(67)
+    await vi.waitFor(() => {
+      expect(controller.inputMidis().size).toBeGreaterThan(0)
+    })
+    expect(sentFunnelEvents()).toEqual([])
+
+    context.currentTime = 100
+    expect(controller.transport.phase()).toBe('complete')
+
+    // The controller loads the funnel on demand, so the event lands a tick later.
+    await vi.waitFor(() => {
+      expect(sentFunnelEvents()).toEqual(['first_value_piano'])
+    })
+  })
+
+  it('sends nothing when a pass over five minutes has no player notes', async () => {
+    const context = new ImmediateAudioContext()
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function AudioContextConstructor() {
+        return context
+      }),
+    )
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+    const controller = mountController()
+
+    await expect(controller.play()).resolves.toBe(true)
+    // Ten minutes of active time is over the five-minute replay limit, and
+    // nobody played a note.
+    const startedAtMs = performance.now()
+    vi.spyOn(performance, 'now').mockReturnValue(startedAtMs + 10 * 60_000)
+    context.currentTime = 100
+    expect(controller.transport.phase()).toBe('complete')
+
+    // Let any on-demand funnel load settle, so a wrongly sent event shows.
+    await vi.dynamicImportSettled()
+    expect(sentFunnelEvents()).toEqual([])
+  })
+
+  it('sends nothing when a pass ends with no player notes', async () => {
+    const context = new ImmediateAudioContext()
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function AudioContextConstructor() {
+        return context
+      }),
+    )
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+    const controller = mountController()
+
+    await expect(controller.play()).resolves.toBe(true)
+    context.currentTime = 100
+    expect(controller.transport.phase()).toBe('complete')
+
+    // Let any on-demand funnel load settle, so a wrongly sent event shows.
+    await vi.dynamicImportSettled()
+    expect(sentFunnelEvents()).toEqual([])
   })
 })

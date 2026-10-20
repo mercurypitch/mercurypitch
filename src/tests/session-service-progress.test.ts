@@ -22,6 +22,13 @@ vi.mock('@/db/services/streak-service', () => ({
 vi.mock('@/lib/analytics', () => ({ trackEvent: mocks.trackEvent }))
 
 import { loadProgressSessionRecords, saveSessionRecord, } from '@/db/services/session-service'
+import { resetFirstValueForTests } from '@/lib/first-value'
+import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
+
+function sentFunnelEvents(): string[] {
+  const raw = localStorage.getItem(GUIDE_FUNNEL_STORAGE_KEY) ?? '[]'
+  return (JSON.parse(raw) as { event: string }[]).map((e) => e.event)
+}
 
 describe('Progress session persistence', () => {
   let create: ReturnType<typeof vi.fn>
@@ -50,6 +57,8 @@ describe('Progress session persistence', () => {
     mocks.getCurrentStreak.mockResolvedValue(3)
     mocks.trackEvent.mockClear()
     mocks.currentUser.id = 'singer-1'
+    localStorage.clear()
+    resetFirstValueForTests()
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-11T20:00:00.000Z'))
   })
@@ -102,6 +111,33 @@ describe('Progress session persistence', () => {
     )
   })
 
+  it('sends first_value_drill once an exercise run is saved', async () => {
+    const run = {
+      melodyName: 'Exercise: Long note',
+      score: 86,
+      accuracy: 86,
+      notesHit: 1,
+      notesTotal: 1,
+      source: 'exercise' as const,
+    }
+    await saveSessionRecord(run)
+    await saveSessionRecord(run)
+
+    expect(sentFunnelEvents()).toEqual(['first_value_drill'])
+  })
+
+  it('sends first_value_sing for a free practice run', async () => {
+    await saveSessionRecord({
+      melodyName: 'Free practice',
+      score: 72,
+      accuracy: 72,
+      notesHit: 2,
+      notesTotal: 4,
+    })
+
+    expect(sentFunnelEvents()).toEqual(['first_value_sing'])
+  })
+
   it('rejects an implausible measured duration before local or cloud persistence', async () => {
     await saveSessionRecord({
       melodyName: 'Corrupt local duration',
@@ -133,6 +169,7 @@ describe('Progress session persistence', () => {
 
     expect(mocks.addScoredMs).not.toHaveBeenCalled()
     expect(mocks.trackEvent).not.toHaveBeenCalled()
+    expect(sentFunnelEvents()).toEqual([])
   })
 
   it('pages records and reports when the safety ceiling truncates history', async () => {
@@ -218,5 +255,6 @@ describe('Progress session persistence', () => {
     await expect(saving).resolves.toBeNull()
     expect(mocks.addScoredMs).not.toHaveBeenCalled()
     expect(create).not.toHaveBeenCalled()
+    expect(sentFunnelEvents()).toEqual([])
   })
 })

@@ -74,7 +74,7 @@ describe('the spotlight while a step prepares', () => {
 
   it('holds the last target while the next step is still being prepared', async () => {
     mountTarget('tour-here')
-    startTour(STEPS)
+    startTour(STEPS, 'home')
     render(() => <Walkthrough />)
     await vi.advanceTimersByTimeAsync(200)
     expect(highlight().style.display).not.toBe('none')
@@ -92,7 +92,7 @@ describe('the spotlight while a step prepares', () => {
 
   it('gives up and hides once preparation has run out of patience', async () => {
     mountTarget('tour-here')
-    startTour(STEPS)
+    startTour(STEPS, 'home')
     render(() => <Walkthrough />)
     await vi.advanceTimersByTimeAsync(200)
 

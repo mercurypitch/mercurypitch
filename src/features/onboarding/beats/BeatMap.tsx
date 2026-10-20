@@ -35,7 +35,7 @@ import { hasPageTour } from '@/stores/app-store'
 import { KARAOKE_GIFT_TAG, MAP_GIFT_JOIN_LINK, MAP_KEEP_GIFT_LINK, mapGiftJoin, mapGiftWaiting, } from '../copy'
 import { pickFirstStop } from '../first-stop'
 import styles from '../onboarding.module.css'
-import type { EnteredRoomId, Room, RoomTarget, SideDoor } from '../rooms'
+import type { EnteredRoomId, Room, RoomId, RoomTarget, SideDoor, } from '../rooms'
 import { ROOMS, SIDE_DOORS } from '../rooms'
 
 /**
@@ -72,7 +72,7 @@ export interface BeatMapProps {
   replay?: boolean
   onEnter: (target: RoomTarget, roomId: EnteredRoomId) => void
   /** Open a room AND start its spotlight tour. */
-  onTour: (target: RoomTarget, tab: ActiveTab) => void
+  onTour: (target: RoomTarget, tab: ActiveTab, roomId: RoomId) => void
   onDone: () => void
   /**
    * Reopen the account offer. Passed only when there is a voiceprint to
@@ -204,13 +204,21 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                     tabindex="0"
                     onClick={(e) => {
                       e.stopPropagation()
-                      props.onTour(room.target, room.tourTab as ActiveTab)
+                      props.onTour(
+                        room.target,
+                        room.tourTab as ActiveTab,
+                        room.id,
+                      )
                     }}
                     onKeyDown={(e) => {
                       if (e.key !== 'Enter' && e.key !== ' ') return
                       e.preventDefault()
                       e.stopPropagation()
-                      props.onTour(room.target, room.tourTab as ActiveTab)
+                      props.onTour(
+                        room.target,
+                        room.tourTab as ActiveTab,
+                        room.id,
+                      )
                     }}
                   >
                     Take the tour

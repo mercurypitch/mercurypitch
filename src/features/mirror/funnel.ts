@@ -29,15 +29,16 @@ export const trackFunnel = createFunnel<FunnelEvent>({
     cta_app_click: AD_CONVERSIONS.app_open,
     card_shared: AD_CONVERSIONS.card_shared,
   },
-  // The worker stores metrics for results_view only.
+  // The worker keeps metrics for results_view (its voice numbers) and for
+  // the tour events (tour, step and of).
   metricEvents: ['results_view'],
 })
 
 /**
  * The store chips' click events, per result screen. Both screens mount the
- * same StoreChips; the name is the only place the screen survives, since the
- * worker keeps an event name and a client id and nothing else. None of these
- * is an Ads conversion: keep them out of `adConversions` above.
+ * same StoreChips; the name is the only place the screen survives, since
+ * these events carry no metrics. None of these is an Ads conversion: keep
+ * them out of `adConversions` above.
  */
 export const STORE_CHIP_EVENTS = {
   results: {
