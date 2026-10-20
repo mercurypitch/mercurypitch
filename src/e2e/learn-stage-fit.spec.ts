@@ -174,7 +174,12 @@ function figureAndFirstControl(): SharedScreen {
     return r.width > 0 && getComputedStyle(el).visibility !== 'hidden'
   })
   const first = controls[0]
-  const figure = toy.querySelector('.viz') ?? first
+  // the figure on show: a toy with two views (Lesson 5's breath gauge and
+  // breath figure) keeps the other one's figure in its markup, hidden
+  const figure =
+    Array.from(toy.querySelectorAll('.viz')).find(
+      (el) => el.getClientRects().length > 0,
+    ) ?? first
   const top = Math.min(
     figure.getBoundingClientRect().top,
     first.getBoundingClientRect().top,
