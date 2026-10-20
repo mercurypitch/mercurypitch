@@ -1,0 +1,63 @@
+/* ============================================================
+   Tune line — the buttons laid over its drawing (kit/tune-line.ts)
+   ============================================================
+
+   Every bead, gap and bracket the page asks for is a button over its tap
+   zone on the canvas, at least 44 px square (tune-line-layout.ts). On a
+   toy the buttons come after its controls in reading order (Lesson 6
+   WEB-SPEC, Toys 1: Play, Slow, the slider, the toggles, then the beads and
+   gaps), yet they must sit over the drawing: the toy is a one-column grid,
+   and its figure and the buttons' layer share one row. Every other child
+   keeps its own row, in the order of the markup. */
+
+.toy.tune-toy.is-active {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.tune-toy > * {
+  grid-column: 1;
+  min-width: 0;
+}
+.tune-toy > .tune-viz,
+.tune-toy > .tune-hits {
+  grid-row: 2;
+}
+.tune-toy > .eyebrow {
+  grid-row: 1;
+}
+/* The layer covers the canvas exactly, inside the figure's 1 px border, and
+   takes every pointer on it, so a drag with a mouse or pen that starts
+   between the beads still slides the line. On touch it keeps the figure's
+   `touch-action: pan-y`: a vertical swipe scrolls the page. */
+.tune-hits {
+  position: relative;
+  margin: 1px;
+  z-index: 1;
+  touch-action: pan-y;
+}
+.tune-hits[hidden] {
+  display: none;
+}
+.tune-hit {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tune-hit:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: -2px;
+}
+@media (hover: hover) {
+  .tune-hit:hover {
+    background: rgba(195, 204, 214, 0.06);
+  }
+}
+.tune-hit[hidden] {
+  display: none;
+}

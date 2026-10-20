@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import type { GuidePoint, GuideRow } from './slide-guide'
-import { guideFrame, inGap, mountGuide, pathLength, pathPieces, pitchAt, } from './slide-guide'
+import { breathAt, guideFrame, inGap, mountGuide, pathLength, pathPieces, pitchAt, } from './slide-guide'
 
 /** Lesson 2's slide on A3 (FACTS 50): hold, up a semitone, hold, back, hold. */
 const SLIDE: readonly GuidePoint[] = [
@@ -136,6 +136,21 @@ describe('guideFrame', () => {
     expect(ys[0] - ys[1]).toBeCloseTo(ys[1] - ys[2], 9)
     expect(f.xOf(4.2)).toBe(f.x1)
     expect(f.xOf(9)).toBe(f.x1)
+  })
+})
+
+describe('breathAt', () => {
+  it('sets a breath mark at its moment, over the higher of the notes either side', () => {
+    // Arrange: a breath where the slide comes back down, at 3.2 s
+    const f = guideFrame(300, 190, LANES, SLIDE)
+
+    // Act
+    const mark = breathAt(f, SLIDE, 3.2)
+
+    // Assert: at 3.2 s across, and above A♯3, the higher side, not A3
+    expect(mark.x).toBe(f.xOf(3.2))
+    expect(mark.y).toBeLessThan(f.yOf(pitchAt(SLIDE, 3.15)))
+    expect(mark.y).toBeLessThan(f.yOf(57))
   })
 })
 

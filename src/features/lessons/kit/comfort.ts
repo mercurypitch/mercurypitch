@@ -118,19 +118,25 @@ export function mountComfort(root: ParentNode, h: ComfortHandlers): void {
   }
 }
 
-/** Binds the four `[data-feel]` buttons inside `root`; each answer marks itself pressed. */
+/**
+ * Binds the four `[data-feel]` buttons inside `root`; each answer marks
+ * itself pressed. An answer is final unless `changeable` (Lesson 6 asks
+ * after every sweep, and an answer can change until the next one): then
+ * every button stays enabled and a later tap moves the press.
+ */
 export function mountFeelings(
   root: ParentNode,
   onFeel: (f: Feeling) => void,
+  o: { readonly changeable?: boolean } = {},
 ): { reset(): void } {
   const buttons = qa<HTMLButtonElement>('button[data-feel]', root)
   for (const b of buttons) {
     b.addEventListener('click', () => {
       const f = FEELINGS.find((x) => x === b.dataset.feel)
       if (f === undefined) return
-      for (const o of buttons) {
-        o.setAttribute('aria-pressed', String(o === b))
-        o.disabled = true
+      for (const other of buttons) {
+        other.setAttribute('aria-pressed', String(other === b))
+        if (o.changeable !== true) other.disabled = true
       }
       onFeel(f)
     })
