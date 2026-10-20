@@ -722,8 +722,8 @@ export const RoomsAlley: Component = () => {
         size={size}
         floor={floor}
         top={topBottom}
-        left={columnLeft}
-        right={topRight}
+        fit={fit}
+        scene={scene}
         doors={doors}
         reduced={reduced}
         phase={() => alley().phase}

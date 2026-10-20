@@ -77,6 +77,12 @@
   outline-offset: 2px;
 }
 
+/* The beats' own wrapper, there to be put out of reach (inert) while Not
+   now's asks are out: no box, so each beat lays out in the layer. */
+.beats {
+  display: contents;
+}
+
 .beat {
   flex: 1 1 auto;
   min-height: 0;

@@ -9,14 +9,20 @@
 import { render } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { alleyFit, layoutDoors } from '../alley/alley-geometry'
 import type { DoorKey } from '../alley/alley-plate'
+import { alleyScene } from '../alley/alley-plate'
 import { alleyGreeted, resetAlleyGreetingForTests } from './alley-greeting'
 import type { GuideInput } from './alley-guide-place'
-import { AlleyGuide, DOORS_IN_TURN, GUIDE_TIMES, UNDRAWN_MS, } from './AlleyGuide'
+import { AlleyGuide, ASIDE_MS, ASIDE_STILL_MS, DOORS_IN_TURN, GUIDE_TIMES, UNDRAWN_MS, } from './AlleyGuide'
 import { ONBOARDING_COPY } from './onboarding-copy'
 import { ONBOARDING_KEY, resetOnboardingFlagForTests } from './onboarding-flag'
 
-const stage = vi.hoisted(() => ({ ok: true, states: [] as string[] }))
+const stage = vi.hoisted(() => ({
+  ok: true,
+  states: [] as string[],
+  paused: [] as boolean[],
+}))
 vi.mock('@/lib/merc/stage', () => ({
   mountMercStage: (_host: HTMLElement, options: { state: string }) => {
     stage.states.push(options.state)
@@ -24,7 +30,7 @@ vi.mock('@/lib/merc/stage', () => ({
       ok: stage.ok,
       setState: (state: string) => stage.states.push(state),
       setVoice: () => undefined,
-      setPaused: () => undefined,
+      setPaused: (paused: boolean) => stage.paused.push(paused),
       setStill: () => undefined,
       destroy: () => undefined,
     }
@@ -36,20 +42,24 @@ vi.mock('@/features/onboarding/funnel', () => ({
   trackNativeOnboarding: track,
 }))
 
-/** A phone upright, the doors stepping down to the right. */
-const INPUT: GuideInput = {
-  w: 390,
-  h: 844,
-  landscape: false,
-  floor: 746,
-  top: 170,
-  left: 16,
-  right: 374,
-  doors: [
-    { x0: 0, x1: 30, y1: 503 },
-    { x0: 225, x1: 278, y1: 601 },
-  ],
-}
+/** A phone upright: the alley as RoomsAlley draws it there. */
+const INPUT: GuideInput = (() => {
+  const scene = alleyScene(390, 844)
+  const frame = { top: 170, bottom: 746 }
+  const doors = layoutDoors(scene.plate, scene.doors, 390, 844, frame)
+  return {
+    w: 390,
+    h: 844,
+    landscape: false,
+    floor: 746,
+    top: 170,
+    door: doors.find((door) => door.key === scene.guide.door) ?? doors[0],
+    feet: alleyFit(scene.plate, scene.doors, 390, 844, frame).at(
+      scene.guide.feet,
+    ),
+    doors,
+  }
+})()
 
 let lights: (DoorKey | null)[] = []
 
@@ -98,6 +108,7 @@ beforeEach(() => {
   track.mockClear()
   stage.ok = true
   stage.states = []
+  stage.paused = []
 })
 
 afterEach(() => {
@@ -175,6 +186,46 @@ describe("Merc's welcome in the alley", () => {
     expect(mercState(root)).toBe('idle')
     setAside(false)
     expect(q(root, 'alley-guide')?.getAttribute('data-aside')).toBe('off')
+  })
+
+  it('stops drawing once he has faded out for a picked door, and draws again when it goes back', async () => {
+    const [aside, setAside] = createSignal(false)
+    show({ aside })
+    await drawn()
+
+    setAside(true)
+    vi.advanceTimersByTime(ASIDE_MS - 1)
+    // Still fading: still drawn.
+    expect(stage.paused).toEqual([])
+    vi.advanceTimersByTime(1)
+    expect(stage.paused).toEqual([true])
+
+    setAside(false)
+    expect(stage.paused).toEqual([true, false])
+  })
+
+  it('never stops for a door put back before he has faded out', async () => {
+    const [aside, setAside] = createSignal(false)
+    show({ aside })
+    await drawn()
+
+    setAside(true)
+    vi.advanceTimersByTime(ASIDE_MS - 40)
+    setAside(false)
+    vi.advanceTimersByTime(5000)
+
+    expect(stage.paused).toEqual([])
+  })
+
+  it('under reduced motion: stops drawing after his shorter fade', async () => {
+    const [aside, setAside] = createSignal(false)
+    show({ reduced: true, aside })
+    await drawn()
+
+    setAside(true)
+    vi.advanceTimersByTime(ASIDE_STILL_MS)
+
+    expect(stage.paused).toEqual([true])
   })
 
   it('under reduced motion: no drop, he is simply there and says hello at once', async () => {

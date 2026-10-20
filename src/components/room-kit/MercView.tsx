@@ -11,7 +11,7 @@
 // its world in plates, sprites, SVG and canvas 2D around him.
 
 import type { JSX } from 'solid-js'
-import { createEffect, onCleanup, onMount, untrack } from 'solid-js'
+import { createEffect, on, onCleanup, onMount, untrack } from 'solid-js'
 import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice, SparkleSide } from '@/lib/merc/sim'
 import type { GlideMouth } from '@/lib/merc/sim-glide'
@@ -48,6 +48,12 @@ export interface MercViewProps {
    * read once, at mount. Lip roll gives him a lip roll's buzzing lips.
    */
   mouth?: GlideMouth
+  /**
+   * His frame loop stopped while this holds: he keeps his pose and draws
+   * nothing new (the alley's guide, faded out while a door is picked).
+   * Default: never.
+   */
+  paused?: () => boolean
   class?: string
   style?: JSX.CSSProperties
   /** The room's own id for him ("long-note-merc"). */
@@ -91,6 +97,7 @@ export function MercView(props: MercViewProps): JSX.Element {
         mouth: untrack(() => props.mouth),
       })
       if (!stage.ok) return
+      if (untrack(() => props.paused?.() ?? false)) stage.setPaused(true)
       frame = requestAnimationFrame(feed)
       untrack(() => props.onReady)?.()
     })
@@ -100,6 +107,17 @@ export function MercView(props: MercViewProps): JSX.Element {
     const next = props.state()
     stage?.setState(next)
   })
+
+  // A pause or its end after mount; mount took the first reading.
+  createEffect(
+    on(
+      () => props.paused?.() ?? false,
+      (now) => {
+        stage?.setPaused(now)
+      },
+      { defer: true },
+    ),
+  )
 
   // Only a change after mount is handed over; mount took the first reading.
   createEffect(() => {

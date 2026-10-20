@@ -127,6 +127,9 @@ export const APP_FUNNEL_EVENTS = [
   'cloud_view_import',
   'cloud_view_settings',
   'cloud_view_onboarding',
+  /** The same offer, opened by the native onboarding's own Not now (or
+   *  Back) when it is due, rather than at its end (owner, 20 Oct 2026). */
+  'cloud_view_onboarding_exit',
   /** Subscribe tapped on it, and what the store answered: one name an
    *  answer (KaraokeSubscribeOutcome), `purchased` as success. */
   'cloud_subscribe_tap',
@@ -251,7 +254,8 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   // beat's time is its `_complete` row's createdAt less its `_view` row's.
   // The funnel: install, first note, range, Keep shown, `signup` (the
   // account made, from any sign-in), `cloud_view_onboarding`,
-  // `cloud_purchase_success`, the first `import_sent`.
+  // `cloud_purchase_success`, the first `import_sent`. An install that
+  // leaves by Not now meets the offer as `cloud_view_onboarding_exit`.
   /** A new install: the onboarding flag settled due as the shell first mounts. */
   'native_onboarding_install',
   /** This install's beat 9 group, drawn as its onboarding first opens: the

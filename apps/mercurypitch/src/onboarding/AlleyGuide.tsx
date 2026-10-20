@@ -3,23 +3,26 @@
 // ============================================================
 //
 // A new install's first alley, with its headline ("Pick a room. Make a
-// sound."), is beat 1: Merc drops in on the cobbles, lands, says hello and
-// points at the doors, and the open doors light in turn, the Ear Lab, then
-// Karaoke, then Sing. Then he waits in his idle breath while the singer
-// picks. A door picked, he steps aside (fades out) and comes back when it
-// is put back. An install whose onboarding is done (onboarding-flag.ts)
-// sees the alley as it always was: RoomsAlley mounts this only under the
-// headline, and it shows nothing unless the onboarding is due.
+// sound."), is beat 1: Merc drops in on the road in front of the middle
+// door, lands with his feet on its floor line, says hello and points at the
+// doors, and the open doors light in turn, the Ear Lab, then Karaoke, then
+// Sing. Then he waits in his idle breath while the singer picks. A door
+// picked, he steps aside (fades out, then stops drawing) and comes back
+// when it is put back.
+// An install whose onboarding is done (onboarding-flag.ts) sees the alley
+// as it always was: RoomsAlley mounts this only under the headline, and it
+// shows nothing unless the onboarding is due.
 //
-// Where he stands is alley-guide-place.ts: never over a door. His time
-// starts when he is first drawn (MercView's onReady), so a slow first
+// Where he stands is alley-guide-place.ts: sized to the door behind him,
+// which takes taps through him, with his line under him, over no door. His
+// time starts when he is first drawn (MercView's onReady), so a slow first
 // load does not cut his drop short; without WebGL he is never drawn, and
 // the doors light all the same, with no hello.
 //
 // Reduced motion: no drop, he is simply there; his line and the doors'
 // lights come and go in 150 ms fades.
 //
-// Merc is decorative and his line beside him is hidden from a screen
+// Merc is decorative and his line under him is hidden from a screen
 // reader: the hello is read once, politely, from a live region of its own.
 // His hello is remembered for the session (alley-greeting.ts), so the
 // first note does not say it again.
@@ -72,6 +75,14 @@ export const GUIDE_STILL_TIMES: GuideTimes = {
 
 /** Never drawn (no WebGL) by then: the doors light all the same, ms. */
 export const UNDRAWN_MS = 1500
+
+/**
+ * His fade out for a picked door (alley-guide.css), after which his frame
+ * loop stops until the door goes back, ms.
+ */
+export const ASIDE_MS = 240
+/** The same under reduced motion. */
+export const ASIDE_STILL_MS = 150
 
 /** The open doors, left to right: the ones he points at. */
 export const DOORS_IN_TURN: readonly DoorKey[] = DOORS.filter((door) =>
@@ -179,6 +190,36 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
     ),
   )
 
+  // Faded out for a picked door, he stops drawing until it goes back: an
+  // unseen Merc takes nothing from the door's open (a software renderer
+  // otherwise stalls the open by seconds).
+  const [resting, setResting] = createSignal(false)
+  let restTimer: ReturnType<typeof setTimeout> | undefined
+  const stopResting = (): void => {
+    clearTimeout(restTimer)
+    restTimer = undefined
+  }
+  createEffect(
+    on(
+      () => props.aside(),
+      (aside) => {
+        stopResting()
+        if (!aside) {
+          setResting(false)
+          return
+        }
+        restTimer = setTimeout(
+          () => {
+            restTimer = undefined
+            setResting(true)
+          },
+          still ? ASIDE_STILL_MS : ASIDE_MS,
+        )
+      },
+    ),
+  )
+  onCleanup(stopResting)
+
   return (
     <Show when={onboardingDue() ? place() : null}>
       {(at) => (
@@ -190,8 +231,11 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
             data-still={still ? 'on' : 'off'}
             aria-hidden="true"
           >
+            {/* data-floor: the spot on the picture's floor line he stands
+                on, for the walk to hold his feet to (probe-onboarding.mjs). */}
             <div
               class="mp-alley-guide__merc"
+              data-floor={props.input().feet.join(',')}
               style={{
                 left: `${at().x}px`,
                 top: `${at().y}px`,
@@ -204,6 +248,7 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
                 voice={() => SILENT_VOICE}
                 still={() => still}
                 rings={false}
+                paused={resting}
                 class="mp-alley-guide__view"
                 testId="alley-merc"
                 onReady={meet}
@@ -216,6 +261,7 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
                   data-shown={hello() ? 'on' : 'off'}
                   data-testid="alley-guide-line"
                   style={{
+                    // Its middle under his feet: the stylesheet centres it.
                     left: `${line().x}px`,
                     top: `${line().y}px`,
                     'max-width': `${line().width}px`,

@@ -28,7 +28,8 @@
 //   offer       beat 9: the Cloud offer, the shell's own sheet over this
 //               layer (CloudOffer.tsx), once an install, held out of one
 //               install in ten, never to a subscriber (onboarding-offer.ts).
-//               Merc goes with it, small by its art (cloudOfferGuest)
+//               Merc goes with it, small by its art (cloudOfferGuest). The
+//               layer's Not now brings it too, from any beat
 //
 // Keep comes only to a phone with no account yet (signed in, or signed out
 // of one, the layer goes straight on to the line), and only after a range
@@ -42,7 +43,18 @@
 // whatever it handed over to have closed; else it lands there straight
 // away. A refused mic, or one that would not open, goes on in one tap
 // (Continue without the mic, REQ-NFL-043) to the same landing, with no
-// offer. Not now at any beat leaves for the Sing room, with no offer.
+// offer.
+//
+// Not now, at any beat (and Back, which is the same Not now), ends the
+// onboarding for good, its mic shut in the tap (owner, 20 Oct 2026). The
+// Cloud offer comes when it is due, by every rule of beat 9's and never
+// after a refused mic (S7b E5), counted apart from the end's; the layer
+// waits on the asks before it, its Not now busy and the beat out of reach,
+// and a second Not now leaves at once. Not due, it leaves at once. Either
+// way it lands on the alley, once the offer and whatever it handed over to
+// have closed (onboarding-landing.ts). Keep's own Not now still goes on to
+// the line, and the end's offer to the Warm-up's path.
+//
 // Opened on its own from Keep's "Find your range first" over anything
 // else, the layer starts on the range and goes back to Keep.
 //
@@ -84,10 +96,10 @@ import { KeepView } from './KeepView'
 import { lineSaysText, LineView } from './LineView'
 import styles from './NativeOnboarding.module.css'
 import { ONBOARDING_COPY } from './onboarding-copy'
-import { leaveOnboarding, onboardingEntry, registerLayerRange, } from './onboarding-layer'
+import { leaveOnboarding, markNotNow, onboardingEntry, registerLayerNotNow, registerLayerRange, } from './onboarding-layer'
 import { KEEP_CHOICE_EVENT, lineBandEvent } from './onboarding-measure'
 import type { OfferSkip } from './onboarding-offer'
-import { onboardingOfferGroup, openOnboardingOffer, prepareOnboardingOffer, } from './onboarding-offer'
+import { offerSkipNow, onboardingOfferGroup, openOnboardingOffer, prepareOnboardingOffer, } from './onboarding-offer'
 import { rangeSays, RangeView } from './RangeView'
 import { RevealView } from './RevealView'
 import { savedRange } from './saved-range'
@@ -137,9 +149,11 @@ export function NativeOnboarding(): JSX.Element {
   /** How the last beat gave way, for the probe. */
   const [swapped, setSwapped] = createSignal<SwapDone | 'none'>('none')
   let root: HTMLDivElement | undefined
+  /** Where the beats draw: no box of its own, so each lays out in the layer. */
+  let beats: HTMLDivElement | undefined
   /** The beat on screen: the root its view draws in the layer. */
   const beatOnScreen = (): HTMLElement | undefined => {
-    for (const child of root?.children ?? []) {
+    for (const child of beats?.children ?? []) {
       if (
         child instanceof HTMLElement &&
         child.classList.contains(styles.beat) &&
@@ -205,6 +219,16 @@ export function NativeOnboarding(): JSX.Element {
   let skipTimer: ReturnType<typeof setTimeout> | undefined
   onCleanup(() => clearTimeout(skipTimer))
 
+  /**
+   * Not now has been said: the layer is on its way out, through the Cloud
+   * offer when it is due. Never undone.
+   */
+  let exiting = false
+  /** Not now's asks are out: the layer waits on them before it goes. */
+  const [deciding, setDeciding] = createSignal(false)
+  /** The beat Not now was said on, for the layer's name under its offer. */
+  const [leftFrom, setLeftFrom] = createSignal<OnboardingBeat | null>(null)
+
   // Leaving shuts the mic at once; the layer only fades after.
   createEffect(
     on(
@@ -232,6 +256,10 @@ export function NativeOnboarding(): JSX.Element {
    */
   const toLine = (): void => {
     if (untrack(leaving)) return
+    if (exiting) {
+      leaveOnboarding('not-now')
+      return
+    }
     go('line')
     line.arrive()
   }
@@ -329,7 +357,8 @@ export function NativeOnboarding(): JSX.Element {
         if ((now !== 'keep' && now !== 'offer') || up) return
         queueMicrotask(() => {
           if (untrack(sheetUp)) return
-          if (headed === 'keep' && !offered) toLine()
+          if (exiting) leaveOnboarding('not-now')
+          else if (headed === 'keep' && !offered) toLine()
           else if (headed === 'keep' || headed === 'offer') {
             leaveOnboarding('finished')
           }
@@ -355,22 +384,70 @@ export function NativeOnboarding(): JSX.Element {
 
   /** Continue on the line: beat 9 when its rules allow it, else the landing. */
   const continueLine = (): void => {
-    if (untrack(continuing) || untrack(leaving)) return
+    if (untrack(continuing) || untrack(leaving) || exiting) return
     setContinuing(true)
     const asks = offerAsks ?? prepareOnboardingOffer()
-    void openOnboardingOffer(asks, () => !untrack(leaving)).then((opened) => {
+    // Not now while the asks are out takes over: its offer, not this one.
+    const stands = (): boolean => !untrack(leaving) && !exiting
+    void openOnboardingOffer(asks, stands).then((opened) => {
       setContinuing(false)
-      if (untrack(leaving)) return
+      if (!stands()) return
       if (!opened) {
         leaveOnboarding('finished')
         return
       }
-      offered = true
-      // Merc goes with the offer, small by its art (S7b beat 9).
-      setCloudOfferGuest(mercEl() ?? null)
-      go('offer')
+      showOffer()
     })
   }
+
+  /** The offer is up: Merc goes with it, small by its art (S7b beat 9). */
+  const showOffer = (): void => {
+    offered = true
+    setCloudOfferGuest(mercEl() ?? null)
+    go('offer')
+  }
+
+  /** The mic refused, or would not open, and not granted since (S7b E5). */
+  const micRefused = (): boolean =>
+    [note.state(), range.state(), line.state()].some(
+      (state) => state.phase === 'blocked',
+    )
+
+  /**
+   * Not now, on the layer or by Back: the onboarding over for good, its mic
+   * shut in the tap. Then the Cloud offer when it is due, once its asks
+   * have answered, else the alley at once. A second Not now while the asks
+   * are out leaves at once. The range on its own goes back to Keep.
+   */
+  const notNow = (): void => {
+    if (entry !== 'onboarding' || exiting) {
+      leaveOnboarding('not-now')
+      return
+    }
+    exiting = true
+    const refused = micRefused()
+    clearTimeout(skipTimer)
+    skipTimer = undefined
+    note.leave()
+    range.leave()
+    line.leave()
+    markNotNow()
+    if (refused || offerSkipNow() !== null) {
+      leaveOnboarding('not-now')
+      return
+    }
+    setLeftFrom(untrack(beat))
+    setDeciding(true)
+    const asks = offerAsks ?? prepareOnboardingOffer()
+    const stands = (): boolean => !untrack(leaving)
+    void openOnboardingOffer(asks, stands, 'onboarding-exit').then((opened) => {
+      setDeciding(false)
+      if (!stands()) return
+      if (opened) showOffer()
+      else leaveOnboarding('not-now')
+    })
+  }
+  onCleanup(registerLayerNotNow(notNow))
 
   // Counted: each beat as it shows, and as it is done (S7b §7).
   createEffect(
@@ -462,8 +539,11 @@ export function NativeOnboarding(): JSX.Element {
     }
   }
 
+  /** The layer's name: under Not now's offer, the beat it was said on. */
   const title = (): string => {
-    switch (beat()) {
+    const now = beat()
+    const named = now === 'offer' ? (leftFrom() ?? 'line') : now
+    switch (named) {
       case 'range':
         return ONBOARDING_COPY.rangeTitle
       case 'reveal':
@@ -544,7 +624,8 @@ export function NativeOnboarding(): JSX.Element {
         <button
           type="button"
           class={styles.notNow}
-          onClick={() => leaveOnboarding('not-now')}
+          onClick={notNow}
+          aria-busy={deciding() ? 'true' : undefined}
           data-testid="onboarding-not-now"
         >
           {ONBOARDING_COPY.notNow}
@@ -558,57 +639,65 @@ export function NativeOnboarding(): JSX.Element {
       >
         {said() ?? ''}
       </span>
-      <Switch>
-        <Match when={beat() === 'first-note'}>
-          <FirstNoteView
-            controller={note}
-            line={said()}
-            onRange={findRange}
-            onSkip={skip}
-            onSeeSaved={seeSaved}
-            onWithoutMic={withoutMic}
-            skipped={skipped()}
-            merc={merc}
-          />
-        </Match>
-        <Match when={beat() === 'range'}>
-          <RangeView
-            controller={range}
-            line={said()}
-            onSee={seeVoice}
-            onSkip={skipRange}
-            onWithoutMic={withoutMic}
-            skipped={skipped()}
-            merc={merc}
-          />
-        </Match>
-        <Match when={beat() === 'reveal' ? revealed() : null}>
-          {(shown) => (
-            <RevealView
-              controller={reveal}
-              range={shown()}
-              onContinue={continueOn}
+      {/* Out of reach while Not now's asks are out: the mic stays shut. */}
+      <div
+        ref={beats}
+        class={styles.beats}
+        inert={deciding()}
+        data-testid="onboarding-beats"
+      >
+        <Switch>
+          <Match when={beat() === 'first-note'}>
+            <FirstNoteView
+              controller={note}
+              line={said()}
+              onRange={findRange}
+              onSkip={skip}
+              onSeeSaved={seeSaved}
+              onWithoutMic={withoutMic}
+              skipped={skipped()}
               merc={merc}
             />
-          )}
-        </Match>
-        <Match when={beat() === 'keep'}>
-          <KeepView merc={merc} />
-        </Match>
-        <Match when={beat() === 'line'}>
-          <LineView
-            controller={line}
-            line={said()}
-            onContinue={continueLine}
-            continuing={continuing()}
-            onWithoutMic={withoutMic}
-            merc={merc}
-          />
-        </Match>
-        <Match when={beat() === 'offer'}>
-          <KeepView testId="onboarding-offer" />
-        </Match>
-      </Switch>
+          </Match>
+          <Match when={beat() === 'range'}>
+            <RangeView
+              controller={range}
+              line={said()}
+              onSee={seeVoice}
+              onSkip={skipRange}
+              onWithoutMic={withoutMic}
+              skipped={skipped()}
+              merc={merc}
+            />
+          </Match>
+          <Match when={beat() === 'reveal' ? revealed() : null}>
+            {(shown) => (
+              <RevealView
+                controller={reveal}
+                range={shown()}
+                onContinue={continueOn}
+                merc={merc}
+              />
+            )}
+          </Match>
+          <Match when={beat() === 'keep'}>
+            <KeepView merc={merc} />
+          </Match>
+          <Match when={beat() === 'line'}>
+            <LineView
+              controller={line}
+              line={said()}
+              onContinue={continueLine}
+              continuing={continuing()}
+              onWithoutMic={withoutMic}
+              merc={merc}
+            />
+          </Match>
+          <Match when={beat() === 'offer'}>
+            <KeepView testId="onboarding-offer" />
+          </Match>
+        </Switch>
+      </div>
     </div>
   )
 }

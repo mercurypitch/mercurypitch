@@ -4,7 +4,9 @@
 //
 // RoomsAlley mounts this under the headline of a new install's first
 // alley, with what it has measured: the screen, the dock's top, the
-// headline block and the doors. On a build with the onboarding
+// headline block's bottom, the picture as it is drawn and the doors in it,
+// so Merc can stand on the picture's own floor in front of its middle door
+// (alley-plate.ts `guide`). On a build with the onboarding
 // (`NATIVE_ONBOARDING`) the guide is a lazy chunk of its own
 // (onboarding/AlleyGuide.tsx); on any other this is nothing, and by the
 // shell's ternary the store build keeps no chunk of it. The door lit for
@@ -14,9 +16,9 @@ import type { Component, JSX } from 'solid-js'
 import { createSignal, lazy, Show } from 'solid-js'
 import { NATIVE_ONBOARDING } from '@/lib/native-build'
 import type { AlleyGuideProps } from '../onboarding/AlleyGuide'
-import type { DoorLayout } from './alley-geometry'
+import type { CoverFit, DoorLayout } from './alley-geometry'
 import type { AlleyPhase } from './alley-machine'
-import type { DoorKey } from './alley-plate'
+import type { AlleyScene, DoorKey } from './alley-plate'
 
 const AlleyGuide: Component<AlleyGuideProps> = NATIVE_ONBOARDING
   ? lazy(async () =>
@@ -37,10 +39,11 @@ export interface AlleyGuideSlotProps {
   /** The alley as measured: the screen and the dock's top. */
   size: () => { readonly w: number; readonly h: number }
   floor: () => number
-  /** The headline block: its bottom, its left padding edge and its right. */
+  /** The headline block's bottom. */
   top: () => number
-  left: () => number
-  right: () => number
+  /** The picture, as it is drawn, and the doors in it. */
+  fit: () => CoverFit
+  scene: () => AlleyScene
   doors: () => readonly DoorLayout[]
   /** The alley's reduced motion. */
   reduced: () => boolean
@@ -53,16 +56,20 @@ export function AlleyGuideSlot(props: AlleyGuideSlotProps): JSX.Element {
   return (
     <Show when={props.shown()}>
       <AlleyGuide
-        input={() => ({
-          w: props.size().w,
-          h: props.size().h,
-          landscape: props.size().w > props.size().h,
-          floor: props.floor(),
-          top: props.top(),
-          left: props.left(),
-          right: props.right(),
-          doors: props.doors(),
-        })}
+        input={() => {
+          const spot = props.scene().guide
+          const doors = props.doors()
+          return {
+            w: props.size().w,
+            h: props.size().h,
+            landscape: props.size().w > props.size().h,
+            floor: props.floor(),
+            top: props.top(),
+            door: doors.find((door) => door.key === spot.door) ?? doors[0],
+            feet: props.fit().at(spot.feet),
+            doors,
+          }
+        }}
         reduced={props.reduced}
         aside={() => props.phase() !== 'rest'}
         opened={() => props.phase() === 'opening'}
