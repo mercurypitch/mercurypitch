@@ -35,6 +35,7 @@ import { handleFriendAccept, handleFriendCode, handleFriendRedeem, handleFriendR
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
+import { cleanMirrorMetrics } from './mirror-metrics'
 import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, } from './moderation'
 import { getPerksForUser } from './perks'
 import { handlePremiumBackgroundAdminRequest } from './premium-background-admin'
@@ -1260,15 +1261,6 @@ async function handleLeaderboard(
 // events the client emitted were answered 400 and dropped in silence.
 export const FUNNEL_EVENTS: ReadonlySet<string> = new Set(FUNNEL_EVENT_NAMES)
 
-// Derived numbers only (range/accuracy/steadiness) — never audio.
-const MIRROR_METRIC_KEYS = new Set([
-  'lowMidi',
-  'highMidi',
-  'semitones',
-  'accuracy',
-  'steadiness',
-])
-
 // ── First-touch acquisition (src/lib/acquisition.ts) ─────────────────
 // One row per clientId in funnelAcquisition, so the funnel can finally be
 // read per campaign — "do Campaign E's visitors finish an upload more often
@@ -1368,26 +1360,7 @@ async function handleMirrorEvent(
     return respond({ error: 'Invalid event' }, { status: 400 })
   }
 
-  // Metrics ride along only on results_view, filtered to known numeric keys.
-  let metricsJson: string | null = null
-  if (
-    event === 'results_view' &&
-    typeof metrics === 'object' &&
-    metrics !== null
-  ) {
-    const clean: Record<string, number | null> = {}
-    for (const [key, value] of Object.entries(
-      metrics as Record<string, unknown>,
-    )) {
-      if (
-        MIRROR_METRIC_KEYS.has(key) &&
-        (typeof value === 'number' || value === null)
-      ) {
-        clean[key] = value
-      }
-    }
-    metricsJson = JSON.stringify(clean)
-  }
+  const metricsJson = cleanMirrorMetrics(event, metrics)
 
   await env.DB.prepare(
     'INSERT INTO mirrorEvents (id, createdAt, clientId, event, metricsJson) VALUES (?, ?, ?, ?, ?)',

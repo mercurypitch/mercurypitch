@@ -12,7 +12,7 @@
 // tests pin that they still do.
 
 import { describe, expect, it } from 'vitest'
-import { APP_FUNNEL_EVENTS, FUNNEL_EVENT_NAMES, GLASS_FUNNEL_EVENTS, KARAOKE_FUNNEL_EVENTS, MIRROR_FUNNEL_EVENTS, ONBOARDING_FUNNEL_EVENTS, RESERVED_FUNNEL_EVENTS, } from '../../../src/lib/funnel-event-catalog'
+import { APP_FUNNEL_EVENTS, FUNNEL_EVENT_NAMES, GLASS_FUNNEL_EVENTS, GUIDE_FUNNEL_EVENTS, KARAOKE_FUNNEL_EVENTS, MIRROR_FUNNEL_EVENTS, ONBOARDING_FUNNEL_EVENTS, RESERVED_FUNNEL_EVENTS, } from '../../../src/lib/funnel-event-catalog'
 import { FUNNEL_EVENTS } from './index'
 
 /** Every surface whose events the worker must accept. */
@@ -22,6 +22,7 @@ const CLIENT_SURFACES = {
   karaoke: KARAOKE_FUNNEL_EVENTS,
   glass: GLASS_FUNNEL_EVENTS,
   onboarding: ONBOARDING_FUNNEL_EVENTS,
+  guide: GUIDE_FUNNEL_EVENTS,
 } as const
 
 describe('ingest allowlist covers every client surface', () => {
