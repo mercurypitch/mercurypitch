@@ -17,7 +17,10 @@
 // phrase, and nothing is drawn from the point before it. Between runs the
 // path rests in chrome (Lesson 2) or in amber (Lesson 4). Under reduced
 // motion the model lights the whole path at once, and the sweep lights the
-// path's segments one after another instead of a travelling line.
+// path's segments one after another instead of a travelling line. A path
+// with no rest to breathe in can carry breath marks (Lesson 6's, after
+// "star"): a small tick over the path in its own colour with the word
+// "breathe", lit as the voice or the sweep reaches it.
 //
 // Mounted on a root holding a `canvas` and a `[data-guide-rows]` box, into
 // which the row labels are written as markup (so a ♯ is spoken), each at its
@@ -52,13 +55,19 @@ export interface GuideOptions {
   readonly rest?: 'chrome' | 'amber'
   /** When the guide draws; default while its root is on screen. */
   readonly active?: () => boolean
+  /** Breath marks, seconds into the path; none by default. */
+  readonly breaths?: readonly number[]
 }
 
 export interface Guide {
   /** True while Merc's model or the viewer's sweep runs. */
   readonly busy: boolean
-  /** New rows and a new path (the slide an octave up, a new do), drawn from the next frame. */
-  set(rows: readonly GuideRow[], path: readonly GuidePoint[]): void
+  /** New rows and a new path (the slide an octave up, a new do), drawn from the next frame; breath marks stay unless given. */
+  set(
+    rows: readonly GuideRow[],
+    path: readonly GuidePoint[],
+    breaths?: readonly number[],
+  ): void
   /** Merc's model: the path lights in amber as it is sung; resolves at its last point. */
   model(): Promise<void>
   /** The viewer's turn: `countIn` seconds waiting at the start, then the line sweeps the path; resolves when it has gone. */
@@ -68,7 +77,7 @@ export interface Guide {
 type Mode = 'rest' | 'model' | 'count' | 'sweep'
 
 /** Where the rows and the path sit on a W by H canvas. */
-interface Frame {
+export interface Frame {
   readonly x0: number
   readonly x1: number
   /** The path's length, seconds. */
@@ -307,6 +316,47 @@ function drawSweep(
 }
 
 /**
+ * Where a breath mark `t` seconds in sits: over the path there, clear of the
+ * higher of the two notes either side of it.
+ */
+export function breathAt(
+  f: Frame,
+  path: readonly GuidePoint[],
+  t: number,
+): { x: number; y: number } {
+  const before = f.yOf(pitchAt(path, t - 0.05))
+  const after = f.yOf(pitchAt(path, t + 0.05))
+  return { x: f.xOf(t), y: Math.min(before, after) - 9 }
+}
+
+/** The breath marks: each a tick and its word, in `color`, full once `reached` has passed it. */
+function drawBreaths(
+  ctx: CanvasRenderingContext2D,
+  f: Frame,
+  path: readonly GuidePoint[],
+  breaths: readonly number[],
+  color: string,
+  reached: number,
+): void {
+  ctx.font = '500 11px "JetBrains Mono", monospace'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'bottom'
+  ctx.lineCap = 'round'
+  for (const t of breaths) {
+    const { x, y } = breathAt(f, path, t)
+    const lit = reached >= t
+    ctx.strokeStyle = rgba(color, lit ? 1 : 0.7)
+    ctx.fillStyle = rgba(color, lit ? 1 : 0.7)
+    ctx.lineWidth = lit ? 2.2 : 1.8
+    ctx.beginPath()
+    ctx.moveTo(x - 1.5, y)
+    ctx.lineTo(x + 2.5, y - 8)
+    ctx.stroke()
+    ctx.fillText('breathe', x, y - 11)
+  }
+}
+
+/**
  * Writes each row's label at its row's height in the labels box, as a share
  * of the box, so the labels sit right before the canvas has drawn a frame.
  */
@@ -327,10 +377,31 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
   const box = q('[data-guide-rows]', root)
   let rows = opts.rows
   let path = opts.path
+  let breaths = opts.breaths ?? []
   let mode: Mode = 'rest'
   let t0 = 0
   let wait = 0
   placeLabels(box, rows)
+
+  /** The breath marks in the path's colour now, lit as far as the voice or the sweep has come. */
+  function marks(ctx: CanvasRenderingContext2D, f: Frame, s: number): void {
+    if (breaths.length === 0) return
+    if (mode === 'model')
+      drawBreaths(ctx, f, path, breaths, COLOR.amber, reducedMotion() ? f.T : s)
+    else if (mode === 'count')
+      drawBreaths(ctx, f, path, breaths, COLOR.chrome, -1)
+    else if (mode === 'sweep')
+      drawBreaths(ctx, f, path, breaths, COLOR.chrome, s - wait)
+    else
+      drawBreaths(
+        ctx,
+        f,
+        path,
+        breaths,
+        opts.rest === 'amber' ? COLOR.amber : COLOR.chrome,
+        f.T,
+      )
+  }
 
   function rest(ctx: CanvasRenderingContext2D, f: Frame): void {
     strokePath(
@@ -352,6 +423,7 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
     else if (mode === 'count') drawSweep(ctx, f, path, 0, H)
     else if (mode === 'sweep') drawSweep(ctx, f, path, s - wait, H)
     else rest(ctx, f)
+    marks(ctx, f, s)
   }
 
   addDrawer({ active: opts.active ?? watch(root), draw })
@@ -382,9 +454,10 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
     get busy() {
       return mode !== 'rest'
     },
-    set(nextRows, nextPath) {
+    set(nextRows, nextPath, nextBreaths) {
       rows = nextRows
       path = nextPath
+      if (nextBreaths !== undefined) breaths = nextBreaths
       placeLabels(box, rows)
     },
     model() {

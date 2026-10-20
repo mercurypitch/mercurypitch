@@ -82,6 +82,23 @@ export interface SkyOptions {
   readonly camera?: { readonly cam: number }
 }
 
+/**
+ * The sky drawn still, once per size: for a page on which only the Mercs'
+ * idle loops move by themselves (each WEB-SPEC's Look). Lesson 6 is the
+ * first to take it from here; Lessons 3 and 5 keep the copies they were
+ * built with.
+ */
+export function stillSky(stage: HTMLElement): void {
+  const cv = surface(q<HTMLCanvasElement>('canvas.sky', stage))
+  const stars = makeStars()
+  const paint = (): void => {
+    const { ctx, w, h } = cv.fit()
+    drawStars(ctx, w, h, stars, { idleT: 0, twinkle: 0, cam: 1 })
+  }
+  paint()
+  new ResizeObserver(paint).observe(stage)
+}
+
 /** The sky alone on a hero stage, drawn while the stage is on screen. */
 export function mountSky(stage: HTMLElement, opts: SkyOptions = {}): void {
   const cv = surface(opts.canvas ?? q<HTMLCanvasElement>('canvas.sky', stage))
