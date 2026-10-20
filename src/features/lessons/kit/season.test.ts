@@ -196,6 +196,21 @@ describe('LESSONS', () => {
       expect(hasTime, `lesson ${L.n}`).toBe(L.page !== undefined)
     }
   })
+
+  it('gives each lesson its copy from lesson-copy.ts beside its own default hook', () => {
+    // Act
+    const L = LESSONS[7]
+
+    // Assert: the hook proposed in CURIOSITY-MOMENTS § 2, the current wording kept
+    expect(L.hook).toBe(
+      'Why is your comfortable middle worth more than your highest note?',
+    )
+    expect(L.hookAlts?.map((v) => v.text)).toEqual([
+      'How many notes can your voice reach, and why is the comfortable middle worth more than the extremes?',
+    ])
+    expect(L.tease).toBe('Books often give a voice type two octaves.')
+    expect(LESSONS[1].tease).toBeUndefined()
+  })
 })
 
 describe('a draft lesson (drafts.ts)', () => {
@@ -244,6 +259,18 @@ describe('a draft lesson (drafts.ts)', () => {
     const L = season.LESSONS[3]
     expect([L.page, L.minutes]).toEqual([undefined, undefined])
     expect(season.LESSONS[1].page).toBe('/learn/01')
+  })
+
+  it('still opens on its hook where the build hides drafts, its alternative kept for the admin console', async () => {
+    // Act
+    const season = await seasonBuilt('0')
+
+    // Assert
+    const L = season.LESSONS[3]
+    expect(L.hook).toBe(
+      "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?",
+    )
+    expect(L.hookAlts?.map((v) => v.id)).toEqual(['figures'])
   })
 
   it('reads Lesson 5 as live, its seventeen minutes and its page, where drafts are shown', async () => {

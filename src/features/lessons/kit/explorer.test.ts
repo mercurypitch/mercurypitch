@@ -209,6 +209,27 @@ describe('createExplorer', () => {
     }
   })
 
+  it("draws no hook variant's team note on any lesson's card", () => {
+    // Arrange: the notes that say why each variant exists (lesson-copy.ts)
+    const notes = LESSONS.flatMap((L) =>
+      [...(L.hookAlts ?? []), ...(L.teaseAlts ?? [])].map((v) => v.note),
+    )
+    explorerPage()
+    const explorer = createExplorer({ current: 1 })
+
+    for (const L of LESSONS) {
+      // Act
+      explorer.select(L.n, false)
+
+      // Assert
+      const text = openCard()?.textContent ?? ''
+      expect(text, `lesson ${L.n}`).toContain(L.hook)
+      for (const note of notes)
+        expect(text.includes(note), `lesson ${L.n}: ${note}`).toBe(false)
+    }
+    expect(notes.length).toBeGreaterThan(0)
+  })
+
   it('shows the trailer as its hook and "Coming later", and nothing else', () => {
     // Arrange
     explorerPage()
