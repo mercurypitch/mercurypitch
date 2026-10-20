@@ -252,8 +252,25 @@ async function expectUp(page, kit, how) {
   await page
     .locator(LAYER)
     .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
-    .catch(() => {
-      throw new Error(`${how}: the onboarding did not come up`)
+    .catch(async () => {
+      // Where it stopped: the address, the alley, the layer and the room.
+      const seen = await page
+        .evaluate(
+          ([layer, flag]) => ({
+            hash: window.location.hash,
+            alley:
+              typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+            layer: document.querySelector(layer) !== null,
+            flag: localStorage.getItem(flag),
+            room: document.querySelector('[data-testid="sing-room"]') !== null,
+            morph: document.querySelector('.mp-alley-morph') !== null,
+          }),
+          [LAYER, FLAG],
+        )
+        .catch((error) => String(error))
+      throw new Error(
+        `${how}: the onboarding did not come up ${JSON.stringify(seen)}`,
+      )
     })
   const flag = await flagNow(page)
   if (flag !== 'due') throw new Error(`${how}: the flag is ${flag}, not due`)
