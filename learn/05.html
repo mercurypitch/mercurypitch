@@ -231,7 +231,7 @@
     </header>
 
     <main id="top">
-      <!-- ============================================================ HERO, RECALL AND COLD OPEN -->
+      <!-- ============================================================ HERO: the cold open -->
       <section class="hero l05-hero" aria-labelledby="hook">
         <div class="wrap hero-grid">
           <div class="hero-copy">
@@ -290,39 +290,6 @@
                 Turn sound on
               </button>
             </div>
-
-            <!-- Recall from Lesson 3: shown to everyone, Lesson 3 is a prerequisite -->
-            <section
-              class="recall l05-recall"
-              id="recall"
-              aria-labelledby="recall-title"
-            >
-              <p class="recall-tempo">
-                From Lesson 3: <span>two questions, asked afresh</span>
-              </p>
-              <h2 class="recall-title" id="recall-title">
-                Recall from Lesson 3
-              </h2>
-              <div class="card quiz recall-quiz">
-                <div class="quiz-top">
-                  <p class="eyebrow">
-                    <span class="fig">Tap an answer</span> one try each, then
-                    the reason
-                  </p>
-                  <div class="quiz-score">
-                    <p class="score">
-                      <span id="rc-scoreN">0</span><small>of 2</small>
-                    </p>
-                    <button class="btn sm" type="button" id="rc-quizReset">
-                      <svg class="ico" aria-hidden="true">
-                        <use href="#i-redo" /></svg
-                      >Try again
-                    </button>
-                  </div>
-                </div>
-                <div class="qs" id="rc-qs"></div>
-              </div>
-            </section>
           </div>
 
           <div class="hero-side">
@@ -446,6 +413,39 @@
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ RECALL -->
+      <!-- Recall from Lesson 3, after the cold open as on Lesson 2: shown to
+           everyone, Lesson 3 is a prerequisite -->
+      <section class="mv" id="recall" aria-labelledby="recall-title">
+        <div class="wrap">
+          <header class="mv-head">
+            <p class="mv-tempo">
+              From Lesson 3: <span>two questions, asked afresh</span>
+            </p>
+            <h2 class="mv-title" id="recall-title">Recall from Lesson 3</h2>
+          </header>
+          <div class="card quiz" id="recallQuiz">
+            <div class="quiz-top">
+              <p class="eyebrow">
+                <span class="fig">Tap an answer</span> one try each, then the
+                reason
+              </p>
+              <div class="quiz-score">
+                <p class="score">
+                  <span id="rc-scoreN">0</span><small>of 2</small>
+                </p>
+                <button class="btn sm" type="button" id="rc-quizReset">
+                  <svg class="ico" aria-hidden="true">
+                    <use href="#i-redo" /></svg
+                  >Try again
+                </button>
+              </div>
+            </div>
+            <div class="qs" id="rc-qs"></div>
           </div>
         </div>
       </section>

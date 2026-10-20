@@ -54,6 +54,7 @@ initMotionSwitch()
 Motion.init()
 
 initHook()
+// the recall follows the cold open, as on Lesson 2
 initRecall()
 initWords()
 
@@ -105,6 +106,7 @@ createExplorer({ current: 5 })
 engraveClefs(G_CLEF_PATH)
 initMasthead(
   {
+    recall: '#lesson',
     words: '#lesson',
     lesson: '#lesson',
     sing: '#sing',

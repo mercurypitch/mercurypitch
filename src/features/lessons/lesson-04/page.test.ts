@@ -44,4 +44,15 @@ describe("Lesson 4's page", () => {
     expect(PAGE).not.toMatch(/id="watch"/)
     expect(PAGE).not.toMatch(/<video/)
   })
+
+  it('opens on the cold open, the recall after it and before the four words', () => {
+    // Act: each section's place in the document
+    const at = ['id="cold"', 'id="recall"', 'id="words"'].map((id) =>
+      PAGE.indexOf(id),
+    )
+
+    // Assert: decided 20 October 2026 (MASTER-PLAN § 4.2), as Lesson 2 runs
+    expect(at.every((i) => i > 0)).toBe(true)
+    expect([...at].sort((a, b) => a - b)).toEqual(at)
+  })
 })
