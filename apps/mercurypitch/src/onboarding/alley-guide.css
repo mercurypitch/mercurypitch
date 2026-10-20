@@ -47,10 +47,13 @@
   inset: 0;
 }
 
-/* His line beside him, its middle at his face, on a dark pane so it reads
-   over the picture. */
+/* His line under him, its middle under his feet and its top at `top`, on
+   a dark pane so it reads over the cobbles. As wide as its words, up to its
+   max-width, wherever its middle is (alley-guide-place.ts LINE_H is its
+   height in one line). */
 .mp-alley-guide__line {
   position: absolute;
+  width: max-content;
   margin: 0;
   padding: 8px 14px;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -58,9 +61,10 @@
   background: rgba(11, 13, 18, 0.74);
   color: #e6edf3;
   font: 500 16px/1.3 var(--font-body, sans-serif);
+  text-align: center;
   text-wrap: balance;
   opacity: 0;
-  transform: translateY(calc(-50% + 6px));
+  transform: translate(-50%, 6px);
   transition:
     opacity 280ms ease,
     transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -68,7 +72,7 @@
 
 .mp-alley-guide__line[data-shown='on'] {
   opacity: 1;
-  transform: translateY(-50%);
+  transform: translate(-50%, 0);
 }
 
 /* His hello for a screen reader, read once. */
@@ -101,7 +105,7 @@
 
   .mp-alley-guide__line,
   .mp-alley-guide__line[data-shown='on'] {
-    transform: translateY(-50%);
+    transform: translate(-50%, 0);
   }
 
   .mp-alley__door.is-lit .mp-alley__rim,
@@ -116,7 +120,7 @@
 }
 
 .mp-shell[data-reduced='on'] .mp-alley-guide__line {
-  transform: translateY(-50%);
+  transform: translate(-50%, 0);
 }
 
 .mp-shell[data-reduced='on'] .mp-alley__door.is-lit .mp-alley__rim,

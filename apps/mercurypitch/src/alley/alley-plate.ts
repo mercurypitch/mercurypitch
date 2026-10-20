@@ -315,16 +315,36 @@ export const DOORS_LANDSCAPE: readonly DoorSpec[] = DOORS.map((door) => ({
   quad: LANDSCAPE_QUADS[door.key],
 }))
 
+/**
+ * Where Merc stands for a new install's welcome (S7b beat 1; owner, 20 Oct
+ * 2026): on the road, in front of the middle of the three open doors, the
+ * Karaoke door, his feet on the floor line. `feet` is that point in the
+ * picture's own master pixels: under the middle of the door's sill, where
+ * the cobbles start below its step (the lit sill, the step's edge and its
+ * shadowed riser above it, read down the picture's pixels at the door's
+ * middle: 1051 to 1057 in the portrait master, 625 in the landscape one).
+ */
+export interface GuideSpot {
+  readonly door: DoorKey
+  readonly feet: Point
+}
+
 /** A picture and the doors measured in it. */
 export interface AlleyScene {
   readonly plate: PlateSpec
   readonly doors: readonly DoorSpec[]
+  readonly guide: GuideSpot
 }
 
-const PORTRAIT_SCENE: AlleyScene = { plate: ALLEY_PLATE, doors: DOORS }
+const PORTRAIT_SCENE: AlleyScene = {
+  plate: ALLEY_PLATE,
+  doors: DOORS,
+  guide: { door: 'karaoke', feet: [539.5, 1054.6] },
+}
 const LANDSCAPE_SCENE: AlleyScene = {
   plate: ALLEY_PLATE_LANDSCAPE,
   doors: DOORS_LANDSCAPE,
+  guide: { door: 'karaoke', feet: [1065.7, 625.1] },
 }
 
 /**
