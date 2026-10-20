@@ -49,7 +49,7 @@ the first two): the step toys double as the Playground (item 9); the Wrap comes 
 episode; the "Common mix-up" card (item 6) sits inside step 3, beside the toy that refutes it,
 rather than after the steps; "Three words you'll meet" is an extra section before the steps; and
 the practise link (item 11) sits in the Sing it card and the footer, not in the Wrap, whose copy
-in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
+in LESSON.md has none. The recall check (item 4) starts with Lesson 2.
 
 1. **Masthead** (sticky, slim): wordmark, the lesson menu's button (below), anchors (Lesson,
    Watch, Explorer), a Sound toggle (off by default; nothing plays without a tap), and a
@@ -128,7 +128,7 @@ in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
    the right answer marked with a check icon, a small score ("3 of 4"), answers remembered in
    localStorage (wrapped in try/catch). On a return visit the questions are asked afresh, not
    shown with their stored answers, so the page measures delayed retrieval (MASTER-PLAN § 9);
-   Lesson 2's page will open with two of them (§ 4.2 item 3). In the preview nothing leaves the
+   Lesson 2's page asks two of them again (§ 4.2 item 4). In the preview nothing leaves the
    browser; on the public host each answer also goes out as a Lesson telemetry event (MASTER-PLAN
    Phase 1, § 12 item 11), behind the viewer's consent.
 7. **Wrap**: the three recap lines, the one-sentence challenge, and the next lesson's hook from

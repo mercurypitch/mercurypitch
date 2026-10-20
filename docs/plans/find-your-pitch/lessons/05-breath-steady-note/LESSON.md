@@ -30,25 +30,6 @@ there. What the vocal coach and the owner decide is listed at the end.
 > This lesson is about your breath and your voice. Tap to turn the sound on: nothing plays until
 > you press play. We ask for the microphone only if you choose to sing.
 
-## Recall from Lesson 3
-
-Lesson 3's questions 3 and 4, asked afresh (FACTS 3).
-
-1. Merc sings an A3. You sing an A2, an octave lower and 20 cents high. Where is your note?
-   - In the band: the same note, an octave lower **[correct]** · Feedback: "An octave away counts,
-     and 20 cents is inside the band."
-   - Outside the band: an octave is 1,200 cents away · Feedback: "An octave match counts: in
-     Merc's octave, your note is 20 cents high. Try Lesson 3, Step 4 again."
-   - Off the note: in tune means exactly 0 cents · Feedback: "In tune is a band, and 20 cents is
-     inside it. Try Lesson 3, Step 5 again."
-2. How loud should you sing when you practise matching?
-   - At about the volume you talk at **[correct]** · Feedback: "No shouting, no whispering: a quiet
-     note is just as much the right note."
-   - Loud and full, like a singer on a stage · Feedback: "A loud note is no more the right note
-     than a quiet one, and shouting is an extreme to avoid."
-   - Almost a whisper, to be gentle · Feedback: "Whispering is an extreme too. Speaking volume is
-     the gentle middle."
-
 ## Cold open: predict
 
 Orange Merc: "So if I push the air out harder, the note holds steadier?"
@@ -76,6 +57,28 @@ Both lines are drawings of that rule, not recordings.
 
 (If you chose steadier: that's what the word "support" seems to promise. So what does keep a note
 steady? That's this lesson.)
+
+## Recall from Lesson 3
+
+_[After the cold open since 20 October 2026, as on Lesson 2's page (MASTER-PLAN § 4.2 and
+§ 12 item 13).]_
+
+Lesson 3's questions 3 and 4, asked afresh (FACTS 3).
+
+1. Merc sings an A3. You sing an A2, an octave lower and 20 cents high. Where is your note?
+   - In the band: the same note, an octave lower **[correct]** · Feedback: "An octave away counts,
+     and 20 cents is inside the band."
+   - Outside the band: an octave is 1,200 cents away · Feedback: "An octave match counts: in
+     Merc's octave, your note is 20 cents high. Try Lesson 3, Step 4 again."
+   - Off the note: in tune means exactly 0 cents · Feedback: "In tune is a band, and 20 cents is
+     inside it. Try Lesson 3, Step 5 again."
+2. How loud should you sing when you practise matching?
+   - At about the volume you talk at **[correct]** · Feedback: "No shouting, no whispering: a quiet
+     note is just as much the right note."
+   - Loud and full, like a singer on a stage · Feedback: "A loud note is no more the right note
+     than a quiet one, and shouting is an extreme to avoid."
+   - Almost a whisper, to be gentle · Feedback: "Whispering is an extreme too. Speaking volume is
+     the gentle middle."
 
 ## Four words you'll meet
 

@@ -47,9 +47,10 @@ toggle stops the same three (WCAG 2.2.2).
 The page anatomy (MASTER-PLAN § 4.2), with Lesson 1's departures kept: the Playground (item 9) is
 the step toys themselves, not a toy of its own (here gathered on one free-play stage in the Wrap);
 the Wrap comes before the episode; and each "Common mix-up" card sits inside the step whose toy
-refutes it. New against Lesson 1: the recall check (item 3) runs for the first time, and it comes
-straight after the hero, because the cold open (item 4) plays in the hero, beside the spiral it
-lights, as Lesson 1's does: items 3 and 4 swap (DECISIONS 80). The practice link sits in the Wrap,
+refutes it. New against Lesson 1: the recall check (item 4) runs for the first time, and it comes
+straight after the hero, because the cold open (item 3) plays in the hero, beside the spiral it
+lights, as Lesson 1's does (DECISIONS 80, where items 3 and 4 swapped; every page has taken this
+order since 20 October 2026, MASTER-PLAN § 12 item 13). The practice link sits in the Wrap,
 as the anatomy has it; the page has two mix-up cards, one per concept (playbook rule 3); and there
 is no series blueprint section (it is the team's, in the Content Studio), so the masthead's anchors
 are Lesson, Watch and Explorer. Each section's heading, and the line above it, are in LESSON.md
@@ -405,7 +406,7 @@ vertical (pitch is height).
 - The quick-check component, straight after the hero (DECISIONS 80), with Lesson 1's questions 2
   and 4 under the `question_id`s Lesson 1's page gives them (proposed: `l01-q2` and `l01-q4`, as
   this page's own are `l02-q1` to `l02-q4`), so one question reports under one id on both pages;
-  the first time the page anatomy's item 3 runs. Options are reshuffled from a seed of its own
+  the first time the page anatomy's item 4 runs. Options are reshuffled from a seed of its own
   (keys `fyp-l02-recall-seed` and `fyp-l02-recall-v1`), not Lesson 1's, and earlier answers are
   never shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). It marks no lesson done.
   On the public host each answer is a telemetry event with its `visit_index`. The kit needs three
