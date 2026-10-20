@@ -14,6 +14,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
+import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
 import type { AdminLessonsPageProps } from './AdminLessonsPage'
 import { AdminLessonsPage } from './AdminLessonsPage'
@@ -23,10 +24,33 @@ import { card, cellOf, liveRegion, openCard, seasonRows, settled, } from './less
 import type { FakeLessonApi, SiteAnswer, } from './lessons/lesson-site.test-fixtures'
 import { ADMIN_KEY, fakeLessonApi, logged, stubLessonSite, } from './lessons/lesson-site.test-fixtures'
 
+function seasonLesson(test: (lesson: Lesson) => boolean, what: string): Lesson {
+  const lesson = LESSONS.find(test)
+  if (lesson === undefined) throw new Error(`no lesson with ${what}`)
+  return lesson
+}
+
 /** The first draft that waits on a sign-off: Lesson 3 as the season stands. */
 const DRAFT = Number(Object.keys(DRAFT_LESSONS)[0])
 
 const FOLLOWS = 'The site follows within about a minute.'
+
+/** The first lesson the kit gives alternative hooks: Lesson 3 as the season stands. */
+const VARIED = seasonLesson(
+  (lesson) => (lesson.hookAlts ?? []).length > 0,
+  'alternative hooks',
+)
+const VARIED_ALTS = VARIED.hookAlts ?? []
+
+/** The first lesson whose code holds one hook and one tease, so nothing to pick: Lesson 2. */
+const LONE = seasonLesson(
+  (lesson) =>
+    lesson.n > 0 &&
+    (lesson.hookAlts ?? []).length === 0 &&
+    lesson.tease !== undefined &&
+    (lesson.teaseAlts ?? []).length === 0,
+  'a lone hook and tease',
+)
 
 /** Two hooks for every lesson, and two teases from Lesson 2 on, each variant with its note. */
 const CHOICES: CopyChoicesFor = (lesson) => ({
@@ -398,26 +422,83 @@ describe('the wording pickers', () => {
     )
   })
 
+  it("offers the season's own wordings: each alternative with the team's note, and a lone wording as text", async () => {
+    renderPage()
+    await settled()
+
+    const varied = VARIED.n
+    const hook = within(openCard(varied)).getByRole('group', { name: 'Hook' })
+    const [byDefault, ...alternatives] = within(hook).getAllByRole('button')
+    expect(byDefault).toHaveAccessibleName(
+      `Lesson ${varied} hook: ${VARIED.hook} Default`,
+    )
+    expect(byDefault).toHaveAttribute('aria-pressed', 'true')
+    expect(alternatives).toHaveLength(VARIED_ALTS.length)
+    VARIED_ALTS.forEach((alt, i) => {
+      expect(alternatives[i]).toHaveAccessibleName(
+        `Lesson ${varied} hook: ${alt.text}`,
+      )
+      expect(alternatives[i]).toHaveAccessibleDescription(alt.note)
+      expect(alternatives[i]).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    const lone = openCard(LONE.n)
+    expect(within(lone).queryByRole('group')).toBeNull()
+    expect(within(lone).getByText(LONE.hook)).toBeVisible()
+    expect(within(lone).getByText(LONE.tease ?? '')).toBeVisible()
+    expect(
+      within(lone).getAllByText('The only wording its code holds.'),
+    ).toHaveLength(2)
+  })
+
   it('flags a saved wording this build does not hold, and puts the default back on request', async () => {
-    const api = fakeLessonApi({ lessons: { '3': { hook: 'gone' } } })
+    const varied = VARIED.n
+    const api = fakeLessonApi({ lessons: { [varied]: { hook: 'gone' } } })
     renderPage(api)
     await settled()
 
-    const hook = within(openCard(3)).getByRole('group', { name: 'Hook' })
+    const hook = within(openCard(varied)).getByRole('group', { name: 'Hook' })
     expect(hook).toHaveTextContent(
       'Saved here as “gone”, a wording this build does not hold, so the pages show the default.',
     )
-    fireEvent.click(
-      within(hook).getByRole('button', { name: /^Lesson 3 hook:/ }),
-    )
+    const byDefault = within(hook).getByRole('button', {
+      name: `Lesson ${varied} hook: ${VARIED.hook} Default`,
+    })
+    expect(byDefault).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(byDefault)
 
     await waitFor(() => {
-      expect(card(3)).toHaveTextContent(
-        `Lesson 3's hook is back to the default. ${FOLLOWS}`,
+      expect(hook).toHaveTextContent(
+        `Lesson ${varied}'s hook is back to the default. ${FOLLOWS}`,
       )
     })
     expect(bodies(api)).toEqual([{ hook: null }])
-    expect(within(card(3)).queryByRole('group', { name: 'Hook' })).toBeNull()
+    expect(hook).not.toHaveTextContent(/Saved here as/)
+    expect(byDefault).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('shows a lone wording as text again once the unknown one is cleared', async () => {
+    const api = fakeLessonApi({ lessons: { [LONE.n]: { hook: 'gone' } } })
+    renderPage(api)
+    await settled()
+
+    const hook = within(openCard(LONE.n)).getByRole('group', { name: 'Hook' })
+    fireEvent.click(
+      within(hook).getByRole('button', {
+        name: `Lesson ${LONE.n} hook: ${LONE.hook} Default`,
+      }),
+    )
+
+    await waitFor(() => {
+      expect(card(LONE.n)).toHaveTextContent(
+        `Lesson ${LONE.n}'s hook is back to the default. ${FOLLOWS}`,
+      )
+    })
+    expect(bodies(api)).toEqual([{ hook: null }])
+    expect(
+      within(card(LONE.n)).queryByRole('group', { name: 'Hook' }),
+    ).toBeNull()
+    expect(within(card(LONE.n)).getByText(LONE.hook)).toBeVisible()
   })
 })
 

@@ -18,6 +18,8 @@
 // later. The live column is a few plain requests to the site the page is
 // served from (lessons/lesson-admin.ts). A lesson with no override is the
 // code's to decide, as before: deleting its line in drafts.ts releases it.
+// The hook and tease choices are the lessons kit's own
+// (lessons/copy-choices.ts).
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'

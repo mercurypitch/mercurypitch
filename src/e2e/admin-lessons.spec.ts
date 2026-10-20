@@ -11,10 +11,20 @@
 
 import type { Locator, Page, Route } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 
 const ADMIN_KEY = 'e2e-admin-key'
 const AT = '2026-10-20T14:02:00.000Z'
 const FOLLOWS = 'The site follows within about a minute.'
+
+/** The first lesson the kit gives an alternative hook, and that hook: Lesson 3's as the season stands. */
+const [VARIED, VARIED_HOOK] = (() => {
+  for (const [n, copy] of Object.entries(LESSON_COPY)) {
+    const alt = copy?.hookAlts?.[0]
+    if (alt !== undefined) return [Number(n), alt] as const
+  }
+  throw new Error('no lesson in lesson-copy.ts has an alternative hook')
+})()
 
 const VIEWPORTS = [
   { name: 'phone', viewport: { width: 390, height: 844 } },
@@ -271,9 +281,51 @@ for (const { name, viewport } of VIEWPORTS) {
       await expectNoSidewaysScroll(page)
     })
 
+    test("offers a lesson's hooks from the kit, and saves the one chosen by keyboard", async ({
+      page,
+    }) => {
+      const api = await serveLessonApi(page)
+      const lessons = await openLessonsPage(page)
+      await rowOf(lessons, VARIED)
+        .getByRole('rowheader')
+        .getByRole('button')
+        .click()
+      const hook = cardOf(lessons, VARIED).getByRole('group', { name: 'Hook' })
+      const byDefault = hook.getByRole('button', {
+        name: new RegExp(`^Lesson ${VARIED} hook: .+ Default$`),
+      })
+      const variant = hook.getByRole('button', {
+        name: `Lesson ${VARIED} hook: ${VARIED_HOOK.text}`,
+        exact: true,
+      })
+      await expect(byDefault).toHaveAttribute('aria-pressed', 'true')
+      await expect(variant).toHaveAccessibleDescription(VARIED_HOOK.note)
+      await expectTouchSize(variant)
+
+      await variant.focus()
+      await page.keyboard.press('Space')
+
+      await expect(variant).toHaveAttribute('aria-pressed', 'true')
+      await expect(variant).toBeFocused()
+      await expect(hook).toContainText(
+        `Lesson ${VARIED}'s hook is now “${VARIED_HOOK.id}”. ${FOLLOWS}`,
+      )
+
+      await byDefault.click()
+
+      await expect(byDefault).toHaveAttribute('aria-pressed', 'true')
+      expect(api.saves).toEqual([
+        { n: VARIED, body: { hook: VARIED_HOOK.id } },
+        { n: VARIED, body: { hook: null } },
+      ])
+      await expectNoSidewaysScroll(page)
+    })
+
     test('flags a hook this build does not hold, and puts the default back', async ({
       page,
     }) => {
+      // Lesson 2's code holds one hook, so clearing the unknown one leaves nothing to pick.
+      expect(LESSON_COPY[2]?.hookAlts ?? []).toHaveLength(0)
       const api = await serveLessonApi(page, { '2': { hook: 'gone' } })
       const lessons = await openLessonsPage(page)
       await rowOf(lessons, 2).getByRole('rowheader').getByRole('button').click()
