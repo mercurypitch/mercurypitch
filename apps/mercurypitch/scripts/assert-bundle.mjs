@@ -378,6 +378,12 @@ const KARAOKE_STAGE_2 = [
   ['native_onboarding_', "the native onboarding's counts"],
   ['cloud_view_', "the Cloud offer's counts"],
   ['import_tap_', "the import gate's counts"],
+  // Part 6: the Cloud offer the onboarding's own Not now opens, counted
+  // apart from the one at its end (owner, 20 Oct 2026).
+  [
+    'cloud_view_onboarding_exit',
+    "the Cloud offer from the native onboarding's Not now",
+  ],
 ]
 
 /**

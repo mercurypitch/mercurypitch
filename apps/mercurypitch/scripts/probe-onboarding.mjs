@@ -25,9 +25,13 @@
 // in the layer, Keep again with the voiceprint, and the line, on an install
 // held out of the offer: Continue lands straight on the path), Keep's
 // "Find your range first" from Settings (the range on its own, Keep again,
-// the first note then ending on the range kept, and Not now on the line: no
-// offer), Not now, Back, and a refused microphone, whose Continue without
-// the mic lands on the path with no offer. Every visible part is measured
+// the first note then ending on the range kept, and Not now on the line:
+// the Cloud offer, counted as Not now's, whose own Not now lands on the
+// alley), Not now on the first note (the same offer, then the alley), Back
+// on an install held out of the offer (the alley at once), a refused
+// microphone, whose Continue without the mic lands on the path with no
+// offer, and Not now after a refusal (the alley, no offer, nothing asked;
+// S7b E5). Every visible part is measured
 // on each frame: inside the screen, apart from one another, and every
 // control at least 44 px. With --shots, the screens parts 3 to 5 added or
 // changed are shot once each, after their motion has played out.
@@ -493,11 +497,70 @@ async function expectRoomLive(page, kit, how) {
 }
 
 /**
- * Beat 1, on a new install's alley (S7b): Merc on the cobbles, his whole
- * box inside the screen and clear of every door, from the door's foot to
- * the top of the screen; his line beside him, clear of the doors too; his
- * hello said once he is drawn; and the open doors lit in turn, then none.
- * Shot as the first door lights, while he points.
+ * Not now's landing (owner, 20 Oct 2026): gone, the flag done, the rail
+ * back over the Rooms home, the alley, with no Sing room under it and no
+ * room held, nothing pushed, no offer up and no welcome again.
+ */
+async function expectAlley(page, kit, how) {
+  await expectGone(page, kit, how)
+  await page
+    .locator('[data-testid="rooms-alley"]')
+    .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
+    .catch(() => {
+      throw new Error(`${how}: the alley is not up`)
+    })
+  await settleAnimations(page, '[data-testid="rooms-alley"]')
+  const seen = await page.evaluate(
+    ([offer, keep, guide, path]) => ({
+      hash: window.location.hash,
+      room: document.querySelector('[data-testid="sing-room"]') !== null,
+      held:
+        typeof window.mpAlley === 'function' ? window.mpAlley().held : null,
+      guide: document.querySelector(guide) !== null,
+      offer:
+        document.querySelector(offer) !== null ||
+        document.querySelector(keep) !== null,
+      path: document.querySelector(path) !== null,
+    }),
+    [OFFER, KEEP, GUIDE, PATH],
+  )
+  const problems = []
+  if (seen.hash !== '#/home') problems.push(`the address is ${seen.hash}`)
+  if (seen.room) problems.push('a Sing room is up')
+  if (seen.held !== false) problems.push(`the rooms are held (${seen.held})`)
+  if (seen.guide) problems.push('Merc welcomes again')
+  if (seen.offer) problems.push('an offer is up')
+  if (seen.path) problems.push("the Warm-up's path is up")
+  if (problems.length > 0) throw new Error(`${how}: ${problems.join('; ')}`)
+  return 'gone, flag done, the alley (#/home) under the rail, no Sing room, nothing held or pushed'
+}
+
+/** How often each of the exit's counts went out. */
+function exitCounts(events) {
+  const times = (name) => events.filter((event) => event === name).length
+  return {
+    notNow: times('native_onboarding_not_now'),
+    done: times('native_onboarding_done'),
+    exit: times('cloud_view_onboarding_exit'),
+    end: times('cloud_view_onboarding'),
+  }
+}
+
+/** Merc's feet and body in his box (MercView MERC_FEET, tip-target MERC_BODY). */
+const MERC_FEET = 0.81
+const MERC_BODY = { x: 0.26, y: 0.3, w: 0.48 }
+/** His figure, head to feet, as a share of the door behind him (alley-guide-place.ts). */
+const FIGURE_OF_DOOR = 0.4
+
+/**
+ * Beat 1, on a new install's alley (S7b; owner, 20 Oct 2026): Merc on the
+ * road in front of the middle door, the Karaoke door, his feet on the floor
+ * line the picture has there, sized to the door, his body over no other
+ * door; his line under him, over no door and inside the screen; his hello
+ * said once he is drawn; and the open doors lit in turn, then none. Then a
+ * tap on him picks the door behind him, and Back puts it back. Shot as he
+ * lands (with --angle gl, once his hello shows) and as the first door
+ * lights, while he points.
  */
 async function expectWelcome(page, args, frame, kit) {
   await page
@@ -506,6 +569,20 @@ async function expectWelcome(page, args, frame, kit) {
     .catch(() => {
       throw new Error('beat 1: no Merc in the alley')
     })
+  // Landed: his hello shows 1.2 s after he is first drawn, and the first
+  // door lights 0.7 s after that. Without WebGL he is never drawn.
+  const landed = await page
+    .locator('[data-testid="alley-guide-line"][data-shown="on"]')
+    .waitFor({ state: 'attached', timeout: 5000 })
+    .then(
+      () => true,
+      () => false,
+    )
+  if (landed) {
+    // The line's 280 ms rise, played out.
+    await page.waitForTimeout(320)
+    await kit.shoot(page, shotsFor(args, frame), 'onboarding-welcome-landed')
+  }
   await page
     .waitForFunction(() => (window.__mpLit ?? []).includes('ear'), null, {
       timeout: kit.stepTimeoutMs,
@@ -528,16 +605,13 @@ async function expectWelcome(page, args, frame, kit) {
     const box = (element) => {
       if (element === null) return null
       const r = element.getBoundingClientRect()
-      return {
-        left: Math.round(r.left),
-        top: Math.round(r.top),
-        right: Math.round(r.right),
-        bottom: Math.round(r.bottom),
-      }
+      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
     }
     const line = document.querySelector('[data-testid="alley-guide-line"]')
+    const merc = document.querySelector('.mp-alley-guide__merc')
     return {
-      merc: box(document.querySelector('.mp-alley-guide__merc')),
+      merc: box(merc),
+      floor: (merc?.getAttribute('data-floor') ?? '').split(',').map(Number),
       line: box(line),
       shown: line?.getAttribute('data-shown') ?? null,
       said:
@@ -547,8 +621,8 @@ async function expectWelcome(page, args, frame, kit) {
         document
           .querySelector('[data-testid="alley-merc"]')
           ?.getAttribute('data-merc-state') ?? null,
-      // Each door's own quad, from its rim's points: its box also holds the
-      // light it spills on the cobbles, which he may stand in.
+      // Each door's own quad, from its rim's points, clockwise from the top
+      // left: its box also holds the light it spills on the cobbles.
       doors: [...document.querySelectorAll('.mp-alley__door')].map((door) => {
         const at = door.getBoundingClientRect()
         const points = (
@@ -558,15 +632,8 @@ async function expectWelcome(page, args, frame, kit) {
           .trim()
           .split(/\s+/u)
           .map((pair) => pair.split(',').map(Number))
-        if (points.length < 3) return null
-        const xs = points.map(([x]) => at.left + x)
-        const ys = points.map(([, y]) => at.top + y)
-        return {
-          left: Math.round(Math.min(...xs)),
-          top: Math.round(Math.min(...ys)),
-          right: Math.round(Math.max(...xs)),
-          bottom: Math.round(Math.max(...ys)),
-        }
+          .map(([x, y]) => [at.left + x, at.top + y])
+        return { key: door.getAttribute('data-door'), points }
       }),
       lit: window.__mpLit,
       w: window.innerWidth,
@@ -574,33 +641,78 @@ async function expectWelcome(page, args, frame, kit) {
     }
   })
   const problems = []
-  const inside = (b) =>
-    b.left >= 0 && b.top >= 0 && b.right <= seen.w && b.bottom <= seen.h
-  // A door's column, from its foot to the top of the screen.
-  const overDoor = (b) =>
-    seen.doors.some(
-      (door) =>
-        door !== null &&
-        b.left < door.right - 1 &&
-        door.left < b.right - 1 &&
-        b.top < door.bottom - 1,
+  const r1 = (n) => Math.round(n * 10) / 10
+  const boxOf = (points) => ({
+    left: Math.min(...points.map(([x]) => x)),
+    top: Math.min(...points.map(([, y]) => y)),
+    right: Math.max(...points.map(([x]) => x)),
+    bottom: Math.max(...points.map(([, y]) => y)),
+  })
+  const overlaps = (a, b) =>
+    a.left < b.right - 1 &&
+    b.left < a.right - 1 &&
+    a.top < b.bottom - 1 &&
+    b.top < a.bottom - 1
+  const middle = seen.doors.find((door) => door.key === 'karaoke')
+  if (seen.merc === null || middle === undefined || middle.points.length < 4) {
+    throw new Error(
+      `beat 1: ${seen.merc === null ? 'Merc has no box' : 'no Karaoke door'}`,
     )
-  if (seen.merc === null) problems.push('Merc has no box')
-  else {
-    if (!inside(seen.merc)) {
-      problems.push(`Merc is off the screen ${JSON.stringify(seen.merc)}`)
-    }
-    if (overDoor(seen.merc)) {
-      problems.push(`Merc stands over a door ${JSON.stringify(seen.merc)}`)
-    }
+  }
+  const side = seen.merc.right - seen.merc.left
+  const feet = {
+    x: (seen.merc.left + seen.merc.right) / 2,
+    y: seen.merc.top + MERC_FEET * side,
+  }
+  const body = {
+    left: seen.merc.left + MERC_BODY.x * side,
+    right: seen.merc.left + (MERC_BODY.x + MERC_BODY.w) * side,
+    top: seen.merc.top + MERC_BODY.y * side,
+    bottom: feet.y,
+  }
+  // His feet on the floor line, to a pixel.
+  const [floorX, floorY] = seen.floor
+  const off = Math.max(Math.abs(feet.x - floorX), Math.abs(feet.y - floorY))
+  if (!(off <= 1.5)) {
+    problems.push(
+      `his feet stand at ${r1(feet.x)},${r1(feet.y)}, the floor line at ${seen.floor.join(',')}`,
+    )
+  }
+  // In front of the middle door: under the middle of its sill, just below.
+  const [a, b, c, d] = middle.points
+  const sill = { x: (c[0] + d[0]) / 2, y: (c[1] + d[1]) / 2 }
+  const tall = (d[1] - a[1] + (c[1] - b[1])) / 2
+  const below = floorY - sill.y
+  if (Math.abs(floorX - sill.x) > 2 || below < 0 || below > 0.25 * tall) {
+    problems.push(
+      `the floor line ${r1(below)} px under the Karaoke sill, ${r1(floorX - sill.x)} px across`,
+    )
+  }
+  const figure = ((MERC_FEET - MERC_BODY.y) * side) / tall
+  if (Math.abs(figure - FIGURE_OF_DOOR) > 0.02) {
+    problems.push(`his figure is ${r1(figure * 100)}% of the door's height`)
+  }
+  const inside = (box) =>
+    box.left >= 0 && box.top >= 0 && box.right <= seen.w && box.bottom <= seen.h
+  if (!inside(body)) problems.push(`his body is off the screen`)
+  const covered = seen.doors
+    .filter((door) => door.points.length >= 3 && overlaps(body, boxOf(door.points)))
+    .map((door) => door.key)
+  if (JSON.stringify(covered) !== JSON.stringify(['karaoke'])) {
+    problems.push(`his body covers ${JSON.stringify(covered)}`)
   }
   if (seen.line !== null) {
     if (!inside(seen.line)) {
       problems.push(`his line is off the screen ${JSON.stringify(seen.line)}`)
     }
-    if (overDoor(seen.line)) {
-      problems.push(`his line is over a door ${JSON.stringify(seen.line)}`)
-    }
+    if (seen.line.top < feet.y) problems.push('his line is not under him')
+    const over = seen.doors
+      .filter(
+        (door) =>
+          door.points.length >= 3 && overlaps(seen.line, boxOf(door.points)),
+      )
+      .map((door) => door.key)
+    if (over.length > 0) problems.push(`his line covers ${over.join(', ')}`)
   }
   const drawn = seen.said === HELLO
   if (drawn && seen.shown !== 'on') problems.push('his hello is not shown')
@@ -608,7 +720,44 @@ async function expectWelcome(page, args, frame, kit) {
     problems.push(`the doors lit ${JSON.stringify(seen.lit)}`)
   }
   if (problems.length > 0) throw new Error(`beat 1: ${problems.join('; ')}`)
-  return `Merc ${seen.merc.right - seen.merc.left} px on the cobbles, clear of all ${seen.doors.length} doors${seen.line === null ? ', no room for his line' : ', his line beside him'}; ${drawn ? `"${HELLO}" said once he was drawn` : 'never drawn (no WebGL here), no hello'}; the doors lit ${seen.lit.filter(Boolean).join(', ')}, then none; Merc ${seen.state}`
+  // A tap on him is a tap on the door behind him; Back puts it back.
+  await page.touchscreen.tap(
+    (body.left + body.right) / 2,
+    (body.top + body.bottom) / 2,
+  )
+  const picked = await page
+    .waitForFunction(
+      () => window.mpAlley?.().door === 'karaoke',
+      null,
+      { timeout: kit.stepTimeoutMs },
+    )
+    .then(
+      () => true,
+      () => false,
+    )
+  const now = await page.evaluate(() => window.mpAlley?.())
+  if (!picked) {
+    throw new Error(`beat 1: a tap on Merc picked ${JSON.stringify(now)}`)
+  }
+  const back = await page.evaluate(() => window.mpShellBack())
+  await page
+    .waitForFunction(() => window.mpAlley?.().phase === 'rest', null, {
+      timeout: kit.stepTimeoutMs,
+    })
+    .catch(async () => {
+      const after = await page.evaluate(() => window.mpAlley?.())
+      throw new Error(
+        `beat 1: Back after the tap answered '${back}', the alley ${JSON.stringify(after)}`,
+      )
+    })
+  const covers = seen.doors
+    .filter((door) => door.points.length >= 3)
+    .map((door) => {
+      const box = boxOf(door.points)
+      return `${door.key} ${overlaps(body, box) ? 'behind him' : 'clear'}`
+    })
+    .join(', ')
+  return `Merc ${Math.round(side)} px, his feet ${r1(off)} px from the floor line ${r1(below)} px under the Karaoke sill, his figure ${r1(figure * 100)}% of the door (${covers})${seen.line === null ? ', no room for his line' : ', his line under him, clear of every door'}; ${drawn ? `"${HELLO}" said once he was drawn` : 'never drawn (no WebGL here), no hello'}; the doors lit ${seen.lit.filter(Boolean).join(', ')}, then none; Merc ${seen.state}; a tap on him picked the Karaoke door behind him, and Back put it back`
 }
 
 /** How the last beat gave way to this one: 'view', 'fade' or 'cut'. */
@@ -1610,10 +1759,17 @@ async function walkSkip(browser, args, frame, kit) {
  * the range on its own: the range and the reveal, then Keep again, the
  * voiceprint flown in. The onboarding is left due, and when it comes, its
  * first note ends on the range kept: See my voice reveals it, the twin it
- * was kept with, then Keep, and Keep's Not now leaves the onboarding done.
+ * was kept with, then Keep. Keep's Not now brings the line, and Not now on
+ * the line the Cloud offer (owner, 20 Oct 2026), whose Not now lands on
+ * the alley.
  */
 async function walkKeepRange(browser, args, frame, kit) {
-  const { context, page, errors, mints } = await boot(browser, args, frame, kit)
+  const { context, page, errors, mints, events } = await boot(
+    browser,
+    args,
+    frame,
+    kit,
+  )
   const visible = (selector, timeout = kit.stepTimeoutMs) =>
     page.locator(selector).waitFor({ state: 'visible', timeout })
   try {
@@ -1707,55 +1863,82 @@ async function walkKeepRange(browser, args, frame, kit) {
     })
     await page.locator(KEEP_NOT_NOW).tap()
 
-    // ── The line, and Not now on it: no offer ─────────────────
-    // The mic was granted on the first note, so the room arrives live.
+    // ── The line, and Not now on it: the offer, then the alley ─
     await expectLine(page, kit, "Keep's Not now")
     await page.locator(NOT_NOW).tap()
-    await expectRoomLive(page, kit, 'Not now on the line')
-    await expectGone(page, kit, 'Not now on the line', 'transport')
-    const left = await page.evaluate(
-      ([offer, shownKey]) => ({
-        offer: document.querySelector(offer) !== null,
-        shown: localStorage.getItem(shownKey),
-        room: window.mpSingRoom?.().state ?? null,
-      }),
-      [OFFER, OFFER_SHOWN],
-    )
-    if (left.offer || left.shown !== null || left.room !== 'live') {
-      throw new Error(`Not now on the line: ${JSON.stringify(left)}`)
+    const offer = await expectOffer(page, kit, 'Not now on the line')
+    await page.locator(`${OFFER} button`, { hasText: /^Not now$/u }).tap()
+    const alley = await expectAlley(page, kit, "the offer's Not now")
+    const counts = exitCounts(events)
+    if (
+      counts.notNow !== 1 ||
+      counts.exit !== 1 ||
+      counts.end !== 0 ||
+      counts.done !== 0
+    ) {
+      throw new Error(`Not now on the line: counted ${JSON.stringify(counts)}`)
     }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     return [
-      `Keep from Settings, the anonymous identity asked for as it opened; "Find your range first": the range on its own (no Skip for now), ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${keep}; the onboarding still due. Then the rail's Sing: ${note} named, the first note ending on See my voice and Find my range again, no Skip for now; See my voice: ${kept}, as kept; Continue: Keep, ${again}; Keep's Not now: the sung line; its Not now: no offer, nothing marked, gone, flag done, the room live under the transport`,
+      `Keep from Settings, the anonymous identity asked for as it opened; "Find your range first": the range on its own (no Skip for now), ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${keep}; the onboarding still due. Then the rail's Sing: ${note} named, the first note ending on See my voice and Find my range again, no Skip for now; See my voice: ${kept}, as kept; Continue: Keep, ${again}; Keep's Not now: the sung line; its Not now: ${offer}, counted as Not now's; the offer's Not now: ${alley}`,
     ]
   } finally {
     await context.close()
   }
 }
 
-/** The rail's Sing, then Not now: no grant, the room resting. */
+/**
+ * The rail's Sing, then Not now on the first note (owner, 20 Oct 2026):
+ * the Cloud offer over the layer, counted as Not now's, and its own Not
+ * now: the alley.
+ */
 async function walkNotNow(browser, args, frame, kit) {
-  const { context, page, errors } = await boot(browser, args, frame, kit)
+  const { context, page, errors, events } = await boot(
+    browser,
+    args,
+    frame,
+    kit,
+  )
   try {
     await page.locator('[data-rail-item="stage"]').click()
     await expectUp(page, kit, "the rail's Sing")
     await expectLayout(page, 'Not now')
     await page.locator(NOT_NOW).tap()
-    await expectGone(page, kit, 'Not now')
-    const room = await page.evaluate(() => window.mpSingRoom?.())
-    if (room?.state !== 'resting') {
-      throw new Error(`Not now: the room is ${JSON.stringify(room)}`)
+    const offer = await expectOffer(page, kit, 'Not now')
+    await kit.shoot(page, shotsFor(args, frame), 'onboarding-exit-offer')
+    await page.locator(`${OFFER} button`, { hasText: /^Not now$/u }).tap()
+    const alley = await expectAlley(page, kit, "the offer's Not now")
+    await kit.shoot(page, shotsFor(args, frame), 'onboarding-exit-alley')
+    const counts = exitCounts(events)
+    if (
+      counts.notNow !== 1 ||
+      counts.exit !== 1 ||
+      counts.end !== 0 ||
+      counts.done !== 0
+    ) {
+      throw new Error(`Not now: counted ${JSON.stringify(counts)}`)
     }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
-    return ["the rail's Sing, then Not now: gone, flag done, the room resting"]
+    return [
+      `the rail's Sing, then Not now: ${offer}, counted as Not now's; its Not now: ${alley}`,
+    ]
   } finally {
     await context.close()
   }
 }
 
-/** Back is Not now. */
+/**
+ * Back is Not now. On an install held out of the offer: the alley at
+ * once, nothing asked and nothing marked.
+ */
 async function walkBack(browser, args, frame, kit) {
-  const { context, page, errors } = await boot(browser, args, frame, kit)
+  const { context, page, errors, events, mints } = await boot(
+    browser,
+    args,
+    frame,
+    kit,
+    { group: 'holdout' },
+  )
   try {
     await page.locator('[data-rail-item="stage"]').click()
     await expectUp(page, kit, 'Back')
@@ -1763,9 +1946,64 @@ async function walkBack(browser, args, frame, kit) {
     if (outcome !== 'onboarding') {
       throw new Error(`Back answered '${outcome}'`)
     }
-    await expectGone(page, kit, 'Back')
+    const alley = await expectAlley(page, kit, 'Back')
+    const shown = await page.evaluate(
+      (key) => localStorage.getItem(key),
+      OFFER_SHOWN,
+    )
+    const counts = exitCounts(events)
+    if (shown !== null || counts.exit !== 0 || mints.length > 0) {
+      throw new Error(
+        `Back, held out: ${JSON.stringify({ shown, counts, mints: mints.length })}`,
+      )
+    }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
-    return ["Back answers 'onboarding': gone, flag done"]
+    return [
+      `Back answers 'onboarding' on an install held out of the offer: no offer, nothing asked or marked; ${alley}`,
+    ]
+  } finally {
+    await context.close()
+  }
+}
+
+/**
+ * A refused microphone, then Not now: no offer after a refusal (S7b E5),
+ * nothing asked or marked, and the alley.
+ */
+async function walkRefusedNotNow(browser, args, frame, kit) {
+  const { context, page, errors, events, mints } = await boot(
+    browser,
+    args,
+    frame,
+    kit,
+    { refuse: true },
+  )
+  try {
+    await page.locator('[data-rail-item="stage"]').click()
+    await expectUp(page, kit, 'refused, then Not now')
+    await page.locator(MIC).tap()
+    await page
+      .locator('[data-testid="onboarding-retry"]')
+      .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
+      .catch(() => {
+        throw new Error('refused, then Not now: no Try again')
+      })
+    await page.locator(NOT_NOW).tap()
+    const alley = await expectAlley(page, kit, 'Not now after a refusal')
+    const shown = await page.evaluate(
+      (key) => localStorage.getItem(key),
+      OFFER_SHOWN,
+    )
+    const counts = exitCounts(events)
+    if (shown !== null || counts.exit !== 0 || mints.length > 0) {
+      throw new Error(
+        `Not now after a refusal: ${JSON.stringify({ shown, counts, mints: mints.length })}`,
+      )
+    }
+    if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
+    return [
+      `a refused mic, then Not now: no offer, nothing asked or marked; ${alley}`,
+    ]
   } finally {
     await context.close()
   }
@@ -1842,6 +2080,7 @@ export async function walkOnboarding(browser, args, frame, kit) {
     ['Not now', walkNotNow],
     ['Back', walkBack],
     ['refused', walkRefused],
+    ['refused, then Not now', walkRefusedNotNow],
   ]) {
     try {
       steps.push(
