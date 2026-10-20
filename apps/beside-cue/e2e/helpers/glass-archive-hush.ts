@@ -1,5 +1,6 @@
-// Archive Hush browser fixtures — oscillator PCM enters the real capture worker; scene observation preserves all rendering.
+// Archive Hush browser fixtures — oscillator PCM enters the real capture worker; real raster checkpoints surround voice behavior.
 import { expect, type Page } from '@playwright/test'
+import { installMuseumRasterCheckpoints, renderMuseumCheckpoint, } from './museum-raster-checkpoints'
 import { ARCHIVE_HUSH_ROOMS } from '../../../../packages/glass-game/src/content/archive-hush-room'
 
 const levelId = 'glassworks-unbroken-archive/archive-hush'
@@ -29,6 +30,7 @@ export async function openArchiveHush(
   page: Page,
   calibrated = true,
 ): Promise<string[]> {
+  await installMuseumRasterCheckpoints(page)
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => {
@@ -134,11 +136,25 @@ export async function openArchiveHush(
       response,
       body: `
 const { Scene: HushScene } = await import('/@id/three');
+const hushBeforeRender = HushScene.prototype.onBeforeRender;
 const hushAfterRender = HushScene.prototype.onAfterRender;
-let hushScene, hushDraws = 0;
+let hushScene, hushDraws = 0, hushFrameStart = 0;
+const isHushDraw = renderer => renderer.getRenderTarget() === null && renderer.domElement.closest('[data-testid="glass-adventure"]');
+HushScene.prototype.onBeforeRender = function (...args) {
+  const result = hushBeforeRender.apply(this, args);
+  if (isHushDraw(args[0])) {
+    window.museumRasterCheckpoints.beginFrame(args[0].getContext());
+    hushFrameStart = window.museumRasterCheckpoints.read().forwardedDraws;
+  }
+  return result;
+};
 HushScene.prototype.onAfterRender = function (...args) {
   const result = hushAfterRender.apply(this, args);
-  if (args[0].getRenderTarget() === null && args[0].domElement.closest('[data-testid="glass-adventure"]')) { hushScene = this; hushDraws++; }
+  if (isHushDraw(args[0])) {
+    hushScene = this;
+    if (window.museumRasterCheckpoints.read().forwardedDraws > hushFrameStart) hushDraws++;
+    window.museumRasterCheckpoints.finishFrame(args[0].getContext());
+  }
   return result;
 };
 window.archiveHushDraw = { read() {
@@ -171,6 +187,7 @@ ${entry}`,
     'data-mode',
     'off',
   )
+  await renderMuseumCheckpoint(page)
   await expect
     .poll(() => page.evaluate(() => window.archiveHushDraw.read().draws))
     .toBeGreaterThan(0)

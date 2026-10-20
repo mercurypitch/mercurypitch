@@ -1,35 +1,44 @@
 // Archive Hush integration — real microphone PCM, visible cover ownership and released manual controls.
 import { expect, test } from '@playwright/test'
+import { renderMuseumCheckpoint, restoreMuseumRaster, } from './helpers/museum-raster-checkpoints'
 import { archivePlayer, expectArchiveMicrophoneOff, openArchiveHush, setArchiveVoice, walkArchiveTo, } from './helpers/glass-archive-hush'
 
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
 test.setTimeout(90_000)
 test.afterEach(async ({ page }, testInfo) => {
-  if (!page.isClosed())
-    await testInfo.attach('hush-runtime', {
-      body: JSON.stringify(
-        await page.evaluate(() => {
-          const canvas = document.querySelector(
-            '[data-testid="glass-adventure"] canvas',
-          ) as HTMLCanvasElement | null
-          const gl = canvas?.getContext('webgl2')
-          const extension = gl?.getExtension('WEBGL_debug_renderer_info')
-          return {
-            renderer:
-              gl && extension
-                ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL)
-                : null,
-            capture: window.archiveHushPcm?.read(),
-            draw: window.archiveHushDraw?.read(),
-          }
-        }),
-        null,
-        2,
-      ),
-      contentType: 'application/json',
-    })
-  if (!page.isClosed())
-    await page.evaluate(() => window.archiveHushPcm?.dispose())
+  try {
+    if (!page.isClosed())
+      await testInfo.attach('hush-runtime', {
+        body: JSON.stringify(
+          await page.evaluate(() => {
+            const canvas = document.querySelector(
+              '[data-testid="glass-adventure"] canvas',
+            ) as HTMLCanvasElement | null
+            const gl = canvas?.getContext('webgl2')
+            const extension = gl?.getExtension('WEBGL_debug_renderer_info')
+            return {
+              renderer:
+                gl && extension
+                  ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL)
+                  : null,
+              raster: window.museumRasterCheckpoints?.read(),
+              capture: window.archiveHushPcm?.read(),
+              draw: window.archiveHushDraw?.read(),
+            }
+          }),
+          null,
+          2,
+        ),
+        contentType: 'application/json',
+      })
+  } finally {
+    try {
+      if (!page.isClosed())
+        await page.evaluate(() => window.archiveHushPcm?.dispose())
+    } finally {
+      await restoreMuseumRaster(page)
+    }
+  }
 })
 
 test('Hush earns two shields through real PCM and completes the covered chime with intact glass @smoke', async ({
@@ -55,6 +64,7 @@ test('Hush earns two shields through real PCM and completes the covered chime wi
   await expect
     .poll(() => page.evaluate(() => window.archiveHushDraw.read().coverX))
     .toBeCloseTo(-1.35, 1)
+  await renderMuseumCheckpoint(page)
   await page
     .getByRole('button', { name: 'Start listening', exact: true })
     .click()
@@ -95,6 +105,7 @@ test('Hush earns two shields through real PCM and completes the covered chime wi
       shardsVisible: false,
     })),
   )
+  await renderMuseumCheckpoint(page)
   await testInfo.attach('hush-complete', {
     body: await page.screenshot(),
     contentType: 'image/png',
@@ -142,6 +153,7 @@ test('native touch cover and movement stay independent while listening and relea
     await expect
       .poll(() => page.evaluate(() => window.archiveHushDraw.read().coverX))
       .toBeCloseTo(1.35, 1)
+    await renderMuseumCheckpoint(page)
     await page
       .getByRole('button', { name: 'Start listening', exact: true })
       .click()
@@ -247,6 +259,7 @@ test('fresh calibration writes the same note shown in the room and can change wi
     .getByRole('button', { name: 'Stop listening', exact: true })
     .click()
   await expectArchiveMicrophoneOff(page)
+  await renderMuseumCheckpoint(page)
   expect(errors).toEqual([])
 })
 
@@ -354,6 +367,7 @@ test('three protected rooms open real doors and a walkable escape, with a failed
     await expectArchiveMicrophoneOff(page)
     await walkArchiveTo(page, 0, centerZs[index]! - 0.8)
     await page.getByTestId('archive-aim-0').click()
+    await renderMuseumCheckpoint(page)
     await testInfo.attach(`room-${index + 1}-entry`, {
       body: await page.screenshot(),
       contentType: 'image/png',
@@ -365,6 +379,11 @@ test('three protected rooms open real doors and a walkable escape, with a failed
       })
       await expect(root).toHaveAttribute('data-completed', '3')
       await expectArchiveMicrophoneOff(page)
+      await renderMuseumCheckpoint(page)
+      await testInfo.attach('room-2-open-curtain-retry', {
+        body: await page.screenshot(),
+        contentType: 'image/png',
+      })
       await page.getByRole('button', { name: 'Reset this arrangement' }).click()
     }
     await solve(index > 0)
@@ -373,15 +392,16 @@ test('three protected rooms open real doors and a walkable escape, with a failed
         page.getByRole('button', { name: /^Open curtain/ }),
       ).toBeDisabled()
       await expect(panel).toHaveAttribute('data-curtain', 'true')
-      await testInfo.attach(`room-${index + 1}-protected`, {
-        body: await page.screenshot(),
-        contentType: 'image/png',
-      })
     }
     await expect(panel).toHaveAttribute('data-mode', 'complete', {
       timeout: 8_000,
     })
     await expectArchiveMicrophoneOff(page)
+    await renderMuseumCheckpoint(page)
+    await testInfo.attach(`room-${index + 1}-protected`, {
+      body: await page.screenshot(),
+      contentType: 'image/png',
+    })
     await expect(root).toHaveAttribute(
       'data-completed',
       String([3, 7, 12][index]),
@@ -427,6 +447,7 @@ test('three protected rooms open real doors and a walkable escape, with a failed
         })
         await expect(root).toHaveAttribute('data-completed', '3')
         await expectArchiveMicrophoneOff(page)
+        await renderMuseumCheckpoint(page)
       }
     }
   }
@@ -437,6 +458,7 @@ test('three protected rooms open real doors and a walkable escape, with a failed
   ).toBeVisible({ timeout: 10_000 })
   expect((await archivePlayer(page)).z).toBeGreaterThan(39.305)
   await expectArchiveMicrophoneOff(page)
+  await renderMuseumCheckpoint(page)
   await testInfo.attach('archive-escaped', {
     body: await page.screenshot(),
     contentType: 'image/png',
