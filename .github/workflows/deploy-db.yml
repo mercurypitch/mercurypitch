@@ -52,6 +52,9 @@ on:
       - 'src/lib/funnel-event-catalog.ts'
       - 'src/lib/supporter-feature-catalog.ts'
       - 'src/lib/backgrounds/background-catalog.ts'
+      # The lesson-state contract, for the same reason: the worker validates
+      # the Content Studio's writes with it and answers the site in its shape.
+      - 'src/lib/lesson-state.ts'
   workflow_dispatch:
     inputs:
       environment:
