@@ -100,12 +100,12 @@ in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
    partials 1, .62, .38, .24, .14, .08, .045, .025 over a lowpass near 2.6 kHz, vibrato 5.5 Hz,
    +-14 cents grown in over .35 s) and "Play it an octave up" (A4); a breathing hum-along ring that
    runs for four seconds after the note (unscored: nothing listens); the safety line; then the app
-   link card: "To be scored, sing it: in MercuryPitch, Voice Mirror finds your comfortable range,
-   then plays five notes for you to sing back on "ooh", and counts a match in any octave. Free, no
-   account." mercurypitch.com/mirror (a real link; show the address as text too; on the public
-   host it carries `?lesson=01`, as every Lesson 1 CTA does: this card, the footer's practise link
-   and Lesson 1's explorer card; MASTER-PLAN Phase 1 Lesson host). Never say Mirror scores a hum
-   or asks for an A: it does neither (`src/lib/mirror/session.ts`, `metrics.ts`).
+   link card: "Want a score? Try MercuryPitch's Voice Mirror. It finds your comfortable range, then
+   plays five notes for you to sing back on "ooh", and counts a match in any octave. Free, no
+   account." mercurypitch.com/mirror (a real link; show the address as text too; on the public host
+   it carries `?lesson=01`, as every Lesson 1 CTA does: this card, the footer's practise link and
+   Lesson 1's explorer card; MASTER-PLAN Phase 1 Lesson host). Never say Mirror scores a hum or asks
+   for an A: it does neither (`src/lib/mirror/session.ts`, `metrics.ts`).
 6. **Quick check**: the four questions from LESSON.md, three answers each in a shuffled order
    (seeded per question, so the order is stable for a viewer), tap to answer, one-line feedback,
    the right answer marked with a check icon, a small score ("3 of 4"), answers remembered in
