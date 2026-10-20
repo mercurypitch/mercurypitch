@@ -21,7 +21,6 @@ import { createPianoPerformanceScoringEngine } from '@/features/piano/runtime/pi
 import { pianoTempoBeatToSeconds } from '@/features/piano/runtime/piano-tempo-map'
 import { installAudioUnlock } from '@/lib/audio-unlock'
 import { presentationFps, recordAnimationFrame } from '@/lib/device-tier'
-import { trackFirstValue } from '@/lib/first-value'
 import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { createPersistedSignal } from '@/lib/storage'
@@ -429,7 +428,14 @@ export function usePianoNightController() {
     // Only a pass that kept player notes is a result. A refusal does not say
     // notes were played: the recorder returns 'duration-limit' before it
     // checks for an empty pass, so a silent pass over five minutes gets it too.
-    if (finished.ok) trackFirstValue('piano')
+    // Loaded here rather than imported: the funnel reaches consent and
+    // defaults, which ship in the app's pitch-core chunk, and Piano Night's
+    // first paint stays out of it (scripts/assert-piano-night-bundle.mjs).
+    if (finished.ok) {
+      void import('@/lib/first-value')
+        .then(({ trackFirstValue }) => trackFirstValue('piano'))
+        .catch(() => undefined)
+    }
     if (!finished.ok) {
       if (finished.reason === 'empty') {
         performanceTake.unsupported(

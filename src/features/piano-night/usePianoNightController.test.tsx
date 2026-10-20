@@ -903,7 +903,10 @@ describe('usePianoNightController first value', () => {
     context.currentTime = 100
     expect(controller.transport.phase()).toBe('complete')
 
-    expect(sentFunnelEvents()).toEqual(['first_value_piano'])
+    // The controller loads the funnel on demand, so the event lands a tick later.
+    await vi.waitFor(() => {
+      expect(sentFunnelEvents()).toEqual(['first_value_piano'])
+    })
   })
 
   it('sends nothing when a pass over five minutes has no player notes', async () => {
@@ -925,6 +928,8 @@ describe('usePianoNightController first value', () => {
     context.currentTime = 100
     expect(controller.transport.phase()).toBe('complete')
 
+    // Let any on-demand funnel load settle, so a wrongly sent event shows.
+    await vi.dynamicImportSettled()
     expect(sentFunnelEvents()).toEqual([])
   })
 
@@ -943,6 +948,8 @@ describe('usePianoNightController first value', () => {
     context.currentTime = 100
     expect(controller.transport.phase()).toBe('complete')
 
+    // Let any on-demand funnel load settle, so a wrongly sent event shows.
+    await vi.dynamicImportSettled()
     expect(sentFunnelEvents()).toEqual([])
   })
 })
