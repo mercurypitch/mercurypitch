@@ -22,7 +22,8 @@ const LANE_BANDS: readonly (readonly [Lane, string, string])[] = [
   ['theory', 'Theory', '7 lessons'],
   ['voice', 'Voice', '6 lessons + 14'],
 ]
-const ARCS: readonly (readonly [string, string, number, number])[] = [
+/** The season's two arcs: each one's name, its span in words, and its first and last lesson. */
+export const ARCS: readonly (readonly [string, string, number, number])[] = [
   ['Hear it', 'Lessons 1 to 7', 1, 7],
   ['Shape it', 'Lessons 8 to 14', 8, 14],
 ]

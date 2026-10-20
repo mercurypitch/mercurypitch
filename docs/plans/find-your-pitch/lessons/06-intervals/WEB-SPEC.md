@@ -49,7 +49,8 @@ line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 06", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock). `initMasthead`
-   takes any map of anchors (`kit/page-chrome.ts:71`).
+   takes any map of anchors, and the page's lesson and step deck for the lesson menu
+   (`{ lesson: 6, deck }`, `kit/page-chrome.ts`).
 2. **Hero**: kicker; the hook question as the title; the meta as three chips ("15 minutes", FACTS
    3; "After Lesson 4: The major scale and home", a link to `/learn/04`; Sound on); the promise; the
    sound gate from LESSON.md in the hero copy, as Lesson 1's is; the two Mercs on the floor line

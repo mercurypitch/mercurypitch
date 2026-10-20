@@ -24,7 +24,6 @@ import { mountLoud } from '@/features/lessons/kit/loud'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
-import { rememberSteps } from '@/features/lessons/kit/position'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck, registerToy } from '@/features/lessons/kit/step-deck'
@@ -72,7 +71,6 @@ registerToy({
 initOctaveToy(deck)
 initSpiralToy(deck)
 deck.start()
-rememberSteps(1, deck)
 
 initSing({ blue: mercBlue, orange: mercOrange })
 createQuiz({
@@ -91,14 +89,17 @@ createEpisode({
 })
 
 engraveClefs(G_CLEF_PATH)
-initMasthead({
-  words: '#lesson',
-  lesson: '#lesson',
-  sing: '#lesson',
-  check: '#lesson',
-  watch: '#watch',
-  explorer: '#explorer',
-})
+initMasthead(
+  {
+    words: '#lesson',
+    lesson: '#lesson',
+    sing: '#lesson',
+    check: '#lesson',
+    watch: '#watch',
+    explorer: '#explorer',
+  },
+  { lesson: 1, deck },
+)
 initEntrance()
 initReveals()
 startFrameLoop()

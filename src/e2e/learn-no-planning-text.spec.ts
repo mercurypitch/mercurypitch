@@ -8,8 +8,9 @@
 // what they can do now: Ready, Coming later, Done.
 // Each lesson page this bundle carries is read the way a learner meets it,
 // after its script has run: every word of the document, every label a
-// screen reader speaks, and every lesson's explorer card, opened from the
-// map in turn.
+// screen reader speaks, every lesson's explorer card, opened from the map in
+// turn, and the season in the masthead's lesson menu, which is drawn as it
+// opens.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -82,7 +83,7 @@ for (const n of LESSONS) {
     await expect(map).toHaveCount(15)
     const found = planningIn(await learnerText(page, 'body'), 'the page')
 
-    // Act: open every lesson's card from the map
+    // Act: open every lesson's card from the map, then the lesson menu
     for (let i = 0; i < 15; i += 1) {
       await map.nth(i).click()
       const card = page.locator('#exCardHost .ex-card')
@@ -90,6 +91,11 @@ for (const n of LESSONS) {
       const name = (await map.nth(i).getAttribute('aria-label')) ?? `${i}`
       found.push(...planningIn(await learnerText(page, '#exCardHost'), name))
     }
+    await page.getByRole('button', { name: /: all lessons$/ }).click()
+    await expect(page.locator('#lessonMenu .lm-row').first()).toBeVisible()
+    found.push(
+      ...planningIn(await learnerText(page, '#lessonMenu'), 'the lesson menu'),
+    )
 
     // Assert
     expect(found).toEqual([])
