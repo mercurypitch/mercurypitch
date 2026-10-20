@@ -307,10 +307,11 @@ The six step headings are orange's questions (playbook rule 4's web column), as 
 give them; the section headings stay Lesson 1's labels, a deviation Lesson 1's page shares
 (DECISIONS 86).
 
-The explorer's line under its heading ends "Lesson 1 is ready to watch and read; Lesson 2 is ready
-to read, with its film in production; the rest are planned." until the film is published, and
-then "Lessons 1 and 2 are ready to watch and read; the rest are planned." Lesson 2's explorer card
-reads "In production" until then (WEB-SPEC, Lesson explorer).
+The explorer's line under its heading is Lesson 1's, "Each lesson's closing question opens the
+next. Pick a lesson to light up the path of lessons it builds on.", and names no lesson's state:
+the legend (Ready, Coming later, Done) and the cards say that, from the season (`kit/season.ts`),
+so a lesson going live edits no page's line. Lesson 2's explorer card reads "Ready · read" until
+its film is published, then "Ready · watch and read" (WEB-SPEC, Lesson explorer).
 
 ## Head and footer
 
@@ -343,13 +344,12 @@ The page's head, its share text and its footer, exactly (WEB-SPEC, Footer; Lesso
   ```
 
 - Footer, first column: the wordmark, Find Your Pitch; then "Season 1 · Lesson 02 · Twelve notes".
-  (Lesson 1's second line, "Proof episode, October 2026.", has no counterpart here.)
+  No dateline, as on Lesson 1's.
 - Footer, Practise: the link "mercurypitch.com/ear-lab" (to `/ear-lab?lesson=02`, in a new tab),
   then "Ear Lab is free: tap Leap. On a first visit, close the intro first, with the × at the top
   right ("Skip the intro")."
 - Footer, Credits: "Fonts: Outfit, Inter, Instrument Serif, JetBrains Mono and Noto Music, all SIL
   OFL 1.1. Voices in the episode: ElevenLabs (Eleven v3). Merc's sung notes in the film:
-  development placeholders re-pitched from ElevenLabs takes. Every other musical example, Merc's
-  slides included, is synthesised in code; on this page every sound is synthesised in the
-  browser."
+  stand-ins for now, made with ElevenLabs and retuned. Every other musical example, Merc's slides
+  included, is synthesised in code; on this page every sound is synthesised in the browser."
 - Footer, legal links: Privacy · Terms · Imprint, as Lesson 1's.

@@ -164,7 +164,7 @@ describe('the list of drafts', () => {
 
 describe("a page's words about which lessons are ready", () => {
   const LINE =
-    'Next: Lesson 5 <span data-if-live="5">ready to read</span\n  ><span data-if-planned="5">Coming later</span>.'
+    'Next: Lesson 5 <span data-if-live="5">ready to read</span\n  ><span data-if-planned="5">coming later</span>.'
 
   /** A document's text, its whitespace runs closed up as a browser lays it out. */
   const words = (html: string): string => html.replace(/\s+/g, ' ')
@@ -176,7 +176,7 @@ describe("a page's words about which lessons are ready", () => {
 
     // Assert
     expect(live).toBe('Next: Lesson 5 ready to read.')
-    expect(planned).toBe('Next: Lesson 5 Coming later.')
+    expect(planned).toBe('Next: Lesson 5 coming later.')
   })
 
   it('refuses a reading that holds a span of its own, which would end it early', () => {
@@ -185,22 +185,34 @@ describe("a page's words about which lessons are ready", () => {
     expect(() => resolveLessonStates(nested, [3])).toThrow(/holds a span/)
   })
 
-  it("says Lesson 5 is coming later on Lesson 4's next-lesson card until a build carries its page", () => {
-    // Arrange
-    const html = repoFile('learn/04.html')
-    const card = (live: readonly number[]): string => {
-      const text = words(resolveLessonStates(html, live))
-      const at = text.indexOf('05 · Breath and a steady note')
-      return text.slice(at, at + 140)
-    }
-    const reading = (shown: boolean): string =>
-      builtLessons(ROOT, shown).includes(5) ? 'ready to read' : 'Coming later'
+  // each page that names a draft as its next lesson: [page, its next lesson, the title its card names]
+  const NEXT_DRAFTS = [
+    ['learn/02.html', 3, '03 · Match a note'],
+    ['learn/04.html', 5, '05 · Breath and a steady note'],
+  ] as const
 
-    // Act and assert
-    expect(card(builtLessons(ROOT, true))).toContain(reading(true))
-    expect(card(builtLessons(ROOT, false))).toContain(reading(false))
-    expect(card([1, 2, 4, 5])).toContain('ready to read')
-    expect(card([1, 2, 4])).toContain('Coming later')
-    expect(words(resolveLessonStates(html, [1, 2, 4]))).not.toMatch(/data-if-/)
-  })
+  it.each(NEXT_DRAFTS)(
+    "says %s's next lesson, %i, is coming later until a build carries its page",
+    (page, next, title) => {
+      // Arrange
+      const html = repoFile(page)
+      const card = (live: readonly number[]): string => {
+        const text = words(resolveLessonStates(html, live))
+        const at = text.indexOf(title)
+        return text.slice(at, at + 140)
+      }
+      const reading = (shown: boolean): string =>
+        builtLessons(ROOT, shown).includes(next)
+          ? 'ready to read'
+          : 'coming later'
+      const without = [1, 2, 3, 4, 5].filter((n) => n !== next)
+
+      // Act and assert
+      expect(card(builtLessons(ROOT, true))).toContain(reading(true))
+      expect(card(builtLessons(ROOT, false))).toContain(reading(false))
+      expect(card([...without, next])).toContain('ready to read')
+      expect(card(without)).toContain('coming later')
+      expect(words(resolveLessonStates(html, without))).not.toMatch(/data-if-/)
+    },
+  )
 })

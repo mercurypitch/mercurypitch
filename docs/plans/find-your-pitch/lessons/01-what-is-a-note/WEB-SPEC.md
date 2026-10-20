@@ -116,20 +116,26 @@ in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
    Phase 1, § 12 item 11), behind the viewer's consent.
 7. **Wrap**: the three recap lines, the one-sentence challenge, and the next lesson's hook from
    LESSON.md ("Musicians only use seven letters, so where do the other five notes come from?") on
-   a card that opens Lesson 2 in the explorer (Planned).
+   a card that opens Lesson 2's page, "ready to read" (a lesson not live yet reads "coming later").
 8. **Watch the episode**: the film (see Video below) with a chapter list beside it (clickable,
    highlighting the current chapter), captions on by default (VTT track), and a "Read the
    transcript" disclosure built from the captions.
 9. **Lesson explorer**: Season 1 as two lanes, Theory and Voice, plus the trailer; arcs "Hear it"
    (1 to 7) and "Shape it" (8 to 14); prerequisite edges between nodes, from CURRICULUM § 3.3's
-   lesson prerequisite table; Lesson 1's status follows its episode, as the Video section does:
-   "In production" (read now, the film to come) until the delivery master exists and its HLS is
-   published, then "Ready" (watch and read); the rest "Planned"; filter by lane; clicking a node
-   opens a card with the hook question, the topics, the practise link as its CURRICULUM card gives
-   it (or "needs a deep link" where none exists yet), and the status. On phones a vertical two-lane
-   list with chips. Remember "done" per lesson in localStorage (Lesson 1
-   marks done when the quiz is finished); on the public host it syncs on sign-in (MASTER-PLAN
-   § 4.3).
+   lesson prerequisite table. Each lesson says what a learner can do with it (`kit/lesson-state.ts`,
+   the legend's three words): "Ready" once its page is live ("Ready · watch and read" once its film
+   is published, "Ready · read" until then), "Coming later" until then, "Done" once marked; filter
+   by lane; clicking a node opens a card with the hook question and, under it, the lesson's one
+   action ("Start lesson" at its page's top, "Continue: step N" at the furthest step the viewer
+   reached, or "Read again"), with "Watch the episode" beside it once the film is published; then
+   the topics by name, what it builds on and opens, the practise link where one exists, as its
+   CURRICULUM card gives it, and its reading time ("10 min", with the film's running time once the
+   film plays). The season's planning fields (the signature image, the link a drill still needs, a
+   film made but not published) stay in `kit/season.ts` for the team and the admin console, never
+   on a card. On phones a vertical two-lane list with chips. Remember "done" per lesson in
+   localStorage (Lesson 1 marks done when the quiz is finished; on the public host it syncs on
+   sign-in, MASTER-PLAN § 4.3), and each lesson's furthest step, on this device only
+   (`kit/position.ts`).
 10. **No series blueprint.** The page closed with one for the team until October 2026: the
     promise; the episode beat sheet and the page anatomy; the five teaching rules that matter
     most; the pipeline in eight steps; the phases 0 to 5; links to the plan files
@@ -138,9 +144,9 @@ in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
     Lessons page (`/admin/lessons`) shows. Change it there.
 11. **Footer**: practise link (Voice Mirror, `mercurypitch.com/mirror`, with `?lesson=01` on the
     public host, as in the Sing it card); credits (fonts SIL OFL; scratch voices: local
-    Kokoro-82M, Apache 2.0, to be re-voiced; every musical example synthesised; Merc's sung notes
-    in the film: development placeholders re-pitched from ElevenLabs takes); "Proof episode,
-    October 2026".
+    Kokoro-82M, Apache 2.0, to be re-voiced; every musical example synthesised; "Merc's sung notes
+    in the film: stand-ins for now, made with ElevenLabs and retuned"). No dateline: a footer says
+    nothing a learner cannot use.
     The owner holds those sung notes' rights (`src/features/echo/merc-voice-set.ts`; MASTER-PLAN
     § 12 item 1); a voice actor replaces them later.
 

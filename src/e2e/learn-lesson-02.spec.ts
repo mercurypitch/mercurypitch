@@ -111,12 +111,12 @@ test('the lesson boots: a guess unlocks the climb, which counts twelve steps to 
   await expect(page.locator('#predict .reveal')).toContainText(
     'Twelve steps, not fourteen.',
   )
-  // the explorer opens on this lesson, read now with its film to come
+  // the explorer opens on this lesson, to start from the top of the page
   await page.locator('#explorer').scrollIntoViewIfNeeded()
   await expect(page.locator('#exCardHost h3')).toHaveText('Twelve notes')
   await expect(
-    page.locator('#exCardHost').getByRole('link', { name: 'Read the lesson' }),
-  ).toBeVisible()
+    page.locator('#exCardHost').getByRole('link', { name: 'Start lesson' }),
+  ).toHaveAttribute('href', '#top')
 
   expect(errors).toEqual([])
 })

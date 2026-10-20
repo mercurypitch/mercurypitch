@@ -34,7 +34,7 @@
 //
 // A page's own words can follow the build too. Where a lesson page says
 // whether another lesson is ready (a next-lesson card's "ready to read" or
-// "Coming later"), it writes both readings, each in a
+// "coming later"), it writes both readings, each in a
 // `<span data-if-live="5">` or `<span data-if-planned="5">`, and
 // `lessonStatesPlugin` keeps the one that is true of the build: live where
 // Lesson 5's page is built, planned where it is not. So a page reads

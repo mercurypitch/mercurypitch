@@ -148,16 +148,16 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
    captions and the transcript; until the files are uploaded, the poster, the chapters and the
    transcript with "Film coming soon". See "The episode", below.
 10. **Lesson explorer**: Lesson 1's, with Lesson 2 as the current node, selected when the page
-    opens. Until the film is published Lesson 2 reads "In production" (read now, the film to come),
-    as Lesson 1's spec had it for Lesson 1 until its film was published; its card offers Read the
-    lesson and not Watch the episode, its length is 7:11 (`len: '7:11'` on its entry in
-    `kit/season.ts`), and the line under the explorer's heading is LESSON.md's ("Section
-    headings"). Once the film is published, Lesson 2 is ready to watch and read (`ready: true`).
-    Lesson 2 marks done when its quiz is finished. Its card's practice link reads as LESSON.md's
-    Wrap: `season.ts` already links `/ear-lab?lesson=02` with the note "for now, then tap Leap" and
-    lists the subset launch under "needs"; the note becomes "for now, then tap Leap (on a first
-    visit, close the intro first)". The kit's explorer assumes Lesson 1's page today, and has no
-    "In production" state (What the kit and the app still need, 10).
+    opens. Until the film is published Lesson 2 reads "Ready · read" and its card offers the kit's
+    one action ("Start lesson", "Continue: step N" or "Read again"; Lesson 1's spec, item 9)
+    without Watch the episode; once the film is published (`film: 'published'` on its entry in
+    `kit/season.ts`) it reads "Ready · watch and read" and Watch the episode joins the action. Its
+    Length row is the page's reading time, 10 min (`minutes: 10`), with the film's 7:11 only once
+    the film plays. The line under the explorer's heading names no lesson's state: the legend
+    (Ready, Coming later, Done) and the cards say it, from the season. Lesson 2 marks done when its
+    quiz is finished. Its card's practice link reads as LESSON.md's Wrap: `season.ts` links
+    `/ear-lab?lesson=02` with the note "then tap Leap"; the subset launch it still needs is the
+    team's (`pr.needs`), kept for the admin console and never drawn on the card.
 11. **Footer**: Lesson 1's, with every string as LESSON.md gives it ("Head and footer"): "Season 1
     · Lesson 02 · Twelve notes"; the practice link, printed `mercurypitch.com/ear-lab` and linking
     `/ear-lab?lesson=02`, with "Ear Lab is free: tap Leap." and the first-visit line; and the
@@ -549,15 +549,14 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
    `data-goto-step`, which would open the reusing page's own step N (Lessons 3 and 4 already write
    it so).
 10. **`kit/explorer.ts`** and **`kit/season.ts`**: the current lesson (it selects Lesson 1 when it
-    opens); a link to its own page for a ready lesson that is not the current one (its card's Watch
-    the episode and Read the lesson are the same-page anchors `#watch` and `#lesson`, so from this
-    page they would open Lesson 2's); a poster per lesson (`poster` is Lesson 1's, and the poster
-    figure's alt text names Lesson 01); and a state for a lesson whose page is live and whose film
-    is not published, "In production" (read now, the film to come), whose card offers Read the
-    lesson and not Watch the episode (`explorer.ts:41` and `:122-123` know only done, ready and
-    planned; Lesson 3's spec needs the same state). Lesson 2's entry gets `len: '7:11'` and that
-    state until the film is published, then `ready: true`; its practice note becomes "for now, then
-    tap Leap (on a first visit, close the intro first)".
+    opens); a link to its own page for a ready lesson that is not the current one (its card's
+    actions are same-page anchors, so from this page they would open Lesson 2's); a poster per
+    lesson (`poster` is Lesson 1's, and the poster figure's alt text names Lesson 01); and a state
+    for a lesson whose page is live and whose film is not published, "Ready · read", whose card
+    offers its action without Watch the episode (built: `kit/lesson-state.ts` gives the state and
+    the action, and Lesson 2's entry carries `minutes: 10`, its film's `len: '7:11'` for the team,
+    and `film: 'production'` until the film is published). Its practice note is "then tap Leap":
+    a lesson's link skips the app's intro since the `?lesson=` step-aside shipped (item 18).
 11. **`kit/notes.ts`**: the sharp and flat names of the five (`letterOf` returns null for them,
     Lesson 1's unnamed beads), in signs ("C♯4") and in words ("C sharp 4"), for the toggle, the
     labels and every accessible name.
@@ -576,8 +575,8 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
     list, the entry in LESSON.md, "Head and footer"); `public/learn/lesson-02-og.jpg`, the share
     card (The episode, above).
 17. Lesson 1's page, when this one goes live: its Wrap's next-lesson card ("02 · Twelve notes",
-    marked planned, opening the explorer) links to `/learn/02`, and its explorer's line names both
-    lessons, as LESSON.md gives it ("Section headings").
+    marked planned, opening the explorer) links to `/learn/02`, marked "ready to read". Its
+    explorer needs no edit: each lesson's state comes from the season.
 18. **The `?lesson=` step-aside** (CURRICULUM § 4 item 6; MASTER-PLAN § 7, the Phase 1 App track):
     a launch that carries `?lesson=02` skips First Light and records which lesson sent the viewer.
     It is the proper fix for the first visit (Practice link, above), and when it ships the

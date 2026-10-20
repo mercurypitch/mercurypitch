@@ -521,7 +521,7 @@
   border-color: var(--aqua);
   box-shadow: 0 0 10px color-mix(in srgb, var(--aqua) 60%, transparent);
 }
-.legend i.planned {
+.legend i.later {
   border-style: dashed;
 }
 .legend i.done {
@@ -771,17 +771,12 @@
 }
 .ex-rows .topic {
   display: inline-flex;
-  gap: 8px;
-  align-items: baseline;
   padding: 5px 10px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--hair);
   font-size: var(--fs-14);
   line-height: 1.35;
-}
-.ex-rows .topic b {
-  color: var(--aqua);
 }
 .ex-rows button.lk {
   border: 1px solid var(--hair-2);
@@ -796,15 +791,12 @@
 .ex-rows button.lk:hover {
   border-color: var(--hair-3);
 }
-.needs {
-  color: var(--violet);
-  font-size: var(--fs-14);
-}
+/* a live lesson's buttons sit under its hook, above the rows that explain it */
 .ex-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 18px;
+  margin: 0 0 18px;
 }
 .ex-fig {
   width: 210px;

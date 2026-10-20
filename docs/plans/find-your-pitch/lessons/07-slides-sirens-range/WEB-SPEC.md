@@ -557,14 +557,14 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 7's entry in `kit/season.ts` (`:201-216`) gains `len: '16 minutes'`
+- **Season data**: Lesson 7's entry in `kit/season.ts` (`:201-216`) gains `minutes: 16`
   (FACTS 4) and, proposed, `needs: "the warm-up's Lip trills routine, ungraded (a pattern slug)"`,
   the form Lesson 5's entry uses for its own missing drill, with the warm-up's ungraded end as one
-  of its conditions (Practice links); its link, hook, signature and topics stay (FACTS 71).
+  of its conditions (Practice links), for the team and never drawn on the card; its link, hook,
+  signature and topics stay (FACTS 71).
 - **A text-only lesson**: the "Ready · read" state Lesson 4's spec proposes (no Watch button, the
-  card's length from `len`), the current lesson (the explorer selects Lesson 1 when it opens,
-  `kit/explorer.ts:115`), and cards for other lessons linking to their own `/learn/NN`. Whichever
-  page ships first adds them.
+  card's length from `minutes`), the current lesson (the page passes `current: 7`), and cards for
+  other lessons linking to their own `/learn/NN`: the kit has all three.
 
 ## What the kit and the app still need
 
@@ -604,7 +604,9 @@ Lessons 2 to 6 promote into the kit (Toys table):
    another, for the end-to-end tests (Tests).
 10. App: the `pattern` slug and its test, the two warm-up changes the lip-trill link waits on
     (Practice links), and the App content items.
-11. Lessons 1 to 6's pages, when this one goes live: their explorer lines name Lesson 7.
+11. Lessons 1 to 6's pages, when this one goes live: nothing to edit in their explorers, which read
+    each lesson's state from the season (`kit/season.ts`). Lesson 6's next-lesson card turns from
+    "coming later" to "ready to read".
 
 ## Edge cases
 
@@ -703,7 +705,7 @@ parts:
     column and control is at least 44 px wide, with 8 px between neighbours and none overlapping,
     the voice switch on its own row and free play's state switch in rows of three and two (FACTS
     88).
-11. Season data: Lesson 7's entry has `len: '16 minutes'` and its link carries `?lesson=07`;
+11. Season data: Lesson 7's entry has `minutes: 16` and its link carries `?lesson=07`;
     `EDGES` holds [3, 7].
 
 End to end (Playwright, at 390 x 844 and 1440 x 900):

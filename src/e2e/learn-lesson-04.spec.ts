@@ -121,8 +121,8 @@ test('the lesson boots: a guess unlocks Play from D, and Merc stops on ti @smoke
   await expect(card.locator('h3')).toHaveText('The major scale and home')
   await expect(card).toContainText('Ready · read')
   await expect(
-    card.getByRole('link', { name: 'Read the lesson' }),
-  ).toBeVisible()
+    card.getByRole('link', { name: 'Start lesson' }),
+  ).toHaveAttribute('href', '#top')
   await expect(
     card.getByRole('link', { name: 'Watch the episode' }),
   ).toHaveCount(0)

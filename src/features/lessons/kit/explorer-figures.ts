@@ -200,10 +200,10 @@ export function cardFigure(
     cap.textContent = 'From the episode: the title card'
     f.append(img, cap)
   } else if (fig === 'metronome') {
-    f.innerHTML = `${metronomeSVG()}<figcaption>The stats site's metronome, its arm on 2 and 4</figcaption>`
+    f.innerHTML = `${metronomeSVG()}<figcaption>A metronome, its arm on beats 2 and 4</figcaption>`
   } else {
     f.innerHTML =
-      '<div class="plate"><canvas aria-hidden="true"></canvas></div><figcaption>Chladni plate: sand gathers where the plate stays still, the standing-wave motif for harmonics</figcaption>'
+      '<div class="plate"><canvas aria-hidden="true"></canvas></div><figcaption>A vibrating plate: sand gathers where the plate stays still</figcaption>'
   }
   return f
 }
