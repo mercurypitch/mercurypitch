@@ -4,13 +4,13 @@
 //
 // learn/04.html carries every word of the lesson; this module adds what the
 // markup cannot: the sound, the staircase in all its copies (the hero's,
-// the cold open's, the steps' stage and free play's), the recall check,
-// the four words, the scale guide, the quick check and the season map. A
-// written lesson with no film, so there is no Watch section and the
-// masthead's anchors are Lesson and Explorer. Every part is the shared
-// kit's, mounted per root, or this lesson's own toy built on it. The Mercs'
-// renderer loads last, as its own chunk, so the page reads and plays before
-// it arrives.
+// the cold open's, the steps' stage and free play's), the recall check
+// after the cold open, the four words, the scale guide, the quick check
+// and the season map. A written lesson with no film, so there is no Watch
+// section and the masthead's anchors are Lesson and Explorer. Every part is
+// the shared kit's, mounted per root, or this lesson's own toy built on it.
+// The Mercs' renderer loads last, as its own chunk, so the page reads and
+// plays before it arrives.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -52,6 +52,8 @@ initMotionSwitch()
 Motion.init()
 
 initHero()
+// the cold open comes first, as on Lesson 2, and the recall follows it
+initColdOpen()
 
 // the recall check: Lesson 2's questions 1 and 3, under Lesson 2's ids, marking no lesson done
 createQuiz({
@@ -62,7 +64,6 @@ createQuiz({
   away: { href: recallStepHref },
 })
 
-initColdOpen()
 initWords()
 
 // the names on the stairs: one page-wide choice, Letters on every visit

@@ -2,11 +2,10 @@
    Lesson 5 — "Breath and a steady note": the hook stage, the toys, the holds
    ============================================================
    What only this page draws: a long hook in a smaller face, the two Mercs
-   either side of the hook's band chart with its level strip, the recall
-   open in the hero's copy column, the breath toy's two views, the three
-   starts' key, the figures' heights for the stage budget, orange Merc's
-   line beside her still, the note finder and the hold's phases on the
-   checkpoint card, and the free-play stage. */
+   either side of the hook's band chart with its level strip, the breath
+   toy's two views, the three starts' key, the figures' heights for the
+   stage budget, orange Merc's line beside her still, the note finder and
+   the hold's phases on the checkpoint card, and the free-play stage. */
 
 /* ---------------------------------------------------------------- the hero */
 .l05-hero .hook {
@@ -64,29 +63,9 @@ div.reveal p:last-child {
   color: var(--ink-2);
 }
 
-/* the recall, open for everyone, in the hero's copy column */
-.l05-recall {
-  margin-top: 28px;
-}
-.recall-tempo {
-  margin: 0 0 6px;
-  font: italic 400 clamp(17px, 1.8vw, 20px) / 1.15 var(--f-serif);
-  color: var(--aqua);
-  word-spacing: 0.1em;
-}
-.recall-tempo > span {
-  color: var(--ink-3);
-  font-size: 0.86em;
-}
-.recall-title {
-  margin: 0 0 6px;
-  font: 600 clamp(24px, 2.6vw, 32px) / 1.08 var(--f-display);
-  letter-spacing: -0.02em;
-}
-
 /* one column in reading order, as LESSON.md runs: the header and the sound
-   gate, the recall, then the cold open, its first take right under the
-   chart it draws on */
+   gate, then the cold open, its first take right under the chart it draws
+   on; the recall follows the hero in a section of its own */
 @media (max-width: 1080px) {
   .l05-hero .hero-copy,
   .l05-hero .hero-side {
@@ -94,9 +73,6 @@ div.reveal p:last-child {
   }
   .l05-hero .duo {
     --merc: clamp(120px, 22vw, 200px);
-  }
-  .l05-hero .recall {
-    max-width: none;
   }
   .l05-hero .stage-night {
     margin-top: 24px;
