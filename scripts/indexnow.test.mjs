@@ -10,11 +10,15 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { changedUrls, findKey, indexNowRequest, parseArgs, SITE, sitemapEntries, urlsSince, } from './indexnow.mjs'
+import { changedUrls, findKey, indexNowRequest, listedEntries, parseArgs, SITE, sitemapEntries, unlistedUrls, urlsSince, } from './indexnow.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./indexnow.mjs', import.meta.url))
 const SITEMAP = readFileSync(
   fileURLToPath(new URL('../public/sitemap.xml', import.meta.url)),
+  'utf8',
+)
+const ENV_PRODUCTION = readFileSync(
+  fileURLToPath(new URL('../.env.production', import.meta.url)),
   'utf8',
 )
 
@@ -104,6 +108,52 @@ test('the first release with a key sends every URL; later ones the changes', () 
   const withKey = (_ref, path) =>
     path === 'public/sitemap.xml' ? previous : key
   assert.deepEqual(urlsSince('v1', key, withKey, now), [`${SITE}/`])
+})
+
+// Glassworks is served in production but listed nowhere (tools/glassworks-
+// listing.ts), and public/sitemap.xml still names it for the dev build.
+test('production does not list Glassworks, so no release announces it', () => {
+  const museum = `${SITE}/glass-game`
+  assert.ok(sitemapEntries(SITEMAP).has(museum))
+  assert.ok(!listedEntries(SITEMAP, ENV_PRODUCTION).has(museum))
+  assert.equal(
+    listedEntries(SITEMAP, ENV_PRODUCTION).size,
+    sitemapEntries(SITEMAP).size - 1,
+  )
+  assert.deepEqual([...unlistedUrls('VITE_GLASSWORKS_LISTED=1')], [])
+  assert.deepEqual([...unlistedUrls('VITE_GLASSWORKS_LISTED="true"\n')], [])
+  // Only an explicit yes lists it: off, unset or garbled all hide it.
+  for (const env of [
+    'VITE_GLASSWORKS_LISTED=0',
+    '',
+    'VITE_GLASSWORKS_LISTED=yes',
+  ]) {
+    assert.deepEqual([...unlistedUrls(env)], [museum])
+  }
+})
+
+test('a listing that flips is sent as an addition or a removal', () => {
+  const key = 'e'.repeat(32)
+  const museum = `${SITE}/glass-game`
+  const map = sitemap([
+    [`${SITE}/`, '2026-10-19'],
+    [museum, '2026-10-19'],
+  ])
+  const readWith = (env) => (_ref, path) =>
+    path === 'public/sitemap.xml' ? map : path === '.env.production' ? env : key
+  const off = 'VITE_GLASSWORKS_LISTED=0'
+  const on = 'VITE_GLASSWORKS_LISTED=1'
+  // Unchanged pages, unchanged listing: nothing to send.
+  assert.deepEqual(urlsSince('v1', key, readWith(off), map, off), [])
+  // Listed now, hidden at the last release: announce it.
+  assert.deepEqual(urlsSince('v1', key, readWith(off), map, on), [museum])
+  // Hidden now, listed at the last release: send it, and the engine finds the noindex.
+  assert.deepEqual(urlsSince('v1', key, readWith(on), map, off), [museum])
+  // The first release with a key sends only what production lists.
+  assert.deepEqual(
+    urlsSince('v1', key, () => undefined, map, off),
+    [`${SITE}/`],
+  )
 })
 
 test('--since takes a ref, and URLs are not mixed with it', () => {
