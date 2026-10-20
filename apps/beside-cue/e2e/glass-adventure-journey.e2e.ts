@@ -1,6 +1,7 @@
 // Floating museum journey — real pointer, lifecycle and durable-progress browser checks.
 
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { observeJourneyMedallions } from './helpers/journey-medallion-points'
 
 test.use({
   viewport: { width: 1024, height: 768 },
@@ -10,8 +11,13 @@ test.use({
   },
 })
 test.setTimeout(120_000)
+test.afterEach(async ({ page }) => {
+  if (!page.isClosed())
+    await page.evaluate(() => window.journeyMedallionObservation?.dispose())
+})
 
 async function openJourney(page: Page): Promise<Locator> {
+  await observeJourneyMedallions(page)
   await page.addInitScript(() => {
     localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
   })
@@ -47,27 +53,22 @@ async function projectedMedallion(
   y: number
 }> {
   await expect(label).toHaveAttribute('data-projected', 'true')
-  const [bounds, projectedX, projectedY] = await Promise.all([
-    canvas.boundingBox(),
-    label.getAttribute('data-projected-x'),
-    label.getAttribute('data-projected-y'),
-  ])
-  expect(bounds).not.toBeNull()
-  expect(projectedX).not.toBeNull()
-  expect(projectedY).not.toBeNull()
-  const point = {
-    x: bounds!.x + Number(projectedX),
-    y: bounds!.y + Number(projectedY),
-  }
+  const stageId = await label.getAttribute('data-journey-label')
+  expect(stageId).not.toBeNull()
+  // The label anchor sits below the pod's fascia; it is not the pod's hit target.
+  const point = await canvas
+    .page()
+    .evaluate((id) => window.journeyMedallionObservation.point(id), stageId!)
+  expect(point).not.toBeNull()
   expect(
     await canvas.evaluate(
       (element, target) =>
         document.elementFromPoint(target.x, target.y) === element,
-      point,
+      point!,
     ),
     'the projected medallion must remain an unobstructed canvas hit target',
   ).toBe(true)
-  return point
+  return point!
 }
 
 test('mouse selects, zooms, orbits and resets without entering a gallery @smoke', async ({

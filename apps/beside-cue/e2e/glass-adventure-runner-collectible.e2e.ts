@@ -3,9 +3,44 @@ import { expect, test } from '@playwright/test'
 import { collectibleCourse, collectiblePickup, collectibleScaleKey, collectibleSettings, collectibleTimeAtDistance, openCollectibleCourse, steerToCollectible, touchCollectibleScale, waitForCollectibleTime, } from './helpers/runner-collectible-host'
 import { expectCollectibleHostScale } from './helpers/runner-collectible-observation'
 import { openCollectibleRenderer } from './helpers/runner-collectible-renderer'
+import { restoreHostRaster } from './helpers/host-raster-checkpoints'
 
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
 test.setTimeout(180_000)
+
+test.afterEach(async ({ page }, info) => {
+  if (page.isClosed()) return
+  try {
+    const proof = await page.evaluate(() => {
+      if (!window.hostRasterCheckpoints) return null
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        '[data-testid="song-runner-scene"] canvas',
+      )
+      const gl = canvas?.getContext('webgl2')
+      const debug = gl?.getExtension('WEBGL_debug_renderer_info')
+      return {
+        raster: window.hostRasterCheckpoints.read(),
+        renderer: debug
+          ? gl?.getParameter(debug.UNMASKED_RENDERER_WEBGL)
+          : null,
+      }
+    })
+    if (proof)
+      await info.attach('collectible-raster-proof', {
+        body: JSON.stringify(proof),
+        contentType: 'application/json',
+      })
+  } finally {
+    try {
+      await page.evaluate(async () => {
+        window.collectibleHostObservation?.dispose()
+        await window.runnerVoiceFixture?.dispose()
+      })
+    } finally {
+      await restoreHostRaster(page)
+    }
+  }
+})
 
 test('C01 scale is accessible, persists and fits both themes on phones and tablet @smoke', async ({
   page,
@@ -106,15 +141,22 @@ test('C01 keeps real pickup timing while paused mouse and touch scaling redraws 
   await expect
     .poll(async () => Number(await runner.getAttribute('data-hit-targets')))
     .toBeGreaterThan(0)
+  // Settings stops capture; its reset control redraws the paused scene on demand.
+  const drawsBeforePause = await page.evaluate(
+    () => window.collectibleHostObservation.read().draws,
+  )
+  const { settings, range } = await collectibleSettings(page)
+  await expect(runner).toHaveAttribute('data-phase', 'paused')
+  await settings
+    .getByRole('button', { name: 'Reset to 120%', exact: true })
+    .click()
   let drawn = await expectCollectibleHostScale(
     page,
     collectiblePickup.id,
     1.2,
-    0,
+    drawsBeforePause,
   )
   await page.screenshot({ path: info.outputPath('c01-real-approach.png') })
-  const { settings, range } = await collectibleSettings(page)
-  await expect(runner).toHaveAttribute('data-phase', 'paused')
   const pausedAt = await runner.getAttribute('data-course-seconds')
   const requests = await page.evaluate(() => window.runnerVoiceFixture.requests)
   const box = (await range.boundingBox())!
@@ -205,7 +247,6 @@ test('C01 keeps real pickup timing while paused mouse and touch scaling redraws 
     'data-collected-rewards',
     collectiblePickup.id,
   )
-  await page.screenshot({ path: info.outputPath('c01-real-collected.png') })
   await waitForCollectibleTime(
     page,
     collectibleTimeAtDistance(collectiblePickup.courseDistanceMeters + 2),
@@ -215,6 +256,20 @@ test('C01 keeps real pickup timing while paused mouse and touch scaling redraws 
     collectiblePickup.id,
   )
   await expect(runner).toHaveAttribute('data-player-grounded', 'true')
+  const framesBeforePause = await page.evaluate(
+    () => window.hostRasterCheckpoints.read().forwardedDraws,
+  )
+  const collectedSettings = await collectibleSettings(page)
+  await expect(runner).toHaveAttribute('data-phase', 'paused')
+  await collectedSettings.settings
+    .getByRole('button', { name: 'Reset to 120%', exact: true })
+    .click()
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.hostRasterCheckpoints.read().forwardedDraws),
+    )
+    .toBeGreaterThan(framesBeforePause)
+  await page.screenshot({ path: info.outputPath('c01-real-collected.png') })
   expect(errors).toEqual([])
   await page.evaluate(async () => {
     window.collectibleHostObservation.dispose()

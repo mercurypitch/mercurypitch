@@ -1,9 +1,12 @@
 // Museum material integration — decorative tiles must fill their real touch controls in every engine.
 import { expect, test } from '@playwright/test'
 import { catalogueActionContainment, museumTextContrast, completedMuseumCardStorage, museumCardContainment, } from './helpers/museum-card-containment'
+import { installMuseumLayoutRaster, renderMuseumLayoutFrame, restoreMuseumLayoutRaster, } from './helpers/museum-raster-fixture'
 
 test.use({ hasTouch: true })
 test.setTimeout(120_000)
+test.beforeEach(async ({ page }) => installMuseumLayoutRaster(page))
+test.afterEach(async ({ page }) => restoreMuseumLayoutRaster(page))
 
 for (const viewport of [
   { width: 320, height: 568 },
@@ -148,6 +151,7 @@ for (const viewport of [
           }),
         )
         .toEqual([])
+      await renderMuseumLayoutFrame(page)
       await page.screenshot({
         path: testInfo.outputPath(`museum-material-hosts-${theme}.png`),
       })
@@ -182,23 +186,24 @@ test('runner native microphone selector follows both material themes @smoke', as
     await expect(microphone).toHaveCSS('color-scheme', scheme)
     await expect(microphone).toHaveCSS('color', ink)
     await microphone.scrollIntoViewIfNeeded()
+    await renderMuseumLayoutFrame(page)
     await page.screenshot({
       path: testInfo.outputPath(`native-selector-${theme}.png`),
     })
   }
 })
 
-test('compact museum cards keep every gallery title and entry inside the frame @smoke', async ({
-  page,
-}, testInfo) => {
-  await page.goto('/glass-game/?campaign=1')
-  await expect(page.locator('[data-map-state]')).toHaveAttribute(
-    'data-map-state',
-    'ready',
-    { timeout: 60_000 },
-  )
-  for (const width of [320, 360, 390]) {
+for (const width of [320, 360, 390]) {
+  test(`compact museum cards keep every gallery title and entry inside the frame at ${width}px @smoke`, async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize({ width, height: 844 })
+    await page.goto('/glass-game/?campaign=1')
+    await expect(page.locator('[data-map-state]')).toHaveAttribute(
+      'data-map-state',
+      'ready',
+      { timeout: 60_000 },
+    )
     for (const choice of await page
       .getByRole('navigation', { name: 'Select a museum island' })
       .getByRole('button')
@@ -238,11 +243,12 @@ test('compact museum cards keep every gallery title and entry inside the frame @
         geometry.card.bottom - 12,
       )
     }
+    await renderMuseumLayoutFrame(page)
     await page.screenshot({
       path: testInfo.outputPath(`long-gallery-${width}.png`),
     })
-  }
-})
+  })
+}
 
 for (const progress of ['default', 'completed'] as const) {
   for (const viewport of [
@@ -290,6 +296,7 @@ for (const progress of ['default', 'completed'] as const) {
         await expect
           .poll(() => action.evaluate(museumCardContainment))
           .toEqual([])
+        await renderMuseumLayoutFrame(page)
         await page.screenshot({
           path: testInfo.outputPath(`card-${index}.png`),
         })
@@ -351,6 +358,7 @@ for (const progress of ['default', 'completed'] as const) {
               .poll(() => entry.evaluate(catalogueActionContainment))
               .toEqual([])
           }
+          await renderMuseumLayoutFrame(page)
           await page.screenshot({
             path: testInfo.outputPath(`catalogue-actions-${theme}.png`),
           })

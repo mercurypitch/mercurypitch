@@ -5,6 +5,7 @@ import { SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY as course } from '../../../../
 import { runnerBeatToSeconds } from '../../../../packages/glass-game/src/runner/tempo'
 import { observeCollectibleHost } from './runner-collectible-observation'
 import { installRunnerVoice } from './runner-voice-fixture'
+import { installHostRasterCheckpoints } from './host-raster-checkpoints'
 
 export const collectibleCourse = course
 export const collectiblePickup = course.rewards.pickups[0]!
@@ -17,7 +18,12 @@ export async function openCollectibleCourse(page: Page) {
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text())
   })
-  // Preserve the real GPU renderer: this fixture supplies microphone PCM only.
+  // Real raster checkpoints surround voice timing; full-raster GPU runs use the same flow.
+  await installHostRasterCheckpoints(
+    page,
+    '[data-testid="song-runner-scene"]',
+    true,
+  )
   await installRunnerVoice(page, true, { course, omitRaster: false })
   await observeCollectibleHost(page)
   await page.goto(
