@@ -156,4 +156,5 @@ not half.]_
 **One-sentence challenge:** explain to a friend, in one sentence, why a man and a woman singing
 "the same" tune can be an octave apart.
 
-**Next lesson:** Musicians only use seven letters, so where do the other five notes come from?
+**Next lesson:** Musicians only use seven letters, so where do the other five notes come from? One
+line above it, the tease: "Seven letters, but twelve notes."

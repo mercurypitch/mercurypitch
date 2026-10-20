@@ -21,8 +21,11 @@ link there. What the vocal coach signs off is listed at the end.
 ## Header
 
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 07
-- Title (the hook question): **How many notes can your voice reach, and why is the comfortable
-  middle worth more than the extremes?**
+- Title (the hook question): **Why is your comfortable middle worth more than your highest note?**
+  _[The default since 20 October 2026 (CURIOSITY-MOMENTS § 2 and § 5): one question, not two, with
+  no first half inviting a count of notes, which the lesson steers away from. The old title, "How
+  many notes can your voice reach, and why is the comfortable middle worth more than the
+  extremes?", is kept in `kit/lesson-copy.ts` as an alternative the admin console can switch to.]_
 - Meta, as chips: 16 minutes · After Lesson 3: Match a note · Sound on · Microphone optional
 - Promise: By the end you'll warm up with gentle sirens, lip trills and "ng", find your comfortable
   middle, and know what a voice type can and can't tell you.
@@ -314,7 +317,8 @@ link: its "Reach New Notes" week asks for notes past your comfortable top (§ 4 
 public host every link carries `?lesson=07`.]_
 
 **Next lesson:** Lesson 8, Beat, tempo and the backbeat. "Why does the same song feel different
-when you clap on 2 and 4 instead of 1 and 3?"
+when you clap on 2 and 4 instead of 1 and 3?" One line above it, the tease: "Same song, same
+speed. Only the claps move."
 
 ## Footer
 

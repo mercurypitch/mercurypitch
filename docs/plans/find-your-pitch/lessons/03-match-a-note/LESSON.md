@@ -15,8 +15,12 @@ check links there. What the vocal coach signs off is listed at the end.
 ## Header
 
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 03
-- Title (the hook question): **In a survey, most of 1,105 students said they couldn't copy a tune.
-  In tests, only about one in ten to one in six missed by a semitone or more. So what's going on?**
+- Title (the hook question): **Asked, most students said they couldn't copy a tune. Tested, most
+  could. So what's going on?** _[The default since 20 October 2026 (CURIOSITY-MOMENTS § 5). The
+  title it replaces, the season's longest at 163 characters, is kept in `kit/lesson-copy.ts` as
+  an alternative the admin console can switch to: "In a survey, most of 1,105 students said they
+  couldn't copy a tune. In tests, only about one in ten to one in six missed by a semitone or
+  more. So what's going on?" Its figures stay on the cold open's stage.]_
 - Meta, as chips: 15 minutes · After Lesson 1: What is a note? (the prerequisite chip, a link to
   Lesson 1's page) · Also useful: Lesson 2, Twelve notes · Sound on · Microphone optional
 - Promise: By the end you'll know how your voice makes a note, how to look after it and what "in
@@ -293,7 +297,8 @@ mercurypitch.com/exercises/hold-a-note". If it is not, end that sentence at "fiv
 the one above or below." On the public host every link carries `?lesson=03`.]_
 
 **Next lesson:** Lesson 4, The major scale and home. "Why does do-re-mi sound finished when it
-lands on do, and restless when it stops on ti?"
+lands on do, and restless when it stops on ti?" One line above it, the tease: "Merc climbs seven
+stairs and stops, one short of home."
 
 ## For the vocal coach
 

@@ -47,6 +47,7 @@
     22a. MercuryPitch is free | `public/llms.txt` line 3 ("A free, open-source singing and playing studio") | repo
 22. Voice Mirror is at mercurypitch.com/mirror and needs no account | `public/llms.txt` ("No account, no setup, about sixty seconds"); motion-designer house rules | repo
 23. The series name "Find Your Pitch" uses the brand tagline | `docs/branding/BRAND.md` § 1 ("Find your pitch.", recommended) | repo
+24. The next-lesson card's tease, one line above Lesson 2's hook: "Seven letters, but twelve notes.", the seven letters of 13 against the twelve notes of 14, which Lesson 2 counts | `src/features/lessons/kit/lesson-copy.ts`, Lesson 2; 13, 14 | carried; the card draws it from the season data, so the page's markup holds none of it
 
 ## Illustrations without claims
 

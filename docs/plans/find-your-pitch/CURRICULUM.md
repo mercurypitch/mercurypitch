@@ -54,23 +54,23 @@ characters (aim for about 60) and may shorten the hook as long as it stays accur
 goes in the thumbnail text, the first line of the description and the cold open (MASTER-PLAN
 § 4.1).
 
-| #   | Track            | Title                                 | Topics                 | Hook question (the cold open)                                                                                                                               |
-| --- | ---------------- | ------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | Trailer          | Find your pitch                       | all                    | What if you could see every note you sing? (2 to 3 minutes: the promise and the map of all 14 hooks)                                                        |
-| 1   | Theory           | What is a note? **(in production)**   | T01, T02               | If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?                                                                 |
-| 2   | Theory           | Twelve notes                          | T03, T04: cents        | Musicians only use seven letters, so where do the other five notes come from?                                                                               |
-| 3   | Voice            | Match a note                          | S01, S05, T04: in tune | Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going on? |
-| 4   | Theory           | The major scale and home              | T09, T10               | Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?                                                                     |
-| 5   | Voice            | Breath and a steady note              | S02, S03, S04, S06     | Singers are told to "support" a long note. If that doesn't mean pushing, what keeps it steady?                                                              |
-| 6   | Theory           | Intervals: the distance between notes | T11, T12               | Why can you start "Twinkle, Twinkle" on any note and it is still the same tune?                                                                             |
-| 7   | Voice            | Slides, sirens and your range         | S07, S08               | How many notes can your voice reach, and why is the comfortable middle worth more than the extremes?                                                        |
-| 8   | Theory           | Beat, tempo and the backbeat          | T05, T06               | Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?                                                                          |
-| 9   | Voice            | Landing a leap                        | S09, S10               | Why is jumping to a note so much harder than stepping to it?                                                                                                |
-| 10  | Theory           | Major and minor                       | T14, T15a, T19 (intro) | Which single note turns a bright major chord into a dark minor one?                                                                                         |
-| 11  | Voice            | Registers and the break               | S12                    | Why does your voice flip at roughly the same note every time you slide up?                                                                                  |
-| 12  | Theory           | Chords and the four-chord song        | T19, T20, T21          | How can hundreds of songs share the same four chords and still sound different?                                                                             |
-| 13  | Voice            | Resonance and vowels                  | T28, S13, S14          | If "ee" and "ah" sung on the same note draw the same pitch line, what makes them sound different?                                                           |
-| 14  | Voice and theory | Phrasing: sing a whole song           | S16, S17, T22 (light)  | If you can hit every note of a song, what is still missing between correct and compelling?                                                                  |
+| #   | Track            | Title                                 | Topics                 | Hook question (the cold open)                                                                        |
+| --- | ---------------- | ------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| 0   | Trailer          | Find your pitch                       | all                    | What if you could see every note you sing? (2 to 3 minutes: the promise and the map of all 14 hooks) |
+| 1   | Theory           | What is a note? **(in production)**   | T01, T02               | If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?          |
+| 2   | Theory           | Twelve notes                          | T03, T04: cents        | Musicians only use seven letters, so where do the other five notes come from?                        |
+| 3   | Voice            | Match a note                          | S01, S05, T04: in tune | Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?         |
+| 4   | Theory           | The major scale and home              | T09, T10               | Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?              |
+| 5   | Voice            | Breath and a steady note              | S02, S03, S04, S06     | Singers are told to "support" a long note. If that doesn't mean pushing, what keeps it steady?       |
+| 6   | Theory           | Intervals: the distance between notes | T11, T12               | Why can you start "Twinkle, Twinkle" on any note and it is still the same tune?                      |
+| 7   | Voice            | Slides, sirens and your range         | S07, S08               | Why is your comfortable middle worth more than your highest note?                                    |
+| 8   | Theory           | Beat, tempo and the backbeat          | T05, T06               | Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?                   |
+| 9   | Voice            | Landing a leap                        | S09, S10               | How do you land a note you have to leap to?                                                          |
+| 10  | Theory           | Major and minor                       | T14, T15a, T19 (intro) | Which single note turns a major chord into a minor one?                                              |
+| 11  | Voice            | Registers and the break               | S12                    | Why does your voice flip at roughly the same note every time you slide up?                           |
+| 12  | Theory           | Chords and the four-chord song        | T19, T20, T21          | How can two songs share the same four chords and still sound different?                              |
+| 13  | Voice            | Resonance and vowels                  | T28, S13, S14          | If "ee" and "ah" sung on the same note draw the same pitch line, what makes them sound different?    |
+| 14  | Voice and theory | Phrasing: sing a whole song           | S16, S17, T22 (light)  | If you can hit every note of a song, what is still missing between correct and compelling?           |
 
 ### 2.1 Lesson cards
 
