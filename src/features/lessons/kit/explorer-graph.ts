@@ -4,9 +4,11 @@
 //
 // The pieces of the wide-screen season map that hold no state: the lane
 // bands and arc captions behind it, an SVG path per prerequisite, a label
-// placed beside each node, and the painters that restyle a node, a label or
-// a list row when the selection or the lane filter changes. explorer.ts owns
-// the selection, the filter and every event.
+// placed beside each node (on a map under 1100 px wide, no wider than its
+// share of its lane, so a long name wraps instead of touching the next),
+// and the painters that restyle a node, a label or a list row when the
+// selection or the lane filter changes. explorer.ts owns the selection, the
+// filter and every event.
 
 import { q, svg } from './dom'
 import type { Lane, Lesson } from './season'
@@ -27,6 +29,15 @@ export const ARCS: readonly (readonly [string, string, number, number])[] = [
   ['Hear it', 'Lessons 1 to 7', 1, 7],
   ['Shape it', 'Lessons 8 to 14', 8, 14],
 ]
+
+/** A lane label's width, px, on a map wide enough to give it. */
+const LABEL_W = 150
+/** Below this map width, px, each label keeps to its share of its lane. */
+const SHARES_BELOW = 1100
+/** The least air between two labels' shares along a lane, px. */
+const LABEL_GAP = 12
+/** How far a leaning label starts behind its node's centre, px. */
+const LEAN_BACK = 18
 
 const check = (px: number): string =>
   `<svg class="ico" style="width:${px}px;height:${px}px" aria-hidden="true"><use href="#i-check"/></svg>`
@@ -111,6 +122,12 @@ export function addEdges(
   )
 }
 
+/** A lane's lessons in season order. */
+const laneLessons = (k: Exclude<Lane, 'both'>): number[] =>
+  LESSONS.filter((L) => L.lane === k)
+    .map((L) => L.n)
+    .sort((a, b) => a - b)
+
 /**
  * Labels sit outside the gutter: theory above, voice below, the trailer and
  * Lesson 14 beside their nodes. Neighbours a column apart (1 and 2) lean
@@ -119,9 +136,7 @@ export function addEdges(
 export function labelLeans(): Map<number, Lean> {
   const lean = new Map<number, Lean>()
   for (const k of ['theory', 'voice'] as const) {
-    const ns = LESSONS.filter((L) => L.lane === k)
-      .map((L) => L.n)
-      .sort((a, b) => a - b)
+    const ns = laneLessons(k)
     for (let i = 1; i < ns.length; i++) {
       if (ns[i] - ns[i - 1] < 2) {
         lean.set(ns[i - 1], 'ar')
@@ -132,14 +147,47 @@ export function labelLeans(): Map<number, Lean> {
   return lean
 }
 
-/** A node's short name, placed by its lane and its lean. */
+/**
+ * Each lane label's width, px. On a map 1100 px wide or more every label is
+ * LABEL_W. On a narrower one a label keeps to its share of its lane, which
+ * ends LABEL_GAP / 2 short of halfway to the next label along it, so a long
+ * name wraps onto a second line instead of running into its neighbour's: a
+ * centred label's share lies either side of its node, a leaning label's
+ * runs from LEAN_BACK behind its node towards the side it leans.
+ */
+export function labelWidths(
+  mapW: number,
+  colW: number,
+  leans: ReadonlyMap<number, Lean>,
+): Map<number, number> {
+  const widths = new Map<number, number>()
+  const half = (cols: number): number => (cols * colW - LABEL_GAP) / 2
+  for (const k of ['theory', 'voice'] as const) {
+    const ns = laneLessons(k)
+    ns.forEach((n, i) => {
+      const before = i === 0 ? Infinity : half(n - ns[i - 1])
+      const after = i === ns.length - 1 ? Infinity : half(ns[i + 1] - n)
+      const lean = leans.get(n)
+      const share =
+        lean === 'al'
+          ? LEAN_BACK + after
+          : lean === 'ar'
+            ? LEAN_BACK + before
+            : 2 * Math.min(before, after)
+      widths.set(n, mapW >= SHARES_BELOW ? LABEL_W : Math.min(LABEL_W, share))
+    })
+  }
+  return widths
+}
+
+/** A node's short name, placed by its lane and its lean, `w` px wide. */
 export function nodeLabel(
   L: Lesson,
   p: Pos,
   leans: Lean | undefined,
+  w = LABEL_W,
 ): HTMLDivElement {
   const lab = document.createElement('div')
-  const w = 150
   lab.className = `nlabel${L.lane === 'theory' ? ' up' : ''}${leans === undefined ? '' : ` ${leans}`}`
   lab.style.width = `${w}px`
   if (L.lane === 'both') placeSideLabel(lab, L.n, p)
@@ -167,10 +215,10 @@ function placeLaneLabel(
 ): void {
   lab.style.top = `${lane === 'theory' ? p.y - 34 : p.y + 34}px`
   if (leans === 'ar') {
-    lab.style.left = `${p.x + 18 - w}px`
+    lab.style.left = `${p.x + LEAN_BACK - w}px`
     lab.style.marginLeft = '0'
   } else if (leans === 'al') {
-    lab.style.left = `${p.x - 18}px`
+    lab.style.left = `${p.x - LEAN_BACK}px`
     lab.style.marginLeft = '0'
   } else {
     lab.style.left = `${p.x}px`
@@ -188,6 +236,8 @@ export function paintNode(
   if (node === undefined) return
   node.className = `node${look.stClass}${look.selected ? ' sel' : ''}${onPath ? ' anc' : ''}${look.on ? '' : ' dim'}`
   node.setAttribute('aria-pressed', String(look.selected))
+  // one tab stop for the map: the selected node; the arrows reach the rest
+  node.tabIndex = look.selected ? 0 : -1
   if (look.done) node.innerHTML = check(18)
   else node.textContent = String(n)
 }
