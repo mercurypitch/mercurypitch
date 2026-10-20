@@ -145,6 +145,9 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // Lesson 5, a draft as Lesson 3 is, for the same reason.
   '/learn/05',
   '/learn/05.html',
+  // Lesson 6, a draft as Lessons 3 and 5 are, for the same reason.
+  '/learn/06',
+  '/learn/06.html',
   '/jam-rooms',
   '/jam-rooms.html',
   // Search-intent entries (src/seo/entry-pages.ts). Each boots an existing

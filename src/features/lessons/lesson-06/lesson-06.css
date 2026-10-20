@@ -1,0 +1,382 @@
+/* ============================================================
+   Lesson 6 — Intervals: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-guide, lesson-parts, lesson-voice, lesson-tune-line and
+   lesson-ear-game). Here: the compact tune line between the Mercs, the tune
+   line's heights for the stage budget, the readout and the start slider
+   under it, orange Merc's line in Step 3, the anchor board, Sing it's
+   guide beside its ring, and the Wrap's cards and free play. */
+
+/* ---------------------------------------------------------------- hero: the tune line between the Mercs */
+.l6-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --line-h: clamp(170px, 15vw, 220px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--line-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the tune line's lowest row, where the Mercs stand */
+.l6-duo .floor {
+  top: var(--line-h);
+}
+.l6-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l6-duo .merc-blue {
+  grid-column: 1;
+}
+.l6-duo .merc-orange {
+  grid-column: 3;
+}
+.hero-tune {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--line-h);
+  margin: 0;
+}
+.hero-tune canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.l6-hero .hero-plays {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l6-duo {
+    --merc: clamp(110px, 18vw, 170px);
+    --line-h: clamp(180px, 26vw, 240px);
+  }
+  /* Play from C sits right under the stage, before the sound gate (the kit
+     orders the hero's parts at this width), so it is on a phone's first screen */
+  .l6-hero .hero-plays {
+    order: 4;
+    margin-top: 14px;
+  }
+}
+/* on a phone the Mercs stand smaller either side of the line */
+@media (max-width: 560px) {
+  .l6-duo {
+    --merc: min(20vw, 80px);
+    --line-h: 150px;
+    margin-top: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------- the tune line's stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* Each state's figure at the height its layout wants (kit/tune-line-layout.ts:
+   one line with its names and gap strip, both lines, free play's both lines
+   with every strip). Beside the text the stage caps the figure at the room
+   its controls leave, and no lower than --viz-min: one line keeps 200 px at
+   1024 x 640, where Step 3's slider and names switch leave it 240. On a
+   phone held sideways two lines keep 250 px, their layout's least, and
+   Play still shares the screen with them. */
+.tune-viz[data-shape='one'] {
+  --viz-min: 200px;
+  height: 276px;
+}
+.tune-viz[data-shape='two'] {
+  --viz-min: 250px;
+  height: 350px;
+}
+.tune-viz[data-shape='free'] {
+  height: 438px;
+}
+/* a phone held sideways: free play's figure at its layout's least, so it fits under the masthead */
+@media (orientation: landscape) and (max-height: 500px) {
+  .tune-viz[data-shape='free'] {
+    height: 332px;
+  }
+}
+/* the wide figure gives up its side borders on phones (kit/lesson-stage.css),
+   and the buttons' layer follows it to the card's edge */
+@media (max-width: 960px) {
+  .tune-toy > .tune-hits {
+    margin: 1px -12px;
+  }
+}
+/* the toggles' row takes no room while both its parts are hidden */
+.tune-toy .tune-toggles {
+  margin-top: 0;
+}
+.tune-toggles > * {
+  margin-top: 14px;
+}
+.tune-toggles .names-bar {
+  margin-bottom: 0;
+}
+/* the readout under the figure: where the line starts, and its do-re-mi, which never changes */
+.tune-readout {
+  margin: 8px 0 0;
+  font: 600 var(--fs-16) / 1.4 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.slide-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.start-slider {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px dashed var(--hair-2);
+  font: 600 var(--fs-16) / 1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink);
+  cursor: ns-resize;
+}
+.start-slider:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+/* on a narrow phone the two buttons keep their words and give up their arrows, so the slider can show its note */
+@media (max-width: 420px) {
+  .slide-row {
+    gap: 8px;
+  }
+  .slide-row .btn {
+    padding: 0 10px;
+  }
+  .slide-row .btn .ico {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* orange Merc's question in Step 3: a bubble beside her still */
+.l6-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l6-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l6-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l6-says .bubble::after {
+  display: none;
+}
+
+/* the anchor board: LESSON.md's table, a row per interval, each heard two ways */
+.anchor-board {
+  margin: 18px 0 8px;
+  padding: 18px 20px;
+}
+.anchor-board .eyebrow {
+  margin: 0 0 4px;
+  font-weight: 500;
+}
+.anchors {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.anchor {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px 14px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--hair);
+}
+.anchor:first-child {
+  border-top: 0;
+}
+.anchor.is-on .anchor-fig {
+  filter: drop-shadow(
+    0 0 6px color-mix(in srgb, var(--chrome) 45%, transparent)
+  );
+}
+.anchor-fig {
+  display: block;
+  width: 56px;
+  height: 44px;
+}
+.anchor-words {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  min-width: 0;
+}
+.anchor-words p {
+  margin: 0;
+  max-width: none;
+}
+.anchor-name {
+  color: var(--ink);
+}
+.anchor-name b {
+  font-weight: 600;
+}
+.anchor-st {
+  font: 500 var(--fs-12) / 1.6 var(--f-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.anchor-tune {
+  flex-basis: 100%;
+  font-size: var(--fs-14);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.anchor-plays {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.anchor-plays .btn {
+  white-space: normal;
+  line-height: 1.25;
+  padding-block: 8px;
+  text-align: left;
+}
+.anchor-plays .btn.is-on {
+  border-color: color-mix(in srgb, var(--chrome) 70%, transparent);
+}
+/* on a phone the buttons share the row's width under its words */
+@media (max-width: 560px) {
+  .anchor-board {
+    padding: 16px 14px;
+  }
+  .anchor {
+    grid-template-columns: 48px minmax(0, 1fr);
+    column-gap: 12px;
+  }
+  .anchor-fig {
+    width: 48px;
+    height: 38px;
+  }
+  .anchor-plays {
+    grid-column: 1 / -1;
+  }
+  .anchor-plays .btn {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l6-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l6-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sing-btns .move-do {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.move-lbl {
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.move-sep {
+  color: var(--ink-3);
+}
+.l6-sing .sing-card .guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l6-sing .sing-card .unscored {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+}
+.l6-sing .sing-card .do-readout {
+  margin: 0 0 12px;
+  font: 600 var(--fs-16) / 1.35 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+/* the guide beside its ring: ten rows, so a little taller than the kit's */
+.l6-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+}
+.tune-guide {
+  height: 240px;
+}
+.guide-row .sol {
+  color: var(--ink-2);
+  margin-right: 3px;
+}
+@media (max-width: 560px) {
+  .l6-guide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .l6-guide .ring {
+    margin-inline: auto;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l6-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l6-app .addr-line,
+.l6-app .second-drill {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l6-app .second-drill {
+  margin-top: 14px;
+}
+.l6-app a.addr {
+  text-decoration: none;
+}
+.l6-next {
+  margin-top: 18px;
+}
+/* free play: the steps' toy with every control, on its own card */
+.l6-free.tune-toy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.l6-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}

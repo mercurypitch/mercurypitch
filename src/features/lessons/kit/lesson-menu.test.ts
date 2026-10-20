@@ -62,7 +62,7 @@ describe('menuModel', () => {
       rows(m)
         .filter((r) => r.state === 'later')
         .map((r) => r.href),
-    ).toEqual(Array(9).fill(null))
+    ).toEqual(Array(8).fill(null))
   })
 
   it('recommends as up next the first lesson ready whose prerequisites are all done', () => {
@@ -149,7 +149,8 @@ describe('menuModel', () => {
       'ready',
       'done',
       'progress',
-      ...Array(9).fill('later'),
+      'ready',
+      ...Array(8).fill('later'),
     ])
     expect(m.bars[4].fill).toBeCloseTo(0.4)
   })

@@ -9,9 +9,9 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3 and 5 are live here; a page that holds them back is
-// next-card.test.ts's, and one the site worker served with the console's
-// state is learn-publish-state.spec.ts's. A lesson with a tease
+// does, so Lessons 3, 5 and 6 are live here; a page that holds them back
+// is next-card.test.ts's, and one the site worker served with the
+// console's state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
 // its hook; the season's close, on a finale with no page yet, is
 // next-card.test.ts's too.
@@ -51,7 +51,13 @@ const CARDS = [
   ],
   [
     '/learn/05',
-    'Next lesson 06 · Intervals: the distance between notes Coming later',
+    'Next lesson 06 · Intervals: the distance between notes Ready · 15 min',
+    '/learn/06',
+    'Start lesson',
+  ],
+  [
+    '/learn/06',
+    'Next lesson 07 · Slides, sirens and your range Coming later',
     '#explorer',
     'See it on the map',
   ],
@@ -152,7 +158,7 @@ test('a lesson coming later opens the map on its card @smoke', async ({
   page,
 }) => {
   // Arrange
-  await page.goto('/learn/05')
+  await page.goto('/learn/06')
 
   // Act
   await card(page).click()
@@ -160,7 +166,7 @@ test('a lesson coming later opens the map on its card @smoke', async ({
   // Assert
   await expect(page).toHaveURL(/#explorer$/)
   await expect(page.locator('#exCardHost h3')).toHaveText(
-    'Intervals: the distance between notes',
+    'Slides, sirens and your range',
   )
 })
 
@@ -203,7 +209,13 @@ for (const [width, height, name] of [
   test.describe(`on ${name}, ${width} x ${height}`, () => {
     test.use({ viewport: { width, height } })
 
-    for (const path of ['/learn/02', '/learn/03', '/learn/04', '/learn/05']) {
+    for (const path of [
+      '/learn/02',
+      '/learn/03',
+      '/learn/04',
+      '/learn/05',
+      '/learn/06',
+    ]) {
       test(`${path}: every prerequisite chip is a 44 px target`, async ({
         page,
       }) => {
