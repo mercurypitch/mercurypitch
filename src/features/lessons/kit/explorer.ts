@@ -7,6 +7,11 @@
 // lessons are a two-lane list whose selected row opens its card inline.
 // Selecting a lesson lights its path in (season.ts `lessonPath`): its own
 // links lead, the rest of its path glows under them, the map stays faint.
+// A tap on a node, a row or a card's lesson link then scrolls the page
+// until the card's main button is wholly on screen (`revealDelta`); a
+// next-lesson card's link to the explorer does it once its own jump has
+// landed. A polite live region says the card is below. The map is one tab
+// stop: only the selected node takes Tab, and the arrows move along it.
 //
 // Any lesson page can host it: it opens on that page's own lesson, whose
 // card's actions stay within the page, while another live lesson's card
@@ -25,7 +30,7 @@ import { clamp, q, qa, svg } from './dom'
 import type { PlateFigure } from './explorer-figures'
 import { cardFigure, plateFigure, pluckString } from './explorer-figures'
 import type { Look, Pos } from './explorer-graph'
-import { addArcs, addEdges, addLaneBands, labelLeans, LANE_Y, nodeLabel, paintLabel, paintNode, paintRow, } from './explorer-graph'
+import { addArcs, addEdges, addLaneBands, labelLeans, labelWidths, LANE_Y, nodeLabel, paintLabel, paintNode, paintRow, } from './explorer-graph'
 import { addDrawer, watch } from './frame-loop'
 import type { LessonView } from './lesson-state'
 import { lessonViews } from './lesson-state'
@@ -45,10 +50,77 @@ export interface ExplorerOptions {
 export interface Explorer {
   /** Repaints the map and rebuilds the open card (after a lesson is marked done). */
   refresh(): void
-  /** Selects lesson `n`; `scrollCard` brings its card into view if it is off screen. */
+  /** Selects lesson `n`; `scrollCard` scrolls the page until its card's main button is wholly on screen (`revealDelta`). */
   select(n: number, scrollCard: boolean): void
   /** Lesson `n`'s real running time, once its film's metadata has loaded. */
   setLength(n: number, len: string): void
+}
+
+/** A box's top and bottom, px from the top of the viewport. */
+export interface Span {
+  readonly top: number
+  readonly bottom: number
+}
+
+/**
+ * The page scroll, px (down is positive), that brings a card's main button
+ * wholly into `room`, the screen under the masthead; 0 when it is there
+ * already. The least scroll does it, and a card no taller than the room
+ * keeps its top in view, as far as its top on the way up. A card taller
+ * than the room shows from its top, under the masthead, whenever its
+ * button still lands in the room that way. On a phone's list `card` spans
+ * the lesson's row and the card under it.
+ */
+export function revealDelta(card: Span, action: Span, room: Span): number {
+  const lands = (d: number): boolean =>
+    action.top - d >= room.top && action.bottom - d <= room.bottom
+  if (lands(0)) return 0
+  const align = card.top - room.top
+  const tall = card.bottom - card.top > room.bottom - room.top
+  if (tall && lands(align)) return align
+  if (action.bottom > room.bottom) return action.bottom - room.bottom
+  return lands(align) ? align : action.top - room.top
+}
+
+/**
+ * The screen a reveal brings a card's button into: from 8 px under the
+ * masthead to 12 px above the foot of what is visible (`visualViewport`, so
+ * an open keyboard or a pinch zoom is allowed for), px from the top of the
+ * viewport.
+ */
+function room(): Span {
+  const seen = window.visualViewport
+  const top = seen?.offsetTop ?? 0
+  const mast = document.getElementById('mast')?.getBoundingClientRect().bottom
+  return {
+    top: Math.max(mast ?? 0, top) + 8,
+    bottom: top + (seen?.height ?? window.innerHeight) - 12,
+  }
+}
+
+/**
+ * Calls `fn` once the page has stopped scrolling: on `scrollend`; where a
+ * browser has none, 150 ms after the last scroll; 600 ms on if nothing
+ * scrolls at all.
+ */
+function afterScroll(fn: () => void): void {
+  let timer = 0
+  let fired = false
+  const finish = (): void => {
+    if (fired) return
+    fired = true
+    window.clearTimeout(timer)
+    window.removeEventListener('scroll', moved)
+    window.removeEventListener('scrollend', finish)
+    fn()
+  }
+  const moved = (): void => {
+    window.clearTimeout(timer)
+    timer = window.setTimeout(finish, 150)
+  }
+  window.addEventListener('scroll', moved, { passive: true })
+  window.addEventListener('scrollend', finish)
+  timer = window.setTimeout(finish, 600)
 }
 
 type LaneFilter = 'all' | Exclude<Lane, 'both'>
@@ -195,6 +267,13 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   const matches = (L: Lesson): boolean =>
     lane === 'all' || L.lane === lane || L.lane === 'both'
   const behavior = (): ScrollBehavior => (reducedMotion() ? 'auto' : 'smooth')
+  // the card changes below the map or the row with nothing said: say so
+  const status = document.createElement('p')
+  status.id = 'exStatus'
+  status.className = 'sr'
+  status.setAttribute('role', 'status')
+  status.setAttribute('aria-live', 'polite')
+  cardHost.before(status)
 
   function card(L: Lesson): HTMLElement {
     const el = document.createElement('article')
@@ -290,10 +369,11 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     nodes = new Map()
     labels = new Map()
     const lean = labelLeans()
+    const widths = labelWidths(W, colW, lean)
     for (const L of LESSONS) {
       const p = pos(L.n)
       addNode(L, p)
-      const lab = nodeLabel(L, p, lean.get(L.n))
+      const lab = nodeLabel(L, p, lean.get(L.n), widths.get(L.n))
       graph.appendChild(lab)
       labels.set(L.n, lab)
     }
@@ -330,7 +410,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
           row.setAttribute('aria-expanded', 'false')
           return
         }
-        select(L.n, false)
+        select(L.n, true)
       })
       list.appendChild(li)
     }
@@ -373,16 +453,36 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     paint()
   }
 
+  /** Scrolls the page until the open card's main button is wholly on screen (`revealDelta`). */
+  function reveal(): void {
+    const el = (narrow.matches ? list : cardHost).querySelector<HTMLElement>(
+      '.ex-card',
+    )
+    if (el === null) return
+    // a lesson coming later has no button: its hook stands in
+    const action =
+      el.querySelector('.ex-actions .btn.primary') ??
+      el.querySelector('.hookq') ??
+      el
+    const box = el.getBoundingClientRect()
+    // on a phone's list the card opens under its row, and comes in with it
+    const row = narrow.matches
+      ? list.querySelector(`[data-n="${sel}"]`)?.getBoundingClientRect()
+      : undefined
+    const d = revealDelta(
+      { top: row?.top ?? box.top, bottom: box.bottom },
+      action.getBoundingClientRect(),
+      room(),
+    )
+    if (d !== 0) window.scrollBy({ top: d, behavior: behavior() })
+  }
+
   function select(n: number, scrollCard: boolean): void {
     sel = n
     refresh()
-    if (!scrollCard) return
-    const target = narrow.matches ? list.querySelector('.ex-detail') : cardHost
-    if (target === null) return
-    const r = target.getBoundingClientRect()
-    if (r.top > window.innerHeight - 120 || r.bottom < 0) {
-      target.scrollIntoView({ behavior: behavior(), block: 'nearest' })
-    }
+    const L = LESSONS[n]
+    status.textContent = `${L.n === 0 ? 'Trailer' : `Lesson ${L.n}`}, ${L.title}: card below`
+    if (scrollCard) reveal()
   }
 
   const filters = qa('.filters [data-lane]')
@@ -408,10 +508,13 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     width = graph.clientWidth
     layoutGraph()
   }).observe(graph)
+  // a next-lesson card links to #explorer: the browser's jump comes first,
+  // and the card's reveal waits for it to settle
   for (const a of qa('[data-select-lesson]')) {
-    a.addEventListener('click', () =>
-      select(Number(a.dataset.selectLesson), false),
-    )
+    a.addEventListener('click', () => {
+      select(Number(a.dataset.selectLesson), false)
+      afterScroll(reveal)
+    })
   }
   Done.subscribe(refresh)
   // "Continue: step N" follows the steps this page's deck reaches
