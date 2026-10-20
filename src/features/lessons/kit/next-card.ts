@@ -13,10 +13,11 @@
 //
 // A live lesson's card is its main action: "Start lesson" at its page's
 // top, "Continue: step N" at a step the viewer reached, or "Read again"
-// once it is done. A lesson coming later, as a draft a production build
-// hides is, has no page to link: its card says "Coming later" and opens the
-// map on it ("See it on the map"), through the explorer's
-// `[data-select-lesson]`, which selects the lesson there.
+// once it is done. A lesson coming later, as one the page's state holds
+// back is (page-state.ts), has no page to link: its card says "Coming
+// later" and opens the map on it ("See it on the map"), through the
+// explorer's `[data-select-lesson]`, which selects the lesson there. The
+// tease and the hook are the ones the admin console picked.
 //
 // After the season's last lesson there is no lesson to go on to, and the
 // card closes the season instead: the trailer's question answered, and two
@@ -32,11 +33,11 @@ import { svg } from './dom'
 import { SEASON_END } from './lesson-copy'
 import type { LessonAction } from './lesson-state'
 import { lessonViews, stateWords } from './lesson-state'
+import { pageLessons } from './page-state'
 import type { StepMarks } from './position'
 import { Positions } from './position'
 import { Done } from './progress'
 import type { Lesson } from './season'
-import { LESSONS } from './season'
 
 /** The lesson after this page's, as its card shows it. */
 export interface NextCard {
@@ -181,8 +182,9 @@ export function createNextCard(lesson: number): void {
   const mark = document.querySelector<HTMLElement>('[data-next-card]')
   if (mark === null) return
   const slot = Array.from(mark.childNodes)
+  const lessons = pageLessons()
   const read = (): NextCard | SeasonEnd | null =>
-    nextCard(LESSONS, Done.list(), Positions.all(), lesson)
+    nextCard(lessons, Done.list(), Positions.all(), lesson)
   const first = read()
   if (first === null) return
   if (first.kind === 'end') {

@@ -12,13 +12,17 @@
 // note?") with its number. A lesson without one still gets a link, as
 // "Lesson N"; src/tests/lesson-pages.test.ts fails until it has one.
 //
-// Drafts are never linked, whichever way the build shows them: a nav is
-// what a crawler follows, and a draft is not for crawling.
+// Drafts are never linked, whichever way an environment shows them: a nav
+// is what a crawler follows, and a draft is not for crawling. One the admin
+// console publishes before its line is deleted is still not linked here,
+// since these navs are written at build time; the site worker lists it in
+// the sitemap and llms.txt as it serves them (src/lesson-gate.ts), and the
+// release that deletes its line links it here.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { DRAFT_LESSONS } from '../src/features/lessons/kit/drafts'
-import { builtLessons, lessonDocument, lessonPath } from './draft-lessons'
+import { lessonDocument, lessonPath, releasedLessons } from './draft-lessons'
 
 export interface LessonLink {
   href: string
@@ -47,7 +51,7 @@ export function releasedLessonLinks(
   root: string,
   drafts: Readonly<Partial<Record<number, string>>> = DRAFT_LESSONS,
 ): LessonLink[] {
-  return builtLessons(root, false, drafts).map((n) => {
+  return releasedLessons(root, drafts).map((n) => {
     const headline = lessonHeadline(
       readFileSync(resolve(root, lessonDocument(n)), 'utf8'),
     )

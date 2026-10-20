@@ -137,9 +137,9 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/learn/02.html',
   '/learn/04',
   '/learn/04.html',
-  // A draft lesson too (src/features/lessons/kit/drafts.ts). The production
-  // build leaves its document out, and then the right answer for its path is
-  // the asset layer's 404 page, never the shell.
+  // A draft lesson too (src/features/lessons/kit/drafts.ts). Where it is not
+  // published, the site worker answers its path with the 404 page
+  // (src/lesson-gate.ts), and that is the right answer, never the shell.
   '/learn/03',
   '/learn/03.html',
   // Lesson 5, a draft as Lesson 3 is, for the same reason.

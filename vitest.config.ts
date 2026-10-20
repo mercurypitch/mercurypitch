@@ -67,11 +67,13 @@ export default defineConfig({
     // "0" (src/tests/home-destinations.test.tsx) and by
     // scripts/assert-glassworks-listing.mjs on every build.
     //
-    // Draft lessons shown, as on the dev deploy and in the e2e bundle: the
-    // lesson suites describe the pages being built. The production build,
-    // which hides them, is covered by stubbing this back to "0"
-    // (src/features/lessons/kit/season.test.ts) and by
-    // scripts/assert-draft-lessons.mjs on every build.
+    // Draft lessons shown by default, as on the dev deploy and in the e2e
+    // bundle: the lesson suites describe the pages being built. The
+    // production default, which holds them back on a page no worker served,
+    // is covered by stubbing this back to "0"
+    // (src/features/lessons/kit/page-state.test.ts and its consumers' tests)
+    // and by scripts/assert-draft-lessons.mjs on every build; what the site
+    // worker serves, whatever the build, is src/lesson-gate.test.ts's.
     env: {
       VITE_API_BASE_URL: '',
       VITE_GLASSWORKS_LISTED: '1',

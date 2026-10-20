@@ -6,6 +6,7 @@ import { q, qa, svg } from './dom'
 import { createLessonMenu } from './lesson-menu'
 import { Motion } from './motion-switch'
 import { A3, A4, hz } from './notes'
+import { followPageState } from './page-state'
 import { rememberSteps } from './position'
 import { Sound } from './sound'
 import type { StepDeck } from './step-deck'
@@ -99,11 +100,15 @@ export interface MastheadLesson {
  * sheet carries the sections the nav shows on a wider screen. `sections`
  * maps a section id to its nav link. The page's steps are remembered as the
  * viewer moves through them (position.ts), for every page's menu and map.
+ * Every lesson page calls this, so it is also where the page's own links
+ * to other lessons, and its readings of their state, follow the state the
+ * page was served with (page-state.ts `followPageState`).
  */
 export function initMasthead(
   sections: Record<string, string>,
   page: MastheadLesson,
 ): void {
+  followPageState()
   const links = qa<HTMLAnchorElement>('.mast-nav a')
   const spy = new IntersectionObserver(
     (entries) =>

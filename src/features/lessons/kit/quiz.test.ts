@@ -222,6 +222,30 @@ describe('linkAway', () => {
     expect(link?.target).toBe('')
     expect(link?.textContent).toBe('Try Lesson 1, Step 3 again')
   })
+
+  it("keeps a step link's words and drops its link where that lesson is not live", () => {
+    // Arrange: the page's state holds Lesson 2 back
+    const tag = document.createElement('script')
+    tag.type = 'application/json'
+    tag.id = 'lesson-state'
+    tag.textContent = JSON.stringify({
+      version: 1,
+      updatedAt: null,
+      lessons: { 2: { published: false } },
+      drafts: true,
+    })
+    document.head.append(tag)
+    const box = document.createElement('p')
+    box.innerHTML = STEP_LINK
+
+    // Act
+    linkAway(box, 2)
+    tag.remove()
+
+    // Assert
+    expect(box.querySelector('a')).toBeNull()
+    expect(box.textContent).toBe('Try Lesson 2, Step 3 again')
+  })
 })
 
 describe('lessonOfQuestion', () => {

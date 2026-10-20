@@ -393,9 +393,10 @@ export default defineConfig(({ mode, command }) => {
       // Cue, not here.
       'import.meta.env.VITE_GLASSWORKS_LISTED': JSON.stringify('0'),
       // Always "0". The web build's draft-lessons switch
-      // (tools/draft-lessons.ts) decides whether a Find Your Pitch lesson
-      // waiting on a sign-off is built and linked; this app ships no lesson
-      // page, so every draft reads as a planned lesson here.
+      // (tools/draft-lessons.ts) is the default of a lesson page no worker
+      // served: whether a Find Your Pitch lesson waiting on a sign-off is
+      // linked there. This app ships no lesson page, so every draft reads as
+      // a planned lesson here.
       'import.meta.env.VITE_DRAFT_LESSONS': JSON.stringify('0'),
       __APP_CHANNEL__: JSON.stringify(
         (process.env.GITHUB_REF ?? '').startsWith('refs/tags/')

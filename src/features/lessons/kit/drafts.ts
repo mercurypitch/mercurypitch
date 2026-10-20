@@ -2,29 +2,30 @@
 // Lesson drafts — the lesson pages that wait on a sign-off
 // ============================================================
 //
-// One list, and the whole switch reads it. A lesson on it has a page that
-// is built, routed and linked only where drafts are shown: `pnpm dev`, the
-// dev site and every PR preview (development mode, .env.development), and
-// the e2e bundle (`build:e2e` sets VITE_DRAFT_LESSONS=1, as it lists
-// Glassworks). A production build (`pnpm build`, every release tag) leaves
-// the document out of the build, routes nothing to it and links nothing to
-// it: the lesson's season entry folds to a planned lesson (season.ts), so
-// Lesson 1's explorer, and every other page's, shows it with no link, and
-// scripts/assert-draft-lessons.mjs proves all of that on the finished dist.
+// One list, and the publish default reads it. Every build carries a
+// draft's page, as it carries every lesson's; what the list decides is
+// whether the site serves it while the admin console has said nothing about
+// it (kit/publish.ts). Each environment has its own answer for a draft
+// (src/lesson-gate.ts, the LESSON_DRAFTS var in wrangler.jsonc): served
+// and linked on the dev site and every PR preview, held back on
+// mercurypitch.com, where its address answers the 404 page and every
+// page's explorer shows it with no link, as a lesson not written yet.
+// Publishing it from the console puts it live there without a release.
+// A page no worker served (`pnpm dev`, the e2e bundle) takes its build's
+// answer instead (draft-switch.ts), and scripts/assert-draft-lessons.mjs
+// checks a finished dist against the build it should be.
 //
 // Releasing a lesson means deleting its line here. Then, as for any lesson
 // going live, list it in public/sitemap.xml and public/llms.txt, which keep
-// drafts out. Lesson 5 joined with its page, its season entry under the
-// same gate; Lesson 7, a voice lesson too, joins when its page is built.
-// The Content Studio's Lessons page (/admin/lessons) shows this list as it
-// stands, what the site it runs on serves, and each lesson's release
-// checklist; it reads, and never changes, what is decided here.
+// drafts out: the site worker adds a draft to both only while it is
+// published. Lesson 5 joined with its page; Lesson 7, a voice lesson too,
+// joins when its page is built. The Content Studio's Lessons page
+// (/admin/lessons) shows this list as it stands and what the site it runs
+// on serves.
 //
-// An object keyed by lesson number, not an array, so that a season entry's
-// `DRAFT_LESSONS[3]` is a constant the bundler folds away. Nothing here may
-// read `import.meta`: vite.config.ts, tools/draft-lessons.ts and the dist
-// assert read this file in plain Node. The build's own answer, whether
-// drafts are shown, is draft-switch.ts.
+// An object keyed by lesson number, read in place (`DRAFT_LESSONS[n]`).
+// Nothing here may read `import.meta`: vite.config.ts, tools/draft-lessons.ts,
+// the site worker and the dist assert read this file outside a Vite bundle.
 
 /** The lessons whose pages wait on a sign-off, each with what it waits on. */
 export const DRAFT_LESSONS: Readonly<Partial<Record<number, string>>> = {

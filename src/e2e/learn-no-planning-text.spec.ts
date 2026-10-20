@@ -15,7 +15,7 @@
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { builtLessons, lessonPath } from '../../tools/draft-lessons'
+import { lessonPages, lessonPath } from '../../tools/draft-lessons'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 
 /** The team's words, each a sign that planning has reached a learner's screen. */
@@ -46,8 +46,9 @@ const NOTES: readonly string[] = Object.values(LESSON_COPY).flatMap((c) =>
 /** What no reader meets. */
 const LEFT_OUT = 'script, style, template, noscript'
 
-// the e2e bundle shows drafts (`build:e2e`), so it carries every lesson page
-const LESSONS = builtLessons(process.cwd(), true)
+// every build carries every lesson page, and the e2e bundle shows the drafts
+// (`build:e2e`), so each page lists every lesson written
+const LESSONS = lessonPages(process.cwd())
 
 /** What a learner can read or hear inside `scope`: its text and its labels. */
 function learnerText(page: Page, scope: string): Promise<string> {

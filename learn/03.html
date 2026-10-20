@@ -41,8 +41,10 @@
     <!-- A lesson is its own document, like learn/01.html: every word of it is
          in this markup, so it reads without the script; the module adds the
          sound, the toys, the Mercs and the microphone. A draft until the vocal
-         coach signs it off (src/features/lessons/kit/drafts.ts): only builds
-         that show drafts build this document at all. -->
+         coach signs it off (src/features/lessons/kit/drafts.ts): every build
+         carries this document, and on mercurypitch.com the site worker
+         answers its address with the 404 page until the admin console
+         publishes it (src/lesson-gate.ts). -->
     <script
       type="module"
       src="/src/features/lessons/lesson-03/main.ts"

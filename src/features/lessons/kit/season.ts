@@ -12,13 +12,17 @@
 // (`?lesson=01`, before any hash route), so the app can tell where a session
 // came from. The printed address (`addr`) stays the public one.
 //
-// A lesson is live once it has a `page`; until then it is coming later.
-// Where a lesson stands for a viewer (done, in progress, up next) is
-// lesson-state.ts's to say. A film is published once its sources are set
-// in films.ts, which every entry's `film` reads, and only a published film
-// ever offers "Watch the episode". A lesson whose page waits on a sign-off
-// is a draft (drafts.ts): live where the build shows drafts, coming later
-// where it hides them.
+// A lesson has a `page` once its document is written, and every build
+// carries every lesson page. Whether it is live is publish.ts's to say: a
+// lesson the admin console holds back, or a draft (drafts.ts) where its
+// environment holds drafts back, is coming later, exactly as a lesson with
+// no page yet. So nothing here reads the build: the site worker reads this
+// file as the pages do (src/lesson-gate.ts), and each page takes the season
+// as its state shows it (page-state.ts `pageLessons`). Where a lesson
+// stands for a viewer (done, in progress, up next) is lesson-state.ts's to
+// say. A film is published once its sources are set in films.ts, which
+// every entry's `film` reads, and only a published film ever offers "Watch
+// the episode".
 //
 // Some fields are the team's and never drawn on a lesson page: the
 // signature image (`sig`), the drill a practise link still needs
@@ -32,11 +36,9 @@
 // A lesson's `hook` is its default hook, which its page's title and its
 // documents quote. Its alternative hooks, its tease (the line the lesson
 // before it draws above that hook) and the tease's alternatives are
-// lesson-copy.ts's, which the site worker can read and this file cannot be:
-// LESSONS gives each entry its lesson's copy from there.
+// lesson-copy.ts's: LESSONS gives each entry its lesson's copy from there,
+// and the page state picks among them (publish.ts `seasonFor`).
 
-import { DRAFTS_SHOWN } from './draft-switch'
-import { DRAFT_LESSONS } from './drafts'
 import type { FilmState } from './films'
 import { filmState } from './films'
 import type { CuriosityCopy } from './lesson-copy'
@@ -109,7 +111,7 @@ export interface Lesson extends CuriosityCopy {
   /** The name on the map and in the links between cards. */
   readonly short: string
   readonly topics: readonly TopicId[]
-  /** Its page's reading time in minutes, as its hero says; only a live lesson has one. */
+  /** Its page's reading time in minutes, as its hero says; only a lesson with a page has one. */
   readonly minutes?: number
   /**
    * Its film's running time as made ("5:14"), or as planned for the
@@ -117,7 +119,7 @@ export interface Lesson extends CuriosityCopy {
    * plays on its page, which reports it (explorer.ts `setLength`).
    */
   readonly len?: string
-  /** Its own page on this site, once it is live: `/learn/01`. */
+  /** Its own page on this site, once it is written: `/learn/01`. Live only where published (publish.ts). */
   readonly page?: string
   /**
    * Its film, from films.ts: 'published' once its sources are set there,
@@ -207,14 +209,10 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Match a note',
     short: 'Match a note',
     topics: ['S01', 'S05'],
-    // A draft until its sign-off (drafts.ts). Written as one constant
-    // expression, never a function call, so a build that hides drafts folds
-    // it to nothing: the lesson reads as coming later and no page that build
-    // ships carries the document it leaves out. Once its line leaves
-    // drafts.ts, the same expression folds to its page.
-    ...(DRAFT_LESSONS[3] !== undefined && !DRAFTS_SHOWN
-      ? {}
-      : { minutes: 15, page: '/learn/03' }),
+    // A draft until its sign-off (drafts.ts): built in every mode, and live
+    // where the page state publishes it (publish.ts).
+    minutes: 15,
+    page: '/learn/03',
     hook: "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?",
     sig: "The singer's line chasing Merc's target band, the gap shrinking in cents.",
     pr: {
@@ -253,12 +251,9 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Breath and a steady note',
     short: 'Steady note',
     topics: ['S02', 'S03', 'S04', 'S06'],
-    // A draft until its sign-off (drafts.ts), folded exactly as Lesson 3's
-    // entry is: one constant expression, so a build that hides drafts
-    // carries no trace of the page.
-    ...(DRAFT_LESSONS[5] !== undefined && !DRAFTS_SHOWN
-      ? {}
-      : { minutes: 17, page: '/learn/05' }),
+    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    minutes: 17,
+    page: '/learn/05',
     hook: "Singers are told to “support” a long note. If that doesn't mean pushing, what keeps it steady?",
     sig: 'The pitch line of a held note settling from a wobble into a narrow band.',
     pr: {

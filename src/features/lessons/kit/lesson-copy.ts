@@ -19,10 +19,9 @@
 // Pure data and resolvers, with no DOM and no `import.meta`, so the site
 // worker (which rewrites a page's `<h1 class="hook" id="hook">`), the admin
 // console and the e2e specs, which run in plain Node, read it as it is.
-// season.ts cannot be read there: its draft fold reads `import.meta.env`
-// (draft-switch.ts). So the copy lives here and season.ts gives each entry
-// its lesson's; the default hook stays on the entry, which every lesson page
-// and document quotes.
+// season.ts gives each entry its lesson's copy from here; the default hook
+// stays on the entry, which every lesson page and document quotes, and the
+// page state picks among them (publish.ts `seasonFor`).
 //
 // A variant's `note` is the team's, like a lesson's `sig`: why the variant
 // exists, for the admin console, and never drawn on a lesson page. Its text

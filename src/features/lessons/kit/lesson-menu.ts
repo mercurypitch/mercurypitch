@@ -18,20 +18,21 @@
 // remembered (position.ts) and the deck's step showing now, so it is never
 // stale.
 //
-// Drafts: the rows read LESSONS, where a draft the build hides has no page,
-// so it is "Coming later" and not a link. This module writes no lesson's
-// address of its own (scripts/assert-draft-lessons.mjs).
+// Publishing: the rows read the season as the page's state shows it
+// (page-state.ts), where a lesson the admin console holds back, or a draft
+// its environment holds back, has no page, so it is "Coming later" and not
+// a link. This module writes no lesson's address of its own.
 
 import './lesson-menu.css'
 import { clamp } from './dom'
 import { ARCS } from './explorer-graph'
 import type { LessonState, LessonView } from './lesson-state'
 import { lessonViews, stateWords } from './lesson-state'
+import { pageLessons } from './page-state'
 import type { StepMarks } from './position'
 import { Positions } from './position'
 import { Done } from './progress'
 import type { Lane, Lesson } from './season'
-import { LESSONS } from './season'
 import type { StepDeck } from './step-deck'
 import { stepFromHash } from './step-deck'
 
@@ -388,8 +389,9 @@ function outside(dialog: HTMLDialogElement, e: MouseEvent): boolean {
  */
 export function createLessonMenu(o: LessonMenuOptions): void {
   const { deck } = o
-  const L = LESSONS.find((x) => x.n === o.lesson)
-  const total = LESSONS.filter((x) => x.n >= 1).length
+  const lessons = pageLessons()
+  const L = lessons.find((x) => x.n === o.lesson)
+  const total = lessons.filter((x) => x.n >= 1).length
   const sheet = window.matchMedia('(max-width: 820px)')
   const root = document.documentElement
 
@@ -429,7 +431,7 @@ export function createLessonMenu(o: LessonMenuOptions): void {
   }
 
   function render(): void {
-    const m = menuModel(LESSONS, Done.list(), Positions.all(), o.lesson, {
+    const m = menuModel(lessons, Done.list(), Positions.all(), o.lesson, {
       now: deck.current,
       titles: deck.titles,
       after,
