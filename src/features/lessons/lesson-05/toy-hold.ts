@@ -17,8 +17,8 @@
 // exactly what a take would read. The reader reaches Voice Mirror's scorer,
 // which first paint must not load, so it arrives as its own chunk once the
 // step is first shown; until then the readouts wait. Under reduced motion
-// the figure lands in its end state with its readouts beside it, and Play
-// still sounds the note.
+// the figure lands in its end state with its readouts on it, and Play still
+// sounds the note.
 
 import type { BandChart, TracePoint } from '@/features/lessons/kit/band-chart'
 import { mountBandChart } from '@/features/lessons/kit/band-chart'
