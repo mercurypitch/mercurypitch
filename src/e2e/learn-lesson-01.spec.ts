@@ -10,6 +10,7 @@
 // that reads but never plays is a failure nobody would think to report.
 
 import { expect, test } from '@playwright/test'
+import { filmSources } from '../features/lessons/kit/films'
 import { dismissOverlays } from './helpers/ui'
 
 const TITLE = 'What is a note? Find Your Pitch, Lesson 1 | MercuryPitch'
@@ -121,4 +122,25 @@ test('a visitor with the studio installed still gets the lesson, not the shell @
 
   await expect(page).toHaveTitle(TITLE)
   await expect(page.locator('#root')).toHaveCount(0)
+})
+
+// Until the film's MP4s are uploaded (kit/films.ts) there is nothing to
+// watch, so the page offers nothing to watch: no section, no masthead link
+// and no button on the card, the masthead numbered without a gap.
+test('offers nothing to watch while the film has no sources @smoke', async ({
+  page,
+}) => {
+  test.skip(
+    filmSources(1) !== null,
+    "Lesson 1's film has its sources in kit/films.ts: the page shows it",
+  )
+  await page.goto('/learn/01')
+  // the module has run: the explorer opened on this lesson's card
+  await expect(page.locator('#exCardHost h3')).toHaveText('What is a note?')
+
+  await expect(page.locator('#watch')).toBeHidden()
+  await expect(page.getByRole('link', { name: /watch/i })).toHaveCount(0)
+  await expect(
+    page.locator('#mastNav a:visible b').filter({ hasText: /^[IVX]+$/ }),
+  ).toHaveText(['I', 'II'])
 })

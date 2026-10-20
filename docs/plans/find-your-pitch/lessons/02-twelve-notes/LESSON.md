@@ -279,8 +279,8 @@ missed by a semitone or more. So what's going on?" Beside it, the film's two fig
 Below the Wrap (WEB-SPEC, "The episode").
 
 - Above the heading: The same lesson, as a film: 7:11, captions on
-- Play button: Play the episode · 7:11 · captions on. Until the film is on R2: Film coming soon ·
-  The poster for now · chapters and transcript are ready.
+- Play button: Play the episode · 7:11 · captions on. Until the film is on R2 the page has no
+  Watch section, so none of this shows (WEB-SPEC, "The episode").
 - The video's accessible name: Find Your Pitch, Lesson 02: Twelve notes
 - Beside the player: Chapters · tap to jump, the film's eleven chapters as WEB-SPEC lists them,
   from "The missing five" at 00:00 to "Next time" at 06:49.

@@ -5,13 +5,17 @@
 // The film is a self-hosted MP4 on R2 in two sizes, 720p at 900 px and
 // below and 1080p above, picked when the viewer first presses play (the
 // markup's preload="none" keeps a page view from fetching any of it). Until
-// the film is published (`film: null`) the player says it is coming and the
-// chapters and transcript, which need only the captions, still work.
-// Captions are a same-origin WebVTT track, on by default; the transcript is
-// the same text, one paragraph per speaker turn. Once the episode is also on
-// YouTube, the section links there ("Watch on YouTube"); it never embeds it.
+// its sources are set in films.ts (`film: null`) there is nothing to watch,
+// so the section stays off the page with its masthead link, and the
+// masthead's numerals close up. The markup ships both hidden, as a film
+// with no sources needs, so the page paints that way before this runs;
+// once the film has sources this shows them. Captions are a same-origin
+// WebVTT track, on by default; the transcript is the same text, one
+// paragraph per speaker turn. Once the episode is also on YouTube, the
+// section links there ("Watch on YouTube"); it never embeds it.
 
 import { clamp, lerp, q, qa } from './dom'
+import type { FilmSources } from './films'
 import { toast } from './toast'
 
 export interface Chapter {
@@ -21,8 +25,8 @@ export interface Chapter {
 }
 
 export interface EpisodeOptions {
-  /** The 1080p and 720p MP4s, or null while the film is still rendering. */
-  readonly film: { readonly hd: string; readonly sd: string } | null
+  /** The 1080p and 720p MP4s (films.ts), or null while there are none: no Watch section then. */
+  readonly film: FilmSources | null
   /** Same-origin WebVTT captions, for the video's track. */
   readonly captions: string
   /** The same captions as text, for the transcript. */
@@ -45,6 +49,28 @@ interface Paragraph {
 
 /** Volume ramp either side of a jump, ms. */
 const DIP_MS = 80
+
+/** The masthead's section numerals, in order. */
+const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI']
+
+/**
+ * Shows the Watch section and its masthead link, or takes both off the
+ * page, and numbers the masthead's links that show in order, so it reads
+ * "I Lesson, II Explorer" without the film and "I Lesson, II Watch, III
+ * Explorer" with it. A mark that is not a numeral (a section sign) keeps
+ * its place.
+ */
+function showWatch(section: HTMLElement, shown: boolean): void {
+  section.hidden = !shown
+  let k = 0
+  for (const a of qa<HTMLAnchorElement>('.mast-nav a')) {
+    if (a.getAttribute('href') === `#${section.id}`) a.hidden = !shown
+    const mark = a.querySelector('b')
+    if (a.hidden || mark === null) continue
+    if (!NUMERALS.includes(mark.textContent ?? '')) continue
+    mark.textContent = NUMERALS[k++]
+  }
+}
 
 /** "02:44", as the chapter list and the transcript print a time. */
 const clock = (s: number): string =>
@@ -131,7 +157,10 @@ function linkYouTube(href: string, grid: HTMLElement): void {
 }
 
 export function createEpisode(opts: EpisodeOptions): void {
-  const { film, chapters } = opts
+  showWatch(q('#watch'), opts.film !== null)
+  if (opts.film === null) return
+  const film: FilmSources = opts.film
+  const { chapters } = opts
   const v = q<HTMLVideoElement>('#ep')
   const big = q<HTMLButtonElement>('#bigPlay')
   const list = q('#chapters')
@@ -235,12 +264,6 @@ export function createEpisode(opts: EpisodeOptions): void {
 
   function attach(): boolean {
     if (attached) return true
-    if (film === null) {
-      toast(
-        'Film coming soon: the episode is still rendering. The chapters and transcript are ready below.',
-      )
-      return false
-    }
     if (v.canPlayType('video/mp4') === '') {
       toast('This browser cannot play the stream.')
       return false
@@ -304,18 +327,6 @@ export function createEpisode(opts: EpisodeOptions): void {
     }
   }
 
-  if (film === null) {
-    big.dataset.state = 'soon'
-    q('.disc', big).innerHTML =
-      '<svg class="ico" aria-hidden="true" style="margin:0"><use href="#i-clock"/></svg>'
-    q('#bigPlayCap').textContent = 'Film coming soon'
-    q('#bigPlaySub').textContent =
-      'The poster for now · chapters and transcript are ready'
-    big.setAttribute(
-      'aria-label',
-      'Film coming soon: the episode is still rendering. Chapters and the transcript are ready.',
-    )
-  }
   renderChapters()
   if (opts.vtt.trim() !== '') renderTranscript(opts.vtt)
   if (opts.youtube !== undefined) linkYouTube(opts.youtube, grid)

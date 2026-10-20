@@ -9,8 +9,7 @@
 // Each lesson page this bundle carries is read the way a learner meets it,
 // after its script has run: every word of the document, every label a
 // screen reader speaks, and every lesson's explorer card, opened from the
-// map in turn. One part is left to the branch that reworks it: the Watch
-// section (#watch).
+// map in turn.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -36,8 +35,8 @@ const PLANNING: readonly RegExp[] = [
   /\b[TS]\d\d\b/,
 ]
 
-/** The parts of a page this test leaves to other branches, and what no reader meets. */
-const LEFT_OUT = '#watch, script, style, template, noscript'
+/** What no reader meets. */
+const LEFT_OUT = 'script, style, template, noscript'
 
 // the e2e bundle shows drafts (`build:e2e`), so it carries every lesson page
 const LESSONS = builtLessons(process.cwd(), true)
