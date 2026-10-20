@@ -123,6 +123,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // next-lesson card (101 before them); the renderer is the same dynamic
   // import as Lesson 1's.
   'learn/04.html': 125,
+  // Lesson 6, "Intervals: the distance between notes", a draft too, built
+  // in every mode as Lesson 3 is: its own module on the kit, with the tune
+  // line and the ear game it brings. Measured 125 with the lesson menu and
+  // the next-lesson card, and 128 with the page state; the budget is a
+  // quarter over the first. Sing it opens no microphone, so the only
+  // dynamic import is Merc's renderer, as on Lesson 1. A build of this page
+  // alone weighs it about 8 lighter, so weigh a new page in build:e2e,
+  // where this check runs.
+  'learn/06.html': 156,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -191,6 +200,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // parts Lessons 2 and 4 share), its own, and the shared Inter and Outfit
   // @font-face rules.
   'learn/04.html': 92,
+  // Lesson 6 (a draft, as above). Measured 87: the kit's sheets (with the
+  // slide guide's, the voice lessons', the shared parts, the tune line's
+  // and the ear game's), its own, and the shared Inter and Outfit
+  // @font-face rules. A build of this page alone weighs it at 80.
+  'learn/06.html': 109,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx
