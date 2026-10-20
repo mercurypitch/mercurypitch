@@ -124,7 +124,7 @@ a step. Three steps carry more beside it, for these reasons:
 | Toy                       | Reuses                                                                                                                                                                                                                                                         | New in Lesson 7                                                                                                                                                       |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. The range chart        | Lesson 3's band chart (`kit/band-chart.ts`, its Toys 6: pitch as height, the canvas colours, the live line and its edge pins); Lesson 6's tune line for "Twinkle" (`kit/tune-line.ts`, its Toys 1); the kit's sound and notes (`kit/sound.ts`, `kit/notes.ts`) | A window per voice group; the column with its lit middle half and dimmed ends; a glowing siren sweep; three sounds on one path; Slide; the push gauge; bands; singers |
-| 2. Predict widgets        | Lesson 1's predict (`lesson-01/predict.ts`), promoted into the kit as Lesson 2 plans                                                                                                                                                                           | A predict whose reveal is the drawing: the tune's beads, hidden until the choice                                                                                      |
+| 2. Predict widgets        | Lesson 1's predict, now in the kit (`kit/predict.ts`)                                                                                                                                                                                                          | A predict whose reveal is the drawing: the tune's beads, hidden until the choice                                                                                      |
 | 3. Four words             | Lesson 1's strip of figure, word, definition and button (`lesson-01/words.ts`)                                                                                                                                                                                 | Four new figures                                                                                                                                                      |
 | 4. Sing it                | Lesson 3's checkpoint (`kit/comfort.ts`, `kit/listen.ts`, `kit/take.ts`, its warm-up, its voice choice on `fyp-voice`, Lesson 1's ring, the feeling question, the rest card); Lesson 6's rest card after "Effortful"                                           | One siren take; the siren reader; the band that settles on the take's middle half; a flow rule                                                                        |
 | 5. Recall and quick check | The kit's quiz (`kit/quiz.ts`) with the three changes Lesson 2 makes to it; Lesson 3's questions 1 and 4                                                                                                                                                       | Ids and keys                                                                                                                                                          |
@@ -166,7 +166,7 @@ live and free play.
   form, with **Start lower**, **Start higher** (a semitone a tap) and **Play**. Do runs from the
   column's bottom to 15 semitones up, so the tune never leaves the column, and opens on E3 (or E4)
   (FACTS 84). With a mouse or pen a vertical drag also slides it; on touch the stage keeps
-  `touch-action: pan-y`, as Lesson 1's does (`lesson-01/lesson-01.css:777`), so a swipe scrolls
+  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:776`), so a swipe scrolls
   the page and the buttons slide. The beads carry no names. A readout names the move and the place,
   never the key: "Moved up 2 semitones: all of it in the lit middle", "reaching into the dimmed top
   end" or "reaching into the dimmed bottom end", so no note needs a key's spelling. From E3 the tune
@@ -256,7 +256,7 @@ live and free play.
   guess (playbook rules 2 and 3; FACTS 83). Its reveal is the drawing: choosing draws the beads
   across the column and the gold bracket, and shows the reveal's text, the tune's span against the
   column. It needs no sound, so it appears as soon as a choice is made, with or without a play.
-  With sound off, Lesson 1's hint (`lesson-01/predict.ts:88`), made singular, "Sound is off, so
+  With sound off, Lesson 1's hint (`lesson-01/predict.ts:48-49`), made singular, "Sound is off, so
   nothing played. Turn sound on to hear it.", shows beside Play.
 - Step 5's predict needs no sound: choosing shows its reveal and unlocks the two singers.
 - States: waiting for a choice, the column alone; a sound playing, beads still hidden; choice made,
@@ -385,7 +385,7 @@ Reading a siren (`kit/take.ts`, extended with `readSiren`; pure and unit-tested)
   voiced one, Lesson 3's attack rule. Under 1.0 s of voiced frames left gives "We didn't hear a
   steady siren that time.", never a low reading (REQ-GVC-031).
 - Otherwise the notes come from `computeRange([frames])` in `src/lib/mirror/metrics.ts`, imported,
-  not copied, given the trimmed raw frames, which it preprocesses itself (`:176`): the semitones
+  not copied, given the trimmed raw frames, which it preprocesses itself (`:164`): the semitones
   the take dwelt on for 0.15 s in all, after its outlier guard (FACTS 67a). If it returns null, the
   line is the not-steady one. Its `lowNote`, `highNote` and `semitones` never reach the page.
 - The band: when the notes held span under three semitones (`highMidi - lowMidi < 3`), one note,
@@ -393,11 +393,11 @@ Reading a siren (`kit/take.ts`, extended with `readSiren`; pure and unit-tested)
 - `middleHalf(lowMidi: number, highMidi: number): { low: number; high: number }` is a new export
   from `metrics.ts`: `low` is `Math.round(lowMidi + span * 0.25)` and `high` is
   `Math.round(highMidi - span * 0.25)`, with `span = highMidi - lowMidi`, exactly the p25 and p75
-  that `pickMatchTargets` computes today (`:375-377`), which then calls it. So `pickMatchTargets`'
+  that `pickMatchTargets` computes today (`:363-365`), which then calls it. So `pickMatchTargets`'
   callers, `src/lib/mirror/session.ts:125` and
   `src/features/onboarding/beats/BeatVoiceprint.tsx:427`, see no change, and the page and the Vocal
   Range Test share one rule (FACTS 35). The parity test sits in `src/lib/mirror/metrics.test.ts`,
-  beside the `pickMatchTargets` tests (`:379-406`).
+  beside the `pickMatchTargets` tests (`:452-479`).
 - The line: "The lit band is the middle half of your siren: about {low} to {high}.", or, for one
   note, "The lit band is the middle of your siren: about {note}." Notes are named with
   `midiToNoteNameOctave` (`src/lib/note-utils.ts:38-40`, the app's sharp spelling, "C#4"), shown
@@ -432,11 +432,10 @@ word "Listening", and the Mercs skip their reactions (REQ-GVC-083).
 ### 5. Recall and quick check
 
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
-(its WEB-SPEC, "What the kit and the app still need"): a root element or id prefix, because the kit
-binds to `#qs`, `#scoreN` and `#quizReset` (`kit/quiz.ts:104-108`, `:155-165`); `lesson` optional,
-because the kit marks `lesson` done once every question has an answer (`:174-175`); and a question
-`id` (`QuizQuestion` has none, `:31-36`). Lesson 3's page brings them, and this page publishes after
-it.
+(its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
+elements each quiz binds and writes (`kit/quiz.ts:78-83`, `:195-199`); `lesson` optional, since the
+kit marks `lesson` done once every question has an answer (`:72-73`, `:295-300`); and a question
+`id` (`:40-44`).
 
 - **Recall**: Lesson 3's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 3),
   under their Lesson 3 ids, `l03-q1` and `l03-q4`, shown to everyone (Lesson 3 is a prerequisite).
@@ -445,12 +444,12 @@ it.
   `lesson`, so it marks nothing done. Neither question plays a sound. Question 1's "Try Lesson 3,
   Step 1 again" is a plain link to `/learn/03#lesson`, opening in a new tab so the viewer keeps
   their place here, never `data-goto-step`, which would move this page's own deck
-  (`kit/quiz.ts:178-195`), as Lesson 5's recall links them; question 4 has no step link.
+  (`kit/quiz.ts:303-320`), as Lesson 5's recall links them; question 4 has no step link.
 - **Quick check**: LESSON.md's four questions, ids `l07-q1` to `l07-q4`, keys `fyp-l07-seed` and
   `fyp-l07-quiz-v1`, and `lesson: 7`, so answering all four marks Lesson 7 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:167`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:266`), so no feedback line starts with "Right", "Yes" or
   "Correct". "Try Step 1 again", "Try Step 2 again", "Try Step 4 again" and "Try Step 5 again" use
   the kit's `data-goto-step`. Answers stay in the viewer's browser until the telemetry track
   exists.
@@ -482,14 +481,14 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   higher, from E4), and orange `celebrate`s once after the cold-open reveal (no sparkles), the
   puzzled guesser who then gets it (playbook rule 15). The same rule picks the singing Merc wherever
   Merc's siren sounds.
-- `merc-duo.ts` has `mercSing` and `mercCelebrate` only (`:147`, `:184`), so this page needs no
-  other state: the Merc who is not singing idles, and both idle during a take. Three states the
-  renderer already has would suit it, proposed as Lesson 3's page proposes `listen`: `listen` for
-  the take, if Lesson 3's page has added it to the kit by then; and `ride` and `hum`, which
+- `merc-duo.ts` has `mercSing`, `mercListen` and `mercCelebrate` (`:164`, `:206`, `:216`), so this
+  page needs no other state: the Merc who is not singing idles, and both idle during a take. Three
+  states the renderer already has would suit it, proposed: `listen` for the take, which the kit has
+  since Lesson 3's page added `mercListen`; and `ride` and `hum`, which
   `src/lib/merc/constants.ts` lists for the glide rooms ("humming, and riding the voice",
   `:24-26`) and MERC-BIBLE § 5 gives to "riding a glide (sirens, slides)", so the singing Merc
-  would `ride` Merc's siren, and `hum` it on "ng", in place of `sing`. Without them in the kit, the
-  page uses `mercSing` and idles, as above.
+  would `ride` Merc's siren, and `hum` it on "ng", in place of `sing`. Without `ride` and `hum` in
+  the kit, the page uses `mercSing` and idles, as above.
 - Nothing celebrates in Sing it: a hum is never scored or celebrated as an achievement (FACTS 59).
 - Under reduced motion or Pause animations each Merc holds a still frame and skips the reactions.
 
@@ -571,15 +570,16 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 ## What the kit and the app still need
 
 Found in the kit and the app as they stand on main (19 October 2026, `51f1c53de`), beyond the parts
-Lessons 2 to 6 promote into the kit (Toys table):
+Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53e9` (20 October
+2026): an item main has met since says so, and the line references are main's.
 
-1. The lesson host: `learn/07.html` at `/learn/07`, wired as `/learn/01` is: `vite.config.ts` (the
-   dev and preview path, as `LESSON_01_PATH` is at `:81` and `:132-133`, and a build input beside
-   `lesson01` at `:447-448`); `src/lib/sw-runtime.ts`, `/learn/07` and `/learn/07.html` in
-   `STANDALONE_DOCUMENT_PATHS` (as `/learn/01` at `:134-135`); `public/sitemap.xml`; and
-   `public/llms.txt`, its "Lessons" list (`:62-69`), whose intro says each lesson is a page with
-   "live sound examples and its episode" (`:64-65`): with text-only lessons listed, it needs "and,
-   where one exists, its episode" or the like.
+1. The lesson host: `learn/07.html` at `/learn/07`. On main the dev and preview servers and the
+   build take every `learn/NN.html` as a lesson page, with no entry of its own, and keep a draft out
+   of production until its sign-off (`vite.config.ts:77-87`, `:139-141`, `:473`; `kit/drafts.ts`).
+   Still needed: `/learn/07` and `/learn/07.html` in `STANDALONE_DOCUMENT_PATHS`
+   (`src/lib/sw-runtime.ts`, as `/learn/01` at `:134-135`); `public/sitemap.xml`; and Lesson 7 in
+   `public/llms.txt`'s "Lessons" list (`:66-81`), whose intro now allows a lesson with no episode
+   ("with its episode where the lesson has one", `:68-70`).
 2. The page's head, as Lesson 1's (`learn/01.html`): title "Slides, sirens and your range · Find
    Your Pitch, Lesson 7 | MercuryPitch"; meta description "How many notes can your voice reach, and
    why is the comfortable middle worth more than the extremes? A sixteen-minute lesson with live
@@ -590,16 +590,22 @@ Lessons 2 to 6 promote into the kit (Toys table):
 3. `kit/range-chart.ts`, new (Toys 1), generic over a window, a column and its lit band, lines,
    bands and range bars, so Lesson 11 (its signature, "the siren's line crossing a shaded seam")
    and Lesson 14 can use it.
-4. `kit/sound.ts`: a voice that follows a pitch path, and the "ng" and lip-trill timbres (Audio).
+4. `kit/sound.ts`: the "ng" and lip-trill timbres (Audio). The voice that follows a pitch path is on
+   main: `contourVoice` and `playContour` glide pitch and level exponentially from point to point
+   (`kit/sound.ts:292-325`, `:524-533`).
 5. `kit/take.ts`: `readSiren` (Toys 4); `src/lib/mirror/metrics.ts`:
    `middleHalf(lowMidi: number, highMidi: number): { low: number; high: number }`, exported and used
-   by `pickMatchTargets`, with its parity test in `src/lib/mirror/metrics.test.ts` (Toys 4);
-   `kit/notes.ts`: a formatter giving a note name with its sign and in words.
-6. Lesson 3's kit parts, if its page has not built them: `comfort.ts`, `listen.ts`, `take.ts`, the
-   voice choice on `fyp-voice`, the warm-up cards and the feeling question; Lesson 6's rest card
-   after "Effortful"; Lesson 6's tune line; Lesson 1's predict widget and words strip, promoted.
-7. `kit/quiz.ts`: Lesson 2's three changes (Toys 5).
-8. `kit/explorer.ts`: the text-only state and the current lesson (Explorer and season data).
+   by `pickMatchTargets`, with its parity test in `src/lib/mirror/metrics.test.ts` (Toys 4). The
+   note formatter is on main: Lesson 4's spelling helper names a note with its sign and in words
+   (`sharpOf`, `signName`, `wordName`, `kit/notes.ts:157-197`).
+6. Lesson 3's kit parts are on main: `comfort.ts` with the feeling question, `listen.ts`, `take.ts`,
+   the voice choice on `fyp-voice` (`voice-choice.ts`) and the warm-up cards (`warm-up.ts`); so is
+   Lesson 1's predict widget (`kit/predict.ts`). Still needed: Lesson 6's rest card after
+   "Effortful", which the kit leaves to the coach (`kit/comfort.ts:65-66`); Lesson 6's tune line;
+   and Lesson 1's words strip, promoted (`lesson-01/words.ts`).
+7. `kit/quiz.ts`: Lesson 2's three changes (Toys 5), on main.
+8. `kit/explorer.ts`: the text-only state and the current lesson (Explorer and season data). Both
+   are on main.
 9. `src/e2e/helpers/tone-wav.ts`: a glide beside `writeToneWav` (`:29`), proposed
    `writeGlideWav(fromHz, toHz, secondsEachWay)`, the same tone gliding up and back down, even in
    semitones; Chromium loops the file, as the helper notes (`:27`), so it plays one siren after

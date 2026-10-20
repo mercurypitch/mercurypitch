@@ -121,7 +121,7 @@ beside it, for these reasons:
 | Toy                       | Reuses                                                                                                                                                                                                                                 | New in Lesson 6                                                                                                                                                            |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. The tune line          | The kit's sound (`kit/sound.ts`: `playTone`, the soft tone, Merc's "ooh"), notes (`kit/notes.ts`: `hz`, `COLOR`) with Lesson 4's spelling helper, frame loop and step deck; Lesson 4's staircase rows, its slider and its names switch | Beads on semitone rows joined by a line; the two lines stacked; the compact state; contour marks; gap numbers and gap buttons; Lift and Slide; Swap sizes; named intervals |
-| 2. Predict widgets        | Lesson 1's predict (`lesson-01/predict.ts`), promoted into the kit as Lesson 2 plans                                                                                                                                                   | A play button that works before the choice (Play from C) beside one that unlocks after it                                                                                  |
+| 2. Predict widgets        | Lesson 1's predict, now in the kit (`kit/predict.ts`)                                                                                                                                                                                  | A play button that works before the choice (Play from C) beside one that unlocks after it                                                                                  |
 | 3. Four words             | Lesson 1's strip of figure, word, definition and play button (`lesson-01/words.ts`)                                                                                                                                                    | Four new figures                                                                                                                                                           |
 | 4. Ear games              | Lesson 2's Semitone or tone? (its Toys 4, in build), generalised to two or four answers                                                                                                                                                | Step or leap? (two answers, either direction) and Name it (four answers, each in its anchor's direction)                                                                   |
 | 5. Anchor board           | The words strip's play buttons                                                                                                                                                                                                         | Five rows, each with the tune's snippet and the bare interval                                                                                                              |
@@ -212,7 +212,7 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
   notes and lights them (FACTS 64). In Steps 3 and 4 the gap numbers are labels in the same strip.
 - **Slide** (Step 3, and free play): Start lower and Start higher (a semitone each), or, with a
   mouse or pen, a vertical drag on the line; starts run from C4 to B4. On touch the stage keeps
-  `touch-action: pan-y`, as Lesson 1's does (`lesson-01/lesson-01.css:770-777`), so a swipe still
+  `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:769-776`), so a swipe still
   scrolls the page and the buttons do the sliding. A slide is the signature move: the line lifts
   (a soft shadow, the rows dim), travels, and settles on its new rows, where the letters change and
   the gap numbers glow gold once, unchanged. A faint chrome ghost of the line on C stays in place
@@ -304,7 +304,7 @@ fourth"; the semitone row's snippet is "How I won-der", four notes, so its tune 
 "Play Lesson 1's two As". A row lights while it sounds; one sound at a time (a new tap stops the
 last). On phones (below 960 px) each row stacks: the name, label and semitones on one line beside
 the figure, and under them the two buttons side by side, each half the row's width and at least
-44 px tall, as the kit's small buttons are (`btn sm`, `kit/lesson-base.css:522-526`). At 390 px a
+44 px tall, as the kit's small buttons are (`btn sm`, `kit/lesson-base.css:519-523`). At 390 px a
 card with 1 px borders and 16 px padding leaves a 324 px row, so with an 8 px gap each button is
 158 px wide; a label wraps if it must. Under reduced motion the row lights with no transition.
 
@@ -338,7 +338,7 @@ States:
    **Play the first version** sings do = D3 (lower) or D4 (higher), and **Play the second
    version** three semitones higher, in Merc's "ooh", the path lighting in step while the ring
    beside the guide shows the still of the Merc singing, blue for the lower voice and orange for the
-   higher, as Lesson 1's ring does (`lesson-01/sing.ts:23-39`). **Move do** is two buttons, Lower
+   higher, as Lesson 1's ring does (`kit/sing.ts:243-249`). **Move do** is two buttons, Lower
    and Higher, a semitone each, up to four either way, moving both versions together (FACTS 57);
    the readout and the path's row labels follow.
 5. **Guide**: **Start the guide** is enabled once either version has played (hear it first:
@@ -384,12 +384,10 @@ shows a number instead of breathing.
 ### 7. Recall and quick check
 
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
-(its WEB-SPEC, "What the kit and the app still need"): a root element or id prefix, because the kit
-binds to `#qs`, `#scoreN` and `#quizReset` and writes the ids `q0` and `fb0` onwards
-(`kit/quiz.ts:104-108`, `:155-165`); `lesson` optional, because the kit marks `lesson` done once
-every question has an answer (`:174-175`); and a question `id`, the telemetry's `question_id`
-(`QuizQuestion` has none, `:31-36`). If no earlier page has landed them, this one does, in the shape
-Lesson 2 describes.
+(its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
+elements each quiz binds and writes (`kit/quiz.ts:78-83`, `:195-199`); `lesson` optional, since the
+kit marks `lesson` done once every question has an answer (`:72-73`, `:295-300`); and a question
+`id`, the telemetry's `question_id` (`:40-44`).
 
 - **Recall**: Lesson 4's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS
   7), under their Lesson 4 ids, `l04-q1` and `l04-q4`, shown to everyone (Lesson 4 is a
@@ -408,14 +406,15 @@ Lesson 2 describes.
   `fyp-l06-quiz-v1`, and `lesson: 6`, so answering all four marks Lesson 6 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:167`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:266`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 1's play button plays `line-c`, then `line-fs`, and question 3's plays C4 then
-  F4 (FACTS 63, 69). Each sits in the slot Lesson 2's spec adds after a question's heading, outside
-  the `<h3>` that labels its answers (`kit/quiz.ts:155`), so the button is not part of every
-  answer's name. The kit rebuilds the questions on every answer (`kit/quiz.ts:148-150`), so those
-  buttons are handled by a listener on the quiz's root, as the step links are. "Try Step 2
-  again", "Try Step 3 again", "Try Step 4 again" and "Try Step 5 again" use the kit's
-  `data-goto-step`. Answers stay in the viewer's browser until the telemetry track exists.
+  F4 (FACTS 63, 69). Each sits in the kit's slot after a question's heading (`slot`,
+  `kit/quiz.ts:49-55`, `:281-282`), outside the `<h3>` that labels its answers (`:279`), so the
+  button is not part of every answer's name. The kit rebuilds the questions on every answer
+  (`kit/quiz.ts:272-274`), so those buttons are handled by a listener on the quiz's root, as the
+  step links are. "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try Step 5 again"
+  use the kit's `data-goto-step`. Answers stay in the viewer's browser until the telemetry track
+  exists.
 
 ### 8. Go deeper drawer
 
@@ -441,8 +440,8 @@ other, paused off screen, and the still images when WebGL fails or would run on 
 - They live in the hero, and their reactions are the hero pair's: blue `sing` while the hero's
   Play sounds and while the cold open's two plays sound; orange `celebrate` once after the
   cold-open reveal (no sparkles), the puzzled guesser who then gets it (playbook rule 15).
-- `merc-duo.ts` has `mercSing` and `mercCelebrate` only (`:147`, `:184`), so this page asks for no
-  other state: the Merc who is not singing idles.
+- `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:216`), and `mercListen` (`:206`)
+  since Lesson 3's page; this page asks for no other state: the Merc who is not singing idles.
 - The cold open sits below the recall, so the live pair is often off screen and paused; the bubbles
   carry each Merc's still, and the compact line carries the moment. In Sing it the ring shows the
   still of the Merc singing (Toys 6).
@@ -489,16 +488,17 @@ other, paused off screen, and the still images when WebGL fails or would run on 
 
 Found in the kit and the app as they stand (18 October 2026, `4d5891ac0`, with `src/`, `public/`
 and `learn/` unchanged at `0f416f33a`), beyond the parts Lessons 2 to 4 promote into the kit (Toys
-table):
+table). Read again on main at `31b7f53e9` (20 October 2026): an item main has met since says so,
+and the line references are main's.
 
 - `kit/quiz.ts`: Lesson 2's three changes, which this page's two quizzes need, and its slot for a
   question's own controls, which quiz questions 1 and 3 need (Lesson 2 WEB-SPEC, "What the kit and
-  the app still need", item 9; Toys 7).
+  the app still need", item 9; Toys 7), all on main (`kit/quiz.ts:40-55`, `:72-83`).
 - `kit/explorer.ts`, shared with Lessons 3 and 4, needs nothing new: a lesson with a page and no
   film reads "Ready · read", its card offers "Start lesson" (`/learn/06`) without "Watch the
   episode" and shows its Length, "15 min"; the page passes `current: 6`, and other lessons' cards
   link to their own pages.
-- `kit/season.ts`, Lesson 6's entry (`:182-200`): `minutes: 15` (FACTS 3). The practice link
+- `kit/season.ts`, Lesson 6's entry (`:264-282`): `minutes: 15` (FACTS 3). The practice link
   stays Ear Lab's (`href` `/ear-lab?lesson=06`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
   Lab"), and its `note` stays "then tap Leap to name them", printed "Ear Lab, then tap Leap to name
   them" by `practiseMarkup` (`kit/explorer.ts:98-103`): the `?lesson=` step-aside has shipped
@@ -508,26 +508,33 @@ table):
 - `kit/notes.ts`: Lesson 4's spelling helper (its Toys 1 and "What the kit and the app still
   need"), each name in signs ("B♭4") and in words ("B flat 4"), for the bead names, the readouts,
   the slider and every accessible name; `letterOf` and `nameOf` know only the seven letters
-  (`kit/notes.ts:36-61`).
+  (`kit/notes.ts:45-70`). On main: `spellOn`, `sharpOf`, `flatOf`, `signName` and `wordName`
+  (`kit/notes.ts:151-197`).
 - Lesson 4's names switch (its Toys 1), promoted into the kit with a choice of modes, so this page
-  offers Letters and Do-re-mi.
+  offers Letters and Do-re-mi. On main: `kit/names.ts` keeps any page-wide choice of modes
+  (`createModeStore`, `:12-13`, `:27`).
 - `kit/tune-line.ts`: the tune line (Toys 1), new, generic over a list of notes and lengths, so
   Lessons 9 and 14 can draw their phrases with it.
 - The ear game (Toys 4): Lesson 2's Semitone or tone?, promoted and generalised to N answers and a
   direction rule.
 - Lesson 3's comfort check (`kit/comfort.ts`), usable without its microphone steps, and its voice
-  choice, reading and writing `fyp-voice`.
+  choice, reading and writing `fyp-voice`. On main: the check binds its two answers to the page's
+  own handlers (`kit/comfort.ts:104-119`), and the choice reads and writes `fyp-voice`
+  (`kit/voice-choice.ts:20`).
 - Lesson 4's scale guide, generalised to any number of rows and any path, with its count-in and
-  Move do (Toys 6), and the feeling question as a kit part shared with Lesson 3.
-- `vite.config.ts`: `/learn/06` served from `learn/06.html` in dev and preview, as `LESSON_01_PATH`
-  is (`vite.config.ts:81`, `:132-133`), and `learn/06.html` as a build input beside `lesson01`
-  (`:447-448`).
+  Move do (Toys 6), and the feeling question as a kit part shared with Lesson 3. On main: the guide
+  takes any rows and any path, with its count-in (`mountGuide`, `kit/slide-guide.ts:325`), and the
+  feeling question is the kit's (`mountFeelings`, `kit/comfort.ts:122`); Move do is still Lesson
+  4's (`lesson-04/sing.ts`).
+- `vite.config.ts`: `/learn/06` served from `learn/06.html` in dev and preview, and `learn/06.html`
+  as a build input. On main every `learn/NN.html` is both, with no entry of its own
+  (`vite.config.ts:77-87`, `:139-141`, `:473`).
 - `src/lib/sw-runtime.ts`: `/learn/06` and `/learn/06.html` in `STANDALONE_DOCUMENT_PATHS`, as
   `/learn/01` is (`sw-runtime.ts:131-135`).
-- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, `:62-67`): Lesson 6's entry.
+- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, `:66-81`): Lesson 6's entry.
 - `public/learn/lesson-06-og.jpg`: the share card, 1200 x 630, a still of the hero: the title over
   the tune line on C with its leap bracketed.
-- The page's head, as Lesson 1's (`learn/01.html:9-58`):
+- The page's head, as Lesson 1's (`learn/01.html:9-60`):
   - title: "Intervals: the distance between notes · Find Your Pitch, Lesson 6 | MercuryPitch";
   - meta description: "Why can you start 'Twinkle, Twinkle' on any note and it is still the same
     tune? A fifteen-minute lesson with live sound toys: a tune as a pattern of intervals, steps and
@@ -537,7 +544,8 @@ table):
 - Lessons 1 to 5's pages, when this one goes live: nothing to edit in their explorers, which read
   each lesson's state from the season (`kit/season.ts`). Lesson 5's next-lesson card turns from
   "coming later" to "ready to read".
-- App content (the App content track): Interval Trainer's menu card, "above and below" (FACTS 48).
+- App content (the App content track): Interval Trainer's menu card, "above and below" (FACTS 48),
+  on main since `80df49e62`: "Sing specific intervals above a reference note." (FACTS 48a).
 
 ## Tests
 
