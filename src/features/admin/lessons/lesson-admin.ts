@@ -13,18 +13,6 @@
 // /llms.txt), and derives each lesson's release checklist from the two and
 // from its override. No DOM, so the page and its tests share every rule.
 //
-// Two rules keep a hidden draft out of a production build, which
-// scripts/assert-draft-lessons.mjs fails if any script there names a hidden
-// draft's address, and this module ships in that build's admin chunk:
-//
-//   1. No lesson address here is a string literal. Each is built from the
-//      lesson number at run time (`lessonAddress`).
-//   2. drafts.ts's list is only ever read in place, `DRAFT_LESSONS[n]`, and
-//      never handed on as a value: not as an argument, not as a parameter's
-//      default. An object that flows into a parameter is one the bundler
-//      stops folding, and season.ts's draft entries need that fold to leave
-//      a hidden draft's page out (kit/drafts.test.ts holds the rule).
-//
 // The site follows an override within about a minute: an unpublished
 // lesson's address answers 404 and leaves both listings, and a published
 // draft goes live and is listed without a release. The checklist weighs
@@ -84,7 +72,7 @@ export function publishedByDefault(
   return row.build === 'draft' && draftsShown
 }
 
-/** Lesson `n`'s address on the site, `/learn/NN`, built at run time (see the banner). */
+/** Lesson `n`'s address on the site, `/learn/NN`. */
 export function lessonAddress(n: number): string {
   return `/learn/${String(n).padStart(2, '0')}`
 }
@@ -92,7 +80,7 @@ export function lessonAddress(n: number): string {
 /** One row per lesson, in season order: the trailer, then Lessons 1 to 14. */
 export function lessonRows(
   lessons: readonly Lesson[] = LESSONS,
-  /** A draft list in drafts.ts's place, for a test; read in place otherwise (see the banner). */
+  /** A draft list in drafts.ts's place, for a test; drafts.ts's own when absent. */
   drafts?: Readonly<Partial<Record<number, string>>>,
   films: FilmRegistry = FILMS,
 ): LessonRow[] {
