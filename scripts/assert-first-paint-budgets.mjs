@@ -99,16 +99,19 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // renderer is the same dynamic import as Lesson 1's.
   'learn/02.html': 165,
 
-  // Lesson 3, a draft lesson: emitted only by builds that show drafts
-  // (build:e2e, which runs this check; src/features/lessons/kit/drafts.ts).
-  // Measured 117 with the lesson menu and the next-lesson card (100 before
-  // them). The listener, the pitch detector and Voice Mirror's scorer arrive
+  // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
+  // every mode like the rest: the site worker decides where it is live
+  // (src/lesson-gate.ts). Measured 117 with the lesson menu and the
+  // next-lesson card (100 before them), and 124 once the page read the state
+  // it was served with (kit/page-state.ts, about 3 on every lesson page). The
+  // listener, the pitch detector and Voice Mirror's scorer arrive
   // through a dynamic import when Sing it's Start is pressed, and the band
   // edges sit in their own leaf chunk, so the page stays this light only
   // while both boundaries hold.
   'learn/03.html': 125,
-  // Lesson 5, a draft too, built only where drafts are shown. Measured 122
-  // with the lesson menu and the next-lesson card (109 before them).
+  // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
+  // with the lesson menu and the next-lesson card (109 before them), and 129
+  // with the page state.
   // The listener and the hold reader arrive when Sing it's Start is pressed,
   // the reader for the hold demo's readouts once Step 5 comes near: Voice
   // Mirror's scorer stays off first paint only while both imports stay
