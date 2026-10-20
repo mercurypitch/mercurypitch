@@ -1,0 +1,460 @@
+// ============================================================
+// Lesson 6 page QA — the tune line by keyboard, the games, and the layouts
+// ============================================================
+//
+// WEB-SPEC's end-to-end checks 3, 4 and 9 and its page QA (Contract), with
+// reduced motion emulated so every move lands at once and a key press
+// meets the state it changed: Tab walks every bead and gap, each named in
+// spoken names; the start slider moves by keys alone and the words follow
+// it; the names switch and Swap sizes toggle and say so; Step 4's predict
+// waits for both versions; Step 5's brackets and anchor board play; the
+// two games answer by keys, and Space replays only off a button. At 390 x
+// 844, 375 and 360 px wide, every step's stage fits with every target at
+// least 44 px square and none overlapping, free play at every start from
+// C4 to B4; at 1024 x 640 the stage fits the screen under the masthead. A
+// real-mouse drag of the line closes it, since a drag slides the start
+// and must not land as a tap.
+
+import type { Locator, Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+
+/** The steps' tune line, and its parts. */
+const TOY = '#toyTune'
+const slider = (page: Page, root = TOY): Locator =>
+  page.locator(`${root} [data-start-slider]`)
+const said = (page: Page): Locator => page.locator(`${TOY} [data-tune-said]`)
+const bead = (page: Page, g: number): Locator =>
+  page.locator(`${TOY} [data-note="${g}"]`)
+
+async function openStep(page: Page, step: number): Promise<void> {
+  await page.goto(`/learn/06#step-${step}`)
+  await expect(page.locator('#stepNow')).toHaveText(String(step))
+}
+
+/** Moves the deck on the page already open, as a step link does. */
+async function goStep(page: Page, step: number): Promise<void> {
+  await page.evaluate((n) => {
+    window.location.hash = `#step-${n}`
+  }, step)
+  await expect(page.locator('#stepNow')).toHaveText(String(step))
+}
+
+/** Slides a tune line to `midi` (C4 60 to B4 71) by keyboard. */
+async function startOn(page: Page, midi: number, root = TOY): Promise<void> {
+  await slider(page, root).focus()
+  await page.keyboard.press('Home')
+  for (let m = 60; m < midi; m++) await page.keyboard.press('ArrowUp')
+  await expect(slider(page, root)).toHaveAttribute(
+    'aria-valuenow',
+    String(midi),
+  )
+}
+
+interface Box {
+  readonly name: string
+  readonly x: number
+  readonly y: number
+  readonly w: number
+  readonly h: number
+}
+
+const boxesOf = (loc: Locator): Promise<Box[]> =>
+  loc.evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect()
+      return {
+        name: el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '',
+        x: r.x,
+        y: r.y,
+        w: r.width,
+        h: r.height,
+      }
+    }),
+  )
+
+const overlap = (a: Box, b: Box): boolean =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+
+/** Every target over a tune line: at least 44 px square, and no two overlapping. */
+async function expectTargets(root: Locator, what: string): Promise<void> {
+  const targets = await boxesOf(root.locator('.tune-hit:visible'))
+  expect(targets.length, what).toBeGreaterThan(0)
+  for (const t of targets) {
+    expect(t.w, `${what}: ${t.name}`).toBeGreaterThanOrEqual(44)
+    expect(t.h, `${what}: ${t.name}`).toBeGreaterThanOrEqual(44)
+  }
+  targets.forEach((a, i) =>
+    targets.forEach((b, j) => {
+      if (i < j)
+        expect(overlap(a, b), `${what}: ${a.name} and ${b.name}`).toBe(false)
+    }),
+  )
+}
+
+const sideways = (page: Page): Promise<number> =>
+  page.evaluate(() => document.documentElement.scrollWidth)
+
+test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
+  // every move lands at once, so a key press meets the state it changed
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+  })
+
+  test('Tab walks Play, Slow, then every bead and every gap, each named, with a visible focus ring', async ({
+    page,
+  }) => {
+    await openStep(page, 2)
+    const notes = [
+      'C 4, twin',
+      'C 4, kle',
+      'G 4, twin',
+      'G 4, kle',
+      'A 4, lit',
+      'A 4, tle',
+      'G 4, star',
+      'F 4, How',
+      'F 4, I',
+      'E 4, won',
+      'E 4, der',
+      'D 4, what',
+      'D 4, you',
+      'C 4, are',
+    ].map((n, g) => `Note ${g + 1} of 14, ${n}`)
+    const gaps = [
+      'the same note again',
+      'up 7 semitones, a leap',
+      'the same note again',
+      'up 2 semitones, a step',
+      'the same note again',
+      'down 2 semitones, a step',
+      'down 2 semitones, a step',
+      'the same note again',
+      'down 1 semitone, a step',
+      'the same note again',
+      'down 2 semitones, a step',
+      'the same note again',
+      'down 2 semitones, a step',
+    ].map((n, g) => `Gap ${g + 1}: ${n}`)
+
+    await page.locator(`${TOY} [data-tune-play]`).focus()
+    await page.keyboard.press('Tab')
+    await expect(page.locator(`${TOY} [data-tune-slow]`)).toBeFocused()
+    const met: string[] = []
+    for (let i = 0; i < notes.length + gaps.length; i++) {
+      await page.keyboard.press('Tab')
+      met.push(
+        await page.evaluate(
+          () => document.activeElement?.getAttribute('aria-label') ?? '',
+        ),
+      )
+    }
+
+    expect(met).toEqual([...notes, ...gaps])
+    const ring = await page.evaluate(() => {
+      const s = getComputedStyle(document.activeElement as Element)
+      return `${s.outlineStyle} ${s.outlineWidth}`
+    })
+    expect(ring).toBe('solid 2px')
+  })
+
+  test('the start slider moves by keys alone, and the words follow it in spoken names', async ({
+    page,
+  }) => {
+    await openStep(page, 3)
+    const s = slider(page)
+    await s.focus()
+    await expect(s).toHaveAttribute('role', 'slider')
+
+    await page.keyboard.press('ArrowUp')
+    await page.keyboard.press('ArrowRight')
+    await expect(s).toHaveAttribute('aria-valuenow', '62')
+    await expect(s).toHaveAttribute(
+      'aria-valuetext',
+      'Starts on D 4: every interval the same',
+    )
+    await expect(said(page)).toHaveText(
+      'Twinkle from D 4: do do so so la la so',
+    )
+    await expect(page.locator(`${TOY} [data-tune-summary]`)).toHaveText(
+      'Twinkle from D 4: D, D, A, A, B, B, A. Same, up 7, same, up 2, same, down 2.',
+    )
+    await page.keyboard.press('End')
+    await page.keyboard.press('ArrowDown')
+    await expect(s).toHaveAttribute(
+      'aria-valuetext',
+      'Starts on B flat 4: every interval the same',
+    )
+    // the gaps read the same from B flat; the letters follow its key
+    await expect(page.locator(`${TOY} [data-tune-summary]`)).toHaveText(
+      'Twinkle from B flat 4: B flat, B flat, F, F, G, G, F. Same, up 7, same, up 2, same, down 2.',
+    )
+    await page.keyboard.press('End')
+    await expect(page.locator(`${TOY} [data-slide="1"]`)).toBeDisabled()
+    await page.keyboard.press('Home')
+    await expect(s).toHaveAttribute('aria-valuenow', '60')
+    await expect(page.locator(`${TOY} [data-slide="-1"]`)).toBeDisabled()
+    await expect(s).toBeFocused()
+  })
+
+  test('the names switch shows do-re-mi in the letters’ place, by keyboard', async ({
+    page,
+  }) => {
+    await openStep(page, 3)
+    const solfege = page.locator(`${TOY} [data-names="solfege"]`)
+
+    await solfege.focus()
+    await page.keyboard.press('Enter')
+
+    await expect(solfege).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator(`${TOY} [data-names="letters"]`)).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    await expect(bead(page, 2)).toHaveAttribute(
+      'aria-label',
+      'Note 3 of 7, so, G 4',
+    )
+  })
+
+  test('Swap sizes toggles, and says what it changed', async ({ page }) => {
+    await openStep(page, 4)
+    const swap = page.locator(`${TOY} [data-tune-swap]`)
+
+    await swap.focus()
+    await page.keyboard.press('Space')
+    await expect(swap).toHaveAttribute('aria-pressed', 'true')
+    await expect(said(page)).toHaveText(
+      'Swapped: up 2, then up 7. Same ups and downs, two intervals changed.',
+    )
+    await page.keyboard.press('Space')
+
+    await expect(swap).toHaveAttribute('aria-pressed', 'false')
+    await expect(said(page)).toHaveText('The tune as it was: up 7, then up 2.')
+  })
+
+  test("Step 4's predict reveals only once both versions are heard", async ({
+    page,
+  }) => {
+    await openStep(page, 4)
+    const predict = page.locator('#predictSwap')
+    const reveal = predict.locator('.reveal')
+
+    await predict.locator('[data-choice="changes"]').click()
+    await predict.locator('[data-play="line"]').click()
+    await expect(predict.locator('.lock-hint')).toHaveText(
+      'Now play the other one.',
+      { timeout: 10_000 },
+    )
+    await expect(reveal).toBeHidden()
+    await predict.locator('[data-play="swapped"]').click()
+
+    await expect(reveal).toBeVisible({ timeout: 10_000 })
+    await expect(reveal.locator('.mono')).toHaveText('You said: no, it changes')
+  })
+
+  test("Step 5 names its brackets in words, and its board's five rows each play", async ({
+    page,
+  }) => {
+    await openStep(page, 5)
+    const brackets = await page
+      .locator(`${TOY} [data-bracket]`)
+      .evaluateAll((els) => els.map((b) => b.getAttribute('aria-label')))
+    expect(brackets).toEqual([
+      'Play the interval: C 4 up to G 4, a perfect fifth',
+      'Play the interval: A 4 down to G 4, a major second',
+      'Play the interval: F 4 down to E 4, a minor second',
+    ])
+
+    const rows = page.locator('#anchorBoard [data-anchor]')
+    await expect(rows).toHaveCount(5)
+    expect(
+      await rows.evaluateAll((els) =>
+        els.map((r) => (r as HTMLElement).dataset.anchor),
+      ),
+    ).toEqual(['m2', 'M2', 'P4', 'P5', 'P8'])
+    const fifth = page.locator('#anchorBoard [data-anchor="P5"]')
+    await fifth.locator('[data-anchor-play="interval"]').click()
+    await expect(fifth).toHaveClass(/\bis-on\b/)
+    await expect(fifth).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+  })
+
+  for (const [step, id, rounds, keys] of [
+    [2, '#stepLeapGame', 10, ['1', '2']],
+    [5, '#nameItGame', 8, ['1', '2', '3', '4']],
+  ] as const) {
+    test(`${id}: keys answer ${rounds} rounds, a round once each, and the end reads "N of ${rounds}"`, async ({
+      page,
+    }) => {
+      await openStep(page, step)
+      const game = page.locator(id)
+      const play = game.locator('[data-eg-play]')
+
+      for (let r = 1; r <= rounds; r++) {
+        await play.click()
+        await expect(game.locator('[data-eg-round]')).toHaveText(
+          `Round ${r} of ${rounds}`,
+        )
+        await page.keyboard.press(keys[r % keys.length])
+        await expect(game.locator('[data-eg-feedback]')).toHaveText(
+          /^(Yes\.|Here it is again, slower\.) /,
+        )
+        // a missed round is not asked again: the button moves on
+        await expect(play).toHaveText(
+          r < rounds ? 'Next round' : /^Play (ten|eight) more$/,
+        )
+      }
+
+      await expect(game.locator('[data-eg-round]')).toHaveText(
+        new RegExp(`^\\d+ of ${rounds}$`),
+      )
+      await expect(game.locator('[data-eg-feedback] b')).toHaveText(
+        new RegExp(`^\\d+ of ${rounds}$`),
+      )
+    })
+  }
+
+  test('Space replays the pair on the card, and presses a focused button instead', async ({
+    page,
+  }) => {
+    await openStep(page, 2)
+    const game = page.locator('#stepLeapGame')
+    const play = game.locator('[data-eg-play]')
+    await play.click()
+    await expect(play).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+
+    await game.focus()
+    await page.keyboard.press('Space')
+    await expect(play).toHaveClass(/\bis-on\b/)
+    await expect(game.locator('[data-eg-feedback]')).toHaveText('')
+
+    await game.locator('[data-eg-answer="leap"]').focus()
+    await page.keyboard.press('Space')
+    await expect(game.locator('[data-eg-answer="leap"]')).toHaveClass(
+      /\bpicked\b/,
+    )
+    await expect(game.locator('[data-eg-feedback]')).not.toHaveText('')
+  })
+
+  test.describe('at 390 x 844', () => {
+    test.use({ viewport: { width: 390, height: 844 } })
+
+    for (const step of [1, 2, 3, 4, 5]) {
+      test(`step ${step}'s stage fits under the masthead, every control at least 44 px`, async ({
+        page,
+      }) => {
+        await openStep(page, step)
+        const card = page.locator('#stepsStage .stage-card')
+        const box = await card.boundingBox()
+        // the masthead is 58 px: the stage fits the 786 px below it
+        expect(box?.height ?? 0).toBeLessThan(786)
+        expect(await sideways(page)).toBe(390)
+        const controls = await boxesOf(card.locator('button:visible'))
+        expect(controls.length).toBeGreaterThan(7)
+        for (const c of controls) {
+          expect(c.w, c.name).toBeGreaterThanOrEqual(44)
+          expect(c.h, c.name).toBeGreaterThanOrEqual(44)
+        }
+        await expectTargets(page.locator(TOY), `step ${step}`)
+      })
+    }
+
+    test('free play fits every bead, gap and bracket, none overlapping, at every start from C4 to B4', async ({
+      page,
+    }) => {
+      await page.goto('/learn/06#freePlay')
+      const free = page.locator('#freePlay')
+      for (let start = 60; start <= 71; start++) {
+        await startOn(page, start, '#freePlay')
+        await expectTargets(free, `free play from ${start}`)
+      }
+      expect(await sideways(page)).toBe(390)
+    })
+  })
+
+  for (const width of [360, 375]) {
+    test(`at ${width} px wide nothing scrolls sideways, and every target keeps 44 px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 })
+      await openStep(page, 2)
+      await expectTargets(page.locator(TOY), `step 2 at ${width}`)
+      await goStep(page, 5)
+      await expectTargets(page.locator(TOY), `step 5 at ${width}`)
+      expect(await sideways(page)).toBe(width)
+    })
+  }
+
+  // the polish audit's landscape budget: an iPad in Safari with its tab bar
+  test.describe('at 1024 x 640, an iPad in Safari with its tab bar', () => {
+    test.use({ viewport: { width: 1024, height: 640 }, hasTouch: true })
+
+    test("every step's stage fits the screen under the masthead, every control on it", async ({
+      page,
+    }) => {
+      await openStep(page, 1)
+      for (const step of [1, 2, 3, 4, 5]) {
+        await goStep(page, step)
+        const card = await page.locator('#stepsStage .stage-card').boundingBox()
+        const fig = await page.locator(`${TOY} .tune-viz`).boundingBox()
+        // 640 less the 58 px masthead and the stage's margins
+        expect(card?.height ?? 0, `step ${step}`).toBeLessThanOrEqual(564)
+        // what the stage holds besides its figure (WEB-SPEC, Layout)
+        expect(
+          (card?.height ?? 0) - (fig?.height ?? 0),
+          `step ${step}: the chrome`,
+        ).toBeLessThanOrEqual(375)
+        const mast = await page.locator('#mast').boundingBox()
+        const controls = await boxesOf(
+          page.locator(`${TOY} button:visible, ${TOY} [role="slider"]:visible`),
+        )
+        for (const c of controls) {
+          expect(c.y, `step ${step} ${c.name}`).toBeGreaterThanOrEqual(
+            (mast?.y ?? 0) + (mast?.height ?? 0) - 0.5,
+          )
+          expect(c.y + c.h, `step ${step} ${c.name}`).toBeLessThanOrEqual(640.5)
+        }
+      }
+    })
+  })
+})
+
+test('dragging the line with a real mouse slides its start, and the drag presses no bead @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openStep(page, 3)
+  const viz = page.locator(`${TOY} .tune-viz`)
+  await viz.scrollIntoViewIfNeeded()
+  await expect(slider(page)).toHaveAttribute('aria-valuenow', '60')
+  // count the presses every bead button takes
+  await page.evaluate(() => {
+    const w = window as unknown as { beadPresses: number }
+    w.beadPresses = 0
+    for (const b of document.querySelectorAll('#toyTune [data-note]'))
+      b.addEventListener('click', () => {
+        w.beadPresses += 1
+      })
+  })
+  const presses = (): Promise<number> =>
+    page.evaluate(
+      () => (window as unknown as { beadPresses: number }).beadPresses,
+    )
+  const box = await bead(page, 3).boundingBox()
+  if (box === null) throw new Error('no bead')
+  // grab the fourth bead's column, and drag up a little over half the figure
+  const x = box.x + box.width / 2
+  const y = box.y + box.height * 0.75
+
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x, y - box.height / 2, { steps: 12 })
+  await page.mouse.up()
+
+  const now = Number(await slider(page).getAttribute('aria-valuenow'))
+  expect(now).toBeGreaterThan(60)
+  expect(await presses()).toBe(0)
+  // a plain click on a bead is a press, and moves nothing
+  await bead(page, 3).click()
+  expect(await presses()).toBe(1)
+  await expect(slider(page)).toHaveAttribute('aria-valuenow', String(now))
+})
