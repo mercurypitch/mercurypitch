@@ -1852,6 +1852,26 @@ life in this repo before loading it, and read a Lightning CSS position after
 that plugin as approximate.
 **See:** `tools/css-legacy-fallbacks.ts`, `src/features/lessons/kit/lesson-sections.css`
 
+### Decode what HTMLRewriter reads, and escape what it writes
+
+**Symptom:** the site worker's hook rewrite looked finished and nearly
+shipped two ways wrong. Lesson 5's `og:description` holds `&#8220;support&#8221;`,
+so the comparison with the hook's text never matched and the description
+would never have been retold. A picked hook with a literal `&amp;` in it would
+have gone in raw, and a crawler would have read it as `&`.
+**Cause:** in workerd, `getAttribute` returns the attribute exactly as the
+markup spells it, entities and all, and `setAttribute` escapes only `"`: `&`,
+`<` and `>` go in raw. A `<script>`'s text reaches `text()` in several chunks,
+the last one empty, so a handler that edits one chunk sees part of the JSON.
+**Rule:** decode an attribute before comparing it, escape `&`, `"`, `<` and
+`>` yourself before `setAttribute`, and buffer a script's chunks until
+`lastInTextNode`. A jsdom test double hides all three, so make the double
+behave the same way and check its claims under `wrangler dev`.
+Separately, `wrangler dev`'s `ASSETS.fetch` serves `/x.html` with a 200 where
+production answers a 307 to `/x`. A local run cannot show the redirect.
+**See:** `src/lesson-gate.ts` (`decodeHtml`, `escapeAttribute`,
+`retellScripts`), `src/html-rewriter.test-fixtures.ts`
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
