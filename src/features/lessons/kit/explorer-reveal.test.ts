@@ -301,8 +301,8 @@ describe("a next-lesson card's link to the explorer", () => {
   })
 
   it('shows a card coming later as far as its question, which stands in for the button it does not have', () => {
-    // Arrange: Lesson 5's card leads to Lesson 6, coming later, its question under the fold
-    pageWithNextCard(5, 6)
+    // Arrange: Lesson 6's card leads to Lesson 7, coming later, its question under the fold
+    pageWithNextCard(6, 7)
     measuredBoxes({ card: [700, 1000], hook: [810, 870] })
     const tops = pageScrolls()
     q('[data-select-lesson]').click()
@@ -312,7 +312,7 @@ describe("a next-lesson card's link to the explorer", () => {
 
     // Assert
     expect(q('#exCardHost h3').textContent).toBe(
-      'Intervals: the distance between notes',
+      'Slides, sirens and your range',
     )
     expect(document.querySelector('#exCardHost .ex-actions')).toBeNull()
     expect(tops()).toEqual([870 - ROOM.bottom])
