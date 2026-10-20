@@ -40,7 +40,7 @@ export interface AfterLines {
   readonly doctor: boolean
   readonly hold15: boolean
   readonly again: boolean
-  /** 'today': Done for today; 'done': Done; null: neither. */
+  /** 'today': Done for today; 'done': the same words on the primary button, after the fifteen; null: neither. */
   readonly done: 'today' | 'done' | null
 }
 

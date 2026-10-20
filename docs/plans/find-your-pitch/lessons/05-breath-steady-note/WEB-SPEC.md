@@ -226,8 +226,9 @@ States:
    WEB-SPEC, Toys 5 and Contract; FACTS 5). Its reading and writing move into the kit as
    `kit/voice-choice.ts` if Lesson 3's page has not moved them, with the same key; there is no
    second key.
-3. **Warm-up**, optional, with Skip: Lesson 3's two cards and words, with "Follow the shape, not
-   Merc's notes" and the stop line (FACTS 53, 77). Nothing listens and nothing is scored.
+3. **Warm-up**, optional, with Skip: Lesson 3's two cards and words, with "Copy the way Merc's voice
+   slides, not the exact notes" and the stop line (FACTS 53, 77). Nothing listens and nothing is
+   scored.
 4. **Note**: Merc's A in the chosen voice, with **Lower** and **Higher** (a semitone a tap, up to
    four either way, F3 to C♯4 or F4 to C♯5: FACTS 55); each tap plays the note for 1 s. The move
    lasts for the visit and is not stored. It comes before Start: finding the note needs no
@@ -272,7 +273,7 @@ States:
       time your line was in the band for X of 10 seconds.", while the fifteen-second hold has no
       take with a reading; rule 15's line if either was in the band for less than half its length;
       Merc `celebrate`s if the fifteen-second take was in the band for at least 80 % of it; then
-      **Again** (while hold 2 has had fewer than three takes) and **Done**.
+      **Again** (while hold 2 has had fewer than three takes) and **Done for today**.
     - Effortful: as in 8: the readings, no celebration, no Again and no further hold, only **Done
       for today**.
     - Uncomfortable: as in 8.

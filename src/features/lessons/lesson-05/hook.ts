@@ -154,7 +154,7 @@ export function initHook(): void {
     revealOn: ['pushed'],
     hints: {
       chosen:
-        'Locked in. Play: pushing harder sings the same note with more and more air.',
+        "Locked in. Now press Play: pushing harder. It's the same note, with a harder and harder push of air.",
       silent:
         'Sound is off, so nothing played. Turn sound on to hear it, then press Play: pushing harder.',
       next: 'Now press Play: pushing harder.',

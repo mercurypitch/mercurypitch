@@ -97,8 +97,8 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
         feedback: 'It can wave a little and still stay in the band.',
       },
       {
-        text: 'A perfectly flat line, with no movement at all',
-        feedback: `Steady isn't flat: a small vibrato can sit inside the band. ${step(5)}`,
+        text: 'A perfectly straight line, with no movement at all',
+        feedback: `Steady isn't dead straight: a small vibrato can sit inside the band. ${step(5)}`,
       },
       {
         text: 'The longest line you can make on one breath',
