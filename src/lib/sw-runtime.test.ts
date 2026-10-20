@@ -243,17 +243,16 @@ describe('the standalone documents', () => {
   it('leaves every lesson page alone, at its clean path and as its document, a draft as much as a live one', () => {
     // Each Find Your Pitch lesson is a build input of its own and is linked
     // at both addresses; the shell in its place would be a page with no
-    // lesson on it. vite.config.ts takes every learn/NN.html as an input
-    // (tools/draft-lessons.ts), so the documents themselves are the list,
-    // and that list holds the drafts as well: a production build leaves a
-    // draft's document out (src/features/lessons/kit/drafts.ts), and the
-    // right answer for its path is then the asset layer's 404 page, which
-    // the shell would hide.
+    // lesson on it. vite.config.ts takes every learn/NN.html as an input in
+    // every mode (tools/draft-lessons.ts), so the documents themselves are
+    // the list, and that list holds the drafts as well: where a lesson is
+    // not published, the site worker answers its path with the 404 page
+    // (src/lesson-gate.ts), which the shell would hide.
     const config = readFileSync(
       resolve(process.cwd(), 'vite.config.ts'),
       'utf8',
     )
-    expect(config).toContain('...lessonInputs(__dirname, draftsShown)')
+    expect(config).toContain('...lessonInputs(__dirname),')
     const lessons = readdirSync(resolve(process.cwd(), 'learn'))
       .map((name) => /^(\d{2})\.html$/.exec(name)?.[1])
       .filter((n): n is string => n !== undefined)

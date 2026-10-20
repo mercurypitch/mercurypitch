@@ -7,8 +7,9 @@
 // lesson is done (the viewer marked it), here (this page's own lesson), in
 // progress (a step remembered from its page, position.ts), up next (the
 // first live lesson not done whose prerequisites are), ready (live), or
-// coming later (no page in this build, so a draft the build hides reads
-// exactly like a lesson not made yet).
+// coming later (no page live: the caller hands in the season as the page's
+// state shows it, page-state.ts, where a lesson held back has no page, so
+// it reads exactly like a lesson not made yet).
 //
 // Each live lesson has one main action: "Start lesson" at its page's top
 // (not at the steps, which would skip the cold open), "Continue: step N" at

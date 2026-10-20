@@ -2,13 +2,13 @@
 // Lesson state tests — where each lesson stands, and its one action
 // ============================================================
 
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import type * as State from './lesson-state'
+import { describe, expect, it } from 'vitest'
 import type { Viewer } from './lesson-state'
 import { lessonViews, upNext } from './lesson-state'
 import type { StepMarks } from './position'
-import type * as Season from './season'
+import { defaultPageState, seasonFor } from './publish'
 import type { Lesson } from './season'
+import { LESSONS } from './season'
 
 /** Lesson `n` of a season for a state test, live when `live`; its prerequisites are the real season's. */
 const lesson = (n: number, live: boolean): Lesson => ({
@@ -132,26 +132,32 @@ describe('upNext', () => {
   })
 })
 
-describe('a hidden draft (drafts.ts)', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.resetModules()
-  })
-
-  it('is coming later, with no action, even with a step the viewer reached while it was shown', async () => {
-    // Arrange: a build that hides drafts, and a step kept from a dev visit
-    vi.stubEnv('VITE_DRAFT_LESSONS', '0')
-    vi.resetModules()
-    const season: typeof Season = await import('./season')
-    const state: typeof State = await import('./lesson-state')
+describe('a lesson held back (publish.ts)', () => {
+  it('is coming later, with no action, even with a step the viewer reached while it was shown', () => {
+    // Arrange: drafts held back, as on mercurypitch.com, and a step kept from a dev visit
+    const season = seasonFor(LESSONS, defaultPageState(false))
 
     // Act
-    const L3 = state.lessonViews(
-      season.LESSONS,
-      viewer(1, [1], { 3: { step: 3, of: 6 } }),
-    )[3]
+    const L3 = lessonViews(season, viewer(1, [1], { 3: { step: 3, of: 6 } }))[3]
 
     // Assert
     expect([L3.state, L3.step, L3.action]).toEqual(['later', null, null])
+  })
+
+  it('is never up next, a released lesson the console holds back as much as a draft', () => {
+    // Arrange: Lesson 2 held back; Lesson 1 done, so Lessons 2 and 3 are open to it
+    const season = seasonFor(LESSONS, {
+      ...defaultPageState(false),
+      lessons: { 2: { published: false } },
+    })
+
+    // Act
+    const views = lessonViews(season, viewer(1, [1]))
+    const next = upNext(season, viewer(1, [1]))
+
+    // Assert
+    expect([views[2].state, views[2].action]).toEqual(['later', null])
+    expect(next).not.toBe(2)
+    expect(next).not.toBe(3)
   })
 })

@@ -61,6 +61,8 @@
     //             the client can read the slug.
     //   /admin*  — the friendly admin entries, likewise: no file behind them,
     //             the client rewrites the path to a hash route on boot.
+    //   /learn/*, /sitemap.xml, /llms.txt — have files, but answer as the
+    //             admin console's lesson state has them (src/lesson-gate.ts).
     "run_worker_first": [
       "/api/*",
       "/",
@@ -93,9 +95,26 @@
       // (src/worker.ts), so a picture fetched before its deploy lands is not
       // cached as missing for a year.
       "/email/*",
+      // Find Your Pitch. Every build carries every lesson page, so whether
+      // one is live is the Worker's to answer from the admin console's
+      // lesson state (src/lesson-gate.ts): a lesson held back answers with
+      // the 404 page, and a published one carries its state and picked
+      // hook. Answered by the asset layer, a held-back lesson would be
+      // served to anyone with its address. The sitemap and llms.txt list
+      // the lessons that are live, for the same reason.
+      "/learn/*",
+      "/sitemap.xml",
+      "/llms.txt",
     ],
   },
   "compatibility_flags": ["nodejs_compat"],
+  // A named environment inherits none of these, so each sets its own below.
+  // LESSON_DRAFTS: whether a Find Your Pitch draft the admin console has not
+  // set is published (src/lesson-gate.ts). A local `wrangler dev` shows the
+  // drafts, as the dev site does.
+  "vars": {
+    "LESSON_DRAFTS": "1",
+  },
   // Local dev (plain `wrangler dev`, no --env) needs the R2 staging bucket
   // too: without it every upload over the 7 MB inline cap — and every
   // instrumental split, whose WAV payload is far bigger — 503s before
@@ -143,6 +162,9 @@
         // Lets the worker serve stems straight from R2 for ~24 h after RunPod
         // forgets the job (~30 min).
         "RUNPOD_STEM_PREFIX": "runpod",
+        // A draft lesson stays off mercurypitch.com until the admin console
+        // publishes it, or its line leaves drafts.ts (src/lesson-gate.ts).
+        "LESSON_DRAFTS": "0",
       },
     },
     "dev": {
@@ -163,6 +185,9 @@
         // bucket `mercurypitch-uvr-output` (matches its `expire-runpod-dev`
         // 1-day lifecycle rule). Must equal the endpoint's S3_KEY_PREFIX.
         "RUNPOD_STEM_PREFIX": "runpod-dev",
+        // The dev site shows every draft lesson the admin console has not
+        // held back (src/lesson-gate.ts).
+        "LESSON_DRAFTS": "1",
       },
       "build": {
         "command": "pnpm run build:dev",
@@ -203,6 +228,8 @@
       "vars": {
         "ENVIRONMENT": "preview",
         "DB_API_URL": "https://api-dev.mercurypitch.com",
+        // As on the dev site (src/lesson-gate.ts).
+        "LESSON_DRAFTS": "1",
       },
       "build": {
         "command": "pnpm run build:dev",

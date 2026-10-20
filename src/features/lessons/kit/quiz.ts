@@ -15,13 +15,16 @@
 // reads and the ids it writes. A question asked on another lesson's page
 // keeps its "Try Step N again" link, but as a plain link to its own
 // lesson's page ("Try Lesson 2, Step N again"): `data-goto-step` there
-// would move the reusing page's own deck.
+// would move the reusing page's own deck. While that lesson is not live
+// here (page-state.ts) the words stay with no link, which would lead to the
+// 404 page.
 //
 // Questions, answers and feedback are markup (feedback may link back into a
 // step), so they must come from the lesson's own code, never from a viewer.
 
 import { mulberry32, q, store } from './dom'
 import { reducedMotion } from './motion-switch'
+import { lessonLive } from './page-state'
 import { Done } from './progress'
 import type { StepDeck } from './step-deck'
 
@@ -166,7 +169,7 @@ function loadRecord(key: string): AnswerRecord {
 /**
  * A question from another lesson: each step link becomes a plain link to
  * that lesson's page, "Try Step 3 again" reading "Try Lesson 2, Step 3
- * again".
+ * again". Where that lesson is not live, the words stay and the link goes.
  */
 export function linkAway(
   box: ParentNode,
@@ -174,19 +177,24 @@ export function linkAway(
   away: QuizOptions['away'] = {},
 ): void {
   const href = away.href ?? lessonPageHref
+  const live = lessonLive(lesson)
   for (const a of Array.from(
     box.querySelectorAll<HTMLAnchorElement>('a[data-goto-step]'),
   )) {
     const step = Number(a.dataset.gotoStep)
     a.removeAttribute('data-goto-step')
+    const text = /^Try Step (\d+) again$/.exec(a.textContent ?? '')
+    if (text !== null)
+      a.textContent = `Try Lesson ${lesson}, Step ${text[1]} again`
+    if (!live) {
+      a.replaceWith(...Array.from(a.childNodes))
+      continue
+    }
     a.href = href(lesson, step)
     if (away.newTab !== false) {
       a.target = '_blank'
       a.rel = 'noopener'
     }
-    const text = /^Try Step (\d+) again$/.exec(a.textContent ?? '')
-    if (text !== null)
-      a.textContent = `Try Lesson ${lesson}, Step ${text[1]} again`
   }
 }
 

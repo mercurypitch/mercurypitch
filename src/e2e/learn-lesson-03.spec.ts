@@ -2,11 +2,12 @@
 // Lesson 3 loads at /learn/03 as its own document, and its checkpoint listens
 // ============================================================
 //
-// A draft until the vocal coach signs it off: the e2e bundle shows drafts
-// (`build:e2e` sets VITE_DRAFT_LESSONS=1), the production build leaves the
-// document out (scripts/assert-draft-lessons.mjs). Like Lesson 1 it must load
-// as itself, never as the 404 page or the studio's cached app shell, and its
-// module must boot.
+// A draft until the vocal coach signs it off. Every build carries its
+// document, and the e2e bundle shows drafts (`build:e2e` sets
+// VITE_DRAFT_LESSONS=1); on mercurypitch.com the site worker answers its
+// address with the 404 page until the admin console publishes it
+// (src/lesson-gate.ts). Like Lesson 1 it must load as itself, never as the
+// 404 page or the studio's cached app shell, and its module must boot.
 //
 // Sing it runs on Chromium's fake microphone, a steady A3 (220 Hz) looped
 // from a file (helpers/tone-wav.ts). Against the lower voice's notes that is

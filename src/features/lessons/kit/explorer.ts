@@ -15,15 +15,18 @@
 //
 // Any lesson page can host it: it opens on that page's own lesson, whose
 // card's actions stay within the page, while another live lesson's card
-// links to its own page. A live lesson's main action is the one
-// lesson-state.ts gives it ("Start lesson", "Continue: step N" or "Read
-// again"), right under its hook; "Watch the episode" joins it only once
-// its film is published. A card draws only what a learner can use: the
-// season's planning fields (season.ts) stay in the data.
+// links to its own page. Which lessons are live, and the hook each card
+// prints, are the page state's (page-state.ts): a lesson the admin console
+// holds back is coming later, as one not written yet. A live lesson's main
+// action is the one lesson-state.ts gives it ("Start lesson", "Continue:
+// step N" or "Read again"), right under its hook; "Watch the episode" joins
+// it only once its film is published. A card draws only what a learner can
+// use: the season's planning fields (season.ts) stay in the data.
 //
 // Cards are markup strings, which is safe only because every value they
-// interpolate is defined in season.ts or here; poster URLs, which come from
-// the page, are set as properties instead. The map's stateless pieces
+// interpolate is defined in season.ts, lesson-copy.ts or here (the page
+// state only picks among lesson-copy.ts's hooks, by id); poster URLs, which
+// come from the page, are set as properties instead. The map's stateless pieces
 // (lanes, arcs, edges, labels and their painters) are in explorer-graph.ts.
 
 import { clamp, q, qa, svg } from './dom'
@@ -35,6 +38,7 @@ import { addDrawer, watch } from './frame-loop'
 import type { LessonView } from './lesson-state'
 import { lessonViews } from './lesson-state'
 import { reducedMotion } from './motion-switch'
+import { pageLessons } from './page-state'
 import { Positions } from './position'
 import { Done } from './progress'
 import type { Lane, Lesson, Practise } from './season'
@@ -250,6 +254,9 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   const narrow = window.matchMedia('(max-width: 860px)')
   const lengths = new Map<number, string>()
   const current = opts.current ?? 1
+  // the season as this page's state shows it, read once: a page keeps the
+  // state it was served with (page-state.ts)
+  const lessons = pageLessons()
   let sel = current
   let lane: LaneFilter = 'all'
   let nodes = new Map<number, HTMLButtonElement>()
@@ -259,7 +266,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
 
   /** Every lesson as this viewer stands with it, read fresh from storage. */
   const views = (): LessonView[] =>
-    lessonViews(LESSONS, {
+    lessonViews(lessons, {
       done: new Set(Done.list()),
       steps: Positions.all(),
       current,
@@ -306,7 +313,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   })
 
   function renderCard(): void {
-    const el = card(LESSONS[sel])
+    const el = card(lessons[sel])
     if (narrow.matches) {
       qa('.ex-detail', list).forEach((d) => d.remove())
       const row = list.querySelector(`[data-n="${sel}"]`)
@@ -341,7 +348,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
       const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
       if (d === 0) return
       e.preventDefault()
-      const next = clamp(L.n + d, 0, LESSONS.length - 1)
+      const next = clamp(L.n + d, 0, lessons.length - 1)
       nodes.get(next)?.focus()
       select(next, false)
     })
@@ -364,13 +371,13 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     )
     addLaneBands(graph)
     addArcs(graph, X, colW)
-    const pos = (n: number): Pos => ({ x: X(n), y: LANE_Y[LESSONS[n].lane] })
+    const pos = (n: number): Pos => ({ x: X(n), y: LANE_Y[lessons[n].lane] })
     edgeEls = addEdges(edgesSvg, pos, colW)
     nodes = new Map()
     labels = new Map()
     const lean = labelLeans()
     const widths = labelWidths(W, colW, lean)
-    for (const L of LESSONS) {
+    for (const L of lessons) {
       const p = pos(L.n)
       addNode(L, p)
       const lab = nodeLabel(L, p, lean.get(L.n), widths.get(L.n))
@@ -387,7 +394,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     head.className = 'ex-lanes-head'
     head.innerHTML = '<span>Theory</span><span>Voice</span>'
     list.appendChild(head)
-    for (const L of LESSONS) {
+    for (const L of lessons) {
       if (L.n === 1 || L.n === 8) {
         const arc = document.createElement('li')
         arc.className = 'ex-arc'
@@ -421,7 +428,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     const { ancestors, roles } = lessonPath(sel)
     const open = list.querySelector('.ex-detail') !== null
     const all = views()
-    for (const L of LESSONS) {
+    for (const L of lessons) {
       const a = availability(all[L.n])
       const look: Look = {
         done: a === 'done',
@@ -438,7 +445,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     }
     edgeEls.forEach((el, i) => {
       const [a, b] = EDGES[i]
-      const on = matches(LESSONS[a]) && matches(LESSONS[b])
+      const on = matches(lessons[a]) && matches(lessons[b])
       const role = roles[i]
       el.setAttribute(
         'class',
@@ -480,7 +487,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   function select(n: number, scrollCard: boolean): void {
     sel = n
     refresh()
-    const L = LESSONS[n]
+    const L = lessons[n]
     status.textContent = `${L.n === 0 ? 'Trailer' : `Lesson ${L.n}`}, ${L.title}: card below`
     if (scrollCard) reveal()
   }

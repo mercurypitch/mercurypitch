@@ -24,12 +24,12 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
-import { builtLessons, lessonPath } from '../../tools/draft-lessons'
+import { lessonPages, lessonPath } from '../../tools/draft-lessons'
 
 const REPO = fileURLToPath(new URL('../..', import.meta.url))
 
-/** Every lesson page the e2e bundle carries (`build:e2e` shows the drafts). */
-const LESSONS = builtLessons(REPO, true)
+/** Every lesson page the e2e bundle carries: every build carries every one. */
+const LESSONS = lessonPages(REPO)
 
 /** Phones, tablets less their browser's bars, a laptop's window and a desktop. */
 const SIZES = [

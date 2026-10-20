@@ -198,12 +198,12 @@ jobs:
       # mercurypitch.com). Each script asserts its state on the finished dist.
       # See tools/glassworks-listing.ts.
       #
-      # The draft-lessons switch rides the same split: `build:dev` reads
-      # VITE_DRAFT_LESSONS=1 (a Find Your Pitch lesson waiting on a sign-off is
-      # built, routed and linked on dev.mercurypitch.com and previews), `build`
-      # reads 0 (its document is left out and nothing links it on
-      # mercurypitch.com), and each script runs assert-draft-lessons.mjs on the
-      # dist. See tools/draft-lessons.ts.
+      # The draft-lessons default rides the same split: `build:dev` reads
+      # VITE_DRAFT_LESSONS=1 and `build` reads 0, the default of a page no
+      # worker served, and each script runs assert-draft-lessons.mjs on the
+      # dist. Both carry every lesson page: what a deployed site serves is
+      # the site worker's, from the admin console's state and wrangler.jsonc's
+      # LESSON_DRAFTS (src/lesson-gate.ts). See tools/draft-lessons.ts.
       - name: Build app before direct deployment
         if: steps.preview-scope.outputs.deploy == 'true' && github.event_name != 'pull_request'
         shell: bash

@@ -11,7 +11,7 @@ import solidPlugin from 'vite-plugin-solid'
 import { ENTRY_PAGES } from './src/seo/entry-pages'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
 import { devLogRelayPlugin } from './tools/dev-log-relay'
-import { builtLessons, DRAFT_LESSONS_ENV, isDraftLessonsShown, lessonInputs, lessonPaths, lessonStatesPlugin, } from './tools/draft-lessons'
+import { DRAFT_LESSONS_ENV, isDraftLessonsShown, lessonInputs, lessonPaths, lessonStatesPlugin, liveByDefault, } from './tools/draft-lessons'
 import { fontAliasesPlugin } from './tools/font-aliases'
 import { writeEntryPages } from './tools/generate-entry-pages'
 import { writeErrorPages } from './tools/generate-error-pages'
@@ -80,11 +80,10 @@ const DELETE_ACCOUNT_PATH = '/delete-account'
 // the toys. Production serves /learn/01 from learn/01.html through
 // html_handling; dev and preview need the rewrite below, and the service
 // worker must leave the path alone (STANDALONE_DOCUMENT_PATHS). Every
-// learn/NN.html is a lesson page, served the same way (Lessons 1 and 2 on
-// every build); one still waiting on a sign-off
-// (src/features/lessons/kit/drafts.ts) is built and routed only where the
-// build shows drafts: in development mode and the e2e bundle, never in
-// production (tools/draft-lessons.ts).
+// learn/NN.html is a lesson page, served the same way and built in every
+// mode, one still waiting on a sign-off (src/features/lessons/kit/drafts.ts)
+// included: whether a lesson is live is the site worker's to answer at run
+// time (src/lesson-gate.ts, tools/draft-lessons.ts).
 
 // Clean path -> generated document, straight off the model in
 // src/seo/entry-pages.ts. Production does this at Cloudflare's asset layer
@@ -250,10 +249,11 @@ export default defineConfig(({ command, mode }) => {
     process.env[GLASSWORKS_LISTED_ENV] ?? modeEnv[GLASSWORKS_LISTED_ENV],
   )
 
-  // Whether this build shows the Find Your Pitch lessons that still wait on
-  // a sign-off: built, routed and linked in development mode (`pnpm dev`,
-  // `build:dev`: the dev deploy and PR previews) and in `build:e2e`; left out
-  // of the production build. See tools/draft-lessons.ts.
+  // Whether a page no worker served shows the Find Your Pitch lessons that
+  // still wait on a sign-off: yes in development mode (`pnpm dev`,
+  // `build:dev`) and in `build:e2e`, no in the production build. Every build
+  // carries every lesson page; where one is served, the site worker's state
+  // decides (src/lesson-gate.ts). See tools/draft-lessons.ts.
   const draftsShown = isDraftLessonsShown(
     process.env[DRAFT_LESSONS_ENV] ?? modeEnv[DRAFT_LESSONS_ENV],
   )
@@ -303,10 +303,11 @@ export default defineConfig(({ command, mode }) => {
       // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
       // vertexFn/fragmentFn closures) — same setup as chaos-master.
       typegpuPlugin({}),
-      standaloneEntryRewritePlugin(lessonPaths(__dirname, draftsShown)),
-      // A lesson page's words about which lessons are ready follow the
-      // build: a draft reads as ready only where its page is built.
-      lessonStatesPlugin(builtLessons(__dirname, draftsShown)),
+      standaloneEntryRewritePlugin(lessonPaths(__dirname)),
+      // A lesson page's words about which lessons are ready: both readings
+      // stay for the worker and the page's script to settle, and the one
+      // false by this build's default is marked hidden until they do.
+      lessonStatesPlugin(liveByDefault(__dirname, draftsShown)),
       standaloneAliasFilesPlugin(),
       nonProductionNoindexPlugin(mode === 'production'),
       removeWasmAssetsPlugin(),
@@ -467,10 +468,10 @@ export default defineConfig(({ command, mode }) => {
           // Plain, like the 404, but answered with a 200 at its clean path.
           deleteAccount: resolve(__dirname, 'delete-account.html'),
           // Find Your Pitch's lesson pages, learn/NN.html at /learn/NN
-          // (lesson01, lesson02, lesson03): every one, less the lessons still
-          // waiting on a sign-off where the build hides them, as production
-          // does.
-          ...lessonInputs(__dirname, draftsShown),
+          // (lesson01, lesson02, lesson03): every one, in every mode, the
+          // lessons still waiting on a sign-off included. Whether one is
+          // live is the site worker's to answer (src/lesson-gate.ts).
+          ...lessonInputs(__dirname),
         },
         output: {
           manualChunks(id) {
@@ -879,8 +880,8 @@ export default defineConfig(({ command, mode }) => {
       [`import.meta.env.${GLASSWORKS_LISTED_ENV}`]: JSON.stringify(
         glassworksListed ? '1' : '0',
       ),
-      // The same for the draft lessons: a hidden build folds every draft's
-      // season entry to a planned lesson, with no page to link
+      // The same for the draft lessons: the default of a page no worker
+      // served, which a production bundle reads as drafts held back
       // (src/features/lessons/kit/draft-switch.ts).
       [`import.meta.env.${DRAFT_LESSONS_ENV}`]: JSON.stringify(
         draftsShown ? '1' : '0',

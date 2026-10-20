@@ -2,6 +2,8 @@
 // Season map tests — what a lesson builds on, opens and lights
 // ============================================================
 
+import { readdirSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type * as Season from './season'
 import { ancestors, EDGES, lessonPath, LESSONS, unlocks } from './season'
@@ -214,7 +216,7 @@ describe('LESSONS', () => {
 })
 
 describe('a draft lesson (drafts.ts)', () => {
-  /** The season as a build with drafts shown ("1") or hidden ("0") reads it. */
+  /** The season as a build with drafts shown ("1") or held back ("0") reads it. */
   async function seasonBuilt(drafts: '1' | '0'): Promise<typeof Season> {
     vi.stubEnv('VITE_DRAFT_LESSONS', drafts)
     vi.resetModules()
@@ -226,42 +228,53 @@ describe('a draft lesson (drafts.ts)', () => {
     vi.resetModules()
   })
 
-  it('is live where the build shows drafts, with its page and its fifteen minutes', async () => {
-    // Act
-    const season = await seasonBuilt('1')
+  it("keeps its page and its reading time in every build: whether it is live is publish.ts's", async () => {
+    for (const drafts of ['1', '0'] as const) {
+      // Act
+      const season = await seasonBuilt(drafts)
 
-    // Assert
-    const L = season.LESSONS[3]
-    expect([L.page, L.minutes, L.film]).toEqual(['/learn/03', 15, undefined])
+      // Assert: Lessons 3 and 5 wait on a sign-off, and Lesson 4 is live with no film
+      const [L3, L4, L5] = [3, 4, 5].map((n) => season.LESSONS[n])
+      expect([L3.page, L3.minutes, L3.film], drafts).toEqual([
+        '/learn/03',
+        15,
+        undefined,
+      ])
+      expect([L4.page, L4.minutes, L4.film], drafts).toEqual([
+        '/learn/04',
+        10,
+        undefined,
+      ])
+      expect([L5.page, L5.minutes, L5.film], drafts).toEqual([
+        '/learn/05',
+        17,
+        undefined,
+      ])
+      expect(L4.pr.link?.href, drafts).toBe('/pitch-training?lesson=04')
+      expect(L5.pr.link?.href, drafts).toBe('/mirror?lesson=05')
+    }
   })
 
-  it('leaves a live lesson with no film live in either build: Lesson 4', async () => {
+  it('gives every lesson page in the repository its page in the season, whichever way a build reads drafts', async () => {
+    // Arrange: every learn/NN.html, as the build takes them (tools/draft-lessons.ts)
+    const pages = readdirSync(resolve(__dirname, '../../../../learn'))
+      .map((name) => /^(\d{2})\.html$/.exec(name)?.[1])
+      .filter((nn): nn is string => nn !== undefined)
+
     for (const drafts of ['1', '0'] as const) {
       // Act
       const season = await seasonBuilt(drafts)
 
       // Assert
-      const L = season.LESSONS[4]
-      expect([L.page, L.minutes, L.film], drafts).toEqual([
-        '/learn/04',
-        10,
-        undefined,
-      ])
-      expect(L.pr.link?.href, drafts).toBe('/pitch-training?lesson=04')
+      expect(pages.length, drafts).toBeGreaterThanOrEqual(5)
+      for (const nn of pages)
+        expect(season.LESSONS[Number(nn)]?.page, `${drafts}: ${nn}`).toBe(
+          `/learn/${nn}`,
+        )
     }
   })
 
-  it('is coming later, with no page and no reading time, where the build hides drafts', async () => {
-    // Act
-    const season = await seasonBuilt('0')
-
-    // Assert: exactly what the season map said before the page existed
-    const L = season.LESSONS[3]
-    expect([L.page, L.minutes]).toEqual([undefined, undefined])
-    expect(season.LESSONS[1].page).toBe('/learn/01')
-  })
-
-  it('still opens on its hook where the build hides drafts, its alternative kept for the admin console', async () => {
+  it('opens on its hook, its alternative kept for the admin console', async () => {
     // Act
     const season = await seasonBuilt('0')
 
@@ -271,26 +284,7 @@ describe('a draft lesson (drafts.ts)', () => {
       "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?",
     )
     expect(L.hookAlts?.map((v) => v.id)).toEqual(['figures'])
-  })
-
-  it('reads Lesson 5 as live, its seventeen minutes and its page, where drafts are shown', async () => {
-    // Act
-    const season = await seasonBuilt('1')
-
-    // Assert
-    const L = season.LESSONS[5]
-    expect([L.page, L.minutes, L.film]).toEqual(['/learn/05', 17, undefined])
-  })
-
-  it("folds Lesson 5 to a lesson coming later where drafts are hidden, its practise link and the team's notes kept", async () => {
-    // Act
-    const season = await seasonBuilt('0')
-
-    // Assert: Voice Mirror is live, so the link stays; the page does not
-    const L = season.LESSONS[5]
-    expect([L.page, L.minutes]).toEqual([undefined, undefined])
-    expect(L.pr.link?.href).toBe('/mirror?lesson=05')
-    expect(L.pr.needs).toBe(
+    expect(season.LESSONS[5].pr.needs).toBe(
       'Long Note with a fixed 10 or 15 s length (durationSec)',
     )
   })

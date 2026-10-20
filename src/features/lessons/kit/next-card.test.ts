@@ -9,7 +9,7 @@ import type * as Card from './next-card'
 import type { NextCard, SeasonEnd } from './next-card'
 import { createNextCard, nextCard } from './next-card'
 import { Done } from './progress'
-import type * as Season from './season'
+import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
 
 /** The card for a lesson, never the season's close. */
@@ -132,23 +132,13 @@ describe('nextCard', () => {
   })
 })
 
-describe('a hidden draft (drafts.ts)', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.resetModules()
-  })
-
-  it('is coming later with no link to its page, even with a step the viewer reached while it was shown', async () => {
-    // Arrange: a build that hides drafts, and a step kept from a dev visit
-    vi.stubEnv('VITE_DRAFT_LESSONS', '0')
-    vi.resetModules()
-    const season: typeof Season = await import('./season')
-    const card: typeof Card = await import('./next-card')
+describe('a lesson held back (publish.ts)', () => {
+  it('is coming later with no link to its page, even with a step the viewer reached while it was shown', () => {
+    // Arrange: drafts held back, as on mercurypitch.com, and a step kept from a dev visit
+    const season = seasonFor(LESSONS, defaultPageState(false))
 
     // Act: on Lesson 2's page, the card for Lesson 3
-    const c = lessonCard(
-      card.nextCard(season.LESSONS, [1], { 3: { step: 3, of: 6 } }, 2),
-    )
+    const c = lessonCard(nextCard(season, [1], { 3: { step: 3, of: 6 } }, 2))
 
     // Assert
     expect([c?.n, c?.title, ...way(c)]).toEqual([
@@ -160,6 +150,87 @@ describe('a hidden draft (drafts.ts)', () => {
       '#explorer',
     ])
     expect(JSON.stringify(c)).not.toContain('/learn/03')
+  })
+})
+
+describe('createNextCard on a page the worker served (page-state.ts)', () => {
+  /** The page's state, as the site worker writes it into the head. */
+  function served(lessons: object, drafts = false): void {
+    const tag = document.createElement('script')
+    tag.type = 'application/json'
+    tag.id = 'lesson-state'
+    tag.textContent = JSON.stringify({
+      version: 1,
+      updatedAt: null,
+      lessons,
+      drafts,
+    })
+    document.head.append(tag)
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    document.body.innerHTML =
+      '<div class="next-card card" data-next-card hidden></div>'
+  })
+
+  afterEach(() => {
+    document.head.querySelector('#lesson-state')?.remove()
+    document.body.textContent = ''
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it('links a draft the state publishes, where its build holds drafts back', async () => {
+    // Arrange: a production bundle, and Lesson 3 published from the console
+    vi.stubEnv('VITE_DRAFT_LESSONS', '0')
+    vi.resetModules()
+    const built: typeof Card = await import('./next-card')
+    served({ 3: { published: true } })
+
+    // Act: Lesson 2's Wrap
+    built.createNextCard(2)
+
+    // Assert
+    const card = document.querySelector<HTMLAnchorElement>('a.next-card')
+    expect([
+      card?.getAttribute('href'),
+      card?.querySelector('.chip')?.textContent,
+    ]).toEqual(['/learn/03', 'Start lesson'])
+  })
+
+  it('shows a released lesson the state holds back as coming later, on the map', () => {
+    // Arrange: Lesson 2 held back
+    served({ 2: { published: false } }, true)
+
+    // Act: Lesson 1's Wrap
+    createNextCard(1)
+
+    // Assert
+    const card = document.querySelector<HTMLAnchorElement>('a.next-card')
+    expect([
+      card?.getAttribute('href'),
+      card?.classList.contains('is-later'),
+      card?.querySelector('.tempo')?.textContent,
+    ]).toEqual(['#explorer', true, 'Coming later'])
+    expect(card?.outerHTML).not.toContain('/learn/02')
+  })
+
+  it('draws the hook the console picked, and the default tease for an id the lesson lacks', () => {
+    // Arrange: on Lesson 2's Wrap, Lesson 3's card; on Lesson 3's, Lesson 4's
+    served({ 3: { hook: 'figures' }, 4: { tease: 'gone' } }, true)
+
+    // Act
+    createNextCard(2)
+    const hook = document.querySelector('a.next-card .q2')?.textContent
+    document.body.innerHTML =
+      '<div class="next-card card" data-next-card hidden></div>'
+    createNextCard(3)
+    const tease = document.querySelector('a.next-card .next-tease')?.textContent
+
+    // Assert
+    expect(hook).toBe(LESSONS[3].hookAlts?.[0]?.text)
+    expect(tease).toBe(LESSONS[4].tease)
   })
 })
 

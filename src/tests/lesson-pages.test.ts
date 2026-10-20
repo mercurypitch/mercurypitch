@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ENTRY_PAGES } from '@/seo/entry-pages'
-import { builtLessons, draftLessons, lessonDocument, lessonPath, } from '../../tools/draft-lessons'
+import { draftLessons, lessonDocument, lessonPath, releasedLessons, } from '../../tools/draft-lessons'
 import { lessonHeadline, releasedLessonLinks } from '../../tools/lesson-links'
 
 // A Find Your Pitch lesson is written by hand, so nothing generates its head
@@ -37,7 +37,7 @@ const ORGANIZATION = {
 }
 
 // Released: every learn/NN.html the draft list does not hold back.
-const RELEASED = builtLessons(repo, false)
+const RELEASED = releasedLessons(repo)
 
 describe('the released lessons', () => {
   it('starts with Lesson 1, which every hand-written nav links', () => {
@@ -184,10 +184,12 @@ describe.each(RELEASED)('released lesson %i', (n) => {
 
 // A draft (drafts.ts: Lessons 3 and 5 wait on the vocal coach) is the other
 // half, held to what scripts/assert-draft-lessons.mjs checks in a finished
-// build: listed nowhere and linked from no crawlable document, whichever way
-// a build shows it, with its service-worker rule kept so that a build hiding
-// it answers its address with the 404 page, never the app shell. These are
-// the same rules on the repository, so the two cannot disagree.
+// build: listed in no static file and linked from no crawlable document,
+// whichever way an environment shows it (the site worker adds it to the
+// sitemap and llms.txt only while it is published, src/lesson-gate.ts), with
+// its service-worker rule kept so that where it is held back its address
+// reaches the worker's 404 page, never the app shell. These are the same
+// rules on the repository, so the two cannot disagree.
 describe.each(draftLessons())('draft lesson %i', (n) => {
   const path = lessonPath(n)
   // `/learn/05`, but not `/learn/050`
@@ -210,7 +212,7 @@ describe.each(draftLessons())('draft lesson %i', (n) => {
       expect(repoFile(file), `${file} links ${path}`).not.toMatch(mention)
   })
 
-  it('keeps its service-worker rule, for a build that hides it', () => {
+  it('keeps its service-worker rule, for an environment that holds it back', () => {
     const serviceWorker = repoFile('src/lib/sw-runtime.ts')
     expect(serviceWorker).toContain(`'${path}'`)
     expect(serviceWorker).toContain(`'${path}.html'`)

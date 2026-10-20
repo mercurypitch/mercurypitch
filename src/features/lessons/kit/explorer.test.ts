@@ -311,8 +311,10 @@ describe('createExplorer', () => {
   })
 })
 
-describe("a draft lesson on Lesson 1's map (drafts.ts)", () => {
-  /** Lesson 1's explorer as a build with drafts shown ("1") or hidden ("0") draws it, Lesson 3 selected. */
+// A page no worker served (`pnpm dev`, the e2e bundle) carries no state, so
+// its map reads drafts as its build does (page-state.ts).
+describe("a draft lesson on Lesson 1's map, on a page no worker served (drafts.ts)", () => {
+  /** Lesson 1's explorer as a build with drafts shown ("1") or held back ("0") draws it, Lesson 3 selected. */
   async function lessonThreeFromLessonOne(drafts: '1' | '0'): Promise<void> {
     vi.stubEnv('VITE_DRAFT_LESSONS', drafts)
     vi.resetModules()
@@ -337,7 +339,7 @@ describe("a draft lesson on Lesson 1's map (drafts.ts)", () => {
     expect(cardLinks()).toEqual(['/learn/03'])
   })
 
-  it('shows a hidden draft as coming later, with no link to the page the build leaves out', async () => {
+  it('shows a draft held back as coming later, with no link to its page', async () => {
     // Arrange: a step kept from a visit to a build that showed it
     localStorage.setItem('fyp-pos', JSON.stringify({ 3: { step: 3, of: 6 } }))
 
@@ -377,5 +379,75 @@ describe("a draft lesson on Lesson 1's map (drafts.ts)", () => {
     expect(hidden?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
     expect(hidden?.innerHTML).not.toContain('/learn/05')
     expect(hidden?.innerHTML).toContain('/mirror?lesson=05')
+  })
+})
+
+describe("Lesson 1's map on a page the worker served (page-state.ts)", () => {
+  /** The page's state, as the site worker writes it into the head. */
+  function served(lessons: object, drafts = false): void {
+    const tag = document.createElement('script')
+    tag.type = 'application/json'
+    tag.id = 'lesson-state'
+    tag.textContent = JSON.stringify({
+      version: 1,
+      updatedAt: null,
+      lessons,
+      drafts,
+    })
+    document.head.append(tag)
+  }
+
+  afterEach(() => {
+    document.head.querySelector('#lesson-state')?.remove()
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it('links a draft the state publishes, where its build holds drafts back', async () => {
+    // Arrange: a production bundle, and Lesson 3 published from the console
+    vi.stubEnv('VITE_DRAFT_LESSONS', '0')
+    vi.resetModules()
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    served({ 3: { published: true } })
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 1 }).select(3, false)
+
+    // Assert
+    expect(openCard()?.querySelector('.chip')?.textContent).toBe('Ready · read')
+    expect(cardLinks()).toEqual(['/learn/03'])
+  })
+
+  it('shows a released lesson the state holds back as coming later, with no link', () => {
+    // Arrange: Lesson 2 held back
+    served({ 2: { published: false } }, true)
+    explorerPage()
+
+    // Act
+    createExplorer({ current: 1 }).select(2, false)
+
+    // Assert
+    const card = openCard()
+    expect(card?.querySelector('h3')?.textContent).toBe('Twelve notes')
+    expect(card?.querySelector('.chip')?.textContent).toBe('Coming later')
+    expect(card?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
+    expect(document.getElementById('exCardHost')?.innerHTML).not.toContain(
+      '/learn/02',
+    )
+  })
+
+  it('draws the hook the console picked on its card', () => {
+    // Arrange: Lesson 3's figures, the hook it opened on before
+    served({ 3: { hook: 'figures' } }, true)
+    explorerPage()
+
+    // Act
+    createExplorer({ current: 1 }).select(3, false)
+
+    // Assert
+    expect(openCard()?.querySelector('.hookq')?.textContent).toBe(
+      LESSONS[3].hookAlts?.[0]?.text,
+    )
   })
 })

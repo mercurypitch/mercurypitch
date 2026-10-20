@@ -7,8 +7,9 @@ import './browser-doubles.test-fixtures'
 import type * as Menu from './lesson-menu'
 import type { DeckNow, MenuModel, MenuRow } from './lesson-menu'
 import { menuModel } from './lesson-menu'
-import type * as Season from './season'
+import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
+import type { StepDeck } from './step-deck'
 
 /** This page's deck: six steps, the third showing, singing after the last. */
 const DECK: DeckNow = {
@@ -165,27 +166,13 @@ describe('menuModel', () => {
   })
 })
 
-describe('a hidden draft (drafts.ts)', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.resetModules()
-  })
-
-  it('is coming later and not a link, even with a step the viewer reached while it was shown', async () => {
-    // Arrange: a build that hides drafts, and a step kept from a dev visit
-    vi.stubEnv('VITE_DRAFT_LESSONS', '0')
-    vi.resetModules()
-    const season: typeof Season = await import('./season')
-    const menu: typeof Menu = await import('./lesson-menu')
+describe('a lesson held back (publish.ts)', () => {
+  it('is coming later and not a link, even with a step the viewer reached while it was shown', () => {
+    // Arrange: drafts held back, as on mercurypitch.com, and a step kept from a dev visit
+    const season = seasonFor(LESSONS, defaultPageState(false))
 
     // Act
-    const m = menu.menuModel(
-      season.LESSONS,
-      [1],
-      { 3: { step: 3, of: 6 } },
-      1,
-      DECK,
-    )
+    const m = menuModel(season, [1], { 3: { step: 3, of: 6 } }, 1, DECK)
 
     // Assert
     const L3 = row(m, 3)
@@ -196,5 +183,68 @@ describe('a hidden draft (drafts.ts)', () => {
       0,
     ])
     expect(rows(m).map((r) => r.href)).not.toContain('/learn/03#step-3')
+  })
+})
+
+describe('createLessonMenu on a page the worker served (page-state.ts)', () => {
+  const showModal = HTMLDialogElement.prototype.showModal
+
+  /** A step deck on its first of six steps. */
+  const deck = {
+    current: 1,
+    count: 6,
+    titles: DECK.titles,
+    after: { label: 'Sing it', selector: '#sing' },
+    subscribe: () => () => undefined,
+    jump: () => undefined,
+    show: () => undefined,
+  } as unknown as StepDeck
+
+  afterEach(() => {
+    HTMLDialogElement.prototype.showModal = showModal
+    document.head.querySelector('#lesson-state')?.remove()
+    document.body.textContent = ''
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it('lists the lessons as the state has them: a draft it publishes linked, a lesson it holds back coming later', async () => {
+    // Arrange: a production bundle, Lesson 3 published and Lesson 2 held back
+    vi.stubEnv('VITE_DRAFT_LESSONS', '0')
+    vi.resetModules()
+    const built: typeof Menu = await import('./lesson-menu')
+    HTMLDialogElement.prototype.showModal = function open(
+      this: HTMLDialogElement,
+    ) {
+      this.setAttribute('open', '')
+    }
+    const tag = document.createElement('script')
+    tag.type = 'application/json'
+    tag.id = 'lesson-state'
+    tag.textContent = JSON.stringify({
+      version: 1,
+      updatedAt: null,
+      lessons: { 3: { published: true }, 2: { published: false } },
+      drafts: false,
+    })
+    document.head.append(tag)
+    document.body.innerHTML = '<span class="mast-ep">Lesson 01</span>'
+    built.createLessonMenu({
+      lesson: 1,
+      deck,
+      label: document.querySelector('.mast-ep') as HTMLElement,
+      sections: [],
+    })
+
+    // Act
+    document.querySelector<HTMLButtonElement>('.lm-btn')?.click()
+
+    // Assert
+    const hrefs = Array.from(document.querySelectorAll('#lessonMenu a')).map(
+      (a) => a.getAttribute('href') ?? '',
+    )
+    expect(hrefs).toContain('/learn/03')
+    expect(hrefs.filter((h) => h.startsWith('/learn/02'))).toEqual([])
+    expect(hrefs.filter((h) => h.startsWith('/learn/05'))).toEqual([])
   })
 })

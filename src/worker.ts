@@ -1,5 +1,7 @@
 import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace, R2Bucket } from '@cloudflare/workers-types'
+import type { WaitUntil } from './lesson-gate'
+import { handleLessonRequest } from './lesson-gate'
 import { apexMirrorUrl } from './lib/mirror-subdomain'
 import { nativeAppOrigin, nativePreflight, withNativeCors, } from './lib/native-app-cors'
 import { getRunpodConfig, requestedRunpodTier } from './lib/runpod'
@@ -57,6 +59,11 @@ export interface Env {
    *  Locates a job's stems for the R2 recovery fallback and second-pass
    *  stem reuse. Defaults to "runpod" when unset. */
   RUNPOD_STEM_PREFIX?: string
+  /** Whether a draft lesson the admin console has not set is published
+   *  here: "1" or "true" publishes it. Per-env var in wrangler.jsonc: "0" on
+   *  prod, "1" on dev, previews and a local `wrangler dev`
+   *  (src/lesson-gate.ts). */
+  LESSON_DRAFTS?: string
 }
 
 // Voice Mirror and the vocal-range search entry share the same app code but
@@ -343,7 +350,7 @@ async function mailPicture(request: Request, env: Env): Promise<Response> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx?: WaitUntil): Promise<Response> {
     const url = new URL(request.url)
     const method = request.method
 
@@ -414,6 +421,13 @@ export default {
       const apex = apexMirrorUrl(request.url)
       if (apex !== null) return Response.redirect(apex, 301)
     }
+
+    // Find Your Pitch's lesson pages, the sitemap and llms.txt answer as the
+    // admin console's lesson state has them: a lesson held back is the 404
+    // page, a published one carries the state and its picked hook, and the
+    // listings name the live lessons (src/lesson-gate.ts).
+    const lessonResp = await handleLessonRequest(request, env, ctx)
+    if (lessonResp !== null) return lessonResp
 
     // Voice Mirror — the standalone entry (mirror.html) is served for its
     // path on the main domain and the SEO alias landings. Hashed /assets/*

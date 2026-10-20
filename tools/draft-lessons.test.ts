@@ -1,21 +1,21 @@
 // ============================================================
-// Draft lessons tests — a lesson waiting on a sign-off stays off mercurypitch.com
+// Draft lessons tests — every lesson page in every build, and the build's default for drafts
 // ============================================================
 //
-// The switch's rules run on a fixture of lesson pages; the rest runs against
+// The build's rules run on a fixture of lesson pages; the rest runs against
 // the real env files, scripts, documents and listings, so a change to any of
 // them fails here before it fails a release build. Releasing a lesson changes
 // no test: it deletes the lesson's line from drafts.ts and lists the page in
-// the sitemap and llms.txt, which the last test below then requires. The
-// folded season entry is season.test.ts's; the finished dist is
-// scripts/assert-draft-lessons.mjs's.
+// the sitemap and llms.txt, which the last test below then requires. Which
+// lessons are live at run time is src/lesson-gate.ts's, and its tests'; the
+// finished dist is scripts/assert-draft-lessons.mjs's.
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DRAFT_LESSONS } from '../src/features/lessons/kit/drafts'
-import { builtLessons, draftLessons, isDraftLessonsShown, lessonDocument, lessonInputs, lessonPages, lessonPath, lessonPaths, resolveLessonStates, } from './draft-lessons'
+import { draftLessons, isDraftLessonsShown, lessonDocument, lessonInputs, lessonPages, lessonPath, lessonPaths, liveByDefault, markLessonStates, releasedLessons, } from './draft-lessons'
 
 const ROOT = resolve(__dirname, '..')
 
@@ -84,14 +84,14 @@ describe('the lesson pages', () => {
   })
 })
 
-describe('a build that shows the drafts', () => {
+describe('every build', () => {
   it('builds every lesson page and rewrites every clean path, drafts included', () => {
     // Arrange
     const root = fixture(['01.html', '03.html'])
 
     // Act
-    const inputs = lessonInputs(root, true, WAITING)
-    const paths = lessonPaths(root, true, WAITING)
+    const inputs = lessonInputs(root)
+    const paths = lessonPaths(root)
 
     // Assert
     expect(inputs).toEqual({
@@ -100,29 +100,34 @@ describe('a build that shows the drafts', () => {
     })
     expect(paths).toEqual(['/learn/01', '/learn/03'])
   })
-})
 
-describe('a build that hides the drafts', () => {
-  it('builds and routes the live lessons only', () => {
-    // Arrange
-    const root = fixture(['01.html', '03.html'])
-
-    // Act
-    const inputs = lessonInputs(root, false, WAITING)
-    const paths = lessonPaths(root, false, WAITING)
-
-    // Assert
-    expect(inputs).toEqual({ lesson01: resolve(root, 'learn/01.html') })
-    expect(paths).toEqual(['/learn/01'])
-  })
-
-  it('builds a lesson once its line leaves drafts.ts: releasing is deleting the line', () => {
+  it('names the released pages, which the static listings link: every one with no line in drafts.ts', () => {
     // Arrange
     const root = fixture(['01.html', '03.html'])
 
     // Act + Assert
-    expect(builtLessons(root, false, {})).toEqual([1, 3])
-    expect(lessonPaths(root, false, {})).toEqual(['/learn/01', '/learn/03'])
+    expect(releasedLessons(root, WAITING)).toEqual([1])
+    expect(releasedLessons(root, {})).toEqual([1, 3])
+  })
+
+  it("reads a page no worker served as live by the build's default: drafts too only where shown", () => {
+    // Arrange
+    const root = fixture(['01.html', '03.html'])
+
+    // Act + Assert
+    expect(liveByDefault(root, true, WAITING)).toEqual([1, 3])
+    expect(liveByDefault(root, false, WAITING)).toEqual([1])
+  })
+
+  it('takes every lesson page in this repository as an input, Lessons 3 and 5 among them', () => {
+    // Act
+    const inputs = lessonInputs(ROOT)
+
+    // Assert
+    for (const n of [1, 2, 3, 4, 5])
+      expect(inputs[`lesson0${n}`], `${n}`).toBe(
+        resolve(ROOT, `learn/0${n}.html`),
+      )
   })
 })
 
@@ -166,19 +171,39 @@ describe("a page's words about which lessons are ready", () => {
   const LINE =
     'Next: Lesson 5 <span data-if-live="5">ready to read</span\n  ><span data-if-planned="5">coming later</span>.'
 
-  it('keeps the reading that is true of the build, unwrapped, and drops the other', () => {
+  it("keeps both readings, marking hidden the one that is false by the build's default", () => {
     // Act
-    const live = resolveLessonStates(LINE, [1, 2, 4, 5])
-    const planned = resolveLessonStates(LINE, [1, 2, 4])
+    const live = markLessonStates(LINE, [1, 2, 4, 5])
+    const planned = markLessonStates(LINE, [1, 2, 4])
 
     // Assert
-    expect(live).toBe('Next: Lesson 5 ready to read.')
-    expect(planned).toBe('Next: Lesson 5 coming later.')
+    expect(live).toBe(
+      'Next: Lesson 5 <span data-if-live="5">ready to read</span><span data-if-planned="5" hidden>coming later</span>.',
+    )
+    expect(planned).toBe(
+      'Next: Lesson 5 <span data-if-live="5" hidden>ready to read</span><span data-if-planned="5">coming later</span>.',
+    )
   })
 
   it('refuses a reading that holds a span of its own, which would end it early', () => {
     const nested = '<span data-if-live="3">a <span>b</span> c</span>'
 
-    expect(() => resolveLessonStates(nested, [3])).toThrow(/holds a span/)
+    expect(() => markLessonStates(nested, [3])).toThrow(/holds a span/)
+  })
+
+  it('refuses a reading in any other form, which the worker and the page could not settle alike', () => {
+    for (const odd of [
+      '<span data-if-live="3" class="x">a</span>',
+      '<span data-if-live="123">a</span>',
+      '<b data-if-planned="3">a</b>',
+      '<span data-if-live="3" hidden>a</span>',
+    ])
+      expect(() => markLessonStates(odd, [3]), odd).toThrow(/one attribute/)
+  })
+
+  it('leaves a page with no readings as it is', () => {
+    const html = repoFile('learn/02.html')
+
+    expect(markLessonStates(html, [1, 2])).toBe(html)
   })
 })
