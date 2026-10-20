@@ -14,7 +14,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
-import type { Fetcher, LessonRow, ListingCheck, PageCheck, ReleaseStep, } from './lesson-admin'
+import type { ChecklistInputs, Fetcher, LessonRow, ListingCheck, PageCheck, ReleaseStep, } from './lesson-admin'
 import { checkPage, lessonRows, llmsPaths, pagePath, readListing, releaseChecklist, sitemapPaths, } from './lesson-admin'
 
 const repoFile = (path: string): string =>
@@ -47,6 +47,10 @@ const read = (...paths: string[]): ListingCheck => ({
   paths: new Set(paths),
 })
 const answered = (status: number): PageCheck => ({ kind: 'answered', status })
+
+/** A site that shows drafts by default (the dev site), and one that holds them back (mercurypitch.com). */
+const SHOWN: ChecklistInputs = { draftsShown: true }
+const HELD: ChecklistInputs = { draftsShown: false }
 
 const states = (steps: readonly ReleaseStep[]) =>
   steps.map((step) => [step.id, step.state])
@@ -277,11 +281,15 @@ describe('releaseChecklist', () => {
   )
 
   it('marks a released, filmed lesson the site serves and lists done, bar the steps done by hand', () => {
-    const steps = releaseChecklist(released, {
-      page: answered(200),
-      sitemap: read('/learn/01'),
-      llms: read('/learn/01'),
-    })
+    const steps = releaseChecklist(
+      released,
+      {
+        page: answered(200),
+        sitemap: read('/learn/01'),
+        llms: read('/learn/01'),
+      },
+      HELD,
+    )
 
     expect(states(steps)).toEqual([
       ['page', 'done'],
@@ -297,11 +305,15 @@ describe('releaseChecklist', () => {
   })
 
   it('leaves a hidden draft its release steps, and names what it waits on', () => {
-    const steps = releaseChecklist(hiddenDraft, {
-      page: answered(404),
-      sitemap: read('/learn/01'),
-      llms: read('/learn/01'),
-    })
+    const steps = releaseChecklist(
+      hiddenDraft,
+      {
+        page: answered(404),
+        sitemap: read('/learn/01'),
+        llms: read('/learn/01'),
+      },
+      HELD,
+    )
 
     expect(states(steps)).toEqual([
       ['page', 'done'],
@@ -318,16 +330,34 @@ describe('releaseChecklist', () => {
     )
   })
 
-  it('flags a draft the site serves, or lists, where this build leaves drafts out', () => {
-    const steps = releaseChecklist(hiddenDraft, {
+  it('flags a draft the site serves, or lists, where this site leaves drafts out, whether or not this build carries its page', () => {
+    const site = {
       page: answered(200),
       sitemap: read('/learn/03'),
       llms: read(),
-    })
+    }
+    const problems = (steps: readonly ReleaseStep[]) =>
+      siteSteps(steps).filter(([, state]) => state === 'problem')
 
-    expect(states(steps).filter(([, state]) => state === 'problem')).toEqual([
-      ['sitemap', 'problem'],
-      ['live', 'problem'],
+    for (const draft of [hiddenDraft, rowFor(3)]) {
+      expect(problems(releaseChecklist(draft, site, HELD))).toEqual([
+        [
+          'sitemap',
+          'problem',
+          'Listed before its release: a draft stays out of both listings.',
+        ],
+        [
+          'live',
+          'problem',
+          'This site leaves drafts out, yet it serves the page.',
+        ],
+      ])
+    }
+    // Where drafts are shown, serving and listing it is what the site should do.
+    expect(siteSteps(releaseChecklist(rowFor(3), site, SHOWN))).toEqual([
+      ['sitemap', 'done', undefined],
+      ['llms', 'todo', undefined],
+      ['live', 'done', undefined],
     ])
   })
 
@@ -335,7 +365,7 @@ describe('releaseChecklist', () => {
     const steps = releaseChecklist(
       released,
       { page: answered(200), sitemap: read('/learn/01'), llms: read() },
-      false,
+      { ...HELD, published: false },
     )
 
     expect(siteSteps(steps)).toEqual([
@@ -352,7 +382,7 @@ describe('releaseChecklist', () => {
         releaseChecklist(
           released,
           { page: answered(404), sitemap: read(), llms: read() },
-          false,
+          { ...HELD, published: false },
         ),
       ).at(-1),
     ).toEqual(['live', 'todo', 'Unpublished here, so it answers 404.'])
@@ -363,12 +393,12 @@ describe('releaseChecklist', () => {
     const shown = releaseChecklist(
       shownDraft,
       { page: answered(200), sitemap: read('/learn/03'), llms: read() },
-      true,
+      { ...SHOWN, published: true },
     )
     const hidden = releaseChecklist(
       hiddenDraft,
       { page: answered(404), sitemap: read(), llms: read() },
-      true,
+      { ...HELD, published: true },
     )
 
     expect(siteSteps(shown)).toEqual([
@@ -388,16 +418,24 @@ describe('releaseChecklist', () => {
   })
 
   it('waits for the site, and says so when it could not ask, before marking what it serves', () => {
-    const waiting = releaseChecklist(released, {
-      page: { kind: 'checking' },
-      sitemap: { kind: 'checking' },
-      llms: { kind: 'checking' },
-    })
-    const failed = releaseChecklist(released, {
-      page: { kind: 'unreachable' },
-      sitemap: { kind: 'unreadable', status: 500 },
-      llms: { kind: 'unreadable' },
-    })
+    const waiting = releaseChecklist(
+      released,
+      {
+        page: { kind: 'checking' },
+        sitemap: { kind: 'checking' },
+        llms: { kind: 'checking' },
+      },
+      HELD,
+    )
+    const failed = releaseChecklist(
+      released,
+      {
+        page: { kind: 'unreachable' },
+        sitemap: { kind: 'unreadable', status: 500 },
+        llms: { kind: 'unreadable' },
+      },
+      HELD,
+    )
     const served = (steps: readonly ReleaseStep[]) =>
       states(steps).filter(
         ([id]) => id === 'sitemap' || id === 'llms' || id === 'live',
@@ -421,11 +459,12 @@ describe('releaseChecklist', () => {
       releaseChecklist(
         rowFor(n, lessonRows(LESSONS, {}, { 2: null })),
         site,
+        SHOWN,
       ).map((step) => step.id)
 
     expect(ids(2)).toContain('film')
     expect(ids(4)).not.toContain('film')
-    expect(states(releaseChecklist(rowFor(6), site))).toEqual([
+    expect(states(releaseChecklist(rowFor(6), site, SHOWN))).toEqual([
       ['page', 'todo'],
       ['release', 'todo'],
       ['sitemap', 'todo'],
@@ -439,11 +478,11 @@ describe('releaseChecklist', () => {
 
   it('has no checklist for the trailer, a film with no page', () => {
     expect(
-      releaseChecklist(rowFor(0), {
-        page: null,
-        sitemap: read(),
-        llms: read(),
-      }),
+      releaseChecklist(
+        rowFor(0),
+        { page: null, sitemap: read(), llms: read() },
+        SHOWN,
+      ),
     ).toEqual([])
   })
 })

@@ -10,10 +10,8 @@
 // change in the lesson's log.
 //
 // Whether this site shows drafts is the page's to pass in: draft-switch.ts's
-// DRAFTS_SHOWN, the answer this build was made with. It is not read from
-// whether the build carries a draft's page. The two agree while a build that
-// hides drafts leaves their pages out, and part once every build carries
-// every lesson page and the site decides per request which are live.
+// DRAFTS_SHOWN, the answer this build was made with, never whether the build
+// carries a draft's page (lesson-admin.ts `publishedByDefault`).
 //
 // The words the Lessons page prints for all of that are here too, from the
 // state words to what the page says after a save, so the page and its tests
@@ -21,6 +19,7 @@
 
 import type { LessonOverride, LessonStateChange, LessonStateField, } from '@/lib/lesson-state'
 import type { LessonRow } from './lesson-admin'
+import { publishedByDefault } from './lesson-admin'
 import type { LessonApiError } from './lesson-state-client'
 
 /**
@@ -58,15 +57,6 @@ export function latestChange(
   field: LessonStateField,
 ): LessonStateChange | null {
   return log?.find((change) => change.field === field) ?? null
-}
-
-/** What the code decides on this site, the state aside: published if released, or a draft where drafts are shown. */
-export function publishedByDefault(
-  row: LessonRow,
-  draftsShown: boolean,
-): boolean {
-  if (row.build === 'released') return true
-  return row.build === 'draft' && draftsShown
 }
 
 function defaultReason(row: LessonRow, draftsShown: boolean): PublishReason {
