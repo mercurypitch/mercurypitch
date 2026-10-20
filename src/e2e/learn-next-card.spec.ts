@@ -9,10 +9,12 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3 and 5 are live here; a build that hides them is
-// next-card.test.ts's. A lesson with a tease (kit/lesson-copy.ts) is set up
-// by it on the card before, one line above its hook; the season's close,
-// on a finale with no page yet, is next-card.test.ts's too.
+// does, so Lessons 3 and 5 are live here; a page that holds them back is
+// next-card.test.ts's, and one the site worker served with the console's
+// state is learn-publish-state.spec.ts's. A lesson with a tease
+// (kit/lesson-copy.ts) is set up by it on the card before, one line above
+// its hook; the season's close, on a finale with no page yet, is
+// next-card.test.ts's too.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
