@@ -633,15 +633,21 @@ jobs:
       # Tells Bing and the other IndexNow engines which pages this release
       # added, re-dated or removed, now that they and the key file are live
       # (scripts/indexnow.mjs). A notice, not part of the release: it never
-      # fails the run.
+      # fails the run. The next release compares against this tag whatever
+      # happened here, so a failed notice leaves a warning on the run with
+      # the command that sends it by hand.
       - name: Notify IndexNow
         if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
         continue-on-error: true
+        timeout-minutes: 5
         shell: bash
         run: |
           set -euo pipefail
+          since=()
           if previous=$(git describe --tags --abbrev=0 --match 'v*' "${GITHUB_SHA}^" 2>/dev/null); then
-            node scripts/indexnow.mjs --since "$previous"
-          else
-            node scripts/indexnow.mjs
+            since=(--since "$previous")
+          fi
+          if ! node scripts/indexnow.mjs "${since[@]}"; then
+            echo "::warning title=IndexNow was not notified::Send this release's pages by hand from a checkout of ${GITHUB_REF_NAME}: pnpm indexnow ${since[*]}"
+            exit 1
           fi

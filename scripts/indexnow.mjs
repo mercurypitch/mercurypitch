@@ -144,6 +144,24 @@ function fileAt(ref, path) {
   }
 }
 
+/** Whether `ref` names a commit. Without this check a mistyped --since would
+ *  read as "the key was not live then" and send every URL. */
+export function refExists(ref) {
+  try {
+    execFileSync(
+      'git',
+      ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`],
+      {
+        cwd: repoRoot,
+        stdio: 'ignore',
+      },
+    )
+    return true
+  } catch {
+    return false
+  }
+}
+
 const currentSitemap = () => readFileSync(join(repoRoot, SITEMAP), 'utf8')
 const currentEnvProduction = () =>
   readFileSync(join(repoRoot, ENV_PRODUCTION), 'utf8')
@@ -188,6 +206,9 @@ const invokedPath = process.argv[1] ? resolve(process.argv[1]) : ''
 if (invokedPath === fileURLToPath(import.meta.url)) {
   try {
     const { dryRun, since, urls: given } = parseArgs(process.argv.slice(2))
+    if (since !== undefined && !refExists(since)) {
+      throw new Error(`--since ${since} is not a commit in this checkout.`)
+    }
     const key = findKey()
     const urls =
       since !== undefined
@@ -208,6 +229,8 @@ if (invokedPath === fileURLToPath(import.meta.url)) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify(body),
+      // A hung endpoint must not hold the release job for minutes.
+      signal: AbortSignal.timeout(30_000),
     })
     // 200 and 202 both mean received; 202 while the key is still checked.
     if (response.status !== 200 && response.status !== 202) {

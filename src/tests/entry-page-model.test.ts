@@ -355,7 +355,7 @@ describe('the images a crawler reads in the raw markup', () => {
   })
 
   it.each(['index.html', '404.html', 'delete-account.html'])(
-    'gives every image in the hand-written %s an alt attribute',
+    'gives every image in the root document %s an alt attribute',
     (file) => {
       expect(tagsWithoutAlt(repoFile(file))).toEqual([])
     },
