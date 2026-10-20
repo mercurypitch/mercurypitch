@@ -4,8 +4,9 @@
 //
 // The season's planning fields (season.ts: a lesson's signature image, the
 // link its drill still needs, a film made but not published) stay in the
-// data for the team and the admin console. A page a learner reads says only
-// what they can do now: Ready, Coming later, Done.
+// data for the team and the admin console, and so does the note that says
+// why each hook or tease variant exists (kit/lesson-copy.ts). A page a
+// learner reads says only what they can do now: Ready, Coming later, Done.
 // Each lesson page this bundle carries is read the way a learner meets it,
 // after its script has run: every word of the document, every label a
 // screen reader speaks, every lesson's explorer card, opened from the map in
@@ -15,6 +16,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { builtLessons, lessonPath } from '../../tools/draft-lessons'
+import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 
 /** The team's words, each a sign that planning has reached a learner's screen. */
 const PLANNING: readonly RegExp[] = [
@@ -35,6 +37,11 @@ const PLANNING: readonly RegExp[] = [
   // a topic's code (T01, S05) in place of its name
   /\b[TS]\d\d\b/,
 ]
+
+/** Why each hook or tease variant exists: the team's note, never a learner's words. */
+const NOTES: readonly string[] = Object.values(LESSON_COPY).flatMap((c) =>
+  [...(c?.hookAlts ?? []), ...(c?.teaseAlts ?? [])].map((v) => v.note),
+)
 
 /** What no reader meets. */
 const LEFT_OUT = 'script, style, template, noscript'
@@ -61,16 +68,26 @@ function learnerText(page: Page, scope: string): Promise<string> {
   )
 }
 
-/** Each planning word found in `text`, with the words around it. */
+/** Each planning word and each variant's note found in `text`, with the words around it. */
 function planningIn(text: string, where: string): string[] {
   const flat = text.replace(/\s+/g, ' ')
-  return PLANNING.flatMap((word) => {
+  const words = PLANNING.flatMap((word) => {
     const at = flat.search(word)
     return at < 0
       ? []
       : [`${where}: …${flat.slice(Math.max(0, at - 50), at + 50)}…`]
   })
+  const notes = NOTES.filter((note) => flat.includes(note)).map(
+    (note) => `${where}: a variant's note, "${note}"`,
+  )
+  return [...words, ...notes]
 }
+
+test("the guard knows every variant's note", () => {
+  // a note is a whole sentence, so a page can only show one by drawing it
+  expect(NOTES.length).toBeGreaterThan(0)
+  for (const note of NOTES) expect(note).toMatch(/^\S.{20,}$/)
+})
 
 for (const n of LESSONS) {
   test(`Lesson ${n}'s page shows a learner none of the team's planning words`, async ({

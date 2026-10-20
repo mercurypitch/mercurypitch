@@ -23,15 +23,24 @@
 // Some fields are the team's and never drawn on a lesson page: the
 // signature image (`sig`), the drill a practise link still needs
 // (`pr.needs`), why a lesson has no drill (`pr.none`), a film that is made
-// but not published (`film: 'production'`) and a film's running time
-// (`len`). They stay here for the team and the admin console. A note on a
-// practise link (`pr.link.note`) is printed on the card, so it speaks to
-// the learner: "then tap Scale Runner", never what the drill still lacks.
+// but not published (`film: 'production'`), a film's running time (`len`)
+// and why a hook or tease variant exists (its `note`). They stay here for
+// the team and the admin console. A note on a practise link
+// (`pr.link.note`) is printed on the card, so it speaks to the learner:
+// "then tap Scale Runner", never what the drill still lacks.
+//
+// A lesson's `hook` is its default hook, which its page's title and its
+// documents quote. Its alternative hooks, its tease (the line the lesson
+// before it draws above that hook) and the tease's alternatives are
+// lesson-copy.ts's, which the site worker can read and this file cannot be:
+// LESSONS gives each entry its lesson's copy from there.
 
 import { DRAFTS_SHOWN } from './draft-switch'
 import { DRAFT_LESSONS } from './drafts'
 import type { FilmState } from './films'
 import { filmState } from './films'
+import type { CuriosityCopy } from './lesson-copy'
+import { LESSON_COPY } from './lesson-copy'
 
 export const TOPICS = {
   T01: 'Sound and pitch: vibration, frequency, hertz; high is not loud',
@@ -91,7 +100,7 @@ export interface Practise {
   readonly none?: string
 }
 
-export interface Lesson {
+export interface Lesson extends CuriosityCopy {
   /** 0 is the trailer; LESSONS[n].n === n. */
   readonly n: number
   readonly lane: Lane
@@ -117,7 +126,7 @@ export interface Lesson {
    * never drawn on a lesson page. Absent while there is no film.
    */
   readonly film?: FilmState
-  /** The question the lesson opens with. */
+  /** The question the lesson opens with: its default hook, variant id 'default' (lesson-copy.ts). */
   readonly hook: string
   /** The signature image, the team's shorthand for the lesson's look. Admin only, never drawn on a lesson page. */
   readonly sig: string
@@ -128,7 +137,8 @@ export interface Lesson {
   readonly posterAlt?: string
 }
 
-export const LESSONS: readonly Lesson[] = [
+/** The season's entries as written here, before each takes its lesson's copy. */
+const ENTRIES: readonly Lesson[] = [
   {
     n: 0,
     lane: 'both',
@@ -205,7 +215,7 @@ export const LESSONS: readonly Lesson[] = [
     ...(DRAFT_LESSONS[3] !== undefined && !DRAFTS_SHOWN
       ? {}
       : { minutes: 15, page: '/learn/03' }),
-    hook: "In a survey, most of 1,105 students said they couldn't copy a tune. In tests, only about one in ten to one in six missed by a semitone or more. So what's going on?",
+    hook: "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?",
     sig: "The singer's line chasing Merc's target band, the gap shrinking in cents.",
     pr: {
       needs: 'Pitch Hold (a slug)',
@@ -286,7 +296,7 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Slides, sirens and your range',
     short: 'Your range',
     topics: ['S07', 'S08'],
-    hook: 'How many notes can your voice reach, and why is the comfortable middle worth more than the extremes?',
+    hook: 'Why is your comfortable middle worth more than your highest note?',
     sig: "A siren's line sweeping the chart, the comfortable band lit and the edges dimmed.",
     pr: {
       link: {
@@ -320,7 +330,7 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Landing a leap',
     short: 'Landing a leap',
     topics: ['S09', 'S10'],
-    hook: 'Why is jumping to a note so much harder than stepping to it?',
+    hook: 'How do you land a note you have to leap to?',
     sig: "The leap drawn as an arc whose landing zone is the target band (amber, the app's pitch-canvas colour); slow leaps first.",
     pr: {
       needs: 'Interval Trainer (sing) and Arpeggio Jumper',
@@ -338,7 +348,7 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Major and minor',
     short: 'Major and minor',
     topics: ['T14', 'T15', 'T19'],
-    hook: 'Which single note turns a bright major chord into a dark minor one?',
+    hook: 'Which single note turns a major chord into a minor one?',
     sig: "One bead, the third, sliding down one semitone and the chord's colour changing.",
     pr: { needs: 'Drone Intonation and Ear Lab Stack' },
   },
@@ -358,7 +368,7 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Chords and the four-chord song',
     short: 'Chords',
     topics: ['T19', 'T20', 'T21'],
-    hook: 'How can hundreds of songs share the same four chords and still sound different?',
+    hook: 'How can two songs share the same four chords and still sound different?',
     sig: 'Four chords as four rooms on the spiral; a melody walking through them.',
     pr: {
       needs:
@@ -393,6 +403,12 @@ export const LESSONS: readonly Lesson[] = [
     },
   },
 ]
+
+/** Every lesson, its alternative hooks and its tease from lesson-copy.ts. */
+export const LESSONS: readonly Lesson[] = ENTRIES.map((L) => ({
+  ...L,
+  ...LESSON_COPY[L.n],
+}))
 
 /** A prerequisite: lesson `from` comes before lesson `to`. */
 export type Edge = readonly [from: number, to: number]

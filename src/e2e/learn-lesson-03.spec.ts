@@ -74,7 +74,7 @@ test('a hard load of /learn/03 answers 200 with the lesson @smoke', async ({
   expect(response?.status()).toBe(200)
   await expect(page).toHaveTitle(TITLE)
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
-    "So what's going on?",
+    "Tested, most could. So what's going on?",
   )
   await expect(page.locator('#root')).toHaveCount(0)
 })
