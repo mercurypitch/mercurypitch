@@ -48,7 +48,8 @@ headings").
 
 1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 04", anchors Lesson and Explorer, the
    Sound toggle off by default, Pause animations with its reduced-motion lock). `initMasthead`
-   takes any map of anchors, so dropping Watch needs no kit change (`kit/page-chrome.ts:71-109`).
+   takes any map of anchors, and the page's lesson and step deck for the lesson menu
+   (`{ lesson: 4, deck }`), so dropping Watch needs no kit change (`kit/page-chrome.ts`).
 2. **Hero**: kicker; the hook question as the title; the meta as three chips (10 minutes; "After
    Lesson 2: Twelve notes", the prerequisite chip, a link to `/learn/02`; Sound on); the promise;
    the sound gate from LESSON.md, in the hero copy as Lesson 1's is; the two Mercs live on the

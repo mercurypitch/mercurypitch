@@ -29,7 +29,6 @@ import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { createModeStore } from '@/features/lessons/kit/names'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
-import { rememberSteps } from '@/features/lessons/kit/position'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
@@ -75,7 +74,6 @@ const deck = createStepDeck({
 })
 initSteps(deck, names)
 deck.start()
-rememberSteps(4, deck)
 
 initSing({ blue: mercBlue, orange: mercOrange })
 const quiz = createQuiz({
@@ -95,14 +93,17 @@ createExplorer({ current: 4 })
 
 engraveClefs(G_CLEF_PATH)
 // Lesson 3's masthead: Lesson, Sing and Explorer
-initMasthead({
-  recall: '#lesson',
-  cold: '#lesson',
-  words: '#lesson',
-  lesson: '#lesson',
-  sing: '#sing',
-  explorer: '#explorer',
-})
+initMasthead(
+  {
+    recall: '#lesson',
+    cold: '#lesson',
+    words: '#lesson',
+    lesson: '#lesson',
+    sing: '#sing',
+    explorer: '#explorer',
+  },
+  { lesson: 4, deck },
+)
 initReveals()
 startFrameLoop()
 void initMercs(q('#heroStage'))

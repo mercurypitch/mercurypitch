@@ -3,9 +3,12 @@
 // ============================================================
 
 import { q, qa, svg } from './dom'
+import { createLessonMenu } from './lesson-menu'
 import { Motion } from './motion-switch'
 import { A3, A4, hz } from './notes'
+import { rememberSteps } from './position'
 import { Sound } from './sound'
+import type { StepDeck } from './step-deck'
 import { hideToast, toast } from './toast'
 
 /** The sound gate's two lines: before sound is on, and once it is. */
@@ -84,11 +87,24 @@ export function initMotionSwitch(): void {
   })
 }
 
-/** The active section in the nav, and the phone menu. `sections` maps a section id to its nav link. */
-export function initMasthead(sections: Record<string, string>): void {
+/** A lesson page as its masthead needs it: its lesson's number and its step deck. */
+export interface MastheadLesson {
+  readonly lesson: number
+  readonly deck: StepDeck
+}
+
+/**
+ * The active section in the nav, and the lesson menu (lesson-menu.ts): the
+ * masthead's "Season 1 · Lesson 02" opens the season, and under 821 px its
+ * sheet carries the sections the nav shows on a wider screen. `sections`
+ * maps a section id to its nav link. The page's steps are remembered as the
+ * viewer moves through them (position.ts), for every page's menu and map.
+ */
+export function initMasthead(
+  sections: Record<string, string>,
+  page: MastheadLesson,
+): void {
   const links = qa<HTMLAnchorElement>('.mast-nav a')
-  const nav = q('#mastNav')
-  const btn = q('#menuBtn')
   const spy = new IntersectionObserver(
     (entries) =>
       entries.forEach((e) => {
@@ -107,21 +123,12 @@ export function initMasthead(sections: Record<string, string>): void {
     const el = document.getElementById(id)
     if (el) spy.observe(el)
   }
-  const close = (): void => {
-    nav.classList.remove('open')
-    btn.setAttribute('aria-expanded', 'false')
-  }
-  btn.addEventListener('click', () => {
-    const open = !nav.classList.contains('open')
-    nav.classList.toggle('open', open)
-    btn.setAttribute('aria-expanded', String(open))
-  })
-  links.forEach((a) => a.addEventListener('click', close))
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && nav.classList.contains('open')) {
-      close()
-      btn.focus()
-    }
+  rememberSteps(page.lesson, page.deck)
+  createLessonMenu({
+    lesson: page.lesson,
+    deck: page.deck,
+    label: q('.mast-ep'),
+    sections: links,
   })
 }
 

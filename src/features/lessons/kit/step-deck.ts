@@ -9,7 +9,8 @@
 // toy registers here and hears every step change, so it can stop a note that
 // belongs to a step the viewer has left; anything else that follows the
 // steps (position.ts, which remembers how far the viewer got) subscribes to
-// the deck itself.
+// the deck itself. The masthead's lesson menu lists the steps by their
+// titles and jumps to the one the viewer picks.
 //
 // The stuck stage must fit the screen beside the text: on every step, and
 // whenever a toy's box changes, stage-fit.ts measures what the toy needs
@@ -50,7 +51,16 @@ export interface StepDeck {
   readonly current: number
   /** How many steps the deck has. */
   readonly count: number
+  /** Each step's title, as its heading words it; step 1's first. */
+  readonly titles: readonly string[]
+  /** Where "Next" goes after the last step, and its label. */
+  readonly after: StepDeckOptions['after']
   show(step: number, options?: { scroll?: boolean }): void
+  /**
+   * Shows step `n` and brings it into view from anywhere on the page: the
+   * step beside the stage, or the deck's card. The lesson menu's step links.
+   */
+  jump(n: number): void
   /**
    * Calls `fn` with the new step whenever the step changes, not for the
    * step showing now; returns the unsubscribe.
@@ -85,7 +95,9 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
   const stages = qa('.toy', root)
   const bars = qa('.progress i', root)
   const count = steps.length
-  const titles = steps.map((s) => q('h3', s).textContent ?? '')
+  const titles = steps.map((s) =>
+    (q('h3', s).textContent ?? '').replace(/\s+/g, ' ').trim(),
+  )
   const stage = q('#stepsStage')
   const card = q('.stage-card', stage)
   const deckQuery = window.matchMedia(DECK_QUERY)
@@ -216,20 +228,23 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
     { passive: true },
   )
 
+  /** Step `n`, and the stage or the step brought into view, at once or smoothly. */
+  function bring(n: number, how: ScrollBehavior): void {
+    if (deck) {
+      stage.scrollIntoView({ behavior: how, block: 'start' })
+      return
+    }
+    lockUntil = performance.now() + 1100
+    window.scrollTo({ top: stepScroll(n), behavior: how })
+  }
+
   /** A step opened from the address: the step beside the stage, or the stage above it. */
   function openAt(n: number): void {
     // the lock comes first: a scroll's observer report still on its way would
     // otherwise land after this step and show the step that scroll reached
     lockUntil = performance.now() + 1100
     show(n)
-    requestAnimationFrame(() => {
-      if (deck) {
-        stage.scrollIntoView({ behavior: 'auto', block: 'start' })
-        return
-      }
-      lockUntil = performance.now() + 1100
-      window.scrollTo({ top: stepScroll(n), behavior: 'auto' })
-    })
+    requestAnimationFrame(() => bring(n, 'auto'))
   }
 
   const stageSeen = watch(stage)
@@ -238,7 +253,13 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
       return current
     },
     count,
+    titles,
+    after: opts.after,
     show,
+    jump(n) {
+      show(n)
+      bring(current, behavior())
+    },
     subscribe(fn) {
       listeners.add(fn)
       return () => {

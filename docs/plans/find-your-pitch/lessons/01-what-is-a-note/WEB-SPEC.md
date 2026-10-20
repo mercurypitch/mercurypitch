@@ -51,15 +51,32 @@ rather than after the steps; "Three words you'll meet" is an extra section befor
 the practise link (item 11) sits in the Sing it card and the footer, not in the Wrap, whose copy
 in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
 
-1. **Masthead** (sticky, slim): wordmark, "Season 1 · Lesson 01", anchors (Lesson, Watch,
-   Explorer), a Sound toggle (off by default; nothing plays without a tap), and a
+1. **Masthead** (sticky, slim): wordmark, the lesson menu's button (below), anchors (Lesson,
+   Watch, Explorer), a Sound toggle (off by default; nothing plays without a tap), and a
    **Pause animations** toggle for everyone (an SVG icon with a text label, `aria-pressed`, at
    least 44 px). On, it freezes the Merc idle loops, the staff vibration and the spiral drift.
    Without reduced motion it starts off, and the viewer's choice is remembered in localStorage.
    Under `prefers-reduced-motion` it is shown on and locked (`aria-pressed="true"`,
    `aria-disabled="true"`, still focusable, with the visible hint "Paused by your reduced-motion
    setting"): a click changes nothing, and a stored choice is ignored until the setting is off
-   again. A `change` listener on the media query applies either state at once.
+   again. A `change` listener on the media query applies either state at once. Under 1021 px the
+   logo stands for the wordmark; under 821 px the anchors move into the lesson menu; under 390 px
+   Pause shows its icon alone, its name kept in `aria-label`, as Sound's is under 821 px.
+
+   **The lesson menu** (`kit/lesson-menu.ts`, set up by every page's `initMasthead` call):
+   "Season 1 · Lesson 01" is a button at every width ("Lesson 01" under 1021 px), with a ring that
+   fills as the viewer moves through the steps, and a chevron. It opens the season in a native
+   modal `<dialog>`: a dropdown under the button from 821 px, and below that a sheet under the
+   masthead, which also carries the page's anchors ("On this page"), so a page has one menu. It
+   shows how many lessons are done, a bar a lesson, where the viewer is on this page (with
+   Continue), and every lesson under its arc with its state: Done, the step reached, Up next,
+   Ready, or Coming later, which is no link (as a draft hidden in production reads). This lesson
+   opens to its steps by their titles, or as 44 px chips on a screen under 900 px tall. Focus goes
+   to this lesson's row, and back to the button however the menu closes: Escape, a tap beside it,
+   a link or its close button. It fades in over 160 ms, at once under reduced motion. The states
+   are `kit/lesson-state.ts`'s, from `fyp-done` and each lesson's furthest step
+   (`kit/position.ts`).
+
 2. **Hero, the cold open**: kicker; the hook question as the title (serif italic, large, balanced);
    LESSON.md's meta as three chips (10 minutes, No theory needed, Sound on) and its one-line
    promise; the two Mercs live (blue left, orange right, about 260 px on desktop, 160 px on phones)

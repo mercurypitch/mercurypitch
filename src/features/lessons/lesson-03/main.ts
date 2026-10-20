@@ -26,7 +26,6 @@ import { mountLoud } from '@/features/lessons/kit/loud'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
-import { rememberSteps } from '@/features/lessons/kit/position'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck, registerToy } from '@/features/lessons/kit/step-deck'
@@ -87,7 +86,6 @@ registerToy({
 })
 bindVoiceButtons(q('#step-4'))
 deck.start()
-rememberSteps(3, deck)
 
 initSing({ blue: mercBlue, orange: mercOrange })
 createQuiz({
@@ -100,12 +98,15 @@ initWrap()
 createExplorer({ current: 3 })
 
 engraveClefs(G_CLEF_PATH)
-initMasthead({
-  words: '#lesson',
-  lesson: '#lesson',
-  sing: '#sing',
-  explorer: '#explorer',
-})
+initMasthead(
+  {
+    words: '#lesson',
+    lesson: '#lesson',
+    sing: '#sing',
+    explorer: '#explorer',
+  },
+  { lesson: 3, deck },
+)
 initReveals()
 startFrameLoop()
 void initMercs(q('#heroStage'))
