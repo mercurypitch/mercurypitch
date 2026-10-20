@@ -254,7 +254,7 @@ export const LESSONS: readonly Lesson[] = [
         href: '/mirror?lesson=05',
         addr: 'mercurypitch.com/mirror',
         label: 'Voice Mirror',
-        note: 'its Hold, until Long Note has a slug',
+        note: 'its Hold: a comfortable note, held steady',
       },
     },
   },

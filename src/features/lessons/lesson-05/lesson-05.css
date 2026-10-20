@@ -4,9 +4,9 @@
    What only this page draws: a long hook in a smaller face, the two Mercs
    either side of the hook's band chart with its level strip, the recall
    open in the hero's copy column, the breath toy's two views, the three
-   starts' key, the hold demo's readouts, orange Merc's line beside her
-   still, the note finder and the hold's phases on the checkpoint card, and
-   the free-play stage. */
+   starts' key, the figures' heights for the stage budget, orange Merc's
+   line beside her still, the note finder and the hold's phases on the
+   checkpoint card, and the free-play stage. */
 
 /* ---------------------------------------------------------------- the hero */
 .l05-hero .hook {
@@ -14,21 +14,25 @@
   line-height: 1.06;
   max-width: 15em;
 }
+/* the prerequisite chip is a link: a 44 px target around a 28 px chip */
 .chip-link {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-color: var(--hair-3);
-  text-underline-offset: 3px;
+  color: var(--ink-2);
+  text-decoration: none;
 }
-/* a 44 px target for a 28 px chip, reaching into the gaps above and below it only */
 .chip-link::after {
   content: '';
   position: absolute;
   inset: -8px -4px;
+}
+.chip-link:hover {
+  border-color: var(--hair-3);
+  color: var(--ink);
+}
+/* two prerequisite chips, which can wrap one above the other: rows 16 px
+   apart keep their 44 px targets from overlapping */
+.l05-hero .meta {
+  row-gap: 16px;
 }
 .l05-hero .duo {
   --merc: clamp(120px, 13vw, 188px);
@@ -203,6 +207,28 @@ div.reveal p:last-child {
 .starts-viz {
   height: 280px;
 }
+/* The stage budget: beside the steps, each step's whole stage, its figure
+   and its controls, stays under about 550 px tall at 1024 px wide, so a
+   landscape tablet's screen holds all of it. Each figure's height is its
+   --viz-max, the most it takes. */
+@media (min-width: 961px) {
+  .steps-stage .push-viz {
+    --viz-max: 230px;
+    height: var(--viz-max);
+  }
+  .steps-stage .gauge-viz {
+    --viz-max: 280px;
+    height: var(--viz-max);
+  }
+  .steps-stage .figure-viz {
+    --viz-max: 270px;
+    height: var(--viz-max);
+  }
+  .steps-stage .hold-viz {
+    --viz-max: 245px;
+    height: var(--viz-max);
+  }
+}
 .trace-key {
   list-style: none;
   display: flex;
@@ -215,11 +241,19 @@ div.reveal p:last-child {
   text-transform: uppercase;
   color: var(--ink-3);
 }
+/* the hold demo's two readouts sit on its figure, top right, as the kit's
+   readouts do; on a phone they move under it, clear of the scale's labels */
+.hold-figure {
+  position: relative;
+}
 .hold-readouts {
+  position: absolute;
+  top: 12px;
+  right: 14px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 28px;
-  margin-top: 12px;
+  gap: 18px;
+  text-align: right;
+  pointer-events: none;
 }
 @media (max-width: 560px) {
   .figure-row {
@@ -235,6 +269,13 @@ div.reveal p:last-child {
   }
   .starts-viz {
     height: 250px;
+  }
+  .hold-readouts {
+    position: static;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    margin-top: 12px;
+    text-align: left;
   }
 }
 
