@@ -56,13 +56,19 @@ function filesByAddress(): Record<string, { body: string; type: string }> {
 function assetLayer() {
   const files = filesByAddress()
   return vi.fn(async (request: Request): Promise<Response> => {
-    const { pathname } = new URL(request.url)
+    let { pathname } = new URL(request.url)
     const spelling = /^(\/learn\/\d{2})(?:\.html|\/)$/.exec(pathname)
-    if (spelling !== null)
-      return new Response(null, {
-        status: 307,
-        headers: { Location: spelling[1] },
-      })
+    if (spelling !== null) {
+      // Only a request that takes its redirects by hand sees the 307. The
+      // runtime follows it for any other, as it does for a Request built
+      // without `redirect`, and answers with the page and a 200.
+      if (request.redirect === 'manual')
+        return new Response(null, {
+          status: 307,
+          headers: { Location: spelling[1] },
+        })
+      pathname = spelling[1]
+    }
     const file = files[pathname]
     const headers = {
       'Content-Type': file?.type ?? 'text/html; charset=utf-8',

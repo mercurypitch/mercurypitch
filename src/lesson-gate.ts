@@ -301,12 +301,22 @@ const CONDITIONAL_HEADERS = [
   'Range',
 ]
 
-/** The request as the asset layer is asked it: no conditions, so a whole answer, at `path` if given. */
+/**
+ * The request as the asset layer is asked it: no conditions, so a whole
+ * answer, at `path` if given. Its redirects come back as they are, as the
+ * incoming request's do: a Request built without `redirect` follows them,
+ * and a lesson's other spellings would then answer with the page and a 200
+ * instead of the asset layer's 307 to its address.
+ */
 function unconditional(request: Request, path?: string): Request {
   const headers = new Headers(request.headers)
   for (const name of CONDITIONAL_HEADERS) headers.delete(name)
   const url = path === undefined ? request.url : new URL(path, request.url)
-  return new Request(url.toString(), { method: request.method, headers })
+  return new Request(url.toString(), {
+    method: request.method,
+    headers,
+    redirect: 'manual',
+  })
 }
 
 /** An asset's headers for an answer made from it: no validators, no length, `cacheControl`. */
