@@ -183,6 +183,12 @@
 .band-viz {
   touch-action: pan-y;
 }
+/* the lowest a short screen's stage takes the band chart (--viz-min,
+   kit/lesson-stage.css): lower, the chase's marks sit on the cents labels
+   and "In the band" runs into the gap readout */
+.band-viz {
+  --viz-min: 210px;
+}
 /* the handles take the drag: touch is theirs before contact, the rest of the figure scrolls */
 .match-handle,
 .band-handle {

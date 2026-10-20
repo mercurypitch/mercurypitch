@@ -121,6 +121,17 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* the lowest a short screen's stage takes each figure (--viz-min,
+   kit/lesson-stage.css). Lower, the dial's "one swing" runs into its
+   readout, the octave's waves are left too little swing between their
+   readout and the peak ruler, and the spiral's hint meets its top turn. */
+#vizDial,
+#vizOct {
+  --viz-min: 240px;
+}
+#vizSpiral {
+  --viz-min: 210px;
+}
 #heroRail .halo {
   transform-box: fill-box;
   transform-origin: center;

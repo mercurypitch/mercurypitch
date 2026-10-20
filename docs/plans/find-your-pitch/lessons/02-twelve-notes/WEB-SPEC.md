@@ -314,7 +314,9 @@ figure (`:1199-1205`). That is too narrow for eight 44 px keys, so steps 3 to 5 
     figure, three rows: Sharp and Flat; Play both ways; the Show the rare ones switch. The predict
     and Play E to F are in the step's text.
   - Each stays under the 786 px a 390 x 844 screen leaves below the 58 px masthead (`--mast`,
-    `kit/lesson-base.css:92`).
+    `kit/lesson-base.css:92`). That is the phone's budget only: beside the text the stage is
+    stuck, and every step's stage also fits 1024 x 640 with the masthead, the kit's landscape
+    budget (PRODUCTION-PIPELINE.md § 5, `src/e2e/learn-stage-fit.spec.ts`).
 
 ### 2. Semitone ruler with cents
 

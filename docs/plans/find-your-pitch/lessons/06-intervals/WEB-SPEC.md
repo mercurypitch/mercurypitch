@@ -184,6 +184,9 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
     canvas (Step 5 the same, its bracket strip above in place of the gap strip below; free play,
     with both strips, 438 px), where Lesson 1's taller step figure on a phone is 310 px; the stage,
     with its head and a row of 44 px controls, stays well under the 786 px left below the masthead.
+    Beside the text the stage is stuck, so it also meets the kit's landscape budget: every step's
+    stage fits 1024 x 640 with the masthead, its chrome (the stage less the figure) under about
+    375 px (PRODUCTION-PIPELINE.md § 5).
     The one-line states (Steps 1, 3 and 4) draw all 21 rows from C4 to G♯5, so a slide travels
     visibly, in a 276 px canvas whose strip under the names holds the contour marks or the gap
     numbers.

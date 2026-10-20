@@ -45,6 +45,14 @@ export function initOctaveToy(deck: StepDeck): void {
   const roRatio = q('#roRatio')
   const ratioVal = q('#ratioVal')
   const roOrange = q('#roOrange')
+  const readout = q('#vizOct .readout')
+  // the readout's foot in the figure, px, read again when the figure's
+  // height changes or the fonts arrive
+  let readoutFoot = 0
+  let footFor = -1
+  void document.fonts?.ready.then(() => {
+    footFor = -1
+  })
   let r = 2
   let vb: Voice | null = null
   let vo: Voice | null = null
@@ -183,8 +191,16 @@ export function initOctaveToy(deck: StepDeck): void {
       const x1 = W - 16
       const cycles = 6
       const T = cycles / 220
-      const cy = H * 0.44
-      const A = Math.min(H * 0.17, 54)
+      // the waves keep clear of the readout in the corner above them (a
+      // peak's glow reaches 14 px up) and of the peak ruler's label below:
+      // a figure a short stage has shortened swings less, and nothing meets
+      if (footFor !== H) {
+        readoutFoot = readout.offsetTop + readout.offsetHeight
+        footFor = H
+      }
+      const top = readoutFoot + 14
+      const A = Math.max(0, Math.min(H * 0.17, 54, (H - 74 - top) / 2))
+      const cy = Math.max(H * 0.44, top + A)
       const xOf = (t: number): number => x0 + (t / T) * (x1 - x0)
       ctx.strokeStyle = 'rgba(195,204,214,.12)'
       ctx.lineWidth = 1

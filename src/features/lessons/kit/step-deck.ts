@@ -3,12 +3,17 @@
 // ============================================================
 //
 // On a wide screen the steps are a column of text beside a sticky figure
-// stage; the step in the middle of the viewport picks the toy. Below 960 px
-// the stage becomes a one-card deck: buttons and a swipe on the text move
-// between steps. Each toy registers here and hears every step change, so it
-// can stop a note that belongs to a step the viewer has left; anything else
-// that follows the steps (position.ts, which remembers how far the viewer
-// got) subscribes to the deck itself.
+// stage; the step in the middle of the viewport picks the toy. Below 960 px,
+// or on a screen under 560 px tall (`DECK_QUERY`), the stage becomes a
+// one-card deck: buttons and a swipe on the text move between steps. Each
+// toy registers here and hears every step change, so it can stop a note that
+// belongs to a step the viewer has left; anything else that follows the
+// steps (position.ts, which remembers how far the viewer got) subscribes to
+// the deck itself.
+//
+// The stuck stage must fit the screen beside the text: on every step, and
+// whenever a toy's box changes, stage-fit.ts measures what the toy needs
+// besides its figure, and the stylesheet gives the figure the rest.
 //
 // One toy per step (`toyFor`); a step's other parts, such as a game card in
 // its text, live in the text and hear the steps the same way. An address
@@ -19,6 +24,16 @@
 import { clamp, q, qa } from './dom'
 import { watch } from './frame-loop'
 import { reducedMotion } from './motion-switch'
+import { fitStage, watchStageFit } from './stage-fit'
+
+/**
+ * Where the one-card deck takes over: below 960 px, where the text and the
+ * stage cannot sit side by side, and under 560 px of height, where a toy's
+ * controls and a 180 px figure no longer fit beside the text. The deck's
+ * rules in lesson-stage.css sit under this same query (step-deck.test.ts
+ * holds the two to it).
+ */
+export const DECK_QUERY = '(max-width: 960px), (max-height: 560px)'
 
 export interface Toy {
   onStep?: (step: number, previous: number) => void
@@ -71,18 +86,40 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
   const bars = qa('.progress i', root)
   const count = steps.length
   const titles = steps.map((s) => q('h3', s).textContent ?? '')
-  const narrow = window.matchMedia('(max-width: 960px)')
+  const stage = q('#stepsStage')
+  const card = q('.stage-card', stage)
+  const deckQuery = window.matchMedia(DECK_QUERY)
   let current = 1
   let deck = false
   let lockUntil = 0
   const listeners = new Set<(step: number) => void>()
   const behavior = (): ScrollBehavior => (reducedMotion() ? 'auto' : 'smooth')
 
+  /**
+   * The page scroll that centres step `n` under the masthead, as
+   * `scrollIntoView({ block: 'center' })` would, but never short of the
+   * scroll at which the stage sticks: centring a step near the top of the
+   * column left the stage lower down, its foot below the fold. The stage's
+   * place in the flow is the top of its grid row.
+   */
+  function stepScroll(n: number): number {
+    const r = steps[n - 1].getBoundingClientRect()
+    const pad =
+      parseFloat(
+        window.getComputedStyle(document.documentElement).scrollPaddingTop,
+      ) || 0
+    const centre = r.top + r.height / 2 - (pad + window.innerHeight) / 2
+    const flowTop = stage.parentElement?.getBoundingClientRect().top ?? 0
+    const sticks =
+      flowTop - (parseFloat(window.getComputedStyle(stage).top) || 0)
+    return window.scrollY + Math.max(centre, sticks)
+  }
+
   function show(n: number, o: { scroll?: boolean } = {}): void {
     const next = clamp(n, 1, count)
     const previous = current
     current = next
-    q('.stage-card', root).dataset.dir = next < previous ? 'b' : 'f'
+    card.dataset.dir = next < previous ? 'b' : 'f'
     steps.forEach((s) =>
       s.classList.toggle('is-active', Number(s.dataset.step) === next),
     )
@@ -107,31 +144,30 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
       next < count ? `Next: ${titles[next]}` : `Next: ${opts.after.label}`
     toys.forEach((t) => t.onStep?.(next, previous))
     if (next !== previous) listeners.forEach((fn) => fn(next))
+    // the toy as its step left it; a stage still over budget scrolls inside
+    // itself, and each step starts at the stage's head
+    fitStage(stage, deck)
+    if (next !== previous) card.scrollTop = 0
     if (o.scroll === true) {
       if (!deck) {
         lockUntil = performance.now() + 1100
-        steps[next - 1].scrollIntoView({
-          behavior: behavior(),
-          block: 'center',
-        })
-      } else {
-        const stage = q('#stepsStage')
-        if (stage.getBoundingClientRect().top < 0) {
-          stage.scrollIntoView({ behavior: behavior(), block: 'start' })
-        }
+        window.scrollTo({ top: stepScroll(next), behavior: behavior() })
+      } else if (stage.getBoundingClientRect().top < 0) {
+        stage.scrollIntoView({ behavior: behavior(), block: 'start' })
       }
     }
   }
 
   function setMode(): void {
-    deck = narrow.matches
+    deck = deckQuery.matches
     root.classList.toggle('is-deck', deck)
   }
   setMode()
-  narrow.addEventListener('change', () => {
+  deckQuery.addEventListener('change', () => {
     setMode()
     show(current)
   })
+  watchStageFit(stage, () => deck)
 
   const follow = new IntersectionObserver(
     (entries) =>
@@ -182,18 +218,21 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
 
   /** A step opened from the address: the step beside the stage, or the stage above it. */
   function openAt(n: number): void {
+    // the lock comes first: a scroll's observer report still on its way would
+    // otherwise land after this step and show the step that scroll reached
+    lockUntil = performance.now() + 1100
     show(n)
     requestAnimationFrame(() => {
       if (deck) {
-        q('#stepsStage').scrollIntoView({ behavior: 'auto', block: 'start' })
+        stage.scrollIntoView({ behavior: 'auto', block: 'start' })
         return
       }
       lockUntil = performance.now() + 1100
-      steps[n - 1].scrollIntoView({ behavior: 'auto', block: 'center' })
+      window.scrollTo({ top: stepScroll(n), behavior: 'auto' })
     })
   }
 
-  const stageSeen = watch(q('#stepsStage'))
+  const stageSeen = watch(stage)
   return {
     get current() {
       return current

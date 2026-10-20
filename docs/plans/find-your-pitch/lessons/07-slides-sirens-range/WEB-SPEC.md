@@ -217,7 +217,10 @@ live and free play.
     line window's 32 semitones get 8.25 px each and Step 5's 44 semitones 6.00 px each, so each band
     stands 144 px tall. With the stage head and at most five rows of 44 px controls (free play's
     siren state: the voice switch, the state switch's two rows, Play and Slow, the scrub bar), the
-    stage stays under about 650 px, inside the 786 px left below the masthead.
+    stage stays under about 650 px, inside the 786 px left below the masthead. Beside the text the
+    stage is stuck, so it also meets the kit's landscape budget: every step's stage fits 1024 x 640
+    with the masthead, its chrome (the stage less the chart) under about 375 px
+    (PRODUCTION-PIPELINE.md § 5).
   - The six band columns share the plot beside the 34 px gutter: 53.3 px each at 390 px, 45.7 px at
     344 px, 102.8 px at 1440 px. "Mezzo-soprano" will not fit across them, so each band's name and
     span run up the column, bottom to top, in about 127 px of its 144 px at 12 px type.

@@ -881,6 +881,13 @@ import handler, issue #813.
 **Rule:** for a footer that must stay on a column's edge, make the column a flex column, scroll the content in its own region above the footer, and keep the footer out of the scroller. Test it by walking the scroll range and checking each text node's clipped box against the footer.
 **See:** `.phraseCoachScroll` in `src/features/drum-night/DrumNightApp.module.css`, `src/e2e/drum-take-card.spec.ts`.
 
+### Budget a sticky panel against a short landscape browser window, not a portrait phone
+
+**Symptom:** on an iPad in Safari, landscape, eight of the lessons' seventeen steps had a slider or a row of buttons below the fold, unreachable while their step showed (scrolling on picked the next step), though every check passed.
+**Cause:** the step stage is sticky beside the text above 960 px and had no height limit. The specs budgeted it at 390 x 844 only, where it scrolls with the page, and the nominal 1024 x 768 fitted with 4 px to spare. A browser's bars take 70 to 140 px of that: 1024 x 672 in Safari, 1024 x 640 with its tab bar, 1366 x 657 in a laptop's window.
+**Rule:** a sticky panel must fit the smallest viewport it sticks in (`100svh`). Let its flexible part give way first, keep a scroll inside the panel as the last resort, and test at the browser's sizes, not the device's screen. Look at every figure the fit shrinks, not only at the boxes: a canvas laid out in fixed pixels (a readout in its corner, a label per semitone) collides with itself below a height the e2e cannot see, so each such figure carries its own floor (`--viz-min`).
+**See:** `src/features/lessons/kit/stage-fit.ts`, `src/e2e/learn-stage-fit.spec.ts`, `--viz-min` in the lesson stylesheets
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
