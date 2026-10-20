@@ -98,7 +98,7 @@ line above it, are in LESSON.md ("Section headings").
     still need).
 11. **Footer**: Lesson 1's, with "Season 1 · Lesson 07 · Slides, sirens and your range"; the
     practice link, printed `mercurypitch.com/vocal-range-test`, with "The Vocal Range Test is free,
-    in your browser." (FACTS 68); Lesson 1's fonts line and "Every sound on this page is
+    in your browser." (FACTS 68a); Lesson 1's fonts line and "Every sound on this page is
     synthesised in your browser" (FACTS, Labels). The test is its own document, so the footer
     needs no first-visit line (FACTS 64).
 
@@ -386,7 +386,7 @@ Reading a siren (`kit/take.ts`, extended with `readSiren`; pure and unit-tested)
   steady siren that time.", never a low reading (REQ-GVC-031).
 - Otherwise the notes come from `computeRange([frames])` in `src/lib/mirror/metrics.ts`, imported,
   not copied, given the trimmed raw frames, which it preprocesses itself (`:176`): the semitones
-  the take dwelt on for 0.15 s in all, after its outlier guard (FACTS 67). If it returns null, the
+  the take dwelt on for 0.15 s in all, after its outlier guard (FACTS 67a). If it returns null, the
   line is the not-steady one. Its `lowNote`, `highNote` and `semitones` never reach the page.
 - The band: when the notes held span under three semitones (`highMidi - lowMidi < 3`), one note,
   the centre, `Math.round((lowMidi + highMidi) / 2)`; otherwise `middleHalf(lowMidi, highMidi)`.
@@ -503,44 +503,36 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   (FACTS 64). It runs Voice Mirror's two glides and a hold, then a screen naming a famous singer of
   the voice type the range overlaps most, then five match notes picked from the middle half of the
   range the glides found; it shows the range first, with the span and the overlapping voice type as
-  "a broad guide, not a verdict", then Accuracy and Steadiness scores (FACTS 65 to 69). The card
+  "a broad guide, not a verdict", then Accuracy and Steadiness scores (FACTS 65a to 69a). The card
   comes in two versions, picked by how Sing it ended (Toys 4), and both link the same address. The
   `?lesson=` marker changes nothing in the test: the main app's step-aside never runs in the test's
   own document, and the test's intent reads only the path (FACTS 64, 72a).
-- **App content, small** (the App content track), proposed:
-  - The twin screen after the hold (FACTS 69). Its line, "{Legend} shares your voice type. That is
-    yours now: it is on your voiceprint whatever happens next.", assigns a voice type from range
-    alone, which Step 5 says range cannot decide, and it shows before the card's "a broad guide,
-    not a verdict". Proposed: "{Legend}: a famous {type}, the voice type your range overlaps most.
-    A broad guide, not a verdict."
-  - The test's "…to your highest" copy (FACTS 70): the first glide and the overview's card, the
-    landing's lede, and the entry page's descriptions and lede. "To your highest comfortable note"
-    would match REQ-GVC-072 and the card's "keep the glides comfortable", as Lesson 3's spec already
-    proposes for the first glide.
-  - The results' clause about the ear being ahead (FACTS 69): the task measured the voice, not the
-    ear (REQ-GVC-045); Lesson 3's spec already lists it.
-  - The returning visitor's change line (FACTS 70a), such as "▲ +2 semitones since 12 May": an up
-    arrow for a wider span reads as a reward (REQ-GVC-072), and every change, however small, gets a
-    direction (REQ-GVC-065, REQ-GVC-066). Proposed: the span's change in plain words with no arrow,
-    and "Similar today" inside the measurement's noise.
-  - The warm-up's end screen and help (FACTS 75, 76): a letter grade, a percentage and "New best!"
-    or the change since last time, on a routine its own code calls not graded; the help's sentence
-    that warming up "protects your cords", which no source read supports; and its "no grades"
-    sentence, which the grade contradicts.
+- **App content, small** (the App content track): on main since `7ed2aa1d2` and `e37bbba59`, all
+  but one sentence, which stays proposed:
+  - The twin screen after the hold now reads "{Legend}: a famous {type}, the voice type your range
+    overlaps most. A broad guide, not a verdict." (FACTS 69a). Its old line, "{Legend} shares your
+    voice type. That is yours now: it is on your voiceprint whatever happens next.", assigned a
+    voice type from range alone, which Step 5 says range cannot decide (FACTS 69).
+  - The test asks for "your highest comfortable note" in the first glide and the overview's card,
+    the landing's lede, and the entry page's descriptions and lede, as REQ-GVC-072 and the card's
+    "keep the glides comfortable" ask (FACTS 70b). Proposed: the entry page's structured data,
+    added since, says "a glide from the lowest comfortable note to the highest"; "to the highest
+    comfortable note" would match.
+  - The results' clause about the ear being ahead is gone: the task measured the voice, not the ear
+    (REQ-GVC-045; FACTS 69a).
+  - The returning visitor's change line gives each reading earlier then today, with no arrow and no
+    sign, and calls a reading "similar" only when it is unchanged (FACTS 70c; REQ-GVC-065,
+    REQ-GVC-066).
+  - The warm-up ends with no grade, score or level, and its help no longer says that warming up
+    "protects your cords" (FACTS 75a, 76a).
 - **Needed, proposed: `/exercises/lip-trills`** (CURRICULUM § 4 item 2, the Phase 1 App track): the
   Guided Warmup on its Lip trills routine, registered in `EXERCISE_SLUGS` as
   `{ kind: 'exercise', exercise: EXERCISE_WARMUP, pattern: 'lip-trill' }` with a line in
-  `src/tests/slug-map.test.ts`. Beyond the entry it needs (FACTS 73 to 76):
+  `src/tests/slug-map.test.ts`. Beyond the entry it needs (FACTS 73 to 76a):
   - the `pattern` field on `ExerciseLaunch` (`src/features/exercises/slug-map.ts:24-36`), passed by
     `applyExerciseSlug` into the launch override beside the notes and the difficulty
-    (`src/App.tsx:622-630`); the override's config already carries `pattern`, and the warm-up
-    already reads it (`WarmupExercise.tsx:62`);
-  - two app changes, which are conditions for the link because the house rules never score a lip
-    trill and make no health claims: the warm-up must end with no letter grade, no percentage and
-    no "New best!" or change line, which it shows today because it hands the exercise shell a score
-    and no guided prescription (`WarmupExercise.tsx:350-355`; `ExerciseShell.tsx:314-327`,
-    `:835-875`); and the help sentence that warming up "protects your cords" must be rewritten
-    (`exercise-help.ts:23`);
+    (`src/App.tsx:623-631`); the override's config already carries `pattern`, and the warm-up
+    already reads it (`WarmupExercise.tsx:61`);
   - the coach's decision on the routine's first block, a breath held for four counts, which Lesson
     5 chose not to link (FACTS 74; Lesson 5 FACTS 65). If the coach says no, the slug needs a new
     routine without it, added under a new pattern name, since routine segments are keyed off the six
@@ -548,9 +540,14 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   - `?lesson=07` on the link, because a slug boots the main app, where First Light opens on a first
     visit unless the marker steps it aside (FACTS 72a), so LESSON.md's editorial copy carries no
     first-visit line.
-  - Not a condition, for the director: the warm-up also saves its score to the exercise history and
-    moves the exercise's difficulty (`WarmupExercise.tsx:306-319`), which no screen the link opens
-    would show.
+  - Met on main since `e37bbba59`: the two app changes the link waited on, because the house rules
+    never score a lip trill and make no health claims. The warm-up ends with no grade, score or
+    level (`WarmupExercise.tsx:324-331`, `:362-368`; `ExerciseShell.tsx:108-116`), and its help no
+    longer says that warming up "protects your cords" (`exercise-help.ts:23`; FACTS 75a, 76a).
+  - Not a condition, for the director: the warm-up still saves each run, with its coverage score,
+    to the exercise history, where it ticks off the first segment of Today's Session and earns
+    practice time, the streak and badges; no screen the link opens shows it. It no longer moves the
+    exercise's difficulty (`WarmupExercise.tsx:305-322`).
 - **Not linked**, with the reasons in FACTS: the Siren exercise (FACTS 77), which Lesson 11's card
   plans with a slug; the Sing screen's premium rooms Lip roll and Ng slides, and its premium
   Warm-up, which runs those two rooms first (FACTS 78); the Ascent's week 3 (FACTS 79), until the
@@ -562,11 +559,11 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 7's entry in `kit/season.ts` (`:201-216`) gains `minutes: 16`
-  (FACTS 4) and, proposed, `needs: "the warm-up's Lip trills routine, ungraded (a pattern slug)"`,
-  the form Lesson 5's entry uses for its own missing drill, with the warm-up's ungraded end as one
-  of its conditions (Practice links), for the team and never drawn on the card; its link, hook,
-  signature and topics stay (FACTS 71).
+- **Season data**: Lesson 7's entry in `kit/season.ts` (`:283-298`) gains `minutes: 16`
+  (FACTS 4) and, proposed, `needs: "the warm-up's Lip trills routine (a pattern slug)"`, the form
+  Lesson 5's entry uses for its own missing drill, for the team and never drawn on the card; the
+  warm-up's ungraded end, which the proposal used to name, is on main (Practice links). Its link,
+  hook, signature and topics stay (FACTS 71).
 - **A text-only lesson**: the "Ready · read" state Lesson 4's spec proposes (no Watch button, the
   card's length from `minutes`), the current lesson (the page passes `current: 7`), and cards for
   other lessons linking to their own `/learn/NN`: the kit has all three.
@@ -607,8 +604,8 @@ Lessons 2 to 6 promote into the kit (Toys table):
    `writeGlideWav(fromHz, toHz, secondsEachWay)`, the same tone gliding up and back down, even in
    semitones; Chromium loops the file, as the helper notes (`:27`), so it plays one siren after
    another, for the end-to-end tests (Tests).
-10. App: the `pattern` slug and its test, the two warm-up changes the lip-trill link waits on
-    (Practice links), and the App content items.
+10. App: the `pattern` slug and its test (Practice links), and the App content list's one open
+    sentence. The two warm-up changes the lip-trill link waited on are on main (Practice links).
 11. Lessons 1 to 6's pages, when this one goes live: nothing to edit in their explorers, which read
     each lesson's state from the season (`kit/season.ts`). Lesson 6's next-lesson card turns from
     "coming later" to "ready to read".
@@ -641,7 +638,7 @@ What the page does where nothing above says:
   the band from the notes the take held, and the window does not move. A lit band past the edge is
   drawn to the edge, or as a strip along it, with the arrow (Toys 4, state 7).
 - **Octave jumps from the detector**: Voice Mirror's outlier guard drops them before the band
-  (FACTS 67); a short jump never moves the band.
+  (FACTS 67a); a short jump never moves the band.
 - **A siren that only rises, or a hum that hardly moves**: the band is the middle half of whatever
   was held, or under three semitones its centre: a steady A3 gives "The lit band is the middle of
   your siren: about A3.", and a hum between A3 and B3 gives "about A♯3".
