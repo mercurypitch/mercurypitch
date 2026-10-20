@@ -5,6 +5,53 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.22] - 2026-10-20
+
+Find Your Pitch opens: free lessons on notes and singing, three of them so
+far. The Guided Warmup now ends without a grade, and the vocal range test
+asks for your highest comfortable note.
+
+### Added
+
+- **Find Your Pitch: free lessons on notes and singing.** Three are open,
+  about ten minutes each: What is a note?, Twelve notes, and The major scale
+  and home. Home's new Lessons link opens the first.
+- **Each lesson is a page you play.** Guess before you listen, play with the
+  sound toys, hum along with Merc, then try a four-question quick check.
+  Nothing listens and nothing is scored.
+- **The season map keeps your place.** Each lesson's card offers Start
+  lesson, Continue or Read again, saved in this browser.
+- **A page for karaoke questions.** mercurypitch.com/karaoke-app answers the
+  first ones: is it free, your own songs, singing with friends, and TVs.
+
+### Changed
+
+- **The Guided Warmup ends without a grade.** You see "Warmup complete", or
+  "Warmup ended" if you stop early, and the steps you finished. A full
+  warm-up still counts toward your streak.
+- **The vocal range test asks for your highest comfortable note.** Your voice
+  twin is a broad guide now, not a verdict.
+- **Coming back to the range test shows then and now.** "Since 7 Jul: span 14
+  to 16 semitones" replaces the arrows, or "Similar today" when nothing
+  moved.
+- **Bass-baritone, by name.** A range that sits as much in Bass as in
+  Baritone, like E2 to G4, now reads Bass-baritone. Your voice twin stays
+  the same.
+- **The hold drills stop asking for your longest hold.** Long Note and Pitch
+  Hold let you choose how long to hold.
+- **A wrong address gets a proper page.** One note has drifted off its stave
+  over a night sky, with the way home and a link to every room.
+- **A lesson's practice link opens its room.** On a first visit, the room the
+  lesson sent you to opens straight away, without the intro.
+
+### Fixed
+
+- **The intro names a note you held.** When your note wavered between two,
+  it could name the one in between. Now it names one you sang.
+- **Smaller things.** Interval Trainer's card no longer says it sings
+  intervals below the note, Long Note and Pitch Hold get tags that match,
+  and screen readers hear Piano Night's name as its heading.
+
 ## [0.9.21] - 2026-10-18
 
 The sign-in, sign-up and password reset mails now look like the welcome mail,

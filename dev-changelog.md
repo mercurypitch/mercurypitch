@@ -9,6 +9,1430 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.22] - 2026-10-20
+
+171 commits since `v0.9.21` (bd524160a) before this release PR, from 40
+PRs, on 115 first-parent entries. 19 PRs came in as merge commits: #1094 (1
+commit), #1091 (1), #1095 (3), #1096 (1), #1097 (1), #1099 (1), #1098 (3),
+#1100 (2), #1101 (3), #1102 (3), #1103 (7), #1104 (1), #1110 (2), #1112
+(4), #1113 (3), #1120 (12), #1123 (6), #1128 (1) and #1130 (1). 20 were
+rebased onto `main`: #1048 (62), #1111 (9), #1116 (4), #1108, #1109 and
+#1129 (2 each), and #1105, #1107, #1114, #1115, #1118, #1119, #1122, #1124,
+#1125, #1126, #1127, #1131, #1132 and #1133 (1 each). #1106 was squashed
+into one commit (af0f45eea). Every commit came through a PR.
+
+On the web, the release is:
+
+- **Find Your Pitch**, the first lessons on mercurypitch.com: Lesson 1
+  "What is a note?" (#1048), Lesson 2 "Twelve notes" on the shared lesson
+  kit (#1111) and Lesson 4 "The major scale and home" (#1127), at
+  `/learn/01`, `/learn/02` and `/learn/04`; Home's Lessons link to the
+  first; cards that speak to learners (#1133); the blueprint off Lesson 1
+  (#1131); and the `?lesson=` marker that keeps First Light off the room a
+  lesson sent someone to (#1119). Lessons 3 and 5 are drafts: built,
+  routed and linked on dev.mercurypitch.com and PR previews, left out of
+  the production build (#1111, #1129). No film plays yet.
+- **Search:** one studio in the app markup and the site's name (#1105),
+  `/karaoke-app` and new FAQs (#1106), the store listings driving the
+  native app signals, which render nothing until a listing is live
+  (#1107), every released lesson linked and marked up (#1109), sitemap
+  dates that mean something (#1122), and Bing's findings with an IndexNow
+  notice on every release (#1116).
+- **The 404 page's error scene** (#1118).
+- **Practice:** the Guided Warmup ends with no grade (#1124), the range
+  test cushions the top and drops its verdicts (#1125), a range that ties
+  Bass and Baritone reads Bass-baritone, in the welcome mail too (#1128),
+  the hold cards stop asking for the longest hold (#1126), and First Light
+  names a note the voice held (#1110's first commit).
+
+A production web build of 2aee5a3f6 (`pnpm build`: vite wrote every
+document and chunk, then stopped in the Glass Game asset step because the
+local checkout has Git LFS pointers; CI has the files) has `learn/01.html`,
+`learn/02.html` and `learn/04.html` with their share cards and no 03 or 05.
+No script or document in it carries `/learn/03` or `/learn/05`, `sw.js`
+keeps both paths' network rules, the sitemap and `llms.txt` list the three
+live lessons only, and no document still carries a `data-if-live` or
+`data-if-planned` reading: the draft assert's rules, checked by hand since
+the assert runs after the step that stopped. The live lesson chunks hold no
+`getUserMedia` and no external URL.
+
+The rest is the native app: its own onboarding, in six parts and a fixes PR
+(#1098, #1101, #1103, #1110, #1112, #1120, #1123), the Warm-up (#1096,
+#1099, #1100, #1102, #1104, #1113, #1130), the iOS volume read (#1091),
+"One volume in rooms" off by default (#1097), and two refactors (#1094,
+#1095).
+The same web build carries none of their lines ("Hi, I'm Merc.", "Sing me
+one note, any note.", "Find my range", "Sing this line with me.", "Mercury
+Pitch Cloud", "One volume in rooms", "Skip stop", "Back to the warm-up",
+"Four stops, about three minutes, then a song.", "Warmed up today", "Start
+warm-up", `mp:native-onboarding`, `native_onboarding_`, `cloud_view_`,
+`import_tap_`, `mp_warm_up_today`, `pitchperfect_warm_up_days`,
+`warm-up-path`, no `warm-*.webp`), and does carry the web changes' ("Turn
+sound on", "Play the climb", "Stop on ti", "Start lesson", "Film coming
+soon", "Nothing plays at this address", "Warmup complete", "your highest
+comfortable note", "A broad guide, not a verdict.", "Similar today to your
+run on", "Hold one comfortable note, steady, for a length you choose.",
+"Sing specific intervals above a reference note."). Two web-graph changes
+show nothing: #1094's console arming (`developer-console-arming-*.js`) and
+the shared code the Warm-up moved (below). #1128 and #1130 merged after
+that build: #1128's lines are the web Voice Mirror's (its PR checked
+`/mirror?demo=bass-baritone` in a browser), and #1130 changes only
+`src/features/warm-up`, which mounts from `apps/mercurypitch` alone.
+
+### Release steps (prod)
+
+1. **No migration.** Nothing under `workers/db-worker/migrations`, the
+   repository's one migrations folder, changed since `v0.9.21`; the newest
+   file is still `0070_natural_keys.sql`. Project memory (`.claude/memory/`)
+   holds no pending prod migration note.
+2. **No new secret, variable or binding.** No `wrangler*` file changed since
+   `v0.9.21`, and the `env.*` names read in `workers/` and `src/worker.ts`
+   are the same 70 at both ends. The one workflow change, `build.yml`'s
+   Notify IndexNow step (#1116), reads no secret or variable. The committed
+   env files gain only the draft-lessons switch, `VITE_DRAFT_LESSONS`: 1 in
+   `.env.development`, 0 in `.env.production`, and "0" in the native app's
+   `vite.config.ts`.
+3. **Worker code.** The tag's `deploy-db-prod` ships two changes to the DB
+   worker. `src/worker.ts`, anything it imports directly, and the Jam
+   worker did not change.
+   - **The welcome mail's voice type** (#1128): `signup-hint.ts` names a
+     range that ties Bass and Baritone Bass-baritone when its twin is a
+     Bass legend, through `voiceTypeHint` and `voiceTypeBand`, now in
+     `src/lib/mirror/legend-catalog.ts`, which the worker compiles in. Dev
+     has had it since Deploy DB Worker run 39383878523 (#1128), green.
+   - **The funnel catalog.** The worker compiles in
+     `src/lib/funnel-event-catalog.ts` and answers any name outside it 400.
+     #1120 added 49 names and #1123 one: 31 `native_onboarding_*`, 12
+     `cloud_*` and 7 `import_*`. Nothing is dropped meanwhile: only a
+     native build with `KARAOKE_IMPORT` sends them, and that is exactly a
+     build that targets the dev worker (`karaokeImportFor` in
+     `apps/mercurypitch/api-base.mjs`; tag builds are dev builds too). Dev
+     has had them since Deploy DB Worker runs 39334075590 (#1120) and
+     39379638222 (#1123), both green, as `deploy-db.yml`'s push filter
+     names the catalog.
+4. **No new link into the landing** (prod-upd step 0c). The diff's new
+   about.mercurypitch.com URLs are the lesson pages' footer links
+   (`/terms/`, `/privacy/` and `/imprint/`, on `learn/01` to `learn/05` and
+   in their test), plus a test fixture and comments. The live landing,
+   `mp-v0.1.34` (disjoint-colliders 10ff9f8d), has `terms.astro`,
+   `privacy.astro` and `imprint.astro`. No new query parameter. The lessons'
+   `?lesson=NN` links point into the app itself (#1119).
+5. **Social cards.** `pnpm run og:versions` on this PR stamped 13 cards with
+   no change. The lesson cards are outside it (below).
+6. **The lessons' release day** (`docs/plans/find-your-pitch/SEARCH.md`
+   § 12). This is the first release to carry any lesson, so this PR sets
+   `datePublished` to 2026-10-20 on Lessons 1, 2 and 4; their sitemap dates
+   already say 2026-10-20. If the tag goes out on a later day, move those
+   six dates to that day first. Nothing to upload: `FILM_SOURCES` is `null`
+   for both films, and playing them needs a code change (the two MP4 URLs a
+   film, and `public/_headers` first for a custom media domain).
+7. **Walk the tours on `main`** before the tag (Release Tours, prod-upd step
+   4). The baseline is 0 misses. Home's Lessons link adds no tour step:
+   Home's tour covers the cards, not the header's doors.
+8. **Push the tag `v0.9.22`.**
+9. **After the tag.**
+   - The first Notify IndexNow run (#1116) sends all 18 listed URLs, as the
+     key file is new since `v0.9.21`. If the run carries the "IndexNow was
+     not notified" warning, send them by hand from a checkout of `v0.9.22`:
+     `pnpm indexnow --since v0.9.21`.
+   - Request indexing for `/learn/01`, `/learn/02` and `/learn/04` in
+     Search Console. Bing hears of them through IndexNow.
+   - #1115's YouTube guide waits on this release (its "gate 2": the lesson
+     pages live). The films go up as Private first and public after it.
+   - The landing's own release (`mp-v0.1.35` in disjoint-colliders: the
+     about site's 404 and its alt fix) does not depend on this tag.
+
+### Found while preparing this release
+
+None of these is in a PR's notes, and none blocks the tag.
+
+- **Lesson 1's card promises a film that does not play.** Since the kit
+  (d548f3a94) its season entry says `film: 'published'`, while
+  `lesson-01/film.ts` keeps `FILM_SOURCES = null`. In production its map
+  card reads "Ready · watch and read" and offers "Watch the episode", which
+  scrolls to a player saying "Film coming soon". `explorer.test.ts` pins
+  that action, and `learn-no-planning-text.spec.ts` leaves `#watch` to a
+  follow-up.
+- **#1113's haptics reach every native build.** `installNativeHaptics()` is
+  called in `apps/mercurypitch/src/main.tsx` with no `PREMIUM_EXERCISES`
+  guard, so the store build sends every `platform.haptics` call to the
+  device, the Sing room's seven `haptics.tapLight()` calls
+  (`SingRoomStage.tsx`) among them. On an iPhone, which has no
+  `navigator.vibrate`, those did nothing before. #1113 names only the four
+  rooms and the path. Not checked on a device.
+- **#1091 in a store build:** nothing listens for `audioOutputChange`
+  there, so the slider read now stops about a second after launch. Read
+  from the code; no phone checked it.
+- **The lesson share cards are outside `og:versions`.**
+  `scripts/gen-og-versions.mjs` stamps `public/*-og.png` and `glass/og.*`,
+  not `public/learn/lesson-NN-og.jpg`, and the lesson pages' `og:image`
+  URLs carry no `?v=`. Harmless on first publication; a recut card would
+  keep its old address in every social cache.
+- **The first-visit line outlived its reason.** Lessons 2 and 4 still tell
+  first visitors to close the intro with the ×; after #1119 a marked link
+  never shows it. #1119 names dropping the line as a follow-up.
+- **No lesson page links Home.** Their only ways into the app are the
+  practise links; SEARCH.md § 3.3 lists the home page among a lesson's
+  links out.
+- **"To the highest" without "comfortable"** is left in the range test
+  page's JSON-LD app description, the voice type test's og description and
+  `public/llms.txt` (#1125's own list named the first two). A take saved
+  before this release keeps its arrows line when restored at
+  `/mirror#take-N`, since `saveAttempt` stores the string.
+- **`docs/agent/BUGS.md` names none of the PRs' open items** (#1103's pill
+  over a pushed room's bar; #1120's and #1123's held taps and Merc crossing
+  his line; #1095's five; #1130's lights in flight); they live only in the
+  PR bodies, and below.
+
+### Web: Find Your Pitch, with Lesson 1 at /learn/01 (#1048)
+
+62 commits (50d31df42 to 51f1c53de on the first-parent line), 46 of them
+only `docs/`: the series' plan, and its first page.
+
+- **The page.** `learn/01.html` is its own document, like
+  `delete-account.html`: every word of the lesson is in the markup, so it
+  reads with scripts off. `lesson-01/main.ts` adds the sound, five figure
+  toys (the plucked string, the frequency dial, loudness against pitch, two
+  waves an octave apart, the spiral that unrolls into a keyboard), the two
+  Mercs, the quiz, the episode player and the Season 1 explorer. The parts
+  every lesson will share start `src/features/lessons/kit/`.
+- **Serving.** A Rollup input and a dev and preview rewrite; in production
+  the asset layer's `html_handling` maps `/learn/01` to `learn/01.html`, as
+  for `/delete-account`, with no Worker route. `STANDALONE_DOCUMENT_PATHS`
+  (`src/lib/sw-runtime.ts`) gains `/learn/01` and `/learn/01.html`, so the
+  service worker never answers the lesson with the app shell. The sitemap
+  and `llms.txt` (a new "Lessons" section) list it, with a 1200x630 share
+  card in `public/learn/`; `knip.jsonc` takes each `lessons/*/main.ts` as
+  an entry.
+- **First-paint budgets** (225dae3ea). `measureFirstPaint` read only the
+  root of `dist`, so `learn/01.html` arrived unweighed. It walks every
+  folder but `assets/` now, with a test for a document in a folder.
+- **No CDN and no Google Fonts**, which the CSP and `self-hosted-fonts.ts`
+  rule out. The proof page's GSAP, ScrollTrigger and hls.js became Web
+  Animations and IntersectionObserver (`kit/reveal.ts`); Inter and Outfit
+  come from the app's `@fontsource-variable` packages; Instrument Serif and
+  JetBrains Mono ship as Latin WOFF2 subsets with their OFL texts.
+- **Orange Merc, the approved shader untouched.** `src/lib/merc` gains one
+  optional mount option, `fragmentPatch`, which rewrites the scene shader's
+  GLSL just before it compiles (all three compile sites in `renderer.ts`).
+  `kit/merc-warm.ts` uses it to turn the cool light amber.
+  `scene-shader.test.ts` still pins the approved text, `merc-warm.test.ts`
+  fails if a swap stops matching exactly once, and Blue Merc and every app
+  surface are unchanged.
+- **Live Mercs only on a GPU** (e1b067ddb). On SwiftShader the two live
+  Mercs held the main thread for about 11 s after load and the lesson
+  stopped answering. `kit/merc-duo.ts` keeps the still pictures when WebGL2
+  reports a major performance caveat or the renderer names itself as
+  software (SwiftShader, llvmpipe, softpipe, Basic Render Driver), since
+  headless Chrome ignores the caveat flag.
+- **The episode** plays from R2 once uploaded. `lesson-01/film.ts` takes a
+  1080p and a 720p MP4 and is `null` until then, so the section shows the
+  poster, the chapters and the transcript with "Film coming soon". The host
+  must be one `media-src` already allows (`*.r2.dev`,
+  `*.r2.cloudflarestorage.com`); a custom media domain needs
+  `public/_headers` first.
+- **Captions** (1b8a07ee0): 12 of 90 cues ran over 20 characters a second
+  (peak 33.0) and one line held 45 characters. Now the peak is 20.0 and the
+  longest line 42, with short `BLUE:` and `ORANGE:` labels; the transcript
+  reads both label forms, and `film-sync.test.ts` fails if the page's
+  captions or chapters drift from the plan folder's copies. The page gives
+  the re-voiced master's 5:14 (rc-07, the owner's ElevenLabs voices) in the
+  watch heading and on the play button (97b207006; #1133 later keeps the
+  map's card to the reading time until a film plays), and the quiz prints
+  "Right." once (10d549d5f).
+- **Sound** follows the house envelope rules (an exponential attack from
+  the 1e-4 floor, a `setTargetAtTime` release at release / 5, a stop 60 ms
+  after) on the page's own small graph: `preview-player.ts` would bring the
+  notifications store and Solid into a page that boots no framework.
+- **Copy** is British English (MASTER-PLAN § 12 item 5); the app's own
+  screens stay American.
+- **Home** (cf2e6efe9): a third header door, Lessons, a plain link to
+  `/learn/01` between Learn and What's new, styled as they are.
+- **Fixed on the branch:** the lesson's blue is `--signal-blue`
+  (abda04949), as `theme-css.contract.test.ts` bans the retired `--blue`;
+  and the ten new functions over cognitive complexity 15 (the ratchet went
+  436 to 446) were split into named helpers, back to 436 (64d3d9b7b), with
+  all 365 pixel and DOM snapshots and 9,284 recorded values unchanged.
+- **Agent settings** (71213a23c, "Update settings.json"):
+  `.claude/settings.json` gains a `permissions.allow` list of 13 ElevenLabs
+  MCP tools and 6 Claude Docs tools; its `model` line is unchanged. Nothing
+  ships.
+- `docs/agent/MISTAKES.md` gains "Format a stylesheet with Prettier before
+  Vite sees it": `tools/css-legacy-fallbacks.ts` works line by line, so on
+  a dense stylesheet its `color-mix()` fallbacks opened rules they never
+  closed.
+- **Checks** (the PR's): CI green on 9713bcdb; Vitest 12 files and 233
+  tests (the lessons, `sw-runtime`, `src/lib/merc`, the styles) and 9 files
+  and 338 (entry pages, SEO, OG, CSP, worker routing and others); all 18
+  documents within budget on a `build:e2e` build; `learn-lesson-01.spec.ts`
+  and `walkthrough.spec.ts`, 12 tests, Home's Lessons link among them. On
+  the preview, with the site's real CSP: no violations, console errors or
+  failed requests.
+- **Left for later** (the PR's list): the film files on R2, which the owner
+  uploads after a person has watched and listened to both masters; explorer
+  progress synced on sign-in; and per-question quiz telemetry. Progress
+  stays in the visitor's browser.
+
+### Web: the shared lesson kit, and Lesson 2 at /learn/02 (#1111)
+
+Nine commits: the kit (d548f3a94), Lesson 2 (dc10d1dc8), Lesson 3 as a
+draft (3774c5668) with the native define fix (63338326c), both under the
+drafts section, and five docs-only commits.
+
+- **The kit.** Lesson 1's own code moved into `src/features/lessons/kit/`,
+  nothing copied, and every toy now mounts on a root it is given, any
+  number per page, each with its own state: the spiral and its keyboard
+  (`spiral.ts`, `spiral-draw.ts`, `spiral-keys.ts`), the dial, the predict
+  (two to four choices, a reveal only once the sound was heard, never
+  calling a choice wrong), the sing ring, the page-wide Sharps, Flats or
+  Both (`names.ts`: Sharps on every visit, never stored), note names
+  (`notes.ts`), the contour player (`sound.ts`), the quiz (id prefixes,
+  reused questions linking their own lesson), the explorer and season data,
+  the step deck (opens at `#step-N`) and the episode (it takes a YouTube
+  link; none is passed). `lesson-stage.css` holds the shared stage and the
+  `--amber` token.
+- **Lesson 1 on the kit** changed attributes only, then gained its
+  next-lesson card to `/learn/02`. Of 154 screenshots per build (390x844
+  and 1440x900, reduced and full motion) 152 matched; the other two follow
+  the spiral's unroll click, whose scroll lands at either of two places in
+  both builds, and with the same scroll 38 of 38 matched. The quiz keys
+  (`fyp-l01-seed`, `fyp-l01-quiz-v3`) are unchanged, so no saved progress
+  resets. First-paint JavaScript went from 99.1 to 113 KB (budget 125), CSS
+  from 68.2 to 69 KB (budget 90).
+- **Lesson 2, "Twelve notes"** (`learn/02.html`, `lesson-02/`) carries
+  every word of its LESSON.md: a cold open on its own hero spiral (a guess
+  unlocks Play the climb, twelve steps from A3 to A4), a recall of Lesson
+  1's questions 2 and 4 that marks no lesson done, the spiral's Climb and
+  Look down, the keyboard's Unroll, Straighten and step bars, the tiles'
+  Lift out the five, Sharps, Flats or Both with the Sharp and Flat arrows,
+  the semitone ruler in cents beside the app's monitor, the Semitone or
+  tone? ear game, three predicts, Sing it with the slide guide, the quick
+  check (question 2 by ear), and the Wrap with Leap's card and free play.
+  The phone stage follows DECISIONS 83: eight 44.5 px keys edge to edge,
+  44 px black-key zones 0.5 px apart, step 5 at 50.9 px a tile. Budgets:
+  165 KB of JavaScript (measured 131) and 95 KB of CSS (75).
+- **Departures from the spec:** the Sharp and Flat arrows ask for a white
+  tile when given a black one, since double sharps are not taught; the
+  count-in is silent ("Get ready"); ♯ and ♭ use the system font, the kit
+  having no Noto Music subset; and a few interface lines LESSON.md does not
+  give, such as the ear game's "Yes." and "Here it is again, slower.".
+- **The episode** shows the poster, chapters and transcript with "Film
+  coming soon" until the film is on R2 (`lesson-02/film.ts`); its captions
+  and chapters are tested against the plan folder's copies.
+- **Checks** (the PR's): CI green on 3962d2f5, all 80 checks; Lessons 1 to
+  3's specs, 27 tests, on a `build:e2e` bundle and against the PR preview
+  with the real CSP (no violations, console errors, failed requests or
+  sideways scroll); `learn-lesson-02.spec.ts` (13) 34 of 34 with every test
+  run twice; 248 screenshots of Lesson 2's 62 states; Vitest 454 tests in
+  51 files.
+
+### Web: Lesson 4, "The major scale and home", at /learn/04 (#1127)
+
+One commit (df3833f81). The written lesson goes live on the kit: no film,
+so no Watch section, and Lesson 3's masthead (Lesson, Sing, Explorer).
+
+- **One staircase carries it:** eight stairs on semitone rows with the two
+  semitone steps lit gold, Group's two tone-tone-semitone brackets, a start
+  that slides from C4 to B4 and spells every scale one letter per step (E
+  sharp in F sharp major), White keys only drawn dashed with a "?" where it
+  leaves the pattern, the names switch, and Stop on ti and Land on do. A
+  compact copy plays the cold open's predict; Sing it grows Lesson 2's
+  slide guide to thirteen rows with a count-in and Move do; the recall asks
+  Lesson 2's questions 1 and 3; the quick check marks the lesson done.
+- **Access:** every stair and bracket is a button laid over the canvas, so
+  the staircase works by keyboard and screen reader ("Stair 3, mi, F sharp
+  4"), and the start is a slider. On a phone every tap target is at least
+  44 px at every start; beside the text the sticky stage keeps within 550
+  px at 1024 px wide, controls included.
+- **A released lesson,** so it meets #1109's `lesson-pages.test.ts`:
+  Article and BreadcrumbList JSON-LD, `max-image-preview:large`, a
+  57-character title, a 155-character description, a sitemap entry dated
+  2026-10-20, `llms.txt`, the service worker's path and nav links from
+  every entry document. Every page whose words or links changed moved its
+  `lastmod` to that day.
+- **Kit, additive:** `major-scale.ts` (spelling and steps), `key-strip.ts`,
+  `home-glyph.ts` (the house on do), `lesson-parts.css` (what Lessons 2 and
+  4 share) and silent gaps in `slide-guide.ts`.
+- **Words that follow the build.** A next-lesson card writes both readings
+  in `data-if-live` and `data-if-planned` spans, and `lessonStatesPlugin`
+  (`tools/draft-lessons.ts`) keeps the one true of the build: Lesson 4's
+  card says "Coming later" for Lesson 5 in production and "ready to read"
+  where drafts are shown. `assert-draft-lessons.mjs` fails any document
+  still carrying both.
+- **Numbers:** first paint 101 KB of JavaScript (ceiling 125) and 73 KB of
+  CSS (ceiling 92); Vitest 47 files and 535 tests locally; CI green on
+  b26f7ef5, `learn-lesson-04.spec.ts` among the browser shards.
+
+### Web: lesson cards speak to learners, not to the team (#1133)
+
+One commit (f4113007d), from the owner's tablet review. The explorer's
+cards printed the season's planning fields to every learner: a "Signature"
+row, "Needs a deep link: ... (a data-only slug)", topic codes, "Planned, 6
+to 9 minutes" and an "In production" chip. The fields stay in
+`kit/season.ts`, marked admin-only; the production build's lesson chunks
+hold none of those labels.
+
+- **One state function,** `kit/lesson-state.ts`, for every list of
+  lessons: done, here, in progress, up next, ready or coming later, and one
+  action per live lesson, "Start lesson", "Continue: step N" at the
+  furthest step reached, or "Read again" once done. `lessonStatus` goes.
+- **The furthest step,** kept per lesson in `fyp-pos` by `kit/position.ts`
+  through the never-throwing `store`; it ignores what it can't read and
+  forgets a lesson's step once the lesson is marked done. The step deck
+  gains `count` and `subscribe`, and each page calls `rememberSteps` after
+  `deck.start()`, so opening a page at a step is not progress.
+- **The card:** the action under the hook, "Watch the episode" beside it
+  only for a published film; a chip for Ready, Coming later or Done; topics
+  by name (codes kept as `data-topic`); a Practise row only where there is
+  a link; a Length row with the reading time ("10 min"), plus the film's
+  running time once a film plays.
+- **Pages:** the legend reads Ready, Coming later, Done; next-lesson cards
+  say "coming later", Lesson 2's now resolved by the build as Lesson 4's
+  is; the footers lose their datelines; the film credit reads "stand-ins
+  for now, made with ElevenLabs and retuned".
+- **Tests:** `lesson-state.test.ts` and `position.test.ts`; the new card
+  and data in `explorer.test.ts` and `season.test.ts`, a hidden draft among
+  them (coming later, no link, even with a kept step); and
+  `learn-no-planning-text.spec.ts`, which opens every lesson's card on
+  every built lesson page and finds none of the team's words, `#watch` left
+  out for the film follow-up. CI green.
+
+### Web: the Series blueprint leaves Lesson 1's page (#1131)
+
+One commit (e8e97929f), from the same review: planning stays off the
+lesson pages. Lesson 1 ended with a "For the team" section, linked from the
+masthead as "§ Blueprint": the beat sheet, page anatomy, the five teaching
+rules, the pipeline, the roadmap and links to the plan files.
+
+- `learn/01.html` drops the section, its anchor and its icon;
+  `lesson-01/blueprint.ts` goes, with its rules in `lesson-sections.css`,
+  `lesson-base.css` and `reveal.ts`.
+- The words move unchanged to `src/features/admin/lessons/blueprint-data.ts`
+  for the Content Studio's Lessons page, a follow-up; nothing imports the
+  file yet.
+- `learn-lesson-01.spec.ts` now requires no `#blueprint`, no Blueprint link
+  and a masthead whose every anchor lands on a section.
+- First paint: Lesson 1's JavaScript 116 to 114 KB and CSS 69 to 64 KB; its
+  CSS ceiling drops from 90 to 80; every other lesson's CSS is about 5 KB
+  lighter from the shared sheet. CI green.
+
+### Web: a lesson's ?lesson= marker opens its room, not First Light (#1119)
+
+One commit (152aad288). The lessons put `?lesson=NN` on every practise link
+(`/ear-lab?lesson=02`, `/pitch-training?lesson=04`,
+`/exercises/<slug>?lesson=NN`, `/?lesson=09#/path`), but nothing read it: a
+first visit opened First Light over the room, and the pages told visitors
+to close it with the ×.
+
+- `src/lib/lesson-marker.ts`: `lesson=` and two digits, 01 to 14, from the
+  query string only, never a hash route's `?`. Anything else, and every
+  visit without one, boots as before.
+- `stepAsideForLesson` (`onboarding-store.ts`) runs from `index.tsx` before
+  the render, before App decides this is a first run and before
+  `/exercises/<slug>` cleans its address. It ends First Light for good, via
+  `finishOnboarding`, as the × does, so a reload after the slug cleanup
+  does not bring "Welcome to MercuryPitch" back. Settings > Replay the
+  intro and `#/map` still open it.
+- What's New: a first visit a lesson sent is not a returning one, so the
+  release line is marked caught up, not announced. No `onboarding_skipped`
+  count, no analytics event, the lesson number not stored, the URL left as
+  it is.
+- App's First Light gate moves unchanged into `useFirstLight`, so the tests
+  run the real decision. Voice Mirror and the Vocal Range Test are their
+  own documents and never show First Light; the native build never runs it.
+- **Tests:** `lesson-marker.test.ts` (33) and `useFirstLight.test.tsx`
+  (21); `lesson-marker.spec.ts` 11 of 11 and `onboarding.spec.ts` 9 of 9 on
+  a `build:e2e` bundle, and a build without the `index.tsx` call fails all
+  five marker cases. CI green.
+
+### Dev site only: Lessons 3 and 5 as drafts, and the switch (#1111, #1129)
+
+Main deploys to dev.mercurypitch.com and a tag deploys `main` to
+production, so a lesson waiting on the vocal coach's sign-off (MASTER-PLAN
+§ 12 item 8) must stay out of a production build. The switch (3774c5668)
+works like the Glassworks listing:
+
+- `VITE_DRAFT_LESSONS` is `1` in `.env.development` (the dev site, PR
+  previews, `pnpm dev`), `0` in `.env.production`, and `1` in `build:e2e`
+  and Vitest's env. Only "1" or "true" shows drafts, so a build that loses
+  the variable hides them.
+- `kit/drafts.ts` lists the drafts, Lessons 3 and 5.
+  `tools/draft-lessons.ts` builds every `learn/NN.html` less the hidden
+  drafts, so `vite.config.ts` names no lesson; `kit/draft-switch.ts` reads
+  the same value through a `define`, folding a draft's season entry to
+  "coming later" with no page.
+- In production a draft is no build input and no route (its path answers
+  the 404 page), nothing links it, the service worker leaves the path to
+  the network, and the sitemap and `llms.txt` leave it out.
+  `scripts/assert-draft-lessons.mjs dist --hidden` checks all of that after
+  `build` and `build:tours`, and `--shown` after `build:dev` and
+  `build:e2e`.
+- The native app compiles the same `src/`, and its define-parity test needs
+  every constant the web build defines, so it defines the switch as "0"
+  (63338326c).
+- **Lesson 3, "Match a note"** (3774c5668), the first checkpoint that
+  listens. The comfort check comes first on every visit; "Just listen
+  today" never asks for the microphone; Start is the only control that
+  does, and a take holds the microphone only while it is open. Three notes,
+  up to three tries each, no Again after "Effortful" or "Uncomfortable",
+  and nothing recorded, kept or sent. New kit parts for the voice lessons
+  (`band-chart.ts`, `listen.ts`, `take.ts`, `comfort.ts`, `voice-choice.ts`,
+  `loud.ts`, `slow-motion.ts`, `cents-slider.ts`, `band-words.ts`). In app
+  code, Voice Mirror's 15-, 35- and 60-cent edges move to the leaf
+  `src/lib/mirror/match-bands.ts`, re-exported by `metrics.ts`, so a page
+  that draws the band never loads the scorer; the production bundle gains
+  that 100-byte chunk.
+- **Lesson 5, "Breath and a steady note"** (#1129: 5bd3e4dc6 and
+  4cca847a2): Lesson 3's checkpoint with two holds, of ten and fifteen
+  seconds; "How did that feel?" after every take, decided by the pure rule
+  in `hold-flow.ts` (Effortful and Uncomfortable never offer the longer hold
+  or Again); the hold reader `kit/hold-take.ts`. `src/lib/merc/sim.ts`
+  gains a `'none'` sparkle side for a quiet celebration; the three existing
+  sides behave as before. `lesson-pages.test.ts` now holds every draft to
+  the assert's rules. CI green.
+- **At sign-off,** per #1111: delete the lesson's line in `drafts.ts`, add
+  its URL to `public/sitemap.xml` and `public/llms.txt` (the switch's test
+  then requires both), and give it a share card; neither draft has one.
+
+### Web: every released lesson is linked and marked up for search (#1109)
+
+Two commits, rebased (e8df9193d, then the plan in 8f7ff7f11). It follows
+the draft-lessons build: nothing in it names a lesson, and a lesson is
+still released by deleting its line from `kit/drafts.ts`.
+
+- **Linked from every crawlable page.** `tools/lesson-links.ts` reads the
+  released lessons off `learn/`, leaving out the drafts the way
+  `tools/draft-lessons.ts` does, and labels each link with the lesson's
+  structured-data headline ("What is a note? (Lesson 1)"). Every generated
+  entry page's nav lists them after Home; index.html and 404.html link
+  Lesson 1, which links on to the next. No nav links a draft, whichever way
+  the build shows drafts.
+- **The lesson heads.** An `Article` node (a free beginner lesson in the
+  Find Your Pitch series, its `position`, `en-GB`, from the organization)
+  and a `BreadcrumbList`; `max-image-preview:large`, which Discover needs
+  before it shows a large image; no `VideoObject` until a film plays on the
+  page. The meta descriptions went from 206 to 156 and from 272 to 159
+  characters, with the same facts. `datePublished` waited for this release
+  (Release steps).
+- **`src/tests/lesson-pages.test.ts`** checks every released lesson's
+  canonical, image directive, description length, structured data, sitemap,
+  llms.txt and service-worker entries, links from the entry documents and
+  legal links, and skips a lesson while it is a draft.
+- **`docs/plans/find-your-pitch/SEARCH.md`**: what Google supports for
+  teaching pages, the page template, query-led titles for all 14 lessons,
+  the `/learn/` hub, watch pages after YouTube, the lesson-to-room link map
+  and a release checklist that follows `drafts.ts`.
+
+### Web: one studio in the app markup, and the site's name (#1105)
+
+One commit, rebased (6418e6973). Structured data only; nothing on screen.
+
+- **Site name.** index.html gains a `WebSite` node (`@id .../#website`,
+  name MercuryPitch, alternateName "Mercury Pitch"). Google takes a
+  result's site name from this node on the home page.
+- **One studio, one publisher.** The home `WebApplication` gets the id
+  `.../#app` and a publisher link. Every entry document's app node gets its
+  own `@id` (`<canonical>#app`) and links by `@id` to the studio
+  (`isPartOf`) and the organization (`publisher`), with the name and URL
+  repeated inline so each page still reads on its own.
+- **App markup where it was missing.** Karaoke Night, the Voice Mirror, the
+  Vocal Range Test and Break Glass, the rooms people search for by name,
+  were the only ones with no `WebApplication`. They have one now.
+- **Manifest description.** `site.webmanifest` no longer reads "Train your
+  vocal pitch with ... piano roll visualization"; it says what the studio
+  does.
+- Tests: `entry-page-model.test.ts` (the four rooms' app markup; every app
+  node's `@id`, `isPartOf` and `publisher`) and `launch-entry-seo.test.ts`
+  (the WebSite node and the studio `@id` on index.html).
+
+### Web: `/karaoke-app`, and FAQs for Jam Rooms and key changes (#1106)
+
+Three branch commits, squashed into af0f45eea.
+
+- **`/karaoke-app`** is a front door for "karaoke app" searches. It boots
+  Karaoke Night, as `/vocal-remover` does. Title "Free Karaoke App: Lyrics
+  and Live Scoring | MercuryPitch", a lede and five FAQs with FAQPage
+  markup: free, and it scores your singing; your own songs from files you
+  own, no catalogue; friends (a singer per playlist song, Jam Rooms for up
+  to 12); TV (TV browsers play prepared songs with lyrics, most cannot use
+  a mic yet); iPhone and Android. The phone answer comes from
+  `STORE_LISTINGS` (`nativeAppsAnswer()`): "on the way" today, the store's
+  name the day a listing goes live, with no copy change. It reuses the
+  karaoke share card and joins the index and 404 navs, the sitemap, the
+  service worker, llms.txt and `.gitignore`.
+- **FAQs where the queries already land.** Jam Rooms gets its first:
+  karaoke with friends online, how many can join (12, `MAX_PEERS`), your
+  own songs and handing out lines. Karaoke Night gets one on changing a
+  song's key (plus or minus 6 semitones, Find my key, remembered per song).
+- **llms.txt** gains "Where it runs": browsers today, the apps not yet in
+  the stores, and the TV limits.
+- Every claim was checked against the code or the changelog (`MAX_PEERS`
+  is 12, the karaoke key store's six semitones, the playlist singer and
+  score flow, the host-only assign bar, UvrPanel's TV notice).
+- Tests: the page is in the front-door boot check (and
+  `every-document-boots.spec.ts` walks the model); `nativeAppsAnswer` in
+  all four store states, where a live flag with no Apple ID does not count;
+  once a listing is live, llms.txt must link it; every generated entry
+  document must be git-ignored, which this one was not.
+
+### Web: the store listings drive the website's native app signals (#1107)
+
+One commit, rebased (d4188cde2). Nothing renders today: no listing in
+`src/lib/store-listings.ts` is live.
+
+- Once the App Store listing is live, every generated entry document
+  carries Safari's Smart App Banner (`<meta name="apple-itunes-app">`), with
+  no `app-argument` until the app opens links.
+- `store-presence.test.ts` fails on launch day and names the text to add to
+  the hand-written files: index.html's banner tag, one `MobileApplication`
+  node per live store (free, linked to the organization's `@id`), and
+  `related_applications` in `site.webmanifest`, so Chrome on Android can
+  answer `getInstalledRelatedApps()`. `prefer_related_applications` must
+  never be true, or Chrome would offer the store app instead of installing
+  the web app. The manifest is not rewritten at build time because the
+  service worker precaches it by hash.
+- One module, `src/seo/store-presence.ts`, built on `storeLinks()`: a live
+  flag with a missing Apple ID produces nothing, the rule the store chips
+  follow. Both stores were flipped live locally: exactly the three
+  hand-written-file checks failed, each naming what was missing.
+
+### Web: sitemap dates that say when a page changed (#1122)
+
+One commit, rebased (89a9a9d1e). The fortnightly SEO check found ten URLs
+still dated 2026-09-08 after a month of changes and five with no
+`<lastmod>`. Google reads `<lastmod>` only when a site's dates are
+consistently accurate, and Bing distrusts dates that look stale or uniform.
+
+- Every page's generated document was rebuilt at each of the 58 main
+  commits that could change it since the entry model landed (2026-09-09);
+  every page last changed on 2026-10-19, when the studio markup (#1105),
+  the karaoke link (#1106) and the lesson links (#1109) reached every
+  document. Lesson 4 (#1127) has since moved every date to 2026-10-20, as
+  its link reached every nav.
+- `<changefreq>` and `<priority>` are gone (Google and Bing ignore them,
+  and only 12 of the 18 entries had them). A comment at the top says when
+  to move a date: when a page's words, structured data or links change, in
+  the same PR.
+- `launch-entry-seo.test.ts` fails on a URL with no `<lastmod>` or a date
+  after today (one day of slack for time zones ahead of CI).
+
+### Web: Bing Webmaster findings: Piano Night's h1, image alt, IndexNow (#1116)
+
+Four commits, rebased (cfeb70433 to 9b31b52c4). Bing Webmaster Tools' first
+report for mercurypitch.com listed IndexNow as not set up, one page with no
+h1 and three pages with an image without alt text. It gives counts, not
+URLs.
+
+- **h1.** Every entry document's prelude has an h1 but hides once `#root`
+  fills, and every room then renders its own, except Piano Night. Its stage
+  now names the room in a visually hidden h1.
+- **Image alt.** No real image lacked an alt attribute. Every generated
+  entry document did carry a prelude comment that spelled out an image tag,
+  which a scanner reading raw markup counts as an image with no alt; the
+  comment now names it in words. A test checks every image tag in every
+  generated entry and in index.html, 404.html and delete-account.html.
+- **IndexNow.** The key file is
+  `public/f21f5911628de02a2eb25f532b8f984f.txt` (public by design).
+  `scripts/indexnow.mjs` (`pnpm indexnow`) POSTs to `api.indexnow.org`:
+  `--since <ref>` sends the sitemap URLs added, removed or re-dated since
+  that commit, or every URL when the key file was not in it. It reads both
+  sides as production lists them (`.env.production`'s
+  `VITE_GLASSWORKS_LISTED` at the same ref, so `/glass-game` stays out),
+  and refuses a ref that is not a commit. Draft lessons are never in the
+  sitemap. The request gives up after 30 seconds.
+- **The release step.** `build.yml` gains "Notify IndexNow" after the
+  production deploy, on `v*` tags only, against the previous `v*` tag, with
+  `continue-on-error` and a five-minute timeout. A failure leaves a warning
+  on the run with the command that sends it by hand, since the next release
+  compares against this tag whatever happened here.
+- `scripts/indexnow.test.mjs`: 11 tests. Nothing reaches the network.
+
+### Web: one error scene, starting with the 404 page (#1118)
+
+One commit, rebased (a2ec1d49d). Phase 1 of the error-page plan (#1117,
+still open), "Off the stave".
+
+- **The page.** The First Light night plate over the mercury sea, and a
+  stave of light with one note drifted up off its line, glowing, a dashed
+  ghost where it belongs and a dotted glide between them. One glass card
+  holds the lockup, a tuner readout ("404 cents off"), "Nothing plays at
+  this address", "Back to the home page", every room as a link and the
+  legal links. The note bobs and the glide flows; both stop under
+  `prefers-reduced-motion`. Checked at 2560x1440, 1440x900, 1024x768 and
+  390x844: no sideways scroll, and all of it fits at 1440x900.
+- **The kit.** `src/error-kit/` holds each state's words
+  (`error-states.ts`, only `not-found` so far), the stave as an inline SVG
+  string (`staves.ts`, reusing the lessons' engraved G clef, ids prefixed)
+  and the document writer (`render-error-page.ts`);
+  `src/styles/error-scene.css` draws the sky in CSS, so the page looks
+  finished before the plate arrives, or offline. Colours are custom
+  properties, which the about site's copy overrides.
+- **404.html is generated.** `tools/generate-error-pages.ts` writes it from
+  `vite.config.ts` and the test setup, like the entry documents, and it is
+  git-ignored; the hand-written file is gone. Its room links come from
+  `navLinksFor`, so a new room is linked without a hand edit and an
+  unlisted one (Glassworks, in production) is not. Still no script, no
+  root, `noindex, follow` and no canonical. `src/tests/error-pages.test.ts`
+  is new.
+- **Not in it:** the other states (server error, offline, link gone,
+  crash), the Worker's 500 page, the service worker's unknown-path and
+  offline fixes, and the in-app scene: phases 2 to 4. The about site's 404
+  is disjoint-colliders #170, on its own landing tag.
+
+### Web: the Guided Warmup ends with no grade, score or level (#1124)
+
+One commit, rebased (e37bbba59).
+
+- **Why.** The drill's help promised "There are no grades here" and its
+  code says "A warm-up is not graded", yet its end screen showed a letter
+  grade, the participation average as a percentage, and "New best!" or the
+  change since the last run: `WarmupExercise.tsx` handed `ExerciseShell` a
+  score and no guided prescription. Find Your Pitch Lesson 7 can link the
+  warm-up only once it is ungraded and its help makes no health claim
+  (Lesson 7 WEB-SPEC; FACTS 75 and 76).
+- **The shell.** `ExerciseShell` takes `ungraded: { resultTitle }`. Set, it
+  shows no live percentage and no "Lv" chip in the header, no recent-scores
+  strip on the setup screen, and a result card that leads with the title
+  (`.exercise-result-title`) in place of the grade, the percentage, "New
+  best!" and "vs last". The end haptic is the light tap. The replay notes
+  drop "Your score is unchanged" and say "This browser cannot record a
+  replay.", and the note before a run says "Runs save without audio." A
+  drill that does not set it renders as before, which a graded control
+  test holds. The replay-note chain moved unchanged into
+  `exercise-replay-note.ts`; the PR reports `ExerciseShell`'s complexity 49
+  to 22 and cross-feature imports 524 to 523.
+- **The warm-up.** "Warmup complete" when every step finished, "Warmup
+  ended" otherwise, then "Steps: n/N" without "Participation: n%". The run
+  still goes to the exercise history, so a full warm-up still ticks off
+  Today's Session's first segment and earns practice time, the streak and
+  badges, but `updateDifficultyFromEma` is no longer called: no level, and
+  no "Level up! This drill is now Lv N" toast, comes from a warm-up.
+- **Help** (`exercise-help.ts`): "Warming up prepares your voice the way
+  stretching prepares muscles — it protects your cords and makes
+  everything after sound better." is now "A warmup is a gentle start: easy
+  sounds, at about speaking volume, before anything harder. Stop
+  immediately if anything feels uncomfortable." The no-grades sentence is
+  now "There are no grades and no score here. The end screen just counts
+  the steps you finished."
+- **Tests.** New `ExerciseShell.ungraded.test.tsx` and
+  `warmup/WarmupExercise.test.tsx`; `src/tests/warmup-participation.test.ts`
+  pins the new sentence and runs the help through the guided-voice claims
+  check (`validateGuidedDynamicClaim`). The PR ran 13 suites (98 tests),
+  the exercise layout, stop-flow, tablet, routine and guided voice
+  Playwright specs on a `build:e2e` bundle, and the mobile audit (18 of 18
+  clean), whose seed now gives the recent-scores check a Long Note history.
+- **Not in it** (the PR's list): the library card's "Novice" and "Best:
+  60%", "Warmup 60%" in Recent Sessions and the "Warmup Focus" suggestion
+  still read the warm-up's saved score.
+
+### Web: the range test cushions the top and drops its verdicts (#1125)
+
+One commit, rebased (7ed2aa1d2).
+
+- **Why.** Find Your Pitch Lessons 3 and 5 send singers to the Voice
+  Mirror, and Lesson 7 to the Vocal Range Test, the same app. Their App
+  content lists name four things that break the series' rules: never
+  reward a wider range (REQ-GVC-072), never give a direction to a change
+  the test cannot tell from noise (REQ-GVC-065, REQ-GVC-066), and the task
+  measures the voice, not the ear (REQ-GVC-045).
+- **The top is cushioned**: "Slide like a siren, from your lowest comfy
+  note to your highest comfortable note." in the first glide
+  (`MirrorApp.tsx`) and the overview's card (`HowItWorks.tsx`), the
+  landing's lede (`MirrorLanding.tsx`), and the entry page's description,
+  og description and lede (`src/seo/entry-pages.ts`). `public/sitemap.xml`
+  dates /vocal-range-test 2026-10-20.
+- **The twin screen**: "{Legend} shares your voice type. That is yours now:
+  it is on your voiceprint whatever happens next." is now "{Legend}: a
+  famous {type}, the voice type your range overlaps most. A broad guide,
+  not a verdict." (`twin-peek-line.ts`; with no voice hint, "a famous
+  singer of the voice type your range overlaps most").
+- **The accuracy note** drops "Your ear is ahead of your control, the good
+  order."
+- **The change line** for a returning visitor, on the results and the
+  share card (`formatDeltaLine`, `card-renderer.ts`): "▲ +2 semitones ·
+  accuracy +1 · steadiness -11 since 7 Jul" is now "Since 7 Jul: span 14 to
+  16 semitones · accuracy 71 to 72 · steadiness 80 to 69", with no arrow,
+  sign or direction word. An unchanged reading is "similar", and a run with
+  every reading unchanged gets "Similar today to your run on 7 Jul", where
+  it used to get no line. No validated noise figure exists in the code, the
+  guided-voice spec or the lessons' FACTS, so none is assumed; one would go
+  in `deltaPart`. `deltaVsBaseline` (`src/lib/mirror/baseline.ts`) now hands
+  back the stored readings too.
+- **Tests.** New `HowItWorks.test.tsx`, `MirrorApp.range-copy.test.tsx`,
+  `card-renderer.test.ts`, `twin-peek-line.test.ts` and
+  `src/seo/entry-pages.test.ts`. The PR ran 49 suites (728 tests), and the
+  Voice Mirror and voiceprint-link Playwright specs.
+- **For later** (the PR's list): uncushioned "to your highest" lines in the
+  voice-type test, singer match and the JSON-LD description (see Found
+  while preparing this release).
+
+### Web: the hold cards stop asking for the longest hold (#1126)
+
+One commit, rebased (80df49e62). Find Your Pitch Lessons 3, 5 and 6 send
+singers to these drills for short, comfortable holds (5 s and 10 s), and
+their App content lists name the cards' copy (`ExerciseMenu.tsx`).
+
+- **Long Note**: "Hold a steady pitch as long as you can. Builds breath
+  support and pitch stability." is now Lesson 5's "Hold one comfortable
+  note, steady, for a length you choose." (REQ-GVC-070, REQ-GVC-071), and
+  its "Breath Control" tag is "Steady Note"; "Stability" stays.
+- **Pitch Hold**: "Keep your pitch inside a shrinking target zone. How long
+  can you stay locked in?" is now "Keep your pitch inside a shrinking target
+  zone, for a length you choose.", tagged "Precision" instead of
+  "Endurance".
+- **Interval Trainer**: "Sing specific intervals above and below a
+  reference note." is now "... above a reference note.": it only ever plays
+  the second note above the first (Lesson 6 FACTS 48).
+- **Tests.** New `ExerciseMenu.test.tsx`; the PR ran 5 suites (44 tests).
+- **For later** (the PR's): Long Note's help summary ("Hold a steady pitch
+  as long as you can. ...", `exercise-help.ts`) and setup line ("The longer
+  and steadier, the better.", `LongNoteExercise.tsx`), and Dynamic Swell's
+  "Master breath support" and "Breath Control" tag, all still in the build.
+
+### Web and native: a range that ties Bass and Baritone reads Bass-baritone (#1128)
+
+One commit, merge commit (3cda8f53f).
+
+- **The tie.** E2 to G4 shares 24 semitones with Bass (E2 to E4) and 24
+  with Baritone (G2 to G4), and its middle is 1.5 semitones from each
+  band's middle, so `voiceTypeHint` tied on both counts and the bands'
+  order made it Bass. A range ties when its ends add up to 107 in MIDI and
+  no other band overlaps it more. `voiceTypeHint` now keeps every band
+  tied on both counts and returns `BASS_BARITONE` ('Bass-baritone') when
+  Bass and Baritone are both among them: the owner's call, after the
+  bass-baritone's range in the sources (F2 to F4 or F#4). Any other full
+  tie keeps the band listed first.
+- **Where it shows:** the Voice Mirror's result ("Bass-baritone range", and
+  the chip "Bass-baritone · like Paul Robeson"), the voiceprint card's type
+  pill, the twin card's range line, the twin screen's line ("Paul Robeson:
+  a famous bass-baritone, ..."), the native onboarding's reveal, and the
+  welcome mail for a tied range whose twin is a Bass legend.
+  `/mirror?demo=bass-baritone` shows it.
+- **Nobody's twin changes.** `voiceTypeHint` moved from `metrics.ts` to
+  `legend-catalog.ts`, beside the bands, so the DB worker names a voice the
+  way the app does; `metrics.ts` re-exports it. `voiceTypeBand(name)` gives
+  the band behind a name (Bass for Bass-baritone), so `singer-match.ts`
+  still draws a tie's twin from the Bass roster (Paul Robeson or Barry
+  White), `VoiceRangeTestModal.tsx` still gives it the Bass preset, and the
+  native reveal, which rebuilds a kept range's twin from its two ends,
+  keeps finding the same one.
+- **Tests** (the PR's): `voice-type-tie.test.tsx` walks all 24 ranges whose
+  ends add up to 107 (F#1 to F5 down to F3 to F#3), the demo through the
+  real metrics, the cards and the reveal's lines; with `metrics`,
+  `singer-match`, `legend-catalog`, `signup-hint` and the native
+  `reveal-voice-type.test.tsx`. Each fix taken out in turn fails its tests.
+  Checked in a browser at 390x844 and 1280x800; the native dev and store
+  bundles pass their asserts.
+- **Found, not fixed:** `Reveal.dom.test.tsx` labels an E2 to G4 fixture
+  Baritone by hand (it passes either way), and ties between other
+  neighbours (Tenor and Alto, say) still go to the band listed first.
+
+### Native and web: the first note names a note the voice held, and Back closes the voiceprint ask first (#1110)
+
+Two commits, merge commit (df89bac8c), each with its tests failing first.
+
+- **The note.** `settledNote` (`src/features/onboarding/settled-note.ts`),
+  shared by the web's First Light and the native first note, took the
+  median of a take's cents, which for an even count is the mean of the
+  middle two: a take split between A4 and C5 read A#4. It now takes the
+  lower of the two middle values, always a frame the voice gave; an odd
+  count reads as before. The note held longest was rejected: a wide vibrato
+  spends about a third of its time on each of three notes. First Light's Hz
+  now comes from that same frame; it was the median of the raw frames,
+  onset included, so a split take could show 481.6 Hz under a C5. The web
+  build's First Light chunk carries the new reading. Three new tests; the
+  web's onboarding suites (27 files, 254 tests) and the native one's (15
+  files, 147) pass.
+- **Back.** The voiceprint ask (`VoiceprintAsk.tsx`) rises after a sign-in
+  to an existing account, over the Account screen, the Sing room under
+  Keep, a room under its Cloud offer or the onboarding's Keep beat. It was
+  not among the overlays `shell-navigation.ts` knows, so Android Back went
+  under it. Back now answers the ask first, as its Not now. One predicate,
+  `voiceprintAskUp` (`voiceprint-ask.ts`), draws the sheet and answers
+  Back, so a press waits while a keep is saving. `VoiceprintAskSheet` is
+  mounted in every native build, the store build included. Tests:
+  `shell-navigation.voiceprint-ask.test.ts` and one in
+  `NativeOnboarding.dom.test.tsx`; the shell's and onboarding's suites (111
+  files, 1,076 tests) pass.
+
+### Web, no visible change: shared code the Warm-up moved (#1102, #1104, #1113)
+
+- `src/lib/auto-continue.ts` now holds `AUTO_CONTINUE_SECONDS` (still 5),
+  which `features/routines/auto-continue.ts` re-exports for the web's daily
+  routine, and `features/routines/types.ts` takes `ExerciseType` from
+  `lib/domain/exercise-contracts`, holding the cross-feature import count
+  at its baseline (#1102).
+- `src/lib/platform/index.ts` (#1113): the web installs nothing, so
+  `platform.haptics` keeps the vibrate patterns (10, [15, 30, 40] and [30,
+  40, 30]).
+- `src/db/services/settings-progress.ts` (#1104) names the days' merge only
+  inside its `PREMIUM_EXERCISES` blocks; the web build has no
+  `pitchperfect_warm_up_days`.
+- `src/stores/native-shell-store.ts` gains the song-list request, which
+  only the native Sing room reads, and `exercise-contracts.ts` gains
+  `EXERCISE_WARM_UP_PATH`, absent from the web build (#1102).
+
+### Native: the app's own onboarding, as it stands (#1098, #1101, #1103, #1110, #1112, #1120, #1123)
+
+Six parts and one fixes PR, all merge commits, 18 to 20 Oct (plans S7 and
+S7b). Everything is behind `NATIVE_ONBOARDING` (`src/lib/native-build.ts`,
+new in #1098), which equals `KARAOKE_IMPORT`: on in a native test build,
+TestFlight among them, compiled out of the store build until the V1 flip,
+never on the web. `apps/mercurypitch/scripts/assert-bundle.mjs` STAGE 2 now
+holds 20 onboarding markers to a test build and away from the store build.
+`apps/mercurypitch/src/onboarding` holds 37 files (7,466 lines) and 26 test
+files; it did not exist at v0.9.21. A new install now meets:
+
+1. Beat 1, in the alley: Merc drops onto the road in front of the Karaoke
+   door, says "Hi, I'm Merc." and points while the Ear Lab, Karaoke and
+   Sing doors light in turn (#1120, #1123).
+2. The first Sing door, or the rail's Sing, opens a full-screen layer over
+   the held Sing room. Merc asks for one note, the mic opens in the tap,
+   and the settled note is named: "That's an A3." (#1098).
+3. Find my range: a slide down and a slide up, then "E2 to G4. That's your
+   range today." Or Skip for now (#1101).
+4. The reveal: a voiceprint card drawn from the range, the voice type, Find
+   my twin, Continue and Share (#1101).
+5. Keep, the account offer, for a phone with no account yet (#1103).
+6. The sung line: Merc sings ten notes, the singer answers, the Karaoke
+   engine scores it (#1112).
+7. The Cloud offer, paywall B: once an install, one install in ten held
+   out, never to a subscriber (#1112).
+8. The landing: the Warm-up's path, Merc beside its first stop (#1120).
+
+Not now, and Back, on any beat end it for good: the Cloud offer if it is
+due, then the alley (#1123). A refused mic gets Continue without the mic,
+straight to the landing with no offer (#1120). Every step is counted as a
+first-party name on `/api/mirror/event` (#1120).
+
+### Native: onboarding part 1, Merc names your first note (#1098)
+
+Three commits, merge commit (eebdabdb1).
+
+- **The beat.** Merc says "Hi, I'm Merc.", then "Sing me one note, any
+  note." while a silent line labelled "Example" draws in the lane. Under the
+  mic, the house priming copy and "Only you can hear you."; nothing touches
+  the microphone before the tap. Once a voice starts, "Hold it there."; the
+  take runs 3 s from the onset, up to 6 s on a screen too slow to have
+  heard enough. The settled note is named ("That's an A3."), the mic shuts,
+  and the next button lands in the Sing room, live, since the grant was
+  made here. A take with no settled note listens again once by itself
+  ("That one wandered. Hold one steady 'ahh'."), a second miss shuts the
+  mic and asks for a tap, nine silent seconds bring a nudge, and a refused
+  mic shows the room kit's notice with Try again. "Not now" (top right, 44
+  px) and Back leave from anywhere. A dark stage in both themes.
+- **How it hooks in.** `onboarding-flag.ts` keeps `mp:native-onboarding`
+  (`due` or `done`), device-local and never synced; at shell mount an
+  install that has already opened a door counts as done, so no existing
+  install sees it. `onboarding-layer.ts` opens when the Sing tab arrives
+  while due, and while up holds the Sing room's arrival
+  (`holdRoomArrival`), puts the rail aside, keeps a phone upright
+  (`portrait-lock.ts`) and answers Back as `'onboarding'`. Leaving marks
+  the flag done, releases the hold and fades for 280 ms (120 ms with
+  reduced motion). `NativeShell.tsx` mounts it as a lazy chunk behind the
+  switch. Developer screen: "Replay the onboarding".
+- **The Sing room fix** (67fa418c0), in every native build: the room read
+  the remembered mic grant once, when its store was built, so the room the
+  onboarding landed in rested and would have asked again. The `enter`
+  event now carries the remembered grant (`room-machine.ts`,
+  `sing-room-store.ts`).
+- **Store build.** The flag and the layer are static imports, so
+  `vite.config.ts` lists both side-effect free under `KARAOKE_STAGE_2`.
+  iOS and Android store bundles (fake RevenueCat keys) pass
+  `assert-bundle.mjs` and `assert-no-portable-console.mjs --store-binary`,
+  and hold no marker, onboarding chunk or `mpOnboarding` hook.
+- **Tests and probes** (the PR's): 50 tests in 7 files, 2 in
+  `src/features/sing-room`, each mutation caught. New `probe-onboarding.mjs`
+  walks the Sing door, Not now, Back and a refused mic at 390x844, 820x1180
+  and 1180x820: 424 steps, 0 failures on the first head. After the last
+  rebase the full probe and the screenshots were not re-run.
+
+### Native: onboarding part 2, your range and your voiceprint (#1101)
+
+Three commits, merge commit (64692b69a).
+
+- **The range.** Find my range, or Skip for now ("It's here when you want
+  it."). The mic opens in the tap. A whole-tone ladder two octaves tall,
+  centred on the note just named (A3 when none), lights each rung the voice
+  dwells on, Merc riding beside it. A slide ends after 0.9 s of quiet once
+  there has been 1.5 s of voice, or 8 s after the voice started. The range
+  is the Voice Mirror's `computeRange` over both slides (each semitone held
+  150 ms, with its octave guard), saved at once with `saveVoiceprint` as an
+  onboarding voiceprint, twin and all, before the reveal and before any
+  account is mentioned. Less than a fourth, or no pitched voice, shuts the
+  mic with a line and waits for a tap.
+- **The reveal** ("Your voice"): a print drawn from the range, the range,
+  `voiceTypeHint`'s type and Find my twin; "That's your voiceprint. It
+  changes as you practice." Share finds the twin first, then hands the
+  share sheet one line ("Paul Robeson is my voice twin.", or "My range is
+  E2 to G4.") and the public Mirror link; with no sheet it copies the link.
+- **From Keep.** Builds with the onboarding register a range finder, so
+  Keep's "Find your range first" opens the layer on the range alone; the
+  store build registers nothing, so its Keep row stays undrawn.
+- **The copy tripwire** (998a696b2): `probe-bundle.mjs --dist` had failed
+  on every build since 621fcfc06, looking for "Keep stores it on this
+  phone." where the bundle holds a template. It now matches the fixed
+  start.
+- **Tests** (the PR's): 125 in 14 files, 16 mutations each caught; all 18
+  onboarding walks passed, each measuring A4 to E5 from the probe's tone
+  file.
+
+### Native: onboarding part 3, Keep after the reveal (#1103)
+
+Seven commits, merge commit (2b33bf604).
+
+- **Keep** is the shell's own sheet (`AccountOffer.tsx`,
+  `account-offer.ts`) over the layer, for a phone with no account yet
+  (`noAccountYet`); a phone signed in, or signed out of an account, goes
+  straight on. Straight after a reveal the voiceprint card flies in from
+  above. After Skip for now it is "Save your progress", whose first row,
+  "Find your range first. Takes under a minute." (it said 2 minutes), runs
+  the layer's own range.
+- **Keep's free song row** gains "Yours once your email is confirmed." (the
+  server grants it to a confirmed email, `getsFreeSong`).
+- **The anonymous identity** (S7b E11) is minted as Keep opens, never
+  awaited, never for a phone signed out of an account, and only behind
+  `KARAOKE_IMPORT`: the store build's Keep does not mint.
+- **A range kept before the first Sing door** ends the first note on See my
+  voice and Find my range again, with no Skip for now.
+- **The probe's notices flake** (9d40f178b): the walk measured the previous
+  room's notice; `pillCheck` now taps earlier notices away and measures its
+  own once its box has held still for 400 ms. The app is unchanged.
+- **Tests** (the PR's): 146 in 15 files, 19 mutations.
+- **Found there:** Android Back did not close the voiceprint ask, and the
+  first note could name a note between two (both fixed by #1110). Still
+  open: a notice on show as a room is pushed can sit over the new room's
+  bar until the pill's next 250 ms measure.
+
+### Native: onboarding part 4, the sung line and the Cloud offer (#1112)
+
+Four commits, merge commit (61239a157).
+
+- **"Sing this line with me."** (`sung-line.ts`, `line-score.ts`,
+  `line-machine.ts`, `LineView.tsx`, `useLine.ts`). One line ships in the
+  bundle, "Open the window, let the morning in": ten notes, a syllable each,
+  the tonic up to the fifth and home, 7.7 s at 60 beats a minute, no
+  network. Its key sits a little under the middle of the revealed range,
+  within Merc's recorded reach, or C4 after a skipped range. Merc sings it
+  first in his recorded voice, then a two-beat count-in. The Karaoke room's
+  `createPitchCompareEngine` scores it on its defaults: "8 of 10 notes on
+  pitch", bars teal or dashed, Merc's word from S7b § 6.1's bands, then
+  Continue and Once more.
+- **The Cloud offer** (`onboarding-offer.ts`): Continue opens the shell's
+  paywall B (`openCloudOffer('onboarding')`) over the layer. Once an install
+  (`mp:onboarding-cloud-offer`); one install in ten held out
+  (`mp:onboarding-offer-group`, drawn once, kept); never to a subscriber
+  (the identity, the server and the store asked as the score shows,
+  Continue busy at most 3 s); the offer store's own caps; never after a
+  refused mic; none in a build without Cloud.
+- **Proof** (the PR's): the onboarding walk, 20 steps in each theme; full
+  probe 431 ok; 8 suites, 106 tests, and the offer store's 16.
+
+### Native: onboarding part 5, Merc in the alley, the counts and the Warm-up landing (#1120)
+
+Twelve commits, merge commit (790de6bec, tagged `mp-v0.8.38`).
+
+- **The beats give way** by a same-document View Transition, a cross-fade
+  where the WebView has none; Merc is moved by a transform (460 ms), so one
+  Merc is ever on screen. Reduced motion: one 150 ms cross-fade, no move.
+- **`reach`**, a new state of the existing Merc
+  (`src/lib/merc/sim-choreo.ts`, `REACH_CENTS` 700): on the range he climbs
+  with the voice; only the native range sets it, and the approved states
+  are sim-pinned and unchanged.
+- **Beat 1** (`AlleyGuide.tsx`, a lazy chunk): on a new install's first
+  alley Merc drops in, says "Hi, I'm Merc." once drawn (`MercView`'s new
+  `onReady`) and points while the three open doors light; without WebGL the
+  doors light anyway.
+- **The counts** (S7b § 7): 49 names in `src/lib/funnel-event-catalog.ts`,
+  31 `native_onboarding_*`, 11 `cloud_*` and 7 `import_*`, sent as
+  `app_open` and `signup` already are: the device's first-party anonymous
+  id and a name on `/api/mirror/event`. The ingest keeps no properties, so
+  a variant or a band is in the name. The native build loads no Google tag.
+  (Release steps, item 3.)
+- **The landing.** The onboarding's own end pushes the Warm-up's path over
+  the Sing room; the layer fades off as the path draws in, and Merc hops
+  beside the first stop (d1521efe8, `path-landing.ts`). After a refused or
+  failed mic, Continue without the mic goes straight to the landing with no
+  offer.
+- **Fixed on the way:** under a View Transition, Keep's "Find your range
+  first" went on to the line; the layer now keeps the beat asked for.
+  `RoomsAlley.tsx` went back under the 800-line ratchet (790) with
+  `AlleyGuideSlot.tsx` and `alley-ambient.ts`.
+- **Proof** (the PR's): full probe 430 ok; the onboarding walk 19 ok each
+  run; beat 1 at 390x844, DPR 3, CPU 4x slower: 270 frames, none over 20
+  ms. 26 files, 276 tests.
+- **Found, not fixed:** taps wait out a transition's 280 ms between beats;
+  Merc crosses his line on the move from Keep to the ladder; the bundle
+  carries the web's Ads conversion label constant, unused; Merc beside the
+  Warm-up's first stop touches its orb; the pre-consent funnel ids are
+  still with the lawyer.
+
+### Native: onboarding part 6, Not now to the Cloud offer, then the alley; Merc on the road (#1123)
+
+Six commits, merge commit (2aee5a3f6, after `mp-v0.8.38`): the owner's
+calls on TestFlight 1154, the `mp-v0.8.38` build.
+
+- **Not now** on any beat, and Back where it acts as Not now, ends the
+  onboarding in the tap: the flag done, `native_onboarding_not_now` counted
+  once, every mic shut. If the end's offer is due by every one of its rules,
+  the same asks run (3 s at most) and the same sheet opens; any close of it
+  lands on the alley (`goToTab(TAB_HOME)`). Not due: straight to the alley.
+  Counted apart: `cloud_view_onboarding_exit`, the 50th new catalog name.
+- **Merc on the road.** He lands on the picture's own floor line in front
+  of the Karaoke door (`alley-plate.ts` `guide`), his figure 40% of the
+  door's height; the door behind him takes taps through him. Measured at
+  390x844, 820x1180 and 1180x820: feet 0.4 to 0.5 px off the floor line.
+- **Fixed on the way:** faded out for a picked door, the alley's Merc kept
+  drawing, and at his new size a software renderer stalled the door's open
+  by 3 to 7 s. `MercView` takes a `paused` accessor, set once his 240 ms
+  fade ends (5419b33ac): enter to onboarding on software GL went from 3.6 to
+  7.1 s to 0.57 to 0.60 s.
+- **Proof** (the PR's): full probe 433 ok, the onboarding's 21 walks among
+  them; the native app's run, 161 files and 1,795 tests.
+- **Not fixed:** Merc still crosses his line on the move from Keep to the
+  range.
+
+### Native: the picker heads its cards Pitch and Warm-ups (#1096)
+
+One commit, merge commit (9c3023f06).
+
+- The Sing room's Exercises sheet sorts its cards under two headings in the
+  Karaoke library's style: PITCH (Long note, Echo) and WARM-UPS (Lip roll,
+  Ng slides). Warm-up design PR 13d.
+- `catalogue.ts`: each entry names its `group`; `EXERCISE_GROUPS` holds the
+  headings in order, and `catalogueGroups()` returns each with its cards in
+  catalogue order. `ExercisePicker.tsx` draws a `<section>` and `<h3>` per
+  group, each list named by its heading (`aria-labelledby`).
+- **Tests.** 16 new cases in `ExercisePicker.test.tsx`, `catalogue.test.ts`
+  and `card-contrast.test.ts` (the headings at 4.5:1 or more in all nine
+  themes), all failing against main's sources.
+
+### Native: warm-up mode in the four exercise rooms (#1099)
+
+One commit, merge commit (d877ac9d5).
+
+- Lip roll, Ng slides, Echo and Long note can run as a stop of the Warm-up
+  (PR 13a). Before the take: the chip "Warm-up 2 of 4", Merc's cue in place
+  of his intro ("Roll your lips, brrr, and ride the wave.", "Hum ng and
+  slide over the arch.", "I sing it first. Then you sing it back.",
+  "Breathe in, then hold A3."), and "Skip stop" where the level pill was.
+  "?" still plays the demo, which never starts by itself here.
+- **At the result**: the room's own result with no Again, Done or "Pick
+  another note". It holds 2.4 s once the result sequence settles (glide
+  rooms 1.2 s, Echo 1.8 s, Long note 0.65 s), or until a tap after a 0.6 s
+  grace, then hands the routine `{ id, line, settledNote }` once. Focus
+  moves to the tap layer, "Back to the warm-up".
+- **Echo** sings three phrases (`WARM_UP_PHRASES`) instead of five: kept in
+  the history, never a best. A room with no voiceprint and no note of its
+  own starts from the note an earlier stop started from.
+- **Files.** New `room-kit/routine-stop.ts` and `RoutineStop.module.css`;
+  `RoomShell.tsx` reads `routine` from the room's config.
+- **Tests.** 30 of the new tests fail against main's versions of the 35
+  changed source files; full Vitest 1,763 files, 22,092 passed; bundle
+  probe 412 ok.
+- **Found, not fixed:** Echo's top band has four places (`FINISHED_SLOTS`)
+  where the design draws five; Skip stop wears the bar's dark glass, not
+  the demo Skip's white.
+
+### Native: the routine core, its day on the device and the minutes (#1100)
+
+Two commits, merge commit (1688fe374). Nothing on screen (PR 13b):
+`src/features/warm-up/`.
+
+- `warm-up-plan.ts` makes the routine data: a plan names its stops in
+  order and the song on top. `OWNER_ROUTINE` is Lip roll, Ng slides, Long
+  note and Echo, then the song; `planWarmUp()` is the seam for a planner.
+- `routine.ts`, pure: the next stop is the first waiting room; a finished
+  stop lights with its line and Again replaces it; a skipped stop is
+  passed. The end with a stop finished counts the day; every stop skipped
+  goes back to the start. A new day starts fresh.
+- `warm-up-store.ts`: today's run in `mp_warm_up_today`, on the device only
+  (the `mp_` prefix stays out of the settings sync), stored with its plan;
+  the open stop in memory only. `canStartWarmUp()` is the seam for the
+  Warm-up's own free run, true in every build.
+- `estimate.ts`: the owner's routine is 153.4, 144 and 128.6 s at Learning,
+  Singer and Professional: "3 min" at each.
+- **Tests.** 4 files, 43 tests; eleven rules broken one at a time, each
+  caught.
+- **Found, not fixed:** the design's stop lengths predate the 1 s pause
+  after each landing (Lip roll runs 25.2, 21.3 and 15.4 s against 23, 19
+  and 16; Ng slides 33, 27.5 and 18 s against 28, 22 and 17). The chip
+  still reads "3 min".
+
+### Native: the Warm-up's path, from Start to Sing a song (#1102)
+
+Three commits, merge commit (be17c3bd3). PR 13c, as the owner chose on 18
+Oct.
+
+- The picker's Warm-up card sits at the top of Warm-ups: "Four stops, about
+  three minutes, then a song.", or "Warmed up today". It pushes the path, a
+  full-bleed premium screen: a night over a glass floor, the four stops
+  climbing it and the song on top, Merc on the floor, the chip "3 min".
+- Start opens Lip roll as stop 1 of 4 in #1099's mode. Back on the path the
+  trail lights, Merc hops and a card rises ("Lip roll: 86% lit", Again);
+  after 2.5 s Skip and "Next: Ng slides" come in, and Next counts down 5 s,
+  stayed by "Stay here", any other tap, the level pill or the app going
+  away. After Echo: "Warmed up", "4 of 4 today", Done and Sing a song,
+  which opens the Sing room's song list.
+- **Files.** `WarmUpPath.tsx`; pure `path-view.ts`, `path-layout.ts` and
+  `path-motion.ts`; `PathColumn.tsx`, `PathActions.tsx`; the art (the
+  night, 17.7 KB, and four orb sprites, written by
+  `scripts/sync-warm-art.mjs`). The store build folds the art
+  (`PREMIUM_IMAGES`), and `assert-bundle.mjs` holds the plates and four
+  strings out of it.
+- **Tests.** 239 in the 17 files it adds or changes; six planted bugs each
+  caught, and writing them found one (Again never showed on the first
+  stop's card). Full Vitest 1,771 files, 22,220 passed.
+- **Not in it:** no build locks the Warm-up: `canStartWarmUp()` is true
+  everywhere, and "Warm up with Premium" calls an `onPremium` seam that
+  nothing wires.
+
+### Native: the week's dots, the synced days and the end's polish (#1104)
+
+One commit, merge commit (652db7ad0). PR 13e.
+
+- **The days warmed up follow the account:** `pitchperfect_warm_up_days`
+  (`src/lib/warm-up-days.ts`), the newest 90 dates. A settings pull merges
+  the two lists as a union (`MERGE_ON_PULL` and `MERGE_DEFAULTS` in
+  `settings-progress.ts`, behind `PREMIUM_EXERCISES`), so a second phone
+  says "Warmed up today" too. It rides the existing generic settings sync:
+  no server change.
+- **This week's dots** (`room-kit/WeekDots`): seven, one filled per day
+  warmed up, today ringed; no streak counter, no mark for a missed day. A
+  screen reader hears "Warmed up this week: Monday, Tuesday and today".
+- **The end**: the stops brighten in turn, the song lights with a burst and
+  Merc hops onto it, with the device's success as he lands. Under reduced
+  motion Merc crossfades and smiles.
+- **Tests.** 43 across nine files and the shell walk; 11 mutations caught.
+  Full Vitest 1,777 files, 22,283 passed. Bundle probe 431 ok. The days'
+  key is in one file of the dev bundle and in none of the store bundle.
+
+### Native: the end's re-pack, the day's first draw-in and the rooms' haptics on iOS (#1113)
+
+Three commits, merge commit (d202d3f99). PR 13f, what #1104 found and
+left.
+
+- **The end**: the finished stops brighten where they stood; as the song
+  lights Merc hops onto it and the stops pack under the titles (`PACK_MS`
+  600). Under reduced motion the end arrives settled.
+- **The day's first open** draws the path in from the bottom stop (700 ms,
+  `DRAW_IN_MS`); later opens that day arrive settled. The day is kept in
+  `mp_warm_up_opened`, on the device, and folded out of the store build.
+- **Haptics.** `@/lib/haptics` was `navigator.vibrate` alone, which iOS
+  WebKit lacks, so no room ticked on an iPhone. `src/lib/platform` gains
+  `installHaptics(service)`;
+  `apps/mercurypitch/src/infrastructure/native-haptics.ts` installs the
+  platform package's `hapticTap`, `hapticSuccess` and `hapticWarning` from
+  `main.tsx` and swallows a rejected call. (The install's reach: Found
+  while preparing this release.)
+- **Tests.** The seam (5), the native install (3), the store's first open
+  (4), the motion's draw-in and pack, the path's draw-in, crossfades, pack
+  and hop paces; full Vitest 1,812 files, 22,556 passed.
+- **Found, not fixed:** the hop back beside the next stop was still the
+  straight glide, and Merc's body crossed "Lip roll 86% lit" for about 20
+  ms, both taken up by #1130; `docs/plans/mobile-native/mobile-kit.md`
+  still says the swap to Capacitor Haptics comes "later".
+
+### Native: Merc rises first between stops, and stands clear of the stops (#1130)
+
+One commit, merge commit (2ad8e8576). Warm-up 13g: the owner's call of 20
+Oct, and what #1113 and onboarding part 5 measured.
+
+- **The drift.** The rooms' `hop` (`sim-choreo.ts`) carries Merc's root
+  0.38 units right inside his canvas and springs him home once idle. In
+  Echo and Long note the canvas stands still, but on the path the canvas
+  already carries him, so the drift put his body up to 42.5 px right of
+  his spot on a phone for about 0.8 s from each hop, onto the stops' lights
+  and names. `hop-drift.ts` slides his canvas against it
+  (`holdHopInPlace(canvas)`, a Web Animation), checked against the real
+  simulation to within 0.006 units at every step. At rest his body was
+  centred all along.
+- **The paces** (`HOP_PACES` in `path-motion.ts`): between stops he rises
+  first, then crosses, leaning out from under the next stop's name; the
+  landing drops first, so the top of his jump comes where he will stand;
+  the end keeps #1113's across-first pace. Reduced motion still fades. The
+  fixture takes `&warmLand=1` for the landing.
+- **Measured** frame by frame at six sizes: on no name in either motion,
+  and on no light wherever he stands (on main he stood on "Your song"
+  through the end's hop at every size). No frame over 20 ms through the hop
+  and the spring home.
+- **For the owner** (the PR's three questions): he still crosses the stops'
+  lights in flight (about 0.5 s a hop between stops, 0.33 s at the end),
+  which no pace avoids; rising first crosses them longer than the straight
+  glide would (about 500 ms against 355), and going back is one line
+  (`HOP_PACES.between`); the landing's drop is one line too
+  (`HOP_PACES.land`).
+- **Found, not fixed:** #1113's per-frame tool slowed Merc's simulation a
+  hundred times, so its numbers missed the drift; at 320x568 Merc stands
+  2.0 px from "Long note 12.6 s" beside Echo, and the top of the landing's
+  jump comes 1.7 px under Ng slides' name; one of his sparkles crosses "4
+  of 4 today" in the end's settled frame.
+
+### Native: iOS reads the system volume only while someone listens (#1091)
+
+One commit, merge commit (22a4d8087).
+
+- `AudioOutputPlugin.swift` read its hidden volume view's slider every 250
+  ms for as long as the app ran. Now it looks from launch until the view
+  has settled and been read once (about a second), then only while a
+  screen listens for `audioOutputChange`: `addListener`, `removeListener`
+  and `removeAllListeners` are overridden to call `super` and decide on the
+  main queue. The settle time and the last reading outlive a stop, so a
+  room's first reading is still settled, and a key pressed while nobody
+  listened still counts as a move (`systemVolumeLive`).
+- The listeners are a premium room's volume notice (`RoomVolumeHint.tsx`),
+  a test build's audio record and the Developer screen.
+- Tests: `src/ios-audio-output.test.ts` pins the wiring; 7 new cases failed
+  before the Swift change, 33 of 33 pass after. Swift compiles only on the
+  macOS jobs.
+
+### Native: "One volume in rooms" is off by default (#1097)
+
+One commit, merge commit (21f09a3c5).
+
+- Developer > Audio > "One volume in rooms" (#1082) is off by default. Off,
+  a premium room leaves the session to WebKit: the demo and the room play
+  at the media volume, and only a take with the mic open uses iOS's call
+  volume. On, kept for comparing, the room holds play-and-record from the
+  door to the way out.
+- Why: the owner's test of TestFlight 1040, where with it on the phone
+  showed the call icon for the whole visit and the exercises played too
+  quietly. An old `'0'` reads as off; a store build folds it to off.
+
+### Refactors (no behavior change)
+
+- **#1094** (one commit, merge commit 91d577b7e), `pnpm arch`'s one error:
+  `src/lib/developer-console.ts` dynamically imported
+  `@/components/FloatingConsole` (`lib-no-components`), which also closed a
+  `no-circular` loop through the console's store. The arming moves to
+  `src/components/developer-console-arming.ts`, and `src/lib` keeps only
+  `DEVELOPER_CONSOLE_KEY`. Every entry and the native app's flagged dynamic
+  import follow it; `floating-console-build.test.ts` holds `main.tsx` to
+  the new path. `pnpm arch`: 719 violations (1 error) on main, 717 (0
+  errors) on the branch.
+- **#1095** (three commits, merge commit f6a06f7b0, tagged `mp-v0.8.37`),
+  room refactor step 6 of 6 (after #1058, #1061, #1064, #1083 and #1086).
+  Echo, Long note, Lip roll and Ng slides share `room-kit/RoomShell.tsx`
+  (`createRoomShell` with `ShellHead`, `ShellBarEnd`, `ShellSkip`,
+  `ShellBubble` and `ShellDock`) and `room-measure.ts`; Lip roll and Ng
+  slides share `glide/GlideRoomScreen.tsx`; the four `demo/tip-targets.ts`
+  take their common parts from `demo-kit/tip-target.ts`. Each room keeps
+  its world, words, stylesheet, class names and test ids. #1083's harness
+  found 10 of 11 DOM dump files byte-identical, and Long note's identical
+  once the mic ring's live level is masked. No existing test edited; 38
+  new. jscpd over the rooms: 24 clones and 444 lines before, 10 and 122
+  after. `metrics:check`: `crossFeatureImports` 524 to 521, `filesOver800`
+  133 to 132. Found, not fixed: `DEMO_COPY.fastLabel` is never read,
+  `imagesDecoded` is written four times, the fixtures are not still, Echo's
+  fixture draws the sky rather than `EchoRoom`, and Lip roll's and Ng
+  slides' tip targets still share about 20 lines.
+
+### Tests: Lesson 3's no-upload check on a proxied host (#1114)
+
+One commit (7a3af477c). Run against dev.mercurypitch.com after #1111, the
+check that a Sing it take sends nothing failed on Cloudflare's own edge
+posts (`POST /cdn-cgi/rum`, `/cdn-cgi/challenge-platform/...`). It now
+leaves `/cdn-cgi/` out: before, 26 of the 27 lesson e2e tests passed
+against dev; after, all 10 of Lesson 3's do. CI is unchanged.
+
+### Docs only
+
+- **Find Your Pitch**: 53 docs-only commits under
+  `docs/plans/find-your-pitch/`, which holds 82 files at 2aee5a3f6:
+  #1048's 46 (the master plan, the Season 1 curriculum, the teaching
+  playbook, the host bible, the production pipeline and seven research
+  reports; Lessons 1 and 2's film and page sources through nine and fifteen
+  critic rounds, Lesson 2's film shipping as rc-04 at 7:11; Lessons 3 to 6
+  as written lessons, each through a fresh reviewer); #1111's five (Lesson
+  7, the YouTube upload guide, Lessons 2 to 6's citations re-anchored on
+  `main` after #1048's rebase, and Lesson 3's band examples at 20 cents);
+  #1115 (the owner's YouTube choices, and which pages are built); and #1132
+  (minor solfège is do-based, MASTER-PLAN § 12 item 12).
+- **Search** (#1108, two commits, c68603e9e then 117c3ed82 marking #1105 to
+  #1107 shipped): `docs/plans/search-and-answer-engines.md`, with the
+  owner's checks (Cloudflare's AI-training block now also blocks the search
+  crawlers unless the zone opts out; Search Console's generative AI
+  setting; Bing's AI Performance report; IndexNow; a GA4 AI channel group),
+  what moves answer engines, the intent map, the native launch (deep links,
+  AASA and assetlinks templates, store listing drafts, review risks such as
+  Jam's chat having no report or block), TV, and a competitor table.
+
+### native-mercurypitch
+
+`mp-v0.8.37` (f6a06f7b0, the merge of #1095) carries #1094, #1091 and
+#1095, and with them the five 0.9.21 PRs that missed `mp-v0.8.36` (#1086,
+#1084, #1085, #1089 and #1088): v0.9.21's commit bd524160a is its ancestor.
+`mp-v0.8.38` (790de6bec, the merge of #1120) carries #1096, #1097, #1099,
+#1098, #1100, #1101, #1102, #1103, #1048, #1104, #1111, #1114, #1115,
+#1105, #1106, #1107, #1108, #1109, #1110, #1112, #1113, #1119 and #1120.
+#1118, #1122, #1124, #1125, #1126, #1127, #1129, #1131, #1132, #1116,
+#1133, #1123, #1128 and #1130 merged after it and arrive with the next
+`mp-v` tag. Each tag's Mercury Pitch Mobile run is green: run 39130959618
+(run number 1060) and run 39334165289 (1154). The iOS build number is the
+run number, so `mp-v0.8.38` is TestFlight 1154. Tag builds compile in the
+dev DB worker, and TestFlight uploads come from tags only. On 2aee5a3f6,
+Mercury Pitch Mobile run 39379638209 (1191) is green.
+
+Reach, from static import tracing from `apps/mercurypitch/src/main.tsx`, not
+from a native bundle's module list (no native build was made); each hit
+under `IS_NATIVE_BUILD`, `KARAOKE_IMPORT`, `PREMIUM_EXERCISES` or
+`NATIVE_ONBOARDING` was read by hand.
+
+- **The onboarding** (#1098, #1101, #1103, #1112, #1120, #1123): test builds
+  only (`NATIVE_ONBOARDING`). In every native build, the store build
+  included: #1098's Sing room arrival fix, #1103's Keep copy and card
+  keyframes (undrawn there), and #1120's alley split (`AlleyGuideSlot.tsx`
+  renders nothing without the switch).
+- **#1110**: the settled-note fix reaches the native first note (test
+  builds) and the web's First Light; the Back fix reaches every native
+  build.
+- **#1128**: the native onboarding's reveal (test builds) names a tied
+  range Bass-baritone, and its Find my twin still finds Paul Robeson.
+- **#1091**: every iOS build.
+- **The premium switch** (`PREMIUM_EXERCISES`, test builds only): #1095,
+  #1097, #1096, #1099, #1100, #1102, #1104 (its sync of the warm-up days is
+  folded out of a store build too), #1113's Warm-up changes and #1130. The
+  store build's `assert-bundle.mjs` STAGE 2 list now holds out the
+  `warm-*.webp` plates, `warm-up-path`, the card's line, the level lines,
+  `mp_warm_up_today`, `pitchperfect_warm_up_days` and `mp_warm_up_opened`.
+- **#1113's haptics** reach every native build (Found while preparing this
+  release).
+- **#1094**: `main.tsx`'s flagged dynamic import follows the arming to its
+  new path; a store build folds it away.
+- **In the native graph, no behavior change:** #1048 (the Merc renderer's
+  opt-in `fragmentPatch`; `sw-runtime.ts`, whose service worker the native
+  build never registers; Home's Lessons link, while `HomePage` renders only
+  where `IS_NATIVE_BUILD` is false); #1111 (the match-band edges move at the
+  same 15, 35 and 60 cents, and `VITE_DRAFT_LESSONS` is defined as "0");
+  #1106 and #1127 (`sw-runtime.ts` paths); #1107 (a comment); #1119 (First
+  Light is a stub under `IS_NATIVE_BUILD`, and the step-aside runs from the
+  web-only `src/index.tsx`); #1125 (`card-renderer.ts` is in the graph
+  through the share studio, which never calls the changed
+  `formatDeltaLine`); #1129 (Merc's `'none'` sparkle side, which only
+  Lesson 5 uses).
+- **Compiled in, reach not traced:** #1124 and #1126 change the web's
+  exercises (`ExercisesPage`, mounted in `App.tsx` under `TAB_EXERCISES`
+  with no native guard). `apps/mercurypitch` names no `TAB_EXERCISES`;
+  whether anything in the shell opens it was not traced.
+- **Not in the native graph:** #1105, #1108, #1109, #1114, #1115, #1116,
+  #1118, #1122, #1131, #1132 and #1133.
+
+The PRs report no check on a phone of the device haptics (#1104's success,
+#1113's ticks); their proof is tests, browser fixtures and bundle asserts.
+
+### native-besidecue
+
+No file under `apps/beside-cue` or `packages/` changed since `v0.9.21`: not
+`packages/glass-game`, `beside-cue-core`, `audio-io`, `mobile-runtime`,
+`pitch-engine`, `purchase-kit` or `ios-audio-session`. No `bc-v` tag exists.
+Beside Cue's one reach into the root tree, `src/dev/game-diagnostics.ts`,
+imports `src/components/PortableConsole.tsx` and
+`src/lib/portable-console.ts`, which did not change. #1091's
+`AudioOutputPlugin.swift` is in `apps/mercurypitch/ios` only, and #1113's
+haptics install is `apps/mercurypitch`'s own. Beside Cue Mobile on 2aee5a3f6
+(run 39379638145) passed in 26 s: its Changes job ran, and its iOS, iOS
+Release and Android jobs were skipped, so it built nothing.
+
 ## [0.9.21] - 2026-10-18
 
 38 commits since `v0.9.20` (217047ffe) before this release PR, from 8 PRs, on
