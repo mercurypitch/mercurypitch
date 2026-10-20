@@ -10,6 +10,8 @@
 // however the panel closes; Tab stays inside it; every row and step is a
 // 44 px target and a lesson coming later is no link; reduced motion opens it
 // without its fade; and its links land, on this page or on another lesson's.
+// Lesson 6, a page with no film, is checked on its own as well: the
+// button's name, a tapped step, and the phone sheet's three sections.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -243,6 +245,70 @@ test.describe('on a phone, 390 x 844, with a section hidden', () => {
       await expect(onPage.getByRole('link')).toHaveText(['Lesson', 'Explorer'])
     })
   }
+})
+
+test.describe('on Lesson 6, a page with no film', () => {
+  test.describe('on a tablet in landscape, 1024 x 672 with touch', () => {
+    test.use({ viewport: { width: 1024, height: 672 }, hasTouch: true })
+
+    test('the button names Lesson 6, and a tapped step shows that step beside the stage @smoke', async ({
+      page,
+    }) => {
+      // Arrange: every move lands at once
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.goto('/learn/06')
+      await expect(trigger(page)).toHaveAccessibleName(
+        'Lesson 6 of 14, Intervals: the distance between notes: all lessons',
+      )
+      await trigger(page).tap()
+      await expect(hereRow(page)).toBeFocused()
+      // the page's five steps, each its own link
+      await expect(
+        menu(page).getByRole('link', { name: /^Step \d: / }),
+      ).toHaveCount(5)
+
+      // Act
+      await menu(page)
+        .getByRole('link', { name: /^Step 4: / })
+        .tap()
+
+      // Assert
+      await expect(menu(page)).toBeHidden()
+      await expect(page.locator('#stepNow')).toHaveText('4')
+      const step = page.locator('#lesson .step[data-step="4"]')
+      await expect(step).toHaveClass(/\bis-active\b/)
+      await expect(step).toBeInViewport()
+    })
+  })
+
+  test.describe('on a phone, 390 x 844', () => {
+    test.use({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    })
+
+    test("the sheet offers the page's three sections, and no Watch @smoke", async ({
+      page,
+    }) => {
+      // Arrange
+      await page.goto('/learn/06')
+      await expect(trigger(page)).toBeVisible()
+
+      // Act
+      await trigger(page).tap()
+
+      // Assert
+      const onPage = menu(page).getByRole('navigation', {
+        name: 'On this page',
+      })
+      await expect(onPage.getByRole('link')).toHaveText([
+        'Lesson',
+        'Sing',
+        'Explorer',
+      ])
+    })
+  })
 })
 
 const LAYOUTS = [
