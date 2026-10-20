@@ -278,9 +278,9 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
     await expect(fifth).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
   })
 
-  for (const [step, id, rounds, keys] of [
-    [2, '#stepLeapGame', 10, ['1', '2']],
-    [5, '#nameItGame', 8, ['1', '2', '3', '4']],
+  for (const [step, id, rounds, keys, more] of [
+    [2, '#stepLeapGame', 10, ['1', '2'], 'Play ten more'],
+    [5, '#nameItGame', 8, ['1', '2', '3', '4'], 'Play eight more'],
   ] as const) {
     test(`${id}: keys answer ${rounds} rounds, a round once each, and the end reads "N of ${rounds}"`, async ({
       page,
@@ -298,10 +298,10 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
         await expect(game.locator('[data-eg-feedback]')).toHaveText(
           /^(Yes\.|Here it is again, slower\.) /,
         )
-        // a missed round is not asked again: the button moves on
-        await expect(play).toHaveText(
-          r < rounds ? 'Next round' : /^Play (ten|eight) more$/,
-        )
+        // a missed round is not asked again: the button moves on. A string,
+        // not a pattern, because the button's markup puts whitespace around
+        // its label and only a string expectation normalises it
+        await expect(play).toHaveText(r < rounds ? 'Next round' : more)
       }
 
       await expect(game.locator('[data-eg-round]')).toHaveText(
