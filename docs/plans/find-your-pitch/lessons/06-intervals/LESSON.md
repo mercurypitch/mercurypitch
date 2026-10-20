@@ -77,7 +77,7 @@ guess.)
   up to G]
 - **Step**: a move to the next letter up or down: in a major scale, a semitone or a tone. [Play: A
   down to G]
-- **Leap**: a move that skips at least one letter: a third or bigger. [Play: D up to G]
+- **Leap**: a move that skips at least one letter, like D up to G. [Play: D up to G]
 - **Transpose**: to move a whole tune up or down, every note by the same interval. [Play: from
   C, then from F♯]
 
@@ -85,8 +85,8 @@ guess.)
 
 Here's the tune's first line on a chart like MercuryPitch's: each note at its height, one row per
 semitone. Left to right: two notes the same, a big jump up, two the same, a small step up, two the
-same, a step down. Which way it goes from each note to the next, up, down or the same, is
-the tune's contour.
+same, a step down. The tune's contour is which way it goes from each note to the next: up, down or
+the same.
 
 **Try:** play the line, then tap any note to hear it.
 **Notice:** the ups, downs and repeats make a shape you could draw with a finger.
@@ -123,7 +123,7 @@ _Toy: the tune line with Slide and the names switch._
 ## Step 4 of 5: So is it the ups and downs I remember?
 
 **Predict:** this version keeps five of the first line's seven notes, and every up and down, but
-swaps the sizes of the leap and the step. Is it still "Twinkle"?
+swaps the sizes of its two rises, the leap and the step up. Is it still "Twinkle"?
 [ Yes: most notes are the same ] [ No: it changes ]
 
 (After a choice: Play the first line · Play the swapped version. With sound off, the hint reads:
@@ -137,9 +137,9 @@ was a fair guess.)
 > **Common mix-up:** "A tune is a list of notes, so changing the notes changes the tune."
 > **Why it seems right:** on a piano, a tune is a row of particular keys to press.
 > **The evidence:** change every note but keep the intervals, and it's still "Twinkle". Keep five
-> notes but swap two intervals, and it isn't. In one study, familiar folk tunes that kept their
-> rhythm and ups and downs, not their sizes, were recognised less often than ones that kept the
-> sizes too.
+> notes but swap two intervals, and it isn't. In one study, people heard familiar folk tunes that
+> kept their rhythm and their ups and downs. Versions with new sizes were recognised less often than
+> ones that kept the sizes too.
 > **The better idea:** a tune is a pattern of intervals, so it can start on any note.
 
 **Try:** press Swap sizes, play the line, then swap back.
@@ -150,9 +150,9 @@ _Toy: the tune line with Swap sizes._
 ## Step 5 of 5: Do the distances have names?
 
 Musicians name an interval by counting letters, both ends included: C up to G runs C, D, E, F, G,
-five letters, so it's a fifth. The semitones finish the name: seven make a perfect fifth. A tune
-you know is a handle on an interval: hear a leap, and ask which tune starts that way. Five to
-keep, with Leap's labels:
+five letters, so it's a fifth. The number of semitones gives the rest of the name: a fifth of seven
+semitones is a perfect fifth. To name an interval, think of a tune you know: hear a leap, and ask
+which tune starts that way. Five to keep, with Leap's labels:
 
 | Interval                      | Semitones | Hear it in                                              |
 | ----------------------------- | --------- | ------------------------------------------------------- |
@@ -188,8 +188,8 @@ hoarseness or discomfort lasts more than a couple of weeks, see a doctor (a GP o
 throat specialist). If it's very painful, or breathing or swallowing is hard, get help straight
 away."
 
-Your voice from Lesson 3, or choose now: [ Lower: sing with blue Merc, around A3 ] [ Higher: sing
-with orange Merc, around A4 ]
+Keep the voice you chose in Lesson 3, or choose now: [ Lower: sing with blue Merc, around A3 ]
+[ Higher: sing with orange Merc, around A4 ]
 
 (A stored voice shows pressed and can be changed. With none stored, this choice comes after either
 answer above and before anything plays, because it picks the Merc who sings, as in Lesson 5.)
@@ -197,7 +197,7 @@ answer above and before anything plays, because it picks the Merc who sings, as 
 **Your turn:** Merc sings the tune's first two lines, then again three semitones higher. Play the
 first version, then start the guide and sing along, on the words, on do-re-mi or on "ooh". Breathe
 after "star". Then the same with the second. Sing at about speaking volume. If the top feels high,
-move do lower; if the bottom feels low, move it higher.
+move do, your starting note, lower; if the bottom feels low, move it higher.
 
 Stop immediately if anything feels uncomfortable.
 
@@ -216,7 +216,8 @@ doctor lines.
 
 ## Quick check
 
-Each question has three answers, shown in a shuffled order, so a guess scores a third, not half.
+_[Editorial: each question has three answers, shown in a shuffled order, so a guess scores a third,
+not half.]_
 
 1. Merc sings the first line from C, then from F♯. [Play] What stayed the same?
    - The intervals between the notes **[correct]** · Feedback: "Every note moved up six
@@ -237,8 +238,8 @@ Each question has three answers, shown in a shuffled order, so a guess scores a 
    - A step · Feedback: "A step is a semitone or a tone. This one is five semitones. Try Step 2
      again."
    - The same note twice · Feedback: "The second note is higher: five semitones up."
-4. A version keeps five of the line's seven notes and every up and down, but swaps the sizes of
-   the leap and the step. Is it still "Twinkle"?
+4. A version keeps five of the line's seven notes and every up and down, but swaps the sizes of its
+   two rises, the leap and the step up. Is it still "Twinkle"?
    - No: two intervals changed **[correct]** · Feedback: "The ups and downs aren't the whole tune;
      the sizes count too."
    - Yes: most of the notes are the same · Feedback: "Most notes match, but a tune lives in its
@@ -253,8 +254,8 @@ Each question has three answers, shown in a shuffled order, so a guess scores a 
   interval and it's the same tune: that's transposing.
 - A step goes to the next letter, a semitone or a tone; anything bigger is a leap. The first two
   lines of "Twinkle" hold six steps and one leap.
-- A tune you know can name an interval: a perfect fifth opens "Twinkle, Twinkle", and a perfect
-  fourth opens "Auld Lang Syne".
+- You can name an interval by a tune you know: a perfect fifth opens "Twinkle, Twinkle", and a
+  perfect fourth opens "Auld Lang Syne".
 
 **One-sentence challenge:** explain to a friend, in one sentence, why "Twinkle, Twinkle" still
 sounds like itself from any note.
@@ -263,32 +264,28 @@ sounds like itself from any note.
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Interval Trainer
-- Text: Interval Trainer plays two notes, the second always higher, then you sing them back. Four
-  of its six intervals are today's: the tone, fourth, fifth and octave. It starts low in the voice
-  range saved in Settings and listens for each note in the octave it plays, so set your range there
-  first (under Singing Voice Range). Sore, hoarse or unwell today? Just listen along. Sing at about
-  speaking volume, and stop immediately if anything feels uncomfortable.
-- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Interval Trainer. (First
-  visit? MercuryPitch opens with its intro: close it with the × at the top right ("Skip the
-  intro").)
+- Text: Interval Trainer plays two notes, the second always higher, then you sing them back. Four of
+  its six intervals are this lesson's: the tone, fourth, fifth and octave. It starts low in the
+  voice range saved in Settings. It wants each note in the octave it plays, not an octave away, so
+  set your range there first (under Singing Voice Range). Sore, hoarse or unwell today? Just listen
+  along. Sing at about speaking volume, and stop immediately if anything feels uncomfortable.
+- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Interval Trainer.
 - Second drill: For your ear, Ear Lab's Leap plays two notes, going up or down, and you name the
-  interval. It mixes all twelve; listen for today's m2, M2, P4, P5 and P8. Free:
+  interval. It mixes all twelve; listen for this lesson's m2, M2, P4, P5 and P8. Free:
   **mercurypitch.com/ear-lab**, then tap Leap.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Interval Trainer
   will be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap
-  Interval Trainer." Then the second drill, with the first-visit line after Leap's address.
+  Interval Trainer." Then the second drill.
 
 _[Editorial: when the `intervals` launch field ships (CURRICULUM § 4 item 2; WEB-SPEC, Practice
 links), the card's address becomes "Practise it free: mercurypitch.com/exercises/fourths-and-fifths"
 (proposed slug), which opens Interval Trainer on the perfect fourth and fifth only, both upward,
-and the text's second sentence becomes "It asks for today's two leaps, the perfect fourth and the
-perfect fifth." When the `ear-drill` launch kind ships (CURRICULUM § 4 item 5), the second drill's
-address becomes "mercurypitch.com/exercises/steps-and-leaps" (proposed slug), Leap with only m2,
-M2, P4 and P5, and "It mixes all twelve; listen for today's m2, M2, P4, P5 and P8" goes. When the
-`?lesson=` marker ships (CURRICULUM § 4 item 6), First Light steps aside and the first-visit line
-goes: from the card, the rest card and the footer, and from the explorer card's note, which then
-reads "then tap Leap to name them" again (WEB-SPEC, What the kit and the app still need). On the
-public host every link carries `?lesson=06`.]_
+and the text's second sentence becomes "It asks for this lesson's two leaps, the perfect fourth and
+the perfect fifth." When the `ear-drill` launch kind ships (CURRICULUM § 4 item 5), the second
+drill's address becomes "mercurypitch.com/exercises/steps-and-leaps" (proposed slug), Leap with only
+m2, M2, P4 and P5, and "It mixes all twelve; listen for this lesson's m2, M2, P4, P5 and P8" goes.
+Every link carries `?lesson=06`, so First Light, the app's intro, steps aside on a first visit, and
+the page has no line about closing it (FACTS 44a).]_
 
 **Next lesson:** Lesson 7, Slides, sirens and your range. "How many notes can your voice reach, and
 why is the comfortable middle worth more than the extremes?"
@@ -297,8 +294,7 @@ why is the comfortable middle worth more than the extremes?"
 
 Season 1 · Lesson 06 · Intervals: the distance between notes. The practice links, printed
 mercurypitch.com/pitch-training and mercurypitch.com/ear-lab, with "Interval Trainer and Leap are
-free. On a first visit, close the intro first, with the × at the top right ("Skip the intro")."
-Lesson 1's fonts line, and "Every sound on this page is synthesised in your browser."
+free." Lesson 1's fonts line, and "Every sound on this page is synthesised in your browser."
 
 ## Section headings
 
@@ -361,3 +357,22 @@ coach's gates in MASTER-PLAN § 7 do not bind it, but it asks the viewer to sing
 - The practice card's Interval Trainer: at the default pace six two-note rounds, each up to an
   octave, both notes sung back for 2.5 s each and scored in cents against the octave it plays; and
   the proposed slug with only the perfect fourth and fifth (FACTS 40 to 43, 49).
+
+### Changed in the plain-language review
+
+The review of October 2026 reworded these voice lines, for the coach to check. Each says the same
+thing as before, more plainly.
+
+- Your turn. Before: "If the top feels high, move do lower; if the bottom feels low, move it
+  higher." After: "If the top feels high, move do, your starting note, lower; if the bottom feels
+  low, move it higher." In "Twinkle", do is the first note. Lesson 4's Your turn says the same.
+- The voice line, shared with Lessons 5 and 7. Before: "Your voice from Lesson 3, or choose now:"
+  After: "Keep the voice you chose in Lesson 3, or choose now:"
+
+Also changed, though it is not a voice instruction: the practice card now says plainly that
+Interval Trainer wants each note in the octave it plays, not an octave away (FACTS 43), so a
+learner who sings an octave down, as Lessons 1 to 4 invited, knows why the score drops.
+
+The review also proposes plainer words for the four answers to "How did that feel?", [ Easy ]
+[ OK ] [ Hard work ] [ Uncomfortable ]; it is on Lesson 3's list for the coach, and this page
+takes whatever is decided there.

@@ -84,22 +84,21 @@ line above it, are in LESSON.md ("Section headings").
 9. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's
    ending picks, and the next lesson's hook on a card that opens Lesson 7 in the explorer. The card
    is Lesson 2's app card with LESSON.md's eyebrow, title, text, address and second drill:
-   Interval Trainer, with the first-visit line after its address (Practice links), and Ear Lab's
-   Leap. After "Effortful", "Uncomfortable" or "Just listen today" it is Lesson 3's rest card
-   instead, with Interval Trainer named and "then tap Interval Trainer" after its address, then the
-   same second drill, with the first-visit line after Leap's address (Toys 6). Its addresses link
-   `/pitch-training?lesson=06` and `/ear-lab?lesson=06` in a new tab. Free play unlocks here: every
-   tune-line control on one stage (playbook rule 17).
+   Interval Trainer and Ear Lab's Leap. After "Effortful", "Uncomfortable" or "Just listen today" it
+   is Lesson 3's rest card instead, with Interval Trainer named and "then tap Interval Trainer"
+   after its address, then the same second drill (Toys 6). Its addresses link
+   `/pitch-training?lesson=06` and `/ear-lab?lesson=06` in a new tab, so neither meets First Light
+   (Practice links). Free play unlocks here: every tune-line control on one stage (playbook
+   rule 17).
 10. **Lesson explorer**: the kit's, with Lesson 6 as the current node, the line under its heading
     from LESSON.md, and the state for a lesson with a page and no film (What the kit and the app
     still need).
 11. **Footer**: Lesson 1's, with "Season 1 · Lesson 06 · Intervals: the distance between notes"; the
     two practice links, printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`,
-    with "Interval Trainer and Leap are free. On a first visit, close the intro first, with the ×
-    at the top right ("Skip the intro")." (both addresses boot the main app, FACTS 44, 45; the form
-    of Lesson 2's footer, its LESSON.md, "Head and footer"); Lesson 1's fonts line and "Every sound
-    on this page is synthesised in your browser" (FACTS 6). With no film there are no voices to
-    credit.
+    with "Interval Trainer and Leap are free." (both links carry `?lesson=06`, so neither meets
+    First Light, FACTS 44a; the form of Lesson 2's footer, its LESSON.md, "Head and footer");
+    Lesson 1's fonts line and "Every sound on this page is synthesised in your browser" (FACTS 6).
+    With no film there are no voices to credit.
 
 ## Length
 
@@ -325,11 +324,11 @@ States:
    its list naming all six of REQ-GVC-020's conditions, and its two buttons (FACTS 50), through the
    kit's comfort check that Lesson 3 adds (`kit/comfort.ts`), with no microphone step after it.
 2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with the Mercs' stills
-   (`aria-pressed`, at least 44 px), under LESSON.md's "Your voice from Lesson 3, or choose now",
-   read from and stored in `fyp-voice` inside try/catch (FACTS 52). A stored choice shows pressed
-   and can be changed, and nothing waits on it. With none stored, neither is pressed and the next
-   state waits for a choice, before "Just listen today" plays anything too, because the voice picks
-   the Merc who sings, as on Lesson 5's page (its WEB-SPEC, Toys 6).
+   (`aria-pressed`, at least 44 px), under LESSON.md's "Keep the voice you chose in Lesson 3, or
+   choose now", read from and stored in `fyp-voice` inside try/catch (FACTS 52). A stored choice
+   shows pressed and can be changed, and nothing waits on it. With none stored, neither is pressed
+   and the next state waits for a choice, before "Just listen today" plays anything too, because the
+   voice picks the Merc who sings, as on Lesson 5's page (its WEB-SPEC, Toys 6).
 3. **Just listen today** (listen-only mode): LESSON.md's line with the doctor lines (FACTS 51, 55);
    Play the first version and Play the second version sing Merc's versions on a tap in the chosen
    voice, the path lighting as each plays; Start the guide and Move do are not shown, and nothing
@@ -454,15 +453,10 @@ other, paused off screen, and the still images when WebGL fails or would run on 
   44); the viewer taps Interval Trainer, which plays two notes, the second always higher, then asks
   for both back (FACTS 40), six rounds at the default pace (FACTS 41), starting low in the saved
   voice range (FACTS 42). It scores each note against the octave it plays (FACTS 43), so the copy
-  says so and sends the viewer to Settings, Singing Voice Range, first (CURRICULUM § 4 item 7). On a
-  first visit the main app opens First Light first, and its welcome's one way out is the × at the
-  top right, labelled "Skip the intro" (FACTS 44), so the page says so in the series' first-visit
-  line, the one Lessons 2 and 4 use: "(First visit? MercuryPitch opens with its intro: close it with
-  the × at the top right ("Skip the intro").)" on the card, after its address; on the rest card
-  once, after Leap's address, the link it offers for today (its first link, Interval Trainer's, is
-  for when the voice feels comfortable); and in the footer once for both links, in the form of
-  Lesson 2's footer. It stays until the `?lesson=` marker lets First Light step aside (CURRICULUM
-  § 4 item 6). On the public host the link is `/pitch-training?lesson=06`.
+  says so and sends the viewer to Settings, Singing Voice Range, first (CURRICULUM § 4 item 7). The
+  link is `/pitch-training?lesson=06`, and the `?lesson=` marker lets First Light, the main app's
+  intro, step aside on a first visit (FACTS 44a), so the card, the rest card and the footer carry no
+  first-visit line (the series' old line, FACTS 44, went when the marker shipped).
 - **Today, Ear Lab's Leap.** `mercurypitch.com/ear-lab`, then tap Leap (FACTS 45, 46); on the public
   host `/ear-lab?lesson=06`, which keeps the bench's `#/ear-lab` boot. Leap needs no voice, so it
   stays on the rest card (FACTS 59).
@@ -479,7 +473,7 @@ other, paused off screen, and the still images when WebGL fails or would run on 
   - the octave: Interval Trainer scores the written octave (FACTS 43), so until the octave-folded
     option ships (CURRICULUM § 4 item 7) the card keeps its Settings sentence; Interval Trainer
     belongs on item 7's list beside Pitch Hold and Scale Runner;
-  - `?lesson=06` on the link, so First Light steps aside once the marker ships;
+  - `?lesson=06` on the link, so First Light steps aside (FACTS 44a);
   - App content: the menu card's "above and below" (FACTS 48), which the App content track already
     lists.
 - **Needed, proposed: `/exercises/steps-and-leaps`** (CURRICULUM § 4 item 5): the planned
@@ -505,14 +499,11 @@ table):
   link to their own pages.
 - `kit/season.ts`, Lesson 6's entry (`:182-200`): `minutes: 15` (FACTS 3). The practice link
   stays Ear Lab's (`href` `/ear-lab?lesson=06`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
-  Lab"), and, proposed for when this page is built, its `note` becomes "then tap Leap to name them
-  (on a first visit, close the intro first)", the short form Lesson 2's spec sets for an Ear Lab
-  link (its "What the kit and the app still need", item 10), printed "Ear Lab, then tap Leap to
-  name them (on a first visit, close the intro first)" by `practiseMarkup`
-  (`kit/explorer.ts:51-56`). If the `?lesson=` step-aside has shipped by then, the note stays "then
-  tap Leap to name them". Its `needs` stays until the slug ships. A second proposal only, for the
-  director: link Interval Trainer instead, the Wrap's lead drill (`href`
-  `/pitch-training?lesson=06`, `label` "Exercises", `note` "then tap Interval Trainer").
+  Lab"), and its `note` stays "then tap Leap to name them", printed "Ear Lab, then tap Leap to name
+  them" by `practiseMarkup` (`kit/explorer.ts:98-103`): the `?lesson=` step-aside has shipped
+  (FACTS 44a), so the note needs no first-visit form. Its `needs` stays until the slug ships. A
+  second proposal only, for the director: link Interval Trainer instead, the Wrap's lead drill
+  (`href` `/pitch-training?lesson=06`, `label` "Exercises", `note` "then tap Interval Trainer").
 - `kit/notes.ts`: Lesson 4's spelling helper (its Toys 1 and "What the kit and the app still
   need"), each name in signs ("B♭4") and in words ("B flat 4"), for the bead names, the readouts,
   the slider and every accessible name; `letterOf` and `nameOf` know only the seven letters
@@ -610,10 +601,9 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
    do, shows the doctor lines and leaves the rest card in the Wrap; Start the guide stays
    `aria-disabled` until a version has played; the feeling question appears when each sweep ends;
    "Easy" after the first version's sweep shows the one-version line, and after the second's the
-   transposed line, and keeps the Interval Trainer card, whose first-visit line follows its own
-   address; "Effortful" hides the guide and Move do and shows the gentle line; "Uncomfortable"
-   hides the guide and Move do, shows the doctor lines and the rest card, whose first-visit line
-   follows Leap's address.
+   transposed line, and keeps the Interval Trainer card; "Effortful" hides the guide and Move do and
+   shows the gentle line; "Uncomfortable" hides the guide and Move do, shows the doctor lines and
+   the rest card.
 6. No call to `navigator.mediaDevices.getUserMedia` at any point (a spy).
 7. The recall shows with an empty `fyp-done`, and answering both its questions marks nothing done:
    `fyp-done` stays empty and no explorer node changes; its step link is
@@ -624,9 +614,8 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
    transition, the guide's notes light one after another in place of the sweep, and nothing moves
    on its own.
 10. The Wrap after "Effortful": after the first version's sweep, "Effortful" leaves the rest card in
-    the Wrap, with Interval Trainer named for later, "then tap Interval Trainer", and the
-    first-visit line after Leap's address, and no Interval Trainer card; answering "Easy" after that
-    does not bring the card back on this visit.
+    the Wrap, with Interval Trainer named for later, "then tap Interval Trainer", and no Interval
+    Trainer card; answering "Easy" after that does not bring the card back on this visit.
 
 ## Contract
 
