@@ -17,9 +17,9 @@
 // follows within about a minute; the page asks the site again a few seconds
 // later. The live column is a few plain requests to the site the page is
 // served from (lessons/lesson-admin.ts). A lesson with no override is the
-// code's to decide, as before: deleting its line in drafts.ts releases it.
-// The hook and tease choices are the lessons kit's own
-// (lessons/copy-choices.ts).
+// code's to decide, as before: deleting its line in drafts.ts releases it,
+// and a draft takes this build's DRAFTS_SHOWN. The hook and tease choices
+// are the lessons kit's own (lessons/copy-choices.ts).
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
@@ -35,7 +35,7 @@ import type { CopyChoicesFor } from './lessons/copy-choices'
 import { copyChoicesFor } from './lessons/copy-choices'
 import type { LessonRow, ListingCheck, PageCheck, ReleaseStep, SiteFindings, StepId, StepState, } from './lessons/lesson-admin'
 import { checkPage, lessonName, lessonRows, listedIn, llmsPaths, readListing, releaseChecklist, sitemapPaths, } from './lessons/lesson-admin'
-import { asSentence, publishView, stateWord } from './lessons/lesson-publish'
+import { asSentence, publishedByDefault, publishView, stateWord, } from './lessons/lesson-publish'
 import type { LessonActions } from './lessons/LessonControls'
 import { PublishCell, PublishPanel, WordingPanel, } from './lessons/LessonControls'
 import { LessonsBlueprint } from './lessons/LessonsBlueprint'
@@ -167,6 +167,7 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
       row,
       lessons.overrideOf(row.lesson.n),
       log?.kind === 'read' ? log.changes : null,
+      DRAFTS_SHOWN,
     )
   }
 
@@ -179,7 +180,7 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
       name: lessonName(row.lesson),
       field: 'published',
       value,
-      defaultPublished: row.built,
+      defaultPublished: publishedByDefault(row, DRAFTS_SHOWN),
     })
 
   /** Publish, asking first when the lesson still waits on its sign-off; or unpublish. */
@@ -216,7 +217,7 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
         name: lessonName(row.lesson),
         field,
         value,
-        defaultPublished: row.built,
+        defaultPublished: publishedByDefault(row, DRAFTS_SHOWN),
       })
     },
     get onChangeKey() {
@@ -321,11 +322,17 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
       <div class={styles.intro}>
         <p>
           Publish or unpublish a lesson here, and choose its hook and its tease.
-          A change is saved at once, and the site follows within about a minute.
-          Without one, the code decides: deleting a lesson's line in{' '}
-          <code>src/features/lessons/kit/drafts.ts</code> releases it, and the
-          next release tag deploys it. A film reaches its page once its sources
-          are set in <code>src/features/lessons/kit/films.ts</code>.
+          A change is saved at once, and the site follows within about a minute:
+          an unpublished lesson's address answers 404, a draft published here
+          goes live without waiting for a release, the chosen hook opens its
+          page, and the chosen tease sits on the previous lesson's next-lesson
+          card.
+        </p>
+        <p>
+          Where nothing is set here, the code decides: deleting a lesson's line
+          in <code>src/features/lessons/kit/drafts.ts</code> releases it, and
+          the next release tag deploys it. A film reaches its page once its
+          sources are set in <code>src/features/lessons/kit/films.ts</code>.
         </p>
         <div class={styles.statusRow}>
           <span class={styles.badge} data-tone={DRAFTS_SHOWN ? 'todo' : 'done'}>

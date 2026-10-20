@@ -6,11 +6,10 @@
 // on: an override wins over the code, a lesson with no page is never
 // published, who set an override is the newest change of that field, and
 // every line the page prints after a save is the one it should be. Against
-// the season's own data, drafts shown, as on the dev site.
+// the season's own data, on a site that shows drafts (the dev site) and on
+// one that holds them back (mercurypitch.com).
 
 import { describe, expect, it } from 'vitest'
-import type { Lesson } from '@/features/lessons/kit/season'
-import { LESSONS } from '@/features/lessons/kit/season'
 import type { LessonStateChange } from '@/lib/lesson-state'
 import type { LessonRow } from './lesson-admin'
 import { lessonRows } from './lesson-admin'
@@ -20,37 +19,34 @@ import { AT, logged } from './lesson-site.test-fixtures'
 /** A line as it reads: the no-break spaces in a time read as spaces. */
 const plain = (line: string): string => line.replace(/\u00a0/g, ' ')
 
-function rowFor(
-  n: number,
-  rows: readonly LessonRow[] = lessonRows(),
-): LessonRow {
-  const row = rows.find((r) => r.lesson.n === n)
-  if (row === undefined) throw new Error(`no row for lesson ${n}`)
+const ROWS = lessonRows()
+
+function rowWhere(test: (row: LessonRow) => boolean, what: string): LessonRow {
+  const row = ROWS.find(test)
+  if (row === undefined) throw new Error(`the season has no ${what}`)
   return row
 }
 
-/** A season entry as a build that leaves drafts out folds it: no page. */
-function withoutPage(lesson: Lesson): Lesson {
-  const folded: { -readonly [K in keyof Lesson]: Lesson[K] } = { ...lesson }
-  delete folded.page
-  delete folded.minutes
-  return folded
-}
-
-const released = rowFor(1)
-const shownDraft = rowFor(3)
-const hiddenDraft = rowFor(
-  3,
-  lessonRows([withoutPage(LESSONS[3])], { 3: 'a sign-off' }),
+const released = rowWhere((row) => row.lesson.n === 1, 'Lesson 1')
+const draft = rowWhere((row) => row.build === 'draft', 'draft')
+/** The first lesson whose page is not written yet. */
+const planned = rowWhere(
+  (row) => row.path !== null && !row.written,
+  'lesson still to write',
 )
-const planned = rowFor(6)
-const trailer = rowFor(0)
+const trailer = rowWhere((row) => row.path === null, 'trailer')
+
+/** Where this site shows drafts, and where it holds them back. */
+const SHOWN = true
+const HELD = false
 
 describe('publishView', () => {
-  it("reads the code's default where nothing is set here: released, a draft this site shows, a draft it hides", () => {
-    const views = [released, shownDraft, hiddenDraft].map((row) =>
-      publishView(row, {}, null),
-    )
+  it("reads the code's default where nothing is set here: released, a draft where drafts are shown, and where they are held back", () => {
+    const views = [
+      publishView(released, {}, null, HELD),
+      publishView(draft, {}, null, SHOWN),
+      publishView(draft, {}, null, HELD),
+    ]
 
     expect(
       views.map((view) => [view.published, view.reason, view.overridden]),
@@ -62,13 +58,15 @@ describe('publishView', () => {
   })
 
   it('lets an override set here win over the code, either way', () => {
-    expect(publishView(released, { published: false }, null)).toMatchObject({
+    expect(
+      publishView(released, { published: false }, null, SHOWN),
+    ).toMatchObject({
       published: false,
       byDefault: true,
       reason: 'set',
       overridden: true,
     })
-    expect(publishView(hiddenDraft, { published: true }, null)).toMatchObject({
+    expect(publishView(draft, { published: true }, null, HELD)).toMatchObject({
       published: true,
       byDefault: false,
       reason: 'set',
@@ -76,7 +74,7 @@ describe('publishView', () => {
   })
 
   it('never publishes a lesson with no page, whatever is stored for it', () => {
-    const view = publishView(planned, { published: true }, null)
+    const view = publishView(planned, { published: true }, null, SHOWN)
 
     expect(view).toMatchObject({
       published: false,
@@ -85,7 +83,7 @@ describe('publishView', () => {
       overridden: true,
     })
     expect(stateWord(view)).toBe('No page yet')
-    expect(stateWord(publishView(trailer, {}, null))).toBe('No page')
+    expect(stateWord(publishView(trailer, {}, null, SHOWN))).toBe('No page')
   })
 
   it('takes who set it from the newest change of the publish field, past newer wording changes', () => {
@@ -101,7 +99,7 @@ describe('publishView', () => {
       logged({ id: 1, lesson: 1, field: 'published', newValue: true }),
     ]
 
-    const view = publishView(released, { published: false }, log)
+    const view = publishView(released, { published: false }, log, SHOWN)
 
     expect(view.change?.id).toBe(2)
     expect(plain(reasonLine(view))).toBe(
@@ -110,9 +108,9 @@ describe('publishView', () => {
   })
 
   it('says "Set here" alone until the log is read', () => {
-    expect(reasonLine(publishView(released, { published: false }, null))).toBe(
-      'Set here',
-    )
+    expect(
+      reasonLine(publishView(released, { published: false }, null, SHOWN)),
+    ).toBe('Set here')
   })
 })
 
@@ -158,14 +156,25 @@ describe('the words', () => {
     expect(AT).toMatch(/^2026-10-20T/)
   })
 
-  it('states the default on this site for each kind of lesson', () => {
-    expect(
-      [released, shownDraft, hiddenDraft, planned].map(defaultSentence),
-    ).toEqual([
+  it('states the default on this site for each kind of lesson, an override aside', () => {
+    const sentence = (row: LessonRow, draftsShown: boolean): string =>
+      defaultSentence(
+        row,
+        publishView(row, { published: false }, null, draftsShown),
+      )
+
+    expect([
+      sentence(released, HELD),
+      sentence(draft, SHOWN),
+      sentence(draft, HELD),
+      sentence(planned, SHOWN),
+      sentence(trailer, SHOWN),
+    ]).toEqual([
       'The default here is published: it is released in code.',
       'The default here is published: this site shows drafts.',
       'The default here is unpublished: this site leaves drafts out.',
       'It has no page yet, so there is nothing to publish.',
+      'A film has no page to publish.',
     ])
   })
 

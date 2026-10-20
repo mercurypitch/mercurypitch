@@ -358,7 +358,7 @@ describe('releaseChecklist', () => {
     ).toEqual(['live', 'todo', 'Unpublished here, so it answers 404.'])
   })
 
-  it('holds a draft published here to being listed and served, and says when this build cannot serve it', () => {
+  it('holds a draft published here to being listed and served, and says when the site has not followed yet', () => {
     const shownDraft = rowFor(3)
     const shown = releaseChecklist(
       shownDraft,
@@ -379,7 +379,7 @@ describe('releaseChecklist', () => {
     expect(siteSteps(hidden).at(-1)).toEqual([
       'live',
       'todo',
-      'Published here, but it answers 404: this build leaves its page out.',
+      'Published here, but it answers 404. The site follows within about a minute of a save.',
     ])
     expect(states(shown).find(([id]) => id === 'release')).toEqual([
       'release',
