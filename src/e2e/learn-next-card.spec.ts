@@ -10,10 +10,13 @@
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
 // does, so Lessons 3 and 5 are live here; a build that hides them is
-// next-card.test.ts's.
+// next-card.test.ts's. A lesson with a tease (kit/lesson-copy.ts) is set up
+// by it on the card before, one line above its hook; the season's close,
+// on a finale with no page yet, is next-card.test.ts's too.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 
 /** The card at the foot of this page's Wrap. */
 const card = (page: Page): Locator => page.locator('#wrap a.next-card')
@@ -75,6 +78,25 @@ for (const [path, eyebrow, href, way] of CARDS) {
     await expect(c).toHaveAttribute('href', href)
   })
 }
+
+test("Lesson 1's card sets up Lesson 2 with its tease, one line above its hook", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/01')
+
+  // Assert
+  const c = card(page)
+  await expect(c.locator('.next-tease')).toHaveText(
+    LESSON_COPY[2]?.tease ?? 'Lesson 2 has a tease',
+  )
+  await expect(c.locator('.next-tease')).toBeVisible()
+  expect(
+    await c
+      .locator('.next-words > *')
+      .evaluateAll((els) => els.map((e) => e.className)),
+  ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+})
 
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
   page,

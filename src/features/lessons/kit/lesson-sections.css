@@ -188,11 +188,33 @@
   transform: translateY(-2px);
   color: var(--ink);
 }
-.next-card .q2 {
+.next-card .q2,
+.next-card .end-line {
   margin: 8px 0 10px;
   font: italic 400 clamp(22px, 2.4vw, 30px)/1.18 var(--f-serif);
   word-spacing: 0.06em;
   text-wrap: balance;
+}
+/* the next lesson's tease (kit/lesson-copy.ts): one line, set up above its
+   hook. Not `.tease`, which is Lesson 2's two figures in the card's slot */
+.next-card .next-tease {
+  margin: 10px 0 0;
+  font: 500 var(--fs-16)/1.35 var(--f-ui);
+  color: var(--ink-2);
+}
+/* the season's close (next-card.ts): no link itself, so it stays put under
+   the pointer, and its two ways on are buttons */
+.next-card.is-end:hover {
+  transform: none;
+}
+.next-card .end-line {
+  margin-bottom: 16px;
+}
+.next-card .end-ways {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
 }
 /* its way on (next-card.ts): aqua to a lesson, ink to read one again, chrome
    to the map for a lesson coming later */
