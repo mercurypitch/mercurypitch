@@ -249,7 +249,7 @@ export const LESSONS: readonly Lesson[] = [
     ...(DRAFT_LESSONS[5] !== undefined && !DRAFTS_SHOWN
       ? {}
       : { minutes: 17, page: '/learn/05' }),
-    hook: 'Singers are told to "support" a long note. If that doesn\'t mean pushing, what keeps it steady?',
+    hook: "Singers are told to “support” a long note. If that doesn't mean pushing, what keeps it steady?",
     sig: 'The pitch line of a held note settling from a wobble into a narrow band.',
     pr: {
       needs: 'Long Note with a fixed 10 or 15 s length (durationSec)',
@@ -267,7 +267,7 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Intervals: the distance between notes',
     short: 'Intervals',
     topics: ['T11', 'T12'],
-    hook: 'Why can you start "Twinkle, Twinkle" on any note and it is still the same tune?',
+    hook: 'Why can you start ‘Twinkle, Twinkle’ on any note and it is still the same tune?',
     sig: "A tune's contour lifted off the chart and slid up and down, keeping its shape.",
     pr: {
       needs:
@@ -371,7 +371,7 @@ export const LESSONS: readonly Lesson[] = [
     title: 'Resonance and vowels',
     short: 'Vowels',
     topics: ['T28', 'S13', 'S14'],
-    hook: 'If "ee" and "ah" sung on the same note draw the same pitch line, what makes them sound different?',
+    hook: 'If ‘ee’ and ‘ah’ sung on the same note draw the same pitch line, what makes them sound different?',
     sig: 'One pitch line over a harmonic spectrum whose peaks move as the vowel changes.',
     pr: { needs: 'Long Note on vowels' },
     fig: 'chladni',
