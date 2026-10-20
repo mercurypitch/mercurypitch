@@ -133,7 +133,10 @@ in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
    Phase 1, § 12 item 11), behind the viewer's consent.
 7. **Wrap**: the three recap lines, the one-sentence challenge, and the next lesson's hook from
    LESSON.md ("Musicians only use seven letters, so where do the other five notes come from?") on
-   a card that opens Lesson 2's page, "ready to read" (a lesson not live yet reads "coming later").
+   the kit's next-lesson card (`kit/next-card.ts`), which takes Lesson 2's state from the season in
+   the explorer's words: "Start lesson" to its page ("Continue: step N" once begun, "Read again"
+   once done). A lesson not live yet, as a draft a production build hides, reads "Coming later" and
+   opens the explorer on it ("See it on the map"), never its page.
 8. **Watch the episode**: the film (see Video below) with a chapter list beside it (clickable,
    highlighting the current chapter), captions on by default (VTT track), and a "Read the
    transcript" disclosure built from the captions.

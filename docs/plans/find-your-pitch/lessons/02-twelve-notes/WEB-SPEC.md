@@ -130,10 +130,11 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
      the card's width, never scaled down, so its text keeps the type scale's 12 px floor; on phones
      a pad's name may take two lines. Its caption: "Illustration: Leap's twelve answers. In Leap:
      m2 = semitone · M2 = tone."
-   - **The next-lesson card**: the next lesson's hook on a card that opens Lesson 3 in the
-     explorer, with the tease's two figures side by side: ASKED, 59 %, of 1,105; TESTED, 10–16 %, a
-     semitone or more off (FACTS 36). The film prints the second label "≥ 1 semitone off"; the page
-     spells it out in words.
+   - **The next-lesson card**: the kit's (`kit/next-card.ts`), Lesson 3's hook and "Start lesson" to
+     `/learn/03`, or "Coming later" and the explorer where a build hides it (a draft until its
+     sign-off). The page's mount keeps the tease's two figures side by side after the card's words:
+     ASKED, 59 %, of 1,105; TESTED, 10–16 %, a semitone or more off (FACTS 36). The film prints the
+     second label "≥ 1 semitone off"; the page spells it out in words.
    - **Free play**: one stage with the whole object and every control of the step toys at once (the
      spiral with Climb and Look down; Unroll and Straighten; Lift out the five; the names toggle
      with Sharp, Flat and Show the rare ones; the ruler with One semitone and Glide), switched by
@@ -570,9 +571,9 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
 16. `public/sitemap.xml` (`https://mercurypitch.com/learn/02`) and `public/llms.txt` (its "Lessons"
     list, the entry in LESSON.md, "Head and footer"); `public/learn/lesson-02-og.jpg`, the share
     card (The episode, above).
-17. Lesson 1's page, when this one goes live: its Wrap's next-lesson card ("02 · Twelve notes",
-    marked planned, opening the explorer) links to `/learn/02`, marked "ready to read". Its
-    explorer needs no edit: each lesson's state comes from the season.
+17. Lesson 1's page, when this one goes live: no edit. Its Wrap's next-lesson card
+    (`kit/next-card.ts`) and its explorer take each lesson's state from the season, so the card
+    reads "Start lesson" and links to `/learn/02` once the season gives this lesson its page.
 18. **The `?lesson=` step-aside** (CURRICULUM § 4 item 6; MASTER-PLAN § 7, the Phase 1 App track):
     shipped in `152aad288`. A launch that carries `?lesson=02` skips First Light (FACTS 33b), so the
     first-visit line has gone from the practice card, the footer and the explorer card's note

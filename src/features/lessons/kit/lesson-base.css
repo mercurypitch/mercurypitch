@@ -550,6 +550,23 @@ button {
   background: var(--c, var(--chrome));
   box-shadow: 0 0 10px var(--c, var(--chrome));
 }
+/* the prerequisite chip is a link, the whole chip (li > a.chip.chip-link):
+   a 44 px target around a 28 px chip, reaching 8 px into the gaps above and
+   below (its inset is from inside the chip's 1 px border) */
+.chip-link {
+  position: relative;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.chip-link::after {
+  content: '';
+  position: absolute;
+  inset: -9px -5px;
+}
+.chip-link:hover {
+  border-color: var(--hair-3);
+  color: var(--ink);
+}
 .switch {
   display: inline-flex;
   align-items: center;

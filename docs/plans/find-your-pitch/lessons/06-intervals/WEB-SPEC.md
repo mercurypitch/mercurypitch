@@ -82,15 +82,15 @@ line above it, are in LESSON.md ("Section headings").
 7. **Sing it**: the comfort check, the voice choice, the two versions, the guide, Move do and the
    feeling question after each version (Toys 6); nothing listens.
 8. **Quick check**: LESSON.md's four questions (Toys 7).
-9. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's
-   ending picks, and the next lesson's hook on a card that opens Lesson 7 in the explorer. The card
-   is Lesson 2's app card with LESSON.md's eyebrow, title, text, address and second drill:
-   Interval Trainer and Ear Lab's Leap. After "Effortful", "Uncomfortable" or "Just listen today" it
-   is Lesson 3's rest card instead, with Interval Trainer named and "then tap Interval Trainer"
-   after its address, then the same second drill (Toys 6). Its addresses link
-   `/pitch-training?lesson=06` and `/ear-lab?lesson=06` in a new tab, so neither meets First Light
-   (Practice links). Free play unlocks here: every tune-line control on one stage (playbook
-   rule 17).
+9. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
+   picks, and the kit's next-lesson card (`kit/next-card.ts`): Lesson 7's hook, "Coming later" and
+   the explorer until Lesson 7 is live, then "Start lesson" to its page. The card is Lesson 2's app
+   card with LESSON.md's eyebrow, title, text, address and second drill: Interval Trainer and Ear
+   Lab's Leap. After "Effortful", "Uncomfortable" or "Just listen today" it is Lesson 3's rest card
+   instead, with Interval Trainer named and "then tap Interval Trainer" after its address, then the
+   same second drill (Toys 6). Its addresses link `/pitch-training?lesson=06` and
+   `/ear-lab?lesson=06` in a new tab, so neither meets First Light (Practice links). Free play
+   unlocks here: every tune-line control on one stage (playbook rule 17).
 10. **Lesson explorer**: the kit's, with Lesson 6 as the current node, the line under its heading
     from LESSON.md, and the state for a lesson with a page and no film (What the kit and the app
     still need).
@@ -543,9 +543,10 @@ and the line references are main's.
     leaps, transposing, and intervals named by tunes you know. With the Season 1 map.";
   - canonical and `og:url`: `https://mercurypitch.com/learn/06`; `og:image`: the share card, with
     alt text naming what it shows.
-- Lessons 1 to 5's pages, when this one goes live: nothing to edit in their explorers, which read
-  each lesson's state from the season (`kit/season.ts`). Lesson 5's next-lesson card turns from
-  "coming later" to "ready to read".
+- Lessons 1 to 5's pages, when this one goes live: nothing to edit. Their explorers and their
+  Wraps' next-lesson cards (`kit/next-card.ts`) read each lesson's state from the season
+  (`kit/season.ts`), so Lesson 5's card turns from "Coming later" to "Start lesson" and links
+  this page.
 - App content (the App content track): Interval Trainer's menu card, "above and below" (FACTS 48),
   on main since `80df49e62`: "Sing specific intervals above a reference note." (FACTS 48a).
 

@@ -77,12 +77,13 @@ headings").
 7. **Sing it**: the scale guide (Toys 4) with Merc's scale, the octave-up scale, the guide and
    Move do, and LESSON.md's lines in its order; nothing listens.
 8. **Quick check**: LESSON.md's four questions (Toys 5).
-9. **Wrap**: the three recap lines, the challenge, the practice card and the next lesson's hook on
-   a card that opens Lesson 5 in the explorer. The practice card is Lesson 2's app card with
-   LESSON.md's eyebrow, title, text, address, second drill and figure: Scale Runner today and Ear
-   Lab Home. Its addresses link `/pitch-training?lesson=04` and `/ear-lab?lesson=04` in a new tab,
-   so neither meets First Light (Practice links). Free play unlocks here: every staircase control on
-   one stage (playbook rule 17: guided first, free play after).
+9. **Wrap**: the three recap lines, the challenge, the practice card and the kit's next-lesson card
+   (`kit/next-card.ts`): Lesson 5's hook and "Start lesson" to its page, or "Coming later" and the
+   explorer where a build hides it. The practice card is Lesson 2's app card with LESSON.md's
+   eyebrow, title, text, address, second drill and figure: Scale Runner today and Ear Lab Home. Its
+   addresses link `/pitch-training?lesson=04` and `/ear-lab?lesson=04` in a new tab, so neither
+   meets First Light (Practice links). Free play unlocks here: every staircase control on one stage
+   (playbook rule 17: guided first, free play after).
 10. **Lesson explorer**: the kit's, with Lesson 4 as the current node, the line under its heading
     from LESSON.md, and the state for a lesson with a page and no film (What the kit and the app
     still need).

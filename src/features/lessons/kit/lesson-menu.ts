@@ -26,7 +26,7 @@ import './lesson-menu.css'
 import { clamp } from './dom'
 import { ARCS } from './explorer-graph'
 import type { LessonState, LessonView } from './lesson-state'
-import { lessonViews } from './lesson-state'
+import { lessonViews, stateWords } from './lesson-state'
 import type { StepMarks } from './position'
 import { Positions } from './position'
 import { Done } from './progress'
@@ -106,18 +106,11 @@ export interface MenuModel {
 
 const SEASON = 'Season 1'
 
-const minutes = (L: Lesson): string =>
-  L.minutes === undefined ? '' : ` · ${L.minutes} min`
-
 /** A row's right-hand text; this page's lesson counts the step showing. */
 function metaOf(v: LessonView, deck: DeckNow): string {
-  const L = v.lesson
   if (v.state === 'here')
     return `${v.done ? 'Done · step' : 'Step'} ${deck.now} of ${deck.titles.length}`
-  if (v.state === 'later') return 'Coming later'
-  if (v.done) return `Done${minutes(L)}`
-  if (v.step !== null) return `Step ${v.step.step} of ${v.step.of}`
-  return v.state === 'next' ? 'Up next' : `Ready${minutes(L)}`
+  return v.state === 'next' ? 'Up next' : stateWords(v)
 }
 
 /** A lesson done is full; one begun is filled to its step. */

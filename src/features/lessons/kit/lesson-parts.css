@@ -2,27 +2,11 @@
    Lesson parts — the small pieces more than one lesson page uses
    ============================================================
    Lesson 2's page built these in its own sheet; a later page imports them
-   from here, after lesson-stage.css: the prerequisite chip as a link, four
-   ticket cards in two columns, the segmented toggle and its note, a predict
-   inside a step's text, the Go deeper drawer, the slide guide beside the
-   breathing ring, and free play's card head. Lesson 2 still carries its
-   own copies, unchanged. */
-
-/* the prerequisite chip is a link: a 44 px target around a 28 px chip */
-.chip-link {
-  position: relative;
-  color: var(--ink-2);
-  text-decoration: none;
-}
-.chip-link::after {
-  content: '';
-  position: absolute;
-  inset: -8px -4px;
-}
-.chip-link:hover {
-  border-color: var(--hair-3);
-  color: var(--ink);
-}
+   from here, after lesson-stage.css: four ticket cards in two columns, the
+   segmented toggle and its note, a predict inside a step's text, the Go
+   deeper drawer, the slide guide beside the breathing ring, and free play's
+   card head. Lesson 2 still carries its own copies, unchanged. The
+   prerequisite chip as a link is every page's, in lesson-base.css. */
 
 /* ---------------------------------------------------------------- four words */
 .tickets.four {

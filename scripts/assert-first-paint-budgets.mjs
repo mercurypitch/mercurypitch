@@ -86,28 +86,29 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'guitar-night.html': 1800,
 
   // Find Your Pitch, Lesson 1: the lesson's own module, the shared lesson
-  // kit and Vite's helper. Measured 125 on 2026-10-20: 114 once the Series
-  // blueprint left the page, then the masthead's lesson menu that every
-  // lesson page carries (kit/lesson-menu.ts, about 10 KB), so a quarter over
-  // that, as Lessons 2 to 5 were set. Merc's renderer arrives through a
+  // kit and Vite's helper. Measured on 2026-10-20: 114 once the Series
+  // blueprint left the page, 125 with the masthead's lesson menu that every
+  // lesson page carries (kit/lesson-menu.ts, about 10 KB), the budget a
+  // quarter over that as Lessons 2 to 5 were set, and 127 with the Wrap's
+  // next-lesson card (kit/next-card.ts). Merc's renderer arrives through a
   // dynamic import, so the page stays this light only while that boundary
   // holds.
   'learn/01.html': 155,
-  // Lesson 2, "Twelve notes": its own module on the same kit. Measured 145
-  // with the lesson menu (131 before it); the renderer is the same dynamic
-  // import as Lesson 1's.
+  // Lesson 2, "Twelve notes": its own module on the same kit. Measured 146
+  // with the lesson menu and the next-lesson card (131 before them); the
+  // renderer is the same dynamic import as Lesson 1's.
   'learn/02.html': 165,
 
   // Lesson 3, a draft lesson: emitted only by builds that show drafts
   // (build:e2e, which runs this check; src/features/lessons/kit/drafts.ts).
-  // Measured 115 with the lesson menu (100 before it). The listener, the
-  // pitch detector and Voice Mirror's scorer arrive through a dynamic import
-  // when Sing it's Start is pressed, and the band edges sit in their own
-  // leaf chunk, so the page stays this light only while both boundaries
-  // hold.
+  // Measured 117 with the lesson menu and the next-lesson card (100 before
+  // them). The listener, the pitch detector and Voice Mirror's scorer arrive
+  // through a dynamic import when Sing it's Start is pressed, and the band
+  // edges sit in their own leaf chunk, so the page stays this light only
+  // while both boundaries hold.
   'learn/03.html': 125,
-  // Lesson 5, a draft too, built only where drafts are shown. Measured 120
-  // with the lesson menu (109 before it).
+  // Lesson 5, a draft too, built only where drafts are shown. Measured 122
+  // with the lesson menu and the next-lesson card (109 before them).
   // The listener and the hold reader arrive when Sing it's Start is pressed,
   // the reader for the hold demo's readouts once Step 5 comes near: Voice
   // Mirror's scorer stays off first paint only while both imports stay
@@ -115,8 +116,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/05.html': 136,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
-  // the staircase drawn on canvas. Measured 113 with the lesson menu (101
-  // before it); the renderer is the same dynamic import as Lesson 1's.
+  // the staircase drawn on canvas. Measured 114 with the lesson menu and the
+  // next-lesson card (101 before them); the renderer is the same dynamic
+  // import as Lesson 1's.
   'learn/04.html': 125,
 
   // The main app, and the crawlable doors that are the main app. Measured

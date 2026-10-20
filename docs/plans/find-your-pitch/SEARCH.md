@@ -393,6 +393,11 @@ exist beyond a definition.
    - `STANDALONE_DOCUMENT_PATHS`;
    - the first-paint budget, which `scripts/assert-first-paint-budgets.mjs`
      asks for at build.
+
+   No other lesson's page needs an edit: the previous lesson's next-lesson
+   card (`kit/next-card.ts`) and every explorer read the season, so the card
+   turns from "Coming later" to "Start lesson" and links the new page.
+
 4. Links out: home, hub, previous and next lesson, the room. Links in: the room
    pages in §8.
 5. Release day:

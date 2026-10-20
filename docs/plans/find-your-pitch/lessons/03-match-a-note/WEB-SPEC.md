@@ -56,7 +56,8 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
 8. **Quick check** (Toys, 8).
 9. **Wrap**: the recap, the challenge, the practise card in the version the checkpoint's ending
    picks (Toys, 7: the Voice Mirror card with "Ten minutes, gently, most days", or the rest card
-   without it), and the next hook on a card that opens Lesson 4 in the explorer. Free play unlocks
+   without it), and the kit's next-lesson card (`kit/next-card.ts`): Lesson 4's hook and "Start
+   lesson" to its page, or "Coming later" and the explorer while it is not live. Free play unlocks
    here: the folds, the slider match with its rounds on C4 and F3, and the band chart in drag mode
    on one stage (playbook rule 17).
 10. **Lesson explorer**: Lesson 1's, with Lesson 3 current and marked done when its quick check is
