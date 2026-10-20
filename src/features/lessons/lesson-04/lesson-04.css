@@ -313,7 +313,6 @@
   color: var(--ink-2);
 }
 .l4-app a.addr {
-  vertical-align: middle;
   text-decoration: none;
 }
 .ladder-fig {
