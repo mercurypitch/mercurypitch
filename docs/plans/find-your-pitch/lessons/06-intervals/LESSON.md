@@ -288,8 +288,9 @@ m2, M2, P4 and P5, and "It mixes all twelve; listen for this lesson's m2, M2, P4
 Every link carries `?lesson=06`, so First Light, the app's intro, steps aside on a first visit, and
 the page has no line about closing it (FACTS 44a).]_
 
-**Next lesson:** Lesson 7, Slides, sirens and your range. "How many notes can your voice reach, and
-why is the comfortable middle worth more than the extremes?"
+**Next lesson:** Lesson 7, Slides, sirens and your range. "Why is your comfortable middle worth
+more than your highest note?" One line above it, the tease: "Books often give a voice type two
+octaves."
 
 ## Footer
 

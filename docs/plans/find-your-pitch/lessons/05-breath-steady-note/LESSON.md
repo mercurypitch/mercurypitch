@@ -320,7 +320,8 @@ still promises to build what the claims rules never rate, and asks for longer ex
 (§ 4 item 8).]_
 
 **Next lesson:** Lesson 6, Intervals: the distance between notes. "Why can you start 'Twinkle,
-Twinkle' on any note and it is still the same tune?"
+Twinkle' on any note and it is still the same tune?" One line above it, the tease: "Merc moves
+every single note of 'Twinkle, Twinkle' up."
 
 ## Footer
 

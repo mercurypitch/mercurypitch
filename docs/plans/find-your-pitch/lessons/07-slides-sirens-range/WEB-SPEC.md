@@ -583,8 +583,8 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
    `public/llms.txt`'s "Lessons" list (`:66-81`), whose intro now allows a lesson with no episode
    ("with its episode where the lesson has one", `:68-70`).
 2. The page's head, as Lesson 1's (`learn/01.html`): title "Slides, sirens and your range · Find
-   Your Pitch, Lesson 7 | MercuryPitch"; meta description "How many notes can your voice reach, and
-   why is the comfortable middle worth more than the extremes? A sixteen-minute lesson with live
+   Your Pitch, Lesson 7 | MercuryPitch"; meta description "Why is your comfortable middle worth
+   more than your highest note? A sixteen-minute lesson with live
    sound toys: gentle sirens, lip trills and "ng", your comfortable middle, and voice types as
    labels. With the Season 1 map."; canonical and `og:url` `https://mercurypitch.com/learn/07`;
    `og:image` `public/learn/lesson-07-og.jpg`, 1200 x 630, a still of the hero's siren on the

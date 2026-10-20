@@ -279,6 +279,7 @@ Light, the app's intro, steps aside on a first visit, and the card has no line a
 
 **Next lesson** (a card that opens Lesson 5 in the explorer): Lesson 5, Breath and a steady note.
 "Singers are told to 'support' a long note. If that doesn't mean pushing, what keeps it steady?"
+One line above it, the tease: "One long note, sung easily, then with a harder push."
 
 ## Footer
 
