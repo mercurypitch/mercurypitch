@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CHEER_MS, HOP_MS } from '@/components/room-kit/merc-moves'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
 import type { PathMotion } from './path-motion'
-import { ACTIONS_MS, createPathMotion, DRAW_IN_MS, drawInSchedule, END_SONG_MS, END_STEP_MS, HOP_AT_MS, LAND_AT_MS, LIGHT_MS, MERC_FADE_MS, PACK_AFTER_HOP_MS, PACK_MS, TRAIL_MS, } from './path-motion'
+import { ACTIONS_MS, createPathMotion, DRAW_IN_MS, drawInSchedule, END_SONG_MS, END_STEP_MS, HOP_AT_MS, HOP_EASE, HOP_PACES, LAND_AT_MS, LIGHT_MS, MERC_FADE_MS, PACK_AFTER_HOP_MS, PACK_MS, TRAIL_MS, } from './path-motion'
 import type { PathView } from './path-view'
 import { pathView } from './path-view'
 import type { WarmUpDay } from './routine'
@@ -126,6 +126,7 @@ describe('back from a stop', () => {
       true,
       'hop',
     ])
+    expect(current!.motion.hopPace()).toBe('between')
     vi.advanceTimersByTime(HOP_MS)
     expect([current!.motion.hopping(), current!.motion.mercState()]).toEqual([
       false,
@@ -258,6 +259,7 @@ describe('the end', () => {
     current = rig(ended(), { index: 3, state: 'done' })
     vi.advanceTimersByTime(SONG_AT)
     expect(current.motion.hopping()).toBe(true)
+    expect(current.motion.hopPace()).toBe('end')
     expect(current.motion.pack()).toBe('unpacked')
     vi.advanceTimersByTime(PACK_AFTER_HOP_MS)
     expect(current.motion.pack()).toBe('packing')
@@ -404,6 +406,7 @@ describe("the onboarding's landing (S7b beat 10)", () => {
     vi.advanceTimersByTime(1)
     expect(current.motion.merc()).toEqual(BESIDE_FIRST)
     expect(current.motion.hopping()).toBe(true)
+    expect(current.motion.hopPace()).toBe('land')
     expect(current.motion.mercState()).toBe('hop')
     vi.advanceTimersByTime(HOP_MS)
     expect(current.motion.hopping()).toBe(false)
@@ -462,5 +465,52 @@ describe("the onboarding's landing (S7b beat 10)", () => {
     vi.advanceTimersByTime(5000)
 
     expect(current.motion.merc()).toEqual({ at: 'floor' })
+  })
+})
+
+/** A CSS cubic-bezier's progress at a share `t` of its time. */
+function eased(ease: string, t: number): number {
+  const [x1, y1, x2, y2] = (/cubic-bezier\(([^)]+)\)/u.exec(ease)?.[1] ?? '')
+    .split(',')
+    .map(Number)
+  const at = (s: number, a: number, b: number): number =>
+    3 * (1 - s) ** 2 * s * a + 3 * (1 - s) * s * s * b + s ** 3
+  let lo = 0
+  let hi = 1
+  for (let i = 0; i < 60; i += 1) {
+    const mid = (lo + hi) / 2
+    if (at(mid, x1, x2) < t) lo = mid
+    else hi = mid
+  }
+  return at((lo + hi) / 2, y1, y2)
+}
+
+describe("the hops' paces", () => {
+  it('between stops he rises first: most of the way up by mid-hop, then across', () => {
+    const { across, up } = HOP_PACES.between
+    for (const t of [0.3, 0.4, 0.5, 0.6]) {
+      expect(eased(up, t) - eased(across, t)).toBeGreaterThan(0.15)
+    }
+    expect(eased(up, 0.5)).toBeGreaterThan(0.85)
+    expect(eased(across, 0.5)).toBeLessThan(0.65)
+    // Never straight up: the next stop's name is over him as he leaves.
+    expect(eased(across, 0.1)).toBeGreaterThanOrEqual(eased(up, 0.1))
+  })
+
+  it('the end goes across first', () => {
+    const { across, up } = HOP_PACES.end
+    for (const t of [0.2, 0.3, 0.4, 0.5]) {
+      expect(eased(across, t) - eased(up, t)).toBeGreaterThan(0.3)
+    }
+  })
+
+  it('the landing drops first: at his new height by the top of his jump', () => {
+    const { across, up } = HOP_PACES.land
+    expect(across).toBe(HOP_EASE)
+    // His jump peaks 0.44 to 0.5 of the way through the hop.
+    expect(eased(up, 0.44)).toBeGreaterThan(0.9)
+    for (const t of [0.2, 0.3, 0.44]) {
+      expect(eased(up, t) - eased(HOP_EASE, t)).toBeGreaterThan(0.2)
+    }
   })
 })

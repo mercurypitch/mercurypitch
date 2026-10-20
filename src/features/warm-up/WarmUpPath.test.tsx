@@ -18,10 +18,11 @@ import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN,
 import { haptics } from '@/lib/haptics'
 import type { UnlockItem } from '@/stores/notifications-store'
 import { onUnlockShown, resetNotifications, setNotificationPresenter, showNotification, } from '@/stores/notifications-store'
+import { HOP_DRIFT_MS, hopDriftKeyframes } from './hop-drift'
 import { askPathLanding, resetPathLandingForTests } from './path-landing'
 import type { PathMode } from './path-layout'
 import { columnX, columnY, pathFrame, segmentD, stopPlaces, } from './path-layout'
-import { ACTIONS_MS, DRAW_IN_MS, END_HOP_ACROSS_EASE, END_SONG_MS, END_STEP_MS, HOP_AT_MS, HOP_EASE, LIGHT_MS, PACK_AFTER_HOP_MS, PACK_MS, } from './path-motion'
+import { ACTIONS_MS, BETWEEN_HOP_ACROSS_EASE, DRAW_IN_MS, END_HOP_ACROSS_EASE, END_SONG_MS, END_STEP_MS, HOP_AT_MS, HOP_EASE, LIGHT_MS, PACK_AFTER_HOP_MS, PACK_MS, } from './path-motion'
 import { pinnedSource } from './path-source'
 import { freshDay } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
@@ -35,9 +36,11 @@ vi.mock('@/lib/haptics', () => ({
 
 vi.mock('@/components/room-kit/MercView', () => ({
   MERC_FEET: 0.81,
+  // His view with the canvas his stage draws in (hop-drift.ts slides it).
   MercView: () => {
     const merc = document.createElement('div')
     merc.dataset.testid = 'warm-up-merc'
+    merc.append(document.createElement('canvas'))
     return merc
   },
 }))
@@ -254,7 +257,7 @@ describe("the onboarding's landing (S7b beat 10)", () => {
     vi.advanceTimersByTime(DRAW_IN_MS)
 
     expect(drawing()).toBeNull()
-    expect(track.style.transition).toContain(`${HOP_MS}ms`)
+    expect(track.style.transition).toContain(`${HOP_MS}ms ${HOP_EASE}`)
     expect(track.style.transform).not.toBe(onFloor)
     vi.advanceTimersByTime(HOP_MS)
     expect(track.style.transition).toBe('none')
@@ -288,15 +291,35 @@ describe('back from a stop', () => {
     expect(haptics.success).not.toHaveBeenCalled()
   })
 
-  it('Merc hops beside the next stop straight across and up, then stands', () => {
+  it('Merc hops beside the next stop at the between pace, then stands', () => {
     mount()
     const track = screen.getByTestId('warm-up-merc-track')
     expect(track.style.transition).toBe('none')
     vi.advanceTimersByTime(HOP_AT_MS)
     expect(track.style.transition).toContain(`${HOP_MS}ms`)
-    expect(track.style.transition).toContain(HOP_EASE)
+    expect(track.style.transition).toContain(BETWEEN_HOP_ACROSS_EASE)
     vi.advanceTimersByTime(HOP_MS)
     expect(track.style.transition).toBe('none')
+  })
+
+  it("Merc's canvas slides against his hop's own drift, from the hop", () => {
+    const animate = vi.fn(() => ({ cancel: vi.fn() }) as unknown as Animation)
+    HTMLCanvasElement.prototype.animate = animate
+    try {
+      mount()
+      vi.advanceTimersByTime(HOP_AT_MS - 1)
+      expect(animate).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(1)
+      expect(animate).toHaveBeenCalledTimes(1)
+      expect(animate).toHaveBeenCalledWith(hopDriftKeyframes(), {
+        duration: HOP_DRIFT_MS,
+        easing: 'linear',
+      })
+      const canvas = animate.mock.contexts[0] as HTMLCanvasElement
+      expect(canvas.parentElement?.dataset.testid).toBe('warm-up-merc')
+    } finally {
+      delete (HTMLCanvasElement.prototype as Partial<HTMLCanvasElement>).animate
+    }
   })
 
   it('the finished stop crossfades from next to done', () => {
