@@ -7,10 +7,10 @@
 // down, then, if the viewer likes, lip trills, a hum or a soft "oo". Merc
 // shows the shape in the chosen voice: the sigh glides down a fifth to the
 // voice's A (E4 to A3, or E5 to A4), the slide goes up to that E and back.
-// The page says "Follow the shape, not Merc's notes": E4 is the top of the
-// app's bass preset. Nothing listens and nothing is scored (REQ-GVC-074,
-// REQ-GVC-075). Promoted from Lesson 3's checkpoint, which plays it
-// unchanged.
+// The page says "Copy the way Merc's voice slides, not the exact notes": E4
+// is the top of the app's bass preset. Nothing listens and nothing is scored
+// (REQ-GVC-074, REQ-GVC-075). Promoted from Lesson 3's checkpoint, which
+// plays it unchanged.
 
 import { hz } from './notes'
 import type { ContourPoint } from './sound'

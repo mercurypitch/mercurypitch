@@ -43,11 +43,11 @@ describe("Stretch's scale (FACTS 48)", () => {
 })
 
 describe("the folds' words", () => {
-  it('say the rate in cycles a second, and slowed 220 times (FACTS 22)', () => {
+  it('say the rate in swings a second, and slowed 220 times (FACTS 22)', () => {
     expect(stretchText(220)).toBe(
       '220 hertz, A3: the folds open and close 220 times a second',
     )
-    expect(foldsReadout(220, false)).toBe('220 Hz: 220 cycles a second')
+    expect(foldsReadout(220, false)).toBe('220 Hz: 220 swings a second')
     expect(foldsReadout(220, true)).toBe('slowed 220 times: 1 a second')
     expect(foldsReadout(440, true)).toBe('slowed 220 times: 2 a second')
   })

@@ -15,17 +15,17 @@ check links there. What the vocal coach signs off is listed at the end.
 ## Header
 
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 03
-- Title (the hook question): **Asked, most of 1,105 students said they couldn't copy a tune.
-  Tested, only about one in ten to one in six missed by a semitone or more. So what's going on?**
+- Title (the hook question): **In a survey, most of 1,105 students said they couldn't copy a tune.
+  In tests, only about one in ten to one in six missed by a semitone or more. So what's going on?**
 - Meta, as chips: 15 minutes · After Lesson 1: What is a note? (the prerequisite chip, a link to
-  Lesson 1's page) · Helps: Lesson 2, Twelve notes · Sound on · Microphone optional
+  Lesson 1's page) · Also useful: Lesson 2, Twelve notes · Sound on · Microphone optional
 - Promise: By the end you'll know how your voice makes a note, how to look after it and what "in
   tune" means, and you can sing three notes back to Merc.
 
 ## Sound gate
 
 > This lesson is about your own voice. Tap to turn the sound on: nothing plays until you press
-> play. The microphone is asked for only if you choose to sing.
+> play. We ask for the microphone only if you choose to sing.
 
 ## Recall from Lesson 2
 
@@ -64,12 +64,12 @@ semitone below it.)
 
 **Predict before you see the result.** In one test, 39 students who said they couldn't copy a note
 sang short tunes back. How many sang a semitone or more off?
-[ Most of them ] [ About as few as in any group ]
+[ Most of them ] [ About as few as anyone else ]
 
 Reveal (shown after a choice), three cards:
 
-1. **Saying it didn't predict it.** Only four of them sang a semitone or more off. Of the 40 who
-   weren't screened, six did.
+1. **Saying so didn't predict how they sang.** Only four of them sang a semitone or more off. Of 40
+   others, not picked for saying so, six did.
 2. **For most, the ears were fine.** Most of those who sang off heard small changes in pitch as
    well as the accurate singers did. The hard part was turning a heard note into a sung one: the
    link between ear and voice.
@@ -77,15 +77,15 @@ Reveal (shown after a choice), three cards:
    properly names, affects about 1.5 % of people.
 
 Then the answer: most people who say they can't sing still land within a semitone, and when a note
-does come out off, it's usually the link, not the ears. (The 59 % answered a questionnaire; in
-the tests, 10 of 79 and 7 of 45 sang off. If you chose "most of them", that's what "I can't sing"
+does come out off, it's usually the link, not the ears. (The 59 % answered a questionnaire. In the
+tests, 10 of 79 and 7 of 45 sang off. If you chose "most of them", you went with what "I can't sing"
 suggests.)
 
 ## Three words you'll meet
 
 - **Vocal folds**: two folds of tissue in your voice box that vibrate to make your voice. [Play:
   Merc's "ooh"]
-- **Cent**: a hundredth of an equal semitone, the unit MercuryPitch measures in. [Play: a slow
+- **Cent**: the unit MercuryPitch measures in. In its tuning, a semitone is 100 cents. [Play: a slow
   glide of 100 cents]
 - **Target band**: the strip around a note that counts as landing on it. [Show: the band lights]
 
@@ -99,7 +99,7 @@ string tuned up.
 
 **Try:** turn on slow motion, then drag Stretch from slack to tight.
 **Notice:** slowed 220 times, the folds at A3 open and close once a second; stretched, they speed
-up. When you sing, don't think about your folds: aim at the sound.
+up. When you sing, don't think about your folds: aim for the note you hear.
 
 _Toy: the vocal folds, seen from above, with Stretch and slow motion._
 
@@ -129,11 +129,11 @@ musicians and non-musicians alike matched notes more accurately with a slider th
 voices.
 
 **Try:** play Merc's note, drag the slider until your note sounds the same, then press Compare.
-**Notice:** Compare shows which way to go and how far, in cents. For your voice, the pitch line
-does that.
+**Notice:** Compare shows which way to go and how far, in cents. When you sing, your pitch line on
+screen shows you that.
 
 > **Common mix-up:** "Some people are just tone deaf."
-> **Why it seems right:** the words blame the ear.
+> **Why it seems right:** the word "deaf" puts the blame on the ears.
 > **The evidence:** most people who sing off hear pitch changes as well as accurate singers do.
 > **The better idea:** singing in tune is a skill, the link between hearing a note and making it,
 > and it can get better with practice.
@@ -156,11 +156,12 @@ _Toy: Match it by ear, a slider note against Merc's note, with Compare._
 Reveal: It counts: the same letter, twice as fast, one turn up the spiral (Lesson 1). Voice Mirror
 counts it too. (It does sound higher: that's what makes it tricky.)
 
-Smaller folds vibrate faster, so children's voices sit highest, then most women's, then most
-men's: two people singing one tune are often an octave apart. The researchers counted octave
-matches too.
+From one person to the next, smaller folds vibrate faster. So children's voices sit highest, then
+most women's, then most men's: two people singing one tune are often an octave apart. The
+researchers counted octave matches too.
 
-**Try:** play both, then tap the A nearer your voice. You'll sing with that Merc at the end.
+**Try:** play both, then tap the A that feels easier to hum along with. You'll sing with that Merc
+at the end.
 **Notice:** either choice works: the same notes, an octave apart.
 
 _Toy: two bands an octave apart, A3 and A4, with the predict and the voice choice._
@@ -169,8 +170,8 @@ _Toy: two bands an octave apart, A3 and A4, with the predict and the voice choic
 
 Even the accurate singers in the study's second test sat about 30 cents from the target, on
 average. So "in tune" can't mean one exact line: it's a band around the note. On this page, as in
-Voice Mirror, the band reaches 35 cents either side, about a third of a semitone. A semitone off,
-the study's line, is 100 cents: nearly three times as far as the band's edge.
+Voice Mirror, the band reaches 35 cents either side, about a third of a semitone. The study's
+cut-off, a semitone off, is 100 cents: nearly three times as far as the band's edge.
 
 **Try:** press Play to watch a line chase the band, then drag the line yourself.
 **Notice:** inside the band, the readout says "in the band". Past 50 cents the nearest note changes
@@ -180,7 +181,7 @@ _Toy: the band chart, Merc's amber band and a violet line, with Play and drag._
 
 ## Sing it: three notes
 
-Your turn: Merc sings a note, then you sing it back, three notes, slowly, with the Merc you chose.
+Your turn: three notes, slowly, with the Merc you chose. Merc sings each one, then you sing it back.
 Slow helps: in one study, most occasional singers sang a well-known song as accurately as
 professionals once they slowed down.
 
@@ -198,18 +199,18 @@ away."
 
 **Warm-up, optional, about a minute.** Three sighs: a quiet "hoo" sliding down, like a relieved
 sigh. Then, if you like, lip trills ("brrr", lips loose, up a little and back), or hum, or sing a
-soft "oo". Follow the shape, not Merc's notes. Nothing listens. Stop immediately if anything feels
-uncomfortable. [Play Merc's sigh] [Play the slide] [ Skip ]
+soft "oo". Copy the way Merc's voice slides, not the exact notes. Nothing listens. Stop immediately
+if anything feels uncomfortable. [Play Merc's sigh] [Play the slide] [ Skip ]
 
 > **What this does:** it measures how far your note sits from Merc's, in cents, in any octave. It
-> diagnoses nothing, and it isn't a test of whether you can sing. Your voice is analysed on this
-> device: nothing is recorded, kept or sent.
+> doesn't diagnose anything, and it isn't a test of whether you can sing. Your voice is analysed on
+> this device: nothing is recorded, kept or sent.
 
 [ Start ] (the browser asks for the microphone now)
 
-For each note, listen, then sing it back at about speaking volume for about three seconds: A,
-then G a tone below, then B a tone above, up to three tries each. After each try, one line about
-the sound:
+For each note, listen, then sing it back for about three seconds, at about speaking volume. The
+notes are A, then G a tone below, then B a tone above, with up to three tries each. After each try,
+one line about the sound:
 
 - "In the band: 20 cents above Merc's note."
 - "About two semitones below, nearer a different note. Listen again, then slide up to the band."
@@ -226,7 +227,8 @@ No microphone: "No microphone? Sing along anyway: Merc sings each note, and noth
 
 ## Quick check
 
-Each question has three answers, shown in a shuffled order, so a guess scores a third, not half.
+_[Editorial: each question has three answers, shown in a shuffled order, so a guess scores a third,
+not half.]_
 
 1. When you sing a higher note, what are your vocal folds doing?
    - Vibrating faster **[correct]** · Feedback: "Stretched longer and tighter, they vibrate
@@ -306,7 +308,8 @@ the coach reviews Lessons 3 and 5):
   35).
 - The warm-up: three sighs and the optional lip trill (or a hum, or a soft "oo"), about a minute,
   never scored. Merc demonstrates the sigh from E4 down to A3 (lower voice) or E5 down to A4
-  (higher), and the slide from A up to E and back; hence "Follow the shape, not Merc's notes".
+  (higher), and the slide from A up to E and back; hence "Copy the way Merc's voice slides, not the
+  exact notes".
 - The voice choice: "Lower: sing with blue Merc, around A3" or "Higher: sing with orange Merc,
   around A4".
 - The three notes, A, G and B around A3 or A4: Merc's two-second note, up to six seconds to start
@@ -320,3 +323,47 @@ the coach reviews Lessons 3 and 5):
 - The practise card's Voice Mirror note (two glides and a held note) and "Ten minutes, gently, most
   days".
 - The proposed Pitch Hold link: one 5-second hold in a 35-cent zone.
+
+### Changed in the plain-language review
+
+The review of October 2026 reworded these voice lines, for the coach to check. Each says the same
+thing as before, more plainly.
+
+- Step 1's Notice. Before: "When you sing, don't think about your folds: aim at the sound." After:
+  "When you sing, don't think about your folds: aim for the note you hear." Still a cue about the
+  sound, not the body (playbook rule 24).
+- Step 4. Before: "Smaller folds vibrate faster, so children's voices sit highest, then most
+  women's, then most men's: ..." After: "From one person to the next, smaller folds vibrate faster.
+  So children's voices sit highest, then most women's, then most men's: ...", so it no longer seems
+  to contradict Step 1's longer, tighter folds.
+- Step 4's Try. Before: "play both, then tap the A nearer your voice." After: "play both, then tap
+  the A that feels easier to hum along with."
+- Sing it, the task. Before: "Your turn: Merc sings a note, then you sing it back, three notes,
+  slowly, with the Merc you chose." After: "Your turn: three notes, slowly, with the Merc you chose.
+  Merc sings each one, then you sing it back."
+- The warm-up's cue, shared with Lessons 5 and 7. Before: "Follow the shape, not Merc's notes."
+  After: "Copy the way Merc's voice slides, not the exact notes." It uses no pronoun on purpose,
+  because in the higher voice the singer is orange Merc.
+- The checkpoint's instruction. Before: "For each note, listen, then sing it back at about speaking
+  volume for about three seconds: A, then G a tone below, then B a tone above, up to three tries
+  each." After: "For each note, listen, then sing it back for about three seconds, at about
+  speaking volume. The notes are A, then G a tone below, then B a tone above, with up to three
+  tries each."
+
+Also changed around the sung part, though they are not voice instructions: the sound gate's "The
+microphone is asked for only if you choose to sing." is now "We ask for the microphone only if you
+choose to sing."; "What this does" says "It doesn't diagnose anything", not "It diagnoses
+nothing"; and the listen-only status line drops "nothing listens", so it reads "Just listening
+today: the microphone stays off."
+
+### Proposed, not applied: the four answers to "How did that feel?"
+
+The review proposes [ Easy ] [ OK ] [ Hard work ] [ Uncomfortable ] in place of the current
+[ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable ]. "Workable" and "Effortful" are rare words for
+a teen, and the answer drives the safety flow ("Effortful" ends the retries), so a learner who
+guesses at a word can misreport how the singing felt. "Hard work" is the comfort check's own
+phrase. The four answers, their order and what each one does would stay the same. The page keeps
+the current labels until the coach decides, because they drive the safety flow. The app's Guided
+Voice Check uses the same four labels (`src/features/voice-history/GuidedVoiceCheck.tsx`,
+REQ-GVC-022), so the decision covers both, unless the lessons are to differ on purpose. Lesson 5
+uses the same four labels, and Lessons 6 and 7 plan to.

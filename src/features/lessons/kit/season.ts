@@ -205,7 +205,7 @@ export const LESSONS: readonly Lesson[] = [
     ...(DRAFT_LESSONS[3] !== undefined && !DRAFTS_SHOWN
       ? {}
       : { minutes: 15, page: '/learn/03' }),
-    hook: "Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six missed by a semitone or more. So what's going on?",
+    hook: "In a survey, most of 1,105 students said they couldn't copy a tune. In tests, only about one in ten to one in six missed by a semitone or more. So what's going on?",
     sig: "The singer's line chasing Merc's target band, the gap shrinking in cents.",
     pr: {
       needs: 'Pitch Hold (a slug)',

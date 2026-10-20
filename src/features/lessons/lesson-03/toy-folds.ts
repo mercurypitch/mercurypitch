@@ -48,11 +48,11 @@ export function stretchText(f: number): string {
   return `${n} hertz${name}: the folds open and close ${n} times a second`
 }
 
-/** The readout: "220 Hz: 220 cycles a second", or slowed, "slowed 220 times: 1 a second". */
+/** The readout: "220 Hz: 220 swings a second", or slowed, "slowed 220 times: 1 a second". */
 export function foldsReadout(f: number, slow: boolean): string {
   return slow
     ? `slowed 220 times: ${slowRate(f)} a second`
-    : `${fmtHz(f)}\u202fHz: ${Math.round(f)} cycles a second`
+    : `${fmtHz(f)}\u202fHz: ${Math.round(f)} swings a second`
 }
 
 export interface FoldsOptions {
