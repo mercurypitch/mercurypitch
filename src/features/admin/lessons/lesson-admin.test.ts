@@ -314,7 +314,7 @@ describe('releaseChecklist', () => {
       ['release-day', 'by-hand'],
     ])
     expect(steps.find((step) => step.id === 'release')?.detail).toBe(
-      `Waiting on ${DRAFT_LESSONS[3]}.`,
+      `Waiting on ${DRAFT_LESSONS[3]}. It can be published here before then.`,
     )
   })
 

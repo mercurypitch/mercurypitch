@@ -1,6 +1,7 @@
-/* The Lessons page, in the studio console's tokens: a table to scan, a card
-   per lesson to read. Read-only, so the one action color is the "Check
-   again" button; states color their icons and badges, never body text. */
+/* The Lessons page, in the studio console's tokens: a table to scan and
+   switch, a card per lesson to read and set. The one filled action is
+   Publish (lessons/LessonControls.module.css); states color their icons and
+   badges, never body text. */
 
 .page {
   min-width: 0;
@@ -73,7 +74,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  min-height: 34px;
+  min-height: 44px;
   padding: 7px 14px;
   border: 1px solid var(--border, #2a3446);
   border-radius: 10px;
@@ -87,7 +88,7 @@
     color 120ms ease;
 }
 
-.recheck:not(:disabled):hover {
+.recheck:not([aria-disabled='true']):hover {
   border-color: var(--accent, #f0a848);
   color: var(--accent, #f0a848);
 }
@@ -97,13 +98,35 @@
   outline-offset: 2px;
 }
 
-.recheck:disabled {
+.recheck[aria-disabled='true'] {
   opacity: 0.55;
   cursor: default;
 }
 
 .recheck svg {
   flex: none;
+}
+
+.problem {
+  color: var(--status-danger-fg, var(--danger, #f85149));
+}
+
+.keyNotice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  border: 1px solid
+    color-mix(in srgb, var(--status-danger-fg, #f85149) 45%, transparent);
+  border-radius: 12px;
+  background: var(--status-danger-bg, rgba(248, 81, 73, 0.12));
+}
+
+.keyNotice p {
+  margin: 0;
+  max-width: 70ch;
+  color: var(--text-primary, #f4f7fb);
 }
 
 /* ── Sections ───────────────────────────────────────────────────── */
@@ -147,7 +170,7 @@
 
 .table {
   width: 100%;
-  min-width: 780px;
+  min-width: 960px;
   border-collapse: collapse;
   font-size: 0.84rem;
   line-height: 1.4;
@@ -155,7 +178,7 @@
 
 .table th,
 .table td {
-  padding: 10px 14px;
+  padding: 10px 12px;
   text-align: left;
   vertical-align: top;
   border-bottom: 1px solid var(--border-subtle, #252c35);
@@ -187,6 +210,15 @@
 
 .table tbody th {
   font-weight: 400;
+}
+
+.publishCell {
+  min-width: 12.5rem;
+}
+
+/* Room for a draft's sign-off in drafts.ts's own words, which are long. */
+.buildCell {
+  min-width: 9.5rem;
 }
 
 .lessonLink {
@@ -227,18 +259,6 @@
   color: var(--text-primary, #f4f7fb);
 }
 
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  white-space: nowrap;
-  color: var(--text-primary, #f4f7fb);
-}
-
-.status[data-tone='none'] {
-  color: var(--text-secondary, #b9c4d4);
-}
-
 .sub {
   display: block;
   max-width: 34ch;
@@ -246,59 +266,6 @@
   font-size: 0.76rem;
   line-height: 1.4;
   color: var(--text-secondary, #b9c4d4);
-}
-
-/* ── State icons ────────────────────────────────────────────────── */
-
-.icon {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  color: var(--text-muted, #7d8a9c);
-}
-
-.icon:empty {
-  display: none;
-}
-
-.icon svg {
-  width: 14px;
-  height: 14px;
-}
-
-.icon[data-tone='done'] {
-  color: var(--success, #3fb950);
-}
-
-.icon[data-tone='todo'] {
-  color: var(--warning, #e0b341);
-}
-
-.icon[data-tone='by-hand'] {
-  color: var(--accent-text, var(--accent, #f0a848));
-}
-
-.icon[data-tone='problem'] {
-  color: var(--danger, #f85149);
-}
-
-.icon[data-tone='unknown'],
-.icon[data-tone='checking'] {
-  color: var(--text-muted, #7d8a9c);
-}
-
-.ring {
-  width: 11px;
-  height: 11px;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-}
-
-.icon[data-tone='checking'] .ring {
-  border-style: dashed;
 }
 
 /* ── Lesson cards ───────────────────────────────────────────────── */
@@ -361,6 +328,11 @@
   font-size: 0.74rem;
 }
 
+.cardState {
+  color: var(--text-primary, #f4f7fb);
+  font-weight: 600;
+}
+
 .chevron {
   display: inline-flex;
   color: var(--text-muted, #7d8a9c);
@@ -377,6 +349,15 @@
   gap: 20px 32px;
   padding: 16px 16px 18px;
   border-top: 1px solid var(--border-subtle, #252c35);
+}
+
+/* The card's switches and wording, side by side above its facts. */
+.controls {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  align-items: start;
+  gap: 14px;
 }
 
 .facts {
@@ -470,7 +451,7 @@
   line-height: 1.45;
 }
 
-.step .icon {
+.stepIcon {
   margin-top: 2px;
 }
 
@@ -498,7 +479,8 @@
 }
 
 @container (max-width: 820px) {
-  .cardBody {
+  .cardBody,
+  .controls {
     grid-template-columns: minmax(0, 1fr);
   }
 }

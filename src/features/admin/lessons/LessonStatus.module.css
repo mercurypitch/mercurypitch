@@ -1,0 +1,64 @@
+/* A state mark: the icon colours what the words beside it already say. */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  color: var(--text-primary, #f4f7fb);
+}
+
+.status[data-tone='none'] {
+  color: var(--text-secondary, #b9c4d4);
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted, #7d8a9c);
+}
+
+.icon:empty {
+  display: none;
+}
+
+.icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.icon[data-tone='done'] {
+  color: var(--status-success-fg, var(--success, #3fb950));
+}
+
+.icon[data-tone='todo'] {
+  color: var(--status-warning-fg, var(--warning, #e0b341));
+}
+
+.icon[data-tone='by-hand'] {
+  color: var(--accent-text, var(--accent, #f0a848));
+}
+
+.icon[data-tone='problem'] {
+  color: var(--status-danger-fg, var(--danger, #f85149));
+}
+
+.icon[data-tone='unknown'],
+.icon[data-tone='checking'] {
+  color: var(--text-muted, #7d8a9c);
+}
+
+.ring {
+  width: 11px;
+  height: 11px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.icon[data-tone='checking'] .ring {
+  border-style: dashed;
+}

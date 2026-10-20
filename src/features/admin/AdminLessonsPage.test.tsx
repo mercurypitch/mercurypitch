@@ -2,11 +2,13 @@
 // The Content Studio's Lessons page — the season as it really stands
 // ============================================================
 //
-// The page is read-only, so its whole worth is being right: one row per
-// Season 1 lesson, a draft that says what it waits on in drafts.ts's own
-// words, and a live column that is what the site answered, not what the
-// build expects. The site is the one thing stubbed, at `fetch`; the rows
-// are the season's real data (drafts shown, as on the dev site).
+// The page's read side, whose whole worth is being right: one row per
+// Season 1 lesson, its state on this site and why, a draft that says what
+// it waits on in drafts.ts's own words, and a live column that is what the
+// site answered, not what the build expects. The site and the lesson-state
+// API are the things stubbed, at `fetch`; the rows are the season's real
+// data (drafts shown, as on the dev site). Saving is
+// AdminLessonsPage.publish.test.tsx.
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -14,11 +16,12 @@ import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import { LESSONS, TOPICS } from '@/features/lessons/kit/season'
 import { AdminLessonsPage } from './AdminLessonsPage'
 import { BEAT_SHEET, FILES, planFileUrl } from './lessons/blueprint-data'
+import { lessonRows } from './lessons/lesson-admin'
+import { card, cellOf, column, openCard, seasonRows, settled, } from './lessons/lesson-page.test-fixtures'
+import type { SiteAnswer } from './lessons/lesson-site.test-fixtures'
+import { ADMIN_KEY, fakeLessonApi, logged, sitePathsAsked, stubLessonSite, } from './lessons/lesson-site.test-fixtures'
 
-/** How the stubbed site answers a path: a response, or a failed request. */
-type Answer = { status: number; body?: string; type?: string } | 'offline'
-
-const SITEMAP: Answer = {
+const SITEMAP: SiteAnswer = {
   status: 200,
   type: 'application/xml',
   body: `<urlset>
@@ -28,48 +31,6 @@ const SITEMAP: Answer = {
   </urlset>`,
 }
 
-/** Stub the site the page is served from; a path it does not know is a 404. */
-function stubSite(answers: Record<string, Answer>) {
-  const fetchMock = vi.fn(
-    async (input: RequestInfo | URL, init?: RequestInit) => {
-      const answer = answers[String(input)] ?? { status: 404 }
-      if (answer === 'offline') throw new TypeError('Failed to fetch')
-      return new Response(
-        init?.method === 'HEAD' ? null : (answer.body ?? ''),
-        {
-          status: answer.status,
-          headers: { 'content-type': answer.type ?? 'text/plain' },
-        },
-      )
-    },
-  )
-  vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
-}
-
-function seasonRows(): HTMLElement[] {
-  const table = screen.getByRole('table', { name: /^Season 1/ })
-  const [, body] = within(table).getAllByRole('rowgroup')
-  return within(body).getAllByRole('row')
-}
-
-/** One column's text down the whole season: 0 is "In this build", 1 "On this site", then Sitemap, llms.txt and Film. */
-function column(index: number): string[] {
-  return seasonRows().map(
-    (row) => within(row).getAllByRole('cell')[index].textContent ?? '',
-  )
-}
-
-function card(n: number): HTMLElement {
-  const cards = screen.getByRole('region', { name: 'Lesson by lesson' })
-  return within(cards).getAllByRole('group')[n]
-}
-
-const settled = () =>
-  waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Check again' })).toBeEnabled()
-  })
-
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
@@ -77,8 +38,8 @@ afterEach(() => {
 
 describe('AdminLessonsPage', () => {
   it('draws one row for each Season 1 lesson, the trailer first', async () => {
-    stubSite({})
-    render(() => <AdminLessonsPage />)
+    stubLessonSite({})
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
 
     const rows = seasonRows()
@@ -92,14 +53,14 @@ describe('AdminLessonsPage', () => {
   })
 
   it("shows each draft row what it waits on, in drafts.ts's own words, and no other row", async () => {
-    stubSite({})
-    render(() => <AdminLessonsPage />)
+    stubLessonSite({})
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
 
     const drafts = Object.keys(DRAFT_LESSONS).map(Number)
     expect(drafts.length).toBeGreaterThan(0)
     seasonRows().forEach((row, n) => {
-      const built = within(row).getAllByRole('cell')[0]
+      const built = within(row).getAllByRole('cell')[1]
       if (drafts.includes(n)) {
         expect(built).toHaveTextContent(/^Draft/)
         expect(built).toHaveTextContent(`Waits on ${DRAFT_LESSONS[n]}`)
@@ -110,7 +71,7 @@ describe('AdminLessonsPage', () => {
   })
 
   it('fills the live column from what the site answers, asking only for the lessons with a page', async () => {
-    const fetchMock = stubSite({
+    const fetchMock = stubLessonSite({
       '/learn/01': { status: 200 },
       '/learn/02': { status: 200 },
       '/learn/03': { status: 404 },
@@ -119,10 +80,10 @@ describe('AdminLessonsPage', () => {
       '/sitemap.xml': SITEMAP,
       '/llms.txt': { status: 404 },
     })
-    render(() => <AdminLessonsPage />)
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
 
-    expect(column(1)).toEqual([
+    expect(column(2)).toEqual([
       'No page',
       '200 Public',
       '200 Public',
@@ -131,16 +92,14 @@ describe('AdminLessonsPage', () => {
       'Unreachable',
       ...Array<string>(9).fill('No page yet'),
     ])
-    expect(column(2)).toEqual([
+    expect(column(3)).toEqual([
       'Not listed',
       'Listed',
       'Listed',
       ...Array<string>(12).fill('Not listed'),
     ])
-    expect(column(3)).toEqual(Array<string>(15).fill('Could not read'))
-    expect(
-      [...new Set(fetchMock.mock.calls.map(([input]) => String(input)))].sort(),
-    ).toEqual([
+    expect(column(4)).toEqual(Array<string>(15).fill('Could not read'))
+    expect(sitePathsAsked(fetchMock)).toEqual([
       '/learn/01',
       '/learn/02',
       '/learn/03',
@@ -152,22 +111,24 @@ describe('AdminLessonsPage', () => {
   })
 
   it('asks the site again on "Check again", and shows what it answers now', async () => {
-    const answers: Record<string, Answer> = { '/learn/03': { status: 404 } }
-    stubSite(answers)
-    render(() => <AdminLessonsPage />)
+    const answers: Record<string, SiteAnswer> = {
+      '/learn/03': { status: 404 },
+    }
+    stubLessonSite(answers)
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
-    expect(column(1)[3]).toBe('404 Not found')
+    expect(column(2)[3]).toBe('404 Not found')
 
     answers['/learn/03'] = { status: 200 }
     fireEvent.click(screen.getByRole('button', { name: 'Check again' }))
     await settled()
 
-    expect(column(1)[3]).toBe('200 Public')
+    expect(column(2)[3]).toBe('200 Public')
   })
 
   it("opens a lesson's card from its row, with the release steps it still needs", async () => {
-    stubSite({ '/learn/03': { status: 200 } })
-    render(() => <AdminLessonsPage />)
+    stubLessonSite({ '/learn/03': { status: 200 } })
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
     expect(card(3)).not.toHaveAttribute('open')
 
@@ -180,14 +141,14 @@ describe('AdminLessonsPage', () => {
       .getAllByRole('listitem')
       .map((item) => item.textContent)
     expect(steps).toContain(
-      `To do: Its line is deleted from src/features/lessons/kit/drafts.tsWaiting on ${DRAFT_LESSONS[3]}.`,
+      `To do: Its line is deleted from src/features/lessons/kit/drafts.tsWaiting on ${DRAFT_LESSONS[3]}. It can be published here before then.`,
     )
     expect(steps).toContain('Done: /learn/03 answers 200 on this site')
   })
 
   it("keeps each lesson's team fields: what its drill still needs, its Signature and its topic codes", async () => {
-    stubSite({})
-    render(() => <AdminLessonsPage />)
+    stubLessonSite({})
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
 
     const lesson = LESSONS[2]
@@ -202,8 +163,8 @@ describe('AdminLessonsPage', () => {
   })
 
   it('holds the series blueprint, with every plan file linked on main', async () => {
-    stubSite({})
-    render(() => <AdminLessonsPage />)
+    stubLessonSite({})
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
 
     expect(
@@ -218,5 +179,141 @@ describe('AdminLessonsPage', () => {
         planFileUrl(path),
       )
     }
+  })
+
+  it("says each lesson's state on this site and why: the code's default where nothing is set here", async () => {
+    stubLessonSite({})
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
+    await settled()
+
+    const draft = Number(Object.keys(DRAFT_LESSONS)[0])
+    const planned =
+      lessonRows().find((row) => row.path !== null && !row.written)?.lesson.n ??
+      -1
+    expect(cellOf(0, 0)).toHaveTextContent(
+      /^No pageA film, with no page of its own$/,
+    )
+    expect(cellOf(1, 0)).toHaveTextContent(
+      /^PublishedDefault: released in code/,
+    )
+    expect(cellOf(draft, 0)).toHaveTextContent(
+      /^PublishedDefault: this site shows drafts/,
+    )
+    expect(cellOf(planned, 0)).toHaveTextContent(
+      new RegExp(`^Publish Lesson ${planned}: No page yet$`),
+    )
+    expect(within(cellOf(0, 0)).queryAllByRole('button')).toEqual([])
+    expect(
+      within(cellOf(planned, 0)).getByRole('button', {
+        name: `Publish Lesson ${planned}: No page yet`,
+      }),
+    ).toBeDisabled()
+  })
+
+  it('draws a state set here as set here, with who set it and when, in the row and on the card', async () => {
+    stubLessonSite(
+      {},
+      fakeLessonApi({
+        lessons: { '1': { published: false } },
+        log: [
+          logged({ id: 1, lesson: 1, field: 'published', newValue: false }),
+        ],
+      }),
+    )
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
+    await settled()
+
+    await waitFor(() => {
+      expect(cellOf(1, 0)).toHaveTextContent(
+        /^UnpublishedSet here by owner@example, Oct 20, 2:02 PM/,
+      )
+    })
+    expect(
+      within(cellOf(1, 0)).getByRole('button', { name: 'Publish Lesson 1' }),
+    ).toBeEnabled()
+    expect(card(1).querySelector('summary')).toHaveTextContent(
+      /^Lesson 1.+UnpublishedReleased/,
+    )
+  })
+
+  it("shows a lesson's latest change on its card, and the few before it on request", async () => {
+    stubLessonSite(
+      {},
+      fakeLessonApi({
+        lessons: { '1': { published: false } },
+        log: [
+          logged({ id: 4, lesson: 1, field: 'published', newValue: false }),
+          logged({
+            id: 3,
+            lesson: 1,
+            field: 'published',
+            newValue: true,
+            changedBy: null,
+          }),
+          logged({ id: 2, lesson: 1, field: 'hook', newValue: 'figures' }),
+          logged({ id: 1, lesson: 1, field: 'tease', newValue: null }),
+          logged({ id: 5, lesson: 2, field: 'published', newValue: true }),
+        ],
+      }),
+    )
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
+    await settled()
+
+    const panel = within(openCard(1)).getByRole('region', {
+      name: 'On this site',
+    })
+    await waitFor(() => {
+      expect(within(panel).getByText(/^Unpublished by/)).toHaveTextContent(
+        'Unpublished by owner@example, Oct 20, 2:02 PM',
+      )
+    })
+    const earlier = within(panel).getByText('Earlier changes (3)')
+    expect(earlier).toHaveTextContent('Earlier changes to Lesson 1 (3)')
+    expect(
+      within(earlier.closest('details') ?? panel)
+        .getAllByRole('listitem', { hidden: true })
+        .map((item) => item.textContent?.replace(/\u00a0/g, ' ')),
+    ).toEqual([
+      'Published with the shared admin key, Oct 20, 2:02 PM',
+      'Hook set to “figures” by owner@example, Oct 20, 2:02 PM',
+      'Tease set back to the default by owner@example, Oct 20, 2:02 PM',
+    ])
+  })
+
+  it('says a lesson with no change made here is left to the code', async () => {
+    stubLessonSite({})
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
+    await settled()
+
+    const panel = within(openCard(2)).getByRole('region', {
+      name: 'On this site',
+    })
+
+    expect(
+      await within(panel).findByText(/^No change made here yet/),
+    ).toHaveTextContent('No change made here yet: the code decides all of it.')
+    expect(panel).toHaveTextContent(
+      'The default here is published: it is released in code.',
+    )
+  })
+
+  it('says when the lesson state cannot be read, and reads it again on request', async () => {
+    const api = fakeLessonApi({ lessons: { '1': { published: false } } })
+    api.failNextRead = 'offline'
+    stubLessonSite({}, api)
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
+
+    expect(
+      await screen.findByText(/^The lesson state could not be read/),
+    ).toHaveTextContent(
+      'The lesson state could not be read. The content API could not be reached.',
+    )
+    expect(cellOf(1, 0)).toHaveTextContent('Could not read')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Read it again' }))
+    await settled()
+
+    expect(cellOf(1, 0)).toHaveTextContent(/^Unpublished/)
+    expect(screen.queryByRole('button', { name: 'Read it again' })).toBeNull()
   })
 })
