@@ -99,7 +99,7 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
       {
         text: 'It sounds unfinished only if the scale started on C',
         feedback: signsHtml(
-          'The pull goes wherever home goes: start on D, and ti, C♯, leans up to D.',
+          'The pull goes wherever home goes: start on D, and ti is C♯, which leans up to D.',
         ),
       },
     ],

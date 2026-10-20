@@ -64,9 +64,9 @@ and stops, and Land on do finishes it. With sound off, the hint reads: "Sound is
 played. Turn sound on to hear it, then press Play from D." The reveal waits for the sound.)
 
 Reveal (shown after Play from D has played, so it describes what was heard): Still unfinished, and
-Land on do finishes it on D. Home moved with the start: it's the steps that matter, not the note C,
-and the steps are this lesson's story. (The scale you heard first started on C, so C was a fair
-guess.)
+landing on do finishes it, this time on D. Home moved with the start: it's the steps that matter,
+not the note C, and the steps are this lesson's story. (The scale you heard first started on C, so C
+was a fair guess.)
 
 ## Four words you'll meet
 
@@ -121,8 +121,8 @@ called D major: a major scale is named after its first note.
 
 > **Common mix-up:** "A scale is a fixed set of notes, and it starts on C."
 > **Why it seems right:** the major scale on C is the only one you can play on the white keys
-> alone, so it's the one a keyboard shows most plainly. And in one system of names, fixed do, do
-> is always C.
+> alone, so it's the one a keyboard shows most plainly. And in one naming system, called fixed do,
+> the note do is always C.
 > **The evidence:** play the white keys from D to D. The steps come out in a different order, and
 > it isn't do-re-mi.
 > **The better idea:** a major scale is a pattern of steps, not a set of keys. Start the pattern on
@@ -137,11 +137,11 @@ _Toy: the staircase with Slide and White keys only._
 ## Step 4 of 5: Name the stairs
 
 The first note of a scale is its tonic, its home. Musicians number the notes up from it, 1 to 7,
-and sing them as do, re, mi, fa, so, la, ti, with do again at the top. (Many books write so as
-sol, and so does MercuryPitch's Ear Lab.) The names belong to the places in the scale, not to the
-keys. In C major, do is C. Slide to D and do is D, re is E, mi is F♯. That's movable do: home
-moves, and the names move with it. There's also a fixed do, in which do is always C; this lesson
-uses movable do.
+and sing them as do, re, mi, fa, so, la, ti, with do again at the top. (Many books, and
+MercuryPitch's Ear Lab, write so as sol.) The names belong to the places in the scale, not to the
+keys. In C major, do is C. Slide to D and do is D, re is E, mi is F♯. That's movable do: home moves,
+and the names move with it. There's also a fixed do, in which do is always C; this lesson uses
+movable do.
 
 **Try:** switch the names between letters, numbers and do-re-mi, then slide the staircase.
 **Notice:** the letters change as you slide. The numbers and the do-re-mi stay on their stairs.
@@ -152,11 +152,12 @@ _Toy: the staircase with the names switch._
 
 Back to the opening question. Ti is the seventh note, and it sits just a semitone below do: the
 pattern's last step is a short one. Climb to ti and stop, and most listeners hear the scale waiting
-for one more note. Take that step, and it lands home. Why is do home? Asked how well each note
-finishes a scale, listeners rate do highest, and that seems to be learned just by hearing music
-(Go deeper, below). And whatever the start, ti sits just under home. It's called the leading note
-(American books, and MercuryPitch's Ear Lab, say leading tone), because it's thought of as leading
-to the tonic. It leads wherever home is: from D, ti is C♯, and it leans up to D.
+for one more note. Take that step, and it lands home. Why is do home? When listeners are asked how
+well each note finishes a scale, they rate do highest. That sense of home seems to be learned just
+by hearing music (Go deeper, below). And whatever the start, ti sits just under home. It's called
+the leading note (American books, and MercuryPitch's Ear Lab, say leading tone), because it's
+thought of as leading to the tonic. It leads wherever home is: from D, ti is C♯, and it leans up to
+D.
 
 **Try:** press Stop on ti, wait a moment, then press Land on do. Slide the staircase and try again.
 **Notice:** the last step is always a semitone, so ti always sits right under home.
@@ -171,7 +172,7 @@ _Toy: the staircase with Stop on ti and Land on do._
 >   with musical training; for the others, how close a note sat in pitch counted for more
 >   (Krumhansl and Shepard, 1979).
 > - **Learned by listening.** Later studies found the same kind of order in children and adults,
->   with and without training, only sharper in musicians and in adults, which suggests it is
+>   with and without training. It was only sharper in musicians and in adults, which suggests it is
 >   picked up just by hearing music (Janata and colleagues, 2003, summing up those studies). A
 >   review of studies on tension and release, expectation and more came to the same view: some of
 >   these responses come from listening, not from lessons (Bigand and Poulin-Charronnat, 2006).
@@ -180,16 +181,16 @@ _Toy: the staircase with Stop on ti and Land on do._
 
 ## Sing it
 
-Merc sings do-re-mi-fa-so and back down to do. Then Merc climbs to ti, stops, and after a pause
+Blue Merc sings do-re-mi-fa-so and back down to do. Then Merc climbs to ti, stops, and after a pause
 lands on do. Orange Merc sings the same an octave up.
 
 > Sore, hoarse or unwell today? Just listen along.
 
-**Your turn:** play Merc's scale, then sing it with the guide, on do, re, mi or on "ooh". Start on
-Merc's note or the one an octave up, whichever is comfortable: an octave up or down still counts.
-If the top feels high, move do lower; if the bottom feels low, move it higher. Sing at about
-speaking volume. When you stop on ti, wait a moment and notice where it wants to go. Then land on
-do.
+**Your turn:** play Merc's scale, then sing it with the guide, on the names do, re, mi or on "ooh".
+Start on Merc's note or the one an octave up, whichever is comfortable: an octave up or down is just
+as right. If the top feels high, move do, your starting note, lower; if the bottom feels low, move
+it higher. Sing at about speaking volume. When you stop on ti, wait a moment and notice where it
+wants to go. Then land on do.
 
 Stop immediately if anything feels uncomfortable.
 
@@ -199,14 +200,15 @@ Start the guide once you've heard Merc's scale: it counts you in on do, then a l
 Merc's path, up to so and back, then up to ti, a pause, and home. Nothing listens here and nothing
 is scored. It's just for you.
 
-If hoarseness or discomfort lasts more than a couple of weeks, see a doctor or a voice
-specialist.
+If hoarseness or discomfort lasts more than a couple of weeks, see a doctor (a GP or an ear, nose
+and throat specialist). If it's very painful, or breathing or swallowing is hard, get help straight
+away.
 
 ## Quick check
 
-Four questions, each with three answers shown in a shuffled order, so a guess scores a third, not
-half. The page puts "Right." or "Not quite." before each feedback line, and a "Try Step N again"
-ends with a link to that step, as in Lessons 1 and 2.
+_[Editorial: four questions, each with three answers shown in a shuffled order, so a guess scores a
+third, not half. The page puts "Right." or "Not quite." before each feedback line, and a "Try Step N
+again" ends with a link to that step, as in Lessons 1 and 2.]_
 
 1. Which pattern of steps makes a major scale?
    - Tone, tone, semitone, tone, tone, tone, semitone **[correct]** · Feedback: "Two
@@ -229,7 +231,7 @@ ends with a link to that step, as in Lessons 1 and 2.
    - It sounds finished: ti is the top of the scale · Feedback: "Ti is the seventh note, not the
      end. The scale lands home on do, an octave above where it started."
    - It sounds unfinished only if the scale started on C · Feedback: "The pull goes wherever home
-     goes: start on D, and ti, C♯, leans up to D."
+     goes: start on D, and ti is C♯, which leans up to D."
 4. In D major, which note is mi?
    - F♯ **[correct]** · Feedback: "Do is D, re is E, mi is F♯. The names move with home."
    - E · Feedback: "E is re, the second note. Count up from do: D, E, F♯."
@@ -253,13 +255,11 @@ don't sound like do-re-mi.
 - Title: Scale Runner
 - Text: Scale Runner plays a major scale one note at a time, do up to do, and you sing each note
   back. It draws the notes still to come as a ladder ahead of your pitch line: this lesson's
-  staircase. Major and Ascending are already chosen. Its scale starts from the voice range saved
-  in Settings, and it listens for each note in the octave it plays, so set your range there first
-  (under Singing Voice Range; "Don't know? Find my voice" helps). Sing at about speaking volume,
-  and stop immediately if anything feels uncomfortable.
-- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Scale Runner. (First
-  visit? MercuryPitch opens with its intro: close it with the × at the top right ("Skip the
-  intro").)
+  staircase. Major and Ascending are already chosen. Its scale starts from the voice range saved in
+  Settings. It wants each note in the octave it plays, not an octave away. So set your range there
+  first, under Singing Voice Range ("Don't know? Find my voice" helps). Sing at about speaking
+  volume, and stop immediately if anything feels uncomfortable.
+- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Scale Runner.
 - Second drill: For your ear, Ear Lab's Home plays a few chords that set home, then one note: name
   its scale degree, 1 to 7. The pads show do to ti, with so written Sol, and you can tap your
   answer or sing it, in any octave. Free: **mercurypitch.com/ear-lab**, then tap Home.
@@ -270,9 +270,9 @@ don't sound like do-re-mi.
 _[Editorial: when the beginner-tempo slug ships (CURRICULUM § 4 item 1; WEB-SPEC, Practice links),
 the card's address becomes "Practise it free: mercurypitch.com/exercises/slow-scales" (proposed
 slug), which opens Scale Runner on a major scale at a beginner pace, starting a little above the
-bottom of your saved voice range. When the `?lesson=` marker ships (CURRICULUM § 4 item 6), First
-Light steps aside and the welcome sentence goes. On the public host every link carries
-`?lesson=04`.]_
+bottom of your saved voice range. On the public host every link carries `?lesson=04`, so First
+Light, the app's intro, steps aside on a first visit, and the card has no line about closing it
+(FACTS 35b).]_
 
 **Next lesson** (a card that opens Lesson 5 in the explorer): Lesson 5, Breath and a steady note.
 "Singers are told to 'support' a long note. If that doesn't mean pushing, what keeps it steady?"
@@ -314,11 +314,35 @@ the coach's gates in MASTER-PLAN § 7 do not bind it, but the sing-along spans a
 - "Sing at about speaking volume." (FACTS 51), in Sing it and on the practice card.
 - The stop line, "Stop immediately if anything feels uncomfortable." (FACTS 53), in Sing it and on
   the practice card.
-- The referral line, "If hoarseness or discomfort lasts more than a couple of weeks, see a doctor
-  or a voice specialist." (FACTS 54; the guideline behind it says four weeks).
+- Lesson 3's doctor lines, word for word: a couple of weeks (the NHS says two weeks; the US
+  guideline four), "a doctor (a GP or an ear, nose and throat specialist)", and the urgent signs,
+  "very painful, or breathing or swallowing is hard" (FACTS 54).
 - The range: Merc's scale on D3 or D4, an octave either way, and Move do up to four semitones
   lower or higher (FACTS 52).
 - The exercise: do-re-mi-fa-so and back, then up to ti, a 2 s pause on ti, then do; 0.8 s a note,
   sung on do-re-mi or "ooh"; nothing listens and nothing is scored (FACTS 55, 63).
 - The practice card's Scale Runner: one octave, do up to do, one note at a time, scored in cents,
   at the viewer's stored pace, and the proposed beginner slug at difficulty 2 (FACTS 37, 42).
+
+### Changed in the plain-language review
+
+The review of October 2026 reworded these voice lines, for the coach to check. Your turn says the
+same thing as before, more plainly; the doctor lines are now Lesson 3's.
+
+- Your turn. Before: "... sing it with the guide, on do, re, mi or on "ooh". Start on Merc's note
+  or the one an octave up, whichever is comfortable: an octave up or down still counts. If the top
+  feels high, move do lower; if the bottom feels low, move it higher." After: "... sing it with the
+  guide, on the names do, re, mi or on "ooh". Start on Merc's note or the one an octave up,
+  whichever is comfortable: an octave up or down is just as right. If the top feels high, move do,
+  your starting note, lower; if the bottom feels low, move it higher." Nothing here is counted, and
+  "move do lower" read as broken English to anyone who didn't yet know do is a note.
+- The doctor lines. Before: "If hoarseness or discomfort lasts more than a couple of weeks, see a
+  doctor or a voice specialist." After, Lesson 3's lines word for word: "If hoarseness or
+  discomfort lasts more than a couple of weeks, see a doctor (a GP or an ear, nose and throat
+  specialist). If it's very painful, or breathing or swallowing is hard, get help straight away."
+  "A voice specialist" didn't tell a beginner whom to see, and it was the playbook's draft, which
+  Lessons 3, 5, 6 and 7 had already replaced.
+
+Also changed, though it is not a voice instruction: the practice card now says plainly that Scale
+Runner wants each note in the octave it plays, not an octave away (FACTS 40), so a learner who
+sings an octave down, as Lessons 1 to 3 invited, knows why the score drops.

@@ -78,10 +78,10 @@ headings").
 8. **Quick check**: LESSON.md's four questions (Toys 5).
 9. **Wrap**: the three recap lines, the challenge, the practice card and the next lesson's hook on
    a card that opens Lesson 5 in the explorer. The practice card is Lesson 2's app card with
-   LESSON.md's eyebrow, title, text, address, second drill and figure: Scale Runner today, with
-   the sentence about First Light (Practice links), and Ear Lab Home. Its addresses link
-   `/pitch-training?lesson=04` and `/ear-lab?lesson=04` in a new tab. Free play unlocks here:
-   every staircase control on one stage (playbook rule 17: guided first, free play after).
+   LESSON.md's eyebrow, title, text, address, second drill and figure: Scale Runner today and Ear
+   Lab Home. Its addresses link `/pitch-training?lesson=04` and `/ear-lab?lesson=04` in a new tab,
+   so neither meets First Light (Practice links). Free play unlocks here: every staircase control on
+   one stage (playbook rule 17: guided first, free play after).
 10. **Lesson explorer**: the kit's, with Lesson 4 as the current node, the line under its heading
     from LESSON.md, and the state for a lesson with a page and no film (What the kit and the app
     still need).
@@ -120,7 +120,7 @@ transforms is one object on the page.
   outline with the arrow up from ti, and Land on do fills it. Its stairs are not buttons (the
   bubbles' buttons carry every action), so the drawing is `aria-hidden` and a polite live region
   speaks for it: "Major scale from C" or "Major scale from D" as each starts, then "Stopped on ti.
-  Land on do finishes the scale." Play from D slides it up two rows first.
+  Landing on do finishes the scale." Play from D slides it up two rows first.
 - **One action per tap.** A tap on a stair plays its note in the soft tone, in every state but the
   compact one. A tap on a key of the strip plays that key in steps 1 and 2; from step 3 on, and in
   free play, it makes that key do instead. A pointer that moves more than 6 px before it lifts is a
@@ -185,7 +185,7 @@ transforms is one object on the page.
   "Stair 7, ti, E sharp 5"). The start is a slider (`role="slider"`, C4 to B4, `aria-valuetext`
   such as "Do is D4: D major, two black keys"): arrow keys move it a semitone, and Home and End
   jump to C and B. The overlay announces "White keys from D: tone, semitone, tone, tone, tone,
-  semitone, tone. Not a major scale." Stop on ti announces "Stopped on ti, C sharp 5. Land on do
+  semitone, tone. Not a major scale." Stop on ti announces "Stopped on ti, C sharp 5. Landing on do
   finishes the scale."
 - Under reduced motion every move (a slide, Group, the overlay, the names changing, the arrow)
   lands in its end state at once; a played scale still sounds and lights its stairs in turn.
@@ -227,8 +227,8 @@ button (FACTS 61).
 - **Move do** shifts do a semitone lower or higher, up to four either way (FACTS 52, 63): the rows
   relabel and the path keeps its shape, movable do at work. Both scales and the count-in follow it.
 - The card follows LESSON.md's order: the comfort line, Your turn, the stop line, the buttons, the
-  guide's note, and the referral line in small type at the foot. The stop line is in that one
-  place, above the buttons.
+  guide's note, and the doctor lines in small type at the foot. The stop line is in that one place,
+  above the buttons.
 - Nothing listens and nothing is scored: there is no microphone on this page. Under reduced motion
   the path's notes light one after another instead of the travelling line.
 
@@ -299,10 +299,10 @@ on the CPU.
   the viewer taps Scale Runner, which opens on Major and Ascending (FACTS 37), at the viewer's
   stored pace (difficulty 5 unless the app has moved it, FACTS 42), starting from the saved voice
   range (FACTS 41). It scores each note against the octave it plays (FACTS 40), so the copy says
-  so and sends the viewer to Settings, Singing Voice Range, first. On a first visit the main app
-  opens First Light first, and its welcome's one way out is the × at the top right, labelled Skip
-  the intro (FACTS 35a), so the card says so until the `?lesson=` marker lets First Light step
-  aside (CURRICULUM § 4 item 6). On the public host the link is `/pitch-training?lesson=04`.
+  so and sends the viewer to Settings, Singing Voice Range, first. The link is
+  `/pitch-training?lesson=04`, and the `?lesson=` marker lets First Light, the main app's intro,
+  step aside on a first visit (FACTS 35b), so the card carries no first-visit line (the series' old
+  line, FACTS 35a, went when the marker shipped).
 - **Today, Ear Lab Home.** `mercurypitch.com/ear-lab`, then tap Home (FACTS 46, 47); on the public
   host `/ear-lab?lesson=04`.
 - **Needed: a data-only slug** (CURRICULUM § 4 item 1, the Phase 1 App track): `slow-scales`
@@ -322,7 +322,7 @@ on the CPU.
     the viewer leaves Scale Runner (FACTS 45).
   - Nothing else: the worker already serves any `/exercises/<slug>` path, and its routing test
     walks the registry (FACTS 43). The link should carry `?lesson=04`, so First Light steps aside
-    once that marker ships (CURRICULUM § 4 item 6).
+    (FACTS 35b).
 - **Still open: the octave** (CURRICULUM § 4 item 7). Scale Runner scores the written octave, and a
   visitor who never set a range is fitted as a tenor (FACTS 41), so a soprano who skips Settings
   is scored against a low octave. Until the octave-folded option exists, the copy's sentence about
