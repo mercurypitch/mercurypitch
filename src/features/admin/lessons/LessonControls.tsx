@@ -306,7 +306,7 @@ export function PublishPanel(props: {
               <span class={styles.muted}>{reasonLine(view())}</span>
             </p>
             <p id={defaultId} class={styles.why}>
-              {defaultSentence(props.row)}
+              {defaultSentence(props.row, view())}
               <Show when={props.row.waitingOn}>
                 {(waitingOn) => <> It waits on {waitingOn()}.</>}
               </Show>

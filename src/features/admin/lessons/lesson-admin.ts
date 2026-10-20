@@ -25,10 +25,11 @@
 //      stops folding, and season.ts's draft entries need that fold to leave
 //      a hidden draft's page out (kit/drafts.test.ts holds the rule).
 //
-// An override changes what the site is meant to serve and list, not what
-// this build holds: a draft the build leaves out has no document here, so
-// publishing it cannot make this site serve it. The checklist says so when
-// the site disagrees, and the live check shows what the site really does.
+// The site follows an override within about a minute: an unpublished
+// lesson's address answers 404 and leaves both listings, and a published
+// draft goes live and is listed without a release. The checklist weighs
+// the override and the live check asks the site, so the page says when the
+// two disagree.
 
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { FilmRegistry, FilmSources, FilmState, } from '@/features/lessons/kit/films'
@@ -354,9 +355,7 @@ function overriddenLive(
       id: 'live',
       text,
       state: 'todo',
-      detail: row.built
-        ? `Published here, but it answers ${status}. The site follows within about a minute of a save.`
-        : `Published here, but it answers ${status}: this build leaves its page out.`,
+      detail: `Published here, but it answers ${status}. The site follows within about a minute of a save.`,
     }
   }
   return status === 200

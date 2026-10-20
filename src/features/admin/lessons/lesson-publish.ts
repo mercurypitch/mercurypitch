@@ -4,10 +4,16 @@
 //
 // A lesson's state on this site is its override when the Content Studio has
 // set one (src/lib/lesson-state.ts), and the code's default otherwise: a
-// released lesson is published, a draft is published where this build shows
-// drafts and left out where it hides them, and a lesson with no page has
+// released lesson is published, a draft is published where this site shows
+// drafts and held back where it does not, and a lesson with no page has
 // nothing to publish. Who set an override, and when, is the newest matching
 // change in the lesson's log.
+//
+// Whether this site shows drafts is the page's to pass in: draft-switch.ts's
+// DRAFTS_SHOWN, the answer this build was made with. It is not read from
+// whether the build carries a draft's page. The two agree while a build that
+// hides drafts leaves their pages out, and part once every build carries
+// every lesson page and the site decides per request which are live.
 //
 // The words the Lessons page prints for all of that are here too, from the
 // state words to what the page says after a save, so the page and its tests
@@ -54,30 +60,37 @@ export function latestChange(
   return log?.find((change) => change.field === field) ?? null
 }
 
-function defaultReason(row: LessonRow): PublishReason {
+/** What the code decides on this site, the state aside: published if released, or a draft where drafts are shown. */
+export function publishedByDefault(
+  row: LessonRow,
+  draftsShown: boolean,
+): boolean {
+  if (row.build === 'released') return true
+  return row.build === 'draft' && draftsShown
+}
+
+function defaultReason(row: LessonRow, draftsShown: boolean): PublishReason {
   if (row.path === null) return 'film'
   if (row.build === 'released') return 'released'
-  if (row.build === 'draft') return row.built ? 'draft-shown' : 'draft-hidden'
+  if (row.build === 'draft') return draftsShown ? 'draft-shown' : 'draft-hidden'
   return 'no-page'
 }
 
-/** Lesson `row`'s state on this site, from its override and its log. */
+/** Lesson `row`'s state on this site, from its override, its log, and whether this site shows drafts. */
 export function publishView(
   row: LessonRow,
   override: LessonOverride,
   log: readonly LessonStateChange[] | null,
+  draftsShown: boolean,
 ): PublishView {
   const canPublish = row.written && row.path !== null
-  // season.ts folds a hidden draft's page away, so `built` is exactly what
-  // the code serves on this site: a released lesson, or a draft where
-  // drafts are shown.
-  const byDefault = row.built
+  const byDefault = publishedByDefault(row, draftsShown)
   const set =
     typeof override.published === 'boolean' ? override.published : null
   const overridden = set !== null
   return {
     published: canPublish && (set ?? byDefault),
-    reason: canPublish && overridden ? 'set' : defaultReason(row),
+    reason: canPublish && overridden ? 'set' : defaultReason(row, draftsShown),
     byDefault,
     overridden,
     canPublish,
@@ -160,14 +173,15 @@ export function reasonLine(view: PublishView): string {
 }
 
 /** What the code decides on this site, as a sentence: the default "Use default" goes back to. */
-export function defaultSentence(row: LessonRow): string {
-  if (!row.written || row.path === null) {
+export function defaultSentence(row: LessonRow, view: PublishView): string {
+  if (row.path === null) return 'A film has no page to publish.'
+  if (!view.canPublish) {
     return 'It has no page yet, so there is nothing to publish.'
   }
   if (row.build === 'released') {
     return 'The default here is published: it is released in code.'
   }
-  return row.built
+  return view.byDefault
     ? 'The default here is published: this site shows drafts.'
     : 'The default here is unpublished: this site leaves drafts out.'
 }
