@@ -155,9 +155,14 @@ in LESSON.md has none. The recall check (item 3) starts with Lesson 2.
 On the public page (`/learn/01`) the episode is an MP4 on R2 (MASTER-PLAN § 12 item 7): 1080p, and
 a 720p copy below 900 px, both cut from the delivery master. They are served from R2's custom
 domain (planned: `media.mercurypitch.com`, which `media-src` must list first), not `r2.dev`. Once
-the episode is on YouTube, the section adds a "Watch on YouTube" link; there is no YouTube embed. Their URLs are the lesson's film
-setting (`src/features/lessons/lesson-01/film.ts`); until the files are uploaded the setting is
-empty and the section shows the poster, the chapters and the transcript with "Film coming soon".
+the episode is on YouTube, the section adds a "Watch on YouTube" link; there is no YouTube embed. Their URLs are Lesson 1's
+entry in the kit's film list (`src/features/lessons/kit/films.ts`), which the page's
+`lesson-01/film.ts` and the season map (`kit/season.ts`) both read. Until the files are uploaded
+the entry is null and the page offers nothing to watch: the section, its masthead link and the
+card's "Watch the episode" are gone, and the masthead numbers its other links without a gap.
+The markup ships the section and its link hidden, so the page paints without them, and
+`kit/episode.ts` shows them once the entry is set: setting it is the whole change that puts the
+film on the page.
 Captions are the same-origin VTT in a `<track>`; the transcript is built from the same VTT text,
 and the chapters from the film's generated `chapters.json`, both copied beside the page module
 (`lesson-01/assets/`, from this folder's `captions/`). Captions and chapters travel with the film: a

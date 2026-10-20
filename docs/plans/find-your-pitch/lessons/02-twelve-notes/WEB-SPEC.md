@@ -145,13 +145,13 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
      steps it repeats.
 9. **Watch the episode**: the kit's episode section (`kit/episode.ts`), as Lesson 1's page has it:
    the film as MP4s on R2 in the page's own player, never a YouTube embed, with its chapters, its
-   captions and the transcript; until the files are uploaded, the poster, the chapters and the
-   transcript with "Film coming soon". See "The episode", below.
+   captions and the transcript. Until the files are uploaded the page has no Watch section and no
+   Watch link (`kit/films.ts`). See "The episode", below.
 10. **Lesson explorer**: Lesson 1's, with Lesson 2 as the current node, selected when the page
     opens. Until the film is published Lesson 2 reads "Ready · read" and its card offers the kit's
     one action ("Start lesson", "Continue: step N" or "Read again"; Lesson 1's spec, item 9)
-    without Watch the episode; once the film is published (`film: 'published'` on its entry in
-    `kit/season.ts`) it reads "Ready · watch and read" and Watch the episode joins the action. Its
+    without Watch the episode; once the film is published (its sources set in `kit/films.ts`) it
+    reads "Ready · watch and read" and Watch the episode joins the action. Its
     Length row is the page's reading time, 10 min (`minutes: 10`), with the film's 7:11 only once
     the film plays. The line under the explorer's heading names no lesson's state: the legend
     (Ready, Coming later, Done) and the cards say it, from the season. Lesson 2 marks done when its
@@ -175,15 +175,18 @@ loads, as Lesson 1's page does with 5:14; `onDuration` hands the same length to 
 Twelve notes".
 
 - **Where it plays from**: `src/features/lessons/lesson-02/film.ts`, built like Lesson 1's
-  (`lesson-01/film.ts`). `FILM_SOURCES` (`{ hd, sd }`, the 1080p and 720p MP4s, the 720p one at 900
-  px and below) stays `null` until the files are uploaded, and while it is null the section shows
-  the poster, the chapters and the transcript with "Film coming soon"; `FILM_CHAPTERS` and
-  `FILM_CAPTIONS_TEXT` read the bundled copies below. The MP4s live on R2 (MASTER-PLAN § 12 item
-  7), served from R2's custom domain (planned: `media.mercurypitch.com`), not `r2.dev`. Of outside
-  hosts, `media-src` in `public/_headers` lists only `*.r2.dev` and `*.r2.cloudflarestorage.com`
-  today, so the domain goes in there before `FILM_SOURCES` points at it, or the browser refuses the
-  video. Once the episode is on YouTube the section adds a "Watch on YouTube" link; there is no
-  YouTube embed.
+  (`lesson-01/film.ts`). Its `FILM_SOURCES` (`{ hd, sd }`, the 1080p and 720p MP4s, the 720p one
+  at 900 px and below) is Lesson 2's entry in the kit's film list, `src/features/lessons/kit/films.ts`,
+  which the season map reads too. The entry stays `null` until the files are uploaded, and while it
+  is null the page offers nothing to watch: no Watch section, no masthead link, no "Watch the
+  episode" on the card, the masthead's other links numbered without a gap. The markup ships the
+  section and its link hidden, so the page paints without them, and `kit/episode.ts` shows them
+  once the entry is set: setting it is the whole change. `FILM_CHAPTERS` and `FILM_CAPTIONS_TEXT`
+  read the bundled copies below. The MP4s live on R2 (MASTER-PLAN § 12 item 7), served from R2's
+  custom domain (planned: `media.mercurypitch.com`), not `r2.dev`. Of outside hosts, `media-src`
+  in `public/_headers` lists only `*.r2.dev` and `*.r2.cloudflarestorage.com` today, so the
+  domain goes in there before the entry points at it, or the browser refuses the video. Once the
+  episode is on YouTube the section adds a "Watch on YouTube" link; there is no YouTube embed.
 - **The files**: the film's `tools/web-video.sh` cuts them all from the delivery master,
   `rc-04-60fps`:
   `lesson-02-1080p.mp4` and `lesson-02-720p.mp4` (H.264 and AAC at 30 fps, moov first) for R2;

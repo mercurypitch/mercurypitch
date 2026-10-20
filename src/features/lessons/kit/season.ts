@@ -14,9 +14,11 @@
 //
 // A lesson is live once it has a `page`; until then it is coming later.
 // Where a lesson stands for a viewer (done, in progress, up next) is
-// lesson-state.ts's to say. Only a published film ever offers "Watch the
-// episode". A lesson whose page waits on a sign-off is a draft (drafts.ts):
-// live where the build shows drafts, coming later where it hides them.
+// lesson-state.ts's to say. A film is published once its sources are set
+// in films.ts, which every entry's `film` reads, and only a published film
+// ever offers "Watch the episode". A lesson whose page waits on a sign-off
+// is a draft (drafts.ts): live where the build shows drafts, coming later
+// where it hides them.
 //
 // Some fields are the team's and never drawn on a lesson page: the
 // signature image (`sig`), the drill a practise link still needs
@@ -28,6 +30,8 @@
 
 import { DRAFTS_SHOWN } from './draft-switch'
 import { DRAFT_LESSONS } from './drafts'
+import type { FilmState } from './films'
+import { filmState } from './films'
 
 export const TOPICS = {
   T01: 'Sound and pitch: vibration, frequency, hertz; high is not loud',
@@ -107,11 +111,12 @@ export interface Lesson {
   /** Its own page on this site, once it is live: `/learn/01`. */
   readonly page?: string
   /**
-   * Its film, for the team: 'published' plays on its page, so its card
-   * offers "Watch the episode"; 'production' is made but not yet published,
-   * and is never drawn on a lesson page. Absent while there is no film.
+   * Its film, from films.ts: 'published' once its sources are set there,
+   * so it plays on its page and its card offers "Watch the episode";
+   * 'production' while it is made but not uploaded, which is the team's and
+   * never drawn on a lesson page. Absent while there is no film.
    */
-  readonly film?: 'published' | 'production'
+  readonly film?: FilmState
   /** The question the lesson opens with. */
   readonly hook: string
   /** The signature image, the team's shorthand for the lesson's look. Admin only, never drawn on a lesson page. */
@@ -145,7 +150,7 @@ export const LESSONS: readonly Lesson[] = [
     minutes: 10,
     len: '5:14',
     page: '/learn/01',
-    film: 'published',
+    film: filmState(1),
     hook: 'If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?',
     sig: 'The pitch line winds into a spiral; the spiral unrolls into the keyboard.',
     pr: {
@@ -169,7 +174,7 @@ export const LESSONS: readonly Lesson[] = [
     minutes: 10,
     len: '7:11',
     page: '/learn/02',
-    film: 'production',
+    film: filmState(2),
     hook: 'Musicians only use seven letters, so where do the other five notes come from?',
     sig: 'The five "?" beads from Lesson 1\'s spiral light up; twelve equal steps multiply to exactly 2.',
     pr: {

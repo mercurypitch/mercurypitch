@@ -286,21 +286,6 @@
 .big-play .cap small {
   color: var(--ink-2);
 }
-.big-play[data-state='soon'] {
-  cursor: default;
-  background: linear-gradient(
-    180deg,
-    rgba(7, 10, 16, 0.25) 0%,
-    rgba(7, 10, 16, 0.82) 100%
-  );
-}
-.big-play[data-state='soon'] .disc {
-  background: rgba(13, 17, 23, 0.5);
-  border-style: dashed;
-}
-.big-play[data-state='soon']:hover .disc {
-  transform: none;
-}
 .chapters {
   list-style: none;
   margin: 0;

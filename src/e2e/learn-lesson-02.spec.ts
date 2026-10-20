@@ -14,6 +14,7 @@
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { filmSources } from '../features/lessons/kit/films'
 
 const TITLE = 'Twelve notes: Find Your Pitch, Lesson 2 | MercuryPitch'
 
@@ -350,4 +351,24 @@ test('dragging the ruler marker with a real mouse slides the pitch up @smoke', a
   await expect(slider).toHaveAttribute('aria-valuenow', '1200')
   await expect(note).toHaveText('A4')
   await expect(page.locator('#toyRuler [data-ruler-hz]')).toHaveText('440.00Hz')
+})
+
+// As for Lesson 1: until the film's MP4s are uploaded (kit/films.ts) the
+// page offers nothing to watch, and the masthead is numbered without a gap.
+test('offers nothing to watch while the film has no sources @smoke', async ({
+  page,
+}) => {
+  test.skip(
+    filmSources(2) !== null,
+    "Lesson 2's film has its sources in kit/films.ts: the page shows it",
+  )
+  await page.goto('/learn/02')
+  // the module has run: the explorer opened on this lesson's card
+  await expect(page.locator('#exCardHost h3')).toHaveText('Twelve notes')
+
+  await expect(page.locator('#watch')).toBeHidden()
+  await expect(page.getByRole('link', { name: /watch/i })).toHaveCount(0)
+  await expect(
+    page.locator('#mastNav a:visible b').filter({ hasText: /^[IVX]+$/ }),
+  ).toHaveText(['I', 'II'])
 })

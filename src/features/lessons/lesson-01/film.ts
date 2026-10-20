@@ -4,29 +4,24 @@
 //
 // The episode plays from R2 (docs/plans/find-your-pitch/MASTER-PLAN.md § 12
 // item 7): a 1080p MP4 and a 720p copy for phones, both cut from the
-// delivery master. Until they are uploaded FILM_SOURCES stays null and the
-// section shows the poster, the chapters and the transcript with "Film coming
-// soon". The files must come from a host the site's media-src allows
-// (public/_headers: *.r2.dev or *.r2.cloudflarestorage.com); a custom media
-// domain needs adding there first, or the browser refuses the video. The plan
-// is media.mercurypitch.com, since r2.dev is rate-limited and for development.
+// delivery master. Their addresses are Lesson 1's entry in kit/films.ts, the
+// one list every film is read from, and the page shows no Watch section
+// until it is set. The plan for their host is media.mercurypitch.com, since
+// r2.dev is rate-limited and for development; films.ts says what media-src
+// needs first.
 //
 // Captions and chapters travel with the film. A re-cut that re-times it (a
 // re-voice will) regenerates the film's captions and chapters, and both copies
 // change in the same commit as the MP4 URLs: assets/ here and the lesson's
 // captions/ folder in docs/plans. film-sync.test.ts holds the two copies equal.
 
+import type { FilmSources } from '@/features/lessons/kit/films'
+import { filmSources } from '@/features/lessons/kit/films'
 import chapters from './assets/chapters.json'
 import captionsText from './assets/lesson-01.en.vtt?raw'
 
-export interface FilmSources {
-  /** 1080p30 MP4, moov at the front so it starts before it has downloaded. */
-  hd: string
-  /** 720p30 MP4 for narrow screens. */
-  sd: string
-}
-
-export const FILM_SOURCES: FilmSources | null = null
+/** The 1080p and 720p MP4s, or null until they are uploaded (kit/films.ts). */
+export const FILM_SOURCES: FilmSources | null = filmSources(1)
 
 /** Generated from the film's scene table (the film's tools/chapters.py). */
 export const FILM_CHAPTERS: readonly { title: string; start: number }[] =

@@ -5,6 +5,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { cardActions, createExplorer } from './explorer'
+import { filmSources } from './films'
 import type { LessonView } from './lesson-state'
 import { lessonViews } from './lesson-state'
 import type { StepMarks } from './position'
@@ -36,6 +37,13 @@ function view(
   const season = LESSONS.map((M) => (M.n === L.n ? L : M))
   return lessonViews(season, { done: new Set(done), steps, current })[L.n]
 }
+
+/** Lesson 1 as it reads once its film has sources (films.ts). */
+const filmed: Lesson = { ...LESSONS[1], film: 'published' }
+
+/** Where Lesson 1's card sends Watch from `at`: nowhere until its film has sources. */
+const watchFrom = (at: string): string[] =>
+  filmSources(1) === null ? [] : [`${at}#watch`]
 
 /** Each action of a card as [label, href (null for a button), primary]. */
 function actions(markup: string): [string, string | null, boolean][] {
@@ -81,7 +89,7 @@ afterEach(() => {
 describe('cardActions', () => {
   it("starts the page's own lesson at the top of the page, its episode beside it", () => {
     // Act
-    const own = actions(cardActions(view(LESSONS[1], 1), 1))
+    const own = actions(cardActions(view(filmed, 1), 1))
 
     // Assert
     expect(own).toEqual([
@@ -93,7 +101,7 @@ describe('cardActions', () => {
 
   it('links another live lesson to its own page', () => {
     // Act: Lesson 1's card on Lesson 2's page
-    const other = actions(cardActions(view(LESSONS[1], 2), 2))
+    const other = actions(cardActions(view(filmed, 2), 2))
 
     // Assert
     expect(other.map(([label, href]) => [label, href])).toEqual([
@@ -169,7 +177,7 @@ describe('createExplorer', () => {
     expect(openCard()?.querySelector('h3')?.textContent).toBe('What is a note?')
     expect(img?.getAttribute('src')).toBe('/assets/poster-01.jpg')
     expect(img?.alt).toBe(LESSONS[1].posterAlt)
-    expect(cardLinks()).toEqual(['#top', '#watch'])
+    expect(cardLinks()).toEqual(['#top', ...watchFrom('')])
   })
 
   it("opens on another lesson's page on that lesson, and links Lesson 1's card to its own page", () => {
@@ -184,7 +192,7 @@ describe('createExplorer', () => {
     // Assert
     expect(opened).toBe(LESSONS[4].title)
     expect(openCard()?.querySelector('h3')?.textContent).toBe('What is a note?')
-    expect(cardLinks()).toEqual(['/learn/01', '/learn/01#watch'])
+    expect(cardLinks()).toEqual(['/learn/01', ...watchFrom('/learn/01')])
   })
 
   it("draws none of the team's planning words on any lesson's card", () => {
