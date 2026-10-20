@@ -49,7 +49,11 @@ export interface LessonRow {
   /** Its page's address, `/learn/NN`; null for the trailer, a film that never has a page. */
   readonly path: string | null
   readonly build: BuildState
-  /** Whether this build serves its page: a released lesson, or a draft where drafts are shown. */
+  /**
+   * Whether this build carries its page (season.ts `page`). Whether the site
+   * serves it is the live check's to say, and whether it should by default
+   * is `publishedByDefault`'s.
+   */
   readonly built: boolean
   /** Whether the repository holds its page at all, built here or not. */
   readonly written: boolean
@@ -63,6 +67,21 @@ export interface LessonRow {
 /** "Lesson 3", or "Trailer" for the season's film. */
 export function lessonName(lesson: Lesson): string {
   return lesson.kind === 'Trailer' ? 'Trailer' : `Lesson ${lesson.n}`
+}
+
+/**
+ * What the code decides on this site, the state aside: a released lesson is
+ * published, and a draft where this site shows drafts (`draftsShown`,
+ * draft-switch.ts's DRAFTS_SHOWN, which the page passes in). Not read from
+ * `built`: a build that hides drafts leaves their pages out today, but once
+ * every build carries every lesson page, the site decides per request.
+ */
+export function publishedByDefault(
+  row: LessonRow,
+  draftsShown: boolean,
+): boolean {
+  if (row.build === 'released') return true
+  return row.build === 'draft' && draftsShown
 }
 
 /** Lesson `n`'s address on the site, `/learn/NN`, built at run time (see the banner). */
@@ -81,8 +100,7 @@ export function lessonRows(
     const waitingOn =
       (drafts === undefined ? DRAFT_LESSONS[lesson.n] : drafts[lesson.n]) ??
       null
-    // season.ts folds a hidden draft's page away, so `page` is exactly
-    // "this build serves it".
+    // season.ts sets `page` exactly where this build carries the document.
     const built = lesson.page !== undefined
     let build: BuildState = 'planned'
     if (waitingOn !== null) build = 'draft'
@@ -260,13 +278,22 @@ export interface SiteFindings {
   readonly llms: ListingCheck
 }
 
+/** What the checklist weighs besides the build and what the site said. */
+export interface ChecklistInputs {
+  /** Whether this site shows drafts by default: DRAFTS_SHOWN, passed in by the page. */
+  readonly draftsShown: boolean
+  /** The publish override set here; absent or null where the code decides. */
+  readonly published?: boolean | null
+}
+
 function listingStep(
   id: 'sitemap' | 'llms',
   file: string,
   row: LessonRow,
   check: ListingCheck,
-  published: boolean | null,
+  inputs: ChecklistInputs,
 ): ReleaseStep {
+  const published = inputs.published ?? null
   const text = `Listed in ${file}`
   const listed = listedIn(check, row.path)
   if (listed === null) {
@@ -274,9 +301,9 @@ function listingStep(
       ? { id, text, state: 'checking' }
       : { id, text, state: 'unknown', detail: `Could not read ${file}.` }
   }
-  // An override decides what the site should list; without one, the code
-  // lists a released lesson and no other.
-  const expected = published ?? row.build === 'released'
+  // The site should list what it serves: the override where one is set,
+  // the code's default otherwise.
+  const expected = published ?? publishedByDefault(row, inputs.draftsShown)
   if (listed && !expected) {
     return {
       id,
@@ -305,8 +332,9 @@ function listingStep(
 function liveStep(
   row: LessonRow,
   page: PageCheck | null,
-  published: boolean | null,
+  inputs: ChecklistInputs,
 ): ReleaseStep {
+  const published = inputs.published ?? null
   const text = `${row.path ?? 'Its page'} answers 200 on this site`
   if (page === null) {
     return { id: 'live', text, state: 'todo', detail: 'It has no page yet.' }
@@ -322,12 +350,12 @@ function liveStep(
   }
   if (published !== null) return overriddenLive(row, page.status, published)
   if (page.status === 200) {
-    return row.build === 'draft' && !row.built
+    return row.build === 'draft' && !inputs.draftsShown
       ? {
           id: 'live',
           text,
           state: 'problem',
-          detail: 'This build leaves drafts out, yet the site serves the page.',
+          detail: 'This site leaves drafts out, yet it serves the page.',
         }
       : { id: 'live', text, state: 'done' }
   }
@@ -376,14 +404,14 @@ function overriddenLive(
 
 /**
  * Lesson `row`'s release checklist, SEARCH.md § 12 in order, each step
- * marked from the build, from what the site said, and from its publish
- * override (`published`; null where the code decides). The trailer is a
+ * marked from the build, from what the site said, and from `inputs`: its
+ * publish override and whether this site shows drafts. The trailer is a
  * film with no page, so it has none.
  */
 export function releaseChecklist(
   row: LessonRow,
   site: SiteFindings,
-  published: boolean | null = null,
+  inputs: ChecklistInputs,
 ): ReleaseStep[] {
   if (row.path === null) return []
   const file = `learn/${row.path.slice('/learn/'.length)}.html`
@@ -412,8 +440,8 @@ export function releaseChecklist(
   }
 
   steps.push(
-    listingStep('sitemap', 'public/sitemap.xml', row, site.sitemap, published),
-    listingStep('llms', 'public/llms.txt', row, site.llms, published),
+    listingStep('sitemap', 'public/sitemap.xml', row, site.sitemap, inputs),
+    listingStep('llms', 'public/llms.txt', row, site.llms, inputs),
     {
       id: 'service-worker',
       text: `The service worker leaves ${row.path} to the network (STANDALONE_DOCUMENT_PATHS in src/lib/sw-runtime.ts)`,
@@ -451,7 +479,7 @@ export function releaseChecklist(
     })
   }
 
-  steps.push(liveStep(row, site.page, published), {
+  steps.push(liveStep(row, site.page, inputs), {
     id: 'release-day',
     text: 'Release day: set datePublished and the sitemap date, request indexing in Search Console and Bing, and publish the episode on YouTube with the lesson link first',
     state: 'by-hand',

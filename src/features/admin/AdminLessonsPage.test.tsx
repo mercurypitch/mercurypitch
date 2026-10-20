@@ -52,7 +52,7 @@ describe('AdminLessonsPage', () => {
     expect(within(rows[0]).getByRole('rowheader')).toHaveTextContent(/^Trailer/)
   })
 
-  it("shows each draft row what it waits on, in drafts.ts's own words, and no other row", async () => {
+  it("shows each draft row what it waits on, in drafts.ts's own words, and that this site shows drafts, and no other row", async () => {
     stubLessonSite({})
     render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
@@ -62,10 +62,11 @@ describe('AdminLessonsPage', () => {
     seasonRows().forEach((row, n) => {
       const built = within(row).getAllByRole('cell')[1]
       if (drafts.includes(n)) {
-        expect(built).toHaveTextContent(/^Draft/)
-        expect(built).toHaveTextContent(`Waits on ${DRAFT_LESSONS[n]}`)
+        expect(built).toHaveTextContent(
+          `DraftShown here by defaultWaits on ${DRAFT_LESSONS[n]}`,
+        )
       } else {
-        expect(built).not.toHaveTextContent(/Draft|Waits on/)
+        expect(built).not.toHaveTextContent(/Draft|by default|Waits on/)
       }
     })
   })

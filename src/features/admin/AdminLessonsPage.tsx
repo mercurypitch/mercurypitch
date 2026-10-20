@@ -34,8 +34,8 @@ import styles from './AdminLessonsPage.module.css'
 import type { CopyChoicesFor } from './lessons/copy-choices'
 import { copyChoicesFor } from './lessons/copy-choices'
 import type { LessonRow, ListingCheck, PageCheck, ReleaseStep, SiteFindings, StepId, StepState, } from './lessons/lesson-admin'
-import { checkPage, lessonName, lessonRows, listedIn, llmsPaths, readListing, releaseChecklist, sitemapPaths, } from './lessons/lesson-admin'
-import { asSentence, publishedByDefault, publishView, stateWord, } from './lessons/lesson-publish'
+import { checkPage, lessonName, lessonRows, listedIn, llmsPaths, publishedByDefault, readListing, releaseChecklist, sitemapPaths, } from './lessons/lesson-admin'
+import { asSentence, publishView, stateWord } from './lessons/lesson-publish'
 import type { LessonActions } from './lessons/LessonControls'
 import { PublishCell, PublishPanel, WordingPanel, } from './lessons/LessonControls'
 import { LessonsBlueprint } from './lessons/LessonsBlueprint'
@@ -247,7 +247,13 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
         sitemap: sitemap(),
         llms: llms(),
       }
-      byLesson.set(row.lesson.n, releaseChecklist(row, site, overrideOf(row)))
+      byLesson.set(
+        row.lesson.n,
+        releaseChecklist(row, site, {
+          draftsShown: DRAFTS_SHOWN,
+          published: overrideOf(row),
+        }),
+      )
     }
     return byLesson
   })
@@ -433,9 +439,9 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
                         {(waitingOn) => (
                           <>
                             <span class={styles.sub}>
-                              {row.built
-                                ? 'Shown in this build'
-                                : 'Left out of this build'}
+                              {DRAFTS_SHOWN
+                                ? 'Shown here by default'
+                                : 'Left out here by default'}
                             </span>
                             <span class={styles.sub}>
                               Waits on {waitingOn()}
