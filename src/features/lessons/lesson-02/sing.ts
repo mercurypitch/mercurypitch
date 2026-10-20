@@ -60,8 +60,8 @@ export function guideLabel(root: number): string {
       .join(' or ')
   const lanes = [root - 1, root, root + 1, root + 2].map(say)
   return (
-    `Four lanes, ${lanes[0]}, ${lanes[1]}, ${lanes[2]} and ${lanes[3]}, pitch as height, ` +
-    `with Merc's path: ${lanes[1]} held, up one lane to ${lanes[2]}, held, and back to ${lanes[1]}.`
+    `Four rows, ${lanes[0]}, ${lanes[1]}, ${lanes[2]} and ${lanes[3]}, pitch as height, ` +
+    `with Merc's path: ${lanes[1]} held, up one row to ${lanes[2]}, held, and back to ${lanes[1]}.`
   )
 }
 

@@ -127,7 +127,7 @@ export function mountEarGame(root: HTMLElement): void {
     }
     render()
     if (last) roundEl.textContent = `${score.heard} of ${ROUNDS}`
-    playLabel.textContent = last ? 'Play ten more' : 'Next step'
+    playLabel.textContent = last ? 'Play ten more' : 'Next round'
     // a miss plays the step again, slowly, once the answer has been said
     const missed = step
     if (!correct)

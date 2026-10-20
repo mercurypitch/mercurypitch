@@ -421,7 +421,7 @@
                         ><span class="v"
                           ><span data-climb-steps>0</span
                           ><span class="x2" data-climb-x2 hidden
-                            >&#215;&#8202;2</span
+                            >&#183; Hz&#8202;&#215;&#8202;2</span
                           ></span
                         >
                       </div>
@@ -626,7 +626,10 @@
               </div>
               <div class="body">
                 <h3>Cent</h3>
-                <p>A hundredth of an equal semitone.</p>
+                <p>
+                  A tiny unit for measuring the distance between notes. In the
+                  tuning MercuryPitch uses, a semitone is 100 cents.
+                </p>
                 <button
                   class="btn sm tint"
                   type="button"
@@ -712,7 +715,7 @@
                         ><span class="v"
                           ><span data-climb-steps>0</span
                           ><span class="x2" data-climb-x2 hidden
-                            >&#215;&#8202;2</span
+                            >&#183; Hz&#8202;&#215;&#8202;2</span
                           ></span
                         >
                       </div>
@@ -1050,10 +1053,10 @@
                   Keep taking semitone steps and count. From A3 you reach A4,
                   one turn up the spiral, in twelve steps: seven letters, and
                   five notes between them. In hertz each step is a little bigger
-                  than the last, but to your ear every step is the same size, so
-                  each one turns the spiral by the same amount. And twelve of
-                  them double the frequency, from 220&#8239;Hz to 440&#8239;Hz,
-                  which is exactly what an octave is.
+                  than the last. To your ear, though, every step is the same
+                  size, so each one turns the spiral by the same amount. And
+                  twelve of them double the frequency, from 220&#8239;Hz to
+                  440&#8239;Hz, which is exactly what an octave is.
                 </p>
                 <p class="try">
                   <span class="k">Try</span
@@ -1337,7 +1340,9 @@
                   ><span class="sr"> flat</span>: the same key, two names.
                   Musicians call that enharmonic. Both are right: the music
                   around it decides which one is written. MercuryPitch's pitch
-                  line shows the sharp names, like
+                  line shows the sharp names, typed with a
+                  <span aria-hidden="true">#</span
+                  ><span class="sr">hash sign</span>, like
                   <span aria-hidden="true">C#4</span
                   ><span class="sr">C sharp 4</span>.
                 </p>
@@ -1431,13 +1436,13 @@
                 </p>
                 <h3>How big is a semitone, exactly?</h3>
                 <p>
-                  We measure it in cents: in the tuning MercuryPitch uses, every
+                  We measure it in cents. In the tuning MercuryPitch uses, every
                   semitone is a hundred cents wide, so the twelve semitones of
-                  an octave make 1,200 cents, and a tone is 200. MercuryPitch
-                  measures in cents too: its Singing tab names the nearest note
-                  and shows on a bar how far above or below it you are, up to 50
-                  cents either way. Fifty cents is halfway; past that, the next
-                  note is nearer.
+                  an octave make 1,200 cents, and a tone is 200. MercuryPitch's
+                  Singing tab measures in cents too. Its Input monitor names the
+                  nearest note, and a bar shows how far above or below it you
+                  are, up to 50 cents either way. Fifty cents is halfway; past
+                  that, the next note is nearer.
                 </p>
                 <p class="try">
                   <span class="k">Try</span
@@ -1455,7 +1460,7 @@
                   ><span
                     >At 50 cents the nearest note changes from A3 to
                     <span aria-hidden="true">A#3</span
-                    ><span class="sr">A sharp 3</span>, just as MercuryPitch's
+                    ><span class="sr">A sharp 3</span>, just as the Input
                     monitor does.</span
                   >
                 </p>
@@ -1467,11 +1472,14 @@
                   </summary>
                   <ul>
                     <li>
-                      <b>Why twelve equal steps make exactly two.</b> Each
-                      semitone multiplies the frequency by the same number, the
-                      twelfth root of 2, about 1.0595. Twelve of those multiply
-                      to exactly 2: an octave. So the gap in hertz grows as you
-                      go up (A3 to A<span aria-hidden="true">♯</span
+                      <b
+                        >Why twelve equal steps exactly double the frequency.</b
+                      >
+                      Each semitone multiplies the frequency by the same number,
+                      the twelfth root of 2, about 1.0595. Twelve of those
+                      multiply to exactly 2: an octave. So the gap in hertz
+                      grows as you go up (A3 to A<span aria-hidden="true"
+                        >♯</span
                       ><span class="sr"> sharp </span>3 is 13.08&#8239;Hz, A4 to
                       A<span aria-hidden="true">♯</span
                       ><span class="sr"> sharp </span>4 is 26.16&#8239;Hz),
@@ -1524,8 +1532,8 @@
                 <h2 class="mv-title" id="sing-title">Sing it</h2>
               </header>
               <p>
-                Merc holds an A, slides up one semitone, and comes back. Orange
-                Merc sings it an octave up.
+                Blue Merc holds an A, slides up one semitone, and comes back.
+                Orange Merc sings it an octave up.
               </p>
               <p class="turn">
                 <b>Your turn:</b> play Merc's slide, then do the same on a hum
@@ -1566,10 +1574,10 @@
                 >
               </p>
               <p class="unscored" id="guideNote">
-                Start the guide once you've heard Merc's slide: it counts you
-                in, then a line sweeps along Merc's path, so follow it up one
-                lane and back. Nothing listens here and nothing is scored. It's
-                just for you.
+                Start the guide once you've heard Merc's slide. It counts you
+                in, then a line sweeps along Merc's path: follow it up one row,
+                a semitone, and back. Nothing listens here and nothing is
+                scored. It's just for you.
               </p>
             </div>
             <div class="guide-side">
@@ -1714,8 +1722,8 @@
                     >♯</span
                   ><span class="sr"> sharp</span> and D<span aria-hidden="true"
                     >♭</span
-                  ><span class="sr"> flat</span>; an equal semitone is 100
-                  cents, the unit MercuryPitch measures in.</span
+                  ><span class="sr"> flat</span>. MercuryPitch measures in
+                  cents: 100 to a semitone, in the tuning it uses.</span
                 >
               </li>
             </ul>
@@ -1739,8 +1747,8 @@
               <p>
                 In MercuryPitch's Ear Lab, Leap plays two notes, going up or
                 down, and asks for the distance. There a semitone is called a
-                minor 2nd (m2) and a tone a major 2nd (M2). Leap mixes all
-                twelve distances today, so listen for those two. For an easier
+                minor 2nd (m2) and a tone a major 2nd (M2). Leap mixes in all
+                twelve distances, so listen out for those two. For an easier
                 first drill, Contour asks only whether the second note went up,
                 down or stayed.
               </p>
@@ -1751,12 +1759,6 @@
                   <svg class="ico" aria-hidden="true">
                     <use href="#i-out" /></svg></span
                 >, then tap Leap.
-              </p>
-              <p class="first-visit">
-                First visit? MercuryPitch opens with its intro: close it with
-                the <span aria-hidden="true">&#215;</span
-                ><span class="sr">cross</span> at the top right (&#8220;Skip the
-                intro&#8221;).
               </p>
             </div>
             <figure class="leap-fig">
@@ -1906,7 +1908,7 @@
                     ><span class="v"
                       ><span data-climb-steps>0</span
                       ><span class="x2" data-climb-x2 hidden
-                        >&#215;&#8202;2</span
+                        >&#183; Hz&#8202;&#215;&#8202;2</span
                       ></span
                     >
                   </div>
@@ -2212,10 +2214,7 @@
           <p>
             <a href="/ear-lab?lesson=02" target="_blank" rel="noopener"
               >mercurypitch.com/ear-lab</a
-            ><br />Ear Lab is free: tap Leap. On a first visit, close the intro
-            first, with the <span aria-hidden="true">&#215;</span
-            ><span class="sr">cross</span> at the top right (&#8220;Skip the
-            intro&#8221;).
+            ><br />Ear Lab is free: tap Leap.
           </p>
         </div>
         <div>

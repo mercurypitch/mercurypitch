@@ -432,11 +432,6 @@ details.deeper li b {
   margin: 0 0 6px;
   color: var(--ink-2);
 }
-.l2-app .first-visit {
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--ink-3);
-}
 .leap-fig {
   margin: 0;
   min-width: 0;

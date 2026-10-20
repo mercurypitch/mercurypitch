@@ -73,7 +73,8 @@ quiz has question ids yet, so the Lesson telemetry track gives Lesson 1's questi
   [Play: A to A♯]
 - **Tone**, or whole step: two semitones. [Play: A to B]
 - **Sharp ♯ and flat ♭**: one semitone up, and one semitone down. [Play: C to C♯]
-- **Cent**: a hundredth of an equal semitone. [Play: a slow glide of 100 cents]
+- **Cent**: a tiny unit for measuring the distance between notes. In the tuning MercuryPitch uses, a
+  semitone is 100 cents. [Play: a slow glide of 100 cents]
 
 ## Step 1 of 6: What's the very next note after A?
 
@@ -92,9 +93,9 @@ own lit beads, so the hero's climb leaves this one's dim (DECISIONS 81)._
 
 Keep taking semitone steps and count. From A3 you reach A4, one turn up the spiral, in twelve
 steps: seven letters, and five notes between them. In hertz each step is a little bigger than the
-last, but to your ear every step is the same size, so each one turns the spiral by the same amount.
-And twelve of them double the frequency, from 220 Hz to 440 Hz, which is exactly what an octave
-is.
+last. To your ear, though, every step is the same size, so each one turns the spiral by the same
+amount. And twelve of them double the frequency, from 220 Hz to 440 Hz, which is exactly what an
+octave is.
 
 **Try:** press Climb and watch the beads light. Then press Look down.
 **Notice:** from above, one turn is a ring of twelve beads, evenly spaced like the hours on a
@@ -146,7 +147,8 @@ card under the Notice in the step's own text, since it is played by ear and need
 The five need names, and they borrow them from their neighbours. A sharp (♯) means one semitone
 up; a flat (♭) means one semitone down. So the key just above C is C♯, and the key just below D
 is D♭: the same key, two names. Musicians call that enharmonic. Both are right: the music around
-it decides which one is written. MercuryPitch's pitch line shows the sharp names, like C#4.
+it decides which one is written. MercuryPitch's pitch line shows the sharp names, typed with a #,
+like C#4.
 
 > **Common mix-up:** "The black keys are the sharps and flats; the white keys are the plain notes."
 > **Why it seems right:** every black key does carry a sharp name and a flat name.
@@ -167,23 +169,24 @@ gold ring; on phones, a close-up of B to F (WEB-SPEC, Toys 1)._
 
 ## Step 6 of 6: How big is a semitone, exactly?
 
-We measure it in cents: in the tuning MercuryPitch uses, every semitone is a hundred cents wide, so
-the twelve semitones of an octave make 1,200 cents, and a tone is 200. MercuryPitch measures in
-cents too: its Singing tab names the nearest note and shows on a bar how far above or below it you
-are, up to 50 cents either way. Fifty cents is halfway; past that, the next note is nearer.
+We measure it in cents. In the tuning MercuryPitch uses, every semitone is a hundred cents wide, so
+the twelve semitones of an octave make 1,200 cents, and a tone is 200. MercuryPitch's Singing tab
+measures in cents too. Its Input monitor names the nearest note, and a bar shows how far above or
+below it you are, up to 50 cents either way. Fifty cents is halfway; past that, the next note is
+nearer.
 
 **Try:** drag the marker slowly from A3 up to A♯3.
-**Notice:** at 50 cents the nearest note changes from A3 to A#3, just as MercuryPitch's monitor
-does.
+**Notice:** at 50 cents the nearest note changes from A3 to A#3, just as the Input monitor does.
 
 _Toy: the semitone ruler with cents._
 
 > **Go deeper**
 >
-> - **Why twelve equal steps make exactly two.** Each semitone multiplies the frequency by the
->   same number, the twelfth root of 2, about 1.0595. Twelve of those multiply to exactly 2: an
->   octave. So the gap in hertz grows as you go up (A3 to A♯3 is 13.08 Hz, A4 to A♯4 is 26.16 Hz),
->   while every semitone is still 100 cents. Your ear hears multiplying, not adding (Lesson 1).
+> - **Why twelve equal steps exactly double the frequency.** Each semitone multiplies the frequency
+>   by the same number, the twelfth root of 2, about 1.0595. Twelve of those multiply to exactly 2:
+>   an octave. So the gap in hertz grows as you go up (A3 to A♯3 is 13.08 Hz, A4 to A♯4 is
+>   26.16 Hz), while every semitone is still 100 cents. Your ear hears multiplying, not adding
+>   (Lesson 1).
 > - **Where the cent comes from.** The cent comes from Alexander Ellis, who used it in 1885 to
 >   compare the scales of different musical cultures. One cent multiplies the frequency by about
 >   1.000578.
@@ -192,7 +195,7 @@ _Toy: the semitone ruler with cents._
 
 ## Sing it
 
-Merc holds an A, slides up one semitone, and comes back. Orange Merc sings it an octave up.
+Blue Merc holds an A, slides up one semitone, and comes back. Orange Merc sings it an octave up.
 
 **Your turn:** play Merc's slide, then do the same on a hum or an "ooh", starting on Merc's A or
 the A an octave up, whichever is comfortable. Keep it quiet and gentle, never push, and stop if
@@ -200,15 +203,15 @@ anything feels uncomfortable.
 
 [ Play Merc's slide ] [ Play it an octave up ] [ Start the guide ]
 
-Start the guide once you've heard Merc's slide: it counts you in, then a line sweeps along Merc's
-path, so follow it up one lane and back. Nothing listens here and nothing is scored. It's just for
-you.
+Start the guide once you've heard Merc's slide. It counts you in, then a line sweeps along Merc's
+path: follow it up one row, a semitone, and back. Nothing listens here and nothing is scored. It's
+just for you.
 
 ## Quick check
 
-The film's four recap questions, each with three answers shown in a shuffled order, so a guess
-scores a third, not half. The page puts "Right." or "Not quite." before each feedback line, and a
-"Try Step N again" ends with a link to that step, as in Lesson 1's quick check.
+_[Editorial: the film's four recap questions, each with three answers shown in a shuffled order, so
+a guess scores a third, not half. The page puts "Right." or "Not quite." before each feedback line,
+and a "Try Step N again" ends with a link to that step, as in Lesson 1's quick check.]_
 
 1. How many semitones make an octave?
    - 12 **[correct]** · Feedback: "Seven letters and five notes between them: twelve equal steps."
@@ -241,8 +244,8 @@ scores a third, not half. The page puts "Right." or "Not quite." before each fee
 - Seven letters and five notes in the gaps: twelve notes, twelve equal semitones to the octave.
 - A semitone is one key to the very next, white or black; a tone is two. B–C and E–F are
   semitones.
-- One key can have two names, like C♯ and D♭; an equal semitone is 100 cents, the unit
-  MercuryPitch measures in.
+- One key can have two names, like C♯ and D♭. MercuryPitch measures in cents: 100 to a semitone, in
+  the tuning it uses.
 
 **One-sentence challenge:** explain to a friend, in one sentence, why there's no black key between
 B and C.
@@ -252,22 +255,19 @@ B and C.
 - Eyebrow: Practise in MercuryPitch
 - Title: Ear Lab's Leap
 - Text: In MercuryPitch's Ear Lab, Leap plays two notes, going up or down, and asks for the
-  distance. There a semitone is called a minor 2nd (m2) and a tone a major 2nd (M2). Leap mixes
-  all twelve distances today, so listen for those two. For an easier first drill, Contour asks
-  only whether the second note went up, down or stayed.
+  distance. There a semitone is called a minor 2nd (m2) and a tone a major 2nd (M2). Leap mixes in
+  all twelve distances, so listen out for those two. For an easier first drill, Contour asks only
+  whether the second note went up, down or stayed.
 - Address: Practise it free: **mercurypitch.com/ear-lab**, then tap Leap.
-- First visit: First visit? MercuryPitch opens with its intro: close it with the × at the top
-  right ("Skip the intro").
 - Figure: Leap's twelve answers in the app's six columns, m2 and M2 lit, the other ten ghosted.
   Caption: "Illustration: Leap's twelve answers. In Leap: m2 = semitone · M2 = tone."
 
 _[Editorial: when the `ear-drill` launch kind with a bank subset ships (CURRICULUM § 4 item 5),
 the card's text becomes "Leap plays two notes, going up or down; answer whether the step was a
 semitone (m2) or a tone (M2)." and its address "Practise it free:
-mercurypitch.com/exercises/semitone-or-tone" (proposed slug, DECISIONS 31); the figure stays. On
-the public host every link carries `?lesson=02`. When the `?lesson=` step-aside ships (CURRICULUM
-§ 4 item 6), the first-visit line goes, here, in the footer and on the explorer card (DECISIONS
-84).]_
+mercurypitch.com/exercises/semitone-or-tone" (proposed slug, DECISIONS 31); the figure stays. On the
+public host every link carries `?lesson=02`, so First Light, the app's intro, steps aside on a first
+visit, and the card and the footer have no line about closing it (FACTS 33b).]_
 
 **Next lesson** (a card that opens Lesson 3 in the explorer): Lesson 3, Match a note. "Asked, most
 of 1,105 students said they couldn't copy a tune. Tested, only about one in ten to one in six
@@ -346,8 +346,7 @@ The page's head, its share text and its footer, exactly (WEB-SPEC, Footer; Lesso
 - Footer, first column: the wordmark, Find Your Pitch; then "Season 1 · Lesson 02 · Twelve notes".
   No dateline, as on Lesson 1's.
 - Footer, Practise: the link "mercurypitch.com/ear-lab" (to `/ear-lab?lesson=02`, in a new tab),
-  then "Ear Lab is free: tap Leap. On a first visit, close the intro first, with the × at the top
-  right ("Skip the intro")."
+  then "Ear Lab is free: tap Leap."
 - Footer, Credits: "Fonts: Outfit, Inter, Instrument Serif, JetBrains Mono and Noto Music, all SIL
   OFL 1.1. Voices in the episode: ElevenLabs (Eleven v3). Merc's sung notes in the film:
   stand-ins for now, made with ElevenLabs and retuned. Every other musical example, Merc's slides
