@@ -55,14 +55,15 @@ headings").
    the sound gate from LESSON.md, in the hero copy as Lesson 1's is; the two Mercs live on the
    floor line either side of the staircase, shown on C with do marked home, and its Play button
    (`scale-c`, FACTS 57).
-3. **Recall from Lesson 2**: Lesson 2's questions 1 and 3 (Toys 5).
-4. **Cold open: predict**: the bubbles, each with its Merc's still, and beside them the compact
+3. **Cold open: predict**: the bubbles, each with its Merc's still, and beside them the compact
    staircase (Toys 1), so the sound and the stairs are on screen together (playbook rule 10). Play
    from C and its Land on do work from the start; orange's and blue's lines from LESSON.md; the
    two-choice predict; choosing unlocks Play from D, which slides the compact staircase to D,
    announced "Major scale from D", before it plays. The reveal appears after Play from D has
    sounded; with sound off, LESSON.md's hint shows and the reveal waits. The live Mercs stay in the
    hero (Mercs, below).
+4. **Recall from Lesson 2**: Lesson 2's questions 1 and 3 (Toys 5), straight after the cold
+   open, as on Lesson 2's page (MASTER-PLAN § 4.2, decided 20 October 2026).
 5. **Four words you'll meet**: scale, tonic, scale degree and solfège, each with its definition, a
    small figure and a play button (Toys 3).
 6. **The steps**: Lesson 1's sticky stage and step deck ("N of 5", Previous and Next, the stage
@@ -288,7 +289,7 @@ on the CPU.
 - They live in the hero, and their reactions are the hero pair's: blue `sing` while the hero's
   Play sounds; in the cold open, blue `sing` while Play from C sounds and orange `sing` while Play
   from D sounds; and orange `celebrate` once after the cold-open reveal (no sparkles).
-- The cold open sits below the recall, so the live pair is often off screen and paused while it
+- The cold open sits below the hero, so the live pair is often off screen and paused while it
   plays. The bubbles carry each Merc's still, and the compact staircase carries the moment.
 - `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:216`), and `mercListen` (`:206`)
   since Lesson 3's page; this page asks for no other state: the Merc who is not singing idles.

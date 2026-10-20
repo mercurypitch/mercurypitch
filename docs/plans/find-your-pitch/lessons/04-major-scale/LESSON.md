@@ -24,7 +24,31 @@ the end.
 > This lesson is about the steps of a scale. Tap to turn sound on: nothing plays until you press a
 > play button.
 
+## Cold open: predict
+
+[ Play from C ] (Merc climbs the major scale from C and stops on ti. Land on do finishes it. The
+small staircase beside the bubbles shows do-re-mi names only: no letters and no keys.)
+
+Orange Merc: "It just hangs there, waiting. Is that because we started on C?"
+Blue Merc: "Start somewhere else and listen."
+
+**Predict before you listen.** Merc climbs the same steps from D and stops on ti again. Will it
+still sound unfinished?
+[ Yes, still unfinished ] [ No, only from C ]
+
+(After a choice, Play from D unlocks. The staircase, announced "Major scale from D", climbs to ti
+and stops, and Land on do finishes it. With sound off, the hint reads: "Sound is off, so nothing
+played. Turn sound on to hear it, then press Play from D." The reveal waits for the sound.)
+
+Reveal (shown after Play from D has played, so it describes what was heard): Still unfinished, and
+landing on do finishes it, this time on D. Home moved with the start: it's the steps that matter,
+not the note C, and the steps are this lesson's story. (The scale you heard first started on C, so C
+was a fair guess.)
+
 ## Recall from Lesson 2
+
+_[After the cold open since 20 October 2026, as on Lesson 2's page (MASTER-PLAN § 4.2 and
+§ 12 item 13).]_
 
 Two questions from Lesson 2, asked afresh (no earlier answers are shown). They are Lesson 2's quiz
 questions 1 and 3, word for word, under their ids `l02-q1` and `l02-q3`; Lesson 3's draft asks the
@@ -46,27 +70,6 @@ count as the delayed score (MASTER-PLAN § 9).
      from C, D♭ a semitone down from D, and both land on it. Try Lesson 2, Step 5 again."
    - It depends on the music around it · Feedback: "The music around it decides which name is
      written, not which key: C♯ and D♭ are one key either way."
-
-## Cold open: predict
-
-[ Play from C ] (Merc climbs the major scale from C and stops on ti. Land on do finishes it. The
-small staircase beside the bubbles shows do-re-mi names only: no letters and no keys.)
-
-Orange Merc: "It just hangs there, waiting. Is that because we started on C?"
-Blue Merc: "Start somewhere else and listen."
-
-**Predict before you listen.** Merc climbs the same steps from D and stops on ti again. Will it
-still sound unfinished?
-[ Yes, still unfinished ] [ No, only from C ]
-
-(After a choice, Play from D unlocks. The staircase, announced "Major scale from D", climbs to ti
-and stops, and Land on do finishes it. With sound off, the hint reads: "Sound is off, so nothing
-played. Turn sound on to hear it, then press Play from D." The reveal waits for the sound.)
-
-Reveal (shown after Play from D has played, so it describes what was heard): Still unfinished, and
-landing on do finishes it, this time on D. Home moved with the start: it's the steps that matter,
-not the note C, and the steps are this lesson's story. (The scale you heard first started on C, so C
-was a fair guess.)
 
 ## Four words you'll meet
 

@@ -53,9 +53,10 @@ above it, are in LESSON.md ("Section headings").
    Twelve notes" and "After Lesson 3: Match a note", the prerequisite chips, links to `/learn/02`
    and `/learn/03`; Sound on; Microphone optional), the promise, and the two Mercs either side of a
    still of the hold demo (Toys, 5): a violet line settling into Merc's band, the signature.
-3. **Recall from Lesson 3**, shown to everyone, because Lesson 3 is a prerequisite (CURRICULUM
-   § 3.3; Toys, 7).
-4. **Cold open: predict**: the bubbles, the two takes, the predict and the reveal (Toys, 1).
+3. **Cold open: predict**: the bubbles, the two takes, the predict and the reveal (Toys, 1).
+4. **Recall from Lesson 3**, a section of its own straight after the cold open, as on Lesson 2's
+   page (MASTER-PLAN § 4.2, decided 20 October 2026), shown to everyone, because Lesson 3 is a
+   prerequisite (CURRICULUM § 3.3; Toys, 7).
 5. **Four words you'll meet**: Air pressure plays Push's note at 50, then at 70 (Toys, 2);
    Diaphragm shows the breath figure breathing in (Toys, 3); Onset plays the "together" start
    (Toys, 4); Support has no button.
@@ -382,7 +383,7 @@ Tests:
 
 ### 7. Recall and quick check
 
-- **Recall**: the kit's quiz at the top of the page with Lesson 3's questions 3 and 4 as committed,
+- **Recall**: the kit's quiz below the cold open with Lesson 3's questions 3 and 4 as committed,
   word for word, under Lesson 3's ids `l03-q3` and `l03-q4` (FACTS 3), shown to everyone because
   Lesson 3 is a prerequisite (CURRICULUM § 3.3). It is reshuffled from a seed of its own (keys
   `fyp-l05-recall-seed` and `fyp-l05-recall-v1`), and earlier answers are never shown, so the
