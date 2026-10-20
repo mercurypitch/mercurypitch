@@ -34,6 +34,7 @@ import { retentionConfig, sweepFunnelRetention } from './funnel-retention'
 import { handleFriendAccept, handleFriendCode, handleFriendRedeem, handleFriendRemove, handleFriendRequest, handleFriendRequests, } from './friends'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
 import { handleGuidedExerciseRequest } from './guided-exercises'
+import { handleLessonStateRequest, isLessonStatePath, } from './lesson-state-routes'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { cleanMirrorMetrics } from './mirror-metrics'
 import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, } from './moderation'
@@ -2811,6 +2812,26 @@ async function handleRequest(
       },
     )
     if (guidedResponse !== null) return guidedResponse
+  }
+
+  // Find Your Pitch's runtime publish state: the public read the site and
+  // the lesson pages make, and the Content Studio's writes and history
+  // behind it (lesson-state-routes.ts). Writes are rate-limited like the
+  // generic CRUD path.
+  if (isLessonStatePath(url.pathname)) {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      const rl = await checkRateLimit(
+        env.DB,
+        rateLimitSubject(request, auth),
+        'crud-write',
+      )
+      if (!rl.allowed) return rateLimited(rl)
+    }
+    return handleLessonStateRequest(request, env, url, {
+      respond,
+      admin: () =>
+        resolveAdminWithIdentity(request, env, hasAdminKey(request, env)),
+    })
   }
 
   if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
