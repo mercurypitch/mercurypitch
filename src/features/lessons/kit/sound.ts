@@ -463,7 +463,7 @@ export const Sound = {
   canPlay(): boolean {
     if (hushed) return false
     if (state === 'off') {
-      toast('Sound is off, so this one plays silently.', true)
+      toast("Sound is off, so you'll see this one but not hear it.", true)
       return false
     }
     if (state === 'unset') Sound.set('on')

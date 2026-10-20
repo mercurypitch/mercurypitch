@@ -44,7 +44,7 @@ export function initPredict(): void {
     revealOn: ['both'],
     hints: {
       chosen:
-        'Locked in. Play both plays them one after the other, then together.',
+        "Locked in. Now press Play both: you'll hear them one after the other, then together.",
       silent:
         'Sound is off, so nothing played. Turn sound on to hear them, then press Play both.',
       next: 'Now press Play both: one after the other, then together.',

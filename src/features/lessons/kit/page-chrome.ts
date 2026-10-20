@@ -71,7 +71,7 @@ export function initMotionSwitch(): void {
     } else {
       b.removeAttribute('aria-disabled')
       b.removeAttribute('aria-describedby')
-      b.title = 'Pause or play the ambient animations'
+      b.title = 'Pause or play the background animations'
     }
     note.hidden = !locked
   })

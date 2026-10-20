@@ -59,7 +59,9 @@ describe('readTake', () => {
     const r = read(-45)
 
     // Assert
-    expect(r.line).toBe("Close: 45 cents below Merc's note.")
+    expect(r.line).toBe(
+      "Close: 45 cents below Merc's note. Listen again, then aim a touch higher.",
+    )
     expect(r.landed).toBe(false)
   })
 
@@ -99,7 +101,9 @@ describe('readTake', () => {
     const r = read(-1200 + 55)
 
     // Assert
-    expect(r.line).toBe("Close: 55 cents above Merc's note.")
+    expect(r.line).toBe(
+      "Close: 55 cents above Merc's note. Listen again, then aim a touch lower.",
+    )
     expect(r.octaveLine).toBeNull()
   })
 
