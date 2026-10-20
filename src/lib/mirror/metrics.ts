@@ -15,7 +15,7 @@ import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Frame, VoicedFrame } from '@/lib/pitch-measurements'
 import { centsToMidi, CONF_MIN, DEFAULT_VOICED_RUN_GAP_SEC, estimateFrameHop as estimateHop, foldCents, median, MEDIAN_WINDOW, medianFilter as sharedMedianFilter, preprocessF0Frames, } from '@/lib/pitch-measurements'
 import { detectVibrato } from '@/lib/vocal-analyzer'
-import { VOICE_TYPE_BANDS } from './legend-catalog'
+import { voiceTypeHint } from './legend-catalog'
 import { BULLSEYE_TOLERANCE_CENTS, CLOSE_TOLERANCE_CENTS, HIT_TOLERANCE_CENTS, } from './match-bands'
 
 export type { F0Frame, VoicedFrame } from '@/lib/pitch-measurements'
@@ -150,28 +150,11 @@ export interface RangeResult {
   voiceHint: string | null
 }
 
-/** Best-overlapping voice type for a detected range; ties → closest center. */
-export function voiceTypeHint(
-  lowMidi: number,
-  highMidi: number,
-): string | null {
-  const center = (lowMidi + highMidi) / 2
-  let best: { name: string; overlap: number; centerDist: number } | null = null
-  for (const band of VOICE_TYPE_BANDS) {
-    const overlap =
-      Math.min(highMidi, band.highMidi) - Math.max(lowMidi, band.lowMidi)
-    if (overlap <= 0) continue
-    const centerDist = Math.abs((band.lowMidi + band.highMidi) / 2 - center)
-    if (
-      best === null ||
-      overlap > best.overlap ||
-      (overlap === best.overlap && centerDist < best.centerDist)
-    ) {
-      best = { name: band.id, overlap, centerDist }
-    }
-  }
-  return best?.name ?? null
-}
+/**
+ * Best-overlapping voice type for a detected range. It lives with the bands
+ * (legend-catalog.ts) so the db worker can name a voice the way the app does.
+ */
+export { voiceTypeHint }
 
 /**
  * Vocal range from the glide task (§4.1). Takes both glides (up and down);

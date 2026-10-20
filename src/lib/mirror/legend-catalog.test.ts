@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { VOICE_LEGENDS, VOICE_TYPE_BANDS } from './legend-catalog'
+import { BASS_BARITONE, VOICE_LEGENDS, VOICE_TYPE_BANDS, voiceTypeBand, } from './legend-catalog'
 
 describe('VOICE_TYPE_BANDS', () => {
   it('contains the six broad voice bands in stable low-to-high order', () => {
@@ -82,5 +82,22 @@ describe('VOICE_LEGENDS', () => {
     expect(imageSources.every((source) => source.startsWith('/legends/'))).toBe(
       true,
     )
+  })
+})
+
+describe('voiceTypeBand', () => {
+  it('is the band itself for every band', () => {
+    for (const band of VOICE_TYPE_BANDS) {
+      expect(voiceTypeBand(band.id)).toBe(band.id)
+    }
+  })
+
+  it('draws a bass-baritone on Bass, where its twins come from', () => {
+    expect(voiceTypeBand(BASS_BARITONE)).toBe('Bass')
+  })
+
+  it('knows no band for a name no band carries', () => {
+    expect(voiceTypeBand('Countertenor')).toBeNull()
+    expect(voiceTypeBand(null)).toBeNull()
   })
 })

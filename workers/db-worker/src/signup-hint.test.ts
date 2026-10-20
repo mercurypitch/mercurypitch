@@ -25,10 +25,30 @@ describe('parseVoiceprintHint', () => {
 
   it('finds every legend in the catalogue by its own name', () => {
     for (const legend of VOICE_LEGENDS) {
-      const hint = parseVoiceprintHint({ ...SINATRA, twin: legend.name })
+      // G2–G4: a range that ties no two bands, so each reads its own band.
+      const hint = parseVoiceprintHint({
+        ...SINATRA,
+        twin: legend.name,
+        lowMidi: 43,
+      })
       expect(hint?.legendId).toBe(legend.id)
       expect(hint?.voiceType).toBe(legend.band)
     }
+  })
+
+  it('names a range that ties Bass and Baritone Bass-baritone, as the card does', () => {
+    const bass = VOICE_LEGENDS.find((legend) => legend.band === 'Bass')
+    // E2–G4 with a Bass twin, the twin the app finds for that tie.
+    expect(
+      parseVoiceprintHint({ ...SINATRA, twin: bass?.name })?.voiceType,
+    ).toBe('Bass-baritone')
+    // E2–E4 is Bass alone.
+    expect(
+      parseVoiceprintHint({ ...SINATRA, twin: bass?.name, highMidi: 64 })
+        ?.voiceType,
+    ).toBe('Bass')
+    // A Baritone twin on the same range keeps its own band.
+    expect(parseVoiceprintHint(SINATRA)?.voiceType).toBe('Baritone')
   })
 
   it('rounds the scores and lets either be missing', () => {

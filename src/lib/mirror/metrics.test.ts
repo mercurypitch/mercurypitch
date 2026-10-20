@@ -226,13 +226,24 @@ describe('voiceTypeHint', () => {
     expect(voiceTypeHint(43, 67)).toBe('Baritone')
   })
 
+  it('matches an E2–E4 range to Bass', () => {
+    expect(voiceTypeHint(40, 64)).toBe('Bass')
+  })
+
+  it('names an E2–G4 range, a tie of Bass and Baritone, Bass-baritone', () => {
+    expect(voiceTypeHint(40, 67)).toBe('Bass-baritone')
+    // Any range sharing as much with each and as near both middles: E3–G3.
+    expect(voiceTypeHint(52, 55)).toBe('Bass-baritone')
+  })
+
   it('matches a C4–C6 range to Soprano', () => {
     expect(voiceTypeHint(60, 84)).toBe('Soprano')
   })
 
   it('breaks equal-overlap ties by closest center, then catalogue order', () => {
     expect(voiceTypeHint(60, 67)).toBe('Alto')
-    expect(voiceTypeHint(52, 55)).toBe('Bass')
+    // A full Baritone/Tenor tie (A2–A#4) keeps the catalogue's order.
+    expect(voiceTypeHint(45, 70)).toBe('Baritone')
   })
 
   it('returns null when a range does not overlap a canonical band', () => {

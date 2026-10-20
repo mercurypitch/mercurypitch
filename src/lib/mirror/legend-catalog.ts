@@ -83,6 +83,61 @@ export const VOICE_TYPE_BANDS = [
   },
 ] as const satisfies readonly VoiceTypeBand[]
 
+/**
+ * The voice between Bass and Baritone. A range that shares as many
+ * semitones with each and sits as near the middle of each (E2 to G4 is one)
+ * is this voice, not whichever of the two the catalogue lists first.
+ */
+export const BASS_BARITONE = 'Bass-baritone'
+
+/** A voice type the Mirror can name: one band, or the Bass/Baritone tie. */
+export type VoiceTypeName = VoiceTypeBandId | typeof BASS_BARITONE
+
+/**
+ * The band behind a voice type's name, for what only a band has: the
+ * twins' roster, a range preset. A bass-baritone draws on Bass, where the
+ * tie went before it had its own name, so every twin stays who it was. Null
+ * for a name no band carries.
+ */
+export function voiceTypeBand(name: string | null): VoiceTypeBandId | null {
+  if (name === BASS_BARITONE) return 'Bass'
+  return VOICE_TYPE_BANDS.find((band) => band.id === name)?.id ?? null
+}
+
+/**
+ * The voice type a range overlaps most: the band sharing the most semitones
+ * with it, a tie going to the band whose middle is nearest. A range that
+ * ties Bass and Baritone on both reads Bass-baritone; any other full tie
+ * goes to the band listed first. A hint, never a verdict.
+ */
+export function voiceTypeHint(
+  lowMidi: number,
+  highMidi: number,
+): VoiceTypeName | null {
+  const center = (lowMidi + highMidi) / 2
+  let best: VoiceTypeBandId[] = []
+  let bestOverlap = 0
+  let bestCenterDist = Infinity
+  for (const band of VOICE_TYPE_BANDS) {
+    const overlap =
+      Math.min(highMidi, band.highMidi) - Math.max(lowMidi, band.lowMidi)
+    if (overlap <= 0) continue
+    const centerDist = Math.abs((band.lowMidi + band.highMidi) / 2 - center)
+    if (
+      overlap > bestOverlap ||
+      (overlap === bestOverlap && centerDist < bestCenterDist)
+    ) {
+      best = [band.id]
+      bestOverlap = overlap
+      bestCenterDist = centerDist
+    } else if (overlap === bestOverlap && centerDist === bestCenterDist) {
+      best.push(band.id)
+    }
+  }
+  if (best.includes('Bass') && best.includes('Baritone')) return BASS_BARITONE
+  return best[0] ?? null
+}
+
 /** The complete Voice Mirror legend roster, grouped in map display order. */
 export const VOICE_LEGENDS = [
   {
