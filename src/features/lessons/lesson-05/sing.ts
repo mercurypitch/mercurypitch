@@ -59,8 +59,7 @@ const TAP_SEC = 1
 
 /** Every status line the checkpoint says, beside the reader's own. */
 export const STATUS = {
-  listen:
-    'Just listening today: nothing listens, and the microphone stays off.',
+  listen: 'Just listening today: the microphone stays off.',
   nomic:
     'No microphone? Sing along anyway: Merc sings the note first, and nothing listens.',
   voice: "Choose the voice you'll sing with.",
@@ -361,7 +360,7 @@ export function initSing(stills: RingStills): void {
 
   const feelings = mountFeelings(card, onFeel)
 
-  /** Done for today, or Done: the checkpoint ends here, and the Wrap keeps the Voice Mirror card. */
+  /** Done for today, on either of its buttons: the checkpoint ends here, and the Wrap keeps the Voice Mirror card. */
   function finish(): void {
     for (const b of qa<HTMLButtonElement>(
       '[data-panel="after"] .sing-btns button, [data-take-actions] button',

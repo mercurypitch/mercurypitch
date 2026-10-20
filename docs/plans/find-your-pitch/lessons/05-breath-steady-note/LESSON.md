@@ -28,7 +28,7 @@ there. What the vocal coach and the owner decide is listed at the end.
 ## Sound gate
 
 > This lesson is about your breath and your voice. Tap to turn the sound on: nothing plays until
-> you press play. The microphone is asked for only if you choose to sing.
+> you press play. We ask for the microphone only if you choose to sing.
 
 ## Recall from Lesson 3
 
@@ -62,8 +62,8 @@ loudness.)
 (A held A, four seconds, drawn as a violet line: it starts a little low, settles into the band and
 stays.)
 
-**Predict before you hear it.** Now the same note is sung pushing more and more air. What will the
-line do?
+**Predict before you hear it.** Now the same note is sung with a harder and harder push of air. What
+will the line do?
 [ Settle, steadier than before ] [ Get louder and drift higher ]
 
 (After a choice: Play: pushing harder.)
@@ -72,7 +72,7 @@ Reveal (after it plays): Louder, and higher. The push of air under your vocal fo
 sets how loud a note is, and nudges it higher too. So pushing doesn't hold a note still: it moves
 it. A steady note needs steady air, not more of it.
 
-Small print: both lines illustrate that rule; neither is a recording.
+Both lines are drawings of that rule, not recordings.
 
 (If you chose steadier: that's what the word "support" seems to promise. So what does keep a note
 steady? That's this lesson.)
@@ -84,13 +84,14 @@ steady? That's this lesson.)
 - **Diaphragm**: a dome-shaped muscle under your lungs. It tightens to breathe in. [Show: the dome
   flattens]
 - **Onset**: the very start of a note, the moment the sound begins. [Play: an easy start]
-- **Support**: what singers call managing the breath as they sing. It has no agreed definition.
+- **Support**: singers' word for how they manage the breath as they sing. There's no one agreed
+  meaning.
 
 ## Step 1 of 5: Why does pushing move the note?
 
-How hard your breath pushes on your vocal folds, its pressure, mainly sets how loud the note is,
-and nudges the pitch: push harder and the note gets louder and creeps higher. Loud and high are
-different things (Lesson 1), but in a voice one push moves both. So singers learn to keep each
+How hard your breath pushes on your vocal folds is its pressure. It mainly sets how loud the note
+is, and it nudges the pitch: push harder and the note gets louder and creeps higher. Loud and high
+are different things (Lesson 1), but in a voice one push moves both. So singers learn to keep each
 note's pressure steady, and loud and high apart.
 
 **Try:** play the note, slide Push up and down, then keep it still.
@@ -108,31 +109,32 @@ lungs. It can't push air out.
 [ Push it out ] [ Hold it back ]
 
 Reveal: Hold it back, with your breathing muscles, never your throat. Full lungs spring back by
-themselves, often harder than a quiet note needs, so at first your breathing-in muscles keep
-working. As the air goes, your belly and rib muscles take over. (If you said push: the push is
-already there.)
+themselves, often harder than a quiet note needs. So at first your breathing-in muscles keep
+working, holding some of that push back. As the air goes, your belly and rib muscles take over the
+pushing. (If you said push: full lungs already push.)
 
 Orange Merc: "So full lungs push by themselves, and at first I just hold some back."
 
 > **Common mix-up:** "Support means pushing the air out hard, or squeezing."
 > **Why it seems right:** singers often talk about support, and it sounds like effort.
 > **The evidence:** pushing harder makes a note louder and higher (Step 1). Squeezing your throat
-> makes a pressed sound, like lifting something heavy, that needs more air pressure, not less.
+> makes a pressed sound, the sound people make lifting something heavy, and a pressed sound needs
+> more air pressure, not less.
 > **The better idea:** a steady note needs steady air, not more of it: breathe in low, start
 > easily, and let the air flow out unforced.
 
 **Try:** press Play the breath, then switch between Quiet and Loud.
-**Notice:** what the note needs stays flat while the lungs' push falls: first the body holds back,
-then it adds. A loud note needs less holding back.
+**Notice:** what the note needs stays level, while the lungs' own push falls. So first the body
+holds back, then it adds. A loud note needs less holding back.
 
 _Toy: the breath gauge, one long note's breath, with Quiet and Loud._
 
 ## Step 3 of 5: How should I breathe in?
 
-Start tall but easy, knees unlocked if you're standing, jaw, tongue and neck loose: that's where
-singing teachers usually begin. Then breathe in quietly and let the breath drop low, shoulders
-still, taking as much as feels easy. If your belly moves out, that's your diaphragm at work.
-Singers breathe in different ways; this is a calm place to start.
+Start tall but easy. If you're standing, keep your knees unlocked. Let your jaw, tongue and neck go
+loose. That's where singing teachers usually begin. Then breathe in quietly and let the breath drop
+low, shoulders still, taking as much as feels easy. If your belly moves out, that's your diaphragm
+at work. Singers breathe in different ways; this is a calm place to start.
 
 Lesson 3's care lines still apply: stop if your voice feels scratchy or hoarse.
 
@@ -146,12 +148,12 @@ _Toy: the breath figure, with Breathe in and Merc's breathing ring, beside the c
 
 > **Go deeper**
 >
-> - **What singers say and do.** In six opera baritones, judged from how their chest and belly
->   moved, the diaphragm refilled the lungs, and their own accounts of their breathing bore little
->   resemblance to it (Watson and Hixon, 1985).
+> - **What singers say and do.** Researchers tracked how six opera baritones' chests and bellies
+>   moved. Judging from that, the diaphragm refilled their lungs, but the singers' own accounts of
+>   their breathing bore little resemblance to it (Watson and Hixon, 1985).
 > - **Belly in, belly out.** Some singers keep the belly out, others draw it in (Sundberg, 1992).
->   In one study, most of the trained classical singers drew it in just before singing; it measured
->   breathing, not the sound (Salomoni and colleagues, 2016).
+>   In one study, most of the trained classical singers drew it in just before singing; that study
+>   measured breathing, not the sound (Salomoni and colleagues, 2016).
 > - **Holding back has a name:** inspiratory checking. In four professional singers, some tightened
 >   the diaphragm briefly near a phrase's start; one kept it working throughout (Leanderson and
 >   colleagues, 1987).
@@ -161,7 +163,8 @@ _Toy: the breath figure, with Breathe in and Merc's breathing ring, beside the c
 A voice has three main ways to start a note, its onset. Air first: a puff of breath, like a soft
 "h", then the sound. A catch: the vocal folds are pressed shut, and the note starts as they open,
 a little like a cough. Or together: the folds meet the air just as it starts to flow. For a long,
-easy note, many singing teachers aim for the third, the easy start, often found through the "h".
+easy note, many singing teachers aim for the third, the easy start. It's often found by beginning
+with a soft "h", then keeping it only in your mind.
 
 **Try:** play the three starts. Then sing a quiet "hoo" three times, with a breath between, then
 "oo", with the "h" only in your mind.
@@ -173,8 +176,8 @@ _Toy: three starts, the vocal folds from above with a trace of each start._
 ## Step 5 of 5: What does a steady note look like?
 
 Sung notes are rarely perfectly still: they can begin with a short slide, a scoop. And steady
-doesn't mean flat: a small vibrato, a regular wave in the pitch, can sit inside the band. Steady
-means the line settles into the band and stays, for a comfortable, fixed length: 5, 10 or 15
+doesn't mean dead straight: a small vibrato, a regular wave in the pitch, can sit inside the band.
+Steady means the line settles into the band and stays, for a comfortable, fixed length: 5, 10 or 15
 seconds, never "as long as you can".
 
 **Try:** press Play, then Slow, and watch the first second.
@@ -199,25 +202,25 @@ If hoarseness or discomfort lasts more than a couple of weeks, see a doctor (a G
 and throat specialist). If it's very painful, or breathing or swallowing is hard, get help straight
 away."
 
-Your voice from Lesson 3, or choose now: [ Lower: sing with blue Merc, around A3 ] [ Higher: sing
-with orange Merc, around A4 ]
+Keep the voice you chose in Lesson 3, or choose now: [ Lower: sing with blue Merc, around A3 ]
+[ Higher: sing with orange Merc, around A4 ]
 
 **Warm-up, optional, about a minute.** Three sighs: a quiet "hoo" sliding down, like a relieved
 sigh. Then, if you like, lip trills ("brrr", lips loose, up a little and back), or hum, or sing a
-soft "oo". Follow the shape, not Merc's notes. Nothing listens. Stop immediately if anything feels
-uncomfortable. [Play Merc's sigh] [Play the slide] [ Skip ]
+soft "oo". Copy the way Merc's voice slides, not the exact notes. Nothing listens. Stop immediately
+if anything feels uncomfortable. [Play Merc's sigh] [Play the slide] [ Skip ]
 
 Your note is Merc's A: move it **Lower** or **Higher** until it sits easily.
 
-> **What this does:** it measures how long your note stays in Merc's band, in any octave. It
-> doesn't measure your breath or diagnose your voice. Your voice is analysed on this device:
-> nothing is recorded, kept or sent.
+> **What this does:** it measures how long your note stays in Merc's band, in any octave. It doesn't
+> measure your breath or diagnose anything. Your voice is analysed on this device: nothing is
+> recorded, kept or sent.
 
 [ Start ] (it asks for the microphone)
 
-Each hold goes **Listen · Breathe · Sing**: listen to Merc's note, breathe in low and quiet, then
-sing straight away, easily, at about speaking volume, and hold the note until the ring closes, or
-stop sooner if you need to. Stop immediately if anything feels uncomfortable.
+Each hold goes **Listen · Breathe · Sing**. Listen to Merc's note. Breathe in, low and quiet. Then
+sing straight away, easily, at about speaking volume. Hold the note until the ring closes, or stop
+sooner if you need to. Stop immediately if anything feels uncomfortable.
 
 After each hold, one line, such as:
 
@@ -229,7 +232,7 @@ Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable 
 - Easy or Workable, after ten seconds: "Rest for a few easy breaths. Ready when you are."
   [ Hold for 15 seconds ] [ Again ] [ Done for today ]
 - Easy or Workable, after fifteen: "This time your line was in the band for 8.4 of 10 seconds,
-  then 12.9 of 15." [ Again ] [ Done ]
+  then 12.9 of 15." [ Again ] [ Done for today ]
 - If a hold spent under half its length in the band: "If that felt tricky, good: that's
   learning."
 - Effortful: the reading and no more holds, then "Keep it gentle: rest before you sing again."
@@ -241,7 +244,8 @@ No microphone: "No microphone? Sing along anyway: Merc sings the note first, and
 
 ## Quick check
 
-Each question has three answers, shown in a shuffled order, so a guess scores a third, not half.
+_[Editorial: each question has three answers, shown in a shuffled order, so a guess scores a third,
+not half.]_
 
 1. What is your diaphragm's main job?
    - Breathing in: it tightens, and air flows in **[correct]** · Feedback: "It mostly works on the
@@ -267,8 +271,8 @@ Each question has three answers, shown in a shuffled order, so a guess scores a 
 4. What does a steady long note look like on the pitch line?
    - It settles into the band and stays there **[correct]** · Feedback: "It can wave a little and
      still stay in the band."
-   - A perfectly flat line, with no movement at all · Feedback: "Steady isn't flat: a small vibrato
-     can sit inside the band. Try Step 5 again."
+   - A perfectly straight line, with no movement at all · Feedback: "Steady isn't dead straight: a
+     small vibrato can sit inside the band. Try Step 5 again."
    - The longest line you can make on one breath · Feedback: "Length isn't the goal. Holds here are
      a fixed 5, 10 or 15 seconds, never a contest."
 
@@ -362,7 +366,7 @@ the coach reviews Lessons 3 and 5), and the questions still open:
 - The cold open's pushed note and Step 1's Push toy: a voice pushed louder and higher, for
   listening only.
 - The warm-up, Lesson 3's: three sighs and the optional lip trill (or a hum, or a soft "oo"), about
-  a minute, never scored, with "Follow the shape, not Merc's notes".
+  a minute, never scored, with "Copy the way Merc's voice slides, not the exact notes".
 - The holds: ten seconds, then fifteen only after "Easy" or "Workable"; Listen · Breathe · Sing,
   with the take open from the in-breath so nobody waits holding their breath; at speaking volume;
   A3 or A4, moved up to four semitones either way; Merc's two-second note; a rest the singer ends,
@@ -381,3 +385,74 @@ the coach reviews Lessons 3 and 5), and the questions still open:
   default timer length (FACTS 44 and 63). The vocal coach still signs off the doses with the holds
   above, including the 15 seconds that the app's own timer comment calls "a long way to go without
   a rest" (FACTS 63); here a rest the singer ends always comes first.
+
+### Changed in the plain-language review
+
+The review of October 2026 reworded these voice lines, for the coach to check. Each says the same
+thing as before, more plainly.
+
+- The four words, Support. Before: "what singers call managing the breath as they sing. It has no
+  agreed definition." After: "singers' word for how they manage the breath as they sing. There's
+  no one agreed meaning."
+- Step 1. Before: "How hard your breath pushes on your vocal folds, its pressure, mainly sets how
+  loud the note is, and nudges the pitch: ..." After: "How hard your breath pushes on your vocal
+  folds is its pressure. It mainly sets how loud the note is, and it nudges the pitch: ..."
+- Step 2's reveal. Before: "Full lungs spring back by themselves, often harder than a quiet note
+  needs, so at first your breathing-in muscles keep working. As the air goes, your belly and rib
+  muscles take over. (If you said push: the push is already there.)" After: "Full lungs spring
+  back by themselves, often harder than a quiet note needs. So at first your breathing-in muscles
+  keep working, holding some of that push back. As the air goes, your belly and rib muscles take
+  over the pushing. (If you said push: full lungs already push.)"
+- The mix-up card's evidence. Before: "Squeezing your throat makes a pressed sound, like lifting
+  something heavy, that needs more air pressure, not less." After: "Squeezing your throat makes a
+  pressed sound, the sound people make lifting something heavy, and a pressed sound needs more air
+  pressure, not less."
+- Step 2's Notice. Before: "what the note needs stays flat while the lungs' push falls: first the
+  body holds back, then it adds." After: "what the note needs stays level, while the lungs' own
+  push falls. So first the body holds back, then it adds." "Level" and "the lungs' own push" are
+  the gauge's own words; in this series "flat" means too low.
+- Step 3's cues. Before: "Start tall but easy, knees unlocked if you're standing, jaw, tongue and
+  neck loose: that's where singing teachers usually begin." After: "Start tall but easy. If you're
+  standing, keep your knees unlocked. Let your jaw, tongue and neck go loose. That's where singing
+  teachers usually begin."
+- Step 4. Before: "... the easy start, often found through the "h"." After: "... the easy start.
+  It's often found by beginning with a soft "h", then keeping it only in your mind."
+- Step 5 and quiz question 4, "flat" for a level line. Before: "And steady doesn't mean flat:",
+  "A perfectly flat line, with no movement at all" and "Steady isn't flat: a small vibrato can sit
+  inside the band." After: "And steady doesn't mean dead straight:", "A perfectly straight line,
+  with no movement at all" and "Steady isn't dead straight: a small vibrato can sit inside the
+  band."
+- The hold briefing. Before: "Each hold goes Listen · Breathe · Sing: listen to Merc's note,
+  breathe in low and quiet, then sing straight away, easily, at about speaking volume, and hold
+  the note until the ring closes, or stop sooner if you need to." After: "Each hold goes Listen ·
+  Breathe · Sing. Listen to Merc's note. Breathe in, low and quiet. Then sing straight away,
+  easily, at about speaking volume. Hold the note until the ring closes, or stop sooner if you
+  need to."
+- The voice line, shared with Lessons 6 and 7. Before: "Your voice from Lesson 3, or choose now:"
+  After: "Keep the voice you chose in Lesson 3, or choose now:" On this page the line shows only
+  when no choice is stored (WEB-SPEC, Toys 6, state 2), so here it asks the singer to pick the
+  same voice again or a new one; Lessons 6 and 7 plan to show a stored choice pressed. If the coach
+  or the owner would rather this page say only what it asks, "Choose a voice:" is the short form.
+- The warm-up's cue, shared with Lessons 3 and 7. Before: "Follow the shape, not Merc's notes."
+  After: "Copy the way Merc's voice slides, not the exact notes."
+
+Also changed, though they are not voice instructions: the sound gate's "The microphone is asked
+for only if you choose to sing." is now "We ask for the microphone only if you choose to sing.";
+the listen-only status line drops "nothing listens", as Lesson 3's does; "What this does" says
+"It doesn't measure your breath or diagnose anything", the series' one wording; the cold open's
+predict says "sung with a harder and harder push of air", and its hint names the button instead of
+making it the subject; "Small print:" is gone, and the line says "Both lines are drawings of that
+rule, not recordings."; the Go deeper names who tracked the baritones ("Researchers tracked how
+six opera baritones' chests and bellies moved. Judging from that, ...") and says "that study
+measured breathing"; and the button after the fifteen-second hold says "Done for today", as
+every other way out of the checkpoint does.
+
+### Proposed, not applied: the four answers to "How did that feel?"
+
+As in Lesson 3's list, the review proposes [ Easy ] [ OK ] [ Hard work ] [ Uncomfortable ] in
+place of the current [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable ]. "Workable" and
+"Effortful" are rare words for a teen, and here the answer decides whether the fifteen-second hold
+is offered ("Effortful" ends the holds), so a learner who guesses at a word can misreport how the
+singing felt. "Hard work" is the comfort check's own phrase. The four answers, their order and what
+each one does would stay the same. The page keeps the current labels until the coach decides, and
+the decision covers Lesson 3's page and the app's Guided Voice Check too, which use the same four.

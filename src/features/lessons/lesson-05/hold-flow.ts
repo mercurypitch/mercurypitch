@@ -114,7 +114,7 @@ export interface FlowStep {
   readonly offers: {
     readonly hold15: boolean
     readonly again: boolean
-    /** 'today': Done for today; 'done': Done; null: no button at all. */
+    /** 'today': Done for today; 'done': the same words on the primary button, after the fifteen; null: no button at all. */
     readonly done: 'today' | 'done' | null
   }
 }

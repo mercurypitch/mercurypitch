@@ -48,7 +48,7 @@ const STILLS = { blue: mercBlue, orange: mercOrange }
 // the gate's line while sound is off is the markup's (LESSON.md's); once it
 // is on, the line still names the microphone
 initSoundSwitch({
-  on: 'Sound is on: nothing plays until you press play. The microphone is asked for only if you choose to sing.',
+  on: 'Sound is on: nothing plays until you press play. We ask for the microphone only if you choose to sing.',
 })
 initMotionSwitch()
 Motion.init()
