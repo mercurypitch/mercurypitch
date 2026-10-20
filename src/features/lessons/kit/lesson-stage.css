@@ -648,15 +648,53 @@
   margin: 0;
   color: var(--ink);
 }
+/* the room a stuck stage has: from its sticky top to the foot of the smallest
+   viewport, with the browser's bars showing (svh; vh where svh is unknown). No
+   gap is kept under it, so a stage that fits today keeps its whole figure. */
 .steps-stage {
+  --stage-room: calc(
+    100vh - var(--mast) - 18px - env(safe-area-inset-top, 0px) -
+      env(safe-area-inset-bottom, 0px)
+  );
   min-width: 0;
   grid-column: 2;
   grid-row: 1;
   position: sticky;
   top: calc(var(--mast) + 18px + env(safe-area-inset-top, 0px));
 }
+@supports (height: 100svh) {
+  .steps-stage {
+    --stage-room: calc(
+      100svh - var(--mast) - 18px - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
 .stage-card {
   padding: 16px 18px 18px;
+}
+/* stuck beside the text, the stage fits that room: the figure gives way first,
+   to what the rest of its toy leaves (--stage-chrome, which stage-fit.ts
+   measures), and a stage still over budget scrolls inside itself, so no
+   control is ever out of reach. The deck below undoes both.
+   A figure goes no lower than --viz-min, 180 px unless its lesson's
+   stylesheet sets more: a drawing laid out in fixed pixels (a readout in its
+   corner, a label per semitone) collides with itself when squashed further. */
+.steps-stage .stage-card {
+  max-height: var(--stage-room);
+  overflow: hidden auto;
+  scrollbar-width: thin;
+}
+.steps-stage .viz {
+  max-height: max(
+    var(--viz-min, 180px),
+    calc(var(--stage-room) - var(--stage-chrome, 0px))
+  );
+}
+/* stage-fit.ts reads the stage uncapped, and puts the caps back in the same task */
+.steps-stage.is-measuring .stage-card,
+.steps-stage.is-measuring .viz {
+  max-height: none;
 }
 .stage-head {
   display: flex;
@@ -985,7 +1023,8 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
   }
 }
-@media (max-width: 960px) {
+/* the one-card deck: step-deck.ts DECK_QUERY, narrow or too short for a stuck stage */
+@media (max-width: 960px), (max-height: 560px) {
   .steps-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: 18px;
@@ -998,6 +1037,14 @@
   .steps-stage {
     position: relative;
     top: 0;
+  }
+  /* the deck's stage scrolls with the page, so it needs no cap of its own */
+  .steps-stage .stage-card {
+    max-height: none;
+    overflow: visible;
+  }
+  .steps-stage .viz {
+    max-height: none;
   }
   .steps.is-deck .step {
     display: none;
@@ -1048,6 +1095,24 @@
   }
   .deck-nav .btn {
     padding: 0 14px;
+  }
+}
+/* a phone held sideways: the deck's figure shrinks so that it and its toy's
+   first row of controls share the screen (170 px: the stage's head and the
+   figure's label above it, one row of 44 px controls under it), down to its
+   --viz-min, 150 px unless its lesson's stylesheet sets more */
+@media (orientation: landscape) and (max-height: 500px) {
+  .steps-stage .viz {
+    max-height: clamp(
+      var(--viz-min, 150px),
+      calc(100vh - var(--mast) - 170px),
+      280px
+    );
+    max-height: clamp(
+      var(--viz-min, 150px),
+      calc(100svh - var(--mast) - 170px),
+      280px
+    );
   }
 }
 

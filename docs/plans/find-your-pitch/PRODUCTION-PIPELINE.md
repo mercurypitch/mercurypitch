@@ -296,7 +296,15 @@ item 7): an MP4 at 1080p and a 720p copy for phones, cut from the delivery maste
 Lesson telemetry track exists, quiz answers stay in the viewer's browser.
 
 Checks before publishing: phone (390 px) and desktop widths in light and dark, keyboard focus, no
-sideways scroll, every audio button user-initiated, and motion. Under `prefers-reduced-motion` the
-Merc idle loops freeze (`setPaused(true)` or a still frame), and the staff vibration and the
-spiral's drift stop; a visible "Pause animations" toggle in the masthead lets anyone stop them
-(WCAG 2.2.2). The shared toy kit's contract carries both rules.
+sideways scroll, every audio button user-initiated, and motion. The stage budget is landscape, not
+only a phone's: beside the text the stage is stuck under the masthead, so every step's stage must
+fit a tablet in its browser, 1024 x 640 with the masthead, where a stuck stage has 564 px. The kit
+gives the figure what the rest of its toy leaves (`kit/stage-fit.ts`), down to 180 px, or to the
+`--viz-min` a lesson's stylesheet sets for a drawing that collides with itself any lower (a readout
+in its corner, a label per semitone). So keep a toy's chrome, its stage less the figure, under
+about 375 px at 1133 px wide; a stage still over budget scrolls inside itself, by 60 px at most.
+`src/e2e/learn-stage-fit.spec.ts` holds every built lesson to it at four short landscape sizes, and
+on a phone held sideways (844 x 390). Under `prefers-reduced-motion` the Merc idle loops freeze
+(`setPaused(true)` or a still frame), and the staff vibration and the spiral's drift stop; a
+visible "Pause animations" toggle in the masthead lets anyone stop them (WCAG 2.2.2). The shared
+toy kit's contract carries both rules.

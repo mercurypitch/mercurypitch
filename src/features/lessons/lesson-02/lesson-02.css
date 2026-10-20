@@ -186,9 +186,19 @@
   }
 }
 
+/* the lowest a short screen's stage takes each figure (--viz-min,
+   kit/lesson-stage.css). Lower, the spiral's hint meets its top turn, and
+   the ruler's thirteen names crowd together while its readout runs into
+   "How MercuryPitch shows it". */
+#toySpiral .viz,
+#toyKeys .viz {
+  --viz-min: 210px;
+}
+
 /* ---------------------------------------------------------------- the semitone ruler */
 .ruler-viz {
   touch-action: pan-y;
+  --viz-min: 240px;
 }
 /* the ruler's strip takes the drag (and holds the page still under it); the rest of the figure scrolls */
 .ruler-slider {
