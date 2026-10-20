@@ -302,16 +302,16 @@ the best singer.
 _[Editorial: the card's second drill, the Guided Warmup's lip trills, can't be linked yet. It needs
 a slug, proposed `/exercises/lip-trills`, that opens the warm-up on its Lip trills routine through
 the planned `pattern` field on slug launches (CURRICULUM § 4 item 2); its link carries `?lesson=07`,
-so First Light steps aside (FACTS 72a). Two app changes are conditions too, because the house rules
-never score a lip trill and make no health claims: the warm-up must end with no letter grade, no
-percentage and no "New best!" or change line, and its help sentence saying that warming up "protects
-your cords" must be rewritten (WEB-SPEC, Practice links). The routine opens with a breath held for
-four counts, which Lesson 5 chose not to link: that is the vocal coach's call. When it ships, add
-after the Vocal Range Test text, naming the breath first if the routine keeps it: "Then warm up on
-lip trills: the Guided Warmup's Lip trills routine runs two lip trills, up a fifth and back, and two
-gentle hums, from a note low in the voice range saved in Settings. It shows no grade and no score.
-Free: mercurypitch.com/exercises/lip-trills" No Ascent link: its "Reach New Notes" week asks for
-notes past your comfortable top (§ 4 item 8). On the public host every link carries `?lesson=07`.]_
+so First Light steps aside (FACTS 72a). The two app changes the house rules asked for, because they
+never score a lip trill and make no health claims, are on main: the warm-up ends with no grade,
+score or level, and its help no longer says that warming up "protects your cords" (FACTS 75a, 76a).
+The routine opens with a breath held for four counts, which Lesson 5 chose not to link: that is the
+vocal coach's call. When it ships, add after the Vocal Range Test text, naming the breath first if
+the routine keeps it: "Then warm up on lip trills: the Guided Warmup's Lip trills routine runs two
+lip trills, up a fifth and back, and two gentle hums, from a note low in the voice range saved in
+Settings. It shows no grade and no score. Free: mercurypitch.com/exercises/lip-trills" No Ascent
+link: its "Reach New Notes" week asks for notes past your comfortable top (§ 4 item 8). On the
+public host every link carries `?lesson=07`.]_
 
 **Next lesson:** Lesson 8, Beat, tempo and the backbeat. "Why does the same song feel different
 when you clap on 2 and 4 instead of 1 and 3?"
@@ -385,18 +385,17 @@ questions still open:
   siren too unsteady to read, "That's it: one gentle siren, done.", with "Try again at about
   speaking volume." only when Again follows (FACTS 60).
 - The practice card's Vocal Range Test: two glides that the app introduces as "from your lowest
-  comfy note to your highest", a held note of six seconds (not a house length) and five notes to
-  sing back; "keep the glides comfortable"; and the rest card after "Effortful", "Uncomfortable" or
-  "Just listen today" (FACTS 64 to 70).
-- The famous singer the test names after the hold: the card calls it a guide, not a verdict, but
-  the test's own screen says the singer "shares your voice type" and adds "That is yours now: it is
-  on your voiceprint whatever happens next.", from the range alone, which Step 5 says cannot decide
-  a type; WEB-SPEC proposes new app copy (FACTS 69).
+  comfy note to your highest comfortable note", a held note of six seconds (not a house length) and
+  five notes to sing back; "keep the glides comfortable"; and the rest card after "Effortful",
+  "Uncomfortable" or "Just listen today" (FACTS 64 to 70c).
+- The famous singer the test names after the hold: the card calls it a guide, not a verdict, and
+  the test's own screen now says so too: "{Legend}: a famous {type}, the voice type your range
+  overlaps most. A broad guide, not a verdict." It used to say the singer "shares your voice type",
+  from the range alone, which Step 5 says cannot decide a type (FACTS 69, 69a).
 - The proposed lip-trill link: the routine's first step holds the breath for four counts, which
-  Lesson 5 chose not to link: that is the coach's call. The link also waits on two app changes the
-  house rules require: today the warm-up ends with a letter grade, a percentage and "New best!" or
-  a change since last time, and its help text makes a claim about protecting the voice that no
-  source read here supports (FACTS 73 to 76).
+  Lesson 5 chose not to link: that is the coach's call. The two app changes the house rules
+  required are on main: the warm-up now ends with no grade or score, and its help no longer claims
+  that warming up protects the voice (FACTS 73 to 76a).
 - The sounds played only for listening: Merc's siren on "ng", on a lip trill and on "oo", all
   synthesised, and "Twinkle" sung by Merc from E3 or E4 (FACTS 81 to 86).
 
