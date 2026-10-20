@@ -514,8 +514,7 @@ async function expectAlley(page, kit, how) {
     ([offer, keep, guide, path]) => ({
       hash: window.location.hash,
       room: document.querySelector('[data-testid="sing-room"]') !== null,
-      held:
-        typeof window.mpAlley === 'function' ? window.mpAlley().held : null,
+      held: typeof window.mpAlley === 'function' ? window.mpAlley().held : null,
       guide: document.querySelector(guide) !== null,
       offer:
         document.querySelector(offer) !== null ||
@@ -696,7 +695,9 @@ async function expectWelcome(page, args, frame, kit) {
     box.left >= 0 && box.top >= 0 && box.right <= seen.w && box.bottom <= seen.h
   if (!inside(body)) problems.push(`his body is off the screen`)
   const covered = seen.doors
-    .filter((door) => door.points.length >= 3 && overlaps(body, boxOf(door.points)))
+    .filter(
+      (door) => door.points.length >= 3 && overlaps(body, boxOf(door.points)),
+    )
     .map((door) => door.key)
   if (JSON.stringify(covered) !== JSON.stringify(['karaoke'])) {
     problems.push(`his body covers ${JSON.stringify(covered)}`)
@@ -726,11 +727,9 @@ async function expectWelcome(page, args, frame, kit) {
     (body.top + body.bottom) / 2,
   )
   const picked = await page
-    .waitForFunction(
-      () => window.mpAlley?.().door === 'karaoke',
-      null,
-      { timeout: kit.stepTimeoutMs },
-    )
+    .waitForFunction(() => window.mpAlley?.().door === 'karaoke', null, {
+      timeout: kit.stepTimeoutMs,
+    })
     .then(
       () => true,
       () => false,

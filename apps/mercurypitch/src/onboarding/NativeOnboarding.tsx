@@ -440,14 +440,12 @@ export function NativeOnboarding(): JSX.Element {
     setDeciding(true)
     const asks = offerAsks ?? prepareOnboardingOffer()
     const stands = (): boolean => !untrack(leaving)
-    void openOnboardingOffer(asks, stands, 'onboarding-exit').then(
-      (opened) => {
-        setDeciding(false)
-        if (!stands()) return
-        if (opened) showOffer()
-        else leaveOnboarding('not-now')
-      },
-    )
+    void openOnboardingOffer(asks, stands, 'onboarding-exit').then((opened) => {
+      setDeciding(false)
+      if (!stands()) return
+      if (opened) showOffer()
+      else leaveOnboarding('not-now')
+    })
   }
   onCleanup(registerLayerNotNow(notNow))
 
@@ -649,55 +647,55 @@ export function NativeOnboarding(): JSX.Element {
         data-testid="onboarding-beats"
       >
         <Switch>
-        <Match when={beat() === 'first-note'}>
-          <FirstNoteView
-            controller={note}
-            line={said()}
-            onRange={findRange}
-            onSkip={skip}
-            onSeeSaved={seeSaved}
-            onWithoutMic={withoutMic}
-            skipped={skipped()}
-            merc={merc}
-          />
-        </Match>
-        <Match when={beat() === 'range'}>
-          <RangeView
-            controller={range}
-            line={said()}
-            onSee={seeVoice}
-            onSkip={skipRange}
-            onWithoutMic={withoutMic}
-            skipped={skipped()}
-            merc={merc}
-          />
-        </Match>
-        <Match when={beat() === 'reveal' ? revealed() : null}>
-          {(shown) => (
-            <RevealView
-              controller={reveal}
-              range={shown()}
-              onContinue={continueOn}
+          <Match when={beat() === 'first-note'}>
+            <FirstNoteView
+              controller={note}
+              line={said()}
+              onRange={findRange}
+              onSkip={skip}
+              onSeeSaved={seeSaved}
+              onWithoutMic={withoutMic}
+              skipped={skipped()}
               merc={merc}
             />
-          )}
-        </Match>
-        <Match when={beat() === 'keep'}>
-          <KeepView merc={merc} />
-        </Match>
-        <Match when={beat() === 'line'}>
-          <LineView
-            controller={line}
-            line={said()}
-            onContinue={continueLine}
-            continuing={continuing()}
-            onWithoutMic={withoutMic}
-            merc={merc}
-          />
-        </Match>
-        <Match when={beat() === 'offer'}>
-          <KeepView testId="onboarding-offer" />
-        </Match>
+          </Match>
+          <Match when={beat() === 'range'}>
+            <RangeView
+              controller={range}
+              line={said()}
+              onSee={seeVoice}
+              onSkip={skipRange}
+              onWithoutMic={withoutMic}
+              skipped={skipped()}
+              merc={merc}
+            />
+          </Match>
+          <Match when={beat() === 'reveal' ? revealed() : null}>
+            {(shown) => (
+              <RevealView
+                controller={reveal}
+                range={shown()}
+                onContinue={continueOn}
+                merc={merc}
+              />
+            )}
+          </Match>
+          <Match when={beat() === 'keep'}>
+            <KeepView merc={merc} />
+          </Match>
+          <Match when={beat() === 'line'}>
+            <LineView
+              controller={line}
+              line={said()}
+              onContinue={continueLine}
+              continuing={continuing()}
+              onWithoutMic={withoutMic}
+              merc={merc}
+            />
+          </Match>
+          <Match when={beat() === 'offer'}>
+            <KeepView testId="onboarding-offer" />
+          </Match>
         </Switch>
       </div>
     </div>

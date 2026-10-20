@@ -47,13 +47,7 @@ function inputFor(screen: Screen): GuideInput {
       }
     : { top: screen.top, bottom: screen.floor }
   const fit = alleyFit(scene.plate, scene.doors, screen.w, screen.h, frame)
-  const doors = layoutDoors(
-    scene.plate,
-    scene.doors,
-    screen.w,
-    screen.h,
-    frame,
-  )
+  const doors = layoutDoors(scene.plate, scene.doors, screen.w, screen.h, frame)
   const door = doors.find((each) => each.key === scene.guide.door)
   if (door === undefined) throw new Error('no middle door')
   return {
