@@ -82,7 +82,7 @@ const SECTIONS: readonly SectionMeta[] = [
     label: 'Find Your Pitch Lessons',
     shortLabel: 'Lessons',
     description:
-      'See where each lesson stands, what the site serves, and what its release still needs.',
+      'Publish or unpublish each lesson, choose its hook and tease, and see what the site serves.',
   },
 ] as const
 
@@ -466,7 +466,10 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
                       />
                     </Match>
                     <Match when={props.section === 'lessons'}>
-                      <AdminLessonsPage />
+                      <AdminLessonsPage
+                        adminKey={verifiedKey()}
+                        onChangeKey={changeKey}
+                      />
                     </Match>
                   </Switch>
                 </Suspense>

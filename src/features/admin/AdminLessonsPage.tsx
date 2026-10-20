@@ -1,36 +1,65 @@
 // ============================================================
-// AdminLessonsPage — where each Find Your Pitch lesson stands, read-only
+// AdminLessonsPage — publish each Find Your Pitch lesson, and see where it stands
 // ============================================================
 //
-// THESIS: publishing a lesson is a code change, so this page shows the
-// truth rather than holding a switch.
-// FIRST VIEWPORT: the season in one table: each lesson's state in this
-// build, what this site serves at its address, both listings and its film.
-// FORM: a table to scan, a card per lesson to read (the team's fields the
-// lesson pages never draw, and the lesson's release checklist), then the
-// series blueprint that used to close Lesson 1's page.
+// THESIS: the owner switches a lesson on or off here, and picks its wording,
+// and the page shows what the site really serves rather than what a save
+// hoped for.
+// FIRST VIEWPORT: the season in one table: each lesson's state on this site
+// with its switch, its state in this build, what the site answers at its
+// address, both listings and its film.
+// FORM: a table to scan and switch, then a card per lesson to read and set:
+// why it stands where it does, "Use default", its history, its hook and
+// tease, the team's fields the lesson pages never draw and its release
+// checklist. Then the series blueprint that used to close Lesson 1's page.
 //
-// It saves nothing and calls no admin API. Its rows are the season's own
-// data and its live column is a few plain requests to the site it is
-// served from; both live in lessons/lesson-admin.ts. A runtime publish
-// toggle (PLAN Option B) would join there, not here.
+// A save goes to the lesson state (lessons/useLessonState.ts) and the site
+// follows within about a minute; the page asks the site again a few seconds
+// later. The live column is a few plain requests to the site the page is
+// served from (lessons/lesson-admin.ts). A lesson with no override is the
+// code's to decide, as before: deleting its line in drafts.ts releases it.
 
 import type { JSX } from 'solid-js'
-import { createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
-import { AlertTriangle, CheckCircle, ChevronDown, HelpCircle, Info, RotateCcw, } from '@/components/icons'
+import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ChevronDown, Eye, RotateCcw } from '@/components/icons'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { DRAFTS_SHOWN } from '@/features/lessons/kit/draft-switch'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { TOPICS } from '@/features/lessons/kit/season'
+import { useConfirm } from '@/lib/use-confirm'
 import styles from './AdminLessonsPage.module.css'
+import type { CopyChoicesFor } from './lessons/copy-choices'
+import { copyChoicesFor } from './lessons/copy-choices'
 import type { LessonRow, ListingCheck, PageCheck, ReleaseStep, SiteFindings, StepId, StepState, } from './lessons/lesson-admin'
-import { checkPage, lessonRows, listedIn, llmsPaths, readListing, releaseChecklist, sitemapPaths, } from './lessons/lesson-admin'
+import { checkPage, lessonName, lessonRows, listedIn, llmsPaths, readListing, releaseChecklist, sitemapPaths, } from './lessons/lesson-admin'
+import { asSentence, publishView, stateWord } from './lessons/lesson-publish'
+import type { LessonActions } from './lessons/LessonControls'
+import { PublishCell, PublishPanel, WordingPanel, } from './lessons/LessonControls'
 import { LessonsBlueprint } from './lessons/LessonsBlueprint'
+import type { Tone } from './lessons/LessonStatus'
+import { Status, ToneIcon } from './lessons/LessonStatus'
+import { useLessonState } from './lessons/useLessonState'
 
-/** How a cell or a step reads at a glance: a step's state, or nothing to say. */
-type Tone = StepState | 'none'
+export interface AdminLessonsPageProps {
+  /** The studio's verified admin key, sent with every save and history read. */
+  adminKey: string
+  /** Lock the studio to ask for the key again: offered when the API refuses this one. */
+  onChangeKey?: () => void
+  /** Each lesson's hook and tease choices; the season's own by default. */
+  copyChoices?: CopyChoicesFor
+  /** How long after a save the site is asked again, in ms. */
+  recheckAfterMs?: number
+}
 
 const CHECKING = { kind: 'checking' } as const
+
+/**
+ * A few seconds: long enough for a site that reads the state at once to
+ * show the change. Its caches can take up to a minute, which the page says
+ * after every save, and "Check again" asks whenever the owner likes.
+ */
+const RECHECK_AFTER_MS = 5_000
 
 const STATE_WORDS: Record<StepState, string> = {
   done: 'Done',
@@ -52,10 +81,6 @@ const TIME = new Intl.DateTimeFormat(undefined, {
   minute: '2-digit',
   second: '2-digit',
 })
-
-function lessonName(lesson: Lesson): string {
-  return lesson.kind === 'Trailer' ? 'Trailer' : `Lesson ${lesson.n}`
-}
 
 function pageLabel(check: PageCheck | null): string {
   if (check === null) return 'No page yet'
@@ -96,40 +121,6 @@ const BUILD_LABELS: Record<LessonRow['build'], string> = {
   planned: 'Planned',
 }
 
-/** The icon for a tone; the words beside it carry the meaning. */
-function ToneIcon(props: { tone: Tone }): JSX.Element {
-  return (
-    <span class={styles.icon} data-tone={props.tone} aria-hidden="true">
-      <Switch>
-        <Match when={props.tone === 'done'}>
-          <CheckCircle />
-        </Match>
-        <Match when={props.tone === 'todo' || props.tone === 'checking'}>
-          <span class={styles.ring} />
-        </Match>
-        <Match when={props.tone === 'by-hand'}>
-          <Info size={14} />
-        </Match>
-        <Match when={props.tone === 'unknown'}>
-          <HelpCircle size={14} />
-        </Match>
-        <Match when={props.tone === 'problem'}>
-          <AlertTriangle />
-        </Match>
-      </Switch>
-    </span>
-  )
-}
-
-function Status(props: { tone: Tone; children: JSX.Element }): JSX.Element {
-  return (
-    <span class={styles.status} data-tone={props.tone}>
-      <ToneIcon tone={props.tone} />
-      <span>{props.children}</span>
-    </span>
-  )
-}
-
 function Fact(props: { term: string; children: JSX.Element }): JSX.Element {
   return (
     <div class={styles.fact}>
@@ -139,7 +130,7 @@ function Fact(props: { term: string; children: JSX.Element }): JSX.Element {
   )
 }
 
-export function AdminLessonsPage(): JSX.Element {
+export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
   const rows = lessonRows()
   const origin = window.location.origin
   const [pages, setPages] = createSignal<ReadonlyMap<number, PageCheck>>(
@@ -150,15 +141,100 @@ export function AdminLessonsPage(): JSX.Element {
   const [checking, setChecking] = createSignal(false)
   const [checkedAt, setCheckedAt] = createSignal<Date | null>(null)
   const cards = new Map<number, HTMLDetailsElement>()
+  const confirm = useConfirm()
   // Bumped by every run and on unmount, so an answer from an earlier run
   // never lands on a later one.
   let run = 0
+  let recheck: ReturnType<typeof setTimeout> | undefined
+
+  const lessons = useLessonState({
+    adminKey: () => props.adminKey,
+    onSaved: () => {
+      clearTimeout(recheck)
+      recheck = setTimeout(
+        () => void checkSite(),
+        props.recheckAfterMs ?? RECHECK_AFTER_MS,
+      )
+    },
+  })
+
+  const viewOf: LessonActions['viewOf'] = (row) => {
+    if (lessons.state() === null) return null
+    const log = lessons.logOf(row.lesson.n)
+    return publishView(
+      row,
+      lessons.overrideOf(row.lesson.n),
+      log?.kind === 'read' ? log.changes : null,
+    )
+  }
+
+  const savePublished = (
+    row: LessonRow,
+    value: boolean | null,
+  ): Promise<boolean> =>
+    lessons.save({
+      n: row.lesson.n,
+      name: lessonName(row.lesson),
+      field: 'published',
+      value,
+      defaultPublished: row.built,
+    })
+
+  /** Publish, asking first when the lesson still waits on its sign-off; or unpublish. */
+  const toggle = (row: LessonRow): void => {
+    const view = viewOf(row)
+    if (view === null || !view.canPublish) return
+    if (view.published) {
+      void savePublished(row, false)
+      return
+    }
+    const waitingOn = row.waitingOn
+    if (waitingOn === null) {
+      void savePublished(row, true)
+      return
+    }
+    const name = lessonName(row.lesson)
+    confirm.request({
+      title: `Publish ${name} before its sign-off?`,
+      message: `${name} waits on ${waitingOn}. Publish it anyway?`,
+      confirmLabel: 'Publish anyway',
+      confirmIcon: <Eye />,
+      onConfirm: () => void savePublished(row, true),
+    })
+  }
+
+  const actions: LessonActions = {
+    lessons,
+    viewOf,
+    toggle,
+    useDefault: (row) => savePublished(row, null),
+    saveCopy: (row, field, value) => {
+      void lessons.save({
+        n: row.lesson.n,
+        name: lessonName(row.lesson),
+        field,
+        value,
+        defaultPublished: row.built,
+      })
+    },
+    get onChangeKey() {
+      return props.onChangeKey
+    },
+  }
 
   /** What the site said about a lesson's page: null for one with no page to ask for. */
   const pageOf = (row: LessonRow): PageCheck | null =>
     row.written && row.path !== null
       ? (pages().get(row.lesson.n) ?? CHECKING)
       : null
+
+  /** The publish override the checklist weighs: null where the code decides. */
+  const overrideOf = (row: LessonRow): boolean | null => {
+    const view = viewOf(row)
+    return view !== null && view.overridden && view.canPublish
+      ? view.published
+      : null
+  }
 
   const checklists = createMemo(() => {
     const byLesson = new Map<number, ReleaseStep[]>()
@@ -168,7 +244,7 @@ export function AdminLessonsPage(): JSX.Element {
         sitemap: sitemap(),
         llms: llms(),
       }
-      byLesson.set(row.lesson.n, releaseChecklist(row, site))
+      byLesson.set(row.lesson.n, releaseChecklist(row, site, overrideOf(row)))
     }
     return byLesson
   })
@@ -219,6 +295,7 @@ export function AdminLessonsPage(): JSX.Element {
     const card = cards.get(n)
     if (card === undefined) return
     card.open = true
+    lessons.ensureLog(n)
     if (typeof card.scrollIntoView === 'function') {
       card.scrollIntoView({
         block: 'start',
@@ -230,19 +307,23 @@ export function AdminLessonsPage(): JSX.Element {
 
   onMount(() => {
     void checkSite()
+    void lessons.readState()
   })
   onCleanup(() => {
     run += 1
+    clearTimeout(recheck)
   })
 
   return (
     <div class={styles.page} data-testid="admin-lessons">
       <div class={styles.intro}>
         <p>
-          Read-only. A lesson is published in code, not here: deleting its line
-          in <code>src/features/lessons/kit/drafts.ts</code> releases it, and
-          the next release tag deploys it. A film reaches its page once its
-          sources are set in <code>src/features/lessons/kit/films.ts</code>.
+          Publish or unpublish a lesson here, and choose its hook and its tease.
+          A change is saved at once, and the site follows within about a minute.
+          Without one, the code decides: deleting a lesson's line in{' '}
+          <code>src/features/lessons/kit/drafts.ts</code> releases it, and the
+          next release tag deploys it. A film reaches its page once its sources
+          are set in <code>src/features/lessons/kit/films.ts</code>.
         </p>
         <div class={styles.statusRow}>
           <span class={styles.badge} data-tone={DRAFTS_SHOWN ? 'todo' : 'done'}>
@@ -259,13 +340,33 @@ export function AdminLessonsPage(): JSX.Element {
           <button
             type="button"
             class={styles.recheck}
-            onClick={() => void checkSite()}
-            disabled={checking()}
+            onClick={() => {
+              if (!checking()) void checkSite()
+            }}
+            aria-disabled={checking() ? 'true' : undefined}
           >
             <RotateCcw size={14} />
             {checking() ? 'Checking…' : 'Check again'}
           </button>
         </div>
+        <StateLine lessons={lessons} />
+        <Show when={lessons.keyRejected()}>
+          <div class={styles.keyNotice}>
+            <p>
+              The admin key was not accepted, so this page cannot save or show
+              who changed what. Change admin key to unlock the studio again.
+            </p>
+            <Show when={props.onChangeKey !== undefined}>
+              <button
+                type="button"
+                class={styles.recheck}
+                onClick={() => props.onChangeKey?.()}
+              >
+                Change admin key
+              </button>
+            </Show>
+          </div>
+        </Show>
       </div>
 
       <section class={styles.section} aria-labelledby="admin-lessons-season">
@@ -280,13 +381,15 @@ export function AdminLessonsPage(): JSX.Element {
         >
           <table class={styles.table}>
             <caption id="admin-lessons-caption" class={styles.srOnly}>
-              Season 1: each lesson in this build, and what {origin} serves
+              Season 1: each lesson on {origin}, what this build holds, and what
+              the site serves
             </caption>
             <thead>
               <tr>
                 <th scope="col">Lesson</th>
+                <th scope="col">Published here</th>
                 <th scope="col">In this build</th>
-                <th scope="col">On this site</th>
+                <th scope="col">Site answers</th>
                 <th scope="col">Sitemap</th>
                 <th scope="col">llms.txt</th>
                 <th scope="col">Film</th>
@@ -310,7 +413,10 @@ export function AdminLessonsPage(): JSX.Element {
                         </span>
                       </button>
                     </th>
-                    <td>
+                    <td class={styles.publishCell}>
+                      <PublishCell row={row} actions={actions} />
+                    </td>
+                    <td class={styles.buildCell}>
                       <Status tone={buildTone(row)}>
                         {BUILD_LABELS[row.build]}
                       </Status>
@@ -364,9 +470,11 @@ export function AdminLessonsPage(): JSX.Element {
           Lesson by lesson
         </h3>
         <p class={styles.sectionNote}>
-          The team's fields, which the lesson pages never draw: what a practice
-          link still needs, why a lesson has no drill, its Signature and its
-          topic codes. Then what its release still needs.
+          Why each lesson stands where it does on this site, its switches and
+          its history, and its hook and tease. Then the team's fields, which the
+          lesson pages never draw: what a practice link still needs, why a
+          lesson has no drill, its Signature and its topic codes. Then what its
+          release still needs.
         </p>
         <div class={styles.cards}>
           <For each={rows}>
@@ -375,6 +483,9 @@ export function AdminLessonsPage(): JSX.Element {
                 class={styles.card}
                 ref={(card) => cards.set(row.lesson.n, card)}
                 data-lesson={row.lesson.n}
+                onToggle={(event) => {
+                  if (event.currentTarget.open) lessons.ensureLog(row.lesson.n)
+                }}
               >
                 <summary class={styles.cardSummary}>
                   <span class={styles.lessonNumber}>
@@ -382,6 +493,13 @@ export function AdminLessonsPage(): JSX.Element {
                   </span>
                   <span class={styles.cardTitle}>{row.lesson.title}</span>
                   <span class={styles.cardMeta}>
+                    <Show when={viewOf(row)}>
+                      {(view) => (
+                        <span class={styles.cardState}>
+                          {stateWord(view())}
+                        </span>
+                      )}
+                    </Show>
                     <Status tone={buildTone(row)}>
                       {BUILD_LABELS[row.build]}
                     </Status>
@@ -392,8 +510,17 @@ export function AdminLessonsPage(): JSX.Element {
                   </span>
                 </summary>
                 <div class={styles.cardBody}>
+                  <div class={styles.controls}>
+                    <PublishPanel row={row} actions={actions} />
+                    <WordingPanel
+                      row={row}
+                      actions={actions}
+                      choices={(props.copyChoices ?? copyChoicesFor)(
+                        row.lesson,
+                      )}
+                    />
+                  </div>
                   <dl class={styles.facts}>
-                    <Fact term="Opens with">{row.lesson.hook}</Fact>
                     <Show when={row.path}>
                       {(path) => (
                         <Fact term="Page">
@@ -476,7 +603,10 @@ export function AdminLessonsPage(): JSX.Element {
                         <For each={stepsOf(row)}>
                           {(step) => (
                             <li class={styles.step} data-state={step.state}>
-                              <ToneIcon tone={step.state} />
+                              <ToneIcon
+                                tone={step.state}
+                                class={styles.stepIcon}
+                              />
                               <div>
                                 <span class={styles.srOnly}>
                                   {STATE_WORDS[step.state]}:{' '}
@@ -500,6 +630,67 @@ export function AdminLessonsPage(): JSX.Element {
       </section>
 
       <LessonsBlueprint />
+
+      {/* Saves are announced here once, whichever control made them; the
+          words also stay under that control. A new object per message, so
+          a repeat is announced again. */}
+      <div class={styles.srOnly} role="status" aria-live="polite">
+        <Show when={lessons.announcement()} keyed>
+          {(said) => <span>{said.text}</span>}
+        </Show>
+      </div>
+      <ConfirmDialog
+        open={confirm.pending() !== null}
+        title={confirm.pending()?.title ?? ''}
+        message={confirm.pending()?.message ?? ''}
+        confirmLabel={confirm.pending()?.confirmLabel}
+        confirmIcon={confirm.pending()?.confirmIcon}
+        tone="primary"
+        onConfirm={confirm.accept}
+        onCancel={confirm.cancel}
+      />
+    </div>
+  )
+}
+
+/** Where the lesson state stands: read, being read, or not read and why. */
+function StateLine(props: {
+  lessons: ReturnType<typeof useLessonState>
+}): JSX.Element {
+  return (
+    <div class={styles.statusRow}>
+      <span class={styles.meta}>
+        <Show
+          when={props.lessons.stateError()}
+          fallback={
+            <Show
+              when={props.lessons.stateReadAt()}
+              fallback="Reading the lesson state…"
+            >
+              {(at) => <>Lesson state read at {TIME.format(at())}</>}
+            </Show>
+          }
+        >
+          {(error) => (
+            <span class={styles.problem}>
+              The lesson state could not be read. {asSentence(error().message)}
+            </span>
+          )}
+        </Show>
+      </span>
+      <Show when={props.lessons.stateError() !== null}>
+        <button
+          type="button"
+          class={styles.recheck}
+          onClick={() => {
+            if (!props.lessons.readingState()) void props.lessons.readState()
+          }}
+          aria-disabled={props.lessons.readingState() ? 'true' : undefined}
+        >
+          <RotateCcw size={14} />
+          Read it again
+        </button>
+      </Show>
     </div>
   )
 }

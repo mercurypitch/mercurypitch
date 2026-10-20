@@ -402,7 +402,7 @@ export function releaseChecklist(
       id: 'release',
       text: 'Its line is deleted from src/features/lessons/kit/drafts.ts',
       state: 'todo',
-      detail: `Waiting on ${row.waitingOn ?? 'a sign-off'}.`,
+      detail: `Waiting on ${row.waitingOn ?? 'a sign-off'}. It can be published here before then.`,
     })
   } else {
     steps.push({
