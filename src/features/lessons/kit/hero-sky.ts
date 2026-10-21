@@ -85,8 +85,8 @@ export interface SkyOptions {
 /**
  * The sky drawn still, once per size: for a page on which only the Mercs'
  * idle loops move by themselves (each WEB-SPEC's Look). Lesson 6 is the
- * first to take it from here; Lessons 3 and 5 keep the copies they were
- * built with.
+ * first to take it from here; Lessons 3, 4 and 5 keep the copies they were
+ * built with (lesson-03/hook.ts, lesson-04/hero.ts, lesson-05/hook.ts).
  */
 export function stillSky(stage: HTMLElement): void {
   const cv = surface(q<HTMLCanvasElement>('canvas.sky', stage))
