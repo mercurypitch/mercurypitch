@@ -258,7 +258,7 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
 
 ### 2. Predict widget
 
-- The kit's predict as it is (`mountPredict`, `kit/predict.ts:72`; FACTS 11), which takes two to
+- The kit's predict as it is (`mountPredict`, `kit/predict.ts:79`; FACTS 11), which takes two to
   four choices: here three `.choice` buttons, `data-choice` "re", "mi" and "fa", each at least 44 px
   tall. The choice locks (`:97-115`) and unlocks the three plays, `data-play` "re", "mi" and "fa",
   labelled "Play do, re, so", "Play do, mi, so" and "Play do, fa, so", which start disabled.
@@ -283,7 +283,7 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
 - States: waiting for a choice, with Play Merc's leap working; the choice locked and the plays open;
   one or two paths heard, with the `next` hint; all three heard, and the reveal shown. With sound
   off a play draws its path and shows the `silent` hint, and the reveal does not come.
-- Under reduced motion the reveal appears without its rise (`kit/predict.ts:126`).
+- Under reduced motion the reveal appears without its rise (`kit/predict.ts:133`).
 
 ### 3. Four words
 
@@ -359,7 +359,7 @@ States:
    today**, and no feeling question, since nothing was sung. Otherwise the count follows the lines
    (below) and **How did that feel?** follows at once (REQ-GVC-022).
 8. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, two a row on
-   phones), through `mountFeelings` (`kit/comfort.ts:121-146`) with its default, an answer that
+   phones), through `mountFeelings` (`kit/comfort.ts:121-152`) with its default, an answer that
    locks, asked after each take with voice (FACTS 82): a press disables all four, and `reset()`
    frees them for the next take, so an answer cannot be changed once it has set what follows. Lesson
    6's page (PR #1149) gives `mountFeelings` a `changeable` option for its sweeps, which this page
@@ -599,10 +599,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   tap Arpeggio Jumper", as Lesson 4's reads "Exercises, then tap Scale Runner" (`season.ts:240-245`,
   `explorer.ts:178`). The note is in the learner's words (`season.ts:27-34`); `needs` keeps
   "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
-  stay. Its hook is the entry's, the default (`season.ts:328`); its alternative, `'harder'`, and its
+  stay. Its hook is the entry's, the default (`season.ts:331`); its alternative, `'harder'`, and its
   tease, which Lesson 8's card draws, are `kit/lesson-copy.ts`'s (`:103-112`), as FACTS 1 records:
   this spec changes no hook or tease line. `EDGES` already holds [3, 9] and [6, 9]
-  (`season.ts:419-420`).
+  (`season.ts:422-423`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,

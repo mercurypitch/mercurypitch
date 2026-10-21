@@ -511,13 +511,13 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
    on screen (`kit/frame-loop.ts`). This page mounts the spiral-and-keyboard component six times
    (Toys 1) and the ruler twice (step 6, free play).
 3. **`kit/predict.ts`**, from `lesson-01/predict.ts`, which binds `#predict`, `#lockHint`,
-   `#reveal` and `#revealGuess` (`predict.ts:23-27`, `:100`): mounts per root, three on this page;
+   `#reveal` and `#revealGuess` (`predict.ts:24-28`, `:107`): mounts per root, three on this page;
    two to four choices, each at least 44 px tall; it is given the play buttons and any other
    controls its choice unlocks (step 5's Sharp, Flat and Show the rare ones), and the reveal it
    shows once the sound has played; it never calls a choice wrong.
 4. **`kit/sing.ts`**, from `lesson-01/sing.ts`, which binds the ring's parts and the two sing
    buttons by id (`#ringProgress`, `#ringBreath`, `#ringRipples`, `#ringMerc`, `#ringNote`,
-   `#ringState`, `#ring`, `#singA3`, `#singA4`; `sing.ts:24-56`) and draws Lesson 1's app-card
+   `#ringState`, `#ring`, `#singA3`, `#singA4`; `sing.ts:25-57`) and draws Lesson 1's app-card
    figure (`#mirrorFig`, `:127`): mounts per root; the breathing ring with the still of the Merc
    singing and the buttons it is given; the slide guide (Toys 5) plugs into it; an app card's
    figure stays the lesson's own.

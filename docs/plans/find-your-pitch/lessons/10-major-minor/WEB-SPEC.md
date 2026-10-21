@@ -274,7 +274,7 @@ draw its triads with it; it moves into the kit when Lesson 12 needs it.
   fa so le te do, the do-based minor the series sings (FACTS 8, 26). The letters come from
   `spellScale` (`notes.ts:165-177`; FACTS 27). Major · Minor waits for the predict's choice: in Step
   5 the toy draws it disabled until the predict's `onChoice` says a choice is in, and the predict's
-  `unlocks` enables it (`src/features/lessons/kit/predict.ts:56-59`), so the stage cannot answer the
+  `unlocks` enables it (`src/features/lessons/kit/predict.ts:63-66`), so the stage cannot answer the
   predict first.
 - **Free play** (Wrap): its own copy of the toy in a card, as Lesson 4's is
   (`lesson-04/main.ts:90-92`), with every control: Root lower and Root higher, Major · Minor, Chord
@@ -386,14 +386,14 @@ taken further without forking it (`spiral.ts:22-26`):
 
 ### 3. Predict widgets
 
-- Both are the kit's predict (`src/features/lessons/kit/predict.ts:28-64`, `mountPredict` at `:72`):
+- Both are the kit's predict (`src/features/lessons/kit/predict.ts:29-71`, `mountPredict` at `:72`):
   the choice locks, the play buttons unlock, the reveal appears after the sound and never calls a
   choice wrong; two choices each, every button at least 44 px tall. The plays start disabled in the
   markup, all but a free one, and the choice enables them and moves the focus to the first that is
   not free (`:97-115`).
 - **Cold open.** The choices are [ Mi ] [ So ] (FACTS 41). Its three plays sit under the spiral on
   the hero's stage, outside the predict card, and are handed to the predict as its `plays`
-  (`predict.ts:60-61`). "Play the chord" (`chord-c`) is a free play (`data-free`, `:14-15`): it sets
+  (`predict.ts:67-68`). "Play the chord" (`chord-c`) is a free play (`data-free`, `:14-15`): it sets
   up the question and answers nothing. "Move mi down" (`move-mi`) and "Move so down" (`move-so`)
   wait for the choice, and the reveal waits until both have been heard, since it compares them:
   `revealOn: ['move-mi', 'move-so']` with `revealAfter: 'all'` (`:45-51`). The two must be passed
@@ -415,10 +415,10 @@ taken further without forking it (`spiral.ts:22-26`):
   "Sound is off, so nothing played. Turn sound on to hear them, then press Play C minor."; and
   `hints.again` "Play them again, or switch the names to do-re-mi." The plays sound on the stage's
   staircase, which shows the scale that is playing, each stair lighting as it sounds (FACTS 77). The
-  choice also unlocks the stage's Major · Minor (`unlocks`, `predict.ts:58-59`; Toys 1, Scale). The
+  choice also unlocks the stage's Major · Minor (`unlocks`, `predict.ts:65-66`; Toys 1, Scale). The
   guess lines are "You said: just one" and "You said: three".
 - With sound off the reveal waits: the reveal only ever describes a sound that was heard
-  (`predict.ts:5-9`).
+  (`predict.ts:5-10`).
 - A play that is cut short is not heard. A new play, a stop or leaving the step ends it early, and
   the reveal waits for plays that run to their end. A cut-short play resolves `false`, which tells
   the kit's predict "not heard"; `void` keeps today's meaning. Both come with #1149's fix pass.
@@ -486,14 +486,14 @@ DECISIONS 82).
 The guide is the kit's slide guide (`src/features/lessons/kit/slide-guide.ts`, `mountGuide` at
 `:325`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from do up to so: the four
 the chords use named do, me, mi and so, and the other four faint (`GuideRow`,
-`slide-guide.ts:31-38`). The rows show syllables only, no letters, so no spelling can go wrong
+`slide-guide.ts:35-42`). The rows show syllables only, no letters, so no spelling can go wrong
 wherever Move do puts do; a readout names do in Lesson 4's names for the key, "do is E3", spoken "do
 is E 3" (FACTS 64). Merc's path is do-mi-so, 1.2 s a note and the top note 1.8 s, then do-me-so, the
 second phrase's first point marked `gap` (`:16-17`, `:44-45`), so nothing is drawn across the 1.6 s
 between them: 10.0 s in all (FACTS 65). The path carries the kit's breath mark, from Lesson 6's page
 (`breaths`, `slide-guide.ts` on `feat/lesson-06-page`), at the start of the gap, 4.2 s in: a small
 tick in the path's own colour with the word "breathe" (FACTS 66). Beside the guide, the kit's
-breathing ring (`mountRing`, `src/features/lessons/kit/sing.ts:129`) shows the still of the Merc
+breathing ring (`mountRing`, `src/features/lessons/kit/sing.ts:132`) shows the still of the Merc
 singing, blue for the lower voice and orange for the higher, never a microphone icon. Every state
 has a visible status line that is also announced (`aria-live="polite"`). Lesson 3's rule for leaving
 holds, for what plays here: if the section stays off screen for 600 ms, or the page is hidden,
@@ -539,7 +539,7 @@ States:
    and focus never moves to a button when a state changes, only to its text (REQ-GVC-080, as
    `lesson-03/sing-view.ts:1-9` does). When the sweep ends, the feeling question follows.
 6. **How did that feel?** appears under the guide each time a sweep ends, asked afresh with no
-   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:121-146`; FACTS 67).
+   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:121-152`; FACTS 67).
    The kit locks the answer once given, until the next sweep resets it; Lesson 6's page passes the
    kit's new `changeable`, so its answer can change until then (`mountFeelings`, `comfort.ts` on
    `feat/lesson-06-page`). This page keeps the lock until the coach settles it for the series
@@ -714,7 +714,7 @@ still images when WebGL fails or would run on the CPU.
 
 ## Explorer and season data
 
-Lesson 10's entry (`src/features/lessons/kit/season.ts:340-349`), proposed for when this page is
+Lesson 10's entry (`src/features/lessons/kit/season.ts:343-352`), proposed for when this page is
 built:
 
 - `minutes: 17` and `page: '/learn/10'`, written plainly, as Lesson 3's entry is
@@ -738,13 +738,13 @@ built:
   Lab" and `note` "then tap Stack", which `practiseMarkup` prints after the address as "Ear Lab,
   then tap Stack" (`kit/explorer.ts:174-179`). Stack is the lesson's ear drill and needs no voice,
   so the card stays right whatever Sing it's ending, as Lesson 6's card links Leap
-  (`season.ts:281-284`). For the owner (Decisions for the owner), the other choice: Drone
+  (`season.ts:284-287`). For the owner (Decisions for the owner), the other choice: Drone
   Intonation, `href` `/pitch-training?lesson=10`, `label` "Exercises" and `note` "then tap Drone
   Intonation", as Lesson 4's card links the drill its Wrap leads with (`season.ts:240-245`).
   `pr.needs`, "Drone Intonation and Ear Lab Stack", stays until the slugs ship: it is "Admin only,
   never drawn on a lesson page" (`season.ts:99-100`, and the fields the team keeps, `:27-34`).
 - `sig` stays as it is. The entry has no `fig`, so the card draws no figure.
-- The hook stays word for word (`season.ts:346`; FACTS 1). The tease Lesson 9's card shows for this
+- The hook stays word for word (`season.ts:349`; FACTS 1). The tease Lesson 9's card shows for this
   lesson, and Lesson 11's tease on this page's card, are the kit's lesson copy
   (`kit/lesson-copy.ts:121`, `:123`; FACTS 5, 5b).
 - The card reads "Ready · read", with "17 min", once the page is live (`explorer.ts:150-157`).
@@ -795,7 +795,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    `lesson-06/sing-guide.ts:37`, `lesson-06/sing-guide.ts:50-51`, on `feat/lesson-06-page`), so this
    page moves Move do into the kit itself and takes Lesson 6's copy with it. The kit's guide already
    waits through a count-in before its sweep (`sweep`,
-   `src/features/lessons/kit/slide-guide.ts:64-65`). Lesson 4's Move do and Lesson 6's both set
+   `src/features/lessons/kit/slide-guide.ts:74-75`). Lesson 4's Move do and Lesson 6's both set
    `disabled` at their limits (`lesson-04/sing.ts:90-97`; `lesson-06/sing.ts:113-116`), which drops
    a keyboard user's focus there; the kit's takes `aria-disabled`, and both pages switch to it.
 8. The breath mark on the slide guide (Toys 6): the kit's, from Lesson 6's page (`breaths`,

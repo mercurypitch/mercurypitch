@@ -381,7 +381,7 @@ States:
    **Play the first version** sings do = D3 (lower) or D4 (higher), and **Play the second
    version** three semitones higher, in Merc's "ooh", the path lighting in step while the ring
    beside the guide shows the still of the Merc singing, blue for the lower voice and orange for the
-   higher, as Lesson 1's ring does (`kit/sing.ts:243-249`). **Move do** is two buttons, Lower
+   higher, as Lesson 1's ring does (`kit/sing.ts:251-257`). **Move do** is two buttons, Lower
    and Higher, a semitone each, up to four either way, moving both versions together (FACTS 57);
    the readout and the path's row labels follow. A press of any of Sing it's controls while a
    version or a sweep runs stops it, then acts: a version cut short has not been played, and a
@@ -572,8 +572,8 @@ and the line references are main's.
   (`kit/voice-choice.ts:20`).
 - Lesson 4's scale guide, generalised to any number of rows and any path, with its count-in and
   Move do (Toys 6), and the feeling question as a kit part shared with Lesson 3. On main: the guide
-  takes any rows and any path, with its count-in (`mountGuide`, `kit/slide-guide.ts:325`), and the
-  feeling question is the kit's (`mountFeelings`, `kit/comfort.ts:122`); Move do is still Lesson
+  takes any rows and any path, with its count-in (`mountGuide`, `kit/slide-guide.ts:378`), and the
+  feeling question is the kit's (`mountFeelings`, `kit/comfort.ts:127`); Move do is still Lesson
   4's (`lesson-04/sing.ts`).
 - `vite.config.ts`: `/learn/06` served from `learn/06.html` in dev and preview, and `learn/06.html`
   as a build input. On main every `learn/NN.html` is both, with no entry of its own

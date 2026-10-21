@@ -139,7 +139,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    `kit/lesson-copy.test.ts:372-381` requires of every page from its first commit), the meta as
    three chips ("15 minutes", FACTS 4; "Also useful: Lesson 6, Intervals", a plain chip, not a link,
    as Lesson 3's "Also useful" chip is, `learn/03.html:261-264`, FACTS 2; Sound on) and the promise,
-   from LESSON.md. The title is the season's hook (`kit/season.ts:310`, FACTS 1); it says the song
+   from LESSON.md. The title is the season's hook (`kit/season.ts:313`, FACTS 1); it says the song
    feels different and never says where the claps land, so it answers nothing the predict asks.
 3. **The stage**: orange's and blue's bubbles over the two Mercs on the floor line, with the beat
    machine in its compact state between them (Toys 1), and under the machine the two plays: "Play
@@ -289,7 +289,7 @@ its patterns with it.
   **Tempo** slider, so nothing here touches Step 2's Tempo. All four start `disabled` in the markup,
   so the stage cannot answer the predict before the viewer commits (Toys 2). Play, March and Rock
   are buttons, passed as the predict's `unlocks`, which sets `disabled = false` on each as the
-  choice locks (`kit/predict.ts:58-59`, `:108-110`). The Tempo slider is an `input`, which `unlocks`
+  choice locks (`kit/predict.ts:65-66`, `:115-117`). The Tempo slider is an `input`, which `unlocks`
   does not take, so the predict's `onChoice` enables it (`:57`, called at `:113`). Lesson 2's stage
   does the same with Sharp and Flat: `disabled` in its markup (`learn/02.html:904`, `:909`) and
   enabled from its predict's `onChoice` (`lesson-02/steps.ts:142`; `lesson-02/keys-toy.ts:337-340`).
@@ -382,20 +382,20 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
 
 ### 2. Predict widgets
 
-- Both are the kit's predict (`kit/predict.ts:28-64`, `mountPredict` at `:72`): the choice locks,
+- Both are the kit's predict (`kit/predict.ts:29-71`, `mountPredict` at `:72`): the choice locks,
   the play buttons unlock, the reveal appears after the sound and never calls a choice wrong; two
   choices each, every button at least 44 px tall.
-- **Heard means played to its end.** The kit counts a play as heard when its promise resolves
-  (`kit/predict.ts:29-33`, `:159-162`), so a play stopped part-way would count. Here a play is cut
-  short by its own stop, by any other play on the page, which stops it (Audio), or, in Step 5, by
-  leaving the step by any route (Toys 1, States), and none of these counts as heard: the page's
-  `play` resolves `false` for "not heard", which #1149's fix pass lets the kit's `play` return, and
-  the reveal stays hidden until a play runs to its end. This holds for both predicts: the cold
+- **Heard means played to its end.** The kit counts a play as heard unless its promise resolves
+  `false` (`kit/predict.ts:31-40`, `:166-170`), so a play the page cuts short must say so. Here a
+  play is cut short by its own stop, by any other play on the page, which stops it (Audio), or, in
+  Step 5, by leaving the step by any route (Toys 1, States), and none of these counts as heard: the
+  page's `play` resolves `false` for "not heard", as #1149's fix pass lets the kit's `play` return,
+  and the reveal stays hidden until a play runs to its end. This holds for both predicts: the cold
   open's "Play with claps on 2 and 4" and Step 5's two plays.
 - **Cold open.** The choices are [ Strong beats ] [ Weak beats ] (FACTS 30b). Its two plays sit
   under the compact machine on the hero's stage, outside the predict card, and are handed to the
-  predict as its `plays` (`kit/predict.ts:60-61`). "Play with claps on 1 and 3" is a free play
-  (`data-free`, `kit/predict.ts:14-15`): it sets up the question and answers nothing. Only "Play
+  predict as its `plays` (`kit/predict.ts:67-68`). "Play with claps on 1 and 3" is a free play
+  (`data-free`, `kit/predict.ts:15-16`): it sets up the question and answers nothing. Only "Play
   with claps on 2 and 4" waits for the choice, and the reveal waits for it (`revealOn`). Until a
   choice the lock hint reads LESSON.md's "Choose an answer to unlock the sound."; after one,
   `hints.chosen` reads "Locked in. Play with claps on 2 and 4.", in Lesson 2's form; with sound off,
@@ -414,7 +414,7 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   (Toys 1, The patterns). The guess lines are "You said: yes, the same speed now" and "You said: no,
   still the march's pattern".
 - With sound off the reveal waits, and the hint is LESSON.md's (`hints.silent`): the reveal only
-  ever describes a sound that was heard (`kit/predict.ts:5-9`).
+  ever describes a sound that was heard (`kit/predict.ts:5-10`).
 - States: waiting for a choice; a sound playing; choice made and sound heard, reveal shown.
 - Under reduced motion the reveal appears at once, with no slide-in.
 
@@ -600,7 +600,7 @@ States:
    does). When the guide ends, the line counts as sung, and Start the guide gives way to the feeling
    question: from then on the only way to sing again is Again, so a visit holds at most two guides.
 6. **How did that feel?** appears under the guide each time it ends, asked afresh with no answer
-   pressed: Lesson 3's four answers through `mountFeelings` (`kit/comfort.ts:122-146`; FACTS 66).
+   pressed: Lesson 3's four answers through `mountFeelings` (`kit/comfort.ts:127-152`; FACTS 66).
    - Easy or Workable shows LESSON.md's line, "That's it: one line over the backbeat, done.", which
      names the task, never the voice or how the line went, since nothing listened; and **Again**,
      the guide once more, once a visit (Lesson 7 FACTS 58), so a visit holds at most two sung
@@ -717,7 +717,7 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
 - **The beat clock**, `kit/beat-clock.ts`, new. A run is a list of events (a click, a drum hit, a
   note, a Merc's hop), each with a beat and a level, at a tempo, started at an audio-clock time a
   lead after the tap that starts it (0.1 s, or the take's 0.6 s). On every frame of the kit's frame
-  loop (`kit/frame-loop.ts:61-87`) it schedules each event that falls within the next 0.1 s, at its
+  loop (`kit/frame-loop.ts:71-131`) it schedules each event that falls within the next 0.1 s, at its
   exact time on the audio clock, with `start(when)` (FACTS 36); an event whose time has already
   passed when it comes up is skipped, never played late. A tempo change applies from the next beat.
   Each run plays into its own gain node on the kit's master bus, so Stop fades that node out over 30
@@ -802,7 +802,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-Lesson 8's entry (`kit/season.ts:304-321`; FACTS 58), proposed for when this page is built:
+Lesson 8's entry (`kit/season.ts:307-324`; FACTS 58), proposed for when this page is built:
 
 - `minutes: 15` and `page: '/learn/08'`, written plainly with Lesson 5's comment, "A draft until its
   sign-off (drafts.ts), as Lesson 3 is." (`season.ts:254-256`). Every build keeps a draft's page and
@@ -819,10 +819,10 @@ Lesson 8's entry (`kit/season.ts:304-321`; FACTS 58), proposed for when this pag
   beats 2 and 4" (`kit/explorer-figures.ts:203`), is the kit's and stays: the card's arm swings in
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:878-889`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
-- The hook stays word for word (`season.ts:310`; FACTS 1), with no alternative, and the tease
+- The hook stays word for word (`season.ts:313`; FACTS 1), with no alternative, and the tease
   stays as `kit/lesson-copy.ts:102` has it: "Same song, same speed. Only the claps move.", which
   Lesson 7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
-  (`season.ts:328`), and its copy the tease (`kit/lesson-copy.ts:111`), with its earlier hook as an
+  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:111`), with its earlier hook as an
   alternative (`:103-110`); all three are Lesson 9's, not this page's (FACTS 6).
 
 ## What the kit and the app still need
@@ -864,7 +864,7 @@ table). Every item is proposed.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:111`), above its new hook, "How do you land a note you
-   have to leap to?" (`season.ts:328`), under `.next-tease` (`kit/next-card.ts:142`;
+   have to leap to?" (`season.ts:331`), under `.next-tease` (`kit/next-card.ts:142`;
    `lesson-sections.css:198-204`), and the old hook stays in `kit/lesson-copy.ts:103-110` as the
    admin console's alternative (CURIOSITY-MOMENTS § 5). This page adds only its tease figure to the
    slot (Toys 9).
