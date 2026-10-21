@@ -1,7 +1,6 @@
 # Lesson 8: Beat, tempo and the backbeat (written lesson)
 
-Status: Awaiting its first review, then the vocal coach's sign-off before publishing (MASTER-PLAN §
-12 item 8)
+Status: Awaiting the vocal coach's sign-off before publishing (MASTER-PLAN § 12 item 8)
 
 The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the

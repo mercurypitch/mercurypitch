@@ -424,8 +424,17 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   [`lessons/06-intervals/`](lessons/06-intervals/) and
   [`lessons/07-slides-sirens-range/`](lessons/07-slides-sirens-range/) (facts, copy and page
   spec). Lessons 3, 5 and 7 wait on the vocal coach (§ 12 item 8), and so does Lesson 6's
-  sing-along. Lesson 3's page is built at `/learn/03` as a draft: the dev site builds it, and a
-  production build leaves it out until the coach signs it off (`src/features/lessons/kit/drafts.ts`).
+  sing-along. Lessons 3, 4 and 5 have pages, `/learn/03` to `/learn/05`. Lessons 3 and 5 are
+  drafts (`src/features/lessons/kit/drafts.ts`): every build carries their pages, and the dev site
+  and previews serve them, but on mercurypitch.com the site worker answers each with the 404 page
+  until the admin console publishes it, after the coach signs it off (`src/lesson-gate.ts`).
+- Lessons 8 to 10: written lessons, text only, each reviewed once and fixed, in
+  [`lessons/08-beat-tempo-backbeat/`](lessons/08-beat-tempo-backbeat/),
+  [`lessons/09-landing-a-leap/`](lessons/09-landing-a-leap/) and
+  [`lessons/10-major-minor/`](lessons/10-major-minor/) (facts, copy and page spec). Their sung
+  parts wait on the vocal coach (§ 12 item 8). No page is built yet; each goes live when the
+  console publishes it, after the coach's sign-off and once the pages its recall links to are
+  live: `/learn/06` for all three, and `/learn/03` too for Lesson 9.
 - YouTube: [`youtube/YOUTUBE.md`](youtube/YOUTUBE.md) is the upload guide for Lessons 1 and 2
   (every Studio field, chapters, end screens, cards and pinned comments, checked against YouTube's
   help pages on 19 October 2026), with three thumbnails per film, end-screen maps, paste-ready

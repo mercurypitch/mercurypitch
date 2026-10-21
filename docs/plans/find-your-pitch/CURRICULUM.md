@@ -214,8 +214,8 @@ voice lines wait on the vocal coach's sign-off, and its page publishes after `/l
   reward the widest span (the app's guided-voice rules).
 
 **Lesson 8. Beat, tempo and the backbeat** (written: the lesson, its facts and its page spec are
-in [lessons/08-beat-tempo-backbeat/](lessons/08-beat-tempo-backbeat/), awaiting review; no film yet;
-its sung line waits on the vocal coach's sign-off, and its page publishes after `/learn/06`)
+in [lessons/08-beat-tempo-backbeat/](lessons/08-beat-tempo-backbeat/), reviewed; no film yet; its
+sung line waits on the vocal coach's sign-off, and its page publishes after `/learn/06`)
 
 - Objectives: find the pulse; count bars of 2, 3 and 4; hear and clap a backbeat.
 - Misconception: "Rhythm is just how fast the song goes."
@@ -229,8 +229,8 @@ its sung line waits on the vocal coach's sign-off, and its page publishes after 
   statistic.
 
 **Lesson 9. Landing a leap** (written: the lesson, its facts and its page spec are in
-[lessons/09-landing-a-leap/](lessons/09-landing-a-leap/), awaiting review; no film yet; its voice
-lines wait on the vocal coach's sign-off, and its page publishes after `/learn/03` and `/learn/06`)
+[lessons/09-landing-a-leap/](lessons/09-landing-a-leap/), reviewed; no film yet; its voice lines
+wait on the vocal coach's sign-off, and its page publishes after `/learn/03` and `/learn/06`)
 
 - Objectives: land thirds, the fifth, the fourth and the octave in tune; use an arpeggio as a
   ladder.
@@ -245,7 +245,9 @@ lines wait on the vocal coach's sign-off, and its page publishes after `/learn/0
   rewritten (§ 4).
 - Facts: RCM interval order; Kodály's sol-mi start.
 
-**Lesson 10. Major and minor**
+**Lesson 10. Major and minor** (written: the lesson, its facts and its page spec are in
+[lessons/10-major-minor/](lessons/10-major-minor/), reviewed; no film yet; its voice lines wait on
+the vocal coach's sign-off, and its page publishes after `/learn/06`)
 
 - Objectives: hear the difference between a major and a minor third; build major and minor triads;
   meet the natural minor scale.
@@ -253,8 +255,10 @@ lines wait on the vocal coach's sign-off, and its page publishes after `/learn/0
 - Signature: one bead (the third) sliding down one semitone and the whole chord's colour
   changing.
 - Checkpoint: sing do-mi-so, then do-me-so.
-- Practise: Drone Intonation (major and minor thirds against a drone; needs the `intervals` launch
-  field to keep only its Major 3rd and Minor 3rd); Ear Lab Stack.
+- Practise: Drone Intonation (`/pitch-training?lesson=10`, then tap Drone Intonation; keeping only
+  its Major 3rd and Minor 3rd needs the `intervals` launch field); Ear Lab's Stack
+  (`/ear-lab?lesson=10`, then tap Stack; a run of only major and minor chords needs the
+  `ear-drill` launch kind).
 - Facts: major and minor thirds differ by one semitone; the RCM Preparatory chord-quality test.
 - Decided (19 October 2026, MASTER-PLAN § 12 item 12): do-based minor, do-me-so as above, with
   the natural minor scale sung do re me fa so le te do. La-based minor (la-do-mi, the Kodály

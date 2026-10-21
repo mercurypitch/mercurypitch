@@ -153,23 +153,24 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   two, with no first half inviting a count of notes, which the lesson steers away from; YOUTUBE.md's own title.
 - **Facts:** FACTS 23, 25 to 28, 30 ("may": one small, preliminary study), 32, 33, 38, 48, 57.
 
-### Lesson 8 · Beat, tempo and the backbeat · theory; CURRICULUM card only · hook kept
+### Lesson 8 · Beat, tempo and the backbeat · theory; written; no page yet · hook kept
 
 - **Opening:** a metronome ticks under "Twinkle", claps on 1 and 3; the Mercs hop on the claps (no hands). Orange
   "If it's no faster, can moving the claps change anything?" Blue "Let's move them and listen." Predict: "Same tune,
-  same speed. The claps move to 2 and 4. Will it feel the same?" [Just the same] [Different].
+  same speed. The claps move to 2 and 4. Musicians call some beats strong and some weak. Will the claps now land on
+  strong beats, or weak ones?" [Strong beats] [Weak beats].
 - **Visual:** the metronome (explorer art in `kit/explorer-figures.ts`) whose arm becomes a beat grid (new);
-  `Sound.tick` and `playNoise` (exist). **Payoff:** the backbeat step; the checkpoint, claps on 2 and 4.
+  `Sound.tick` and `playNoise` (exist). **Payoff:** the backbeat step; the checkpoint, taps on 2 and 4.
 - **Tease:** two lines into the amber band, one stepping, one a dashed arc with a "?" (new): "One note, two ways up:
   step by step, or one leap."
 - **Facts:** "Twinkle", L6 FACTS 20 and 28 to 30; needs a source for the backbeat and bars of 2, 3 and 4 (a theory
   text, or Ableton Learning Music, which the card names). Show the feel; never state it as a statistic.
 
-### Lesson 9 · Landing a leap · voice; card only
+### Lesson 9 · Landing a leap · voice; written; no page yet
 
 - **Opening:** Merc sings do, then leaps to so, drawn as an arc into the band. Orange "Can't I just jump to the top
   note and hope?" Blue "Let's find something to aim with." Predict: "Merc sings do and so again, with one note in
-  between. Which one helps you find so?" [re] [mi] [fa] (the widget takes two to four choices).
+  between. Which one splits the leap most evenly?" [re] [mi] [fa] (the widget takes two to four choices).
 - **Visual:** `kit/band-chart.ts` (exists) with the arc and its landing zone (new). **Payoff:** the arpeggio as a
   ladder, slow leaps first; the checkpoint, do-mi-so-do, slowly.
 - **Tease:** do, mi and so lit on the spiral, one "?" over all three, not over mi (new still): "Three notes, one
@@ -179,7 +180,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Facts:** needs a source for leap against step accuracy (sung-interval studies by size) and for the ladder and
   slow-first advice (a singing-pedagogy text; the card names RCM's order and Kodály's sol-mi); names, L6 FACTS 10 to 13.
 
-### Lesson 10 · Major and minor · theory; card only
+### Lesson 10 · Major and minor · theory; written; no page yet
 
 - **Opening:** do, mi and so lit on the spiral and played together (both exist). Orange "If one note moves a
   semitone, can the whole chord change?" Blue "Choose one, and we'll move it." Predict: "Do stays home. Which note,
