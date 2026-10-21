@@ -139,6 +139,11 @@ export function mountTuneToy(root: HTMLElement, opts: TuneToyOptions): TuneToy {
   let landTimer = 0
   // the line's start, as the words follow it (the core's own moves with it)
   let start = C4
+  // each play of the line, and of the swapped version, takes the next number,
+  // so a play cut short by a newer one of its kind leaves that one's Play
+  // light, or its version on the line, alone
+  let lineRuns = 0
+  let swapRuns = 0
 
   const shownCount = (): number => (features.shape.lines.length === 1 ? 7 : 14)
   const mode = (): NamesMode => opts.names.mode
@@ -229,19 +234,23 @@ export function mountTuneToy(root: HTMLElement, opts: TuneToyOptions): TuneToy {
       features.shape.lines.length === 1
         ? firstLine(start, speed())
         : bothLines(start, speed())
+    lineRuns += 1
+    const run = lineRuns
     playBtn.classList.add('is-on')
     const finished = await core.play(events, audible)
-    playBtn.classList.remove('is-on')
+    if (run === lineRuns) playBtn.classList.remove('is-on')
     return finished
   }
 
   async function playSwappedOverlay(audible: boolean): Promise<boolean> {
+    swapRuns += 1
+    const run = swapRuns
     core.setOverlay(swapOverlay())
     const finished = await core.play(swappedLine(start, speed()), audible, {
       overlay: true,
       color: COLOR.ink2,
     })
-    if (!swapped) core.setOverlay(null)
+    if (run === swapRuns && !swapped) core.setOverlay(null)
     return finished
   }
 
