@@ -19,6 +19,12 @@
 // The same plugin says what iOS does to the app's sound, as `[audio session]
 // ...`: another app's sound starting and stopping, a call, the route.
 //
+// On iOS the same lyrics and clock also reach a TV connected to the phone by
+// AirPlay screen mirroring or a cable (TVLyrics.swift). While a test build's
+// switch is on (`setTvLyricsEnabled`), the TV shows them full screen in place
+// of the phone, and the room keeps handing them over while it does
+// (`onTvLyrics`). Off, the TV mirrors the phone.
+//
 // The web has no window for a page: inert wrappers, and the plugin is never
 // even registered there.
 
@@ -50,6 +56,14 @@ interface PictureInPicturePlugin {
   setLyrics(options: { json?: string }): Promise<void>
   /** iOS: where the song is. */
   setClock(options: PictureInPictureClock): Promise<void>
+  /** iOS: the switch for the lyrics on a connected TV. */
+  setTvLyrics(options: { enabled: boolean }): Promise<void>
+  /** iOS: that switch, and whether a TV is connected and shows the lyrics. */
+  getTvLyrics(): Promise<{
+    enabled?: unknown
+    connected?: unknown
+    showing?: unknown
+  }>
   addListener(
     eventName: 'pictureInPictureChange',
     listener: (state: { inPictureInPicture?: boolean }) => void,
@@ -67,6 +81,10 @@ interface PictureInPicturePlugin {
   addListener(
     eventName: 'pictureInPictureLog' | 'audioSessionLog',
     listener: (event: { message?: unknown }) => void,
+  ): Promise<PluginListenerHandle>
+  addListener(
+    eventName: 'tvLyricsChange',
+    listener: (state: { connected?: unknown; showing?: unknown }) => void,
   ): Promise<PluginListenerHandle>
 }
 
@@ -257,6 +275,67 @@ export function onPictureInPicture(
         )
       } catch {
         // No plugin behind the name in this build: no window, no events.
+      }
+    })()
+  })
+}
+
+/** A TV connected to the iPhone, and what it shows (TVLyrics.swift). */
+export interface TvLyricsState {
+  /** The test build's switch: on, a connected TV shows the lyrics. */
+  readonly enabled: boolean
+  /** A TV is connected, by AirPlay screen mirroring or a cable. */
+  readonly connected: boolean
+  /** It shows the lyrics, not the phone. */
+  readonly showing: boolean
+}
+
+/**
+ * iOS: the switch for the lyrics on a connected TV. Off, a TV mirrors the
+ * phone. The plugin keeps it across launches.
+ */
+export async function setTvLyricsEnabled(on: boolean): Promise<void> {
+  if (!isIos()) return
+  await attempt(async () => {
+    await pictureInPicture().setTvLyrics({ enabled: on })
+  })
+}
+
+/** iOS: the switch and the TV as they stand, or null where there is none. */
+export async function readTvLyrics(): Promise<TvLyricsState | null> {
+  if (!isIos()) return null
+  try {
+    const state = await pictureInPicture().getTvLyrics()
+    return {
+      enabled: state.enabled === true,
+      connected: state.connected === true,
+      showing: state.showing === true,
+    }
+  } catch {
+    // No plugin behind the name in this build: no TV.
+    return null
+  }
+}
+
+/** iOS: a TV coming and going, and the lyrics going up on it or down. */
+export function onTvLyrics(
+  handler: (state: Omit<TvLyricsState, 'enabled'>) => void,
+): Unsubscribe {
+  if (!isIos()) return () => undefined
+
+  return lazyListener((dispose) => {
+    void (async () => {
+      try {
+        dispose(
+          await pictureInPicture().addListener('tvLyricsChange', (state) => {
+            handler({
+              connected: state.connected === true,
+              showing: state.showing === true,
+            })
+          }),
+        )
+      } catch {
+        // No plugin behind the name in this build: no TV, no events.
       }
     })()
   })
