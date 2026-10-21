@@ -42,9 +42,9 @@ export interface PredictOptions {
   readonly hints: {
     /** Once a choice is in. */
     readonly chosen: string
-    /** After a play that sound off kept silent, until the reveal. */
+    /** After a play that sound off kept silent, until a play is heard. */
     readonly silent: string
-    /** After a heard play that does not reveal, until the reveal. */
+    /** After a heard play that does not reveal, until the reveal; `chosen` without it. */
     readonly next?: string
     /** After the reveal. */
     readonly again: string
@@ -80,6 +80,8 @@ export function mountPredict(root: HTMLElement, opts: PredictOptions): Predict {
   const choices = qa<HTMLButtonElement>('.choice', root)
   const plays = opts.plays ?? qa<HTMLButtonElement>('[data-play]', root)
   const hint = q('.lock-hint', root)
+  // the page's own hint, asking for a choice
+  const lockHint = hint.innerHTML
   const given = opts.reveal
   const reveals: readonly HTMLElement[] =
     given === undefined
@@ -139,20 +141,22 @@ export function mountPredict(root: HTMLElement, opts: PredictOptions): Predict {
     )
   }
 
-  // after a play: the reveal once its sound was heard, else a hint saying why not yet
+  // after a play: the reveal once its sound was heard, else a hint saying why
+  // not yet; a heard play never leaves the sound-off hint standing
   function heard(what: string, audible: boolean): void {
+    if (revealed) return
     if (!audible || Sound.state !== 'on') {
-      if (!revealed) hint.innerHTML = `${ICON.speaker}${opts.hints.silent}`
+      hint.innerHTML = `${ICON.speaker}${opts.hints.silent}`
       return
     }
-    if (revealsAnswer(what) && choice !== null) heardPlays.add(what)
-    if (!revealsAnswer(what) || choice === null || !answered()) {
-      const next = opts.hints.next
-      if (!revealed && next !== undefined && choice !== null)
-        hint.innerHTML = `${ICON.play}${next}`
+    // a free example, heard before a choice: the hint asks for one again
+    if (choice === null) {
+      hint.innerHTML = lockHint
       return
     }
-    if (!revealed) showReveal(choice)
+    if (revealsAnswer(what)) heardPlays.add(what)
+    if (revealsAnswer(what) && answered()) showReveal(choice)
+    else hint.innerHTML = `${ICON.play}${opts.hints.next ?? opts.hints.chosen}`
   }
 
   plays.forEach((p) =>
