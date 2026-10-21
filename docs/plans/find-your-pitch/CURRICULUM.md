@@ -265,7 +265,9 @@ the vocal coach's sign-off, and its page publishes after `/learn/06`)
   choice) is named once in Go deeper and never taught. Season 2's movable-do sight-singing (S11)
   inherits it.
 
-**Lesson 11. Registers and the break**
+**Lesson 11. Registers and the break** (written: the lesson, its facts and its page spec are in
+[lessons/11-registers-break/](lessons/11-registers-break/), awaiting review; no film yet; its voice
+lines wait on the vocal coach's sign-off, and its page publishes after `/learn/07`)
 
 - Objectives: know that voices switch between vibration modes and the switch is normal; smooth it
   with gentle glides.
