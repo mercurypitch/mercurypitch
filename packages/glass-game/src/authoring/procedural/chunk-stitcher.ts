@@ -1,18 +1,22 @@
 // Chunk stitcher — transforms and connects modular chunks along cardinal directions into world space.
 
+import type { CloudwayCourseGapState } from '../cloudway-course-source.ts'
+import { hasPlatformGeometryErrors } from './chunk-geometry.ts'
+
+export {
+  buildAssembledCourseGaps,
+  classifyAssembledCourseGaps,
+} from './chunk-gaps.ts'
+
 import type { Vec3 } from '../../contracts.ts'
-import type {
-  CardinalDirection,
-  ChunkExitBounds,
-  ProceduralChunk,
-} from './contracts.ts'
+import type { CardinalDirection, ChunkExitBounds, ChunkPlatform, ProceduralChunk, } from './contracts.ts'
 
 export interface AssembledPlatform {
   readonly id: string
   readonly profileId: string
   readonly center: Vec3
   readonly quarterTurns: number
-  readonly behavior?: unknown
+  readonly behavior?: ChunkPlatform['behavior']
   readonly crystalInterior?: {
     preset: string
     seed: number
@@ -25,6 +29,14 @@ export interface AssembledGap {
   readonly platformBId: string
   readonly minimumClearanceMeters: number
   readonly axis: 'x' | 'z'
+  readonly fromState?: CloudwayCourseGapState
+  readonly toState?: CloudwayCourseGapState
+}
+
+export interface AssembledJoin {
+  readonly platformAId: string
+  readonly platformBId: string
+  readonly kind: 'pearl-butt-seam'
 }
 
 export interface AssembledEncounter {
@@ -37,6 +49,8 @@ export interface AssembledEncounter {
   readonly noteAnchorId?: string
   readonly discoveryCoinIds?: readonly string[]
   readonly requiresCompleted: readonly string[]
+  /** The chunk's owned floor; its own intentional gate may cross this court. */
+  readonly courtPlatformIds: readonly string[]
   readonly presentationBarrier?: {
     profileId: string
     facingYaw: number
@@ -61,6 +75,7 @@ export interface AssembledCameraSection {
 export interface AssembledCourseData {
   readonly platforms: readonly AssembledPlatform[]
   readonly gaps: readonly AssembledGap[]
+  readonly joins: readonly AssembledJoin[]
   readonly encounters: readonly AssembledEncounter[]
   readonly checkpoints: readonly AssembledCheckpoint[]
   readonly cameraSections: readonly AssembledCameraSection[]
@@ -77,51 +92,10 @@ export interface AssembledCourseData {
   readonly finalHeading: CardinalDirection
 }
 
-const PROFILE_DIMENSIONS: Readonly<
-  Record<string, { readonly width: number; readonly depth: number }>
-> = {
-  'pearl-rest': { width: 3.2, depth: 0.72 },
-  'frost-lily': { width: 1.65, depth: 2.2 },
-  'rose-hex-crumble': { width: 1.969, depth: 1.738 },
-  'rose-crackle': { width: 1.64, depth: 1.64 },
-  'amethyst-crackle': { width: 1.64, depth: 1.1 },
-  'gilt-scroll': { width: 2.206, depth: 2.206 },
-  'aurora-glide': { width: 2.55, depth: 1.4 },
-}
-
 export function hasAssembledPlatformOverlap(
   platforms: readonly AssembledPlatform[],
 ): boolean {
-  const boxes = platforms.map((p) => {
-    const dims = PROFILE_DIMENSIONS[p.profileId] ?? { width: 3.2, depth: 0.72 }
-    const rotated = Math.abs(p.quarterTurns) % 2 === 1
-    const halfX = (rotated ? dims.depth : dims.width) / 2
-    const halfZ = (rotated ? dims.width : dims.depth) / 2
-    const behavior = p.behavior as
-      | { kind?: string; translation?: Vec3 }
-      | undefined
-    const tx = behavior?.kind === 'glide' ? (behavior.translation?.x ?? 0) : 0
-    const tz = behavior?.kind === 'glide' ? (behavior.translation?.z ?? 0) : 0
-    return {
-      minX: p.center.x - halfX + Math.min(0, tx),
-      maxX: p.center.x + halfX + Math.max(0, tx),
-      minZ: p.center.z - halfZ + Math.min(0, tz),
-      maxZ: p.center.z + halfZ + Math.max(0, tz),
-    }
-  })
-
-  for (let i = 0; i < boxes.length; i++) {
-    for (let j = i + 1; j < boxes.length; j++) {
-      const a = boxes[i]!
-      const b = boxes[j]!
-      const xOverlap = Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX)
-      const zOverlap = Math.min(a.maxZ, b.maxZ) - Math.max(a.minZ, b.minZ)
-      if (xOverlap > 0.01 && zOverlap > 0.01) {
-        return true
-      }
-    }
-  }
-  return false
+  return hasPlatformGeometryErrors(platforms)
 }
 
 function rotatePoint(local: Vec3, heading: CardinalDirection): Vec3 {
@@ -184,11 +158,13 @@ export function stitchChunks(
 ): AssembledCourseData {
   const assembledPlatforms: AssembledPlatform[] = []
   const assembledGaps: AssembledGap[] = []
+  const assembledJoins: AssembledJoin[] = []
   const assembledEncounters: AssembledEncounter[] = []
   const assembledCheckpoints: AssembledCheckpoint[] = []
   const assembledCameraSections: AssembledCameraSection[] = []
 
   let currentHeading: CardinalDirection = 'north'
+  let exitClearance = 0
   let currentOrigin: Vec3 = { x: 0, y: 0, z: 0 }
   let assembledExitBounds: ChunkExitBounds | undefined = undefined
   let lastExitPlatformId: string | null = null
@@ -203,6 +179,31 @@ export function stitchChunks(
 
   for (let cIdx = 0; cIdx < chunks.length; cIdx++) {
     const chunk = chunks[cIdx]!
+    if (cIdx > 0) {
+      const worldTravelHeading = currentHeading
+      const rotation =
+        (CARDINALS.indexOf(currentHeading) -
+          CARDINALS.indexOf(chunk.entrySocket.facing) +
+          4) %
+        4
+      currentHeading = CARDINALS[rotation]!
+      const entry = rotatePoint(chunk.entrySocket.position, currentHeading)
+      const clearance = Math.max(
+        exitClearance,
+        chunk.entrySocket.clearanceMargin,
+      )
+      if (!Number.isFinite(clearance) || clearance < 0)
+        throw new Error(`Invalid socket clearance in ${chunk.id}`)
+      const offset = rotatePoint(
+        { x: 0, y: 0, z: clearance },
+        worldTravelHeading,
+      )
+      currentOrigin = {
+        x: currentOrigin.x + offset.x - entry.x,
+        y: currentOrigin.y - entry.y,
+        z: currentOrigin.z + offset.z - entry.z,
+      }
+    }
     const chunkPrefix = `proc-c${cIdx + 1}`
     const quarterTurnOffset = headingToQuarterTurns(currentHeading)
     const baseYaw = headingToYaw(currentHeading)
@@ -229,9 +230,9 @@ export function stitchChunks(
       minZ = Math.min(minZ, worldCenter.z - 2.5)
       maxZ = Math.max(maxZ, worldCenter.z + 2.5)
 
-      let behavior: unknown = undefined
+      let behavior: ChunkPlatform['behavior'] = undefined
       if (p.behavior) {
-        if (p.behavior.kind === 'glide' && p.behavior.translation) {
+        if (p.behavior.kind === 'glide') {
           const rotatedTranslation = rotatePoint(
             p.behavior.translation,
             currentHeading,
@@ -268,23 +269,42 @@ export function stitchChunks(
       })
     }
 
-    // Inter-chunk gap connecting last platform of previous chunk to first platform of this chunk
+    const entryPlatformId = idMap.get(chunk.entrySocket.platformLocalId)
+    const exitPlatformId = idMap.get(chunk.exitSocket.platformLocalId)
+    if (entryPlatformId === undefined || exitPlatformId === undefined)
+      throw new Error(`Unknown socket platform in ${chunk.id}`)
+    for (const join of chunk.joins ?? []) {
+      const platformAId = idMap.get(join.platformALocalId),
+        platformBId = idMap.get(join.platformBLocalId)
+      if (platformAId === undefined || platformBId === undefined)
+        throw new Error(`Unknown join platform in ${chunk.id}`)
+      assembledJoins.push({ platformAId, platformBId, kind: join.kind })
+    }
+
+    // Connect the declared socket platforms, never an optional last-array alcove.
     if (lastExitPlatformId !== null && chunk.platforms.length > 0) {
-      const firstPlatformGlobalId = idMap.get(chunk.platforms[0]!.localId)!
       assembledGaps.push({
         id: `proc-intergap-${cIdx}`,
         platformAId: lastExitPlatformId,
-        platformBId: firstPlatformGlobalId,
-        minimumClearanceMeters: 0.55,
+        platformBId: entryPlatformId,
+        minimumClearanceMeters: Math.max(
+          exitClearance,
+          chunk.entrySocket.clearanceMargin,
+        ),
         axis:
-          currentHeading === 'east' || currentHeading === 'west' ? 'x' : 'z',
+          turnHeading(currentHeading, chunk.entrySocket.facing) === 'east' ||
+          turnHeading(currentHeading, chunk.entrySocket.facing) === 'west'
+            ? 'x'
+            : 'z',
       })
     }
 
     // Internal chunk gaps
     for (const g of chunk.gaps) {
-      const platA = idMap.get(g.platformALocalId)!
-      const platB = idMap.get(g.platformBLocalId)!
+      const platA = idMap.get(g.platformALocalId)
+      const platB = idMap.get(g.platformBLocalId)
+      if (platA === undefined || platB === undefined)
+        throw new Error(`Unknown gap platform in ${chunk.id}`)
       assembledGaps.push({
         id: `${chunkPrefix}-${g.localId}`,
         platformAId: platA,
@@ -354,6 +374,7 @@ export function stitchChunks(
           noteAnchorId: e.noteAnchorId,
           discoveryCoinIds: e.discoveryCoinIds,
           requiresCompleted,
+          courtPlatformIds: [...idMap.values()],
           presentationBarrier: e.presentationBarrier
             ? {
                 profileId: e.presentationBarrier.profileId,
@@ -370,16 +391,12 @@ export function stitchChunks(
 
     // Camera sections (assign all platforms in the chunk and align look vector with chunk traversal)
     if (chunk.platforms.length > 0) {
-      const chunkPlatformIds = chunk.platforms.map(
-        (p) => idMap.get(p.localId)!,
-      )
+      const chunkPlatformIds = chunk.platforms.map((p) => idMap.get(p.localId)!)
       const cs = chunk.cameraSection
       const rawFrom = cs
         ? idMap.get(cs.lookFromPlatformLocalId)!
-        : chunkPlatformIds[0]!
-      const rawTo = cs
-        ? idMap.get(cs.lookToPlatformLocalId)!
-        : chunkPlatformIds[chunkPlatformIds.length - 1]!
+        : entryPlatformId
+      const rawTo = cs ? idMap.get(cs.lookToPlatformLocalId)! : exitPlatformId
       const lookFromPlatformId =
         rawFrom === rawTo && lastExitPlatformId !== null
           ? lastExitPlatformId
@@ -420,12 +437,9 @@ export function stitchChunks(
       }
     }
 
-    // Update origin for next chunk
-    if (chunk.platforms.length > 0) {
-      lastExitPlatformId = idMap.get(
-        chunk.platforms[chunk.platforms.length - 1]!.localId,
-      )!
-    }
+    // Socket ownership is explicit even when optional side platforms follow the main exit.
+    lastExitPlatformId = exitPlatformId
+    exitClearance = chunk.exitSocket.clearanceMargin
 
     const rotatedExitPos = rotatePoint(
       chunk.exitSocket.position,
@@ -444,6 +458,7 @@ export function stitchChunks(
   return {
     platforms: assembledPlatforms,
     gaps: assembledGaps,
+    joins: assembledJoins,
     encounters: assembledEncounters,
     checkpoints: assembledCheckpoints,
     cameraSections: assembledCameraSections,

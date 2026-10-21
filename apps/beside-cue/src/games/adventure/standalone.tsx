@@ -22,7 +22,16 @@ configurePitchEngineAssets({
 
 async function selectedDevelopmentLevel() {
   if (!import.meta.env.DEV) return undefined
-  const layout = new URLSearchParams(window.location.search).get('layout')
+  const query = new URLSearchParams(window.location.search)
+  const layout = query.get('layout')
+  if (
+    layout === 'procedural' &&
+    (window.location.search.length > 2048 ||
+      ['layout', 'seed', 'difficulty', 'lesson', 'fog'].some(
+        (key) => query.getAll(key).length > 1,
+      ))
+  )
+    return undefined
   if (
     layout !== 'straight' &&
     layout !== 'quarter-turn' &&
@@ -59,7 +68,6 @@ async function selectedDevelopmentLevel() {
     CLOUDWAY_CURRENT_TRIAL,
     CLOUDWAY_THAWING_SONG,
     CLOUDWAY_PRISMATIC_CAUSEWAY,
-    CLOUDWAY_PROCEDURAL,
     createProceduralCourse,
     crystalInteriorStudy,
     livingCrystalStudy,
@@ -86,45 +94,22 @@ async function selectedDevelopmentLevel() {
   if (layout === 'thawing-song') return CLOUDWAY_THAWING_SONG
   if (layout === 'prismatic-causeway') return CLOUDWAY_PRISMATIC_CAUSEWAY
   if (layout === 'procedural') {
+    // This is a local development preview, not a published share URL. Imported
+    // course codes go through the explicit Studio action in every host.
     const params = new URLSearchParams(window.location.search)
-    const seed = params.get('seed')
-    const difficulty = params.get('difficulty')
-    const lesson = params.get('lesson')
-    const fog = params.get('fog')
-    if (
-      (typeof seed === 'string' && seed.length > 0) ||
-      difficulty !== null ||
-      lesson !== null ||
-      fog !== null
-    ) {
-      return createProceduralCourse({
-        seed:
-          typeof seed === 'string' && seed.length > 0
-            ? seed
-            : 'celestial-prime',
-        difficulty:
-          difficulty === 'gentle' ||
-          difficulty === 'balanced' ||
-          difficulty === 'virtuoso'
-            ? difficulty
-            : undefined,
-        melodyLessonId:
-          lesson === 'first-arc-v1' ||
-          lesson === 'sunlit-steps-v1' ||
-          lesson === 'gallery-arch-v1' ||
-          lesson === 'two-windows-v1'
-            ? lesson
-            : undefined,
-        fogTheme:
-          fog === 'dawn' ||
-          fog === 'celestial' ||
-          fog === 'aurora' ||
-          fog === 'twilight'
-            ? fog
-            : undefined,
-      }).compiledLevel
+    const { normalizeProceduralCourseOptions } =
+      await import('@irchiinnuss/glass-game/creator-levels')
+    try {
+      const options = normalizeProceduralCourseOptions({
+        seed: params.get('seed') ?? 'celestial-prime',
+        difficulty: params.get('difficulty') ?? undefined,
+        melodyLessonId: params.get('lesson') ?? undefined,
+        fogTheme: params.get('fog') ?? undefined,
+      })
+      return createProceduralCourse(options).compiledLevel
+    } catch {
+      return undefined
     }
-    return CLOUDWAY_PROCEDURAL
   }
   if (layout === 'crystal-interiors') {
     const preset = new URLSearchParams(window.location.search).get('interior')

@@ -6,6 +6,7 @@ export type CardinalDirection = 'north' | 'east' | 'south' | 'west'
 
 export interface ChunkSocket {
   readonly id: string
+  readonly platformLocalId: string
   readonly position: Vec3
   readonly facing: CardinalDirection
   readonly width: number
@@ -50,6 +51,13 @@ export interface ChunkGap {
   readonly platformBLocalId: string
   readonly minimumClearanceMeters: number
   readonly axis: 'x' | 'z'
+}
+
+/** An authored, coplanar Pearl butt seam; contact must meet exactly, not overlap. */
+export interface ChunkJoin {
+  readonly platformALocalId: string
+  readonly platformBLocalId: string
+  readonly kind: 'pearl-butt-seam'
 }
 
 export interface ChunkEncounter {
@@ -116,6 +124,7 @@ export interface ProceduralChunk {
   readonly exitSocket: ChunkSocket
   readonly platforms: readonly ChunkPlatform[]
   readonly gaps: readonly ChunkGap[]
+  readonly joins?: readonly ChunkJoin[]
   readonly encounters?: readonly ChunkEncounter[]
   readonly checkpoints?: readonly ChunkCheckpoint[]
   readonly cameraSection?: ChunkCameraSection

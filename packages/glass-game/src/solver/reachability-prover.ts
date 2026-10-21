@@ -1,140 +1,186 @@
-// Reachability prover — goal-directed forward exploration proving physical route accessibility.
+// Reachability search — bounded forward exploration with runtime-validated positive witnesses.
 
-import type { LevelDefinition, MovementInput, Vec3 } from '../contracts'
-import { BREAKABLE_INTERACTION_RADIUS } from '../core/exhibit-interaction'
-import { createGlassGame } from '../core/game'
-import { MOVEMENT } from '../core/movement'
-import type { ReachabilityProof, ReachabilityTarget } from './contracts'
-import { expandMacroToInputs, generateGoalDirectedActions } from './macro-inputs'
-import { StateLattice } from './state-lattice'
-import { distXZ, isWithinInteraction, replayTrajectory } from './trajectory-stepper'
+import type { LevelDefinition, MovementInput, Vec3 } from '../contracts.ts'
+import { createGlassGame } from '../core/game.ts'
+import { MOVEMENT } from '../core/movement.ts'
+import type { ReachabilityProof, ReachabilityTarget } from './contracts.ts'
+import { boundedInteger, MAX_MACRO_TICKS } from './limits.ts'
+import { expandMacroToInputs, generateGoalDirectedActions, } from './macro-inputs.ts'
+import { StateLattice } from './state-lattice.ts'
+import { distXZ, replayTrajectory, satisfiesTarget, } from './trajectory-stepper.ts'
 
 export interface ReachabilitySearchOptions {
   maxFrontierExpansions?: number
   macroTickDuration?: number
   savedProgress?: unknown
+  maxTrajectoryTicks?: number
+  /** Counts every replayed tick, not only the retained witness. */
+  maxSimulationTicks?: number
+  maxFrontierSize?: number
 }
 
 interface SearchNode {
   inputs: MovementInput[]
   position: Vec3
   grounded: boolean
-  costG: number // elapsed seconds
-  heuristicH: number // distance estimate / speed
+  score: number
+  history: string
 }
 
+/** Failure is inconclusive: finite actions, beam pruning and time budgets are not impossibility proofs. */
 export function proveReachability(
   level: LevelDefinition,
   target: ReachabilityTarget,
   options: ReachabilitySearchOptions = {},
 ): ReachabilityProof {
   const maxExpansions = options.maxFrontierExpansions ?? 3500
-  const macroDuration = options.macroTickDuration ?? 8
+  const macroDuration = options.macroTickDuration ?? 12
+  const maxTicks = options.maxTrajectoryTicks ?? 1800
+  const simulationBudget = options.maxSimulationTicks ?? 1_000_000
+  const frontierLimit = options.maxFrontierSize ?? 1000
   const lattice = new StateLattice()
-
-  // Initial node from spawn
-  const initialGame = createGlassGame(level, options.savedProgress)
-  const initialPlayer = initialGame.snapshot().player
-  const initialSolids = initialGame.snapshot().activeSolidIds
-
-  lattice.add(initialPlayer, initialSolids)
-
-  const initialDistance = distXZ(initialPlayer.position, target.anchor)
-  if (isWithinInteraction(initialPlayer.position, target.anchor, target.interactionRadius) && initialPlayer.grounded) {
-    return {
-      targetId: target.id,
-      reachable: true,
-      elapsedSeconds: 0,
-      totalTicks: 0,
-      witnessInputSequence: [],
-      exploredStatesCount: 1,
-    }
-  }
-
+  const inconclusive = (reason: string): ReachabilityProof => ({
+    targetId: target.id,
+    reachable: false,
+    status: 'inconclusive',
+    exploredStatesCount: lattice.size,
+    reason,
+  })
+  if (
+    !boundedInteger(maxExpansions, 0, 10_000) ||
+    !boundedInteger(macroDuration, 1, MAX_MACRO_TICKS) ||
+    !boundedInteger(maxTicks, 0, 7200) ||
+    !boundedInteger(simulationBudget, 0, 10_000_000) ||
+    !boundedInteger(frontierLimit, 1, 5000)
+  )
+    return inconclusive(
+      'Invalid search budget: options must be finite bounded integers.',
+    )
+  if (
+    ![
+      target.anchor.x,
+      target.anchor.y,
+      target.anchor.z,
+      target.interactionRadius,
+    ].every(Number.isFinite) ||
+    target.interactionRadius <= 0
+  )
+    return inconclusive('Invalid target geometry.')
+  const initial = createGlassGame(level, options.savedProgress).snapshot()
+  const encounter = level.breakables.find(
+    (candidate) => candidate.id === target.id,
+  )
+  if (target.kind !== 'position' && encounter === undefined)
+    return inconclusive(
+      'Unknown encounter target; geometric waypoints require kind: position.',
+    )
+  const requirements = [
+    ...(target.requiresCompleted ?? []),
+    ...(target.kind === 'position' ? [] : (encounter?.requiresCompleted ?? [])),
+  ]
+  if (!requirements.every((id) => initial.completedBreakableIds.includes(id)))
+    return inconclusive(
+      'Required encounters have not been completed in the supplied progress.',
+    )
+  if (
+    target.kind !== 'position' &&
+    initial.completedBreakableIds.includes(target.id)
+  )
+    return inconclusive(
+      'Encounter is already completed; it cannot be started again.',
+    )
+  const anchor = target.kind === 'position' ? target.anchor : encounter!.anchor
+  const reached = (inputs: MovementInput[]): ReachabilityProof => ({
+    targetId: target.id,
+    reachable: true,
+    status: 'reachable',
+    elapsedSeconds: inputs.length * MOVEMENT.fixedStep,
+    totalTicks: inputs.length,
+    witnessInputSequence: inputs,
+    exploredStatesCount: lattice.size,
+  })
+  lattice.add(initial.player, initial.activeSolidIds, {
+    ticks: 0,
+    platformStates: initial.platformStates,
+    inputHistory: '',
+  })
+  if (satisfiesTarget(initial, target)) return reached([])
+  const speed = level.movement?.runSpeed ?? MOVEMENT.speed
+  // Deliberately greedy rather than optimal A*: useful routes within a fixed simulation budget.
+  const score = (position: Vec3, ticks: number) =>
+    (distXZ(position, anchor) + Math.abs(position.y - anchor.y)) / speed +
+    ticks * MOVEMENT.fixedStep * 0.05
   const frontier: SearchNode[] = [
     {
       inputs: [],
-      position: initialPlayer.position,
-      grounded: initialPlayer.grounded,
-      costG: 0,
-      heuristicH: initialDistance / MOVEMENT.speed,
+      position: initial.player.position,
+      grounded: initial.player.grounded,
+      score: score(initial.player.position, 0),
+      history: '',
     },
   ]
-
   let expansions = 0
-
+  let simulatedTicks = 0
+  let pruned = false
   while (frontier.length > 0 && expansions < maxExpansions) {
     expansions++
-
-    // Pop node with smallest f = g + h
-    let bestIdx = 0
-    let bestF = frontier[0].costG + frontier[0].heuristicH
-    for (let i = 1; i < frontier.length; i++) {
-      const f = frontier[i].costG + frontier[i].heuristicH
-      if (f < bestF) {
-        bestF = f
-        bestIdx = i
-      }
-    }
-
-    const current = frontier.splice(bestIdx, 1)[0]
-
-    // Generate goal-directed candidate actions
-    const candidateMacros = generateGoalDirectedActions(
+    let best = 0
+    for (let i = 1; i < frontier.length; i++)
+      if (frontier[i].score < frontier[best].score) best = i
+    const current = frontier.splice(best, 1)[0]
+    const actions = generateGoalDirectedActions(
       current.position,
-      target.anchor,
+      anchor,
       current.grounded,
       macroDuration,
     )
-
-    for (const macro of candidateMacros) {
-      const newInputs = [...current.inputs, ...expandMacroToInputs(macro)]
-      const replay = replayTrajectory(level, options.savedProgress, newInputs)
-
-      if (replay.fell) continue
-
-      const player = replay.player
-      const solids = replay.game.snapshot().activeSolidIds
-
-      // Check if goal is reached
-      if (
-        isWithinInteraction(player.position, target.anchor, target.interactionRadius ?? BREAKABLE_INTERACTION_RADIUS) &&
-        player.grounded
-      ) {
-        return {
-          targetId: target.id,
-          reachable: true,
-          elapsedSeconds: newInputs.length * MOVEMENT.fixedStep,
-          totalTicks: newInputs.length,
-          witnessInputSequence: newInputs,
-          exploredStatesCount: lattice.size,
-        }
+    // Coarse waits make ferry/scroll timing searchable without dropping stationary states.
+    if (level.platforms.some((platform) => platform.behavior !== undefined)) {
+      actions.push({ moveX: 0, moveZ: 0, jumpDown: false, durationTicks: 60 })
+    }
+    for (const macro of actions) {
+      const inputs = [...current.inputs, ...expandMacroToInputs(macro)]
+      if (inputs.length > maxTicks) {
+        pruned = true
+        continue
       }
-
-      // Check lattice deduplication
-      if (lattice.add(player, solids)) {
-        const d = distXZ(player.position, target.anchor)
-        frontier.push({
-          inputs: newInputs,
-          position: player.position,
-          grounded: player.grounded,
-          costG: newInputs.length * MOVEMENT.fixedStep,
-          heuristicH: d / MOVEMENT.speed,
+      if (simulatedTicks + inputs.length > simulationBudget)
+        return inconclusive(
+          'Simulation tick budget exhausted; no valid witness found.',
+        )
+      simulatedTicks += inputs.length
+      const replay = replayTrajectory(level, options.savedProgress, inputs)
+      if (replay.fell) continue
+      const snapshot = replay.game.snapshot()
+      if (satisfiesTarget(snapshot, target)) return reached(inputs)
+      const history = `${current.history}/${macro.moveX},${macro.moveZ},${Number(macro.jumpDown)},${macro.durationTicks}`
+      if (
+        !lattice.add(replay.player, snapshot.activeSolidIds, {
+          ticks: inputs.length,
+          platformStates: snapshot.platformStates,
+          inputHistory: history,
         })
-
-        // Keep frontier bounded if necessary
-        if (frontier.length > 5000) {
-          frontier.sort((a, b) => (a.costG + a.heuristicH) - (b.costG + b.heuristicH))
-          frontier.length = 3500
-        }
+      )
+        continue
+      frontier.push({
+        inputs,
+        position: replay.player.position,
+        grounded: replay.player.grounded,
+        score: score(replay.player.position, inputs.length),
+        history,
+      })
+      if (frontier.length > frontierLimit) {
+        frontier.sort((a, b) => a.score - b.score)
+        frontier.length = frontierLimit
+        pruned = true
       }
     }
   }
-
-  return {
-    targetId: target.id,
-    reachable: false,
-    exploredStatesCount: lattice.size,
-    reason: `Frontier exhausted after ${expansions} expansions (${lattice.size} states explored)`,
-  }
+  return inconclusive(
+    expansions >= maxExpansions
+      ? 'Expansion budget exhausted; no valid witness found.'
+      : pruned
+        ? 'Bounded frontier or trajectory horizon exhausted; no valid witness found.'
+        : 'Sampled frontier exhausted; unsampled routes remain unknown.',
+  )
 }

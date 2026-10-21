@@ -1,194 +1,179 @@
-// Sequence-break prover — adversarial boundary fan-out bounding maximum kinematic jump reach across gaps.
+// Sequence-break search — physical gap and gate probes, never a security certificate.
+import type { BoundsXZ, LevelDefinition, Vec3 } from '../contracts.ts'
+import { MOVEMENT } from '../core/movement.ts'
+import { getActiveCourseSolids } from '../core/solid-activation.ts'
+import type { SequenceBreakProof } from './contracts.ts'
+import type { SequenceBreakOptions } from './security-probe.ts'
+import { inconclusiveSecurity, probeBoundary, project, securityOptionsError, } from './security-probe.ts'
+import { distXZ, replayTrajectory } from './trajectory-stepper.ts'
 
-import type { LevelDefinition, MovementInput } from '../contracts'
-import { createGlassGame } from '../core/game'
-import { MOVEMENT } from '../core/movement'
-import type { SequenceBreakProof } from './contracts'
-import { replayTrajectory } from './trajectory-stepper'
+export type { SequenceBreakOptions } from './security-probe.ts'
 
-export interface SequenceBreakOptions {
-  approachRunTicks?: number
-  coyoteWindowTicks?: number
-  angleSpreadDeg?: number
+function normalToward(
+  from: Vec3,
+  to: Vec3,
+  explicit: SequenceBreakOptions['direction'],
+  cardinal = false,
+): { x: number; z: number } | undefined {
+  let x = explicit?.x ?? to.x - from.x
+  let z = explicit?.z ?? to.z - from.z
+  if (cardinal && explicit === undefined) {
+    if (Math.abs(x) > Math.abs(z)) z = 0
+    else x = 0
+  }
+  const length = Math.hypot(x, z)
+  return length > 0 && Number.isFinite(length)
+    ? { x: x / length, z: z / length }
+    : undefined
 }
 
-/**
- * Tests whether an unbridged progression gap can be crossed before its unlock condition is met.
- */
+function projectedBounds(
+  bounds: BoundsXZ,
+  normal: { x: number; z: number },
+): number[] {
+  return [
+    project({ x: bounds.minX, z: bounds.minZ }, normal),
+    project({ x: bounds.minX, z: bounds.maxZ }, normal),
+    project({ x: bounds.maxX, z: bounds.minZ }, normal),
+    project({ x: bounds.maxX, z: bounds.maxZ }, normal),
+  ]
+}
+
+/** Looks for a bypass with the bridge disabled; a negative finite sample is inconclusive. */
 export function proveSequenceBreakSecurity(
   level: LevelDefinition,
   bridgePlatformId: string,
   options: SequenceBreakOptions = {},
 ): SequenceBreakProof {
-  const bridge = level.platforms.find((p) => p.id === bridgePlatformId)
-  if (!bridge) {
-    throw new Error(`Platform "${bridgePlatformId}" not found in level platforms.`)
+  const error = securityOptionsError(options)
+  if (error !== undefined) return inconclusiveSecurity(bridgePlatformId, error)
+  const bridge = level.platforms.find(
+    (platform) => platform.id === bridgePlatformId,
+  )
+  if (bridge === undefined)
+    return inconclusiveSecurity(bridgePlatformId, 'Unknown bridge platform.')
+  const initial = replayTrajectory(
+    level,
+    options.savedProgress,
+    options.approachInputSequence ?? [],
+  )
+  if (initial.game.snapshot().enabledPlatformIds.includes(bridgePlatformId))
+    return inconclusiveSecurity(
+      bridgePlatformId,
+      'Bridge is already enabled in the supplied progress.',
+    )
+  const center = {
+    x: (bridge.minX + bridge.maxX) / 2,
+    y: bridge.top,
+    z: (bridge.minZ + bridge.maxZ) / 2,
   }
-
-  // The span is the physical length of the bridge along its primary axis
-  const spanX = bridge.maxX - bridge.minX
-  const spanZ = bridge.maxZ - bridge.minZ
-  const isAxisZ = spanZ >= spanX
-  const gapWidthMetres = isAxisZ ? spanZ : spanX
-
-  // Game with bridge disabled (fresh progress)
-  const initialGame = createGlassGame(level)
-  const snapshot = initialGame.snapshot()
-  if (snapshot.enabledPlatformIds.includes(bridgePlatformId)) {
-    throw new Error(`Platform "${bridgePlatformId}" is unexpectedly enabled at spawn.`)
-  }
-
-  // Sample trajectories: run-up into edge departure with varied coyote delays (0 to 14 ticks)
-  let maximumReach = 0
-  let testedCount = 0
-  let exploitWitness: MovementInput[] | undefined
-
-  const coyoteTicksMax = options.coyoteWindowTicks ?? Math.ceil(MOVEMENT.coyoteSeconds / MOVEMENT.fixedStep)
-  const angles = [-30, -15, 0, 15, 30] // diagonal sprint approaches
-
-  for (const angle of angles) {
-    const rad = (angle * Math.PI) / 180
-    const cos = Math.cos(rad)
-    const sin = Math.sin(rad)
-    const moveX = isAxisZ ? sin : cos
-    const moveZ = isAxisZ ? cos : sin
-
-    for (let coyoteDelay = 0; coyoteDelay <= coyoteTicksMax; coyoteDelay += 2) {
-      testedCount++
-      const inputs: MovementInput[] = []
-
-      // 1. Approach run-up (sustained input to reach full velocity)
-      const runTicks = options.approachRunTicks ?? 40
-      for (let t = 0; t < runTicks; t++) {
-        inputs.push({ moveX, moveZ, jumpDown: false })
-      }
-
-      // 2. Coyote delay frames (running off ledge before jump press)
-      for (let t = 0; t < coyoteDelay; t++) {
-        inputs.push({ moveX, moveZ, jumpDown: false })
-      }
-
-      // 3. Jump press & hold through entire flight
-      const flightTicks = 45 // ~0.375s full jump arc
-      for (let t = 0; t < flightTicks; t++) {
-        inputs.push({ moveX, moveZ, jumpDown: true })
-      }
-
-      const replay = replayTrajectory(level, undefined, inputs)
-      const startPos = level.spawn.position
-      const finalPos = replay.player.position
-      const reach = isAxisZ
-        ? Math.abs(finalPos.z - startPos.z)
-        : Math.abs(finalPos.x - startPos.x)
-
-      if (reach > maximumReach) {
-        maximumReach = reach
-      }
-
-      // If the player somehow did not fall and reached downstream deck, record exploit
-      if (!replay.fell && reach >= gapWidthMetres) {
-        exploitWitness = inputs
-        break
-      }
-    }
-    if (exploitWitness) break
-  }
-
-  const clearanceMargin = maximumReach - gapWidthMetres
-
-  return {
-    bridgeOrGateId: bridgePlatformId,
-    secure: clearanceMargin < 0 && exploitWitness === undefined,
-    gapWidthMetres,
-    maximumReachMetres: Number(maximumReach.toFixed(3)),
-    clearanceMarginMetres: Number(clearanceMargin.toFixed(3)),
-    testedTrajectoriesCount: testedCount,
-    exploitWitnessSequence: exploitWitness,
-  }
+  const normal = normalToward(
+    initial.player.position,
+    center,
+    options.direction,
+    true,
+  )
+  if (normal === undefined)
+    return inconclusiveSecurity(
+      bridgePlatformId,
+      'No upstream crossing direction can be established.',
+    )
+  const projections =
+    bridge.supportPolygon?.map((point) => project(point, normal)) ??
+    projectedBounds(bridge, normal)
+  return probeBoundary(
+    level,
+    bridgePlatformId,
+    {
+      normal,
+      near: Math.min(...projections),
+      far: Math.max(...projections),
+      jumpBefore: 0.025,
+    },
+    options,
+  )
 }
 
-/**
- * Tests whether an unbroken sanctuary barrier blocks all sprint, coyote, and diagonal jump trajectories from crossing past its threshold.
- */
+/** Local gate probe starts at the actual replayed position; callers must supply honest progress/approach. */
 export function proveBarrierSecurity(
   level: LevelDefinition,
   gateEncounterId: string,
-  spawnPosition: { x: number; y: number; z: number },
+  spawnPosition: Vec3,
   options: SequenceBreakOptions = {},
 ): SequenceBreakProof {
-  const gate = level.breakables.find((b) => b.id === gateEncounterId)
-  if (!gate) {
-    throw new Error(`Breakable gate "${gateEncounterId}" not found in level.`)
+  const error = securityOptionsError(options)
+  if (error !== undefined) return inconclusiveSecurity(gateEncounterId, error)
+  if (
+    ![spawnPosition.x, spawnPosition.y, spawnPosition.z].every(Number.isFinite)
+  )
+    return inconclusiveSecurity(
+      gateEncounterId,
+      'Requested start must be finite.',
+    )
+  const gate = level.breakables.find((target) => target.id === gateEncounterId)
+  if (gate === undefined)
+    return inconclusiveSecurity(gateEncounterId, 'Unknown barrier encounter.')
+  const initial = replayTrajectory(
+    level,
+    options.savedProgress,
+    options.approachInputSequence ?? [],
+  )
+  if (
+    distXZ(initial.player.position, spawnPosition) > 0.001 ||
+    Math.abs(initial.player.position.y - spawnPosition.y) > 0.001
+  ) {
+    return inconclusiveSecurity(
+      gateEncounterId,
+      'Requested start does not match the actual runtime checkpoint/approach; teleporting is not a route proof.',
+    )
   }
-
-  const dx = gate.position.x - spawnPosition.x
-  const dz = gate.position.z - spawnPosition.z
-  const isAxisZ = Math.abs(dz) >= Math.abs(dx)
-  const dirSign = (isAxisZ ? dz : dx) >= 0 ? 1 : -1
-  const distanceToGate = Math.abs(isAxisZ ? dz : dx)
-  // Crossing past the barrier means advancing >= 0.45m past the barrier plane
-  const crossThreshold = distanceToGate + 0.45
-
-  const testLevel: LevelDefinition = {
-    ...level,
-    spawn: {
-      ...level.spawn,
-      position: spawnPosition,
-    },
-  }
-
-  let maximumReach = 0
-  let testedCount = 0
-  let exploitWitness: MovementInput[] | undefined
-
-  const coyoteTicksMax =
-    options.coyoteWindowTicks ??
-    Math.ceil(MOVEMENT.coyoteSeconds / MOVEMENT.fixedStep)
-  const angles = [-30, -15, 0, 15, 30]
-
-  for (const angle of angles) {
-    const rad = (angle * Math.PI) / 180
-    const cos = Math.cos(rad) * dirSign
-    const sin = Math.sin(rad)
-    const moveX = isAxisZ ? sin : cos
-    const moveZ = isAxisZ ? cos : sin
-
-    for (let coyoteDelay = 0; coyoteDelay <= coyoteTicksMax; coyoteDelay += 3) {
-      testedCount++
-      const inputs: MovementInput[] = []
-      const runTicks = options.approachRunTicks ?? 36
-      for (let t = 0; t < runTicks + coyoteDelay; t++) {
-        inputs.push({ moveX, moveZ, jumpDown: false })
-      }
-      for (let t = 0; t < 40; t++) {
-        inputs.push({ moveX, moveZ, jumpDown: true })
-      }
-
-      const replay = replayTrajectory(testLevel, undefined, inputs)
-      const finalPos = replay.player.position
-      const progress = isAxisZ
-        ? (finalPos.z - spawnPosition.z) * dirSign
-        : (finalPos.x - spawnPosition.x) * dirSign
-
-      if (progress > maximumReach) {
-        maximumReach = progress
-      }
-      if (!replay.fell && progress >= crossThreshold) {
-        exploitWitness = inputs
-        break
-      }
+  const snapshot = initial.game.snapshot()
+  if (snapshot.completedBreakableIds.includes(gateEncounterId))
+    return inconclusiveSecurity(
+      gateEncounterId,
+      'Gate encounter is already completed.',
+    )
+  const solids = getActiveCourseSolids(
+    level,
+    new Set(snapshot.completedBreakableIds),
+  ).filter(
+    (solid) =>
+      solid.kind === 'prop' &&
+      (solid.activation?.noneCompleted?.includes(gateEncounterId) === true ||
+        solid.id.startsWith(`barrier:${gateEncounterId}:`)),
+  )
+  if (solids.length === 0)
+    return inconclusiveSecurity(
+      gateEncounterId,
+      'No active collision solid is associated with this gate.',
+    )
+  const normal = normalToward(
+    initial.player.position,
+    gate.position,
+    options.direction,
+  )
+  if (normal === undefined)
+    return inconclusiveSecurity(
+      gateEncounterId,
+      'No upstream crossing direction can be established.',
+    )
+  const projections = solids.flatMap((solid) => {
+    if (solid.kind === 'prop' && solid.shape === 'cylinder') {
+      const center = project({ x: solid.x, z: solid.z }, normal)
+      const radius = Math.max(solid.radiusTop, solid.radiusBottom)
+      return [center - radius, center + radius]
     }
-    if (exploitWitness) break
-  }
-
-  const clearanceMargin = maximumReach - crossThreshold
-  return {
-    bridgeOrGateId: gateEncounterId,
-    secure: clearanceMargin < 0 && exploitWitness === undefined,
-    gapWidthMetres: Number(crossThreshold.toFixed(3)),
-    maximumReachMetres: Number(maximumReach.toFixed(3)),
-    clearanceMarginMetres: Number(clearanceMargin.toFixed(3)),
-    testedTrajectoriesCount: testedCount,
-    exploitWitnessSequence: exploitWitness,
-  }
+    return projectedBounds(solid, normal)
+  })
+  return probeBoundary(
+    level,
+    gateEncounterId,
+    {
+      normal,
+      near: Math.min(...projections),
+      far: Math.max(...projections),
+      jumpBefore: MOVEMENT.radius + 0.03,
+    },
+    options,
+  )
 }

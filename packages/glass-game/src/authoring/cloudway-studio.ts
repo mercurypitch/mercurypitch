@@ -3,9 +3,10 @@
 import { CLOUDWAY_FOG_DEFAULTS, CLOUDWAY_FOG_LIMITS, } from '../content/cloudway-visibility.ts'
 import { crystalInteriorStudySource } from '../content/crystal-interior-study.ts'
 import promenade from '../content/data/cloudway-crystal-promenade.course.json' with { type: 'json' }
-import thawing from '../content/data/cloudway-thawing-song.course.json' with { type: 'json' }
 import prismaticCauseway from '../content/data/cloudway-prismatic-causeway.course.json' with { type: 'json' }
+import thawing from '../content/data/cloudway-thawing-song.course.json' with { type: 'json' }
 import { glassMelody } from '../content/melodies.ts'
+import { PROCEDURAL_COURT_BARRIERS } from '../content/procedural-court-barriers.ts'
 import { THAWING_SONG_ALCOVE_PROFILES } from '../content/thawing-song-alcove-profiles.ts'
 import { THAWING_SONG_ALCOVE_DOCUMENT } from '../content/thawing-song-alcove-source.ts'
 import { THAWING_SONG_PROFILES } from '../content/thawing-song-profiles.ts'
@@ -27,6 +28,10 @@ const baseLesson = THAWING_SONG_PROFILES.melodyLessons['sunlit-steps-v1']
 /** Profiles own judging policy; editable JSON only selects certified choices. */
 export const CLOUDWAY_STUDIO_PROFILES: CloudwayCourseProfileCatalog = {
   ...THAWING_SONG_ALCOVE_PROFILES,
+  barriers: {
+    ...THAWING_SONG_ALCOVE_PROFILES.barriers,
+    ...PROCEDURAL_COURT_BARRIERS,
+  },
   melodyLessons: {
     ...THAWING_SONG_PROFILES.melodyLessons,
     'first-arc-v1': { ...baseLesson, melody: glassMelody('first-arc') },

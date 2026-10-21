@@ -1,8 +1,9 @@
 // Tests for procedural course generator.
 
 import { describe, expect, it } from 'vitest'
-import { generateProceduralCourse } from './course-generator.ts'
 import { proveReachability } from '../../solver/reachability-prover.ts'
+import { getAssembledGeometryIssues } from './chunk-geometry.ts'
+import { generateProceduralCourse } from './course-generator.ts'
 
 describe('generateProceduralCourse', () => {
   it('generates a valid schema 4 course document and compiles to LevelDefinition', () => {
@@ -19,7 +20,7 @@ describe('generateProceduralCourse', () => {
     expect(result.compiledLevel.rewards?.discoveries.length).toBe(1)
   })
 
-  it('supports 5-station, 7-station, and 10-station melody lessons with zero overlaps and optional alcove toggling', () => {
+  it('preserves 5-station, 7-station, and 10-station melody lessons and optional alcove toggling', () => {
     const sunlit = generateProceduralCourse({
       seed: 'sunlit-voyage',
       melodyLessonId: 'sunlit-steps-v1',
@@ -52,17 +53,16 @@ describe('generateProceduralCourse', () => {
     expect(withoutAlcoves.compiledLevel.rewards).toBeUndefined()
   })
 
-  it('assigns chunk-aligned camera sections covering every platform and proves sanctuary barriers block sequence breaks', async () => {
-    const { proveBarrierSecurity } = await import(
-      '../../solver/sequence-break-prover.ts'
-    )
+  it('assigns chunk-aligned camera sections and does not claim gate security from an unreached checkpoint', async () => {
+    const { proveBarrierSecurity } =
+      await import('../../solver/sequence-break-prover.ts')
     const result = generateProceduralCourse({ seed: 'spire' })
     const level = result.compiledLevel
 
     // Every chunk produces its own camera section
     expect(level.camera?.sections.length).toBeGreaterThanOrEqual(7)
 
-    // First vocal sanctuary barrier must block an uncompleted sprint/jump attempt from its checkpoint
+    // A local checkpoint argument cannot silently teleport the runtime from spawn.
     const firstGate = level.breakables.find(
       (b) => b.presentation?.kind === 'barrier',
     )!
@@ -72,7 +72,8 @@ describe('generateProceduralCourse', () => {
       firstGate.id,
       sanctuaryCheckpoint.position,
     )
-    expect(securityProof.secure).toBe(true)
+    expect(securityProof.secure).toBe(false)
+    expect(securityProof.status).toBe('inconclusive')
     expect(securityProof.exploitWitnessSequence).toBeUndefined()
   })
 
@@ -94,7 +95,7 @@ describe('generateProceduralCourse', () => {
     expect(runA.title).not.toBe(runB.title)
   })
 
-  it('guarantees kinematic clearances on moving rafts to avoid collisions', () => {
+  it('includes a moving raft in the generated route', () => {
     const result = generateProceduralCourse({ seed: 777 })
     const level = result.compiledLevel
 
@@ -271,7 +272,7 @@ describe('generateProceduralCourse', () => {
     }
   })
 
-  it('stiches compound multi-mechanic set-piece chunks with zero static or swept-volume overlaps', async () => {
+  it('stitches compound set-pieces with no unintended static or swept-volume overlaps', async () => {
     const {
       createArrivalChunk,
       createFrostRaftTransferChunk,
@@ -279,9 +280,7 @@ describe('generateProceduralCourse', () => {
       createTwinGlideCrossingChunk,
       createFinalePavilionChunk,
     } = await import('./chunk-library.ts')
-    const { hasAssembledPlatformOverlap, stitchChunks } = await import(
-      './chunk-stitcher.ts'
-    )
+    const { stitchChunks } = await import('./chunk-stitcher.ts')
 
     const stitched = stitchChunks([
       createArrivalChunk('first-arc-home'),
@@ -292,7 +291,11 @@ describe('generateProceduralCourse', () => {
       createFinalePavilionChunk('fin1'),
     ])
 
-    expect(hasAssembledPlatformOverlap(stitched.platforms)).toBe(false)
+    expect(
+      getAssembledGeometryIssues(stitched).filter(
+        (issue) => issue.severity === 'error',
+      ),
+    ).toEqual([])
     expect(stitched.cameraSections.length).toBe(6)
     expect(stitched.platforms.length).toBeGreaterThanOrEqual(30)
   })

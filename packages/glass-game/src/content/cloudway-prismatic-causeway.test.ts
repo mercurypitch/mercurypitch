@@ -2,7 +2,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { BREAKABLE_INTERACTION_RADIUS } from '../core/exhibit-interaction'
+import { createGlassGame } from '../core/game'
+import { resolveMelodyAttempt } from '../core/melody-attempt'
 import { proveReachability } from '../solver/reachability-prover'
+import { replayTrajectory } from '../solver/trajectory-stepper'
 import { CLOUDWAY_PRISMATIC_CAUSEWAY } from './cloudway-prismatic-causeway'
 
 const level = CLOUDWAY_PRISMATIC_CAUSEWAY
@@ -92,14 +95,17 @@ describe('The Celestial Promenade course definition', () => {
     expect(gapAtRest).toBeCloseTo(0.55, 2)
 
     // At destination: translation by 2.4m
-    const translationX = glide.behavior?.kind === 'glide' ? glide.behavior.translation.x : 0
+    const translationX =
+      glide.behavior?.kind === 'glide' ? glide.behavior.translation.x : 0
     const raftMaxXAtDestination = glide.maxX + translationX
     const gapAtDestination = catchDeck.minX - raftMaxXAtDestination
     expect(gapAtDestination).toBeCloseTo(0.55, 2)
   })
 
-  it('guarantees clear forward sightlines and space in front of all frosted gates', () => {
-    const gates = level.breakables.filter((b) => b.presentation?.kind === 'barrier')
+  it('leaves at least two meters between singing anchors and frosted gates', () => {
+    const gates = level.breakables.filter(
+      (b) => b.presentation?.kind === 'barrier',
+    )
     expect(gates.length).toBe(2)
 
     for (const gate of gates) {
@@ -156,96 +162,67 @@ describe('The Celestial Promenade course definition', () => {
     expect(proof.witnessInputSequence).toBeDefined()
   })
 
-  it('proves that the rise gate (The Roseveil Gate) is reachable from the court checkpoint', () => {
-    const gate = level.breakables.find((b) => b.id === 'prisma-gate-rise')
-    expect(gate).toBeDefined()
-
-    const courtSpawnLevel = {
-      ...level,
-      spawn: {
-        position: { x: 1.96, y: 0, z: 13.50 },
-        facingYaw: -1.5707963267948966,
-        checkpointId: 'prisma-save-court',
-      },
-    }
-
-    const proof = proveReachability(
-      courtSpawnLevel,
-      {
-        id: gate!.id,
-        label: gate!.label,
-        anchor: gate!.anchor,
-        interactionRadius: BREAKABLE_INTERACTION_RADIUS,
-      },
-      {
-        maxFrontierExpansions: 2000,
-        macroTickDuration: 12,
-      },
-    )
-
-    expect(proof.reachable).toBe(true)
-    expect(proof.witnessInputSequence).toBeDefined()
-  })
-
-  it('proves that the return gate is reachable from the pavilion checkpoint', () => {
-    const gate = level.breakables.find((b) => b.id === 'prisma-gate-return')
-    expect(gate).toBeDefined()
-
-    const pavilionSpawnLevel = {
-      ...level,
-      spawn: {
-        position: { x: 18.426, y: 0, z: 10.82 },
-        facingYaw: 0,
-        checkpointId: 'prisma-save-pavilion',
-      },
-    }
-
-    const proof = proveReachability(
-      pavilionSpawnLevel,
-      {
-        id: gate!.id,
-        label: gate!.label,
-        anchor: gate!.anchor,
-        interactionRadius: BREAKABLE_INTERACTION_RADIUS,
-      },
-      {
-        maxFrontierExpansions: 2000,
-        macroTickDuration: 12,
-      },
-    )
-
-    expect(proof.reachable).toBe(true)
-    expect(proof.witnessInputSequence).toBeDefined()
-  })
-
-  it('proves that the finale portrait is reachable from the post-gate pavilion court', () => {
-    const finale = level.breakables.find((b) => b.id === 'prisma-portrait-finale')
-    expect(finale).toBeDefined()
-
-    const postGateSpawnLevel = {
-      ...level,
-      spawn: {
-        position: { x: 18.426, y: 0, z: 7.22 },
-        facingYaw: 0,
-        checkpointId: 'prisma-save-pavilion',
-      },
-    }
-
-    const proof = proveReachability(
-      postGateSpawnLevel,
-      {
-        id: finale!.id,
-        label: finale!.label,
-        anchor: finale!.anchor,
-        interactionRadius: BREAKABLE_INTERACTION_RADIUS,
-      },
-      {
-        maxFrontierExpansions: 2000,
-        macroTickDuration: 12,
-      },
-    )
-
-    expect(proof.reachable).toBe(true)
-    expect(proof.witnessInputSequence).toBeDefined()
-  })
+  // These are saved-checkpoint legs, not continuous proof of the intervening
+  // crackle, scroll and ferry route. The runtime must accept every saved prerequisite.
+  it.each([
+    [
+      'rise gate',
+      'prisma-gate-rise',
+      'prisma-save-court',
+      ['prisma-note-home'],
+    ],
+    [
+      'return gate',
+      'prisma-gate-return',
+      'prisma-save-pavilion',
+      ['prisma-note-home', 'prisma-gate-rise'],
+    ],
+    [
+      'finale portrait',
+      'prisma-portrait-finale',
+      'prisma-save-pavilion',
+      ['prisma-note-home', 'prisma-gate-rise', 'prisma-gate-return'],
+    ],
+  ] as const)(
+    'replays a local saved-checkpoint leg to the %s',
+    (_label, targetId, checkpointId, completedBreakableIds) => {
+      const target = level.breakables.find(
+        (candidate) => candidate.id === targetId,
+      )!
+      const checkpoint = level.checkpoints.find(
+        (candidate) => candidate.id === checkpointId,
+      )!
+      const savedProgress = {
+        version: 3,
+        levelId: level.id,
+        checkpointId,
+        completedBreakableIds: [...completedBreakableIds],
+        melodyAttempt: resolveMelodyAttempt(level, {
+          attemptId: 'checkpoint-leg',
+          comfortableMidi: 60,
+        }).identity,
+      }
+      const initial = createGlassGame(level, savedProgress).snapshot()
+      expect(initial.player.position).toEqual(checkpoint.position)
+      expect(initial.completedBreakableIds).toEqual([...completedBreakableIds])
+      const proof = proveReachability(
+        level,
+        { ...target, interactionRadius: BREAKABLE_INTERACTION_RADIUS },
+        {
+          savedProgress,
+          maxFrontierExpansions: 2000,
+          macroTickDuration: 12,
+        },
+      )
+      expect(proof.status, proof.reason).toBe('reachable')
+      expect(proof.witnessInputSequence).toBeDefined()
+      const replay = replayTrajectory(
+        level,
+        savedProgress,
+        proof.witnessInputSequence!,
+      )
+      expect(replay.fell).toBe(false)
+      expect(replay.game.beginEncounter(targetId)).toBe(true)
+    },
+  )
 })
