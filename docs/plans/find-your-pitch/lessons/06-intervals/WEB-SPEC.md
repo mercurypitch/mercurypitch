@@ -536,11 +536,18 @@ and the line references are main's.
 - `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, `:66-81`): Lesson 6's entry.
 - `public/learn/lesson-06-og.jpg`: the share card, 1200 x 630, a still of the hero: the title over
   the tune line on C with its leap bracketed.
-- The page's head, as Lesson 1's (`learn/01.html:9-60`):
-  - title: "Intervals: the distance between notes · Find Your Pitch, Lesson 6 | MercuryPitch";
-  - meta description: "Why can you start 'Twinkle, Twinkle' on any note and it is still the same
-    tune? A fifteen-minute lesson with live sound toys: a tune as a pattern of intervals, steps and
-    leaps, transposing, and intervals named by tunes you know. With the Season 1 map.";
+- The page's head, as Lesson 1's (`learn/01.html:9-60`). Like the cold open, nothing in it answers
+  the predict before the reveal (CURIOSITY-MOMENTS rule 2): every copy a link preview or a search
+  result shows says what the lesson asks, never what stays the same.
+  - title: "Intervals: the distance between notes | MercuryPitch", 60 characters at most; og:title
+    and twitter:title "Intervals: the distance between notes · Find Your Pitch, Lesson 6";
+  - meta description, and the structured data's: "Why can you start 'Twinkle, Twinkle' on any
+    note and it is still the same tune? A fifteen-minute lesson on intervals, steps, leaps and
+    transposing.";
+  - og:description: the hook, then "Hear it from two notes, find what stays the same, and sing it
+    yourself." (151 characters); twitter:description, the hook alone;
+  - the structured data's `teaches`: "What keeps a tune the same on any note", "Steps and leaps",
+    "Transposing a tune to a new starting note" and "Naming intervals by tunes you know";
   - canonical and `og:url`: `https://mercurypitch.com/learn/06`; `og:image`: the share card, with
     alt text naming what it shows.
 - Lessons 1 to 5's pages, when this one goes live: nothing to edit. Their explorers and their
