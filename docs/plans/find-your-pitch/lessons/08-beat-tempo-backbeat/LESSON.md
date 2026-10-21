@@ -70,13 +70,14 @@ for the sound.)
 Reveal: Weak beats. Count 1 2 3 4: beat 1 is usually the strongest, and beat 3 the next. Beats 2
 and 4 are the weak ones. In the first line, the claps now land on "kle", "kle" and "tle". Claps on
 the weak beats make a backbeat. How a backbeat changes a song without speeding it up is this
-lesson's story. (A clap stresses any beat it lands on, so "strong beats" was a fair guess.)
+lesson's story. (Claps on 2 and 4 make those weak beats stand out, so "strong beats" was a fair
+guess.)
 
 ## Recall from Lesson 6
 
 (Straight after the hero. Lesson 6's questions 1 and 4, asked afresh, shown once Lesson 6 is marked
 done; anyone else sees the closed line "Done Lesson 6? Two questions from it", which opens the same
-two: FACTS 3.)
+two. While Lesson 6's page is not published, the section is left out: FACTS 3.)
 
 1. Merc sings the first line from C, then from F♯. [Play] What stayed the same?
    - The intervals between the notes **[correct]** · Feedback: "Every note moved up six
@@ -124,13 +125,14 @@ the clicks come closer together or further apart, but they stay evenly spaced: a
 still a beat.
 
 **Try:** drag Tempo, then tap along. The readout works out your taps per minute.
-**Notice:** tap faster and your number climbs. The metronome's number is the same kind of count.
+**Notice:** tap faster and your number climbs. The metronome's number counts the same thing:
+beats per minute.
 
 _Toy: the metronome with Tempo and the tap readout._
 
 ## Step 3 of 5: Why do musicians count to four?
 
-Lay the metronome's beats in a row, one pad each, and they fall into groups called bars, each
+Here the metronome's beats are laid in a row, one pad each. They fall into groups called bars, each
 counted from 1. Musicians call beat 1 the downbeat; here its click is higher. Bars of 2, 3 or 4
 count 1 2, 1 2 3 or 1 2 3 4. Written music shows the group with a time signature: in 3/4, the top
 number means three beats in a bar. ABRSM, a British exam board, starts Grade 1 theory with 2/4, 3/4
@@ -144,16 +146,16 @@ _Toy: the beat row with Bars, and the Count the bar ear game._
 > **Go deeper**
 >
 > - **Two or four?** Four beats split into two pairs, so a bar of four can feel like two bars of
->   two. Open Music Theory notes that, by listening alone, it isn't always clear which one a piece
->   is in.
+>   two. Open Music Theory, a free online textbook, notes that by ear alone it isn't always clear
+>   which one a piece is in.
 
 ## Step 4 of 5: What makes a backbeat?
 
-Put sounds on the pads, a row per sound and a column per beat: the inside of a drum pattern. The
-kick, a bass drum played by foot, sits on the strong beats, 1 and 3. The hi-hat, two small
-cymbals, ticks twice a beat. Claps sit on the weak beats, 2 and 4: a backbeat. Many styles in four
-have one, a basic rock beat among them. Move the claps and the stresses move: the rhythm changes,
-at the same speed.
+Each sound gets a row of pads, a column per beat: the inside of a drum pattern. The kick, a bass
+drum played by foot, sits on the strong beats, 1 and 3. The hi-hat, two small cymbals, ticks twice a
+beat. Claps sit on the weak beats, 2 and 4: a backbeat. Many styles with four-beat bars have one, a
+basic rock beat among them. Move the claps off 2 and 4 and the backbeat goes: the rhythm changes, at
+the same speed.
 
 **Try:** move the claps to 1 and 3 and play. Then move them back to 2 and 4.
 **Notice:** on 1 and 3 the claps land with the kick; on 2 and 4, between its hits.
@@ -169,8 +171,8 @@ march tempo. Slowed to the rock beat's 90, is it the rock beat?
 (After a choice: Play the march at 90 · Play the rock beat. With sound off, the hint reads: "Sound
 is off, so nothing played. Turn sound on to hear them, then press Play the march at 90.")
 
-Reveal: No: slower, but still BOOM on 1 and whack on 2, 3 and 4; the rock beat claps on 2 and 4
-only. The tempo changed, not the rhythm. (They now share a speed, so "yes" was a fair guess.)
+Reveal: No. It's slower, but still BOOM on 1 and whack on 2, 3 and 4. The rock beat claps on 2
+and 4 only. The tempo changed, not the rhythm. (They now share a speed, so "yes" was a fair guess.)
 
 Orange Merc: "So the tempo is the speed, and the rhythm is what happens on the beats."
 
@@ -180,7 +182,7 @@ Orange Merc: "So the tempo is the speed, and the rhythm is what happens on the b
 > keeps its BOOM-whack-whack-whack. A song's style comes from its sounds and patterns as well as
 > its tempo.
 > **The better idea:** tempo is how fast the beats come. Rhythm is the pattern of sounds on them:
-> which beats are stressed, and how they group into bars.
+> which beats are stressed, or made to stand out, and how they group into bars.
 
 **Try:** swap the tempos: the march at 90, the rock beat at 120.
 **Notice:** each keeps its stresses at either speed.
@@ -189,10 +191,10 @@ _Toy: the beat grid with March, Rock and Tempo._
 
 ## Sing it: tap it, then sing it
 
-**First, the backbeat.** The groove has a kick on 1 and 3 and the hi-hat ticking twice a beat, but
-no clap on 2 and 4: you add the backbeat. Press Play the groove and clap on 2 and 4 with it. Then
-press Start and tap instead: every beat for two bars, then only 2 and 4. The page can't hear claps,
-only taps.
+**First, the backbeat.** Here's a groove, a drum pattern to play along with. It has a kick on 1 and
+3 and the hi-hat ticking twice a beat, but no clap on 2 and 4: you add the backbeat. Press Play the
+groove and clap on 2 and 4 with it. Then press Start and tap instead: every beat for two bars, then
+only 2 and 4. The page can't hear claps, only taps.
 
 [ Play the groove ] [ Start: tap the backbeat ]
 
@@ -231,15 +233,16 @@ above and before anything plays, because it picks the Merc who sings, as in Less
 
 **Your turn:** Merc sings the first line of "Twinkle, Twinkle" over the backbeat, one syllable on
 each beat and "star" for two. Play it, then start the guide and sing along, on the words or on
-"ooh". Take an easy breath as the count-in ends. Sing at about speaking volume. If the top feels
-high, move do, your starting note, lower; if the bottom feels low, move it higher.
+"ooh". The guide counts you in with a bar of clicks: take an easy breath as it ends. Sing at about
+speaking volume. If the top feels high, move do, your starting note, lower; if the bottom feels low,
+move it higher.
 
 Stop immediately if anything feels uncomfortable.
 
 [ Play Merc's line ] [ Start the guide ] [ Move do: lower · higher ]
 
-The guide counts you in for a bar, then lights each beat as the line goes by, with the backbeat
-under it. Nothing listens here and nothing is scored. It's just for you.
+Then the guide lights each beat as the line goes by, with the backbeat under it. Nothing listens
+here and nothing is scored. It's just for you.
 
 Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable ]. Easy or
 Workable: "That's it: one line over the backbeat, done.", with Again, once. Effortful: no more
@@ -366,7 +369,7 @@ page stays a draft until the coach signs it off:
   notes" (FACTS 61).
 - The voice choice, Lesson 3's two buttons and its stored choice, which shows pressed and can be
   changed; with none stored it comes before either path, listening or singing. Its line has the two
-  forms Lessons 5 to 7 use (FACTS 62).
+  forms Lessons 6 and 7 use, and the one for no stored choice is Lesson 5's line too (FACTS 62).
 - "Sing at about speaking volume." (FACTS 63). The brief asked for "speaking volume or softer";
   the page keeps the series' line, which never asks for more than speaking volume and never for a
   whisper, as Lesson 3 rules and Lesson 7's review settled.
@@ -384,8 +387,9 @@ page stays a draft until the coach signs it off:
   with the backbeat; Merc sings it first; the viewer sings it once, and once more only after
   "Easy" or "Workable", so a visit holds at most two sung lines. Nothing listens and nothing is
   scored. No warm-up: the coach may add Lesson 3's (FACTS 68).
-- The breath cue, new: "Take an easy breath as the count-in ends." The line has no rest, and at
-  5.3 seconds it is short, so the breath comes before it; the coach may move it (FACTS 68).
+- The breath cue, new: "The guide counts you in with a bar of clicks: take an easy breath as it
+  ends." The line has no rest, and at 5.3 seconds it is short, so the breath comes before it; the
+  coach may move it (FACTS 68).
 - The groove under the line, new: it plays at half the steps' level, so that nobody sings over
   loud drums; the coach may set its level (FACTS 68, 76).
 - How did that feel? and its endings: Lesson 3's four answers, asked after the guide; after
@@ -407,25 +411,35 @@ This lesson's draft (19 October 2026) was written before the review of October 2
 voice lines of Lessons 3 to 7. The page now takes their wording, for the coach to check. Each says
 the same thing as before, more plainly.
 
-- The voice line, shared with Lessons 5 to 7. Before: "Your voice from Lesson 3, or choose now:"
-  After, in two forms: "Keep the voice you chose before, or change it:" with a choice stored, and
-  "Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:" with none.
+- The voice line, shared with Lessons 6 and 7, and with Lesson 5 where no choice is stored. Before:
+  "Your voice from Lesson 3, or choose now:" After, in two forms: "Keep the voice you chose before,
+  or change it:" with a choice stored, and "Choose a voice to sing with. If you chose one in an
+  earlier lesson, pick it again:" with none.
 - Your turn. Before: "If the top feels high, move do lower; if the bottom feels low, move it
   higher." After: "If the top feels high, move do, your starting note, lower; if the bottom feels
   low, move it higher." In "Twinkle", do is the first note, as in Lesson 6.
 - The Easy and Workable line. Before: "That's the checkpoint: a line on the beat, with the backbeat
   under it." After: "That's it: one line over the backbeat, done." "Checkpoint" is the team's word
   for the sung task, which the learner never meets, as Lesson 7's review found.
+- The breath cue. Before: "Take an easy breath as the count-in ends." After: "The guide counts you
+  in with a bar of clicks: take an easy breath as it ends." The count-in is named before the cue
+  that leans on it, as this lesson's review asked.
 
-Also changed, though they are not voice instructions: the cold open's predict now asks whether the
-moved claps land on strong or weak beats, since the title already says the song feels different;
-Step 3 names beat 1 the downbeat and says nothing of how it feels, where the draft said it can feel
-heavier, and Step 3 and the quick check call beat 1's click high, its pitch, where the draft called
-it bright, so that no beat carries a mood word (FACTS 15, 74); the practice card, the rest card and
-the footer drop the first-visit line, because the `?lesson=` marker now steps First Light aside
-(FACTS 54, 57); the quick check's builder note is marked as editorial; and Step 1, Step 3, Step 4,
-Sing it and the practice card say one thing a sentence, with "kick", "hi-hat" and "ABRSM" explained
-where they first appear.
+Also changed, though they are not voice instructions:
+
+- The cold open's predict asks whether the moved claps land on strong or weak beats, since the
+  title already says the song feels different (FACTS 30b).
+- Its reveal says that claps on 2 and 4 make those weak beats stand out, as the backbeat's sources
+  say, where it said that a clap stresses any beat it lands on, which no source says; Step 4 says
+  that moving the claps off 2 and 4 takes the backbeat away (FACTS 21a).
+- Step 3 names beat 1 the downbeat and says nothing of how it feels, where the draft said it can
+  feel heavier, and Step 3 and the quick check call beat 1's click high, its pitch, where the draft
+  called it bright, so that no beat carries a mood word (FACTS 15, 74).
+- The practice card, the rest card and the footer drop the first-visit line, because the
+  `?lesson=` marker now steps First Light aside (FACTS 54, 57).
+- The quick check's builder note is marked as editorial.
+- Step 1, Step 3, Step 4, Sing it and the practice card say one thing a sentence, with "kick",
+  "hi-hat", "ABRSM", "groove" and Open Music Theory explained where they first appear.
 
 ### Proposed, not applied: the four answers to "How did that feel?"
 
