@@ -194,20 +194,24 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Facts:** a minor interval is a semitone smaller than the major, L6 FACTS 11 and 12; needs a source for triads (a
   theory text, such as OMT 2e's triad chapter; the series already cites OMT 2e).
 
-### Lesson 11 · Registers and the break · voice; card only
+### Lesson 11 · Registers and the break · voice; written; no page yet
 
 - **Opening:** Merc's slow "ng" siren climbs the range chart; partway, the sound changes gear and the line crosses a
   grey seam. Orange "My voice just flipped. Did I do it wrong?" Blue "Let's slide again and listen." Predict: "A flip
-  like that: a sign something's wrong, or something every voice can do?" [Something's wrong] [Every voice can].
-- **Visual:** Lesson 7's range chart, the seam and a synthesised gear change (new), labelled a model as Lesson 5
-  labels its takes. The app does not detect registers, so the seam is never the learner's measurement and its
-  narrowing is an illustration. **Payoff:** the gears step; the checkpoint, a slow, quiet "ng" slide.
+  like that: a mistake, or something every voice can do?" [A mistake] [Every voice can]. The plan's "a sign something's
+  wrong" made it a health question, and a lesson cannot tell anyone their voice is healthy, so the written lesson asks
+  whether a flip is a mistake (Lesson 11 FACTS 11, 12).
+- **Visual:** Lesson 7's range chart, the seam and a synthesised gear change (new), labelled a model as Lesson 5 labels
+  its takes. The app does not detect registers, so the seam is never the learner's measurement and its narrowing is an
+  illustration. **Payoff:** the gears step; the checkpoint, one slow, quiet siren on "ng", up only as far as is easy.
 - **Tease:** four chords as four rooms on the spiral, with no tune note on the ring (new still; Lesson 12's WEB-SPEC,
   Decisions for the owner, item 13): "Four chords, round and round."
-- **Hook:** keep only if a source shows a singer's flip lands near one note on repeated slides; otherwise "Why does
-  your voice sometimes flip as you slide up?" Reason: the same question, without the unsourced "every time".
-- **Facts:** every voice has registers, L7 FACTS 57 (Henrich 2006); needs a source for "the same note every time"
-  (voice-science work on register changes) and for Arneson on register coordination (named on the card).
+- **Hook, proposed:** "Why does your voice sometimes flip as you slide up?" Reason: the same question, without the
+  unsourced "every time"; the old wording stays as the alternative `same-note` until FACTS.md has a source (Lesson 11
+  FACTS 1).
+- **Facts:** sourced in Lesson 11's FACTS: registers and the break (Henrich 2006; Herbst & Elemans 2025), breaks in
+  choir singers' slides (Cardoso 2023) and Arneson on register coordination; "the same note every time" is still
+  unsourced (FACTS 1).
 
 ### Lesson 12 · Chords and the four-chord song · theory; written; no page yet
 
