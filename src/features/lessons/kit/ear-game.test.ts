@@ -4,7 +4,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
-import type { EarNote, EarRound } from './ear-game'
+import type { EarGame, EarNote, EarRound } from './ear-game'
 import { keyAnswer, mountEarGame, NEW_GAME, scoreAnswer, slowerBy, TRICKY, } from './ear-game'
 
 type Answer = 'step' | 'leap'
@@ -31,22 +31,39 @@ function gameCard(): HTMLElement {
 
 interface Harness {
   readonly root: HTMLElement
+  readonly game: EarGame
   /** Every sound the game asked for, in order. */
   readonly played: EarNote[][]
+  /** How many sounds the game has stopped. */
+  stops(): number
   /** How many runs have taken a seed. */
   seeds(): number
 }
 
-function mount(): Harness {
+/** A game whose sounds end at once, or, `held`, only when stopped. */
+function mount(held = false): Harness {
   const root = gameCard()
   const played: EarNote[][] = []
+  let stops = 0
   let seeds = 0
-  mountEarGame<Answer>(root, {
+  const game = mountEarGame<Answer>(root, {
     answers: ['step', 'leap'],
     deal: () => ROUNDS,
     play: (events) => {
       played.push([...events])
-      return { done: Promise.resolve(), stop: () => undefined }
+      let end: () => void = () => undefined
+      const done = held
+        ? new Promise<void>((resolve) => {
+            end = resolve
+          })
+        : Promise.resolve()
+      return {
+        done,
+        stop: () => {
+          stops += 1
+          end()
+        },
+      }
     },
     slower: 1.5,
     labels: {
@@ -60,7 +77,7 @@ function mount(): Harness {
       return seeds
     },
   })
-  return { root, played, seeds: () => seeds }
+  return { root, game, played, stops: () => stops, seeds: () => seeds }
 }
 
 const el = (root: HTMLElement, selector: string): HTMLElement => {
@@ -344,5 +361,38 @@ describe('mountEarGame', () => {
     // Assert
     expect(event.defaultPrevented).toBe(false)
     expect(text(root, '[data-eg-feedback]')).toBe('')
+  })
+})
+
+describe('mountEarGame: stop', () => {
+  it('stops the pair it is playing and puts out its Play button', () => {
+    // Arrange
+    const { root, game, stops } = mount(true)
+    playBtn(root).click()
+    const lit = playBtn(root).classList.contains('is-on')
+
+    // Act
+    game.stop()
+
+    // Assert
+    expect(lit).toBe(true)
+    expect(stops()).toBe(1)
+    expect(playBtn(root).classList.contains('is-on')).toBe(false)
+  })
+
+  it("cancels a miss's slower replay that is still to come", () => {
+    // Arrange: a miss, 300 ms into the 700 ms before its replay
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { root, game, played } = mount()
+    playBtn(root).click()
+    answerBtn(root, 'leap').click()
+    vi.advanceTimersByTime(300)
+
+    // Act
+    game.stop()
+    vi.advanceTimersByTime(5000)
+
+    // Assert
+    expect(played).toEqual([ROUNDS[0].events])
   })
 })

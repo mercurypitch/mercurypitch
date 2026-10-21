@@ -21,8 +21,10 @@
 // tabindex="-1", so a tap on its text focuses it); a focused button
 // keeps Space and Enter for itself, so a key meant to replay never answers
 // by accident. The answers use aria-disabled, never disabled, so the button
-// a keyboard user just pressed keeps its focus. Lesson 2's own game (its
-// ear-game.ts) predates this one and keeps its fixed seeds.
+// a keyboard user just pressed keeps its focus. The page stops a game when
+// the viewer leaves its step (`stop`): the pair sounding, and a miss's
+// replay still to come. Lesson 2's own game (its ear-game.ts) predates
+// this one and keeps its fixed seeds.
 
 import { mulberry32, q, qa } from './dom'
 
@@ -120,11 +122,17 @@ export interface EarGameOptions<A extends string> {
   readonly seed?: () => number
 }
 
+/** A game on its card, as the page holds it. */
+export interface EarGame {
+  /** Stops the pair it is playing and a miss's replay still to come, and puts out its Play button. */
+  stop(): void
+}
+
 /** Mounts a game on its card: `[data-eg-round]`, `[data-eg-play]` (with a span), `[data-eg-answer]` and `[data-eg-feedback]`. */
 export function mountEarGame<A extends string>(
   root: HTMLElement,
   o: EarGameOptions<A>,
-): void {
+): EarGame {
   const roundEl = q('[data-eg-round]', root)
   const playBtn = q<HTMLButtonElement>('[data-eg-play]', root)
   const playLabel = q('span', playBtn)
@@ -142,9 +150,15 @@ export function mountEarGame<A extends string>(
     for (const b of answerBtns) b.setAttribute('aria-disabled', String(!on))
   }
 
-  function sound(events: readonly EarNote[]): void {
+  function stop(): void {
     window.clearTimeout(missTimer)
     playing?.stop()
+    playing = null
+    playBtn.classList.remove('is-on')
+  }
+
+  function sound(events: readonly EarNote[]): void {
+    stop()
     const run = o.play(events)
     playing = run
     playBtn.classList.add('is-on')
@@ -237,4 +251,6 @@ export function mountEarGame<A extends string>(
       if (current !== null) sound(current.events)
     }
   })
+
+  return { stop }
 }
