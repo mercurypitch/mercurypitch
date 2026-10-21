@@ -10,16 +10,23 @@ has no film yet, so the page has no Watch section. Each step's heading is orange
 (playbook rule 4). The page opens in Lesson 2's order: the title, the stage, the sound gate, the
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13). Where this page shares a
 line with Lessons 3, 5, 6 and 7 (the comfort check, "Just listen today", the voice choice, the
-warm-up, Move do, the stop line, the four feelings with their gentle and enough-for-today lines,
-the doctor lines, the rest card and "Ten minutes, gently, most days"), it is their current text,
-word for word, with only the exercise and its address changed. Interval names and signs are Lesson
-6's. Solfège is Lesson 4's: do, re, mi, fa, so, la, ti, with do again at the top. The ladder's
-notes are spelled as Lesson 4 spells each key, one letter per degree; from the default do, D, its
-notes are D, F♯, A and D, where Lesson 4's spelling and the app's sharps agree. The copy follows
-the plain-language review's patterns. Every practice link carries `?lesson=09`, which opens its
-room with no intro, so the page has no first-visit line. The page publishes only after Lesson 3's
-page, `/learn/03`, and Lesson 6's page, `/learn/06`, are live, because its prerequisite chips and
-its recall check link there. What the vocal coach signs off is listed at the end.
+warm-up, the Move do control, the stop line, the four feelings with their gentle and
+enough-for-today lines, the doctor lines, the rest card and "Ten minutes, gently, most days"), it is
+their current text, word for word, with only the exercise and its address changed. Three shared
+lines are adapted rather than copied: the sentence that sends a singer to Move do is Lesson 6's with
+the smaller ladder added, "What this does" measures "each of your notes" where Lesson 3's measures
+"your note", and the practice card's range sentences, Lessons 4 and 6's, speak of both drills.
+Interval names and signs are Lesson 6's. Solfège is Lesson 4's: do, re, mi, fa, so, la, ti, with do
+again at the top. The ladder's notes are spelled as Lesson 4 spells each key, one letter per degree;
+from the default do, D, its notes are D, F♯, A and D, where Lesson 4's spelling and the app's sharps
+agree. The copy follows the plain-language review's patterns. Every practice link carries
+`?lesson=09`, which opens its room with no intro, so the page has no first-visit line. Every build
+carries the page, and it goes live when the admin console publishes it (FACTS 9, 63). Whoever
+publishes it waits for the vocal coach's sign-off, the hard gate, and for Lessons 3 and 6 to be
+live, because its prerequisite chips and its recall check link there. Those are rules for whoever
+uses the console, and nothing enforces them: the console asks before it publishes a draft that waits
+on a sign-off, and checks nothing about the lessons a page links. What the vocal coach signs off is
+listed at the end.
 
 ---
 
@@ -29,17 +36,18 @@ its recall check link there. What the vocal coach signs off is listed at the end
 - Title (the hook question): **How do you land a note you have to leap to?**
 - Meta, as chips: 16 minutes · After Lesson 3: Match a note · After Lesson 6: Intervals: the
   distance between notes · Sound on · Microphone optional
-- Promise: By the end you'll know how to aim a leap at its landing note, how to use a chord's notes
-  as a ladder, and which leaps to try first. Then you'll sing a slow four-note ladder, or a smaller
-  one if the top feels high.
+- Promise: By the end you'll know how to aim a leap at its landing note, which leaps to try first,
+  and how to tell when you've landed. Then you'll sing a slow four-note ladder, or a smaller one if
+  the top feels high.
 
 _[Editorial: the default since 20 October 2026 (CURIOSITY-MOMENTS § 2 and § 5). The admin console
 can switch the title to the alternative hook kept in `kit/lesson-copy.ts`, "Why is jumping to a note
-so much harder than stepping to it?", the hook this lesson had before. FACTS 1 says what the facts
-support in each: the page answers the default in full, and of the alternative the facts support
-"harder" in part and "so much harder" not at all. Whichever shows, the title never answers the cold
-open's predict. On Lesson 8's next-lesson card, one line above this hook, this lesson's tease reads
-"One note, two ways up: step by step, or one leap." (FACTS 1).]_
+so much harder than stepping to it?", the hook this lesson had before; the site worker then writes
+it into the title and the head's copies of the hook. FACTS 1 says what the facts support in each:
+the page answers the default in full, and of the alternative the facts support "harder" in part and
+"so much harder" not at all. Whichever shows, the title never answers the cold open's predict. On
+Lesson 8's next-lesson card, one line above this hook, this lesson's tease reads "One note, two ways
+up: step by step, or one leap." (FACTS 1).]_
 
 ## Sound gate
 
@@ -58,7 +66,7 @@ Orange Merc: "Can't I just jump to the top note and hope?"
 Blue Merc: "Let's find something to aim with."
 
 **Predict before you listen.** Merc sings do and so again, with one note in between. Which one
-helps you find so?
+splits the leap most evenly?
 [ re ] [ mi ] [ fa ]
 
 (After a choice, three plays unlock: [ Play do, re, so ] [ Play do, mi, so ] [ Play do, fa, so ].
@@ -66,11 +74,10 @@ Each draws its middle note as a band between do's and so's, with Merc's two smal
 The reveal waits until all three have been heard. With sound off, the hint reads: "Sound is off,
 so nothing played. Turn sound on to hear them, then play all three.")
 
-Reveal: All three split the leap in two. Re and fa each split it into a step of 2 semitones and a
-leap of 5. Mi splits it most evenly, into two small leaps of 4 and 3. And do, mi and so are the
-notes of a major chord, three notes that can sound at once. Sung one at a time, they make a ladder
-to aim with: that's this lesson's story. (Each one made the jump smaller, so every choice was a
-fair guess.)
+Reveal: Mi: 4 semitones, then 3, two small leaps. Re and fa each split it into a step of 2 and a
+leap of 5. (Each makes the jump smaller too, so re or fa was a fair guess.) Do, mi and so are the
+notes of a major chord, three notes that can sound at once. Sung one at a time, they make a ladder:
+that's this lesson's story.
 
 ## Recall from Lesson 6
 
@@ -104,9 +111,9 @@ fair guess.)
 
 A step goes to the next letter, right beside the note you're on. A leap skips the notes between.
 For a higher note, your vocal folds stretch longer and tighter (Lesson 3). A step asks for a little
-of that, and a leap for a lot, all in one move. And in one study, 1,797 people in the United
-States and India passed tunes along by singing them. Over many passes, the tunes drifted towards
-small intervals.
+of that, and a leap for a lot, all in one move. And in one study, hundreds of people in the United
+States and India passed short tunes along by singing them. Over many passes, the tunes drifted
+towards small intervals.
 
 **Try:** play the step, then the leap. Under the chart, watch the folds, slowed 220 times.
 **Notice:** the step makes the folds about an eighth faster. The leap to so makes them one and a
@@ -114,7 +121,7 @@ half times as fast.
 
 _Toy: the ladder chart with Step and Leap, and the slowed folds under it._
 
-## Step 2 of 5: So can I aim a leap?
+## Step 2 of 5: Can I aim a leap, then?
 
 Yes: leaps tend to miss the same way. In one study, students with no music training copied leaps
 of a major third, a fourth and a fifth. Even the accurate singers landed them short, by 50 to 100
@@ -138,11 +145,11 @@ _Toy: the ladder chart with an illustrated copy, Hear it first and Leap._
 
 ## Step 3 of 5: What's the ladder for?
 
-Do, mi and so make a major chord. Sung one at a time, up to the top do, they make an arpeggio: a
-ladder. Do to mi is a major third, and mi to so a minor third: together, the perfect fifth from do
-to so. So to the top do is a perfect fourth, and do to do the octave. One ladder holds every leap
-here. Exams use it too: before a singer sings a new tune from the page, the Royal Conservatory of
-Music's examiners play do, mi and so, then its first note.
+Do, mi and so make a major chord: three notes that can sound at once. Sung one at a time, up to the
+top do, they make an arpeggio: a ladder. Do to mi is a major third, mi to so a minor third:
+together, the perfect fifth from do to so. So to the top do is a perfect fourth, and do to do the
+octave. Exams use it too. Before a singer sings a new tune from the page, the Royal Conservatory of
+Music's examiners play do, mi and so, then the tune's first note.
 
 **Try:** press Climb, then Leap to so and Leap to the top do.
 **Notice:** each leap lands on a rung the climb touched.
@@ -283,15 +290,15 @@ jumping and hoping.
 **Practise it.**
 
 - After singing, or if Sing it was skipped: "Arpeggio Jumper plays do, mi, so and the top do one at
-  a time, and you sing each back. It opens on Major, Ascending and Note by note. Interval Trainer
-  plays two notes, the second always higher, then you sing them back. Four of its six intervals are
-  this lesson's leaps, but not the minor third. Both start low in the voice range saved in
-  Settings, and both reach a whole octave. They want each note in the octave they play, not an
-  octave away. So set your range there first, under Singing Voice Range ("Don't know? Find my
-  voice" helps). If the top do felt high today, leave them for another day. Sore, hoarse or unwell
-  today? Just listen along. Sing at about speaking volume, and stop immediately if anything feels
-  uncomfortable. Practise it free: **mercurypitch.com/pitch-training**, then tap Arpeggio Jumper or
-  Interval Trainer." Under it: "Ten minutes, gently, most days. Missed a day? Just come back."
+  a time, and you sing each back. Interval Trainer plays two notes, the second always higher, then
+  you sing them back. Four of its six intervals are this lesson's leaps, but not the minor third.
+  Both start low in the voice range saved in Settings, and both reach a whole octave. They want
+  each note in the octave they play, not an octave away. Set your range there first, under Singing
+  Voice Range ("Don't know? Find my voice" helps). If the top do felt high today, leave them for
+  another day. Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and
+  stop immediately if anything feels uncomfortable. Practise it free:
+  **mercurypitch.com/pitch-training**, then tap Arpeggio Jumper or Interval Trainer." Under it:
+  "Ten minutes, gently, most days. Missed a day? Just come back."
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today", with no "Ten minutes" line:
   "Rest today. Arpeggio Jumper will be here when your voice feels comfortable:
   **mercurypitch.com/pitch-training**, then tap Arpeggio Jumper."
@@ -307,18 +314,19 @@ lesson's five leaps." and its address "Interval Trainer, on this lesson's leaps:
 mercurypitch.com/exercises/leap-ladder". Both drills score the octave written on each note, so until
 the octave-folded option ships (§ 4 item 7) the card keeps its octave sentence. No Ascent link: its
 "Tuning & Ear" week tells singers their voice "can only sing as true as your ear can hear", which
-Lesson 3's evidence contradicts (FACTS 61); CURRICULUM § 4 item 8's rewrite now takes that week
+runs against Lesson 3's evidence (FACTS 61); CURRICULUM § 4 item 8's rewrite now takes that week
 too.]_
 
 **Next lesson:** Lesson 10, Major and minor. "Which single note turns a major chord into a minor
 one?" One line above it, the tease: "Three notes, one chord. Move one by a semitone."
 
-_[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season, which
-takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`, `kit/season.ts`). Lesson 10's old hook,
-"Which single note turns a bright major chord into a dark minor one?", is kept there as an
-alternative the admin console can switch to; the card draws the default. Beside the words, the
-tease's figure: do, mi and so lit on the spiral, with one "?" over all three, not over mi. The card
-says "Coming later" and "See it on the map" until Lesson 10's page is live (FACTS 7).]_
+_[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season as
+this page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`,
+`kit/page-state.ts`). Lesson 10's old hook, "Which single note turns a bright major chord into a
+dark minor one?", is kept there as an alternative the admin console can switch to; the card draws
+whichever hook and tease the console picked, and the default until it picks one. Beside the words,
+the tease's figure: do, mi and so lit on the spiral, with one "?" over all three, not over mi. The
+card says "Coming later" and "See it on the map" until Lesson 10's page is live (FACTS 7).]_
 
 ## Footer
 
@@ -407,19 +415,25 @@ so a decision there carries here.
 ### The feelings and the Wrap
 
 - "How did that feel?" and its endings. After "Effortful" there is no further ladder and the Wrap
-  shows the rest card, as on Lessons 6 and 7's pages, because the practice card's drills both reach
-  an octave; please confirm, as Lessons 6 and 7 ask. After "Uncomfortable", the singing stops, the
-  count goes, the doctor lines show and the Wrap shows the rest card. Merc celebrates once, only
-  after "Easy" or "Workable", when every note heard landed, whichever ladder was sung (FACTS 82, 83,
-  85).
+  shows the rest card, as Lessons 6 and 7 specify. The rules decide it: a report of effort
+  suppresses immediate-repeat encouragement (REQ-GVC-021), and both of the practice card's drills
+  reach an octave. After "Uncomfortable", the singing stops, the count goes, the doctor lines show
+  and the Wrap shows the rest card, which recommends no bigger dose (REQ-GVC-023, REQ-GVC-055). Merc
+  celebrates once, only after "Easy" or "Workable", when every note heard landed, whichever ladder
+  was sung (FACTS 82, 83, 85).
 - The practice card: Arpeggio Jumper's four notes up an octave, note by note, from the anchor of
   the singer's saved preset, and its grade, which also counts a measure of how clear the pitch
   track was; Interval Trainer's six rounds, one an octave and one a major sixth; both scored in the
   written octave, which the card says plainly; and the line "If the top do felt high today, leave
   them for another day." (FACTS 48 to 52, 86).
-- The proposed `/exercises/leap-ladder`: should it include the octave, which this page makes
-  optional, as the plan's set does? Interval Trainer's score weighs a wider leap's round more
-  (FACTS 52, 60).
+- The octave, which the rules decide too. Targets fit a comfortable range without requesting
+  extremes (REQ-GVC-011), and a gentler alternative may be offered (REQ-GVC-055), so this page makes
+  the octave optional and never asks anyone to reach the top note (FACTS 73, 77, 80). The proposed
+  `/exercises/leap-ladder` can keep the plan's octave: played from a preset's anchor, as Interval
+  Trainer plays every round, it tops out 7 to 9 semitones under the preset's top, so it requests no
+  extreme of the saved range, and the card's "If the top do felt high today, leave them for another
+  day." is the gentler way. Its score weighs the octave's round six times a tone's (FACTS 52, 60,
+  86).
 
 ### Listening only
 
@@ -432,5 +446,6 @@ so a decision there carries here.
 As in the lists of Lessons 3, 5 and 7, the plain-language review proposes [ Easy ] [ OK ]
 [ Hard work ] [ Uncomfortable ] in place of [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable ].
 Here the answer decides whether Again is offered, so a word a learner guesses at can misreport how
-the singing felt. The page keeps the current labels until the coach decides for every lesson and
-the app's Guided Voice Check at once (FACTS 82).
+the singing felt. The labels stay: REQ-GVC-022 names Easy, Workable, Effortful and Uncomfortable,
+so they change only if the spec does, for the app's Guided Voice Check and every lesson at once.
+The review's answers are a proposal for the spec (FACTS 82).
