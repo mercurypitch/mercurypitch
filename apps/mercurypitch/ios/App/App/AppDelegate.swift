@@ -38,12 +38,28 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    // A configuration for every scene iOS asks about, a window for one.
+    //
+    // iOS asks for a scene with the external-display role when AirPlay
+    // screen mirroring starts or a cable connects, even though the app
+    // supports one scene. Capacitor 8.5's template gave that scene
+    // SceneDelegate as well, and SceneDelegate builds a ViewController:
+    // a second web app, on the TV, on its start page, sharing this one's
+    // storage and initialising every plugin twice -- in place of the
+    // mirror the singer asked for (ionic-team/capacitor#8648). Apple's
+    // answer is to create no window for that scene unless the app means to
+    // stop mirroring. A configuration with no delegate class creates none,
+    // so iOS mirrors the phone, picture and sound.
+    //
+    // apps/mercurypitch/src/ios-external-display.test.ts pins it.
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
         let config = UISceneConfiguration(name: "Default Configuration",
                                           sessionRole: connectingSceneSession.role)
-        config.delegateClass = SceneDelegate.self
+        if connectingSceneSession.role == .windowApplication {
+            config.delegateClass = SceneDelegate.self
+        }
         return config
     }
 }
