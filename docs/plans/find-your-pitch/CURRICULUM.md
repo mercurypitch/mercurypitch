@@ -309,7 +309,7 @@ its voice lines wait on the vocal coach's sign-off, and its page publishes after
 - Facts: harmonics and timbre; vowels as vocal-tract shaping (formants).
 
 **Lesson 14. Phrasing: sing a whole song** (written: the lesson, its facts and its page spec are in
-[lessons/14-phrasing-whole-song/](lessons/14-phrasing-whole-song/), awaiting review; no film yet;
+[lessons/14-phrasing-whole-song/](lessons/14-phrasing-whole-song/), reviewed; no film yet;
 its voice lines wait on the vocal coach's sign-off, and its page publishes after `/learn/05`,
 `/learn/08`, `/learn/09` and `/learn/12`)
 
