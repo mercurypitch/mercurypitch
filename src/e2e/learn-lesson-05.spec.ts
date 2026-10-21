@@ -26,8 +26,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
-const TITLE =
-  'Breath and a steady note: Find Your Pitch, Lesson 5 | MercuryPitch'
+const TITLE = 'Breath and a steady note · Find Your Pitch | MercuryPitch'
 const TONE_WAV = writeToneWav(220, 20)
 
 test.use({
