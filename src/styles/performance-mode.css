@@ -21,6 +21,11 @@
    Class-name matching is intentional. Vite's CSS-module hashing keeps the
    authored `[local]` name in production output (`_glow_1a2b3`), so
    `[class*='glow' i]` matches both plain and module-scoped class names.
+
+   It is only ever used to switch an effect OFF (filter, animation). A
+   substring cannot tell a panel from the scrim behind it or from the rows
+   inside it, so nothing chosen by class name is ever painted here — see the
+   glass ground below, and performance-mode.contract.test.ts.
    ============================================================ */
 
 /* ── Decorative blur and looping animation ───────────────────
@@ -77,17 +82,27 @@
   will-change: auto !important;
 }
 
-/* Glass panels lean on the blur for contrast against whatever is behind them.
-   With the blur gone they need their own ground, or text sits on top of the
-   stage art. Only surfaces that already declare a translucent background are
-   affected — anything opaque keeps its own colour. */
-:root[data-perf-tier='low'] [class*='glass' i],
-:root[data-perf-tier='low'] [class*='overlay' i],
-:root[data-perf-tier='low'] [class*='sheet' i],
-:root[data-perf-tier='low'] [class*='modal' i],
-:root[data-perf-tier='low'] [class*='popover' i],
-:root[data-perf-tier='low'] [class*='dropdown' i] {
-  background-color: var(--bg-card, #161b22);
+/* Glass chrome leans on the blur for contrast against whatever is behind it.
+   With the blur gone, the shared glass ground (mobile-kit.css) turns solid, so
+   the floating bars, pills and HUD chips built on it do not put their text
+   straight onto the stage art.
+
+   Through the token, never by class name. This used to give every element
+   whose class merely CONTAINED "glass", "overlay", "sheet", "modal",
+   "popover" or "dropdown" an opaque --bg-card, on the promise that only
+   translucent panels would notice. CSS cannot ask whether a background is
+   translucent, and those words name scrims and content far more often than
+   panels: the spotlight tour's full-screen overlay, every dialog's backdrop
+   (the Learn dialog, the score card, the export dialogs), the rows and
+   headings of a sheet. The frame sampler drops ANY device to this tier
+   mid-session (src/lib/device-tier.ts) and it stays for the session, so a
+   tablet that stuttered once while a song played lost the whole app behind
+   the tour and behind Learn, and the Zen song list turned into grey bars.
+
+   A scrim stays see-through on every tier. Only a surface that opted into
+   the glass recipe gets a ground, and it gets it from that recipe. */
+:root[data-perf-tier='low'] {
+  --glass-bg: var(--bg-secondary, #161b22);
 }
 
 /* ── Television: readable at three metres, driveable with a D-pad ── */
