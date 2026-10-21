@@ -249,8 +249,17 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
   to B 4, `aria-valuetext` such as "Starts on F sharp 4: every interval the same"): arrow keys move
   it a semitone, Home and End jump to C 4 and B 4. The names switch is two buttons with
   `aria-pressed`. Swap sizes announces "Swapped: up 2, then up 7. Same ups and downs, two intervals
-  changed." Tab order: Play, Slow, the slider and its buttons, the toggles and the names switch,
-  then the beads and gaps, line 1 before line 2.
+  changed." and, pressed again, "The tune as it was: up 7, then up 2."; a gap that repeats its note
+  is "Gap 1: the same note again". Tab order: Play, Slow, the slider and its buttons, the toggles
+  and the names switch, then the beads and gaps, line 1 before line 2.
+- **Words on the stage** (`lesson-06/steps.ts`, `lesson-06/tune-words.ts`). The figure's label
+  follows the step: "Fig. 1 The shape of a tune", "Fig. 2 Both lines, every gap", "Fig. 3 Slide the
+  whole tune", "Fig. 4 Two sizes swapped" and "Fig. 5 The named intervals". The controls read
+  Play, Slow, Start lower, Start higher, Swap sizes, and Letters and Do-re-mi; the slider shows
+  "Starts on C4", spelled as the start is ("Starts on B♭4"), and the readout under the figure
+  "Twinkle from C4: do do so so la la so". Free play's own controls carry "Free play:" before their
+  names ("Free play: where the tune starts", "Free play: names under the beads", "Free play: the
+  tune line"), so a screen reader tells its stage from the steps'.
 - **States**: compact; contour (Step 1); gaps (Step 2); slide (Step 3); swap (Step 4); names (Step
   5); free play, every control together. Any state can be playing or still.
 - Under reduced motion every move (the lift and slide, the swap, the glow) lands in its end state
@@ -306,19 +315,31 @@ Feedback names the interval and the sound, never the listener.
 - **Name it** (Step 5): eight rounds, four answers, labelled "Semitone · m2", "Tone · M2", "Fourth ·
   P4" and "Fifth · P5". Feedback templates: "A perfect fifth, up: 'twin-kle, twin-kle'." "A perfect
   fourth, up: 'Should auld'." "A tone, down: 'lit-tle star'." "A semitone, down: 'I won-der'."
+- **Words on each card.** Its heading, then its round line: "Ten rounds" or "Eight rounds" before
+  the first, "Round 3 of 10" during the game, and the count, "7 of 10", at its end. Its question:
+  "Each round plays two notes, going up or down. Was the move a step or a leap?" (Step or leap?)
+  and "Each round plays one of the board's first four intervals, the steps going down and the leaps
+  going up, as their tunes do. Which is it?" (Name it). The Play button reads "Play a pair", then
+  "Play it again" while a round waits for its answer, "Next round" after it, and "Play ten more"
+  or "Play eight more" at the end. Each answer shows its key, "1 Step" and "2 Leap", or "1 Semitone
+  · m2" to "4 Fifth · P5", and under them "Keys 1 and 2 answer; Space plays the pair again." or
+  "Keys 1 to 4 answer; Space plays the pair again." A feedback line opens "Yes." after a right
+  answer, or "Here it is again, slower." after a miss, before its template (`kit/ear-game.ts`).
 - States: ready (a Play button); playing; answering; feedback shown; finished, with the count and
   Play again.
 - Under reduced motion the answer lights and the feedback appear with no transition.
 
 ### 5. Anchor board
 
-Five rows, LESSON.md's table, on a card in Step 5's text column, under the Notice: each row has the
-interval's name and label, its semitones, a small two-bead figure on rows, and two buttons, **Play
-the tune** (the snippet) and **Play the interval** (the bare pair), with accessible names such as
-"Play 'Should auld ac-quain-tance be for-got'" and "Play the interval: C 4 up to F 4, a perfect
-fourth"; the semitone row's snippet is "How I won-der", four notes, so its tune button reads "Play
-'How I won-der'" (FACTS 68). The octave row plays Lesson 1's A3 and A4 and its tune button reads
-"Play Lesson 1's two As". A row lights while it sounds; one sound at a time (a new tap stops the
+Five rows, LESSON.md's table, on a card in Step 5's text column, under the Notice, headed "Five to
+keep with Leap's labels": each row has the interval's name and label, its semitones and where to
+hear it, LESSON.md's words ("Perfect fourth (P4)", "5 semitones", "'Auld Lang Syne': 'Should
+auld', leaping up"), a small two-bead figure on rows, and two buttons, **Play the tune** (the
+snippet) and **Play the interval** (the bare pair), with accessible names such as "Play the tune:
+'Should auld ac-quain-tance be for-got'" and "Play the interval: C 4 up to F 4, a perfect fourth";
+the semitone row's snippet is "How I won-der", four notes, so its tune button reads "Play the
+tune: 'How I won-der'" (FACTS 68). The octave row plays Lesson 1's A3 and A4 and its tune button
+reads "Play Lesson 1's two As". A row lights while it sounds; one sound at a time (a new tap stops the
 last). On phones (below 960 px) each row stacks: the name, label and semitones on one line beside
 the figure, and under them the two buttons side by side, each half the row's width and at least
 44 px tall, as the kit's small buttons are (`btn sm`, `kit/lesson-base.css:519-523`). At 390 px a
