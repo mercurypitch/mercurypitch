@@ -224,7 +224,9 @@ voice lines wait on the vocal coach's sign-off, and its page publishes after `/l
 - Facts: backbeat (Ableton Learning Music). Show the march-versus-rock feel; don't state it as a
   statistic.
 
-**Lesson 9. Landing a leap**
+**Lesson 9. Landing a leap** (written: the lesson, its facts and its page spec are in
+[lessons/09-landing-a-leap/](lessons/09-landing-a-leap/), awaiting review; no film yet; its voice
+lines wait on the vocal coach's sign-off, and its page publishes after `/learn/03` and `/learn/06`)
 
 - Objectives: land thirds, the fifth, the fourth and the octave in tune; use an arpeggio as a
   ladder.
@@ -233,9 +235,10 @@ voice lines wait on the vocal coach's sign-off, and its page publishes after `/l
   pitch-canvas colour); slow leaps first.
 - Checkpoint: do-mi-so-do, slowly.
 - Practise: Interval Trainer (sing; needs the `intervals` launch field, and a minor third its
-  fixed pool lacks); Arpeggio Jumper; the Ascent "Tuning & Ear" week. Interval Trainer scores
-  raw cents against the written octave, so until the octave-folded option exists the lesson says
-  so in writing (§ 4).
+  fixed pool lacks); Arpeggio Jumper. Interval Trainer scores raw cents against the written octave,
+  so until the octave-folded option exists the lesson says so in writing (§ 4). No Ascent link until
+  its "Tuning & Ear" week, which says "Your voice can only sing as true as your ear can hear", is
+  rewritten (§ 4).
 - Facts: RCM interval order; Kodály's sol-mi start.
 
 **Lesson 10. Major and minor**
@@ -474,10 +477,11 @@ tests, estimated as such:
 7. An octave-folded scoring option for Pitch Hold and the other pitch-matching drills (Pitch Hold
    scores raw cents against the written octave today), or an explicit written-octave note in
    Lessons 3 and 9.
-8. A rewrite of the Ascent's weeks 2 and 3 in `src/features/path/path-content.ts` ("Breath &
-   Power" says "Build breath support"; "Reach New Notes" says "Extend your range"), focus, goals
-   and curated videos, checked against the playbook's claims rules (the Phase 1 App content
-   track). Until then Lessons 5 and 7 do not link the Ascent.
+8. A rewrite of the Ascent's weeks 2, 3 and 4 in `src/features/path/path-content.ts` ("Breath &
+   Power" says "Build breath support"; "Reach New Notes" says "Extend your range"; "Tuning & Ear"
+   says "Your voice can only sing as true as your ear can hear"), focus, goals and curated videos,
+   checked against the playbook's claims rules (the Phase 1 App content track). Until then Lessons
+   5, 7 and 9 do not link the Ascent.
 
 Phase 1's App exit is every Lesson 2 to 7 link opening its drill. The Arc B items (the Lesson 9
 and 10 interval sets, Chord Stacker triads) are in the Phase 2 engineering track, and Phase 2's
