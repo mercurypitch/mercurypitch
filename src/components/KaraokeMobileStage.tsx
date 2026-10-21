@@ -1491,6 +1491,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         class={`${styles.stage} mp-dark-stage${isShortTouchLandscape() ? ` ${styles.sideways}` : ''}`}
         style={background.resolvedStyle()}
         testId="karaoke-mobile-stage"
+        label={`Karaoke: ${displayTitle()}`}
       >
         {content()}
       </StageShell>
