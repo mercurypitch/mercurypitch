@@ -7,18 +7,18 @@
 // two answers, either direction; eight rounds of Name it, four answers,
 // each in its anchor's direction. Each round is a pair in the soft tone,
 // 0.6 s then 0.8 s (FACTS 67), and a missed one plays again 1.5 times
-// slower. One sound at a time: a game's pair stops when the viewer leaves
-// its step.
+// slower. One sound at a time: a game's pair, and the slower replay a miss
+// still has to come, stop when the viewer leaves its step (steps.ts).
 
 import { q } from '@/features/lessons/kit/dom'
-import type { EarNote, EarPlaying } from '@/features/lessons/kit/ear-game'
+import type { EarGame, EarNote, EarPlaying, } from '@/features/lessons/kit/ear-game'
 import { mountEarGame } from '@/features/lessons/kit/ear-game'
 import { Sound } from '@/features/lessons/kit/sound'
 import { MISS_SLOWER, playNotes } from './examples'
 import { dealNameIt, dealStepOrLeap, NAME_IT, STEP_OR_LEAP, } from './game-rounds'
 
 export interface Games {
-  /** Stops whichever pair is sounding. */
+  /** Stops both games: the pair sounding, and a miss's replay still to come. */
   stop(): void
 }
 
@@ -30,7 +30,7 @@ export function initGames(): Games {
     playing = run
     return run
   }
-  mountEarGame(q('#stepLeapGame'), {
+  const stepOrLeap = mountEarGame(q('#stepLeapGame'), {
     answers: STEP_OR_LEAP,
     deal: dealStepOrLeap,
     play,
@@ -42,7 +42,7 @@ export function initGames(): Games {
       more: 'Play ten more',
     },
   })
-  mountEarGame(q('#nameItGame'), {
+  const nameIt = mountEarGame(q('#nameItGame'), {
     answers: NAME_IT,
     deal: dealNameIt,
     play,
@@ -54,10 +54,10 @@ export function initGames(): Games {
       more: 'Play eight more',
     },
   })
+  const games: readonly EarGame[] = [stepOrLeap, nameIt]
   return {
     stop() {
-      playing?.stop()
-      playing = null
+      for (const game of games) game.stop()
     },
   }
 }

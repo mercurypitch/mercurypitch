@@ -6,12 +6,14 @@
 // state (WEB-SPEC, Toys 1): the contour on C; both lines with their gaps;
 // the slide with the names switch; Swap sizes; the named intervals. The
 // games and the anchor board sit in their steps' text, and stop when the
-// viewer leaves the step. Step 4's predict sits in the step text: a guess
-// unlocks Play the first line and Play the swapped version, and Swap sizes
-// on the stage, which plays the answer too. The reveal waits until both
-// have been heard, so it describes what was played, and it never calls a
-// guess wrong; the mix-up card, the Try and the Notice, which answer the
-// predict as well, come with it.
+// viewer leaves the step, whatever the route: Next or Back, a swipe, the
+// lesson menu, an address that names a step and the quiz's step links all
+// come through the deck's `onStep`. Step 4's predict sits in the step
+// text: a guess unlocks Play the first line and Play the swapped version,
+// and Swap sizes on the stage, which plays the answer too. The reveal
+// waits until both have been heard, so it describes what was played, and
+// it never calls a guess wrong; the mix-up card, the Try and the Notice,
+// which answer the predict as well, come with it.
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
@@ -71,11 +73,15 @@ export function initSteps(
   const games = initGames()
   const anchors = initAnchors()
   registerToy({
-    onStep(n) {
+    onStep(n, previous) {
       toy.setStep(n as TuneStep)
       label.innerHTML = FIG[n] ?? FIG[1]
-      if (n !== 2 && n !== 5) games.stop()
-      if (n !== 5) anchors.stop()
+      // a step left behind keeps nothing sounding: its game's pair, a miss's
+      // replay still to come, or an anchor's tune
+      if (n !== previous) {
+        games.stop()
+        anchors.stop()
+      }
     },
   })
   initPredict(toy, root)
