@@ -16,12 +16,18 @@ their current text, word for word, with only the exercise and its address change
 do-based, as decided on 19 October 2026 (MASTER-PLAN § 12 item 12; CURRICULUM, Lesson 10): do stays
 home, and minor's third is me (FACTS 8). Syllables follow Lesson 4's spelling, "so", where
 MercuryPitch's Ear Lab writes "Sol" (FACTS 9). Note names follow the app's sharps, except where a
-chord or a key is spelled one letter per degree, so C minor's third is E♭ (FACTS 10). The title is
-the season's hook as the curiosity plan proposed it and the owner approved it, without the old
-hook's "bright" and "dark"; the old wording stays as an alternative the admin console can switch to
-(FACTS 1). The page publishes only after Lesson 6's page, `/learn/06`, is live, because its
-prerequisite chip and its recall check link there, and after the vocal coach has looked at its voice
-lines (For the vocal coach).
+chord or a key is spelled one letter per degree, so C minor's third is E♭, and on the hero's ring of
+twelve, which names every black key by its flat (FACTS 10). The title is the season's hook as the
+curiosity plan proposed it and the owner approved it, without the old hook's "bright" and "dark".
+The old wording stays as an alternative, `bright-dark`, which the admin console can switch Lesson
+10's hook to. Picked, it puts "bright" and "dark" in the page's heading, its search and share
+descriptions and its structured data, on Lesson 10's card in every lesson page's explorer, even
+while Lesson 10 is coming later, and on Lesson 9's next-lesson card. Those are mood labels, the link
+this lesson questions, so the package recommends leaving it unpicked (Header; FACTS 1). The page is
+published only after Lesson 6's page, `/learn/06`, is, because its recall check asks Lesson 6's
+questions and its prerequisite chip names Lesson 6, and after the vocal coach has looked at its
+voice lines (For the vocal coach). The admin console asks before it publishes a lesson still waiting
+on its sign-off, but it never checks that Lesson 6 is live, so the owner keeps that order (FACTS 7).
 
 ---
 
@@ -31,8 +37,16 @@ lines (For the vocal coach).
 - Title (the hook question): **Which single note turns a major chord into a minor one?**
   _[Editorial: the default since 20 October 2026 (CURIOSITY-MOMENTS § 2 and § 5). The old title,
   "Which single note turns a bright major chord into a dark minor one?", is kept in
-  `kit/lesson-copy.ts` as the alternative `bright-dark` the admin console can switch to. "Bright"
-  and "dark" are mood labels, and the lesson questions "minor means sad" (FACTS 1).]_
+  `kit/lesson-copy.ts` as the alternative `bright-dark`, as the owner's answer to CURIOSITY-MOMENTS
+  § 5 item 2 keeps every changed hook's old wording, and the admin console can switch Lesson 10's
+  hook to it. Picked, it goes wherever the hook goes. The site worker writes it into the page's h1
+  and into every copy of the hook in its head: the description, the og and twitter descriptions and
+  the structured data. The page state gives it to Lesson 10's card in every lesson page's explorer,
+  even while Lesson 10 is "Coming later", and to Lesson 9's next-lesson card. "Bright" and "dark"
+  are mood labels, and the lesson questions "minor means sad", so picking it breaks the rule the
+  lesson teaches; it would also run the description to 171 characters, over its 160 cap. The package
+  recommends leaving it unpicked. Keeping it switchable or retiring it is the owner's call (FACTS 1;
+  WEB-SPEC, Decisions for the owner).]_
 - Meta, as three chips: 17 minutes · After Lesson 6: Intervals: the distance between notes · Sound
   on
 - Promise: By the end you'll build major and minor chords, tell them apart by ear, meet the natural
@@ -47,8 +61,9 @@ lines (For the vocal coach).
 
 (In the hero, as on Lesson 2's page: the bubbles over the stage, the hero's own copy of the spiral
 between the two Mercs, and the predict card under it: FACTS 5a, 41. The spiral is seen from above,
-so one turn is a ring of twelve, and it holds still. Do, mi and so, C4, E4 and G4, glow and carry
-their syllables. Nothing marks which of them is the chord's third.)
+so one turn is a ring of twelve, and it holds still; every black key on it is named by its flat
+(FACTS 10). Do, mi and so, C4, E4 and G4, glow and carry their syllables. Nothing marks which of
+them is the chord's third.)
 
 [ Play the chord ]
 
@@ -75,7 +90,7 @@ sound on to hear the chord, then play it again." The reveal opens on the choice,
 Reveal: Mi. Move mi down a semitone and C, E, G becomes C, E♭, G: C minor. Move so down instead and
 you get C, E, G♭, which is neither major nor minor. Mi is the chord's third, three letters up from
 do: C, D, E. That one note decides major or minor: that's this lesson's story. (Moving so changed
-the chord too, so "so" was a fair guess.)
+the chord too, which made "so" a fair guess.)
 
 ## Recall from Lesson 6
 
@@ -135,12 +150,12 @@ _Toy: the chord beads, stacked: C major._
 Slide the middle bead down one semitone: C, E♭, G. The gaps swap to 3, then 4, and the fifth stays
 perfect: C minor, sung do-me-so ("me" sounds like "may"). Moving so down instead shrinks the fifth
 to 6 semitones. That's no longer perfect, and the chord is neither major nor minor. Major and minor
-triads share a perfect fifth and are named after their third. Telling them apart by ear is the
-first-level chord test in the Royal Conservatory of Music's voice exams.
+triads share a perfect fifth and are named after their third. In the Royal Conservatory of Music's
+2019 voice syllabus, telling them apart by ear is the first-level chord test.
 
-**Try:** switch between Major and Minor, slide the chord to a new root, then play ten rounds of
-Major or minor?
-**Notice:** only the third moves; the root and the fifth stay put.
+**Try:** switch between Major and Minor, move the chord to a new root with Root higher, then play
+ten rounds of Major or minor?
+**Notice:** only the third moves; the root and fifth stay put.
 
 _Toys: the chord beads with Major · Minor and Slide; the Major or minor? ear game, on chords._
 
@@ -162,17 +177,15 @@ music. Play the chord's pattern in minor, slowly, then fast: the same three note
 > **Why it seems right:** in one experiment in Sweden and Finland, researchers changed four
 > composed pieces in several ways. For their 46 listeners, mostly musically trained, switching
 > between major and minor moved happy and sad ratings more than any other change, tempo included.
-> **The evidence:** "always" is the trouble. In another study, non-musicians judged plain melodies,
-> every note the same length: tempo counted for more than major or minor. In a third,
-> five-year-olds went by the tempo alone; six- to eight-year-olds used major and minor too, as
-> adults did. In two remote communities in northwest Pakistan, listeners who knew no Western music
-> rated the major and minor versions of each melody about equally pleasant. UK listeners rated the
-> major ones higher.
+> **The evidence:** "always" is the trouble. In another study, non-musicians judged plain melodies:
+> tempo counted for more than major or minor. In two remote communities in northwest Pakistan,
+> listeners who said they knew no Western music rated the major and minor versions about equally
+> pleasant. UK listeners rated the major ones higher.
 > **The better idea:** a major and a minor chord differ by one note, the third. Tempo, the rest of
 > the music and what you grew up hearing all shape how happy or sad a piece sounds.
 
 **Try:** play Minor, slow, then Minor, fast. Then switch to Major and play both again.
-**Notice:** the notes never change. Only the speed does.
+**Notice:** at either speed the three notes are the same; only the speed changes.
 
 _Toy: the chord beads playing their pattern, with Major · Minor and Slow · Fast._
 
@@ -181,10 +194,12 @@ _Toy: the chord beads playing their pattern, with Major · Minor and Slow · Fas
 > - **Happy and sad at once.** Researchers asked listeners to press one button whenever they felt
 >   happy and another whenever they felt sad. With mixed cues, such as a fast tempo in a minor key,
 >   they spent longer pressing both at once than when the cues agreed (Larsen and Stastny, 2011).
-> - **The other way round.** With single chords, listeners from the same two communities in
->   Pakistan rated minor more positive than major, the reverse of UK listeners. The authors suggest
->   it's because each culture's music favours a different one of the two chords (Lahdelma and
->   colleagues, 2021).
+> - **Tempo first.** In one study, five-year-olds went by the tempo alone; six- to eight-year-olds
+>   used major and minor too, as adults did (Dalla Bella and colleagues, 2001).
+> - **The other way round.** With single chords, the results suggest that listeners from the same
+>   two communities in Pakistan heard minor as more positive than major, the reverse of UK
+>   listeners. The authors suggest it's because each culture's music uses one of the two chords more
+>   often (Lahdelma and colleagues, 2021).
 
 ## Step 5 of 5: Is there a minor scale too?
 
@@ -276,11 +291,11 @@ not half.]_
 3. A friend says: "Minor always sounds sad." What do the studies in this lesson suggest?
    - It depends: tempo, the rest of the music and what you grew up hearing all play a part
      **[correct]** · Feedback: "In one study, tempo counted for more than major or minor."
-   - They're right: minor sounds sad to everyone · Feedback: "In two remote communities in
-     northwest Pakistan, listeners rated the major and minor versions of each melody about equally
-     pleasant. Try Step 4 again."
-   - Only musicians hear it that way · Feedback: "In one study, non-musicians' happy and sad
-     ratings followed major and minor as well as the tempo."
+   - They're right: minor sounds sad to everyone · Feedback: "In two remote communities in northwest
+     Pakistan, listeners rated the major and minor versions about equally pleasant. Try Step 4
+     again."
+   - Only musicians hear it that way · Feedback: "In one study, non-musicians' happy and sad ratings
+     followed major and minor too, not just the tempo."
 4. In C natural minor, which notes of C major move down a semitone?
    - E, A and B: mi, la and ti become me, le and te **[correct]** · Feedback: "Do, re, fa and so
      stay where they were."
@@ -294,10 +309,9 @@ not half.]_
 - A third is three letters wide. A major third is 4 semitones and a minor third 3: one semitone
   apart.
 - Stack two thirds and you have a triad: major is 4 then 3, do-mi-so; minor is 3 then 4, do-me-so.
-  Only the third moves.
-- The natural minor scale lowers mi, la and ti to me, le and te; do stays home. Many Western
-  listeners hear major as happier, but tempo, the rest of the music and what you grew up hearing
-  count too.
+  Only the third moves. Many Western listeners hear major as happier, but tempo, the rest of the
+  music and what you grew up hearing count too.
+- The natural minor scale lowers mi, la and ti to me, le and te; do stays home.
 
 **One-sentence challenge:** explain to a friend, in one sentence, which note turns C major into C
 minor, and why "minor means sad" isn't the whole story.
@@ -399,11 +413,15 @@ chords:
   in that gap, 4.2 s in. The coach may move it (FACTS 66).
 - How did that feel? and its endings: Lesson 3's four answers, asked after each run of the guide;
   after "Effortful" and after "Uncomfortable" the guide and Move do are put away for the visit, as
-  Lesson 3 drops its Again (FACTS 67).
+  Lesson 3 drops its Again (FACTS 67). An answer locks once given, as the kit's buttons do, until
+  the next run asks afresh; Lesson 6's page lets it change until then. Which the series keeps is the
+  coach's call (WEB-SPEC, Decisions for the owner).
 - To confirm: after "Effortful" the Wrap shows the rest card, as on Lessons 6 and 7, because the
   practice card's Drone Intonation asks for six held notes against a drone, each up to 4 seconds,
-  one of them an octave up, and the app never raises the dose after effort. Stack needs no voice,
-  so the rest card still offers it (FACTS 48, 67).
+  one of them an octave up, and the app never raises the dose after effort. Stack needs no voice, so
+  the rest card still offers it (FACTS 48, 67). The kit's default, `afterFeeling`, still leaves
+  "Effortful" on the practice card: which of the two every lesson follows is a question for the
+  coach across the series (WEB-SPEC, Decisions for the owner).
 - The new Easy and Workable line, which describes the task, not the voice: "Do-mi-so, then
   do-me-so: you just moved the third." (FACTS 67).
 - The practice card's Drone Intonation: at the default pace six rounds, a 6-second drone each and
