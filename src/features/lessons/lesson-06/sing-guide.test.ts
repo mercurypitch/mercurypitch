@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
 import { lengthOf } from './examples'
-import { BREATH_SEC, COUNT_IN, COUNT_IN_SEC, guidePath, guideRows, MOVE_MAX, readoutHtml, readoutSaid, ringLabel, versionDo, versionNotes, } from './sing-guide'
+import { BREATH_SEC, COUNT_IN, COUNT_IN_SEC, guidePath, guideRows, MOVE_MAX, readoutHtml, ringLabel, versionDo, versionNotes, } from './sing-guide'
 
 /** Markup as the eye reads it: the signs shown, the spoken words dropped. */
 const seen = (html: string): string =>
@@ -117,9 +117,8 @@ describe('the readout', () => {
     expect(heard(readoutHtml('lower', -4))).toBe(
       'do is B flat 2, then D flat 3',
     )
-    expect(readoutSaid('lower', -4)).toBe('do is B flat 2, then D flat 3')
     expect(seen(readoutHtml('higher', 4))).toBe('do is F♯4, then A4')
-    expect(readoutSaid('higher', 0)).not.toMatch(/[♯♭]/)
+    expect(heard(readoutHtml('higher', 4))).toBe('do is F sharp 4, then A4')
   })
 
   it("labels the ring with do's name and frequency", () => {

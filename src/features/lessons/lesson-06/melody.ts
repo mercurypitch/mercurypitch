@@ -103,9 +103,6 @@ export const transpose = (midis: readonly number[], by: number): number[] =>
 export const gapsOf = (midis: readonly number[]): number[] =>
   midis.slice(1).map((m, i) => m - midis[i])
 
-/** The thirteen gaps of the first two lines (FACTS 22, 23): the same from every start. */
-export const TWINKLE_GAPS: readonly number[] = gapsOf(tuneMidis(C4))
-
 /**
  * Step 4's swapped version (FACTS 37): the line's two rises keep their
  * places and swap their sizes, every other gap as it was, so the ups and
