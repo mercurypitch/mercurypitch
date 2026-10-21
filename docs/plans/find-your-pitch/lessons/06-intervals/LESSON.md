@@ -50,11 +50,17 @@ the version from C?
 [ Play from F♯ ]
 
 (After a choice, Play from F♯ unlocks. The line lifts off the rows, slides up six of them and
-settles before Merc sings, announced "Twinkle from F sharp". With sound off, the hint reads: "Sound
-is off, so nothing played. Turn sound on to hear it, then press Play from F♯." The reveal waits
-for the sound.)
+settles before Merc sings, announced "Twinkle from F sharp". The reveal waits for the sound.)
 
-Reveal: The gaps. Not one note matches, but every gap is the same, so it's still "Twinkle,
+The hint under the buttons:
+
+- Before a choice: "Choose an answer to unlock Play from F♯."
+- After one: "Locked in. Play from F♯: the line slides up six rows, then Merc sings it."
+- With sound off: "Sound is off, so nothing played. Turn sound on to hear it, then press Play from
+  F♯."
+- After the reveal: "Play either start again, and listen to the gaps."
+
+Reveal, under "You said: some of the notes" or "You said: the gaps between the notes": The gaps. Not one note matches, but every gap is the same, so it's still "Twinkle,
 Twinkle". (It still sounds like "Twinkle", so "some of the notes" was a fair guess.)
 
 ## Recall from Lesson 4
@@ -131,12 +137,19 @@ swaps the sizes of its two rises, the leap and the step up. Is it still "Twinkle
 [ Yes: most notes are the same ] [ No: it changes ]
 
 (After a choice: Play the first line · Play the swapped version, and Swap sizes on the line, which
-plays the swapped version too. With sound off, the hint reads: "Sound is off, so nothing played.
-Turn sound on to hear them, then press Play the swapped version." The reveal waits until both have
-been heard, and the mix-up card, the Try and the Notice, which answer the predict too, come with
-it.)
+plays the swapped version too. The reveal waits until both have been heard, and the mix-up card,
+the Try and the Notice, which answer the predict too, come with it.)
 
-Reveal: It changes. Five notes match, and every up and down, but now the first rise is 2 semitones
+The hint under the buttons:
+
+- Before a choice: "Choose an answer to unlock the sound."
+- After one: "Locked in. Play both, and watch the line."
+- After the first play: "Now play the other one."
+- With sound off: "Sound is off, so nothing played. Turn sound on to hear them, then press Play the
+  swapped version."
+- After the reveal: "Play them again, or press Swap sizes to keep the swap on the line."
+
+Reveal, under "You said: yes, most notes are the same" or "You said: no, it changes": It changes. Five notes match, and every up and down, but now the first rise is 2 semitones
 and the second is 7. Two intervals changed, and so did the tune. (Most notes did match, so "yes"
 was a fair guess.)
 
@@ -182,6 +195,22 @@ _Toys: the tune line with its intervals named; the anchor board; the Name it ear
 
 ## Sing it
 
+One phrase, the first two lines of "Twinkle, Twinkle", from two different notes.
+
+The status line under it says what is happening, and is announced as it changes:
+
+- Before the comfort answer: "Before you sing: how is your voice today?"
+- At the voice choice: "Choose the voice you'll sing with.", or after "Just listen today", "Choose a
+  voice: it picks the Merc who sings."
+- Just listening: "Just listening today: press a Play button to hear Merc."
+- Before a version has played: "Play Merc's version first: Merc sings it, then the guide is yours."
+- While Merc sings: "Merc sings the first version." or "Merc sings the second version."
+- Once one has: "Start the guide when you're ready, or play either version."
+- While the guide sweeps: "Your turn: sing with the line."
+- When a sweep ends: "How did that feel?", then the line its answer gives (below).
+- After "Effortful" or "Uncomfortable", once the answer is changed: "Merc can still sing either
+  version for you."
+
 > **Sore, hoarse or unwell today? Just listen along.**
 > Choose listening if anything hurts or singing has felt uncomfortable, if your voice feels
 > unusually hoarse or tired, if notes you usually reach have suddenly gone, if you're ill, or if
@@ -213,6 +242,12 @@ higher ]
 
 The guide counts you in on do, then a line sweeps along the tune. Nothing listens here and nothing
 is scored. It's just for you.
+
+Until a version has played, a hint under the buttons reads "Play Merc's version first". The
+readout names both starts, "do is D3, then F3", and follows the voice and Move do. Beside the
+guide, the ring names do, "Do: D3 · 147 Hz", over its state: "Ready when you are", "Listen" while
+Merc sings, "Get ready" through the count-in, "Sing with the line · 9" counting down the sweep, and
+"Rest" when it ends.
 
 After each version, **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable ].
 Easy or Workable, after one version: "That's one starting note. Now the other version, from a new
@@ -359,6 +394,16 @@ coach's gates in MASTER-PLAN § 7 do not bind it, but it asks the viewer to sing
   than any in the sing-along (its largest is the fifth, its span a sixth), and the app never raises
   the dose after effort (REQ-GVC-021, REQ-GVC-055; Lesson 3 FACTS 36). Leap has no microphone, so
   the rest card still offers it (FACTS 59). Lessons 3 and 5 leave the same question to the coach.
+- The status line, the readout and the ring (Sing it), which say what is happening and never
+  describe the voice: "Before you sing: how is your voice today?", "Choose the voice you'll sing
+  with.", "Choose a voice: it picks the Merc who sings.", "Just listening today: press a Play button
+  to hear Merc.", "Play Merc's version first: Merc sings it, then the guide is yours.", "Merc sings
+  the first version." and "Merc sings the second version.", "Start the guide when you're ready, or
+  play either version.", "Your turn: sing with the line.", "How did that feel?" and "Merc can still
+  sing either version for you."; the guide's hint "Play Merc's version first"; the readout, "do is
+  D3, then F3"; the ring's "Do: D3 · 147 Hz" over "Ready when you are", "Listen", "Get ready",
+  "Sing with the line · 9" and "Rest"; and the intro, "One phrase, the first two lines of
+  "Twinkle, Twinkle", from two different notes."
 - The two new Easy and Workable lines, which describe the task, not the voice: after one version,
   "That's one starting note. Now the other version, from a new note."; after both,
   "One tune, two starting notes: you just transposed it." (FACTS 59).
