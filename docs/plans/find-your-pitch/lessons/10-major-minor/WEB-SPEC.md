@@ -839,10 +839,11 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
       `isAccessibleForFree`, `position` 10, `isPartOf` the series, author and publisher the site's
       `Organization` (`https://mercurypitch.com/#organization`), and `datePublished`, the date the
       page first goes live on mercurypitch.com. Nothing writes it at run time: the site worker
-      rewrites only the copies of the hook (`src/lesson-gate.ts`), so a published draft is served
-      without it. It is set either in the commit that deletes the page's `drafts.ts` line or in a
-      commit straight after the console publishes it, and the owner picks which (SEARCH.md § 3.2
-      still ties it to a release). Last, the BreadcrumbList, ending on the headline.
+      changes the page's state, the hook's copies and its links (`src/lesson-gate.ts:10-21`),
+      never a date, so a published draft is served without one. It is set either in the commit
+      that deletes the page's `drafts.ts` line or in a commit straight after the console
+      publishes it, and the owner picks which (SEARCH.md § 3.2). Last, the BreadcrumbList, ending
+      on the headline.
 13. `public/learn/lesson-10-og.jpg`: the share card, 1200 x 630, a still of the hero: the title over
     the ring of twelve seen from above, do, mi and so in chrome joined by their triangle, between
     blue Merc and orange Merc, with alt text naming it. It marks no note as the one that moves, so

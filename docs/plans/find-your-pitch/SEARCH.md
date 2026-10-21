@@ -146,7 +146,7 @@ Every lesson document follows this, in addition to its WEB-SPEC.
 - **`datePublished`** is the day the lesson first goes live on
   mercurypitch.com. The admin console publishes a draft at run time, and
   nothing then writes the date: the site worker changes the page state, the
-  hook's copies and the links (`src/lesson-gate.ts:9-21`), never a date, so a
+  hook's copies and the links (`src/lesson-gate.ts:10-21`), never a date, so a
   published draft is served without one. It is set either in the commit that
   deletes the lesson's `drafts.ts` line or in a commit straight after the
   console publishes it; the owner picks which. `dateModified` when its
