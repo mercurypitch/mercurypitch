@@ -13,7 +13,9 @@
 // 844, 375 and 360 px wide, every step's stage fits with every target at
 // least 44 px square and none overlapping, free play at every start from
 // C4 to B4; at 390 and 360 px the hero's compact line, which has no
-// buttons, draws all seven notes from C and from F sharp; at 1024 x 640
+// buttons, draws all seven notes from C and from F sharp, and the cold
+// open's sharp sign stays beside its F, in Play from F sharp and in every
+// lock hint; at 1024 x 640
 // the stage fits the screen under the masthead. A real-mouse drag of the
 // line closes it, since a drag slides the start and must not land as a
 // tap.
@@ -149,6 +151,47 @@ async function expectWholeLine(page: Page, when: string): Promise<void> {
     beads[6].to,
     `${when}: the last bead ends inside the line`,
   ).toBeLessThan(width)
+}
+
+/**
+ * Every ♯ and ♭ in an element sits on its letter's line, touching it: the
+ * letter is the last character of the text just before the sign's span. A
+ * flex row's gap between the two shows as space between them, and a wrap
+ * as a different line.
+ */
+async function expectSignsOnTheirLines(
+  loc: Locator,
+  when: string,
+): Promise<void> {
+  const found = await loc.evaluate((el) => {
+    const apart: string[] = []
+    let signs = 0
+    for (const sign of Array.from(
+      el.querySelectorAll('span[aria-hidden="true"]'),
+    )) {
+      if (!/^[♯♭]$/.test(sign.textContent ?? '')) continue
+      signs++
+      const before = sign.previousSibling
+      const text = before?.nodeType === Node.TEXT_NODE ? before.textContent : ''
+      if (before === null || text === null || text === '') {
+        apart.push(`${sign.textContent}: no letter just before it`)
+        continue
+      }
+      const range = document.createRange()
+      range.setStart(before, text.length - 1)
+      range.setEnd(before, text.length)
+      const l = range.getBoundingClientRect()
+      const s = sign.getBoundingClientRect()
+      if (Math.abs(l.top - s.top) > 2 || Math.abs(s.left - l.right) > 1)
+        apart.push(
+          `${text.slice(-1)} ends at ${Math.round(l.right)}, ${Math.round(l.top)}; ` +
+            `${sign.textContent} starts at ${Math.round(s.left)}, ${Math.round(s.top)}`,
+        )
+    }
+    return { signs, apart }
+  })
+  expect(found.signs, `${when}: a sign to check`).toBeGreaterThan(0)
+  expect(found.apart, `${when}: every sign beside its letter`).toEqual([])
 }
 
 test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
@@ -487,6 +530,35 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
 
       await expectWholeLine(page, 'from F sharp')
       expect(await sideways(page)).toBe(width)
+    })
+
+    // the button's and the hint's words are each one span, so no flex gap parts the F from its sign
+    test(`at ${width} px the cold open's ♯ stays on its letter's line, in the button and in every hint`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/learn/06')
+      const fromFs = page.locator('#predict [data-play="fs"]')
+      const hint = page.locator('#predict .lock-hint')
+      await expectSignsOnTheirLines(fromFs, 'Play from F sharp')
+      await expectSignsOnTheirLines(hint, 'the lock hint')
+
+      await page.locator('#predict [data-choice="notes"]').click()
+      await expect(hint).toContainText('Locked in.')
+      await expectSignsOnTheirLines(hint, 'the hint after a guess')
+
+      // the switch turns sound on from unset, then off
+      await page.locator('#soundSwitch').click()
+      await page.locator('#soundSwitch').click()
+      await expect(page.locator('#soundSwitch')).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
+      await fromFs.click()
+      await expect(hint).toContainText('Sound is off, so nothing played.', {
+        timeout: 10_000,
+      })
+      await expectSignsOnTheirLines(hint, 'the hint with sound off')
     })
   }
 

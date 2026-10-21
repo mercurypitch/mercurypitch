@@ -56,6 +56,12 @@ export const STARTS_SAID = {
   fs: 'Twinkle from F sharp',
 } as const
 
+/**
+ * A hint that names F♯, in one span: the lock hint is a flex row, whose
+ * gap would part the F from its sign and could wrap the sign alone.
+ */
+const signedHint = (text: string): string => `<span>${signsHtml(text)}</span>`
+
 /** Blue Merc sings along: each note as it starts, quiet once the last has ended. */
 function singAlong(e: NoteEvent, i: number, count: number): void {
   mercSing('blue', e.midi, true)
@@ -100,10 +106,10 @@ export function initColdOpen(): void {
     ],
     revealOn: ['fs'],
     hints: {
-      chosen: signsHtml(
+      chosen: signedHint(
         'Locked in. Play from F♯: the line slides up six rows, then Merc sings it.',
       ),
-      silent: signsHtml(
+      silent: signedHint(
         'Sound is off, so nothing played. Turn sound on to hear it, then press Play from F♯.',
       ),
       again: 'Play either start again, and listen to the gaps.',
