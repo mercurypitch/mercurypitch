@@ -30,6 +30,33 @@ is live, because its prerequisite chip and its recall check link there.
 > This lesson is about what keeps a tune the same tune. Tap to turn sound on: nothing plays until
 > you press a play button.
 
+## Cold open: predict
+
+(In the hero. Between the two Mercs, the tune's line: the first line of "Twinkle, Twinkle" as
+seven beads on faint rows, one row per semitone, with no names and no numbers.)
+
+Orange Merc: "If every note changes, isn't it a different tune?"
+Blue Merc: "Let's change every one and listen."
+
+[ Play from C ]
+
+(Blue Merc sings the first line on "ooh", starting on C, and the beads light as Merc sings them.
+Play from C works before a choice: it is the version the predict compares with.)
+
+**Predict before you listen.** Merc moves the whole tune up six semitones. What will still match
+the version from C?
+[ Some of the notes ] [ The gaps between the notes ]
+
+[ Play from F♯ ]
+
+(After a choice, Play from F♯ unlocks. The line lifts off the rows, slides up six of them and
+settles before Merc sings, announced "Twinkle from F sharp". With sound off, the hint reads: "Sound
+is off, so nothing played. Turn sound on to hear it, then press Play from F♯." The reveal waits
+for the sound.)
+
+Reveal: The gaps. Not one note matches, but every gap is the same, so it's still "Twinkle,
+Twinkle". (It still sounds like "Twinkle", so "some of the notes" was a fair guess.)
+
 ## Recall from Lesson 4
 
 (Lesson 4's questions 1 and 4, asked afresh, for everyone: FACTS 7.)
@@ -47,30 +74,6 @@ is live, because its prerequisite chip and its recall check link there.
    - E · Feedback: "E is re, the second note. Count up from do: D, E, F♯."
    - F · Feedback: "Mi is two tones above do, and two tones above D is F♯. F is only a tone and a
      semitone up."
-
-## Cold open: predict
-
-[ Play from C ]
-
-(Blue Merc sings the first line of "Twinkle, Twinkle" on "ooh", starting on C. Beside the bubbles,
-the tune's line: seven beads on faint rows, one row per semitone, with no names and no numbers.)
-
-Orange Merc: "If every note changes, isn't it a different tune?"
-Blue Merc: "Let's change every one and listen."
-
-**Predict before you listen.** Merc moves every note up six semitones, so the tune starts on F♯.
-Not one note stays the same. Is it still "Twinkle, Twinkle"?
-[ Yes, the same tune ] [ No, a different tune ]
-
-(After a choice, Play from F♯ unlocks. The line lifts off the rows, slides up six of them and
-settles before Merc sings, announced "Twinkle from F sharp". With sound off, the hint reads: "Sound
-is off, so nothing played. Turn sound on to hear it, then press Play from F♯." The reveal waits
-for the sound.)
-
-Reveal: Still "Twinkle, Twinkle". Every note moved up the same six semitones, so every distance
-from note to note stayed the same. Most adults remember a tune mainly by those distances, not by
-its exact notes: that's this lesson's story. (Not one note stayed, so "a different tune" was a fair
-guess.)
 
 ## Four words you'll meet
 
@@ -127,9 +130,11 @@ _Toy: the tune line with Slide and the names switch._
 swaps the sizes of its two rises, the leap and the step up. Is it still "Twinkle"?
 [ Yes: most notes are the same ] [ No: it changes ]
 
-(After a choice: Play the first line · Play the swapped version. With sound off, the hint reads:
-"Sound is off, so nothing played. Turn sound on to hear them, then press Play the swapped
-version.")
+(After a choice: Play the first line · Play the swapped version, and Swap sizes on the line, which
+plays the swapped version too. With sound off, the hint reads: "Sound is off, so nothing played.
+Turn sound on to hear them, then press Play the swapped version." The reveal waits until both have
+been heard, and the mix-up card, the Try and the Notice, which answer the predict too, come with
+it.)
 
 Reveal: It changes. Five notes match, and every up and down, but now the first rise is 2 semitones
 and the second is 7. Two intervals changed, and so did the tune. (Most notes did match, so "yes"

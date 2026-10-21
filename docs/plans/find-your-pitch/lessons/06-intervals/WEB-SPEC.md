@@ -53,20 +53,27 @@ line above it, are in LESSON.md ("Section headings").
    (`{ lesson: 6, deck }`, `kit/page-chrome.ts`).
 2. **Hero**: kicker; the hook question as the title; the meta as three chips ("15 minutes", FACTS
    3; "After Lesson 4: The major scale and home", a link to `/learn/04`; Sound on); the promise; the
-   sound gate from LESSON.md in the hero copy, as Lesson 1's is; the two Mercs on the floor line
-   either side of the tune line on C, with its Play button (`line-c`, FACTS 63). The hero's line is
-   a copy of its own in the compact state (Toys 1: the first line, no names, numbers or marks, its
-   beads not buttons), whose beads light as blue Merc sings; it shares no lit state with the cold
-   open's copy or the stage's, as Lesson 2's copies of its spiral keep their own (its DECISIONS
-   81). Its drawing is `aria-hidden`, and the Play button's name says what plays ("Play Twinkle
-   from C").
-3. **Recall from Lesson 4**: Lesson 4's questions 1 and 4, for everyone (Toys 7).
-4. **Cold open: predict**: the bubbles, each with its Merc's still, and beside them the compact
-   tune line (Toys 1), so the sound and the line are on screen together (playbook rule 10). Play
-   from C works from the start; orange's and blue's lines from LESSON.md; the two-choice predict;
-   choosing unlocks Play from F♯, which lifts the compact line and slides it up six rows, announced
-   "Twinkle from F sharp", before it plays. The reveal appears after Play from F♯ has sounded; with
-   sound off, LESSON.md's hint shows and the reveal waits.
+   sound gate from LESSON.md in the hero copy, as Lesson 1's is; and beside them the cold open (3):
+   the two Mercs on the floor line either side of the tune line on C, with Play from C under it
+   (`line-c`, FACTS 63). The line is the compact state (Toys 1: the first line, no names, numbers
+   or marks, its beads not buttons), whose beads light as blue Merc sings; it shares no lit state
+   with the stage's, as Lesson 2's copies of its spiral keep their own (its DECISIONS 81). Its
+   drawing is `aria-hidden`, and the Play button's name says what plays ("Play from C: 'Twinkle,
+   Twinkle'").
+3. **Cold open: predict**, in the hero, in Lesson 2's order (CURIOSITY-MOMENTS § 3.1): the
+   bubbles over the two Mercs either side of the compact tune line (Toys 1), so the sound and the
+   line are on screen together (playbook rule 10). Play from C works from the start; orange's and
+   blue's lines from LESSON.md; the predict, "Merc moves the whole tune up six semitones. What will
+   still match the version from C?", with two choices, "Some of the notes" and "The gaps between
+   the notes"; choosing unlocks Play from F♯, which lifts the compact line and slides it up six
+   rows, announced "Twinkle from F sharp", before it plays. The reveal appears after Play from F♯
+   has sounded: "The gaps. Not one note matches, but every gap is the same, so it's still
+   'Twinkle, Twinkle'.", with the other choice "a fair guess" (CURIOSITY-MOMENTS § 2). With sound
+   off, LESSON.md's hint shows and the reveal waits. Nothing before the reveal answers the predict:
+   the title asks, and the promise, the gate and the head (What the kit and the app still need)
+   say what the lesson asks, never what stays the same (CURIOSITY-MOMENTS rule 2).
+4. **Recall from Lesson 4**, after the cold open, in a section of its own: Lesson 4's questions 1
+   and 4, for everyone (Toys 7). The opening's question is the first thing the page asks.
 5. **Four words you'll meet**: interval, step, leap and transpose, each with its definition, a
    small figure and a play button (Toys 3).
 6. **The steps**: Lesson 1's sticky stage and step deck ("N of 5", Previous and Next), every step on
@@ -76,7 +83,8 @@ line above it, are in LESSON.md ("Section headings").
    2. How far apart are the notes? Both lines, one above the other, the gaps numbered, steps and
       the leap labelled; the Step or leap? game (Toys 4).
    3. What happens if I slide the whole tune? Orange's line, then Slide and the names switch.
-   4. So is it the ups and downs I remember? The second predict, then Swap sizes; the mix-up card.
+   4. So is it the ups and downs I remember? The second predict, whose choice unlocks Swap sizes;
+      its reveal brings the mix-up card, the Try and the Notice, which answer it too.
    5. Do the distances have names? The named intervals, the anchor board (Toys 5) and the Name it
       game (Toys 4); the Go deeper drawer under the text (Toys 8).
 7. **Sing it**: the comfort check, the voice choice, the two versions, the guide, Move do and the
@@ -195,12 +203,14 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
     no other note moves. Below 366 px the gap buttons shift left together, by at most 22 px, so
     that the last 44 px of line 1's strip stay gap 7's (6 px at 360 px). The layout holds down to
     344 px, where the minim's column comes to 44 px.
-- **Compact** (cold open and hero): the first line only, smaller, with no names, no numbers and no
-  marks, on sixteen rows from C4 to D♯5, so both starts fit without rescaling. The beads light as
-  Merc sings them. Its beads are not buttons (the bubbles, or the hero's Play, carry every action),
-  so the drawing is `aria-hidden` and a polite live region speaks for it: "Twinkle from C" or
-  "Twinkle from F sharp" as each starts. Play from F♯ lifts it and slides it up six rows first
-  (below).
+- **Compact** (the cold open, in the hero): the first line only, smaller, with no names, no numbers
+  and no marks, on sixteen rows from C4 to D♯5, so both starts fit without rescaling. The beads
+  light as Merc sings them. Its beads are not buttons (Play from C and Play from F♯ carry every
+  action), so the drawing is `aria-hidden` and a polite live region speaks for it: "Twinkle from C"
+  or "Twinkle from F sharp" as each starts. With no button on it, it keeps no 44 px column: its
+  crotchets share the line's width, so all seven notes show however narrow the phone, about 176 px
+  of line between the Mercs at 390 px (`kit/tune-line-layout.ts`). Play from F♯ lifts it and
+  slides it up six rows first (below).
 - **Play** plays the line shown, lighting each bead as it sounds (`line-c`, `lines-c` or the
   current start, FACTS 63 to 65); **Slow** doubles every length (MASTER-PLAN § 4.2 item 5). A tap on
   a bead plays its note in the soft tone.
@@ -223,10 +233,12 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
 - **Swap sizes** (Step 4, and free play): a toggle (`aria-pressed`) that draws the swapped version
   (FACTS 37) over the real line as the contrast case, dashed ink-2 with a "?", its two changed gaps
   marked ("2" where the tune has 7, "7" where it has 2), and plays it. It follows a slide. Pressing
-  it again removes it.
-- **Predict** (Step 4): Toys 2's widget with two choices; choosing unlocks Play the first line and
-  Play the swapped version; with sound off, LESSON.md's hint shows and the reveal waits; the reveal
-  never calls a choice wrong.
+  it again removes it. In Step 4 it plays the predict's answer, so it is disabled until a choice is
+  in (Toys 2).
+- **Predict** (Step 4): Toys 2's widget with two choices; choosing unlocks Play the first line,
+  Play the swapped version and Swap sizes; with sound off, LESSON.md's hint shows and the reveal
+  waits; the reveal never calls a choice wrong, and the mix-up card, the Try and the Notice come
+  with it.
 - **Names** (Step 5, and free play): brackets in the strip over the named gaps, "P5 · 7" over
   "-kle, twin-", "M2 · 2" over "-tle star" and "m2 · 1" over "I won-" (FACTS 13, 22), each a button
   that plays its interval.
@@ -248,10 +260,15 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
 
 - Both are Lesson 1's widget: the choice locks, the play buttons unlock, the reveal plays after
   the sound and never calls a choice wrong; two choices each, every button at least 44 px tall.
-- New, as on Lesson 4's page: the cold open's Play from C works before the choice, because orange's
-  line answers it; only Play from F♯ waits for the choice, and the reveal waits for Play from F♯.
-  With sound off the reveal waits too, and the hint says so (Lesson 1's rule: the reveal describes
-  what was heard).
+- New, as on Lesson 4's page: the cold open's Play from C works before the choice, because it is
+  the version the predict compares with, not its answer; only Play from F♯ waits for the choice,
+  and the reveal waits for Play from F♯. With sound off the reveal waits too, and the hint says so
+  (Lesson 1's rule: the reveal describes what was heard).
+- Step 4's choice also unlocks a control outside the widget, Swap sizes on the stage, which plays
+  the swapped version too (`unlocks`, `kit/predict.ts`), and its reveal is several elements, the
+  widget's own first, so its "You said" line is still written, then the step's mix-up card, Try
+  and Notice, which say the answer in print (`reveal`), as Lesson 2's Step 5 does with its
+  `[data-e-reveal]` parts.
 - States: waiting for a choice; a sound playing; choice made and sound heard, reveal shown.
 - Under reduced motion the reveal appears at once, with no slide-in.
 
@@ -444,9 +461,9 @@ other, paused off screen, and the still images when WebGL fails or would run on 
   cold-open reveal (no sparkles), the puzzled guesser who then gets it (playbook rule 15).
 - `merc-duo.ts` has `mercSing` and `mercCelebrate` (`:164`, `:216`), and `mercListen` (`:206`)
   since Lesson 3's page; this page asks for no other state: the Merc who is not singing idles.
-- The cold open sits below the recall, so the live pair is often off screen and paused; the bubbles
-  carry each Merc's still, and the compact line carries the moment. In Sing it the ring shows the
-  still of the Merc singing (Toys 6).
+- The cold open is in the hero, beside the title, so the live pair is there for it; they pause off
+  screen as always, and the compact line between them carries the moment. In Sing it the ring
+  shows the still of the Merc singing (Toys 6).
 - Under reduced motion or Pause animations each Merc holds a still frame and skips the reactions.
 
 ## Practice links: what exists and what needs engineering
@@ -604,7 +621,10 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
 
 1. No AudioContext before the first tap; nothing plays before a play button.
 2. Cold open: Play from F♯ is disabled until a choice, enabled after; the reveal stays hidden until
-   `line-fs` has finished; with sound off the hint shows and the reveal waits.
+   `line-fs` has finished; with sound off the hint shows and the reveal waits. At 360 and 390 px
+   the compact line draws all seven notes, from C and from F♯, and the ♯ of Play from F♯ and of
+   every hint sits on its letter's line, beside it. In Step 4, Swap sizes is disabled and the
+   mix-up card, the Try and the Notice hidden until the choice and both plays.
 3. The tune line by keyboard alone: Tab reaches every bead and gap; the slider moves by arrows and
    jumps by Home and End; after a slide the gap numbers read the same and the names under the beads
    follow Lesson 4's spelling; the names switch toggles `aria-pressed` and shows do-re-mi in the
@@ -616,8 +636,9 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
    missed round is not asked again; the count reads "N of 10" or "N of 8".
 5. Sing it: the comfort check shows first, every visit; with no stored voice the voice choice
    follows either answer, and nothing plays until a voice is chosen; a stored `fyp-voice` shows
-   pressed, and a tap on the other voice changes it; "Just listen today" shows no guide and no Move
-   do, shows the doctor lines and leaves the rest card in the Wrap; Start the guide stays
+   pressed, and a tap on the other voice changes it; at Move do's lowest the ring's "Do: B♭2 ·
+   117 Hz" stays on one line; "Just listen today" shows no guide and no Move do, shows the doctor
+   lines and leaves the rest card in the Wrap; Start the guide stays
    `aria-disabled` until a version has played; the feeling question appears when each sweep ends;
    "Easy" after the first version's sweep shows the one-version line, and after the second's the
    transposed line, and keeps the Interval Trainer card; "Effortful" hides the guide and Move do and
