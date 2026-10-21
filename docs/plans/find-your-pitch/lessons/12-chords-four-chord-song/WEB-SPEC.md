@@ -6,19 +6,20 @@ predict, a tune toy, an unscored sing-along, two quizzes (the recall and the qui
 lesson explorer. Copy is in [LESSON.md](LESSON.md); every claim is in [FACTS.md](FACTS.md). It is a
 text-only package: no film exists for Lesson 12, so the page has no Watch section and the masthead's
 anchors are Lesson, Sing and Explorer. It is built on the kit (`src/features/lessons/kit/`) as it
-stands on main at `02682a122`, and like Lessons 2 to 10 it reuses and never copies: a part that
+stands on main at `75eeddc40`, and like Lessons 2 to 10 it reuses and never copies: a part that
 still lives in an earlier lesson's module moves into the kit first. Five parts this page needs are
-ones earlier specs add to the kit, and none is on main yet:
+ones earlier pages and specs add to the kit:
 
-- from Lesson 6's page, PR #1149 (read on `feat/lesson-06-page` at `8a8d90335`, its cited lines
-  again at `b4fd009f5`): the guide's breath mark (`slide-guide.ts`, `breaths`) and, with its fix
-  pass, the page-wide "now playing" owner and a play that can report "not heard" to the predict;
+- from Lesson 6's page, PR #1149, on main since 21 October 2026: the guide's breath mark
+  (`slide-guide.ts`, `breaths`), the page-wide "now playing" owner (`kit/now-playing.ts`) and a
+  play that can report "not heard" to the predict (`kit/predict.ts`);
 - from Lesson 10's spec (`lessons/10-major-minor/WEB-SPEC.md`, What the kit and the app still need,
-  items 5 and 7): the names switch with a choice of modes, and Move do with its count-in note, both
-  moved into the kit from Lesson 4's page.
+  items 5 and 7), not on main yet: the names switch with a choice of modes, and Move do with its
+  count-in note, both moved into the kit from Lesson 4's page.
 
-Where one of them is not in the kit when this page is built, this page adds it in the form that
-spec gives, and the later page reuses it (What the kit and the app still need, items 4 to 8). Where
+Where one of Lesson 10's two is not in the kit when this page is built, this page adds it in the
+form that spec gives, and the later page reuses it (What the kit and the app still need, items 5
+and 7). Where
 this page shares a behaviour with Lesson 3's checkpoint (the comfort check, the voice choice, "How
 did that feel?" and the rest card), it is Lesson 3's, unchanged unless this spec says otherwise, and
 after "Effortful" it follows Lessons 6 and 10: no further guide, and the rest card in the Wrap.
@@ -43,7 +44,7 @@ its cold open before its recall, a recall shown to everyone, a names switch, a s
 do, and free play in the Wrap. It is published only after Lesson 10's page, `/learn/10`, is, because
 its recall check asks Lesson 10's questions and its prerequisite chip names Lesson 10 (FACTS 2, 7),
 and after the vocal coach has looked at its voice lines (LESSON.md, For the vocal coach). Until both
-are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`, `:30-35`). Every build carries
+are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`, `:30-36`). Every build carries
 `learn/12.html`, as it carries every lesson page (`tools/draft-lessons.ts:8-14`), and its line in
 `drafts.ts` holds it back on mercurypitch.com: the site worker answers `/learn/12` with the 404
 page, and every page's explorer shows Lesson 12 with no link, as a lesson not written yet
@@ -54,7 +55,7 @@ stands, naming what it waits on (`src/features/admin/AdminLessonsPage.tsx:186-20
 nothing, and "publish after Lesson 10" is a rule for whoever uses it: nothing enforces it (Decisions
 for the owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
 items 2 and 15). The curiosity plan's kit work is on main: Lesson 12's hook is the season's
-(`src/features/lessons/kit/season.ts:366`), its alternative and its tease are in the kit's lesson
+(`src/features/lessons/kit/season.ts:369`), its alternative and its tease are in the kit's lesson
 copy (`src/features/lessons/kit/lesson-copy.ts:124-133`), Lesson 13's tease is there too (`:134`),
 and the next-lesson card draws a tease above the next hook
 (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own title into its
@@ -172,7 +173,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
     practice links, printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`, with
     "Arpeggio Jumper and Cadence are free." and no first-visit line (FACTS 42, 43, 44); Lesson 1's
     fonts line and "Every sound on this page is synthesised in your browser" (FACTS 6, Labels); the
-    legal links, as every lesson document closes (`src/tests/lesson-pages.test.ts:173-182`). With
+    legal links, as every lesson document closes (`src/tests/lesson-pages.test.ts:200-209`). With
     no film there are no voices to credit.
 
 ## Length
@@ -357,8 +358,8 @@ the stage-fit test reach every action.
   still. Leaving a step by any route (Next or Back, a swipe, the lesson menu's jump, `#step-N` or a
   quiz link) stops its sound and any queued play, as `lesson-03/main.ts:80-87` stops its toys when
   the step changes. A new play anywhere on the page stops the last, so one sound plays at a time.
-  The page-wide "now playing" owner that does this comes into the kit with #1149's fix pass, and
-  every source of sound on this page goes through it (Audio).
+  The kit's page-wide "now playing" owner does this (`kit/now-playing.ts:17-39`, from Lesson 6's
+  page), and every source of sound on this page goes through it (Audio).
 
 ### 2. The hero's ring
 
@@ -395,52 +396,51 @@ further:
 
 ### 3. Predict widget
 
-- The kit's predict (`src/features/lessons/kit/predict.ts:28-64`, `mountPredict` at `:72`): the
+- The kit's predict (`src/features/lessons/kit/predict.ts:29-71`, `mountPredict` at `:79`): the
   choice locks, the play buttons unlock, the reveal appears after the sound and never calls a choice
   wrong; two choices, each button at least 44 px tall. The plays start disabled in the markup, all
   but the free one, and the choice enables them and moves the focus to the first that is not free
-  (`:97-115`).
+  (`:106-124`).
 - **Cold open.** The choices are [ Most of them ] [ Hardly any ] (FACTS 39). Its three plays sit
   under the spiral on the hero's stage, outside the predict card, and are handed to the predict as
-  its `plays` (`predict.ts:60-61`). "Play the four chords" (`loop-c`) is a free play (`data-free`,
-  `:13-15`): it sets up the question and answers nothing, since it plays no tune. "Play tune 1"
+  its `plays` (`predict.ts:67-68`). "Play the four chords" (`loop-c`) is a free play (`data-free`,
+  `:14-16`): it sets up the question and answers nothing, since it plays no tune. "Play tune 1"
   (`tune-1`) and "Play tune 2" (`tune-2`) wait for the choice, and the reveal waits until both have
   been heard, since its counts are both tunes': `revealOn: ['tune-1', 'tune-2']` with
-  `revealAfter: 'all'` (`:45-51`). The two must be passed together: without `revealOn`, `'all'`
-  waits on nothing (`:88-92`). Until a choice the lock hint, in the markup, reads LESSON.md's
+  `revealAfter: 'all'` (`:52-58`). The two must be passed together: without `revealOn`, `'all'`
+  waits on nothing (`:97-101`). Until a choice the lock hint, in the markup, reads LESSON.md's
   "Choose an answer to unlock the two tunes."; once a choice is in, `hints.chosen` reads "Locked in.
-  Play tune 1, then tune 2, and watch where the notes land." (`:111`). `hints.next` reads "Now hear
+  Play tune 1, then tune 2, and watch where the notes land." (`:120`). `hints.next` reads "Now hear
   both tunes, 1 and 2, for the answer.": the kit shows it after a heard play that does not reveal,
-  and only once a choice is in (`:141-146`), so it follows the four chords as well as one tune, and
-  the line is true either way. `hints.silent` reads "Sound is off: nothing played. Turn sound on,
+  and only once a choice is in (`:153-159`), so it follows the four chords as well as one tune, and
+  the line is true either way. Before a choice, the four chords heard with sound on put back the
+  markup's own lock hint (`:84`, `:153-156`). `hints.silent` reads "Sound is off: nothing played. Turn sound on,
   then play it again.": the kit shows it after any play that sound off kept silent, before a choice
-  too (`:136-139`), so it names no tune, and "it" is whichever play was just tapped. After the
-  reveal, `hints.again` reads "Play either tune again, or just the four chords." (`:121`), and
-  neither of the others replaces it (`:138`, `:144`). The same strings are LESSON.md's. The reveal's
-  "You said" line is the kit's `guess` (`:52-53`): "You said: most of them" or "You said: hardly
+  too (`:148-151`), so it names no tune, and "it" is whichever play was just tapped. After the
+  reveal, `hints.again` reads "Play either tune again, or just the four chords." (`:130`), and
+  neither of the others replaces it (`:147`). The same strings are LESSON.md's. The reveal's
+  "You said" line is the kit's `guess` (`:59-60`): "You said: most of them" or "You said: hardly
   any", never "right" or "wrong". As it shows, orange celebrates (Mercs). The reveal's last line
   makes the other choice a fair guess (CURIOSITY-MOMENTS § 1, rule 2; FACTS 39).
 - With sound off the reveal waits: the reveal only ever describes a sound that was heard
-  (`predict.ts:5-9`). The plays' visuals still run, the walk and the gold included, as every play's
+  (`predict.ts:5-10`). The plays' visuals still run, the walk and the gold included, as every play's
   do with sound off.
 - A play that is cut short is not heard, and the reveal waits for plays that run to their end. On
   main the kit's predict ignores its own play buttons while one of them plays (`busy`,
-  `predict.ts:154`): a tap on another of the hero's three does nothing until the first ends, so the
+  `predict.ts:165`): a tap on another of the hero's three does nothing until the first ends, so the
   predict's own plays never cut each other short, and they carry no Stop, unlike the steps' tune toy
   (Toys 5). Only a stop (the page hidden, or sound turned off: the kit then stops every voice,
   `sound.ts:445-447`, `:456`), a bead tap on the hero's ring or leaving the hero for a step ends a
-  tune early. PR #1149, not yet merged (read on `feat/lesson-06-page` at `b4fd009f5`), changes two
-  things. A page's `play` may resolve `false` for a play cut short, and the predict then skips its
-  hint and its reveal, so that play reveals nothing and the hint stays as it was
-  (`predict.ts:166-170` on `feat/lesson-06-page`); `true` or nothing is a play heard to its end,
-  today's meaning. And a page-wide sound owner, `NowPlaying` (`kit/now-playing.ts:17-39` on
-  `feat/lesson-06-page`), stops a source's sound through that source's own stop when another source
-  claims it, so a tune also ends early when any other sound on the page starts, a word's play or a
-  step's. If #1149 has merged when this page is built, the page uses both: a tune cut short reveals
-  nothing, and its hint stays. If it has not, the page adds them in that form (What the kit and the
-  app still need, item 8).
-- States: waiting for a choice; a sound playing; choice made, no tune heard yet; choice made and one
-  tune heard; both heard, reveal shown.
+  tune early. Two more kit parts, from Lesson 6's page (PR #1149), make that safe, and this page
+  uses both. A page's `play` may resolve `false` for a play cut short, and the predict then skips
+  its hint and its reveal, so that play reveals nothing and the hint stays as it was
+  (`predict.ts:30-40`, `:173-174`); `true` or nothing is a play heard to its end. And a page-wide
+  sound owner, `NowPlaying` (`kit/now-playing.ts:17-39`), stops a source's sound through that
+  source's own stop when another source claims it, so a tune also ends early when any other sound on
+  the page starts, a word's play or a step's. A tune cut short either way reveals nothing, and its
+  hint stays.
+- States: waiting for a choice; a sound playing; a play kept silent by sound off, before a choice or
+  after; choice made, no tune heard yet; choice made and one tune heard; both heard, reveal shown.
 - Under reduced motion the reveal appears at once, with no slide-in.
 
 ### 4. Four words
@@ -489,18 +489,18 @@ bar of four crotchets, 0.5 s a crotchet, 8.0 s a play (FACTS 35 to 37, 68).
 ### 6. Sing it
 
 The guide is the kit's slide guide (`src/features/lessons/kit/slide-guide.ts`, `mountGuide` at
-`:325`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from fa up to do, a
+`:378`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from fa up to do, a
 semitone apart: the four the line uses named fa, so, la and do, and the other four faint
-(`GuideRow`, `slide-guide.ts:31-38`). The rows show syllables only, no letters, so no spelling can
+(`GuideRow`, `slide-guide.ts:35-42`). The rows show syllables only, no letters, so no spelling can
 go wrong wherever Move do puts do; a readout names do and the line in Lesson 4's names for the key,
 "do is C4: C4, G3, A3, F3, C4", spoken "do is C 4" (FACTS 60). Merc's path is do, so, la, fa, do,
 each root 1.6 s with 0.4 s of silence after it and the last do 2.0 s, every note after a silence
-marked `gap` (`slide-guide.ts:16-17`, `:44-45`), so nothing is drawn across a silence: 10.0 s in
+marked `gap` (`slide-guide.ts:16-17`, `:48-49`), so nothing is drawn across a silence: 10.0 s in
 all (FACTS 61). The path carries the kit's breath mark, from Lesson 6's page (`breaths`,
-`slide-guide.ts:59-60` on `feat/lesson-06-page`), in the gap after la, 5.6 s in: a small tick in the
+`slide-guide.ts:59-60`), in the gap after la, 5.6 s in: a small tick in the
 path's own colour with the word "breathe" (FACTS 62). Under Merc's notes and under the guide the
 chords play, I, V, vi, IV and I, 2.0 s each, so each chord starts with its root (FACTS 73). Beside
-the guide, the kit's breathing ring (`mountRing`, `src/features/lessons/kit/sing.ts:129`) shows the
+the guide, the kit's breathing ring (`mountRing`, `src/features/lessons/kit/sing.ts:132`) shows the
 still of the Merc singing, blue for the lower voice and orange for the higher, never a microphone
 icon. Every state has a visible status line that is also announced (`aria-live="polite"`). Lesson
 3's rule for leaving holds, for what plays here: if the section stays off screen for 600 ms, or the
@@ -583,10 +583,10 @@ States:
    text (REQ-GVC-080, as `lesson-03/sing-view.ts:1-9` does). When the sweep ends, the feeling
    question follows.
 6. **How did that feel?** appears under the guide each time a sweep ends, asked afresh with no
-   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:121-146`; FACTS 63).
+   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:121-152`; FACTS 63).
    The kit locks the answer once given, until the next sweep resets it; Lesson 6's page passes the
-   kit's new `changeable`, so its answer can change until then (`mountFeelings`,
-   `comfort.ts:121-131` on `feat/lesson-06-page`). This page keeps the lock until the coach settles
+   kit's `changeable`, so its answer can change until then (`mountFeelings`,
+   `comfort.ts:121-131`). This page keeps the lock until the coach settles
    it for the series, as Lesson 10's does (Decisions for the owner).
    - Easy or Workable shows LESSON.md's line, "Do, so, la, fa, do: you just sang the loop's roots.",
      which names the task, never the voice or how the notes went, since nothing listened, and leaves
@@ -604,7 +604,7 @@ States:
      in memory for the visit, never in storage.
 
 The flow is a pure rule (`lesson-12/sing-flow.ts`), as Lesson 6's page makes its own
-(`lesson-06/sing-flow.ts` on `feat/lesson-06-page`, the shape to follow): from the comfort answer,
+(`lesson-06/sing-flow.ts`, the shape to follow): from the comfort answer,
 the voice, whether Merc's notes have been heard, how many sweeps have run and the latest answer, it
 gives the state, the controls shown, the line and the Wrap's card, so every branch above is
 unit-tested (Tests, unit 8).
@@ -693,9 +693,9 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
      page, stops what plays there.
   3. A play that is cut short never counts as heard by the predict.
 
-  The kit helpers for these come with #1149's fix pass: a page-wide "now playing" owner, which every
-  source here registers with, and a `play` that can report "not heard" to `predict.ts`. If this page
-  is built before that pass lands, it adds both in that form, and Lesson 6's page reuses them.
+  The kit has the helpers for these, from Lesson 6's page: a page-wide "now playing" owner
+  (`kit/now-playing.ts:17-39`), which every source here registers with, and a `play` that can
+  report "not heard" to the predict (`predict.ts:30-40`, `:173-174`).
 
 - **A chord** is three voices started in one task, so they share one start on the audio clock, each
   at 0.075 alone or at 0.05 under a tune or a voice (FACTS 74), through `playTone`
@@ -782,7 +782,7 @@ still images when WebGL fails or would run on the CPU.
 
 ## Explorer and season data
 
-Lesson 12's entry (`src/features/lessons/kit/season.ts:361-372`), proposed for when this page is
+Lesson 12's entry (`src/features/lessons/kit/season.ts:364-375`), proposed for when this page is
 built:
 
 - `minutes: 15` and `page: '/learn/12'`, written plainly, as Lesson 3's entry is
@@ -809,25 +809,31 @@ built:
   (`season.ts:195-200`). Cadence is the lesson's ear drill and needs no voice, so the card stays
   right whatever Sing it's ending. For the owner (Decisions for the owner), the other choice:
   Arpeggio Jumper, `href` `/pitch-training?lesson=12`, `label` "Exercises" and `note` "then tap
-  Arpeggio Jumper", as Lesson 9's card now reads (`season.ts:330-337`). `pr.needs`, "Chord Stacker
+  Arpeggio Jumper", as Lesson 9's card now reads (`season.ts:333-340`). `pr.needs`, "Chord Stacker
   with major and minor triads (today it has only maj7, min7, dom7, dim7 and maj6)", stays until the
   triads ship: it is "Admin only, never drawn on a lesson page" (`season.ts:99-100`, and the fields
   the team keeps, `:27-34`).
 - `sig` stays as it is. The entry has no `fig`, so the card draws no figure.
-- The hook stays word for word (`season.ts:366`; FACTS 1). The tease Lesson 11's card shows for this
+- The hook stays word for word (`season.ts:369`; FACTS 1). The tease Lesson 11's card shows for this
   lesson, and Lesson 13's tease on this page's card, are the kit's lesson copy
   (`kit/lesson-copy.ts:132`, `:134`; FACTS 5, 5b).
 - The card reads "Ready · read", with "15 min", once the page is live (`explorer.ts:150-157`).
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand on main at `02682a122` (21 October 2026), beyond the
+Found in the kit and the app as they stand on main at `75eeddc40` (21 October 2026), beyond the
 parts Lessons 2 to 10 promote into the kit (Toys table). Every item is proposed. From `6f8081804`,
 where this package was first written, to `9fcc96a01`, where it was reviewed, the code this spec
-cites is unchanged but for Lesson 9's practise link in `season.ts` (`:330-337`, the same lines) and
+cites is unchanged but for Lesson 9's practise link in `season.ts` (`:333-340`, the same lines) and
 a comment in `src/lib/lesson-marker.ts`. From `9fcc96a01` to `02682a122`, PR #1156 put Lesson 4 back
-on the draft list, which moves two citations here: the draft list is `drafts.ts:30-35` (item 2) and
-llms.txt's Lessons list `:66-77` (item 15) (`git diff --stat`).
+on the draft list, which moved two citations here, to the draft list (item 2) and to llms.txt's
+Lessons list (item 15). From `02682a122` to `75eeddc40`, three PRs changed code this spec cites, and
+every citation here was compared line for line between the two and moved to the line it meant:
+PR #1149, Lesson 6's page, brought the breath mark, the sound owner and a play that reports "not
+heard" into the kit (items 6 and 8), with Lesson 6's line in `drafts.ts` and three lines in
+`season.ts`; PR #1159 holds every lesson document to the head checks, a draft's included, and
+checks its share card (items 12, 13 and 15); PR #1160 changed what the predict's hint shows after a
+heard play (Toys 3; Edge cases) (`git diff --stat`).
 
 1. The lesson host: `learn/12.html` at `/learn/12`. The dev and preview servers and every build take
    every `learn/NN.html` as a lesson page, a draft's included, with no entry of its own
@@ -836,8 +842,8 @@ llms.txt's Lessons list `:66-77` (item 15) (`git diff --stat`).
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
    worker's 404 page, never the app shell (`:140-147`).
-2. `src/features/lessons/kit/drafts.ts:30-35`: Lesson 12's line, after Lesson 5's and in the form of
-   Lessons 3 and 5's:
+2. `src/features/lessons/kit/drafts.ts:30-36`: Lesson 12's line, after Lesson 6's and in the form of
+   Lessons 3, 5 and 6's:
    `12: "Lesson 10's page at /learn/10, and the vocal coach's look at the sung checkpoint"`. While
    it stands, the page is held back on mercurypitch.com and served on the dev site and every PR
    preview, and the console can publish it there before both are done, with no release
@@ -860,20 +866,18 @@ llms.txt's Lessons list `:66-77` (item 15) (`git diff --stat`).
    switch into the kit in that form, with Lesson 6's modes, and Lesson 10's page takes it. This page
    shows Letters · Do-re-mi, with the major scale's syllables on the key's tonic. The page-wide
    store is the kit's already (`createModeStore`, `kit/names.ts:27`).
-6. The breath mark on the slide guide (Toys 6): the kit's, from Lesson 6's page (`breaths`,
-   `slide-guide.ts:59-60` on `feat/lesson-06-page`). Until that lands, the gaps alone show where to
-   breathe (FACTS 62); if this page lands first, it adds the mark in that form.
+6. The breath mark on the slide guide (Toys 6): on main, from Lesson 6's page (`breaths`,
+   `slide-guide.ts:59-60`). Nothing to add.
 7. Move do and the count-in's note (Toys 6): Lesson 4's (`lesson-04/sing.ts:32-35`, `:168-176`;
    `lesson-04/examples.ts:137-141`), as Lesson 10's spec moves it into the kit (its item 7), with
    `aria-disabled` at its limits, never `disabled`, so a keyboard user's focus stays put. This page
    needs one thing more: a limit for each side, four lower and three higher, where Lessons 4, 6 and
    10 take four either way (FACTS 60). If this page lands first, it moves Move do into the kit with
    both limits, Lesson 6's copy with it.
-8. The sound rules' helpers, the page-wide "now playing" owner and the play that reports "not heard"
-   to the predict, from #1149's fix pass (Audio; Toys 3), read at `b4fd009f5`: `NowPlaying`
-   (`kit/now-playing.ts:17-39` on `feat/lesson-06-page`) and a `play` that may resolve `false`
-   (`kit/predict.ts:30-40`, `:166-170`, both on `feat/lesson-06-page`). If this page lands first, it
-   adds both in that form. With them, a `schedule` that can be stopped: Lessons 2 and 4 each keep
+8. The sound rules' helpers (Audio; Toys 3). On main, from Lesson 6's page: the page-wide "now
+   playing" owner, `NowPlaying` (`kit/now-playing.ts:17-39`), and a `play` that may resolve `false`
+   for a play cut short (`kit/predict.ts:30-40`, `:173-174`). Still needed: a `schedule` that can be
+   stopped: Lessons 2 and 4 each keep
    their own, which cannot (`lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:81-92`), so this
    page moves it into the kit with a stop that clears its timers, for the owner to call, and Lessons
    2 and 4 may take it later.
@@ -889,10 +893,10 @@ llms.txt's Lessons list `:66-77` (item 15) (`git diff --stat`).
     the owner).
 11. `kit/season.ts`, Lesson 12's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:372-407` on every page from its first commit, and
-    by `src/tests/lesson-pages.test.ts:85-183` once released:
+    `src/features/lessons/kit/lesson-copy.test.ts:372-407` and `src/tests/lesson-pages.test.ts:112-210`
+    on every page, a draft's included, from its first commit:
     - title, at most 60 characters, with "MercuryPitch" and the headline in it
-      (`lesson-pages.test.ts:101-102`, `:130`). The series' form that Lessons 1, 2, 3, 5 and 10 use,
+      (`lesson-pages.test.ts:127-128`, `:160`). The series' form that Lessons 1, 2, 3, 5 and 10 use,
       "Chords and the four-chord song: Find Your Pitch, Lesson 12 | MercuryPitch", is 73 characters,
       over the cap, and Lesson 4's, "· Find Your Pitch | MercuryPitch", 63. Recommended: "Chords and
       the four-chord song: Lesson 12 | MercuryPitch" (56 characters), until SEARCH.md § 13 item 1
@@ -919,7 +923,7 @@ llms.txt's Lessons list `:66-77` (item 15) (`git diff --stat`).
       test reads `alternativeHeadline` from the first script only and skips the check when it is
       absent (`lesson-copy.test.ts:387-395`, `:405`): `@id`
       `https://mercurypitch.com/learn/12#lesson`, `url` the canonical, `image` the same URL as
-      `og:image` (`lesson-pages.test.ts:116-117`, `:129`), headline "Chords and the four-chord
+      `og:image` (`lesson-pages.test.ts:146-147`, `:159`), headline "Chords and the four-chord
       song", `alternativeHeadline` the hook, the same description, `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
       `teaches` ["Building a key's chords from its scale", "Reading Roman numerals", "Hearing the
@@ -931,23 +935,25 @@ llms.txt's Lessons list `:66-77` (item 15) (`git diff --stat`).
       date, so a published draft is served without one. It is set either in the commit that
       deletes the page's `drafts.ts` line or in a commit straight after the console publishes it,
       and the owner picks which (SEARCH.md § 3.2). Last, the BreadcrumbList, ending on the
-      headline (`lesson-pages.test.ts:133-145`).
-13. `public/learn/lesson-12-og.jpg`: the share card, 1200 x 630, a still of the hero: the title over
+      headline (`lesson-pages.test.ts:163-175`).
+13. `public/learn/lesson-12-og.jpg`: the share card, 1200 x 630, in the page's first commit, since
+    `lesson-pages.test.ts:177-196` fails a lesson document whose card is not in `public/` at the size
+    its head gives, a draft's included. It is a still of the hero: the title over
     the ring of twelve seen from above, the loop's four rooms drawn in chrome, between blue Merc and
     orange Merc, with the alt text above. It draws no tune, no walk, no gold and no count, so the
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:58`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:148`), measured, with the
+    `:58`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:157`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:102-104`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:442-446`, and for CSS `:474-478`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:456-460`, and for CSS `:488-492`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Mercs).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-77`), one entry each. Until then the draft's rules
     hold on the repository: in neither file, linked from no entry document, its service-worker rule
-    kept (`src/tests/lesson-pages.test.ts:185-221`). While the console has it published, the site
+    kept (`src/tests/lesson-pages.test.ts:242-279`). While the console has it published, the site
     worker adds it to the sitemap and llms.txt it serves, and takes it out again if it is held back
     (`src/lesson-gate.ts:22-24`; `src/features/lessons/kit/drafts.ts:18-21`). So indexing is
     requested when the console publishes the page, not at the release.
@@ -1019,15 +1025,15 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    lesson follows is a question for the vocal coach across the series; this page shows the rest card
    until it is answered.
 7. **Locking the feeling answer.** The kit locks it once given; Lesson 6's page lets it change until
-   the next sweep (`mountFeelings`, `changeable`, `comfort.ts:121-131` on `feat/lesson-06-page`).
+   the next sweep (`mountFeelings`, `changeable`, `comfort.ts:121-131`).
    The vocal coach's call, for the whole series; this page keeps the lock until then, as Lesson 10's
    does (Toys 6). The review: with the lock, a mis-tapped "Easy" can become "Uncomfortable", and
    bring up the doctor lines, only after another sung run, so Lesson 6's changeable answer serves
    REQ-GVC-021 better. This pass agrees, and recommends putting that to the coach with the question:
-   if the coach picks the changeable answer, this page passes `changeable` (from #1149), and its
+   if the coach picks the changeable answer, this page passes `changeable`, and its
    sing flow puts the guide and Move do away when the answer changes to "Effortful" or
    "Uncomfortable", and no later change brings them back, as Lesson 6's does
-   (`lesson-06/sing-flow.ts` on `feat/lesson-06-page`).
+   (`lesson-06/sing-flow.ts`).
 8. **Move do's top.** Three semitones higher, not four, since four would put the lower line's top do
    on E4, the bass preset's very top (FACTS 60). Recommended: keep three; the coach may confirm it
    (LESSON.md, For the vocal coach). The review: right. At three higher the bass preset keeps one
@@ -1069,23 +1075,22 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
 - **Before a choice**, Play tune 1 and Play tune 2 are disabled, and the reveal stays hidden; Play
   the four chords and a tap on any bead still sound, and draw no walk.
 - **The four chords after a choice, before either tune**: the kit shows `hints.next`, "Now hear both
-  tunes, 1 and 2, for the answer." (`predict.ts:141-146`), which holds with no tune heard yet: it
+  tunes, 1 and 2, for the answer." (`predict.ts:153-159`), which holds with no tune heard yet: it
   asks for both and says nothing of what was heard.
 - **Sound off before a choice**: Play the four chords runs its lights silently, and `hints.silent`,
   "Sound is off: nothing played. Turn sound on, then play it again.", replaces the lock hint
-  (`predict.ts:136-139`). Both tunes stay locked; "it" is the four chords, the one play open.
-- **Sound on again, still before a choice**: once the four chords are heard with sound on, the page
-  needs the lock hint back, "Choose an answer to unlock the two tunes.", since the tunes are still
-  locked. Main's kit leaves `hints.silent` showing until a choice is made: after a heard play with
-  no choice in, `heard()` returns without touching the hint (`predict.ts:142-146`). The lead is
-  making this fix in the kit for every lesson's predict, so that a heard free play before a choice
-  puts the lock hint back; Lessons 4 and 5 have the same case. This page relies on it.
+  (`predict.ts:148-151`). Both tunes stay locked; "it" is the four chords, the one play open.
+- **Sound on again, still before a choice**: once the four chords are heard with sound on, the kit
+  puts the markup's lock hint back, "Choose an answer to unlock the two tunes.", since the tunes
+  are still locked: a heard play with no choice in restores the hint the page wrote
+  (`predict.ts:84`, `:153-156`), as it does on Lessons 4 and 5 (PR #1160).
 - **One tune heard, then a wait**: the reveal stays hidden, with `hints.next` showing, until the
   other tune has been heard with sound on.
 - **A cold-open tune cut short**, by a stop, a bead tap on the hero's ring, leaving the hero for a
-  step or, through #1149's sound owner, any other sound on the page (Toys 3): not heard, so it does
-  not count towards the reveal, and its hint stays; its walk and count stay where they reached. A
-  tap on another of the hero's plays while one plays does nothing (`predict.ts:154`).
+  step or, through the kit's sound owner, any other sound on the page (Toys 3): not heard, so it does
+  not count towards the reveal, and its hint stays (`predict.ts:173-174`); its walk and count stay
+  where they reached. A
+  tap on another of the hero's plays while one plays does nothing (`predict.ts:165`).
 - **Step 5 before the cold open's choice**: the steps' tune toy locks nothing, as Lesson 10's steps
   lock nothing; a viewer who scrolls past the predict meets the tunes there, after the predict.
 - **The key switch mid-play**: switching key stops the play first, then turns the rooms; a chip
@@ -1131,7 +1136,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   so does Lesson 11's next-lesson card (`src/features/lessons/kit/next-card.ts:114-115`). So
   "hundreds", a count FACTS.md does not hold, would stand on every surface the hook reaches (FACTS
   1). The description would run to 158 characters and og:description to 141, inside their caps,
-  which `src/tests/lesson-pages.test.ts:103-106` checks only on the page as written. Neither hook
+  which `src/tests/lesson-pages.test.ts:129-132` checks only on the page as written. Neither hook
   says where a tune's notes fall, so the title never answers the predict (FACTS 1a). The package
   recommends leaving it unpicked (Decisions for the owner, item 1).
 
@@ -1167,8 +1172,7 @@ parts it adds:
    leaving the hero for a step, counts as not heard, reveals nothing and leaves the hint as it was;
    the guess lines and the four hints are LESSON.md's; after a choice, the four chords heard show
    `hints.next`; with sound off before a choice, the four chords show `hints.silent` in place of the
-   lock hint, and heard again with sound on they bring the lock hint back (with the kit's fix, Edge
-   cases).
+   lock hint, and heard again with sound on they bring the lock hint back (Edge cases).
 7. Layout, the pure helper behind Toys 1's strip: at every width from 344 to 1440 px every chip and
    control is at least 44 px each way and none overlaps another; the strip is one row at 440 px of
    figure width and above, two below; the compact layout is drawn below 240 px of height (FACTS 75).
@@ -1253,10 +1257,10 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
 10. Every practice link carries `?lesson=12` before any hash: `/pitch-training?lesson=12` and
     `/ear-lab?lesson=12`.
 11. The next-lesson card: a row for `/learn/12` in `src/e2e/learn-next-card.spec.ts`'s cards
-    (`:27-58`), with the eyebrow "Next lesson 13 · Resonance and vowels Coming later", the link
-    `#explorer` and "See it on the map" while Lesson 13 has no page, as Lesson 5's row reads for
-    Lesson 6; its `.next-tease` reads Lesson 13's tease, one line above its hook, as the spec checks
-    Lesson 1's card (`:84-101`); its still inside the card holds no button.
+    (`:27-64`), with the eyebrow "Next lesson 13 · Resonance and vowels Coming later", the link
+    `#explorer` and "See it on the map" while Lesson 13 has no page, as Lesson 6's row reads for
+    Lesson 7; its `.next-tease` reads Lesson 13's tease, one line above its hook, as the spec checks
+    Lesson 1's card (`:90-107`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:49-51`), for the team's words (`:21-39`), and the
     alternative hook's note never reaches the page (`:41-44`).

@@ -109,12 +109,13 @@ then tune 2, and watch where the notes land." Each plays the four chords again w
 tune over them in "ooh". Each sung note lights its bead, and a line joins it to the note before. A
 note on a corner of the lit room glows gold, and a count under the ring adds them up as they land:
 "On a corner: 11 of 15" when tune 1 ends, "On a corner: 10 of 12" when tune 2 does. The reveal
-waits until both tunes have been heard. Until then, once a choice is in, any heard play, the four
-chords' included, leaves the hint reading "Now hear both tunes, 1 and 2, for the answer." A play
-with sound off, before a choice too, leaves it reading "Sound is off: nothing played. Turn sound
-on, then play it again." Before a choice, the lock line comes back once the four chords are heard
-with sound on (WEB-SPEC, Edge cases). The reveal opens on the choice, "You said: most of them" or
-"You said: hardly any", and the hint then reads "Play either tune again, or just the four chords.")
+waits until both tunes have been heard. Until then, once a choice is in, every play heard to its
+end, the four chords included, sets the hint to "Now hear both tunes, 1 and 2, for the answer." A
+play that sound off kept silent, before a choice or after, sets it to "Sound is off: nothing
+played. Turn sound on, then play it again." Before a choice, the four chords heard with sound on
+bring the lock line back. A play cut short changes nothing (WEB-SPEC, Edge cases). The reveal
+opens on the choice, "You said: most of them" or "You said: hardly any", and the hint then reads
+"Play either tune again, or just the four chords.")
 
 Reveal: Most of them. Tune 1 lands on a corner with 11 of its 15 notes, and tune 2 with 10 of
 its 12. Both walk through the same four rooms, each on its own path and in its own rhythm: one set
