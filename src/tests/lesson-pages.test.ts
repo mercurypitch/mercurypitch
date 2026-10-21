@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ENTRY_PAGES } from '@/seo/entry-pages'
@@ -6,12 +6,20 @@ import { draftLessons, lessonDocument, lessonPath, releasedLessons, } from '../.
 import { lessonHeadline, releasedLessonLinks } from '../../tools/lesson-links'
 
 // A Find Your Pitch lesson is written by hand, so nothing generates its head
-// or puts it in front of a crawler. A lesson is released by deleting its line
-// from drafts.ts; from then on these hold it to what a page needs to be found:
-// a self-canonical head, structured data that says what it is, the sitemap,
-// llms.txt, the service worker, and links from the documents a crawler
-// reaches first. Lesson 1 shipped without the links, the structured data or
-// the image directive; the lessons after it cannot.
+// or puts it in front of a crawler. These hold it to what a page needs to be
+// found, in two parts.
+//
+// The document's own part holds every lesson document, a draft's included: a
+// self-canonical head, a share card that is in public/, structured data that
+// says what it is, and the legal links. The admin console publishes a draft
+// on mercurypitch.com at run time, with no release (src/lesson-gate.ts), so
+// a draft goes live with the head it was built with: that head has to be
+// finished before the console can publish it, not at the release after.
+//
+// The release's part waits for the release, which deletes the lesson's line
+// from drafts.ts: the sitemap, llms.txt, the service worker, and links from
+// the documents a crawler reaches first. Lesson 1 shipped without the links,
+// the structured data or the image directive; the lessons after it cannot.
 
 const repo = resolve(__dirname, '../..')
 const repoFile = (path: string) => readFileSync(resolve(repo, path), 'utf8')
@@ -29,6 +37,23 @@ function jsonLd(document: Document): Record<string, unknown>[] {
   ).map((node) => JSON.parse(node.textContent ?? '{}'))
 }
 
+/** A baseline or progressive JPEG's pixel size, from its frame header. */
+function jpegSize(bytes: Buffer): { width: number; height: number } {
+  let at = 2
+  while (at + 8 < bytes.length) {
+    const marker = bytes[at + 1]
+    const frame =
+      marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)
+    if (frame)
+      return {
+        height: bytes.readUInt16BE(at + 5),
+        width: bytes.readUInt16BE(at + 7),
+      }
+    at += 2 + bytes.readUInt16BE(at + 2)
+  }
+  throw new Error('no JPEG frame header')
+}
+
 const ORGANIZATION = {
   '@type': 'Organization',
   '@id': 'https://mercurypitch.com/#organization',
@@ -38,6 +63,8 @@ const ORGANIZATION = {
 
 // Released: every learn/NN.html the draft list does not hold back.
 const RELEASED = releasedLessons(repo)
+// Every lesson document, released or a draft: any of them can be live.
+const DOCUMENTS = [...RELEASED, ...draftLessons()].sort((a, b) => a - b)
 
 describe('the released lessons', () => {
   it('starts with Lesson 1, which every hand-written nav links', () => {
@@ -82,10 +109,9 @@ describe('the released lessons', () => {
   })
 })
 
-describe.each(RELEASED)('released lesson %i', (n) => {
+describe.each(DOCUMENTS)('lesson document %i', (n) => {
   const file = lessonDocument(n)
-  const path = lessonPath(n)
-  const canonical = `https://mercurypitch.com${path}`
+  const canonical = `https://mercurypitch.com${lessonPath(n)}`
 
   it('has a self-canonical, indexable head', () => {
     const document = parse(file)
@@ -109,9 +135,13 @@ describe.each(RELEASED)('released lesson %i', (n) => {
 
   it('describes itself as a free lesson in the series', () => {
     const document = parse(file)
-    const article = jsonLd(document).find((node) => node['@type'] === 'Article')
+    const blocks = jsonLd(document)
+    const article = blocks.find((node) => node['@type'] === 'Article')
 
     expect(article, 'no Article node').toBeDefined()
+    // First of the blocks: kit/lesson-copy.test.ts reads the hook's copy in
+    // alternativeHeadline from the first one only.
+    expect(blocks[0]?.['@type']).toBe('Article')
     if (article === undefined) return
     expect(article.url).toBe(canonical)
     expect(article['@id']).toBe(`${canonical}#lesson`)
@@ -144,6 +174,46 @@ describe.each(RELEASED)('released lesson %i', (n) => {
     items.forEach((item, index) => expect(item.position).toBe(index + 1))
   })
 
+  // The picture a share or Discover shows with the page (SEARCH.md § 3.1):
+  // this lesson's own card, a file in public/ at the size the head gives.
+  it('names a share card that is in public/, at the size its head gives', () => {
+    const document = parse(file)
+    const card = `learn/lesson-${String(n).padStart(2, '0')}-og.jpg`
+    const image = resolve(repo, 'public', card)
+
+    expect(meta(document, 'og:image')).toBe(`https://mercurypitch.com/${card}`)
+    expect(meta(document, 'twitter:image')).toBe(meta(document, 'og:image'))
+    expect(existsSync(image), `public/${card} is missing`).toBe(true)
+    const size = jpegSize(readFileSync(image))
+    expect([
+      meta(document, 'og:image:width'),
+      meta(document, 'og:image:height'),
+    ]).toEqual([String(size.width), String(size.height)])
+    expect(meta(document, 'og:image:alt')?.trim()).toBeTruthy()
+    expect(meta(document, 'twitter:image:alt')).toBe(
+      meta(document, 'og:image:alt'),
+    )
+  })
+
+  // The imprint has to be easily, directly and permanently accessible from
+  // every document a visitor can land on (launch-entry-seo's legal nav rule).
+  it('closes on the legal links', () => {
+    const hrefs = Array.from(
+      parse(file).querySelectorAll('nav[aria-label="Legal"] a'),
+    ).map((a) => a.getAttribute('href'))
+    expect(hrefs).toEqual([
+      'https://about.mercurypitch.com/privacy/',
+      'https://about.mercurypitch.com/terms/',
+      'https://about.mercurypitch.com/imprint/',
+    ])
+  })
+})
+
+// What only a release brings: a draft has none of it (below).
+describe.each(RELEASED)('released lesson %i', (n) => {
+  const path = lessonPath(n)
+  const canonical = `https://mercurypitch.com${path}`
+
   // drafts.ts asks for the sitemap and llms.txt by hand on release; this is
   // what notices when they were forgotten.
   it('is in the sitemap, llms.txt and the service worker', () => {
@@ -167,29 +237,18 @@ describe.each(RELEASED)('released lesson %i', (n) => {
       expect(hrefs, `${page.slug}.html does not link ${path}`).toContain(path)
     }
   })
-
-  // The imprint has to be easily, directly and permanently accessible from
-  // every document a visitor can land on (launch-entry-seo's legal nav rule).
-  it('closes on the legal links', () => {
-    const hrefs = Array.from(
-      parse(file).querySelectorAll('nav[aria-label="Legal"] a'),
-    ).map((a) => a.getAttribute('href'))
-    expect(hrefs).toEqual([
-      'https://about.mercurypitch.com/privacy/',
-      'https://about.mercurypitch.com/terms/',
-      'https://about.mercurypitch.com/imprint/',
-    ])
-  })
 })
 
-// A draft (drafts.ts: Lessons 3 and 5 wait on the vocal coach) is the other
-// half, held to what scripts/assert-draft-lessons.mjs checks in a finished
-// build: listed in no static file and linked from no crawlable document,
-// whichever way an environment shows it (the site worker adds it to the
-// sitemap and llms.txt only while it is published, src/lesson-gate.ts), with
-// its service-worker rule kept so that where it is held back its address
-// reaches the worker's 404 page, never the app shell. These are the same
-// rules on the repository, so the two cannot disagree.
+// A draft (a lesson with a line in drafts.ts) is the other half. Its document
+// is held above with the released lessons', since a draft the console
+// publishes is live with the head it was built with. What it is held to here
+// is what scripts/assert-draft-lessons.mjs checks in a finished build: listed
+// in no static file and linked from no crawlable document, whichever way an
+// environment shows it (the site worker adds it to the sitemap and llms.txt
+// only while it is published, src/lesson-gate.ts), with its service-worker
+// rule kept so that where it is held back its address reaches the worker's
+// 404 page, never the app shell. These are the same rules on the repository,
+// so the two cannot disagree.
 describe.each(draftLessons())('draft lesson %i', (n) => {
   const path = lessonPath(n)
   // `/learn/05`, but not `/learn/050`
