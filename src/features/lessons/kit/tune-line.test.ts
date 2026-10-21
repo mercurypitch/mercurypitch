@@ -8,10 +8,13 @@
 // across the tune; a new start that lands at once under reduced motion
 // (the doubles turn it on); and a run that announces each note at its
 // onset, settles when the last one ends, and stops when asked, saying
-// whether it was played to its end.
+// whether it was played to its end. With sound on (a fake Sound.voice),
+// a run's voices stop when it is stopped and when a new run starts.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import type { Voice } from './sound'
+import { Sound } from './sound'
 import type { TuneLineOptions, TuneNote, TuneShape } from './tune-line'
 import { mountTuneLine } from './tune-line'
 
@@ -90,6 +93,7 @@ const box = (el: HTMLElement): number[] =>
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.restoreAllMocks()
   document.body.textContent = ''
 })
 
@@ -305,5 +309,77 @@ describe('mountTuneLine: a played run', () => {
     // Assert
     expect(await first).toBe(false)
     expect(await second).toBe(true)
+  })
+})
+
+describe('mountTuneLine: its voices', () => {
+  const EVENTS = [
+    { midi: 60, at: 0, dur: 0.5 },
+    { midi: 60, at: 0.5, dur: 0.5 },
+    { midi: 67, at: 1, dur: 1 },
+  ]
+
+  /** Sound on: every voice the line starts from now on, its note, and whether it was stopped. */
+  function listen(): { midi: number; stopped: boolean }[] {
+    const started: { midi: number; stopped: boolean }[] = []
+    vi.spyOn(Sound, 'voice').mockImplementation((freq: number) => {
+      const v = {
+        midi: Math.round(69 + 12 * Math.log2(freq / 440)),
+        stopped: false,
+      }
+      started.push(v)
+      const voice: Voice = {
+        alive: true,
+        setFreq: () => undefined,
+        setGain: () => undefined,
+        stop: () => {
+          v.stopped = true
+        },
+      }
+      return voice
+    })
+    return started
+  }
+
+  it('stops its voices when the run is stopped, and starts no more', () => {
+    // Arrange: a run with sound, its second note sounding
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const started = listen()
+    const { tune } = mount()
+    void tune.play(EVENTS, true)
+    vi.advanceTimersByTime(600)
+
+    // Act
+    tune.stop()
+    vi.advanceTimersByTime(5000)
+
+    // Assert
+    expect(started).toEqual([
+      { midi: 60, stopped: true },
+      { midi: 60, stopped: true },
+    ])
+  })
+
+  it("stops a run's voices when a new run starts, and leaves the new run's voices whole", () => {
+    // Arrange: a run with sound, its second note sounding
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const started = listen()
+    const { tune } = mount()
+    void tune.play(EVENTS, true)
+    vi.advanceTimersByTime(600)
+
+    // Act
+    void tune.play(EVENTS, true)
+    vi.advanceTimersByTime(5000)
+
+    // Assert: the first run's two stopped, then the new run's three, played out
+    expect(started.map((v) => v.stopped)).toEqual([
+      true,
+      true,
+      false,
+      false,
+      false,
+    ])
+    expect(started.map((v) => v.midi)).toEqual([60, 60, 60, 60, 67])
   })
 })
