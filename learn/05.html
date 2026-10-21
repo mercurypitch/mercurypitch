@@ -6,15 +6,15 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <title>
-      Breath and a steady note: Find Your Pitch, Lesson 5 | MercuryPitch
-    </title>
+    <title>Breath and a steady note · Find Your Pitch | MercuryPitch</title>
     <meta
       name="description"
-      content="Pushing harder makes a note louder and higher, not steadier. A seventeen-minute lesson with live toys and one comfortable note to hold: why pushing moves a note, how to breathe in low and start easily, and what a steady note looks like."
+      content="A seventeen-minute lesson with live toys and one comfortable note to hold: how to breathe in low and start easily, and what a steady note looks like."
     />
     <link rel="canonical" href="https://mercurypitch.com/learn/05" />
-    <meta name="robots" content="index, follow" />
+    <!-- max-image-preview:large lets Search and Discover show the share card
+         at full width; Discover asks for it before it uses a large image. -->
+    <meta name="robots" content="index, follow, max-image-preview:large" />
 
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -31,7 +31,17 @@
       property="og:description"
       content="Singers are told to &#8220;support&#8221; a long note. If that doesn't mean pushing, what keeps it steady?"
     />
-    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:image"
+      content="https://mercurypitch.com/learn/lesson-05-og.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The title card: Find Your Pitch, Lesson 05, Breath and a steady note, above a violet line that wobbles up from below Merc's narrow amber band, then settles into it as a small, even wave, between blue Merc and orange Merc."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
       content="Breath and a steady note: Find Your Pitch, Lesson 5"
@@ -40,6 +50,86 @@
       name="twitter:description"
       content="Singers are told to &#8220;support&#8221; a long note. If that doesn't mean pushing, what keeps it steady?"
     />
+    <meta
+      name="twitter:image"
+      content="https://mercurypitch.com/learn/lesson-05-og.jpg"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="The title card: Find Your Pitch, Lesson 05, Breath and a steady note, above a violet line that wobbles up from below Merc's narrow amber band, then settles into it as a small, even wave, between blue Merc and orange Merc."
+    />
+    <!-- What a search engine or an assistant reads this page as: a free lesson
+         in the Find Your Pitch series, from the organization index.html
+         defines. Every value repeats something the page already says, so it
+         changes when they do; the headline is also this lesson's link text
+         in every entry document's nav (tools/lesson-links.ts). No
+         datePublished yet: it is the day the lesson first goes live on
+         mercurypitch.com, which is the day the admin console first
+         publishes it, and nothing writes it then, so it is set by hand in
+         the commit that deletes its drafts.ts line or in one straight after
+         that first publish. No VideoObject: Lesson 5 has no film
+         (docs/plans/find-your-pitch/SEARCH.md § 3.2). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "@id": "https://mercurypitch.com/learn/05#lesson",
+        "headline": "Breath and a steady note",
+        "alternativeHeadline": "Singers are told to “support” a long note. If that doesn't mean pushing, what keeps it steady?",
+        "description": "A seventeen-minute lesson with live toys and one comfortable note to hold: how to breathe in low and start easily, and what a steady note looks like.",
+        "url": "https://mercurypitch.com/learn/05",
+        "mainEntityOfPage": "https://mercurypitch.com/learn/05",
+        "image": "https://mercurypitch.com/learn/lesson-05-og.jpg",
+        "inLanguage": "en-GB",
+        "learningResourceType": "Lesson",
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT17M",
+        "teaches": [
+          "What a harder push of air does to a note",
+          "What the diaphragm actually does",
+          "Breathing in low and quietly",
+          "How a note starts, and starting one easily",
+          "Holding a comfortable note steady for a fixed length"
+        ],
+        "isAccessibleForFree": true,
+        "position": 5,
+        "isPartOf": {
+          "@type": "CreativeWorkSeries",
+          "name": "Find Your Pitch"
+        },
+        "author": {
+          "@type": "Organization",
+          "@id": "https://mercurypitch.com/#organization",
+          "name": "MercuryPitch",
+          "url": "https://mercurypitch.com/"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "@id": "https://mercurypitch.com/#organization",
+          "name": "MercuryPitch",
+          "url": "https://mercurypitch.com/"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "MercuryPitch",
+            "item": "https://mercurypitch.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Breath and a steady note"
+          }
+        ]
+      }
+    </script>
     <!-- A lesson is its own document, like learn/01.html: every word of it is
          in this markup, so it reads without the script; the module adds the
          sound, the toys, the Mercs and the microphone. A draft until the vocal
