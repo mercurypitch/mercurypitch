@@ -672,7 +672,11 @@ export const StemMixerFixedWorkspace: Component<
                 />
                 {/* Overlay the mic hint on the canvas (not in the fixed-height
                     header) so a long message can't balloon the header on
-                    narrow panels. pointer-events:none lets canvas edits pass. */}
+                    narrow panels. pointer-events:none lets canvas edits pass.
+                    `width: max-content`: an absolute box at `left: 50%` is
+                    only offered the right half of the lane to shrink into, so
+                    without it the pill wrapped at half the lane's width into a
+                    tall blob, whatever its max-width allowed. */}
                 <MicInsightHint
                   message={props.micMessage}
                   insight={props.micInsight}
@@ -681,6 +685,7 @@ export const StemMixerFixedWorkspace: Component<
                     left: '50%',
                     bottom: '10px',
                     transform: 'translateX(-50%)',
+                    width: 'max-content',
                     'max-width': 'calc(100% - 16px)',
                     'font-size': '0.7rem',
                     'z-index': '4',
