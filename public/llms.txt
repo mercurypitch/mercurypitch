@@ -75,10 +75,6 @@ episode where the lesson has one.
 - [Lesson 2: Twelve notes](https://mercurypitch.com/learn/02): Where the other
   five notes come from. The twelve notes on a keyboard, a semitone and a tone by
   ear, why one key has two names, and what a cent is.
-- [Lesson 4: The major scale and home](https://mercurypitch.com/learn/04): Why
-  do-re-mi sounds finished on do and restless on ti. The major scale's pattern
-  of steps, starting it on any note, naming its notes do to ti, and hearing ti
-  lean towards home.
 
 ## Where it runs
 
