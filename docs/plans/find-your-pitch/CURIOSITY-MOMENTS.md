@@ -202,26 +202,29 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Visual:** Lesson 7's range chart, the seam and a synthesised gear change (new), labelled a model as Lesson 5
   labels its takes. The app does not detect registers, so the seam is never the learner's measurement and its
   narrowing is an illustration. **Payoff:** the gears step; the checkpoint, a slow, quiet "ng" slide.
-- **Tease:** four chords as four rooms on the spiral, one tune passing through (new still): "Four chords, round and
-  round."
+- **Tease:** four chords as four rooms on the spiral, with no tune note on the ring (new still; Lesson 12's WEB-SPEC,
+  Decisions for the owner, item 13): "Four chords, round and round."
 - **Hook:** keep only if a source shows a singer's flip lands near one note on repeated slides; otherwise "Why does
   your voice sometimes flip as you slide up?" Reason: the same question, without the unsourced "every time".
 - **Facts:** every voice has registers, L7 FACTS 57 (Henrich 2006); needs a source for "the same note every time"
   (voice-science work on register changes) and for Arneson on register coordination (named on the card).
 
-### Lesson 12 · Chords and the four-chord song · theory; card only
+### Lesson 12 · Chords and the four-chord song · theory; written; no page yet
 
-- **Opening:** I-V-vi-IV lights four rooms on the spiral while Merc sings one tune over them, then another. Orange
-  "Same four chords, so isn't it the same song?" Blue "Listen to both." Predict: "Same chords, two tunes on top. One
-  song or two?" [One song] [Two songs].
+- **Opening:** four faint rooms on the spiral seen from above; Merc plays the four chords, then sings one tune over
+  them, then another. Orange "Same four chords. Isn't it the same song, then?" Blue "Listen to both, and watch where
+  each tune lands." Predict: "Each chord lights a room on the ring, with its three notes as the corners. As Merc
+  sings a tune over the chords, how many of its notes land on a corner of the lit room?" [Most of them] [Hardly
+  any]. The plan's "One song or two?" is answered by the hook right above it, so the written lesson asks where a
+  tune's notes land instead (Lesson 12 FACTS 39).
 - **Visual:** the spiral (exists) with rooms and a melody walking through (new). **Payoff:** the step where the tune
   and its rhythm make the song (Lesson 6 again); the checkpoint, each chord's root, sung.
-- **Tease:** one flat pitch line over a spectrum strip whose peaks show only "?" (new still): "Same note, two vowels:
+- **Tease:** one level pitch line over a spectrum strip whose peaks show only "?" (new still): "Same note, two vowels:
   'ee', then 'ah'."
 - **Hook, proposed:** "How can two songs share the same four chords and still sound different?" Reason: "hundreds"
   needs a counted source (YOUTUBE.md already avoids it), and two is what the cold open shows.
-- **Facts:** needs a source for chords on the scale and Roman numerals (Hooktheory I, as the card says, or a theory
-  text) and for I-V-vi-IV (Ableton Learning Music); the tunes need writing or a rights check.
+- **Facts:** sourced in Lesson 12's FACTS: chords on the scale and Roman numerals (Open Music Theory, Hooktheory I),
+  I-V-vi-IV (Ableton's Learning Music, Hooktheory); both tunes are written for the lesson (FACTS 33).
 
 ### Lesson 13 · Resonance and vowels · voice; card only · hook kept
 
