@@ -5,7 +5,9 @@
 // On the page's own markup, with no microphone: Move do and Start the
 // guide, pressed while Merc sings a version, stop the version and then
 // act; a version cut short has not been played, so the guide still waits
-// for one; and a sound anywhere else on the page stops a version too.
+// for one; and a sound anywhere else on the page stops a version too. The
+// status line and the do line, both live regions, are written only when
+// their words change.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -101,5 +103,48 @@ describe("Lesson 6's Sing it: a press while Merc sings", () => {
     ])
     expect(el('#singStatus').textContent).toBe(STATUS.first)
     expect(lit('[data-version="1"]')).toBe(false)
+  })
+})
+
+describe("Lesson 6's Sing it: its live lines", () => {
+  /** Watches a line from now on; the words of every write it has had, when asked. */
+  function watchWrites(target: HTMLElement): () => string[] {
+    const records: MutationRecord[] = []
+    const watch = new MutationObserver((found) => records.push(...found))
+    watch.observe(target, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    })
+    return () =>
+      [...records, ...watch.takeRecords()].flatMap((r) =>
+        Array.from(r.addedNodes, (n) => n.textContent ?? ''),
+      )
+  }
+
+  it('writes the do line once and the status only on a change, however often a version is pressed', async () => {
+    // Arrange: Sing it mounted, its do line written then, both lines watched from now on
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    listen()
+    mountSing()
+    const doLine = watchWrites(el('[data-do-readout]'))
+    const status = watchWrites(el('#singStatus'))
+
+    // Act: the voice already chosen pressed again, then the first version twice, to its end each time
+    el('[data-panel="voice"] [data-voice="lower"]').click()
+    el('[data-version="1"]').click()
+    await vi.advanceTimersByTimeAsync(9700)
+    el('[data-version="1"]').click()
+    await vi.advanceTimersByTimeAsync(9700)
+
+    // Assert
+    expect(doLine()).toEqual([])
+    expect(el('[data-do-readout]').textContent).toBe('do is D3, then F3')
+    expect(status()).toEqual([
+      RUNNING.model(1),
+      STATUS.ready,
+      RUNNING.model(1),
+      STATUS.ready,
+    ])
   })
 })

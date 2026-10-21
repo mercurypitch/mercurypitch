@@ -15,8 +15,10 @@
 // or a sweep is the page's one sound (kit/now-playing.ts): a press of any
 // of Sing it's controls while one runs stops it and then acts, and a sound
 // anywhere else on the page stops it too. A version cut short has not been
-// played, and a sweep cut short asks nothing. The page has no microphone
-// and scores nothing; only the voice is stored.
+// played, and a sweep cut short asks nothing. The status line and the do
+// line under Move do are live regions, so each is written only when its
+// words change: a screen reader hears a line once, not on every press.
+// The page has no microphone and scores nothing; only the voice is stored.
 
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { mountComfort, mountFeelings, VisitEnding, } from '@/features/lessons/kit/comfort'
@@ -42,6 +44,11 @@ export const RUNNING = {
     `Merc sings the ${n === 1 ? 'first' : 'second'} version.`,
   guide: 'Your turn: sing with the line.',
 } as const
+
+/** Writes a live line only when its words change, so a screen reader hears it once. */
+function say(el: HTMLElement, text: string): void {
+  if (el.textContent !== text) el.textContent = text
+}
 
 /** Keeps the keyboard's place on text, never on a button. */
 function focusText(el: HTMLElement | null): void {
@@ -82,6 +89,8 @@ export function initSing(stills: RingStills): void {
   let playing: Playing | null = null
   let countIn: ReturnType<typeof Sound.voice> = null
   let ringTurn = 0
+  // the do line's markup as last written, so a press that changes nothing writes nothing
+  let doLine = ''
 
   const voice = (): Voice => state.voice ?? 'lower'
   const doMidi = (): number => versionDo(voice(), shown, shift)
@@ -106,7 +115,7 @@ export function initSing(stills: RingStills): void {
     for (const el of qa('[data-after]', feelPanel))
       el.hidden = el.dataset.after !== v.after
     q('[data-after-doctor]', feelPanel).hidden = !v.doctor
-    statusEl.textContent = v.status
+    say(statusEl, v.status)
     if (VisitEnding.ending !== v.card) VisitEnding.set(v.card)
   }
 
@@ -134,7 +143,11 @@ export function initSing(stills: RingStills): void {
   /** The guide, the readout, the ring's label and Move do's ends follow the voice, the version and Move do. */
   function relabel(): void {
     guide.set(guideRows(doMidi()), guidePath(doMidi()))
-    readout.innerHTML = readoutHtml(voice(), shift)
+    const line = readoutHtml(voice(), shift)
+    if (line !== doLine) {
+      readout.innerHTML = line
+      doLine = line
+    }
     q('.ring-note', ringEl).innerHTML = ringLabel(doMidi())
     for (const b of moves) {
       const d = Number(b.dataset.moveDo)
@@ -152,7 +165,7 @@ export function initSing(stills: RingStills): void {
     relabel()
     const d = doMidi()
     b.classList.add('is-on')
-    statusEl.textContent = RUNNING.model(n)
+    say(statusEl, RUNNING.model(n))
     const run = playNotes(versionNotes(d), {
       audible: Sound.canPlay(),
       kind: 'merc',
@@ -203,7 +216,7 @@ export function initSing(stills: RingStills): void {
     const d = doMidi()
     dispatch({ type: 'sweepStart' })
     feelings.reset()
-    statusEl.textContent = RUNNING.guide
+    say(statusEl, RUNNING.guide)
     startBtn.classList.add('is-on')
     // the count-in: do of the version last played, once and softly
     countIn = Sound.canPlay()
