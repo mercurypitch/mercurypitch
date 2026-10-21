@@ -1,0 +1,26 @@
+{
+  "home-desk": {
+    "label-content-name-mismatch": 3
+  },
+  "home-phone": {
+    "label-content-name-mismatch": 1
+  },
+  "karaoke-library-desk": {
+    "label-content-name-mismatch": 1,
+    "link-in-text-block": 1
+  },
+  "settings-desk": {
+    "label-content-name-mismatch": 1
+  },
+  "singing-desk": {
+    "color-contrast": 1,
+    "label": 6,
+    "label-content-name-mismatch": 1
+  },
+  "stem-mixer-desk": {
+    "label-content-name-mismatch": 1
+  },
+  "zen-stage-desk": {
+    "label-content-name-mismatch": 2
+  }
+}
