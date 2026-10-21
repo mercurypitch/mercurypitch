@@ -81,6 +81,7 @@ export interface StairsToy {
   playUp(audible: boolean): Promise<void>
   /** White keys only from the current start, its overlay on. */
   playWhite(audible: boolean): Promise<void>
+  /** Stops the sound, and the summary a slide has queued. */
   stop(): void
 }
 
@@ -426,6 +427,9 @@ export function mountStairsToy(
     },
     playUp,
     playWhite,
-    stop: () => core.stop(),
+    stop: () => {
+      window.clearTimeout(summaryTimer)
+      core.stop()
+    },
   }
 }
