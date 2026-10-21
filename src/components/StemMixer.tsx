@@ -829,9 +829,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // The zen stage's Back: on a desktop-initiated zen it returns to the mixer
   // (keeping the song staged); otherwise it's the normal page-level back.
+  // Returning to the mixer hands focus back to the Zen button that opened the
+  // stage. The button is a new one -- the mixer's tree was swapped out for the
+  // stage -- so StageShell cannot find it, and focus fell to <body>.
   const handleZenBack = (): void => {
     if (karaokeZen() && !phoneStage()) {
       setKaraokeZen(false)
+      queueMicrotask(() =>
+        document
+          .querySelector<HTMLButtonElement>('[data-testid="mixer-zen"]')
+          ?.focus({ preventScroll: true }),
+      )
     } else {
       props.onBack?.()
     }
@@ -2774,6 +2782,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             more={hosted ? undefined : phoneMore}
           />
           <StemMixerScoreModal
+            overStage={hosted === undefined}
             showScore={mic.showScore}
             score={mic.score}
             onViewed={(score) => props.onScorecardViewed?.(score)}
@@ -6848,6 +6857,12 @@ export const StemMixerStyles: string = `
   background: rgba(8, 11, 16, 0.72);
   backdrop-filter: blur(6px);
   animation: sm-score-overlay-in 0.25s ease-out;
+}
+/* Over the Zen stage (StemMixerScoreModal's overStage): portalled to <body>
+   beside the stage, so it covers the viewport above it. */
+.sm-mic-score-overlay--over-stage {
+  position: fixed;
+  z-index: var(--z-modal, 1000);
 }
 @keyframes sm-score-overlay-in {
   from { opacity: 0; }

@@ -5,9 +5,10 @@
 // Visual language matches the karaoke playlist summary (gradient card,
 // grade colors) and the Voice Mirror result cards (rounded stat pills).
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import type { Accessor } from 'solid-js'
 import { createEffect, Show } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import type { MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -21,6 +22,13 @@ interface StemMixerScoreModalProps {
   voiceTakeMessage?: string
   onKeepVoiceTake?: () => void
   onClose: () => void
+  /**
+   * Drawn over the Zen stage. The stage is a fixed layer portalled to <body>
+   * at --z-stage, so an overlay left in the mixer's tree opened invisibly
+   * underneath it -- and still took the keyboard focus. Over a stage the
+   * overlay goes to <body> as well and covers the viewport at --z-modal.
+   */
+  overStage?: boolean
 }
 
 const GRADE_LABEL: Record<MicScore['grade'], string> = {
@@ -81,144 +89,154 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
     }
   }
 
-  return (
-    <Show when={isOpen()}>
-      <div class="sm-mic-score-overlay" onClick={requestClose}>
-        <div
-          ref={dialogRef}
-          class="sm-mic-score-card mp-dark-stage"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Karaoke score"
-          aria-busy={dismissalLocked()}
-          tabindex="-1"
-          onClick={(e) => e.stopPropagation()}
+  const overlay = (): JSX.Element => (
+    <div
+      class="sm-mic-score-overlay"
+      classList={{
+        'sm-mic-score-overlay--over-stage': props.overStage === true,
+      }}
+      onClick={requestClose}
+    >
+      <div
+        ref={dialogRef}
+        class="sm-mic-score-card mp-dark-stage"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Karaoke score"
+        aria-busy={dismissalLocked()}
+        tabindex="-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          class="sm-mic-score-close"
+          disabled={dismissalLocked()}
+          onClick={requestClose}
+          aria-label="Close score"
         >
-          <button
-            type="button"
-            class="sm-mic-score-close"
-            disabled={dismissalLocked()}
-            onClick={requestClose}
-            aria-label="Close score"
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
+        <div
+          class={`sm-mic-grade sm-mic-grade--${props.score()!.grade.toLowerCase()}`}
+        >
+          {props.score()!.grade}
+        </div>
+        <div class="sm-mic-score-verdict">
+          {GRADE_LABEL[props.score()!.grade]}
+        </div>
+
+        <div class="sm-mic-score-accuracy">
+          {props.score()!.accuracyPct}
+          <span class="sm-mic-score-accuracy-unit">%</span>
+        </div>
+        <div class="sm-mic-score-accuracy-label">pitch accuracy</div>
+
+        <div class="sm-mic-score-pills">
+          <Show when={(props.score()!.notesTotal ?? 0) > 0}>
+            <span class="sm-mic-score-pill">
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="currentColor"
+                stroke="none"
+              >
+                <ellipse cx="7" cy="19" rx="4" ry="3" />
+                <rect x="10" y="4" width="2.5" height="15" rx="1" />
+                <path d="M12.5 4 C14 4, 19 3, 20 8 C21 12, 17 11, 12.5 10 Z" />
+              </svg>
+              <strong>
+                {props.score()!.notesHit}/{props.score()!.notesTotal}
+              </strong>
+              notes hit
+            </span>
+          </Show>
+          <span class="sm-mic-score-pill">
             <svg
               viewBox="0 0 24 24"
-              width="16"
-              height="16"
+              width="14"
+              height="14"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
-              stroke-linejoin="round"
             >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+              <path d="M2 14l4-5 4 4 4-8 4 6 4-3" />
             </svg>
-          </button>
+            <strong>
+              {props.score()!.matchedNotes}/{props.score()!.totalNotes}
+            </strong>
+            samples in tune
+          </span>
+          <span class="sm-mic-score-pill">
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path d="M12 3v18" />
+              <path d="M7 8l5-5 5 5" />
+              <path d="M7 16l5 5 5-5" />
+            </svg>
+            <strong>±{props.score()!.avgCentsOff}¢</strong>
+            avg deviation
+          </span>
+        </div>
 
-          <div
-            class={`sm-mic-grade sm-mic-grade--${props.score()!.grade.toLowerCase()}`}
-          >
-            {props.score()!.grade}
+        <Show when={showTakeStatus()}>
+          <div class="sm-mic-score-take" aria-live="polite">
+            <div class="sm-mic-score-take-kicker">Private voice history</div>
+            <p>{props.voiceTakeMessage}</p>
           </div>
-          <div class="sm-mic-score-verdict">
-            {GRADE_LABEL[props.score()!.grade]}
-          </div>
+        </Show>
 
-          <div class="sm-mic-score-accuracy">
-            {props.score()!.accuracyPct}
-            <span class="sm-mic-score-accuracy-unit">%</span>
-          </div>
-          <div class="sm-mic-score-accuracy-label">pitch accuracy</div>
-
-          <div class="sm-mic-score-pills">
-            <Show when={(props.score()!.notesTotal ?? 0) > 0}>
-              <span class="sm-mic-score-pill">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="currentColor"
-                  stroke="none"
-                >
-                  <ellipse cx="7" cy="19" rx="4" ry="3" />
-                  <rect x="10" y="4" width="2.5" height="15" rx="1" />
-                  <path d="M12.5 4 C14 4, 19 3, 20 8 C21 12, 17 11, 12.5 10 Z" />
-                </svg>
-                <strong>
-                  {props.score()!.notesHit}/{props.score()!.notesTotal}
-                </strong>
-                notes hit
-              </span>
-            </Show>
-            <span class="sm-mic-score-pill">
-              <svg
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              >
-                <path d="M2 14l4-5 4 4 4-8 4 6 4-3" />
-              </svg>
-              <strong>
-                {props.score()!.matchedNotes}/{props.score()!.totalNotes}
-              </strong>
-              samples in tune
-            </span>
-            <span class="sm-mic-score-pill">
-              <svg
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              >
-                <path d="M12 3v18" />
-                <path d="M7 8l5-5 5 5" />
-                <path d="M7 16l5 5 5-5" />
-              </svg>
-              <strong>±{props.score()!.avgCentsOff}¢</strong>
-              avg deviation
-            </span>
-          </div>
-
-          <Show when={showTakeStatus()}>
-            <div class="sm-mic-score-take" aria-live="polite">
-              <div class="sm-mic-score-take-kicker">Private voice history</div>
-              <p>{props.voiceTakeMessage}</p>
-            </div>
-          </Show>
-
-          <div class="sm-mic-score-actions">
-            <Show when={showKeepAction()}>
-              <button
-                type="button"
-                class="sm-mic-score-keep-btn"
-                disabled={takeState() !== 'ready'}
-                aria-busy={
-                  takeState() === 'processing' || takeState() === 'saving'
-                }
-                onClick={() => props.onKeepVoiceTake?.()}
-              >
-                {keepLabel()}
-              </button>
-            </Show>
+        <div class="sm-mic-score-actions">
+          <Show when={showKeepAction()}>
             <button
               type="button"
-              class="sm-mic-score-ok-btn"
-              disabled={dismissalLocked()}
-              onClick={requestClose}
+              class="sm-mic-score-keep-btn"
+              disabled={takeState() !== 'ready'}
+              aria-busy={
+                takeState() === 'processing' || takeState() === 'saving'
+              }
+              onClick={() => props.onKeepVoiceTake?.()}
             >
-              {takeState() === 'ready' ? 'Not now' : 'Close'}
+              {keepLabel()}
             </button>
-          </div>
+          </Show>
+          <button
+            type="button"
+            class="sm-mic-score-ok-btn"
+            disabled={dismissalLocked()}
+            onClick={requestClose}
+          >
+            {takeState() === 'ready' ? 'Not now' : 'Close'}
+          </button>
         </div>
       </div>
+    </div>
+  )
+
+  return (
+    <Show when={isOpen()}>
+      {props.overStage === true ? <Portal>{overlay()}</Portal> : overlay()}
     </Show>
   )
 }

@@ -310,6 +310,7 @@ export const MixerHeader: Component<MixerHeaderProps> = (props) => {
             <button
               type="button"
               class={`${styles.hb} ${styles.word}`}
+              data-testid="mixer-zen"
               aria-label="Zen"
               title="Zen mode: lyrics first, Back returns here"
               onClick={() => props.onZen()}

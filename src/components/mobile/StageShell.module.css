@@ -25,3 +25,10 @@
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* The shell takes focus when it opens so a screen reader lands on the stage
+   (StageShell.tsx); it is a landing spot, not a control, so it draws no ring.
+   Every control inside keeps the global :focus-visible ring. */
+.shell:focus {
+  outline: none;
+}
