@@ -446,6 +446,8 @@
                   The gaps between the notes
                 </button>
               </div>
+              <!-- the button's words and the lock hint's are each one span:
+                   a flex row's gap would part the F from its sharp sign -->
               <div class="plays">
                 <button
                   class="btn tint"
@@ -456,16 +458,21 @@
                 >
                   <svg class="ico" aria-hidden="true">
                     <use href="#i-play" /></svg
-                  >Play from F<span aria-hidden="true">♯</span
-                  ><span class="sr"> sharp</span
-                  ><span class="sr">: “Twinkle, Twinkle”</span>
+                  ><span
+                    >Play from F<span aria-hidden="true">♯</span
+                    ><span class="sr"> sharp</span
+                    ><span class="sr">: “Twinkle, Twinkle”</span></span
+                  >
                 </button>
               </div>
               <p class="lock-hint">
                 <svg class="ico" aria-hidden="true"><use href="#i-lock" /></svg
-                >Choose an answer to unlock Play from F<span aria-hidden="true"
-                  >♯</span
-                ><span class="sr"> sharp</span>.
+                ><span
+                  >Choose an answer to unlock Play from F<span
+                    aria-hidden="true"
+                    >♯</span
+                  ><span class="sr"> sharp</span>.</span
+                >
               </p>
               <div class="reveal" hidden aria-live="polite">
                 <span class="mono">Your guess</span>
