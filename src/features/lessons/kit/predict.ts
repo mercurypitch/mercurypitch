@@ -6,7 +6,8 @@
 // so the play buttons stay locked until a choice is in, and the choice
 // locks. The reveal appears only once the sound that answers it has
 // actually been heard, so it never describes a sound that a viewer with
-// sound off did not hear, and it never calls a choice wrong.
+// sound off did not hear, or one cut short before its end, and it never
+// calls a choice wrong.
 //
 // Mounted on a root, any number per page. Inside the root: two to four
 // `.choice` buttons (each with `data-choice`), the `[data-play]` buttons,
@@ -28,9 +29,15 @@ const ICON = {
 export interface PredictOptions {
   /**
    * Plays one example (the button's `data-play` value), its visuals running
-   * even when `audible` is false; resolves when it has finished.
+   * even when `audible` is false; resolves when it has finished. A play
+   * that may be cut short (stopped, or replaced by another sound) resolves
+   * false when it was: it was not heard, so it reveals nothing and the hint
+   * stays. Any other result, true or nothing, is a play heard to its end.
    */
-  readonly play: (what: string, audible: boolean) => Promise<void>
+  readonly play: (
+    what: string,
+    audible: boolean,
+  ) => Promise<boolean> | Promise<void>
   /** The lines the lock hint takes (text, after an icon the widget supplies). */
   readonly hints: {
     /** Once a choice is in. */
@@ -156,10 +163,11 @@ export function mountPredict(root: HTMLElement, opts: PredictOptions): Predict {
         plays.forEach((x) => x.classList.toggle('is-on', x === p))
         const what = p.dataset.play ?? ''
         const audible = Sound.canPlay()
-        await opts.play(what, audible)
+        const finished = await opts.play(what, audible)
         plays.forEach((x) => x.classList.remove('is-on'))
         busy = false
-        heard(what, audible)
+        // a play cut short was not heard to its end: it answers nothing
+        if (finished !== false) heard(what, audible)
       })()
     }),
   )

@@ -119,12 +119,16 @@ export interface TuneLine {
   setOverlay(overlay: TuneOverlay | null): void
   /** Renames every button, after a start or the names change. */
   relabel(): void
-  /** Plays notes, lighting each bead as it sounds; resolves when the last ends, or when stopped. */
+  /**
+   * Plays notes, lighting each bead as it sounds. Resolves true when the
+   * last note ends, or false when the run is cut short: stopped, or
+   * replaced by a new play.
+   */
   play(
     events: readonly TuneEvent[],
     audible: boolean,
     look?: TuneLook,
-  ): Promise<void>
+  ): Promise<boolean>
   /** Stops a run in flight: its notes fall silent and its lights go out. */
   stop(): void
 }
@@ -172,7 +176,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
   let lits: Lit[] = []
   let voices: Voice[] = []
   let timers: number[] = []
-  let finish: (() => void) | null = null
+  let finish: ((finished: boolean) => void) | null = null
   let busy = false
   let layout: TuneLayout | null = null
   let lastKey = ''
@@ -381,7 +385,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     busy = false
     const done = finish
     finish = null
-    done?.()
+    done?.(false)
   }
 
   return {
@@ -435,7 +439,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
       const t0 = now()
       const color = look.color ?? COLOR.chrome
       const order = look.notes ?? shownNotes()
-      return new Promise<void>((resolve) => {
+      return new Promise<boolean>((resolve) => {
         finish = resolve
         events.forEach((e, i) => {
           timers.push(
@@ -467,7 +471,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
             voices = []
             timers = []
             finish = null
-            resolve()
+            resolve(true)
           }, end * 1000),
         )
       })

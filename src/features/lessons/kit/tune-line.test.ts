@@ -7,7 +7,8 @@
 // its shape asks for, on that part's target in the layout and numbered
 // across the tune; a new start that lands at once under reduced motion
 // (the doubles turn it on); and a run that announces each note at its
-// onset, settles when the last one ends, and stops when asked.
+// onset, settles when the last one ends, and stops when asked, saying
+// whether it was played to its end.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -243,16 +244,16 @@ describe('mountTuneLine: a played run', () => {
     { midi: 67, at: 1, dur: 1 },
   ]
 
-  it('announces each note at its onset and settles when the last one ends', async () => {
+  it('announces each note at its onset and settles when the last one ends, played to its end', async () => {
     // Arrange
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const { tune } = mount()
     const heard: number[] = []
-    let settled = false
+    let settled: boolean | null = null
     const run = tune
       .play(EVENTS, false, { onNote: (e) => heard.push(e.midi) })
-      .then(() => {
-        settled = true
+      .then((finished) => {
+        settled = finished
       })
     vi.advanceTimersByTime(999)
     await Promise.resolve()
@@ -263,13 +264,13 @@ describe('mountTuneLine: a played run', () => {
     await run
 
     // Assert
-    expect(early).toEqual({ heard: [60, 60], busy: true, settled: false })
+    expect(early).toEqual({ heard: [60, 60], busy: true, settled: null })
     expect(heard).toEqual([60, 60, 67])
     expect(tune.busy).toBe(false)
     expect(settled).toBe(true)
   })
 
-  it('stops a run in flight: it settles at once and announces nothing more', async () => {
+  it('stops a run in flight: it settles at once, cut short, and announces nothing more', async () => {
     // Arrange
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const { tune } = mount()
@@ -281,11 +282,28 @@ describe('mountTuneLine: a played run', () => {
 
     // Act
     tune.stop()
-    await run
+    const finished = await run
     vi.advanceTimersByTime(5000)
 
     // Assert
+    expect(finished).toBe(false)
     expect(heard).toEqual([60, 60])
     expect(tune.busy).toBe(false)
+  })
+
+  it('cuts a run short when a new one starts, and plays the new one to its end', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { tune } = mount()
+    const first = tune.play(EVENTS, false)
+    vi.advanceTimersByTime(600)
+
+    // Act
+    const second = tune.play(EVENTS, false)
+    vi.advanceTimersByTime(2000)
+
+    // Assert
+    expect(await first).toBe(false)
+    expect(await second).toBe(true)
   })
 })

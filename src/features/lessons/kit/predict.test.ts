@@ -138,6 +138,48 @@ describe('mountPredict', () => {
     expect(reveal(root)?.hidden).toBe(false)
   })
 
+  it('reveals nothing after a play cut short, which resolves false, and reveals once a play is heard to its end', async () => {
+    // Arrange: the first play is stopped before its end, the second is not
+    const root = predictRoot()
+    const ends = [false, true]
+    mountPredict(root, {
+      play: () => Promise.resolve(ends.shift() ?? true),
+      hints: HINTS,
+    })
+    click(root, '[data-choice="same"]')
+
+    // Act
+    click(root, '[data-play="both"]')
+    await settle()
+    const cut = {
+      hidden: reveal(root)?.hidden,
+      hint: root.querySelector('.lock-hint')?.textContent,
+    }
+    click(root, '[data-play="both"]')
+    await settle()
+
+    // Assert
+    expect(cut).toEqual({ hidden: true, hint: HINTS.chosen })
+    expect(reveal(root)?.hidden).toBe(false)
+  })
+
+  it('reveals after a play that resolves nothing, as the lessons before Lesson 6 play, as after one that resolves true', async () => {
+    // Arrange
+    const quiet = predictRoot()
+    const told = predictRoot()
+    mountPredict(quiet, { play: () => Promise.resolve(), hints: HINTS })
+    mountPredict(told, { play: () => Promise.resolve(true), hints: HINTS })
+    for (const root of [quiet, told]) click(root, '[data-choice="lower"]')
+
+    // Act
+    for (const root of [quiet, told]) click(root, '[data-play="both"]')
+    await settle()
+
+    // Assert
+    expect(reveal(quiet)?.hidden).toBe(false)
+    expect(reveal(told)?.hidden).toBe(false)
+  })
+
   it('lets a free example play before a choice, and never reveals with it', async () => {
     // Arrange
     const root = predictRoot()
