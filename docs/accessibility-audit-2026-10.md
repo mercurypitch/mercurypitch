@@ -4,6 +4,14 @@ An initial audit of the MercuryPitch web app against Section 508. The goal is to
 
 Line numbers refer to `main` at `be03c22`.
 
+**Fixed in the pull request that added this report:**
+
+- Item 2: the Zen / phone stage is a named dialog. The page it covers is inert, the toasts drawn above it stay live, and focus goes in and comes back to the Zen button.
+- Item 3: the score card is drawn above the Zen stage.
+- Item 5: the spotlight tour is a dialog that takes the focus, announces each step, and no longer restarts on Enter.
+
+`src/e2e/stage-and-tour-focus.spec.ts` holds all three, and the axe baseline for the Zen stage dropped from 2 to 1.
+
 ## Summary
 
 **Where the app stands.** Section 508's Revised Standards (36 CFR 1194, E205.4) incorporate WCAG 2.0 Level A and AA. Against that bar, the app has a good base and a few large gaps.
