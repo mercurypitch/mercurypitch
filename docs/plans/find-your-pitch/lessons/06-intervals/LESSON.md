@@ -21,13 +21,14 @@ is live, because its prerequisite chip and its recall check link there.
 - Title (the hook question): **Why can you start "Twinkle, Twinkle" on any note and it is still
   the same tune?**
 - Meta, as three chips: 15 minutes · After Lesson 4: The major scale and home · Sound on
-- Promise: By the end you'll hear a tune as a pattern of distances, tell a step from a leap, name a
-  few intervals by tunes you know, and sing one phrase from two different notes.
+- Promise: By the end you'll know what keeps a tune the same on any note and tell a step from a
+  leap. You'll also name a few intervals by tunes you know, and sing one phrase from two different
+  notes.
 
 ## Sound gate
 
-> This lesson is about the distances between notes. Tap to turn sound on: nothing plays until you
-> press a play button.
+> This lesson is about what keeps a tune the same tune. Tap to turn sound on: nothing plays until
+> you press a play button.
 
 ## Recall from Lesson 4
 
