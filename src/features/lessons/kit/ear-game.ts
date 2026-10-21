@@ -11,7 +11,9 @@
 //
 // A round takes one answer. A miss marks the right answer, says the round's
 // feedback line and plays the pair again, slower; the round is not asked
-// again, and Next moves on. Two misses in a row bring the playbook's line
+// again, and Next moves on. A timer starts that replay, not a tap, so the
+// page is told it is one (`play`'s `replay`): it asks nothing of a viewer
+// with sound off, as a tap would. Two misses in a row bring the playbook's line
 // once a game (rule 15). The feedback names the interval and the sound,
 // never the listener (rule 21). At the end, the count of rounds answered
 // right ("7 of 10"), and nothing else: no rating, no streak, nothing stored.
@@ -110,8 +112,13 @@ export interface EarGameOptions<A extends string> {
   readonly answers: readonly A[]
   /** A game's rounds, dealt from a seeded generator. */
   readonly deal: (random: () => number) => readonly EarRound<A>[]
-  /** Plays a round's notes; the page decides whether they sound. */
-  readonly play: (events: readonly EarNote[]) => EarPlaying
+  /**
+   * Plays a round's notes; the page decides whether they sound. `replay` is
+   * true for a miss's slower replay, which a timer starts, not a tap: the
+   * page reads its sound switch for it and asks nothing, so a sound-off
+   * note follows a tap only.
+   */
+  readonly play: (events: readonly EarNote[], replay: boolean) => EarPlaying
   /** How much slower a missed round plays again. */
   readonly slower: number
   /** The Play button's words in each state. */
@@ -164,10 +171,10 @@ export function mountEarGame<A extends string>(
     o.owner?.release(stop)
   }
 
-  function sound(events: readonly EarNote[]): void {
+  function sound(events: readonly EarNote[], replay = false): void {
     stop()
     o.owner?.claim(stop)
-    const run = o.play(events)
+    const run = o.play(events, replay)
     playing = run
     playBtn.classList.add('is-on')
     void run.done.then(() => {
@@ -237,7 +244,7 @@ export function mountEarGame<A extends string>(
       o.owner?.claim(stop)
       missTimer = window.setTimeout(() => {
         missTimer = 0
-        sound(slowerBy(round.events, o.slower))
+        sound(slowerBy(round.events, o.slower), true)
       }, 700)
     }
   }

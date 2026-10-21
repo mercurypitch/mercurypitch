@@ -329,6 +329,8 @@ Feedback names the interval and the sound, never the listener.
 - States: ready (a Play button); playing; answering; feedback shown; finished, with the count and
   Play again.
 - Under reduced motion the answer lights and the feedback appear with no transition.
+- With sound off, a miss's replay plays silently and shows no sound-off note: a timer starts it,
+  and that note follows a tap only.
 
 ### 5. Anchor board
 
