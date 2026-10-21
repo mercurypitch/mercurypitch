@@ -219,7 +219,7 @@ button (FACTS 61).
 - **Play Merc's scale** (do = D3) and **Play it an octave up** (do = D4) sing in Merc's "ooh". The
   path lights in step as each plays, while the breathing ring beside the guide shows the still of
   the Merc singing it, blue for D3 and orange for D4, as Lesson 1's ring does
-  (`kit/sing.ts:243-249`).
+  (`kit/sing.ts:251-257`).
 - **Start the guide** is enabled once either scale has played (hear it first: playbook rule 16);
   until then it is `aria-disabled`, with the hint "Play Merc's scale first". It is the viewer's
   turn, so nothing of the app's drawing stays, as in Lesson 2 (its DECISIONS 68): the amber goes,
