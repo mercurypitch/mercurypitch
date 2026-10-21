@@ -2796,16 +2796,22 @@ const AppShell: Component<AppProps> = (props) => {
       }
     })
 
-    // Inject UVR component styles
-    const styleElements = [LyricsUploaderStyles, StemMixerStyles]
-
-    styleElements.forEach((styleString) => {
-      if (typeof styleString === 'string' && styleString.trim()) {
-        const style = document.createElement('style')
-        style.textContent = styleString
-        document.head.appendChild(style)
+    // Inject the UVR components' style strings, once each. KaraokeMobileStage
+    // and KaraokeStageHost inject the same strings under the same data-kn
+    // keys; whichever runs first owns the sheet. Unkeyed, the uploader's was
+    // in <head> twice.
+    for (const [key, css] of [
+      ['lyrics-uploader', LyricsUploaderStyles],
+      ['stem-mixer', StemMixerStyles],
+    ] as const) {
+      if (document.head.querySelector(`style[data-kn="${key}"]`) !== null) {
+        continue
       }
-    })
+      const style = document.createElement('style')
+      style.setAttribute('data-kn', key)
+      style.textContent = css
+      document.head.appendChild(style)
+    }
 
     melodyStore.seedDefaultSession()
 
