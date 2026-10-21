@@ -339,9 +339,12 @@ draw its triads with it; it moves into the kit when Lesson 12 needs it.
   `notes.ts:193`). Tab order: the stage's controls in reading order, then the beads from the root
   up, then the gap buttons.
 - **States**: thirds; stack; slide; pattern; scale; free play, every control together; each in its
-  full or compact layout. Any state can be playing or still. Leaving a step stops its sound, as
-  `lesson-03/main.ts:80-87` stops its toys when the step changes, and so does any other play on the
-  page: one sound at a time.
+  full or compact layout. Any state can be playing or still. Leaving a step by any route (Next or
+  Back, a swipe, the lesson menu's jump, `#step-N` or a quiz link) stops its sound and any queued
+  replay, as `lesson-03/main.ts:80-87` stops its toys when the step changes. A new play anywhere on
+  the page stops the last, so one sound plays at a time. The page-wide "now playing" owner that does
+  this comes into the kit with #1149's fix pass, and every source of sound on this page goes through
+  it.
 
 ### 2. The hero's spiral and the bead slide
 
@@ -416,6 +419,9 @@ taken further without forking it (`spiral.ts:22-26`):
   guess lines are "You said: just one" and "You said: three".
 - With sound off the reveal waits: the reveal only ever describes a sound that was heard
   (`predict.ts:5-9`).
+- A play that is cut short is not heard. A new play, a stop or leaving the step ends it early, and
+  the reveal waits for plays that run to their end. A cut-short play resolves `false`, which tells
+  the kit's predict "not heard"; `void` keeps today's meaning. Both come with #1149's fix pass.
 - States: waiting for a choice; a sound playing; choice made and sound heard, reveal shown.
 - Under reduced motion the reveal appears at once, with no slide-in.
 
@@ -805,7 +811,8 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/tests/lesson-pages.test.ts:85-183` once released:
+    `src/features/lessons/kit/lesson-copy.test.ts:372-407` on every page from its first commit, and
+    by `src/tests/lesson-pages.test.ts:85-183` once released:
     - title, at most 60 characters with the headline in it: in the form Lessons 1, 2, 3 and 5 use,
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch" (58 characters), until SEARCH.md
       § 13 item 1 settles titles for the series; if it settles them query-led, as it recommends,
@@ -818,18 +825,24 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     - `og:title` and `twitter:title` "Major and minor: Find Your Pitch, Lesson 10", the lesson's
       name and the series', as on Lessons 1, 2, 3 and 5 (`learn/02.html:26-29`, `:45-48`);
       `og:description` and `twitter:description` the hook, as on Lessons 3 and 5;
+    - `og:image` and `twitter:image` the share card (item 13), with `og:image:width` 1200,
+      `og:image:height` 630, and `og:image:alt` and `twitter:image:alt` naming it, as on Lesson 2
+      (`learn/02.html:34-60`);
     - canonical and `og:url` `https://mercurypitch.com/learn/10`;
     - robots `index, follow, max-image-preview:large` and `twitter:card` `summary_large_image`;
-    - the Article block: headline "Major and minor", `alternativeHeadline` the hook, the same
-      description, `inLanguage` `en-GB`, `learningResourceType` "Lesson", `educationalLevel`
-      "Beginner", `timeRequired` `PT17M`, `teaches` ["Major and minor thirds", "Building major and
-      minor triads", "Telling a major from a minor chord by ear", "The natural minor scale"],
+    - the Article block: `@id` `https://mercurypitch.com/learn/10#lesson`, `url` the canonical,
+      `image` the same URL as `og:image` (`lesson-pages.test.ts:116-117`, `:129`), headline "Major
+      and minor", `alternativeHeadline` the hook, the same description, `inLanguage` `en-GB`,
+      `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT17M`,
+      `teaches` ["Major and minor thirds", "Building major and minor triads", "Telling a major from
+      a minor chord by ear", "The natural minor scale"],
       `isAccessibleForFree`, `position` 10, `isPartOf` the series, author and publisher the site's
       `Organization` (`https://mercurypitch.com/#organization`), and `datePublished`, the date the
-      page first goes live on mercurypitch.com, whether the console publishes it or a release does
-      (the console writes no markup, so after a console publish the next change to the page adds it,
-      with that date; SEARCH.md § 3.2 ties it to the release, which the console may now come
-      before); and the BreadcrumbList ending on the headline.
+      page first goes live on mercurypitch.com. Nothing writes it at run time: the site worker
+      rewrites only the copies of the hook (`src/lesson-gate.ts`), so a published draft is served
+      without it. It is set either in the commit that deletes the page's `drafts.ts` line or in a
+      commit straight after the console publishes it, and the owner picks which (SEARCH.md § 3.2
+      still ties it to a release). Last, the BreadcrumbList, ending on the headline.
 13. `public/learn/lesson-10-og.jpg`: the share card, 1200 x 630, a still of the hero: the title over
     the ring of twelve seen from above, do, mi and so in chrome joined by their triangle, between
     blue Merc and orange Merc, with alt text naming it. It marks no note as the one that moves, so
@@ -840,12 +853,12 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     draft's included (`scripts/assert-first-paint-budgets.mjs:102-104`); `build:e2e` runs the check
     (`package.json:20`), and a document it emits with no budget fails it (FACTS 83).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
-    `public/llms.txt` (its Lessons list, `:66-81`), one line each, and release-day indexing. Until
-    then the draft's rules hold on the repository: in neither file, linked from no entry document,
-    its service-worker rule kept (`src/tests/lesson-pages.test.ts:185-221`). While the console has
-    it published, the site worker adds it to the sitemap and llms.txt it serves, and takes it out
-    again if it is held back (`src/lesson-gate.ts:22-24`;
-    `src/features/lessons/kit/drafts.ts:18-21`).
+    `public/llms.txt` (its Lessons list, `:66-81`), one line each. Until then the draft's rules hold
+    on the repository: in neither file, linked from no entry document, its service-worker rule kept
+    (`src/tests/lesson-pages.test.ts:185-221`). While the console has it published, the site worker
+    adds it to the sitemap and llms.txt it serves, and takes it out again if it is held back
+    (`src/lesson-gate.ts:22-24`; `src/features/lessons/kit/drafts.ts:18-21`). So indexing is
+    requested when the console publishes the page, not at the release.
 16. Lessons 1 to 9's pages, when this one goes live: nothing to edit. Their explorers and their
     Wraps' next-lesson cards read the season as their page state shows it (`pageLessons`,
     `src/features/lessons/kit/page-state.ts:54-57`), so Lesson 9's card, once Lesson 9 is live,
@@ -972,7 +985,8 @@ parts it adds:
    81).
 4. The cold open's predict: "Play the chord" plays before a choice and never reveals; the reveal
    waits for both moves heard with sound on; `revealOn` and `revealAfter: 'all'` are passed
-   together; the guess lines and the four hints are LESSON.md's.
+   together; a move stopped before its end, by a new play, a stop or leaving the step, counts as
+   not heard and reveals nothing; the guess lines and the four hints are LESSON.md's.
 5. The bead slide: its position along the ring at each moment of a move, from its own bead to the
    one a semitone below over the glide, and home after; at once under reduced motion.
 6. Layout, the pure helper behind Toys 1's targets: at every width from 344 to 1440 px every bead
@@ -981,7 +995,9 @@ parts it adds:
    below 340 px (FACTS 82).
 7. Major or minor? from a fixed seed: eight rounds on thirds and ten on chords, each answer half the
    rounds; every round's notes inside C4 to D5 (FACTS 70a); the feedback templates; the count counts
-   first-time answers only; a miss replays at 1.5 times its lengths.
+   first-time answers only; a miss replays at 1.5 times its lengths, and leaving the step before
+   the replay starts, including a jump to another step, cancels it, so nothing new plays.
+   Starting any other sound on the page stops a round that is sounding: one sound at a time.
 8. The Sing it flow (`lesson-10/sing-flow.ts`, Toys 6): with no stored voice the voice choice comes
    before either path, under its first line, and a stored voice starts pressed, under its second
    line, and can be changed; "Just listen today" hides Start the guide and Move do and picks the
