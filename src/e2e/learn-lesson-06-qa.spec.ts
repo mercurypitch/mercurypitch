@@ -16,9 +16,9 @@
 // buttons, draws all seven notes from C and from F sharp, and the cold
 // open's sharp sign stays beside its F, in Play from F sharp and in every
 // lock hint; at 1024 x 640
-// the stage fits the screen under the masthead. A real-mouse drag of the
-// line closes it, since a drag slides the start and must not land as a
-// tap.
+// the stage fits the screen under the masthead. Two real-mouse drags of
+// the line close it: a drag slides the start and must not land as a tap,
+// and a drag let go off the line leaves Enter and Space pressing a bead.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -648,4 +648,44 @@ test('dragging the line with a real mouse slides its start, and the drag presses
   await bead(page, 3).click()
   expect(await presses()).toBe(1)
   await expect(slider(page)).toHaveAttribute('aria-valuenow', String(now))
+})
+
+test('a real-mouse drag let go off the line leaves Enter and Space pressing a bead @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openStep(page, 1)
+  await page.locator(`${TOY} .tune-viz`).scrollIntoViewIfNeeded()
+  // count the presses every bead button takes
+  await page.evaluate(() => {
+    const w = window as unknown as { beadPresses: number }
+    w.beadPresses = 0
+    for (const b of document.querySelectorAll('#toyTune [data-note]'))
+      b.addEventListener('click', () => {
+        w.beadPresses += 1
+      })
+  })
+  const presses = (): Promise<number> =>
+    page.evaluate(
+      () => (window as unknown as { beadPresses: number }).beadPresses,
+    )
+  const box = await bead(page, 3).boundingBox()
+  const line = await page.locator(`${TOY} [data-tune-hits]`).boundingBox()
+  if (box === null || line === null) throw new Error('no bead')
+  const x = box.x + box.width / 2
+
+  // grab the fourth bead, drag it up off the line, and let go above it:
+  // Step 1 slides nothing, so the line never holds the pointer
+  await page.mouse.move(x, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(x, line.y - 24, { steps: 8 })
+  await page.mouse.up()
+  expect(await presses()).toBe(0)
+
+  // every key press on a bead is a press of it
+  await bead(page, 3).focus()
+  await page.keyboard.press('Enter')
+  expect(await presses()).toBe(1)
+  await page.keyboard.press('Space')
+  expect(await presses()).toBe(2)
 })
