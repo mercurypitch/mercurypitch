@@ -686,12 +686,15 @@ describe('the sitemap and llms.txt', () => {
   })
 
   it("list a published draft in lesson order, in each file's own form", () => {
-    // Act
-    const state = asPage({ 3: { published: true, hook: 'figures' } })
+    // Act: two drafts published, the later one named first
+    const state = asPage({
+      4: { published: true },
+      3: { published: true, hook: 'figures' },
+    })
     const xml = editSitemap(sitemap, state)
     const text = editLlms(llms, state)
 
-    // Assert: the sitemap entry between Lessons 2 and 4, with the day of the change
+    // Assert: the sitemap entries after Lesson 2 and in order, with the day of the change
     expect(xml).toContain(
       '  <url>\n    <loc>https://mercurypitch.com/learn/03</loc>\n    <lastmod>2026-10-20</lastmod>\n  </url>\n',
     )
@@ -701,7 +704,7 @@ describe('the sitemap and llms.txt', () => {
     expect(locs).toEqual(['01', '02', '03', '04'])
     expect(
       xml.replace(
-        / {2}<url>\n {4}<loc>https:\/\/mercurypitch\.com\/learn\/03<\/loc>\n[^]*?<\/url>\n/,
+        / {2}<url>\n {4}<loc>https:\/\/mercurypitch\.com\/learn\/0[34]<\/loc>\n[^]*?<\/url>\n/g,
         '',
       ),
     ).toBe(sitemap)
@@ -731,11 +734,10 @@ describe('the sitemap and llms.txt', () => {
     // Assert
     expect(xml).not.toContain('/learn/02')
     expect(xml).toContain('/learn/01')
-    expect(xml).toContain('/learn/04')
     expect(xml.split('\n').length).toBe(sitemap.split('\n').length - 4)
     expect(text).not.toContain('/learn/02')
     expect(text).not.toContain('Where the other\n  five notes')
-    expect(text).toContain('/learn/04')
+    expect(text).toContain('/learn/01')
   })
 
   it('write no lastmod for a draft the environment shows when no override has ever changed', () => {

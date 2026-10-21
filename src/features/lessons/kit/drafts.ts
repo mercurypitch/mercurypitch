@@ -30,5 +30,6 @@
 /** The lessons whose pages wait on a sign-off, each with what it waits on. */
 export const DRAFT_LESSONS: Readonly<Partial<Record<number, string>>> = {
   3: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
+  4: "the owner's go-ahead", // Lessons 1 and 2 launch first, with their films
   5: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
 }

@@ -14,7 +14,7 @@ const served = (lessons: PageState['lessons'], drafts = false): PageState => ({
   lessons,
 })
 
-// Lesson 3 waits on a sign-off (drafts.ts); Lessons 1, 2 and 4 are released.
+// Lesson 3 waits on a sign-off (drafts.ts); Lessons 1 and 2 are released.
 describe('isPublished', () => {
   it('publishes a released lesson and holds a draft back where drafts are', () => {
     // Act + Assert
@@ -97,17 +97,17 @@ describe('seasonFor', () => {
   it('gives each lesson the tease its override picks, and its default for an id it lacks', () => {
     // Arrange: no lesson has a second tease yet, so one is made up here
     const L: Lesson = {
-      ...LESSONS[4],
-      teaseAlts: [{ id: 'steps', text: 'Seven steps up.', note: 'test' }],
+      ...LESSONS[2],
+      teaseAlts: [{ id: 'keys', text: 'Five more keys.', note: 'test' }],
     }
 
     // Act
-    const [picked] = seasonFor([L], served({ 4: { tease: 'steps' } }))
-    const [unknown] = seasonFor([L], served({ 4: { tease: 'gone' } }))
+    const [picked] = seasonFor([L], served({ 2: { tease: 'keys' } }))
+    const [unknown] = seasonFor([L], served({ 2: { tease: 'gone' } }))
 
     // Assert
-    expect(picked.tease).toBe('Seven steps up.')
-    expect(unknown.tease).toBe(LESSONS[4].tease)
+    expect(picked.tease).toBe('Five more keys.')
+    expect(unknown.tease).toBe(LESSONS[2].tease)
     expect(unknown).toBe(L)
   })
 })

@@ -230,7 +230,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'The major scale and home',
     short: 'Major scale',
     topics: ['T09', 'T10'],
-    // a written lesson: its page, and no film yet
+    // A draft until the owner's go-ahead (drafts.ts); no film yet
     minutes: 10,
     page: '/learn/04',
     hook: 'Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?',

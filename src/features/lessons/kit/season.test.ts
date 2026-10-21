@@ -233,7 +233,7 @@ describe('a draft lesson (drafts.ts)', () => {
       // Act
       const season = await seasonBuilt(drafts)
 
-      // Assert: Lessons 3 and 5 wait on a sign-off, and Lesson 4 is live with no film
+      // Assert: Lessons 3, 4 and 5 are drafts, each with its page and no film
       const [L3, L4, L5] = [3, 4, 5].map((n) => season.LESSONS[n])
       expect([L3.page, L3.minutes, L3.film], drafts).toEqual([
         '/learn/03',
