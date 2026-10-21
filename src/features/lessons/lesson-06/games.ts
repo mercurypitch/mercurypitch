@@ -11,6 +11,8 @@
 // the page's one sound (kit/now-playing.ts), so it stops whatever played
 // before it and gives way to whatever plays next, the other game's pair
 // included; and both stop when the viewer leaves their step (steps.ts).
+// A miss's replay starts on a timer, not a tap, so it only reads the sound
+// switch: with sound off it plays silently and shows no sound-off note.
 
 import { q } from '@/features/lessons/kit/dom'
 import type { EarGame, EarNote, EarPlaying, } from '@/features/lessons/kit/ear-game'
@@ -26,8 +28,10 @@ export interface Games {
 }
 
 export function initGames(): Games {
-  const play = (events: readonly EarNote[]): EarPlaying =>
-    playNotes(events, { audible: Sound.canPlay() })
+  const play = (events: readonly EarNote[], replay: boolean): EarPlaying =>
+    playNotes(events, {
+      audible: replay ? Sound.state === 'on' && !Sound.hushed : Sound.canPlay(),
+    })
   const stepOrLeap = mountEarGame(q('#stepLeapGame'), {
     answers: STEP_OR_LEAP,
     deal: dealStepOrLeap,

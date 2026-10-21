@@ -34,6 +34,8 @@ interface Harness {
   readonly game: EarGame
   /** Every sound the game asked for, in order. */
   readonly played: EarNote[][]
+  /** Whether each of them was a miss's replay, in the same order. */
+  readonly replays: boolean[]
   /** How many sounds the game has stopped. */
   stops(): number
   /** How many runs have taken a seed. */
@@ -44,13 +46,15 @@ interface Harness {
 function mount(held = false): Harness {
   const root = gameCard()
   const played: EarNote[][] = []
+  const replays: boolean[] = []
   let stops = 0
   let seeds = 0
   const game = mountEarGame<Answer>(root, {
     answers: ['step', 'leap'],
     deal: () => ROUNDS,
-    play: (events) => {
+    play: (events, replay) => {
       played.push([...events])
+      replays.push(replay)
       let end: () => void = () => undefined
       const done = held
         ? new Promise<void>((resolve) => {
@@ -77,7 +81,14 @@ function mount(held = false): Harness {
       return seeds
     },
   })
-  return { root, game, played, stops: () => stops, seeds: () => seeds }
+  return {
+    root,
+    game,
+    played,
+    replays,
+    stops: () => stops,
+    seeds: () => seeds,
+  }
 }
 
 const el = (root: HTMLElement, selector: string): HTMLElement => {
@@ -243,6 +254,22 @@ describe('mountEarGame', () => {
     )
     expect(answerBtn(root, 'step').classList.contains('right')).toBe(true)
     expect(answerBtn(root, 'leap').classList.contains('picked')).toBe(true)
+  })
+
+  it("tells the page which sound is a miss's replay, the one a timer starts", () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { root, replays } = mount()
+
+    // Act: a round played, missed and replayed, played again by a press, then the next round
+    playBtn(root).click()
+    answerBtn(root, 'leap').click()
+    vi.advanceTimersByTime(700)
+    key(root, ' ', 'Space')
+    playBtn(root).click()
+
+    // Assert
+    expect(replays).toEqual([false, true, false, false])
   })
 
   it('does not ask a missed round again: Next moves on to the next round', () => {
