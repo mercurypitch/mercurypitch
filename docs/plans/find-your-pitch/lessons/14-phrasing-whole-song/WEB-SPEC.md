@@ -59,10 +59,10 @@ and wordmark, and the motion rules. On this page:
   along the other notes and growing and fading along take 2's "star". The label under the stage says
   so from the start, "Brighter means louder." Step 3 adds Lesson 5's level strip under the plot,
   where level is height in a strip of its own, as Lesson 5 draws it.
-- A breath mark is the one PR #1149 draws on Lesson 6's slide guide: a small tick over the line with
-  the word "breathe", in the line's colour, lit once the voice reaches it (`slide-guide.ts`
-  `breaths`, `breathAt`, `drawBreaths`, on `origin/feat/lesson-06-page`), the tick a score's comma
-  (26).
+- A breath mark is the kit's, the one Lesson 6's slide guide draws: a small tick over the line with
+  the word "breathe", in the line's colour, lit once the voice reaches it (`kit/slide-guide.ts`: the
+  header, `:20-23`; `breaths`, `:59-60`; `breathAt`, `:321-333`; `drawBreaths`, `:335-360`), the
+  tick a score's comma (26).
 - The words sit under the notes, each syllable under its note in the chart's mono at 11 px, ink-2,
   the sounding one ink (91).
 
@@ -107,7 +107,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    (390 x 844) the title and the opening's first control, Play take 1, and the two choices belong on
    the first screen, and on a tablet in landscape (1024 x 640) the stage and the choices too
    (CURIOSITY-MOMENTS § 3.1, "Above the fold",
-   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:272-274`). Of the plan's levers, the recall's
+   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:275-277`). Of the plan's levers, the recall's
    place is already used, since it follows the predict; the others are the Mercs' size (`--merc`,
    `kit/lesson-stage.css:193`) and the hook's length, 90 characters today and 58 in the proposed
    wording (1). The seven chips take five rows on a 360 px phone, one a row for each lesson chip
@@ -145,10 +145,13 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    `<div class="next-card card l14-next" data-next-card hidden><figure class="end-still">`
    (`src/features/lessons/kit/next-card.test.ts:341-372`). The kit draws the close once and never
    redraws it (`next-card.ts:190-193`), so today it says "Now sing a whole song." whatever Sing it's
-   ending; a rest-aware close is proposed (What the kit and the app still need, 12; 78). The
-   practice card is the Karaoke Night card, with "Ten minutes, gently, most days" under it; after
-   "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, without that
-   line (Toys 4). Both link `/karaoke-night?lesson=14` in a new tab (57).
+   ending. This page needs a close that knows the ending, and is not built before it (What the kit
+   and the app still need, 12; 78): after "Effortful", "Uncomfortable" or "Just listen today" the
+   card keeps "You've seen every note you sing." and "See the season map", and shows neither "Now
+   sing a whole song." nor its Karaoke Night button. The practice card is the Karaoke Night card,
+   with "Ten minutes, gently, most days" under it; after "Effortful", "Uncomfortable" or "Just
+   listen today" it is the rest card instead, without that line (Toys 4). Both link
+   `/karaoke-night?lesson=14` in a new tab (57).
 9. **Lesson explorer**: the kit's, with Lesson 14 as the current node and the line under its heading
    from LESSON.md; its card shows what `kit/lesson-state.ts` says of a live lesson, and no Watch
    button, since Lesson 14 has no published film (`kit/season.ts:23-25`).
@@ -160,28 +163,28 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,376 words by the review's count (8), 3 under the series' cap of 2,379: Lesson
+The learner copy is 2,375 words by the review's count (8), 4 under the series' cap of 2,379: Lesson
 3's page on the same count is 2,454 words, 75 of them the note under its new title, which is not in
 editorial form, so the counter reads it. The page runs about 18 minutes: 9.98 minutes of reading at
 238 words a minute and about 8.1 of sound, toys and tasks, 18.1 in all, of which Sing it is about
 3.3. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6, 7 and 9
 are (15, 17, 15, 16 and 16 minutes), and acceptable by their precedent for a lesson that closes the
 season and carries both lanes. Each step's text, with its Try and its Notice, runs 109 to 116 words
-(Steps 1 to 5: 112, 109, 116, 111 and 116), inside § 4.2's 50 to 120 a step. One step carries more
+(Steps 1 to 5: 112, 109, 116, 111 and 115), inside § 4.2's 50 to 120 a step. One step carries more
 beside it: Step 2, about 200 words with its mix-up card (90 words), which sits in the step whose toy
 refutes it, as in Lessons 2 to 9. The season recap the owner may add to the closing card is one
 line, not a step (LESSON.md, the Wrap's note). The page has no Go deeper drawer.
 
 ## Toys: what each reuses, and what is new
 
-| Toy                       | Reuses                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | New in Lesson 14                                                                                                                                                           |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. The song line          | The kit's band chart (`kit/band-chart.ts`, `kit/band-chart-draw.ts`: the notes axis, Merc's band and steady line, its glow, the violet trace, its head, the playhead and edge pins) and Lesson 5's level strip (`kit/band-chart-hold.ts`); Lesson 9's rungs in sequence mode, a band over each note's own time, and its rung names (Lesson 9 WEB-SPEC, What the kit and the app still need, 5); PR #1149's breath marks (`slide-guide.ts` `breaths`) and its "Twinkle" (`lesson-06/melody.ts` `TWINKLE`); the kit's spelling (`kit/major-scale.ts`, `kit/notes.ts`); `kit/sound.ts` (`contourVoice`) | The words strip; breath marks on the band chart; light that follows a level and stays; the chord strip; the whole first verse as kit data (`kit/twinkle.ts`); seven states |
-| 2. Predict widget         | The kit's predict as it is (`kit/predict.ts`), with two choices, a free first play and a reveal that waits for the second                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Merc's two takes, drawn as they sound                                                                                                                                      |
-| 3. Four words             | Lesson 1's strip of figure, word, definition and button (`lesson-01/words.ts`), promoted into the kit if no earlier page has                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Four new figures                                                                                                                                                           |
-| 4. Sing it                | Lesson 3's checkpoint (`kit/comfort.ts`, `kit/listen.ts`, `kit/take.ts`, `kit/voice-choice.ts` on `fyp-voice`, `kit/warm-up.ts`, the feeling question, the rest card); Lesson 4's Move do and count-in; Lessons 6, 7 and 9's rest card after "Effortful"; the app's take recorder (`src/lib/voice-capture.ts`)                                                                                                                                                                                                                                                                                       | Recording and playing back a take (`kit/record.ts`, proposed); the range reader; two takes and their lines; a flow rule                                                    |
-| 5. Recall and quick check | The kit's quiz as it stands (`kit/quiz.ts`: an id `prefix`, question ids, an optional `lesson` and links away)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Ids and keys                                                                                                                                                               |
-| The season's close        | The kit's next-lesson card as it stands (`kit/next-card.ts`, `SEASON_END` in `kit/lesson-copy.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | The figure in its mark; a rest-aware close, proposed                                                                                                                       |
+| Toy                       | Reuses                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | New in Lesson 14                                                                                                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. The song line          | The kit's band chart (`kit/band-chart.ts`, `kit/band-chart-draw.ts`: the notes axis, Merc's band and steady line, its glow, the violet trace, its head, the playhead and edge pins) and Lesson 5's level strip (`kit/band-chart-hold.ts`); Lesson 9's rungs in sequence mode, a band over each note's own time, and its rung names (Lesson 9 WEB-SPEC, What the kit and the app still need, 5); the kit's breath marks (`kit/slide-guide.ts` `breaths`) and Lesson 6's "Twinkle" (`lesson-06/melody.ts` `TWINKLE`), both from Lesson 6's page; the kit's spelling (`kit/major-scale.ts`, `kit/notes.ts`); `kit/sound.ts` (`contourVoice`) | The words strip; breath marks on the band chart; light that follows a level and stays; the chord strip; the whole first verse as kit data (`kit/twinkle.ts`); seven states |
+| 2. Predict widget         | The kit's predict as it is (`kit/predict.ts`), with two choices, a free first play and a reveal that waits for the second                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Merc's two takes, drawn as they sound                                                                                                                                      |
+| 3. Four words             | Lesson 1's strip of figure, word, definition and button (`lesson-01/words.ts`), promoted into the kit if no earlier page has                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Four new figures                                                                                                                                                           |
+| 4. Sing it                | Lesson 3's checkpoint (`kit/comfort.ts`, `kit/listen.ts`, `kit/take.ts`, `kit/voice-choice.ts` on `fyp-voice`, `kit/warm-up.ts`, the feeling question, the rest card); Lesson 4's Move do and count-in; Lessons 6, 7 and 9's rest card after "Effortful"; the app's take recorder (`src/lib/voice-capture.ts`)                                                                                                                                                                                                                                                                                                                            | Recording and playing back a take (`kit/record.ts`, proposed); the range reader; two takes and their lines; a flow rule                                                    |
+| 5. Recall and quick check | The kit's quiz as it stands (`kit/quiz.ts`: an id `prefix`, question ids, an optional `lesson` and links away)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Ids and keys                                                                                                                                                               |
+| The season's close        | The kit's next-lesson card as it stands (`kit/next-card.ts`, `SEASON_END` in `kit/lesson-copy.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | The figure in its mark; a rest-aware close, required before the build                                                                                                      |
 
 ### 1. The song line
 
@@ -284,8 +287,8 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   the steps are about, so no state has a Slow; every play in the steps, the Four words and Sing it
   has a Stop, its button reading "Stop" while it sounds (MASTER-PLAN § 4.2 item 5's pause). The cold
   open's two plays are the exception: they are the kit predict's own buttons, which it ignores while
-  one of them is sounding (`busy`, `kit/predict.ts:154`), so they keep their names and show only as
-  playing (`is-on`, `:156`) until the take ends (Toys 2).
+  one of them is sounding (`busy`, `kit/predict.ts:165`), so they keep their names and show only as
+  playing (`is-on`, `:167`) until the take ends (Toys 2).
 - **Layout and targets** (91). The stage fit is the kit's, so the page sets no figure height of its
   own: on every step the deck measures what the toy needs besides its figure
   (`kit/step-deck.ts:15-17`; `fitStage`, `kit/stage-fit.ts:38`), and the figure, the kit's `.viz`
@@ -322,30 +325,33 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
 
 ### 2. Predict widget
 
-- The kit's predict as it is (`mountPredict`, `kit/predict.ts:72`; 14), which takes two to four
-  choices: here two `.choice` buttons, `data-choice` "rises" and "level", labelled "It rises" and
-  "It stays level", each at least 44 px tall. The choice locks (`:97-115`) and unlocks Play take 2,
-  which starts disabled.
-- The two plays are the compact chart's, under it, so they are given as `plays` (`:60-61`, as Lesson
+- The kit's predict as it is (`mountPredict`, `kit/predict.ts:79`; 14), which takes two to four
+  choices (`:12-14`): here two `.choice` buttons, `data-choice` "rises" and "level", labelled "It
+  rises" and "It stays level", each at least 44 px tall. The choice locks (`:106-124`) and unlocks
+  Play take 2, which starts disabled.
+- The two plays are the compact chart's, under it, so they are given as `plays` (`:67-68`, as Lesson
   5's cold open gives its two, `lesson-05/hook.ts:147-154`): **Play take 1**, `data-play` "take1"
   with `data-free`, works before the choice, so the sound comes first (playbook rule 5), and never
   reveals, since take 1 has no swell and so says nothing of what one does to the line; **Play take
   2**, `data-play` "take2", is the play the question is about.
-- `revealOn: ['take2']`: the reveal waits until take 2 has been heard with sound on
-  (`kit/predict.ts:136-149`), to its end: a take 2 cut short does not count, so the reveal waits for
-  it to play through (Audio). While a take sounds the predict ignores its own two buttons
-  (`kit/predict.ts:154`), so in the cold open a take is cut short only from outside it: another
-  source taking the page's one "now playing" owner (a Four words play, say, on a screen tall enough
-  to show both), the Sound toggle going off, or the tab going hidden, both of which stop every voice
-  (`Sound.stopAll`, `kit/sound.ts:446`, `:456`) without telling the source. The page's `play`
-  resolves `false` in each of the three cases, so it must notice the last two itself (Audio).
-- The hints, each true in every state the kit shows it in (the kit shows `silent` after any play
-  with sound off, the free one included, before a choice too, `kit/predict.ts:137-139`): the lock
-  hint in the markup, "Choose an answer to unlock Play take 2."; `chosen`, "Locked in. Now play take
-  2, and watch "star"."; `silent`, "Sound is off, so nothing played. Turn sound on, then play it
-  again.", which names no take, because before a choice take 2 is still locked; `again`, "Play
-  either take again." No `next` hint: the kit would show it after take 1 heard once a choice is in
-  (`kit/predict.ts:142-146`), where `chosen` already says what to do, so `chosen` stays.
+- `revealOn: ['take2']` (`kit/predict.ts:52-53`, `:93-96`): the reveal waits until take 2 has been
+  heard with sound on (`heard`, `:144-160`), to its end: a take 2 cut short resolves `false`, which
+  the kit never counts as heard (`:29-40`, `:173-174`), so the reveal waits for it to play through
+  (Audio). While a take sounds the predict ignores its own two buttons (`:165`), so in the cold open
+  a take is cut short only from outside it: another source taking the page's one "now playing" owner
+  (a Four words play, say, on a screen tall enough to show both), the Sound toggle going off, or the
+  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:446`, `:456`)
+  without telling the source. The page's `play` resolves `false` in each of the three cases, so it
+  must notice the last two itself (Audio).
+- The hints, each true in every state the kit shows it in (until the reveal, the kit shows `silent`
+  after any play with sound off, the free one included, before a choice too,
+  `kit/predict.ts:147-151`): the lock hint in the markup, "Choose an answer to unlock Play take 2.";
+  `chosen`, "Locked in. Now play take 2, and watch "star"."; `silent`, "Sound is off, so nothing
+  played. Turn sound on, then play it again.", which names no take, because before a choice take 2
+  is still locked; `again`, "Play either take again." No `next` hint: the kit shows `next` after a
+  heard play that does not reveal, once a choice is in, and `chosen` in its place where a page gives
+  none (`kit/predict.ts:47-48`, `:159`); after take 1, `chosen` already says what to do, so `chosen`
+  stays.
 - `guess` gives "You said: it rises" or "You said: it stays level", in Lesson 2's form
   (`lesson-02/cold-open.ts:34-37`), never "right" or "wrong", and the reveal's text is LESSON.md's
   for both choices. It states the answer first, "It stays level.", then why, then the other choice's
@@ -358,11 +364,23 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
 - States: waiting for a choice, with Play take 1 working, before or after take 1 has been heard; the
   choice locked, take 2 open and not yet heard to its end, whether or not take 1 has played since;
   take 2 heard, and the reveal shown. With sound off a play draws its take and shows the `silent`
-  hint, and the reveal does not come. One state is the kit's, not this page's: after a silent play,
-  a take 1 heard before a choice leaves the `silent` hint showing, since the kit returns before it
-  rewrites the hint (`kit/predict.ts:142-146`); the kit should put the lock hint back there, a small
-  fix proposed for after PR #1149 merges (What the kit and the app still need, 10).
-- Under reduced motion the reveal appears without its rise (`kit/predict.ts:126`).
+  hint, and the reveal does not come.
+- How the hint moves, as the kit has it (`heard`, `kit/predict.ts:144-160`). The kit's tests hold
+  the first two below (`src/features/lessons/kit/predict.test.ts:183-205`), the third (`:207-227`)
+  and the fourth (`:141-164`); the fifth has no kit test, so this page's unit test 12 holds it, and
+  End to end 2 holds the first two on the page:
+  - before a choice, take 1 played with sound off shows `silent` in place of the lock hint
+    (`kit/predict.ts:148-151`);
+  - take 1 heard with sound on, still before a choice, puts back the lock hint exactly as the page
+    wrote it, "Choose an answer to unlock Play take 2.": the kit keeps the markup's hint when it
+    mounts (`kit/predict.ts:83-84`) and writes it back (`:152-156`);
+  - after a choice, a heard play that does not reveal, take 1, shows `chosen`, since this page has
+    no `next` (`kit/predict.ts:159`), so it replaces `silent` too;
+  - a play cut short resolves `false`: it reveals nothing and leaves the hint as it was
+    (`kit/predict.ts:173-174`);
+  - once the reveal shows, no play changes the hint, a play with sound off included
+    (`kit/predict.ts:147`).
+- Under reduced motion the reveal appears without its rise (`kit/predict.ts:135`).
 
 ### 3. Four words
 
@@ -452,17 +470,18 @@ States:
    three takes (this take counts), with **Done for today**, and no feeling question follows, since
    nothing was sung. Otherwise **How did that feel?** follows at once (REQ-GVC-022).
 8. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, two a row on
-   phones), through `mountFeelings` (`kit/comfort.ts:121-146`) with its default, an answer that
+   phones), through `mountFeelings` (`kit/comfort.ts:121-152`) with its default, an answer that
    locks, asked after each take with voice (73): a press disables all four, and `reset()` frees them
-   for the next take. PR #1149 gives `mountFeelings` a `changeable` option for Lesson 6's sweeps,
-   which this page leaves off.
+   for the next take. `mountFeelings` has a `changeable` option, for Lesson 6's sweeps (`:121-126`,
+   `:130`), which this page leaves off.
    - Easy or Workable after take 1: LESSON.md's "Now take 2: breathe after "star", and let "star"
      swell." and **Start take 2**.
    - Easy or Workable after take 2: LESSON.md's playback prompt, "Two takes, one phrase. Play them
      back: where did each breathe? Did "star" grow and fade?", and the playback controls (below);
      then, if the visit's one Again is unused and fewer than three takes have been made, **Again**,
-     a new take 2 that takes the old take 2's place, and **Done for today**. The Wrap shows the
-     practice card.
+     which reads "Again: a new take 2", so it says what it does: it makes a new take 2, which takes
+     the old take 2's place once it is heard (a take with no voice, or one abandoned, leaves the old
+     take 2 as it was); and **Done for today**. The Wrap shows the practice card.
    - Effortful: no further take this visit; Lesson 3's "Keep it gentle: rest before you sing
      again."; the takes already made stay, with the playback controls (74), and **Done for today**.
      Move do and Start go. The Wrap shows the rest card, as Lessons 6, 7 and 9 specify: a report of
@@ -553,10 +572,17 @@ Recording (`kit/record.ts`, proposed; 51, 52):
   the take's line and nowhere else: no storage, no IndexedDB, no `Cache`, no network, no analytics
   (REQ-GVC-003, REQ-GVC-090). It goes on Delete, when Again records a new take 2 in its place, and
   when the page is left, with the page.
-- Playback plays that buffer once, from 0.2 s before the take's first voiced frame, at a fixed
-  level, the recording as made, through the page's one "now playing" owner (Audio), so any other
-  sound stops it and it stops any other. It goes past the master bus's compressor
-  (`kit/sound.ts:89-98`), so a swell the singer sang is not flattened in the hearing.
+- Playback plays that buffer once, from 0.2 s before the take's first voiced frame, through the
+  page's one "now playing" owner (Audio), so any other sound stops it and it stops any other.
+- Playback applies one gain to the whole take: the gain takes the take's peak to one set level, the
+  same for every take, so a take sung quietly and one sung louder play back at the same peak, and it
+  never changes during the take. Nothing compresses the take or sets its gain as it plays: it goes
+  past the master bus's compressor (`kit/sound.ts:89-98`), and through no automatic gain, so a swell
+  keeps its shape.
+- The stream it records is the listener's, the mic manager's analysis stream, with the browser's
+  echo cancellation, noise suppression and automatic gain control off (`ANALYSIS_CONSTRAINTS`,
+  `src/lib/mic-manager.ts:48-57`; every stream opens with them, `:216-223`), so the swell recorded
+  is the swell sung. That is why the page can ask "Did "star" grow and fade?" of a playback (51).
 - A recording that cannot be decoded leaves its take drawn and not recorded: its Play is absent, and
   the can't-record line shows under the chart.
 - The kit's listener says today that "Nothing is recorded or kept" (`listen.ts:18-22`); on this page
@@ -634,15 +660,16 @@ from `previous`; a layout switch calls it with the same step (`:178-181`) and st
 Sing it's section, or the tab going hidden, stops a playing take as it releases the microphone. A
 play cut short, by a new play, a stop, the Sound toggle or a hidden tab, never counts as heard: the
 cold open's `play` resolves `false` for it, and the predict counts only a play that runs to its end
-(Toys 2). Both rules' kit parts come with PR #1149's fix pass, from Lesson 6's page review, and are
-on its branch at `b4fd009f5` (21 October 2026, not yet merged): the owner is `kit/now-playing.ts`'s
-`NowPlaying`, which a source `claim`s with its own stop before it sounds, so the owner stops the
-source before it, and `release`s when it ends, so a later claim never stops it twice; and
-`kit/predict.ts`'s `play` may resolve `false`, which the predict takes as "not heard", while `true`
-or nothing keeps today's meaning, so Lessons 2 to 9 see no change (What the kit and the app still
-need, 10; unit tests 16 and 17). This page hands `NowPlaying` to every source it mounts, as Lesson
-6's page does. The owner here covers a buffer as well as a synthesised voice, since the singer's
-takes play through it.
+(Toys 2). Both rules' kit parts are on main, from Lesson 6's page (PR #1149): the owner is
+`kit/now-playing.ts`'s `NowPlaying` (`:17-39`), which a source `claim`s with its own stop before it
+sounds, so the owner stops the source before it, and `release`s when it ends, so a later claim never
+stops it twice; and `kit/predict.ts`'s `play` may resolve `false` (`:29-40`), which the predict
+takes as "not heard" (`:173-174`), while `true` or nothing means heard, as on the pages before
+Lesson 6 (What the kit and the app still need, 10; unit tests 16 and 17). This page hands
+`NowPlaying` to every source it mounts, as Lesson 6's page does: its cold open claims the owner
+before it plays and resolves `false` when another sound cut it short
+(`src/features/lessons/lesson-06/cold-open.ts:101-118`). The owner here covers a buffer as well as a
+synthesised voice, since the singer's takes play through it.
 
 ## Mercs
 
@@ -680,7 +707,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   this package's second commit says on the card why only Karaoke Night is linked.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed: Dynamic Swell's card copy,
   its tags and its score checked against the claims rules, as CURRICULUM § 4 item 8 does for the
-  Ascent's weeks (`CURRICULUM.md:488-492`), so that a later lesson can link it: a swell scored by
+  Ascent's weeks (`CURRICULUM.md:494-498`), so that a later lesson can link it: a swell scored by
   its width in decibels rewards a louder swell, which this lesson's "grow only to about speaking
   volume" would not, so its score would change or its result would say what it measures; and the two
   routines' descriptions, which promise gains in the breath and in range (59), the same way. Until
@@ -688,19 +715,19 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 14's entry in `kit/season.ts` (`:384-399`) gains a plain `minutes: 18` and
+- **Season data**: Lesson 14's entry in `kit/season.ts` (`:387-402`) gains a plain `minutes: 18` and
   `page: '/learn/14'` after its topics, in every build, under the comment Lesson 5's entry carries,
   `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:254`), as Lesson 3's own
-  are written (`season.ts:212-215`; 8, 12). Whether the page is live is `kit/publish.ts`'s to say:
-  `seasonFor` draws a lesson held back as one coming later, with no page and no reading time
-  (`:102-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`, which
-  `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link stays as it is,
-  `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
-  `label: 'Karaoke Night'` (`season.ts:392-398`), with no `needs`. Its topics stay; its hook is the
-  entry's, the default (`:390`), and its tease, which Lesson 13's card draws, is
+  are written (`season.ts:212-215`) and Lesson 6's (`:275-277`; 8, 12). Whether the page is live is
+  `kit/publish.ts`'s to say: `seasonFor` draws a lesson held back as one coming later, with no page
+  and no reading time (`:102-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`,
+  which `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link stays as it
+  is, `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
+  `label: 'Karaoke Night'` (`season.ts:395-401`), with no `needs`. Its topics stay; its hook is the
+  entry's, the default (`:393`), and its tease, which Lesson 13's card draws, is
   `kit/lesson-copy.ts`'s (`:135`), as 1 and 2 record: the proposal to change both is in What the kit
   and the app still need, 15. `EDGES` already holds [5, 14], [8, 14], [9, 14] and [12, 14]
-  (`season.ts:425-428`).
+  (`season.ts:428-431`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its hook, its topics, the lessons it builds on, its practise link and its minutes
@@ -712,44 +739,50 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand on main (21 October 2026, `02682a122`), in Lesson 6's
-page as PR #1149 has it (`8a8d90335`), and in Lesson 9's spec, beyond the parts Lessons 2 to 9
-promote into the kit (Toys table):
+Found in the kit and the app as they stand on main (21 October 2026, `62c99c150`), Lesson 6's page
+among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 promote into the kit
+(Toys table):
 
 1. The lesson host: `learn/14.html` at `/learn/14`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:74-83`;
    `lessonInputs` and `lessonPaths`, `:106-119`; `vite.config.ts:306`, `:474`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
-   `14: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3, 4 and 5's
-   (`:30-35`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
+   `14: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3, 4, 5 and 6's
+   (`:30-36`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
    site's and the previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until
    the console sets it either way, and the Content Studio's Lessons page names that reason when
    asked to publish it (11). `/learn/14` and `/learn/14.html` go in `STANDALONE_DOCUMENT_PATHS`
-   (`src/lib/sw-runtime.ts:93`, the lessons `:131-147`), so the service worker never serves the app
-   shell in the lesson's place; `src/tests/lesson-pages.test.ts` checks a draft for them too
-   (`:215-219`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
-   and to `public/llms.txt`'s Lessons list (`:66-77`), whose intro already allows a page with no
-   episode (`:68-70`); until then the site worker adds the page to both only while it is published
-   (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
-   released checks (`:85-183`), and `tools/lesson-links.ts` links it from every entry document by
-   its headline. Nothing writes `datePublished` at run time, so a published draft is served without
-   one; it is set in the commit that deletes the page's `drafts.ts` line or in one straight after
-   the console publishes it, whichever the owner picks, and indexing is asked for when the console
-   publishes the page, not at a release (SEARCH.md § 3.2, 12).
-2. The page's head, written in full from its first commit:
-   `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
-   (`:372-407`), and `src/tests/lesson-pages.test.ts` holds a released lesson's head, structured
-   data and listings (`:85-183`). The hook's copies are the ones the site worker rewrites when the
-   console picks another hook (`src/lesson-gate.ts:444-451`, `:565-594`); it never rewrites the
-   title. Only the meta description and the Article's description, which repeat each other, may
-   shorten the hook, and every other copy carries it whole. In Lesson 4's form
-   (`learn/04.html:9-128`), with today's hook (13):
+   (`src/lib/sw-runtime.ts:93`, the lessons `:131-150`), so the service worker never serves the app
+   shell in the lesson's place. As a draft, `src/tests/lesson-pages.test.ts` holds the page to the
+   draft checks (`:242-279`): in neither the sitemap nor llms.txt (`lesson-pages.test.ts:257-260`),
+   linked from no entry document (`:262-272`), and its service-worker rule kept (`:274-278`). On
+   release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml` and to
+   `public/llms.txt`'s Lessons list (`:66-77`), whose intro already allows a page with no episode
+   (`:68-70`); until then the site worker adds the page to both only while it is published
+   (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the release
+   checks instead (`:212-240`): listed in the sitemap, llms.txt and the service worker
+   (`lesson-pages.test.ts:217-225`), and linked from every generated entry document (`:227-239`) by
+   its headline, which `tools/lesson-links.ts` writes and the test reads
+   (`lesson-pages.test.ts:74-90`). Nothing writes `datePublished` at run time, so a published draft
+   is served without one; it is set in the commit that deletes the page's `drafts.ts` line or in one
+   straight after the console publishes it, whichever the owner picks, and indexing is asked for
+   when the console publishes the page, not at a release (SEARCH.md § 3.2, 12).
+2. The page's head, written in full from its first commit, since both tests read it while the page
+   is a draft: `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts
+   included (`lesson-copy.test.ts:372-407`), and `src/tests/lesson-pages.test.ts` holds every lesson
+   document, drafts included, to its head, its structured data, its breadcrumb, its share card and
+   its legal links (`:112-210`). So Lesson 14 meets all of the checks below as a draft; its release
+   adds only the listings and links of item 1 (`:212-240`). The hook's copies are the ones the site
+   worker rewrites when the console picks another hook (`src/lesson-gate.ts:444-451`, `:565-594`);
+   it never rewrites the title. Only the meta description and the Article's description, which
+   repeat each other, may shorten the hook, and every other copy carries it whole. In Lesson 4's
+   form (`learn/04.html:9-128`), with today's hook (13):
    - the title, "Phrasing: sing a whole song · Find Your Pitch | MercuryPitch" (60 characters, the
-     test's most, `lesson-pages.test.ts:101-102`), which holds the Article's headline (`:130`), and
+     test's most, `lesson-pages.test.ts:127-128`), which holds the Article's headline (`:160`), and
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:372-381`; Hero);
    - the meta description, "If you can hit every note of a song, what is still missing between
      correct and compelling? Hear Merc sing one phrase twice, then sing it and listen back." (153
-     characters, inside the test's 80 to 160, `lesson-pages.test.ts:103-106`, and 121 with the
+     characters, inside the test's 81 to 160, `lesson-pages.test.ts:129-132`, and 121 with the
      proposed hook);
    - `og:title` and `twitter:title`, "Phrasing: sing a whole song · Find Your Pitch, Lesson 14"
      (`learn/04.html:26-29`, `:45-48`);
@@ -759,62 +792,69 @@ promote into the kit (Toys table):
      `twitter:description`, the hook exactly (`:402-404`);
    - canonical and `og:url` `https://mercurypitch.com/learn/14`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
-     (`lesson-pages.test.ts:90-108`);
+     (`lesson-pages.test.ts:116-134`);
    - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-14-og.jpg` (item 3),
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 14, Phrasing: sing a whole song,
      above the first line of "Twinkle, Twinkle, Little Star" as seven amber bands with its words,
-     between blue Merc and orange Merc." (`learn/04.html:34-43`, `:53-60`);
+     between blue Merc and orange Merc." (`learn/04.html:34-43`, `:53-60`), which the test holds to
+     the file (`lesson-pages.test.ts:177-196`; item 3);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:387-395`, `:405`): `@id` `https://mercurypitch.com/learn/14#lesson` and
-     `url` `https://mercurypitch.com/learn/14` (`lesson-pages.test.ts:116-117`); the headline
-     "Phrasing: sing a whole song"; `alternativeHeadline`, the hook exactly; `description`, the meta
-     description's words, and `image`, the `og:image` URL (`:128-129`); `position: 14`,
-     `learningResourceType` "Lesson", free, the series as `isPartOf`, and the organization as author
-     and publisher (`:118-126`), with `timeRequired` "PT18M" and `teaches` "Where to breathe in a
-     song: at a phrase's end", "Legato: singing on through a phrase", "The swell, or messa di voce:
-     one note, louder, then softer", "How a phrase ends: perfect and imperfect cadences" and
-     "Recording yourself and listening back", none of which says what a swell does to the line, as
-     in Lesson 4's (`learn/04.html:69-109`). It has no `datePublished` (item 1);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:133-145`;
+     (`lesson-copy.test.ts:387-395`, `:405`), and the other test asks for the Article first
+     (`lesson-pages.test.ts:142-144`): `@id` `https://mercurypitch.com/learn/14#lesson` and `url`
+     `https://mercurypitch.com/learn/14` (`:146-147`); the headline "Phrasing: sing a whole song";
+     `alternativeHeadline`, the hook exactly; `description`, the meta description's words, and
+     `image`, the `og:image` URL (`:158-159`); `position: 14`, `learningResourceType` "Lesson",
+     free, the series as `isPartOf`, and the organization as author and publisher (`:148-156`), with
+     `timeRequired` "PT18M" and `teaches` "Where to breathe in a song: at a phrase's end", "Legato:
+     singing smoothly through a phrase", "The swell, or messa di voce: one note, louder, then
+     softer", "How a phrase ends: perfect and imperfect cadences" and "Recording yourself and
+     listening back", none of which says what a swell does to the line, as in Lesson 4's
+     (`learn/04.html:69-109`). It has no `datePublished` (item 1);
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:163-175`;
      `learn/04.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:173-182`).
+     "Legal" (`lesson-pages.test.ts:198-209`).
    - With the proposed hook adopted (item 15), every copy carries it instead, and the console can
      still pick today's wording, which the site worker writes in: every description stays between 80
      and 160 characters with either hook (13).
-3. The share image the head names, `public/learn/lesson-14-og.jpg`, which no test checks today:
-   `src/tests/lesson-pages.test.ts` holds a released lesson's head to its tags, not to the file
-   behind them (`:90-145`). It is 1200 x 630, the size `og:image:width` and `og:image:height` give,
-   a baseline JPEG as Lesson 4's card is (`public/learn/lesson-04-og.jpg`), drawn with the page's
-   own kit so that it looks like the page it opens: the title, Lesson 14 and the wordmark over line
-   1 of the song line, seven amber bands with Merc's steady line through each and the words under
-   them, between blue Merc and orange Merc. It shows no swell, no light and no breath mark, so it
-   does not answer the cold open's predict. The page's own test holds the head to the file, as
-   Lesson 6's does on PR #1149: the `og:image` it names is in `public/`, at the pixel size its
-   `og:image:width` and `og:image:height` give.
+3. The share image the head names, `public/learn/lesson-14-og.jpg`, which
+   `src/tests/lesson-pages.test.ts` checks on every lesson document, drafts included, so from the
+   page's first commit (`:177-196`): `og:image` is
+   `https://mercurypitch.com/learn/lesson-14-og.jpg`, the file is in `public/`, its pixel size, read
+   from the JPEG's frame header (`:40-55`), is what `og:image:width` and `og:image:height` say,
+   `og:image:alt` is not empty, and `twitter:image` and `twitter:image:alt` repeat the two. It is
+   1200 x 630, the size `og:image:width` and `og:image:height` give, a baseline JPEG as Lesson 4's
+   card is (`public/learn/lesson-04-og.jpg`), drawn with the page's own kit so that it looks like
+   the page it opens: the title, Lesson 14 and the wordmark over line 1 of the song line, seven
+   amber bands with Merc's steady line through each and the words under them, between blue Merc and
+   orange Merc. It shows no swell, no light and no breath mark, so it does not answer the cold
+   open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-111`, `:181-184`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:403-407`),
-   so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:137-147`),
-   measured in `build:e2e`, where the check runs (`package.json:20`). As on Lesson 3, the listener,
-   the pitch detector and Voice Mirror's scorer arrive through a dynamic import when Start is
-   pressed (`scripts/assert-first-paint-budgets.mjs:107-110`), and the record module and the app's
-   recorder with them, so the ceiling holds only while that boundary does.
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:102-111`,
+   `:126-134`; `:190-193`, `:203-207`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:417-421`), so without them the Browser jobs fail before any spec
+   runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
+   quarter, the tables' rule (`:46-57`, `:146-156`), measured in `build:e2e`, where the check runs
+   (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
+   (`assert-first-paint-budgets.mjs:131-133`). As on Lesson 3, the listener, the pitch detector and
+   Voice Mirror's scorer arrive through a dynamic import when Start is pressed
+   (`scripts/assert-first-paint-budgets.mjs:107-110`), and the record module and the app's recorder
+   with them, so the ceiling holds only while that boundary does.
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`, the song line's parts (Toys 1): Lesson 9's
    rungs over time slots and its rung names, which this page uses as sequence mode and names by
    syllable (Lesson 9 WEB-SPEC, What the kit and the app still need, 5; if Lesson 9's page has not
    brought them, this one does); the words strip, its syllables centred under their notes at 11 px;
-   the chord strip; breath marks, PR #1149's tick and word (`slide-guide.ts` `breathAt`,
-   `drawBreaths`), moved into a drawing both charts share; the light along a band, from a level
-   curve, kept once sounded; and Step 3's two windows over one band. The existing single band is the
-   case with none of these, so Lessons 3, 5 and 9's figures see no change; a unit test proves it.
+   the chord strip; breath marks, the slide guide's tick and word (`kit/slide-guide.ts`: `breathAt`,
+   `:321-333`; `drawBreaths`, `:335-360`), moved into a drawing both charts share; the light along a
+   band, from a level curve, kept once sounded; and Step 3's two windows over one band. The existing
+   single band is the case with none of these, so Lessons 3, 5 and 9's figures see no change; a unit
+   test proves it.
 6. `kit/twinkle.ts`, proposed: the whole first verse as data, six lines of `MelodyNote` (degree,
-   beats, syllable) in the form PR #1149's `lesson-06/melody.ts` keeps its first two lines
-   (`TWINKLE`, `MelodyNote`), with each syllable's printed form ("Twin-", "kle,"), the page's chords
-   and the five breath marks, so the tune is written once and Lesson 6's page reads its two lines
-   from the kit.
+   beats, syllable) in the form Lesson 6's `lesson-06/melody.ts` keeps its first two lines
+   (`MelodyNote`, `:21-29`; `TWINKLE`, `:37-61`), with each syllable's printed form ("Twin-",
+   "kle,"), the page's chords and the five breath marks, so the tune is written once and Lesson 6's
+   page reads its two lines from the kit.
 7. `kit/record.ts` and `Listener.media` (Toys 4, Recording), proposed: the first kit module that
    keeps audio, in memory only. `kit/take.ts`: `readRange`, `rangeLine` and `NOT_HEARD_PHRASE_LINE`
    (Toys 4), beside `readTake`.
@@ -825,29 +865,27 @@ promote into the kit (Toys table):
    `afterFeeling(f, { restAfterEffort: true })`, as Lesson 9's spec proposes (What the kit and the
    app still need, 8, there), since `afterFeeling` leaves it to the coach (`:58-67`) and Lessons 6,
    7, 9 and 14 all choose it. Until the option lands this page overrides `rest` itself, as Lesson
-   6's page does on PR #1149.
-10. The two sound rules' kit parts (Audio), which PR #1149's fix pass brings from Lesson 6's page
-    review and which are on its branch at `b4fd009f5`, not yet on main: `kit/predict.ts`'s `play`
-    may resolve `false` for a play cut short, which the predict then never counts as heard, while
-    `true` or nothing keeps today's meaning; and `kit/now-playing.ts`, the page-wide owner,
-    `NowPlaying`, which every source `claim`s with its own stop before it sounds and `release`s when
-    it ends. This page is built after #1149 merges, or it waits for them. One more, small and
-    proposed: after a heard play with no choice in, `kit/predict.ts` should put the lock hint back
-    where a silent play left `silent` showing (`kit/predict.ts:136-146` on main), which Lessons 4
-    and 5's free plays meet today too (Toys 2).
+   6's page does (`lesson-06/sing-flow.ts:18-20`, `:88-97`).
+10. The two sound rules (Audio), wired through the kit parts on main since PR #1149:
+    `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict then never
+    counts as heard (`:29-40`, `:173-174`), while `true` or nothing means heard; and
+    `kit/now-playing.ts`, the page-wide owner, `NowPlaying` (`:17-39`), which every source `claim`s
+    with its own stop before it sounds and `release`s when it ends. No kit change: only this page's
+    wiring.
 11. Move do and the count-in as kit parts, promoted before this page is built: Move do as Lesson 9's
     spec proposes (What the kit and the app still need, 10, there), from Lesson 4's page
     (`lesson-04/sing.ts:34-35`, `:168-176`), word for word; and Lesson 4's count-in (`countIn`,
     `lesson-04/examples.ts:137-141`, `:207-211`), which this page plays before every take.
-12. `kit/next-card.ts`, proposed: a close that knows Sing it's ending. After "Effortful",
-    "Uncomfortable" or "Just listen today", the card keeps "You've seen every note you sing." and
-    "See the season map", and drops "Now sing a whole song." and its Karaoke Night button, which the
-    rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055; 78). The kit draws
-    the close once (`next-card.ts:190-193`), so either `createNextCard` redraws it when the visit's
-    ending changes, or the page draws it once Sing it has ended. `SEASON_END` would gain the shorter
-    line beside its own (`lesson-copy.ts:143-149`), kept free of the team's words as the test asks
-    (`lesson-copy.test.ts:300-308`). Until then the card is drawn as it stands, and the page QA list
-    says so.
+12. `kit/next-card.ts`: a close that knows Sing it's ending, required before this page is built, the
+    lead's decision (21 October 2026), so the page waits for it as it waits for item 11. After
+    "Effortful", "Uncomfortable" or "Just listen today", the card keeps "You've seen every note you
+    sing." and "See the season map", and drops "Now sing a whole song." and its Karaoke Night
+    button, which the rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055;
+    78). The kit draws the close once (`next-card.ts:190-193`), so either `createNextCard` redraws
+    it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
+    would gain the shorter line beside its own (`lesson-copy.ts:143-149`), kept free of the team's
+    words as the test asks (`lesson-copy.test.ts:300-308`). Its unit test and End to end 11 check it
+    (Tests), and so does Page QA.
 13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:409-443`),
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like
     every other sound, a breath is a gap, as here.
@@ -856,7 +894,7 @@ promote into the kit (Toys table):
     borrow from Lesson 5's module (`lesson-05/quiz-questions.ts:19-21`), moved into the kit's quiz
     beside `away`.
 15. The hook and the tease, proposed, for the owner: Lesson 14's default hook in `kit/season.ts`
-    (`:390`) becomes "If every note of a song is in tune, what is left to shape?", with today's kept
+    (`:393`) becomes "If every note of a song is in tune, what is left to shape?", with today's kept
     in `kit/lesson-copy.ts`'s Lesson 14 entry as a `HookVariant` under the id `compelling` and a
     note saying why it changed (1); its tease becomes "‘Twinkle, twinkle, little star’, twice. The
     second ‘star’ swells.", with today's kept as a `TeaseVariant` under the id `band` (2).
@@ -869,10 +907,10 @@ promote into the kit (Toys table):
     to end 6).
 17. App: the App content items for Dynamic Swell and the routines (Practice links).
 
-PR #1149 also brings kit parts this page does not use: the ear game (`kit/ear-game.ts`) and the tune
-line (`kit/tune-line.ts`, with its layout, drawing and motion modules), whose beads draw a tune's
-notes and the gaps between them, Lesson 6's subject; this page's subject is a phrase's breaths and
-swell against Merc's bands, which the band chart already draws.
+Lesson 6's page also brought kit parts this page does not use: the ear game (`kit/ear-game.ts`) and
+the tune line (`kit/tune-line.ts`, with its layout, drawing and motion modules), whose beads draw a
+tune's notes and the gaps between them, Lesson 6's subject; this page's subject is a phrase's
+breaths and swell against Merc's bands, which the band chart already draws.
 
 Already on main, so this page needs nothing more from them: run-time publishing (`kit/publish.ts`,
 `kit/page-state.ts`, `src/lesson-gate.ts`), which settles the page's chips, its recall's step links
@@ -882,9 +920,10 @@ that closes the season (`kit/next-card.ts`, its words from `kit/lesson-copy.ts`)
 opens at a step an address names (`kit/step-deck.ts`), Watch only with a published film
 (`kit/season.ts:23-25`), learner-only explorer cards, the kit's spelling of a major key
 (`majorScale`, `kit/major-scale.ts:43-45`), the warm-up (`kit/warm-up.ts`), Lesson 5's level strip
-(`kit/band-chart-hold.ts`) and the app's take recorder (`src/lib/voice-capture.ts`). Released
-lessons need no edit when this page goes live, since every lesson page draws the season as its state
-shows it (`kit/page-state.ts:54-57`).
+(`kit/band-chart-hold.ts`), the page-wide sound owner and the predict's `play` that may resolve
+`false` (item 10), the slide guide's breath marks (`kit/slide-guide.ts`), and the app's take
+recorder (`src/lib/voice-capture.ts`). Released lessons need no edit when this page goes live, since
+every lesson page draws the season as its state shows it (`kit/page-state.ts:54-57`).
 
 ## Edge cases
 
@@ -902,6 +941,15 @@ What the page does where nothing above says:
   locked; the cold open's reveal waits for take 2 to be heard with sound on (Toys 2); Start and Play
   Merc's phrase show state 5's hint and ask for no microphone; a take's playback plays nothing and
   shows "Sound is off, so nothing played. Turn sound on to hear your take."
+- **Sound off before a choice, then on again, still before a choice**: take 1 with sound off shows
+  `silent`; take 1 again with sound on puts back the lock hint, "Choose an answer to unlock Play
+  take 2.", exactly as the page wrote it, and take 2 stays locked (Toys 2; the kit's
+  `predict.test.ts:183-205`; End to end 2).
+- **Take 2 cut short**, by another source taking the page's "now playing" owner, by the Sound toggle
+  going off or by the tab going hidden: the page's `play` resolves `false`, so nothing is revealed
+  and the hint stays as it was, `chosen`; take 2 played to its end afterwards reveals as usual (Toys
+  2; unit test 17 covers all three causes, the kit's `predict.test.ts:141-164` the result; End to
+  end 2 the first).
 - **No Web Audio**: every play button draws in silence with the hint "This browser can't play sound
   here.", so the cold open's reveal cannot come, as on every page that uses the kit's predict; Sing
   it offers the listen-only path of state 10 at once, with no Start; the Wrap keeps the practice
@@ -951,9 +999,10 @@ What the page does where nothing above says:
   kit's quiz does the same for the recall's step links, which keep their words, "Try Lesson 5, Step
   1 again", with no link (`kit/quiz.ts:169-199`). Step 4's "as in Lesson 12" names a lesson that may
   not be live, and is not a link. End to end 14 holds it.
-- **The season's close after a rest ending**: today it still says "Now sing a whole song." and shows
-  Karaoke Night (Sections, 8); with the proposed close it drops both (What the kit and the app still
-  need, 12).
+- **The season's close after a rest ending**: after "Effortful", "Uncomfortable" or "Just listen
+  today" it keeps "You've seen every note you sing." and "See the season map", and shows neither
+  "Now sing a whole song." nor its Karaoke Night button (Sections, 8; What the kit and the app still
+  need, 12; unit test 18; End to end 11).
 - **Reduced motion**: Look, Toys 1 and Toys 4 give the end states; nothing moves on its own.
 
 ## Tests
@@ -1020,17 +1069,23 @@ parts:
     `indexedDB.open`, `caches.open`, `fetch`, `navigator.sendBeacon` and `XMLHttpRequest` are never
     called with a take, and no storage key but the Contract's is written; playback starts through
     the "now playing" owner, from 0.2 s before the first voiced frame, a new sound stops it, and
-    seeking never starts it.
+    seeking never starts it; two takes recorded at different levels play back with the same peak,
+    and one take's own changes in level are kept, so a take that grows 6 dB louder in its middle
+    plays back 6 dB louder there, through one gain for the whole take and no compressor (51).
 11. Copy: every line of LESSON.md's page copy and every template in Toys 1, 2 and 4 passes
     `validateGuidedDynamicClaim` (surface `finding`); no quiz feedback line starts with "Right",
     "Yes" or "Correct"; no accessible name or live text holds a ♯ or ♭ sign; no two controls on a
     stage share an accessible name; and no learner text holds a word of
     `learn-no-planning-text.spec.ts`'s list.
-12. The predict: the choice locks on the first press; before it only Play take 1 plays; after it,
-    the reveal stays hidden until take 2 has been heard with sound on, and a silent play shows the
-    `silent` hint; take 1 never reveals; the reveal's line for "It rises" is "You said: it rises",
-    and no hint or line holds "right" or "wrong"; with sound off, Play take 1 before a choice shows
-    `silent`, which names no take, and Play take 2 stays disabled.
+12. The predict, on this page's markup and hints (Toys 2): the choice locks on the first press;
+    before it only Play take 1 plays; after it, the reveal stays hidden until take 2 has been heard
+    with sound on, and a silent play shows the `silent` hint; take 1 never reveals; the reveal's
+    line for "It rises" is "You said: it rises", and no hint or line holds "right" or "wrong"; with
+    sound off, Play take 1 before a choice shows `silent`, which names no take, and Play take 2
+    stays disabled; take 1 then heard with sound on, still before a choice, puts back "Choose an
+    answer to unlock Play take 2." as the markup has it; after a choice, take 1 heard shows
+    `chosen`, in place of `silent` too; and once the reveal shows, a play of either take, with sound
+    on or off, leaves `again` as it is, which no kit test checks.
 13. Quizzes: the recall's ids are `l05-q2` and `l05-q4`, it takes no `lesson`, and its two step
     links are `/learn/05#step-1` and `/learn/05#step-5`; the quick check's ids are `l14-q1` to
     `l14-q4`, with `lesson: 14`.
@@ -1056,13 +1111,15 @@ parts:
 17. A play cut short never counts as heard (Audio; Toys 2): the cold open's `play` resolves `false`
     when take 2 is stopped before its end, by another source claiming the owner, by the Sound toggle
     going off or by the tab going hidden, and never when it runs out; take 2 cut short leaves the
-    reveal hidden, and take 2 played to its end shows it, as PR #1149's fix pass tests a stopped run
-    in the kit.
+    reveal hidden, and take 2 played to its end shows it, as the kit's test of a play that resolves
+    `false` does (`predict.test.ts:141-164`); a take 2 cut short leaves the hint as it was.
 18. The season's close: `createNextCard(14)` on the page's mark draws "End of Season 1", the line,
     Karaoke Night at `/karaoke-night?lesson=14` with `target="_blank"` and `rel="noopener"`, and
     "See the season map" at `#explorer`, and keeps the still after its words, as `next-card.test.ts`
-    checks the kit (`:341-372`); with the proposed close, a rest ending drops the second sentence
-    and the button and keeps the rest.
+    checks the kit (`:341-372`); and after each of the three rest endings, "Effortful",
+    "Uncomfortable" and "Just listen today", the close keeps "End of Season 1", "You've seen every
+    note you sing." and "See the season map", and shows neither "Now sing a whole song." nor its
+    Karaoke Night button, while every other ending keeps both.
 19. If the hook and the tease change (What the kit and the app still need, 15): the title and the
     head's copies carry the new default, `compelling` and `band` are the alternatives, and
     `lesson-copy.test.ts`'s kept list holds `[14, 'compelling']`.
@@ -1073,7 +1130,10 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 2. Cold open: Play take 1 plays before a choice; Play take 2 stays disabled until a choice; the
    reveal appears only after take 2 has played to its end with sound on; with sound off, the hint
    shows and no reveal comes; and a take 2 cut short, by the Four words' Swell played over it,
-   brings no reveal until it plays to its end (unit test 17).
+   brings no reveal until it plays to its end (unit test 17). Before a choice, Play take 1 with
+   sound off shows "Sound is off, so nothing played. Turn sound on, then play it again."; with sound
+   turned on, Play take 1 again puts back "Choose an answer to unlock Play take 2.", and Play take 2
+   is still disabled.
 3. The song line by keyboard alone: Tab reaches every control; Step 5's scrub bar moves by arrows,
    and Home and End jump; every play reads "Stop" while it sounds; every announcement uses spoken
    names.
@@ -1113,7 +1173,10 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 11. The Wrap ends on the season's close: on `/learn/14` the card reads "End of Season 1" and the
     line, holds the two links and keeps its figure after its words;
     `src/e2e/learn-next-card.spec.ts`, which today leaves the close to `next-card.test.ts` because
-    the finale has no page (`:16-17`), gains this check.
+    the finale has no page (`:16-17`), gains this check. After "Uncomfortable" and after
+    "Effortful", each reached with the fake microphone as End to end 6 reaches them, and after "Just
+    listen today", the card keeps "You've seen every note you sing." and "See the season map", and
+    shows neither "Now sing a whole song." nor a link to `/karaoke-night?lesson=14`.
 12. With reduced motion emulated, a take's bands light in place with no playhead, a line draws
     whole, and nothing moves on its own.
 13. After a full run, storage holds only the keys in the Contract.
@@ -1163,9 +1226,9 @@ Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 - With reduced motion emulated, nothing moves on its own and the live line draws on a still frame.
 - The Wrap shows the rest card after "Effortful", "Uncomfortable" and "Just listen today", and the
   practice card otherwise; neither carries a first-visit line, and both open Karaoke Night with no
-  intro. Until the rest-aware close lands, the season's card says "Now sing a whole song." after a
-  rest ending too: the owner accepts that, or the page waits for it (What the kit and the app still
-  need, 12).
+  intro. After each of those three endings, the season's card keeps "You've seen every note you
+  sing." and "See the season map", and shows neither "Now sing a whole song." nor its Karaoke Night
+  button (What the kit and the app still need, 12).
 - Every step stage fits the four short landscape screens with the masthead (End to end 5), and the
   app-check sweep (`.claude/skills/app-check`) passes at phone and desktop width with Sing it open
   in each state, run locally or on dev, never against production.

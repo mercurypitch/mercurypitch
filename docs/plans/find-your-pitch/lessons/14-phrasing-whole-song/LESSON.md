@@ -10,9 +10,10 @@ has no film yet, so the page has no Watch section. Each step's heading is orange
 (playbook rule 4). The page opens in Lesson 2's order: the title, the stage, the sound gate, the
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13). It is the season's last
 lesson, so the Wrap ends on the kit's card that closes the season, in its words as they stand, where
-other pages have a next lesson (FACTS 9). Where this page shares a line with Lessons 3, 5, 6, 7 and
-9 (the comfort check, "Just listen today", the voice choice, the warm-up, the Move do control, the
-stop line, the four feelings with their gentle and enough-for-today lines, the doctor lines, the
+other pages have a next lesson; after a rest ending the card leaves out its invitation to sing, a
+kit change this page waits for (FACTS 9, 78). Where this page shares a line with Lessons 3, 5, 6, 7
+and 9 (the comfort check, "Just listen today", the voice choice, the warm-up, the Move do control,
+the stop line, the four feelings with their gentle and enough-for-today lines, the doctor lines, the
 rest card and "Ten minutes, gently, most days"), it is their current text, word for word, with only
 the exercise and its address changed: Merc sings "the phrase" in "Just listen today" and in the
 no-microphone line. Six shared lines are adapted rather than copied: the sentence that sends a
@@ -84,9 +85,11 @@ As it gets louder, what will its line do?
 (Before a choice, the hint under the choices reads "Choose an answer to unlock Play take 2.", and [
 Play take 1 ] already plays. After a choice, [ Play take 2 ] unlocks and the hint reads "Locked in.
 Now play take 2, and watch "star"." Take 2 sings the same seven notes. The reveal waits until take 2
-has been heard to its end. After any play with sound off, before a choice or after one, the hint
-reads: "Sound is off, so nothing played. Turn sound on, then play it again." After the reveal: "Play
-either take again.")
+has been heard to its end. Until the reveal, a play with sound off sets the hint to "Sound is off,
+so nothing played. Turn sound on, then play it again.", and a play heard with sound on puts back the
+hint for where the predict stands: "Choose an answer to unlock Play take 2." before a choice,
+"Locked in. Now play take 2, and watch "star"." after it. A take cut short leaves the hint as it
+was. After the reveal: "Play either take again.", whatever plays next.)
 
 Reveal: It stays level. "Star" grew louder, and its light grew with it, but its line stayed in the
 band. (In Lesson 5, a harder push made a note louder and higher too, so "it rises" was a fair
@@ -118,8 +121,8 @@ demonstration, not a recording. Brighter means louder."
 ## Four words you'll meet
 
 - **Phrase**: a musical thought that ends at a point of rest. [Play: the first phrase]
-- **Legato**: singing on, with no break in the sound, as the notes and words change. [Play: legato,
-  then with breaks]
+- **Legato**: singing smoothly, with no break in the sound, as the notes and words change. [Play:
+  legato, then with breaks]
 - **Swell**: one note growing louder, then softer. Classical singers call it messa di voce, Italian
   for "placing the voice". [Play: a swell]
 - **Cadence**: the end of a phrase, where the tune or its chords come to rest, fully or partly.
@@ -188,10 +191,10 @@ _Toy: the song line, its second phrase, then its third, each with its chords und
 ## Step 5 of 5: Why listen back?
 
 You hear yourself differently from everyone else. As you speak, your voice reaches your ears through
-your skull as well as through the air, and that makes it sound lower to you than to others. A
-recording carries only the air's part, which is one reason your recorded voice can sound strange.
-Listen back for your plan, not the sound of your voice: where did each take breathe, and did "star"
-grow and fade? Sing it records your takes on this device, and nothing scores them.
+your skull as well as through the air, so you hear more bass in it than others do. A recording
+carries only the air's part, which is one reason your recorded voice can sound strange. Listen back
+for your plan, not the sound of your voice: where did each take breathe, and did "star" grow and
+fade? Sing it records your takes on this device, and nothing scores them.
 
 **Try:** play Merc's two takes back to back, then scrub through take 2.
 **Notice:** the breath mark lights where each take breathes, and the light on "star" grows and
@@ -257,7 +260,7 @@ Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable 
   take 2 ]
 - After take 2, Easy or Workable: "Two takes, one phrase. Play them back: where did each breathe?
   Did "star" grow and fade?" [ Play your take 1 ] [ Play your take 2 ] [ Delete your takes ]. Then,
-  once a visit, [ Again ], a new take 2, and [ Done for today ].
+  once a visit, [ Again: a new take 2 ] and [ Done for today ].
 - Effortful: no more takes, then "Keep it gentle: rest before you sing again." Your takes stay, to
   play back or delete. [ Done for today ]
 - Uncomfortable: no more takes and no lines, then "Thanks for saying so. That's enough singing for
@@ -338,19 +341,24 @@ tracks the learner brings (FACTS 58 to 60).]_
 See the season map ]
 
 (The kit's card that closes the season, in its words as they stand, where other pages name the next
-lesson. Beside the words, its figure: the whole song line, six phrases with their breath marks and
+lesson. After "Effortful", "Uncomfortable" or "Just listen today" it reads "You've seen every note
+you sing." with [ See the season map ] alone: no "Now sing a whole song." and no Karaoke Night
+button. Beside the words, its figure: the whole song line, six phrases with their breath marks and
 the swell on "star" drawn in light, the season's signature.)
 
 _[Editorial: the card is the kit's (`kit/next-card.ts`, its words `SEASON_END` in
 `kit/lesson-copy.ts`). Its line answers the trailer's question, "What if you could see every note
-you sing?" (FACTS 9). Today it shows "Now sing a whole song." and its Karaoke Night button whatever
-Sing it's ending, so after "Effortful", "Uncomfortable" or "Just listen today" the page would still
-invite more singing, which the rules suppress (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055). Proposed, as
-a kit change: after such an ending the card keeps "You've seen every note you sing." and the map,
-and drops "Now sing a whole song." and the button (FACTS 78; WEB-SPEC, What the kit and the app
-still need). For the owner, what else the card could add: a season recap of one line, such as "This
-season: a note, a band, a scale, a steady breath, a leap and a beat. Today, a whole phrase, shaped
-and heard back.", which names only what Lessons 1 to 9 and this one teach.]_
+you sing?" (FACTS 9). Today the kit shows "Now sing a whole song." and its Karaoke Night button
+whatever Sing it's ending, so after "Effortful", "Uncomfortable" or "Just listen today" the page
+would invite more singing, which the rules suppress (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055). A close
+that knows the ending is required before this page is built, the lead's decision: after such an
+ending the card keeps "You've seen every note you sing." and "See the season map", and shows neither
+"Now sing a whole song." nor the button (FACTS 78; WEB-SPEC, What the kit and the app still need,
+12). The rest card above stays as the series has it: it names Karaoke Night for when the voice feels
+comfortable, and invites nothing today. For the owner, what else the card could add: a season recap
+of one line, such as "This season: a note, a band, a scale, a steady breath, a leap and a beat.
+Today, a whole phrase, shaped and heard back.", which names only what Lessons 1 to 9 and this one
+teach.]_
 
 ## Footer
 
@@ -414,12 +422,20 @@ main, so a decision there carries here.
 - The phrase: "Twinkle, twinkle, little star", seven notes, do, do, so, so, la, la, so, at 80 beats
   a minute: 6.0 s, from D3 up to B3 for the lower voice (or D4 to B4), the same notes as the
   CURRICULUM's checkpoint asks for, sung twice (FACTS 18, 20, 72).
+- The phrase convention: in this lesson each line of the words is a phrase, two bars long, where
+  common practice often calls four bars a phrase, and two bars a phrase member (FACTS 24). Keep the
+  convention?
 - The swell, on "star", the line's last and only long note, 1.2 s of Merc's take 2: from half his
   usual level up to it and back, 6 dB, so it peaks at the level of the line's other notes and never
   above it. The singer's cue: "On "star", start soft, never a whisper, grow to about speaking
-  volume, then soften again." This is the first time a sung line in the series says "soft". The
-  alternative is to leave the swell out of the singer's take and keep it only in Merc's (FACTS 38,
-  83).
+  volume, then soften again." This is the first Sing it cue in the series to ask for a soft start in
+  volume; the warm-up's "a soft "oo"" is the only earlier sung "soft" given as a cue, and Lesson 5's
+  "a soft "h"" is an onset its Step 4 teaches. The alternative is to leave the swell out of the
+  singer's take and keep it only in Merc's (FACTS 38, 83).
+- The breath mark: "usually sits at a phrase's end" and "takes its time from the note before it"
+  (Step 2, quiz question 2, the Wrap's first line) rest on one source, an encyclopedia article; a
+  music dictionary and a notation handbook bear out its place above the staff and the breath, and
+  say neither (FACTS 26). Do you agree with both, as a singer's rule of thumb?
 - The breath: take 2's cue, "breathe before you start, sing through to "star", and breathe after
   it", a breath before and after 6 s of singing, and nothing asks for a longer breath or a longer
   note (FACTS 72).
@@ -435,9 +451,12 @@ main, so a decision there carries here.
 - The dose: Merc's phrase, then the singer's take 1 and take 2, each 6.0 s after a count-in on do;
   one more take 2 ("Again") only after "Easy" or "Workable", once a visit; never a take after
   "Effortful" or "Uncomfortable"; at most three takes a visit (FACTS 72).
-- The recording: each take is recorded on the device, in memory only, played back at a fixed level,
-  and gone on Delete, on a new take in its place, or when the page is left; nothing is stored or
-  sent (FACTS 51, 52).
+- The recording: each take is recorded on the device, in memory only, and gone on Delete, on a new
+  take in its place (Again, "a new take 2"), or when the page is left; nothing is stored or sent. It
+  is recorded with the browser's echo cancellation, noise suppression and automatic gain control
+  off, and played back through one gain for the whole take, its peak at the same level for every
+  take, never through a compressor or an automatic gain, so a swell keeps its shape and "Did "star"
+  grow and fade?" can be heard in it (FACTS 51, 52).
 - The lines: one a take, the range the line ran over, in note names, with Lesson 3's octave line
   where it applies, or "We didn't hear the phrase that time."; no count and no score (FACTS 53).
 - The playback prompt, "Play them back: where did each breathe? Did "star" grow and fade?", a
@@ -453,8 +472,10 @@ main, so a decision there carries here.
 - The practice card: Karaoke Night, a whole song with the singer's own take played back, which
   scores; its key tools, so a song can sit in the comfortable middle; and the card's care lines
   (FACTS 54).
-- The season's closing card: today it says "Now sing a whole song." after any ending, and the
-  package proposes that a rest ending takes the invitation away (FACTS 78).
+- The season's closing card: after "Effortful", "Uncomfortable" or "Just listen today" it leaves out
+  "Now sing a whole song." and its Karaoke Night button, and keeps "You've seen every note you
+  sing." and the season map, a kit change the page waits for. The rest card names Karaoke Night for
+  when the voice feels comfortable, as Lesson 5's names Voice Mirror (FACTS 77, 78).
 
 ### Listening only
 
