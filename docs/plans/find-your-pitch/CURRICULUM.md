@@ -296,7 +296,9 @@ its voice lines wait on the vocal coach's sign-off, and its page publishes after
   reaches it.
 - Facts: Ableton Learning Music's 1-5-6-4 lesson; Roman numerals (Hooktheory I).
 
-**Lesson 13. Resonance and vowels**
+**Lesson 13. Resonance and vowels** (written: the lesson, its facts and its page spec are in
+[lessons/13-resonance-vowels/](lessons/13-resonance-vowels/), awaiting review; no film yet; its
+voice lines wait on the vocal coach's sign-off, and its page publishes after `/learn/11`)
 
 - Objectives: understand that a vowel is a shape of the vocal tract that boosts different
   harmonics; keep pitch steady while changing vowels.
