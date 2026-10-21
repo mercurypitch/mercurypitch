@@ -7,11 +7,13 @@
 // the slide with the names switch; Swap sizes; the named intervals. The
 // games and the anchor board sit in their steps' text, and stop when the
 // viewer leaves the step. Step 4's predict sits in the step text: a guess
-// unlocks Play the first line and Play the swapped version, and the reveal
-// waits until both have been heard, so it describes what was played, and
-// it never calls a guess wrong.
+// unlocks Play the first line and Play the swapped version, and Swap sizes
+// on the stage, which plays the answer too. The reveal waits until both
+// have been heard, so it describes what was played, and it never calls a
+// guess wrong; the mix-up card, the Try and the Notice, which answer the
+// predict as well, come with it.
 
-import { q } from '@/features/lessons/kit/dom'
+import { q, qa } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
 import { mountPredict } from '@/features/lessons/kit/predict'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
@@ -36,12 +38,17 @@ export const SWAP_GUESS: Readonly<Record<string, string>> = {
   changes: 'You said: no, it changes',
 }
 
-function initPredict(toy: TuneToy): void {
-  mountPredict(q('#predictSwap'), {
+function initPredict(toy: TuneToy, stage: HTMLElement): void {
+  const step = q('#step-4')
+  const predict = q('#predictSwap', step)
+  mountPredict(predict, {
     play: (what, audible) =>
       what === 'swapped' ? toy.playSwapped(audible) : toy.playLine(audible),
     revealOn: ['line', 'swapped'],
     revealAfter: 'all',
+    unlocks: [q<HTMLButtonElement>('[data-tune-swap]', stage)],
+    // the predict's own reveal first: its "You said" line is written there
+    reveal: [q('.reveal', predict), ...qa('[data-swap-reveal]', step)],
     hints: {
       chosen: 'Locked in. Play both, and watch the line.',
       next: 'Now play the other one.',
@@ -71,6 +78,6 @@ export function initSteps(
       if (n !== 5) anchors.stop()
     },
   })
-  initPredict(toy)
+  initPredict(toy, root)
   return toy
 }

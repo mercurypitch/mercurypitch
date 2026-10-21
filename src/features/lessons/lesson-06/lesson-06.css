@@ -120,6 +120,11 @@
 .tune-toggles .names-bar {
   margin-bottom: 0;
 }
+/* Step 4's Swap sizes waits for the predict's guess, and looks it, as a locked play button does */
+.tune-toy .switch[disabled] {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
 /* the readout under the figure: where the line starts, and its do-re-mi, which never changes */
 .tune-readout {
   margin: 8px 0 0;

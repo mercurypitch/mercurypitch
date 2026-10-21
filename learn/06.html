@@ -724,12 +724,15 @@
                     </button>
                   </div>
                   <div class="controls tune-toggles">
+                    <!-- Swap sizes plays Step 4's answer, so it waits for the
+                         guess there (lesson-06/steps.ts) -->
                     <button
                       class="switch"
                       type="button"
                       data-tune-swap
                       aria-pressed="false"
                       hidden
+                      disabled
                     >
                       <span class="track" aria-hidden="true"></span>Swap sizes
                     </button>
@@ -994,7 +997,14 @@
                     </p>
                   </div>
                 </div>
-                <aside class="mixup" aria-label="Common mix-up">
+                <!-- the mix-up card, the Try and the Notice answer the
+                     predict, so they come with its reveal -->
+                <aside
+                  class="mixup"
+                  aria-label="Common mix-up"
+                  hidden
+                  data-swap-reveal
+                >
                   <p class="eyebrow">Common mix-up</p>
                   <blockquote>
                     “A tune is a list of notes, so changing the notes changes
@@ -1017,7 +1027,7 @@
                     it can start on any note.
                   </p>
                 </aside>
-                <p class="try">
+                <p class="try" hidden data-swap-reveal>
                   <span class="k">Try</span
                   ><span
                     ><b
@@ -1025,7 +1035,7 @@
                     ></span
                   >
                 </p>
-                <p class="notice">
+                <p class="notice" hidden data-swap-reveal>
                   <span class="k">Notice</span
                   ><span
                     >The contour, the up-and-down shape, survives the swap. The
