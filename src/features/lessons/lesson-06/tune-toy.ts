@@ -104,10 +104,13 @@ const DRAG_PX = 6
 export interface TuneToy {
   readonly core: TuneLine
   setStep(step: TuneStep): void
-  /** The first line from the current start, as the predict plays it. */
-  playLine(audible: boolean): Promise<void>
-  /** The swapped version over the line, as the predict plays it; it fades once played unless Swap sizes is on. */
-  playSwapped(audible: boolean): Promise<void>
+  /** The first line from the current start, as the predict plays it; resolves false if it was cut short. */
+  playLine(audible: boolean): Promise<boolean>
+  /**
+   * The swapped version over the line, as the predict plays it; it fades
+   * once played unless Swap sizes is on. Resolves false if it was cut short.
+   */
+  playSwapped(audible: boolean): Promise<boolean>
   stop(): void
 }
 
@@ -217,23 +220,25 @@ export function mountTuneToy(root: HTMLElement, opts: TuneToyOptions): TuneToy {
     swapBtn?.setAttribute('aria-pressed', String(on))
   }
 
-  async function playLine(audible: boolean): Promise<void> {
+  async function playLine(audible: boolean): Promise<boolean> {
     const events =
       features.shape.lines.length === 1
         ? firstLine(start, speed())
         : bothLines(start, speed())
     playBtn.classList.add('is-on')
-    await core.play(events, audible)
+    const finished = await core.play(events, audible)
     playBtn.classList.remove('is-on')
+    return finished
   }
 
-  async function playSwappedOverlay(audible: boolean): Promise<void> {
+  async function playSwappedOverlay(audible: boolean): Promise<boolean> {
     core.setOverlay(swapOverlay())
-    await core.play(swappedLine(start, speed()), audible, {
+    const finished = await core.play(swappedLine(start, speed()), audible, {
       overlay: true,
       color: COLOR.ink2,
     })
     if (!swapped) core.setOverlay(null)
+    return finished
   }
 
   function bindControls(): void {

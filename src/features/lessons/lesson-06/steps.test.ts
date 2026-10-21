@@ -7,7 +7,7 @@
 // viewer leaves their step, by Next or by a jump straight to another step
 // (the lesson menu, an address and the quiz's links all jump through the
 // deck's show), and leaving never cuts off what the viewer starts on the
-// new step.
+// new step. Step 4's predict reveals nothing after a play cut short.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -123,5 +123,42 @@ describe("Lesson 6's steps: leaving one", () => {
     expect(heard).toHaveLength(1)
     expect(heard[0].stopped).toBe(true)
     expect(el('[data-anchor="P4"]').classList.contains('is-on')).toBe(false)
+  })
+})
+
+describe("Lesson 6's Step 4: the predict", () => {
+  /** Whether each part that answers the predict is hidden: its reveal, then the three after it. */
+  const answers = (): boolean[] =>
+    Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '#predictSwap .reveal, #step-4 [data-swap-reveal]',
+      ),
+      (r) => r.hidden,
+    )
+
+  it('reveals nothing when the swapped version is stopped 300 ms in, and reveals once it is heard to its end', async () => {
+    // Arrange: a guess, and the first line played to its end
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    listen()
+    const deck = mountSteps()
+    deck.show(4)
+    el('#predictSwap [data-choice="same"]').click()
+    el('#predictSwap [data-play="line"]').click()
+    await vi.advanceTimersByTimeAsync(4100)
+    el('#predictSwap [data-play="swapped"]').click()
+    await vi.advanceTimersByTimeAsync(300)
+
+    // Act: a bead on the stage, tapped while the swapped version plays
+    el('#toyTune .tune-hit-note').click()
+    await vi.advanceTimersByTimeAsync(5000)
+    const cut = answers()
+    const hint = el('#predictSwap .lock-hint').textContent
+    el('#predictSwap [data-play="swapped"]').click()
+    await vi.advanceTimersByTimeAsync(4100)
+
+    // Assert
+    expect(cut).toEqual([true, true, true, true])
+    expect(hint).toBe('Now play the other one.')
+    expect(answers()).toEqual([false, false, false, false])
   })
 })
