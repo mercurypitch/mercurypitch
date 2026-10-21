@@ -55,7 +55,7 @@ function initPredict(toy: TuneToy, stage: HTMLElement): void {
       silent:
         'Sound is off, so nothing played. Turn sound on to hear them, then press Play the swapped version.',
       again:
-        'Play them again, or press Swap sizes to keep the swap on the line.',
+        'Play them again, or press Swap sizes: the swapped version stays on the line.',
     },
     guess: (choice) => SWAP_GUESS[choice] ?? 'You said',
   })

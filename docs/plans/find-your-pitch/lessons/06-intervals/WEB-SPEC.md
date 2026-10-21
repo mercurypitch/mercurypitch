@@ -318,8 +318,8 @@ Feedback names the interval and the sound, never the listener.
 - **Words on each card.** Its heading, then its round line: "Ten rounds" or "Eight rounds" before
   the first, "Round 3 of 10" during the game, and the count, "7 of 10", at its end. Its question:
   "Each round plays two notes, going up or down. Was the move a step or a leap?" (Step or leap?)
-  and "Each round plays one of the board's first four intervals, the steps going down and the leaps
-  going up, as their tunes do. Which is it?" (Name it). The Play button reads "Play a pair", then
+  and "Each round plays one of the first four intervals above: the steps going down and the leaps
+  going up, as in their tunes. Which is it?" (Name it). The Play button reads "Play a pair", then
   "Play it again" while a round waits for its answer, "Next round" after it, and "Play ten more"
   or "Play eight more" at the end. Each answer shows its key, "1 Step" and "2 Leap", or "1 Semitone
   · m2" to "4 Fifth · P5", and under them "Keys 1 and 2 answer; Space plays the pair again." or
@@ -332,19 +332,19 @@ Feedback names the interval and the sound, never the listener.
 ### 5. Anchor board
 
 Five rows, LESSON.md's table, on a card in Step 5's text column, under the Notice, headed "Five to
-keep with Leap's labels": each row has the interval's name and label, its semitones and where to
-hear it, LESSON.md's words ("Perfect fourth (P4)", "5 semitones", "'Auld Lang Syne': 'Should
-auld', leaping up"), a small two-bead figure on rows, and two buttons, **Play the tune** (the
-snippet) and **Play the interval** (the bare pair), with accessible names such as "Play the tune:
-'Should auld ac-quain-tance be for-got'" and "Play the interval: C 4 up to F 4, a perfect fourth";
-the semitone row's snippet is "How I won-der", four notes, so its tune button reads "Play the
-tune: 'How I won-der'" (FACTS 68). The octave row plays Lesson 1's A3 and A4 and its tune button
-reads "Play Lesson 1's two As". A row lights while it sounds; one sound at a time (a new tap stops the
-last). On phones (below 960 px) each row stacks: the name, label and semitones on one line beside
-the figure, and under them the two buttons side by side, each half the row's width and at least
-44 px tall, as the kit's small buttons are (`btn sm`, `kit/lesson-base.css:519-523`). At 390 px a
-card with 1 px borders and 16 px padding leaves a 324 px row, so with an 8 px gap each button is
-158 px wide; a label wraps if it must. Under reduced motion the row lights with no transition.
+keep each with the short label Ear Lab uses": each row has the interval's name and label, its
+semitones and where to hear it, LESSON.md's words ("Perfect fourth (P4)", "5 semitones", "'Auld Lang
+Syne': 'Should auld', leaping up"), a small two-bead figure on rows, and two buttons, **Play the
+tune** (the snippet) and **Play the interval** (the bare pair), with accessible names such as "Play
+the tune: 'Should auld ac-quain-tance be for-got'" and "Play the interval: C 4 up to F 4, a perfect
+fourth"; the semitone row's snippet is "How I won-der", four notes, so its tune button reads "Play
+the tune: 'How I won-der'" (FACTS 68). The octave row plays Lesson 1's A3 and A4 and its tune button
+reads "Play Lesson 1's two As". A row lights while it sounds; one sound at a time (a new tap stops
+the last). On phones (below 960 px) each row stacks: the name, label and semitones on one line
+beside the figure, and under them the two buttons side by side, each half the row's width and at
+least 44 px tall, as the kit's small buttons are (`btn sm`, `kit/lesson-base.css:519-523`). At
+390 px a card with 1 px borders and 16 px padding leaves a 324 px row, so with an 8 px gap each
+button is 158 px wide; a label wraps if it must. Under reduced motion the row lights with no transition.
 
 ### 6. Sing it
 

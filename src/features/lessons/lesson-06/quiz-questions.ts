@@ -103,7 +103,7 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
   {
     id: 'l06-q4',
     question:
-      "A version keeps five of the line's seven notes and every up and down, but swaps the sizes of its two rises, the leap and the step up. Is it still “Twinkle”?",
+      "A version keeps five of the line's seven notes and every up and down. But it swaps the sizes of its two rises, the leap and the step up. Is it still “Twinkle”?",
     options: [
       {
         text: 'No: two intervals changed',
@@ -118,7 +118,7 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
       {
         text: 'Yes: every up and down is the same',
         feedback:
-          'Same ups and downs, new sizes: in one study, familiar tunes changed that way were recognised less often than ones that kept the sizes too.',
+          'Same ups and downs, new sizes: in one study, people recognised familiar tunes changed that way less often than ones that kept the sizes too.',
       },
     ],
   },
