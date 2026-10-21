@@ -901,3 +901,60 @@ test.describe('the mixer tour starting at 1440x900', () => {
     ).toBe(0)
   })
 })
+
+/** The mixer's saved layout choices, as the next mount will read them. */
+const savedSidebarHidden = (page: Page) =>
+  page.evaluate(
+    () =>
+      (
+        JSON.parse(
+          localStorage.getItem('pitchperfect_workspace_prefs') ?? '{}',
+        ) as { sidebarHidden?: boolean }
+      ).sidebarHidden ?? null,
+  )
+
+test.describe('the mixer tour with the stem sidebar hidden', () => {
+  // Owner report, 2026-10-21: with the stem controls hidden, the tour's first
+  // step had nothing to spotlight and its card floated mid-screen.
+  test('shows the sidebar for the tour without changing the saved choice', async ({
+    page,
+  }) => {
+    await openSeededSong(page, { width: 1440, height: 900 })
+    const sidebar = page.locator('aside.sm-sidebar')
+    await page.getByRole('button', { name: 'Mixer sidebar' }).click()
+    await expect(sidebar).toHaveClass(/sm-sidebar-hidden/)
+    await expect.poll(() => savedSidebarHidden(page)).toBe(true)
+
+    await page.getByRole('button', { name: 'Tour', exact: true }).click()
+    await expect(page.locator('[class*="walkthroughStepTitle"]')).toHaveText(
+      'Mix the stems',
+    )
+    await expect(sidebar).not.toHaveClass(/sm-sidebar-hidden/)
+
+    // The spotlight lands on the whole stem panel, not on the sliver the
+    // sidebar was a frame into sliding open.
+    const stems = page.locator('[data-tour="mixer.stems"]')
+    const spotlight = page.locator('[class*="walkthroughHighlight"]')
+    await expect
+      .poll(async () => {
+        const target = await stems.boundingBox()
+        const lit = await spotlight.boundingBox()
+        return (
+          target !== null &&
+          lit !== null &&
+          target.width > 150 &&
+          Math.abs(target.x - lit.x) < 12 &&
+          Math.abs(target.width - lit.width) < 24
+        )
+      })
+      .toBe(true)
+    // Shown for the tour, never written: a mixer remounted under the tour
+    // would still read the singer's own choice.
+    expect(await savedSidebarHidden(page)).toBe(true)
+
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[class*="walkthroughOverlay"]')).toHaveCount(0)
+    await expect(sidebar).toHaveClass(/sm-sidebar-hidden/)
+    expect(await savedSidebarHidden(page)).toBe(true)
+  })
+})
