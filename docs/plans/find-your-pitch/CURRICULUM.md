@@ -308,14 +308,21 @@ its voice lines wait on the vocal coach's sign-off, and its page publishes after
   or pronunciation.
 - Facts: harmonics and timbre; vowels as vocal-tract shaping (formants).
 
-**Lesson 14. Phrasing: sing a whole song**
+**Lesson 14. Phrasing: sing a whole song** (written: the lesson, its facts and its page spec are in
+[lessons/14-phrasing-whole-song/](lessons/14-phrasing-whole-song/), awaiting review; no film yet;
+its voice lines wait on the vocal coach's sign-off, and its page publishes after `/learn/05`,
+`/learn/08`, `/learn/09` and `/learn/12`)
 
 - Objectives: plan breaths at phrase ends; shape a phrase with dynamics without pushing; put the
   season together in one song; record yourself and listen back (S22).
 - Misconception: "If every note is in tune, the song is finished."
 - Signature: a whole song's pitch line with breath marks and a swell drawn in light.
 - Checkpoint: sing one phrase twice, the second time with a planned breath and a swell.
-- Practise: Dynamic Swell; Karaoke Night or Play Along; daily routines.
+- Practise: Karaoke Night (`/karaoke-night?lesson=14`: a whole song, with the singer's own take
+  played back; it scores the singing, and says so). Not linked: Dynamic Swell, whose card promises
+  breath support and whose score rewards a wider swell in decibels, and which no address opens; the
+  daily routines, which promise breath support and range from the main app's sidebar; and Play
+  Along, which opens only on a song the viewer has had separated.
 - Facts: messa di voce (Titze); phrasing and breath planning (Arneson).
 
 ## 3. Topic graph
