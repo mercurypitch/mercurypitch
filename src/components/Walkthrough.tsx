@@ -3,9 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, Index, onCleanup, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createUniqueId, Index, onCleanup, Show, untrack, } from 'solid-js'
 import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
 import { applyPersistedValue } from '@/lib/storage'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import { isNarrow } from '@/lib/use-viewport'
 import type { WalkthroughStep } from '@/stores/app-store'
 import { setWalkthroughStep, walkthroughStep } from '@/stores/app-store'
@@ -13,6 +14,7 @@ import { tourSteps, walkthroughActive } from '@/stores/app-store'
 import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, startWalkthrough, } from '@/stores/app-store'
 import { activeTab, setActiveTab, setSidebarCollapsed, setSidebarOpen, sidebarCollapsed, } from '@/stores/ui-store'
 import styles from './Walkthrough.module.css'
+import { IconCheck, IconClose, IconSkipForward } from './walkthrough-icons'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
@@ -21,53 +23,12 @@ const getTooltipWidth = () => Math.min(340, window.innerWidth - 24)
 const getTooltipHeight = () => Math.min(200, window.innerHeight - 48)
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
-// Compact action-row glyphs (16px). Icon-only buttons keep the spotlight tight
-// on small screens; the label lives in title/aria-label.
-const IconClose = () => (
-  <svg
-    viewBox="0 0 24 24"
-    width="15"
-    height="15"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    aria-hidden="true"
-  >
-    <path d="M6 6l12 12M18 6L6 18" />
-  </svg>
-)
-const IconSkipForward = () => (
-  <svg
-    viewBox="0 0 24 24"
-    width="16"
-    height="16"
-    fill="currentColor"
-    aria-hidden="true"
-  >
-    <path d="M5 5l9 7-9 7z" />
-    <rect x="15" y="5" width="3" height="14" rx="1" />
-  </svg>
-)
-const IconCheck = () => (
-  <svg
-    viewBox="0 0 24 24"
-    width="16"
-    height="16"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2.4"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M5 12l5 5L20 7" />
-  </svg>
-)
-
 export const Walkthrough: Component = () => {
   let highlightRef: HTMLDivElement | undefined
   let tooltipRef: HTMLDivElement | undefined
+  let nextRef: HTMLButtonElement | undefined
+  const titleId = createUniqueId()
+  const descId = createUniqueId()
 
   // Derived signals
   const steps = () => tourSteps()
@@ -149,6 +110,8 @@ export const Walkthrough: Component = () => {
 
   // Keyboard navigation (desktop): →/Enter next, ← back, Esc closes. Skip when
   // typing in a field, and let a focused tooltip button handle its own Enter.
+  // Only a tooltip button: the mixer's Tour button, left focused behind the
+  // overlay, took the Enter and restarted the tour from its first step.
   createEffect(() => {
     if (!walkthroughActive()) return
     const onKey = (e: KeyboardEvent) => {
@@ -172,13 +135,21 @@ export const Walkthrough: Component = () => {
         e.preventDefault()
         advance()
       } else if (e.key === 'Enter') {
-        if (t && t.tagName === 'BUTTON') return
+        if (t?.tagName === 'BUTTON' && tooltipRef?.contains(t) === true) return
         e.preventDefault()
         advance()
       }
     }
     window.addEventListener('keydown', onKey)
     onCleanup(() => window.removeEventListener('keydown', onKey))
+  })
+
+  // The tooltip is a dialog: focus moves onto its Next button, Tab stays in
+  // it, and focus returns to whatever started the tour. Escape stays with the
+  // handler above, so the tour ends once.
+  useFocusTrap(() => tooltipRef, {
+    isOpen: walkthroughActive,
+    initialFocus: () => nextRef,
   })
 
   // An element only counts as a spotlight target when the user could actually
@@ -670,6 +641,10 @@ export const Walkthrough: Component = () => {
         <div
           ref={tooltipRef}
           class={styles.walkthroughTooltip}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={descId}
           onClick={(e) => {
             e.stopPropagation()
           }}
@@ -684,14 +659,21 @@ export const Walkthrough: Component = () => {
             <IconClose />
           </button>
 
-          <Show when={currentSection()}>
-            {(sec) => (
-              <div class={styles.walkthroughSectionTitle}>{sec().title}</div>
-            )}
-          </Show>
-
-          <h3 class={styles.walkthroughStepTitle}>{currentStep()?.title}</h3>
-          <p class={styles.walkthroughStepDesc}>{currentStep()?.description}</p>
+          {/* Focus stays on Next as the steps change, so each new step's
+              words are announced from here. */}
+          <div aria-live="polite">
+            <Show when={currentSection()}>
+              {(sec) => (
+                <div class={styles.walkthroughSectionTitle}>{sec().title}</div>
+              )}
+            </Show>
+            <h3 id={titleId} class={styles.walkthroughStepTitle}>
+              {currentStep()?.title}
+            </h3>
+            <p id={descId} class={styles.walkthroughStepDesc}>
+              {currentStep()?.description}
+            </p>
+          </div>
 
           <div class={styles.walkthroughActions}>
             {/* Progress on its own line. It used to share one with the
@@ -779,6 +761,7 @@ export const Walkthrough: Component = () => {
                 )}
               </Show>
               <button
+                ref={nextRef}
                 class={styles.walkthroughNext}
                 onClick={advance}
                 title={isLast() ? 'Finish' : 'Next'}
