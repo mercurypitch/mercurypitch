@@ -665,7 +665,11 @@ table):
      "Landing a leap"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:128-129`); `position: 9`,
      `learningResourceType` "Lesson", free, the series as `isPartOf`, and the organization as author
-     and publisher (`:118-126`), as in Lesson 2's (`learn/02.html:69-109`);
+     and publisher (`:118-126`), as in Lesson 2's (`learn/02.html:69-109`). It has no
+     `datePublished` yet, as the built pages leave it out until they go live
+     (`learn/04.html:61-68`): the date is the day the page first goes live on mercurypitch.com,
+     which nothing writes at run time, so it is set in the commit that deletes the page's
+     `drafts.ts` line or in one straight after the console publishes it (SEARCH.md § 3.2);
    - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:133-145`;
      `learn/02.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
      "Legal" (`lesson-pages.test.ts:173-182`).
