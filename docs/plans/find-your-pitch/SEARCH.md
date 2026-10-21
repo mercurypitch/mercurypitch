@@ -143,8 +143,14 @@ Every lesson document follows this, in addition to its WEB-SPEC.
 - **Copy Lesson 1's two blocks.** Change the number, headline,
   `alternativeHeadline` (the hook), description, image, `timeRequired`,
   `teaches` and `position`.
-- **`datePublished`** on the release that puts the lesson on mercurypitch.com.
-  `dateModified` when its teaching changes (the LEDGER says when).
+- **`datePublished`** is the day the lesson first goes live on
+  mercurypitch.com. The admin console publishes a draft at run time, and
+  nothing then writes the date: the site worker changes the page state, the
+  hook's copies and the links (`src/lesson-gate.ts:9-21`), never a date, so a
+  published draft is served without one. It is set either in the commit that
+  deletes the lesson's `drafts.ts` line or in a commit straight after the
+  console publishes it; the owner picks which. `dateModified` when its
+  teaching changes (the LEDGER says when).
 - **`author`.** A `Person` with a `url` once the page shows a byline (§3.3).
   Until then, the organization.
 - **Once the hub exists,** the breadcrumb gains its middle step (Home, then Find
@@ -182,15 +188,20 @@ What a reader, a crawler and an answer engine all need:
 
 ### 3.4 Being found
 
-- **Releasing the lesson** (deleting its line from `drafts.ts`) links it from
-  every entry document. The test then asks for the rest:
+- **Publishing it in the admin console** puts a draft live on
+  mercurypitch.com with no release. The site worker serves the page and adds
+  it to the sitemap and llms.txt it serves (`src/lesson-gate.ts:22-24`), so
+  search can find it from that moment.
+- **Releasing the lesson** (deleting its line from `drafts.ts`) makes that
+  permanent in the repository, and links it from every entry document. The
+  test then asks for the rest:
   - the head and the two structured-data blocks;
   - the sitemap;
   - llms.txt, as one bullet with its one-line answer;
   - the service worker's document list.
-- **Sitemap `lastmod`:** the release date when it ships, then the date its
+- **Sitemap `lastmod`:** the day it first went live, then the date its
   content changes. `/learn/01` says 2026-10-16 today; set it to its release day.
-- **On release day:**
+- **On the day the console publishes it**, not at the release:
   - request indexing in Search Console;
   - submit the URL in Bing Webmaster Tools.
 - **Past four lessons,** the nav links give way to one "Lessons" link to the
@@ -386,7 +397,8 @@ exist beyond a definition.
 
 1. The head, as in §3.1.
 2. The two structured-data blocks, from Lesson 1's.
-3. Release it by deleting its line from `drafts.ts`. Run
+3. Publish it in the admin console: that puts it live with no release
+   (§3.4). Release it by deleting its line from `drafts.ts`. Run
    `src/tests/lesson-pages.test.ts`, and fix what it names:
    - the sitemap;
    - llms.txt;
@@ -400,10 +412,12 @@ exist beyond a definition.
 
 4. Links out: home, hub, previous and next lesson, the room. Links in: the room
    pages in §8.
-5. Release day:
-   - set `datePublished` and the sitemap date;
+5. The day it goes live, which is the day the console publishes it:
    - request indexing in Search Console and Bing;
    - publish the episode on YouTube with the lesson link first.
+6. Set `datePublished` and the sitemap date to that day, in the commit that
+   deletes its `drafts.ts` line or in one straight after the console publishes
+   it (§3.2).
 
 ---
 
