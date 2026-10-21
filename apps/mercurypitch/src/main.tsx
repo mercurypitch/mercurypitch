@@ -193,6 +193,19 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       render: () => <Panel />,
     })
   })
+  // The Karaoke room's lyrics on a TV connected by AirPlay screen mirroring
+  // or a cable, in place of a mirror of the phone: a proof of concept for
+  // karaoke on a TV (ios/App/App/LyricsWindow/TVLyrics.swift). Off unless
+  // switched on here, so a store build's TV always mirrors. Same gate, same
+  // reason.
+  void import('./shell/TvLyricsPanel').then((module) => {
+    const Panel = module.TvLyricsPanel
+    registerDeveloperSection({
+      id: 'tv-lyrics',
+      title: 'TV',
+      render: () => <Panel />,
+    })
+  })
   // How long each step of a Subscribe, a Restore purchase and a sign-in's
   // carry took, and the wait for the songs after the store's yes: Subscribe
   // took close to a minute on TestFlight build 919, and nothing said where.

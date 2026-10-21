@@ -412,6 +412,14 @@ export interface NativeDeviceApi {
    */
   pictureInPictureLyrics: ((script: LyricWindowScript | null) => void) | null
   /**
+   * iOS: whether a TV connected to the phone shows the room's lyrics (a test
+   * build's "Lyrics on a connected TV"), now and on every change. The TV
+   * draws them from the same script as the window, so the room keeps handing
+   * it over while the TV shows them, window or not. Returns the unsubscribe.
+   * Absent where no TV can show them.
+   */
+  onTvLyrics?: (handler: (showing: boolean) => void) => () => void
+  /**
    * The phone's volume and where its sound goes, for the premium rooms'
    * low-volume hint and a test build's audio readout. Absent where the app
    * has no reading of it.

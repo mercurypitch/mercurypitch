@@ -31,6 +31,15 @@ const platform = vi.hoisted(() => ({
   micStopsOtherApps: vi.fn(() => false),
   readAudioOutput: vi.fn(async () => Promise.resolve(null as unknown)),
   onAudioOutput: vi.fn((_handler: (reading: unknown) => void) => vi.fn()),
+  readTvLyrics: vi.fn(async () =>
+    Promise.resolve(
+      null as { enabled: boolean; connected: boolean; showing: boolean } | null,
+    ),
+  ),
+  onTvLyrics: vi.fn(
+    (_handler: (state: { connected: boolean; showing: boolean }) => void) =>
+      vi.fn(),
+  ),
 }))
 
 const unlock = vi.hoisted(() => ({
@@ -61,6 +70,7 @@ function fakeContext() {
 afterEach(() => {
   resetSharedAudioContext()
   vi.clearAllMocks()
+  platform.pictureInPictureNeedsLyrics.mockReturnValue(false)
 })
 
 describe('the device a room reaches through the bridge', () => {
@@ -258,6 +268,48 @@ describe('the device a room reaches through the bridge', () => {
 
   it('has no lyrics to hand an Android window, which shows the page', () => {
     expect(createNativeDevice().pictureInPictureLyrics).toBeNull()
+  })
+
+  it('hears an iOS TV show the lyrics: as it stands, then every change', async () => {
+    platform.pictureInPictureNeedsLyrics.mockReturnValue(true)
+    platform.readTvLyrics.mockResolvedValueOnce({
+      enabled: true,
+      connected: true,
+      showing: true,
+    })
+    const stop = vi.fn()
+    platform.onTvLyrics.mockReturnValueOnce(stop)
+    const device = createNativeDevice()
+    const handler = vi.fn()
+
+    const unsubscribe = device.onTvLyrics?.(handler)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    platform.onTvLyrics.mock.calls[0]?.[0]({ connected: true, showing: false })
+    unsubscribe?.()
+
+    expect(handler.mock.calls).toEqual([[true], [false]])
+    expect(stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('drops the first read of the TV once a change has been heard', async () => {
+    platform.pictureInPictureNeedsLyrics.mockReturnValue(true)
+    platform.readTvLyrics.mockResolvedValueOnce({
+      enabled: true,
+      connected: true,
+      showing: true,
+    })
+    const device = createNativeDevice()
+    const handler = vi.fn()
+
+    device.onTvLyrics?.(handler)
+    platform.onTvLyrics.mock.calls[0]?.[0]({ connected: false, showing: false })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(handler.mock.calls).toEqual([[false]])
+  })
+
+  it('has no TV to watch on Android', () => {
+    expect(createNativeDevice().onTvLyrics).toBeUndefined()
   })
 
   it('stands the unlock clip aside while the lock screen’s carrier holds the session', () => {

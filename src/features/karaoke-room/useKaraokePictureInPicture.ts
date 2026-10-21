@@ -27,6 +27,11 @@
 // app meanwhile, and the room pauses a song the singer leaves unless "Keep
 // playing in the background" is on, so on iOS the window arms only with it
 // on. The web has no device and never reports a window.
+//
+// A TV connected to an iPhone can show the same lyrics full screen, from the
+// same script, while a test build's switch is on (`onTvLyrics`). The room
+// keeps handing the script over while the TV shows them, window or not. That
+// never arms the window: auto-enter still follows the setting alone.
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
@@ -91,9 +96,22 @@ export function useKaraokePictureInPicture(
   })
 
   // The lyrics for a window that draws itself, for as long as one could
-  // open, and null once it cannot, which closes one that is open.
+  // open, and null once it cannot, which closes one that is open. A TV that
+  // shows them draws from the same script, so they stay handed over while it
+  // does.
   if (showLyrics !== null) {
-    const lyrics = createMemo(() => (possible() ? options.lyrics() : null))
+    const [tvShowing, setTvShowing] = createSignal(false)
+    const watchTv = device.onTvLyrics
+    if (watchTv !== undefined) {
+      onCleanup(
+        watchTv((showing) => {
+          setTvShowing(showing)
+        }),
+      )
+    }
+    const lyrics = createMemo(() =>
+      possible() || tvShowing() ? options.lyrics() : null,
+    )
     createEffect(on(lyrics, showLyrics))
     onCleanup(() => {
       showLyrics(null)
