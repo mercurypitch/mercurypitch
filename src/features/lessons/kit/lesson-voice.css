@@ -320,7 +320,9 @@
 .ring-sm .lbl b {
   font-size: var(--fs-14);
 }
-.ring-sm .lbl span {
+/* the state line, under the note: never the note's own spans, a black key's
+   sign and its spoken word, which keep "B♭2 · 117 Hz" on one line */
+.ring-sm .lbl > span {
   display: block;
   font-size: var(--fs-12);
   line-height: 1.25;

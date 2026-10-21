@@ -262,7 +262,7 @@ button {
 .viz .hint,
 .slider-row label,
 .tk span,
-.ring .lbl span,
+.ring .lbl > span,
 .app-card figcaption,
 .score small,
 .challenge .lbl,
