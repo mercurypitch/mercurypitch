@@ -7,7 +7,9 @@
 // viewer leaves their step, by Next or by a jump straight to another step
 // (the lesson menu, an address and the quiz's links all jump through the
 // deck's show), and leaving never cuts off what the viewer starts on the
-// new step. Step 4's predict reveals nothing after a play cut short.
+// new step. The step showing, shown again as the layout swaps, keeps its
+// line playing and its bead focused. Step 4's predict reveals nothing
+// after a play cut short.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -93,6 +95,32 @@ describe("Lesson 6's steps: leaving one", () => {
     expect(heard).toHaveLength(1)
     expect(heard[0].stopped).toBe(true)
     expect(el('[data-anchor="P4"]').classList.contains('is-on')).toBe(false)
+  })
+})
+
+describe("Lesson 6's steps: the layout swapping", () => {
+  it('keeps the line playing, and a focused bead focused, when the step showing is shown again', () => {
+    // Arrange: Step 2's two lines a second in, a bead focused
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const heard = listen()
+    const deck = mountSteps()
+    deck.show(2)
+    const play = el('#toyTune [data-tune-play]')
+    play.click()
+    vi.advanceTimersByTime(1000)
+    const bead = el('#toyTune [data-note="3"]')
+    bead.focus()
+
+    // Act: the deck shows its step again, as the phone deck and the wide page do when they swap
+    deck.show(2)
+    vi.advanceTimersByTime(100)
+
+    // Assert
+    expect(heard.length).toBeGreaterThan(0)
+    expect(heard.some((v) => v.stopped)).toBe(false)
+    expect(play.classList.contains('is-on')).toBe(true)
+    expect(bead.isConnected).toBe(true)
+    expect(document.activeElement).toBe(bead)
   })
 })
 
