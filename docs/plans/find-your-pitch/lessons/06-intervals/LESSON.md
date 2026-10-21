@@ -132,7 +132,7 @@ _Toy: the tune line with Slide and the names switch._
 
 ## Step 4 of 5: So is it the ups and downs I remember?
 
-**Predict:** this version keeps five of the first line's seven notes, and every up and down, but
+**Predict:** this version keeps five of the first line's seven notes and every up and down. But it
 swaps the sizes of its two rises, the leap and the step up. Is it still "Twinkle"?
 [ Yes: most notes are the same ] [ No: it changes ]
 
@@ -147,7 +147,7 @@ The hint under the buttons:
 - After the first play: "Now play the other one."
 - With sound off: "Sound is off, so nothing played. Turn sound on to hear them, then press Play the
   swapped version."
-- After the reveal: "Play them again, or press Swap sizes to keep the swap on the line."
+- After the reveal: "Play them again, or press Swap sizes: the swapped version stays on the line."
 
 Reveal, under "You said: yes, most notes are the same" or "You said: no, it changes": It changes. Five notes match, and every up and down, but now the first rise is 2 semitones
 and the second is 7. Two intervals changed, and so did the tune. (Most notes did match, so "yes"
@@ -171,7 +171,7 @@ _Toy: the tune line with Swap sizes._
 Musicians name an interval by counting letters, both ends included: C up to G runs C, D, E, F, G,
 five letters, so it's a fifth. The number of semitones gives the rest of the name: a fifth of seven
 semitones is a perfect fifth. To name an interval, think of a tune you know: hear a leap, and ask
-which tune starts that way. Five to keep, with Leap's labels:
+which tune starts that way. Five to keep, each with the short label Ear Lab uses:
 
 | Interval                      | Semitones | Hear it in                                              |
 | ----------------------------- | --------- | ------------------------------------------------------- |
@@ -231,9 +231,9 @@ chose before, or change it:" instead. With none stored, this choice comes after 
 above and before anything plays, because it picks the Merc who sings, as in Lesson 5.)
 
 **Your turn:** Merc sings the tune's first two lines, then again three semitones higher. Play the
-first version, then start the guide and sing along, on the words, on do-re-mi or on "ooh". Breathe
-after "star". Then the same with the second. Sing at about speaking volume. If the top feels high,
-move do, your starting note, lower; if the bottom feels low, move it higher.
+first version. Then start the guide and sing along: on the words, on do-re-mi or on "ooh". Breathe
+after "star". Then do the same with the second version. Sing at about speaking volume. If the top
+feels high, move do, your starting note, lower; if the bottom feels low, move it higher.
 
 Stop immediately if anything feels uncomfortable.
 
@@ -280,14 +280,14 @@ not half.]_
    - A step · Feedback: "A step is a semitone or a tone. This one is five semitones. Try Step 2
      again."
    - The same note twice · Feedback: "The second note is higher: five semitones up."
-4. A version keeps five of the line's seven notes and every up and down, but swaps the sizes of its
-   two rises, the leap and the step up. Is it still "Twinkle"?
+4. A version keeps five of the line's seven notes and every up and down. But it swaps the sizes of
+   its two rises, the leap and the step up. Is it still "Twinkle"?
    - No: two intervals changed **[correct]** · Feedback: "The ups and downs aren't the whole tune;
      the sizes count too."
    - Yes: most of the notes are the same · Feedback: "Most notes match, but a tune lives in its
      intervals, and two of them changed. Try Step 4 again."
    - Yes: every up and down is the same · Feedback: "Same ups and downs, new sizes: in one study,
-     familiar tunes changed that way were recognised less often than ones that kept the sizes
+     people recognised familiar tunes changed that way less often than ones that kept the sizes
      too."
 
 ## Wrap
@@ -313,8 +313,8 @@ sounds like itself from any note.
   along. Sing at about speaking volume, and stop immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Interval Trainer.
 - Second drill: For your ear, Ear Lab's Leap plays two notes, going up or down, and you name the
-  interval. It mixes all twelve; listen for this lesson's m2, M2, P4, P5 and P8. Free:
-  **mercurypitch.com/ear-lab**, then tap Leap.
+  interval. It mixes all twelve intervals, from a semitone to an octave; listen for this lesson's
+  m2, M2, P4, P5 and P8. Free: **mercurypitch.com/ear-lab**, then tap Leap.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Interval Trainer
   will be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap
   Interval Trainer." Then the second drill.
@@ -325,7 +325,8 @@ links), the card's address becomes "Practise it free: mercurypitch.com/exercises
 and the text's second sentence becomes "It asks for this lesson's two leaps, the perfect fourth and
 the perfect fifth." When the `ear-drill` launch kind ships (CURRICULUM § 4 item 5), the second
 drill's address becomes "mercurypitch.com/exercises/steps-and-leaps" (proposed slug), Leap with only
-m2, M2, P4 and P5, and "It mixes all twelve; listen for this lesson's m2, M2, P4, P5 and P8" goes.
+m2, M2, P4 and P5, and "It mixes all twelve intervals, from a semitone to an octave; listen for
+this lesson's m2, M2, P4, P5 and P8" goes.
 Every link carries `?lesson=06`, so First Light, the app's intro, steps aside on a first visit, and
 the page has no line about closing it (FACTS 44a).]_
 
@@ -419,6 +420,11 @@ thing as before, more plainly.
 - Your turn. Before: "If the top feels high, move do lower; if the bottom feels low, move it
   higher." After: "If the top feels high, move do, your starting note, lower; if the bottom feels
   low, move it higher." In "Twinkle", do is the first note. Lesson 4's Your turn says the same.
+- Your turn again, in the page's content review (October 2026). Before: "Play the first version,
+  then start the guide and sing along, on the words, on do-re-mi or on "ooh". [...] Then the same
+  with the second." After: "Play the first version. Then start the guide and sing along: on the
+  words, on do-re-mi or on "ooh". [...] Then do the same with the second version." The same task in
+  shorter sentences.
 - The voice line, shared with Lessons 5 and 7. Before: "Your voice from Lesson 3, or choose now:"
   After, in two forms: "Keep the voice you chose before, or change it:" with a choice stored, and
   "Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:" with none.
