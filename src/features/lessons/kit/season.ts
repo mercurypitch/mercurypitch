@@ -272,7 +272,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Intervals: the distance between notes',
     short: 'Intervals',
     topics: ['T11', 'T12'],
-    // A draft until the owner's review (drafts.ts), as Lesson 3 is.
+    // A draft until the owner's review and the vocal coach's look at Sing it (drafts.ts).
     minutes: 15,
     page: '/learn/06',
     hook: 'Why can you start ‘Twinkle, Twinkle’ on any note and it is still the same tune?',
