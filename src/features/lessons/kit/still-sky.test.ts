@@ -1,10 +1,11 @@
 // ============================================================
-// Hero sky tests — the still sky: every star once, at rest, and again on a resize
+// Still sky tests — every star once, at rest, and again on a resize
 // ============================================================
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
-import { makeStars, stillSky } from './hero-sky'
+import { makeStars } from './hero-sky'
+import { stillSky } from './still-sky'
 
 /** The stars' fills as a canvas saw them, one per star drawn. */
 let fills: string[] = []

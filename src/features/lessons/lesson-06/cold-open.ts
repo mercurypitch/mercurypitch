@@ -20,11 +20,11 @@
 
 import { q, wait } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
-import { stillSky } from '@/features/lessons/kit/hero-sky'
 import { mercCelebrate, mercSing, mercsReady, } from '@/features/lessons/kit/merc-duo'
 import { COLOR, signsHtml } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { mountPredict } from '@/features/lessons/kit/predict'
+import { stillSky } from '@/features/lessons/kit/still-sky'
 import type { TuneShape } from '@/features/lessons/kit/tune-line'
 import { mountTuneLine } from '@/features/lessons/kit/tune-line'
 import type { NoteEvent } from './examples'
