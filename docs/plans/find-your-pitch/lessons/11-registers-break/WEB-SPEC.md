@@ -97,7 +97,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    (390 x 844) the title and the opening's first control, Play orange Merc's siren, and the two
    choices belong on the first screen, and on a tablet in landscape (1024 x 640) the stage and the
    choices too (CURIOSITY-MOMENTS § 3.1, "Above the fold",
-   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:272-274`). Of the plan's levers, the recall's
+   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:275-277`). Of the plan's levers, the recall's
    place is already used, since it follows the predict; the others are the Mercs' size (`--merc`,
    `kit/lesson-stage.css:193`) and the hook's length, and this hook is a short one.
    `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its seven sizes and
@@ -128,13 +128,18 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    way on (`:130-146`; FACTS 7), "Coming later" and "See it on the map" until Lesson 12's page is
    live. Its hook and tease are the ones the admin console picked, the defaults until it picks
    (`:14-20`), since the card reads the season as the page's state shows it (`:185`). The tease's
-   figure, a still of four chords as four rooms on the spiral with one tune passing through them,
-   sits in the page's `[data-next-card]` mark, whose children the kit keeps in the card after its
-   words (`:27-29`, `:184`, `:205`), as Lesson 2's figures are (`learn/02.html:1776`). The card is
-   a link, so the figure holds no button. The practice card is the Siren card, with "Ten minutes,
-   gently, most days" under it; after "Effortful", "Uncomfortable" or "Just listen today" it is the
-   rest card instead, without that line (Toys 4). Its address links `/pitch-training?lesson=11` in a
-   new tab. Free play unlocks here: the chart's five step states on one stage (playbook rule 17).
+   figure is a still of the four chords as four rooms on the spiral, and it puts no tune note on
+   the ring at all: it lights no corner, draws no bead on a room and draws no path from bead to
+   bead, since a tune drawn bead to bead shows which of its notes sit on a chord's corners, which
+   is Lesson 12's predict. It may show the four rooms; any tune it shows stays off the ring. That
+   is Lesson 12's rule for this still (Lesson 12's WEB-SPEC, Decisions for the owner, item 13;
+   Lesson 12's FACTS 5b; FACTS 7). The still sits in the page's `[data-next-card]` mark, whose
+   children the kit keeps in the card after its words (`:27-29`, `:184`, `:205`), as Lesson 2's
+   figures are (`learn/02.html:1776`). The card is a link, so the figure holds no button. The
+   practice card is the Siren card, with "Ten minutes, gently, most days" under it; after
+   "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, without that
+   line (Toys 4). Its address links `/pitch-training?lesson=11` in a new tab. Free play unlocks
+   here: the chart's five step states on one stage (playbook rule 17).
 9. **Lesson explorer**: the kit's, with Lesson 11 as the current node and the line under its
    heading from LESSON.md; its card shows what `kit/lesson-state.ts` says of a live lesson, and no
    Watch button, since Lesson 11 has no published film (`kit/season.ts:23-25`).
@@ -146,12 +151,12 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,291 words by the review's count (FACTS 5), 88 under the series' cap of 2,379.
-The page runs about 16 minutes: 9.63 minutes of reading at 238 words a minute and about 6.5 of
+The learner copy is 2,286 words by the review's count (FACTS 5), 93 under the series' cap of 2,379.
+The page runs about 16 minutes: 9.61 minutes of reading at 238 words a minute and about 6.5 of
 sound, toys and tasks, 16.1 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active
 time, as Lessons 3, 5, 6, 7 and 9 are (15, 17, 15, 16 and 16 minutes), and acceptable by their
 precedent. Each step's text, with its Try and its Notice, runs 93 to 116 words (Steps 1 to 5: 116,
-107, 113, 93 and 116), inside § 4.2's 50 to 120 a step. Three steps carry more beside it:
+107, 114, 93 and 114), inside § 4.2's 50 to 120 a step. Three steps carry more beside it:
 
 - **Step 1, about 160 words.** Its one-item Go deeper drawer (about 45 words) names the two gears
   singing seldom uses, and is closed by default.
@@ -313,29 +318,63 @@ Lesson 7's column and its lit middle half.
 
 ### 2. Predict widget
 
-- The kit's predict as it is (`mountPredict`, `kit/predict.ts:72`; FACTS 11), which takes two to
-  four choices: here two `.choice` buttons, `data-choice` "wrong" and "every", labelled "Something's
-  wrong" and "Every voice can", each at least 44 px tall. The choice locks (`:97-115`) and unlocks
-  the play `data-play` "blue", labelled "Play blue Merc's siren", which starts disabled.
+The kit's predict as it is on main (`src/features/lessons/kit/predict.ts`, with #1149's `play` that
+reports a play cut short and #1160's hint rules; FACTS 11). Every line cited in this section is
+that file's unless it says otherwise.
+
+- `mountPredict` (`kit/predict.ts:79`) takes two to four choices: here two `.choice` buttons,
+  `data-choice` "mistake" and "every", labelled "A mistake" and "Every voice can", each at least
+  44 px tall. The choice locks: the pressed one shows pressed and both are disabled (`:106-113`).
+  It opens the play `data-play` "blue", labelled "Play blue Merc's siren", which starts disabled in
+  the markup, and moves the focus to it (`:114-121`).
 - **Play orange Merc's siren** is a `data-free` play inside the predict's root: it works before the
   choice, so the sound comes first (playbook rule 5), and it never reveals, since it is the siren
-  the question is about.
-- `revealOn: ['blue']`, with the default `revealAfter: 'any'` (`:45-51`): the reveal waits until
-  blue Merc's siren has been heard with sound on (`:136-149`), to its end: a siren cut short, by
-  another sound or a stop, does not count, so the reveal waits for one that plays through (Audio).
-- The hints: `chosen`, "Locked in. Now play blue Merc's siren."; `silent`, LESSON.md's "Sound is
-  off, so nothing played. Turn sound on to hear the siren, then play it again."; `again`, "Play
-  either siren again." No `next` hint is needed, since one play reveals.
-- `guess` gives "You said: something's wrong" or "You said: every voice can", in Lesson 2's form
+  the question is about (`:14-16`, `:92-96`).
+- `revealOn: ['blue']`, with the default `revealAfter: 'any'` (`:52-58`): the reveal waits until
+  blue Merc's siren has been heard to its end with sound on (`heard`, `:144-160`). The page's
+  `play` resolves `false` for a siren cut short, by another sound or a stop, and the kit then
+  reveals nothing and leaves the hint as it was (`:30-40`, `:170-174`; Audio). A siren played with
+  sound off that draws its line to its end resolves `true`, so the kit can say that nothing was
+  heard (`:148-151`).
+- The hints. The page's own lock hint, in the markup, is LESSON.md's "Choose an answer to unlock
+  blue Merc's siren.", and the kit keeps it to put back (`:83-84`). The kit's three (`:41-51`):
+  `chosen`, "Locked in. Now play blue Merc's siren."; `silent`, LESSON.md's "Sound is off, so
+  nothing played. Turn sound on to hear the siren, then play it again."; and `again`, "Play either
+  siren again." This page has no `next`, since one play reveals, so after a choice a heard play
+  that does not reveal, orange's siren, shows `chosen` (`:47-48`, `:159`).
+- `guess` gives "You said: a mistake" or "You said: every voice can", in Lesson 2's form
   (`lesson-02/cold-open.ts:34-37`), and the reveal's text is LESSON.md's for either choice. It
-  answers "Every voice can" first; its "(Classical singers train to hide it, so "something's wrong"
-  was a fair guess.)" consoles the other choice; and no line says a flip rules anything out (FACTS
-  12). `onReveal`: each seam's label changes to "the switch", the key appears, and orange
-  celebrates once (Mercs).
-- States: waiting for a choice, with Play orange Merc's siren working; the choice locked and blue's
-  siren open; blue's siren heard, and the reveal shown. With sound off a play draws its siren and
-  shows the `silent` hint, and the reveal does not come.
-- Under reduced motion the reveal appears without its rise (`kit/predict.ts:126`).
+  answers "Every voice can" first; its "(Classical singers train to hide it, so "a mistake" was a
+  fair guess.)" consoles the other choice; and no line says a flip rules anything out (FACTS 12).
+  `onReveal`: each seam's label changes to "the switch", the key appears, and orange celebrates
+  once (Mercs).
+- States, and what a play that runs to its end does in each (`heard`, `kit/predict.ts:144-160`):
+  - **Waiting for a choice.** The lock hint shows. Play blue Merc's siren is disabled, and the kit
+    ignores it before a choice too (`:165`); Play orange Merc's siren works. Played with sound off,
+    orange's siren draws its line and `silent` takes the lock hint's place (`:148-151`). Heard with
+    sound on, still before a choice, it puts the page's lock hint back, since blue's siren is still
+    locked (`:152-156`).
+  - **Choice made, blue's siren not heard yet.** The choice shows pressed and locked, Play blue
+    Merc's siren is open and has the focus, and the hint reads `chosen` (`:106-124`). Orange's siren
+    heard with sound on shows `chosen` again, in place of `silent` if sound off had left it there
+    (`:159`). Either siren played with sound off draws its line and shows `silent`. The reveal stays
+    hidden.
+  - **Revealed.** Blue's siren heard to its end with sound on shows the reveal, with its "You said"
+    line, and the hint reads `again` (`:126-142`, `:157-158`). Later plays change neither (`:147`).
+
+  In every state a play cut short reveals nothing and leaves the hint as it was
+  (`kit/predict.ts:173-174`). The predict's own two plays never cut each other short: a tap on one
+  while the other plays does nothing (`busy`, `:165`). So a siren is cut short only by another
+  source taking the page's sound (a Four words play, a step toy: Audio), or by sound turned off or
+  the page hidden, which stop every voice (`kit/sound.ts:445-447`, `:456`).
+
+- The kit's own tests hold these rules (`src/features/lessons/kit/predict.test.ts`): the sound-off
+  hint after a choice (`:96-112`), the play cut short (`:141-164`), the lock hint back after a
+  free play heard before a choice (`:183-205`), `chosen` in place of `silent` after a choice
+  (`:207-227`), and a free play that never reveals (`:229-243`). The page's are unit test 10 and
+  End to end 2, and Page QA's "The predict before a choice", "The predict after a choice" and "A
+  siren cut short" check them by hand (Contract).
+- Under reduced motion the reveal appears without its rise (`kit/predict.ts:135`).
 
 ### 3. Four words
 
@@ -351,7 +390,7 @@ upper gear" and "Play: a siren that flips".
 
 The range chart in live mode, inside Sing it's card, with Merc's amber siren as the shape and the
 viewer's line drawn against the window. It is the kit's `.sing-chart` (240 px; 210 px at 420 px wide
-and under, `kit/lesson-voice.css:40-46`, `:383-386`), over Lesson 7's windows, so the plot gives
+and under, `kit/lesson-voice.css:40-46`, `:385-388`), over Lesson 7's windows, so the plot gives
 6.81 px a semitone for the lower voice's 32 semitones and 7.03 for the higher's 31 (5.88 and 6.06
 at 210 px; FACTS 83). Merc's siren is drawn in its one gear (thick for the lower voice, thin for the
 higher) with no seam; the viewer's line is violet, 3 px, and nothing is ever drawn on it or beside
@@ -415,11 +454,11 @@ States:
    "Your siren, drawn as a line." (REQ-GVC-085), and **How did that feel?** follows at once
    (REQ-GVC-022).
 8. **How did that feel?**: Lesson 3's four answers (`aria-pressed`, at least 44 px, a 2 x 2 grid on
-   phones), through `mountFeelings` (`kit/comfort.ts:121-146`) with its default, an answer that
+   phones), through `mountFeelings` (`kit/comfort.ts:121-152`) with its default, an answer that
    locks, asked after each take with voice (FACTS 65): a press disables all four, and `reset()`
    frees them for the next take, so an answer cannot be changed once it has set what follows. Lesson
-   6's page (PR #1149) gives `mountFeelings` a `changeable` option for its sweeps, which this page
-   leaves off. What each answer allows comes from `afterFeeling` with the proposed
+   6's page gives `mountFeelings` a `changeable` option for its sweeps (`kit/comfort.ts:130`), which
+   this page leaves off. What each answer allows comes from `afterFeeling` with the proposed
    `restAfterEffort` (What the kit and the app still need, 9); its `count` and `tricky` have nothing
    to show here.
    - Easy or Workable: LESSON.md's "That's it: one slow siren, done. Flip or no flip, that's a whole
@@ -572,10 +611,11 @@ address and a quick-check step link all reach the deck's `show`, which calls eac
 sound whenever `step` differs from `previous`; a layout switch calls it with the same step
 (`:178-181`) and stops nothing. A play cut short, by a new play or a stop, never counts as heard:
 the cold open's `play` resolves `false` for it, and the predict counts only a play that runs to its
-end (Toys 2). Both rules' kit parts come with PR #1149's fix pass, from Lesson 6's page review: the
-owner, and `kit/predict.ts`'s `play` resolving `false` for "not heard", where a `void` result keeps
-today's meaning, so Lessons 2 to 5 see no change (What the kit and the app still need, 10; unit
-tests 14 and 15). They are not on that branch as it stands (`8a8d90335`); this page waits for them.
+end (Toys 2). Both rules' kit parts are on main, from Lesson 6's page (#1149): the owner,
+`NowPlaying` (`kit/now-playing.ts:17-39`), which every source claims with its own stop before it
+sounds and releases when it ends (`:5-15`), and `kit/predict.ts`'s `play`, which resolves `false`
+for "not heard", where `true` or nothing is a play heard to its end, so Lessons 2 to 5 see no
+change (`:30-40`; What the kit and the app still need, 10; unit tests 14 and 15).
 
 A sequence decides once, at the tap, whether it sounds (`ToneOptions.audible`,
 `kit/sound.ts:504-507`), so a step's later notes never ask `Sound.canPlay()` from a timer, which
@@ -622,9 +662,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     part of your range."; ":152" drops "through your range"; ":153" becomes LESSON.md's "Stay
     relaxed and let the pitch flow. If your voice flips between your low and high voice, let it:
     every voice changes gear."; and ":154", which says the glide is scored on how smooth and
-    connected it is, becomes "You are scored on how close you come to the second note, and on how
-    your line moves between notes.", the score the code gives (FACTS 41). When the help changes,
-    the card's sentence about it goes (LESSON.md's editorial note).
+    connected it is, becomes "Most of your score is how close you come to the second note.", as the
+    code scores it (70 % of the grade, FACTS 41), at least until the slide part below is fixed. When
+    the help changes, the card's sentence about it goes (LESSON.md's editorial note).
   - its menu card (`src/features/exercises/ExerciseMenu.tsx:175-176`), "Glide smoothly across your
     range. Develop seamless register transitions and vocal flexibility.", becomes "Glide smoothly
     between two notes and back. Develop vocal flexibility.", which promises nothing about the
@@ -652,7 +692,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 11's entry in `kit/season.ts` (`:350-359`) gains a plain `minutes: 16`
+- **Season data**: Lesson 11's entry in `kit/season.ts` (`:353-362`) gains a plain `minutes: 16`
   and `page: '/learn/11'` after its topics, in every build, under the comment Lesson 5's entry
   carries, `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:254`), as
   Lesson 3's own are written (`season.ts:212-215`; FACTS 5, 47, 48). Whether the page is live is
@@ -662,14 +702,14 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   the page (FACTS 47): `href: '/pitch-training?lesson=11'`,
   `addr: 'mercurypitch.com/pitch-training'`, `label: 'Exercises'` and
   `note: 'then tap Siren / Range Explorer'`, so the card reads "Exercises, then tap Siren / Range
-  Explorer", as Lesson 9's reads "Exercises, then tap Arpeggio Jumper" (`season.ts:332-337`,
+  Explorer", as Lesson 9's reads "Exercises, then tap Arpeggio Jumper" (`season.ts:335-340`,
   `explorer.ts:174-179`). The note is in the learner's words (`season.ts:27-34`); `needs` keeps
   "siren and slide drills" for the team, and no card draws it. The link lands with the page, not
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
-  (`season.ts:356`), which the lead changes before the page is built, and its tease and the proposed
+  (`season.ts:359`), which the lead changes before the page is built, and its tease and the proposed
   alternative are `kit/lesson-copy.ts`'s (`:123`), as FACTS 1 records: this spec changes no hook or
-  tease line. `EDGES` already holds [7, 11] (`season.ts:422`).
+  tease line. `EDGES` already holds [7, 11] (`season.ts:425`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -677,39 +717,42 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand on main (21 October 2026, `9fcc96a01`), and in Lesson 6's
-page as PR #1149 has it (`8a8d90335`), beyond the parts Lessons 2 to 10 promote into the kit (Toys
-table). Lessons 7 and 9's pages are not built yet, and several items below are theirs too: whichever
-page is built first lands the part, and the others take it.
+Found in the kit and the app as they stand on main (21 October 2026, `62c99c150`), Lesson 6's page
+(#1149) and the kit's predict fix (#1160) included, beyond the parts Lessons 2 to 10 promote into
+the kit (Toys table). Lessons 7 and 9's pages are not built yet, and several items below are theirs
+too: whichever page is built first lands the part, and the others take it.
 
 1. The lesson host: `learn/11.html` at `/learn/11`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:74-83`;
    `lessonInputs` and `lessonPaths`, `:106-119`; `vite.config.ts:306`, `:474`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
-   `11: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 and 5's
-   (`:30-34`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
+   `11: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3, 4, 5 and 6's
+   (`:30-36`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
    site's and the previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until
    the console sets it either way, and the Content Studio's Lessons page names that reason when
    asked to publish it (FACTS 9). `/learn/11` and `/learn/11.html` go in `STANDALONE_DOCUMENT_PATHS`
-   (`src/lib/sw-runtime.ts:93`, the lessons `:131-147`), so the service worker never serves the app
+   (`src/lib/sw-runtime.ts:93`, the lessons `:131-150`), so the service worker never serves the app
    shell in the lesson's place; `src/tests/lesson-pages.test.ts` checks a draft for them too
-   (`:215-219`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
+   (`:274-278`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
    and to `public/llms.txt`'s Lessons list (`:66-70`), whose intro already allows a page with no
    episode; until then the site worker adds the page to both only while it is published
-   (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
-   released checks (`:85-183`), and `tools/lesson-links.ts` links it from every entry document by
-   its headline (FACTS 48). Indexing is requested on the day the console publishes it, not at the
-   release (SEARCH.md § 3.2).
+   (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to a
+   released lesson's listings, the sitemap, llms.txt, the service worker and a link from every
+   entry document (`lesson-pages.test.ts:212-240`), in place of a draft's (`:242-279`), and
+   `tools/lesson-links.ts` links it from every entry document by its headline (FACTS 48). Indexing
+   is requested on the day the console publishes it, not at the release (SEARCH.md § 3.2).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
-   (`:372-407`), and `src/tests/lesson-pages.test.ts` holds a released lesson's head, structured
-   data and listings (`:85-183`). The hook's copies are the ones the site worker rewrites when the
-   console picks the alternative hook (`src/lesson-gate.ts:17-19`, `:445-460`); only the meta
-   description and the Article's description, which repeat each other, may shorten the hook, and
-   every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:9-128`):
+   (`:372-407`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head, share
+   card and structured data, a draft's included, since a draft the console publishes goes live
+   with the head it was built with (`:12-17`, `:112-210`). The hook's copies are the ones the site
+   worker rewrites when the console picks the alternative hook (`src/lesson-gate.ts:17-19`,
+   `:445-460`); only the meta description and the Article's description, which repeat each other,
+   may shorten the hook, and every other copy carries it whole. As Lesson 2's head has them
+   (`learn/02.html:9-128`):
    - the title, "Registers and the break: chest and head voice | MercuryPitch" (60 characters, at
-     the test's ceiling of 60, `lesson-pages.test.ts:101-102`), which holds the Article's headline
-     (`:130`), the query-led form SEARCH.md § 13 item 1 recommends; if the owner keeps the series'
+     the test's ceiling of 60, `lesson-pages.test.ts:127-128`), which holds the Article's headline
+     (`:160`), the query-led form SEARCH.md § 13 item 1 recommends; if the owner keeps the series'
      form, "Registers and the break: Find Your Pitch | MercuryPitch" (55), since "Registers and the
      break: Find Your Pitch, Lesson 11 | MercuryPitch" runs to 66 (Decisions). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:229`), is
@@ -718,7 +761,7 @@ page is built first lands the part, and the others take it.
      Hero);
    - the meta description, "Why does your voice sometimes flip as you slide up? A sixteen-minute
      lesson with sound toys on chest voice, head voice and the break." (133 characters, inside the
-     test's 80 to 160, `lesson-pages.test.ts:103-106`, and 156 with the alternative hook written in,
+     test's 80 to 160, `lesson-pages.test.ts:129-132`, and 156 with the alternative hook written in,
      should the console pick it);
    - `og:title` and `twitter:title`, "Registers and the break: Find Your Pitch, Lesson 11"
      (`learn/02.html:26-29`, `:45-48`);
@@ -728,7 +771,7 @@ page is built first lands the part, and the others take it.
      (`lesson-copy.test.ts:402-404`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/11`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
-     (`lesson-pages.test.ts:90-108`);
+     (`lesson-pages.test.ts:116-134`);
    - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-11-og.jpg` (item 3),
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 11, Registers and the break, above
@@ -737,39 +780,39 @@ page is built first lands the part, and the others take it.
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
      (`lesson-copy.test.ts:387-395`, `:405`): `@id` `https://mercurypitch.com/learn/11#lesson` and
-     `url` `https://mercurypitch.com/learn/11` (`lesson-pages.test.ts:116-117`); the headline
+     `url` `https://mercurypitch.com/learn/11` (`lesson-pages.test.ts:146-147`); the headline
      "Registers and the break"; `alternativeHeadline`, the hook exactly; `description`, the meta
-     description's words, and `image`, the `og:image` URL (`:128-129`); `position: 11`,
+     description's words, and `image`, the `og:image` URL (`:158-159`); `position: 11`,
      `learningResourceType` "Lesson", `timeRequired` "PT16M", `inLanguage` "en-GB", free, the series
-     as `isPartOf`, and the organization as author and publisher (`:118-126`), as in Lesson 2's
+     as `isPartOf`, and the organization as author and publisher (`:148-156`), as in Lesson 2's
      (`learn/02.html:69-109`). It has no `datePublished` yet, as the built pages leave it out until
      they go live (`learn/04.html:61-68`): the date is the day the page first goes live on
      mercurypitch.com, which nothing writes at run time, so it is set in the commit that deletes the
      page's `drafts.ts` line or in one straight after the console publishes it, as the owner picks
      (SEARCH.md § 3.2);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:133-145`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:163-175`;
      `learn/02.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:173-182`).
+     "Legal" (`lesson-pages.test.ts:200-209`).
 
    None of it answers the predict: the title, the hook and the descriptions say a voice may flip,
-   never whether a flip is a fault, and "Hear Merc's siren flip" is the cold open's set-up
+   never whether a flip is a mistake, and "Hear Merc's siren flip" is the cold open's set-up
    (FACTS 3).
 
-3. The share image the head names, `public/learn/lesson-11-og.jpg`, which no test checks today:
-   `src/tests/lesson-pages.test.ts` holds a released lesson's head to its tags, not to the file
-   behind them (`:90-145`). It is 1200 x 630, the size `og:image:width` and `og:image:height` give,
-   a baseline JPEG as Lesson 4's card is (`public/learn/lesson-04-og.jpg`), drawn with the page's
-   own kit so that it looks like the page it opens: the title, Lesson 11 and the wordmark over the
-   range chart's compact still, orange Merc's amber siren thick, then thin across the grey seam,
-   between blue Merc and orange Merc. It carries no label on the seam and no word but the title's,
-   so it says nothing of whether a flip is a fault and does not answer the cold open's predict. The
-   page's own test holds the head to the file, as Lesson 6's does on PR #1149: the `og:image` it
-   names is in `public/`, at the pixel size its `og:image:width` and `og:image:height` give.
+3. The share image the head names, `public/learn/lesson-11-og.jpg`, which
+   `src/tests/lesson-pages.test.ts` asks of every lesson document, a draft's included, from its
+   first commit: the `og:image` it names is in `public/`, at the pixel size its `og:image:width`
+   and `og:image:height` give, with an `og:image:alt` that `twitter:image:alt` repeats
+   (`:177-196`). It is 1200 x 630, a baseline JPEG as Lesson 4's card is
+   (`public/learn/lesson-04-og.jpg`), drawn with the page's own kit so that it looks like the page
+   it opens: the title, Lesson 11 and the wordmark over the range chart's compact still, orange
+   Merc's amber siren thick, then thin across the grey seam, between blue Merc and orange Merc. It
+   carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
+   a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-111`, `:181-184`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:402-408`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-111`, `:190-193`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:416-422`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:137-147`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:146-156`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed
@@ -800,27 +843,27 @@ page is built first lands the part, and the others take it.
    after at least 2.0 s of voice", its Toys 4).
 9. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
    `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
-   (`:58-67`) and Lessons 6, 7, 9 and 11 all choose it (unit test 13). Lesson 6's page (PR #1149)
-   sends effort to the rest card in its own flow, so until the option lands this page overrides
-   `rest` itself, as that page does. `mountFeelings` needs nothing new: PR #1149's `changeable`
-   option serves Lesson 6's sweeps, and this page takes the default, an answer that locks (Toys 4,
-   state 8).
-10. The two sound rules' kit parts (Audio), which PR #1149's fix pass brings from Lesson 6's page
-    review: `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict
-    then never counts as heard, while a `void` result keeps today's meaning (`:28-33`, `:151-165`);
-    and a page-wide "now playing" owner that every sound source takes before it sounds, which stops
-    the sound before it. If that pass keeps the owner in Lesson 6's own modules, it moves into the
-    kit before this page is built.
+   (`:58-67`) and Lessons 6, 7, 9 and 11 all choose it (unit test 13). Lesson 6's page sends
+   effort to the rest card in its own flow (`lesson-06/sing-flow.ts:90-95`), so until the option
+   lands this page overrides `rest` itself, as that page does. `mountFeelings` needs nothing new:
+   its `changeable` option serves Lesson 6's sweeps (`kit/comfort.ts:121-152`), and this page takes
+   the default, an answer that locks (Toys 4, state 8).
+10. Nothing new for the two sound rules (Audio): their kit parts are on main since #1149.
+    `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict then
+    never counts as heard, while `true` or nothing keeps the old meaning (`:30-40`, `:170-174`);
+    and `NowPlaying`, the page-wide owner, stops the sound before a source that claims it
+    (`kit/now-playing.ts:17-39`). A page opts in by handing it to what it mounts (`:14-15`), as
+    Lesson 6's cold open does (`lesson-06/cold-open.ts:103`); this page hands it to every source.
 11. `recallStepHref` in `kit/quiz.ts`, moved from the two copies Lessons 3 and 5 keep
     (`lesson-03/quiz-questions.ts:24-25`, `lesson-05/quiz-questions.ts:19-21`), so that Lessons 7,
     9 and 11's recalls take one address rule; Lessons 3 and 5's tests then import it from the kit,
     and their addresses do not change.
-12. `kit/sing.ts`: an open turn for the ring (`RingRun`, `:43-67`), proposed, for a take whose end
+12. `kit/sing.ts`: an open turn for the ring (`RingRun`, `:44-68`), proposed, for a take whose end
     the singer sets: the progress arc turns once every given period (8.5 s here, 6 s on Lesson 7's
     page) until the take ends it, and the state line holds one word, "Listening", where the turn
-    today counts its seconds down (`turn`, `:35-36`).
+    today counts its seconds down (`turn`, `:36-37`).
 13. The four-words strip, promoted from Lesson 1's page (`lesson-01/words.ts`) if no earlier page
-    has: Lesson 6's page (PR #1149) keeps its own in `lesson-06/words.ts`.
+    has: Lesson 6's page keeps its own in `lesson-06/words.ts`.
 14. `src/e2e/helpers/tone-wav.ts`: Lesson 7's proposed
     `writeGlideWav(fromHz, toHz, secondsEachWay)`, beside `writeToneWav` (`:29`), with an optional
     jump, `{ atHz, semitones }`, that leaps the given semitones at that pitch on the way up and back
@@ -830,9 +873,10 @@ page is built first lands the part, and the others take it.
 16. App: the Siren exercise's help, menu card and slide score, the optional octave fitting, and the
     `/exercises/siren` slug (Practice links).
 
-Lesson 6's page (PR #1149) also brings kit parts this page does not use: the ear game
+Lesson 6's page (#1149) also brought kit parts this page does not use: the ear game
 (`kit/ear-game.ts`), the tune line (`kit/tune-line.ts`, with its layout, drawing and motion modules)
-and the slide guide's `breaths`. The siren is one breath and draws on the range chart.
+and the slide guide's `breaths` (`kit/slide-guide.ts:60`). The siren is one breath and draws on the
+range chart.
 
 Already on main, so this page needs nothing more from them: run-time publishing (`kit/publish.ts`,
 `kit/page-state.ts`, `src/lesson-gate.ts`), which settles the page's chip, its recall's step links
@@ -856,7 +900,9 @@ With the recommendation first:
    Recommended: never pick `same-note` until FACTS.md has one, since the console would write its
    claim into the title, the head, every explorer card and Lesson 10's next card. The source to
    look for is a singer's flip followed over repeated slides; Roubeau, Henrich and Castellengo 2009,
-   whose full text needs a login, is the likeliest place.
+   whose full text needs a login, is the likeliest place. Step 3 teaches the opposite of
+   `same-note` ("a slide doesn't have to switch at one fixed note"), so the owner may prefer to
+   retire it.
 2. **The title** (item 2): recommended, the query-led "Registers and the break: chest and head voice
    | MercuryPitch", as SEARCH.md § 13 item 1 recommends; the series' form fits only without "Lesson
    11".
@@ -879,6 +925,9 @@ With the recommendation first:
 7. **The Siren link** (FACTS 42): linked now, with the card naming its help's line, where Lesson 7
    did not link it. Recommended: link it, and ship the help's new lines (Practice links) so the
    card's sentence about them can go; and land the season entry's link with the page, not before.
+   The Siren's slide part, which scores jumps rather than the glide (FACTS 41; App content), is a
+   known app bug, filed by the lead with the task #38 follow-ups; until it is fixed, the card and
+   the help name only the part of the score that measures how close you come to the second note.
 8. **The CURRICULUM card** (FACTS 6): its checkpoint and its Practise line, to match the page: "one
    slow, quiet siren on "ng", up only as far as is easy" and the Siren exercise alone.
 
@@ -895,6 +944,18 @@ What the page does where nothing above says:
 - **Sound off**: each play button draws what it would play and shows the kit's hint; the cold open's
   reveal waits for blue Merc's siren to be heard with sound on (Toys 2); Start stays unavailable,
   with state 5's hint, and asks for no microphone.
+- **Sound off before a choice**: Play orange Merc's siren draws its line in silence, and the
+  sound-off hint takes the place of "Choose an answer to unlock blue Merc's siren."
+  (`kit/predict.ts:148-151`); blue's siren stays locked, and its play disabled. Page QA, "The
+  predict before a choice".
+- **Sound on again, still before a choice**: orange's siren, heard this time, puts the lock hint
+  back, since blue's siren is still locked (`kit/predict.ts:152-156`). Page QA, "The predict before
+  a choice".
+- **Blue's siren cut short** (a Four words play over it, sound turned off, or the page hidden):
+  the page's `play` resolves `false`, so nothing is revealed and the hint stays as it was
+  (`kit/predict.ts:173-174`): `chosen`, or `silent` if the play before it was silent, whose "play
+  it again" still holds now that sound is on. Played again to its end with sound on, it reveals.
+  Page QA, "A siren cut short"; unit test 15; End to end 2.
 - **No Web Audio**: every play button draws in silence with the hint "This browser can't play sound
   here.", so the cold open's reveal cannot come, as on every page that uses the kit's predict; Sing
   it offers the listen-only path of state 9 at once, with no Start; the Wrap keeps the practice
@@ -986,12 +1047,13 @@ parts:
    or ♭ sign; no two controls on a stage share an accessible name; and the take's status lines and
    the chart's summary after a take name no flip, gear, switch, break or register.
 9. Every fixed sound's frequency equals `hz(m)` for the notes of FACTS 73.
-10. The predict: the choice locks on the first press; before it only Play orange Merc's siren
-    plays; after it, the reveal stays hidden until blue Merc's siren has been heard with sound on,
-    and a silent play shows the `silent` hint; the reveal's line is "You said: every voice can" or
-    "You said: something's wrong"; no hint says "right" or "wrong", and the reveal's only "wrong" is
-    the choice's own words, quoted; at the reveal each seam's label reads "the switch" (FACTS 11,
-    13).
+10. The predict (Toys 2): the choice locks on the first press; before it only Play orange Merc's
+    siren plays, a silent play of it shows the `silent` hint in place of the lock hint, and a heard
+    one puts the lock hint back; after it, the hint reads `chosen`, the reveal stays hidden until
+    blue Merc's siren has been heard to its end with sound on, a silent play shows `silent`, and
+    orange's siren heard then shows `chosen` again; the reveal's line is "You said: every voice can"
+    or "You said: a mistake"; no hint and no line of the reveal says "right" or "wrong"; at the
+    reveal each seam's label reads "the switch" (FACTS 11, 13).
 11. Quizzes: the recall's ids are `l07-q1` and `l07-q4`, it equals Lesson 7's two questions as its
     module has them, it takes no `lesson`, and its two step links are `/learn/07#step-1` and
     `/learn/07#step-5`; the quick check's ids are `l11-q1` to `l11-q4`, with `lesson: 11`.
@@ -1018,8 +1080,8 @@ parts:
     switch, `onStep` with the same step, stops nothing.
 15. A play cut short never counts as heard (Audio; Toys 2): the cold open's `play` resolves `false`
     when blue Merc's siren is stopped before its end, by another sound or a stop, and never when it
-    runs out; cut short, it leaves the reveal hidden, and played to its end it shows it, as PR
-    #1149's fix pass tests a stopped run in the kit.
+    runs out; cut short, it leaves the reveal hidden, and played to its end it shows it, as the
+    kit's own test does for a stopped run (`kit/predict.test.ts:141-164`).
 16. The kit's other new parts: `kit/sound.ts` without `wave` and `lowpass` builds every voice as
     today, and with them takes the given partials and filter; `recallStepHref` from the kit gives
     Lessons 3 and 5's recalls the addresses they give today; the ring's open turn takes one period
@@ -1031,11 +1093,12 @@ parts:
 End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which shows drafts):
 
 1. No AudioContext before the first tap; nothing plays before a play button.
-2. Cold open: Play orange Merc's siren plays before a choice; Play blue Merc's siren stays disabled
-   until a choice; the reveal appears only after blue Merc's siren has played with sound on; with
-   sound off, the hint shows and no reveal comes; blue's siren cut short, by the Four words' Flip
-   played over it, brings no reveal until it plays to its end (unit test 15); after the reveal each
-   seam reads "the switch".
+2. Cold open: Play orange Merc's siren plays before a choice; with sound off it shows the sound-off
+   hint, and with sound on again it brings back "Choose an answer to unlock blue Merc's siren.";
+   Play blue Merc's siren stays disabled until a choice; the reveal appears only after blue Merc's
+   siren has played with sound on; with sound off, the hint shows and no reveal comes; blue's siren
+   cut short, by the Four words' Flip played over it, brings no reveal until it plays to its end
+   (unit test 15); after the reveal each seam reads "the switch".
 3. The chart by keyboard alone: Tab reaches every control; the scrub bar moves by arrows, and Home
    and End jump; Slow, the voice switch and free play's state switch toggle `aria-pressed`; the
    picker plays one slide a press; every announcement uses spoken names.
@@ -1074,7 +1137,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 12, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,
     "Four chords, round and round.", sits one line above the hook, the card's words in the order
-    eyebrow, tease, hook and way on, as that spec checks Lesson 1's card (`:84-101`).
+    eyebrow, tease, hook and way on, as that spec checks Lesson 1's card (`:90-107`).
 11. With reduced motion emulated, a line draws at once, the gauge shows its end, the ring holds
     still with "Listening", and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.
@@ -1112,6 +1175,21 @@ Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
   console asks only about the sign-off, and nothing checks the rest (the intro).
 - The gear model is heard by ear on a phone's speaker and on headphones: one voice changing colour
   at the switch, the two gears equally loud, and no click at a crossfade (Audio; Decisions, 3).
+- **The predict before a choice** (Toys 2; Edge cases): with sound off, Play orange Merc's siren
+  draws its line and the hint reads "Sound is off, so nothing played. Turn sound on to hear the
+  siren, then play it again." in place of "Choose an answer to unlock blue Merc's siren."; with
+  sound on, played again, the lock hint comes back; Play blue Merc's siren stays disabled
+  throughout.
+- **The predict after a choice** (Toys 2): the hint reads "Locked in. Now play blue Merc's siren."
+  and blue's siren has the focus; blue's siren with sound off shows the sound-off hint and no
+  reveal; orange's siren, then heard with sound on, puts "Locked in. Now play blue Merc's siren."
+  back; blue's siren heard to its end with sound on shows the reveal, its "You said" line and "Play
+  either siren again.".
+- **A siren cut short** (Toys 2; Edge cases): blue's siren stopped before its end, by a Four words
+  play, by turning sound off or by hiding the tab, reveals nothing and leaves the hint as it was;
+  played again to its end with sound on, it reveals.
+- The Wrap's next card: its still shows the four rooms with no tune note, lit corner, bead or path
+  on the ring (Sections, item 8; Lesson 12's WEB-SPEC, Decisions for the owner, item 13).
 - The microphone is requested only by Start; "Just listen today", sound off and a refused permission
   never open it; the browser's microphone indicator goes off at the end of each take, on leaving the
   section and when the tab is hidden.

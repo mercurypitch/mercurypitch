@@ -47,13 +47,13 @@ _[Editorial: the curiosity plan's fallback hook (CURIOSITY-MOMENTS § 2, Lesson 
 lead's change to `kit/season.ts`; until then the default reads "Why does your voice flip at roughly
 the same note every time you slide up?", which FACTS 1 cannot support. Under the owner's rule (§ 5
 item 2) the old wording stays as an alternative the admin console can pick, with a note that it
-needs a source. Neither wording says whether a flip is a fault, so the title never answers the cold
-open's predict. On Lesson 10's next-lesson card, one line above this hook, this lesson's tease reads
-"Slide up slowly, and your voice may flip." (FACTS 1).]_
+needs a source. Neither wording says whether a flip is a mistake, so the title never answers the
+cold open's predict. On Lesson 10's next-lesson card, one line above this hook, this lesson's tease
+reads "Slide up slowly, and your voice may flip." (FACTS 1).]_
 
 ## Sound gate
 
-> This lesson is about flips, and your voice. Tap to turn the sound on: nothing plays until you
+> This lesson is about flips and your voice. Tap to turn the sound on: nothing plays until you
 > press play. We ask for the microphone only if you choose to sing.
 
 ## Cold open: predict
@@ -67,18 +67,19 @@ Coming down, it jumps back. The seam is labelled "Merc's model".)
 Orange Merc: "My voice just flipped. Did I do it wrong?"
 Blue Merc: "Let's slide again and listen."
 
-**Predict before you listen.** A flip like that: a sign something's wrong, or something every
-voice can do?
-[ Something's wrong ] [ Every voice can ]
+**Predict before you listen.** A flip like that: a mistake, or something every voice can do?
+[ A mistake ] [ Every voice can ]
 
-(After a choice, [ Play blue Merc's siren ] unlocks: the same slow siren, lower, from E3 to C♯4,
-with its own flip. The reveal waits until it has been heard to its end. With sound off, the hint
-reads: "Sound is off, so nothing played. Turn sound on to hear the siren, then play it again.")
+(Until a choice, the hint reads "Choose an answer to unlock blue Merc's siren." After a choice,
+[ Play blue Merc's siren ] unlocks: the same slow siren, lower, from E3 to C♯4, with its own flip,
+and the hint reads "Locked in. Now play blue Merc's siren." The reveal waits until it has been
+heard to its end. With sound off, the hint reads: "Sound is off, so nothing played. Turn sound on
+to hear the siren, then play it again.")
 
 Reveal: Every voice can. A flip is a change of register: a switch between your voice's gears,
 which every voice has. A sudden jump in pitch is the most common sign of that switch, in men's and
-women's voices, in speech and in song. (Classical singers train to hide it, so "something's wrong"
-was a fair guess.)
+women's voices, in speech and in song. (Classical singers train to hide it, so "a mistake" was a
+fair guess.)
 
 (Then the seam's label reads "the switch", and orange Merc celebrates once.)
 
@@ -106,7 +107,7 @@ was a fair guess.)
 - **Register**: one of your voice's gears, a way your vocal folds vibrate. [Play: one note in each
   gear]
 - **Chest voice**: the lower gear, the one most speech uses. [Play: the lower gear]
-- **Head voice, or falsetto**: names often given to the upper gear; how they differ depends on whom
+- **Head voice, or falsetto**: names often given to the upper gear; how they differ depends on who
   you ask. [Play: the upper gear]
 - **Flip**: a sudden switch between gears, often with a jump in pitch. Also called a crack or a
   break. [Play: a siren that flips]
@@ -153,9 +154,9 @@ _Toy: the range chart, Merc's slide slowed, with the stretch gauge, Play, Slow a
 
 ## Step 3 of 5: Why only sometimes?
 
-Around the middle of a voice, either gear can sing the same notes, and which one you use can be a
-choice or not. So a slide doesn't have to switch at one fixed note, and a short slide may not
-switch at all. In one study, 67 choir singers each slid up to their highest note. Listening, and
+Around the middle of a voice, either gear can sing the same notes, and you may or may not get to
+choose which one sings. So a slide doesn't have to switch at one fixed note, and a short slide may
+not switch at all. In one study, 67 choir singers each slid up to their highest note. Listening, and
 looking at each slide drawn as a chart, researchers found a break in fewer than a third of the
 slides. The app can't tell which gear you're in.
 
@@ -188,9 +189,9 @@ slides and a slide picker._
 
 It depends on the style. Classical singing works to hide the switch. Yodelling, from the Alps to
 parts of Africa, does the opposite: it uses the flip as an ornament, or as a whole way of singing.
-An international committee of voice experts was set up to agree on what registers are. It said so
-too: register effects can be fundamental to some kinds of singing. Whether to hide a flip or show
-it off is up to the style.
+An international committee of voice experts was set up to agree on what registers are. It agreed:
+register effects can be fundamental to some kinds of singing. Whether to hide a flip or show it off
+is up to the style.
 
 **Try:** play the figure both ways: flipping on purpose, then hiding the switch.
 **Notice:** the same notes each time. Flipped, each leap across the seam changes gear, and you hear
@@ -306,10 +307,10 @@ is changing gear, not making a mistake.
   seconds to breathe. Then a dot glides between them for four seconds, and you follow it with your
   voice. It runs six rounds, each glide up to an octave, around a note low in the voice range saved
   in Settings. Set your range there first, under Singing Voice Range ("Don't know? Find my voice"
-  helps). It scores how close you come to the second note, and how your line moves. Its help asks
-  for glides with no breaks between your low and high voice. If your voice flips anyway, let it:
-  every voice changes gear. Sore, hoarse or unwell today? Just listen along. Sing at about speaking
-  volume, and stop immediately if anything feels uncomfortable. Practise it free:
+  helps). Most of its score is how close you come to the second note. Its help asks for glides with
+  no breaks between your low and high voice. If your voice flips anyway, let it: every voice changes
+  gear. Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
+  immediately if anything feels uncomfortable. Practise it free:
   **mercurypitch.com/pitch-training**, then tap Siren / Range Explorer." Under it: "Ten minutes,
   gently, most days. Missed a day? Just come back."
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today", with no "Ten minutes" line:
@@ -336,9 +337,12 @@ this page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/nex
 `kit/page-state.ts`). Lesson 12's old hook, "How can hundreds of songs share the same four chords
 and still sound different?", is kept there as an alternative the admin console can switch to; the
 card draws whichever hook and tease the console picked, and the default until it picks one. Beside
-the words, the tease's figure: four chords as four rooms on the spiral, with one tune passing
-through them. The card says "Coming later" and "See it on the map" until Lesson 12's page is live
-(FACTS 7).]_
+the words, the tease's figure: a still of the four chords as four rooms on the spiral, with no tune
+note on the ring at all. It lights no corner, draws no bead on a room and draws no path from bead
+to bead, since a tune drawn on the ring would show which of its notes sit on a chord's corners and
+answer Lesson 12's predict. It may show the four rooms; any tune it shows stays off the ring
+(Lesson 12's WEB-SPEC, Decisions for the owner, item 13; Lesson 12's FACTS 5b). The card says
+"Coming later" and "See it on the map" until Lesson 12's page is live (FACTS 7).]_
 
 ## Footer
 
@@ -399,10 +403,13 @@ main, so a decision there carries here.
 
 ### Registers on the page
 
-- The page never says a flip rules out a voice problem. It teaches a flip on a slow slide as a
-  change of gear, and the comfort check and the doctor lines stay for a voice that changes
-  suddenly, hurts or stays hoarse (FACTS 12, 52, 56). Is that enough, or should Sing it say in one
-  line that a flip is not the same as a voice that has suddenly changed?
+- The predict asks whether a flip is "a mistake" or "something every voice can do": a question
+  about technique, as orange's "Did I do it wrong?" and the mix-up card are, so it never sets a
+  fault against a normal voice, and no line says a flip rules out a voice problem. The page
+  teaches a flip on a slow slide as a change of gear, and the comfort check and the doctor lines
+  stay for a voice that changes suddenly, hurts or stays hoarse (FACTS 12, 52, 56). Should Sing it
+  still say in one line that a flip on a slow slide is not the same as a voice that has suddenly
+  changed?
 - The names: chest voice for the lower gear, head voice or falsetto for the upper, and "gears", the
   series' plain word since Lesson 7. No mix and no belting are taught (FACTS 15 to 17).
 - The cue "let it", in Lesson 7's words: "If your voice flips on the way up, let it: that's a change
@@ -424,6 +431,11 @@ main, so a decision there carries here.
   ends 1.0 s after the voice stops, or 14 s after it starts; one more siren ("Again") only after
   "Easy" or "Workable", once a visit; never a retry after "Effortful" or "Uncomfortable"; at most
   three takes a visit (FACTS 63).
+- The no-voice line, new to the coach's lists: "We didn't hear you start that time. Hum "ng" as
+  the ring turns." It is Lesson 5's line with Lesson 7's cue, as Lesson 7's spec words it, but no
+  lesson's list for the coach has carried it, so it is not among the shared lines above. It asks no
+  feeling question. The take that heard no voice counts towards the three, and its [ Start again ]
+  is a fresh start that leaves the one Again unused, as Lessons 7 and 9 count it (FACTS 63).
 - No reading: the take draws the singer's line and says nothing about it, so the only words after
   it are the feeling question's (FACTS 64).
 

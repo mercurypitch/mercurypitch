@@ -266,7 +266,7 @@ the vocal coach's sign-off, and its page publishes after `/learn/06`)
   inherits it.
 
 **Lesson 11. Registers and the break** (written: the lesson, its facts and its page spec are in
-[lessons/11-registers-break/](lessons/11-registers-break/), awaiting review; no film yet; its voice
+[lessons/11-registers-break/](lessons/11-registers-break/), reviewed; no film yet; its voice
 lines wait on the vocal coach's sign-off, and its page publishes after `/learn/07`)
 
 - Objectives: know that voices switch between vibration modes and the switch is normal; smooth it
