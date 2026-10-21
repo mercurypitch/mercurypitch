@@ -381,9 +381,12 @@ States:
    beside the guide shows the still of the Merc singing, blue for the lower voice and orange for the
    higher, as Lesson 1's ring does (`kit/sing.ts:243-249`). **Move do** is two buttons, Lower
    and Higher, a semitone each, up to four either way, moving both versions together (FACTS 57);
-   the readout and the path's row labels follow.
-5. **Guide**: **Start the guide** is enabled once either version has played (hear it first:
-   playbook rule 16); until then it is `aria-disabled`, with the hint "Play Merc's version first".
+   the readout and the path's row labels follow. A press of any of Sing it's controls while a
+   version or a sweep runs stops it, then acts: a version cut short has not been played, and a
+   sweep cut short asks nothing.
+5. **Guide**: **Start the guide** is enabled once either version has played to its end (hear it
+   first: playbook rule 16); until then it is `aria-disabled`, with the hint "Play Merc's version
+   first".
    It is the viewer's turn, so the amber goes, the rows turn plain chrome and Merc's path is drawn
    dashed in chrome (Lesson 2 DECISIONS 68). The count-in sounds do of the version last played, once
    and softly, for its one second (FACTS 70). Then a vertical chrome line sweeps along the path for
@@ -469,8 +472,11 @@ through the kit's sound module and its house envelopes
 games in the soft tone, Merc's singing in Merc's "ooh", the guide's count-in in the soft tone at
 half a tap's level (FACTS, Sounds). The two songs are played only as their bare melodies,
 synthesised, never from a recording or an arrangement (FACTS 30). Each note of a sung line is its
-own voice, so repeated notes ("Twin-kle") are heard as two. Nothing autoplays, one sound plays at a
-time, and the page has no music bed.
+own voice, so repeated notes ("Twin-kle") are heard as two. Nothing autoplays, and one sound plays
+at a time: every source (the hero, the stage, the games and a miss's replay, the anchor board, the
+four words, the quiz and Sing it) hands its sound to one owner (`kit/now-playing.ts`), so a new tap
+anywhere stops the sound before it, and a predict's play cut short reveals nothing. A step left
+behind keeps nothing sounding. The page has no music bed.
 
 ## Mercs
 

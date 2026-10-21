@@ -23,10 +23,13 @@
 // by accident. The answers use aria-disabled, never disabled, so the button
 // a keyboard user just pressed keeps its focus. The page stops a game when
 // the viewer leaves its step (`stop`): the pair sounding, and a miss's
-// replay still to come. Lesson 2's own game (its ear-game.ts) predates
-// this one and keeps its fixed seeds.
+// replay still to come. On a page that plays one sound at a time, the game
+// claims the page's owner (now-playing.ts) before a pair sounds, and as a
+// miss's replay is booked, so a newer sound anywhere cancels it. Lesson 2's
+// own game (its ear-game.ts) predates this one and keeps its fixed seeds.
 
 import { mulberry32, q, qa } from './dom'
+import type { SoundOwner } from './now-playing'
 
 /** One note of a round: MIDI, onset and length, seconds. */
 export interface EarNote {
@@ -120,6 +123,8 @@ export interface EarGameOptions<A extends string> {
   }
   /** The seed for each run; Math.random() by default. */
   readonly seed?: () => number
+  /** The page's one-sound owner (now-playing.ts), on a page that plays one sound at a time. */
+  readonly owner?: SoundOwner
 }
 
 /** A game on its card, as the page holds it. */
@@ -152,13 +157,16 @@ export function mountEarGame<A extends string>(
 
   function stop(): void {
     window.clearTimeout(missTimer)
+    missTimer = 0
     playing?.stop()
     playing = null
     playBtn.classList.remove('is-on')
+    o.owner?.release(stop)
   }
 
   function sound(events: readonly EarNote[]): void {
     stop()
+    o.owner?.claim(stop)
     const run = o.play(events)
     playing = run
     playBtn.classList.add('is-on')
@@ -166,6 +174,8 @@ export function mountEarGame<A extends string>(
       if (playing !== run) return
       playing = null
       playBtn.classList.remove('is-on')
+      // a pair that has ended lets go, unless a miss's replay is still to come
+      if (missTimer === 0) o.owner?.release(stop)
     })
   }
 
@@ -221,12 +231,15 @@ export function mountEarGame<A extends string>(
       roundEl.textContent = count.textContent
     }
     playLabel.textContent = last ? o.labels.more : o.labels.next
-    // a miss plays the round again, slower, once its line has been said
-    if (!correct)
-      missTimer = window.setTimeout(
-        () => sound(slowerBy(round.events, o.slower)),
-        700,
-      )
+    // a miss plays the round again, slower, once its line has been said;
+    // the replay is the page's sound from now, so a newer one cancels it
+    if (!correct) {
+      o.owner?.claim(stop)
+      missTimer = window.setTimeout(() => {
+        missTimer = 0
+        sound(slowerBy(round.events, o.slower))
+      }, 700)
+    }
   }
 
   newGame()

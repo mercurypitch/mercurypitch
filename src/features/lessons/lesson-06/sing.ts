@@ -11,13 +11,18 @@
 // lighting in the app's target amber while the ring shows the still of the
 // Merc singing. Start the guide, once a version has played, is the
 // viewer's turn: do of the version last played, once and softly, then a
-// chrome line sweeps the path for 9.6 s while the ring breathes. The page
-// has no microphone and scores nothing; only the voice is stored.
+// chrome line sweeps the path for 9.6 s while the ring breathes. A version
+// or a sweep is the page's one sound (kit/now-playing.ts): a press of any
+// of Sing it's controls while one runs stops it and then acts, and a sound
+// anywhere else on the page stops it too. A version cut short has not been
+// played, and a sweep cut short asks nothing. The page has no microphone
+// and scores nothing; only the voice is stored.
 
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { mountComfort, mountFeelings, VisitEnding, } from '@/features/lessons/kit/comfort'
 import { q, qa } from '@/features/lessons/kit/dom'
 import { hz } from '@/features/lessons/kit/notes'
+import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type { RingStills } from '@/features/lessons/kit/sing'
 import { mountRing } from '@/features/lessons/kit/sing'
 import { mountGuide } from '@/features/lessons/kit/slide-guide'
@@ -71,7 +76,12 @@ export function initSing(stills: RingStills): void {
   let shift = 0
   // the version the guide shows: the one last played
   let shown: VersionNo = 1
+  // the run in flight: the stops so far (a run that finds them changed was
+  // cut short), Merc's notes, the count-in's note and the ring's turn to come
+  let stops = 0
   let playing: Playing | null = null
+  let countIn: ReturnType<typeof Sound.voice> = null
+  let ringTurn = 0
 
   const voice = (): Voice => state.voice ?? 'lower'
   const doMidi = (): number => versionDo(voice(), shown, shift)
@@ -105,6 +115,22 @@ export function initSing(stills: RingStills): void {
     render()
   }
 
+  /** Stops Merc's version or the viewer's sweep where it stands; the status goes back to the flow's. */
+  function stopRun(): void {
+    if (!busy()) return
+    stops += 1
+    playing?.stop()
+    playing = null
+    countIn?.stop()
+    countIn = null
+    window.clearTimeout(ringTurn)
+    guide.stop()
+    ring.stop()
+    for (const b of [...versionBtns, startBtn]) b.classList.remove('is-on')
+    NowPlaying.release(stopRun)
+    render()
+  }
+
   /** The guide, the readout, the ring's label and Move do's ends follow the voice, the version and Move do. */
   function relabel(): void {
     guide.set(guideRows(doMidi()), guidePath(doMidi()))
@@ -117,7 +143,10 @@ export function initSing(stills: RingStills): void {
   }
 
   async function playVersion(b: HTMLButtonElement): Promise<void> {
-    if (busy() || state.voice === null) return
+    if (state.voice === null) return
+    stopRun()
+    NowPlaying.claim(stopRun)
+    const mine = stops
     const n: VersionNo = b.dataset.version === '2' ? 2 : 1
     shown = n
     relabel()
@@ -136,8 +165,10 @@ export function initSing(stills: RingStills): void {
       turn: 0,
     })
     await Promise.all([run.done, guide.model()])
+    if (mine !== stops) return
     playing = null
     b.classList.remove('is-on')
+    NowPlaying.release(stopRun)
     dispatch({ type: 'played', version: n })
   }
 
@@ -154,7 +185,7 @@ export function initSing(stills: RingStills): void {
       turn: 0,
       words: { listen: 'Get ready' },
     })
-    window.setTimeout(
+    ringTurn = window.setTimeout(
       () => void ring.run({ ...quiet, listen: 0, turn: VERSION_SEC }),
       COUNT_IN_SEC * 1000,
     )
@@ -163,7 +194,10 @@ export function initSing(stills: RingStills): void {
   async function startGuide(): Promise<void> {
     const v = singView(state)
     const last = state.played
-    if (!v.singParts || last === null || busy()) return
+    if (!v.singParts || last === null) return
+    stopRun()
+    NowPlaying.claim(stopRun)
+    const mine = stops
     shown = last
     relabel()
     const d = doMidi()
@@ -172,11 +206,15 @@ export function initSing(stills: RingStills): void {
     statusEl.textContent = RUNNING.guide
     startBtn.classList.add('is-on')
     // the count-in: do of the version last played, once and softly
-    if (Sound.canPlay())
-      Sound.voice(hz(d), { dur: COUNT_IN.note, gain: COUNT_IN.gain })
+    countIn = Sound.canPlay()
+      ? Sound.voice(hz(d), { dur: COUNT_IN.note, gain: COUNT_IN.gain })
+      : null
     ringThroughGuide(d)
     await guide.sweep(COUNT_IN_SEC)
+    if (mine !== stops) return
+    countIn = null
     startBtn.classList.remove('is-on')
+    NowPlaying.release(stopRun)
     dispatch({ type: 'sweepEnd' })
     focusText(q<HTMLElement>('.feel-q', feelPanel))
   }
@@ -205,7 +243,7 @@ export function initSing(stills: RingStills): void {
   startBtn.addEventListener('click', () => void startGuide())
   for (const b of moves)
     b.addEventListener('click', () => {
-      if (busy()) return
+      stopRun()
       shift = clampMove(shift + Number(b.dataset.moveDo))
       relabel()
     })

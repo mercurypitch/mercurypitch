@@ -18,12 +18,15 @@
 // silent: the line lifts, travels and settles, the gap numbers glow gold
 // once, unchanged, and the readout names the new start. Play plays the line
 // from wherever it stands. Steps 1, 2, 4 and 5 stand on C: arriving at one
-// slides the line home.
+// slides the line home. Whatever the line plays, a bead, a gap, a bracket,
+// the line or the swapped version, is the page's one sound
+// (kit/now-playing.ts).
 
 import { clamp, q, qa } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
 import { bindModeToggle } from '@/features/lessons/kit/names'
 import { COLOR } from '@/features/lessons/kit/notes'
+import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { TuneLine, TuneShape } from '@/features/lessons/kit/tune-line'
 import { mountTuneLine } from '@/features/lessons/kit/tune-line'
@@ -157,6 +160,7 @@ export function mountTuneToy(root: HTMLElement, opts: TuneToyOptions): TuneToy {
     onNote: (g) => tapNote(g),
     onGap: (g) => tapPair(g),
     onBracket: (g) => tapPair(g),
+    owner: NowPlaying,
   })
 
   const speed = (): number => (slow ? 2 : 1)

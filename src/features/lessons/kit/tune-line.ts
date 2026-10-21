@@ -13,12 +13,15 @@
 // a button over every bead, gap and named bracket the page asks for, each on
 // its tap zone as the layout changes (tune-line-layout.ts). Under reduced
 // motion every move lands at once; a played line still sounds and lights
-// its beads in turn. Words belong to the page: the core asks for each name
-// and label and only draws.
+// its beads in turn. On a page that plays one sound at a time, a run claims
+// the page's owner (now-playing.ts), so it stops the sound before it, and a
+// newer one elsewhere stops it. Words belong to the page: the core asks for
+// each name and label and only draws.
 
 import { addDrawer, surface } from './frame-loop'
 import { reducedMotion } from './motion-switch'
 import { COLOR, hz } from './notes'
+import type { SoundOwner } from './now-playing'
 import type { Voice, VoiceOptions } from './sound'
 import { Sound } from './sound'
 import type { GapWords, TuneBracket, TuneScene } from './tune-line-draw'
@@ -106,6 +109,8 @@ export interface TuneLineOptions {
   readonly onNote?: (g: number) => void
   readonly onGap?: (g: number) => void
   readonly onBracket?: (g: number) => void
+  /** The page's one-sound owner (now-playing.ts), on a page that plays one sound at a time. */
+  readonly owner?: SoundOwner
 }
 
 export interface TuneLine {
@@ -388,6 +393,12 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     done?.(false)
   }
 
+  /** Stops the run in flight, and lets the page's sound go. */
+  function stop(): void {
+    clearRun()
+    opts.owner?.release(stop)
+  }
+
   return {
     get start() {
       return start
@@ -435,6 +446,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     },
     play(events, audible, look = {}) {
       clearRun()
+      opts.owner?.claim(stop)
       busy = true
       const t0 = now()
       const color = look.color ?? COLOR.chrome
@@ -471,13 +483,12 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
             voices = []
             timers = []
             finish = null
+            opts.owner?.release(stop)
             resolve(true)
           }, end * 1000),
         )
       })
     },
-    stop() {
-      clearRun()
-    },
+    stop,
   }
 }

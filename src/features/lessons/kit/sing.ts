@@ -10,7 +10,8 @@
 // here plays Merc's note on a button, and a lesson's own guide (Lesson 2's
 // slides, Lesson 4's scale) runs the ring beside its drawing. A run can hold
 // an in-breath between Merc's note and the turn, and turn as one long
-// out-breath: Lesson 5's Listen · Breathe · Sing, and its "sss".
+// out-breath: Lesson 5's Listen · Breathe · Sing, and its "sss". A page
+// whose run can be cut short ends it where it stands (`stop`).
 //
 // Mounted on a `.ring` element, any number per page. Inside it: the
 // `.ring-progress` and `.ring-breath` circles, the `.ring-ripples` group,
@@ -80,6 +81,8 @@ export interface Ring {
   readonly busy: boolean
   /** Merc's note, then the viewer's turn; resolves once the ring is back at rest. */
   run(r: RingRun): Promise<void>
+  /** Ends a run where it stands: the ring rests, its ripples go, and the run's promise settles. */
+  stop(): void
 }
 
 const WORDS: RingWords = {
@@ -239,6 +242,11 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
   return {
     get busy() {
       return now !== null
+    },
+    stop() {
+      if (now !== null) finish(now)
+      rips.forEach((r) => r.c.remove())
+      rips = []
     },
     run(run) {
       return new Promise<void>((resolve) => {
