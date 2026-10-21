@@ -256,10 +256,9 @@ export function createFrostRaftTransferChunk(
   }
 }
 
-/** Chunk 18: Twin Glide Crossing — counter-sweeping aurora ferries bridged by a central amethyst crackle pivot */
+/** Chunk 18: Twin Glide Crossing — counter-sweeping ferries with a stable ice landing for transfers. */
 export function createTwinGlideCrossingChunk(
   idSuffix: string,
-  warningSeconds = 1.6,
 ): ProceduralChunk {
   const platforms: ChunkPlatform[] = [
     {
@@ -280,14 +279,11 @@ export function createTwinGlideCrossingChunk(
     },
     {
       localId: `tgc-pivot-${idSuffix}`,
-      profileId: 'amethyst-crackle',
+      // The ferries share a clock: the second is away when the first arrives.
+      // Waiting here must survive a missed cycle, not demand a late jump from
+      // the first ferry just as it reverses to beat a cracking-floor deadline.
+      profileId: 'frost-lily',
       center: { x: 0.6, y: 0.28, z: 6.08 },
-      behavior: {
-        kind: 'crackle',
-        warningSeconds,
-        releaseSeconds: 0.4,
-        resetSeconds: 2.2,
-      },
     },
     {
       localId: `tgc-raft2-${idSuffix}`,

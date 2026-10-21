@@ -7,6 +7,8 @@ import type { AssembledCourseData, AssembledGap } from './chunk-stitcher.ts'
 
 export interface AssembledGapClassification {
   readonly id: string
+  readonly platformAId: string
+  readonly platformBId: string
   readonly kind:
     | 'flat-gap'
     | 'touching-seam'
@@ -79,7 +81,15 @@ export function classifyAssembledCourseGaps(
           : Math.min(a.bounds.maxX, b.bounds.maxX) -
             Math.max(a.bounds.minX, b.bounds.minX)
       const heightDelta = b.top - a.top
-      const common = { id: gap.id, fromState, toState, distance, heightDelta }
+      const common = {
+        id: gap.id,
+        platformAId: gap.platformAId,
+        platformBId: gap.platformBId,
+        fromState,
+        toState,
+        distance,
+        heightDelta,
+      }
       if (crossOverlap <= 0) return { ...common, kind: 'diagonal-route' }
       if (Math.abs(heightDelta) > 0.0801)
         return { ...common, kind: 'elevated-route' }

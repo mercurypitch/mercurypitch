@@ -1,7 +1,81 @@
 // Course codes travel through the real Games host without assuming a public URL or clipboard permission.
 import { expect, test } from '@playwright/test'
+import { installCloudwayVisit } from './helpers/cloudway-platform-proof'
 
 test.use({ hasTouch: true })
+
+for (const viewport of [
+  { width: 320, height: 740 },
+  { width: 390, height: 844 },
+  { width: 844, height: 390 },
+  { width: 768, height: 1024 },
+]) {
+  test(`generated course header keeps title, ten notes and camera controls separate at ${viewport.width}px @smoke`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    // DOM geometry is the subject here; hardware captures separately inspect the scene.
+    await installCloudwayVisit(page, { realRendering: false })
+    await page.goto(
+      '/glass-game/?layout=procedural&seed=shared-pearl&lesson=two-windows-v1',
+    )
+    await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+      'data-ready',
+      'true',
+      { timeout: 45_000 },
+    )
+    const geometry = await page
+      .getByTestId('glass-adventure')
+      .evaluate((root) => {
+        const heading = root.querySelector('h1')!
+        const header = heading.closest('[data-game-hud]')!
+        const route = root.querySelector('[role="progressbar"]')!
+        const camera = root.querySelector('[aria-label="Recenter camera"]')!
+        const rect = (node: Element) => {
+          const box = node.getBoundingClientRect()
+          return {
+            left: box.left,
+            right: box.right,
+            top: box.top,
+            bottom: box.bottom,
+          }
+        }
+        return {
+          width: innerWidth,
+          title: rect(heading),
+          header: rect(header),
+          route: rect(route),
+          camera: rect(camera),
+          controls: [...header.querySelectorAll('button')].map(rect),
+          notes: route.children.length,
+        }
+      })
+    expect(geometry.notes).toBe(10)
+    expect(geometry.header.bottom + 4).toBeLessThanOrEqual(geometry.route.top)
+    expect(geometry.route.bottom + 4).toBeLessThanOrEqual(geometry.camera.top)
+    for (const box of [
+      geometry.title,
+      geometry.route,
+      geometry.camera,
+      ...geometry.controls,
+    ]) {
+      expect(box.left).toBeGreaterThanOrEqual(0)
+      expect(box.right).toBeLessThanOrEqual(geometry.width)
+    }
+    const controlsBeforeTitle = geometry.controls.filter(
+      (box) => box.left < geometry.title.left,
+    )
+    const controlsAfterTitle = geometry.controls.filter(
+      (box) => box.left > geometry.title.left,
+    )
+    expect(controlsBeforeTitle.at(-1)!.right + 4).toBeLessThanOrEqual(
+      geometry.title.left,
+    )
+    expect(geometry.title.right + 4).toBeLessThanOrEqual(
+      controlsAfterTitle[0]!.left,
+    )
+  })
+}
 
 for (const viewport of [
   { width: 320, height: 740 },

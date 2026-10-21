@@ -35,6 +35,24 @@ function sampleFor(
 }
 
 describe('route camera director', () => {
+  it('initializes restored support once while later landings still require dwell', () => {
+    const director = createRouteCameraDirector(ROUTE)
+    expect(
+      director.initialize({ grounded: true, supportPlatformId: 'scroll' })?.id,
+    ).toBe('crossing')
+    expect(
+      director.initialize({ grounded: true, supportPlatformId: 'arrival' })?.id,
+    ).toBe('crossing')
+    expect(sampleFor(director, 0.55, 'arrival')).toMatchObject({
+      section: { id: 'crossing' },
+      changed: false,
+    })
+    expect(sampleFor(director, 0.05, 'arrival')).toMatchObject({
+      section: { id: 'arrival' },
+      changed: true,
+    })
+  })
+
   it('is an inert backwards-compatible policy without authored sections', () => {
     const director = createRouteCameraDirector(undefined)
 

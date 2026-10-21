@@ -49,6 +49,7 @@ export function createRouteCameraDirector(
   let active = initial
   let candidate: RouteCameraSectionDefinition | null = null
   let candidateSeconds = 0
+  let sampled = false
 
   function clearCandidate(): void {
     candidate = null
@@ -59,10 +60,18 @@ export function createRouteCameraDirector(
     section(): RouteCameraSectionDefinition | null {
       return active
     },
+    initialize(sample: RouteCameraSample): RouteCameraSectionDefinition | null {
+      if (sampled) return active
+      sampled = true
+      if (sample.grounded && sample.supportPlatformId != null)
+        active = sectionByPlatform.get(sample.supportPlatformId) ?? active
+      return active
+    },
     update(
       sample: RouteCameraSample,
       elapsedSeconds: number,
     ): RouteCameraUpdate {
+      sampled = true
       if (!sample.grounded || sample.supportPlatformId == null) {
         clearCandidate()
         return { section: active, changed: false }

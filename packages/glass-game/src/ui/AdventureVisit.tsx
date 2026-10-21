@@ -350,7 +350,13 @@ export function AdventureVisit(props: AdventureVisitProps) {
               onClick={adventure.pause}
             />
           </div>
-          <div class={styles.utility} inert={adventure.inspection() !== null}>
+          <div
+            class={styles.utility}
+            classList={{
+              [styles.utilityWithMelody]: level.melodyLesson !== undefined,
+            }}
+            inert={adventure.inspection() !== null}
+          >
             <button
               type="button"
               data-game-hud-layer

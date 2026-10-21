@@ -115,7 +115,7 @@ export function buildActCandidates(options: {
       },
       {
         traversal: [
-          createTwinGlideCrossingChunk(tagA, hexWarningTime),
+          createTwinGlideCrossingChunk(tagA),
           createCrackingSpiralChunk(tagB, 'west', hexWarningTime, 0.48),
         ],
         preferredTurns: ['none', 'east', 'west'],
@@ -189,7 +189,7 @@ export function buildActCandidates(options: {
       },
       {
         traversal: [
-          createTwinGlideCrossingChunk(tagA, hexWarningTime),
+          createTwinGlideCrossingChunk(tagA),
           createArcedViaductChunk(tagB, 'west', hexWarningTime, climbDelta),
         ],
         preferredTurns: ['none', 'east', 'west'],
@@ -230,7 +230,7 @@ export function buildActCandidates(options: {
     {
       traversal: [
         createCrackingSpiralChunk(tagA, 'east', hexWarningTime, -0.36),
-        createTwinGlideCrossingChunk(tagB, hexWarningTime),
+        createTwinGlideCrossingChunk(tagB),
       ],
       preferredTurns: ['none', 'west', 'east'],
     },
