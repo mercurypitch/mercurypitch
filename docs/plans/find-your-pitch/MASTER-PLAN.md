@@ -435,6 +435,11 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   parts wait on the vocal coach (§ 12 item 8). No page is built yet; each goes live when the
   console publishes it, after the coach's sign-off and once the pages its recall links to are
   live: `/learn/06` for all three, and `/learn/03` too for Lesson 9.
+- Lesson 12: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/12-chords-four-chord-song/`](lessons/12-chords-four-chord-song/) (facts, copy and page
+  spec). Its sung checkpoint waits on the vocal coach (§ 12 item 8). No page is built yet; it goes
+  live when the console publishes it, after the coach's sign-off and once `/learn/10`, the page its
+  recall links to, is live.
 - YouTube: [`youtube/YOUTUBE.md`](youtube/YOUTUBE.md) is the upload guide for Lessons 1 and 2
   (every Studio field, chapters, end screens, cards and pinned comments, checked against YouTube's
   help pages on 19 October 2026), with three thumbnails per film, end-screen maps, paste-ready
