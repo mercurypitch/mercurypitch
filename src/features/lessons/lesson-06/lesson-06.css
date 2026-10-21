@@ -333,6 +333,17 @@
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
+/* A black-key do's sign and its spoken word are spans in the ring's note,
+   "Do: B♭2 · 117 Hz". The kit's rules for the state line's span under it
+   (a block, in small mono capitals) must not reach them, or the sign
+   breaks the note onto a second line. */
+.l6-sing .ring .ring-note span {
+  display: inline;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+}
 /* the guide beside its ring: ten rows, so a little taller than the kit's */
 .l6-guide {
   display: grid;

@@ -5,7 +5,8 @@
 // WEB-SPEC's end-to-end checks 5, 6 and 10 (Tests): the comfort check
 // first on every visit; with no voice stored, nothing after the voice
 // choice until one is chosen; a stored voice shown pressed, and a tap on
-// the other changing it; Start the guide aria-disabled until a version has
+// the other changing it; a black-key do, Move do four lower, on one line
+// in the ring; Start the guide aria-disabled until a version has
 // played; "How did that feel?" as each sweep ends, and what each answer
 // shows and puts away; the Wrap's practise card each branch picks. Nothing
 // listens: no call to getUserMedia, and no request that sends anything.
@@ -151,6 +152,36 @@ test.describe('Sing it, with no microphone', () => {
     await expect(page.locator('[data-do-readout]')).toHaveText(
       'do is D4, then F4',
     )
+  })
+
+  test('a black-key do stays on one line in the ring: four lower is "Do: B♭2 · 117 Hz"', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await toSing(page, 'lower')
+    await page.locator('[data-comfort="sing"]').click()
+    const lower = page.locator('[data-move-do="-1"]')
+    for (let i = 0; i < 4; i++) await lower.click()
+    await expect(lower).toBeDisabled()
+
+    const note = page.locator('#ring .ring-note')
+    await expect(note).toContainText('117 Hz')
+    // every piece of the note drawn on one line: the sign's span sits in it
+    const drawn = await note.evaluate((el) => {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const rects = Array.from(range.getClientRects()).filter(
+        (r) => r.width > 1 && r.height > 1,
+      )
+      const tops = rects.map((r) => r.top)
+      return {
+        pieces: rects.length,
+        spread: Math.max(...tops) - Math.min(...tops),
+        line: Math.min(...rects.map((r) => r.height)),
+      }
+    })
+    expect(drawn.pieces).toBeGreaterThan(1)
+    expect(drawn.spread).toBeLessThan(drawn.line / 2)
   })
 
   test('"Effortful" puts the guide away for the visit and rests the Wrap, and "Easy" after it brings neither back', async ({
