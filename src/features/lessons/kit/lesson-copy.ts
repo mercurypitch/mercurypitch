@@ -120,7 +120,16 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
     ],
     tease: 'Three notes, one chord. Move one by a semitone.',
   },
-  11: { tease: 'Slide up slowly, and your voice may flip.' },
+  11: {
+    hookAlts: [
+      {
+        id: 'same-note',
+        text: 'Why does your voice flip at roughly the same note every time you slide up?',
+        note: "Needs FACTS support for 'roughly the same note every time'; Lesson 11's FACTS show a flip can come at different notes on different slides, or not at all.",
+      },
+    ],
+    tease: 'Slide up slowly, and your voice may flip.',
+  },
   12: {
     hookAlts: [
       {

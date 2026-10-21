@@ -356,7 +356,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Registers and the break',
     short: 'Registers',
     topics: ['S12'],
-    hook: 'Why does your voice flip at roughly the same note every time you slide up?',
+    hook: 'Why does your voice sometimes flip as you slide up?',
     sig: "The siren's line crossing a shaded seam, the seam narrowing over repetitions.",
     pr: { needs: 'siren and slide drills' },
   },
