@@ -243,8 +243,9 @@ export function initSing(stills: RingStills): void {
     },
   })
   bindVoiceButtons(card, (v) => {
+    stopRun()
     dispatch({ type: 'voice', voice: v })
-    if (!busy()) relabel()
+    relabel()
   })
   const feelings = mountFeelings(
     feelPanel,
