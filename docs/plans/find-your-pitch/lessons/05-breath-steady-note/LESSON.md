@@ -436,8 +436,8 @@ thing as before, more plainly.
   After: "Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:" On
   this page the line shows only when no choice is stored (WEB-SPEC, Toys 6, state 2), so it asks
   for a choice and assumes none. The review's first rewrite, "Keep the voice you chose in Lesson 3,
-  or choose now:", assumed a stored one; the page still prints it (`learn/05.html:1295`) until it
-  takes this line. Lessons 6 and 7 show a stored choice pressed, under "Keep the voice you chose
+  or choose now:", assumed a stored one, and the page printed it until 21 October 2026, when it
+  took this line. Lessons 6 and 7 show a stored choice pressed, under "Keep the voice you chose
   before, or change it:". If the coach or the owner would rather this page say only what it asks,
   "Choose a voice:" is the short form.
 - The warm-up's cue, shared with Lessons 3 and 7. Before: "Follow the shape, not Merc's notes."
