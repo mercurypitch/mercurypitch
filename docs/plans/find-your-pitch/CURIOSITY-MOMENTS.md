@@ -103,7 +103,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   the "Asked... Tested..." of Lesson 2's film. Check "most could" against FACTS 2 to 4 and 6.
 - **Facts:** FACTS 1 to 8, 13 to 15; the tease, L4 FACTS 17, 22, 23 and 58.
 
-### Lesson 4 · The major scale and home · page live · hook kept
+### Lesson 4 · The major scale and home · page built, a draft until the owner's go-ahead · hook kept
 
 - **Opening (exists, placed too low):** the hero has the hook, a staircase on C and Play the scale; the cold open
   (Play from C, Land on do; Orange "It just hangs there, waiting. Is that because we started on C?"; the predict
@@ -126,7 +126,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   a "?" (new, a plain SVG): "Merc moves every single note of 'Twinkle, Twinkle' up."
 - **Facts:** FACTS 7, 8, 11, 15, 18, 25 (no agreed meaning of "support"), 41 to 44, 48, 72; tease, L6 FACTS 20, 36.
 
-### Lesson 6 · Intervals: the distance between notes · written; no page yet · hook kept
+### Lesson 6 · Intervals: the distance between notes · page built, a draft until the owner and the coach sign off · hook kept
 
 - **Opening (LESSON.md):** Play from C on the compact tune line; Orange "If every note changes, isn't it a different
   tune?" Blue "Let's change every one and listen."; Play from F♯ lifts the line six rows. Question: with every note
