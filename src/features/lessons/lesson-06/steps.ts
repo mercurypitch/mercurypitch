@@ -8,7 +8,9 @@
 // games and the anchor board sit in their steps' text, and stop when the
 // viewer leaves the step, whatever the route: Next or Back, a swipe, the
 // lesson menu, an address that names a step and the quiz's step links all
-// come through the deck's `onStep`. Step 4's predict sits in the step
+// come through the deck's `onStep`. The step showing, shown again as the
+// phone deck and the wide page swap, changes nothing: a line playing plays
+// on, and a focused bead keeps its focus. Step 4's predict sits in the step
 // text: a guess unlocks Play the first line and Play the swapped version,
 // and Swap sizes on the stage, which plays the answer too. The reveal
 // waits until both have been heard, so it describes what was played, and
@@ -74,14 +76,16 @@ export function initSteps(
   const anchors = initAnchors()
   registerToy({
     onStep(n, previous) {
+      // the step showing shown again, as the phone deck and the wide page
+      // swap at a rotation or a resize: nothing changes, so a run plays on
+      // and a focused bead keeps its focus
+      if (n === previous) return
       toy.setStep(n as TuneStep)
       label.innerHTML = FIG[n] ?? FIG[1]
       // a step left behind keeps nothing sounding: its game's pair, a miss's
       // replay still to come, or an anchor's tune
-      if (n !== previous) {
-        games.stop()
-        anchors.stop()
-      }
+      games.stop()
+      anchors.stop()
     },
   })
   initPredict(toy, root)
