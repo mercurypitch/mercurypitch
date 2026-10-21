@@ -1194,7 +1194,7 @@
   font: 600 var(--fs-22)/1.1 var(--f-display);
   font-variant-numeric: tabular-nums;
 }
-.ring .lbl span {
+.ring .lbl > span {
   color: var(--ink-3);
 }
 .app-card {

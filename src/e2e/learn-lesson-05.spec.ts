@@ -279,6 +279,34 @@ test.describe('Sing it, on a steady A3 from the fake microphone', () => {
     )
   })
 
+  test('moved Higher by one, the ring\'s black-key note stays on one line: "A♯3 · 233 Hz"', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await toTheNote(page, 'lower')
+    await page.locator('[data-note="higher"]').click()
+    await page.locator('[data-sing="start"]').click()
+
+    const note = page.locator('#ring .ring-note')
+    await expect(note).toContainText('233 Hz', { timeout: 15_000 })
+    // every piece of the note drawn on one line: the sign's span sits in it
+    const drawn = await note.evaluate((el) => {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const rects = Array.from(range.getClientRects()).filter(
+        (r) => r.width > 1 && r.height > 1,
+      )
+      const tops = rects.map((r) => r.top)
+      return {
+        pieces: rects.length,
+        spread: Math.max(...tops) - Math.min(...tops),
+        line: Math.min(...rects.map((r) => r.height)),
+      }
+    })
+    expect(drawn.pieces).toBeGreaterThan(1)
+    expect(drawn.spread).toBeLessThan(drawn.line / 2)
+  })
+
   test('the higher voice: A4, sung an octave lower, adds the octave line', async ({
     page,
   }) => {
