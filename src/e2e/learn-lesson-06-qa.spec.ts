@@ -7,7 +7,8 @@
 // meets the state it changed: Tab walks every bead and gap, each named in
 // spoken names; the start slider moves by keys alone and the words follow
 // it; the names switch and Swap sizes toggle and say so; Step 4's predict
-// waits for both versions; Step 5's brackets and anchor board play; the
+// waits for both versions, and holds Swap sizes, the mix-up card, the Try
+// and the Notice until then; Step 5's brackets and anchor board play; the
 // two games answer by keys, and Space replays only off a button. At 390 x
 // 844, 375 and 360 px wide, every step's stage fits with every target at
 // least 44 px square and none overlapping, free play at every start from
@@ -275,6 +276,8 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
   test('Swap sizes toggles, and says what it changed', async ({ page }) => {
     await openStep(page, 4)
     const swap = page.locator(`${TOY} [data-tune-swap]`)
+    // it plays the predict's answer, so it waits for a guess
+    await page.locator('#predictSwap [data-choice="changes"]').click()
 
     await swap.focus()
     await page.keyboard.press('Space')
@@ -306,6 +309,44 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
 
     await expect(reveal).toBeVisible({ timeout: 10_000 })
     await expect(reveal.locator('.mono')).toHaveText('You said: no, it changes')
+  })
+
+  test("Step 4's predict locks Swap sizes, and keeps back all that answers it until the reveal", async ({
+    page,
+  }) => {
+    await openStep(page, 4)
+    const predict = page.locator('#predictSwap')
+    const swap = page.locator(`${TOY} [data-tune-swap]`)
+    // the mix-up card, the Try and the Notice
+    const answers = page.locator('#step-4').locator('.mixup, .try, .notice')
+    const allHidden = async (): Promise<void> => {
+      for (const a of await answers.all()) await expect(a).toBeHidden()
+    }
+    await expect(answers).toHaveCount(3)
+
+    // Before a guess: Swap sizes shows, locked, and nothing answers
+    await expect(swap).toBeVisible()
+    await expect(swap).toBeDisabled()
+    await allHidden()
+
+    // A guess unlocks Swap sizes, and still nothing answers
+    await predict.locator('[data-choice="same"]').click()
+    await expect(swap).toBeEnabled()
+    await allHidden()
+    await predict.locator('[data-play="line"]').click()
+    await expect(predict.locator('.lock-hint')).toHaveText(
+      'Now play the other one.',
+      { timeout: 10_000 },
+    )
+    await allHidden()
+
+    // Both versions heard: the reveal, then the rest
+    await predict.locator('[data-play="swapped"]').click()
+    await expect(predict.locator('.reveal')).toBeVisible({ timeout: 10_000 })
+    for (const a of await answers.all()) await expect(a).toBeVisible()
+    await expect(predict.locator('.reveal .mono')).toHaveText(
+      'You said: yes, most notes are the same',
+    )
   })
 
   test("Step 5 names its brackets in words, and its board's five rows each play", async ({
