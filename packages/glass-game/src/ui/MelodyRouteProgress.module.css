@@ -41,7 +41,7 @@
 
 @media (max-width: 430px) {
   .route {
-    top: max(68px, calc(env(safe-area-inset-top) + 56px));
+    top: max(76px, calc(env(safe-area-inset-top) + 64px));
     gap: 5px;
     padding: 6px 8px;
   }

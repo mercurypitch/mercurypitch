@@ -4,6 +4,7 @@ import type { LevelDefinition, MovementInput, Vec3 } from '../contracts.ts'
 import { createGlassGame } from '../core/game.ts'
 import { MOVEMENT } from '../core/movement.ts'
 import type { ReachabilityProof, ReachabilityTarget } from './contracts.ts'
+import { probeGoalWalk } from './goal-walk-probe.ts'
 import { boundedInteger, MAX_MACRO_TICKS } from './limits.ts'
 import { expandMacroToInputs, generateGoalDirectedActions, } from './macro-inputs.ts'
 import { StateLattice } from './state-lattice.ts'
@@ -105,6 +106,15 @@ export function proveReachability(
     inputHistory: '',
   })
   if (satisfiesTarget(initial, target)) return reached([])
+  // Simple court approaches should not pay for a branching search and repeated
+  // prefix replay. A failed walk remains only one sampled route, not a verdict.
+  const walk = probeGoalWalk(
+    level,
+    target,
+    options.savedProgress,
+    maxExpansions > 0 ? Math.min(maxTicks, simulationBudget, 600) : 0,
+  )
+  if (walk.reached) return reached(walk.inputs)
   const speed = level.movement?.runSpeed ?? MOVEMENT.speed
   // Deliberately greedy rather than optimal A*: useful routes within a fixed simulation budget.
   const score = (position: Vec3, ticks: number) =>
@@ -120,7 +130,7 @@ export function proveReachability(
     },
   ]
   let expansions = 0
-  let simulatedTicks = 0
+  let simulatedTicks = walk.inputs.length
   let pruned = false
   while (frontier.length > 0 && expansions < maxExpansions) {
     expansions++

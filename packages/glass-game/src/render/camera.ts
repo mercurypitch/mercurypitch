@@ -83,6 +83,8 @@ export function createAdventureCamera(
   let obstructionLifted = false
   let zoomChanged = false
   let firstFrame = true
+  let initialSnapshotPending = true
+  let initialViewSelected = false
   let requestedChallengeId: string | null = null
   let challengeSubjects: ChallengeCameraSubjects | null = null
   let challengeShot: ChallengeCameraShot | null = null
@@ -375,6 +377,7 @@ export function createAdventureCamera(
       if (challengeInputLocked()) return
       const safeX = Number.isFinite(dx) ? dx : 0
       const safeY = Number.isFinite(dy) ? dy : 0
+      if (safeX !== 0 || safeY !== 0) initialViewSelected = true
       if (cameraMode === 'first-person') {
         firstPerson.orbit(safeX, safeY)
         movementReferenceYaw = firstPerson.yaw()
@@ -407,6 +410,7 @@ export function createAdventureCamera(
     },
     recenter() {
       if (challengeInputLocked()) return
+      initialViewSelected = true
       const recenterYaw = validRouteYaw(activeRouteSection) ?? facing
       if (cameraMode === 'first-person') {
         firstPerson.recenter(recenterYaw)
@@ -438,6 +442,26 @@ export function createAdventureCamera(
       const followDt = Math.min(elapsed, MAXIMUM_CAMERA_CATCH_UP_SECONDS)
       if (Number.isFinite(snapshot.player.facingYaw))
         facing = snapshot.player.facingYaw
+      if (initialSnapshotPending) {
+        initialSnapshotPending = false
+        // A restored checkpoint is the initial composition, not a landing
+        // transition from the level entrance. Later section changes still dwell.
+        activeRouteSection = routeDirector.initialize(snapshot.player)
+        const initialYaw =
+          options.reducedMotion === true
+            ? facing
+            : validRouteYaw(activeRouteSection)
+        if (
+          activeRouteSection !== null &&
+          initialYaw !== null &&
+          !initialViewSelected
+        ) {
+          yaw = initialYaw
+          movementReferenceYaw = yaw
+          firstPerson.recenter(yaw)
+          stopAngularResponse(followResponse, yaw)
+        }
+      }
       const challengeId = focusedChallengeId(snapshot)
       // A pause or encounter can clear a held stick without delivering a
       // release frame. Discard its pending heading before any cinematic early

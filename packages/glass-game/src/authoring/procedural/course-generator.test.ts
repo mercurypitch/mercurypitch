@@ -286,7 +286,7 @@ describe('generateProceduralCourse', () => {
       createArrivalChunk('first-arc-home'),
       createFrostRaftTransferChunk('frt1', 1.5),
       createCrackingSpiralChunk('csp1', 'east', 1.5, 0.48),
-      createTwinGlideCrossingChunk('tgc1', 1.6),
+      createTwinGlideCrossingChunk('tgc1'),
       createCrackingSpiralChunk('csp2', 'west', 1.5, -0.36),
       createFinalePavilionChunk('fin1'),
     ])

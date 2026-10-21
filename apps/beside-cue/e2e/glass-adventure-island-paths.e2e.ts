@@ -129,7 +129,10 @@ test('creator studies remain readable and selectable at phone and tablet widths 
   ).toBeVisible()
   await expect(
     page.getByRole('region', { name: 'Art studies' }).getByRole('button'),
-  ).toHaveCount(9)
+  ).toHaveCount(10)
+  await expect(
+    page.getByRole('button', { name: /The Celestial Promenade/ }),
+  ).toBeVisible()
   await expect(
     page.getByRole('button', { name: /The archive after dark/ }),
   ).toBeVisible()
