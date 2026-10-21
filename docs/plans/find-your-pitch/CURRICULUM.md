@@ -277,14 +277,21 @@ the vocal coach's sign-off, and its page publishes after `/learn/06`)
   it conceptually.
 - Facts: Henrich (2006); Arneson on register coordination. Never frame registers as a problem.
 
-**Lesson 12. Chords and the four-chord song**
+**Lesson 12. Chords and the four-chord song** (written: the lesson, its facts and its page spec are
+in [lessons/12-chords-four-chord-song/](lessons/12-chords-four-chord-song/), awaiting review; no
+film yet; its sung checkpoint waits on the vocal coach's sign-off, and its page publishes after
+`/learn/10`)
 
 - Objectives: build the chords of a key from its scale; read Roman numerals; hear I-V-vi-IV.
 - Misconception: "Songs with the same chords are the same song."
 - Signature: four chords as four rooms on the spiral; a melody walking through them.
 - Checkpoint: sing the root of each chord as the progression plays.
-- Practise: Chord Stacker (needs major and minor triads; today it has only maj7, min7, dom7, dim7
-  and maj6), Play Along.
+- Practise: Arpeggio Jumper (`/pitch-training?lesson=12`, then tap Arpeggio Jumper; its Chord menu
+  holds major, minor, diminished and augmented triads); Ear Lab's Cadence (`/ear-lab?lesson=12`,
+  then tap Cadence; opening it on its own needs the `ear-drill` launch kind). Chord Stacker waits
+  on major and minor triads (today it has only maj7, min7, dom7, dim7 and maj6; § 4 item 4). Play
+  Along is not linked: it opens only on a song the viewer has had separated, and no address
+  reaches it.
 - Facts: Ableton Learning Music's 1-5-6-4 lesson; Roman numerals (Hooktheory I).
 
 **Lesson 13. Resonance and vowels**
