@@ -109,8 +109,12 @@ one attribute flip is reversible:
 
 - `low`: no `backdrop-filter` anywhere, `will-change: auto` everywhere (a TV has
   ~1 GB of shared video memory; a few dozen pinned compositor layers exhausts
-  it), decorative blur and looping animation off, translucent panels given an
-  opaque ground so text stays legible without the blur behind it.
+  it), decorative blur and looping animation off, and the shared glass ground
+  (`--glass-bg`) made solid so text on glass chrome stays legible without the
+  blur behind it. Through the token, not by class name: this first painted
+  every element whose class contained "overlay", "sheet" or "modal", which
+  turned full-screen scrims solid (the tour, the Learn dialog) and the rows of
+  sheets grey on any device the frame sampler demoted (fixed 2026-10-21).
 - `balanced`: decorative blur and looping animation off, glass kept.
 - `tv` (any tier): a strong `:focus-visible` ring, because D-pad navigation is
   unusable without one, and hover transforms suppressed.

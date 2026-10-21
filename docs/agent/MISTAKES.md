@@ -1043,6 +1043,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** Keep fixed collision steps but budget 100 ms of ordinary catch-up. Test equal elapsed movement at 120/30/20 fps and mixed hitches; retain a bounded suspension limit. A quality governor addresses GPU cost separately.
 **See:** `packages/glass-game/src/core/movement.ts`, `packages/glass-game/src/core/game.test.ts`.
 
+### Never paint an element a performance tier chose by class-name substring
+
+**Symptom:** on a tablet, after a song played in the Karaoke mixer, the tour showed only its tooltip, Home's Learn dialog opened over an empty screen and the Zen song list drew grey bars. A reload cleared it; no DOM check found anything hidden.
+**Cause:** the frame sampler (`device-tier.ts`) had dropped the device to the low tier for the session, and `performance-mode.css` gave every element whose class merely contained "overlay", "sheet" or "modal" an opaque `--bg-card` there. Full-screen scrims and transparent rows turned solid.
+**Rule:** a tier stylesheet may use `[class*=…]` only to switch an effect off (filter, animation). A surface that needs another ground on a tier gets it from a token it already uses (`--glass-bg`). Check any tier with Settings > Quality or `?perf=low`: the sampler can apply `low` to any device mid-song.
+**See:** `src/styles/performance-mode.css`, `src/styles/performance-mode.contract.test.ts`, `src/e2e/low-tier-overlays.spec.ts`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag
