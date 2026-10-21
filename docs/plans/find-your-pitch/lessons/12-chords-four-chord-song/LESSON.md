@@ -109,15 +109,17 @@ then tune 2, and watch where the notes land." Each plays the four chords again w
 tune over them in "ooh". Each sung note lights its bead, and a line joins it to the note before. A
 note on a corner of the lit room glows gold, and a count under the ring adds them up as they land:
 "On a corner: 11 of 15" when tune 1 ends, "On a corner: 10 of 12" when tune 2 does. The reveal
-waits until both tunes have been heard; until then, after a play, the hint reads "Now play the
-other tune for the answer." With sound off it reads "Sound is off: nothing played. Turn sound on to
-hear the tunes, then play one again." The reveal opens on the choice, "You said: most of them" or
+waits until both tunes have been heard. Until then, once a choice is in, any heard play, the four
+chords' included, leaves the hint reading "Now hear both tunes, 1 and 2, for the answer." A play
+with sound off, before a choice too, leaves it reading "Sound is off: nothing played. Turn sound
+on, then play it again." Before a choice, the lock line comes back once the four chords are heard
+with sound on (WEB-SPEC, Edge cases). The reveal opens on the choice, "You said: most of them" or
 "You said: hardly any", and the hint then reads "Play either tune again, or just the four chords.")
 
 Reveal: Most of them. Tune 1 lands on a corner with 11 of its 15 notes, and tune 2 with 10 of
 its 12. Both walk through the same four rooms, each on its own path and in its own rhythm: one set
-of chords, two songs. That's this lesson's story. (Some notes in each tune fall between corners,
-which made "hardly any" a fair guess.)
+of chords, two songs. That's this lesson's story. (A chord holds only three of the key's seven
+notes, which made "hardly any" a fair guess.)
 
 ## Recall from Lesson 10
 
@@ -174,16 +176,16 @@ _Toy: the ring of rooms, with the key switch C · G._
 
 > **Go deeper**
 >
-> - **Numbers without case.** Not every text writes capitals and small letters. Ableton's free
->   lessons call chords by plain numbers, such as "the 1 and 5 chords", and some theorists write
->   every numeral in capitals.
+> - **Plain numbers.** Not every text writes capitals and small letters. Ableton's free lessons
+>   call chords by plain numbers, such as "the 1 and 5 chords", and some theorists write every
+>   numeral in capitals.
 
 ## Step 3 of 5: Why is the chord on la minor?
 
 On la, the sixth degree, the chord is la, do and mi: A, C, E. A up to C is 3 semitones, and C up
 to E is 4. That's Lesson 10's minor shape, and its numeral is vi: A minor. In Lesson 10, the minor
 chord's root was do: do-me-so. Here its root is la, and we're still in C major. Do stays on C, and
-all three notes are the scale's own. Beside I, C, E, G, it keeps C and E and swaps G for A.
+all three notes are the scale's own. Compared with I (C, E, G), it keeps C and E and swaps G for A.
 
 **Try:** switch the names to do-re-mi, then play I, then vi.
 **Notice:** one corner slides from G to A. The new room is the old one's mirror image.
@@ -225,7 +227,7 @@ chords, with only its rhythm changed.
 > **The evidence:** a song has two building blocks, its chords and its tune. Ableton's lessons say
 > melodies "define the ‘identity’ of the song in many styles of music": "if you ask someone to sing
 > a particular song, they'll usually sing the melody". This lesson's two tunes share every chord,
-> chord for chord, and they're still two tunes.
+> in the same order, and they're still two tunes.
 > **The better idea:** the chords are the rooms; the song is the walk through them, its tune in its
 > rhythm.
 
@@ -291,8 +293,8 @@ not half.]_
      and small letters mean minor: D, F, A."
    - It's the second chord in the song · Feedback: "A numeral names the root's place in the scale,
      not the chord's place in a song. Try Step 2 again."
-   - Its root is the scale's second note, and it's diminished · Feedback: "Diminished takes a small
-     circle too, as in vii°. D, F, A is 3 then 4 semitones: minor."
+   - Its root is the scale's second note, and it's diminished · Feedback: "A diminished chord adds
+     a small circle, as in vii°. D, F, A is 3 then 4 semitones: minor."
 3. In C major, what are the roots of I–V–vi–IV?
    - C, G, A and F **[correct]** · Feedback: "Do, so, la and fa: degrees 1, 5, 6 and 4."
    - C, D, E and F · Feedback: "Those are the scale's first four notes. The numerals point to
@@ -302,20 +304,21 @@ not half.]_
 4. A friend says: "Those two songs use the same four chords. They're the same song." What does this
    lesson suggest?
    - Not necessarily: the tune, in its rhythm, can make them two songs **[correct]** · Feedback:
-     "Asked to sing a song, people usually sing its tune. Two tunes can share every chord."
+     "Ask someone to sing a song, and they'll usually sing its tune. Two tunes can share every
+     chord."
    - Same chords, same song · Feedback: "This lesson's two tunes share every chord and are still two
      tunes. Try Step 5 again."
    - Only if they're in the same key · Feedback: "Even in the same key, a different tune over the
-     same chords makes a different song."
+     same chords can make a different song."
 
 ## Wrap
 
 - Stack the scale's notes a third and a fifth above each degree of a major scale and you get its
   seven chords. In C major they're all on white keys.
-- A Roman numeral names a chord by its root's degree, and capitals or small letters show its
-  quality: I, IV and V are major, ii, iii and vi minor, and vii° diminished.
+- A Roman numeral names a chord by its root's degree. Capitals or small letters show its quality:
+  I, IV and V are major, ii, iii and vi minor, and vii° diminished.
 - I–V–vi–IV is C, G, A minor and F in C major. Two songs can share it and still differ: the tune,
-  in its rhythm, makes the song.
+  in its rhythm, can make the song.
 
 **One-sentence challenge:** explain to a friend, in one sentence, how two songs can share the same
 four chords and still be two songs.
@@ -324,13 +327,13 @@ four chords and still be two songs.
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Arpeggio Jumper
-- Text: Arpeggio Jumper plays a chord's notes one at a time, from its root up to the root an octave
-  higher, and you sing each back. Its Chord menu starts on Major, with Minor, Diminished and
-  Augmented there too. It starts low in the voice range saved in Settings and climbs a whole
-  octave. It wants each note in the octave it plays, not an octave away: set your range there
-  first, under Singing Voice Range. If the top do felt high today, leave it for another day. Sore,
-  hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop immediately if
-  anything feels uncomfortable.
+- Text: By default, Arpeggio Jumper plays a chord's notes one at a time, from its root up to the
+  root an octave higher, and you sing each back. Its Chord menu starts on Major, with Minor,
+  Diminished and Augmented there too. It starts low in the voice range saved in Settings and climbs
+  a whole octave. It wants each note in the octave it plays, not an octave away: set your range
+  there first, under Singing Voice Range. If the top do felt high today, leave it for another day.
+  Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
+  immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Arpeggio Jumper.
 - Second drill: For your ear, Ear Lab's Cadence strums three or four chords on a guitar, and you
   name the progression in numerals from four choices. I–V–vi–IV is one of the eight it knows. Free:
@@ -434,11 +437,15 @@ roots of a chord loop, over the chords:
   (WEB-SPEC, Decisions for the owner).
 - The new Easy and Workable line, which describes the task, not the voice: "Do, so, la, fa, do: you
   just sang the loop's roots." (FACTS 63).
-- The practice card's Arpeggio Jumper: four notes, root, third, fifth and octave, 700 ms each with
-  2 seconds to sing each back, from the anchor of the voice range saved in Settings, low in it, up
-  to the octave above. Its Chord menu includes Diminished and Augmented, which this lesson only
-  names. Its score also folds in a "richness" reading that is only the run's average pitch clarity,
-  as Lesson 9 lists it for the App content track (FACTS 45, 46).
+- The practice card's Arpeggio Jumper, as it starts by default: four notes, root, third, fifth and
+  octave, played one at a time and sung back, 700 ms each with 2 seconds to sing each, from the
+  anchor of the voice range saved in Settings, low in it, up to the octave above. The drill's
+  stored difficulty scales the note and the time to sing it, from 924 ms and 2.64 seconds at level
+  1 to 420 ms and 1.2 seconds at level 10, and its setup can turn the arpeggio downwards or ask for
+  the whole of it back from memory (Echo the phrase). Its Chord menu includes Diminished and
+  Augmented, which this lesson only names. Its score also folds in a "richness" reading that is
+  only the run's average pitch clarity, as Lesson 9 lists it for the App content track (FACTS 45,
+  46).
 
 ### Changed in the plain-language review
 

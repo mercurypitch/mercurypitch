@@ -278,9 +278,8 @@ the vocal coach's sign-off, and its page publishes after `/learn/06`)
 - Facts: Henrich (2006); Arneson on register coordination. Never frame registers as a problem.
 
 **Lesson 12. Chords and the four-chord song** (written: the lesson, its facts and its page spec are
-in [lessons/12-chords-four-chord-song/](lessons/12-chords-four-chord-song/), awaiting review; no
-film yet; its sung checkpoint waits on the vocal coach's sign-off, and its page publishes after
-`/learn/10`)
+in [lessons/12-chords-four-chord-song/](lessons/12-chords-four-chord-song/), reviewed; no film yet;
+its voice lines wait on the vocal coach's sign-off, and its page publishes after `/learn/10`)
 
 - Objectives: build the chords of a key from its scale; read Roman numerals; hear I-V-vi-IV.
 - Misconception: "Songs with the same chords are the same song."
