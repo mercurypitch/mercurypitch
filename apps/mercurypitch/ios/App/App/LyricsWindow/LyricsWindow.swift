@@ -31,21 +31,6 @@ final class LyricsWindow: NSObject {
     /// The window's own play ("play") or pause ("pause") pressed.
     var pressed: (String) -> Void = { _ in }
 
-    /// Where the song is: the last report, run on by the host clock.
-    private struct Clock {
-        var playing = false
-        var position: Double = 0
-        var rate: Double = 1
-        var duration: Double = 0
-        /// When the report came, on the host clock.
-        var at: Double = CACurrentMediaTime()
-
-        func time(_ now: Double = CACurrentMediaTime()) -> Double {
-            let time = position + (playing ? (now - at) * rate : 0)
-            return duration > 0 ? min(max(0, time), duration) : max(0, time)
-        }
-    }
-
     /// A view whose own layer is the sample-buffer layer, so it keeps its size.
     private final class LayerView: UIView {
         override class var layerClass: AnyClass { AVSampleBufferDisplayLayer.self }
@@ -60,7 +45,7 @@ final class LyricsWindow: NSObject {
 
     private var script: LyricsWindowScript?
     private var autoEnter = false
-    private var clock = Clock()
+    private var clock = LyricsClock()
     private var open = false
     private var layerFailed = false
 
@@ -130,7 +115,7 @@ final class LyricsWindow: NSObject {
 
     /// A Now Playing report: where the song is now.
     func setClock(playing: Bool, position: Double, rate: Double, duration: Double) {
-        clock = Clock(playing: playing, position: position, rate: rate, duration: duration)
+        clock = LyricsClock(playing: playing, position: position, rate: rate, duration: duration)
         setTimebase()
         controller?.invalidatePlaybackState()
         say(String(

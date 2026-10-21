@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 
 // The song's lyrics worked out ahead, as the page sends them
 // (src/lib/lyric-window-script.ts): which line is being sung from when, the
@@ -48,5 +49,22 @@ struct LyricsWindowScript: Decodable {
             }
         }
         return found.map { segments[$0] } ?? segments.first
+    }
+}
+
+/// Where the song is: the last Now Playing report, run on by the host clock.
+/// The lyrics window and a connected TV draw from one each (LyricsWindow.swift,
+/// TVLyrics.swift).
+struct LyricsClock {
+    var playing = false
+    var position: Double = 0
+    var rate: Double = 1
+    var duration: Double = 0
+    /// When the report came, on the host clock.
+    var at: Double = CACurrentMediaTime()
+
+    func time(_ now: Double = CACurrentMediaTime()) -> Double {
+        let time = position + (playing ? (now - at) * rate : 0)
+        return duration > 0 ? min(max(0, time), duration) : max(0, time)
     }
 }

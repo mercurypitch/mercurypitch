@@ -15,11 +15,25 @@ import UIKit
 // Core Graphics and Core Text only, in the bitmap's own coordinates (origin
 // at the bottom left), so a frame needs nothing from UIKit's drawing state.
 final class LyricsWindowRenderer {
-    static let width = 640
-    static let height = 360
+    /// The lyrics window's frame. Every size below is laid out for this
+    /// height and scaled for another, so a TV's frame (TVLyrics.swift) is
+    /// the same picture at more pixels.
+    static let windowWidth = 640
+    static let windowHeight = 360
 
     /// Something went wrong drawing; said once per kind, for the log.
     var trouble: ((String) -> Void)?
+
+    private let metrics: Metrics
+
+    /// Frames of `width` by `height` pixels: the window's unless told.
+    init(width: Int = LyricsWindowRenderer.windowWidth, height: Int = LyricsWindowRenderer.windowHeight) {
+        metrics = Metrics(
+            width: width,
+            height: height,
+            scale: CGFloat(height) / CGFloat(LyricsWindowRenderer.windowHeight)
+        )
+    }
 
     private var pool: CVPixelBufferPool?
     private lazy var backdrop: CGImage? = makeBackdrop()
@@ -41,8 +55,8 @@ final class LyricsWindowRenderer {
         defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
         guard let context = CGContext(
             data: CVPixelBufferGetBaseAddress(buffer),
-            width: Self.width,
-            height: Self.height,
+            width: metrics.width,
+            height: metrics.height,
             bitsPerComponent: 8,
             bytesPerRow: CVPixelBufferGetBytesPerRow(buffer),
             space: Self.colorSpace,
@@ -51,7 +65,7 @@ final class LyricsWindowRenderer {
             report("no drawing context")
             return nil
         }
-        let frame = CGRect(x: 0, y: 0, width: Self.width, height: Self.height)
+        let frame = CGRect(x: 0, y: 0, width: metrics.width, height: metrics.height)
         if let backdrop {
             context.draw(backdrop, in: frame)
         } else {
@@ -86,9 +100,19 @@ final class LyricsWindowRenderer {
         var height: CGFloat { lineHeight * CGFloat(lines.count) }
     }
 
-    private static let textWidth = CGFloat(width) * 0.88
-    private static let gap: CGFloat = 6
-    private static let lineSizes: [CGFloat] = [54, 48, 44, 40]
+    /// The sizes a frame is laid out with: the window's, scaled to its height.
+    private struct Metrics {
+        let width: Int
+        let height: Int
+        let scale: CGFloat
+
+        var textWidth: CGFloat { CGFloat(width) * 0.88 }
+        var gap: CGFloat { 6 * scale }
+        var lineSizes: [CGFloat] { ([54, 48, 44, 40] as [CGFloat]).map { $0 * scale } }
+
+        func points(_ size: CGFloat) -> CGFloat { size * scale }
+    }
+
     private static let maxLines = 3
 
     private func paintLyrics(_ script: LyricsWindowScript, at time: Double, in context: CGContext) {
@@ -98,28 +122,28 @@ final class LyricsWindowRenderer {
 
         var blocks: [Block] = []
         if !current.isEmpty || next != nil {
-            blocks.append(Self.single(script.title, Self.font(28, .semibold), Palette.title))
+            blocks.append(Self.single(script.title, Self.font(metrics.points(28), .semibold), Palette.title, metrics))
         }
         if let segment, !current.isEmpty {
-            blocks.append(Self.sung(segment, at: time))
+            blocks.append(Self.sung(segment, at: time, metrics))
             if let next {
-                blocks.append(Self.single(next, Self.font(33, .medium), Palette.next))
+                blocks.append(Self.single(next, Self.font(metrics.points(33), .medium), Palette.next, metrics))
             }
         } else if let next {
-            blocks.append(Self.big(next, Palette.waiting))
+            blocks.append(Self.big(next, Palette.waiting, metrics))
         } else {
-            blocks.append(Self.big(script.title, Palette.lit))
+            blocks.append(Self.big(script.title, Palette.lit, metrics))
         }
 
-        let total = blocks.reduce(0) { $0 + $1.height } + Self.gap * CGFloat(max(0, blocks.count - 1))
-        var top = (CGFloat(Self.height) + total) / 2
+        let total = blocks.reduce(0) { $0 + $1.height } + metrics.gap * CGFloat(max(0, blocks.count - 1))
+        var top = (CGFloat(metrics.height) + total) / 2
         context.textMatrix = .identity
         for block in blocks {
             let ascent = CTFontGetAscent(block.font)
             let descent = CTFontGetDescent(block.font)
             for line in block.lines {
                 let baseline = top - (block.lineHeight - ascent - descent) / 2 - ascent
-                let x = (CGFloat(Self.width) - line.width) / 2
+                let x = (CGFloat(metrics.width) - line.width) / 2
                 context.textPosition = CGPoint(x: x, y: baseline)
                 CTLineDraw(line.colored, context)
                 if let lit = line.lit {
@@ -146,12 +170,12 @@ final class LyricsWindowRenderer {
                 }
                 top -= block.lineHeight
             }
-            top -= Self.gap
+            top -= metrics.gap
         }
     }
 
     /// The line being sung: its words lit, filling or dim as at `time`.
-    private static func sung(_ segment: LyricsWindowScript.Segment, at time: Double) -> Block {
+    private static func sung(_ segment: LyricsWindowScript.Segment, at time: Double, _ metrics: Metrics) -> Block {
         let words = segment.current
         let text = words.joined(separator: " ")
         var ranges: [NSRange] = []
@@ -164,7 +188,7 @@ final class LyricsWindowRenderer {
         let fills = words.indices.map { segment.fill(of: $0, at: time) }
 
         var chosen: Block?
-        for size in lineSizes {
+        for size in metrics.lineSizes {
             let font = Self.font(size, .bold)
             let colored = attributed(text, font, Palette.dim)
             var sweeps: [Sweep] = []
@@ -175,33 +199,33 @@ final class LyricsWindowRenderer {
                     sweeps.append(Sweep(range: range, fill: CGFloat(fills[index])))
                 }
             }
-            let lines = wrap(colored, lit: attributed(text, font, Palette.lit))
+            let lines = wrap(colored, lit: attributed(text, font, Palette.lit), metrics)
             chosen = Block(lines: Array(lines.prefix(maxLines)), font: font, sweeps: sweeps)
             if lines.count <= maxLines { break }
         }
-        return chosen ?? Block(lines: [], font: Self.font(lineSizes[0], .bold))
+        return chosen ?? Block(lines: [], font: Self.font(metrics.lineSizes[0], .bold))
     }
 
     /// A line in the big place, with no words lit one by one.
-    private static func big(_ text: String, _ color: CGColor) -> Block {
+    private static func big(_ text: String, _ color: CGColor, _ metrics: Metrics) -> Block {
         var chosen: Block?
-        for size in lineSizes {
+        for size in metrics.lineSizes {
             let font = Self.font(size, .bold)
-            let lines = wrap(attributed(text, font, color), lit: nil)
+            let lines = wrap(attributed(text, font, color), lit: nil, metrics)
             chosen = Block(lines: Array(lines.prefix(maxLines)), font: font)
             if lines.count <= maxLines { break }
         }
-        return chosen ?? Block(lines: [], font: Self.font(lineSizes[0], .bold))
+        return chosen ?? Block(lines: [], font: Self.font(metrics.lineSizes[0], .bold))
     }
 
     /// One line, cut short with an ellipsis if it is too wide.
-    private static func single(_ text: String, _ font: CTFont, _ color: CGColor) -> Block {
+    private static func single(_ text: String, _ font: CTFont, _ color: CGColor, _ metrics: Metrics) -> Block {
         var line = CTLineCreateWithAttributedString(attributed(text, font, color) as CFAttributedString)
-        if CTLineGetTypographicBounds(line, nil, nil, nil) > Double(textWidth) {
+        if CTLineGetTypographicBounds(line, nil, nil, nil) > Double(metrics.textWidth) {
             let ellipsis = CTLineCreateWithAttributedString(
                 attributed("\u{2026}", font, color) as CFAttributedString
             )
-            line = CTLineCreateTruncatedLine(line, Double(textWidth), .end, ellipsis) ?? line
+            line = CTLineCreateTruncatedLine(line, Double(metrics.textWidth), .end, ellipsis) ?? line
         }
         let width = CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil))
         let range = CFRange(location: 0, length: (text as NSString).length)
@@ -209,13 +233,13 @@ final class LyricsWindowRenderer {
     }
 
     /// Breaks text into lines that fit, as the window's width allows.
-    private static func wrap(_ text: NSAttributedString, lit: NSAttributedString?) -> [Line] {
+    private static func wrap(_ text: NSAttributedString, lit: NSAttributedString?, _ metrics: Metrics) -> [Line] {
         let typesetter = CTTypesetterCreateWithAttributedString(text as CFAttributedString)
         let litTypesetter = lit.map { CTTypesetterCreateWithAttributedString($0 as CFAttributedString) }
         var lines: [Line] = []
         var start = 0
         while start < text.length {
-            let count = CTTypesetterSuggestLineBreak(typesetter, start, Double(textWidth))
+            let count = CTTypesetterSuggestLineBreak(typesetter, start, Double(metrics.textWidth))
             guard count > 0 else { break }
             let range = CFRange(location: start, length: count)
             let line = CTTypesetterCreateLine(typesetter, range)
@@ -265,8 +289,8 @@ final class LyricsWindowRenderer {
         if let pool { return pool }
         let attributes: [String: Any] = [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-            kCVPixelBufferWidthKey as String: Self.width,
-            kCVPixelBufferHeightKey as String: Self.height,
+            kCVPixelBufferWidthKey as String: metrics.width,
+            kCVPixelBufferHeightKey as String: metrics.height,
             kCVPixelBufferIOSurfacePropertiesKey as String: [String: Any](),
             kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
             kCVPixelBufferCGImageCompatibilityKey as String: true
@@ -281,14 +305,14 @@ final class LyricsWindowRenderer {
     private func makeBackdrop() -> CGImage? {
         guard let context = CGContext(
             data: nil,
-            width: Self.width,
-            height: Self.height,
+            width: metrics.width,
+            height: metrics.height,
             bitsPerComponent: 8,
             bytesPerRow: 0,
             space: Self.colorSpace,
             bitmapInfo: Self.bitmapInfo
         ) else { return nil }
-        let frame = CGRect(x: 0, y: 0, width: Self.width, height: Self.height)
+        let frame = CGRect(x: 0, y: 0, width: metrics.width, height: metrics.height)
         context.setFillColor(Palette.ground)
         context.fill(frame)
         // The bundle's copy of native-only/now-playing.webp (native-assets.mjs).
