@@ -1,5 +1,7 @@
 # Lesson 10: Major and minor (written lesson)
 
+Status: Awaiting the vocal coach's sign-off before publishing (MASTER-PLAN § 12 item 8)
+
 The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
 English (MASTER-PLAN § 12 item 5); the app's screens stay American. Each step names its toy (the
 interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md). This is a text-only
