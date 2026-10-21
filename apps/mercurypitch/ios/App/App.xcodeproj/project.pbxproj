@@ -23,6 +23,7 @@
 		C7A1D5E00000000000001003 /* LyricsWindowScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1D5E00000000000000003 /* LyricsWindowScript.swift */; };
 		C7A1D5E00000000000001004 /* LyricsWindowRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1D5E00000000000000004 /* LyricsWindowRenderer.swift */; };
 		C7A1D5E00000000000001005 /* AudioOutputPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1D5E00000000000000005 /* AudioOutputPlugin.swift */; };
+		C7A1D5E00000000000001006 /* TVLyrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1D5E00000000000000006 /* TVLyrics.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@
 		C7A1D5E00000000000000003 /* LyricsWindowScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsWindowScript.swift; sourceTree = "<group>"; };
 		C7A1D5E00000000000000004 /* LyricsWindowRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsWindowRenderer.swift; sourceTree = "<group>"; };
 		C7A1D5E00000000000000005 /* AudioOutputPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioOutputPlugin.swift; sourceTree = "<group>"; };
+		C7A1D5E00000000000000006 /* TVLyrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVLyrics.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +105,7 @@
 				C7A1D5E00000000000000002 /* LyricsWindow.swift */,
 				C7A1D5E00000000000000003 /* LyricsWindowScript.swift */,
 				C7A1D5E00000000000000004 /* LyricsWindowRenderer.swift */,
+				C7A1D5E00000000000000006 /* TVLyrics.swift */,
 			);
 			path = LyricsWindow;
 			sourceTree = "<group>";
@@ -198,6 +201,7 @@
 				C7A1D5E00000000000001003 /* LyricsWindowScript.swift in Sources */,
 				C7A1D5E00000000000001004 /* LyricsWindowRenderer.swift in Sources */,
 				C7A1D5E00000000000001005 /* AudioOutputPlugin.swift in Sources */,
+				C7A1D5E00000000000001006 /* TVLyrics.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

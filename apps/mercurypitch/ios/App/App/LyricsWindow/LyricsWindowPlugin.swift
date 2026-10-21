@@ -11,6 +11,10 @@ import UIKit
 // and closing, its play and pause, and its log. It also says what iOS does
 // to the app's sound (`audioSessionLog`, AudioSessionWatch below).
 //
+// The same lyrics and clock go to a TV connected to the phone (TVLyrics.swift),
+// which shows them full screen while a test build's switch is on
+// (`setTvLyrics`), and says when a TV comes and goes (`tvLyricsChange`).
+//
 // An app's own plugin is not on Capacitor's package list, so
 // ViewController.capacitorDidLoad() registers this one.
 @objc(LyricsWindowPlugin)
@@ -20,10 +24,13 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "setAutoEnter", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setLyrics", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "setClock", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "setClock", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setTvLyrics", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getTvLyrics", returnType: CAPPluginReturnPromise)
     ]
 
     private var window: LyricsWindow?
+    private var tv: TVLyrics?
     private var sessionWatch: AudioSessionWatch?
 
     override public func load() {
@@ -49,6 +56,18 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
                 ])
             }
             self.window = window
+            let tv = TVLyrics()
+            tv.say = { [weak self] message in
+                self?.log("TV: \(message)")
+            }
+            tv.changed = { [weak self] connected, showing in
+                self?.notifyListeners("tvLyricsChange", data: [
+                    "connected": connected,
+                    "showing": showing
+                ])
+            }
+            self.tv = tv
+            tv.lookForTV()
             self.sessionWatch = AudioSessionWatch { [weak self] message in
                 self?.sessionLog(message)
             }
@@ -74,12 +93,14 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             guard let json else {
                 self.window?.setScript(nil)
+                self.tv?.setScript(nil)
                 call.resolve()
                 return
             }
             do {
                 let script = try JSONDecoder().decode(LyricsWindowScript.self, from: Data(json.utf8))
                 self.window?.setScript(script)
+                self.tv?.setScript(script)
                 call.resolve()
             } catch {
                 self.log("could not read the lyrics: \(error.localizedDescription)")
@@ -95,7 +116,30 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
         let duration = call.getDouble("duration") ?? 0
         DispatchQueue.main.async { [weak self] in
             self?.window?.setClock(playing: playing, position: position, rate: rate, duration: duration)
+            self?.tv?.setClock(playing: playing, position: position, rate: rate, duration: duration)
             call.resolve()
+        }
+    }
+
+    /// The switch for the lyrics on a connected TV: on, a TV shows them in
+    /// place of the phone. Kept across launches by TVLyrics.
+    @objc func setTvLyrics(_ call: CAPPluginCall) {
+        let enabled = call.getBool("enabled") ?? false
+        DispatchQueue.main.async { [weak self] in
+            self?.tv?.setEnabled(enabled)
+            call.resolve()
+        }
+    }
+
+    /// The switch, and whether a TV is connected and shows the lyrics.
+    @objc func getTvLyrics(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [weak self] in
+            let tv = self?.tv
+            call.resolve([
+                "enabled": tv?.enabled ?? false,
+                "connected": tv?.connected ?? false,
+                "showing": tv?.showing ?? false
+            ])
         }
     }
 
