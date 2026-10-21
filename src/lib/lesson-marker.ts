@@ -3,7 +3,7 @@
 // ============================================================
 //
 // Every practise link a lesson page prints carries `?lesson=NN` ahead of any
-// hash route: `/ear-lab?lesson=02`, `/?lesson=09#/path` (the links are in
+// hash route: `/ear-lab?lesson=02`, `/mirror?lesson=05` (the links are in
 // src/features/lessons/kit/season.ts). The main app reads it once, at boot,
 // so First Light steps aside for somebody a lesson sent to one room
 // (stepAsideForLesson in src/stores/onboarding-store.ts).

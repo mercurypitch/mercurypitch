@@ -330,10 +330,10 @@ const ENTRIES: readonly Lesson[] = [
     pr: {
       needs: 'Interval Trainer (sing) and Arpeggio Jumper',
       link: {
-        href: '/?lesson=09#/path',
-        addr: 'mercurypitch.com/#/path',
-        label: 'The Ascent',
-        note: 'Tuning and Ear week',
+        href: '/pitch-training?lesson=09',
+        addr: 'mercurypitch.com/pitch-training',
+        label: 'Exercises',
+        note: 'then tap Arpeggio Jumper',
       },
     },
   },
