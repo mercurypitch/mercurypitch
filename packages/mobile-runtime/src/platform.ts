@@ -50,12 +50,18 @@ export type {
 } from './audio-output'
 export { onAudioOutput, readAudioOutput } from './audio-output'
 export type { Unsubscribe } from './native-calls'
-export type { PictureInPictureLyrics } from './picture-in-picture'
+export type {
+  PictureInPictureLyrics,
+  TvLyricsState,
+} from './picture-in-picture'
 export {
   onPictureInPicture,
+  onTvLyrics,
   pictureInPictureNeedsLyrics,
+  readTvLyrics,
   setPictureInPictureAutoEnter,
   setPictureInPictureLyrics,
+  setTvLyricsEnabled,
 } from './picture-in-picture'
 
 /**

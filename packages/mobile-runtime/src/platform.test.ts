@@ -49,6 +49,8 @@ const pictureInPicture = vi.hoisted(() => ({
   setAutoEnter: vi.fn(),
   setLyrics: vi.fn(),
   setClock: vi.fn(),
+  setTvLyrics: vi.fn(),
+  getTvLyrics: vi.fn(),
   addListener: vi.fn(),
 }))
 const registerPlugin = vi.hoisted(() =>
@@ -190,6 +192,8 @@ describe('on the web', () => {
       'setPictureInPictureLyrics',
       (p: Platform) => p.setPictureInPictureLyrics(SCRIPT),
     ],
+    ['setTvLyricsEnabled', (p: Platform) => p.setTvLyricsEnabled(true)],
+    ['readTvLyrics', (p: Platform) => p.readTvLyrics()],
     ['claimNowPlaying', (p: Platform) => p.claimNowPlaying()],
   ])('%s evaluates no plugin module at all', async (_name, call) => {
     const platform = await loadPlatform(false)
@@ -217,6 +221,7 @@ describe('on the web', () => {
     const stopMedia = platform.onMediaAction(handler)
     const stopWindow = platform.onPictureInPicture(handler)
     const stopHolding = platform.onNowPlayingHoldsAudio(handler)
+    const stopTv = platform.onTvLyrics(handler)
     await settle()
 
     expect(loaded).toEqual([])
@@ -229,6 +234,7 @@ describe('on the web', () => {
       stopMedia()
       stopWindow()
       stopHolding()
+      stopTv()
     }).not.toThrow()
     expect(handler).not.toHaveBeenCalled()
   })
@@ -1491,5 +1497,79 @@ describe('picture in picture', () => {
     await settle()
 
     expect(handle.remove).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('a TV connected to an iPhone', () => {
+  it('switches the lyrics on the TV, and reads the TV as the plugin says', async () => {
+    const platform = await loadPlatform(true, 'ios')
+    pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+    pictureInPicture.getTvLyrics.mockResolvedValueOnce({
+      enabled: true,
+      connected: true,
+      showing: 'yes',
+    })
+
+    await platform.setTvLyricsEnabled(true)
+    const state = await platform.readTvLyrics()
+
+    expect(registerPlugin.mock.calls).toEqual([['PictureInPicture']])
+    expect(pictureInPicture.setTvLyrics.mock.calls).toEqual([
+      [{ enabled: true }],
+    ])
+    expect(state).toEqual({ enabled: true, connected: true, showing: false })
+    pictureInPicture.addListener.mockReset()
+  })
+
+  it('hears a TV come and go, and stops hearing it', async () => {
+    const platform = await loadPlatform(true, 'ios')
+    const handle = listenerHandle()
+    pictureInPicture.addListener.mockResolvedValue(handle)
+    const handler = vi.fn()
+
+    const stop = platform.onTvLyrics(handler)
+    await settle()
+    const heard = pictureInPicture.addListener.mock.calls.find(
+      ([name]) => name === 'tvLyricsChange',
+    )
+    const tell = heard?.[1] as (state: {
+      connected?: unknown
+      showing?: unknown
+    }) => void
+    tell({ connected: true, showing: true })
+    tell({ connected: false })
+    stop()
+
+    expect(handler.mock.calls).toEqual([
+      [{ connected: true, showing: true }],
+      [{ connected: false, showing: false }],
+    ])
+    expect(handle.remove).toHaveBeenCalled()
+    pictureInPicture.addListener.mockReset()
+  })
+
+  it('reads no TV from a build with no plugin behind the name', async () => {
+    const platform = await loadPlatform(true, 'ios')
+    pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+    pictureInPicture.getTvLyrics.mockRejectedValueOnce(
+      new Error('"PictureInPicture" plugin is not implemented on ios'),
+    )
+
+    await expect(platform.readTvLyrics()).resolves.toBeNull()
+    pictureInPicture.addListener.mockReset()
+  })
+
+  it('has no TV on Android, and registers nothing for one', async () => {
+    const platform = await loadPlatform(true)
+
+    await platform.setTvLyricsEnabled(true)
+    const state = await platform.readTvLyrics()
+    const stop = platform.onTvLyrics(vi.fn())
+
+    expect(state).toBeNull()
+    expect(registerPlugin).not.toHaveBeenCalled()
+    expect(() => {
+      stop()
+    }).not.toThrow()
   })
 })
