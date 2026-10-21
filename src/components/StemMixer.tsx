@@ -1878,6 +1878,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       },
     ),
   )
+  // Its first step points at the stem controls, which live in the sidebar,
+  // so the sidebar shows while the tour runs even if the singer hid it.
+  // Hidden, the step had no target and spotlighted nothing. Derived, not
+  // written: the saved choice is never touched, so the sidebar is hidden
+  // again the moment the tour ends, however it ends and even if this mixer
+  // was remounted under it.
+  const sidebarHidden = (): boolean =>
+    layout.sidebarHidden() && props.tourRunning?.() !== true
 
   // ── Derived helpers ───────────────────────────────────────────
   const showMidi = () =>
@@ -3083,7 +3091,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             workspaceLayout={layout.workspaceLayout}
             fixedPanelHeights={layout.fixedPanelHeights}
             handleFixedResizeStart={layout.handleFixedResizeStart}
-            sidebarHidden={layout.sidebarHidden}
+            sidebarHidden={sidebarHidden}
             setCanvasRef={canvas.setCanvasRef}
             handleCanvasWheel={canvas.handleCanvasWheel}
             handleCanvasPointerDown={canvas.handleCanvasPointerDown}
@@ -3146,7 +3154,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           />
           <StemMixerPerformanceWorkspace
             workspaceLayout={layout.workspaceLayout}
-            sidebarHidden={layout.sidebarHidden}
+            sidebarHidden={sidebarHidden}
             setCanvasRef={canvas.setCanvasRef}
             handleCanvasPointerDown={canvas.handleCanvasPointerDown}
             handleCanvasPointerMove={canvas.handleCanvasPointerMove}

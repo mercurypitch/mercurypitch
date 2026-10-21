@@ -425,6 +425,9 @@ export const Walkthrough: Component = () => {
   // Single stable handler so add/remove pair up (the previous anonymous-fn
   // versions never detached, leaking a listener per step). Reposition on
   // resize, orientation change (mobile), and scroll while the tour is active.
+  // Also when a transition ends: a target can still be sliding into place when
+  // it first counts as visible (a sidebar a step just un-hid), and the
+  // spotlight would otherwise keep the sliver it measured mid-slide.
   const reposition = () => {
     updateHighlight()
     updateTooltip()
@@ -434,15 +437,17 @@ export const Walkthrough: Component = () => {
     if (!walkthroughActive()) return
     // Untracked: `reposition` reads the current step, so a tracked call here
     // would re-run this effect on every Next — measuring a target that has
-    // not been prepared yet, and re-attaching all three listeners each time.
+    // not been prepared yet, and re-attaching every listener each time.
     untrack(reposition)
     window.addEventListener('resize', reposition)
     window.addEventListener('orientationchange', reposition)
     window.addEventListener('scroll', reposition, true)
+    window.addEventListener('transitionend', reposition, true)
     onCleanup(() => {
       window.removeEventListener('resize', reposition)
       window.removeEventListener('orientationchange', reposition)
       window.removeEventListener('scroll', reposition, true)
+      window.removeEventListener('transitionend', reposition, true)
     })
   })
 
