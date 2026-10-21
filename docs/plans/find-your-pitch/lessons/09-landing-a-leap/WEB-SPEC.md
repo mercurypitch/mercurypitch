@@ -592,12 +592,13 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   are written (`season.ts:212-215`; FACTS 5, 62, 63). Whether the page is live is `kit/publish.ts`'s
   to say: `seasonFor` draws a lesson held back as one coming later, with no page and no reading time
   (`:94-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`, which
-  `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Proposed, and able to ship on
-  its own, before the page, since every lesson page's explorer prints the entry's link today (FACTS
-  61, 62): its link becomes `href: '/pitch-training?lesson=09'`,
-  `addr: 'mercurypitch.com/pitch-training'`, `label: 'Arpeggio Jumper'` and
-  `note: 'then tap Arpeggio Jumper'`, the note in the learner's words (`season.ts:27-34`); `needs`
-  keeps "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
+  `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link changed before the
+  page, on its own, since every lesson page's explorer prints it (FACTS 61, 62): it is
+  `href: '/pitch-training?lesson=09'`, `addr: 'mercurypitch.com/pitch-training'`,
+  `label: 'Exercises'` and `note: 'then tap Arpeggio Jumper'`, so the card reads "Exercises, then
+  tap Arpeggio Jumper", as Lesson 4's reads "Exercises, then tap Scale Runner" (`season.ts:240-245`,
+  `explorer.ts:178`). The note is in the learner's words (`season.ts:27-34`); `needs` keeps
+  "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
   stay. Its hook is the entry's, the default (`season.ts:328`); its alternative, `'harder'`, and its
   tease, which Lesson 8's card draws, are `kit/lesson-copy.ts`'s (`:103-112`), as FACTS 1 records:
   this spec changes no hook or tease line. `EDGES` already holds [3, 9] and [6, 9]
