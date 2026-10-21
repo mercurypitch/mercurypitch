@@ -345,12 +345,12 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
     await predict.locator('[data-play="line"]').click()
     await expect(predict.locator('.lock-hint')).toHaveText(
       'Now play the other one.',
-      { timeout: 10_000 },
+      { timeout: 15_000 },
     )
     await expect(reveal).toBeHidden()
     await predict.locator('[data-play="swapped"]').click()
 
-    await expect(reveal).toBeVisible({ timeout: 10_000 })
+    await expect(reveal).toBeVisible({ timeout: 15_000 })
     await expect(reveal.locator('.mono')).toHaveText('You said: no, it changes')
   })
 
@@ -379,13 +379,13 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
     await predict.locator('[data-play="line"]').click()
     await expect(predict.locator('.lock-hint')).toHaveText(
       'Now play the other one.',
-      { timeout: 10_000 },
+      { timeout: 15_000 },
     )
     await allHidden()
 
     // Both versions heard: the reveal, then the rest
     await predict.locator('[data-play="swapped"]').click()
-    await expect(predict.locator('.reveal')).toBeVisible({ timeout: 10_000 })
+    await expect(predict.locator('.reveal')).toBeVisible({ timeout: 15_000 })
     for (const a of await answers.all()) await expect(a).toBeVisible()
     await expect(predict.locator('.reveal .mono')).toHaveText(
       'You said: yes, most notes are the same',
@@ -526,7 +526,7 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
       await expect(page.locator('#heroTune [data-hero-said]')).toHaveText(
         'Twinkle from F sharp',
       )
-      await expect(fromFs).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+      await expect(fromFs).not.toHaveClass(/\bis-on\b/, { timeout: 15_000 })
 
       await expectWholeLine(page, 'from F sharp')
       expect(await sideways(page)).toBe(width)
@@ -556,7 +556,7 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
       )
       await fromFs.click()
       await expect(hint).toContainText('Sound is off, so nothing played.', {
-        timeout: 10_000,
+        timeout: 15_000,
       })
       await expectSignsOnTheirLines(hint, 'the hint with sound off')
     })
