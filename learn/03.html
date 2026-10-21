@@ -9,10 +9,12 @@
     <title>Match a note: Find Your Pitch, Lesson 3 | MercuryPitch</title>
     <meta
       name="description"
-      content="Most people who say they can't sing still land within a semitone. A fifteen-minute lesson with live toys and three notes to sing back: how your voice makes a note, how to look after it, and what in tune means."
+      content="A fifteen-minute lesson with live toys and three notes to sing back: how your voice makes a note, how to look after it and what &#8220;in tune&#8221; means."
     />
     <link rel="canonical" href="https://mercurypitch.com/learn/03" />
-    <meta name="robots" content="index, follow" />
+    <!-- max-image-preview:large lets Search and Discover show the share card
+         at full width; Discover asks for it before it uses a large image. -->
+    <meta name="robots" content="index, follow, max-image-preview:large" />
 
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -29,7 +31,17 @@
       property="og:description"
       content="Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?"
     />
-    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:image"
+      content="https://mercurypitch.com/learn/lesson-03-og.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The title card: Find Your Pitch, Lesson 03, Match a note, above a violet line chasing Merc's amber band: it starts well below, closes the gap after try and compare, and ends in the band, between blue Merc and orange Merc."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
       content="Match a note: Find Your Pitch, Lesson 3"
@@ -38,6 +50,86 @@
       name="twitter:description"
       content="Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?"
     />
+    <meta
+      name="twitter:image"
+      content="https://mercurypitch.com/learn/lesson-03-og.jpg"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="The title card: Find Your Pitch, Lesson 03, Match a note, above a violet line chasing Merc's amber band: it starts well below, closes the gap after try and compare, and ends in the band, between blue Merc and orange Merc."
+    />
+    <!-- What a search engine or an assistant reads this page as: a free lesson
+         in the Find Your Pitch series, from the organization index.html
+         defines. Every value repeats something the page already says, so it
+         changes when they do; the headline is also this lesson's link text
+         in every entry document's nav (tools/lesson-links.ts). No
+         datePublished yet: it is the day the lesson first goes live on
+         mercurypitch.com, which is the day the admin console first
+         publishes it, and nothing writes it then, so it is set by hand in
+         the commit that deletes its drafts.ts line or in one straight after
+         that first publish. No VideoObject: Lesson 3 has no film
+         (docs/plans/find-your-pitch/SEARCH.md § 3.2). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "@id": "https://mercurypitch.com/learn/03#lesson",
+        "headline": "Match a note",
+        "alternativeHeadline": "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?",
+        "description": "A fifteen-minute lesson with live toys and three notes to sing back: how your voice makes a note, how to look after it and what “in tune” means.",
+        "url": "https://mercurypitch.com/learn/03",
+        "mainEntityOfPage": "https://mercurypitch.com/learn/03",
+        "image": "https://mercurypitch.com/learn/lesson-03-og.jpg",
+        "inLanguage": "en-GB",
+        "learningResourceType": "Lesson",
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT15M",
+        "teaches": [
+          "How the vocal folds make a note, and how tighter folds raise it",
+          "Looking after your voice as you sing",
+          "Matching a note: hear, try, compare, adjust",
+          "Why a match an octave up or down counts",
+          "What “in tune” means: a band around the note, in cents"
+        ],
+        "isAccessibleForFree": true,
+        "position": 3,
+        "isPartOf": {
+          "@type": "CreativeWorkSeries",
+          "name": "Find Your Pitch"
+        },
+        "author": {
+          "@type": "Organization",
+          "@id": "https://mercurypitch.com/#organization",
+          "name": "MercuryPitch",
+          "url": "https://mercurypitch.com/"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "@id": "https://mercurypitch.com/#organization",
+          "name": "MercuryPitch",
+          "url": "https://mercurypitch.com/"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "MercuryPitch",
+            "item": "https://mercurypitch.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Match a note"
+          }
+        ]
+      }
+    </script>
     <!-- A lesson is its own document, like learn/01.html: every word of it is
          in this markup, so it reads without the script; the module adds the
          sound, the toys, the Mercs and the microphone. A draft until the vocal
