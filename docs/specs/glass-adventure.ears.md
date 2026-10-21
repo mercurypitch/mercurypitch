@@ -85,6 +85,11 @@ Owner decision 2026-09-28: Glassworks belongs to Beside Cue for now. mercurypitc
 - GA-48: The course compiler shall reject a slide opening that cannot pass the lowered body, fails to block the standing body, lacks sufficient supported approach or exit runway, or overlaps an incompatible obstacle. Collision shall preserve the visible arch's solid feet and overhead shape.
 - GA-49: The development-only Low Arch lesson shall introduce sliding with the existing arch art and preserve the identities and saves of accepted runner courses. Both steering modes shall support independent steering, slide and jump contacts within their physical movement constraints.
 
+## Shared procedural courses
+
+- GA-50: A portable Cloudway course code shall preserve its generator version, typed seed and normalized recipe. Reopening a supported code shall retain its course identity, generated route, compiled support and challenge content. A change that alters that contract shall use a new generator version with an explicit compatibility path for existing codes and progress. Representative fixed-code fixtures shall detect drift; they shall not be presented as proof for every possible seed.
+- GA-51: When the Studio cannot read a stored course recipe, it shall preserve the original value and explain that it remains stored. Opening studies, launching or copying the fallback settings, a failed import, and an invalid partial edit shall not replace it. A deliberate valid settings change or successful code import may replace it. Blocked storage shall not prevent opening studies or playing the current course.
+
 ## Evidence
 
 Pure route, hold and lifecycle tests live in `packages/glass-game/src`; real mouse, multi-touch and injected PCM browser journeys live in `apps/beside-cue/e2e/glass-adventure-*.e2e.ts`. Art recipes and source provenance live in `art/glass-adventure`. Physical iPhone/Android microphone, frame-rate and suspension acceptance remains an owner playtest. GA-35 to GA-37: `scripts/assert-glassworks-listing.mjs` on every web build, `tools/glassworks-listing.test.ts`, `src/tests/home-destinations.test.tsx` and `src/e2e/glass-game.spec.ts`.

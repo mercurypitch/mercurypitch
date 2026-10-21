@@ -1,0 +1,150 @@
+{
+  "generatorVersion": 1,
+  "sourceCommit": "e36501be662048c1a3ddcc6ac67d95ddeba97fec",
+  "courses": [
+    {
+      "label": "first-arc-v1/gentle",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImdlbnRsZSIsIm1lbG9keUxlc3NvbklkIjoiZmlyc3QtYXJjLXYxIiwiZm9nVGhlbWUiOiJjZWxlc3RpYWwiLCJpbmNsdWRlTGl2aW5nQ3J5c3RhbHMiOnRydWUsImluY2x1ZGVPcHRpb25hbEFsY292ZXMiOnRydWV9",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImdlbnRsZSIsIm1lbG9keUxlc3NvbklkIjoiZmlyc3QtYXJjLXYxIiwiZm9nVGhlbWUiOiJjZWxlc3RpYWwiLCJpbmNsdWRlTGl2aW5nQ3J5c3RhbHMiOnRydWUsImluY2x1ZGVPcHRpb25hbEFsY292ZXMiOnRydWV9",
+      "platforms": 61,
+      "checkpoints": 4,
+      "rawSha256": "9c3e75a7eca2d14b19b3f4167afa576b65eb4cdc7dc683b3f67353bd6d942c0b",
+      "compiledSha256": "d0d06c32baea5e6a6bc8a019bcbc1e525797e2b09c0d69ae968ed322533d0920"
+    },
+    {
+      "label": "first-arc-v1/balanced",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJmaXJzdC1hcmMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJmaXJzdC1hcmMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "platforms": 61,
+      "checkpoints": 4,
+      "rawSha256": "365f54d354078c6dfcc8d3ab8f596f378756c7f5c5109679eb406774150d1beb",
+      "compiledSha256": "40c6955480ad6173075d150270e2abdb19ef65e196c0613988b7545978fee512"
+    },
+    {
+      "label": "first-arc-v1/virtuoso",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6InZpcnR1b3NvIiwibWVsb2R5TGVzc29uSWQiOiJmaXJzdC1hcmMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6InZpcnR1b3NvIiwibWVsb2R5TGVzc29uSWQiOiJmaXJzdC1hcmMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "platforms": 61,
+      "checkpoints": 4,
+      "rawSha256": "358988a4f5b763701363db562849c8e1d414d8ccc34523b4ae0e1703fd7c210b",
+      "compiledSha256": "b8aa97e0b9220c5a05a66c0531278067bf93e7724cb75d6b76ae9e3a09b9923a"
+    },
+    {
+      "label": "sunlit-steps-v1/gentle",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImdlbnRsZSIsIm1lbG9keUxlc3NvbklkIjoic3VubGl0LXN0ZXBzLXYxIiwiZm9nVGhlbWUiOiJjZWxlc3RpYWwiLCJpbmNsdWRlTGl2aW5nQ3J5c3RhbHMiOnRydWUsImluY2x1ZGVPcHRpb25hbEFsY292ZXMiOnRydWV9",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImdlbnRsZSIsIm1lbG9keUxlc3NvbklkIjoic3VubGl0LXN0ZXBzLXYxIiwiZm9nVGhlbWUiOiJjZWxlc3RpYWwiLCJpbmNsdWRlTGl2aW5nQ3J5c3RhbHMiOnRydWUsImluY2x1ZGVPcHRpb25hbEFsY292ZXMiOnRydWV9",
+      "platforms": 105,
+      "checkpoints": 6,
+      "rawSha256": "0d2d85b1a3dd80d4e8e905dadd76f8d0638944a28e4abc7bbaa1580872e3af3d",
+      "compiledSha256": "fe7cfbb58f88aad8ed61d4f23522532abbecbd3c3643be281112a6e1ab2fbdd5"
+    },
+    {
+      "label": "sunlit-steps-v1/balanced",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJzdW5saXQtc3RlcHMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJzdW5saXQtc3RlcHMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "platforms": 105,
+      "checkpoints": 6,
+      "rawSha256": "059c28fffac113e0a2c73444e10c7f50443bcfa93936d064a261fd787a7cf8e6",
+      "compiledSha256": "c9fff548de90f7bcf21d1f1765a9e5354e1ab47601ec9ef66265f8aec099da60"
+    },
+    {
+      "label": "sunlit-steps-v1/virtuoso",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6InZpcnR1b3NvIiwibWVsb2R5TGVzc29uSWQiOiJzdW5saXQtc3RlcHMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6InZpcnR1b3NvIiwibWVsb2R5TGVzc29uSWQiOiJzdW5saXQtc3RlcHMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "platforms": 105,
+      "checkpoints": 6,
+      "rawSha256": "75929b38cd4d9aa79a64bdc2c52b7c140c6e2fc2b86d55168ffdbfac6215f766",
+      "compiledSha256": "42214e78692f93bfc629f155a19cc8f2e3f93368e423cadd58c2c1c81e3fb4d6"
+    },
+    {
+      "label": "gallery-arch-v1/gentle",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImdlbnRsZSIsIm1lbG9keUxlc3NvbklkIjoiZ2FsbGVyeS1hcmNoLXYxIiwiZm9nVGhlbWUiOiJjZWxlc3RpYWwiLCJpbmNsdWRlTGl2aW5nQ3J5c3RhbHMiOnRydWUsImluY2x1ZGVPcHRpb25hbEFsY292ZXMiOnRydWV9",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImdlbnRsZSIsIm1lbG9keUxlc3NvbklkIjoiZ2FsbGVyeS1hcmNoLXYxIiwiZm9nVGhlbWUiOiJjZWxlc3RpYWwiLCJpbmNsdWRlTGl2aW5nQ3J5c3RhbHMiOnRydWUsImluY2x1ZGVPcHRpb25hbEFsY292ZXMiOnRydWV9",
+      "platforms": 141,
+      "checkpoints": 8,
+      "rawSha256": "448dde71289186b223752357e0db3005e11792d43ef9246ab8464a1fb9c79caa",
+      "compiledSha256": "c29e1639f90139d287dcfe9f9f1da28bd799c9bda6f3d1c2e6186a7958f81e18"
+    },
+    {
+      "label": "gallery-arch-v1/balanced",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJnYWxsZXJ5LWFyY2gtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJnYWxsZXJ5LWFyY2gtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "platforms": 141,
+      "checkpoints": 8,
+      "rawSha256": "1f0566088f60c45a905b9ba031602e0df6e49713d82d0541e08429464a833b4a",
+      "compiledSha256": "5c557b240a433a4a04cdb063226123f62ebdfa5da5aeee9475037a3d33787dfb"
+    },
+    {
+      "label": "gallery-arch-v1/virtuoso",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6InZpcnR1b3NvIiwibWVsb2R5TGVzc29uSWQiOiJnYWxsZXJ5LWFyY2gtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6InZpcnR1b3NvIiwibWVsb2R5TGVzc29uSWQiOiJnYWxsZXJ5LWFyY2gtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "platforms": 141,
+      "checkpoints": 8,
+      "rawSha256": "ec487cc800fbd09ac27ec32f58ed6db36e408e48b15531be14de39f2c38a4759",
+      "compiledSha256": "d1e1a9cad3b53779231f6637c6948a454f96c7479847b8ed6a99d8c27774b7b3"
+    },
+    {
+      "label": "two-windows-v1/gentle",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImdlbnRsZSIsIm1lbG9keUxlc3NvbklkIjoidHdvLXdpbmRvd3MtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImdlbnRsZSIsIm1lbG9keUxlc3NvbklkIjoidHdvLXdpbmRvd3MtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "platforms": 197,
+      "checkpoints": 11,
+      "rawSha256": "9a91f76afbcac8de26819cab73be73ae606dc386449b1aaf0a1bf9be410588ba",
+      "compiledSha256": "72a41c822a3fafbbff7828289969d025ca8d71818b8156c676a9f826ed9ec585"
+    },
+    {
+      "label": "two-windows-v1/balanced",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJ0d28td2luZG93cy12MSIsImZvZ1RoZW1lIjoiY2VsZXN0aWFsIiwiaW5jbHVkZUxpdmluZ0NyeXN0YWxzIjp0cnVlLCJpbmNsdWRlT3B0aW9uYWxBbGNvdmVzIjp0cnVlfQ",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJ0d28td2luZG93cy12MSIsImZvZ1RoZW1lIjoiY2VsZXN0aWFsIiwiaW5jbHVkZUxpdmluZ0NyeXN0YWxzIjp0cnVlLCJpbmNsdWRlT3B0aW9uYWxBbGNvdmVzIjp0cnVlfQ",
+      "platforms": 197,
+      "checkpoints": 11,
+      "rawSha256": "174d0b61e3d098feb7bdb8cf2f3c3e087b42ee43d8e7abc0700d21b3c2577695",
+      "compiledSha256": "086d689d7a041206eddac05a0658c6324ad108cf0ad36b3d4adecaecc3403ae7"
+    },
+    {
+      "label": "two-windows-v1/virtuoso",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6InZpcnR1b3NvIiwibWVsb2R5TGVzc29uSWQiOiJ0d28td2luZG93cy12MSIsImZvZ1RoZW1lIjoiY2VsZXN0aWFsIiwiaW5jbHVkZUxpdmluZ0NyeXN0YWxzIjp0cnVlLCJpbmNsdWRlT3B0aW9uYWxBbGNvdmVzIjp0cnVlfQ",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6InZpcnR1b3NvIiwibWVsb2R5TGVzc29uSWQiOiJ0d28td2luZG93cy12MSIsImZvZ1RoZW1lIjoiY2VsZXN0aWFsIiwiaW5jbHVkZUxpdmluZ0NyeXN0YWxzIjp0cnVlLCJpbmNsdWRlT3B0aW9uYWxBbGNvdmVzIjp0cnVlfQ",
+      "platforms": 197,
+      "checkpoints": 11,
+      "rawSha256": "8a9b6d19ceae42690f9ad577ce5aaa6ecf57856d2d6643db5671f50543a64fe5",
+      "compiledSha256": "71827b6a23a8b9a847cd2526dfa7f349c4aef837fb281ebc88adbcee43c16348"
+    },
+    {
+      "label": "numeric-seed",
+      "code": "cloudway:v1:eyJzZWVkIjo0MiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJmaXJzdC1hcmMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjo0MiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJmaXJzdC1hcmMtdjEiLCJmb2dUaGVtZSI6ImNlbGVzdGlhbCIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "platforms": 64,
+      "checkpoints": 4,
+      "rawSha256": "6daf4d5b1b7914b1f585cb8400f8cf9b29bdc8f80ed3893d918ce170baa75c4b",
+      "compiledSha256": "e653c01fb1b64f77f5e083b507c503d10b0ee5576ec3988065c202b8a1018464"
+    },
+    {
+      "label": "string-seed",
+      "code": "cloudway:v1:eyJzZWVkIjoiNDIiLCJkaWZmaWN1bHR5IjoiYmFsYW5jZWQiLCJtZWxvZHlMZXNzb25JZCI6ImZpcnN0LWFyYy12MSIsImZvZ1RoZW1lIjoiY2VsZXN0aWFsIiwiaW5jbHVkZUxpdmluZ0NyeXN0YWxzIjp0cnVlLCJpbmNsdWRlT3B0aW9uYWxBbGNvdmVzIjp0cnVlfQ",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoiNDIiLCJkaWZmaWN1bHR5IjoiYmFsYW5jZWQiLCJtZWxvZHlMZXNzb25JZCI6ImZpcnN0LWFyYy12MSIsImZvZ1RoZW1lIjoiY2VsZXN0aWFsIiwiaW5jbHVkZUxpdmluZ0NyeXN0YWxzIjp0cnVlLCJpbmNsdWRlT3B0aW9uYWxBbGNvdmVzIjp0cnVlfQ",
+      "platforms": 64,
+      "checkpoints": 4,
+      "rawSha256": "93b3c2a9ec3c4d66d6f5f535d768a7afa170c0dd0ec9039b6e47b1acc24f51ef",
+      "compiledSha256": "01128bcfc7701efb69def6f69d85e3cfc9bf925df6e7d9200faaa18e959f2bac"
+    },
+    {
+      "label": "unicode-seed",
+      "code": "cloudway:v1:eyJzZWVkIjoi8J2EniDEjGFyb2JuaSB2cnQiLCJkaWZmaWN1bHR5IjoiYmFsYW5jZWQiLCJtZWxvZHlMZXNzb25JZCI6ImZpcnN0LWFyYy12MSIsImZvZ1RoZW1lIjoiZGF3biIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoi8J2EniDEjGFyb2JuaSB2cnQiLCJkaWZmaWN1bHR5IjoiYmFsYW5jZWQiLCJtZWxvZHlMZXNzb25JZCI6ImZpcnN0LWFyYy12MSIsImZvZ1RoZW1lIjoiZGF3biIsImluY2x1ZGVMaXZpbmdDcnlzdGFscyI6dHJ1ZSwiaW5jbHVkZU9wdGlvbmFsQWxjb3ZlcyI6dHJ1ZX0",
+      "platforms": 64,
+      "checkpoints": 4,
+      "rawSha256": "2df5aeea0c2d9da9501fd64093f7845fd113020cf5b6c795352acb58a2d9375e",
+      "compiledSha256": "f5f00e0be7a2addea26c6f14c63df4d633f1cf02c5afb0a870e693910e825cb2"
+    },
+    {
+      "label": "switches-off",
+      "code": "cloudway:v1:eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJ0d28td2luZG93cy12MSIsImZvZ1RoZW1lIjoidHdpbGlnaHQiLCJpbmNsdWRlTGl2aW5nQ3J5c3RhbHMiOmZhbHNlLCJpbmNsdWRlT3B0aW9uYWxBbGNvdmVzIjpmYWxzZX0",
+      "courseId": "cloudway-procedural-v1-eyJzZWVkIjoic2hhcmVkLXBlYXJsIiwiZGlmZmljdWx0eSI6ImJhbGFuY2VkIiwibWVsb2R5TGVzc29uSWQiOiJ0d28td2luZG93cy12MSIsImZvZ1RoZW1lIjoidHdpbGlnaHQiLCJpbmNsdWRlTGl2aW5nQ3J5c3RhbHMiOmZhbHNlLCJpbmNsdWRlT3B0aW9uYWxBbGNvdmVzIjpmYWxzZX0",
+      "platforms": 188,
+      "checkpoints": 11,
+      "rawSha256": "3686a2b9f9553d9fc38fa7a2a6388e9c5ec56376239ee06050f7aff375416b84",
+      "compiledSha256": "6cc5038bcb0d566cd0a9d9a5047b65d63b57e527798224d00d971f84f656114a"
+    }
+  ]
+}
