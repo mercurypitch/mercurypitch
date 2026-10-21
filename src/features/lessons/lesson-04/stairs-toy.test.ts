@@ -8,12 +8,12 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { createModeStore } from '@/features/lessons/kit/names'
 import type { StairsToy } from './stairs-toy'
 import { mountStairsToy, startFromKey } from './stairs-toy'
-import { NAMES_MODES } from './stairs-words'
+import { NAMES_MODES, summary } from './stairs-words'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/04.html'), 'utf8')
 
@@ -35,6 +35,7 @@ beforeEach(() => {
 afterEach(() => {
   toy.stop()
   root.remove()
+  vi.useRealTimers()
 })
 
 const slider = (): HTMLElement => root.querySelector('[data-start-slider]')!
@@ -102,6 +103,36 @@ describe('the staircase toy', () => {
     expect(slider().getAttribute('aria-valuenow')).toBe('71')
     press('Home')
     expect(slider().getAttribute('aria-valuenow')).toBe('60')
+  })
+
+  it('says the new start 700 ms after a slide', () => {
+    // Arrange
+    vi.useFakeTimers()
+    toy.setStep(3)
+    const said = root.querySelector<HTMLElement>('[data-stairs-said]')!
+
+    // Act
+    press('ArrowRight')
+    vi.advanceTimersByTime(700)
+
+    // Assert
+    expect(said.textContent).toBe(summary(61))
+  })
+
+  it('drops the summary a slide has queued when it stops', () => {
+    // Arrange
+    vi.useFakeTimers()
+    toy.setStep(3)
+    const said = root.querySelector<HTMLElement>('[data-stairs-said]')!
+    press('ArrowRight')
+    const before = said.textContent
+
+    // Act
+    toy.stop()
+    vi.advanceTimersByTime(700)
+
+    // Assert
+    expect(said.textContent).toBe(before)
   })
 
   it('names the slider within C4 to B4 and disables the button at each end', () => {
