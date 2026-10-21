@@ -98,7 +98,8 @@ line above it, are in LESSON.md ("Section headings").
    instead, with Interval Trainer named and "then tap Interval Trainer" after its address, then the
    same second drill (Toys 6). Its addresses link `/pitch-training?lesson=06` and
    `/ear-lab?lesson=06` in a new tab, so neither meets First Light (Practice links). Free play
-   unlocks here: every tune-line control on one stage (playbook rule 17).
+   unlocks here: every tune-line control on one stage (playbook rule 17), headed in the learner's
+   words, "Free play: try every control of the tune line in one place".
 10. **Lesson explorer**: the kit's, with Lesson 6 as the current node, the line under its heading
     from LESSON.md, and the state for a lesson with a page and no film (What the kit and the app
     still need).
