@@ -6,12 +6,14 @@
 // each row names its interval, its label and its semitones beside a small
 // figure of two beads on semitone rows, and plays the tune's own snippet
 // (Play the tune) or the bare pair (Play the interval), in the soft tone
-// (FACTS 68). A row lights while it sounds, and one sound plays at a time:
-// a new tap stops the last. The rows' words are the markup's; this draws
-// the figures and plays.
+// (FACTS 68). A row lights while it sounds, and it is the page's one sound
+// (kit/now-playing.ts): a new tap, on the board or anywhere on the page,
+// stops the last. The rows' words are the markup's; this draws the figures
+// and plays.
 
 import { q, qa, svg } from '@/features/lessons/kit/dom'
 import { COLOR, rgba } from '@/features/lessons/kit/notes'
+import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { Anchor, Playing } from './examples'
 import { ANCHORS, playNotes } from './examples'
@@ -83,6 +85,7 @@ export function initAnchors(): AnchorBoard {
     lit?.row.classList.remove('is-on')
     lit?.button.classList.remove('is-on')
     lit = null
+    NowPlaying.release(stop)
   }
 
   for (const a of ANCHORS) {
@@ -91,6 +94,7 @@ export function initAnchors(): AnchorBoard {
     for (const button of qa<HTMLButtonElement>('[data-anchor-play]', row)) {
       button.addEventListener('click', () => {
         stop()
+        NowPlaying.claim(stop)
         const events =
           button.dataset.anchorPlay === 'tune' ? a.tune : a.interval
         const run = playNotes(events, { audible: Sound.canPlay() })

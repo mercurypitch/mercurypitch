@@ -11,37 +11,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
-import { createModeStore } from '@/features/lessons/kit/names'
-import type { StepDeck } from '@/features/lessons/kit/step-deck'
-import { createStepDeck } from '@/features/lessons/kit/step-deck'
-import { classify } from './melody'
-import type { HeardVoice } from './page-dom.test-fixtures'
-import { el, listen, loadPage } from './page-dom.test-fixtures'
-import { initSteps } from './steps'
-import type { NamesMode } from './tune-words'
-import { NAMES_MODES } from './tune-words'
-
-/** The page's deck with its steps mounted, opened on step 1 as the page opens it. */
-function mountSteps(): StepDeck {
-  loadPage()
-  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
-  const deck = createStepDeck({
-    toyFor: () => 1,
-    after: { label: 'Sing it', selector: '#sing' },
-  })
-  initSteps(deck, createModeStore<NamesMode>(NAMES_MODES, 'letters'))
-  deck.start()
-  return deck
-}
-
-/** Plays Step or leap?'s round to its end, listening, and answers it wrong. */
-function missARound(heard: HeardVoice[]): void {
-  el('#stepLeapGame [data-eg-play]').click()
-  vi.advanceTimersByTime(1600)
-  const [a, b] = heard.slice(-2).map((v) => v.midi)
-  const wrong = classify(b - a) === 'step' ? 'leap' : 'step'
-  el(`#stepLeapGame [data-eg-answer="${wrong}"]`).click()
-}
+import { el, listen, missARound, mountSteps } from './page-dom.test-fixtures'
 
 afterEach(() => {
   vi.useRealTimers()

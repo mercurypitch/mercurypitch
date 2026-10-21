@@ -20,7 +20,8 @@
 // path's segments one after another instead of a travelling line. A path
 // with no rest to breathe in can carry breath marks (Lesson 6's, after
 // "star"): a small tick over the path in its own colour with the word
-// "breathe", lit as the voice or the sweep reaches it.
+// "breathe", lit as the voice or the sweep reaches it. A page whose run can
+// be cut short ends it where it stands (`stop`), and the guide rests.
 //
 // Mounted on a root holding a `canvas` and a `[data-guide-rows]` box, into
 // which the row labels are written as markup (so a ♯ is spoken), each at its
@@ -72,6 +73,8 @@ export interface Guide {
   model(): Promise<void>
   /** The viewer's turn: `countIn` seconds waiting at the start, then the line sweeps the path; resolves when it has gone. */
   sweep(countIn: number): Promise<void>
+  /** Ends a model or a sweep where it stands: the guide rests, and the run's promise settles. */
+  stop(): void
 }
 
 type Mode = 'rest' | 'model' | 'count' | 'sweep'
@@ -381,6 +384,8 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
   let mode: Mode = 'rest'
   let t0 = 0
   let wait = 0
+  let timers: number[] = []
+  let settle: (() => void) | null = null
   placeLabels(box, rows)
 
   /** The breath marks in the path's colour now, lit as far as the voice or the sweep has come. */
@@ -436,17 +441,24 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
     wait = countIn
     t0 = performance.now()
     return new Promise((resolve) => {
+      settle = resolve
       let at = 0
       for (const [phase, seconds] of phases) {
-        setTimeout(() => {
-          mode = phase
-        }, at * 1000)
+        timers.push(
+          window.setTimeout(() => {
+            mode = phase
+          }, at * 1000),
+        )
         at += seconds
       }
-      setTimeout(() => {
-        mode = 'rest'
-        resolve()
-      }, at * 1000)
+      timers.push(
+        window.setTimeout(() => {
+          mode = 'rest'
+          timers = []
+          settle = null
+          resolve()
+        }, at * 1000),
+      )
     })
   }
 
@@ -473,6 +485,14 @@ export function mountGuide(root: HTMLElement, opts: GuideOptions): Guide {
         ],
         countIn,
       )
+    },
+    stop() {
+      timers.forEach((id) => window.clearTimeout(id))
+      timers = []
+      mode = 'rest'
+      const done = settle
+      settle = null
+      done?.()
     },
   }
 }

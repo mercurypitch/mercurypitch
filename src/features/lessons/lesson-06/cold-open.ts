@@ -8,18 +8,22 @@
 // the start, because orange's line answers it. Play from F♯ waits for a
 // guess, then lifts the line and slides it up six rows, announced "Twinkle
 // from F sharp", before blue Merc sings it in Merc's "ooh" (FACTS 36, 63).
-// The reveal follows once Play from F♯ has been heard; with sound off the
-// hint says so and the reveal waits. Orange celebrates once. The compact
-// line takes no taps (the buttons carry every action), so its drawing is
-// hidden from a screen reader and a polite live region speaks for it. Its
-// stars are drawn once and never twinkle: on this page only the two Mercs'
-// idle loops move by themselves (WEB-SPEC, Look).
+// The reveal follows once Play from F♯ has been heard to its end; with
+// sound off the hint says so and the reveal waits. Each play is the page's
+// one sound (kit/now-playing.ts) from its press, the slide included: a
+// newer sound anywhere stops it, Merc falls quiet, and a play cut short
+// reveals nothing. Orange celebrates once. The compact line takes no taps
+// (the buttons carry every action), so its drawing is hidden from a screen
+// reader and a polite live region speaks for it. Its stars are drawn once
+// and never twinkle: on this page only the two Mercs' idle loops move by
+// themselves (WEB-SPEC, Look).
 
 import { q, wait } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
 import { stillSky } from '@/features/lessons/kit/hero-sky'
 import { mercCelebrate, mercSing, mercsReady, } from '@/features/lessons/kit/merc-duo'
 import { COLOR, signsHtml } from '@/features/lessons/kit/notes'
+import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { mountPredict } from '@/features/lessons/kit/predict'
 import type { TuneShape } from '@/features/lessons/kit/tune-line'
 import { mountTuneLine } from '@/features/lessons/kit/tune-line'
@@ -84,17 +88,33 @@ export function initColdOpen(): void {
     active: watch(stage),
   })
 
-  async function play(what: string, audible: boolean): Promise<void> {
+  // the stops so far: a play stopped while its line still slides finds them changed
+  let stops = 0
+
+  /** Stops the hero's play, or the start a slide is still carrying it to; Merc falls quiet. */
+  function stop(): void {
+    stops += 1
+    line.stop()
+    mercSing('blue', C4, false)
+  }
+
+  /** Plays a start; resolves false if another sound cut it short. */
+  async function play(what: string, audible: boolean): Promise<boolean> {
+    NowPlaying.claim(stop)
+    const mine = stops
     const fs = what === 'fs'
     const lands = line.setStart(fs ? FS4 : C4)
     if (lands > 0) await wait(lands)
+    if (mine !== stops) return false
     said.textContent = fs ? STARTS_SAID.fs : STARTS_SAID.c
     const events = fs ? LINE_FS : LINE_C
-    await line.play(events, audible, {
+    const finished = await line.play(events, audible, {
       kind: 'merc',
       color: COLOR.blue,
       onNote: (e, i) => singAlong(e, i, events.length),
     })
+    if (finished) NowPlaying.release(stop)
+    return finished
   }
 
   mountPredict(q('#predict'), {

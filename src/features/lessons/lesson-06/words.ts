@@ -8,12 +8,16 @@
 // two beads on neighbouring letter rows for step (A4 down to G4); two beads
 // with empty rows between for leap (D4 up to G4); and a short line with its
 // moved copy for transpose (C4 C4 G4 G4, then F♯4 F♯4 C♯5 C♯5). Each bead
-// lights while its note sounds, in the soft tone.
+// lights while its note sounds, in the soft tone. A word is the page's one
+// sound (kit/now-playing.ts): a new press, of a word or anything else on
+// the page, stops the last, and a press of the word sounding plays it again
+// from its start.
 
 import { q, qa, svg } from '@/features/lessons/kit/dom'
 import { COLOR, rgba } from '@/features/lessons/kit/notes'
+import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { Sound } from '@/features/lessons/kit/sound'
-import type { NoteEvent } from './examples'
+import type { NoteEvent, Playing } from './examples'
 import { playNotes, WORD_SOUNDS } from './examples'
 
 /** One bead that lights while its note sounds. */
@@ -128,26 +132,44 @@ export function initWords(): void {
     leap: leapLamps(),
     transpose: transposeLamps(),
   }
-  const busy = new Set<string>()
+  let playing: Playing | null = null
+  let lit: { button: HTMLButtonElement; lamps: readonly Lamp[] } | null = null
+  // each lit bead's own end, cleared with the word, so none outlives it
+  let offs: number[] = []
+
+  /** Stops the word sounding: its notes, its lit beads and its button. */
+  function stop(): void {
+    playing?.stop()
+    playing = null
+    offs.forEach((id) => window.clearTimeout(id))
+    offs = []
+    lit?.button.classList.remove('is-on')
+    lit?.lamps.forEach((l) => l.off())
+    lit = null
+    NowPlaying.release(stop)
+  }
+
   qa<HTMLButtonElement>('[data-word-play]').forEach((b) =>
     b.addEventListener('click', () => {
       const word = b.dataset.wordPlay ?? ''
       const events: readonly NoteEvent[] | undefined = WORD_SOUNDS[word]
       const own = lamps[word] as Lamp[] | undefined
-      if (events === undefined || own === undefined || busy.has(word)) return
-      busy.add(word)
+      if (events === undefined || own === undefined) return
+      stop()
+      NowPlaying.claim(stop)
+      lit = { button: b, lamps: own }
       b.classList.add('is-on')
-      void playNotes(events, {
+      const run = playNotes(events, {
         audible: Sound.canPlay(),
         onNote: (e, i) => {
           own.forEach((l) => l.off())
           own[i]?.on()
-          window.setTimeout(() => own[i]?.off(), e.dur * 1000)
+          offs.push(window.setTimeout(() => own[i]?.off(), e.dur * 1000))
         },
-      }).done.then(() => {
-        busy.delete(word)
-        b.classList.remove('is-on')
-        own.forEach((l) => l.off())
+      })
+      playing = run
+      void run.done.then(() => {
+        if (playing === run) stop()
       })
     }),
   )
