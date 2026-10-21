@@ -2,19 +2,19 @@
 // Lesson 6 Sing it tests — a press during a run stops it, then acts
 // ============================================================
 //
-// On the page's own markup, with no microphone: Move do and Start the
-// guide, pressed while Merc sings a version, stop the version and then
-// act; a version cut short has not been played, so the guide still waits
-// for one; and a sound anywhere else on the page stops a version too. The
-// status line and the do line, both live regions, are written only when
-// their words change.
+// On the page's own markup, with no microphone: Move do, Start the guide
+// and a voice change, pressed while Merc sings a version, stop the version
+// and then act; a version cut short has not been played, so the guide
+// still waits for one; and a sound anywhere else on the page stops a
+// version too. The status line and the do line, both live regions, are
+// written only when their words change.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { el, listen, loadPage } from './page-dom.test-fixtures'
 import { initSing, RUNNING } from './sing'
 import { STATUS } from './sing-flow'
-import { readoutHtml } from './sing-guide'
+import { readoutHtml, ringLabel } from './sing-guide'
 import { initWords } from './words'
 
 /** Sing it on the page's markup, past the comfort check, with the lower voice chosen. */
@@ -101,6 +101,27 @@ describe("Lesson 6's Sing it: a press while Merc sings", () => {
       [69, false],
       [67, false],
     ])
+    expect(el('#singStatus').textContent).toBe(STATUS.first)
+    expect(lit('[data-version="1"]')).toBe(false)
+  })
+
+  it("stops the version at a voice change, and the do line and the ring's do follow the new voice at once", () => {
+    // Arrange: the first version in the lower voice, its fourth note sounding
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const heard = listen()
+    mountSing()
+    el('[data-version="1"]').click()
+    vi.advanceTimersByTime(2000)
+
+    // Act
+    el('[data-panel="voice"] [data-voice="higher"]').click()
+    vi.advanceTimersByTime(10000)
+
+    // Assert: Merc cut off, and the higher voice's do, D4, where the lower's was
+    expect(heard).toHaveLength(4)
+    expect(heard[3].stopped).toBe(true)
+    expect(el('[data-do-readout]').innerHTML).toBe(readoutHtml('higher', 0))
+    expect(el('#ring .ring-note').innerHTML).toBe(ringLabel(62))
     expect(el('#singStatus').textContent).toBe(STATUS.first)
     expect(lit('[data-version="1"]')).toBe(false)
   })
