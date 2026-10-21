@@ -1,6 +1,6 @@
 // Solver contracts — types for headless trajectory exploration and security verification.
 
-import type { MovementInput, PlayerState, Vec3 } from '../contracts'
+import type { MovementInput, PlayerState, Vec3 } from '../contracts.ts'
 
 export interface MacroInput {
   moveX: number
@@ -33,11 +33,14 @@ export interface ReachabilityTarget {
   anchor: Vec3
   interactionRadius: number
   requiresCompleted?: readonly string[]
+  /** Encounter goals use the live nearby-exhibit contract; position goals are explicit. */
+  kind?: 'encounter' | 'position'
 }
 
 export interface ReachabilityProof {
   targetId: string
   reachable: boolean
+  status: 'reachable' | 'inconclusive'
   elapsedSeconds?: number
   totalTicks?: number
   witnessInputSequence?: MovementInput[]
@@ -47,10 +50,23 @@ export interface ReachabilityProof {
 
 export interface SequenceBreakProof {
   bridgeOrGateId: string
-  secure: boolean
+  /** A finite sample cannot certify security; retained for compatibility and always false. */
+  secure: false
+  status: 'exploit-found' | 'inconclusive'
+  reason: string
+  reachedBoundaryTrajectoriesCount: number
   gapWidthMetres: number
   maximumReachMetres: number
   clearanceMarginMetres: number
   testedTrajectoriesCount: number
   exploitWitnessSequence?: MovementInput[]
+}
+
+/** Ordered goals visited by one uninterrupted simulation, with no checkpoint teleport. */
+export interface MovementRouteResult {
+  status: 'reached' | 'inconclusive'
+  reachedTargetIds: string[]
+  totalTicks: number
+  fell: boolean
+  reason?: string
 }

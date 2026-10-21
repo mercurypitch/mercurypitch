@@ -1,8 +1,9 @@
 // Creator gallery — native-accessible art studies keep separate identities from the campaign.
 import type { LevelDefinition } from '@irchiinnuss/glass-game'
 import type { ProceduralGeneratorOptions } from '@irchiinnuss/glass-game/creator-levels'
+import { decodeProceduralCourseCode, encodeProceduralCourseCode, normalizeProceduralCourseOptions, PROCEDURAL_CODE_LIMIT, PROCEDURAL_SEED_LIMIT, } from '@irchiinnuss/glass-game/creator-levels'
 import { CLOUDWAY_PRISMATIC_CAUSEWAY, CLOUDWAY_THAWING_SONG_ALCOVE, createProceduralCourse, crystalInteriorStudy, GLASS_ARCHIVE_HUSH, GLASS_UNBROKEN_ARCHIVE, GLASSWARE_TRIO_STUDY, livingCrystalStudy, } from '@irchiinnuss/glass-game/creator-levels'
-import { createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 import { AdventureScreen } from './AdventureScreen'
 import styles from './CreatorGallery.module.css'
 
@@ -114,22 +115,55 @@ const studies = [
   },
 ] as const
 
+export const CLOUDWAY_RECIPE_STORAGE_KEY = 'beside-cue:cloudway-studio:v1'
+
+function initialRecipe() {
+  try {
+    const saved = window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)
+    if (saved !== null) return decodeProceduralCourseCode(saved)
+  } catch {
+    // A blocked store or an obsolete recipe must not prevent opening studies.
+  }
+  return normalizeProceduralCourseOptions({
+    seed: 'celestial-prime',
+    melodyLessonId: 'sunlit-steps-v1',
+  })
+}
+
 export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
   const [level, setLevel] = createSignal<LevelDefinition>()
-  const [seed, setSeed] = createSignal<string>('celestial-prime')
-  const [difficulty, setDifficulty] =
-    createSignal<NonNullable<ProceduralGeneratorOptions['difficulty']>>(
-      'balanced',
-    )
-  const [lesson, setLesson] =
-    createSignal<NonNullable<ProceduralGeneratorOptions['melodyLessonId']>>(
-      'sunlit-steps-v1',
-    )
-  const [fog, setFog] =
-    createSignal<NonNullable<ProceduralGeneratorOptions['fogTheme']>>(
-      'celestial',
-    )
-  const [copiedLink, setCopiedLink] = createSignal(false)
+  const [recipe, setRecipe] = createSignal(initialRecipe())
+  const [courseCode, setCourseCode] = createSignal('')
+  const [importCode, setImportCode] = createSignal('')
+  const [notice, setNotice] = createSignal('')
+  const [error, setError] = createSignal('')
+  const [storageUnavailable, setStorageUnavailable] = createSignal(false)
+  const seed = () => String(recipe().seed)
+  const difficulty = () => recipe().difficulty
+  const lesson = () => recipe().melodyLessonId
+  const fog = () => recipe().fogTheme
+
+  createEffect(() => {
+    let code: string
+    try {
+      code = encodeProceduralCourseCode(recipe())
+    } catch {
+      return // A partly entered seed is not a saved recipe.
+    }
+    try {
+      window.localStorage.setItem(CLOUDWAY_RECIPE_STORAGE_KEY, code)
+      setStorageUnavailable(false)
+    } catch {
+      setStorageUnavailable(true)
+    }
+  })
+
+  function updateRecipe(changes: Partial<ProceduralGeneratorOptions>) {
+    setRecipe((current) => ({ ...current, ...changes }))
+    setCourseCode('')
+    setNotice('')
+    setError('')
+  }
 
   function randomizeSeed() {
     const current = seed().trim()
@@ -138,33 +172,60 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
       nextCandidates[Math.floor(Math.random() * nextCandidates.length)] ??
       'celestial-prime'
     const suffix = Math.floor(10 + Math.random() * 89)
-    setSeed(`${picked}-${suffix}`)
+    updateRecipe({ seed: `${picked}-${suffix}` })
   }
 
   function launchProceduralCourse() {
-    const activeSeed = seed().trim() || 'celestial-prime'
-    const generated = createProceduralCourse({
-      seed: activeSeed,
-      difficulty: difficulty(),
-      melodyLessonId: lesson(),
-      fogTheme: fog(),
-    })
-    setLevel(generated.compiledLevel)
+    setError('')
+    try {
+      const options = normalizeProceduralCourseOptions(recipe())
+      setLevel(createProceduralCourse(options).compiledLevel)
+    } catch {
+      setError(
+        'This course could not be built. Check the seed or try another one.',
+      )
+    }
   }
 
-  async function copyShareUrl() {
-    const activeSeed = seed().trim() || 'celestial-prime'
-    const params = new URLSearchParams({
-      layout: 'procedural',
-      seed: activeSeed,
-      difficulty: difficulty(),
-      lesson: lesson(),
-      fog: fog(),
-    })
-    const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`
-    await navigator.clipboard.writeText(shareUrl)
-    setCopiedLink(true)
-    window.setTimeout(() => setCopiedLink(false), 2000)
+  async function copyCourseCode() {
+    setError('')
+    let code: string
+    try {
+      code = encodeProceduralCourseCode(recipe())
+      setCourseCode(code)
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : 'Check the course settings.',
+      )
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(code)
+      if (courseCode() === code)
+        setNotice(
+          'Course code copied. Paste it into Cloudway Studio on another device.',
+        )
+    } catch {
+      if (courseCode() === code)
+        setNotice(
+          'Select and copy the course code below. Clipboard access is unavailable here.',
+        )
+    }
+  }
+
+  function importCourseCode() {
+    setError('')
+    setNotice('')
+    try {
+      const decoded = decodeProceduralCourseCode(importCode())
+      setRecipe(decoded)
+      setCourseCode('')
+      setNotice('Course settings loaded. Launch when you are ready.')
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : 'Check the course code.',
+      )
+    }
   }
 
   return (
@@ -200,9 +261,9 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
                 <button
                   type="button"
                   class={styles.secondaryButton}
-                  onClick={() => void copyShareUrl()}
+                  onClick={() => void copyCourseCode()}
                 >
-                  {copiedLink() ? 'Copied link' : 'Copy share link'}
+                  Copy course code
                 </button>
                 <button
                   type="button"
@@ -224,8 +285,11 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
                     id="cloudway-seed-input"
                     class={styles.seedInput}
                     type="text"
+                    maxLength={PROCEDURAL_SEED_LIMIT}
                     value={seed()}
-                    onInput={(e) => setSeed(e.currentTarget.value)}
+                    onInput={(e) =>
+                      updateRecipe({ seed: e.currentTarget.value })
+                    }
                   />
                   <button
                     type="button"
@@ -246,7 +310,9 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
                         type="button"
                         class={styles.pillButton}
                         aria-pressed={lesson() === item.id}
-                        onClick={() => setLesson(item.id)}
+                        onClick={() =>
+                          updateRecipe({ melodyLessonId: item.id })
+                        }
                       >
                         {item.label}
                       </button>
@@ -264,7 +330,7 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
                         type="button"
                         class={styles.pillButton}
                         aria-pressed={difficulty() === item.id}
-                        onClick={() => setDifficulty(item.id)}
+                        onClick={() => updateRecipe({ difficulty: item.id })}
                       >
                         {item.label}
                       </button>
@@ -282,7 +348,7 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
                         type="button"
                         class={styles.pillButton}
                         aria-pressed={fog() === item.id}
-                        onClick={() => setFog(item.id)}
+                        onClick={() => updateRecipe({ fogTheme: item.id })}
                       >
                         {item.label}
                       </button>
@@ -291,6 +357,88 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
                 </div>
               </div>
             </div>
+            <div class={styles.recipeSwitches}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={recipe().includeLivingCrystals}
+                  onChange={(event) =>
+                    updateRecipe({
+                      includeLivingCrystals: event.currentTarget.checked,
+                    })
+                  }
+                />
+                Living crystal
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={recipe().includeOptionalAlcoves}
+                  onChange={(event) =>
+                    updateRecipe({
+                      includeOptionalAlcoves: event.currentTarget.checked,
+                    })
+                  }
+                />
+                Side treasures
+              </label>
+            </div>
+            <section class={styles.sharing} aria-label="Share a course">
+              <p>
+                Send a course code to play the same expedition in Cloudway
+                Studio. Paste a code here to load its settings.
+              </p>
+              <label class={styles.controlLabel} for="cloudway-import-code">
+                Course code to import
+              </label>
+              <textarea
+                id="cloudway-import-code"
+                class={styles.codeInput}
+                rows={3}
+                maxLength={PROCEDURAL_CODE_LIMIT}
+                value={importCode()}
+                spellcheck={false}
+                autocapitalize="off"
+                onInput={(event) => setImportCode(event.currentTarget.value)}
+              />
+              <button
+                type="button"
+                class={styles.secondaryButton}
+                onClick={importCourseCode}
+              >
+                Load course code
+              </button>
+              <Show when={courseCode()}>
+                <label class={styles.controlLabel} for="cloudway-export-code">
+                  Your course code
+                </label>
+                <textarea
+                  id="cloudway-export-code"
+                  class={styles.codeInput}
+                  rows={3}
+                  readOnly
+                  value={courseCode()}
+                  onFocus={(event) => event.currentTarget.select()}
+                  onClick={(event) => event.currentTarget.select()}
+                />
+              </Show>
+              <Show when={notice()}>
+                <p role="status" class={styles.notice}>
+                  {notice()}
+                </p>
+              </Show>
+              <Show when={error()}>
+                <p role="alert" class={styles.error}>
+                  {error()}
+                </p>
+              </Show>
+              <Show when={storageUnavailable()}>
+                <p class={styles.notice}>
+                  Settings cannot be saved on this device. Keep a course code to
+                  return to this expedition.
+                </p>
+              </Show>
+            </section>
           </section>
 
           <section class={styles.grid} aria-label="Art studies">

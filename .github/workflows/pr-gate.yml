@@ -493,6 +493,7 @@ jobs:
             collection,
             context-recovery,
             controls,
+            course-sharing,
             current-entry,
             encore,
             echo-curator,

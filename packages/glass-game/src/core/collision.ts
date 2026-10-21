@@ -2,6 +2,7 @@
 
 import type { CourseSolid, IntentionalGapDefinition, PlatformDefinition, SolidPropDefinition, Vec3, } from '../contracts'
 import { circleInsideConvexPolygon, circleOverlapsConvexPolygon, pointInConvexPolygon, separateCircleFromConvexPolygon, sweepCircleIntoConvexPolygon, } from './convex-polygon.ts'
+import { platformFootprintsConnect } from './platform-connectivity.ts'
 
 export interface BodyShape {
   radius: number
@@ -242,38 +243,6 @@ export function findSupport(
   return support
 }
 
-function orderedOverlap(
-  firstMin: number,
-  firstMax: number,
-  secondMin: number,
-  secondMax: number,
-): boolean {
-  return firstMax >= secondMin - EPSILON && secondMax >= firstMin - EPSILON
-}
-
-function sharesHorizontalEdge(
-  first: PlatformDefinition,
-  second: PlatformDefinition,
-): boolean {
-  const connectsX =
-    first.maxX >= second.minX - 0.02 && second.maxX >= first.minX - 0.02
-  const connectsZ =
-    first.maxZ >= second.minZ - 0.02 && second.maxZ >= first.minZ - 0.02
-  const overlapsX = orderedOverlap(
-    first.minX,
-    first.maxX,
-    second.minX,
-    second.maxX,
-  )
-  const overlapsZ = orderedOverlap(
-    first.minZ,
-    first.maxZ,
-    second.minZ,
-    second.maxZ,
-  )
-  return (connectsX && overlapsZ) || (connectsZ && overlapsX)
-}
-
 /** Allows a shallow visible crown or flat seam at a physically connected floor seam. */
 function isConnectedWalkableStep(
   position: Vec3,
@@ -290,7 +259,7 @@ function isConnectedWalkableStep(
     source !== null &&
     source.kind !== 'prop' &&
     source.id !== target.id &&
-    sharesHorizontalEdge(source, target)
+    platformFootprintsConnect(source, target, EPSILON)
   )
 }
 
@@ -582,7 +551,7 @@ export const FLAT_COURSE_COLLIDER: CourseCollider = {
         Math.abs(p.top - result.support.top) <= 0.02 &&
         (p.id === result.support.id ||
           (result.support.kind !== 'prop' &&
-            sharesHorizontalEdge(result.support as PlatformDefinition, p)))
+            platformFootprintsConnect(result.support, p, EPSILON)))
       )
         continue
       const beforeX = next.x,

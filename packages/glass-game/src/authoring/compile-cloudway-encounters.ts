@@ -64,13 +64,13 @@ function barrierGates(
   return profile.gate === undefined ? [] : [profile.gate]
 }
 
-function barrierSolid(
+export function barrierSolid(
   encounterId: string,
   targetPosition: Vec3,
   turns: PlatformRenderQuarterTurns,
   box: CloudwayBarrierBoxProfile,
   gate: boolean,
-): SolidPropDefinition {
+): Extract<SolidPropDefinition, { shape: 'box' }> {
   const center = transformPoint(box.bottomCenter, {
     translate: targetPosition,
     yawQuarterTurns: turns,

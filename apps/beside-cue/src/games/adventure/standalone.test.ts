@@ -73,6 +73,23 @@ async function mountAt(development: boolean, layout: string, pace?: string) {
 }
 
 describe('standalone development route', () => {
+  it.each([
+    '&seed=',
+    `&seed=${'a'.repeat(129)}`,
+    '&difficulty=unknown',
+    '&lesson=unknown',
+    '&fog=__proto__',
+    '&seed=one&seed=two',
+    '&layout=procedural',
+    `&seed=${'a'.repeat(2050)}`,
+  ])('rejects an invalid procedural preview query %s', async (query) => {
+    expect(await mountAt(true, `procedural${query}`)).toBeUndefined()
+  })
+
+  it('does not turn a release URL into a generated course', async () => {
+    build.channel = 'release'
+    expect(await mountAt(false, 'procedural&seed=valid')).toBeUndefined()
+  })
   it.each(
     ['dev', 'ci', 'release'].flatMap((channel) =>
       ['crystal-study', 'slide-study'].map(

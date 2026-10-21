@@ -1,38 +1,18 @@
-// Procedural Cloudway course generator — compiles Kishōtenketsu modular courses from certified 3D chunks.
+// Procedural Cloudway course generator — assembles bounded modular candidates and validates their authored structure.
 
-import { CLOUDWAY_STUDIO_PROFILES } from '../cloudway-studio.ts'
-import { compileCloudwayCourseDocument } from '../compile-cloudway-course.ts'
 import type { LevelDefinition } from '../../contracts.ts'
-import {
-  createArcedViaductChunk,
-  createArrivalChunk,
-  createAuroraGlideChunk,
-  createCascadingDropChunk,
-  createCrackingSpiralChunk,
-  createCrystalCrossroadsChunk,
-  createDiagonalGlideChunk,
-  createFinalePavilionChunk,
-  createFrostGlissadeChunk,
-  createFrostRaftTransferChunk,
-  createHexCascadeChunk,
-  createScrollBridgeChunk,
-  createSkyElevatorGlideChunk,
-  createSlalomZigzagChunk,
-  createSplitForkChunk,
-  createTerracedAscentChunk,
-  createTwinGlideCrossingChunk,
-  createViaductSCurveChunk,
-  createVocalSanctuaryChunk,
-  type VocalSanctuaryOptions,
-} from './chunk-library.ts'
-import {
-  hasAssembledPlatformOverlap,
-  stitchChunks,
-} from './chunk-stitcher.ts'
-import type {
-  ProceduralChunk,
-  ProceduralGeneratorOptions,
-} from './contracts.ts'
+import { CLOUDWAY_STUDIO_PROFILES, compileStudioDocument, } from '../cloudway-studio.ts'
+import type { AssembledGapClassification } from './chunk-gaps.ts'
+import { classifyAssembledCourseGaps } from './chunk-gaps.ts'
+import type { AssembledGeometryIssue } from './chunk-geometry.ts'
+import { getAssembledGeometryIssues } from './chunk-geometry.ts'
+import type { VocalSanctuaryOptions } from './chunk-library.ts'
+import { createArrivalChunk, createFinalePavilionChunk, createVocalSanctuaryChunk, } from './chunk-library.ts'
+import { buildAssembledCourseGaps, stitchChunks } from './chunk-stitcher.ts'
+import type { ProceduralChunk, ProceduralGeneratorOptions, } from './contracts.ts'
+import { buildActCandidates } from './course-candidates.ts'
+import { getProceduralCourseIdentity, normalizeProceduralCourseOptions, } from './course-options.ts'
+import { searchCompleteCourse } from './course-search.ts'
 import { ProceduralPrng } from './prng.ts'
 
 export interface GeneratedCourseResult {
@@ -40,6 +20,8 @@ export interface GeneratedCourseResult {
   readonly title: string
   readonly rawDocument: Record<string, unknown>
   readonly compiledLevel: LevelDefinition
+  readonly geometryIssues: readonly AssembledGeometryIssue[]
+  readonly routeConnections: readonly AssembledGapClassification[]
 }
 
 function sanitizeIdSegment(raw: string | number): string {
@@ -51,12 +33,12 @@ function sanitizeIdSegment(raw: string | number): string {
 }
 
 export function generateProceduralCourse(
-  options: ProceduralGeneratorOptions,
+  input: ProceduralGeneratorOptions,
 ): GeneratedCourseResult {
+  const options = normalizeProceduralCourseOptions(input)
   const prng = new ProceduralPrng(options.seed)
   const seedSlug = sanitizeIdSegment(options.seed)
-  const courseId =
-    options.courseId ?? `cloudway-procedural-${prng.int(1000, 9999)}`
+  const courseId = getProceduralCourseIdentity(options)
 
   const titleTemplates = [
     `The Resonant Causeway ${options.seed}`,
@@ -72,9 +54,10 @@ export function generateProceduralCourse(
     `The Ascending Spire ${options.seed}`,
     `The Crossroads of Song ${options.seed}`,
   ]
-  const title = options.title ?? prng.pick(titleTemplates)
-  const lessonProfileId = options.melodyLessonId ?? 'first-arc-v1'
-  const includeOptionalAlcoves = options.includeOptionalAlcoves ?? true
+  const generatedTitle = prng.pick(titleTemplates)
+  const title = options.title ?? generatedTitle
+  const lessonProfileId = options.melodyLessonId
+  const includeOptionalAlcoves = options.includeOptionalAlcoves
 
   // Fog themes (farMeters must be <= 30m)
   const fogThemes = {
@@ -83,8 +66,7 @@ export function generateProceduralCourse(
     aurora: { nearMeters: 6, farMeters: 22 },
     twilight: { nearMeters: 12, farMeters: 30 },
   }
-  const fogThemeKeys = ['dawn', 'celestial', 'aurora', 'twilight'] as const
-  const fogKey = options.fogTheme ?? prng.pick(fogThemeKeys)
+  const fogKey = options.fogTheme
   const fog = fogThemes[fogKey]
 
   // Select primary and secondary crystal presets
@@ -98,7 +80,7 @@ export function generateProceduralCourse(
     crystalPresets[(crystalPresets.indexOf(crystalPreset) + 1) % 3]!
 
   // Difficulty-informed mechanics timing
-  const diff = options.difficulty ?? 'balanced'
+  const diff = options.difficulty
   const hexWarningTime = Number(
     (diff === 'virtuoso'
       ? prng.range(0.95, 1.15)
@@ -110,247 +92,31 @@ export function generateProceduralCourse(
 
   const lessonProfile =
     CLOUDWAY_STUDIO_PROFILES.melodyLessons?.[lessonProfileId]
-  const melodyAnchors = lessonProfile
-    ? lessonProfile.melody.phrases.flatMap((phrase) => phrase.anchors)
-    : [
-        { id: 'first-arc-home', offsetSemitones: 0 },
-        { id: 'first-arc-rise', offsetSemitones: 2 },
-        { id: 'first-arc-return', offsetSemitones: 0 },
-      ]
+  if (lessonProfile === undefined) {
+    throw new Error('The selected melody lesson is unavailable.')
+  }
+  const melodyAnchors = lessonProfile.melody.phrases.flatMap(
+    (phrase) => phrase.anchors,
+  )
+  if (melodyAnchors.length < 2) {
+    throw new Error('A generated course needs at least two melody stations.')
+  }
 
   const totalTransitions = melodyAnchors.length - 1
 
-  const buildActCandidates = (
-    stepIndex: number,
-  ): readonly {
-    readonly traversal: readonly ProceduralChunk[]
-    readonly preferredTurns: readonly ('none' | 'east' | 'west')[]
-  }[] => {
-    const prevSemitones = melodyAnchors[stepIndex - 1]!.offsetSemitones
-    const currSemitones = melodyAnchors[stepIndex]!.offsetSemitones
-    const semitoneDelta = currSemitones - prevSemitones
-    const elevationScale = Math.max(0.8, Math.min(1.5, Math.abs(semitoneDelta) / 2))
-    const tagA = `s${stepIndex}a`
-    const tagB = `s${stepIndex}b`
-    const tagC = `s${stepIndex}c`
-    const preset =
-      stepIndex % 2 === 1 ? crystalPreset : secondaryCrystalPreset
-
-    // Final act (Ketsu): always includes a living-crystal/crossroads or fork + a moving 3D ferry
-    if (stepIndex === totalTransitions) {
-      return [
-        {
-          traversal: [
-            createCrystalCrossroadsChunk(tagA, preset, hexWarningTime),
-            createSkyElevatorGlideChunk(tagB, 0.56),
-            createCascadingDropChunk(tagC, 'west', hexWarningTime),
-          ],
-          preferredTurns: ['none', 'east', 'west'],
-        },
-        {
-          traversal: [
-            createCrystalCrossroadsChunk(tagA, preset, hexWarningTime),
-            createArcedViaductChunk(tagB, 'west', hexWarningTime, 0.36),
-            createDiagonalGlideChunk(tagC, 'left-to-right'),
-          ],
-          preferredTurns: ['east', 'west', 'none'],
-        },
-        {
-          traversal: [
-            createSlalomZigzagChunk(tagA, 'frost'),
-            createScrollBridgeChunk(tagB, preset),
-            createArcedViaductChunk(tagC, 'east', hexWarningTime, 0.36),
-            createDiagonalGlideChunk(`s${stepIndex}d`, 'right-to-left'),
-          ],
-          preferredTurns: ['west', 'east', 'none'],
-        },
-        {
-          traversal: [
-            createTerracedAscentChunk(tagA, hexWarningTime),
-            createSplitForkChunk(tagB),
-            createSkyElevatorGlideChunk(tagC, 0.56),
-          ],
-          preferredTurns: ['east', 'none', 'west'],
-        },
-        {
-          traversal: [
-            createScrollBridgeChunk(tagA, preset),
-            createCascadingDropChunk(tagB, 'west', hexWarningTime),
-            createSkyElevatorGlideChunk(tagC, 0.56),
-            createSlalomZigzagChunk(`s${stepIndex}d`, 'frost'),
-          ],
-          preferredTurns: ['none', 'east', 'west'],
-        },
-        {
-          traversal: [
-            createViaductSCurveChunk(tagA),
-            createTerracedAscentChunk(tagB, hexWarningTime),
-            createDiagonalGlideChunk(tagC, 'left-to-right'),
-          ],
-          preferredTurns: ['west', 'none', 'east'],
-        },
-        {
-          traversal: [
-            createSplitForkChunk(tagA),
-            createCrystalCrossroadsChunk(tagB, preset, hexWarningTime),
-            createDiagonalGlideChunk(tagC, 'right-to-left'),
-          ],
-          preferredTurns: ['west', 'east', 'none'],
-        },
-        {
-          traversal: [
-            createTerracedAscentChunk(tagA, hexWarningTime),
-            createScrollBridgeChunk(tagB, preset),
-            createArcedViaductChunk(tagC, 'west', hexWarningTime, 0.36),
-            createAuroraGlideChunk(`s${stepIndex}d`),
-          ],
-          preferredTurns: ['east', 'none', 'west'],
-        },
-        {
-          traversal: [
-            createFrostRaftTransferChunk(tagA, hexWarningTime),
-            createCrackingSpiralChunk(tagB, 'east', hexWarningTime, 0.48),
-            createScrollBridgeChunk(tagC, preset),
-          ],
-          preferredTurns: ['none', 'west', 'east'],
-        },
-        {
-          traversal: [
-            createTwinGlideCrossingChunk(tagA, hexWarningTime),
-            createCrackingSpiralChunk(tagB, 'west', hexWarningTime, 0.48),
-          ],
-          preferredTurns: ['none', 'east', 'west'],
-        },
-      ]
-    }
-
-    // Opening or ascending act (Ki / Sho): pitch rises -> physical elevation rises
-    if (semitoneDelta >= 0) {
-      const climbDelta = Number((0.36 * elevationScale).toFixed(2))
-      return [
-        {
-          traversal: [
-            createTerracedAscentChunk(tagA, hexWarningTime),
-            createArcedViaductChunk(tagB, 'east', hexWarningTime, climbDelta),
-          ],
-          preferredTurns: ['none', 'east', 'west'],
-        },
-        {
-          traversal: [
-            createArcedViaductChunk(tagA, 'east', hexWarningTime, climbDelta),
-            createSlalomZigzagChunk(tagB, 'hybrid', hexWarningTime),
-          ],
-          preferredTurns: ['none', 'west', 'east'],
-        },
-        {
-          traversal: [
-            createViaductSCurveChunk(tagA),
-            createTerracedAscentChunk(tagB, hexWarningTime),
-          ],
-          preferredTurns: ['west', 'east', 'none'],
-        },
-        {
-          traversal: [
-            createSlalomZigzagChunk(tagA, 'hybrid', hexWarningTime),
-            createScrollBridgeChunk(tagB, preset),
-          ],
-          preferredTurns: ['east', 'west', 'none'],
-        },
-        {
-          traversal: [
-            createCrystalCrossroadsChunk(tagA, preset, hexWarningTime),
-          ],
-          preferredTurns: ['east', 'west', 'none'],
-        },
-        {
-          traversal: [
-            createArcedViaductChunk(tagA, 'west', hexWarningTime, climbDelta),
-            createScrollBridgeChunk(tagB, preset),
-          ],
-          preferredTurns: ['east', 'none', 'west'],
-        },
-        {
-          traversal: [
-            createFrostGlissadeChunk(tagA),
-            createTerracedAscentChunk(tagB, hexWarningTime),
-          ],
-          preferredTurns: ['east', 'west', 'none'],
-        },
-        {
-          traversal: [
-            createSkyElevatorGlideChunk(tagA, 0.56),
-            createCascadingDropChunk(tagB, 'east', hexWarningTime),
-          ],
-          preferredTurns: ['none', 'west', 'east'],
-        },
-        {
-          traversal: [
-            createCrackingSpiralChunk(tagA, 'east', hexWarningTime, climbDelta),
-            createFrostRaftTransferChunk(tagB, hexWarningTime),
-          ],
-          preferredTurns: ['none', 'west', 'east'],
-        },
-        {
-          traversal: [
-            createTwinGlideCrossingChunk(tagA, hexWarningTime),
-            createArcedViaductChunk(tagB, 'west', hexWarningTime, climbDelta),
-          ],
-          preferredTurns: ['none', 'east', 'west'],
-        },
-      ]
-    }
-
-    // Intermediate descending act (Ten): melody steps downward -> cascading drops & relief bridges
-    return [
-      {
-        traversal: [
-          createCascadingDropChunk(tagA, 'east', hexWarningTime),
-          createScrollBridgeChunk(tagB, preset),
-        ],
-        preferredTurns: ['none', 'west', 'east'],
-      },
-      {
-        traversal: [
-          createCascadingDropChunk(tagA, 'west', hexWarningTime),
-          createHexCascadeChunk(tagB, hexWarningTime),
-        ],
-        preferredTurns: ['none', 'east', 'west'],
-      },
-      {
-        traversal: [
-          createArcedViaductChunk(tagA, 'east', hexWarningTime, -0.3),
-          createFrostGlissadeChunk(tagB),
-        ],
-        preferredTurns: ['west', 'none', 'east'],
-      },
-      {
-        traversal: [
-          createArcedViaductChunk(tagA, 'west', hexWarningTime, -0.3),
-          createCrystalCrossroadsChunk(tagB, preset, hexWarningTime),
-        ],
-        preferredTurns: ['east', 'none', 'west'],
-      },
-      {
-        traversal: [
-          createCrackingSpiralChunk(tagA, 'east', hexWarningTime, -0.36),
-          createTwinGlideCrossingChunk(tagB, hexWarningTime),
-        ],
-        preferredTurns: ['none', 'west', 'east'],
-      },
-    ]
-  }
-
   const baseSeedOffset = prng.int(0, 999)
 
-  const searchActs = (
-    stepIndex: number,
+  function* candidateActs(
     committedChunks: readonly ProceduralChunk[],
-  ): ProceduralChunk[] | null => {
-    if (stepIndex > totalTransitions) {
-      return [...committedChunks]
-    }
-
-    const candidates = buildActCandidates(stepIndex)
+    stepIndex: number,
+  ): Generator<readonly ProceduralChunk[]> {
+    const candidates = buildActCandidates({
+      stepIndex,
+      melodyAnchors,
+      crystalPreset,
+      secondaryCrystalPreset,
+      hexWarningTime,
+    })
     const anchor = melodyAnchors[stepIndex]!
     const isFirstSanctuary = stepIndex === 1
     const isFinalSanctuary = stepIndex === totalTransitions
@@ -407,62 +173,34 @@ export function generateProceduralCourse(
           ...(isFinalSanctuary ? [createFinalePavilionChunk('c-fin')] : []),
         ]
 
-        const stitched = stitchChunks(nextChunks)
-        if (hasAssembledPlatformOverlap(stitched.platforms)) {
-          continue
-        }
-
-        if (isFinalSanctuary) {
-          const xs = stitched.platforms.map((p) => p.center.x)
-          const ys = stitched.platforms.map((p) => p.center.y)
-          const zs = stitched.platforms.map((p) => p.center.z)
-          const spanX = Math.max(...xs) - Math.min(...xs)
-          const spanY = Math.max(...ys) - Math.min(...ys)
-          const spanZ = Math.max(...zs) - Math.min(...zs)
-          if (spanX < 6.0 || spanZ < 12.0 || spanY < 0.5) {
-            continue
-          }
-        }
-
-        const completed = searchActs(stepIndex + 1, nextChunks)
-        if (completed !== null) {
-          return completed
-        }
+        yield nextChunks
       }
     }
-
-    return null
   }
 
-  const initialChunks: ProceduralChunk[] = [
-    createArrivalChunk(melodyAnchors[0]!.id),
-  ]
-  const chunks =
-    searchActs(1, initialChunks) ?? [
-      createArrivalChunk(melodyAnchors[0]!.id),
-      createTerracedAscentChunk('c2a', hexWarningTime),
-      createArcedViaductChunk('c2b', 'east', 0.36),
-      createVocalSanctuaryChunk(
-        'gate1',
-        melodyAnchors[1]!.id,
-        'none',
-        {
-          barrierProfileId: 'frosted-scroll-wall',
-        },
-      ),
-      createCrystalCrossroadsChunk('c4a', crystalPreset, hexWarningTime),
-      createSkyElevatorGlideChunk('c4b', 0.56),
-      createCascadingDropChunk('c5', 'west', hexWarningTime),
-      createVocalSanctuaryChunk(
-        'gate2',
-        melodyAnchors[melodyAnchors.length - 1]!.id,
-        'none',
-        {
-          barrierProfileId: 'frost-gold-arch-breakwall-a',
-        },
-      ),
-      createFinalePavilionChunk('c-fin'),
-    ]
+  const chunks = searchCompleteCourse<readonly ProceduralChunk[]>({
+    initial: [createArrivalChunk(melodyAnchors[0]!.id)],
+    steps: totalTransitions,
+    candidates: candidateActs,
+    isValid: (candidate, step) => {
+      const stitched = stitchChunks(candidate)
+      if (
+        getAssembledGeometryIssues(stitched).some(
+          (issue) => issue.severity === 'error',
+        )
+      )
+        return false
+      if (step !== totalTransitions) return true
+      const xs = stitched.platforms.map((p) => p.center.x)
+      const ys = stitched.platforms.map((p) => p.center.y)
+      const zs = stitched.platforms.map((p) => p.center.z)
+      return (
+        Math.max(...xs) - Math.min(...xs) >= 6 &&
+        Math.max(...zs) - Math.min(...zs) >= 12 &&
+        Math.max(...ys) - Math.min(...ys) >= 0.5
+      )
+    },
+  })
 
   const assembled = stitchChunks(chunks)
 
@@ -470,9 +208,19 @@ export function generateProceduralCourse(
   const melodicEncounters = assembled.encounters.filter(
     (e) => e.role === 'note' || e.role === 'gate',
   )
-  const finaleEncounter = assembled.encounters.find(
-    (e) => e.role === 'finale',
-  )!
+  const finaleEncounter = assembled.encounters.find((e) => e.role === 'finale')
+  if (
+    finaleEncounter === undefined ||
+    assembled.exitBounds === undefined ||
+    assembled.checkpoints.length === 0 ||
+    assembled.cameraSections.length === 0 ||
+    melodicEncounters.length !== melodyAnchors.length ||
+    melodicEncounters.some(
+      (encounter, index) => encounter.noteAnchorId !== melodyAnchors[index]?.id,
+    )
+  ) {
+    throw new Error('The generated course is incomplete. Try another seed.')
+  }
   const finaleEncounterId = finaleEncounter.id
 
   // Melody lesson stations
@@ -589,25 +337,16 @@ export function generateProceduralCourse(
     lookToPlatformId: cs.lookToPlatformId,
   }))
 
-  // Exit bounds at the finale platform
-  const lastPlat = assembled.platforms[assembled.platforms.length - 1]!
-  const exitBounds = assembled.exitBounds
-    ? {
-        ...assembled.exitBounds,
-        requiresCompleted: [finaleEncounterId],
-      }
-    : {
-        minX: Number((lastPlat.center.x - 0.8).toFixed(3)),
-        maxX: Number((lastPlat.center.x + 0.8).toFixed(3)),
-        minZ: Number((lastPlat.center.z - 0.18).toFixed(3)),
-        maxZ: Number((lastPlat.center.z + 0.18).toFixed(3)),
-        top: lastPlat.center.y,
-        requiresCompleted: [finaleEncounterId],
-      }
+  const exitBounds = {
+    ...assembled.exitBounds,
+    requiresCompleted: [finaleEncounterId],
+  }
 
   // Crystal interiors across all gilt-scroll platforms in the course
   const crystalInteriors = assembled.platforms
-    .filter((p) => p.crystalInterior !== undefined)
+    .filter(
+      (p) => options.includeLivingCrystals && p.crystalInterior !== undefined,
+    )
     .slice(0, 16)
     .map((p) => ({
       platformId: p.id,
@@ -642,7 +381,7 @@ export function generateProceduralCourse(
       checkpointId: assembled.checkpoints[0]!.id,
     },
     platforms: formattedPlatforms,
-    gaps: [],
+    gaps: buildAssembledCourseGaps(assembled),
     checkpoints: assembled.checkpoints,
     encounters: formattedEncounters,
     ...(optionalDiscoveries.length > 0
@@ -695,13 +434,10 @@ export function generateProceduralCourse(
     courses: [courseSource],
   }
 
-  // Compile through the authoritative compiler to certify validity
-  const compiledLevels = compileCloudwayCourseDocument(
-    rawDocument,
-    CLOUDWAY_STUDIO_PROFILES,
-  )
+  // The compiler validates structure and declared gaps; this is not a gameplay certificate.
+  const compiledLevels = compileStudioDocument(rawDocument)
   const compiledLevel = compiledLevels[0]
-  if (!compiledLevel) {
+  if (compiledLevel === undefined) {
     throw new Error(`Failed to compile generated course: ${courseId}`)
   }
 
@@ -710,5 +446,7 @@ export function generateProceduralCourse(
     title,
     rawDocument,
     compiledLevel,
+    geometryIssues: getAssembledGeometryIssues(assembled),
+    routeConnections: classifyAssembledCourseGaps(assembled),
   }
 }

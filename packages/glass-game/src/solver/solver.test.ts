@@ -1,75 +1,134 @@
-// Integration test for the reachability & sequence-break solver suite.
-
+// Solver state and positive-witness contracts exercise the actual simulation.
 import { describe, expect, it } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
-import { BREAKABLE_INTERACTION_RADIUS } from '../core/exhibit-interaction'
+import { createGlassGame } from '../core/game'
+import { generateGoalDirectedActions } from './macro-inputs'
 import { proveReachability } from './reachability-prover'
 import { proveSequenceBreakSecurity } from './sequence-break-prover'
+import { testLevel } from './solver.test-fixtures'
 import { StateLattice } from './state-lattice'
+import { replayTrajectory } from './trajectory-stepper'
 
-describe('Glassworks reachability and sequence-break solver', () => {
-  it('deduplicates spatial positions within lattice bins', () => {
-    const lattice = new StateLattice(0.10, 0.05)
-    const playerA = {
-      position: { x: 1.02, y: 0.01, z: 2.01 },
-      velocity: { x: 0.5, y: 0, z: 0 },
-      grounded: true,
-      facingYaw: 0,
-    }
-    const playerB = {
-      position: { x: 1.04, y: 0.02, z: 2.03 }, // within 10cm horizontal, 5cm vertical
-      velocity: { x: 0.6, y: 0, z: 0 }, // same velocity sign
-      grounded: true,
-      facingYaw: 0,
-    }
-    const playerC = {
-      position: { x: 1.35, y: 0.01, z: 2.01 }, // outside horizontal bin (> 10cm away)
-      velocity: { x: 0.5, y: 0, z: 0 },
-      grounded: true,
-      facingYaw: 0,
-    }
-
-    expect(lattice.add(playerA, ['solid-1'])).toBe(true)
-    expect(lattice.add(playerB, ['solid-1'])).toBe(false) // duplicate bin
-    expect(lattice.add(playerC, ['solid-1'])).toBe(true) // distinct bin
-    expect(lattice.size).toBe(2)
-  })
-
-  it('proves that the arrival exhibit (goblet) is physically reachable from spawn', () => {
-    const goblet = GLASSWORKS.breakables[0]
-    expect(goblet.id).toBe('glassworks.first-goblet')
-
+describe('bounded reachability evidence', () => {
+  it('finds a nontrivial arrival route whose replay can actually start singing', () => {
+    const target = GLASSWORKS.breakables[0]
     const proof = proveReachability(
       GLASSWORKS,
-      {
-        id: goblet.id,
-        label: goblet.label,
-        anchor: goblet.anchor,
-        interactionRadius: BREAKABLE_INTERACTION_RADIUS,
-      },
-      {
-        maxFrontierExpansions: 2000,
-        macroTickDuration: 12,
-      },
+      { ...target, interactionRadius: 1.1 },
+      { maxFrontierExpansions: 2000, macroTickDuration: 12 },
     )
-
-    expect(proof.reachable).toBe(true)
-    expect(proof.elapsedSeconds).toBeDefined()
-    expect(proof.elapsedSeconds!).toBeGreaterThan(0)
-    expect(proof.witnessInputSequence).toBeDefined()
-    expect(proof.witnessInputSequence!.length).toBeGreaterThan(0)
+    expect(proof.status).toBe('reachable')
+    expect(proof.totalTicks).toBeGreaterThan(0)
+    const replay = replayTrajectory(
+      GLASSWORKS,
+      undefined,
+      proof.witnessInputSequence!,
+    )
+    expect(replay.fell).toBe(false)
+    expect(replay.game.beginEncounter(target.id, 60)).toBe(true)
   })
 
-  it('proves that the locked arch-bridge gap is mathematically secure against sequence-break skips', () => {
+  it('does not turn a finite negative sample into a mathematical security claim', () => {
     const proof = proveSequenceBreakSecurity(GLASSWORKS, 'arch-bridge', {
       approachRunTicks: 30,
       coyoteWindowTicks: 12,
     })
+    expect(proof.gapWidthMetres).toBeCloseTo(1.9)
+    expect(proof.status).toBe('inconclusive')
+    expect(proof.secure).toBe(false)
+    expect(proof.reachedBoundaryTrajectoriesCount).toBe(0)
+  })
 
-    // The gap across arch-bridge is 1.9m, while max jump reach is < 1.2m
-    expect(proof.gapWidthMetres).toBeCloseTo(1.9, 1)
-    expect(proof.secure).toBe(true)
-    expect(proof.clearanceMarginMetres).toBeLessThan(0)
-    expect(proof.exploitWitnessSequence).toBeUndefined()
+  it('reports expansion and replay budgets as inconclusive', () => {
+    const level = testLevel()
+    const target = { ...level.breakables[0], interactionRadius: 1.1 }
+    expect(
+      proveReachability(level, target, { maxFrontierExpansions: 0 }),
+    ).toMatchObject({
+      status: 'inconclusive',
+      reason: expect.stringContaining('Expansion budget'),
+    })
+    expect(
+      proveReachability(level, target, { maxSimulationTicks: 0 }),
+    ).toMatchObject({
+      status: 'inconclusive',
+      reason: expect.stringContaining('Simulation tick budget'),
+    })
+  })
+
+  it('requires an explicit position goal for a non-encounter waypoint', () => {
+    const level = testLevel()
+    const target = {
+      id: 'waypoint',
+      label: 'Waypoint',
+      anchor: level.spawn.position,
+      interactionRadius: 0.2,
+    }
+    expect(proveReachability(level, target)).toMatchObject({
+      status: 'inconclusive',
+      reachable: false,
+    })
+    expect(
+      proveReachability(level, { ...target, kind: 'position' }),
+    ).toMatchObject({ status: 'reachable', reachable: true })
+  })
+
+  it('distinguishes falling, speed, time, support and hidden movement history', () => {
+    const lattice = new StateLattice()
+    const player = createGlassGame(testLevel()).snapshot().player
+    const context = { ticks: 12, inputHistory: '/0,1,0,12' }
+    expect(lattice.add(player, ['floor'], context)).toBe(true)
+    expect(lattice.add(player, ['floor'], context)).toBe(false)
+    expect(
+      lattice.add(
+        { ...player, velocity: { x: 0, y: -1, z: 0 } },
+        ['floor'],
+        context,
+      ),
+    ).toBe(true)
+    expect(
+      lattice.add(
+        { ...player, velocity: { x: 0, y: 0, z: 2 } },
+        ['floor'],
+        context,
+      ),
+    ).toBe(true)
+    expect(lattice.add(player, ['floor'], { ...context, ticks: 24 })).toBe(true)
+    expect(
+      lattice.add(player, ['floor'], { ...context, inputHistory: '/0,1,1,12' }),
+    ).toBe(true)
+    expect(
+      lattice.add(
+        { ...player, supportPlatformId: 'ferry' },
+        ['floor'],
+        context,
+      ),
+    ).toBe(true)
+    expect(
+      lattice.add(player, ['floor'], {
+        ...context,
+        platformStates: [
+          {
+            id: 'ferry',
+            offset: { x: 0, y: 0, z: 1 },
+            phase: 'moving',
+            phaseProgress: 0.5,
+            collisionEnabled: true,
+          },
+        ],
+      }),
+    ).toBe(true)
+  })
+
+  it('samples waits and airborne presses for the real coyote/buffer windows', () => {
+    const actions = generateGoalDirectedActions(
+      { x: 0, z: 0 },
+      { x: 0, z: 4 },
+      false,
+    )
+    expect(
+      actions.some((a) => a.moveX === 0 && a.moveZ === 0 && !a.jumpDown),
+    ).toBe(true)
+    expect(actions.some((a) => a.jumpDown)).toBe(true)
   })
 })

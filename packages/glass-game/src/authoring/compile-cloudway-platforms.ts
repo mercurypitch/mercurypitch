@@ -250,7 +250,7 @@ interface GapContact {
   top: number
 }
 
-function platformContactAtState(
+export function platformContactAtState(
   platform: CompiledPlatform,
   state: CloudwayCourseGapState,
   axis: 'x' | 'z',
