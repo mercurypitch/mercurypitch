@@ -13,12 +13,16 @@
 // a button over every bead, gap and named bracket the page asks for, each on
 // its tap zone as the layout changes (tune-line-layout.ts). Under reduced
 // motion every move lands at once; a played line still sounds and lights
-// its beads in turn. On a page that plays one sound at a time, a run claims
-// the page's owner (now-playing.ts), so it stops the sound before it, and a
-// newer one elsewhere stops it. Words belong to the page: the core asks for
-// each name and label and only draws.
+// its beads in turn. It draws only when what it shows has changed (a run,
+// a slide, a fade, a new shape, start, overlay or names, a new size, pixel
+// ratio or font) and while that change moves; idle, it asks the page's
+// frame loop for nothing (frame-loop.ts, `wants`). On a page that plays
+// one sound at a time, a run claims the page's owner (now-playing.ts), so
+// it stops the sound before it, and a newer one elsewhere stops it. Words
+// belong to the page: the core asks for each name and label and only
+// draws.
 
-import { addDrawer, surface } from './frame-loop'
+import { addDrawer, surface, wake } from './frame-loop'
 import { reducedMotion } from './motion-switch'
 import { COLOR, hz } from './notes'
 import type { SoundOwner } from './now-playing'
@@ -159,6 +163,21 @@ function firstsOf(tune: readonly (readonly TuneNote[])[]): number[] {
   })
 }
 
+/** Calls `fn` whenever the screen's pixel ratio changes: a zoom, or another screen. */
+function watchPixelRatio(fn: () => void): void {
+  const query = window.matchMedia(
+    `(resolution: ${window.devicePixelRatio || 1}dppx)`,
+  )
+  query.addEventListener(
+    'change',
+    () => {
+      fn()
+      watchPixelRatio(fn)
+    },
+    { once: true },
+  )
+}
+
 /** Places a button over a rectangle of the drawing. */
 function place(b: HTMLElement, r: Rect): void {
   b.style.left = `${r.x}px`
@@ -185,6 +204,8 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
   let busy = false
   let layout: TuneLayout | null = null
   let lastKey = ''
+  // something the drawing shows has changed since its last frame
+  let dirty = true
   let buttons: {
     el: HTMLButtonElement
     kind: 'note' | 'gap' | 'bracket'
@@ -303,7 +324,22 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     placeButtons()
   }
 
+  /** Something the drawing shows has changed: it draws on the next frame. */
+  function invalidate(): void {
+    dirty = true
+    wake()
+  }
+
+  /** Whether the line has a frame to draw: a change since its last, or a slide, a fade or a light still moving. */
+  function wants(): boolean {
+    const target = overlay === null ? 0 : 1
+    return (
+      dirty || slide !== null || overlayAmount !== target || lits.length > 0
+    )
+  }
+
   function draw(_now: number, dt: number): void {
+    dirty = false
     const t = now()
     let lift = 0
     let glow = 0
@@ -330,7 +366,16 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     lits = lits.filter((l) => t < l.to + 0.5)
   }
 
-  addDrawer({ active: opts.active, draw })
+  addDrawer({ active: opts.active, draw, wants })
+  // a new size draws at once, before the page paints, so no frame shows the
+  // old drawing stretched; a new pixel ratio or font draws on the next frame
+  new ResizeObserver(() => {
+    if (opts.active()) draw(performance.now(), 0)
+    else invalidate()
+  }).observe(opts.canvas)
+  watchPixelRatio(invalidate)
+  void document.fonts?.ready.then(invalidate)
+  document.fonts?.addEventListener('loadingdone', invalidate)
 
   function label(b: (typeof buttons)[number]): string {
     const l = opts.labels
@@ -388,6 +433,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     voices = []
     lits = []
     busy = false
+    invalidate()
     const done = finish
     finish = null
     done?.(false)
@@ -415,6 +461,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     setStart(midi) {
       const next = Math.round(midi)
       if (next === start) return 0
+      invalidate()
       if (reducedMotion()) {
         slide = null
         start = next
@@ -436,13 +483,17 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     setShape(next) {
       shape = next
       build()
+      invalidate()
     },
     setOverlay(next) {
       overlay = next
       if (reducedMotion()) overlayAmount = next === null ? 0 : 1
+      invalidate()
     },
     relabel() {
       for (const b of buttons) b.el.setAttribute('aria-label', label(b))
+      // the names drawn under the beads follow the same words
+      invalidate()
     },
     play(events, audible, look = {}) {
       clearRun()
@@ -476,6 +527,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
               color,
             })
         })
+        invalidate()
         const end = events.reduce((m, e) => Math.max(m, e.at + e.dur), 0)
         timers.push(
           window.setTimeout(() => {

@@ -9,10 +9,13 @@
 // (the doubles turn it on); and a run that announces each note at its
 // onset, settles when the last one ends, and stops when asked, saying
 // whether it was played to its end. With sound on (a fake Sound.voice),
-// a run's voices stop when it is stopped and when a new run starts.
+// a run's voices stop when it is stopped and when a new run starts. On the
+// page's frame loop, turned by hand, an idle line asks for no frames, and a
+// run brings them back until its last light has gone.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { startFrameLoop } from './frame-loop'
 import type { Voice } from './sound'
 import { Sound } from './sound'
 import type { TuneLineOptions, TuneNote, TuneShape } from './tune-line'
@@ -381,5 +384,50 @@ describe('mountTuneLine: its voices', () => {
       false,
     ])
     expect(started.map((v) => v.midi)).toEqual([60, 60, 60, 60, 67])
+  })
+})
+
+describe('mountTuneLine: its frames', () => {
+  const EVENTS = [
+    { midi: 60, at: 0, dur: 0.5 },
+    { midi: 60, at: 0.5, dur: 0.5 },
+    { midi: 67, at: 1, dur: 1 },
+  ]
+
+  it('asks for no frame once it has drawn, and for every frame of a run until its last light has gone', () => {
+    // Arrange: the page's frame loop on a clock the test turns, and a line on screen
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'performance'],
+    })
+    const asked: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) =>
+      asked.push(cb),
+    )
+    const { tune } = mount({ active: () => true })
+    startFrameLoop()
+    /** Runs the frame asked for, 16 ms on; false when none was asked for. */
+    const frame = (): boolean => {
+      const next = asked.shift()
+      if (next === undefined) return false
+      vi.advanceTimersByTime(16)
+      next(performance.now())
+      return true
+    }
+    const painted = frame()
+    const idle = asked.length
+
+    // Act
+    void tune.play(EVENTS, false)
+    const onPlay = asked.length
+    let moving = 0
+    while (moving < 1000 && frame()) moving += 1
+
+    // Assert: the first paint, then none until the run; 2 s of notes and the last light's fade, then none
+    expect(painted).toBe(true)
+    expect(idle).toBe(0)
+    expect(onPlay).toBe(1)
+    expect(moving * 16).toBeGreaterThanOrEqual(2000)
+    expect(moving).toBeLessThan(1000)
+    expect(asked).toHaveLength(0)
   })
 })
