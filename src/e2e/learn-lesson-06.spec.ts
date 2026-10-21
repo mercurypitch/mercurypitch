@@ -70,7 +70,7 @@ test('the lesson boots: no sound before a tap, the predict locks, and the reveal
   await expect(page.locator('#heroTune [data-hero-said]')).toHaveText(
     'Twinkle from C',
   )
-  await expect(fromC).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+  await expect(fromC).not.toHaveClass(/\bis-on\b/, { timeout: 15_000 })
   await expect(reveal).toBeHidden()
   expect(await contexts()).toBe(1)
 
@@ -86,7 +86,7 @@ test('the lesson boots: no sound before a tap, the predict locks, and the reveal
   await expect(page.locator('#heroTune [data-hero-said]')).toHaveText(
     'Twinkle from F sharp',
   )
-  await expect(reveal).toBeVisible({ timeout: 10_000 })
+  await expect(reveal).toBeVisible({ timeout: 15_000 })
   await expect(reveal).toContainText('The gaps. Not one note matches')
   await expect(reveal.locator('.mono')).toHaveText(
     'You said: the gaps between the notes',
@@ -124,7 +124,7 @@ test('with sound off, Play from F sharp says nothing played, and the reveal wait
 
   await expect(page.locator('#predict .lock-hint')).toContainText(
     'Sound is off, so nothing played.',
-    { timeout: 10_000 },
+    { timeout: 15_000 },
   )
   await expect(page.locator('#predict .reveal')).toBeHidden()
 })

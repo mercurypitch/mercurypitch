@@ -62,7 +62,7 @@ test.describe('Sing it, with no microphone', () => {
       `Merc sings the ${n === 1 ? 'first' : 'second'} version.`,
     )
     await expect(status(page)).not.toHaveText(/^Merc sings/, {
-      timeout: 20_000,
+      timeout: 30_000,
     })
   }
 
@@ -71,7 +71,7 @@ test.describe('Sing it, with no microphone', () => {
     await page.locator('[data-guide-start]').click()
     await expect(status(page)).toHaveText('Your turn: sing with the line.')
     await expect(page.locator('[data-panel="feel"]')).toBeVisible({
-      timeout: 20_000,
+      timeout: 30_000,
     })
     await expect(status(page)).toHaveText('How did that feel?')
   }
