@@ -28,20 +28,20 @@ claim. Lessons 11 and 13 have no package on main, so this page cites the CURRICU
 them; Lesson 12's package is on main, and this page cites it. Web sources were fetched and read on
 21 October 2026 with a plain User-Agent ("MercuryPitchLessonResearch/1.0") and no personal data:
 PubMed records through NCBI's E-utilities (efetch XML, each DOI read from the record's own article
-ids), two papers in full as PubMed Central's XML, Rider University's PDF, and Wikipedia articles as
-raw wikitext at the revision named, each revision confirmed on the article's history page. One
-dictionary page that a Wikipedia article cites did not load (503, 21 October 2026). Quotations are
-verbatim. Scripts in the writer's scratchpad (`l14/tools/`), run with `python3 -I`, did the checking
-and the arithmetic: `verify14.py` reads the app at `62c99c150` through `git show` (the voice
-presets, the kit's tonic letters and `hz`, Merc's gain and vibrato, the band chart's frame and level
-strip, Lesson 5's pushed take, Lesson 4's count-in, the hook and the tease), parses the song from
-the saved Wikipedia score, and prints and asserts every pitch, spelling, chord tone, timing, level,
-preset margin, plot size, label fit, chip width and head length below, with the run time;
-`stepwords.py` counts each step's words; `citeprint.py` printed every cited line at `62c99c150`;
-`sharedlines.py` compared the page's copy with Lessons 3 and 5 to 10, sentence by sentence;
-`absmeta.py` printed each PubMed record's metadata and abstract; `numberfacts.py` numbered these
-facts and every reference to them. The review's `wc_learner.py` (scratchpad `review05/`) counts the
-page's words (8).
+ids), two papers in full as PubMed Central's XML, Rider University's PDF, a music dictionary's entry
+and a notation handbook's page as HTML, and Wikipedia articles as raw wikitext at the revision
+named, each revision confirmed on the article's history page. One dictionary page that a Wikipedia
+article cites did not load (503, 21 October 2026). Quotations are verbatim. Scripts in the writer's
+scratchpad (`l14/tools/`), run with `python3 -I`, did the checking and the arithmetic: `verify14.py`
+reads the app at `62c99c150` through `git show` (the voice presets, the kit's tonic letters and
+`hz`, Merc's gain and vibrato, the band chart's frame and level strip, Lesson 5's pushed take,
+Lesson 4's count-in, the hook and the tease), parses the song from the saved Wikipedia score, and
+prints and asserts every pitch, spelling, chord tone, timing, level, preset margin, plot size, label
+fit, chip width and head length below, with the run time; `stepwords.py` counts each step's words;
+`citeprint.py` printed every cited line at `62c99c150`; `sharedlines.py` compared the page's copy
+with Lessons 3 and 5 to 10, sentence by sentence; `absmeta.py` printed each PubMed record's metadata
+and abstract; `numberfacts.py` numbered these facts and every reference to them. The review's
+`wc_learner.py` (scratchpad `review05/`) counts the page's words (8).
 
 ## Sources
 
@@ -85,6 +85,10 @@ Full references. The facts below use the short names in bold, with the page or s
 - **Wikipedia, Breath mark**: "Breath mark", revision 1286540918 (20 April 2025), raw wikitext: its
   lead, the whole article. It carries a cleanup tag (January 2025), and its one reference, the
   OnMusic dictionary's entry, did not load.
+- **Dolmetsch, Breathing mark**: Dolmetsch Online, Music Dictionary, B, "Breathing mark",
+  www.dolmetsch.com/defsb4.htm, fetched 21 October 2026: the entry, read in full.
+- **MuseScore, Breaths and pauses**: MuseScore Studio 4 handbook, "Breaths and pauses",
+  musescore.org/en/handbook/4/breaths-and-pauses, fetched 21 October 2026: the page, read in full.
 - **Wikipedia, Roman numerals**: "Roman numeral analysis", revision 1360934832 (24 June 2026), raw
   wikitext: its lead.
 - **Wikipedia, Bone conduction**: "Bone conduction", revision 1379125069 (8 October 2026), raw
@@ -133,7 +137,7 @@ Full references. The facts below use the short names in bold, with the page or s
 23. A phrase is a musical thought that ends at a point of rest: "A phrase is a substantial musical thought, which ends with a musical punctuation called a cadence."; White defines it as "the smallest musical unit that conveys a more or less complete musical thought. Phrases vary in length and are terminated at a point of full or partial repose, which is called a cadence." | Wikipedia, Phrase, lead (Benward and Saker 2003, p. 89; White 1976, p. 34, neither read) | read in the article only; the four words' "Phrase", Step 1, quiz question 2
 24. Musicians don't always agree where a phrase ends: the term "is one of the most ambiguous in music....there is no consistency in applying these terms nor can there be"; "the absolute span of the phrase ... is as contestable as its pendant in language"; and "In common practice phrases are often four bars or measures long", which would make each of the song's two-bar lines a phrase member, "one of the parts in a phrase separated into two by a pause or long note value" | Wikipedia, Phrase, lead (Stein 2005, no page) and § Duration or form (Riemann 1903; Larousse after Nattiez 1990; Benward and Saker 2003, p. 113), none read | read in the article only; Step 1's "Phrases vary in length, and musicians don't always agree where one ends. In this lesson, each line of the song's words is one". Calling a two-bar line a phrase is the page's convention, which it states; the coach's list asks whether to keep it
 25. Each line of the words is eight beats and ends on its only long note, a minim, where the words pause at a comma or a full stop; the first line's long note is "star", the second's "are", the third's "high" | Wikipedia, Twinkle, § Melody (17); `verify14.py` (each line's beats and its last syllable) | arithmetic; Step 1's Notice, quiz question 2
-26. A score can mark where to breathe with a breath mark, which looks like a comma, usually sits at a phrase's end, and takes its time from the note before it, so the tempo does not change: "It directs the performer of the music passage to take a breath (for wind instruments and vocalists) ..."; "This pause is normally intended to shorten the duration of the preceding note and not to alter the tempo"; "It is usually placed above the staff and at the ends of phrases."; "The breath mark is visually similar to a comma." Two more sources, read in full, bear out the place above the stave and the breath, and one of them the comma, but neither says where the mark usually sits or where its time comes from: a music dictionary's "by use of a mark like a large comma, an apostrophe or an inverted V, placed above the stave, the composer or editor suggests that the performer break the musical line (whether taking a breath or not) and/or take an actual breath, in either way contributing to the desired phrase shape", and a notation program's handbook, "A breath mark is placed just above the staff, and tells a wind instrument performer or singer to take a breath here, or other instruments to pause slightly. It may occur between two notes or at the end of a measure." | Wikipedia, Breath mark, lead (an article tagged for cleanup, its one reference not loaded); Dolmetsch Online, Music Dictionary, B, "Breathing mark" (`dolmetsch.com/defsb4.htm`, fetched 21 October 2026); MuseScore Studio 4 handbook, "Breaths and pauses" (`musescore.org/en/handbook/4/breaths-and-pauses`, fetched 21 October 2026) | read; "usually sits at a phrase's end" and "takes its time from the note before it" rest on one source, the Wikipedia article, and the coach's list asks whether the coach agrees; Step 2, quiz question 2, the Wrap's first line
+26. A score can mark where to breathe with a breath mark, which looks like a comma, usually sits at a phrase's end, and takes its time from the note before it, so the tempo does not change: "It directs the performer of the music passage to take a breath (for wind instruments and vocalists) ..."; "This pause is normally intended to shorten the duration of the preceding note and not to alter the tempo"; "It is usually placed above the staff and at the ends of phrases."; "The breath mark is visually similar to a comma." Two more sources, read in full, bear out the place above the stave and the breath, and one of them the comma, but neither says where the mark usually sits or where its time comes from: a music dictionary's "by use of a mark like a large comma, an apostrophe or an inverted V, placed above the stave, the composer or editor suggests that the performer break the musical line (whether taking a breath or not) and/or take an actual breath, in either way contributing to the desired phrase shape", and a notation program's handbook, "A breath mark is placed just above the staff, and tells a wind instrument performer or singer to take a breath here, or other instruments to pause slightly. It may occur between two notes or at the end of a measure." | Wikipedia, Breath mark, lead (an article tagged for cleanup, its one reference not loaded); Dolmetsch, Breathing mark; MuseScore, Breaths and pauses | read; "usually sits at a phrase's end" and "takes its time from the note before it" rest on one source, the Wikipedia article, and the coach's list asks whether the coach agrees; Step 2, quiz question 2, the Wrap's first line
 27. Legato is singing smoothly, with no break in the sound, as the notes and words change: "LEGATO is the consistent phonation uninterrupted by changing notes or words. Legato is one of the most desirable aspects of beautiful singing." | Arneson ¶ 9 (p. 2) | read; the four words' "Legato", and the head's `teaches`. "Smoothly" stands for the definition's "consistent" and "uninterrupted"; the page uses the definition, not the judgement
 28. A breath inside a phrase breaks its legato: a breath is a pause in the sound (26), and legato is phonation "uninterrupted" (27). A guide for teachers ties the two to phrasing: "Exercises used to develop legato and breath management are used to teach phrasing. Long scales, arpeggios and exercises with specifically placed breaths also develop the breath control skills necessary for long phrases." | Arneson ¶ 8 (p. 2), ¶ 9; Wikipedia, Breath mark, lead | an inference from the two definitions, not a finding; Step 2. What else a snatched breath does to a phrase is not claimed (Unsupported)
 29. Phrasing is the grouping of notes into units: "PHRASING is the grouping of notes into specific units for an artistic or technical purpose." | Arneson ¶ 8 (p. 2) | read; the lesson's frame, never quoted as a definition on the page
