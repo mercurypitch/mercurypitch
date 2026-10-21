@@ -180,6 +180,52 @@ describe('mountPredict', () => {
     expect(reveal(told)?.hidden).toBe(false)
   })
 
+  it('asks for a choice again when a free example is heard after sound off kept it silent', async () => {
+    // Arrange: the page's hint asks for a choice; the free example plays with sound off
+    document.body.innerHTML =
+      '<div id="toast"><span id="toastText"></span><button id="toastBtn" hidden></button></div>'
+    const root = predictRoot()
+    const hint = root.querySelector('.lock-hint')
+    if (hint !== null)
+      hint.textContent = 'Choose an answer to unlock the sound.'
+    mount(root)
+    Sound.set('off')
+    click(root, '[data-play="one"]')
+    await settle()
+    expect(hint?.textContent).toBe(HINTS.silent)
+    Sound.set('on')
+
+    // Act
+    click(root, '[data-play="one"]')
+    await settle()
+
+    // Assert
+    expect(hint?.textContent).toBe('Choose an answer to unlock the sound.')
+    expect(reveal(root)?.hidden).toBe(true)
+  })
+
+  it('after a choice, a heard play that does not reveal takes the place of the sound-off hint', async () => {
+    // Arrange: a choice, then the answer played with sound off
+    document.body.innerHTML =
+      '<div id="toast"><span id="toastText"></span><button id="toastBtn" hidden></button></div>'
+    const root = predictRoot()
+    mount(root)
+    click(root, '[data-choice="same"]')
+    Sound.set('off')
+    click(root, '[data-play="both"]')
+    await settle()
+    expect(root.querySelector('.lock-hint')?.textContent).toBe(HINTS.silent)
+    Sound.set('on')
+
+    // Act: the free example, which answers nothing
+    click(root, '[data-play="one"]')
+    await settle()
+
+    // Assert
+    expect(root.querySelector('.lock-hint')?.textContent).toBe(HINTS.chosen)
+    expect(reveal(root)?.hidden).toBe(true)
+  })
+
   it('lets a free example play before a choice, and never reveals with it', async () => {
     // Arrange
     const root = predictRoot()
