@@ -7,7 +7,9 @@
 // records, for the rules that are easy to break in a refactor: auto-enter
 // told only of a change, off when the room goes, and nothing at all on the
 // web, where there is no device. On iOS the window draws itself: it gets the
-// song's lyrics, and needs the song to keep playing behind other apps.
+// song's lyrics, and needs the song to keep playing behind other apps. A TV
+// connected to an iPhone can show the same lyrics; the room keeps handing
+// them over while it does, and never arms the window for it.
 
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,9 +19,13 @@ import { roomInPictureInPicture } from '@/stores/native-shell-store'
 import { resetKaraokeRoomForTests, setKaraokePictureInPicture, } from './karaoke-room-store'
 import { useKaraokePictureInPicture } from './useKaraokePictureInPicture'
 
-/** A phone: Android's window shows the page, iOS's draws the lyrics. */
-function fakeDevice(phone: 'android' | 'ios' = 'android') {
+/**
+ * A phone: Android's window shows the page, iOS's draws the lyrics. An
+ * iPhone with `tv` can also have a connected TV that shows them.
+ */
+function fakeDevice(phone: 'android' | 'ios' = 'android', tv = false) {
   const handlers = new Set<(inWindow: boolean) => void>()
+  const tvHandlers = new Set<(showing: boolean) => void>()
   const lyrics = vi.fn((_script: LyricWindowScript | null) => undefined)
   const device = {
     pictureInPictureAutoEnter: vi.fn(),
@@ -30,6 +36,16 @@ function fakeDevice(phone: 'android' | 'ios' = 'android') {
       }
     }),
     pictureInPictureLyrics: phone === 'ios' ? lyrics : null,
+    ...(tv
+      ? {
+          onTvLyrics: (handler: (showing: boolean) => void) => {
+            tvHandlers.add(handler)
+            return () => {
+              tvHandlers.delete(handler)
+            }
+          },
+        }
+      : {}),
   }
   return {
     device: device as unknown as NativeDeviceApi,
@@ -39,6 +55,10 @@ function fakeDevice(phone: 'android' | 'ios' = 'android') {
       for (const handler of [...handlers]) handler(inWindow)
     },
     listeners: () => handlers.size,
+    tvShows: (showing: boolean) => {
+      for (const handler of [...tvHandlers]) handler(showing)
+    },
+    tvListeners: () => tvHandlers.size,
   }
 }
 
@@ -226,6 +246,47 @@ describe('the lyrics window on iOS', () => {
     dispose?.()
     dispose = null
 
+    expect(fake.lyrics).toHaveBeenLastCalledWith(null)
+  })
+})
+
+describe('the lyrics on a connected TV (iOS)', () => {
+  it('hands them over while a TV shows them, with no window allowed', () => {
+    const fake = fakeDevice('ios', true)
+    mount(fake.device)
+
+    setKaraokePictureInPicture(false)
+    fake.tvShows(true)
+    fake.tvShows(false)
+
+    expect(fake.lyrics.mock.calls.map(([script]) => script)).toEqual([
+      SCRIPT,
+      null,
+      SCRIPT,
+      null,
+    ])
+  })
+
+  it('never arms the window for a TV', () => {
+    const fake = fakeDevice('ios', true)
+    const room = mount(fake.device)
+    setKaraokePictureInPicture(false)
+
+    fake.tvShows(true)
+    room.setPlaying(true)
+
+    expect(fake.autoEnter).not.toHaveBeenCalled()
+  })
+
+  it('stops listening for a TV when the room goes', () => {
+    const fake = fakeDevice('ios', true)
+    mount(fake.device)
+    expect(fake.tvListeners()).toBe(1)
+
+    dispose?.()
+    dispose = null
+
+    expect(fake.tvListeners()).toBe(0)
     expect(fake.lyrics).toHaveBeenLastCalledWith(null)
   })
 })

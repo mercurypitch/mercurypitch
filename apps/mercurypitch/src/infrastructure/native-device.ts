@@ -12,7 +12,7 @@
 // registers nothing.
 
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
-import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, pictureInPictureNeedsLyrics, readAudioOutput, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
+import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 
@@ -22,6 +22,27 @@ import type { NativeDeviceApi } from '@/stores/native-shell-store'
  * native-only/now-playing.webp, served at the bundle's root (native-assets.mjs).
  */
 const NOW_PLAYING_ARTWORK = '/now-playing.webp'
+
+/**
+ * iOS: whether a connected TV shows the room's lyrics, as it stands and then
+ * on every change (TVLyrics.swift). The first read is dropped if a change was
+ * heard before it came back, or once the room has stopped listening.
+ */
+function watchTvLyrics(handler: (showing: boolean) => void): () => void {
+  let heard = false
+  let listening = true
+  const stop = onTvLyrics((state) => {
+    heard = true
+    handler(state.showing)
+  })
+  void readTvLyrics().then((state) => {
+    if (listening && !heard && state !== null) handler(state.showing)
+  })
+  return () => {
+    listening = false
+    stop()
+  }
+}
 
 export function createNativeDevice(): NativeDeviceApi {
   return {
@@ -51,6 +72,8 @@ export function createNativeDevice(): NativeDeviceApi {
           void setPictureInPictureLyrics(script).catch(() => undefined)
         }
       : null,
+    // A TV showing the same lyrics, on the phone whose window draws them.
+    ...(pictureInPictureNeedsLyrics() ? { onTvLyrics: watchTvLyrics } : {}),
     // The volume and the route: read only, and none on a phone without
     // the plugin (both answer null and nothing).
     audioOutput: {
