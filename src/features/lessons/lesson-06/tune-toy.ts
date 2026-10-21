@@ -312,16 +312,23 @@ export function mountTuneToy(root: HTMLElement, opts: TuneToyOptions): TuneToy {
       const rowH = core.layout?.lines[0]?.rowGap ?? 9
       slide(down.start - Math.round(dy / Math.max(4, rowH)))
     })
+    // the drag ends with its pointer, wherever that is: let go over the line,
+    // it ends at the click that follows; let go off the line, or taken by a
+    // scroll, no click comes to the line, so it ends here
     const end = (e: PointerEvent): void => {
-      if (down !== null && e.pointerId === down.id) down = null
+      if (down === null || e.pointerId !== down.id) return
+      down = null
+      if (e.type === 'pointercancel' || !hits.contains(e.target as Node))
+        dragged = false
     }
-    hits.addEventListener('pointerup', end)
-    hits.addEventListener('pointercancel', end)
-    // a drag that ends on a bead is not a press of it
+    window.addEventListener('pointerup', end)
+    window.addEventListener('pointercancel', end)
+    // a drag that ends on a bead is not a press of it; a key's click (Enter
+    // or Space, detail 0) never ends a drag, so it always presses
     hits.addEventListener(
       'click',
       (e) => {
-        if (!dragged) return
+        if (!dragged || e.detail === 0) return
         dragged = false
         e.stopPropagation()
         e.preventDefault()
