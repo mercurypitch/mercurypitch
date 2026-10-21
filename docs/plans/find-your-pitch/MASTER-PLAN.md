@@ -490,7 +490,7 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
 12. **Decided (19 October 2026): do-based minor.** Minor is sung do-me-so, and the natural minor
     scale do re me fa so le te do. Do stays home, as Lesson 4 teaches it, and a minor third is one
     changed syllable. The app's Ear Lab already sings minor this way (`MINOR_SOLFEGE`,
-    `src/lib/ear/wild.ts:158`; `src/lib/ear/item-bank.ts:65-72`), though it spells the fifth "Sol"
+    `src/lib/ear/wild.ts:159`; `src/lib/ear/item-bank.ts:65-72`), though it spells the fifth "Sol"
     where the lessons write "so". La-based minor (la-do-mi, the Kodály choice) is named once in
     Lesson 10's Go deeper and never taught. Season 2's sight-singing inherits the choice
     (CURRICULUM Lesson 10).
