@@ -3,6 +3,7 @@
 import type * as ThreeTypes from 'three'
 import { Group, Raycaster } from 'three'
 import { beforeEach, expect, it, vi } from 'vitest'
+import { FROST_GOLD_ARCH_BUNDLE_IDS } from '../content/frost-gold-arch-profile'
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
 import type * as JourneyResourceTypes from './resources'
 
@@ -734,9 +735,30 @@ it('rejects first-frame GPU errors through the map failure lifecycle', async () 
   }
 })
 
-it.each([true, false])(
-  'preserves startup detail and only adapts a loaded mobile map (mobile=%s)',
-  async (mobile) => {
+it.each([
+  {
+    mobile: true,
+    logical: FROST_GOLD_ARCH_BUNDLE_IDS.logical,
+    resolved: FROST_GOLD_ARCH_BUNDLE_IDS.mobile,
+  },
+  {
+    mobile: false,
+    logical: FROST_GOLD_ARCH_BUNDLE_IDS.logical,
+    resolved: FROST_GOLD_ARCH_BUNDLE_IDS.desktop,
+  },
+  {
+    mobile: true,
+    logical: 'floating-museum-twin-finish-kit-v4',
+    resolved: 'floating-museum-garden-edge-mobile-v11',
+  },
+  {
+    mobile: false,
+    logical: 'floating-museum-twin-finish-kit-v4',
+    resolved: 'floating-museum-twin-finish-kit-v4',
+  },
+])(
+  'preserves startup detail and only adapts a loaded mobile map ($logical, mobile=$mobile)',
+  async ({ mobile, logical, resolved }) => {
     stubBrowser()
     vi.stubGlobal('window', {
       devicePixelRatio: 3,
@@ -754,14 +776,19 @@ it.each([true, false])(
       dispose: vi.fn(),
     }
     state.loadModels.mockResolvedValueOnce(model)
+    const definition = {
+      ...DEFINITION,
+      sculpturalAssetId: logical,
+      architecturalAssetId: 'architecture',
+    }
     const scene = createMuseumJourneyScene(
       {
         append: vi.fn(),
         clientWidth: 390,
         clientHeight: 844,
       } as unknown as HTMLElement,
-      DEFINITION,
-      (id) => id,
+      definition,
+      (id) => `/host-assets/${id}`,
       {
         selectedStageId: 'stage',
         foreground: true,
@@ -773,11 +800,13 @@ it.each([true, false])(
     try {
       expect(state.setPixelRatio).toHaveBeenLastCalledWith(mobile ? 1.25 : 1.8)
       expect(state.loadModels).toHaveBeenCalledWith(
-        DEFINITION,
-        'map',
-        'merc',
+        definition,
+        '/host-assets/map',
+        '/host-assets/merc',
         expect.any(AbortSignal),
         expect.objectContaining({
+          sculptureUrl: `/host-assets/${resolved}`,
+          architectureUrl: '/host-assets/architecture',
           assetProfile: mobile ? 'mobile' : 'full',
           maximumConcurrentBundleLoads: mobile ? 1 : 2,
         }),

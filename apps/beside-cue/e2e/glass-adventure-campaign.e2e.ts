@@ -61,7 +61,7 @@ test('phone, tablet and desktop map load only lobby models before gallery entry 
     [
       MERC_MODEL_PATH,
       '/games/journey-map-v1/floating-museum-map-kit-v1.glb',
-      '/games/journey-map-v10/floating-museum-botanical-kit-v10.glb',
+      '/games/journey-map-v11/floating-museum-garden-edge-mobile-v11.glb',
       '/games/journey-map-v8/floating-museum-architecture-kit-v8.glb',
     ].sort(),
   )

@@ -38,6 +38,9 @@ const state = vi.hoisted(() => ({
   mercDispose: vi.fn(),
   mercRoot: undefined as Group | undefined,
   worldUpdate: vi.fn(),
+  worldCreate: vi.fn(),
+  artworkFace: vi.fn(),
+  artworkScale: vi.fn(),
   targetUpdate: vi.fn(),
   targetCreate: vi.fn(),
   targetSpeed: vi.fn(),
@@ -116,12 +119,18 @@ vi.mock('./program-precompile', () => ({
 vi.mock('./sky-backdrop', () => ({ fitSkyBackdrop: vi.fn() }))
 vi.mock('./backdrop-fog', () => ({ installBackdropFog: vi.fn() }))
 vi.mock('./runner-world', () => ({
-  createRunnerWorld: () => ({
-    root: new Group(),
-    update: state.worldUpdate,
-    dispose: state.worldDispose,
-    metrics: () => ({ residentChunks: 1 }),
-  }),
+  createRunnerWorld: (...args: unknown[]) => {
+    state.worldCreate(...args)
+    return {
+      root: new Group(),
+      update: state.worldUpdate,
+      faceCollectible: state.artworkFace,
+      setCollectibleArtworkScale: state.artworkScale,
+      withCollectibleWarmupState: (prepare: () => Promise<void>) => prepare(),
+      dispose: state.worldDispose,
+      metrics: () => ({ residentChunks: 1 }),
+    }
+  },
 }))
 vi.mock('./runner-targets', () => ({
   createRunnerTargets: (...args: unknown[]) => {
@@ -561,6 +570,90 @@ describe('runner renderer ownership', () => {
     renderer.setShatterPlaybackSpeed(1.3)
     expect(state.targetSpeed).toHaveBeenLastCalledWith(1.3)
     renderer.dispose()
+  })
+
+  it('loads only the selected course artwork, latches pending scale and faces the final camera', async () => {
+    const { renderer, snapshot } = fixture(true, true, true)
+    renderer.setCollectibleArtworkScale(1.37)
+    await renderer.ready
+    expect(
+      state.texture.mock.calls.filter(
+        ([id]) => id === 'runner-sun-seal-ring-v1',
+      ),
+    ).toHaveLength(1)
+    expect(state.worldCreate.mock.lastCall?.[6]).toMatchObject({ scale: 1.37 })
+    const ownedArtwork = state.worldCreate.mock.lastCall?.[6] as {
+      texture: Texture
+    }
+    const artworkRelease = vi.spyOn(ownedArtwork.texture, 'dispose')
+    const draws = state.render.mock.calls.length
+    renderer.setCollectibleArtworkScale(9)
+    expect(state.artworkScale).toHaveBeenLastCalledWith(1.6)
+    expect(state.render).toHaveBeenCalledTimes(draws)
+    renderer.render(
+      {
+        ...snapshot,
+        status: 'paused',
+        player: { ...snapshot.player, lateralX: -1.5 },
+      },
+      0,
+    )
+    const camera = state.render.mock.lastCall?.[1]
+    expect(state.artworkFace).toHaveBeenLastCalledWith(camera)
+    renderer.dispose()
+    expect(artworkRelease).toHaveBeenCalledOnce()
+    state.artworkScale.mockClear()
+    renderer.setCollectibleArtworkScale(0.8)
+    expect(state.artworkScale).not.toHaveBeenCalled()
+    const ordinary = fixture(true, true)
+    state.texture.mockClear()
+    await ordinary.renderer.ready
+    expect(
+      state.texture.mock.calls.some(([id]) => id === 'runner-sun-seal-ring-v1'),
+    ).toBe(false)
+    ordinary.renderer.dispose()
+  })
+
+  it('releases late collectible texture once after exit and never installs a partial artwork world', async () => {
+    const pending = deferred<Texture>()
+    const texture = new Texture(),
+      release = vi.spyOn(texture, 'dispose')
+    state.texture.mockImplementation(async (id: string) =>
+      id === 'runner-sun-seal-ring-v1' ? pending.promise : new Texture(),
+    )
+    const { renderer } = fixture(true, true, true)
+    await vi.waitFor(() =>
+      expect(state.texture).toHaveBeenCalledWith('runner-sun-seal-ring-v1'),
+    )
+    renderer.dispose()
+    pending.resolve(texture)
+    await renderer.ready
+    expect(release).toHaveBeenCalledOnce()
+    expect(state.worldCreate).not.toHaveBeenCalled()
+    expect(state.render).not.toHaveBeenCalled()
+  })
+
+  it('fails preparation for missing selected artwork and frees it after a later preparation failure', async () => {
+    state.texture.mockImplementation(async (id: string) => {
+      if (id === 'runner-sun-seal-ring-v1') throw new Error('Missing C01')
+      return new Texture()
+    })
+    const missing = fixture(true, true, true)
+    await expect(missing.renderer.ready).rejects.toThrow('Missing C01')
+    expect(state.worldCreate).not.toHaveBeenCalled()
+    expect(state.dispose).toHaveBeenCalledOnce()
+    const artwork = new Texture(),
+      release = vi.spyOn(artwork, 'dispose')
+    state.texture.mockImplementation(async (id: string) =>
+      id === 'runner-sun-seal-ring-v1' ? artwork : new Texture(),
+    )
+    state.environmentCapture.mockImplementationOnce(() => {
+      throw new Error('Capture failed')
+    })
+    const failed = fixture(true, true, true)
+    await expect(failed.renderer.ready).rejects.toThrow('Capture failed')
+    expect(release).toHaveBeenCalledOnce()
+    expect(state.worldDispose).toHaveBeenCalledOnce()
   })
 
   it('changes display quality without reloading the startup asset tier or slowing simulation', async () => {

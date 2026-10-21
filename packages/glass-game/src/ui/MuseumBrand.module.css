@@ -1,0 +1,114 @@
+/* Reference-led museum lockup; width contracts before the neighboring touch targets. */
+.brand {
+  display: flex;
+  width: clamp(260px, 29vw, 380px);
+  min-width: 0;
+  flex: 0 1 auto;
+  flex-direction: column;
+  align-items: center;
+  color: #93641e;
+  pointer-events: none;
+}
+
+.brand > .crest {
+  display: block;
+  width: 45%;
+  height: auto;
+  flex: 0 0 auto;
+  margin-bottom: -1.7%;
+  overflow: visible;
+}
+
+.crestLines,
+.dividerLines {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.crestPoints {
+  fill: currentColor;
+  stroke: none;
+}
+
+.wordmark {
+  width: 100%;
+  margin: 0;
+  line-height: 0;
+}
+
+.wordmark > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.brand > .divider {
+  display: block;
+  width: 61%;
+  height: auto;
+  flex: 0 0 auto;
+  margin: 1.1% 0 2%;
+  overflow: visible;
+}
+
+.tagline {
+  display: flex;
+  margin: 0;
+  flex-direction: column;
+  align-items: center;
+  color: #344944;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  font-size: clamp(8px, 0.76vw, 10px);
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  line-height: 1.65;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@media (width < 700px) {
+  .brand {
+    width: 220px;
+  }
+
+  .tagline {
+    font-size: clamp(6.25px, 1.85vw, 9px);
+    letter-spacing: 0.23em;
+    line-height: 1.55;
+  }
+}
+
+@media (orientation: landscape) and (height < 700px) {
+  .brand {
+    display: grid;
+    width: 258px;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 5px;
+    row-gap: 4px;
+  }
+
+  .brand > .crest {
+    width: 44px;
+    height: 38px;
+    margin: 0;
+  }
+
+  .brand > .divider {
+    display: none;
+  }
+
+  .tagline {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.6em;
+    font-size: 6.75px;
+    letter-spacing: 0.18em;
+    line-height: 1.3;
+  }
+}

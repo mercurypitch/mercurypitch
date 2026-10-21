@@ -3,6 +3,7 @@
 import type { Object3D } from 'three'
 import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, Fog, HemisphereLight, Mesh, MeshStandardMaterial, PerspectiveCamera, Raycaster, RingGeometry, Scene, SRGBColorSpace, Vector2, Vector3, } from 'three'
 import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
+import { resolveAssetProfileBundle } from '../render/asset-profile-bundles'
 import { estimateAssetTextureBytes } from '../render/asset-texture-profile'
 import { disposeObject } from '../render/dispose'
 import { createMuseumEnvironment } from '../render/environment'
@@ -12,7 +13,7 @@ import { createGraphicsRenderer } from '../render/graphics-renderer'
 import { ADAPTIVE_PIXEL_RATIO, ADAPTIVE_SHADOW_FRAME_INTERVAL, createRenderPerformanceGovernor, } from '../render/render-performance-governor'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from '../render/render-quality'
 import { canRenderViewport } from '../render/viewport'
-import { clampJourneyInspectionZoom, clampJourneyOrbit, JOURNEY_DEFAULT_ORBIT, journeyCameraView, projectJourneyStage, } from './camera'
+import { clampJourneyInspectionZoom, clampJourneyOrbit, JOURNEY_DEFAULT_ORBIT, journeyCameraView, projectJourneyStageLabel, } from './camera'
 import { createJourneyPointerTracker, journeyWheelZoomDelta, } from './interaction'
 import { JOURNEY_MEDALLION_CLEARANCE_Y, journeyMarkerPoint } from './landmarks'
 import { loadJourneyMapModels } from './models'
@@ -155,10 +156,6 @@ function buildMuseumJourneyScene(
 ): MuseumJourneyScene {
   const mapUrl = assetUrl(definition.modelAssetId)
   const mercUrl = assetUrl('merc')
-  const sculptureUrl =
-    definition.sculpturalAssetId === undefined
-      ? undefined
-      : assetUrl(definition.sculpturalAssetId)
   const architectureUrl =
     definition.architecturalAssetId === undefined
       ? undefined
@@ -194,6 +191,15 @@ function buildMuseumJourneyScene(
       globalThis.navigator?.userAgent ?? '',
     ),
   })
+  const sculptureUrl =
+    definition.sculpturalAssetId === undefined
+      ? undefined
+      : assetUrl(
+          resolveAssetProfileBundle(
+            definition.sculpturalAssetId,
+            quality.assetProfile,
+          ),
+        )
   const pixelRatio = effectiveGlassPixelRatio(window.devicePixelRatio, {
     ...quality,
     // Retain the map's established desktop detail; the common mobile policy
@@ -440,7 +446,7 @@ function buildMuseumJourneyScene(
       return
     }
     const projections = definition.stages.map((stage) => {
-      const projected = projectJourneyStage(
+      const projected = projectJourneyStageLabel(
         journeyMarkerPoint(stage),
         camera,
         Math.max(1, container.clientWidth),

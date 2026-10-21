@@ -4,6 +4,7 @@ import type { BufferGeometry, Material } from 'three'
 import { ConeGeometry, CylinderGeometry, Group, IcosahedronGeometry, InstancedMesh, Matrix4, Quaternion, SphereGeometry, Vector3, } from 'three'
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
+import { createJourneyIvy } from './ivy'
 import type { VegetationFootprint } from './vegetation-placement'
 import { addInstancedDonor, AUTHORED_CYPRESS_BASE_RADIUS, clearsJourneyLandmarks, clearsVegetationFootprints, createAuthoredFlowerPlacement, fitsIslandTerrace, rimPoint, sourceFloraPoint, } from './vegetation-placement'
 
@@ -12,6 +13,8 @@ export { journeyBridgeDistanceXZ } from './vegetation-placement'
 export interface JourneyVegetationMaterials {
   foliage: Material
   darkFoliage: Material
+  ivyFoliage?: Material
+  ivyDarkFoliage?: Material
   trunk: Material
   blossom: Material
 }
@@ -30,6 +33,7 @@ export function createJourneyVegetation(
   sculpturalUnit: JourneyAuthoredUnit | undefined,
   materials: JourneyVegetationMaterials,
   ownedGeometries: Set<BufferGeometry>,
+  authoredCliffGarden = false,
 ): Group {
   const root = new Group()
   root.name = 'floating-museum-gardens'
@@ -60,23 +64,10 @@ export function createJourneyVegetation(
     materials.foliage,
     definition.landmasses.length * 18 + sourceCount * 5,
   )
-  const ivyPerIsland = 40
-  const ivy = new InstancedMesh(
-    ivyGeometry,
-    materials.foliage,
-    definition.landmasses.length * ivyPerIsland,
-  )
-  const darkIvy = new InstancedMesh(
-    ivyGeometry,
-    materials.darkFoliage,
-    definition.landmasses.length * ivyPerIsland,
-  )
   trunks.name = 'instanced-museum-cypress-trunks'
   crowns.name = 'instanced-museum-cypress-crowns'
   flowers.name = 'instanced-museum-rim-blossoms'
   bedLeaves.name = 'instanced-museum-flower-bed-leaves'
-  ivy.name = 'instanced-hanging-cliff-ivy'
-  darkIvy.name = 'instanced-hanging-cliff-ivy-shadow'
   trunks.castShadow = true
   crowns.castShadow = true
   crowns.receiveShadow = true
@@ -86,8 +77,6 @@ export function createJourneyVegetation(
   let crownIndex = 0
   let flowerIndex = 0
   let leafIndex = 0
-  let ivyIndex = 0
-  let darkIvyIndex = 0
   const cypressTransforms: Matrix4[] = []
   const cypressFootprints: VegetationFootprint[] = []
   const authoredSourceFlowerTransforms: Matrix4[] = []
@@ -233,31 +222,6 @@ export function createJourneyVegetation(
       }
     }
 
-    for (let strand = 0; strand < 8; strand++) {
-      const angle = Math.PI * (0.04 + strand * 0.13) + islandIndex * 0.19
-      const strandTop = rimPoint(island, angle, 1.02)
-      if (!clearsJourneyLandmarks(definition, strandTop)) continue
-      for (let depth = 0; depth < 5; depth++) {
-        const point = strandTop.clone()
-        point.y -= 0.16 + depth * (0.25 + (strand % 3) * 0.025)
-        point.x += Math.sin(depth * 1.7 + strand) * 0.075
-        point.z += Math.cos(depth * 1.3 + strand) * 0.055
-        if (!clearsJourneyLandmarks(definition, point)) continue
-        matrix.compose(
-          point,
-          rotation,
-          new Vector3(
-            0.58 + ((strand + depth) % 3) * 0.1,
-            1.14 + depth * 0.08,
-            0.52,
-          ),
-        )
-        if ((strand + depth) % 3 === 0)
-          darkIvy.setMatrixAt(darkIvyIndex++, matrix)
-        else ivy.setMatrixAt(ivyIndex++, matrix)
-      }
-    }
-
     let plantersPlaced = 0
     for (
       let candidate = 0;
@@ -300,10 +264,6 @@ export function createJourneyVegetation(
   flowers.count = flowerIndex
   bedLeaves.instanceMatrix.needsUpdate = true
   bedLeaves.count = leafIndex
-  ivy.instanceMatrix.needsUpdate = true
-  ivy.count = ivyIndex
-  darkIvy.instanceMatrix.needsUpdate = true
-  darkIvy.count = darkIvyIndex
   if (sculpturalUnit === undefined) root.add(trunks, crowns)
   else {
     const clearedCypressTransforms = cypressTransforms.filter(
@@ -350,6 +310,16 @@ export function createJourneyVegetation(
       'instanced-authored-planters',
     )
   if (sculpturalUnit === undefined) root.add(flowers, bedLeaves)
-  root.add(ivy, darkIvy)
+  if (!authoredCliffGarden)
+    root.add(
+      createJourneyIvy(
+        definition,
+        {
+          foliage: materials.ivyFoliage ?? materials.foliage,
+          darkFoliage: materials.ivyDarkFoliage ?? materials.darkFoliage,
+        },
+        ownedGeometries,
+      ),
+    )
   return root
 }

@@ -3,11 +3,26 @@
 import type { Material } from 'three'
 import { BufferGeometry, CatmullRomCurve3, CylinderGeometry, Float32BufferAttribute, Group, InstancedMesh, Matrix4, Mesh, OctahedronGeometry, Quaternion, TubeGeometry, Vector3, } from 'three'
 import type { MuseumJourneyBridge } from '../content/museum-journey'
-import { createJourneyBridgePath } from './bridge-path'
+import type { JourneyBridgePath } from './bridge-path'
+import { createJourneyBridgePath, JOURNEY_BRIDGE_CORNICE_WIDTH, } from './bridge-path'
 
 interface BridgeMaterials {
   ivory: Material
   gold: Material
+}
+
+function addQuad(
+  positions: number[],
+  uv: number[],
+  a: Vector3,
+  b: Vector3,
+  c: Vector3,
+  d: Vector3,
+): void {
+  for (const point of [a, b, c, a, c, d]) {
+    positions.push(point.x, point.y, point.z)
+    uv.push(point.x * 0.75, point.z * 0.75 + point.y * 0.3)
+  }
 }
 
 /** A closed flat-topped wedge: neighbouring treads share the same plan boundary. */
@@ -21,16 +36,76 @@ function addTread(
   const lower = corners.map((point) => new Vector3(point.x, bottom, point.z))
   const upper = corners.map((point) => new Vector3(point.x, top, point.z))
   const quad = (a: Vector3, b: Vector3, c: Vector3, d: Vector3): void => {
-    for (const point of [a, b, c, a, c, d]) {
-      positions.push(point.x, point.y, point.z)
-      uv.push(point.x * 0.75, point.z * 0.75 + point.y * 0.3)
-    }
+    addQuad(positions, uv, a, b, c, d)
   }
   quad(upper[0]!, upper[1]!, upper[2]!, upper[3]!)
   quad(lower[3]!, lower[2]!, lower[1]!, lower[0]!)
   for (let side = 0; side < 4; side++) {
     const next = (side + 1) % 4
     quad(lower[side]!, lower[next]!, upper[next]!, upper[side]!)
+  }
+}
+
+/** Closed narrow mouldings follow the same plan curve as the level treads. */
+function addMarbleSupport(
+  positions: number[],
+  uv: number[],
+  bridge: MuseumJourneyBridge,
+  path: JourneyBridgePath,
+): void {
+  const half = bridge.width * 0.5
+  for (const side of [-1, 1]) {
+    for (const cornice of [false, true]) {
+      const rings = Array.from({ length: 25 }, (_, index) => {
+        const t = index / 24
+        const slope = bridge.from[1] + (bridge.to[1] - bridge.from[1]) * t
+        const underside = -0.21 - 0.22 * (2 * t - 1) ** 2
+        const profile = cornice
+          ? [
+              [half - 0.045, -0.075],
+              [half + 0.025, -0.075],
+              [half + JOURNEY_BRIDGE_CORNICE_WIDTH, -0.095],
+              [half + 0.045, -0.145],
+              [half - 0.04, -0.145],
+            ]
+          : [
+              [half - 0.01, -0.13],
+              [half + 0.028, -0.13],
+              [half + 0.028, underside],
+              [half - 0.01, underside],
+            ]
+        const points = profile.map(([offset, height]) => {
+          const point = path.point(t, side * offset!)
+          point.y = slope + height!
+          return point
+        })
+        return side < 0 ? points.reverse() : points
+      })
+      for (let index = 0; index < rings.length - 1; index++) {
+        const from = rings[index]!,
+          to = rings[index + 1]!
+        for (let edge = 0; edge < from.length; edge++) {
+          const next = (edge + 1) % from.length
+          addQuad(positions, uv, from[edge]!, from[next]!, to[next]!, to[edge]!)
+        }
+      }
+      // Flat end caps bury each moulding into its terrace landing, not the path.
+      for (const [index, reverse] of [
+        [0, true],
+        [rings.length - 1, false],
+      ] as const) {
+        const cap = rings[index]!
+        for (let edge = 1; edge < cap.length - 1; edge++) {
+          const triangle = reverse
+            ? [cap[0]!, cap[edge + 1]!, cap[edge]!]
+            : [cap[0]!, cap[edge]!, cap[edge + 1]!]
+          for (const point of triangle) {
+            positions.push(point.x, point.y, point.z)
+            uv.push(point.x * 0.75, point.z * 0.75 + point.y * 0.3)
+          }
+        }
+      }
+    }
   }
 }
 
@@ -63,6 +138,7 @@ export function createJourneyBridge(
     const lowerTop = path.surfaceHeight(Math.max(0, start - 0.00001))
     addTread(positions, uv, corners, top, Math.min(top, lowerTop) - 0.12)
   }
+  if (bridge.kind === 'skybridge') addMarbleSupport(positions, uv, bridge, path)
   const geometry = own(new BufferGeometry())
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   geometry.setAttribute('uv', new Float32BufferAttribute(uv, 2))
@@ -129,33 +205,6 @@ export function createJourneyBridge(
       posts.setMatrixAt(instance, matrix)
       matrix.makeTranslation(point.x, railY + 0.025, point.z)
       finials.setMatrixAt(instance++, matrix)
-    }
-    if (bridge.kind === 'skybridge') {
-      const archPoints = Array.from({ length: 33 }, (_, i) => {
-        const t = i / 32,
-          point = path.point(t, sign * (halfWidth - 0.045))
-        point.y =
-          bridge.from[1] +
-          (bridge.to[1] - bridge.from[1]) * t -
-          0.15 -
-          0.42 * Math.pow(2 * t - 1, 2)
-        return point
-      })
-      const arch = new Mesh(
-        own(
-          new TubeGeometry(
-            new CatmullRomCurve3(archPoints),
-            32,
-            0.035,
-            8,
-            false,
-          ),
-        ),
-        materials.gold,
-      )
-      arch.name = `${bridge.id}-supporting-arch`
-      arch.castShadow = true
-      root.add(arch)
     }
   }
   posts.instanceMatrix.needsUpdate = true

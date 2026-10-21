@@ -5,7 +5,7 @@
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { GLASS_GAME_ASSET_FILES, GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS, GLASS_GAME_ON_DEMAND_ASSET_IDS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, glassGameAssetUrl, } from './assets'
+import { GLASS_GAME_ASSET_FILES, GLASS_GAME_DESKTOP_ONLY_DEPENDENCY_FILES, GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS, GLASS_GAME_ON_DEMAND_ASSET_IDS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, glassGameAssetUrl, } from './assets'
 
 describe('Glassworks asset contract', () => {
   it('loads the same inventory directly in Node for native and web packaging', () => {
@@ -92,8 +92,24 @@ describe('Glassworks asset contract', () => {
     expect(required.has('journey-map-v8/manifest.json')).toBe(true)
     expect(
       required.has('journey-map-v10/floating-museum-botanical-kit-v10.glb'),
+    ).toBe(false)
+    expect(required.has('journey-map-v10/manifest.json')).toBe(false)
+    expect(required.has('journey-map-v11/manifest.json')).toBe(true)
+    expect(
+      required.has(
+        'journey-map-v11/floating-museum-garden-edge-desktop-v11.glb',
+      ),
     ).toBe(true)
-    expect(required.has('journey-map-v10/manifest.json')).toBe(true)
+    expect(
+      required.has(
+        'journey-map-v11/floating-museum-garden-edge-mobile-v11.glb',
+      ),
+    ).toBe(true)
+    expect(GLASS_GAME_DESKTOP_ONLY_DEPENDENCY_FILES).toEqual([
+      'journey-map-v11/museum-jasmine-full-v11.webp',
+    ])
+    for (const dependency of GLASS_GAME_DESKTOP_ONLY_DEPENDENCY_FILES)
+      expect(required.has(dependency), dependency).toBe(true)
     expect(required.has('journey-map-v4/manifest.json')).toBe(false)
     expect(required.has('journey-map-v7/manifest.json')).toBe(false)
     expect(required.has('cloudway-v7/cloudway-platform-kit-v7.gltf')).toBe(true)
@@ -141,7 +157,7 @@ describe('Glassworks asset contract', () => {
   })
 
   it('pairs every native-excluded desktop GLB with a distinct shipped mobile GLB', () => {
-    expect(GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS).toHaveLength(3)
+    expect(GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS).toHaveLength(4)
     for (const pair of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS) {
       expect(pair.desktop).toMatch(/-desktop-v\d+\.glb$/u)
       expect(pair.mobile).toMatch(/-mobile-v\d+\.glb$/u)

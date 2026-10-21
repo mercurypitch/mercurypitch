@@ -2,16 +2,18 @@
 // Native games profile tests — preserve store inputs and reject mismatched web output
 // ============================================================
 
-import { GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, } from '@irchiinnuss/glass-game/assets'
+import { GLASS_GAME_DESKTOP_ONLY_DEPENDENCY_FILES, GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, } from '@irchiinnuss/glass-game/assets'
 import { SINGING_CURRENT_WALL_PROFILES } from '@irchiinnuss/glass-game/current-wall-profiles'
 import { RUNNER_MATERIAL_FINISH_TEXTURE_IDS } from '@irchiinnuss/glass-game/material-finishes'
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, posix, resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, NATIVE_RETIRED_GAME_ASSETS, NATIVE_SOURCE_NORMAL_GAME_ASSETS, } from './game-assets.ts'
+import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES, NATIVE_EXCLUDED_GAME_ASSETS, NATIVE_RETIRED_GAME_ASSETS, NATIVE_SOURCE_NORMAL_GAME_ASSETS, } from './game-assets.ts'
+import { gameModelDependencies } from './game-model-dependencies.ts'
 import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
 const temporary: string[] = []
@@ -34,6 +36,7 @@ const RUNNER_READY_GAME_ASSETS = [
   'runner-crystal-bulwark-v1',
   'runner-rose-hurdle-v1',
   'runner-celadon-arch-v1',
+  'runner-sun-seal-ring-v1',
   ...RUNNER_MATERIAL_FINISH_TEXTURE_IDS,
   ...Object.values(SINGING_CURRENT_WALL_PROFILES).map(({ bundle }) => bundle),
 ].map((id) => `games/${glassGameAssetPath(id)}`)
@@ -41,6 +44,7 @@ const CURRENT_DELIVERY_GAME_ASSETS = GLASS_GAME_REQUIRED_FILES.filter(
   (asset) =>
     (asset.startsWith('singing-current-walls-v1/') && asset.endsWith('.glb')) ||
     (asset.startsWith('runner-obstacles-v1/') && asset.endsWith('.glb')) ||
+    asset.startsWith('runner-collectibles-v1/') ||
     (asset.startsWith('shatter-sounds-v1/') && asset.endsWith('.mp3')) ||
     (asset.startsWith('adventure-v2/textures/') &&
       asset.endsWith('-normal.webp')),
@@ -84,6 +88,28 @@ afterEach(() => {
 })
 
 describe('explicit native games profile', () => {
+  it('ships the accepted C01 delivery and its matching provenance offline', () => {
+    const folder = 'games/runner-collectibles-v1'
+    const provenancePath = `${folder}/provenance.json`
+    expect(requiredGameAssets).toContain(provenancePath)
+    const provenance = JSON.parse(
+      readFileSync(resolve(publicDirectory, provenancePath), 'utf8'),
+    )
+    expect(provenance.assets).toHaveLength(1)
+    const asset = provenance.assets[0]
+    const path = `games/${glassGameAssetPath('runner-sun-seal-ring-v1')}`
+    expect(path).toBe(`${folder}/${asset.file}`)
+    expect(requiredGameAssets).toContain(path)
+    expect(asset.acceptedAlpha.sha256).toBe(
+      '595ea83fdb4ad096fcb5d3f12c82461a5e4bd8deb7341e58a321f5bef07775d0',
+    )
+    const bytes = readFileSync(resolve(publicDirectory, path))
+    expect(bytes.byteLength).toBe(asset.bytes)
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(asset.sha256)
+    expect(bytes.toString('ascii', 0, 4)).toBe('RIFF')
+    expect(bytes.toString('ascii', 8, 12)).toBe('WEBP')
+  })
+
   it('declares every in-app runner readiness dependency for offline delivery', () => {
     for (const asset of RUNNER_READY_GAME_ASSETS)
       expect(
@@ -153,7 +179,7 @@ describe('explicit native games profile', () => {
     for (const id of [
       'cloudway-platform-kit-v1',
       'floating-museum-architecture-kit-v6',
-      'floating-museum-twin-finish-kit-v4',
+      'floating-museum-garden-edge-mobile-v11',
     ])
       expect(native.has(`games/${glassGameAssetPath(id)}`)).toBe(true)
     for (const asset of R3_NATIVE_GAME_ASSETS)
@@ -163,6 +189,13 @@ describe('explicit native games profile', () => {
         ({ desktop }) => `games/${desktop}`,
       ),
     )
+    expect(NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES).toEqual(
+      GLASS_GAME_DESKTOP_ONLY_DEPENDENCY_FILES.map((asset) => `games/${asset}`),
+    )
+    for (const asset of NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES) {
+      expect(declaredWeb.has(asset), asset).toBe(true)
+      expect(native.has(asset), `${asset} is full-profile only`).toBe(false)
+    }
     for (const { desktop, mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS) {
       expect(native.has(`games/${desktop}`)).toBe(false)
       expect(native.has(`games/${mobile}`)).toBe(true)
@@ -176,7 +209,7 @@ describe('explicit native games profile', () => {
     ).toHaveLength(14)
     expect(
       CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.webp')),
-    ).toHaveLength(4)
+    ).toHaveLength(5)
     for (const asset of CURRENT_DELIVERY_GAME_ASSETS)
       expect(native.has(asset), `${asset} must remain native`).toBe(true)
     expect(NATIVE_SOURCE_NORMAL_GAME_ASSETS).toHaveLength(4)
@@ -187,29 +220,73 @@ describe('explicit native games profile', () => {
       ).toBe(false)
   })
 
-  it('includes each referenced glTF buffer and image in the shared offline package', () => {
-    const declared = new Set<string>(requiredGameAssets)
-    const models = requiredGameAssets.filter((asset) => asset.endsWith('.gltf'))
-    expect(models.length).toBeGreaterThan(0)
-    for (const model of models) {
-      const document = JSON.parse(
-        readFileSync(resolve(publicDirectory, model), 'utf8'),
-      ) as {
-        buffers?: { uri?: string }[]
-        images?: { uri?: string }[]
+  it.each([
+    {
+      profile: 'web',
+      inventory: GLASS_GAME_REQUIRED_FILES.map((asset) => `games/${asset}`),
+    },
+    { profile: 'native', inventory: requiredGameAssets },
+  ])(
+    'includes every glTF and GLB dependency in the $profile offline inventory',
+    ({ inventory }) => {
+      const declared = new Set(inventory)
+      const models = inventory.filter((asset) => /\.(gltf|glb)$/u.test(asset))
+      expect(models.length).toBeGreaterThan(0)
+      for (const model of models) {
+        for (const dependency of gameModelDependencies(
+          model,
+          readFileSync(resolve(publicDirectory, model)),
+        )) {
+          expect(
+            declared.has(dependency),
+            `${model} needs ${dependency} offline`,
+          ).toBe(true)
+          expect(
+            statSync(resolve(publicDirectory, dependency)).size,
+            dependency,
+          ).toBeGreaterThan(0)
+        }
       }
-      for (const resource of [
-        ...(document.buffers ?? []),
-        ...(document.images ?? []),
-      ]) {
-        if (resource.uri === undefined) continue
-        expect(resource.uri).not.toMatch(/[:\\\\]|^\//u)
-        const dependency = posix.join(posix.dirname(model), resource.uri)
-        expect(dependency.startsWith('games/')).toBe(true)
-        expect(
-          declared.has(dependency),
-          `${model} needs ${dependency} offline`,
-        ).toBe(true)
+    },
+  )
+
+  it('pins the full museum external image and keeps the mobile GLB self-contained', () => {
+    const folder = 'games/journey-map-v11'
+    const manifest = JSON.parse(
+      readFileSync(resolve(publicDirectory, folder, 'manifest.json'), 'utf8'),
+    )
+    expect(manifest.version).toBe(11)
+    for (const [id, profile] of [
+      ['floating-museum-twin-finish-kit-v4', 'full'],
+      ['floating-museum-garden-edge-mobile-v11', 'mobile'],
+    ] as const) {
+      const asset = manifest.assets[id]
+      expect(asset.profile).toBe(profile)
+      const model = `games/${glassGameAssetPath(id)}`
+      expect(model).toBe(`${folder}/${asset.file}`)
+      const bytes = readFileSync(resolve(publicDirectory, model))
+      expect(bytes.byteLength).toBe(asset.bytes)
+      expect(createHash('sha256').update(bytes).digest('hex')).toBe(
+        asset.sha256,
+      )
+      const expected =
+        profile === 'full' ? [`${folder}/museum-jasmine-full-v11.webp`] : []
+      expect(gameModelDependencies(model, bytes)).toEqual(expected)
+      expect(
+        asset.dependencies.map(
+          (dependency: { uri: string }) => `${folder}/${dependency.uri}`,
+        ),
+      ).toEqual(expected)
+      for (const dependency of asset.dependencies) {
+        expect(dependency.native).toBe(false)
+        expect(dependency.mimeType).toBe('image/webp')
+        const image = readFileSync(
+          resolve(publicDirectory, folder, dependency.uri),
+        )
+        expect(image.byteLength).toBe(dependency.bytes)
+        expect(createHash('sha256').update(image).digest('hex')).toBe(
+          dependency.sha256,
+        )
       }
     }
   })

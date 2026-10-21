@@ -2,6 +2,7 @@
 
 import type { Camera, Vector3 } from 'three'
 import type { JourneyPoint } from '../content/museum-journey'
+import { JOURNEY_MEDALLION_SURFACE_Y } from './landmarks'
 
 const OVERVIEW_TARGET: JourneyPoint = [0, 0.88, 0.18]
 export const JOURNEY_DEFAULT_ORBIT = {
@@ -95,4 +96,36 @@ export function projectJourneyStage(
     y: (-scratch.y * 0.5 + 0.5) * height,
     visible,
   }
+}
+
+/** Keep the label leader below the pod while retaining its center's visibility and X. */
+export function projectJourneyStageLabel(
+  point: JourneyPoint,
+  camera: Camera,
+  width: number,
+  height: number,
+  scratch: Vector3,
+): JourneyStageProjection {
+  const projected = projectJourneyStage(point, camera, width, height, scratch)
+  if (!projected.visible) return projected
+
+  // This conservative envelope includes the footing, rim and front stars.
+  // Project all eight corners so inspection pitch/yaw cannot lift the badge
+  // into the front fascia. Tests compare it with the actual medallion meshes.
+  const baseY = point[1] - JOURNEY_MEDALLION_SURFACE_Y
+  for (let level = 0; level < 2; level++) {
+    for (let x = -1; x <= 1; x += 2) {
+      for (let z = -1; z <= 1; z += 2) {
+        scratch
+          .set(
+            point[0] + x * 0.5,
+            baseY + (level === 0 ? -0.065 : 0.17),
+            point[2] + z * 0.5,
+          )
+          .project(camera)
+        projected.y = Math.max(projected.y, (-scratch.y * 0.5 + 0.5) * height)
+      }
+    }
+  }
+  return projected
 }

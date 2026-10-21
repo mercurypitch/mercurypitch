@@ -1,10 +1,179 @@
 // Journey resource tests — retired parses dispose and hidden time cannot leak.
 
+import { createServer } from 'node:http'
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Texture } from 'three'
+import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { describe, expect, it, vi } from 'vitest'
 import { acceptJourneyResource, createJourneyFrameLoop, loadJourneyGltf, MAXIMUM_JOURNEY_FRAME_SECONDS, } from './resources'
 
 describe('journey glTF loading', () => {
+  it('cancels a pending external image request before publishing the parsed scene', async () => {
+    let imageRequested = false
+    let imageCancelled = false
+    const server = createServer((request, response) => {
+      if (request.url !== '/museum-jasmine-full-v11.webp') {
+        response.writeHead(404).end()
+        return
+      }
+      imageRequested = true
+      // Keep the real HTTP image response pending until the client cancels it.
+      response.on('close', () => {
+        imageCancelled = true
+      })
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string')
+      throw new Error('Missing test server port')
+    const controller = new AbortController()
+    const createBitmap = vi.fn()
+    vi.stubGlobal('self', globalThis)
+    vi.stubGlobal('createImageBitmap', createBitmap)
+    // The decoder remains real. Only the document transport and unused browser
+    // bitmap boundary are supplied; its external dependency uses actual fetch.
+    const fetchAsset = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          asset: { version: '2.0' },
+          scene: 0,
+          scenes: [{ nodes: [0] }],
+          nodes: [{ mesh: 0 }],
+          meshes: [
+            { primitives: [{ attributes: { POSITION: 0 }, material: 0 }] },
+          ],
+          accessors: [
+            {
+              componentType: 5126,
+              count: 3,
+              type: 'VEC3',
+              min: [0, 0, 0],
+              max: [0, 0, 0],
+            },
+          ],
+          materials: [
+            { pbrMetallicRoughness: { baseColorTexture: { index: 0 } } },
+          ],
+          textures: [{ source: 0 }],
+          images: [{ uri: 'museum-jasmine-full-v11.webp' }],
+        }),
+      ),
+    )
+    const result = loadJourneyGltf(
+      `http://127.0.0.1:${address.port}/museum.gltf`,
+      controller.signal,
+      { fetch: fetchAsset },
+    ).then(
+      (document) => {
+        document.dispose()
+        return { error: undefined }
+      },
+      (error: unknown) => ({ error }),
+    )
+    try {
+      await vi.waitFor(() => expect(imageRequested).toBe(true))
+      controller.abort()
+      await vi.waitFor(() => expect(imageCancelled).toBe(true))
+      expect(await result).toMatchObject({ error: { name: 'AbortError' } })
+      expect(createBitmap).not.toHaveBeenCalled()
+    } finally {
+      controller.abort()
+      server.closeAllConnections()
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      )
+      await result
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it.each([false, true])(
+    'retires a resolved parse with a failed texture dependency, aborted=%s',
+    async (aborted) => {
+      const bitmap = { width: 2048, height: 1024, close: vi.fn() }
+      const texture = new Texture(bitmap as unknown as ImageBitmap)
+      const geometry = new BoxGeometry()
+      const textured = new MeshBasicMaterial({ map: texture })
+      const missingTexture = new MeshBasicMaterial({ alphaTest: 0.5 })
+      const scene = new Group()
+      scene.add(
+        new Mesh(geometry, textured),
+        new Mesh(geometry, missingTexture),
+      )
+      const disposeGeometry = vi.spyOn(geometry, 'dispose')
+      const disposeTexture = vi.spyOn(texture, 'dispose')
+      const disposeTextured = vi.spyOn(textured, 'dispose')
+      const disposeMissing = vi.spyOn(missingTexture, 'dispose')
+      const controller = new AbortController()
+      // Three reports image failures through the manager, then resolves with
+      // that material's map null. The document can still own other images.
+      const parse = vi
+        .spyOn(GLTFLoader.prototype, 'parseAsync')
+        .mockImplementationOnce(async function (this: GLTFLoader) {
+          this.manager.itemError('botanical-leaves.webp')
+          if (aborted) controller.abort()
+          return { scene, animations: [] } as unknown as GLTF
+        })
+      const resizeImage = vi.fn().mockResolvedValue({
+        width: 1024,
+        height: 512,
+        close: vi.fn(),
+      })
+      const fetchAsset = vi
+        .fn()
+        .mockResolvedValue(new Response(new Uint8Array(64)))
+      try {
+        const pending = loadJourneyGltf('/garden.glb', controller.signal, {
+          fetch: fetchAsset,
+          assetProfile: 'mobile',
+          resizeImage,
+        })
+        if (aborted)
+          await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+        else
+          await expect(pending).rejects.toThrow(
+            'Journey asset has unavailable dependencies: /garden.glb. botanical-leaves.webp',
+          )
+        expect(parse).toHaveBeenCalledOnce()
+        expect(resizeImage).not.toHaveBeenCalled()
+        expect(disposeGeometry).toHaveBeenCalledOnce()
+        expect(disposeTexture).toHaveBeenCalledOnce()
+        expect(disposeTextured).toHaveBeenCalledOnce()
+        expect(disposeMissing).toHaveBeenCalledOnce()
+        expect(bitmap.close).toHaveBeenCalledOnce()
+        expect(bitmap.close.mock.invocationCallOrder[0]).toBeGreaterThan(
+          disposeTexture.mock.invocationCallOrder[0]!,
+        )
+
+        // A failed dependency belongs to one parse, not the shared decoder or
+        // a later document. Exercise the real parser for the next load.
+        fetchAsset.mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              asset: { version: '2.0' },
+              scene: 0,
+              scenes: [{ nodes: [0] }],
+              nodes: [{ name: 'healthy-next-document' }],
+            }),
+          ),
+        )
+        const next = await loadJourneyGltf(
+          '/next.gltf',
+          new AbortController().signal,
+          { fetch: fetchAsset },
+        )
+        expect(
+          next.scene.getObjectByName('healthy-next-document'),
+        ).toBeDefined()
+        next.dispose()
+        next.dispose()
+        expect(bitmap.close).toHaveBeenCalledOnce()
+      } finally {
+        vi.restoreAllMocks()
+      }
+    },
+  )
+
   it('profiles shared mobile images before publishing and owns the resized image through material replacement', async () => {
     const original = { width: 2048, height: 1024, close: vi.fn() }
     const resized = { width: 1024, height: 512, close: vi.fn() }

@@ -8,6 +8,10 @@ import type { GlassAssetQualityProfile } from './render-quality'
 const PROFILE_BUNDLES: Readonly<
   Record<string, Readonly<Record<GlassAssetQualityProfile, string>>>
 > = {
+  'floating-museum-twin-finish-kit-v4': {
+    full: 'floating-museum-twin-finish-kit-v4',
+    mobile: 'floating-museum-garden-edge-mobile-v11',
+  },
   [PEARL_QUARTER_TURN_BUNDLE_IDS.logical]: {
     full: PEARL_QUARTER_TURN_BUNDLE_IDS.desktop,
     mobile: PEARL_QUARTER_TURN_BUNDLE_IDS.mobile,

@@ -1,11 +1,14 @@
 // Journey resources — abortable glTF parsing and one foreground-owned frame clock.
 
-import type { AnimationClip, Group } from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import type { AnimationClip, Group, Object3D } from 'three'
+import { LoadingManager } from 'three'
+import { createGameGltfLoader } from '../render/asset-scene-loader'
 import type { ResizeAssetImage } from '../render/asset-texture-profile'
 import { applyAssetTextureProfile, collectAssetTextureImages, releaseAssetImage, } from '../render/asset-texture-profile'
 import { disposeObject } from '../render/dispose'
 import type { GlassAssetQualityProfile } from '../render/render-quality'
+
+export type JourneyAuthoredUnit = (name: string) => Object3D
 
 export interface JourneyGltfDocument {
   scene: Group
@@ -66,10 +69,16 @@ export async function loadJourneyGltf(
       `Journey asset is an unresolved Git LFS pointer: ${url}. Hydrate the runtime game assets with Git LFS, then reload the museum.`,
     )
   const resourcePath = url.slice(0, Math.max(0, url.lastIndexOf('/') + 1))
+  const failedDependencies: string[] = []
+  const manager = new LoadingManager()
+  manager.onError = (dependency) => failedDependencies.push(dependency)
+  const abort = () => manager.abort()
+  signal.addEventListener('abort', abort, { once: true })
   let parsed: ParsedJourneyGltf
   try {
     parsed = await (
-      options.parse ?? ((data, path) => new GLTFLoader().parseAsync(data, path))
+      options.parse ??
+      ((data, path) => createGameGltfLoader(manager).parseAsync(data, path))
     )(bytes, resourcePath)
   } catch (error) {
     if (signal.aborted) throw abortError()
@@ -77,6 +86,8 @@ export async function loadJourneyGltf(
     throw new Error(`Journey asset could not be parsed: ${url}.${detail}`, {
       cause: error,
     })
+  } finally {
+    signal.removeEventListener('abort', abort)
   }
   // Keep the decoded image owners even if presentation later replaces a material.
   let decodedImages = collectAssetTextureImages(parsed.scene)
@@ -94,6 +105,14 @@ export async function loadJourneyGltf(
   if (signal.aborted) {
     dispose()
     throw abortError()
+  }
+  // Three can resolve a scene after an image failure with its material map
+  // missing. Retire the other decoded resources before publishing that scene.
+  if (failedDependencies.length > 0) {
+    dispose()
+    throw new Error(
+      `Journey asset has unavailable dependencies: ${url}. ${failedDependencies.join(', ')}`,
+    )
   }
   try {
     await applyAssetTextureProfile(

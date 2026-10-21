@@ -6,7 +6,7 @@
 // cannot own these files. The module alias removes game code; this plugin
 // handles public assets, which Vite otherwise copies regardless of imports.
 
-import { GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS } from '@irchiinnuss/glass-game/assets'
+import { GLASS_GAME_DESKTOP_ONLY_DEPENDENCY_FILES, GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS, } from '@irchiinnuss/glass-game/assets'
 import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
@@ -30,14 +30,21 @@ export const NATIVE_DESKTOP_ONLY_GAME_ASSETS = Object.freeze(
   GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS.map(({ desktop }) => `games/${desktop}`),
 )
 
+/** Full-profile external images must not enter native through Vite's public copy. */
+export const NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES = Object.freeze(
+  GLASS_GAME_DESKTOP_ONLY_DEPENDENCY_FILES.map((file) => `games/${file}`),
+)
+
 /**
  * Retired exports kept in public for historical art comparison. Runtime
- * resolves the Cloudway v7 buffers and museum v8/v10 kits through its asset
+ * resolves the Cloudway v7 buffers and museum v8/v11 kits through its asset
  * registry; neither old bundle is a fallback or an external glTF dependency.
  */
 export const NATIVE_RETIRED_GAME_ASSETS = [
   'games/cloudway-v3/cloudway-platform-kit-v3.glb',
   'games/journey-map-v3/floating-museum-sculpture-kit-v3.glb',
+  'games/journey-map-v10/floating-museum-botanical-kit-v10.glb',
+  'games/journey-map-v10/manifest.json',
 ] as const
 
 /**
@@ -54,6 +61,7 @@ export const NATIVE_SOURCE_NORMAL_GAME_ASSETS = [
 export const NATIVE_EXCLUDED_GAME_ASSETS = Object.freeze([
   ...NATIVE_STANDALONE_ONLY_GAME_ASSETS,
   ...NATIVE_DESKTOP_ONLY_GAME_ASSETS,
+  ...NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES,
   ...NATIVE_RETIRED_GAME_ASSETS,
   ...NATIVE_SOURCE_NORMAL_GAME_ASSETS,
 ])
