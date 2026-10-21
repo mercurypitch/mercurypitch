@@ -21,6 +21,9 @@ Start with [MASTER-PLAN.md](MASTER-PLAN.md).
 | [lessons/05-breath-steady-note/](lessons/05-breath-steady-note/)   | Lesson 5, text only: facts, written lesson, web spec                                                                                                           |
 | [lessons/06-intervals/](lessons/06-intervals/)                     | Lesson 6, text only: facts, written lesson, web spec                                                                                                           |
 | [lessons/07-slides-sirens-range/](lessons/07-slides-sirens-range/) | Lesson 7, text only: facts, written lesson, web spec                                                                                                           |
+| [lessons/08-beat-tempo-backbeat/](lessons/08-beat-tempo-backbeat/) | Lesson 8, text only: facts, written lesson, web spec                                                                                                           |
+| [lessons/09-landing-a-leap/](lessons/09-landing-a-leap/)           | Lesson 9, text only: facts, written lesson, web spec                                                                                                           |
+| [lessons/10-major-minor/](lessons/10-major-minor/)                 | Lesson 10, text only: facts, written lesson, web spec                                                                                                          |
 | [research/](research/)                                             | The seven Phase 0 research reports and the stats-site snippets                                                                                                 |
 | [youtube/](youtube/)                                               | The YouTube upload guide for Lessons 1 and 2 (YOUTUBE.md), packaging for the trailer and Lessons 3 to 14, the thumbnails, end-screen maps and paste-ready text |
 
