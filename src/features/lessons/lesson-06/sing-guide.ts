@@ -22,7 +22,6 @@ import type { Voice } from '@/features/lessons/kit/voice-choice'
 import type { NoteEvent } from './examples'
 import { lineNotes, SING_BEAT_SEC, timed } from './examples'
 import { lineNames, SOLFEGE, TWINKLE } from './melody'
-import { spoken } from './tune-words'
 
 export type VersionNo = 1 | 2
 
@@ -97,10 +96,6 @@ const doName = (doMidi: number) => lineNames(TWINKLE[0], doMidi)[0]
 /** The readout, as markup: "do is D3, then F3", every sign spoken. */
 export const readoutHtml = (voice: Voice, shift: number): string =>
   `do is ${nameHtml(doName(versionDo(voice, 1, shift)))}, then ${nameHtml(doName(versionDo(voice, 2, shift)))}`
-
-/** The readout in words: "do is B flat 2, then D flat 3". */
-export const readoutSaid = (voice: Voice, shift: number): string =>
-  `do is ${spoken(doName(versionDo(voice, 1, shift)))}, then ${spoken(doName(versionDo(voice, 2, shift)))}`
 
 /** The ring's label: do's name and frequency, "Do: D3 · 147 Hz". */
 export const ringLabel = (doMidi: number): string =>

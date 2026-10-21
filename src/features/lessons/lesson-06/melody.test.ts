@@ -12,7 +12,8 @@
 import { describe, expect, it } from 'vitest'
 import { isBlack, signName, wordName } from '@/features/lessons/kit/notes'
 import { LEAP_BANK } from '@/lib/ear/banks'
-import { AULD, C4, classify, FS4, gapsOf, intervalName, lineMidis, lineNames, START_HI, START_LO, swapSizes, transpose, tuneMidis, TWINKLE, TWINKLE_GAPS, } from './melody'
+import { AULD, C4, classify, FS4, gapsOf, intervalName, lineMidis, lineNames, START_HI, START_LO, swapSizes, transpose, tuneMidis, TWINKLE, } from './melody'
+import { GAPS } from './tune-words'
 
 const STARTS = Array.from(
   { length: START_HI - START_LO + 1 },
@@ -58,8 +59,8 @@ describe('the melody data', () => {
 
   it('makes thirteen moves: one leap, six steps and six repeated notes', () => {
     // Assert: FACTS 22 and 23
-    expect(TWINKLE_GAPS).toEqual([0, 7, 0, 2, 0, -2, -2, 0, -1, 0, -2, 0, -2])
-    const kinds = TWINKLE_GAPS.map(classify)
+    expect(GAPS).toEqual([0, 7, 0, 2, 0, -2, -2, 0, -1, 0, -2, 0, -2])
+    const kinds = GAPS.map(classify)
     expect(kinds.filter((k) => k === 'leap')).toHaveLength(1)
     expect(kinds.filter((k) => k === 'step')).toHaveLength(6)
     expect(kinds.filter((k) => k === 'same')).toHaveLength(6)
