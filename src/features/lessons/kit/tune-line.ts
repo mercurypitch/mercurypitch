@@ -270,8 +270,14 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     }
   }
 
+  // a shape with no button on its drawing keeps no 44 px floor (tune-line-layout.ts)
+  const hasTargets = (): boolean =>
+    shape.beadButtons ||
+    (shape.gapButtons && shape.below === 'gaps') ||
+    shape.brackets.length > 0
+
   function measure(w: number, h: number): void {
-    const key = `${w} ${h} ${shape.lines.join(',')} ${rowsOf()} ${shape.names} ${shape.below} ${shape.brackets.length} ${shape.fill}`
+    const key = `${w} ${h} ${shape.lines.join(',')} ${rowsOf()} ${shape.names} ${shape.below} ${shape.brackets.length} ${shape.fill} ${hasTargets()}`
     if (key === lastKey && layout !== null) return
     lastKey = key
     layout = tuneLayout({
@@ -283,6 +289,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
       below: shape.below !== null,
       above: shape.brackets.length > 0,
       fill: shape.fill,
+      targets: hasTargets(),
     })
     placeButtons()
   }
