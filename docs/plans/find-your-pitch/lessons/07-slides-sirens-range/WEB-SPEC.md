@@ -435,18 +435,20 @@ word "Listening", and the Mercs skip their reactions (REQ-GVC-083).
 
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
 (its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
-elements each quiz binds and writes (`kit/quiz.ts:78-83`, `:195-199`); `lesson` optional, since the
-kit marks `lesson` done once every question has an answer (`:72-73`, `:295-300`); and a question
-`id` (`:40-44`).
+elements each quiz binds and writes (`kit/quiz.ts:81-86`, `:203-207`); `lesson` optional, since the
+kit marks `lesson` done once every question has an answer (`:75-76`, `:303-308`); and a question
+`id` (`:42-47`).
 
 - **Recall**: Lesson 3's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 3),
   under their Lesson 3 ids, `l03-q1` and `l03-q4`, shown to everyone (Lesson 3 is a prerequisite).
   Reshuffled from a seed of its own (keys `fyp-l07-recall-seed` and `fyp-l07-recall-v1`); earlier
   answers are never shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). It takes no
   `lesson`, so it marks nothing done. Neither question plays a sound. Question 1's "Try Lesson 3,
-  Step 1 again" is a plain link to `/learn/03#lesson`, opening in a new tab so the viewer keeps
-  their place here, never `data-goto-step`, which would move this page's own deck
-  (`kit/quiz.ts:303-320`), as Lesson 5's recall links them; question 4 has no step link.
+  Step 1 again" links to Lesson 3's page at that step, `/learn/03#step-1`, opening in a new tab so
+  the viewer keeps their place here, as Lesson 5's recall links them: the quiz's `away.href` is
+  `recallStepHref` (`lesson-05/quiz-questions.ts:19-21`, `lesson-05/recall.ts:21`), where the kit's
+  default would open `/learn/03#lesson` (`kit/quiz.ts:87-94`). It is never `data-goto-step`, which
+  would move this page's own deck (`kit/quiz.ts:311-328`). Question 4 has no step link.
 - **Quick check**: LESSON.md's four questions, ids `l07-q1` to `l07-q4`, keys `fyp-l07-seed` and
   `fyp-l07-quiz-v1`, and `lesson: 7`, so answering all four marks Lesson 7 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
@@ -754,7 +756,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
 7. The microphone's tracks stop at the end of each take, on leaving the section and when the tab is
    hidden (a spy on `MediaStreamTrack.stop`).
 8. The recall shows with an empty `fyp-done`, and answering both its questions marks nothing done;
-   its one step link is `<a href="/learn/03#lesson" target="_blank">`; answering all four
+   its one step link is `<a href="/learn/03#step-1" target="_blank">`; answering all four
    quick-check questions marks Lesson 7 done in the explorer; each feedback line starts "Right." or
    "Not quite.".
 9. Every practice link carries `?lesson=07`.
