@@ -225,3 +225,101 @@ test('a main-host course code launches the same course through the standalone St
   )
   expect(errors).toEqual([])
 })
+
+for (const viewport of [
+  { width: 320, height: 740 },
+  { width: 768, height: 1024 },
+  { width: 1280, height: 900 },
+]) {
+  test(`an unreadable saved course stays intact in the Games host at ${viewport.width}px @smoke`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    const key = 'beside-cue:cloudway-studio:v1'
+    const unreadableCode = '  cloudway:v2:future-course  '
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.addInitScript(
+      ({ storageKey, code }) => {
+        Object.defineProperty(navigator, 'clipboard', {
+          configurable: true,
+          value: {
+            writeText: async () => {
+              throw new DOMException('Denied', 'NotAllowedError')
+            },
+          },
+        })
+        // Seed once: reloading must read what the app preserved, not reset it.
+        if (sessionStorage.getItem('compatibility-seeded') !== null) return
+        localStorage.setItem(storageKey, code)
+        sessionStorage.setItem('compatibility-seeded', 'true')
+      },
+      { storageKey: key, code: unreadableCode },
+    )
+    await page.goto('/?devSeed&cold')
+    await page.getByRole('button', { name: /B-side games/u }).tap()
+    await page.getByRole('button', { name: /Little discoveries/u }).tap()
+    const status = page.getByRole('status')
+    await expect(status).toContainText('It has been kept.')
+    await expect
+      .poll(() =>
+        page.evaluate((storageKey) => localStorage.getItem(storageKey), key),
+      )
+      .toBe(unreadableCode)
+
+    await page.getByRole('button', { name: 'Balanced', exact: true }).tap()
+    await page
+      .getByRole('button', { name: 'Copy course code', exact: true })
+      .tap()
+    await expect(status).toContainText('It has been kept.')
+    await expect(status).toContainText('Select and copy')
+    const notice = await status.evaluate((node) => {
+      const box = node.getBoundingClientRect()
+      return {
+        left: box.left,
+        right: box.right,
+        width: innerWidth,
+        overflow: node.scrollWidth - node.clientWidth,
+        fontSize: Number.parseFloat(getComputedStyle(node).fontSize),
+      }
+    })
+    expect(notice.left).toBeGreaterThanOrEqual(0)
+    expect(notice.right).toBeLessThanOrEqual(notice.width)
+    expect(notice.overflow).toBeLessThanOrEqual(1)
+    expect(notice.fontSize).toBeGreaterThanOrEqual(14)
+
+    await page.getByLabel('Course code to import').fill('cloudway:v9:invalid')
+    await page
+      .getByRole('button', { name: 'Load course code', exact: true })
+      .tap()
+    await expect(page.getByRole('alert')).toBeVisible()
+    await page.getByLabel('Course seed').fill('')
+    await page.getByRole('button', { name: 'Gentle', exact: true }).tap()
+    expect(
+      await page.evaluate(
+        (storageKey) => localStorage.getItem(storageKey),
+        key,
+      ),
+    ).toBe(unreadableCode)
+
+    await page.reload()
+    await page.getByRole('button', { name: /B-side games/u }).tap()
+    await page.getByRole('button', { name: /Little discoveries/u }).tap()
+    await expect(status).toContainText('It has been kept.')
+    expect(
+      await page.evaluate(
+        (storageKey) => localStorage.getItem(storageKey),
+        key,
+      ),
+    ).toBe(unreadableCode)
+    await page.getByLabel('Course seed').fill('my-replacement-course')
+    await expect(status).not.toBeVisible()
+    const replacement = await page.evaluate(
+      (storageKey) => localStorage.getItem(storageKey),
+      key,
+    )
+    expect(replacement).toMatch(/^cloudway:v1:/u)
+    expect(replacement).not.toBe(unreadableCode)
+    expect(errors).toEqual([])
+  })
+}

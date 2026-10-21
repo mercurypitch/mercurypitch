@@ -78,6 +78,138 @@ describe('creator art studies', () => {
 })
 
 describe('portable course sharing', () => {
+  it.each([
+    ['unsupported', ' \ncloudway:v27:future-recipe\t'],
+    ['corrupt', '{broken'],
+    ['empty', ''],
+  ])(
+    'preserves %s saved code through passive studio actions',
+    async (_kind, saved) => {
+      window.localStorage.setItem(CLOUDWAY_RECIPE_STORAGE_KEY, saved)
+      const write = vi.spyOn(window.localStorage, 'setItem')
+      const view = render(() => <CreatorGallery onExit={() => undefined} />)
+      expect(window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)).toBe(
+        saved,
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your saved course code cannot be read here',
+      )
+      expect(screen.getByLabelText('Course seed')).toHaveValue(
+        'celestial-prime',
+      )
+
+      fireEvent.click(
+        screen.getByRole('button', { name: /The archive after dark/ }),
+      )
+      expect(screen.getByTestId('study')).toBeVisible()
+      fireEvent.click(screen.getByTestId('study'))
+      fireEvent.click(screen.getByRole('button', { name: 'Copy course code' }))
+      await vi.waitFor(() =>
+        expect(screen.getByLabelText('Your course code')).toBeVisible(),
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your saved course code cannot be read here',
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'Launch expedition' }))
+      expect(screen.getByTestId('study')).toBeVisible()
+      fireEvent.click(screen.getByTestId('study'))
+
+      fireEvent.input(screen.getByLabelText('Course code to import'), {
+        target: { value: 'cloudway:v99:unsupported' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Load course code' }))
+      expect(screen.getByRole('alert')).toBeVisible()
+      // Selecting the already active option is not a change to the recipe.
+      fireEvent.click(screen.getByRole('button', { name: 'Balanced' }))
+      expect(window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)).toBe(
+        saved,
+      )
+      expect(write).not.toHaveBeenCalled()
+      view.unmount()
+      render(() => <CreatorGallery onExit={() => undefined} />)
+      expect(window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)).toBe(
+        saved,
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your saved course code cannot be read here',
+      )
+    },
+  )
+
+  it('keeps an unreadable saved code through partial invalid edits and replaces it after a valid edit', () => {
+    const saved = 'cloudway:v27:future-recipe'
+    window.localStorage.setItem(CLOUDWAY_RECIPE_STORAGE_KEY, saved)
+    render(() => <CreatorGallery onExit={() => undefined} />)
+    fireEvent.input(screen.getByLabelText('Course seed'), {
+      target: { value: '' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Gentle' }))
+    expect(window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)).toBe(saved)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your saved course code cannot be read here',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Launch expedition' }))
+    expect(screen.getByRole('alert')).toBeVisible()
+    expect(window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)).toBe(saved)
+    fireEvent.input(screen.getByLabelText('Course seed'), {
+      target: { value: 'my-replacement' },
+    })
+    expect(
+      decodeProceduralCourseCode(
+        window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)!,
+      ),
+    ).toMatchObject({ seed: 'my-replacement', difficulty: 'gentle' })
+    expect(
+      screen.queryByText(/Your saved course code cannot be read here/),
+    ).not.toBeInTheDocument()
+  })
+
+  it('deliberately replaces an unreadable code when a valid imported recipe matches the displayed defaults', () => {
+    window.localStorage.setItem(CLOUDWAY_RECIPE_STORAGE_KEY, '{broken')
+    const code = encodeProceduralCourseCode({
+      seed: 'celestial-prime',
+      melodyLessonId: 'sunlit-steps-v1',
+    })
+    render(() => <CreatorGallery onExit={() => undefined} />)
+    fireEvent.input(screen.getByLabelText('Course code to import'), {
+      target: { value: code },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Load course code' }))
+    expect(window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)).toBe(code)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Course settings loaded',
+    )
+    expect(
+      screen.queryByText(/Your saved course code cannot be read here/),
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not write when reading stored settings is blocked and leaves studies usable', () => {
+    window.localStorage.setItem(
+      CLOUDWAY_RECIPE_STORAGE_KEY,
+      'cloudway:v27:kept',
+    )
+    const read = vi
+      .spyOn(window.localStorage, 'getItem')
+      .mockImplementation(() => {
+        throw new Error('Storage denied')
+      })
+    const write = vi.spyOn(window.localStorage, 'setItem')
+    render(() => <CreatorGallery onExit={() => undefined} />)
+    expect(write).not.toHaveBeenCalled()
+    expect(screen.getByText(/Saved settings are unavailable/)).toBeVisible()
+    fireEvent.click(
+      screen.getByRole('button', { name: /The archive after dark/ }),
+    )
+    expect(screen.getByTestId('study')).toBeVisible()
+    fireEvent.click(screen.getByTestId('study'))
+    expect(write).not.toHaveBeenCalled()
+    read.mockRestore()
+    expect(window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)).toBe(
+      'cloudway:v27:kept',
+    )
+  })
+
   it('imports a typed recipe, persists it and launches the same isolated course', () => {
     const options = {
       seed: 42,
@@ -180,14 +312,26 @@ describe('portable course sharing', () => {
     expect(screen.queryByTestId('study')).not.toBeInTheDocument()
   })
 
-  it('recovers corrupt stored settings and contains blocked storage', () => {
+  it('keeps the unreadable code when a deliberate replacement cannot be saved', () => {
     window.localStorage.setItem(CLOUDWAY_RECIPE_STORAGE_KEY, '{broken')
-    vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
-      throw new Error('Storage denied')
-    })
+    const write = vi
+      .spyOn(window.localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('Storage denied')
+      })
     render(() => <CreatorGallery onExit={() => undefined} />)
     expect(screen.getByLabelText('Course seed')).toHaveValue('celestial-prime')
-    expect(screen.getByText(/Settings cannot be saved/)).toBeVisible()
+    expect(write).not.toHaveBeenCalled()
+    fireEvent.input(screen.getByLabelText('Course seed'), {
+      target: { value: 'replacement' },
+    })
+    expect(screen.getByText(/Saved settings are unavailable/)).toBeVisible()
+    expect(window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)).toBe(
+      '{broken',
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your saved course code cannot be read here',
+    )
     fireEvent.click(
       screen.getByRole('button', { name: /The archive after dark/ }),
     )

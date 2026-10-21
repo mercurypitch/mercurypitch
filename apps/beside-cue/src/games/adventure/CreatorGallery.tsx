@@ -3,7 +3,7 @@ import type { LevelDefinition } from '@irchiinnuss/glass-game'
 import type { ProceduralGeneratorOptions } from '@irchiinnuss/glass-game/creator-levels'
 import { decodeProceduralCourseCode, encodeProceduralCourseCode, normalizeProceduralCourseOptions, PROCEDURAL_CODE_LIMIT, PROCEDURAL_SEED_LIMIT, } from '@irchiinnuss/glass-game/creator-levels'
 import { CLOUDWAY_PRISMATIC_CAUSEWAY, CLOUDWAY_THAWING_SONG_ALCOVE, createProceduralCourse, crystalInteriorStudy, GLASS_ARCHIVE_HUSH, GLASS_UNBROKEN_ARCHIVE, GLASSWARE_TRIO_STUDY, livingCrystalStudy, } from '@irchiinnuss/glass-game/creator-levels'
-import { createEffect, createSignal, For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { AdventureScreen } from './AdventureScreen'
 import styles from './CreatorGallery.module.css'
 
@@ -118,48 +118,73 @@ const studies = [
 export const CLOUDWAY_RECIPE_STORAGE_KEY = 'beside-cue:cloudway-studio:v1'
 
 function initialRecipe() {
-  try {
-    const saved = window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)
-    if (saved !== null) return decodeProceduralCourseCode(saved)
-  } catch {
-    // A blocked store or an obsolete recipe must not prevent opening studies.
+  const fallback = {
+    recipe: normalizeProceduralCourseOptions({
+      seed: 'celestial-prime',
+      melodyLessonId: 'sunlit-steps-v1',
+    }),
+    unreadableSavedRecipe: false,
+    storageUnavailable: false,
   }
-  return normalizeProceduralCourseOptions({
-    seed: 'celestial-prime',
-    melodyLessonId: 'sunlit-steps-v1',
-  })
+  let saved: string | null
+  try {
+    saved = window.localStorage.getItem(CLOUDWAY_RECIPE_STORAGE_KEY)
+  } catch {
+    return { ...fallback, storageUnavailable: true }
+  }
+  if (saved === null) return fallback
+  try {
+    return { ...fallback, recipe: decodeProceduralCourseCode(saved) }
+  } catch {
+    return { ...fallback, unreadableSavedRecipe: true }
+  }
 }
 
 export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
+  const initial = initialRecipe()
   const [level, setLevel] = createSignal<LevelDefinition>()
-  const [recipe, setRecipe] = createSignal(initialRecipe())
+  const [recipe, setRecipe] = createSignal(initial.recipe)
   const [courseCode, setCourseCode] = createSignal('')
   const [importCode, setImportCode] = createSignal('')
   const [notice, setNotice] = createSignal('')
   const [error, setError] = createSignal('')
-  const [storageUnavailable, setStorageUnavailable] = createSignal(false)
+  const [storageUnavailable, setStorageUnavailable] = createSignal(
+    initial.storageUnavailable,
+  )
+  const [unreadableSavedRecipe, setUnreadableSavedRecipe] = createSignal(
+    initial.unreadableSavedRecipe,
+  )
   const seed = () => String(recipe().seed)
   const difficulty = () => recipe().difficulty
   const lesson = () => recipe().melodyLessonId
   const fog = () => recipe().fogTheme
 
-  createEffect(() => {
+  function persistRecipe(next: ProceduralGeneratorOptions) {
     let code: string
     try {
-      code = encodeProceduralCourseCode(recipe())
+      code = encodeProceduralCourseCode(next)
     } catch {
       return // A partly entered seed is not a saved recipe.
     }
     try {
       window.localStorage.setItem(CLOUDWAY_RECIPE_STORAGE_KEY, code)
       setStorageUnavailable(false)
+      setUnreadableSavedRecipe(false)
     } catch {
       setStorageUnavailable(true)
     }
-  })
+  }
 
   function updateRecipe(changes: Partial<ProceduralGeneratorOptions>) {
-    setRecipe((current) => ({ ...current, ...changes }))
+    const current = recipe()
+    const changed = (
+      Object.keys(changes) as (keyof ProceduralGeneratorOptions)[]
+    ).some((key) => changes[key] !== current[key])
+    if (changed) {
+      const next = { ...current, ...changes }
+      setRecipe(next)
+      persistRecipe(next)
+    }
     setCourseCode('')
     setNotice('')
     setError('')
@@ -219,6 +244,7 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
     try {
       const decoded = decodeProceduralCourseCode(importCode())
       setRecipe(decoded)
+      persistRecipe(decoded)
       setCourseCode('')
       setNotice('Course settings loaded. Launch when you are ready.')
     } catch (cause) {
@@ -422,8 +448,13 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
                   onClick={(event) => event.currentTarget.select()}
                 />
               </Show>
-              <Show when={notice()}>
+              <Show when={unreadableSavedRecipe() || notice()}>
                 <p role="status" class={styles.notice}>
+                  <Show when={unreadableSavedRecipe()}>
+                    Your saved course code cannot be read here. It has been
+                    kept. A valid settings change or code import will replace
+                    it.{' '}
+                  </Show>
                   {notice()}
                 </p>
               </Show>
@@ -434,8 +465,8 @@ export function CreatorGallery(props: { onExit(): void; assetBase?: string }) {
               </Show>
               <Show when={storageUnavailable()}>
                 <p class={styles.notice}>
-                  Settings cannot be saved on this device. Keep a course code to
-                  return to this expedition.
+                  Saved settings are unavailable on this device. Keep a course
+                  code to return to this expedition.
                 </p>
               </Show>
             </section>
