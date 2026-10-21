@@ -20,7 +20,9 @@
 // crotchets stay 44 px and its last note takes what is left, and once the
 // last gap's button would meet the join's, every gap button shifts left
 // together, never by more than half a crotchet, so each still lies under
-// its own gap.
+// its own gap. A drawing with no buttons on it (a hero's compact line,
+// whose buttons sit beside it) has no target to keep at 44 px, so its
+// crotchets share the width however narrow it is, and every note shows.
 
 /** The smallest target, px (WCAG 2.5.5, the series' rule). */
 export const MIN_TARGET = 44
@@ -55,6 +57,11 @@ export interface TuneLayoutSpec {
   readonly above: boolean
   /** Spread the rows over the whole height (the compact line), rather than at most ROW_MAX apart. */
   readonly fill?: boolean
+  /**
+   * Whether any bead, gap or bracket is a button (the default). Without one
+   * a column keeps no MIN_TARGET floor, so a narrow line still fits.
+   */
+  readonly targets?: boolean
 }
 
 /** One drawn line: its band of rows, its columns and strips, and its targets. */
@@ -98,18 +105,26 @@ export interface TuneLayout {
   readonly shift: number
 }
 
-/** A line's crotchet width: the width over its crotchets, but never under MIN_TARGET. */
-export function crotchetOf(width: number, beats: readonly number[]): number {
+/**
+ * A line's crotchet width: the width over its crotchets, but never under
+ * `floor`, MIN_TARGET while its columns are buttons and 0 for a drawing alone.
+ */
+export function crotchetOf(
+  width: number,
+  beats: readonly number[],
+  floor = MIN_TARGET,
+): number {
   const total = beats.reduce((s, b) => s + b, 0)
-  return Math.max(MIN_TARGET, width / Math.max(1, total))
+  return Math.max(floor, width / Math.max(1, total))
 }
 
 /** A line's columns: each note `beats` crotchets wide, the last taking what is left. */
 export function columnsOf(
   width: number,
   beats: readonly number[],
+  floor = MIN_TARGET,
 ): { x: number; w: number }[] {
-  const c = crotchetOf(width, beats)
+  const c = crotchetOf(width, beats, floor)
   const cols: { x: number; w: number }[] = []
   let x = 0
   beats.forEach((b, i) => {
@@ -154,6 +169,10 @@ function vertical(spec: TuneLayoutSpec): Vertical {
   }
 }
 
+/** The least a crotchet's column may be: MIN_TARGET where it is a button, else nothing. */
+const floorOf = (spec: TuneLayoutSpec): number =>
+  spec.targets === false ? 0 : MIN_TARGET
+
 function lineBox(spec: TuneLayoutSpec, v: Vertical, k: number): LineBox {
   const y0 = v.top + k * v.perLine
   const aboveH = spec.above ? STRIP_H : 0
@@ -161,7 +180,7 @@ function lineBox(spec: TuneLayoutSpec, v: Vertical, k: number): LineBox {
   const bandBottom = bandTop + v.band
   const namesY = spec.names ? bandBottom + NAMES_H / 2 : null
   const belowTop = bandBottom + (spec.names ? NAMES_H : 0)
-  const cols = columnsOf(spec.width, spec.beats[k])
+  const cols = columnsOf(spec.width, spec.beats[k], floorOf(spec))
   return {
     bandTop,
     bandBottom,
@@ -180,10 +199,14 @@ function lineBox(spec: TuneLayoutSpec, v: Vertical, k: number): LineBox {
  * strip stay its join's: the overlap of its last inner gap's button with
  * the join's, at most half a crotchet.
  */
-export function gapShift(width: number, beats: readonly number[]): number {
-  const cols = columnsOf(width, beats)
+export function gapShift(
+  width: number,
+  beats: readonly number[],
+  floor = MIN_TARGET,
+): number {
+  const cols = columnsOf(width, beats, floor)
   if (cols.length < 2) return 0
-  const c = crotchetOf(width, beats)
+  const c = crotchetOf(width, beats, floor)
   const lastInner = cols[cols.length - 1].x
   return Math.min(c / 2, Math.max(0, lastInner + c / 2 - (width - c)))
 }
@@ -191,17 +214,18 @@ export function gapShift(width: number, beats: readonly number[]): number {
 /** Lays a tune's lines out on a `width` by `height` canvas. */
 export function tuneLayout(spec: TuneLayoutSpec): TuneLayout {
   const v = vertical(spec)
+  const floor = floorOf(spec)
   const lines = spec.beats.map((_, k) => lineBox(spec, v, k))
   const joined = spec.beats.length > 1
   const shift = joined
     ? Math.max(
         0,
-        ...spec.beats.slice(0, -1).map((b) => gapShift(spec.width, b)),
+        ...spec.beats.slice(0, -1).map((b) => gapShift(spec.width, b, floor)),
       )
     : 0
   const gaps: GapBox[] = []
   lines.forEach((L, k) => {
-    const c = crotchetOf(spec.width, spec.beats[k])
+    const c = crotchetOf(spec.width, spec.beats[k], floor)
     const strip = (
       at: { top: number; bottom: number } | null,
       x: number,

@@ -6,7 +6,9 @@
 // (a 344 px phone, where the minim's column comes to 44 px) to 1440 px,
 // every bead, gap and bracket target is at least 44 px each way and none
 // overlaps another, each gap's target lies under its own gap, and the move
-// between the lines sits at the end of line 1's strip.
+// between the lines sits at the end of line 1's strip. A drawing with no
+// buttons on it (the hero's compact line) keeps no floor, so all seven of
+// its notes fit a phone's 176 px.
 
 import { describe, expect, it } from 'vitest'
 import type { Rect, TuneLayout, TuneLayoutSpec } from './tune-line-layout'
@@ -160,6 +162,34 @@ describe('tuneLayout', () => {
     expect(a.rowGap).toBeCloseTo(9, 6)
     expect(a.bandBottom - a.bandTop).toBeCloseTo(97, 6)
   })
+
+  it('fits every note of a line with no buttons on it: eight crotchets in 176 px', () => {
+    // Act: the hero's compact line between the Mercs on a 390 px phone
+    const T = tuneLayout({
+      width: 176,
+      height: 150,
+      beats: [LINE],
+      rows: 16,
+      names: false,
+      below: false,
+      above: false,
+      fill: true,
+      targets: false,
+    })
+
+    // Assert: 22 px a crotchet and 44 the minim, the last ending at the line's end
+    const cols = T.lines[0].cols
+    expect(cols.map((c) => c.w)).toEqual([...Array(6).fill(22), 44])
+    expect(cols[6].x + cols[6].w).toBe(176)
+  })
+
+  it('keeps the 44 px floor, and every layout as it was, wherever a column is a button', () => {
+    for (const state of STATES)
+      for (const width of [300, 308, 324, 339, 354, 640, 1440])
+        expect(tuneLayout({ ...state, width, targets: true })).toEqual(
+          tuneLayout({ ...state, width }),
+        )
+  })
 })
 
 describe('columnsOf', () => {
@@ -182,6 +212,15 @@ describe('columnsOf', () => {
         .slice(0, 6)
         .every((c) => c.w === 44),
     ).toBe(true)
+  })
+
+  it('lets a drawing with no buttons share any width, with no floor', () => {
+    // Act
+    const cols = columnsOf(176, LINE, 0)
+
+    // Assert: no column runs past the line, and none is empty
+    expect(cols.map((c) => c.w)).toEqual([...Array(6).fill(22), 44])
+    expect(cols.every((c) => c.w > 0 && c.x + c.w <= 176)).toBe(true)
   })
 })
 

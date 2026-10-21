@@ -11,9 +11,11 @@
 // two games answer by keys, and Space replays only off a button. At 390 x
 // 844, 375 and 360 px wide, every step's stage fits with every target at
 // least 44 px square and none overlapping, free play at every start from
-// C4 to B4; at 1024 x 640 the stage fits the screen under the masthead. A
-// real-mouse drag of the line closes it, since a drag slides the start
-// and must not land as a tap.
+// C4 to B4; at 390 and 360 px the hero's compact line, which has no
+// buttons, draws all seven notes from C and from F sharp; at 1024 x 640
+// the stage fits the screen under the masthead. A real-mouse drag of the
+// line closes it, since a drag slides the start and must not land as a
+// tap.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -93,6 +95,60 @@ async function expectTargets(root: Locator, what: string): Promise<void> {
 
 const sideways = (page: Page): Promise<number> =>
   page.evaluate(() => document.documentElement.scrollWidth)
+
+interface Drawn {
+  /** The canvas's width, px. */
+  readonly width: number
+  /** Each bead's left and right edge, px, left to right. */
+  readonly beads: readonly { readonly from: number; readonly to: number }[]
+}
+
+/**
+ * The hero's compact line as its canvas draws it. Its beads are not
+ * buttons, so the pixels are the only record of where each one lands: a
+ * bead is filled at 82 % (kit/tune-line-draw.ts), and the rows and the
+ * line through the beads are fainter, so every run of columns holding a
+ * near-solid pixel is one bead.
+ */
+function heroBeads(page: Page): Promise<Drawn> {
+  return page.locator('#heroTune canvas').evaluate((el) => {
+    const canvas = el as HTMLCanvasElement
+    const { width, height } = canvas
+    const data = canvas.getContext('2d')?.getImageData(0, 0, width, height).data
+    const beads: { from: number; to: number }[] = []
+    if (data === undefined) return { width, beads }
+    let from = -1
+    for (let x = 0; x <= width; x++) {
+      let solid = false
+      for (let y = 0; x < width && y < height && !solid; y++)
+        solid = data[(y * width + x) * 4 + 3] > 190
+      if (solid && from < 0) from = x
+      if (!solid && from >= 0) {
+        beads.push({ from, to: x })
+        from = -1
+      }
+    }
+    return { width, beads }
+  })
+}
+
+/** All seven of the hero line's notes drawn, the last ending inside the line. */
+async function expectWholeLine(page: Page, when: string): Promise<void> {
+  await page.locator('#heroTune').scrollIntoViewIfNeeded()
+  // a lit bead's glow joins it to its neighbours: wait for the light to go
+  await expect
+    .poll(async () => (await heroBeads(page)).beads.length, {
+      message: `${when}: seven beads drawn`,
+      timeout: 5_000,
+    })
+    .toBe(7)
+  const { width, beads } = await heroBeads(page)
+  expect(beads[0].from, `${when}: the first bead`).toBeGreaterThan(0)
+  expect(
+    beads[6].to,
+    `${when}: the last bead ends inside the line`,
+  ).toBeLessThan(width)
+}
 
 test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
   // every move lands at once, so a key press meets the state it changed
@@ -370,6 +426,28 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
       expect(await sideways(page)).toBe(390)
     })
   })
+
+  // the hero's compact line has no buttons, so it keeps no 44 px column and fits a phone
+  for (const width of [360, 390]) {
+    test(`at ${width} px the hero's line shows all seven notes, from C and from F sharp`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/learn/06')
+      await expectWholeLine(page, 'from C')
+
+      const fromFs = page.locator('#predict [data-play="fs"]')
+      await page.locator('#predict [data-choice="gaps"]').click()
+      await fromFs.click()
+      await expect(page.locator('#heroTune [data-hero-said]')).toHaveText(
+        'Twinkle from F sharp',
+      )
+      await expect(fromFs).not.toHaveClass(/\bis-on\b/, { timeout: 10_000 })
+
+      await expectWholeLine(page, 'from F sharp')
+      expect(await sideways(page)).toBe(width)
+    })
+  }
 
   for (const width of [360, 375]) {
     test(`at ${width} px wide nothing scrolls sideways, and every target keeps 44 px`, async ({
