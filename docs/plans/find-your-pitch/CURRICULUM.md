@@ -67,7 +67,7 @@ goes in the thumbnail text, the first line of the description and the cold open 
 | 8   | Theory           | Beat, tempo and the backbeat          | T05, T06               | Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?                   |
 | 9   | Voice            | Landing a leap                        | S09, S10               | How do you land a note you have to leap to?                                                          |
 | 10  | Theory           | Major and minor                       | T14, T15a, T19 (intro) | Which single note turns a major chord into a minor one?                                              |
-| 11  | Voice            | Registers and the break               | S12                    | Why does your voice flip at roughly the same note every time you slide up?                           |
+| 11  | Voice            | Registers and the break               | S12                    | Why does your voice sometimes flip as you slide up?                                                  |
 | 12  | Theory           | Chords and the four-chord song        | T19, T20, T21          | How can two songs share the same four chords and still sound different?                              |
 | 13  | Voice            | Resonance and vowels                  | T28, S13, S14          | If "ee" and "ah" sung on the same note draw the same pitch line, what makes them sound different?    |
 | 14  | Voice and theory | Phrasing: sing a whole song           | S16, S17, T22 (light)  | If you can hit every note of a song, what is still missing between correct and compelling?           |
@@ -274,9 +274,10 @@ lines wait on the vocal coach's sign-off, and its page publishes after `/learn/0
 - Misconception: "A crack means you're doing it wrong." (Register breaks are a normal transition,
   Henrich 2006.)
 - Signature: the siren's line crossing a shaded seam, with the seam narrowing over repetitions.
-- Checkpoint: a slow "ng" slide across your break, quietly.
-- Practise: the Siren and Slide exercises (need slugs). The app does not detect registers; teach
-  it conceptually.
+- Checkpoint: one slow, quiet siren on "ng", up only as far as is easy.
+- Practise: the Siren exercise (`/pitch-training?lesson=11`, then tap Siren / Range Explorer;
+  opening it on its own needs a slug, § 4 item 1). Slide In/Out is not linked: it rewards a quick
+  slide. The app does not detect registers; teach it conceptually.
 - Facts: Henrich (2006); Arneson on register coordination. Never frame registers as a problem.
 
 **Lesson 12. Chords and the four-chord song** (written: the lesson, its facts and its page spec are
@@ -375,7 +376,7 @@ only ever needs Season 1 topics, which is why T15 is split into T15a and T15b.
 | S09 | Singing steps: five-note scales, then the octave           | S05, T09      | 1                 |
 | S10 | Singing leaps: thirds, fifth, fourth, octave; arpeggios    | S09, T12      | 1                 |
 | S11 | Echo and sight-sing short melodies                         | S10, T10      | 2                 |
-| S12 | Registers: chest, head, falsetto, mix; the break           | S07, S08      | 1                 |
+| S12 | Registers: chest, head, falsetto; the break                | S07, S08      | 1                 |
 | S13 | Resonance and brightness                                   | S12, T28      | 1                 |
 | S14 | Vowels                                                     | S13           | 1                 |
 | S15 | Consonants and diction                                     | S14           | 2                 |
@@ -497,7 +498,7 @@ tests, estimated as such:
    Power" says "Build breath support"; "Reach New Notes" says "Extend your range"; "Tuning & Ear"
    says "Your voice can only sing as true as your ear can hear"), focus, goals and curated videos,
    checked against the playbook's claims rules (the Phase 1 App content track). Until then Lessons
-   5, 7 and 9 do not link the Ascent.
+   5, 7, 9 and 11 do not link the Ascent.
 
 Phase 1's App exit is every Lesson 2 to 7 link opening its drill. The Arc B items (the Lesson 9
 and 10 interval sets, Chord Stacker triads) are in the Phase 2 engineering track, and Phase 2's
