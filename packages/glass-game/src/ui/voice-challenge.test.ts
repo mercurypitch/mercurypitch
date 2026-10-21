@@ -2,11 +2,12 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ChallengeDefinition, GameEvent, LevelDefinition, PitchObservation, } from '../contracts'
+import { formatArchiveNote, resolvePitchStepTarget, } from '../core/archive-notes'
 import { createGlassGame } from '../core/game'
 import type { GlassSound, GlassVoiceSession } from '../host'
 import { createAdventureVoiceChallenge } from './adventure-voice-challenge'
 import type { MicrophoneIssue } from './mic-error'
-import { createVoiceChallenge } from './voice-challenge'
+import { createVoiceChallenge, readVoicePitchTargets } from './voice-challenge'
 
 const HOLD = {
   requiredSeconds: 0.1,
@@ -111,7 +112,10 @@ class FakeSound implements GlassSound {
   }
 }
 
-function levelWith(challenge: ChallengeDefinition): LevelDefinition {
+function levelWith(
+  challenge: ChallengeDefinition,
+  completion?: 'shatter' | 'awaken',
+): LevelDefinition {
   return {
     id: 'voice-challenge-test',
     title: 'Voice challenge test',
@@ -146,6 +150,23 @@ function levelWith(challenge: ChallengeDefinition): LevelDefinition {
         variant: 'goblet',
         optional: false,
         challenge,
+        ...(completion === undefined ? {} : { completion }),
+        ...(completion === 'awaken'
+          ? {
+              mount: {
+                kind: 'plinth' as const,
+                solidId: 'vessel-plinth',
+                height: 0.3,
+                radiusTop: 0.3,
+                radiusBottom: 0.35,
+                facingYaw: 0,
+                presentation: {
+                  role: 'plinth' as const,
+                  material: 'stone' as const,
+                },
+              },
+            }
+          : {}),
       },
     ],
     exit: {
@@ -186,8 +207,9 @@ function harness(
   suppliedVoices: FakeVoice[] = [new FakeVoice()],
   suppliedSounds: FakeSound[] = [new FakeSound()],
   routed = false,
+  completion?: 'shatter' | 'awaken',
 ) {
-  const level = levelWith(challenge)
+  const level = levelWith(challenge, completion)
   const game = createGlassGame(level)
   for (let index = 0; index < 5; index++)
     game.step({ moveX: 0, moveZ: 0, jumpDown: false }, 1 / 60, index * 16)
@@ -318,6 +340,58 @@ function beginnerWaveCents(seconds: number): number {
 }
 
 describe('voice challenge controller', () => {
+  it('keeps written archive notes, the heard reference and scoring together when recalibrating', async () => {
+    const challenge = {
+      kind: 'hold',
+      step: { target: 'comfortable', archiveNoteDegree: 2, hold: HOLD },
+    } as const
+    const voice = new FakeVoice()
+    const sound = new FakeSound()
+    const fixture = harness(
+      challenge,
+      {
+        'comfortable-note': '57',
+        'comfortable-pair': JSON.stringify({ version: 1, low: 50, high: 70 }),
+      },
+      [voice],
+      [sound],
+      false,
+      'awaken',
+    )
+    const readWrittenNote = () =>
+      resolvePitchStepTarget(
+        challenge.step,
+        readVoicePitchTargets({
+          readPreference: (key) => fixture.preferences.get(key) ?? null,
+        }),
+      )!
+    expect(formatArchiveNote(readWrittenNote())).toBe('E4')
+    expect(fixture.controller.snapshot().targets).toEqual({
+      comfortable: 57,
+      low: 50,
+      high: 70,
+    })
+    await fixture.controller.start('vessel')
+    expect(sound.references).toEqual([readWrittenNote()])
+    expect(fixture.game.snapshot().activeEncounter?.targetMidi).toBe(
+      readWrittenNote(),
+    )
+
+    fixture.setClock(1100)
+    fixture.controller.refind()
+    for (let sequence = 0; sequence <= 18; sequence++)
+      fixture.emit(voice, observation(sequence, 60, 1125 + sequence * 25))
+    await flush()
+    expect(formatArchiveNote(readWrittenNote())).toBe('G4')
+    expect(sound.references).toEqual([64, 67])
+    expect(fixture.controller.snapshot().target).toBe(readWrittenNote())
+    expect(fixture.game.snapshot().activeEncounter?.targetMidi).toBe(
+      readWrittenNote(),
+    )
+    expect(voice.subscriptions).toBe(1)
+    expect(fixture.events).toEqual([])
+  })
+
   it.each([false, true])(
     'finds a new note within the engaged challenge and keeps its microphone (routed: %s)',
     async (routed) => {
@@ -651,6 +725,55 @@ describe('voice challenge controller', () => {
     expect(fixture.controller.snapshot().mode).toBe('off')
     expect(fixture.sounds[0].shatterCount).toBe(1)
   })
+
+  it.each([
+    ['pitch', false],
+    ['adventure', true],
+  ] as const)(
+    'awakens through the %s router without fracture preparation or playback',
+    async (_name, routed) => {
+      class PreparingSound extends FakeSound {
+        preparationCount = 0
+        async prepareShatter(): Promise<void> {
+          this.preparationCount++
+        }
+      }
+      const voice = new FakeVoice()
+      const sound = new PreparingSound()
+      const fixture = harness(
+        COMFORTABLE,
+        { 'comfortable-note': '57' },
+        [voice],
+        [sound],
+        routed,
+        'awaken',
+      )
+      await fixture.controller.start('vessel')
+      expect(fixture.controller.snapshot().mode).toBe('singing')
+      expect(sound.references).toEqual([57])
+      expect(sound.preparationCount).toBe(0)
+      for (let sequence = 0; sequence <= 4; sequence++)
+        fixture.emit(voice, observation(sequence, 57, 1025 + sequence * 25))
+      expect(fixture.events).toEqual([
+        { type: 'awaken', id: 'vessel', outcome: 'exit-opened' },
+      ])
+      fixture.controller.completeBreak()
+      expect(fixture.controller.snapshot().mode).toBe('off')
+      expect(voice.stopCount).toBe(1)
+      expect(voice.activeSubscriptions).toBe(0)
+      expect(sound.shatterCount).toBe(0)
+      expect(sound.disposeCount).toBe(1)
+      expect(fixture.game.saveProgress().completedBreakableIds).toEqual([
+        'vessel',
+      ])
+      voice.emitRetained(0, observation(99, 57, 4000))
+      fixture.controller.completeBreak()
+      expect(fixture.events).toHaveLength(1)
+      expect(sound.shatterCount).toBe(0)
+      expect(sound.disposeCount).toBe(1)
+      fixture.controller.dispose()
+    },
+  )
 
   it('uses only fresh monotonic evidence for comfortable-note calibration', async () => {
     const fixture = harness(COMFORTABLE)

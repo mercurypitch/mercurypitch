@@ -4,6 +4,7 @@
 
 import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID } from '../content/living-crystal-profile'
 import type { LevelDefinition } from '../contracts'
+import { ARCHIVE_SHELF_BUNDLE, isDarkArchive } from './archive-room'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe, MUSEUM_MATERIAL_CATALOG, } from './catalog'
 import { getRoomDecorationRecipe, roomDecorationTextureAssets, } from './room-decoration-catalog'
 import type { MuseumSceneRecipe } from './scene-catalog'
@@ -54,6 +55,7 @@ export function createMuseumAssetLoadPlan(
       (decoration) => getRoomDecorationRecipe(decoration.recipeId).bundle,
     ),
   ])
+  if (isDarkArchive(level)) bundles.add(ARCHIVE_SHELF_BUNDLE)
   if ((level.presentation?.livingCrystalSupports?.length ?? 0) > 0)
     bundles.add(LIVING_CRYSTAL_PLATFORM_BUNDLE_ID)
   const decorationTextures = new Set(

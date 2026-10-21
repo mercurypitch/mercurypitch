@@ -14,6 +14,7 @@ import { createMelodyChallengeJudge } from './melody-challenge'
 import { createMovement, MOVEMENT, releaseMovement, stepMovement, } from './movement'
 import { createPlatformRuntime } from './platform-runtime'
 import { findCheckpoint, getRequiredRouteBreakableIds, readProgress, requirementsMet, } from './progress'
+import { completeProtectionRoom, protectionRoomDefinitionError, } from './protection-rooms'
 import type { SingingQualityAttempt } from './rewards'
 import { applyEncounterRewards, createSingingQualityAttempt, emptyRewardProgress, readRewardProgress, summarizeRewards, ungradedQualityResult, } from './rewards'
 import { MAXIMUM_SHATTER_FRAME_SECONDS, parseShatterPlaybackSpeed, shatterLifecycleSeconds, } from './shatter-presentation'
@@ -38,6 +39,33 @@ export function createGlassGame(
   saved?: unknown,
   collider: CourseCollider = FLAT_COURSE_COLLIDER,
 ): GlassGame {
+  const protectionError = protectionRoomDefinitionError(level)
+  if (protectionError !== undefined)
+    throw new Error(`Invalid protection route: ${protectionError}`)
+  const protectedVessels = new Set(
+    level.protectionRooms?.flatMap((room) => [...room.vesselIds]),
+  )
+  for (const target of level.breakables) {
+    if (
+      target.completion !== undefined &&
+      target.completion !== 'shatter' &&
+      target.completion !== 'awaken'
+    )
+      throw new Error(
+        `Invalid exhibit "${target.id}": completion must be shatter or awaken.`,
+      )
+    if (
+      target.completion === 'awaken' &&
+      (target.mount?.kind !== 'plinth' ||
+        target.presentation !== undefined ||
+        !['hold', 'ordered-pair', 'settle-wave'].includes(
+          target.challenge.kind,
+        ))
+    )
+      throw new Error(
+        `Awakening exhibit "${target.id}" must be a mounted pitch exhibit without a barrier presentation.`,
+      )
+  }
   const lessonError = melodyLessonError(level)
   if (lessonError !== undefined) throw new Error(lessonError)
   for (const gap of level.intentionalGaps ?? []) {
@@ -139,6 +167,7 @@ export function createGlassGame(
     )
 
   const eligible = (target: BreakableDefinition): boolean =>
+    !protectedVessels.has(target.id) &&
     withinSafeInteractionArea(target) &&
     requirementsMet(target.requiresCompleted, completed)
 
@@ -557,6 +586,13 @@ export function createGlassGame(
         id,
         qualityResult,
       )
+      if (encounter.target.completion === 'awaken') {
+        active = null
+        releaseMovement(player)
+        accumulator = 0
+        events.push({ type: 'awaken', id, outcome })
+        return events
+      }
       breakPresentations.set(id, {
         at: elapsedSeconds,
         speed: shatterPlaybackSpeed,
@@ -568,6 +604,14 @@ export function createGlassGame(
       }
       events.push({ type: 'break', id, outcome })
       return events
+    },
+    completeProtectionRoom(roomId) {
+      if (paused || complete || active !== null || shattering !== null)
+        return false
+      if (!completeProtectionRoom(level, roomId, player, completed))
+        return false
+      refreshActiveBaseSolids()
+      return true
     },
     cancelEncounter: cancel,
     setShatterPlaybackSpeed(speed) {

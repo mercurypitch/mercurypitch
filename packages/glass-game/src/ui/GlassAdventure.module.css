@@ -732,6 +732,13 @@
     bottom: max(190px, calc(env(safe-area-inset-bottom) + 178px));
   }
 }
+@media (max-height: 500px) {
+  /* Clear the focused glass while retaining heading semantics and HUD spacing. */
+  .adventure:not([data-challenge-camera-mode='exploration']) .identity {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
 @media (max-width: 900px) {
   .topbarArtwork .identity {
     display: none;
@@ -918,5 +925,24 @@
 @media (prefers-reduced-motion: reduce) {
   .chargeTrack > span {
     transition: none;
+  }
+}
+
+/* Hush keeps the movable-cover console clear of both movement and camera controls. */
+@media (max-height: 500px) {
+  [data-archive-hush] .jump {
+    right: 320px;
+    width: 80px;
+    height: 80px;
+  }
+  [data-archive-hush] .utility {
+    right: 320px;
+    top: 78px;
+  }
+  [data-archive-hush] .identity h1 {
+    font-size: 19px;
+  }
+  [data-archive-hush] .identity p {
+    display: none;
   }
 }

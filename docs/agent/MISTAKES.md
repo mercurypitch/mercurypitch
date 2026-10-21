@@ -48,6 +48,13 @@ entries have probably become guards; prune rather than append.
 
 ## Audio and microphone
 
+### Compare microphone freshness against the current capture clock
+
+**Symptom:** Archive Hush paused a valid chime as if the display had stalled.
+**Cause:** the animation frame timestamp preceded a newly delivered microphone sample by 18 ms, so the freshness check classified that sample as future data.
+**Rule:** sample the current monotonic clock for capture freshness; keep the frame timestamp for animation. Preserve stale-capture and long-frame guards, and test the host's default-clock tick path.
+**See:** `packages/glass-game/src/ui/archive-hush-session.ts` and `packages/glass-game/src/ui/useAdventure.ts`.
+
 ### Observe the new reset, not a cumulative retry label
 
 **Symptom:** a melody browser check read nonzero progress immediately after a wrong note, although the judge reset correctly later.

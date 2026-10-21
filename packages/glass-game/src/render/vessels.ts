@@ -69,7 +69,13 @@ interface VesselInstallation {
 
 export type VesselDefinition = Pick<
   BreakableDefinition,
-  'id' | 'position' | 'anchor' | 'mount' | 'presentation' | 'variant'
+  | 'id'
+  | 'position'
+  | 'anchor'
+  | 'mount'
+  | 'presentation'
+  | 'variant'
+  | 'completion'
 >
 
 export type VesselAssetLeaseFactory = (
@@ -101,8 +107,9 @@ function createVesselPresentation(
   acquireInitialLease?: VesselAssetLeaseFactory,
 ) {
   const recipe = getBreakableRenderRecipe(target.variant)
+  const awakening = target.completion === 'awaken'
   const resonanceSettings =
-    recipe.resonancePresentation === undefined
+    awakening || recipe.resonancePresentation === undefined
       ? undefined
       : {
           ...recipe.resonancePresentation,
@@ -284,8 +291,11 @@ function createVesselPresentation(
           glassMaterialIndices,
           rewardFactory: options.resonanceRewardFactory,
         })
-      nextPieces ??= fractureGeometry(geometry, recipe.fragmentBudget)
+      nextPieces ??= awakening
+        ? []
+        : fractureGeometry(geometry, recipe.fragmentBudget)
       if (
+        !awakening &&
         nextResonance === undefined &&
         authoredCrackGeometries !== undefined &&
         authoredCrackGeometries.length !== nextPieces.length
@@ -293,7 +303,8 @@ function createVesselPresentation(
         throw new Error(
           `Exhibit "${target.id}" has ${authoredCrackGeometries.length} crack outlines for ${nextPieces.length} fracture pieces.`,
         )
-      nextPieces.forEach((piece, index) => {
+      const visiblePieces = awakening ? [] : nextPieces
+      visiblePieces.forEach((piece, index) => {
         const mesh = new Mesh(piece.geometry, nextShardMaterial)
         mesh.position.copy(piece.centre)
         mesh.castShadow = options.castShardShadows !== false
@@ -324,7 +335,7 @@ function createVesselPresentation(
           nextIntact.add(crack)
         }
       })
-      if (!reducedMotion && nextResonance === undefined)
+      if (!awakening && !reducedMotion && nextResonance === undefined)
         nextBurst = createShatterBurst(
           target.id,
           shatterProfile,
@@ -590,7 +601,11 @@ function createVesselPresentation(
     ) {
       if (disposed) return
       latest = state
-      const age = playback.age(state.brokenAt, now, state.shatterPlaybackSpeed)
+      const age = playback.age(
+        awakening ? null : state.brokenAt,
+        now,
+        state.shatterPlaybackSpeed,
+      )
       resetPending ||= previousNow !== undefined && now < previousNow
       const deltaSeconds =
         previousNow === undefined
@@ -605,7 +620,8 @@ function createVesselPresentation(
         resonance?.resetCharge()
         resetPending = false
       }
-      const restored = state.phase === 'complete' && state.brokenAt === null
+      const restored =
+        !awakening && state.phase === 'complete' && state.brokenAt === null
       const timing = reducedMotion
         ? SHATTER_PRESENTATION_TIMING.reducedMotion
         : SHATTER_PRESENTATION_TIMING.normal
@@ -614,7 +630,8 @@ function createVesselPresentation(
       intact.visible = !restored && !shattered
       const surfaceStressActive =
         chargePresentation?.surfaceStressActive !== false
-      const tremorActive = chargePresentation?.tremorActive !== false
+      const tremorActive =
+        !awakening && chargePresentation?.tremorActive !== false
       const stress =
         age < 0
           ? surfaceStressActive
@@ -623,8 +640,11 @@ function createVesselPresentation(
           : age < delay
             ? 1.5
             : Math.max(0, 0.45 - (age - delay) * 3)
-      const surfaceStress =
-        resonanceSettings === undefined
+      const surfaceStress = awakening
+        ? state.phase === 'complete'
+          ? 0.16
+          : Math.max(0, Math.min(1, state.charge)) * 0.08
+        : resonanceSettings === undefined
           ? stress
           : Math.min(
               RESONANCE_SURFACE_STRESS_TUNING.maximumEmissiveIntensity,
@@ -639,10 +659,9 @@ function createVesselPresentation(
       }
       const anticipation =
         age < 0 ? 0 : delay <= 0 ? 1 : Math.max(0, Math.min(1, age / delay))
-      const crackReveal = Math.max(
-        Math.max(0, state.charge - 0.25) / 0.75,
-        anticipation,
-      )
+      const crackReveal = awakening
+        ? 0
+        : Math.max(Math.max(0, state.charge - 0.25) / 0.75, anticipation)
       crackMaterial.opacity = Math.min(1, crackReveal) * 0.92
       for (const crack of cracks)
         crack.visible = intact.visible && crackReveal > 0

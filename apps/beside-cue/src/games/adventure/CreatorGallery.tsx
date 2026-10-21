@@ -1,11 +1,25 @@
 // Creator gallery — native-accessible art studies keep separate identities from the campaign.
 import type { LevelDefinition } from '@irchiinnuss/glass-game'
-import { CLOUDWAY_THAWING_SONG_ALCOVE, crystalInteriorStudy, GLASSWARE_TRIO_STUDY, livingCrystalStudy, } from '@irchiinnuss/glass-game/creator-levels'
+import { CLOUDWAY_THAWING_SONG_ALCOVE, crystalInteriorStudy, GLASS_ARCHIVE_HUSH, GLASS_UNBROKEN_ARCHIVE, GLASSWARE_TRIO_STUDY, livingCrystalStudy, } from '@irchiinnuss/glass-game/creator-levels'
 import { createSignal, For, Show } from 'solid-js'
 import { AdventureScreen } from './AdventureScreen'
 import styles from './CreatorGallery.module.css'
 
 const studies = [
+  {
+    id: 'archive-hush',
+    title: 'The archive after dark',
+    description:
+      'Protect three rooms with humming, glass covers and curtains. Open the doors and find your way out.',
+    create: () => GLASS_ARCHIVE_HUSH,
+  },
+  {
+    id: 'unbroken-archive',
+    title: 'The unbroken archive',
+    description:
+      'Find three sleeping vessels. Hold each note to wake the glass and open the way, keeping every piece whole.',
+    create: () => GLASS_UNBROKEN_ARCHIVE,
+  },
   {
     id: 'glassware-trio',
     title: 'Three notes in glass',

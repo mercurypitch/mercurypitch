@@ -197,6 +197,18 @@ function validateChallenge(
         'Pitch target must be comfortable, low or high.',
       )
     validateHold(step.hold, `${stepPath}.hold`, diagnostics)
+    if (
+      step.archiveNoteDegree !== undefined &&
+      (challenge.kind !== 'hold' ||
+        step.target !== 'comfortable' ||
+        ![0, 1, 2].includes(step.archiveNoteDegree))
+    )
+      diagnostic(
+        diagnostics,
+        'invalid-challenge',
+        `${stepPath}.archiveNoteDegree`,
+        'An archive note degree must be 0, 1 or 2 on a comfortable held-note challenge.',
+      )
   })
 }
 
@@ -216,6 +228,17 @@ function validateExhibitPrefabs(
     ]),
   )
   for (const placement of source.exhibits) {
+    if (
+      placement.completion !== undefined &&
+      placement.completion !== 'shatter' &&
+      placement.completion !== 'awaken'
+    )
+      diagnostic(
+        diagnostics,
+        'invalid-completion',
+        `exhibits.${placement.id}.completion`,
+        'Exhibit completion must be shatter or awaken.',
+      )
     validateChallenge(
       placement.challenge,
       `exhibits.${placement.id}.challenge`,

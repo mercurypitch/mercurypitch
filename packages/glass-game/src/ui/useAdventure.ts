@@ -1,9 +1,11 @@
 // Adventure session — orchestrates host services without putting UI or audio in the game core.
 import { createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { ARCHIVE_HUSH_LEVEL_ID } from '../content/archive-hush-room'
 import type { GalleryArtwork } from '../content/gallery-artworks'
 import { galleryArtwork } from '../content/gallery-artworks'
 import { museumSoundscape } from '../content/soundscapes'
 import type { GameEvent, GameSnapshot, LevelDefinition } from '../contracts'
+import { formatArchiveNote, resolvePitchStepTarget, } from '../core/archive-notes'
 import { createGlassGame } from '../core/game'
 import type { GlassGameHost, MuseumAudioPreferences } from '../host'
 import type { LoadingProgress } from '../loading-progress'
@@ -18,6 +20,7 @@ import { createAdventureTransientMessages } from './adventure-transient-messages
 import type { AdventureVoiceSnapshot } from './adventure-voice-challenge'
 import { createAdventureVoiceChallenge } from './adventure-voice-challenge'
 import { createAdventureVoicePresentation } from './adventure-voice-presentation'
+import { createArchiveHushAdventure } from './archive-hush-adventure'
 import { AUTOMATIC_SINGING_PREFERENCE, createAutomaticVoiceEngagement, createAutomaticVoicePreparationOwner, readAutomaticSingingPreference, serializeAutomaticSingingPreference, } from './automatic-voice-engagement'
 import { createCameraComfortPreference } from './camera-comfort-preference'
 import { handleCameraModeShortcut, toggleCameraMode } from './camera-mode'
@@ -33,6 +36,7 @@ import { ASSET_LOAD_ERROR, createRendererFailureController, GRAPHICS_LOAD_ERROR,
 import { createShatterPlaybackPreference } from './shatter-playback-preference'
 import { createAdventureSoundscape } from './soundscape'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial-progress'
+import { readVoicePitchTargets } from './voice-challenge'
 
 const LOADING_PRESENTATION_MS = 2000
 const MAXIMUM_KEYBOARD_CAMERA_FRAME_SECONDS = 0.25
@@ -55,6 +59,8 @@ export function useAdventure(
   assetProfile?: GlassAssetQualityProfile,
 ) {
   const game = createGlassGame(level, host.loadProgress(level.id))
+  const isArchiveHush = level.id === ARCHIVE_HUSH_LEVEL_ID
+  const isArchive = level.authored?.levelId === 'glassworks-unbroken-archive'
   const initialSnapshot = game.snapshot()
   const input = createAdventureInput()
   let renderer: GlassRenderer | null = null
@@ -125,7 +131,8 @@ export function useAdventure(
   const [inspection, setInspection] = createSignal<GalleryArtwork | null>(null)
   const [nearbyArtwork, setNearbyArtwork] = createSignal<string | null>(null)
   const [tutorial, setTutorial] = createSignal(!hasSeenTutorial(host, level))
-  const automaticSingingAvailable = level.presentation?.theme !== 'cloudway'
+  const automaticSingingAvailable =
+    !isArchiveHush && level.presentation?.theme !== 'cloudway'
   const automaticVoiceEngagement = createAutomaticVoiceEngagement(level)
   const [automaticSingingEnabled, setAutomaticSingingEnabled] = createSignal(
     readAutomaticSingingPreference(host),
@@ -204,6 +211,7 @@ export function useAdventure(
   }
 
   function cancel(): void {
+    hush?.pause()
     transientMessages.clear()
     narration.pause()
     voiceChallenge.cancel()
@@ -227,27 +235,34 @@ export function useAdventure(
 
   function events(batch: GameEvent[]): void {
     for (const event of batch) {
-      if (event.type === 'break') {
-        // This write precedes the fracture, its sound and bridge presentation.
+      if (event.type === 'break' || event.type === 'awaken') {
+        // Save earned progress before either completion presentation releases voice.
         host.saveProgress(game.saveProgress())
         voiceChallenge.completeBreak()
         const item = level.breakables.find(
           (candidate) => candidate.id === event.id,
         )
-        const reaction = narration.breakCompleted(event.outcome)
-        transientMessages.showNarrationCaption(reaction.caption)
+        if (event.type === 'break') {
+          const reaction = narration.breakCompleted(event.outcome)
+          transientMessages.showNarrationCaption(reaction.caption)
+        } else {
+          input.clear()
+          renderer?.cancelHeadingFollow()
+        }
         const authoredNotice = level.guidance?.encounterSuccessNotices?.find(
           (notice) => notice.encounterId === event.id,
         )?.notice
         transientMessages.announce(
           authoredNotice ??
-            (item?.optional === true
-              ? 'Optional exhibit opened. Explore, or continue to the exit.'
-              : event.outcome === 'path-opened'
-                ? 'Beautiful. A new path is open.'
-                : event.outcome === 'exit-opened'
-                  ? 'Beautiful. The exit is open.'
-                  : 'Beautiful. The next exhibit is ready.'),
+            (event.type === 'awaken'
+              ? 'The note is complete. The glass stays whole.'
+              : item?.optional === true
+                ? 'Optional exhibit opened. Explore, or continue to the exit.'
+                : event.outcome === 'path-opened'
+                  ? 'Beautiful. A new path is open.'
+                  : event.outcome === 'exit-opened'
+                    ? 'Beautiful. The exit is open.'
+                    : 'Beautiful. The next exhibit is ready.'),
         )
       } else if (event.type === 'checkpoint') {
         host.saveProgress(game.saveProgress())
@@ -297,9 +312,50 @@ export function useAdventure(
     voiceState,
     voiceChallenge,
   )
+  const hushAdventure = isArchiveHush
+    ? createArchiveHushAdventure({
+        host,
+        level,
+        game,
+        snapshot,
+        canPlay: () => alive && ready() && !paused() && !tutorial(),
+        beforeCapture: () =>
+          Promise.all([
+            soundscape.silenceForVoice(),
+            narration.silenceForVoice(),
+          ]).then(() => undefined),
+        onReleaseVoice: () => {
+          narration.releaseVoice()
+          soundscape.releaseVoice()
+        },
+        refresh,
+      })
+    : null
+  const hush = hushAdventure?.session ?? null
+  const hushState = () => hushAdventure?.state()
+  const archiveNotes = createMemo(() => {
+    if (!isArchive) return undefined
+    const targets = isArchiveHush
+      ? {}
+      : (voiceState()?.targets ?? readVoicePitchTargets(host))
+    return level.breakables.map((vessel) => {
+      const step =
+        vessel.challenge.kind === 'hold' ? vessel.challenge.step : undefined
+      const midi = isArchiveHush
+        ? (hushState()?.target ?? null)
+        : step
+          ? resolvePitchStepTarget(step, targets)
+          : null
+      return {
+        id: vessel.id,
+        label: midi === null ? 'Choose your note' : formatArchiveNote(midi),
+      }
+    })
+  })
 
   async function startEncounter(id: string): Promise<void> {
     if (
+      isArchiveHush ||
       game.snapshot().nearbyBreakableId !== id ||
       !ready() ||
       paused() ||
@@ -512,7 +568,8 @@ export function useAdventure(
     if (!ready()) return
     prepareAutomaticVoiceFromGesture()
     soundscape.activate()
-    narration.welcomeGesture()
+    if (!level.breakables.some((item) => item.completion === 'awaken'))
+      narration.welcomeGesture()
   }
 
   function prepareForLoading(): void {
@@ -712,9 +769,12 @@ export function useAdventure(
           game.step(input.read(renderer?.getMovementYaw() ?? 0), elapsed, now),
         )
         const next = refresh()
+        hushAdventure?.update()
         soundscape.update()
         startAutomaticVoice(next)
       }
+      // Capture may arrive after the frame timestamp; sample its current clock.
+      hush?.tick()
       const activeRenderer = renderer
       const phase = loadingPhase()
       const needsStableFrame = phase === 'awaiting-first-frame'
@@ -729,6 +789,8 @@ export function useAdventure(
             challengeEncounterId: voiceState()?.encounterId ?? null,
             paused: paused() || tutorial(),
             safeBottomFraction: challengeSafeBottom(),
+            archiveNotes: archiveNotes(),
+            archiveHush: hushAdventure?.presentation(),
           })
           // Inspection attributes are sampled, not a second per-frame UI loop.
           if (needsStableFrame || now - lastCameraMetricsAt >= 100) {
@@ -835,12 +897,17 @@ export function useAdventure(
     transientMessages.clear()
     clearTimeout(completionTimer)
     voiceChallenge.dispose()
+    hush?.dispose()
     soundscape.dispose()
     narration.dispose()
     input.clear()
     renderer?.dispose()
   })
   return {
+    hush,
+    hushAdventure,
+    hushState,
+    archiveNotes,
     snapshot,
     completionPresented,
     loadingPhase,

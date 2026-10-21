@@ -1,5 +1,7 @@
 // Adventure voice regression — real PCM, YIN capture, lifecycle and saved success.
 import { expect, test, type Page } from '@playwright/test'
+import { SHATTER_SOUND_ASSET_FILES } from '../../../packages/glass-game/src/content/shatter-sounds'
+import { registerAwakeningVoiceTest } from './helpers/glass-voice-awakening'
 import { registerChangeNoteTest } from './helpers/glass-voice-change-note'
 import { expectCompactVoiceState, expectVoiceActionsFit, expectVoiceGoalFits, expectVoicePanelFits, registerSingingLayoutTests, } from './helpers/glass-voice-layout'
 
@@ -53,6 +55,7 @@ declare global {
       sources: VoiceSource[]
       readonly narrationStarts: number
       readonly referenceStarts: number
+      readonly fractureStarts: number
       deferNextPermission(): void
       grantPermission(): Promise<void>
       denyPermission(): void
@@ -111,205 +114,225 @@ async function openMuseum(
     waitForEncounter: true,
     ...options,
   }
-  await page.addInitScript((museum) => {
-    const prefix = 'beside-cue:glass-adventure:'
-    localStorage.setItem(`${prefix}${museum.tutorialPreference}`, 'seen')
-    localStorage.setItem(`${prefix}automatic-singing`, 'off')
-    // A legitimate reached checkpoint shortens traversal covered by controls tests.
-    // This grants no break, bridge or target note; all singing below is real PCM.
-    if (localStorage.getItem(`${prefix}progress:${museum.levelId}`) === null) {
-      localStorage.setItem(
-        `${prefix}progress:${museum.levelId}`,
-        JSON.stringify({
-          version: 1,
-          levelId: museum.levelId,
-          checkpointId: museum.checkpointId,
-          completedBreakableIds: museum.completedBreakableIds,
-        }),
-      )
-    }
-    if (museum.pairPreference !== null)
-      localStorage.setItem(
-        `${prefix}comfortable-pair`,
-        JSON.stringify(museum.pairPreference),
-      )
-    let amplitude = 0
-    let midi = 57
-    let narrationStarts = 0
-    let referenceStarts = 0
-    // Merc's lines and the shatter recordings are both one-shot decoded
-    // buffers of similar length (0.9-3 s), so duration cannot tell them
-    // apart. Tag each decoded buffer with the file it came from instead.
-    const responseUrls = new WeakMap<ArrayBuffer, string>()
-    const readBytes = Response.prototype.arrayBuffer
-    Response.prototype.arrayBuffer = async function () {
-      const bytes = await readBytes.call(this)
-      responseUrls.set(bytes, this.url)
-      return bytes
-    }
-    const narrationBuffers = new WeakSet<AudioBuffer>()
-    const decode = BaseAudioContext.prototype.decodeAudioData
-    BaseAudioContext.prototype.decodeAudioData = async function (
-      bytes,
-      ...callbacks
-    ) {
-      // Decoding detaches the bytes, so read the URL first.
-      const url = responseUrls.get(bytes) ?? ''
-      const buffer = await decode.call(this, bytes, ...callbacks)
-      // Merc's narration ships as adventure-voice-*/merc-*.mp3.
-      if (/\/merc-[^/]*\.mp3$/.test(new URL(url, location.href).pathname))
-        narrationBuffers.add(buffer)
-      return buffer
-    }
-    const startBuffer = AudioBufferSourceNode.prototype.start
-    AudioBufferSourceNode.prototype.start = function (...args) {
-      // Reference notes are oscillators. This observes actual spoken buffer
-      // playback without replacing it.
-      if (this.buffer !== null && narrationBuffers.has(this.buffer))
-        narrationStarts++
-      startBuffer.apply(this, args)
-    }
-    const microphoneOscillators = new WeakSet<OscillatorNode>()
-    const startOscillator = OscillatorNode.prototype.start
-    OscillatorNode.prototype.start = function (...args) {
-      if (!microphoneOscillators.has(this)) referenceStarts++
-      startOscillator.apply(this, args)
-    }
-    let nextPermission: 'grant' | 'defer' = 'grant'
-    const sources: VoiceSource[] = []
-    const pendingPermissions: PendingPermission[] = []
-    const original = navigator.mediaDevices.getUserMedia.bind(
-      navigator.mediaDevices,
-    )
-    const createStream = async (): Promise<MediaStream> => {
-      const context = new AudioContext()
-      await context.resume()
-      const oscillator = context.createOscillator()
-      oscillator.frequency.value = 440 * 2 ** ((midi - 69) / 12)
-      microphoneOscillators.add(oscillator)
-      const gain = context.createGain()
-      gain.gain.value = amplitude
-      const destination = context.createMediaStreamDestination()
-      oscillator.connect(gain).connect(destination)
-      oscillator.start()
-      const track = destination.stream.getAudioTracks()[0]
-      const stop = track.stop.bind(track)
-      track.stop = () => {
-        stop()
-        oscillator.stop()
-        oscillator.disconnect()
-        gain.disconnect()
-        void context.close()
-      }
-      sources.push({ context, gain, oscillator, track })
-      return destination.stream
-    }
-    navigator.mediaDevices.getUserMedia = async (constraints) => {
-      if (!constraints?.audio) return original(constraints)
-      const permission = nextPermission
-      nextPermission = 'grant'
-      if (permission === 'defer')
-        return new Promise<MediaStream>((resolve, reject) => {
-          pendingPermissions.push({ resolve, reject })
-        })
-      return createStream()
-    }
-    window.glassVoiceFixture = {
-      sources,
-      get narrationStarts() {
-        return narrationStarts
-      },
-      get referenceStarts() {
-        return referenceStarts
-      },
-      deferNextPermission() {
-        nextPermission = 'defer'
-      },
-      async grantPermission() {
-        const pending = pendingPermissions.shift()
-        if (!pending) throw new Error('No microphone permission is pending.')
-        try {
-          pending.resolve(await createStream())
-        } catch (cause) {
-          pending.reject(cause)
-        }
-      },
-      denyPermission() {
-        const pending = pendingPermissions.shift()
-        if (!pending) throw new Error('No microphone permission is pending.')
-        pending.reject(new DOMException('Permission denied', 'NotAllowedError'))
-      },
-      pendingPermissionCount: () => pendingPermissions.length,
-      dropAmplitudeFor(durationSeconds) {
-        if (!Number.isFinite(durationSeconds) || durationSeconds <= 0)
-          throw new Error('Dropout duration must be positive.')
-        // Keep both edges on the audio clock. Two host calls can drift far
-        // enough apart under CI load to turn a brief dropout into a reset.
-        let restoreAt: number | null = null
-        for (const source of sources) {
-          if (source.track.readyState !== 'live') continue
-          const now = source.context.currentTime
-          const parameter = source.gain.gain
-          parameter.cancelScheduledValues(now)
-          parameter.setValueAtTime(0, now)
-          parameter.setValueAtTime(amplitude, now + durationSeconds)
-          restoreAt = now + durationSeconds
-        }
-        if (restoreAt === null)
-          throw new Error('No live microphone source is available.')
-        return restoreAt
-      },
-      setAmplitude(value) {
-        amplitude = value
-        for (const source of sources)
-          if (source.track.readyState === 'live')
-            source.gain.gain.setValueAtTime(value, source.context.currentTime)
-      },
-      setMidi(value) {
-        if (!Number.isFinite(value)) throw new Error('MIDI must be finite.')
-        midi = value
-        const frequency = 440 * 2 ** ((value - 69) / 12)
-        for (const source of sources)
-          if (source.track.readyState === 'live')
-            source.oscillator.frequency.setValueAtTime(
-              frequency,
-              source.context.currentTime,
-            )
-      },
-      glideMidi(value, durationSeconds) {
-        if (!Number.isFinite(value)) throw new Error('MIDI must be finite.')
-        if (!Number.isFinite(durationSeconds) || durationSeconds <= 0)
-          throw new Error('Glide duration must be positive.')
-        midi = value
-        const frequency = 440 * 2 ** ((value - 69) / 12)
-        for (const source of sources) {
-          if (source.track.readyState !== 'live') continue
-          const now = source.context.currentTime
-          const parameter = source.oscillator.frequency
-          const current = parameter.value
-          parameter.cancelScheduledValues(now)
-          parameter.setValueAtTime(current, now)
-          parameter.exponentialRampToValueAtTime(
-            frequency,
-            now + durationSeconds,
-          )
-        }
-      },
-      async dispose() {
-        for (const pending of pendingPermissions.splice(0))
-          pending.reject(new DOMException('Test ended', 'AbortError'))
-        for (const source of sources)
-          if (source.track.readyState === 'live') source.track.stop()
-        await Promise.all(
-          sources.map((source) =>
-            source.context.state === 'closed'
-              ? Promise.resolve()
-              : source.context.close(),
-          ),
+  await page.addInitScript(
+    ({ museum, fractureFiles }) => {
+      const prefix = 'beside-cue:glass-adventure:'
+      localStorage.setItem(`${prefix}${museum.tutorialPreference}`, 'seen')
+      localStorage.setItem(`${prefix}automatic-singing`, 'off')
+      // A legitimate reached checkpoint shortens traversal covered by controls tests.
+      // This grants no break, bridge or target note; all singing below is real PCM.
+      if (
+        localStorage.getItem(`${prefix}progress:${museum.levelId}`) === null
+      ) {
+        localStorage.setItem(
+          `${prefix}progress:${museum.levelId}`,
+          JSON.stringify({
+            version: 1,
+            levelId: museum.levelId,
+            checkpointId: museum.checkpointId,
+            completedBreakableIds: museum.completedBreakableIds,
+          }),
         )
-      },
-    }
-  }, setup)
+      }
+      if (museum.pairPreference !== null)
+        localStorage.setItem(
+          `${prefix}comfortable-pair`,
+          JSON.stringify(museum.pairPreference),
+        )
+      let amplitude = 0
+      let midi = 57
+      let narrationStarts = 0
+      let referenceStarts = 0
+      let fractureStarts = 0
+      const fractureUrls = new Set(
+        fractureFiles.map(
+          (file) => new URL(`/games/${file}`, location.href).href,
+        ),
+      )
+      // Merc's lines and the shatter recordings are both one-shot decoded
+      // buffers of similar length (0.9-3 s), so duration cannot tell them
+      // apart. Tag each decoded buffer with the file it came from instead.
+      const responseUrls = new WeakMap<ArrayBuffer, string>()
+      const readBytes = Response.prototype.arrayBuffer
+      Response.prototype.arrayBuffer = async function () {
+        const bytes = await readBytes.call(this)
+        responseUrls.set(bytes, this.url)
+        return bytes
+      }
+      const narrationBuffers = new WeakSet<AudioBuffer>()
+      const fractureBuffers = new WeakSet<AudioBuffer>()
+      const decode = BaseAudioContext.prototype.decodeAudioData
+      BaseAudioContext.prototype.decodeAudioData = async function (
+        bytes,
+        ...callbacks
+      ) {
+        // Decoding detaches the bytes, so read the URL first.
+        const url = responseUrls.get(bytes) ?? ''
+        const buffer = await decode.call(this, bytes, ...callbacks)
+        // Merc's narration ships as adventure-voice-*/merc-*.mp3.
+        if (/\/merc-[^/]*\.mp3$/.test(new URL(url, location.href).pathname))
+          narrationBuffers.add(buffer)
+        if (fractureUrls.has(url)) fractureBuffers.add(buffer)
+        return buffer
+      }
+      const startBuffer = AudioBufferSourceNode.prototype.start
+      AudioBufferSourceNode.prototype.start = function (...args) {
+        // Reference notes are oscillators. These observe actual narration and
+        // fracture buffer playback without replacing either.
+        if (this.buffer !== null && narrationBuffers.has(this.buffer))
+          narrationStarts++
+        if (this.buffer !== null && fractureBuffers.has(this.buffer))
+          fractureStarts++
+        startBuffer.apply(this, args)
+      }
+      const microphoneOscillators = new WeakSet<OscillatorNode>()
+      const startOscillator = OscillatorNode.prototype.start
+      OscillatorNode.prototype.start = function (...args) {
+        if (!microphoneOscillators.has(this)) referenceStarts++
+        startOscillator.apply(this, args)
+      }
+      let nextPermission: 'grant' | 'defer' = 'grant'
+      const sources: VoiceSource[] = []
+      const pendingPermissions: PendingPermission[] = []
+      const original = navigator.mediaDevices.getUserMedia.bind(
+        navigator.mediaDevices,
+      )
+      const createStream = async (): Promise<MediaStream> => {
+        const context = new AudioContext()
+        await context.resume()
+        const oscillator = context.createOscillator()
+        oscillator.frequency.value = 440 * 2 ** ((midi - 69) / 12)
+        microphoneOscillators.add(oscillator)
+        const gain = context.createGain()
+        gain.gain.value = amplitude
+        const destination = context.createMediaStreamDestination()
+        oscillator.connect(gain).connect(destination)
+        oscillator.start()
+        const track = destination.stream.getAudioTracks()[0]
+        const stop = track.stop.bind(track)
+        track.stop = () => {
+          stop()
+          oscillator.stop()
+          oscillator.disconnect()
+          gain.disconnect()
+          void context.close()
+        }
+        sources.push({ context, gain, oscillator, track })
+        return destination.stream
+      }
+      navigator.mediaDevices.getUserMedia = async (constraints) => {
+        if (!constraints?.audio) return original(constraints)
+        const permission = nextPermission
+        nextPermission = 'grant'
+        if (permission === 'defer')
+          return new Promise<MediaStream>((resolve, reject) => {
+            pendingPermissions.push({ resolve, reject })
+          })
+        return createStream()
+      }
+      window.glassVoiceFixture = {
+        sources,
+        get narrationStarts() {
+          return narrationStarts
+        },
+        get referenceStarts() {
+          return referenceStarts
+        },
+        get fractureStarts() {
+          return fractureStarts
+        },
+        deferNextPermission() {
+          nextPermission = 'defer'
+        },
+        async grantPermission() {
+          const pending = pendingPermissions.shift()
+          if (!pending) throw new Error('No microphone permission is pending.')
+          try {
+            pending.resolve(await createStream())
+          } catch (cause) {
+            pending.reject(cause)
+          }
+        },
+        denyPermission() {
+          const pending = pendingPermissions.shift()
+          if (!pending) throw new Error('No microphone permission is pending.')
+          pending.reject(
+            new DOMException('Permission denied', 'NotAllowedError'),
+          )
+        },
+        pendingPermissionCount: () => pendingPermissions.length,
+        dropAmplitudeFor(durationSeconds) {
+          if (!Number.isFinite(durationSeconds) || durationSeconds <= 0)
+            throw new Error('Dropout duration must be positive.')
+          // Keep both edges on the audio clock. Two host calls can drift far
+          // enough apart under CI load to turn a brief dropout into a reset.
+          let restoreAt: number | null = null
+          for (const source of sources) {
+            if (source.track.readyState !== 'live') continue
+            const now = source.context.currentTime
+            const parameter = source.gain.gain
+            parameter.cancelScheduledValues(now)
+            parameter.setValueAtTime(0, now)
+            parameter.setValueAtTime(amplitude, now + durationSeconds)
+            restoreAt = now + durationSeconds
+          }
+          if (restoreAt === null)
+            throw new Error('No live microphone source is available.')
+          return restoreAt
+        },
+        setAmplitude(value) {
+          amplitude = value
+          for (const source of sources)
+            if (source.track.readyState === 'live')
+              source.gain.gain.setValueAtTime(value, source.context.currentTime)
+        },
+        setMidi(value) {
+          if (!Number.isFinite(value)) throw new Error('MIDI must be finite.')
+          midi = value
+          const frequency = 440 * 2 ** ((value - 69) / 12)
+          for (const source of sources)
+            if (source.track.readyState === 'live')
+              source.oscillator.frequency.setValueAtTime(
+                frequency,
+                source.context.currentTime,
+              )
+        },
+        glideMidi(value, durationSeconds) {
+          if (!Number.isFinite(value)) throw new Error('MIDI must be finite.')
+          if (!Number.isFinite(durationSeconds) || durationSeconds <= 0)
+            throw new Error('Glide duration must be positive.')
+          midi = value
+          const frequency = 440 * 2 ** ((value - 69) / 12)
+          for (const source of sources) {
+            if (source.track.readyState !== 'live') continue
+            const now = source.context.currentTime
+            const parameter = source.oscillator.frequency
+            const current = parameter.value
+            parameter.cancelScheduledValues(now)
+            parameter.setValueAtTime(current, now)
+            parameter.exponentialRampToValueAtTime(
+              frequency,
+              now + durationSeconds,
+            )
+          }
+        },
+        async dispose() {
+          for (const pending of pendingPermissions.splice(0))
+            pending.reject(new DOMException('Test ended', 'AbortError'))
+          for (const source of sources)
+            if (source.track.readyState === 'live') source.track.stop()
+          await Promise.all(
+            sources.map((source) =>
+              source.context.state === 'closed'
+                ? Promise.resolve()
+                : source.context.close(),
+            ),
+          )
+        },
+      }
+    },
+    { museum: setup, fractureFiles: Object.values(SHATTER_SOUND_ASSET_FILES) },
+  )
   await page.goto(setup.path)
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-ready',
@@ -696,6 +719,7 @@ test.afterEach(async ({ page }) => {
 })
 
 registerChangeNoteTest({ openMuseum, setVoice, expectMicrophoneOff })
+registerAwakeningVoiceTest({ openMuseum, setVoice, expectMicrophoneOff })
 
 test('silence cannot earn progress; a fresh comfortable hold breaks and survives reload', async ({
   page,

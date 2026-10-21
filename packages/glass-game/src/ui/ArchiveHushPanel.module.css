@@ -1,0 +1,235 @@
+/* Archive protection console — compact brass and ink beneath the actual glass displays. */
+.panel {
+  position: absolute;
+  z-index: 15;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(440px, calc(100% - 32px));
+  padding: 12px 16px;
+  border: 1px solid #bda47180;
+  border-radius: 18px;
+  color: #f1eadb;
+  background: linear-gradient(140deg, #15282aef, #081316f5);
+  box-shadow:
+    0 12px 40px #0005,
+    inset 0 1px #fff1;
+  font-family: inherit;
+  box-sizing: border-box;
+  max-height: 360px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.controls {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.heading {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #dcc695;
+}
+.note {
+  font:
+    24px Georgia,
+    serif;
+}
+.message {
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 6px 0 8px;
+}
+.displays {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(96px, 1fr);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+  gap: 6px;
+}
+.panel button {
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+  min-height: 44px;
+  border: 1px solid #bdab7745;
+  border-radius: 9px;
+  background: #ffffff08;
+  padding: 6px;
+}
+.panel button:focus-visible,
+.panel input:focus-visible {
+  outline: 2px solid #e4ce8b;
+  outline-offset: 3px;
+}
+.panel button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.displays button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  min-height: 54px;
+  scroll-snap-align: start;
+}
+.displays button[aria-pressed='true'] {
+  border-color: #d5be80;
+  background: #bfa36c21;
+}
+.displays small {
+  font-size: 9px;
+  color: #c6e4d8;
+}
+.rail {
+  margin-top: 7px;
+}
+.rail label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+.rail label span {
+  color: #bcd6cf;
+}
+.rail input {
+  width: 100%;
+  height: 44px;
+  accent-color: #d1b775;
+  margin: 0;
+  touch-action: pan-x;
+}
+.meter {
+  height: 3px;
+  background: #ffffff1a;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.meter span {
+  display: block;
+  height: 100%;
+  background: #8edac9;
+}
+.actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.actions button {
+  flex: 1 1 auto;
+  font-size: 11px;
+}
+.actions .primary {
+  background: #dcc993;
+  color: #142325;
+  border-color: #ead8a5;
+}
+@media (max-width: 600px) and (min-height: 501px) {
+  .panel {
+    bottom: max(138px, calc(env(safe-area-inset-bottom) + 112px));
+    padding: 12px 14px;
+  }
+}
+@media (max-height: 500px) {
+  .panel {
+    left: auto;
+    right: max(12px, env(safe-area-inset-right));
+    top: 78px;
+    bottom: 12px;
+    transform: none;
+    width: 290px;
+    padding: 10px 12px;
+    overflow: hidden;
+  }
+  .message {
+    flex-shrink: 0;
+    margin: 5px 0 7px;
+    font-size: 11px;
+    min-height: 0;
+  }
+  .rail {
+    margin-top: 7px;
+  }
+  .note {
+    font-size: 20px;
+  }
+  .actions {
+    margin-top: 6px;
+  }
+}
+
+.title {
+  margin: 3px 0 5px;
+  font:
+    22px Georgia,
+    serif;
+  color: #f1e7ce;
+}
+.instruction {
+  margin: 0 0 9px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #bfd0c8;
+}
+.panel .curtain {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 3px 0 9px;
+  font-size: 12px;
+}
+.curtain small {
+  font-size: 10px;
+  text-align: right;
+  color: #c6e4d8;
+}
+.curtain[aria-pressed='true'] {
+  background: #195049;
+  border-color: #84bbae;
+}
+.panel[data-travel='true'] .actions {
+  display: none;
+}
+.panel[data-travel='true'] {
+  width: min(370px, calc(100% - 32px));
+  pointer-events: none;
+}
+@media (max-width: 600px) and (min-height: 501px) {
+  .panel {
+    max-height: min(360px, calc(100% - 285px));
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+}
+@media (max-height: 500px) {
+  .title {
+    font-size: 18px;
+  }
+  .instruction {
+    margin-bottom: 6px;
+  }
+  .panel[data-travel='true'] {
+    top: 78px;
+    bottom: auto;
+    width: 250px;
+  }
+}

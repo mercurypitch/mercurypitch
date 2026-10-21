@@ -8,6 +8,121 @@ import { SHATTER_LIFECYCLE_SECONDS, SHATTER_PRESENTATION_TIMING, } from '../core
 import { getBreakableRenderRecipe } from './catalog'
 import { createAuthoredVessel, createVessel } from './vessels'
 
+describe('intact awakening presentation', () => {
+  it.each([false, true])(
+    'keeps charged, completed and restored glass intact without fracture effects (reduced motion %s)',
+    (reducedMotion) => {
+      const target = {
+        ...GLASSWORKS_JOURNEY.breakables[0]!,
+        completion: 'awaken' as const,
+      }
+      const vessel = createVessel(target, reducedMotion)
+      const intact = vessel.root.getObjectByName(
+        `vessel-intact-${target.id}`,
+      ) as Mesh
+      const shards = vessel.root.getObjectByName(
+        `vessel-shards-${target.id}`,
+      ) as Group
+      const wave = vessel.root.children.find(
+        (child) => (child as Mesh).geometry?.type === 'RingGeometry',
+      ) as Mesh
+      expect(shards.children).toHaveLength(0)
+      expect(intact.children).toHaveLength(0)
+      for (const phase of ['charging', 'complete'] as const) {
+        for (const now of [0.1, 0.4, 5]) {
+          vessel.update(
+            { id: target.id, charge: 1, phase, brokenAt: null },
+            now,
+          )
+          expect(intact.visible).toBe(true)
+          expect(intact.rotation.z).toBe(0)
+          expect(shards.visible).toBe(false)
+          expect(wave.visible).toBe(false)
+          expect(
+            (intact.material as MeshPhysicalMaterial).emissiveIntensity,
+          ).toBeGreaterThan(0)
+          expect(
+            (intact.material as MeshPhysicalMaterial).emissiveIntensity,
+          ).toBeLessThanOrEqual(0.16)
+        }
+      }
+      const replacement = new BoxGeometry(0.2, 0.3, 0.08)
+      vessel.setGeometry(replacement)
+      vessel.update(
+        { id: target.id, charge: 1, phase: 'complete', brokenAt: null },
+        6,
+      )
+      const replacedIntact = vessel.root.getObjectByName(
+        `vessel-intact-${target.id}`,
+      ) as Mesh
+      expect(replacedIntact.geometry).toBe(replacement)
+      expect(replacedIntact.visible).toBe(true)
+      expect(
+        (vessel.root.getObjectByName(`vessel-shards-${target.id}`) as Group)
+          .children,
+      ).toHaveLength(0)
+      vessel.dispose()
+
+      const restored = createVessel(target, reducedMotion)
+      restored.update(
+        { id: target.id, charge: 1, phase: 'complete', brokenAt: null },
+        0,
+      )
+      expect(
+        restored.root.getObjectByName(`vessel-intact-${target.id}`)?.visible,
+      ).toBe(true)
+      expect(
+        restored.root.getObjectByName(`vessel-shards-${target.id}`)?.visible,
+      ).toBe(false)
+      restored.dispose()
+    },
+  )
+
+  it('retains the authored intact mesh and releases its borrowed fracture lease exactly once', () => {
+    const target = {
+      ...GLASSWORKS_JOURNEY.breakables[0]!,
+      completion: 'awaken' as const,
+    }
+    const geometry = new BoxGeometry(0.2, 0.3, 0.08)
+    const shard = new BoxGeometry(0.1, 0.1, 0.08)
+    const crack = new EdgesGeometry(shard)
+    const sourceMaterial = new PhysicalMaterial({ transmission: 0.9 })
+    const release = vi.fn()
+    const vessel = createAuthoredVessel(target, false, (library) => ({
+      geometry,
+      pieces: [{ geometry: shard, centre: new Vector3() }],
+      crackGeometries: [crack],
+      materials: [library.clone(sourceMaterial)],
+      transform: new Matrix4(),
+      release,
+    }))
+    vessel.update(
+      { id: target.id, charge: 1, phase: 'complete', brokenAt: null },
+      0,
+    )
+    const intact = vessel.root.getObjectByName(
+      `vessel-intact-${target.id}`,
+    ) as Mesh
+    expect(intact.geometry).toBe(geometry)
+    expect(intact.visible).toBe(true)
+    expect(intact.children).toHaveLength(0)
+    expect(
+      (intact.material as MeshPhysicalMaterial[])[0]?.emissiveIntensity,
+    ).toBe(0.16)
+    expect(
+      (vessel.root.getObjectByName(`vessel-shards-${target.id}`) as Group)
+        .children,
+    ).toHaveLength(0)
+    vessel.dispose()
+    vessel.dispose()
+    expect(release).toHaveBeenCalledOnce()
+    geometry.dispose()
+    shard.dispose()
+    crack.dispose()
+    sourceMaterial.dispose()
+  })
+})
+
 describe('persistent glazed artwork', () => {
   it('uses plane texture orientation only for the separate artwork plane', () => {
     const target = GLASSWORKS_JOURNEY.breakables.find((item) =>

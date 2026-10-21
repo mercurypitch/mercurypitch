@@ -48,6 +48,39 @@ function codes(
 }
 
 describe('authoring validation', () => {
+  it.each([
+    { target: 'comfortable', archiveNoteDegree: 3 },
+    { target: 'comfortable', archiveNoteDegree: 0.5 },
+    { target: 'low', archiveNoteDegree: 1 },
+  ] as const)('rejects an unsupported archive note step %j', (step) => {
+    const [first, ...rest] = FOUNDATION_STRAIGHT_SOURCE.exhibits
+    if (first.challenge.kind !== 'hold')
+      throw new Error('Expected hold fixture.')
+    const diagnostics = diagnosticsFrom({
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      exhibits: [
+        {
+          ...first,
+          challenge: {
+            kind: 'hold',
+            step: {
+              ...first.challenge.step,
+              ...step,
+              archiveNoteDegree: step.archiveNoteDegree as 0,
+            },
+          },
+        },
+        ...rest,
+      ],
+    })
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid-challenge',
+        path: 'exhibits.arrival-goblet.challenge.step.archiveNoteDegree',
+      }),
+    )
+  })
+
   it('rejects malformed holds and duplicate ordered-pair targets on placements', () => {
     const [first, ...rest] = FOUNDATION_STRAIGHT_SOURCE.exhibits
     if (first.challenge.kind !== 'hold')

@@ -2,6 +2,7 @@
 
 import type { CheckpointDefinition, LevelDefinition, SavedProgress, } from '../contracts'
 import { readMelodyAttempt, sameMelodyAttempt } from './melody-attempt'
+import { retainProtectionProgress } from './protection-rooms'
 import { emptyRewardProgress, mergeRewardProgress, readRewardProgress, } from './rewards'
 
 export function requirementsMet(
@@ -97,6 +98,7 @@ export function readProgress(
         (melodyAttempt !== undefined || !melodyEncounterIds.has(id)),
     ),
   )
+  retainProtectionProgress(level, requested)
   const completed = new Set<string>()
   // Dependency order is deliberately not tied to content array order.
   for (let pass = 0; pass < level.breakables.length; pass++) {

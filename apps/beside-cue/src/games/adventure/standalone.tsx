@@ -38,6 +38,8 @@ async function selectedDevelopmentLevel() {
     layout !== 'living-crystal' &&
     layout !== 'living-glass' &&
     layout !== 'glassware-trio' &&
+    layout !== 'unbroken-archive' &&
+    layout !== 'archive-hush' &&
     layout !== 'cloudway-laboratory' &&
     layout !== 'cloudway-mechanics-preview' &&
     layout !== 'quarter-turn-art' &&
@@ -58,6 +60,8 @@ async function selectedDevelopmentLevel() {
     livingCrystalStudy,
     LIVING_GLASS_TRIAL,
     GLASSWARE_TRIO_STUDY,
+    GLASS_UNBROKEN_ARCHIVE,
+    GLASS_ARCHIVE_HUSH,
     CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
     CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW,
     CLOUDWAY_QUARTER_TURN_ART_STUDY,
@@ -91,6 +95,8 @@ async function selectedDevelopmentLevel() {
   }
   if (layout === 'living-glass') return LIVING_GLASS_TRIAL
   if (layout === 'glassware-trio') return GLASSWARE_TRIO_STUDY
+  if (layout === 'unbroken-archive') return GLASS_UNBROKEN_ARCHIVE
+  if (layout === 'archive-hush') return GLASS_ARCHIVE_HUSH
   if (layout === 'cloudway-laboratory') return CLOUDWAY_CRYSTAL_PROMENADE_STUDY
   if (layout === 'cloudway-mechanics-preview')
     return CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW

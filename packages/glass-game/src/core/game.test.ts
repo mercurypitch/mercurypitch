@@ -52,6 +52,27 @@ const PAIR_LEVEL: LevelDefinition = {
 }
 const vase = GLASSWORKS.breakables[1].id
 const hero = GLASSWORKS.breakables[2].id
+const AWAKEN_LEVEL: LevelDefinition = {
+  ...GLASSWORKS,
+  id: 'glassworks-awakening-proof',
+  breakables: GLASSWORKS.breakables.map((target, index) =>
+    index === 0
+      ? {
+          ...target,
+          completion: 'awaken',
+          mount: {
+            kind: 'plinth',
+            solidId: `plinth:${target.id}`,
+            height: 0.24,
+            radiusTop: 0.25,
+            radiusBottom: 0.29,
+            facingYaw: 0,
+            presentation: { role: 'plinth', material: 'stone' },
+          },
+        }
+      : target,
+  ),
+}
 
 const AIRBORNE_EXIT_LEVEL: LevelDefinition = {
   id: 'airborne-exit',
@@ -170,6 +191,104 @@ function jumpSouth(game: GlassGame): void {
 }
 
 describe('Glassworks simulation', () => {
+  it('awakens a mounted exhibit once, unlocks progression and releases movement without shattering', () => {
+    const game = createGlassGame(AWAKEN_LEVEL)
+    walkToGoblet(game)
+    expect(game.beginEncounter(goblet, 57)).toBe(true)
+    const parked = game.snapshot().player.position
+    expect(sing(game)).toEqual([
+      { type: 'awaken', id: goblet, outcome: 'path-opened' },
+    ])
+    expect(game.snapshot()).toMatchObject({
+      phase: 'idle',
+      activeEncounter: null,
+    })
+    expect(game.snapshot().breakables[0]).toMatchObject({
+      charge: 1,
+      phase: 'complete',
+      brokenAt: null,
+    })
+    expect(game.snapshot().breakables[0]?.shatterPlaybackSpeed).toBeUndefined()
+    expect(game.snapshot().enabledPlatformIds).toContain('arch-bridge')
+    expect(game.saveProgress()).toMatchObject({
+      version: 2,
+      completedBreakableIds: [goblet],
+    })
+    expect(game.beginEncounter(goblet, 57)).toBe(false)
+    expect(sing(game)).toEqual([])
+    game.step({ ...idle, moveX: 1 }, MOVEMENT.fixedStep)
+    expect(game.snapshot().player.position.x).toBeGreaterThan(parked.x)
+
+    const restored = createGlassGame(AWAKEN_LEVEL, game.saveProgress())
+    expect(restored.snapshot().breakables[0]).toMatchObject({
+      charge: 1,
+      phase: 'complete',
+      brokenAt: null,
+    })
+    expect(restored.snapshot().enabledPlatformIds).toContain('arch-bridge')
+    expect(restored.beginEncounter(goblet, 57)).toBe(false)
+  })
+
+  it('does not earn awakening from a cancelled incomplete note', () => {
+    const game = createGlassGame(AWAKEN_LEVEL)
+    walkToGoblet(game)
+    expect(game.beginEncounter(goblet, 57)).toBe(true)
+    game.feedPitch(
+      {
+        sequence: 0,
+        captureSeconds: 0,
+        capturedAtMs: 0,
+        confidence: 0.9,
+        midi: 57,
+      },
+      0,
+    )
+    game.cancelEncounter()
+    expect(game.saveProgress().completedBreakableIds).toEqual([])
+    expect(game.snapshot().breakables[0]).toMatchObject({
+      charge: 0,
+      phase: 'idle',
+      brokenAt: null,
+    })
+    expect(game.snapshot().enabledPlatformIds).not.toContain('arch-bridge')
+  })
+
+  it('persists the same one-time reward ledger for awakened exhibits', () => {
+    const level: LevelDefinition = {
+      ...AWAKEN_LEVEL,
+      rewards: {
+        revision: 1,
+        grading: [],
+        discoveries: [{ encounterId: goblet, coinIds: ['awakening-proof'] }],
+      },
+    }
+    const game = createGlassGame(level)
+    walkToGoblet(game)
+    expect(game.beginEncounter(goblet, 57)).toBe(true)
+    sing(game)
+    expect(game.saveProgress().rewards).toMatchObject({
+      discoveredEncounterIds: [goblet],
+      collectedCoinIds: ['awakening-proof'],
+    })
+    const restored = createGlassGame(level, game.saveProgress())
+    expect(restored.saveProgress().rewards).toEqual(game.saveProgress().rewards)
+    expect(restored.beginEncounter(goblet, 57)).toBe(false)
+  })
+
+  it.each([
+    { completion: 'unknown' },
+    { completion: null },
+    { mount: undefined },
+    { presentation: { kind: 'barrier', facingYaw: 0 } },
+    { challenge: { kind: 'melody-contour' } },
+  ])('rejects unsupported awakening content %j', (patch) => {
+    const level = {
+      ...AWAKEN_LEVEL,
+      breakables: [{ ...AWAKEN_LEVEL.breakables[0], ...patch }],
+    } as LevelDefinition
+    expect(() => createGlassGame(level)).toThrow(/completion|Awakening/)
+  })
+
   it('starts with closed progression bridges and no active voice', () => {
     const game = createGlassGame(GLASSWORKS)
     expect(game.snapshot().enabledPlatformIds).not.toContain('arch-bridge')

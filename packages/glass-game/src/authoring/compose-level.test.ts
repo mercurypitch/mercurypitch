@@ -271,6 +271,51 @@ function transformedFixture(): {
 }
 
 describe('composeLevel', () => {
+  it.each(['awaken', 'shatter'] as const)(
+    'preserves an explicit %s completion policy on the compiled mounted exhibit',
+    (completion) => {
+      const { source, catalog } = transformedFixture()
+      const level = composeLevel(
+        {
+          ...source,
+          exhibits: source.exhibits.map((exhibit) => ({
+            ...exhibit,
+            completion,
+          })),
+        },
+        catalog,
+      )
+      expect(level.breakables[0]?.completion).toBe(completion)
+      expect(level.breakables[0]?.mount?.kind).toBe('plinth')
+      expect(() => createGlassGame(level)).not.toThrow()
+    },
+  )
+
+  it('rejects an unknown completion policy instead of silently reverting to shatter', () => {
+    const { source, catalog } = transformedFixture()
+    const malformed = {
+      ...source,
+      exhibits: source.exhibits.map((exhibit) => ({
+        ...exhibit,
+        completion: 'unknown',
+      })),
+    } as unknown as AuthoredLevelSource
+    expect(() => composeLevel(malformed, catalog)).toThrow(/completion/)
+  })
+
+  it('rejects unsupported melody awakening through ordinary exhibit authoring', () => {
+    const { source, catalog } = transformedFixture()
+    const malformed = {
+      ...source,
+      exhibits: source.exhibits.map((exhibit) => ({
+        ...exhibit,
+        completion: 'awaken',
+        challenge: { kind: 'melody-contour' },
+      })),
+    } as unknown as AuthoredLevelSource
+    expect(() => composeLevel(malformed, catalog)).toThrow(/Melodic encounters/)
+  })
+
   it('applies one translated quarter turn to every gameplay and presentation datum', () => {
     const { source, catalog } = transformedFixture()
 

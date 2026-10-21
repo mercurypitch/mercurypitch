@@ -203,6 +203,8 @@ export type PitchTargets = Readonly<Partial<Record<PitchTargetId, number>>>
 
 export interface PitchStepDefinition {
   target: PitchTargetId
+  /** Archive placards use a range-safe degree above the calibrated comfortable note. */
+  archiveNoteDegree?: 0 | 1 | 2
   hold: HoldDefinition
 }
 
@@ -252,6 +254,8 @@ export interface BreakableDefinition {
   variant: string
   /** Optional authored sound semantics; legacy exhibits use their render recipe's family. */
   soundProfile?: GlassShatterProfile
+  /** Mounted pitch exhibits may stay intact; omitted keeps the original shatter. */
+  completion?: 'shatter' | 'awaken'
   optional: boolean
   requiresCompleted?: readonly string[]
   challenge: ChallengeDefinition
@@ -550,6 +554,14 @@ export const LEVEL_MOVEMENT_LIMITS = {
   maximumRunRampSeconds: 5,
 } as const
 
+/** Ordered intact-glass groups judged by a protection session, never by a pitch encounter. */
+export interface ProtectionRoomDefinition {
+  id: string
+  vesselIds: readonly string[]
+  bounds: BoundsXZ
+  top: number
+}
+
 export interface LevelDefinition {
   id: string
   title: string
@@ -560,6 +572,7 @@ export interface LevelDefinition {
   movement?: LevelMovementDefinition
   camera?: LevelCameraDefinition
   melodyLesson?: MelodyLessonDefinition
+  protectionRooms?: readonly ProtectionRoomDefinition[]
   intentionalGaps?: readonly IntentionalGapDefinition[]
   spawn: { position: Vec3; facingYaw: number; checkpointId?: string }
   platforms: readonly PlatformDefinition[]
@@ -754,6 +767,7 @@ export type GameEvent =
     }
   | { type: 'challenge-reset'; id: string; reason: 'wrong-order' }
   | { type: 'break'; id: string; outcome: BreakOutcome }
+  | { type: 'awaken'; id: string; outcome: BreakOutcome }
   | { type: 'complete' }
 
 export interface GlassGame {
@@ -772,6 +786,8 @@ export interface GlassGame {
   /** A number is the backwards-compatible shorthand for `{ comfortable: n }`. */
   beginEncounter(id: string, targets: number | PitchTargets): boolean
   feedPitch(frame: PitchObservation, nowMs: number): GameEvent[]
+  /** Accepts a protection-session result only in its reachable authored room. */
+  completeProtectionRoom(roomId: string): boolean
   cancelEncounter(): void
   /** Visual playback and cinematic hold only; changes apply to the next break. */
   setShatterPlaybackSpeed(speed: number): void
