@@ -213,7 +213,7 @@ const ENTRIES: readonly Lesson[] = [
     // where the page state publishes it (publish.ts).
     minutes: 15,
     page: '/learn/03',
-    hook: "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?",
+    hook: "Asked, most students said they couldn't copy a tune. What happened when researchers tested it?",
     sig: "The singer's line chasing Merc's target band, the gap shrinking in cents.",
     pr: {
       needs: 'Pitch Hold (a slug)',

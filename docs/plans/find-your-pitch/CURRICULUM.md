@@ -59,7 +59,7 @@ goes in the thumbnail text, the first line of the description and the cold open 
 | 0   | Trailer          | Find your pitch                       | all                    | What if you could see every note you sing? (2 to 3 minutes: the promise and the map of all 14 hooks) |
 | 1   | Theory           | What is a note? **(in production)**   | T01, T02               | If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?          |
 | 2   | Theory           | Twelve notes                          | T03, T04: cents        | Musicians only use seven letters, so where do the other five notes come from?                        |
-| 3   | Voice            | Match a note                          | S01, S05, T04: in tune | Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?         |
+| 3   | Voice            | Match a note                          | S01, S05, T04: in tune | Asked, most students said they couldn't copy a tune. What happened when researchers tested it?       |
 | 4   | Theory           | The major scale and home              | T09, T10               | Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?              |
 | 5   | Voice            | Breath and a steady note              | S02, S03, S04, S06     | Singers are told to "support" a long note. If that doesn't mean pushing, what keeps it steady?       |
 | 6   | Theory           | Intervals: the distance between notes | T11, T12               | Why can you start "Twinkle, Twinkle" on any note and it is still the same tune?                      |
