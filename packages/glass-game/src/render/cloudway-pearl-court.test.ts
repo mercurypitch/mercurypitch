@@ -10,7 +10,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { PlatformDefinition } from '../contracts'
 import { CLOUDWAY_LAB_PLATFORM_RENDER_IDS } from './cloudway-laboratory-catalog'
 import { fitCloudwayLaboratoryRigidPresentation } from './cloudway-laboratory-platforms'
-import { clipPearlCourtGeometry, createPearlCourtBatches, PEARL_COURT_EDGES,pearlCourtJoinMask,  } from './cloudway-pearl-court'
+import { clipPearlCourtGeometry, createPearlCourtBatches, PEARL_COURT_EDGES, pearlCourtJoinMask, } from './cloudway-pearl-court'
+import * as pearlSurface from './cloudway-pearl-surface'
 import { disposeObject } from './dispose'
 import * as rigidBatch from './rigid-platform-batch'
 import { updateRigidPlatformBatch } from './rigid-platform-batch'
@@ -249,6 +250,124 @@ describe('Pearl continuous court presentation', () => {
     dispose.mockRestore()
     donor.geometry.dispose()
     donor.material.dispose()
+  })
+
+  it('releases completed shell and marble batches after a later failure without taking source ownership', () => {
+    const donorMap = new Texture()
+    const surfaceMaps = [new Texture(), new Texture(), new Texture()]
+    const donor = new Mesh(
+      new BoxGeometry(3.4, 0.34, 0.9),
+      new MeshStandardMaterial({ map: donorMap }),
+    )
+    const surfaceMaterial = new MeshStandardMaterial({
+      map: surfaceMaps[0],
+      normalMap: surfaceMaps[1],
+      roughnessMap: surfaceMaps[2],
+    })
+    donor.updateMatrixWorld(true)
+    const sourceAttributes = Object.entries(donor.geometry.attributes).map(
+      ([name, attribute]) => ({
+        name,
+        attribute,
+        values: attribute.array.slice(),
+      }),
+    )
+    const sourceIndex = donor.geometry.index!
+    const sourceIndices = sourceIndex.array.slice()
+    const borrowedDispose = vi.fn()
+    for (const borrowed of [
+      donor.geometry,
+      donor.material,
+      surfaceMaterial,
+      donorMap,
+      ...surfaceMaps,
+    ])
+      borrowed.addEventListener('dispose', borrowedDispose)
+    const dispose = vi.spyOn(BufferGeometry.prototype, 'dispose')
+    const replaced: ReturnType<typeof pearlSurface.replacePearlCourtSurface>[] =
+      []
+    const replaceOriginal = pearlSurface.replacePearlCourtSurface
+    const replace = vi
+      .spyOn(pearlSurface, 'replacePearlCourtSurface')
+      .mockImplementation((...args) => {
+        const result = replaceOriginal(...args)
+        replaced.push(result)
+        return result
+      })
+    const completed: ReturnType<typeof rigidBatch.createRigidPlatformBatch>[] =
+      []
+    const batchDispose = [vi.fn(), vi.fn()]
+    const attemptedGeometries: BufferGeometry[] = []
+    const original = rigidBatch.createRigidPlatformBatch
+    const create = vi
+      .spyOn(rigidBatch, 'createRigidPlatformBatch')
+      .mockImplementation((...args) => {
+        attemptedGeometries.push(args[0].geometry)
+        if (attemptedGeometries.length === 3)
+          throw new Error('fixture failure after marble batch')
+        const batch = original(...args)
+        batch.mesh.addEventListener('dispose', batchDispose[completed.length]!)
+        completed.push(batch)
+        return batch
+      })
+    try {
+      const platforms = [platform('a'), platform('b', 0, 0.72)]
+      expect(() =>
+        createPearlCourtBatches(
+          donor,
+          platforms.map((item) => ({
+            platform: item,
+            placement: new Matrix4(),
+          })),
+          contact,
+          surfaceMaterial,
+        ),
+      ).toThrow('fixture failure after marble batch')
+      expect(completed.map((batch) => batch.mesh.material)).toEqual([
+        donor.material,
+        surfaceMaterial,
+      ])
+      for (const listener of batchDispose)
+        expect(listener).toHaveBeenCalledOnce()
+      expect(replaced).toHaveLength(2)
+      const ownedGeometries = new Set([
+        ...attemptedGeometries,
+        ...replaced.flatMap(({ shell, surface }) => [
+          ...shell,
+          ...(surface === null ? [] : [surface]),
+        ]),
+      ])
+      for (const geometry of ownedGeometries) {
+        expect(geometry).not.toBe(donor.geometry)
+        expect(
+          dispose.mock.contexts.filter((disposed) => disposed === geometry),
+        ).toHaveLength(1)
+      }
+      // Intermediate cut parts are owned too, even when they share donor attributes.
+      expect(new Set(dispose.mock.contexts).size).toBe(
+        dispose.mock.contexts.length,
+      )
+      expect(borrowedDispose).not.toHaveBeenCalled()
+      for (const { name, attribute, values } of sourceAttributes) {
+        expect(donor.geometry.getAttribute(name)).toBe(attribute)
+        expect(attribute.array).toEqual(values)
+      }
+      expect(donor.geometry.index).toBe(sourceIndex)
+      expect(sourceIndex.array).toEqual(sourceIndices)
+      expect(donor.material.map).toBe(donorMap)
+      expect(surfaceMaterial.map).toBe(surfaceMaps[0])
+      expect(surfaceMaterial.normalMap).toBe(surfaceMaps[1])
+      expect(surfaceMaterial.roughnessMap).toBe(surfaceMaps[2])
+    } finally {
+      create.mockRestore()
+      replace.mockRestore()
+      dispose.mockRestore()
+      donor.geometry.dispose()
+      donor.material.dispose()
+      surfaceMaterial.dispose()
+      donorMap.dispose()
+      surfaceMaps.forEach((map) => map.dispose())
+    }
   })
 
   it('clips the actual fitted indexed Pearl donor and preserves its source hash and unjoined bounds', async () => {

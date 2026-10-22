@@ -10,6 +10,7 @@ import { validateCloudwayCrackleDonor } from './cloudway-crackle-contract'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS, CLOUDWAY_LAB_PEARL_PRESENTATION_FIT, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_RIGID_MATERIAL_ROLES, CLOUDWAY_LAB_ROOT_NAMES, CLOUDWAY_LAB_SCROLL_MATERIAL_BINDINGS, } from './cloudway-laboratory-catalog'
 import { validateCloudwayLaboratoryStaticDonor } from './cloudway-laboratory-static-contract'
 import { createPearlCourtBatches } from './cloudway-pearl-court'
+import { createPearlCourtMaterial } from './cloudway-pearl-material'
 import { CLOUDWAY_PLATFORM_FOG_CULL_MARGIN, createCloudwayPlatformViewSelector, } from './cloudway-platform-culling'
 import { resolveCloudwayFog } from './cloudway-scene'
 import type { CloudwayScrollAdapter } from './cloudway-scroll-adapter'
@@ -342,6 +343,10 @@ export function createCloudwayLaboratoryPlatformRenderer(
       return { placement, platform }
     })
     const staged: RigidPlatformBatch[] = []
+    const courtMaterial =
+      key === 'pearlRest'
+        ? createPearlCourtMaterial(materials.marble, materialLibrary.materials)
+        : undefined
     try {
       template.traverse((object) => {
         const sourceMesh = object as Mesh
@@ -352,6 +357,7 @@ export function createCloudwayLaboratoryPlatformRenderer(
                 sourceMesh,
                 placements,
                 validated.collider,
+                courtMaterial,
               )
             : [createRigidPlatformBatch(sourceMesh, placements)]),
         )

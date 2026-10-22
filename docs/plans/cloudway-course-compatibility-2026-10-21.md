@@ -67,7 +67,7 @@ contained so studies and the current course can still be played.
 PR #1087 remains unchanged on the reviewed green head. This local follow-up
 does not represent new CI, a native build or physical-device acceptance.
 
-## Next visual pass
+## Initial visual handoff
 
 The gate wings need an underside support treatment while retaining their exact
 above-floor collision. A tapered stone return can share the existing mesh and
@@ -78,4 +78,6 @@ Repeated Pearl court ornament needs a dedicated continuous-court adapter.
 Shrinking the donor art would expose unsupported-looking contact edges; opaque
 seam strips would only conceal the overlap. Preserve the outer endcaps,
 walkable faces, UVs and batching when developing that treatment. Neither visual
-change is part of this compatibility follow-up.
+change was part of the initial compatibility commit. Both are now implemented
+on the follow-up branch; the implementation and measured artwork costs are in
+[the court presentation notes](cloudway-court-presentation-2026-10-22.md).
