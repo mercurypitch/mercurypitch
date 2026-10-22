@@ -282,22 +282,28 @@ export function initSing(stills: RingStills): void {
       toListening('nomic')
       return
     }
+    // the tab hidden while the listener loaded: its visibilitychange came
+    // before the microphone did, so let it go here and end the take unstarted
+    const hidden = document.hidden
+    if (hidden) leave(true)
     const name = signName(sharpOf(r.midi))
-    const reading = await holdOne({
-      mod: mods.listen,
-      reader: mods.reader,
-      listener,
-      view,
-      which: r.which,
-      midi: r.midi,
-      length: HOLD_SEC[hold],
-      label: ringLabel(r.midi),
-      cancelled: () => me.cancelled,
-      onPhase: (p) => {
-        view.phase(p)
-        view.status(phaseStatus(hold, name, p))
-      },
-    })
+    const reading = hidden
+      ? null
+      : await holdOne({
+          mod: mods.listen,
+          reader: mods.reader,
+          listener,
+          view,
+          which: r.which,
+          midi: r.midi,
+          length: HOLD_SEC[hold],
+          label: ringLabel(r.midi),
+          cancelled: () => me.cancelled,
+          onPhase: (p) => {
+            view.phase(p)
+            view.status(phaseStatus(hold, name, p))
+          },
+        })
     mic.release()
     view.phase(null)
     if (take !== me) return

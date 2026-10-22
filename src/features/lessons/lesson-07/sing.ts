@@ -320,6 +320,14 @@ export function initSing(stills: RingStills): void {
       focusText(q('[data-listen-why="nomic"]', card))
       return
     }
+    // the tab hidden while the listener loaded: its visibilitychange came
+    // before the microphone did, so let it go here, and end the take
+    // unstarted, as one abandoned before any voice is ended
+    if (document.hidden) {
+      leave(true)
+      recordTake({ reading: null, voiced: false })
+      return
+    }
     const me = { cancelled: false }
     take = me
     phase = 'take'
