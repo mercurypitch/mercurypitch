@@ -35,7 +35,10 @@ from mathutils import Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..', '..'))
 sys.path.insert(0, os.path.join(REPO, '.claude', 'skills', 'blender-modeler', 'scripts'))
+sys.path.insert(0, HERE)
 from bkit import export, fracture, lathe, materials, profile, scene, textures, validate  # noqa: E402
+from colours import CUP, FRONT, LOBE_TOP, amber_colour, cup_top, lobe_envelope, lobe_phase  # noqa: E402
+from colours import smooth as _smooth  # noqa: E402
 
 V = profile.V
 ROOT = 'breakable_l2_low_amber_urn'
@@ -43,10 +46,8 @@ ASSET_ID = 'amber-cadence-urn'
 TILE = 0.06
 TOP = 0.720
 SHARDS = 16
-LOBES = 8
 BODY_SEGMENTS = 64  # eight per lobe, so every crease falls on a vertex column
 SEGMENTS = 32  # the plain lathes: 1.4 mm of polygon on the foot, within budget
-FRONT = -math.pi / 2  # the cabochon and the bead face -Y
 WALL = 0.010
 LAUREL_TILE = 0.09  # one repeat of the frieze: two leaf pairs, 4.5 cm apart as in the concept
 
@@ -70,8 +71,6 @@ BORE = 0.1650  # the neck's bore, which is also the body's opening
 LOWER_BAND = (0.1190, 0.1740, 0.2575, 0.2535)  # z0, z1, fillet r, frieze r
 SHOULDER_BAND = (0.5480, 0.6060)  # z0, z1 along the shoulder, up to the neck's foot
 LOBE_DEPTH = 0.13  # of the radius at a crease: the concept's creases read 12% of it or more
-LOBE_TOP = 0.552  # the creases run up under the shoulder band's lower fillet
-CUP = (0.168, 0.190, 0.220)  # the marble cup: sunk in the lower band; its top edge under a lobe, at a crease
 TUCK = 0.006  # the glass under and just above the cup's edge, set in so the cup's rim stands proud of the lobes
 BAND_INSET = 0.0025  # the shoulder band's face inside the outline, so its fillets stand on it
 GLASS_INSET = 0.0085  # the glass under the shoulder band, inside the outline: the band's 6 mm of gold on it
@@ -80,20 +79,20 @@ GLASS_INSET = 0.0085  # the glass under the shoulder band, inside the outline: t
 def palette(laurel_maps, shoulder_maps):
     # Warm cream marble with bold tan veins: the room's light cools and greys marble, and round
     # 1's #ede4d3 read saturation 0.07 to 0.10 in the game against the concept's 0.31 to 0.44.
-    marble_veins = textures.marbled('marble_veins', '#e9c99a', '#a8743f', dark='#d6b07c', size=256, veins=3,
+    marble_veins = textures.marbled('marble_veins', '#e9c189', '#9c6a36', dark='#d6aa68', size=256, veins=3,
                                     turbulence=2.4, softness=0.12, seed=9)
     return {
         'marble': textures.attach_color(
-            materials.principled('marble_cream', '#e9c99a', roughness=0.30, coat=0.35, coat_roughness=0.10),
+            materials.principled('marble_cream', '#e9c189', roughness=0.30, coat=0.35, coat_roughness=0.10),
             marble_veins, scale=1 / 4),
         # Amber set in the game's renderer. Mostly diffuse: at transmission 0.85 to 0.95 it reads as
         # glass but shows the gallery wall's black skirting through the lobes (median luminance 73
         # to 86 against the concept's 110). Its contrast is painted instead: COLOR_0 (amber_colour)
-        # lightest on each lobe's crown, darker to its sides, darkest in the crease; a clear coat
-        # for the highlights.
+        # lightest on each lobe's crown, darker to its sides, darkest in the crease. A clear coat of
+        # 0.5: at 1.0 it laid the room's blue over the dark creases.
         'amber': materials.vertex_tint(
-            materials.principled('amber_glass', '#f8b448', roughness=0.04, transmission=0.35, ior=1.52,
-                                 coat=1.0, coat_roughness=0.03)),
+            materials.principled('amber_glass', '#f4a830', roughness=0.04, transmission=0.35, ior=1.52,
+                                 coat=0.5, coat_roughness=0.03)),
         # Warmer than the amphora's: this concept's gold midtone is hue 33, saturation 0.59.
         'gold': materials.gold('gold_polished', '#e6b46a', roughness=0.22, metallic=0.75),
         'laurel': textures.attach_inlay(materials.principled('laurel_frieze', '#ffffff', roughness=0.5),
@@ -107,30 +106,6 @@ def palette(laurel_maps, shoulder_maps):
                                      coat=0.6, coat_roughness=0.05),
         'amber_cut': materials.principled('amber_cut', '#e8a64a', roughness=0.22, transmission=0.70, ior=1.52),
     }
-
-
-def _smooth(t):
-    t = min(1.0, max(0.0, t))
-    return t * t * (3 - 2 * t)
-
-
-def lobe_phase(theta):
-    """0 on a lobe's crown, 1 at a crease; the front lobe centred on FRONT."""
-    period = 2 * math.pi / LOBES
-    phi = ((theta - FRONT + period / 2) % period) - period / 2
-    return abs(phi / (period / 2))
-
-
-def cup_top(u):
-    """Height of the cup's top edge: low under a lobe's crown, rising to a cusp in each crease."""
-    _, base, cusp = CUP
-    return base + (cusp - base) * u * u
-
-
-def lobe_envelope(u, z):
-    """The share of the full crease depth at phase u and height z: none inside the cup, growing
-    out of its edge over 3 cm, held up the body, eased out over 1.2 cm under the shoulder band."""
-    return _smooth((z - cup_top(u)) / 0.030) * _smooth((LOBE_TOP - z) / 0.012)
 
 
 def lobe_depth(theta, z):
@@ -149,19 +124,6 @@ def tuck_depth(theta, z):
 
 
 BODY_LINE = profile.spline([V(r, z) for r, z in BODY], samples=8)
-
-
-def amber_colour(p):
-    """sRGB multiplier for the amber, the concept's light through each lobe: brightest on the
-    crown, deeper toward its sides and darkest, redder, in the crease (luminance p5 48, p95 200
-    at game size against round 1's 63 and 129)."""
-    u = lobe_phase(math.atan2(p.y, p.x))
-    e = lobe_envelope(u, p.z)
-    side = (0.82, 0.68, 0.55)
-    deep = (0.36, 0.22, 0.14)
-    t_side = u ** 1.5 * e
-    t_deep = u ** 6 * e
-    return tuple((1.0 + (s_ - 1.0) * t_side) * (1.0 + (d / s_ - 1.0) * t_deep) for s_, d in zip(side, deep))
 
 
 def foot(m):
@@ -433,8 +395,8 @@ def main():
     # front, so leaves 71 mm long at 48 degrees read as the concept's 53 mm at 27, and fill 86%
     # of the band (round 1's filled the middle half and the band read dark).
     shoulder_maps = textures.laurel('laurel_shoulder', 0.11, slope, pairs=2, cols=384, rows=256,
-                                    leaf=(0.071, 0.032), angle=48, relief=0.0028, stem=0.0022, ground='#4a3519',
-                                    leaf_colour='#e8b86a')
+                                    leaf=(0.071, 0.032), angle=48, relief=0.0028, stem=0.0022, ground='#5a4020',
+                                    leaf_colour='#f0c878', leaf_trm=(0.0, 0.30, 0.30))
     m = palette(maps, shoulder_maps)
     lower, lower_slot = band_ring('lower_band', m, z0, z1, fillet_r, frieze_r, 0.2300)
     laurel_uvs(lower, lower_slot, LAUREL_TILE, z0=z0 + 0.009, z1=z1 - 0.009)
@@ -460,6 +422,14 @@ def main():
         facts['parts'][part.name] = {k: rep[k] for k in ('tris', 'components', 'volume_m3', 'self_intersections')}
         if problems:
             raise SystemExit(f'part {part.name} fails its gates: {problems}')
+    # No part may reach into the hollow: separate shells pass every other gate while doing it.
+    shell = next(p for p in parts if p.name == 'body')
+    hollow = validate.cavity_intrusions(shell, [p for p in parts if p is not shell], z_min=0.208,
+                                        z_max=seat - 0.011)
+    facts['cavity_intrusions'] = {name: count for name, (count, _) in hollow.items()}
+    inside = {name: f'{count} vertices, {deep * 1000:.1f} mm' for name, (count, deep) in hollow.items() if count}
+    if inside:
+        raise SystemExit(f'parts inside the cavity: {inside}')
 
     root = scene.empty(ROOT)
     root['asset_id'] = ASSET_ID
