@@ -47,7 +47,8 @@ TILE = 0.06
 TOP = 0.720
 SHARDS = 16
 BODY_SEGMENTS = 64  # eight per lobe, so every crease falls on a vertex column
-SEGMENTS = 32  # the plain lathes: 1.4 mm of polygon on the foot, within budget
+SEGMENTS = 28  # the plain lathes: 1.6 mm of polygon on the foot; a column on the front for the bead
+BAND_SEGMENTS = 32  # the shoulder band, on the widest radius and holding the stone
 WALL = 0.010
 LAUREL_TILE = 0.09  # one repeat of the frieze: two leaf pairs, 4.5 cm apart as in the concept
 
@@ -78,6 +79,7 @@ LOBE_RINGS = (0.238, 0.250, 0.262, 0.275, 0.288, 0.300, 0.330, 0.370, 0.410, 0.4
               0.548)  # ends on SHOULDER_BAND[0]
 LOBE_DEPTH = 0.13  # of the radius at a crease: the concept's creases read 12% of it or more
 TUCK = 0.010  # the glass under and just above the cup's edge, set in so the cup's rim stands proud of the lobes
+VALLEY_FULL = 0.410  # where a crease reaches its full depth (the belly), rising steadily from the cup's cusp
 FLOOR_Z = 0.240  # the cavity's floor: solid amber below, so the tuck never thins a wall (the concept's thick base)
 BAND_INSET = 0.0025  # the shoulder band's face inside the outline, so its fillets stand on it
 GLASS_INSET = 0.0085  # the glass under the shoulder band, inside the outline: the band's 6 mm of gold on it
@@ -97,9 +99,11 @@ def palette(laurel_maps, shoulder_maps):
         # pale base it read pale and smoky (saturation 0.5); at 0.35-0.5 on a saturated base it held
         # the concept's median colour but read as milky pottery to two critics. At 0.9 on #ffbe55 it
         # reads as glass: the room shows through, the lower lobes go deep amber, dark tones match
-        # (p5 58 against 53-60), median (143, 81, 40) against (166, 100, 32). COLOR_0 only leans the
-        # valleys toward the thicker glass's colour (colours.py, rule 11). A clear coat of 0.5: at
-        # 1.0 it laid the room's blue over the creases. The game ignores emission on it.
+        # (p5 58 against 53-60), median (143, 81, 40) against (166, 100, 32). Its colour gathers over
+        # 15 cm (optics.json): over 5 cm it read browner, hue 26 and median luminance 85 against the
+        # concept's 30 and 110 (15 cm: 31 and 93). COLOR_0 only leans the valleys toward the thicker
+        # glass's colour (colours.py, rule 11). A clear coat of 0.5: at 1.0 it laid the room's blue
+        # over the creases. The game ignores emission on it.
         'amber': materials.vertex_tint(
             materials.principled('amber_glass', '#ffbe55', roughness=0.04, transmission=0.90, ior=1.52,
                                  coat=0.5, coat_roughness=0.03)),
@@ -198,21 +202,55 @@ def body(m):
     pts = [V(0.0, BODY[0][1])] + outer + [top] + inner
 
     # The outer wall's push per ring and lobe phase (eight columns a lobe: phases 0, 1/4 .. 1): the
-    # crease depth, clamped so a valley never turns back in as it rises out of the cup while the
-    # body still widens (round 3's zebra: radius 0.356, 0.349, 0.364 m, a closed eye), plus the tuck.
-    # The clamp is set on the valley column and scales every phase by the same share, so the
-    # section keeps its shape (clamping each column alone left a valley shallower than its sides:
-    # 24 crossing faces).
+    # crease depth plus the tuck. Up from the cup's cusp the valley follows one rising curve, concave
+    # all the way as the body is (its slope falling steadily), to the full crease at the belly, set
+    # where its vertices land (a push along the normal also lifts them, up to 2 cm here). Grown at
+    # the lobes' own rate the crease turned the valley back in as it left the cup (round 3's zebra:
+    # radius 0.356, 0.349, 0.364 m); clamped not to, the valley stood upright for 4 cm while the
+    # body flared round it; joined to the full crease at 0.33 m the curve steepened again near its
+    # end. Each read as a closed eye in zebra. Every phase of a ring scales by the valley's share,
+    # so the section keeps its shape (each column on its own left a valley shallower than its
+    # sides: 24 crossing faces).
     valley = FRONT + math.pi / LOBES
-    share, last = [], None
-    for p in outer:
-        tuck = tuck_depth(valley, p.y)
+
+    def landed(z, depth):  # where a push of `depth` plus the tuck along the outline's normal lands
+        t = profile.tangent_at(glass, z)
+        return V(profile.radius_at(glass, z), z) - V(t.y, -t.x) * (depth + tuck_depth(valley, z))
+
+    z_a, z_b = cup_top(1.0), VALLEY_FULL
+    a, b = landed(z_a, 0.0), landed(z_b, lobe_depth(valley, z_b))
+    b0, b1 = (landed(z, lobe_depth(valley, z)) for z in (z_b - 0.005, z_b + 0.005))
+    t_a = profile.tangent_at(glass, z_a)
+    secant = (b.x - a.x) / (b.y - a.y)
+    s_b = min((b1.x - b0.x) / (b1.y - b0.y), secant)
+    slopes = (min(t_a.x / t_a.y, 3 * secant - 2 * s_b), s_b)  # concave: 2 s_a + 4 s_b <= 6 secant
+
+    def rise(z):  # the valley's radius at height z: a cubic Hermite from a to b
+        h = b.y - a.y
+        t = min(1.0, max(0.0, (z - a.y) / h))
+        return ((2 * t ** 3 - 3 * t ** 2 + 1) * a.x + (t ** 3 - 2 * t ** 2 + t) * h * slopes[0]
+                + (-2 * t ** 3 + 3 * t ** 2) * b.x + (t ** 3 - t ** 2) * h * slopes[1])
+
+    share = []
+    for i, p in enumerate(outer):
         want = lobe_depth(valley, p.y)
-        depth = want
-        if last is not None and p.y < 0.41:  # below the widest belly the valley keeps widening
-            depth = max(0.0, min(want, p.x - tuck - last))
-        share.append(depth / want if want > 1e-9 else 1.0)
-        last = p.x - depth - tuck
+        if not (z_a < p.y < z_b and want > 1e-9):
+            share.append(1.0)
+            continue
+        n = -profile.normal_in(pts, i + 1)  # the lathe's own normal for this ring
+        tuck = tuck_depth(valley, p.y)
+        off = lambda d: (p - n * (d + tuck)).x - rise((p - n * (d + tuck)).y)  # noqa: E731
+        lo, hi = 0.0, want
+        if off(hi) >= 0.0:
+            share.append(1.0)
+            continue
+        if off(lo) <= 0.0:
+            share.append(0.0)
+            continue
+        for _ in range(40):  # bisect for the depth that lands the valley on the curve
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if off(mid) > 0.0 else (lo, mid)
+        share.append(lo / want)
     push = {}
     for j in range(5):
         theta = FRONT + j / 4 * math.pi / LOBES
@@ -255,8 +293,8 @@ def cup(m):
     # 60 degrees was 25 mm across, and the cup stood 3.6 mm off the glass: the critic's 4-9 mm
     # slot, and every fracture cell between rim and foot two shards. The faces inside the glass
     # are amber: cream there showed through the lobes as a scalloped line.
-    section = [(z0, 0.0005), (rim, 0.0005), (base - 0.002, -0.0005), (base + 0.002, -0.0040),
-               (base + 0.003, -0.0075), (base + 0.0005, -0.0125), (rim, -0.0130), (z0, -0.0130)]
+    section = [(z0, 0.0005), (rim, 0.0005), (base - 0.002, -0.0005), (base + 0.003, -0.0055),
+               (base + 0.0005, -0.0125), (rim, -0.0130), (z0, -0.0130)]
     pts = [on(z, off) for z, off in section]
 
     def lift(theta, _z, i):
@@ -267,7 +305,7 @@ def cup(m):
         return (p.x - pts[i].x, p.y - pts[i].y)
 
     marble, amber = 0, 1
-    slots = [marble] * 5 + [amber] * 3  # outside and rim; then into the glass, the inner face, the bottom
+    slots = [marble] * 4 + [amber] * 3  # outside and rim; then into the glass, the inner face, the bottom
     return lathe.lathe('cup', pts, BODY_SEGMENTS, closed=True, modulate=lift, material=[m['marble'], m['amber']],
                        span_materials=slots, sharp_degrees=60, uv=TILE)
 
@@ -297,7 +335,7 @@ def shoulder_band(m):
     k0, k1 = 4, len(front) - 5  # the frieze runs between the fillets
     pts = list(reversed(back)) + front
     slots = [gold] * len(back) + [laurel if k0 <= i < k1 else gold for i in range(len(front) - 1)] + [gold]
-    obj = lathe.lathe('shoulder_band', pts, SEGMENTS, closed=True, material=[m['gold'], m['laurel_high']],
+    obj = lathe.lathe('shoulder_band', pts, BAND_SEGMENTS, closed=True, material=[m['gold'], m['laurel_high']],
                       span_materials=slots, sharp_degrees=50, uv=TILE)
     return obj, laurel, front[k0:k1 + 1]
 
@@ -326,7 +364,7 @@ def front_point(r, z, out=0.0, theta=FRONT):
     return Vector(((r + out) * math.cos(theta), (r + out) * math.sin(theta), z))
 
 
-def bead(m, name, r, z, radius, *, theta=FRONT, sink=0.45, segments=14, rings=10):
+def bead(m, name, r, z, radius, *, theta=FRONT, sink=0.45, segments=12, rings=6):
     """A gold bead on a band at angle theta, `sink` of its radius set into it."""
     pts = [V(radius * math.sin(math.pi * k / rings), -radius * math.cos(math.pi * k / rings)) for k in range(rings + 1)]
     obj = lathe.lathe(name, [V(0.0, p.y) if i in (0, rings) else p for i, p in enumerate(pts)], segments,
@@ -444,16 +482,20 @@ def main():
     frieze_h = (z1 - z0) - 2 * 0.009
     # One row of 32 mm leaves running out from the bead along the stem, as the concept draws it;
     # two rows of small ones at 36 degrees read as a thin dark strip at 128 px.
+    # Both friezes' leaves at metallic 0.6, roughness 0.4, set in the game from probes: at 1.0 and
+    # 0.25 (round 3's ask) the shoulder band, facing the ceiling, mirrored it dark, median luminance
+    # 93 against the concept's 154 (0.6 and 0.4: 122, its highlights 181 against 222).
     maps = textures.laurel('laurel', LAUREL_TILE, frieze_h, pairs=3, cols=384, rows=96, leaf=(0.040, 0.014),
-                           angle=20, relief=0.0022, stem=0.0016, ground='#33200d', leaf_colour='#e0ad62',
-                           leaf_trm=(0.0, 0.25, 1.0))
+                           angle=20, relief=0.0022, stem=0.0016, ground='#33200d', leaf_colour='#e8b86c',
+                           ground_trm=(0.0, 0.85, 0.20), leaf_trm=(0.0, 0.40, 0.60))
     slope = profile.length(profile.between(BODY_LINE, *SHOULDER_BAND)) - 0.013  # less the fillets
     # Drawn for the camera: the 21 degree slope shows a frieze at under half its height from the
     # front, so leaves 71 mm long at 48 degrees read as the concept's 53 mm at 27, and fill 86%
     # of the band (round 1's filled the middle half and the band read dark).
     shoulder_maps = textures.laurel('laurel_shoulder', 0.11, slope, pairs=2, cols=384, rows=256,
                                     leaf=(0.071, 0.036), angle=48, relief=0.0028, stem=0.0022, ground='#5a3916',
-                                    leaf_colour='#f6bc62', leaf_trm=(0.0, 0.25, 1.0))
+                                    leaf_colour='#fcc870', ground_trm=(0.0, 0.85, 0.20),
+                                    leaf_trm=(0.0, 0.40, 0.60))
     m = palette(maps, shoulder_maps)
     lower, lower_slot = band_ring('lower_band', m, z0, z1, fillet_r, frieze_r, 0.2300)
     laurel_uvs(lower, lower_slot, LAUREL_TILE, z0=z0 + 0.009, z1=z1 - 0.009)
