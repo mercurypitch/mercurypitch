@@ -29,7 +29,6 @@ import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, }
 import { navigateTo } from '@/lib/hash-router'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
-import { openLearningWalkthrough } from '@/stores/app-store'
 import { exerciseHistory } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
@@ -173,22 +172,15 @@ const HomePage: Component = () => {
               })}
             </p>
           </div>
-          {/* Learn and What's new sat in the sidebar, where four controls no
-              longer fit a phone and neither had anything to do with the page
-              you were on. Home is where you arrive, which is where "what is
-              this" and "what changed" belong. Lessons is the third door: the
-              Find Your Pitch lessons are their own documents (/learn/01, not
-              an app route), so it is a plain link and the visit leaves the
-              app, the way /delete-account does. */}
+          {/* Lessons and What's new. The Find Your Pitch lessons are their
+              own documents (/learn/01, not an app route), so Lessons is a
+              plain link and the visit leaves the app, the way /delete-account
+              does. Learn, the read-along chapters about the app, sat here
+              beside it for a release; two doors both called learn led to
+              different places, so Learn went back to the sidebar with Guide
+              and Tour, and Home's one learning door is the singing course.
+              What's new stays: Home is where you arrive. */}
           <div class={styles.headActions}>
-            <button
-              type="button"
-              class={styles.headAction}
-              onClick={() => openLearningWalkthrough()}
-              data-testid="home-learn"
-            >
-              Learn
-            </button>
             <a
               class={styles.headAction}
               href="/learn/01"
