@@ -14,6 +14,7 @@ Start with [MASTER-PLAN.md](MASTER-PLAN.md).
 | [CURIOSITY-MOMENTS.md](CURIOSITY-MOMENTS.md)                             | One curiosity moment per lesson: the opening question and its visual, where the lesson answers it, and the tease that sets up the next lesson                  |
 | [MERC-BIBLE.md](MERC-BIBLE.md)                                           | The hosts: canon, roles, looks, voices, behaviour, production, engineering backlog                                                                             |
 | [PRODUCTION-PIPELINE.md](PRODUCTION-PIPELINE.md)                         | The film and web pipeline as built on Lessons 1 and 2, with commands and traps                                                                                 |
+| [HANDOFF.md](HANDOFF.md)                                                 | Where the season stands on 22 October 2026: release day, the decisions waiting, what was left for later and what is ahead                                      |
 | [lessons/01-what-is-a-note/](lessons/01-what-is-a-note/)                 | Lesson 1: brief, facts, script with `script.json`, storyboard, handoffs, build guide, decisions, captions (SRT, VTT, chapters), written lesson, web spec       |
 | [lessons/02-twelve-notes/](lessons/02-twelve-notes/)                     | Lesson 2: the same set as Lesson 1, plus the film's build decisions (BUILD-DECISIONS.md)                                                                       |
 | [lessons/03-match-a-note/](lessons/03-match-a-note/)                     | Lesson 3, text only: facts, written lesson, web spec                                                                                                           |
@@ -34,9 +35,9 @@ Start with [MASTER-PLAN.md](MASTER-PLAN.md).
 Each lesson's documents are kept in its folder under `lessons/`; a filmed lesson's LEDGER follows
 its critic rounds. The film projects (compositions, tools, Merc passes) live in
 `output/motion/lesson-01/` and `output/motion/lesson-02/`, gitignored per the motion pipeline's
-house rules; those sources move to a private repository (MASTER-PLAN § 12 item 2). Its web lesson was proved as a private preview page, and its public
-home is the app's `mercurypitch.com/learn/01` (MASTER-PLAN § 12 item 9). MASTER-PLAN § 11 lists
-what exists now.
+house rules; those sources move to a private repository (MASTER-PLAN § 12 item 2). Lesson 1's web
+lesson was proved as a private preview page, and its public home is the app's
+`mercurypitch.com/learn/01` (MASTER-PLAN § 12 item 9). MASTER-PLAN § 11 lists what exists now.
 
 ## How the plan cites the app
 
