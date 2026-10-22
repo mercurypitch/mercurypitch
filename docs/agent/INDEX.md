@@ -508,6 +508,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm test:e2e:cloud` | `playwright test -c playwright.cloud.config.ts` |
 | `pnpm indexnow` | `node scripts/indexnow.mjs` |
 | `pnpm lyrics:compare` | `node scripts/compare-lrc-timing.mjs` |
+| `pnpm lesson:words` | `node scripts/lesson-words.mjs` |
 | `pnpm marketing:capture` | `node scripts/capture-marketing.mjs` |
 | `pnpm test:tours` | `node scripts/walk-tours.mjs` |
 | `pnpm audit:mobile` | `node scripts/audit-exercises-mobile.mjs` |
