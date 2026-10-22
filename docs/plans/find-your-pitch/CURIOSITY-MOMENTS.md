@@ -29,8 +29,8 @@ lesson's question, posed the same way. The facts and animations added later go i
    the reveal waits until it is heard, no choice is called wrong, and the other choice is "a fair guess" (rules 2, 15).
 3. **Show, don't tell.** A sound and a figure, pitch drawn as height or the lesson's own object, with the words
    beside it. The Mercs act; they don't decorate (rules 5, 10, 13, 20).
-4. **The title must not answer the predict,** which sits right under it. Lessons 3, 6 and 13 needed this fix;
-   their entries say how.
+4. **The title must not answer the predict,** which sits right under it, and nor must the promise between them.
+   Lessons 3, 6 and 13 needed this fix for the title, and Lesson 5 for its promise; their entries say how.
 5. **Pay off within the lesson,** at a named step. Both films close their main loop at about 40 % and carry the next
    lesson's loop to the end: keep that (production-research §5.2 gives 70 to 80 % for a film with one loop).
 6. **End on the next lesson's question.** The tease is the next opening in miniature: its set-up, never its answer,
@@ -124,6 +124,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Opening (exists):** Orange "So if I push the air out harder, the note holds steadier?" Blue "Let's listen.
   Here's one note, sung easily."; then the predict [Settle, steadier than before] [Get louder and drift higher].
   Question: if pushing moves the note, what keeps it steady? On phones an open recall comes first (§3.1).
+- **Promise, changed on 22 October 2026:** "By the end you'll know what pushing does to a note", which said "why
+  pushing moves a note" and so told the predict under it which way the line goes (rule 4).
 - **Visual:** the band chart and loudness strip (`kit/band-chart.ts`, `kit/loud.ts`, exist). **Payoff:** Step 1
   (pushing moves the note), Steps 2 to 4 (breathe in low, start easily), Step 5 and the hold in Sing it.
 - **Tease:** seven beads on faint semitone rows, "Twinkle"'s first line unnamed, and a dashed copy six rows up with

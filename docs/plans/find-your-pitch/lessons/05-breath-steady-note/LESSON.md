@@ -22,8 +22,10 @@ there. What the vocal coach and the owner decide is listed at the end.
   pushing, what keeps it steady?**
 - Meta, as chips: 17 minutes · After Lesson 2: Twelve notes · After Lesson 3: Match a note ·
   Sound on · Microphone optional
-- Promise: By the end you'll know why pushing moves a note, how to breathe in low and start
+- Promise: By the end you'll know what pushing does to a note, how to breathe in low and start
   easily, and you'll hold a comfortable note for ten seconds, then fifteen if that felt easy.
+  _[Editorial: since 22 October 2026. It said "why pushing moves a note", which told the cold
+  open's predict, just below it, which way the line goes (CURIOSITY-MOMENTS § 1 rule 4).]_
 
 ## Sound gate
 
