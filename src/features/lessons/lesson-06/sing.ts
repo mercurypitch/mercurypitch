@@ -23,7 +23,7 @@
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { mountComfort, mountFeelings, VisitEnding, } from '@/features/lessons/kit/comfort'
 import { q, qa } from '@/features/lessons/kit/dom'
-import { hz } from '@/features/lessons/kit/notes'
+import { COUNT_IN_SEC, countIn, nextShift, setMoveEnds, } from '@/features/lessons/kit/move-do'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type { RingStills } from '@/features/lessons/kit/sing'
 import { mountRing } from '@/features/lessons/kit/sing'
@@ -36,7 +36,7 @@ import { playNotes } from './examples'
 import type { Panel, SingEvent } from './sing-flow'
 import { nextState, openState, singView } from './sing-flow'
 import type { VersionNo } from './sing-guide'
-import { BREATH_SEC, clampMove, COUNT_IN, COUNT_IN_SEC, guidePath, guideRows, MOVE_MAX, readoutHtml, ringLabel, VERSION_SEC, versionDo, versionNotes, } from './sing-guide'
+import { BREATH_SEC, guidePath, guideRows, readoutHtml, ringLabel, VERSION_SEC, versionDo, versionNotes, } from './sing-guide'
 
 /** The status line while Merc sings, and while the guide sweeps. */
 export const RUNNING = {
@@ -87,7 +87,7 @@ export function initSing(stills: RingStills): void {
   // cut short), Merc's notes, the count-in's note and the ring's turn to come
   let stops = 0
   let playing: Playing | null = null
-  let countIn: ReturnType<typeof Sound.voice> = null
+  let counting: ReturnType<typeof countIn> = null
   let ringTurn = 0
   // the do line's markup as last written, so a press that changes nothing writes nothing
   let doLine = ''
@@ -130,8 +130,8 @@ export function initSing(stills: RingStills): void {
     stops += 1
     playing?.stop()
     playing = null
-    countIn?.stop()
-    countIn = null
+    counting?.stop()
+    counting = null
     window.clearTimeout(ringTurn)
     guide.stop()
     ring.stop()
@@ -149,10 +149,7 @@ export function initSing(stills: RingStills): void {
       doLine = line
     }
     q('.ring-note', ringEl).innerHTML = ringLabel(doMidi())
-    for (const b of moves) {
-      const d = Number(b.dataset.moveDo)
-      b.disabled = (d < 0 && shift <= -MOVE_MAX) || (d > 0 && shift >= MOVE_MAX)
-    }
+    setMoveEnds(moves, shift)
   }
 
   async function playVersion(b: HTMLButtonElement): Promise<void> {
@@ -219,13 +216,11 @@ export function initSing(stills: RingStills): void {
     say(statusEl, RUNNING.guide)
     startBtn.classList.add('is-on')
     // the count-in: do of the version last played, once and softly
-    countIn = Sound.canPlay()
-      ? Sound.voice(hz(d), { dur: COUNT_IN.note, gain: COUNT_IN.gain })
-      : null
+    counting = countIn(d, Sound.canPlay())
     ringThroughGuide(d)
     await guide.sweep(COUNT_IN_SEC)
     if (mine !== stops) return
-    countIn = null
+    counting = null
     startBtn.classList.remove('is-on')
     NowPlaying.release(stopRun)
     dispatch({ type: 'sweepEnd' })
@@ -258,7 +253,7 @@ export function initSing(stills: RingStills): void {
   for (const b of moves)
     b.addEventListener('click', () => {
       stopRun()
-      shift = clampMove(shift + Number(b.dataset.moveDo))
+      shift = nextShift(shift, b)
       relabel()
     })
 

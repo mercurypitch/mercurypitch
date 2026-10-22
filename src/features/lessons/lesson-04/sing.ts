@@ -20,19 +20,18 @@
 import { q, qa } from '@/features/lessons/kit/dom'
 import { majorScale } from '@/features/lessons/kit/major-scale'
 import type { Which } from '@/features/lessons/kit/merc-duo'
+import { COUNT_IN_SEC, countIn, nextShift, setMoveEnds, } from '@/features/lessons/kit/move-do'
 import { hz, nameHtml, wordName } from '@/features/lessons/kit/notes'
 import type { Ring, RingStills } from '@/features/lessons/kit/sing'
 import { mountRing } from '@/features/lessons/kit/sing'
 import type { GuideRow } from '@/features/lessons/kit/slide-guide'
 import { mountGuide } from '@/features/lessons/kit/slide-guide'
 import { Sound } from '@/features/lessons/kit/sound'
-import { COUNT_IN_SEC, countIn, GUIDE_SEC, guidePath, singModel, TI_HOLD, } from './examples'
+import { GUIDE_SEC, guidePath, singModel, TI_HOLD } from './examples'
 import { SOLFEGE } from './stairs-words'
 
 /** Merc's do, and Tavi's an octave up (FACTS 52 and 63). */
 const MERC_DO = 50
-/** Move do's reach either way, semitones (FACTS 52). */
-const MOVE_MAX = 4
 
 const DEGREES = [0, 2, 4, 5, 7, 9, 11, 12]
 
@@ -90,10 +89,7 @@ export function initSing(stills: RingStills): void {
   function relabel(): void {
     guide.set(scaleRows(doMidi()), guidePath(doMidi()))
     guideRoot.setAttribute('aria-label', guideLabel(doMidi()))
-    moves.forEach((b) => {
-      const d = Number(b.dataset.moveDo)
-      b.disabled = (d < 0 && shift <= -MOVE_MAX) || (d > 0 && shift >= MOVE_MAX)
-    })
+    setMoveEnds(moves, shift)
   }
 
   function playScale(b: HTMLButtonElement): void {
@@ -168,10 +164,7 @@ export function initSing(stills: RingStills): void {
   for (const b of moves)
     b.addEventListener('click', () => {
       if (busy()) return
-      shift = Math.max(
-        -MOVE_MAX,
-        Math.min(MOVE_MAX, shift + Number(b.dataset.moveDo)),
-      )
+      shift = nextShift(shift, b)
       relabel()
     })
 

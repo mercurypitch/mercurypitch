@@ -8,9 +8,10 @@
 // note's letter, so it holds no sharp or flat sign.
 
 import { describe, expect, it } from 'vitest'
+import { clampMove, MOVE_MAX } from '@/features/lessons/kit/move-do'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
-import { clampMove, doReadout, LINE_DO, lineDo, lineFrom, MOVE_MAX, } from './sing-line'
+import { doReadout, LINE_DO, lineDo, lineFrom } from './sing-line'
 
 const PRESETS: Readonly<
   Record<'lower' | 'higher', readonly VocalRangePreset[]>

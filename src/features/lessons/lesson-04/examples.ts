@@ -134,12 +134,6 @@ export const GUIDE_SEC = 18.2
 /** Ti's 2 s hold in the model: where the guide's ring breathes. */
 export const TI_HOLD = { from: 14.4, to: 16.4 } as const
 
-/** Seconds of the count-in before the viewer's turn: do for 0.8 s, then 0.2 s of quiet. */
-export const COUNT_IN_SEC = 1
-const COUNT_IN_NOTE_SEC = 0.8
-/** The count-in's level: half a tapped note's (the soft tone's 0.13). */
-const COUNT_IN_GAIN = 0.065
-
 /** The model's seventeen notes on a do of `doMidi`, with their times. */
 export function guideNotes(doMidi: number): NoteEvent[] {
   return PHRASES.flatMap((p) =>
@@ -202,10 +196,4 @@ export function singModel(doMidi: number, audible: boolean): Promise<void> {
         )
     window.setTimeout(resolve, GUIDE_SEC * 1000)
   })
-}
-
-/** The count-in: do of the scale last played, once and softly (FACTS 63). */
-export function countIn(doMidi: number, audible: boolean): void {
-  if (audible)
-    Sound.voice(hz(doMidi), { dur: COUNT_IN_NOTE_SEC, gain: COUNT_IN_GAIN })
 }
