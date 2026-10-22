@@ -8,20 +8,20 @@ the repository root, where the game's packages are.
 
 ## Build, gates and proofs
 
-| Script                                          | Runs in         | Use it for                                                                                                                                                            |
-| ----------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `preflight.sh`                                  | shell           | Finding or fetching Blender 5.2.2 and proving headless rendering works. Prints `BLENDER=`                                                                             |
-| `bkit/`                                         | Blender         | The modelling library: `profile`, `lathe`, `sweep`, `trims`, `materials`, `textures`, `fracture`, `validate`, `scene`, `export`. Tested by `tests/test_bkit.py`       |
-| `asset_pipeline.py`                             | Python          | One command per round: build, finish, contract, Khronos, silhouette, sheets (`--sheet --shards-sheet`), `--intact-only` for fast form work. Exits 1 on any gate       |
-| `validate_asset.py`                             | Blender         | The contract gate on an exported GLB: names, roles, closure, budgets, shard origins and volume, loose pieces                                                          |
-| `gltf_finish.py`                                | Python          | Adds what the exporter drops (`optics.json`: volume, iridescence) and the node extras                                                                                 |
-| `gltf_validate.mjs`                             | Node            | The Khronos glTF validator, exit 1 on any error                                                                                                                       |
-| `silhouette_render.py`, `silhouette_compare.py` | Blender, Python | The form gate: the model's mask at the concept's camera against the concept's, IoU and ten width bands, `rows.json` for refits                                        |
-| `render_views.py`, `compose_sheet.py`           | Blender, Python | The review sheet: clay, zebra, material ids, ACES material panels, the game's 128 px panel, and a three.js column                                                     |
-| `measure_views.py`, `annotate_measure.py`       | Blender, Python | Orthographic measurement renders with a scale, for reading a concept or a shipped mesh                                                                                |
-| `smoke_render.py`                               | Blender         | The render check `preflight.sh` runs                                                                                                                                  |
-| `three_preview.mjs`                             | Node            | The GLB drawn by the game's own three.js, light rig and tone mapping in seconds; `--set mat.prop=value` tries a material, `--dump` lists them as three.js loaded them |
-| `runtime_proof.mjs`                             | Node            | The candidate served in place of the shipped file inside the running game, screenshots per shot; fails if the game never asked for the file                           |
+| Script                                          | Runs in         | Use it for                                                                                                                                                                   |
+| ----------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `preflight.sh`                                  | shell           | Finding or fetching Blender 5.2.2 and proving headless rendering works. Prints `BLENDER=`                                                                                    |
+| `bkit/`                                         | Blender         | The modelling library: `profile`, `lathe`, `sweep`, `trims`, `materials`, `textures`, `fracture`, `validate`, `scene`, `export`. Tested by `tests/test_bkit.py`              |
+| `asset_pipeline.py`                             | Python          | One command per round: build, finish, contract, Khronos, silhouette, sheets (`--sheet --shards-sheet`), `--intact-only` for fast form work. Exits 1 on any gate              |
+| `validate_asset.py`                             | Blender         | The contract gate on an exported GLB: names, roles, closure, budgets, shard origins and volume, loose pieces                                                                 |
+| `gltf_finish.py`                                | Python          | Adds what the exporter drops (`optics.json`: volume, iridescence) and the node extras                                                                                        |
+| `gltf_validate.mjs`                             | Node            | The Khronos glTF validator, exit 1 on any error                                                                                                                              |
+| `silhouette_render.py`, `silhouette_compare.py` | Blender, Python | The form gate: the model's mask at the concept's camera against the concept's, IoU and ten width bands, `rows.json` for refits                                               |
+| `render_views.py`, `compose_sheet.py`           | Blender, Python | The review sheet: clay, zebra, material ids, ACES material panels, the game's 128 px panel, and a three.js column                                                            |
+| `measure_views.py`, `annotate_measure.py`       | Blender, Python | Orthographic measurement renders with a scale, for reading a concept or a shipped mesh                                                                                       |
+| `smoke_render.py`                               | Blender         | The render check `preflight.sh` runs                                                                                                                                         |
+| `three_preview.mjs`                             | Node            | The GLB drawn by the game's own three.js, light rig and tone mapping in seconds; `--set mat.prop=value` tries a material, `--dump` lists them as three.js loaded them        |
+| `runtime_proof.mjs`                             | Node            | The candidate served in place of the shipped file inside the running game, screenshots per shot; fails if the game never asked for the file. Proofs queue on a lock per port |
 
 ## Probes and measurement (no Blender)
 

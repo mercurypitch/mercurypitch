@@ -4,8 +4,8 @@
         [--shots entry] [--measure 920,177,972,206]
 
 `runtime_proof.mjs` starts the game's dev server on one fixed port, so proofs cannot
-run side by side: this waits for any proof already running (another batch, a
-pipeline) and then runs its candidates in turn. --shots keeps only the named shots
+run side by side: each takes a lock on the port and waits its turn behind any other
+(a pipeline's, another batch's), and this runs its candidates in turn. --shots keeps only the named shots
 (the entry shot is the like-for-like frame and takes about two minutes alone).
 --measure runs `colour_stats.py` on that box of each candidate's first shot, so a
 sweep of material probes (`glb_patch.py`, `glb_recolour.py`) ends in a table to
@@ -27,11 +27,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..', '..'))
 
 
-def proof_running():
-    out = subprocess.run(['pgrep', '-f', 'runtime_proof.mjs'], capture_output=True, text=True).stdout.split()
-    return [pid for pid in out if int(pid) != os.getpid()]
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('candidates', nargs='+')
@@ -39,7 +34,7 @@ def main():
     ap.add_argument('--out', required=True)
     ap.add_argument('--shots', help='comma-separated shot names to keep, e.g. entry')
     ap.add_argument('--measure', help='x0,y0,x1,y1 box for colour_stats on the first shot')
-    ap.add_argument('--timeout', type=int, default=900)
+    ap.add_argument('--timeout', type=int, default=3600, help='seconds a proof may take, waiting for the port included')
     args = ap.parse_args()
 
     config = json.load(open(args.config))
@@ -57,8 +52,6 @@ def main():
     for glb in args.candidates:
         name = os.path.splitext(os.path.basename(glb))[0]
         out_dir = os.path.join(os.path.abspath(args.out), name)
-        while proof_running():
-            time.sleep(5)
         start = time.time()
         with open(out_dir + '.log', 'w') as log:
             code = subprocess.run(['node', os.path.join(HERE, 'runtime_proof.mjs'), '--config', config_path,

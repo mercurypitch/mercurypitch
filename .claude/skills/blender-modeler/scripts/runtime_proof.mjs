@@ -21,8 +21,9 @@
 // }
 
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync, writeSync, } from 'node:fs'
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
@@ -48,6 +49,35 @@ mkdirSync(out, { recursive: true })
 const port = Number(process.env.PROOF_PORT ?? 5391)
 const base = `http://127.0.0.1:${port}`
 
+// One proof at a time on a port: a pipeline's proof, a probe batch and a critic's
+// run all want it, and two dev servers on one port fail. Wait for the lock; a lock
+// whose process has gone is stale.
+const lock = join(tmpdir(), `glassworks-proof-${port}.lock`)
+for (;;) {
+  try {
+    const fd = openSync(lock, 'wx')
+    writeSync(fd, String(process.pid))
+    closeSync(fd)
+    break
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error
+  }
+  const holder = Number(readFileSync(lock, 'utf8'))
+  let alive = !(Number.isInteger(holder) && holder > 0) // being written: wait
+  try {
+    if (!alive) alive = process.kill(holder, 0)
+  } catch {
+    alive = false
+  }
+  if (!alive) {
+    try {
+      unlinkSync(lock)
+    } catch {}
+    continue
+  }
+  await sleep(5000)
+}
+
 const server = spawn(
   process.execPath,
   [
@@ -65,6 +95,14 @@ const server = spawn(
   },
 )
 let serverLog = ''
+process.on('exit', () => {
+  server.kill('SIGTERM')
+  try {
+    if (Number(readFileSync(lock, 'utf8')) === process.pid) unlinkSync(lock)
+  } catch {}
+})
+for (const signal of ['SIGINT', 'SIGTERM'])
+  process.on(signal, () => process.exit(130))
 server.stdout.on('data', (chunk) => (serverLog += chunk))
 server.stderr.on('data', (chunk) => (serverLog += chunk))
 

@@ -3,6 +3,21 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **A critic's fix is a hypothesis; probe it in the game.** Round 3 asked for the
+  urn's laurel leaves at metallic 1.0 and roughness 0.25. Built, the shoulder band,
+  which faces the ceiling, mirrored it dark: median luminance 93 against the
+  concept's 154, darker than before. Two probes found 0.6 and 0.4 (122). When a
+  fix is not taken as asked, the ledger says why, with the numbers.
+
+- **A crease that fades out must fade along a concave curve.** The urn's creases,
+  grown at the lobes' rate out of the cup, turned the valley back in; clamped not
+  to, the valley stood upright for 4 cm while the body flared round it; joined to
+  the full crease at 0.33 m, the curve steepened again near its end. Each read as
+  a closed eye in zebra, three rounds running. One cubic from the cup's cusp to
+  the full crease at the belly, its end slopes held so it stays concave
+  (2 s_a + 4 s_b <= 6 x secant), solved where the pushed vertices land (a push
+  along the normal lifts them too, 2 cm here), removed it.
+
 - **Sink a part along the same direction the wall under it moved.** The urn's
   cup was offset across, at fixed height, from a wall tucked 10 mm along its
   normal; on a shelf flaring at 60 degrees that tuck is 25 mm across, so the
