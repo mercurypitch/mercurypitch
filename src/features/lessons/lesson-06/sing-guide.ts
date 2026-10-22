@@ -12,10 +12,11 @@
 // starts instead, spelled as the tune line spells them, "do is D3, then
 // F3", spoken "do is D 3, then F 3". Merc's path holds each note and glides
 // into the next, with a breath mark after "star", the end of the first
-// line, 4.8 s in (FACTS 58a). The count-in is do of the version last
-// played, once and softly, for its one second (FACTS 70).
+// line, 4.8 s in (FACTS 58a). Move do's reach and the count-in, do of the
+// version last played, once and softly, for its one second (FACTS 70), are
+// the kit's (kit/move-do.ts).
 
-import { clamp } from '@/features/lessons/kit/dom'
+import { clampMove } from '@/features/lessons/kit/move-do'
 import { hz, nameHtml } from '@/features/lessons/kit/notes'
 import type { GuidePoint, GuideRow } from '@/features/lessons/kit/slide-guide'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
@@ -32,22 +33,13 @@ export const FIRST_DO: Readonly<Record<Voice, number>> = {
 }
 /** The second version sits this many semitones above the first. */
 export const SECOND_UP = 3
-/** Move do's reach either way, semitones. */
-export const MOVE_MAX = 4
 /** A version's length: twelve crotchets and two minims at 0.6 s a crotchet. */
 export const VERSION_SEC = 9.6
 /** The breath mark, seconds in: after "star", the first line's minim. */
 export const BREATH_SEC = 4.8
-/** The count-in: do for 0.8 s at half a tapped note's level, then 0.2 s of quiet. */
-export const COUNT_IN = { note: 0.8, quiet: 0.2, gain: 0.065 } as const
-export const COUNT_IN_SEC = COUNT_IN.note + COUNT_IN.quiet
 
 /** A held note glides into the next over its last 0.05 s, as Lesson 4's path does. */
 const GLIDE_SEC = 0.05
-
-/** Move do, kept whole and within its reach. */
-export const clampMove = (shift: number): number =>
-  clamp(Math.round(shift), -MOVE_MAX, MOVE_MAX)
 
 /** Do of a version, for the chosen voice and Move do. */
 export function versionDo(

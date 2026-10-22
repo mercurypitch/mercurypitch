@@ -31,6 +31,7 @@ import { mountBeatStrip } from '@/features/lessons/kit/beat-strip'
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { mountComfort, mountFeelings, VisitEnding, } from '@/features/lessons/kit/comfort'
 import { q, qa } from '@/features/lessons/kit/dom'
+import { nextShift, setMoveEnds } from '@/features/lessons/kit/move-do'
 import { COLOR, hz } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type { RingStills } from '@/features/lessons/kit/sing'
@@ -43,7 +44,7 @@ import type { LineHit } from './patterns'
 import { BEAT_SEC, BPM, COUNT_IN_DO_GAIN, lineBars, stripRow } from './patterns'
 import type { Panel, SingEvent } from './sing-flow'
 import { HINT, nextState, openState, singView } from './sing-flow'
-import { clampMove, doReadout, lineDo, lineFrom, MOVE_MAX } from './sing-line'
+import { doReadout, lineDo, lineFrom } from './sing-line'
 import { initTake } from './take'
 
 /** The status line while Merc sings; the guide's is the flow's (`STATUS.guiding`). */
@@ -183,10 +184,7 @@ export function initSing(stills: RingStills): void {
   /** The do line and Move do's ends follow Move do; the guide's still follows the voice. */
   function relabel(): void {
     say(readout, doReadout(shift))
-    for (const b of moves) {
-      const d = Number(b.dataset.moveDo)
-      b.disabled = (d < 0 && shift <= -MOVE_MAX) || (d > 0 && shift >= MOVE_MAX)
-    }
+    setMoveEnds(moves, shift)
     const src = voice() === 'lower' ? stills.blue : stills.orange
     if (guide.still.getAttribute('src') !== src) guide.still.src = src
   }
@@ -284,7 +282,7 @@ export function initSing(stills: RingStills): void {
   for (const b of moves)
     b.addEventListener('click', () => {
       stopRun()
-      shift = clampMove(shift + Number(b.dataset.moveDo))
+      shift = nextShift(shift, b)
       relabel()
     })
 

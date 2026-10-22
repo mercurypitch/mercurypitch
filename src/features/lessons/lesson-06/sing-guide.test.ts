@@ -9,10 +9,11 @@
 // And Tests 10's readout: "do is B♭2, then D♭3" at Move do's lowest.
 
 import { describe, expect, it } from 'vitest'
+import { COUNT_IN, COUNT_IN_SEC, MOVE_MAX, } from '@/features/lessons/kit/move-do'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
 import { lengthOf } from './examples'
-import { BREATH_SEC, COUNT_IN, COUNT_IN_SEC, guidePath, guideRows, MOVE_MAX, readoutHtml, ringLabel, versionDo, versionNotes, } from './sing-guide'
+import { BREATH_SEC, guidePath, guideRows, readoutHtml, ringLabel, versionDo, versionNotes, } from './sing-guide'
 
 /** Markup as the eye reads it: the signs shown, the spoken words dropped. */
 const seen = (html: string): string =>

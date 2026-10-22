@@ -5,12 +5,12 @@
 // Pure (WEB-SPEC, Toys 6; Tests 9). The line is "Twinkle"'s first, from do
 // = D3 for the lower voice or D4 for the higher, D3 D3 A3 A3 B3 B3 A3 or an
 // octave up (FACTS 79), each inside every app preset of its voice (FACTS
-// 67). Move do shifts it a semitone at a time, up to four either way, and
-// its readout names semitones, never letters, so no spelling is needed:
-// "do: as written", "do: 1 semitone lower", "do: 4 semitones higher, the
-// highest".
+// 67). Move do (kit/move-do.ts) shifts it a semitone at a time, up to four
+// either way, and its readout names semitones, never letters, so no
+// spelling is needed: "do: as written", "do: 1 semitone lower", "do: 4
+// semitones higher, the highest".
 
-import { clamp } from '@/features/lessons/kit/dom'
+import { clampMove, MOVE_MAX } from '@/features/lessons/kit/move-do'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
 import { TWINKLE } from '@/features/lessons/lesson-06/melody'
 import type { Syllable } from './patterns'
@@ -21,13 +21,6 @@ export const LINE_DO: Readonly<Record<Voice, number>> = {
   lower: 50,
   higher: 62,
 }
-
-/** Move do's reach either way, semitones. */
-export const MOVE_MAX = 4
-
-/** Move do, kept whole and within its reach. */
-export const clampMove = (shift: number): number =>
-  clamp(Math.round(shift), -MOVE_MAX, MOVE_MAX)
 
 /** Do for the voice and Move do. */
 export const lineDo = (voice: Voice, shift: number): number =>
