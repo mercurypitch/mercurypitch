@@ -13,14 +13,17 @@
 // a button over every bead, gap and named bracket the page asks for, each on
 // its tap zone as the layout changes (tune-line-layout.ts). Under reduced
 // motion every move lands at once; a played line still sounds and lights
-// its beads in turn. It draws only when what it shows has changed (a run,
-// a slide, a fade, a new shape, start, overlay or names, a new size, pixel
-// ratio or font) and while that change moves; idle, it asks the page's
-// frame loop for nothing (frame-loop.ts, `wants`). On a page that plays
-// one sound at a time, a run claims the page's owner (now-playing.ts), so
-// it stops the sound before it, and a newer one elsewhere stops it. Words
-// belong to the page: the core asks for each name and label and only
-// draws.
+// its beads in turn. A shape may ask for its buttons as one grid
+// (`TuneShape.grid`, WAI-ARIA's layout grid): a row for each line's
+// brackets, beads and gaps, top to bottom, and one Tab stop, the button
+// last focused, from which the arrows, Home and End move. It draws only
+// when what it shows has changed (a run, a slide, a fade, a new shape,
+// start, overlay or names, a new size, pixel ratio or font) and while that
+// change moves; idle, it asks the page's frame loop for nothing
+// (frame-loop.ts, `wants`). On a page that plays one sound at a time, a run
+// claims the page's owner (now-playing.ts), so it stops the sound before
+// it, and a newer one elsewhere stops it. Words belong to the page: the
+// core asks for each name and label and only draws.
 
 import { addDrawer, surface, wake } from './frame-loop'
 import { reducedMotion } from './motion-switch'
@@ -70,6 +73,12 @@ export interface TuneShape {
   readonly brackets: readonly TuneBracket[]
   /** The first line kept faint at this start for comparison, or null. */
   readonly ghost: number | null
+  /**
+   * The buttons as one grid, a single Tab stop that lands on the button last
+   * focused (the first, before any), rather than a Tab stop each. Off by
+   * default.
+   */
+  readonly grid?: boolean
 }
 
 /** A contrast case drawn dashed over the first line: its notes above the start, and the gaps it changes. */
@@ -153,6 +162,14 @@ interface Lit {
   readonly color: string
 }
 
+/** A button over the drawing: its part, and its box, the grid cell it sits in or itself. */
+interface Hit {
+  readonly el: HTMLButtonElement
+  readonly box: HTMLElement
+  readonly kind: 'note' | 'gap' | 'bracket'
+  readonly g: number
+}
+
 /** The global index of each line's first note. */
 function firstsOf(tune: readonly (readonly TuneNote[])[]): number[] {
   let n = 0
@@ -186,6 +203,55 @@ function place(b: HTMLElement, r: Rect): void {
   b.style.height = `${r.h}px`
 }
 
+/** A cell of a grid: its row, and its place in that row. */
+export interface GridCell {
+  readonly row: number
+  readonly col: number
+}
+
+/**
+ * Where a key moves the focus in a grid whose rows are `lengths` long, from
+ * `at`, as WAI-ARIA's layout grid has it: an arrow a cell at a time, staying
+ * put at an edge, Up and Down to the same place in the next row or to its
+ * last cell if it is shorter; Home and End to the row's ends, and with
+ * Control to the grid's first and last cells. Null for any other key.
+ */
+export function gridMove(
+  lengths: readonly number[],
+  at: GridCell,
+  key: string,
+  ctrl = false,
+): GridCell | null {
+  const lastRow = lengths.length - 1
+  const end = (row: number): number => lengths[row] - 1
+  const inRow = (row: number): GridCell => ({
+    row,
+    col: Math.min(at.col, end(row)),
+  })
+  if (ctrl)
+    return key === 'Home'
+      ? { row: 0, col: 0 }
+      : key === 'End'
+        ? { row: lastRow, col: end(lastRow) }
+        : null
+  switch (key) {
+    case 'ArrowLeft':
+      return { row: at.row, col: Math.max(0, at.col - 1) }
+    case 'ArrowRight':
+      return { row: at.row, col: Math.min(end(at.row), at.col + 1) }
+    case 'ArrowUp':
+      return inRow(Math.max(0, at.row - 1))
+    case 'ArrowDown':
+      return inRow(Math.min(lastRow, at.row + 1))
+    case 'Home':
+      return { row: at.row, col: 0 }
+    case 'End':
+      return { row: at.row, col: end(at.row) }
+    default:
+      return null
+  }
+}
+
 export function mountTuneLine(opts: TuneLineOptions): TuneLine {
   const cv = surface(opts.canvas)
   const flat = opts.tune.flat()
@@ -206,11 +272,13 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
   let lastKey = ''
   // something the drawing shows has changed since its last frame
   let dirty = true
-  let buttons: {
-    el: HTMLButtonElement
-    kind: 'note' | 'gap' | 'bracket'
-    g: number
-  }[] = []
+  let buttons: Hit[] = []
+  // with `shape.grid`, the buttons by row, and the one Tab stop, kept by
+  // its part so that a new shape lands on the same button where it can
+  let rows: Hit[][] = []
+  let tabStop: { kind: Hit['kind']; g: number } | null = null
+  // the layer's own role, a group, which a grid takes over while it shows
+  const groupRole = opts.hits?.getAttribute('role') ?? null
 
   const now = (): number => performance.now() / 1000
   const shownFirsts = (): number[] => shape.lines.map((k) => firsts[k])
@@ -295,9 +363,11 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
         const gap = L.gaps[b.g - f0] as (typeof L.gaps)[number] | undefined
         const r = b.kind === 'gap' ? gap?.target : gap?.bracket
         b.el.hidden = r === null || r === undefined
+        b.box.hidden = b.el.hidden
         if (r !== null && r !== undefined) place(b.el, r)
       }
     }
+    if (shape.grid === true) rove()
   }
 
   // a shape with no button on its drawing keeps no 44 px floor (tune-line-layout.ts)
@@ -377,7 +447,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
   void document.fonts?.ready.then(invalidate)
   document.fonts?.addEventListener('loadingdone', invalidate)
 
-  function label(b: (typeof buttons)[number]): string {
+  function label(b: Hit): string {
     const l = opts.labels
     if (l === undefined) return ''
     return b.kind === 'note'
@@ -387,26 +457,81 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
         : l.bracket(b.g)
   }
 
+  /**
+   * Gives the grid's one Tab stop to `to`; with none, keeps it on the button
+   * that had it if that one still shows, or gives it to the first that does.
+   */
+  function rove(to?: Hit): void {
+    const shown = buttons.filter((b) => !b.el.hidden)
+    const kept = shown.find(
+      (b) => b.kind === tabStop?.kind && b.g === tabStop.g,
+    )
+    const at = to ?? kept ?? shown.at(0)
+    if (at === undefined) return
+    tabStop = { kind: at.kind, g: at.g }
+    for (const b of buttons) b.el.tabIndex = b === at ? 0 : -1
+  }
+
   function build(): void {
     const hits = opts.hits
     if (hits === undefined || hits === null) return
     hits.replaceChildren()
     buttons = []
-    const make = (kind: 'note' | 'gap' | 'bracket', g: number): void => {
+    rows = []
+    // a button straight on the layer, or in a cell of a grid's row
+    const make = (
+      kind: Hit['kind'],
+      g: number,
+      row: HTMLElement | null,
+    ): Hit => {
       const el = document.createElement('button')
       el.type = 'button'
       el.className = `tune-hit tune-hit-${kind}`
       el.dataset[kind] = String(g)
-      hits.appendChild(el)
-      const b = { el, kind, g }
+      const box = row === null ? el : document.createElement('div')
+      if (row === null) hits.appendChild(el)
+      else {
+        box.setAttribute('role', 'gridcell')
+        box.appendChild(el)
+        row.appendChild(box)
+      }
+      const b = { el, box, kind, g }
       el.setAttribute('aria-label', label(b))
       buttons.push(b)
+      return b
     }
     const notes = shownNotes()
-    if (shape.beadButtons) notes.forEach((g) => make('note', g))
-    if (shape.gapButtons && shape.below === 'gaps')
-      notes.slice(0, -1).forEach((g) => make('gap', g))
-    shape.brackets.forEach((b) => make('bracket', b.gap))
+    const parts: (readonly [Hit['kind'], number])[] = [
+      ...(shape.beadButtons ? notes.map((g) => ['note', g] as const) : []),
+      ...(shape.gapButtons && shape.below === 'gaps'
+        ? notes.slice(0, -1).map((g) => ['gap', g] as const)
+        : []),
+      ...shape.brackets.map((b) => ['bracket', b.gap] as const),
+    ]
+    if (shape.grid === true) {
+      // each line's brackets, beads and gaps, top to bottom as drawn; a gap
+      // or a bracket belongs to the line of its first note
+      const lineOf = (g: number): number =>
+        shape.lines.findIndex(
+          (k) => g >= firsts[k] && g < firsts[k] + opts.tune[k].length,
+        )
+      hits.setAttribute('role', 'grid')
+      shape.lines.forEach((_, i) => {
+        for (const kind of ['bracket', 'note', 'gap'] as const) {
+          const mine = parts.filter(([k, g]) => k === kind && lineOf(g) === i)
+          if (mine.length === 0) continue
+          const row = document.createElement('div')
+          row.setAttribute('role', 'row')
+          hits.appendChild(row)
+          rows.push(mine.map(([k, g]) => make(k, g, row)))
+        }
+      })
+      rove()
+    } else {
+      if (groupRole === null) hits.removeAttribute('role')
+      else hits.setAttribute('role', groupRole)
+      parts.forEach(([k, g]) => make(k, g, null))
+    }
     hits.hidden = buttons.length === 0
     lastKey = ''
     const rect = opts.canvas.getBoundingClientRect()
@@ -422,6 +547,32 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     if (b.kind === 'note') opts.onNote?.(b.g)
     else if (b.kind === 'gap') opts.onGap?.(b.g)
     else opts.onBracket?.(b.g)
+  })
+
+  // in a grid, the button that takes the focus, by key, tap or script, is
+  // its Tab stop, and the arrows, Home and End move the focus between them
+  opts.hits?.addEventListener('focusin', (e) => {
+    if (shape.grid !== true) return
+    const b = buttons.find((x) => x.el === e.target)
+    if (b !== undefined) rove(b)
+  })
+  opts.hits?.addEventListener('keydown', (e) => {
+    if (shape.grid !== true || e.altKey || e.metaKey || e.shiftKey) return
+    const shown = rows
+      .map((r) => r.filter((b) => !b.el.hidden))
+      .filter((r) => r.length > 0)
+    const row = shown.findIndex((r) => r.some((b) => b.el === e.target))
+    if (row < 0) return
+    const col = shown[row].findIndex((b) => b.el === e.target)
+    const to = gridMove(
+      shown.map((r) => r.length),
+      { row, col },
+      e.key,
+      e.ctrlKey,
+    )
+    if (to === null) return
+    e.preventDefault()
+    shown[to.row][to.col].el.focus()
   })
 
   build()

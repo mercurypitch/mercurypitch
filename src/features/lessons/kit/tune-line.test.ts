@@ -11,7 +11,10 @@
 // whether it was played to its end. With sound on (a fake Sound.voice),
 // a run's voices stop when it is stopped and when a new run starts. On the
 // page's frame loop, turned by hand, an idle line asks for no frames, and a
-// run brings them back until its last light has gone.
+// run brings them back until its last light has gone. A shape that asks for
+// a grid makes its buttons one: a row for each line's beads and its gaps,
+// one Tab stop that stays on the button last focused, and arrows, Home and
+// End that move the focus as WAI-ARIA's layout grid does.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -19,7 +22,7 @@ import { startFrameLoop } from './frame-loop'
 import type { Voice } from './sound'
 import { Sound } from './sound'
 import type { TuneLineOptions, TuneNote, TuneShape } from './tune-line'
-import { mountTuneLine } from './tune-line'
+import { gridMove, mountTuneLine } from './tune-line'
 
 const line = (ats: readonly number[]): TuneNote[] =>
   ats.map((at, i) => ({ at, beats: i === ats.length - 1 ? 2 : 1 }))
@@ -216,6 +219,211 @@ describe('mountTuneLine: its buttons', () => {
 
     // Assert
     expect(names(hits, 'note')[0]).toBe('Note 1, from D')
+  })
+})
+
+describe('mountTuneLine: a grid', () => {
+  /** Both lines stacked, every bead and gap a button, as one grid (Lesson 6's Step 2). */
+  const GRID: TuneShape = { ...ONE, lines: [0, 1], window: null, grid: true }
+
+  const rowNames = (hits: HTMLElement): string[][] =>
+    Array.from(hits.querySelectorAll('[role="row"]'), (row) =>
+      Array.from(
+        row.querySelectorAll('[role="gridcell"] > .tune-hit'),
+        (b) => b.getAttribute('aria-label') ?? '',
+      ),
+    )
+
+  const tabStops = (hits: HTMLElement): string[] =>
+    Array.from(
+      hits.querySelectorAll('.tune-hit[tabindex="0"]'),
+      (b) => b.getAttribute('aria-label') ?? '',
+    )
+
+  /** A key pressed on whatever has the focus. */
+  const press = (key: string, ctrlKey = false): string => {
+    const at = document.activeElement
+    at?.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key,
+        ctrlKey,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    return document.activeElement?.getAttribute('aria-label') ?? ''
+  }
+
+  it("lays a row for each line's beads and one for its gaps, the join in line 1's, every name as before", () => {
+    // Arrange
+    const { hits } = mount({ shape: GRID })
+
+    // Act
+    const rows = rowNames(hits)
+
+    // Assert
+    expect(hits.getAttribute('role')).toBe('grid')
+    const n = (from: number, to: number, kind: string): string[] =>
+      Array.from({ length: to - from + 1 }, (_, i) => `${kind} ${from + i}`)
+    expect(rows).toEqual([
+      n(1, 7, 'Note'),
+      n(1, 7, 'Gap'),
+      n(8, 14, 'Note'),
+      n(8, 13, 'Gap'),
+    ])
+  })
+
+  it('is one Tab stop, on the first bead before any focus, then on the button last focused', () => {
+    // Arrange
+    const { tune, hits } = mount({ shape: GRID })
+    const before = tabStops(hits)
+
+    // Act: a gap takes the focus, then the shape is drawn again
+    button(hits, '[data-gap="3"]').focus()
+    const after = tabStops(hits)
+    tune.setShape({ ...GRID })
+
+    // Assert
+    expect(before).toEqual(['Note 1'])
+    expect(after).toEqual(['Gap 4'])
+    expect(tabStops(hits)).toEqual(['Gap 4'])
+    expect(hits.querySelectorAll('.tune-hit[tabindex="-1"]')).toHaveLength(26)
+  })
+
+  it('moves the focus by the arrows, a row at a time down a column, and by Home and End', () => {
+    // Arrange
+    const { hits } = mount({ shape: GRID })
+    button(hits, '[data-note="0"]').focus()
+
+    // Act
+    const met = [
+      press('ArrowRight'),
+      press('End'),
+      press('ArrowRight'),
+      press('ArrowDown'),
+      press('ArrowDown'),
+      press('ArrowDown'),
+      press('ArrowDown'),
+      press('Home'),
+      press('ArrowLeft'),
+      press('ArrowUp'),
+      press('End', true),
+      press('Home', true),
+      press('ArrowUp'),
+    ]
+
+    // Assert: the shorter last row takes its last cell; the edges hold
+    expect(met).toEqual([
+      'Note 2',
+      'Note 7',
+      'Note 7',
+      'Gap 7',
+      'Note 14',
+      'Gap 13',
+      'Gap 13',
+      'Gap 8',
+      'Gap 8',
+      'Note 8',
+      'Gap 13',
+      'Note 1',
+      'Note 1',
+    ])
+    expect(tabStops(hits)).toEqual(['Note 1'])
+  })
+
+  it('leaves Enter, Space and every other key to the button, which still presses', () => {
+    // Arrange
+    const { hits, pressed } = mount({ shape: GRID })
+    const gap = button(hits, '[data-gap="1"]')
+    gap.focus()
+    const key = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+    })
+
+    // Act
+    gap.dispatchEvent(key)
+    gap.click()
+
+    // Assert
+    expect(key.defaultPrevented).toBe(false)
+    expect(pressed).toEqual(['gap 1'])
+  })
+
+  it('goes back to a Tab stop each, and the layer to its own role, on a shape with no grid', () => {
+    // Arrange
+    const { tune, hits } = mount({ shape: GRID })
+
+    // Act
+    tune.setShape(ONE)
+
+    // Assert
+    expect(hits.getAttribute('role')).toBeNull()
+    expect(hits.querySelectorAll('[role="row"]')).toHaveLength(0)
+    expect(hits.querySelectorAll('.tune-hit[tabindex]')).toHaveLength(0)
+    expect(Array.from(hits.children).every((c) => c.matches('.tune-hit'))).toBe(
+      true,
+    )
+  })
+})
+
+describe('gridMove', () => {
+  const ROWS = [7, 7, 7, 6]
+
+  it('steps along a row, holding at its ends', () => {
+    expect(gridMove(ROWS, { row: 0, col: 3 }, 'ArrowRight')).toEqual({
+      row: 0,
+      col: 4,
+    })
+    expect(gridMove(ROWS, { row: 0, col: 6 }, 'ArrowRight')).toEqual({
+      row: 0,
+      col: 6,
+    })
+    expect(gridMove(ROWS, { row: 1, col: 0 }, 'ArrowLeft')).toEqual({
+      row: 1,
+      col: 0,
+    })
+  })
+
+  it('moves up and down a column, onto the last cell of a shorter row, holding at the top and bottom', () => {
+    expect(gridMove(ROWS, { row: 2, col: 6 }, 'ArrowDown')).toEqual({
+      row: 3,
+      col: 5,
+    })
+    expect(gridMove(ROWS, { row: 3, col: 5 }, 'ArrowDown')).toEqual({
+      row: 3,
+      col: 5,
+    })
+    expect(gridMove(ROWS, { row: 0, col: 2 }, 'ArrowUp')).toEqual({
+      row: 0,
+      col: 2,
+    })
+  })
+
+  it("goes to a row's ends by Home and End, and to the grid's with Control", () => {
+    expect(gridMove(ROWS, { row: 3, col: 2 }, 'Home')).toEqual({
+      row: 3,
+      col: 0,
+    })
+    expect(gridMove(ROWS, { row: 1, col: 2 }, 'End')).toEqual({
+      row: 1,
+      col: 6,
+    })
+    expect(gridMove(ROWS, { row: 1, col: 2 }, 'Home', true)).toEqual({
+      row: 0,
+      col: 0,
+    })
+    expect(gridMove(ROWS, { row: 1, col: 2 }, 'End', true)).toEqual({
+      row: 3,
+      col: 5,
+    })
+  })
+
+  it('leaves every other key alone', () => {
+    expect(gridMove(ROWS, { row: 0, col: 0 }, 'Enter')).toBeNull()
+    expect(gridMove(ROWS, { row: 0, col: 0 }, ' ')).toBeNull()
+    expect(gridMove(ROWS, { row: 0, col: 0 }, 'ArrowDown', true)).toBeNull()
   })
 })
 
