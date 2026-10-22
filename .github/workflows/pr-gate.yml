@@ -338,9 +338,9 @@ jobs:
           key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       - name: Install Chromium
-        # --with-deps installs OS packages the cache cannot hold, so this still
-        # runs on a hit; only the browser download itself is skipped.
-        run: pnpm exec playwright install --with-deps chromium
+        # OS dependencies still install on a cache hit. The helper limits apt
+        # to Ubuntu sources without changing package signature checks.
+        run: node scripts/install-ci-browser.mjs chromium
 
       # The whole suite, on pull requests as well as main. It used to be
       # `--grep @smoke` on a PR and everything only after merge, which meant
@@ -444,7 +444,7 @@ jobs:
           --exclude=""
       - uses: ./.github/actions/setup
       - name: Install Chromium for Beside Cue browser tests
-        run: pnpm exec playwright install --with-deps chromium
+        run: node scripts/install-ci-browser.mjs chromium
 
       # Keep the existing games and games-off paths sharded, but give the
       # heavier adventure files their own jobs below. One browser worker per
@@ -542,7 +542,7 @@ jobs:
           --exclude=""
       - uses: ./.github/actions/setup
       - name: Install browser for Glass Adventure paths
-        run: pnpm exec playwright install --with-deps ${{ matrix.spec == 'material-hosts' && 'webkit' || 'chromium' }}
+        run: node scripts/install-ci-browser.mjs ${{ matrix.spec == 'material-hosts' && 'webkit' || 'chromium' }}
 
       # Each file loads and compiles the authored museum through SwiftShader.
       # File-level jobs keep a slow GPU process from delaying unrelated paths

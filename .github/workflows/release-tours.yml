@@ -71,7 +71,7 @@ jobs:
           key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
+        run: node scripts/install-ci-browser.mjs chromium
 
       - name: Walk every tour
         shell: bash
