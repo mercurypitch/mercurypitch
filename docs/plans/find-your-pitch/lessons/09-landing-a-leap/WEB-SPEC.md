@@ -465,8 +465,8 @@ The kit's quiz as it stands carries everything two quizzes on one page need (`ki
 `prefix` for each quiz's elements (`:81-86`), question ids, from which a question's lesson is read
 (`:42-47`, `lessonOfQuestion` `:118-122`), an optional `lesson` (`:75-76`), a `slot` for a
 question's own controls (`:52-58`), and links that leave this page for a question from another
-lesson (`linkAway`, `:169-199`), which keep their words and drop the link where that lesson is not
-live (`:169-173`).
+lesson (`linkAway`, `:173-203`), which keep their words and drop the link where that lesson is not
+live (`:173-177`).
 
 - **Recall**: Lesson 6's questions 2 and 3, word for word with their feedback (LESSON.md; FACTS 4),
   under their Lesson 6 ids, `l06-q2` and `l06-q3`, with the prefix `rc-`, as Lessons 3 and 5's
@@ -475,20 +475,20 @@ live (`:169-173`).
   4 and 5's are, `lesson-04/main.ts:61`); earlier answers are never shown, so the answers measure
   delayed retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Question 2's
   slot holds a Play button for Lesson 6's sound, C4 then F4 (FACTS 96), handled by a listener on the
-  quiz's host, since the kit builds each slot once and keeps it across answers (`quiz.ts:218-225`).
+  quiz's host, since the kit builds each slot once and keeps it across answers (`quiz.ts:222-229`).
   The kit turns "Try Step 5 again" and "Try Step 2 again" into "Try Lesson 6, Step 5 again" and "Try
   Lesson 6, Step 2 again", links that open Lesson 6's page at that step, `/learn/06#step-5` and
   `/learn/06#step-2`, in a new tab so the viewer keeps their place here, never `data-goto-step`,
-  which would move this page's own deck (`quiz.ts:169-199`); where Lesson 6 is not live, each keeps
-  its words with no link (`:189-192`; Edge cases). The address is the quiz's `away.href`
-  (`quiz.ts:87-94`), Lesson 5's `recallStepHref` (`lesson-05/quiz-questions.ts:19-21`) in place of
+  which would move this page's own deck (`quiz.ts:173-203`); where Lesson 6 is not live, each keeps
+  its words with no link (`:193-196`; Edge cases). The address is the quiz's `away.href`
+  (`quiz.ts:87-94`), Lesson 5's `recallStepHref` (`lesson-05/quiz-questions.ts:19-20`) in place of
   the default `/learn/06#lesson`, and the kit's step deck opens at the step an address names
   (`kit/step-deck.ts:18-23`, `:269-277`).
 - **Quick check**: LESSON.md's four questions, ids `l09-q1` to `l09-q4`, keys `fyp-l09-seed` and
   `fyp-l09-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 9`, so answering all four marks Lesson 9
   done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
   feedback for every answer, and a check icon and ink (not gold) on the right one. The kit prints
-  "Right." or "Not quite." before each line (`quiz.ts:274`), so no feedback line starts with
+  "Right." or "Not quite." before each line (`quiz.ts:278`), so no feedback line starts with
   "Right", "Yes" or "Correct". "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try
   Step 5 again" use the kit's `data-goto-step`. LESSON.md's note on the shuffle is editorial and
   never printed. Answers stay in the viewer's browser until the telemetry track exists.
@@ -500,7 +500,7 @@ kit's sound module and its house envelopes (`.claude/memory/audio-pop-free-playb
 started only by a tap: Merc's notes, leaps, paths and ladders in Merc's "ooh"; the illustrated
 landing, the recall's two notes and the rung taps in free play in the soft tone (FACTS 90 to 96). A
 leap is two notes, each its own voice, so a repeated note is heard as two; Step 5's slide is one
-voice that glides, the kit's `contourVoice` (`kit/sound.ts:318`). Nothing autoplays, nothing plays
+voice that glides, the kit's `contourVoice` (`kit/sound.ts:321`). Nothing autoplays, nothing plays
 while a take is open, and the page has no music bed.
 
 One sound plays at a time, page-wide. Every source, the cold open, the Four words, the step toys,
@@ -586,7 +586,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 9's entry in `kit/season.ts` (`:325-342`) gains a plain `minutes: 16` and
+- **Season data**: Lesson 9's entry in `kit/season.ts` (`:330-347`) gains a plain `minutes: 16` and
   `page: '/learn/09'` after its topics, in every build, under the comment Lesson 5's entry carries,
   `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:254`), as Lesson 3's own
   are written (`season.ts:212-215`; FACTS 5, 62, 63). Whether the page is live is `kit/publish.ts`'s
@@ -599,10 +599,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   tap Arpeggio Jumper", as Lesson 4's reads "Exercises, then tap Scale Runner" (`season.ts:240-245`,
   `explorer.ts:178`). The note is in the learner's words (`season.ts:27-34`); `needs` keeps
   "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
-  stay. Its hook is the entry's, the default (`season.ts:334`); its alternative, `'harder'`, and its
+  stay. Its hook is the entry's, the default (`season.ts:339`); its alternative, `'harder'`, and its
   tease, which Lesson 8's card draws, are `kit/lesson-copy.ts`'s (`:108-117`), as FACTS 1 records:
   this spec changes no hook or tease line. `EDGES` already holds [3, 9] and [6, 9]
-  (`season.ts:425-426`).
+  (`season.ts:430-431`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -615,8 +615,8 @@ page as PR #1149 has it (`f6333d527`), beyond the parts Lessons 2 to 7 promote i
 table):
 
 1. The lesson host: `learn/09.html` at `/learn/09`. Every build takes every `learn/NN.html` as an
-   input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:74-83`;
-   `lessonInputs` and `lessonPaths`, `:106-119`; `vite.config.ts:306`, `:474`), so the page needs no
+   input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
+   `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:306`, `:474`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
    `9: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 and 5's (`:30-34`),
    makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev site's and the
@@ -685,10 +685,10 @@ table):
    `og:image` it names is in `public/`, at the pixel size its `og:image:width` and `og:image:height`
    give.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-120`, `:209-212`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:440-444`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-120`, `:216-219`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:451-455`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:165-175`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:172-182`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -799,7 +799,7 @@ What the page does where nothing above says:
   by `initMasthead`, `kit/page-chrome.ts:111`): the "After Lesson 3" or "After Lesson 6" chip stays
   as a plain chip, and any other link keeps its words. The kit's quiz does the same for the recall's
   step links, which keep their words, "Try Lesson 6, Step 5 again", with no link
-  (`kit/quiz.ts:169-199`). The recall still shows, and the explorer and the lesson menu draw the
+  (`kit/quiz.ts:173-203`). The recall still shows, and the explorer and the lesson menu draw the
   lesson held back as coming later. End to end 13 holds it.
 - **Reduced motion**: Look, Toys 1 and Toys 4 give the end states; nothing moves on its own.
 
@@ -869,9 +869,9 @@ parts:
 12. Season data: Lesson 9's entry has `minutes: 16` and `page: '/learn/09'` in every build,
     whichever way `VITE_DRAFT_LESSONS` reads, as `season.test.ts` checks Lessons 3 to 5's
     (`:241-266`), and the same file's check of every page in the repository then covers it
-    (`:268-285`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 9 no page and no
+    (`:286-303`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 9 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:57-82`). That
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:57-91`). That
     file's example of a lesson with no page is Lesson 9 (`:44-55`): it moves to one the test finds,
     `LESSONS.find((L) => L.n > 0 && L.page === undefined)`, so that the next page to land cannot
     break it. Lesson 9's practise link carries `?lesson=09`, and `EDGES` holds [3, 9] and [6, 9].
@@ -936,7 +936,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 10, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,
     Lesson 10's line, sits one line above the hook, the card's words in the order eyebrow, tease,
-    hook and way on, as that spec checks Lesson 1's card (`:96-113`).
+    hook and way on, as that spec checks Lesson 1's card (`:102-119`).
 11. With reduced motion emulated, an arc and a trace draw at once, the guide's bands light in place,
     and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.

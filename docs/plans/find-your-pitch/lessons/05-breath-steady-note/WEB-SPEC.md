@@ -128,7 +128,7 @@ and 89). Three run longer, for these reasons:
 
 - The band chart (Merc's band at A3) with the level strip and a held voice, drawn violet. One
   slider, **Push**, 0 to 100, starting at 50, moves the voice's level and pitch together through
-  the kit's `setGain` and `setFreq` (`sound.ts:166-173`): ±6 dB and ±60 cents at the ends (FACTS
+  the kit's `setGain` and `setFreq` (`sound.ts:169-176`): ±6 dB and ±60 cents at the ends (FACTS
   73). The line draws in a scrolling 4-second window while the note sounds.
 - Sounding the note: `holdToPlay` sounds it while a pointer holds the slider, or for 0.7 s after
   the last arrow key (`kit/toy-helpers.ts:17-63`); it handles no Space or Enter, so on its own a
@@ -397,7 +397,7 @@ Tests:
   answering all four marks Lesson 5 done in the explorer; a check icon and ink (not gold) on the
   right answer, and feedback that links back to Steps 1, 2, 4 and 5 (`data-goto-step`). No feedback
   line starts with "Right", "Yes" or "Correct": the kit prints "Right." or "Not quite." itself
-  (`kit/quiz.ts:167`). Answers stay in localStorage until the Lesson telemetry track exists.
+  (`kit/quiz.ts:171`). Answers stay in localStorage until the Lesson telemetry track exists.
 - Two quizzes on one page need the three changes to `kit/quiz.ts` that Lesson 2's spec lists (a
   root per quiz, `lesson` optional, a question `id`); Lesson 2's page brings them, and this page
   publishes after it.

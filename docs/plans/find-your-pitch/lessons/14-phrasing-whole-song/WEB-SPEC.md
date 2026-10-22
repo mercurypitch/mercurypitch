@@ -340,7 +340,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   (Audio). While a take sounds the predict ignores its own two buttons (`:165`), so in the cold open
   a take is cut short only from outside it: another source taking the page's one "now playing" owner
   (a Four words play, say, on a screen tall enough to show both), the Sound toggle going off, or the
-  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:465`, `:475`)
+  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:476`, `:507`)
   without telling the source. The page's `play` resolves `false` in each of the three cases, so it
   must notice the last two itself (Audio).
 - The hints, each true in every state the kit shows it in (until the reveal, the kit shows `silent`
@@ -365,8 +365,8 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   take 2 heard, and the reveal shown. With sound off a play draws its take and shows the `silent`
   hint, and the reveal does not come.
 - How the hint moves, as the kit has it (`heard`, `kit/predict.ts:144-160`). The kit's tests hold
-  the first two below (`src/features/lessons/kit/predict.test.ts:183-205`), the third (`:207-227`)
-  and the fourth (`:141-164`); the fifth has no kit test, so this page's unit test 12 holds it, and
+  the first two below (`src/features/lessons/kit/predict.test.ts:218-240`), the third (`:242-262`)
+  and the fourth (`:176-199`); the fifth has no kit test, so this page's unit test 12 holds it, and
   End to end 2 holds the first two on the page:
   - before a choice, take 1 played with sound off shows `silent` in place of the lock hint
     (`kit/predict.ts:148-151`);
@@ -576,7 +576,7 @@ Recording (`kit/record.ts`, proposed; 51, 52):
 - Playback applies one gain to the whole take: the gain takes the take's peak to one set level, the
   same for every take, so a take sung quietly and one sung louder play back at the same peak, and it
   never changes during the take. Nothing compresses the take or sets its gain as it plays: it goes
-  past the master bus's compressor (`kit/sound.ts:107-116`), and through no automatic gain, so a swell
+  past the master bus's compressor (`kit/sound.ts:109-118`), and through no automatic gain, so a swell
   keeps its shape.
 - The stream it records is the listener's, the mic manager's analysis stream, with the browser's
   echo cancellation, noise suppression and automatic gain control off (`ANALYSIS_CONSTRAINTS`,
@@ -608,8 +608,8 @@ without a playhead, and the Mercs skip their reactions (REQ-GVC-083).
 The kit's quiz as it stands carries everything two quizzes on one page need (`kit/quiz.ts`): an id
 `prefix` for each quiz's elements (`:81-86`), question ids, from which a question's lesson is read
 (`:42-47`, `lessonOfQuestion` `:118-122`), an optional `lesson` (`:75-76`) and links that leave this
-page for a question from another lesson (`linkAway`, `:169-199`), which keep their words and drop
-the link where that lesson is not live (`:169-173`).
+page for a question from another lesson (`linkAway`, `:173-203`), which keep their words and drop
+the link where that lesson is not live (`:173-177`).
 
 - **Recall**: Lesson 5's questions 2 and 4, word for word with their feedback (LESSON.md; 7), under
   their Lesson 5 ids, `l05-q2` and `l05-q4`, with the prefix `rc-`, as Lessons 3 and 5's recalls
@@ -621,15 +621,15 @@ the link where that lesson is not live (`:169-173`).
   again" and "Try Lesson 5, Step 5 again", links that open Lesson 5's page at that step,
   `/learn/05#step-1` and `/learn/05#step-5` (its step ids, `learn/05.html:951`, `:1168`), in a new
   tab so the viewer keeps their place here, never `data-goto-step`, which would move this page's own
-  deck (`quiz.ts:169-199`); where Lesson 5 is not live, each keeps its words with no link
-  (`:189-192`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:87-94`), Lesson 5's
-  `recallStepHref` (`lesson-05/quiz-questions.ts:19-21`) in place of the default `/learn/05#lesson`,
+  deck (`quiz.ts:173-203`); where Lesson 5 is not live, each keeps its words with no link
+  (`:193-196`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:87-94`), Lesson 5's
+  `recallStepHref` (`lesson-05/quiz-questions.ts:19-20`) in place of the default `/learn/05#lesson`,
   and the kit's step deck opens at the step an address names (`kit/step-deck.ts:18-23`, `:269-277`).
 - **Quick check**: LESSON.md's four questions, ids `l14-q1` to `l14-q4`, keys `fyp-l14-seed` and
   `fyp-l14-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 14`, so answering all four marks Lesson
   14 done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
   feedback for every answer, and a check icon and ink (not gold) on the right one. The kit prints
-  "Right." or "Not quite." before each line (`quiz.ts:274`), so no feedback line starts with
+  "Right." or "Not quite." before each line (`quiz.ts:278`), so no feedback line starts with
   "Right", "Yes" or "Correct". "Try Step 2 again", "Try Step 3 again" and "Try Step 4 again" use the
   kit's `data-goto-step`. LESSON.md's note on the shuffle is editorial and never printed. Answers
   stay in the viewer's browser until the telemetry track exists.
@@ -640,7 +640,7 @@ Every tone is synthesised in the page with Web Audio at the frequencies in 82, t
 sound module and its house envelopes (`.claude/memory/audio-pop-free-playback.md`), and started only
 by a tap: Merc's takes, phrases and the song in Merc's "ooh"; the chords and the count-in in the
 soft tone (83 to 90). A sung line is one voice from breath to breath, the kit's `contourVoice`
-(`kit/sound.ts:311-344`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
+(`kit/sound.ts:314-347`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
 dips to 0.6 of its level for about 0.06 s, never to silence, so two notes are heard as two within
 one voice; a chord is three soft voices at 0.05 each, held for its minim (87). A breath is a 0.3 s
 gap, not a sound, because the kit's noise cannot be stopped once started (84). The one recorded
@@ -714,7 +714,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 14's entry in `kit/season.ts` (`:390-405`) gains a plain `minutes: 18` and
+- **Season data**: Lesson 14's entry in `kit/season.ts` (`:395-410`) gains a plain `minutes: 18` and
   `page: '/learn/14'` after its topics, in every build, under the comment Lesson 5's entry carries,
   `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:254`), as Lesson 3's own
   are written (`season.ts:212-215`) and Lesson 6's (`:275-277`; 8, 12). Whether the page is live is
@@ -722,11 +722,11 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   and no reading time (`:102-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`,
   which `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link stays as it
   is, `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
-  `label: 'Karaoke Night'` (`season.ts:398-404`), with no `needs`. Its topics stay; its hook is the
-  entry's, the default (`:396`), and its tease, which Lesson 13's card draws, is
+  `label: 'Karaoke Night'` (`season.ts:403-409`), with no `needs`. Its topics stay; its hook is the
+  entry's, the default (`:401`), and its tease, which Lesson 13's card draws, is
   `kit/lesson-copy.ts`'s (`:157`), with the old ones kept as `compelling` and `band` (`:149-165`),
   as 1 and 2 record. `EDGES` already holds [5, 14], [8, 14], [9, 14] and [12, 14]
-  (`season.ts:431-434`).
+  (`season.ts:436-439`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its hook, its topics, the lessons it builds on, its practise link and its minutes
@@ -743,11 +743,11 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
 (Toys table):
 
 1. The lesson host: `learn/14.html` at `/learn/14`. Every build takes every `learn/NN.html` as an
-   input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:74-83`;
-   `lessonInputs` and `lessonPaths`, `:106-119`; `vite.config.ts:306`, `:474`), so the page needs no
+   input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
+   `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:306`, `:474`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
    `14: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 7's
-   (`:30-37`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
+   (`:30-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
    site's and the previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until
    the console sets it either way, and the Content Studio's Lessons page names that reason when
    asked to publish it (11). `/learn/14` and `/learn/14.html` go in `STANDALONE_DOCUMENT_PATHS`
@@ -829,10 +829,10 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:102-120`,
-   `:138-146`; `:209-212`, `:222-226`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:440-444`), so without them the Browser jobs fail before any spec
+   `:138-146`; `:216-219`, `:229-233`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:451-455`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:46-57`, `:165-175`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:46-57`, `:172-182`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
    (`assert-first-paint-budgets.mjs:143-145`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -883,12 +883,12 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     would gain the shorter line beside its own (`lesson-copy.ts:173-179`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:300-308`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
-13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:428-462`),
+13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:439-473`),
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like
     every other sound, a breath is a gap, as here.
 14. The four-words strip, built: promoted from Lesson 1's page (`lesson-01/words.ts`) into
     `kit/words-strip.ts` with Lesson 7's page. Still needed, `recallStepHref`, which Lessons 9 and
-    14 both borrow from Lesson 5's module (`lesson-05/quiz-questions.ts:19-21`), moved into the
+    14 both borrow from Lesson 5's module (`lesson-05/quiz-questions.ts:19-20`), moved into the
     kit's quiz beside `away`.
 15. The hook and the tease: done in this PR (1, 2).
 16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's proposed `writeStepsWav(steps, leadSilence)`, steady
@@ -934,13 +934,13 @@ What the page does where nothing above says:
 - **Sound off before a choice, then on again, still before a choice**: take 1 with sound off shows
   `silent`; take 1 again with sound on puts back the lock hint, "Choose an answer to unlock Play
   take 2.", exactly as the page wrote it, and take 2 stays locked (Toys 2; the kit's
-  `predict.test.ts:183-205`; End to end 2).
+  `predict.test.ts:218-240`; End to end 2).
 - **Take 2 cut short**, by another source taking the page's "now playing" owner, by the Sound toggle
   going off or by the tab going hidden: the page's `play` resolves `false`, so nothing is revealed
   and the hint stays as it was: `chosen`, or `silent` if the play before it was silent, whose "play
   it again" still holds now that sound is on; take 2 played to its end afterwards reveals as usual
   (Toys
-  2; unit test 17 covers all three causes, the kit's `predict.test.ts:141-164` the result; End to
+  2; unit test 17 covers all three causes, the kit's `predict.test.ts:176-199` the result; End to
   end 2 the first).
 - **No Web Audio**: every play button draws in silence with the hint "This browser can't play sound
   here.", so the cold open's reveal cannot come, as on every page that uses the kit's predict; Sing
@@ -989,7 +989,7 @@ What the page does where nothing above says:
   `kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:111`): each "After
   Lesson N" chip for such a lesson stays as a plain chip, and any other link keeps its words. The
   kit's quiz does the same for the recall's step links, which keep their words, "Try Lesson 5, Step
-  1 again", with no link (`kit/quiz.ts:169-199`). Step 4's "as in Lesson 12" names a lesson that may
+  1 again", with no link (`kit/quiz.ts:173-203`). Step 4's "as in Lesson 12" names a lesson that may
   not be live, and is not a link. End to end 14 holds it.
 - **The season's close after a rest ending**: after "Effortful", "Uncomfortable" or "Just listen
   today" it keeps "You've seen every note you sing." and "See the season map", and shows neither
@@ -1084,9 +1084,9 @@ parts:
 14. Season data: Lesson 14's entry has `minutes: 18` and `page: '/learn/14'` in every build,
     whichever way `VITE_DRAFT_LESSONS` reads, as `season.test.ts` checks Lessons 3 to 5's
     (`:241-266`), and the same file's check of every page in the repository then covers it
-    (`:268-285`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
+    (`:286-303`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:57-82`); if that
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:57-91`); if that
     file's example of a lesson with no page still names a lesson that now has one (`:44-55`), it
     moves to one the test finds, as Lesson 9's spec proposes. Lesson 14's practise link carries
     `?lesson=14`, and `EDGES` holds [5, 14], [8, 14], [9, 14] and [12, 14].
@@ -1104,7 +1104,7 @@ parts:
     when take 2 is stopped before its end, by another source claiming the owner, by the Sound toggle
     going off or by the tab going hidden, and never when it runs out; take 2 cut short leaves the
     reveal hidden, and take 2 played to its end shows it, as the kit's test of a play that resolves
-    `false` does (`predict.test.ts:141-164`); a take 2 cut short leaves the hint as it was.
+    `false` does (`predict.test.ts:176-199`); a take 2 cut short leaves the hint as it was.
 18. The season's close: `createNextCard(14)` on the page's mark draws "End of Season 1", the line,
     Karaoke Night at `/karaoke-night?lesson=14` with `target="_blank"` and `rel="noopener"`, and
     "See the season map" at `#explorer`, and keeps the still after its words, as `next-card.test.ts`
