@@ -1,0 +1,299 @@
+/* ============================================================
+   Lesson 8 — Beat, tempo and the backbeat: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-guide, lesson-parts, lesson-voice, lesson-ear-game and
+   lesson-beat-machine). Here: the compact strip between the Mercs, the beat
+   machine's height for the stage budget, the step rows' labels, orange
+   Merc's line in Step 5, Sing it's two parts on one card, and the Wrap's
+   cards, free play and the tease figure. */
+
+/* ---------------------------------------------------------------- hero: the strip between the Mercs */
+.l8-duo {
+  --merc: clamp(96px, 9vw, 132px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  column-gap: 8px;
+  height: auto;
+  margin-top: 6px;
+}
+/* the floor runs under the Mercs' feet and the strip's last row */
+.l8-duo .floor {
+  top: auto;
+  bottom: calc(var(--merc) * 0.165);
+}
+.l8-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l8-duo .merc-blue {
+  grid-column: 1;
+}
+.l8-duo .merc-orange {
+  grid-column: 3;
+}
+.hero-strip {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  min-width: 0;
+  margin: 0 0 calc(var(--merc) * 0.165 + 8px);
+}
+.l8-hero .hero-plays {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l8-duo {
+    --merc: clamp(104px, 15vw, 150px);
+  }
+  /* both plays sit right under the stage, before the sound gate (the kit
+     orders the hero's parts at this width), so the first is on a phone's
+     first screen */
+  .l8-hero .hero-plays {
+    order: 4;
+    margin-top: 14px;
+  }
+}
+/* on a phone the strip takes the stage's whole width, on its own row under
+   the Mercs, so every beat keeps a cell of 35 px or more (FACTS 80) */
+@media (max-width: 720px) {
+  .l8-duo {
+    --merc: min(24vw, 112px);
+    grid-template-rows: var(--merc) auto;
+    row-gap: 6px;
+    margin-top: 0;
+  }
+  .l8-duo .merc {
+    align-self: start;
+  }
+  .l8-duo .floor {
+    top: calc(var(--merc) * 0.835);
+    bottom: auto;
+  }
+  .hero-strip {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+  }
+}
+.hero-strip .strip-cells .sc {
+  height: 28px;
+}
+
+/* ---------------------------------------------------------------- the beat machine's stage */
+/* the figure is 250 px tall at every width, the kit's height on the
+   narrowest phones: its tallest drawing, the grid with its number strip and
+   bar labels, is 182 px (FACTS 80). Beside the text the stage may cap it,
+   and on a phone held sideways the kit caps the deck's figure at 162 px,
+   where the grid takes its compact layout. */
+.bm-toy .viz.bm {
+  height: 250px;
+}
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+.bm-row {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.bm-row .tap-pad {
+  flex: 1 1 160px;
+}
+/* a one-digit choice, Bars of 2, 3 or 4, is still a 44 px target each way */
+.seg .btn {
+  min-width: 44px;
+}
+.seg-lbl,
+.move-lbl {
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+/* Step 5's row waits for its predict, and looks it, as a locked play button does */
+.bm-toy .btn:disabled,
+.bm-toy .range:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* orange Merc's line in Step 5, after the reveal: a bubble beside her still */
+.l8-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 16px 0;
+}
+.l8-says[hidden] {
+  display: none;
+}
+.l8-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l8-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l8-says .bubble::after {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Sing it: two parts, one card */
+.l8-sing {
+  max-width: 880px;
+  gap: 0;
+}
+.sing-part > :first-child {
+  margin-top: 0;
+}
+.sing-part + .sing-part {
+  margin-top: 26px;
+  padding-top: 24px;
+  border-top: 1px solid var(--hair);
+}
+.part-head {
+  margin: 0 0 10px;
+  font: 600 var(--fs-20, 20px) / 1.3 var(--f-display);
+  color: var(--ink);
+}
+.sing-part .sing-status {
+  margin: 14px 0 0;
+}
+.take-pad {
+  width: 100%;
+  margin-top: 14px;
+}
+.take-strip {
+  margin-top: 14px;
+}
+.l8-sing .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l8-sing .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sing-btns .move-do {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sing-btns .move-do[hidden] {
+  display: none;
+}
+.move-sep {
+  color: var(--ink-3);
+}
+.l8-sing .guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l8-sing .unscored {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+}
+.l8-sing .do-readout {
+  margin: 0 0 12px;
+  font: 600 var(--fs-16) / 1.35 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+/* the guide beside the still of the Merc singing, never a microphone */
+.l8-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px;
+  gap: 14px;
+  align-items: center;
+}
+.guide-merc {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+}
+@media (max-width: 560px) {
+  .l8-guide {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    gap: 8px;
+  }
+  .guide-merc {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l8-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l8-app .addr-line,
+.l8-app .second-drill {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l8-app .rest-line {
+  color: var(--ink);
+}
+.l8-app .second-drill {
+  margin-top: 14px;
+}
+.l8-app a.addr {
+  text-decoration: none;
+}
+.l08-next {
+  margin-top: 18px;
+}
+/* the tease figure in the next-lesson card: two ways up into Lesson 9's amber band */
+.l08-tease {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  margin-top: 12px;
+}
+.l08-tease .band {
+  fill: color-mix(in srgb, var(--amber) 14%, transparent);
+  stroke: color-mix(in srgb, var(--amber) 55%, transparent);
+}
+.l08-tease .steps {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.l08-tease .leap {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+.l08-tease .start,
+.l08-tease .land {
+  fill: var(--chrome);
+}
+.l08-tease .ask {
+  fill: var(--amber);
+  font: 600 16px / 1 var(--f-display);
+}
+/* free play: the beat machine with every control, on its own card */
+.l8-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.l8-free .controls {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.l8-free .tap-pad {
+  flex: 1 1 200px;
+}

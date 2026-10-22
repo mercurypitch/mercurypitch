@@ -136,10 +136,10 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    steps the viewer reaches, and first settles the page's own links to other lessons by the state
    the page was served with (`followPageState`, `kit/page-chrome.ts:111`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
-   `kit/lesson-copy.test.ts:373-382` requires of every page from its first commit), the meta as
+   `kit/lesson-copy.test.ts:375-384` requires of every page from its first commit), the meta as
    three chips ("15 minutes", FACTS 4; "Also useful: Lesson 6, Intervals", a plain chip, not a link,
-   as Lesson 3's "Also useful" chip is, `learn/03.html:261-264`, FACTS 2; Sound on) and the promise,
-   from LESSON.md. The title is the season's hook (`kit/season.ts:316`, FACTS 1); it says the song
+   as Lesson 3's "Also useful" chip is, `learn/03.html:353-356`, FACTS 2; Sound on) and the promise,
+   from LESSON.md. The title is the season's hook (`kit/season.ts:319`, FACTS 1); it says the song
    feels different and never says where the claps land, so it answers nothing the predict asks.
 3. **The stage**: orange's and blue's bubbles over the two Mercs on the floor line, with the beat
    machine in its compact state between them (Toys 1), and under the machine the two plays: "Play
@@ -234,7 +234,7 @@ recall and quiz questions, 60 s (FACTS 4).
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. The beat machine       | The kit's metronome drawing (`kit/explorer-figures.ts:20-32`), sound (`kit/sound.ts`), frame loop, step deck and stage fit; the app's drum voices (`src/lib/drum-voices.ts`); the stats site's arm angle (`research/stats-snippets/instrument-figures.js:103-104`)                          | The beat clock; the metronome on the stage; the beat row with Bars; the beat grid with Kick, Clap and Hi-hat; Rock and March; Tempo; the morph; the compact state |
 | 2. Predict widgets        | The kit's predict (`kit/predict.ts`), with a free play before the choice and a reveal after both of two plays                                                                                                                                                                               | Nothing                                                                                                                                                           |
-| 3. Four words             | The words strip of Lessons 1 to 3, a ticket per word with its figure and play button (`lesson-03/words.ts`)                                                                                                                                                                                 | Four new figures                                                                                                                                                  |
+| 3. Four words             | Lesson 1's words strip, a ticket per word with its figure and play button, in the kit for Lesson 7 (`kit/words-strip.ts:1-12`)                                                                                                                                                              | Four new figures                                                                                                                                                  |
 | 4. Count the bar          | The kit's ear game (`kit/ear-game.ts`, on #1149): Lesson 2's Semitone or tone? promoted and generalised to N answers                                                                                                                                                                        | Three answers, 2, 3 and 4, on the keys 2, 3 and 4 (a key per answer, new in the kit); the clicks as the game's notes                                              |
 | 5. Tap pad and readout    | The Ear Lab's tap rule (`src/lib/ear/tap-rule.ts:13-39`, moved there from its `TapPad`, `src/features/ear-lab/EarStage.tsx:545-606`): pointer down, Space or Enter, the event's own time                                                                                                    | A plain-DOM pad in the kit; the taps-per-minute readout                                                                                                           |
 | 6. Sing it                | Lesson 3's comfort check, voice choice and feeling question (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`); Lesson 6's rest card after "Effortful" and its pure flow rule; the Ear Lab's judge (`src/lib/ear/rhythm-take.ts`); Drum Night's latency estimator, moved into `src/lib` | The tap take and its lines; the sung line's guide on the beat machine; Move do in semitones                                                                       |
@@ -375,7 +375,15 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
 - **Free play** (Wrap): its own copy of the object in a card, as Lesson 2's free play is
   (`lesson-02/free-play.ts:1-13`), with every control: Play, Bars, the Click switch, March, Rock
   and Clear, Tempo, the tap pad and its readout, and the grid's cells. Nothing locks: the guided
-  steps come first on the page (playbook rule 17).
+  steps come first on the page (playbook rule 17). Its line, in the form of Lesson 6's ("Free
+  play: try every control of the tune"), reads "Free play: every control of the beat machine in one
+  place".
+- **Captions.** Each step's figure carries its caption, as Lesson 6's do: "Fig. 1 The metronome",
+  "Fig. 2 The metronome, with Tempo", "Fig. 3 The beat row", "Fig. 4 The beat grid" and "Fig. 5
+  Two patterns, one grid". The hero's figure is described for a screen reader, before its reveal,
+  by what it draws: "The first two lines of 'Twinkle, Twinkle' in four bars of four beats, one
+  syllable to a beat, the beats numbered 1 to 4, with the claps drawn as dots under beats 1 and 3
+  and a small metronome beside them."
 - Under reduced motion the arm holds still and upright and its lamp lights on each beat; the
   morph, a pattern change and the cold-open slide land in their end states at once; a played
   pattern still sounds and lights its cells in turn.
@@ -408,7 +416,10 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   again."
 - **Step 5.** Both plays, "Play the march at 90" and "Play the rock beat", unlock after the choice,
   and the reveal waits until both have been heard to their ends (`revealAfter: 'all'`), since it
-  compares them; after the first, the hint reads "Now play the other one." (`hints.next`). They play
+  compares them; after the first, the hint reads "Now play the other one." (`hints.next`); after the
+  choice, "Locked in. Play both, and watch the grid." (`hints.chosen`); after the reveal, "Play
+  them again, or swap the tempos on the stage." (`hints.again`), which leads to the step's Try. They
+  play
   two bars each on the stage's grid, which shows the pattern that is playing. The choice also opens
   the step's stage controls: Play, March and Rock as its `unlocks`, and Tempo from its `onChoice`
   (Toys 1, The patterns). The guess lines are "You said: yes, the same speed now" and "You said: no,
@@ -420,14 +431,16 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
 
 ### 3. Four words
 
-The strip of Lessons 1 to 3: a ticket per word with its small figure, its definition and a play
-button, in the page's own `lesson-08/words.ts`, as each earlier lesson keeps its own figures
-(`lesson-03/words.ts`). The figures: for beat, four dots that light in turn; for tempo, the same
-dots twice, far apart then close; for bar, two groups of four with a bar line between, each 1
-larger; for backbeat, one bar's grid with the kick on 1 and 3 and the claps on 2 and 4 in gold.
-Each button names what it plays: "Play four clicks", "Play 60, then 120 beats per minute", "Play
-two bars of four", "Play a bar with claps on 2 and 4" (FACTS 73). Under reduced motion the dots
-light in turn, with no other motion.
+Lesson 1's strip, which the kit has held since Lesson 7 (`kit/words-strip.ts:1-12`): a ticket per
+word with its small figure, its definition and a play button, with the page's own figures in
+`lesson-08/words.ts`, as Lesson 7 keeps its own (`lesson-07/words.ts:1-14`). Each word is the page's
+one sound: a newer sound anywhere on the page stops it, and a press of the word still sounding is
+ignored (`kit/words-strip.ts:7-12`). The figures: for beat, four dots that light in turn; for tempo,
+the same dots twice, far apart then close; for bar, two groups of four with a bar line between, each
+1 larger; for backbeat, one bar's grid with the kick on 1 and 3 and the claps on 2 and 4 in gold.
+Each button names what it plays: "Play four clicks", "Play 60, then 120 beats per minute", "Play two
+bars of four", "Play a bar with claps on 2 and 4" (FACTS 73). Under reduced motion the dots light in
+turn, with no other motion.
 
 ### 4. Count the bar
 
@@ -509,8 +522,9 @@ the page is hidden, whatever is playing stops (`lesson-03/sing.ts:366-382`).
 - **Play the groove** plays the take's groove for four bars at 90 BPM, a kick on 1 and 3 and the
   hi-hat on every eighth, no click and no clap, 10.7 s, for clapping aloud (FACTS 76). A second
   press stops it. Nothing is measured.
-- **Start: tap the backbeat** runs the take (FACTS 43): a 0.6 s lead, one bar counted in on the
-  click, beat 1 on the high click; two bars of the groove with the click, status "Tap every beat:
+- **Start: tap the backbeat** runs the take (FACTS 43), whose status reads "Press Start when
+  you're ready to tap." until then: a 0.6 s lead, one bar counted in on the click, beat 1 on the
+  high click, status "Counting in: one bar."; two bars of the groove with the click, status "Tap every beat:
   bar 1 of 2"; four bars of the groove without the click, status "Now 2 and 4: bar 1 of 4", the take
   strip's 2 and 4 outlined in gold; then 0.35 s more. 28 beats, 19.6 s in all. Each tap sounds a
   clap at once, at gain 0.7. Start becomes Stop while the take runs, and moves the focus to the pad.
@@ -562,7 +576,13 @@ the page is hidden, whatever is playing stops (`lesson-03/sing.ts:366-382`).
 two bars of eight beat cells with the syllables "Twin kle twin kle lit tle star", "star" across
 the last two, and the claps on 2 and 4 in gold, with the still of the Merc singing beside it,
 blue for the lower voice and orange for the higher, never a microphone icon. Every state has its
-status line.
+status line, LESSON.md's (Sing it, Status lines): the comfort check's "Before you sing: how is
+your voice today?"; the voice choice's "Choose the voice you'll sing with.", or "Choose a voice: it
+picks the Merc who sings." after "Just listen today"; "Just listening today: press Play Merc's line
+to hear it."; before Merc's line is heard, "Play Merc's line first: Merc sings it, then the guide
+is yours."; then "Start the guide when you're ready, or play Merc's line again."; while Merc sings,
+"Merc sings the line."; while the guide runs, "Your turn: sing with the guide."; when it ends,
+"How did that feel?"; and once the guide is put away, "Merc can still sing the line for you."
 
 States:
 
@@ -814,7 +834,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-Lesson 8's entry (`kit/season.ts:310-327`; FACTS 58), proposed for when this page is built:
+Lesson 8's entry (`kit/season.ts:310-332`; FACTS 58), as this page wrote it:
 
 - `minutes: 15` and `page: '/learn/08'`, written plainly with Lesson 5's comment, "A draft until its
   sign-off (drafts.ts), as Lesson 3 is." (`season.ts:254-256`). Every build keeps a draft's page and
@@ -831,17 +851,18 @@ Lesson 8's entry (`kit/season.ts:310-327`; FACTS 58), proposed for when this pag
   beats 2 and 4" (`kit/explorer-figures.ts:207`), is the kit's and stays: the card's arm swings in
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:878-889`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
-- The hook stays word for word (`season.ts:316`; FACTS 1), with no alternative, and the tease
+- The hook stays word for word (`season.ts:319`; FACTS 1), with no alternative, and the tease
   stays as `kit/lesson-copy.ts:107` has it: "Same song, same speed. Only the claps move.", which
   Lesson 7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
-  (`season.ts:334`), and its copy the tease (`kit/lesson-copy.ts:116`), with its earlier hook as an
+  (`season.ts:339`), and its copy the tease (`kit/lesson-copy.ts:116`), with its earlier hook as an
   alternative (`:108-115`); all three are Lesson 9's, not this page's (FACTS 6).
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand on main at `d59c00ad6` (21 October 2026), and on #1149 at
+Found in the kit and the app as they stood on main at `d59c00ad6` (21 October 2026), and on #1149 at
 `8a8d90335` where an item says so, beyond the parts Lessons 2 to 7 promote into the kit (Toys
-table). Every item is proposed.
+table). The page's build brought every item but 17, and each item's citations are to the tree it
+was built on.
 
 1. `kit/beat-clock.ts`, new: the lookahead scheduler on the audio clock, the run's own gain node,
    the audio-to-page clock map (Audio). Generic, with unit tests on a fake clock.
@@ -883,7 +904,7 @@ table). Every item is proposed.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:116`), above its new hook, "How do you land a note you
-   have to leap to?" (`season.ts:334`), under `.next-tease` (`kit/next-card.ts:142`;
+   have to leap to?" (`season.ts:339`), under `.next-tease` (`kit/next-card.ts:142`;
    `lesson-sections.css:198-204`), and the old hook stays in `kit/lesson-copy.ts:108-115` as the
    admin console's alternative (CURIOSITY-MOMENTS § 5). This page adds only its tease figure to the
    slot (Toys 9).
@@ -893,26 +914,26 @@ table). Every item is proposed.
     used at `lesson-04/main.ts:41` and `:64`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
     `recallHref` (`lesson-06/quiz-questions.ts:30-32`) opens a page, never a step, and stays its
     own. The quiz needs nothing else: its prefix, slot and away links are on main
-    (`kit/quiz.ts:73-97`, `:174-199`).
+    (`kit/quiz.ts:73-97`, `:173-203`).
 11. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after
     "Effortful", as Lesson 6's does, leaving the kit's default for the coach
     (`kit/comfort.ts:58-67`).
-12. `src/features/lessons/kit/drafts.ts:30-34`: Lesson 8's line, "the vocal coach's sign-off
+12. `src/features/lessons/kit/drafts.ts:30-38`: Lesson 8's line, "the vocal coach's sign-off
     (MASTER-PLAN § 12 item 8)", in the form of Lessons 3 and 5's, and the season entry above. The
     console puts the page live on mercurypitch.com by publishing it, with no release
     (`kit/drafts.ts:13`); releasing it in code means deleting that line (`drafts.ts:18-24`).
 13. The service worker: `/learn/08` and `/learn/08.html` in `STANDALONE_DOCUMENT_PATHS`
-    (`src/lib/sw-runtime.ts:93`), beside the drafts' entries and their comment (`:140-147`), so
+    (`src/lib/sw-runtime.ts:93`), beside the drafts' entries and their comment (`:140-156`), so
     that where it is held back its address reaches the site worker's 404 page, never the app
     shell; the build takes `learn/08.html` by itself, in every mode (`tools/draft-lessons.ts:16-18`;
     `vite.config.ts:306`, `:474`).
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-137`), whole in the page's first commit. Two tests hold it: the kit's
-    `src/features/lessons/kit/lesson-copy.test.ts:373-408` reads every `learn/NN.html`, drafts
+    `src/features/lessons/kit/lesson-copy.test.ts:375-410` reads every `learn/NN.html`, drafts
     included, from its first commit, and `src/tests/lesson-pages.test.ts:85-183` holds a released
     lesson's head. The copies of the hook that the first test reads are the ones the site worker
     rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
-    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:373-382`).
+    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:375-384`).
     - The document title, at most 60 characters, with "MercuryPitch" and the headline in it
       (`lesson-pages.test.ts:101-102`, `:130`): SEARCH.md § 4's draft, "Beat, tempo and the
       backbeat, explained | MercuryPitch" (54 characters), for the owner to decide.
@@ -926,16 +947,16 @@ table). Every item is proposed.
     - `og:title` and `twitter:title`, "Beat, tempo and the backbeat: Find Your Pitch, Lesson 8", in
       the form of Lesson 2's (`learn/02.html:26-29`, `:45-48`).
     - `og:description`, the full hook and then one line, as Lesson 2's (`learn/02.html:30-33`),
-      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:399-402`): "Why
+      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:401-404`): "Why
       does the same song feel different when you clap on 2 and 4 instead of 1 and 3? Hear the claps
       move, then tap the backbeat."
     - `twitter:description`, the hook exactly (`learn/02.html:49-52`;
-      `lesson-copy.test.ts:403-405`).
+      `lesson-copy.test.ts:405-407`).
     - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-08-og.jpg`, with
       `og:image:width` 1200 and `og:image:height` 630, and `og:image:alt` and `twitter:image:alt`
       naming the card (item 15; `learn/02.html:34-43`, `:53-60`).
     - The Article block: `@id` `https://mercurypitch.com/learn/08#lesson`, headline "Beat, tempo and
-      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:406`), the same
+      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:408`), the same
       description as the meta, `url` and `mainEntityOfPage` the canonical address, `image` the
       og:image (`lesson-pages.test.ts:116-117`, `:128-129`), `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
@@ -950,11 +971,13 @@ table). Every item is proposed.
       which: the one that deletes the page's `drafts.ts` line, or one straight after the console
       publishes the page.
 15. `public/learn/lesson-08-og.jpg`: the share card, 1200 x 630, a still of the hero before its
-    reveal: the title over the metronome and the compact grid, the claps on 1 and 3 as plain dots
-    and every beat number one size, so the card, which people see before the page, answers nothing
-    the cold open asks (Look). Its alt text, in the form of Lesson 2's (`learn/02.html:40-43`): "The
-    title card: Find Your Pitch, Lesson 08, Beat, tempo and the backbeat, above a metronome and a
-    grid of four bars of four beats, with claps as dots under beats 1 and 3."
+    reveal: the title over the metronome and the compact grid, between the two Mercs as the hero
+    and Lessons 6 and 7's cards stand them, the claps on 1 and 3 as plain dots and every beat number
+    one size, so the card, which people see before the page, answers nothing the cold open asks
+    (Look). Its alt text, in the form of Lesson 2's (`learn/02.html:40-43`) and naming the Mercs as
+    Lesson 6's does (`learn/06.html:40-43`): "The title card: Find Your Pitch, Lesson 08, Beat,
+    tempo and the backbeat, above a metronome and a grid of four bars of four beats, with claps as
+    dots under beats 1 and 3, between blue Merc and orange Merc."
 16. Indexing, requested when the console publishes the page: from then on the site worker lists it
     in `sitemap.xml` and `llms.txt` as it serves them (`src/lesson-gate.ts:22-24`). While it is a
     draft, the static files keep it out: in neither `public/sitemap.xml` nor `public/llms.txt`,
@@ -962,9 +985,10 @@ table). Every item is proposed.
     (`src/tests/lesson-pages.test.ts:185-220`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-81`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:149-155` checks. The first-paint budget comes with the page,
-    beside Lessons 3 and 5's (`scripts/assert-first-paint-budgets.mjs:102-125`), since every build
-    carries every lesson page.
-17. The App content items under Practice links.
+    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:102-128`, Lessons 3 and 5),
+    at `:154-160`, and its CSS ceiling at `:238-241`, since every build carries every lesson page.
+17. The App content items under Practice links: the App and App content tracks' to weigh, and not
+    built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
     `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which then never counts as
     heard (Toys 2); and a page-wide "now playing" owner, in the kit (promoted there if #1149 keeps
@@ -1040,7 +1064,11 @@ parts:
 5. The take judge: the cases of `verify08.py` § 7 from fixed seeds, every template in Toys 6 and
    the rule that picks it; 120 ms either side counts and 121 ms does not; the 250 ms cap; fewer than
    five pulse samples; a second tap on one beat matches no beat; counts in words from "One" to
-   "Nine"; the estimator and `judgeTake` imported from `src/lib`, never copied.
+   "Nine"; the estimator and `judgeTake` imported from `src/lib`, never copied. `verify08.py` is not
+   in the repository, so the tests draw their own seeded takes (`lesson-08/take-judge.test.ts`): on
+   them a 20 ms spread reads "All 8 landed on 2 and 4: a backbeat." every time, and a 40 ms spread
+   at least 7 of 8, since a spread that wide puts a tap past the 120 ms window now and then (FACTS
+   42 reports every take reading all 8 on that script's seeds).
 6. The tap readout: the median of the last eight gaps; shown from the fourth tap; a 2 s gap starts
    a new run; a gap under 0.15 s is ignored.
 7. Count the bar from a fixed seed: six rounds, each size twice, never the same twice running; the
@@ -1067,7 +1095,7 @@ parts:
 13. `metronomeSVG(id)`: two copies have distinct gradient ids.
 14. The season entry: Lesson 8 keeps `page` and `minutes` in every build, as Lessons 3 and 5 do
     (`kit/season.test.ts:241-266`), and the season gives the page its entry, as it must every lesson
-    document in `learn/` (`kit/season.test.ts:268-285`); a state that holds it back draws it with
+    document in `learn/` (`kit/season.test.ts:286-303`); a state that holds it back draws it with
     neither (`kit/publish.test.ts:58-73`); its link's `note` matches none of the backlog words
     (`kit/season.test.ts:177-190`).
 15. Step 5's lock: before the predict's choice, Play, March, Rock and Tempo are `disabled` and none

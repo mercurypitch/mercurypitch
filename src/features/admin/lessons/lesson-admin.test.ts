@@ -92,7 +92,7 @@ describe('lessonRows', () => {
         (lesson) => lesson.n,
       ),
     )
-    expect(rowFor(8, rows)).toMatchObject({
+    expect(rowFor(9, rows)).toMatchObject({
       build: 'planned',
       built: false,
       written: false,
@@ -464,7 +464,7 @@ describe('releaseChecklist', () => {
 
     expect(ids(2)).toContain('film')
     expect(ids(4)).not.toContain('film')
-    expect(states(releaseChecklist(rowFor(8), site, SHOWN))).toEqual([
+    expect(states(releaseChecklist(rowFor(9), site, SHOWN))).toEqual([
       ['page', 'todo'],
       ['release', 'todo'],
       ['sitemap', 'todo'],

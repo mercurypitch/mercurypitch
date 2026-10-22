@@ -77,13 +77,13 @@ describe('nextCard', () => {
   })
 
   it('opens the map on a lesson coming later, with no page to link', () => {
-    // Act: on Lesson 7's page, Lesson 8 not written yet
-    const c = lessonCard(nextCard(LESSONS, [], {}, 7))
+    // Act: on Lesson 8's page, Lesson 9 not written yet
+    const c = lessonCard(nextCard(LESSONS, [], {}, 8))
 
     // Assert
     expect([c?.n, c?.title, ...way(c)]).toEqual([
-      8,
-      'Beat, tempo and the backbeat',
+      9,
+      'Landing a leap',
       'Coming later',
       'See it on the map',
       'map',
@@ -324,8 +324,8 @@ describe('createNextCard', () => {
     document.body.innerHTML =
       '<div class="next-card card" data-next-card hidden></div>'
 
-    // Act: on Lesson 7's page
-    createNextCard(7)
+    // Act: on Lesson 8's page
+    createNextCard(8)
 
     // Assert
     const card = document.querySelector<HTMLAnchorElement>('a.next-card')
@@ -335,7 +335,7 @@ describe('createNextCard', () => {
       card?.classList.contains('is-later'),
       card?.querySelector('.tempo')?.textContent,
       card?.querySelector('.chip')?.textContent,
-    ]).toEqual(['#explorer', '8', true, 'Coming later', 'See it on the map'])
+    ]).toEqual(['#explorer', '9', true, 'Coming later', 'See it on the map'])
   })
 
   it("closes the season on its last lesson's page: no link itself, its two ways on links", () => {

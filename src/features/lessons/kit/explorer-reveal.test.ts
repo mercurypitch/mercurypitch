@@ -301,8 +301,8 @@ describe("a next-lesson card's link to the explorer", () => {
   })
 
   it('shows a card coming later as far as its question, which stands in for the button it does not have', () => {
-    // Arrange: Lesson 7's card leads to Lesson 8, coming later, its question under the fold
-    pageWithNextCard(7, 8)
+    // Arrange: Lesson 8's card leads to Lesson 9, coming later, its question under the fold
+    pageWithNextCard(8, 9)
     measuredBoxes({ card: [700, 1000], hook: [810, 870] })
     const tops = pageScrolls()
     q('[data-select-lesson]').click()
@@ -311,7 +311,7 @@ describe("a next-lesson card's link to the explorer", () => {
     window.dispatchEvent(new Event('scrollend'))
 
     // Assert
-    expect(q('#exCardHost h3').textContent).toBe('Beat, tempo and the backbeat')
+    expect(q('#exCardHost h3').textContent).toBe('Landing a leap')
     expect(document.querySelector('#exCardHost .ex-actions')).toBeNull()
     expect(tops()).toEqual([870 - ROOM.bottom])
   })
