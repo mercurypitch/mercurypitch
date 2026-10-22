@@ -27,7 +27,10 @@ def lathe(name, profile, segments=48, *, closed=False, modulate=None, uv=True, s
         On a hollow shell walked up its outside and down its inside, outward points
         away from the axis on both walls: one negative push moves both in together
         and keeps the wall even (a crease), where pushing the inner wall the other
-        way drives it through the outer.
+        way drives it through the outer. f may return (dr, dz) instead, for a push in
+        a fixed direction: a floor's corner has a diagonal normal, and a lobe pushed
+        along it lifted the urn's floor 2 cm in every crease and folded its inner wall
+        through the outer; moved straight in, the floor stays flat.
     sharp_degrees: mark edges sharper than this as sharp (Smooth by Angle semantics).
     material / span_materials: one material, or a list of slots with
         span_materials[i] naming the slot of the faces between profile points i and
@@ -66,8 +69,12 @@ def lathe(name, profile, segments=48, *, closed=False, modulate=None, uv=True, s
             r, z = p.x, p.y
             if modulate is not None:
                 d = modulate(theta, p.y, i)
-                r += outward.x * d
-                z += outward.y * d
+                if isinstance(d, tuple):
+                    r += d[0]
+                    z += d[1]
+                else:
+                    r += outward.x * d
+                    z += outward.y * d
             ring.append(bm.verts.new((r * math.cos(theta), r * math.sin(theta), z)))
         rings.append(ring)
 

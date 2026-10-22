@@ -81,6 +81,30 @@ def resample(poly, count, curvature_bias=0.4, keep=()):
     return out
 
 
+def resample_by_turn(poly, degrees=12.0, max_length=None):
+    """The fewest of poly's own points that keep every ring's turn within `degrees`.
+
+    Each span ends before any piece of the outline it covers points more than half of
+    `degrees` away from its chord, so two chords meeting at a ring differ by at most
+    `degrees` (plus the turn between two of poly's samples: pass it densely sampled, a
+    spline at 20 or more samples a span). A span also ends before its chord passes
+    `max_length` metres. The urn's neck resampled by count spent its rings evenly and
+    turned 22-31 degrees a ring through its waist.
+    """
+    half = math.radians(degrees) / 2
+    out, a = [poly[0].copy()], 0
+    for b in range(2, len(poly)):
+        chord = poly[b] - poly[a]
+        ok = chord.length > 1e-12 and (max_length is None or chord.length <= max_length)
+        ok = ok and all((poly[k + 1] - poly[k]).angle(chord, 0.0) <= half
+                        for k in range(a, b) if (poly[k + 1] - poly[k]).length > 1e-12)
+        if not ok:
+            out.append(poly[b - 1].copy())
+            a = b - 1
+    out.append(poly[-1].copy())
+    return out
+
+
 def _segment_weights(poly, bias):
     lengths = [(b - a).length for a, b in zip(poly, poly[1:])]
     turns = [0.0] * len(lengths)

@@ -56,7 +56,7 @@ def radius_at(z, names=None):
         for p, q in ((a, b), (b, c), (c, a)):
             if (p.z - z) * (q.z - z) <= 0 and p.z != q.z:
                 t = (z - p.z) / (q.z - p.z)
-                x = p.x + (q.x - p.x) * t; y = p.y + (q.y - p.y) * t
+                y = p.y + (q.y - p.y) * t
                 best = max(best, abs(y - center.y))
     return best
 

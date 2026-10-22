@@ -14,8 +14,6 @@ import traceback
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
-from mathutils import Vector  # noqa: E402
-
 from bkit import export, fracture, lathe, materials, profile, scene, sweep, textures, trims, validate  # noqa: E402
 
 V = profile.V
@@ -41,6 +39,17 @@ def test_spline_passes_control_points_and_keeps_corners():
         assert min((p - V(*c)).length for p in curve) < 1e-9, c
     resampled = profile.resample(curve, 30, keep=(6,))
     assert (resampled[0] - V(0, 0)).length < 1e-9 and (resampled[-1] - V(0, 2)).length < 1e-9
+
+
+def test_resample_by_turn_keeps_each_ring_within_the_limit():
+    arc = [V(math.cos(math.pi / 2 * k / 400), math.sin(math.pi / 2 * k / 400)) for k in range(401)]
+    line = [V(1.0, -1.0 + k / 10) for k in range(10)] + arc  # a straight run into a quarter turn
+    out = profile.resample_by_turn(line, 12.0)
+    assert (out[0] - line[0]).length < 1e-9 and (out[-1] - line[-1]).length < 1e-9
+    turns = [math.degrees((b - a).angle(c - b)) for a, b, c in zip(out, out[1:], out[2:])]
+    assert max(turns) <= 12.0 + 0.3, max(turns)  # plus one sample's turn, 0.225 degrees here
+    assert len(out) <= 12, len(out)  # 90 degrees at 12 a ring is 8 spans; the straight run needs one more
+    assert len(profile.resample_by_turn(line, 12.0, max_length=0.25)) > len(out)
 
 
 def test_offset_keeps_wall_thickness_on_slopes():
@@ -79,6 +88,20 @@ def test_modulation_moves_only_the_band():
                         modulate=lambda t, z, i: 0.01 * lathe.band(z, 0.08, 0.12, 0.02) * math.cos(4 * t))
     moved = [a.co.z for a, b in zip(plain.data.vertices, lobed.data.vertices) if (a.co - b.co).length > 1e-7]
     assert moved and all(0.06 - 1e-6 <= z <= 0.14 + 1e-6 for z in moved), (min(moved), max(moved))
+
+
+def test_modulation_can_push_in_a_fixed_direction():
+    scene.reset()
+    # A cup walked up its outside and down to a flat floor: the floor's corner normal is diagonal.
+    pts = [V(0, 0), V(0.1, 0), V(0.1, 0.1), V(0.09, 0.1), V(0.09, 0.01), V(0, 0.01)]
+    corner = 4
+    along = lathe.lathe('along', pts, 16, modulate=lambda t, z, i: -0.005 if i == corner else 0.0)
+    straight = lathe.lathe('straight', pts, 16, modulate=lambda t, z, i: (-0.005, 0.0) if i == corner else 0.0)
+    ring = lambda obj: [v.co for v in obj.data.vertices if 0.08 < math.hypot(v.co.x, v.co.y) < 0.0895]  # noqa: E731
+    assert len(ring(along)) == 16 and all(c.z > 0.013 for c in ring(along)), 'a normal push lifts the corner'
+    assert len(ring(straight)) == 16
+    for c in ring(straight):
+        assert abs(c.z - 0.01) < 1e-6 and abs(math.hypot(c.x, c.y) - 0.085) < 1e-6, c
 
 
 def test_chain_and_raised_band_give_one_multi_material_shell():
@@ -342,6 +365,16 @@ def test_cavity_intrusions_find_a_part_inside_the_hollow():
     found = validate.cavity_intrusions(cup, [inside, outside], z_min=0.03, z_max=0.19)
     assert found['inside'][0] > 0 and found['inside'][1] > 0.05, found
     assert found['outside'] == (0, 0.0), found
+
+
+def test_touching_counts_a_part_sunk_in_another_without_crossing():
+    scene.reset()
+    wall = lathe.lathe('wall', [V(0, 0), V(0.1, 0), V(0.1, 0.1), V(0, 0.1)], 16)
+    sunk = lathe.lathe('sunk', [V(0, 0.03), V(0.0995, 0.03), V(0.0995, 0.07), V(0, 0.07)], 16)
+    far = lathe.lathe('far', [V(0, 0.3), V(0.1, 0.3), V(0.1, 0.4), V(0, 0.4)], 16)
+    assert not validate.overlap(wall, sunk), 'no surfaces cross'
+    assert validate.touching(wall, sunk), 'half a millimetre inside the surface touches'
+    assert not validate.touching(wall, far)
 
 
 def test_validate_counts_pieces_that_float_free():

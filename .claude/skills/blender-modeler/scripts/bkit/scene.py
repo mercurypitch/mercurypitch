@@ -102,24 +102,28 @@ def clean(obj, dist=1e-5, triangulate=False):
     if triangulate:
         bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
     bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=dist)
-    if triangulate:  # dissolving can leave an n-gon behind; split it again
-        bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3], quad_method='BEAUTY',
-                              ngon_method='BEAUTY')
+    if triangulate:
         # A needle whose three corners are nearly in line has long edges and no area, so
         # dissolving short edges misses it. Rotating its longest edge turns the needle and
-        # its neighbour into two triangles with area. The bar is ten times the validator's
-        # 1e-10: float32 positions and the weld on import can push a 1.1e-10 needle under it.
-        for _ in range(4):
-            needles = [f for f in bm.faces if f.is_valid and f.calc_area() < 1e-9]
+        # its neighbour into two triangles with area; where Blender will not rotate it (two
+        # needles side by side, a corner exactly in line), its shortest edge, tens of microns,
+        # collapses. Dissolving and splitting again (a quad with a corner on the line between
+        # two others, which the exporter split along that line) can make new needles, so it
+        # runs until none are left. The bar is ten times the validator's 1e-10: float32
+        # positions and the weld on import can push a 1.1e-10 needle under it.
+        for _ in range(8):
+            bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3], quad_method='BEAUTY',
+                                  ngon_method='BEAUTY')
+            needles = [f for f in bm.faces if f.calc_area() < 1e-9]
             if not needles:
                 break
             longest = {max(f.edges, key=lambda e: e.calc_length()) for f in needles}
-            bmesh.ops.rotate_edges(bm, edges=[e for e in longest if e.is_valid and e.is_manifold], use_ccw=False)
-        bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=dist)
-        # That dissolve can leave a quad again, one corner on the line between two others: the
-        # exporter split one along that line into a zero-area triangle. Split here, by beauty.
-        bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3], quad_method='BEAUTY',
-                              ngon_method='BEAUTY')
+            bmesh.ops.rotate_edges(bm, edges=[e for e in longest if e.is_manifold], use_ccw=False)
+            stuck = {min(f.edges, key=lambda e: e.calc_length()) for f in bm.faces if f.calc_area() < 1e-9}
+            stuck = [e for e in stuck if e.calc_length() < 1e-4]
+            if stuck:
+                bmesh.ops.collapse(bm, edges=stuck, uvs=True)
+            bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=dist)
     loose = [v for v in bm.verts if not v.link_faces]
     if loose:
         bmesh.ops.delete(bm, geom=loose, context='VERTS')

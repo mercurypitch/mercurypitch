@@ -3,6 +3,32 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **Sink a part along the same direction the wall under it moved.** The urn's
+  cup was offset across, at fixed height, from a wall tucked 10 mm along its
+  normal; on a shelf flaring at 60 degrees that tuck is 25 mm across, so the
+  cup's inner face, "2 mm inside the glass", stood 3.6 mm off it: the critic's
+  slot behind the cup, two rounds running. Offset both along the outline's
+  normal, and measure each vertex's signed distance to the wall before a round.
+
+- **The fracture and the shard gate must agree on touching.** The fracture
+  grouped a cell's pieces by crossing surfaces; the gate by crossing or lying
+  within 1.5 mm. The urn's cup, sunk 2 mm into the glass, crosses it only at its
+  rim and foot, so every cell between them came out as two shards and 24 seed
+  sets failed. The fracture now groups by the gate's rule, `validate.touching`.
+
+- **A corner's normal is diagonal.** The urn's lobes, pushed along each profile
+  point's normal, moved the floor's corner up and in: the floor rose 2 cm in
+  every crease and its long inner chord cut the outer wall (16 crossing pairs).
+  A floor corner moves straight in (`modulate` may return `(dr, dz)`), and the
+  floor itself not at all. Where a near-flat span tilts a hair outward, its
+  normal flips side too: keep modulations off floors and lips.
+
+- **Limit a modulation by ring, not by column.** Holding the urn's crease depth
+  back where the valley would turn inward, column by column, left a valley
+  shallower at its centre than at its sides: a ridge in the crease and 24
+  crossing faces. Setting the limit on the valley column and scaling every
+  column of that ring by the same share keeps the section's shape.
+
 - **The silhouette gate measures in heights of the mask.** The urn's foot refit
   moved its bottom ring 1.5 mm in, which raised the mask's lowest point 1 mm;
   every row shifted, and the fast-flaring cup two bands up read 5 mm wider per

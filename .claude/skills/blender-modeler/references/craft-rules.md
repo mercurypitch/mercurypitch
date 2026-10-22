@@ -84,7 +84,9 @@ Even quads on curved surfaces, density where the outline bends (curvature-
 weighted resampling: `profile.resample` for an outline, `sweep.path(...,
 curvature_bias=)` for a handle), no needles or slivers. Measure it: no ring
 should turn more than about 12 degrees on a silhouette, and a ring that turns
-under 2 is better spent elsewhere. A lathe ring costs `segments`
+under 2 is better spent elsewhere. `profile.resample_by_turn(outline, 12)`
+gives the fewest rings that hold the limit; a fixed count spends them evenly
+and leaves the tightest bend faceted. A lathe ring costs `segments`
 quads: spend rings on the silhouette and the visible lip, few on the hidden
 inner wall below the neck, none on faces nobody sees.
 
@@ -113,7 +115,8 @@ so the motif still reads where its normal map is a pixel wide. A second: glass
 that is thicker where it folds (the valley between two lobes) may lean its
 vertex colour mildly toward its attenuation colour, standing in for the path
 three.js's single volume thickness does not see; no darker than about (0.8,
-0.65, 0.5) of the base. The urn's round 2 painted its valleys down to 5%: that
+0.65, 0.5) of the base as the colour function returns it (sRGB; COLOR_0 stores
+it linear, about (0.6, 0.4, 0.2)). The urn's round 2 painted its valleys down to 5%: that
 is a shadow in the albedo, and it read as glazed pottery.
 
 ## 12. Every build is a script

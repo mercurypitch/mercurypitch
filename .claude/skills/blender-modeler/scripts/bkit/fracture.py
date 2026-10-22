@@ -156,7 +156,7 @@ def _split_loose(obj):
 
 
 def _groups(pieces):
-    """Connected groups of pieces (pieces touch when their surfaces cross or meet)."""
+    """Connected groups of pieces, touching as the shard gate sees it (validate.touching)."""
     parent = list(range(len(pieces)))
 
     def find(i):
@@ -167,7 +167,7 @@ def _groups(pieces):
 
     for i in range(len(pieces)):
         for j in range(i + 1, len(pieces)):
-            if find(i) != find(j) and validate.overlap(pieces[i], pieces[j]):
+            if find(i) != find(j) and validate.touching(pieces[i], pieces[j]):
                 parent[find(i)] = find(j)
     groups = {}
     for i, piece in enumerate(pieces):
@@ -221,7 +221,8 @@ def fracture(parts, count, *, cut_materials, seed=1, attempts=24, seed_on=None, 
             created.extend(pieces)
             groups = _groups(pieces) if pieces else []
             if len(groups) != 1:
-                log(f'attempt {attempt}: cell {i} gives {len(groups)} separate groups, reseeding')
+                names = ' | '.join(', '.join(sorted(q.name.split('.')[0] for q in g)) for g in groups)
+                log(f'attempt {attempt}: cell {i} gives {len(groups)} separate groups ({names}), reseeding')
                 ok = False
                 break
             shards.append(pieces)

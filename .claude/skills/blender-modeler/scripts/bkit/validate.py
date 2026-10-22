@@ -209,6 +209,22 @@ def overlap(a, b):
     return hit
 
 
+def touching(a, b, touch=0.0015):
+    """True when two objects' surfaces cross, or a vertex of either lies within `touch` metres
+    of the other's surface: what the shard gate calls touching (loose_pieces). Two pieces cut
+    by one cell meet on a shared cut face, which no crossing test sees (coplanar faces do not
+    cross): the urn's cup, sunk 2 mm into the glass, crosses it only at its rim and foot, and
+    every cell between them read as two separate shards."""
+    bma, bmb = _bm(a), _bm(b)
+    ta = BVHTree.FromBMesh(bma, epsilon=1e-6)
+    tb = BVHTree.FromBMesh(bmb, epsilon=1e-6)
+    hit = bool(ta.overlap(tb)) or any(tb.find_nearest(v.co, touch)[0] is not None for v in bma.verts) or \
+        any(ta.find_nearest(v.co, touch)[0] is not None for v in bmb.verts)
+    bma.free()
+    bmb.free()
+    return hit
+
+
 def cavity_intrusions(body, others, *, z_min, z_max, tolerance=1e-5):
     """Vertices of `others` inside the cavity of `body`, a hollow vessel lathed round Z.
 
