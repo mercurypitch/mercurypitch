@@ -14,7 +14,7 @@ import type { LessonCopy } from '@/features/lessons/kit/lesson-copy'
 import { DEFAULT_ID, hookFor, teaseFor, } from '@/features/lessons/kit/lesson-copy'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
-import { HOOK_NOTES } from '@/features/lessons/kit/team-notes'
+import { HOOK_NOTES, TEASE_NOTES } from '@/features/lessons/kit/team-notes'
 import type { CopyChoice } from './copy-choices'
 import { chosenId, copyChoicesFor, hookChoices, savedValue, teaseChoices, unknownSaved, } from './copy-choices'
 
@@ -30,6 +30,11 @@ const VARIED = seasonLesson(
   'alternative hooks',
 )
 const TEASED = seasonLesson((lesson) => lesson.tease !== undefined, 'a tease')
+/** A lesson the kit gives an alternative tease. */
+const TEASE_VARIED = seasonLesson(
+  (lesson) => (lesson.teaseAlts ?? []).length > 0,
+  'alternative teases',
+)
 const UNTEASED = seasonLesson(
   (lesson) => lesson.n > 0 && lesson.tease === undefined,
   'no tease',
@@ -94,6 +99,23 @@ describe('hookChoices and teaseChoices', () => {
     ])
   })
 
+  it('still offer a variant that has no note, with none', () => {
+    // Act: a note for some other id, and none at all
+    const hooks = hookChoices(copy, { gone: 'A note for no variant.' })
+    const teases = teaseChoices(copy)
+
+    // Assert
+    expect(hooks.map((c) => [c.id, c.note])).toEqual([
+      ['default', ''],
+      ['plain', ''],
+      ['styled', ''],
+    ])
+    expect(teases.map((c) => [c.id, c.note])).toEqual([
+      ['default', ''],
+      ['short', ''],
+    ])
+  })
+
   it('offer a lesson with no alternatives its default hook alone, and no tease at all', () => {
     // Act
     const hooks = hookChoices({ hook: 'Why?' })
@@ -126,6 +148,20 @@ describe('copyChoicesFor', () => {
       })),
     )
     expect(hooks.slice(1).every((choice) => choice.note !== '')).toBe(true)
+  })
+
+  it("gives each tease alternative the team's note from the tease notes", () => {
+    const { teases } = copyChoicesFor(TEASE_VARIED)
+
+    expect(teases.slice(1)).toEqual(
+      (TEASE_VARIED.teaseAlts ?? []).map((alt) => ({
+        id: alt.id,
+        text: alt.text,
+        note: TEASE_NOTES[TEASE_VARIED.n]?.[alt.id],
+        isDefault: false,
+      })),
+    )
+    expect(teases.slice(1).every((choice) => choice.note !== '')).toBe(true)
   })
 
   it('offers a tease only for a lesson that has one, its own first', () => {
