@@ -107,14 +107,19 @@ def clean(obj, dist=1e-5, triangulate=False):
                               ngon_method='BEAUTY')
         # A needle whose three corners are nearly in line has long edges and no area, so
         # dissolving short edges misses it. Rotating its longest edge turns the needle and
-        # its neighbour into two triangles with area.
+        # its neighbour into two triangles with area. The bar is ten times the validator's
+        # 1e-10: float32 positions and the weld on import can push a 1.1e-10 needle under it.
         for _ in range(4):
-            needles = [f for f in bm.faces if f.is_valid and f.calc_area() < 1e-10]
+            needles = [f for f in bm.faces if f.is_valid and f.calc_area() < 1e-9]
             if not needles:
                 break
             longest = {max(f.edges, key=lambda e: e.calc_length()) for f in needles}
             bmesh.ops.rotate_edges(bm, edges=[e for e in longest if e.is_valid and e.is_manifold], use_ccw=False)
         bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=dist)
+        # That dissolve can leave a quad again, one corner on the line between two others: the
+        # exporter split one along that line into a zero-area triangle. Split here, by beauty.
+        bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3], quad_method='BEAUTY',
+                              ngon_method='BEAUTY')
     loose = [v for v in bm.verts if not v.link_faces]
     if loose:
         bmesh.ops.delete(bm, geom=loose, context='VERTS')

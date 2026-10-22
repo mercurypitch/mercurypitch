@@ -426,7 +426,13 @@ def attach_inlay(material, maps, strength=1.0):
     split = nt.nodes.new('ShaderNodeSeparateColor')
     nt.links.new(colour.outputs['Color'], bsdf.inputs['Base Color'])
     nt.links.new(trm.outputs['Color'], split.inputs['Color'])
-    nt.links.new(split.outputs['Red'], bsdf.inputs['Transmission Weight'])
+    # A frieze with no glass in it (a laurel on a dark ground) keeps transmission off: an
+    # all-zero channel linked anyway exports as transmission 1 times that map, and three.js
+    # then draws the band in its transmission pass for nothing.
+    red = np.empty(len(maps['trm'].pixels), dtype=np.float32)
+    maps['trm'].pixels.foreach_get(red)
+    if red[0::4].max() > 0.0:
+        nt.links.new(split.outputs['Red'], bsdf.inputs['Transmission Weight'])
     nt.links.new(split.outputs['Green'], bsdf.inputs['Roughness'])
     nt.links.new(split.outputs['Blue'], bsdf.inputs['Metallic'])
     return attach_normal(material, maps['normal'], strength)

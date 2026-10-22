@@ -89,13 +89,17 @@ OPAL_PATCHES = (  # sRGB colour, share bias. The concept's opal is milky with mi
     ((0.85, 0.95, 0.75), 0.05),   # yellow-green mint, hue 90
 )
 OPAL_CENTRE = (0.89, 0.91, 0.86)  # the pearl the patches play round, warm: the game's cyan rim cools it
-OPAL_PUSH = 3.0  # three.js keeps about 40% of a palette's spread: 3x reads as the concept's (10.4 of 11.2)
+OPAL_PUSH = 1.5  # set in the game, belly against the concept at the same pixel size: Lab spread 12.4
+# against 11.7, a* -9.1 against -7.0, b* +3.1 against +2.2. Pushed 3x it read 20.8, -15.1, +5.9: the
+# room's probe light saturates pale tints, so three_preview's museum HDR under-reads them.
 
 
 def corner_colour(p, material):
-    """COLOR_0 for every tinted face: the opal's patches on the glass, a darker jade on the foot."""
+    """COLOR_0 for every tinted face: the opal's patches on the glass, a darker, yellower jade on
+    the foot. The foot faces the hemisphere light's teal ground: grey 0.75 read L 40, hue 148 in
+    the game, (0.92, 0.95, 0.74) L 53, hue 116; the concept's foot is L 47, hue 130."""
     if material == 'jade_stone':
-        return (0.75, 0.75, 0.75) if p.z < 0.16 else (1.0, 1.0, 1.0)
+        return (0.85, 0.86, 0.74) if p.z < 0.16 else (1.0, 1.0, 1.0)
     return opal_colour(p)
 
 
@@ -189,7 +193,8 @@ def foot(m):
     skirt = profile.resample(profile.spline([(0.1645, 0.0700), (0.1645, 0.0745), (0.1600, 0.0850), (0.1510, 0.0950),
                                              (0.1380, 0.1050), (0.1200, 0.1130), (0.1050, 0.1195), (0.0990, 0.1240)],
                                             samples=6), 7, curvature_bias=0.5)
-    pts = [V(0, 0.0690), V(0.1640, 0.0690)] + skirt + [V(0.0965, 0.1300), V(0, 0.1300)]
+    # The underside runs straight to the skirt: a 1 mm ring there (hidden in the base ring) was 56 slivers.
+    pts = [V(0, 0.0690)] + skirt + [V(0.0965, 0.1300), V(0, 0.1300)]
     return lathe.lathe('foot', pts, FOOT_SEGMENTS, material=m['jade'], sharp_degrees=50, uv=TILE)
 
 
@@ -226,9 +231,9 @@ def body(m, body_line, neck_line, core):
     pts, slots = profile.chain(
         (opal, [V(0, BODY[0][1])]),
         (opal, profile.resample(profile.between(body_line, BODY[0][1], z0), 9, curvature_bias=0.65)),
-        (gold, profile.raised(body_line, z0, z1, proud, samples=1)),
+        (gold, profile.raised(body_line, z0, z1, proud, corner_steps=0, samples=1)),
         (waves, profile.resample(profile.between(body_line, z1, w0), 5, curvature_bias=0.3)),
-        (gold, profile.raised(body_line, w0, w1, wproud, samples=1)),
+        (gold, profile.raised(body_line, w0, w1, wproud, corner_steps=0, samples=1)),
         (opal, profile.resample(profile.between(body_line, w1, BODY[-1][1]), 11, curvature_bias=0.55)),
         (gold, [V(*p) for p in COLLAR]),
         (opal, profile.resample(profile.between(neck_line, NECK[0][1], rim0), 10, curvature_bias=0.6)),
@@ -422,7 +427,7 @@ def handle(m, side, body_line, neck_line):
         rho = 0.031 + lift[i]
         return rho * math.cos(a), (0.031 * 0.78 + lift[i]) * math.sin(a)
 
-    sleeve = sweep.tube(f'sleeve_{name}', mirror(sleeve_path), None, ring=14, resample=False,
+    sleeve = sweep.tube(f'sleeve_{name}', mirror(sleeve_path), None, ring=16, resample=False,
                         section=sleeve_section, first_normal=(0, 0, 1), material=m['gold_polished'],
                         seat=(neck_seat, None), clear=(clear[0], None, 2), uv=TILE)
 

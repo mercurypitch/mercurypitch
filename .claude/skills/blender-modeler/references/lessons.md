@@ -3,6 +3,37 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **Match the concept at the size the game draws it.** The amphora's round 6
+  candidate read Lab chroma spread 20.8 and a\* -15 on its belly in the game,
+  where the concept scaled to the same pixel size reads 11.7 and -7.0;
+  three_preview had called it a match. Measure the same region in both, found
+  per image between landmarks (the collar's gold and the band's gold line), not
+  a fixed box: a box that caught the collar read b\* five units too yellow. The
+  chroma push that matched was half the preview's (1.5, not 3).
+- **Faces that look down take the floor's colour.** The amphora's jade foot faces
+  the hemisphere light's teal ground and read hue 148 where its handles read 133. A yellower, lighter COLOR_0 on the foot alone (`paint_corners` passes each
+  face's material) moved it to 127 against the concept's 130.
+- **A band proud of a shallow slope widens the silhouette.** The urn's shoulder
+  band stood 4.5 mm off a 21 degree shoulder, and its outline read 12 to 22 mm
+  wide per side: proud divided by the sine of the slope. Set the glass in under
+  the band so its fillets sit on the outline.
+- **The game will not load a breakable without its shards.** An intact-only urn
+  failed at asset load ("Glassworks renderer attempt failed"). Tune materials in
+  the runtime proof on full builds.
+- **Thin rings are the slivers.** A 2 mm ring on a 5.6 cm segment is a triangle
+  under 2 degrees: the amphora's band corners and a hidden 1 mm ring on its foot
+  were 176 of its 182. Chamfer at band scale; give a corner rings only where a
+  segment is short.
+- **A dissolve can leave a quad behind.** `scene.clean` dissolved degenerate
+  geometry after its last triangulation and left a quad with one corner on the
+  line between two others; the exporter split it along that line into a
+  zero-area triangle in two shards. It now triangulates last.
+- **`profile.resample` below three returns its input.** Two rings asked for
+  under the urn's cup came back as the spline's fifteen points: 1,664 triangles.
+- **Float32 ends, again.** `radius_at` and `tangent_at` missed a height read off
+  an outline's own end point (0.607 stored as 0.60699999) and answered None and
+  vertical; both now take a micron either side.
+
 - **Bin hues the way the eye does, and measure in the game.** Round 3 put the
   opal's mint at hue 113 because a coarse 90-170 "mint" bin said it matched the
   concept. In the game 98% of the body read yellow-green (60-130) where the

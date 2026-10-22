@@ -167,12 +167,15 @@ def blend(tail, head, reach=0.35, samples=8):
     return out
 
 
+END = 1e-6  # metres: points are float32, so a height read off an end point can sit just past it
+
+
 def radius_at(poly, z):
     """Largest radius where the outline crosses height z (None if it never does)."""
     best = None
     for a, b in zip(poly, poly[1:]):
         lo, hi = sorted((a.y, b.y))
-        if lo <= z <= hi and hi > lo:
+        if lo - END <= z <= hi + END and hi > lo:
             r = a.x + (b.x - a.x) * (z - a.y) / (b.y - a.y)
             best = r if best is None else max(best, r)
     return best
@@ -182,7 +185,7 @@ def tangent_at(poly, z):
     """Unit tangent (walking upward) of the outline segment that crosses height z."""
     for a, b in zip(poly, poly[1:]):
         lo, hi = sorted((a.y, b.y))
-        if lo <= z <= hi and hi > lo:
+        if lo - END <= z <= hi + END and hi > lo:
             t = (b - a).normalized()
             return t if t.y >= 0 else -t
     return V(0, 1)
