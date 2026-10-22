@@ -11,10 +11,10 @@ has no film yet, so the page has no Watch section. Each step's heading is orange
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13). **The title is a new
 wording of the hook**, the curiosity plan's own fallback: "Why does your voice sometimes flip as
 you slide up?". No source read for this package shows one singer's flip landing near the same note
-on slide after slide, and several show it moving or not coming at all (FACTS 1). The default in
-`kit/season.ts` stays "Why does your voice flip at roughly the same note every time you slide up?"
-until the lead changes it, with the old wording kept as an alternative, and the page is built after
-that change, since its title must be the season's hook. Where this page shares a line with Lessons
+on slide after slide, and several show it moving or not coming at all (FACTS 1). This PR makes it
+the default in `kit/season.ts`, with the old wording, "Why does your voice flip at roughly the same
+note every time you slide up?", kept as the alternative `same-note`, since the page's title must be
+the season's hook. Where this page shares a line with Lessons
 3, 5, 6, 7 and 9 (the comfort check, "Just listen today", the voice choice, the warm-up, the stop
 line, the four feelings with their gentle and enough-for-today lines, the doctor lines, the rest
 card and "Ten minutes, gently, most days"), it is their current text, word for word, with only the
@@ -43,10 +43,10 @@ coach signs off is listed at the end.
 - Promise: By the end you'll know what changes when a voice flips, and why it happens. Then you'll
   hum one slow, quiet siren on "ng".
 
-_[Editorial: the curiosity plan's fallback hook (CURIOSITY-MOMENTS § 2, Lesson 11), which needs the
-lead's change to `kit/season.ts`; until then the default reads "Why does your voice flip at roughly
-the same note every time you slide up?", which FACTS 1 cannot support. Under the owner's rule (§ 5
-item 2) the old wording stays as an alternative the admin console can pick, with a note that it
+_[Editorial: the curiosity plan's fallback hook (CURIOSITY-MOMENTS § 2, Lesson 11), the default in
+`kit/season.ts` since this PR; the old default, "Why does your voice flip at roughly the same note
+every time you slide up?", is one FACTS 1 cannot support. Under the owner's rule (§ 5 item 2) the
+old wording stays as the alternative `same-note` the admin console can pick, with a note that it
 needs a source. Neither wording says whether a flip is a mistake, so the title never answers the
 cold open's predict. On Lesson 10's next-lesson card, one line above this hook, this lesson's tease
 reads "Slide up slowly, and your voice may flip." (FACTS 1).]_
@@ -424,9 +424,10 @@ main, so a decision there carries here.
 - The siren: Merc's slow "ng" siren in one gear, E3 to C♯4 and back (lower voice) or E4 to C♯5
   (higher), 8.5 s, inside every preset of its voice, as Lesson 7's siren is; the singer is asked to
   go only as far as is easy, slowly, at about speaking volume (FACTS 61, 62, 81).
-- The CURRICULUM card's checkpoint reads "a slow "ng" slide across your break, quietly". The page
-  can't place a slide across anyone's break, since nothing measures it, and never asks for a flip,
-  so the siren goes up only as far as is easy and is complete with no flip (FACTS 6, 61).
+- The CURRICULUM card's checkpoint is the page's: "one slow, quiet siren on "ng", up only as far
+  as is easy". It once asked for a slide across your break, but the page can't place a slide across
+  anyone's break, since nothing measures it, and never asks for a flip, so the siren is complete
+  with no flip (FACTS 6, 61).
 - The dose and retries: Merc's siren, then the singer's; the take waits up to 6 s for a voice and
   ends 1.0 s after the voice stops, or 14 s after it starts; one more siren ("Again") only after
   "Easy" or "Workable", once a visit; never a retry after "Effortful" or "Uncomfortable"; at most
