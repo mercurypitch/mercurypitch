@@ -5,7 +5,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_LATENCY_MS } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
-import { clearMicLatency, currentMicDeviceKey, DEFAULT_DEVICE_KEY, micLatencyByDevice, micLatencyMs, micLatencyMsForDevice, micLatencySec, micLatencySpreadByDevice, micLatencySpreadMs, micLatencySpreadMsForDevice, setMicLatencyByDevice, setMicLatencyMeasurement, setMicLatencyMeasurementForDevice, setMicLatencyMs, setMicLatencySpreadByDevice, } from '@/stores/mic-latency-store'
+import { setAudioRouteForTests } from '@/stores/audio-route-store'
+import { clearMicLatency, currentLatencyRoute, currentMicDeviceKey, DEFAULT_DEVICE_KEY, micLatencyByDevice, micLatencyByRoute, micLatencyMeasuredOnRoute, micLatencyMs, micLatencyMsForDevice, micLatencySec, micLatencySpreadByDevice, micLatencySpreadByRoute, micLatencySpreadMs, micLatencySpreadMsForDevice, setMicLatencyByDevice, setMicLatencyByRoute, setMicLatencyMeasurement, setMicLatencyMeasurementForDevice, setMicLatencyMs, setMicLatencySpreadByDevice, setMicLatencySpreadByRoute, } from '@/stores/mic-latency-store'
 
 /** Pretend a particular input is selected, without touching a real device. */
 function pretendDevice(deviceId: string | null) {
@@ -17,6 +18,9 @@ describe('Mic Latency Store', () => {
     vi.spyOn(micManager, 'getResolvedDevice').mockReturnValue(null)
     setMicLatencyByDevice({})
     setMicLatencySpreadByDevice({})
+    setMicLatencyByRoute({})
+    setMicLatencySpreadByRoute({})
+    setAudioRouteForTests(null)
   })
 
   afterEach(() => {
@@ -205,6 +209,135 @@ describe('Mic Latency Store', () => {
       const before = micLatencyByDevice()
       clearMicLatency()
       expect(micLatencyByDevice()).toBe(before)
+    })
+  })
+
+  // A TV on AirPlay or HDMI plays the song well behind the phone's speaker,
+  // and Bluetooth further still: each keeps its own offset per input. The
+  // phone's own outputs, and the web (no route at all), share the input's.
+  describe('per output route', () => {
+    it('keeps the input’s offset on the phone’s own outputs, as before', () => {
+      pretendDevice('built-in')
+      setMicLatencyMeasurement(60, 6)
+
+      for (const route of [
+        'speaker',
+        'receiver',
+        'headphones',
+        'other',
+        'none',
+        null,
+      ] as const) {
+        setAudioRouteForTests(route)
+        expect(currentLatencyRoute()).toBeNull()
+        expect(micLatencyMs()).toBe(60)
+        expect(micLatencySpreadMs()).toBe(6)
+        expect(micLatencyMeasuredOnRoute()).toBe(true)
+      }
+      expect(micLatencyByRoute()).toEqual({})
+    })
+
+    it.each(['airplay', 'hdmi', 'bluetooth'] as const)(
+      'lets %s borrow the input’s offset until it has its own, with no spread to claim',
+      (route) => {
+        pretendDevice('built-in')
+        setMicLatencyMeasurement(60, 6)
+
+        setAudioRouteForTests(route)
+
+        expect(currentLatencyRoute()).toBe(route)
+        expect(micLatencyMs()).toBe(60)
+        expect(micLatencySpreadMs()).toBeNull()
+        expect(micLatencyMeasuredOnRoute()).toBe(false)
+      },
+    )
+
+    it('keeps a measurement on AirPlay for AirPlay alone', () => {
+      pretendDevice('built-in')
+      setMicLatencyMeasurement(60, 6)
+      setAudioRouteForTests('airplay')
+
+      setMicLatencyMeasurement(240, 15)
+
+      expect(micLatencyMs()).toBe(240)
+      expect(micLatencySpreadMs()).toBe(15)
+      expect(micLatencyMeasuredOnRoute()).toBe(true)
+      expect(micLatencyByDevice()).toEqual({ 'built-in': 60 })
+      expect(micLatencyByRoute()).toEqual({ 'airplay:built-in': 240 })
+      expect(micLatencySpreadByRoute()).toEqual({ 'airplay:built-in': 15 })
+
+      setAudioRouteForTests('speaker')
+      expect(micLatencyMs()).toBe(60)
+      expect(micLatencySpreadMs()).toBe(6)
+      setAudioRouteForTests('airplay')
+      expect(micLatencyMs()).toBe(240)
+    })
+
+    it('keeps each route apart, and each input apart on a route', () => {
+      const device = pretendDevice('built-in')
+      setAudioRouteForTests('airplay')
+      setMicLatencyMeasurement(240, 15)
+      setAudioRouteForTests('bluetooth')
+      setMicLatencyMeasurement(190, 20)
+      device.mockReturnValue('usb-interface-1')
+      setMicLatencyMeasurement(170, 9)
+
+      expect(micLatencyMs()).toBe(170)
+      device.mockReturnValue('built-in')
+      expect(micLatencyMs()).toBe(190)
+      setAudioRouteForTests('airplay')
+      expect(micLatencyMs()).toBe(240)
+      setAudioRouteForTests('hdmi')
+      expect(micLatencyMs()).toBe(0)
+    })
+
+    it('stores a fallback device’s calibration for the route it was taken on', () => {
+      pretendDevice(null)
+      setAudioRouteForTests('airplay')
+
+      setMicLatencyMeasurementForDevice('fallback-device', 230, 12)
+
+      expect(micLatencyByRoute()).toEqual({ 'airplay:fallback-device': 230 })
+      expect(micLatencyMsForDevice('fallback-device')).toBe(230)
+      expect(micLatencySpreadMsForDevice('fallback-device')).toBe(12)
+      expect(micLatencyByDevice()).toEqual({})
+    })
+
+    it('reads a resolved default route’s legacy alias on a route as well', () => {
+      pretendDevice(null)
+      vi.mocked(micManager.getResolvedDevice).mockReturnValue('built-in-input')
+      setMicLatencyByRoute({ [`airplay:${DEFAULT_DEVICE_KEY}`]: 220 })
+      setAudioRouteForTests('airplay')
+
+      expect(micLatencyMs()).toBe(220)
+      expect(micLatencyMeasuredOnRoute()).toBe(true)
+    })
+
+    it('clears the route’s own offset, and leaves the input’s for the phone', () => {
+      pretendDevice('built-in')
+      setMicLatencyMeasurement(60, 6)
+      setAudioRouteForTests('airplay')
+      setMicLatencyMeasurement(240, 15)
+
+      clearMicLatency()
+
+      expect(micLatencyByRoute()).toEqual({})
+      expect(micLatencySpreadByRoute()).toEqual({})
+      expect(micLatencyByDevice()).toEqual({ 'built-in': 60 })
+      expect(micLatencyMs()).toBe(60)
+      expect(micLatencySpreadMs()).toBeNull()
+    })
+
+    it('clears nothing on a route that only borrows', () => {
+      pretendDevice('built-in')
+      setMicLatencyMeasurement(60, 6)
+      setAudioRouteForTests('hdmi')
+      const before = micLatencyByRoute()
+
+      clearMicLatency()
+
+      expect(micLatencyByRoute()).toBe(before)
+      expect(micLatencyByDevice()).toEqual({ 'built-in': 60 })
     })
   })
 })
