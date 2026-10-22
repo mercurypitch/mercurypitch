@@ -48,8 +48,8 @@ it from the admin console puts it live on mercurypitch.com with no release
 naming what it waits on, but checks nothing, so the owner keeps the order above (Decisions for the
 owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need, items 2
 and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's hook, its alternative
-and its tease are in the kit's lesson copy (`src/features/lessons/kit/lesson-copy.ts:113-122`),
-Lesson 11's tease is there too (`:123`), and the next-lesson card draws a tease above the next hook
+and its tease are in the kit's lesson copy (`src/features/lessons/kit/lesson-copy.ts:118-127`),
+Lesson 11's tease is there too (`:128`), and the next-lesson card draws a tease above the next hook
 (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own title into its
 markup, and nothing of Lesson 11's (FACTS 1, 5).
 
@@ -746,7 +746,7 @@ built:
 - `sig` stays as it is. The entry has no `fig`, so the card draws no figure.
 - The hook stays word for word (`season.ts:352`; FACTS 1). The tease Lesson 9's card shows for this
   lesson, and Lesson 11's tease on this page's card, are the kit's lesson copy
-  (`kit/lesson-copy.ts:121`, `:123`; FACTS 5, 5b).
+  (`kit/lesson-copy.ts:126`, `:128`; FACTS 5, 5b).
 - The card reads "Ready · read", with "17 min", once the page is live (`explorer.ts:150-157`).
 
 ## What the kit and the app still need
@@ -811,7 +811,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:372-407` on every page from its first commit, and
+    `src/features/lessons/kit/lesson-copy.test.ts:373-408` on every page from its first commit, and
     by `src/tests/lesson-pages.test.ts:85-183` once released:
     - title, at most 60 characters with the headline in it: in the form Lessons 1, 2, 3 and 5 use,
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch" (58 characters), until SEARCH.md
@@ -874,7 +874,7 @@ CURIOSITY-MOMENTS § 5 item 2.
 
 1. **The alternative hook, `bright-dark`.** Keep it switchable, as the owner's answer to
    CURIOSITY-MOMENTS § 5 item 2 keeps every changed hook's old wording
-   (`src/features/lessons/kit/lesson-copy.test.ts:319-333`), or retire it. The Content Studio's hook
+   (`src/features/lessons/kit/lesson-copy.test.ts:319-334`), or retire it. The Content Studio's hook
    picker offers it with its note, which names the mood labels. Picked, it puts "bright" and "dark"
    in the h1, the head's copies of the hook and the structured data, on Lesson 10's card in every
    lesson page's explorer and on Lesson 9's next-lesson card, and runs the description to 171
@@ -949,7 +949,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   the recall would ask about a lesson the learner cannot open.
 - **The admin console's hook.** The console can switch Lesson 10's hook to its alternative,
   `bright-dark`, "Which single note turns a bright major chord into a dark minor one?"
-  (`kit/lesson-copy.ts:113-122`): the pick is the `hook` field of the lesson's override, set through
+  (`kit/lesson-copy.ts:118-127`): the pick is the `hook` field of the lesson's override, set through
   PUT `/api/admin/lessons/:n` (`src/lib/lesson-state.ts:41`, `:49-50`, `:182-189`) from the Content
   Studio's hook picker, which prints the variant's note under it
   (`src/features/admin/lessons/LessonControls.tsx:447-451`, at `d59c00ad6`). The page's markup keeps

@@ -136,7 +136,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    steps the viewer reaches, and first settles the page's own links to other lessons by the state
    the page was served with (`followPageState`, `kit/page-chrome.ts:111`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
-   `kit/lesson-copy.test.ts:372-381` requires of every page from its first commit), the meta as
+   `kit/lesson-copy.test.ts:373-382` requires of every page from its first commit), the meta as
    three chips ("15 minutes", FACTS 4; "Also useful: Lesson 6, Intervals", a plain chip, not a link,
    as Lesson 3's "Also useful" chip is, `learn/03.html:261-264`, FACTS 2; Sound on) and the promise,
    from LESSON.md. The title is the season's hook (`kit/season.ts:316`, FACTS 1); it says the song
@@ -820,10 +820,10 @@ Lesson 8's entry (`kit/season.ts:310-327`; FACTS 58), proposed for when this pag
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:878-889`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
 - The hook stays word for word (`season.ts:316`; FACTS 1), with no alternative, and the tease
-  stays as `kit/lesson-copy.ts:102` has it: "Same song, same speed. Only the claps move.", which
+  stays as `kit/lesson-copy.ts:107` has it: "Same song, same speed. Only the claps move.", which
   Lesson 7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
-  (`season.ts:334`), and its copy the tease (`kit/lesson-copy.ts:111`), with its earlier hook as an
-  alternative (`:103-110`); all three are Lesson 9's, not this page's (FACTS 6).
+  (`season.ts:334`), and its copy the tease (`kit/lesson-copy.ts:116`), with its earlier hook as an
+  alternative (`:108-115`); all three are Lesson 9's, not this page's (FACTS 6).
 
 ## What the kit and the app still need
 
@@ -863,9 +863,9 @@ table). Every item is proposed.
    stage directions change to say so.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
-   step, or one leap." (`kit/lesson-copy.ts:111`), above its new hook, "How do you land a note you
+   step, or one leap." (`kit/lesson-copy.ts:116`), above its new hook, "How do you land a note you
    have to leap to?" (`season.ts:334`), under `.next-tease` (`kit/next-card.ts:142`;
-   `lesson-sections.css:198-204`), and the old hook stays in `kit/lesson-copy.ts:103-110` as the
+   `lesson-sections.css:198-204`), and the old hook stays in `kit/lesson-copy.ts:108-115` as the
    admin console's alternative (CURIOSITY-MOMENTS § 5). This page adds only its tease figure to the
    slot (Toys 9).
 10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:124-126`), since this page
@@ -889,11 +889,11 @@ table). Every item is proposed.
     `vite.config.ts:306`, `:474`).
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-137`), whole in the page's first commit. Two tests hold it: the kit's
-    `src/features/lessons/kit/lesson-copy.test.ts:372-407` reads every `learn/NN.html`, drafts
+    `src/features/lessons/kit/lesson-copy.test.ts:373-408` reads every `learn/NN.html`, drafts
     included, from its first commit, and `src/tests/lesson-pages.test.ts:85-183` holds a released
     lesson's head. The copies of the hook that the first test reads are the ones the site worker
     rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
-    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:372-381`).
+    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:373-382`).
     - The document title, at most 60 characters, with "MercuryPitch" and the headline in it
       (`lesson-pages.test.ts:101-102`, `:130`): SEARCH.md § 4's draft, "Beat, tempo and the
       backbeat, explained | MercuryPitch" (54 characters), for the owner to decide.
@@ -907,16 +907,16 @@ table). Every item is proposed.
     - `og:title` and `twitter:title`, "Beat, tempo and the backbeat: Find Your Pitch, Lesson 8", in
       the form of Lesson 2's (`learn/02.html:26-29`, `:45-48`).
     - `og:description`, the full hook and then one line, as Lesson 2's (`learn/02.html:30-33`),
-      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:398-401`): "Why
+      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:399-402`): "Why
       does the same song feel different when you clap on 2 and 4 instead of 1 and 3? Hear the claps
       move, then tap the backbeat."
     - `twitter:description`, the hook exactly (`learn/02.html:49-52`;
-      `lesson-copy.test.ts:402-404`).
+      `lesson-copy.test.ts:403-405`).
     - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-08-og.jpg`, with
       `og:image:width` 1200 and `og:image:height` 630, and `og:image:alt` and `twitter:image:alt`
       naming the card (item 15; `learn/02.html:34-43`, `:53-60`).
     - The Article block: `@id` `https://mercurypitch.com/learn/08#lesson`, headline "Beat, tempo and
-      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:405`), the same
+      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:406`), the same
       description as the meta, `url` and `mainEntityOfPage` the canonical address, `image` the
       og:image (`lesson-pages.test.ts:116-117`, `:128-129`), `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
