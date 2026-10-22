@@ -16,8 +16,9 @@ import WebKit
 // app's bundle under the bridge's own scheme by the bridge's own asset
 // handler. The page draws what the room sends it (LyricsWindowPlugin
 // passes each message on, `push`), and the last song and frame are kept for
-// a page that loads after them. With the switch off, or once the window
-// goes, the TV mirrors the phone again. The scene's role is non-interactive:
+// a page that loads after them. With the switch off, once the window goes,
+// or where the page is missing or does not load (a store build has none),
+// the TV mirrors the phone again. The scene's role is non-interactive:
 // the TV shows, the phone does. Everything here runs on the main thread.
 final class TVStage: NSObject {
     /// A TV coming or going, and the stage going up on it or down.
@@ -227,9 +228,14 @@ final class TVStage: NSObject {
         }
     }
 
+    /// A page that does not load takes its window down: the mirror is
+    /// better than an empty TV. A load cut short by the next one is not a
+    /// failure.
     fileprivate func pageFailed(_ web: WKWebView, _ error: Error) {
-        guard web === webView else { return }
+        guard web === webView, (error as NSError).code != NSURLErrorCancelled else { return }
         say("the stage page did not load: \(error.localizedDescription)")
+        hide()
+        tell()
     }
 
     fileprivate func pageCrashed(_ web: WKWebView) {

@@ -8,7 +8,8 @@
 // window only on an external display's scene and only with the switch on,
 // which starts off, so a store build mirrors; the window holds a plain web
 // view with no bridge of its own and no plugins, showing the stage page from
-// the app's bundle through the bridge's own scheme handler; a message the
+// the app's bundle through the bridge's own scheme handler, and none where
+// the bundle has no page or it does not load, so the TV mirrors; a message the
 // room sends reaches the page, and the newest song and frame wait for a page
 // still loading; a TV shows the lyrics or the stage, never both; and Xcode
 // compiles the file at all. Nothing in CI connects a TV, so all of it is
@@ -98,6 +99,13 @@ describe('the plugin', () => {
     )
     expect(page).toContain('appendingPathComponent("stage.html")')
   })
+
+  it('finds no page where the bundle has none, as a store build has not', () => {
+    const page = swiftFunction(PLUGIN, 'stagePage')
+    expect(page).toMatch(
+      /let file = bridge\.config\.appLocation\.appendingPathComponent\("stage\.html"\)\s*guard FileManager\.default\.fileExists\(atPath: file\.path\) else \{\s*return nil/u,
+    )
+  })
 })
 
 describe('the TV', () => {
@@ -127,6 +135,15 @@ describe('the TV', () => {
       /window\.isHidden = true\s*self\.window = nil/u,
     )
     expect(swiftFunction(STAGE, 'disconnect')).toContain('hide()')
+  })
+
+  it('gives the TV back to the mirror when the page does not load', () => {
+    expect(swiftFunction(STAGE, 'show')).toMatch(
+      /guard let page = findPage\(\) else \{[^}]*return\s*\}/u,
+    )
+    const failed = swiftFunction(STAGE, 'pageFailed')
+    expect(failed).toContain('code != NSURLErrorCancelled')
+    expect(failed).toMatch(/hide\(\)\s*tell\(\)/u)
   })
 
   it('shows a plain web view: no bridge of its own, no plugins', () => {

@@ -217,11 +217,18 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
 
     /// The stage page in the app's bundle, under the bridge's own scheme,
     /// and the bridge's own handler for that scheme to serve it: the same
-    /// files the app is served from, read by a second web view.
+    /// files the app is served from, read by a second web view. None where
+    /// the bundle has no stage page: a store build carries none
+    /// (vite.config.ts), and a switch a test build left on before a store
+    /// build was installed over it must leave the TV mirroring, not black.
     private func stagePage() -> TVStage.Page? {
         guard let bridge,
               let scheme = bridge.config.localURL.scheme,
               let handler = bridge.webView?.configuration.urlSchemeHandler(forURLScheme: scheme) else {
+            return nil
+        }
+        let file = bridge.config.appLocation.appendingPathComponent("stage.html")
+        guard FileManager.default.fileExists(atPath: file.path) else {
             return nil
         }
         return TVStage.Page(
