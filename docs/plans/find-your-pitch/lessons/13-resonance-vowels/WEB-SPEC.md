@@ -1149,9 +1149,8 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 14, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:157`); its
     tease, "‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.", sits one line above
-    the hook, the card's
-    words in the order eyebrow, tease, hook and way on, then the figure, as that spec checks
-    Lessons 1 and 2's cards (`:90-126`).
+    the hook, the card's words in the order eyebrow, tease, hook and way on, then the figure, as
+    that spec checks Lessons 1 and 2's cards (`:90-126`).
 11. With reduced motion emulated, a column jumps to its height, a vowel change lands at once, the
     ring holds still, and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.
