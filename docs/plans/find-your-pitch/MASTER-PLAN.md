@@ -424,10 +424,11 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   [`lessons/06-intervals/`](lessons/06-intervals/) and
   [`lessons/07-slides-sirens-range/`](lessons/07-slides-sirens-range/) (facts, copy and page
   spec). Lessons 3, 5 and 7 wait on the vocal coach (§ 12 item 8), and so does Lesson 6's
-  sing-along. Lessons 3 to 6 have pages, `/learn/03` to `/learn/06`, all four drafts
+  sing-along. Lessons 3 to 7 have pages, `/learn/03` to `/learn/07`, all five drafts
   (`src/features/lessons/kit/drafts.ts`): every build carries them, the dev site and previews serve
   them, and mercurypitch.com answers each with the 404 page until the console publishes it
-  (`src/lesson-gate.ts`): 3 and 5 after the coach, 6 after the owner and the coach, 4 after 1 and 2.
+  (`src/lesson-gate.ts`): 3 and 5 after the coach, 6 after the owner and the coach, 7 after both
+  and once `/learn/03` is live (its recall links there), 4 after 1 and 2.
 - Lessons 8 to 10: written lessons, text only, each reviewed once and fixed, in
   [`lessons/08-beat-tempo-backbeat/`](lessons/08-beat-tempo-backbeat/),
   [`lessons/09-landing-a-leap/`](lessons/09-landing-a-leap/) and
