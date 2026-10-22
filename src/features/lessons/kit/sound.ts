@@ -41,7 +41,25 @@ export interface VoiceOptions {
    * note that begins under a burst of air (Lesson 5's three starts).
    */
   at?: number
+  /** Shapes the voice as it is built: Lesson 7's "ng" and lip trill (kit/timbre.ts). */
+  timbre?: Timbre
 }
+
+/**
+ * A timbre shapes a voice as it is built: it takes the voice's lowpass,
+ * which it may retune, and routes the filtered tone to the envelope itself,
+ * through nodes of its own, adding to `parts` any source it starts at `at`
+ * (a wobble, breath noise), so each stops with the voice. The timbres live
+ * in their own module (kit/timbre.ts), loaded only by the page that sings
+ * them, and this hook is all a first paint carries of them; without one, a
+ * voice is built exactly as before.
+ */
+export type Timbre = (
+  filter: BiquadFilterNode,
+  envelope: GainNode,
+  at: number,
+  parts: AudioScheduledSourceNode[],
+) => void
 
 export interface Voice {
   readonly alive: boolean
@@ -132,7 +150,7 @@ interface Graph {
   readonly osc: OscillatorNode
   readonly env: GainNode
   readonly level: GainNode
-  readonly parts: OscillatorNode[]
+  readonly parts: AudioScheduledSourceNode[]
   /** When it started, on the audio clock. */
   readonly t: number
   readonly merc: boolean
@@ -158,11 +176,12 @@ function build(freq: number, o: VoiceOptions): Graph | null {
   const env = context.createGain()
   const level = context.createGain()
   level.gain.value = o.gain ?? (merc ? 0.2 : 0.13)
+  const parts: AudioScheduledSourceNode[] = [osc]
   osc.connect(lp)
-  lp.connect(env)
+  if (o.timbre) o.timbre(lp, env, t, parts)
+  else lp.connect(env)
   env.connect(level)
   level.connect(master)
-  const parts: OscillatorNode[] = [osc]
   if (merc) {
     // vibrato 5.5 Hz, +-14 cents, grown in over 0.35 s
     const lfo = context.createOscillator()
