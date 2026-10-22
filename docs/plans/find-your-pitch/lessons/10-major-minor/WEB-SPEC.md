@@ -38,7 +38,7 @@ slide guide with Move do, and free play in the Wrap. It is published only after 
 `/learn/06`, is, because its recall check asks Lesson 6's questions and its prerequisite chip names
 Lesson 6 (FACTS 2, 7), and after the vocal coach has looked at its voice lines (LESSON.md, For the
 vocal coach). Until both are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`,
-`:30-34`). Every build carries `learn/10.html`, as it carries every lesson page
+`:29-36`). Every build carries `learn/10.html`, as it carries every lesson page
 (`tools/draft-lessons.ts:8-14`), and its line in `drafts.ts` holds it back on mercurypitch.com: the
 site worker answers `/learn/10` with the 404 page, and every page's explorer shows Lesson 10 with no
 link, as a lesson not written yet (`src/lesson-gate.ts:10-12`;
@@ -636,19 +636,19 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 
 - **A chord** is three voices started in one task, so they share one start on the audio clock, each
   at 0.075, about 1.7 times one tapped note under the master's compressor (FACTS 81), through
-  `playTone` (`src/features/lessons/kit/sound.ts:509-518`), whose visuals run even when sound is
+  `playTone` (`src/features/lessons/kit/sound.ts:528-537`), whose visuals run even when sound is
   off.
 - **A move** is the two held notes as voices for its 3.1 s and the moving note as one voice along a
   contour, `contourOf(329.63, [{ hold: 1.2 }, { glide: 0.4, to: 311.13 }, { hold: 1.5 }])` for mi,
-  or from 392.00 to 369.99 for so, through `playContour` (`sound.ts:263-286`, `:520-533`), whose
-  pitch glides on the audio clock (`:292-325`; FACTS 73). The bead's slide is timed from the same
+  or from 392.00 to 369.99 for so, through `playContour` (`sound.ts:282-305`, `:539-552`), whose
+  pitch glides on the audio clock (`:311-344`; FACTS 73). The bead's slide is timed from the same
   start, so it lands as the note lands.
 - **Levels**: a tapped note at the soft tone's 0.13; a chord's voices at 0.075 each; Merc's "ooh" at
   the kit's level; the count-in at 0.065 (FACTS 80, 81).
-- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:459-471`): the first
+- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:478-490`): the first
   tap turns sound on; with sound off the kit's toast says so and the visuals play silently; with no
   Web Audio nothing sounds and the visuals still play. The kit stops every sound when the page is
-  hidden (`sound.ts:445-447`).
+  hidden (`sound.ts:464-466`).
 
 ## Mercs
 
@@ -714,7 +714,7 @@ still images when WebGL fails or would run on the CPU.
 
 ## Explorer and season data
 
-Lesson 10's entry (`src/features/lessons/kit/season.ts:343-352`), proposed for when this page is
+Lesson 10's entry (`src/features/lessons/kit/season.ts:346-355`), proposed for when this page is
 built:
 
 - `minutes: 17` and `page: '/learn/10'`, written plainly, as Lesson 3's entry is
@@ -744,7 +744,7 @@ built:
   `pr.needs`, "Drone Intonation and Ear Lab Stack", stays until the slugs ship: it is "Admin only,
   never drawn on a lesson page" (`season.ts:99-100`, and the fields the team keeps, `:27-34`).
 - `sig` stays as it is. The entry has no `fig`, so the card draws no figure.
-- The hook stays word for word (`season.ts:349`; FACTS 1). The tease Lesson 9's card shows for this
+- The hook stays word for word (`season.ts:352`; FACTS 1). The tease Lesson 9's card shows for this
   lesson, and Lesson 11's tease on this page's card, are the kit's lesson copy
   (`kit/lesson-copy.ts:121`, `:123`; FACTS 5, 5b).
 - The card reads "Ready · read", with "17 min", once the page is live (`explorer.ts:150-157`).
@@ -1074,10 +1074,10 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
 10. Every practice link carries `?lesson=10` before any hash: `/pitch-training?lesson=10` and
     `/ear-lab?lesson=10`.
 11. The next-lesson card: a row for `/learn/10` in `src/e2e/learn-next-card.spec.ts`'s cards
-    (`:27-58`), with the eyebrow "Next lesson 11 · Registers and the break Coming later", the link
-    `#explorer` and "See it on the map" while Lesson 11 has no page, as Lesson 5's row reads for
-    Lesson 6; its `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks
-    Lesson 1's card (`:84-101`); its still inside the card holds no button.
+    (`:27-70`), with the eyebrow "Next lesson 11 · Registers and the break Coming later", the link
+    `#explorer` and "See it on the map" while Lesson 11 has no page, as Lesson 7's row reads for
+    Lesson 8; its `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks
+    Lesson 1's card (`:96-113`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:49-51`), for the team's words (`:21-39`), and the
     alternative hook's note never reaches the page (`:41-44`).

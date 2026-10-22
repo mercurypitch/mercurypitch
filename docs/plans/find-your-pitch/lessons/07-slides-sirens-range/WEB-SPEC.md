@@ -426,7 +426,7 @@ Reading a siren (`kit/take.ts`, extended with `readSiren`; pure and unit-tested)
   callers, `src/lib/mirror/session.ts:125` and
   `src/features/onboarding/beats/BeatVoiceprint.tsx:427`, see no change, and the page and the Vocal
   Range Test share one rule (FACTS 35). The parity test sits in `src/lib/mirror/metrics.test.ts`,
-  beside the `pickMatchTargets` tests (`:452-479`).
+  beside the `pickMatchTargets` tests (`:452-518`).
 - The line: "The lit band is the middle half of your siren: about {low} to {high}.", or, for one
   note, "The lit band is the middle of your siren: about {note}." Notes are named with
   `midiToNoteNameOctave` (`src/lib/note-utils.ts:38-40`, the app's sharp spelling, "C#4"), shown
@@ -592,7 +592,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 7's entry in `kit/season.ts` (`:283-298`) gains `minutes: 16`
+- **Season data**: Lesson 7's entry in `kit/season.ts` (`:291-309`) gains `minutes: 16`
   (FACTS 4) and, proposed, `needs: "the warm-up's Lip trills routine (a pattern slug)"`, the form
   Lesson 5's entry uses for its own missing drill, for the team and never drawn on the card; the
   warm-up's ungraded end, which the proposal used to name, is on main (Practice links). Its link,
@@ -625,27 +625,32 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
    predict asks, with alt text naming what it shows.
 3. `kit/range-chart.ts`, new (Toys 1), generic over a window, a column and its lit band, lines,
    bands and range bars, so Lesson 11 (its signature, "the siren's line crossing a shaded seam")
-   and Lesson 14 can use it.
+   and Lesson 14 can use it. Built, with its layout and its drawing in `kit/range-chart-layout.ts`
+   and `kit/range-chart-draw.ts`.
 4. `kit/sound.ts`: the "ng" and lip-trill timbres (Audio). The voice that follows a pitch path is on
    main: `contourVoice` and `playContour` glide pitch and level exponentially from point to point
-   (`kit/sound.ts:311-344`, `:543-552`).
+   (`kit/sound.ts:311-344`, `:543-552`). Built: `kit/timbre.ts`, the "ng" (Merc's "ooh" through a
+   900 Hz lowpass) and the lip trill, each a `Timbre` that the voice's new `timbre` option applies as
+   the voice is built (`kit/sound.ts:44-45`, `:181`), in a module only this page loads.
 5. `kit/take.ts`: `readSiren` (Toys 4); `src/lib/mirror/metrics.ts`:
    `middleHalf(lowMidi: number, highMidi: number): { low: number; high: number }`, exported and used
-   by `pickMatchTargets`, with its parity test in `src/lib/mirror/metrics.test.ts` (Toys 4). The
-   note formatter is on main: Lesson 4's spelling helper names a note with its sign and in words
-   (`sharpOf`, `signName`, `wordName`, `kit/notes.ts:157-197`).
+   by `pickMatchTargets`, with its parity test in `src/lib/mirror/metrics.test.ts` (Toys 4). Both
+   built: `readSiren` at `kit/take.ts:228`, `middleHalf` at `metrics.ts:353-368` and the parity test
+   at `metrics.test.ts:479`. The note formatter is on main: Lesson 4's spelling helper names a note
+   with its sign and in words (`sharpOf`, `signName`, `wordName`, `kit/notes.ts:157-197`).
 6. Lesson 3's kit parts are on main: `comfort.ts` with the feeling question, `listen.ts`, `take.ts`,
    the voice choice on `fyp-voice` (`voice-choice.ts`) and the warm-up cards (`warm-up.ts`); so is
    Lesson 1's predict widget (`kit/predict.ts`). Still needed: Lesson 6's rest card after
    "Effortful", which the kit leaves to the coach (`kit/comfort.ts:65-66`); Lesson 6's tune line;
-   and Lesson 1's words strip, promoted (`lesson-01/words.ts`).
+   and Lesson 1's words strip, promoted (`lesson-01/words.ts`). Built: the words strip, promoted to
+   `kit/words-strip.ts`, which Lesson 1's page now uses too.
 7. `kit/quiz.ts`: Lesson 2's three changes (Toys 5), on main.
 8. `kit/explorer.ts`: the text-only state and the current lesson (Explorer and season data). Both
    are on main.
-9. `src/e2e/helpers/tone-wav.ts`: a glide beside `writeToneWav` (`:29`), proposed
-   `writeGlideWav(fromHz, toHz, secondsEachWay)`, the same tone gliding up and back down, even in
-   semitones; Chromium loops the file, as the helper notes (`:27`), so it plays one siren after
-   another, for the end-to-end tests (Tests).
+9. `src/e2e/helpers/tone-wav.ts`: a glide beside `writeToneWav` (`:76`), built as
+   `writeGlideWav(fromHz, toHz, secondsEachWay)` (`:94`), the same tone gliding up and back down,
+   even in semitones; Chromium loops the file, as the helper notes (`:89-90`), so it plays one siren
+   after another, for the end-to-end tests (Tests).
 10. App: the `pattern` slug and its test (Practice links), and the App content list's one open
     sentence. The two warm-up changes the lip-trill link waited on are on main (Practice links).
 11. Lessons 1 to 6's pages, when this one goes live: nothing to edit. Their explorers and their
