@@ -62,20 +62,31 @@ Blue Merc: "Let's see how many a song asks for."
 
 (Merc sings the first two lines of "Twinkle, Twinkle" on "ooh": blue Merc from E3, or orange Merc
 an octave up if the voice stored from Lesson 3 is the higher. Beside the bubbles, the range chart: a
-column two octaves tall, its middle half lit and its ends dimmed. The tune's notes stay hidden until
-a choice is made.)
+column two octaves tall, its middle half lit and its ends dimmed. Play "Twinkle" works before a
+choice, and draws no notes: the tune's notes stay hidden until the reveal.)
 
 **Predict before the reveal.** The column is two octaves, 24 semitones: the span books often give
 one voice type, such as tenor or alto. How much of it does "Twinkle, Twinkle" use?
 [ Most of it ] [ Less than half ]
 
-(After a choice, the tune's fourteen notes draw across the column as beads, and a gold bracket joins
-its lowest note to its highest. With sound off, the hint beside Play reads: "Sound is off, so
-nothing played. Turn sound on to hear it.")
+[ Play "Twinkle" on the column ]
 
-Reveal: Less than half. The whole tune spans 9 semitones, from do up to la, and the column
-spans 24. A song asks for a slice of your voice, and you choose where the slice sits. This lesson
-is about where. (It uses six of its scale's seven notes, so "most of it" was a fair guess.)
+(After a choice, Play "Twinkle" on the column unlocks: each of the tune's fourteen notes lights on
+the column as a bead as Merc sings it. The reveal waits for that play to be heard to its end; then
+a gold bracket joins the tune's lowest note to its highest. A play that sound off kept silent, or
+that another sound cut short, takes its beads away again.)
+
+The hint under the buttons:
+
+- Before a choice: "Choose an answer to unlock Play 'Twinkle' on the column."
+- After one: "Locked in. Play 'Twinkle' on the column: each note lights as Merc sings it."
+- With sound off: "Sound is off, so nothing played. Turn sound on to hear it."
+- After the reveal: "Play 'Twinkle' again, and watch where the slice sits."
+
+Reveal, under "You said: most of it" or "You said: less than half": Less than half. The whole tune
+spans 9 semitones, from do up to la, and the column spans 24. A song asks for a slice of your
+voice, and you choose where the slice sits. This lesson is about where. (It uses six of its scale's
+seven notes, so "most of it" was a fair guess.)
 
 ## Four words you'll meet
 
@@ -401,7 +412,12 @@ questions still open:
   required are on main: the warm-up now ends with no grade or score, and its help no longer claims
   that warming up protects the voice (FACTS 73 to 76a).
 - The sounds played only for listening: Merc's siren on "ng", on a lip trill and on "oo", all
-  synthesised, and "Twinkle" sung by Merc from E3 or E4 (FACTS 81 to 86).
+  synthesised, and "Twinkle" sung by Merc from E3 or E4 (FACTS 81 to 86). As built, "ng" is Merc's
+  voice through a low-pass filter at 900 Hz, and the lip trill the same voice with its level
+  buzzing 22 times a second over a soft band of breath; both are illustrations, not measurements,
+  so please listen to them on the page (`kit/timbre.ts`).
+- Step 4's push note, a sustained note that follows the note on the column while Lower or Higher is
+  held, for listening only (FACTS 85).
 
 ### Changed in the plain-language review
 
