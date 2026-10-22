@@ -49,13 +49,13 @@ SHARDS = 18
 
 # Outer wall of the glass, bottom to top (r, z) in metres. The first point sits
 # inside the stem ring; the last meets the collar.
-BODY = [(0.0880, 0.1580), (0.0900, 0.1680), (0.1000, 0.1715), (0.1177, 0.1750), (0.1427, 0.2000),
+BODY = [(0.0880, 0.1580), (0.0950, 0.1640), (0.1010, 0.1670), (0.1180, 0.1750), (0.1427, 0.2000),
         (0.1768, 0.2300), (0.2024, 0.2600), (0.2276, 0.3000), (0.2479, 0.3400), (0.2628, 0.3800),
         (0.2730, 0.4200), (0.2800, 0.4500), (0.2827, 0.4800), (0.2806, 0.5225), (0.2725, 0.5645),
         (0.2567, 0.6065), (0.2280, 0.6440), (0.1950, 0.6680), (0.1620, 0.6830), (0.1450, 0.6905)]
 COLLAR = [(0.1450, 0.6905), (0.1482, 0.6950), (0.1490, 0.7080), (0.1478, 0.7210), (0.1440, 0.7250),
           (0.1330, 0.7260)]
-NECK = [(0.1330, 0.7260), (0.1255, 0.7330), (0.1180, 0.7550), (0.1145, 0.7760), (0.1160, 0.8000),
+NECK = [(0.1330, 0.7260), (0.1302, 0.7320), (0.1252, 0.7420), (0.1198, 0.7560), (0.1145, 0.7760), (0.1160, 0.8000),
         (0.1220, 0.8250), (0.1340, 0.8550), (0.1490, 0.8850), (0.1590, 0.9000), (0.1625, 0.9150),
         (0.1640, 0.9250)]  # runs past the lip so the rim can be measured off it
 # The surface under the collar, which the inner wall follows instead of the collar. It
@@ -76,30 +76,35 @@ WAVE_CENTRE_Z = 0.350
 WAVE_LINE = 0.00375  # half width of the gold line: a 7.5 mm ribbon
 
 
-OPAL_PATCHES = (  # sRGB colour, share bias. Mint dominates as in the concept (half its body is
-    # hue 90 to 170); the museum's blue sky pulls every patch toward aqua, so mint sits at hue 115.
-    ((0.64, 0.90, 0.60), 0.55),   # mint-green
-    ((0.60, 0.86, 0.84), 0.0),    # aqua
-    ((0.80, 0.68, 0.96), 0.15),   # lavender
-    ((0.98, 0.87, 0.62), -0.15),  # peach-gold
-    ((0.70, 0.78, 0.98), -0.4),   # ice blue
+OPAL_PATCHES = (  # sRGB colour, share bias. The concept's opal is milky with mint-cyan, lavender, rose
+    # and cream patches round a pearl average (Lab a* -6, b* +1; chroma spread 11). Round 3's mint at
+    # hue 113 read yellow-green in the game; round 4's patches were the right average and too faint.
+    ((0.86, 0.93, 0.93), 0.225),   # milky cyan-white
+    ((0.70, 0.92, 0.84), 0.11),    # mint-cyan, hue 156
+    ((0.71, 0.88, 0.95), -0.125),  # aqua, hue 195
+    ((0.84, 0.77, 0.95), 0.35),    # lavender, hue 265
+    ((0.97, 0.91, 0.78), 0.135),   # cream, hue 40
+    ((0.95, 0.83, 0.91), 0.0),     # rose, hue 325
 )
+OPAL_CENTRE = (0.87, 0.91, 0.90)  # the pearl the patches play round
+OPAL_PUSH = 3.0  # three.js keeps about 40% of a palette's spread: 3x reads as the concept's (10.4 of 11.2)
 
 
 def opal_colour(p):
     """The concept's opal fire as distinct soft patches (sRGB): a soft-max over drifting
     fields, so each corner leans to one patch colour instead of all averaging to a flat
-    tint. Turned so a lavender patch crosses the front-right of the belly, as in the
-    concept. Saturation about 0.27 before lighting; the game's lights halve it."""
+    tint, about a dozen patches round the body; then each pushed three times further in
+    chroma from the pearl centre, lightness kept (`materials.push_chroma`)."""
     theta = math.atan2(p.y, p.x) + 2.1
 
     def drift(seed):
-        return sum(math.sin(f * theta + g * p.z + seed * (1.7 + 0.9 * k)) / (1 + 0.5 * k)
-                   for k, (f, g) in enumerate(((1, 2.6), (2, -5.3), (3, 7.1), (4, -3.4))))
+        return sum(math.sin(f * theta + g * p.z + seed * (1.7 + 0.9 * k)) / (1 + 0.35 * k)
+                   for k, (f, g) in enumerate(((2, 5.0), (3, -8.0), (5, 11.0), (7, -4.0))))
 
-    weights = [math.exp(6.0 * (drift(1.3 * i + 0.4) / 2 + bias)) for i, (_, bias) in enumerate(OPAL_PATCHES)]
+    weights = [math.exp(6.0 * (drift(1.3 * i + 0.4) / 2.6 + bias)) for i, (_, bias) in enumerate(OPAL_PATCHES)]
     total = sum(weights)
-    return tuple(sum(w * colour[j] for w, (colour, _) in zip(weights, OPAL_PATCHES)) / total for j in range(3))
+    rgb = [sum(w * colour[j] for w, (colour, _) in zip(weights, OPAL_PATCHES)) / total for j in range(3)]
+    return materials.push_chroma(rgb, OPAL_CENTRE, OPAL_PUSH)
 
 
 CRACKLE = dict(keep=0.6, line=0.03, tint=0.04, ground=0.95, warp=0.35, seed=11)  # the opal's crackle, 6 cm cells
@@ -137,13 +142,14 @@ def palette(waves_maps):
         # Polished where the concept polishes: the sleeves, the handles' linings and tails, the neck
         # straps and the stem ring.
         'gold_polished': materials.gold('gold_polished', '#ebcb88', roughness=0.20, metallic=0.75),
-        # Cloudy jade at the concept's lit midtone (hue 129, saturation 0.27), soft lighter veins,
+        # Cloudy jade at the concept's lit midtone (hue 129, saturation 0.27): broad pale mint clouds
+        # over a fifth of it (the concept has 18-28% of its handle above luminance 170), soft veins,
         # one image over three tiles.
         'jade': textures.attach_color(
             materials.principled('jade_stone', '#3f6a4b', roughness=0.26, transmission=0.08, ior=1.61,
                                  coat=0.3, coat_roughness=0.08),
-            textures.marbled('jade_veins', '#3f6a4b', '#5f9472', dark='#22402c', size=256, veins=2,
-                             turbulence=1.4, softness=0.8), scale=1 / 3),
+            textures.marbled('jade_veins', '#55876a', '#6fa283', dark='#2f5640', light='#b6e2c6', light_share=0.36,
+                             size=256, veins=2, turbulence=1.4, softness=0.8), scale=1 / 3),
         'cut': materials.principled('glass_cut', '#dcefe7', roughness=0.25, transmission=0.45, ior=1.47),
     }
 
@@ -162,7 +168,7 @@ def outlines():
 
 
 def base_ring(m):
-    pts = [V(0, 0), V(0.1650, 0), V(0.1712, 0.0020), V(0.1745, 0.0075), V(0.1758, 0.0160), V(0.1760, 0.0450),
+    pts = [V(0, 0), V(0.1680, 0), V(0.1745, 0.0060), V(0.1758, 0.0160), V(0.1760, 0.0450),
            V(0.1752, 0.0640), V(0.1730, 0.0700), V(0.1680, 0.0720), V(0, 0.0720)]
     return lathe.lathe('base_ring', pts, FOOT_SEGMENTS, material=m['gold'], sharp_degrees=50, uv=TILE)
 
@@ -176,9 +182,8 @@ def foot(m):
 
 
 def stem_ring(m):
-    pts = [V(0, 0.1240), V(0.0960, 0.1240), V(0.1005, 0.1255), V(0.1018, 0.1300), V(0.1015, 0.1440),
-           V(0.0990, 0.1465), V(0.1012, 0.1490), V(0.1010, 0.1600), V(0.0985, 0.1640), V(0.0940, 0.1660),
-           V(0, 0.1665)]
+    pts = [V(0, 0.1240), V(0.0960, 0.1240), V(0.1012, 0.1275), V(0.1015, 0.1440), V(0.0990, 0.1465),
+           V(0.1012, 0.1490), V(0.1010, 0.1600), V(0.0950, 0.1660), V(0, 0.1665)]
     return lathe.lathe('stem_ring', pts, FOOT_SEGMENTS, material=m['gold_polished'], sharp_degrees=50, uv=TILE)
 
 
@@ -202,18 +207,18 @@ def body(m, body_line, neck_line, core):
     # neck's flare would cut out through its 8 mm wall.
     # Dense enough that no chord across the convex belly sags more than about 1 mm into the wall.
     cavity = (profile.resample(list(reversed(profile.between(inner, 0.7000, 0.9055))), 8, curvature_bias=0.3)
-              + profile.resample(list(reversed(profile.between(inner, 0.1900, 0.7000))), 14, curvature_bias=0.3)[1:])
+              + profile.resample(list(reversed(profile.between(inner, 0.1900, 0.7000))), 12, curvature_bias=0.3)[1:])
     low = cavity[-1]
     floor = [V(low.x * 0.5, low.y - 0.0060), V(low.x * 0.2, low.y - 0.0075), V(0, low.y - 0.0080)]
     pts, slots = profile.chain(
         (opal, [V(0, BODY[0][1])]),
-        (opal, profile.resample(profile.between(body_line, BODY[0][1], z0), 8, curvature_bias=0.6)),
+        (opal, profile.resample(profile.between(body_line, BODY[0][1], z0), 9, curvature_bias=0.65)),
         (gold, profile.raised(body_line, z0, z1, proud, samples=1)),
         (waves, profile.resample(profile.between(body_line, z1, w0), 5, curvature_bias=0.3)),
         (gold, profile.raised(body_line, w0, w1, wproud, samples=1)),
-        (opal, profile.resample(profile.between(body_line, w1, BODY[-1][1]), 9, curvature_bias=0.5)),
+        (opal, profile.resample(profile.between(body_line, w1, BODY[-1][1]), 11, curvature_bias=0.55)),
         (gold, [V(*p) for p in COLLAR]),
-        (opal, profile.resample(profile.between(neck_line, NECK[0][1], rim0), 7, curvature_bias=0.4)),
+        (opal, profile.resample(profile.between(neck_line, NECK[0][1], rim0), 10, curvature_bias=0.6)),
         (gold, rim_face + lip + [inner_top] + inner_gold[1:]),
         (opal, cavity + profile.blend(cavity, floor, samples=3) + floor),
     )
@@ -275,10 +280,11 @@ def wave_maps(body_line):
     curl_at = len(back)  # index of the crest; the curl turns `turns` over the next 160 points
     layers = [layer(0.0095, int(curl_at * 0.30), curl_at + int(160 * 0.5 / turns), 0.0042, 0.0016),
               layer(0.0185, int(curl_at * 0.50), curl_at + int(160 * 0.28 / turns), 0.0038, 0.0012)]
-    maps = textures.inlay('waves', [(line, half)], period, w0 - z1, cols=512, rows=288, ground='#aeddbe',
+    maps = textures.inlay('waves', [(line, half)], period, w0 - z1, cols=512, rows=288, ground='#dfe5e4',
                           line='#eec674', ground_trm=(0.35, 0.20, 0.0), line_trm=(0.0, 0.30, 0.6),
                           ridge=0.0012, relief=0.0020, reach=0.024, side=-1, ridges=layers,
-                          ground_low='#6faa92', light=0.12, crackle=dict(CRACKLE, cell=TILE, depth=0.0004))
+                          ground_low='#7aaea4', light=0.12, crackle=dict(CRACKLE, cell=TILE, depth=0.0004),
+                          body_colour='#86c3b8')  # the band is the body's pearl, the wave bodies teal
     return maps, period
 
 
@@ -394,7 +400,7 @@ def handle(m, side, body_line, neck_line):
 
     def strap_section(u, a):
         c = math.cos(a)
-        return (0.0035 if c >= 0 else 0.0030) * c, 0.0075 * math.sin(a)
+        return (0.0035 if c >= 0 else 0.0030) * c, 0.0090 * math.sin(a)  # 15 mm across where it shows
 
     neck_strap = sweep.tube(f'neck_strap_{name}', mirror(points), None, ring=6, resample=False,
                             section=strap_section, first_normal=(side, 0, 0), material=m['gold_polished'], uv=TILE)
