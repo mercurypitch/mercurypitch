@@ -75,11 +75,12 @@ def palette(laurel_maps, shoulder_maps):
         'marble': textures.attach_color(
             materials.principled('marble_cream', '#ede4d3', roughness=0.30, coat=0.35, coat_roughness=0.10),
             marble_veins, scale=1 / 4),
-        # Amber at the concept's midtone (hue 31, value 0.67): its colour in the base and in the
-        # volume, transmission 0.55 so it keeps its own colour and hides the foot inside.
+        # Amber at the concept's midtone (hue 31, value 0.67), set in the game's renderer: there the
+        # warm gallery's own reflections darken glass, so a light, saturated base at transmission
+        # 0.35 reads hue 33, value 0.63 (the previous #cc8a2a at 0.55 read dark brown, value 0.48).
         # The concept's amber darkens into every crease: COLOR_0, painted by amber_colour.
         'amber': materials.vertex_tint(
-            materials.principled('amber_glass', '#cc8a2a', roughness=0.04, transmission=0.55, ior=1.52)),
+            materials.principled('amber_glass', '#f0a028', roughness=0.04, transmission=0.35, ior=1.52)),
         # Warmer than the amphora's: this concept's gold midtone is hue 33, saturation 0.59.
         'gold': materials.gold('gold_polished', '#e6b46a', roughness=0.22, metallic=0.75),
         'laurel': textures.attach_inlay(materials.principled('laurel_frieze', '#ffffff', roughness=0.5),

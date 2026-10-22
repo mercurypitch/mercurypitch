@@ -3,9 +3,9 @@
     "KHR_materials_volume": {
       "thicknessFactor": 0.03,
       "attenuationColor": [
-        0.807,
-        0.434,
-        0.117
+        0.871,
+        0.392,
+        0.065
       ],
       "attenuationDistance": 0.07
     }

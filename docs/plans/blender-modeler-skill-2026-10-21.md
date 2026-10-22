@@ -1,7 +1,10 @@
 # Plan: a Blender modeling skill that makes the museum assets good
 
-**Date:** 2026-10-21 · **Branch:** `feat/blender-modeler-skill` · **Status:** plan,
-awaiting the owner's go-ahead. Nothing in the game changes until then.
+**Date:** 2026-10-21 · **Branch:** `feat/blender-modeler-skill` · **Status:** the
+skill is built and two vessels are rebuilt with it (`art/glass-adventure/procedural/`);
+the measured comparison with their Meshy files is in
+[`meshy-vs-procedural.md`](../../art/glass-adventure/proofs/modeling-audit-2026-10-21/meshy-vs-procedural.md).
+Nothing in the game changes until the owner swaps a file in.
 
 Evidence for every claim below is in
 [`art/glass-adventure/proofs/modeling-audit-2026-10-21/`](../../art/glass-adventure/proofs/modeling-audit-2026-10-21/):
