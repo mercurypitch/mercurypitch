@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3, 5 and 6 are live here; a page that holds them back
+// does, so Lessons 3, 5, 6 and 7 are live here; a page that holds them back
 // is next-card.test.ts's, and one the site worker served with the
 // console's state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -57,7 +57,13 @@ const CARDS = [
   ],
   [
     '/learn/06',
-    'Next lesson 07 · Slides, sirens and your range Coming later',
+    'Next lesson 07 · Slides, sirens and your range Ready · 16 min',
+    '/learn/07',
+    'Start lesson',
+  ],
+  [
+    '/learn/07',
+    'Next lesson 08 · Beat, tempo and the backbeat Coming later',
     '#explorer',
     'See it on the map',
   ],
@@ -158,7 +164,7 @@ test('a lesson coming later opens the map on its card @smoke', async ({
   page,
 }) => {
   // Arrange
-  await page.goto('/learn/06')
+  await page.goto('/learn/07')
 
   // Act
   await card(page).click()
@@ -166,7 +172,7 @@ test('a lesson coming later opens the map on its card @smoke', async ({
   // Assert
   await expect(page).toHaveURL(/#explorer$/)
   await expect(page.locator('#exCardHost h3')).toHaveText(
-    'Slides, sirens and your range',
+    'Beat, tempo and the backbeat',
   )
 })
 

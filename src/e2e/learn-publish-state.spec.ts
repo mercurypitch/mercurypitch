@@ -125,6 +125,34 @@ test('a released lesson the console holds back is linked from nowhere on the pag
   await expect(page.locator('#lessonMenu a[href^="/learn/02"]')).toHaveCount(0)
 })
 
+test('Lesson 7, a draft, is held back where drafts are, and linked once the console publishes it', async ({
+  page,
+}) => {
+  // Arrange: mercurypitch.com's default, and nothing published
+  await serveWith(page, '/learn/04', { drafts: false, lessons: {} })
+
+  // Assert: the map's card and the lesson menu say coming later, and link nothing
+  const later = await mapCard(page, 7)
+  await expect(later.locator('.chip')).toHaveText('Coming later')
+  await expect(later.locator('a.btn')).toHaveCount(0)
+  const held = await menuRow(page, 7)
+  await expect(held).toHaveClass(/\blater\b/)
+  await expect(page.locator('a[href^="/learn/07"]')).toHaveCount(0)
+
+  // Act: the console publishes it
+  await page.unrouteAll()
+  await serveWith(page, '/learn/04', {
+    drafts: false,
+    lessons: { 7: { published: true } },
+  })
+
+  // Assert
+  const card = await mapCard(page, 7)
+  await expect(card.locator('a.btn')).toHaveAttribute('href', '/learn/07')
+  const seven = await menuRow(page, 7)
+  await expect(seven).toHaveAttribute('href', '/learn/07')
+})
+
 test("the Wrap's card on the lesson before shows a lesson held back as coming later", async ({
   page,
 }) => {

@@ -16,6 +16,53 @@ import path from 'node:path'
 export const TONE_HZ = 220
 export const TONE_NOTE = 'A3'
 
+/** 16-bit mono PCM at 48 kHz, from a level per sample (−1 to 1 of 26000). */
+const RATE = 48000
+
+function wavOf(samples: number, level: (i: number) => number): Buffer {
+  const buf = Buffer.alloc(44 + samples * 2)
+  buf.write('RIFF', 0)
+  buf.writeUInt32LE(36 + samples * 2, 4)
+  buf.write('WAVE', 8)
+  buf.write('fmt ', 12)
+  buf.writeUInt32LE(16, 16)
+  buf.writeUInt16LE(1, 20) // PCM
+  buf.writeUInt16LE(1, 22) // mono
+  buf.writeUInt32LE(RATE, 24)
+  buf.writeUInt32LE(RATE * 2, 28)
+  buf.writeUInt16LE(2, 32)
+  buf.writeUInt16LE(16, 34)
+  buf.write('data', 36)
+  buf.writeUInt32LE(samples * 2, 40)
+  for (let i = 0; i < samples; i++) {
+    const s = Math.max(-32768, Math.min(32767, Math.round(level(i) * 26000)))
+    buf.writeInt16LE(s, 44 + i * 2)
+  }
+  return buf
+}
+
+/** A sine and two harmonics at `phase` (radians of the fundamental). */
+const voice = (phase: number): number =>
+  0.5 * Math.sin(phase) + 0.2 * Math.sin(2 * phase) + 0.1 * Math.sin(3 * phase)
+
+/**
+ * Writes `buf` to a file named `name` in the temp folder: beside it, then
+ * renamed into place, never written over. Every worker that loads a spec
+ * writes the same file at module load, and a plain write truncates it
+ * first, so a worker that read it back in that moment got a short file --
+ * and a song that would not load. Measured 2026-10-11: six processes
+ * writing and reading one path at once came back short in 358 of 900
+ * reads, and in none once renamed. A rename swaps in a whole file, and a
+ * reader keeps whichever one it opened.
+ */
+function place(name: string, buf: Buffer): string {
+  const file = path.join(os.tmpdir(), name)
+  const scratch = `${file}.${process.pid}.tmp`
+  fs.writeFileSync(scratch, buf)
+  fs.renameSync(scratch, file)
+  return file
+}
+
 /**
  * A sine plus two harmonics, 16-bit mono PCM at 48 kHz.
  *
@@ -27,53 +74,41 @@ export const TONE_NOTE = 'A3'
  * Chromium loops the file, so a few seconds covers a whole voiceprint.
  */
 export function writeToneWav(hz: number = TONE_HZ, seconds = 5): string {
-  const rate = 48000
-  const samples = rate * seconds
-  const buf = Buffer.alloc(44 + samples * 2)
-  buf.write('RIFF', 0)
-  buf.writeUInt32LE(36 + samples * 2, 4)
-  buf.write('WAVE', 8)
-  buf.write('fmt ', 12)
-  buf.writeUInt32LE(16, 16)
-  buf.writeUInt16LE(1, 20) // PCM
-  buf.writeUInt16LE(1, 22) // mono
-  buf.writeUInt32LE(rate, 24)
-  buf.writeUInt32LE(rate * 2, 28)
-  buf.writeUInt16LE(2, 32)
-  buf.writeUInt16LE(16, 34)
-  buf.write('data', 36)
-  buf.writeUInt32LE(samples * 2, 40)
-
-  for (let i = 0; i < samples; i++) {
-    const t = i / rate
-    const v =
-      0.5 * Math.sin(2 * Math.PI * hz * t) +
-      0.2 * Math.sin(4 * Math.PI * hz * t) +
-      0.1 * Math.sin(6 * Math.PI * hz * t)
-    const s = Math.max(-32768, Math.min(32767, Math.round(v * 26000)))
-    buf.writeInt16LE(s, 44 + i * 2)
-  }
-
+  const buf = wavOf(RATE * seconds, (i) => voice((2 * Math.PI * hz * i) / RATE))
   // The length is part of the name. Callers ask for four different lengths at
   // 220 Hz, all at module load, and Playwright loads spec files across four
   // parallel workers — keying on frequency alone let a 1-second spec truncate
   // the 20-second file `guided-voice-check` had already pinned, so its capture
   // ran out of microphone mid-take and failed the task-completion gate.
-  const file = path.join(
-    os.tmpdir(),
-    `mercurypitch-e2e-tone-${hz}-${seconds}s.wav`,
+  return place(`mercurypitch-e2e-tone-${hz}-${seconds}s.wav`, buf)
+}
+
+/**
+ * A siren: the same tone gliding from `fromHz` up to `toHz` in
+ * `secondsEachWay`, and back down in as long, even in semitones (an
+ * exponential sweep in hertz), with no pause at either end. Chromium loops
+ * the file, so it sings one siren after another, and a take that never
+ * falls quiet runs its full length and holds a whole turn at each end from
+ * any starting point (Lesson 7's WEB-SPEC, Tests).
+ */
+export function writeGlideWav(
+  fromHz: number,
+  toHz: number,
+  secondsEachWay: number,
+): string {
+  const half = Math.round(RATE * secondsEachWay)
+  const ratio = Math.log(toHz / fromHz)
+  let phase = 0
+  const buf = wavOf(2 * half, (i) => {
+    // up for the first half, down for the second, evenly in log frequency
+    const u = i < half ? i / half : (2 * half - i) / half
+    phase += (2 * Math.PI * fromHz * Math.exp(ratio * u)) / RATE
+    return voice(phase)
+  })
+  return place(
+    `mercurypitch-e2e-glide-${fromHz}-${toHz}-${secondsEachWay}s.wav`,
+    buf,
   )
-  // Written beside it and renamed into place, never written over. The same
-  // length is still shared: every worker that loads a spec writes this file
-  // at module load, and a plain write truncates it first, so a worker that
-  // read it back in that moment got a short file -- and a song that would not
-  // load. Measured 2026-10-11: six processes writing and reading one path at
-  // once came back short in 358 of 900 reads, and in none once renamed. A
-  // rename swaps in a whole file, and a reader keeps whichever one it opened.
-  const scratch = `${file}.${process.pid}.tmp`
-  fs.writeFileSync(scratch, buf)
-  fs.renameSync(scratch, file)
-  return file
 }
 
 /** Chromium flags that route the generated tone into getUserMedia. */
