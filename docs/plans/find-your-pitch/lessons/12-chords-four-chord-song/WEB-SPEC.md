@@ -893,7 +893,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     the owner).
 11. `kit/season.ts`, Lesson 12's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:112-210`
+    `src/features/lessons/kit/lesson-copy.test.ts:325-360` and `src/tests/lesson-pages.test.ts:112-210`
     on every page, a draft's included, from its first commit:
     - title, at most 60 characters, with "MercuryPitch" and the headline in it
       (`lesson-pages.test.ts:127-128`, `:160`). The series' form that Lessons 1, 2, 3, 5 and 10 use,
@@ -921,7 +921,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     - robots `index, follow, max-image-preview:large` and `twitter:card` `summary_large_image`;
     - the Article block, the head's first `application/ld+json` script and one object, since the
       test reads `alternativeHeadline` from the first script only and skips the check when it is
-      absent (`lesson-copy.test.ts:338-346`, `:356`): `@id`
+      absent (`lesson-copy.test.ts:340-348`, `:358`): `@id`
       `https://mercurypitch.com/learn/12#lesson`, `url` the canonical, `image` the same URL as
       `og:image` (`lesson-pages.test.ts:146-147`, `:159`), headline "Chords and the four-chord
       song", `alternativeHeadline` the hook, the same description, `inLanguage` `en-GB`,

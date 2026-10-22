@@ -91,7 +91,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; 1), and the element
+   (`:325-334`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; 1), and the element
    the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as seven chips
    ("18 minutes", 8; "After Lesson 5: Steady note", "After Lesson 8: Beat and tempo", "After Lesson
    9: Landing a leap" and "After Lesson 12: Chords", each a link to that lesson's page and wholly
@@ -768,7 +768,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    when the console publishes the page, not at a release (SEARCH.md § 3.2, 12).
 2. The page's head, written in full from its first commit, since both tests read it while the page
    is a draft: `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts
-   included (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
+   included (`lesson-copy.test.ts:325-360`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, drafts included, to its head, its structured data, its breadcrumb, its share card and
    its legal links (`:112-210`). So Lesson 14 meets all of the checks below as a draft; its release
    adds only the listings and links of item 1 (`:212-240`). The hook's copies are the ones the site
@@ -778,7 +778,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    form (`learn/04.html:9-128`), with the default hook (13):
    - the title, "Phrasing: sing a whole song · Find Your Pitch | MercuryPitch" (60 characters, the
      test's most, `lesson-pages.test.ts:127-128`), which holds the Article's headline (`:160`), and
-     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
+     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:325-334`; Hero);
    - the meta description, "If every note of a song is in tune, what is left to shape? Hear Merc
      sing one phrase twice, then sing it and listen back." (121 characters, inside the test's 81 to
      160, `lesson-pages.test.ts:129-132`, and 153 with `compelling`);
@@ -786,8 +786,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      (`learn/04.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "If every note of a song is in tune, what is left
      to shape? Hear one phrase sung twice, then sing it yourself." (109 characters; 141 with
-     `compelling`; `lesson-copy.test.ts:349-352`), and
-     `twitter:description`, the hook exactly (`:353-355`);
+     `compelling`; `lesson-copy.test.ts:351-354`), and
+     `twitter:description`, the hook exactly (`:355-357`);
    - canonical and `og:url` `https://mercurypitch.com/learn/14`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:116-134`);
@@ -799,7 +799,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      the file (`lesson-pages.test.ts:177-196`; item 3);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:338-346`, `:356`), and the other test asks for the Article first
+     (`lesson-copy.test.ts:340-348`, `:358`), and the other test asks for the Article first
      (`lesson-pages.test.ts:142-144`): `@id` `https://mercurypitch.com/learn/14#lesson` and `url`
      `https://mercurypitch.com/learn/14` (`:146-147`); the headline "Phrasing: sing a whole song";
      `alternativeHeadline`, the hook exactly; `description`, the meta description's words, and
@@ -881,7 +881,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     78). The kit draws the close once (`next-card.ts:190-193`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
     would gain the shorter line beside its own (`lesson-copy.ts:165-171`), kept free of the team's
-    words as the test asks (`lesson-copy.test.ts:247-255`). Its unit test and End to end 11 check it
+    words as the test asks (`lesson-copy.test.ts:249-257`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
 13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:439-473`),
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like

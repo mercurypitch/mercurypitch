@@ -78,7 +78,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
+   (`:325-334`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    five chips ("16 minutes", FACTS 5; "After Lesson 3: Match a note", a link to `/learn/03`; "After
    Lesson 6: Intervals: the distance between notes", a link to `/learn/06`, each chip wholly the
@@ -640,7 +640,7 @@ table):
    every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:9-128`):
    - the title, "Landing a leap: Find Your Pitch, Lesson 9 | MercuryPitch" (56 characters, under the
      test's 60, `lesson-pages.test.ts:101-102`), which holds the Article's headline (`:130`), and
-     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
+     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:325-334`; Hero);
    - the meta description, "How do you land a note you have to leap to? Hear it first, aim at its
      band, and sing do-mi-so-do as a ladder. A free lesson in your browser." (140 characters, inside
      the test's 80 to 160, `lesson-pages.test.ts:103-106`, and 157 with the alternative hook written
@@ -648,9 +648,9 @@ table):
    - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear
-     the landing note first, then aim at it." (`lesson-copy.test.ts:349-352`;
+     the landing note first, then aim at it." (`lesson-copy.test.ts:351-354`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:353-355`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:355-357`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/09`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:90-108`);
@@ -661,7 +661,7 @@ table):
      orange Merc." (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:338-346`, `:356`): `@id` `https://mercurypitch.com/learn/09#lesson` and
+     (`lesson-copy.test.ts:340-348`, `:358`): `@id` `https://mercurypitch.com/learn/09#lesson` and
      `url` `https://mercurypitch.com/learn/09` (`lesson-pages.test.ts:116-117`); the headline
      "Landing a leap"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:128-129`); `position: 9`,
