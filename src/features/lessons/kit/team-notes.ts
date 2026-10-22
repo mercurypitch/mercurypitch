@@ -21,7 +21,7 @@
 //
 // The words are lesson copy, held to its rules: British English, every claim
 // in that lesson's FACTS.md, and no mood labels. A note may name a mood
-// label to say why its variant is not the default, as Lesson 10's does.
+// label to say why its variant is not the default.
 //
 // Pure data, with no imports, no DOM and no `import.meta`, as lesson-copy.ts
 // is, so the admin console and the e2e specs, which run in plain Node, read
@@ -60,26 +60,6 @@ export const HOOK_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
   7: {
     'two-questions':
       'The original hook: two questions in one, and its first half invites counting notes, which the lesson steers away from.',
-  },
-  9: {
-    harder:
-      "Needs FACTS support for 'so much harder'; Lesson 9's FACTS show copied leaps landing short, more so the larger the leap.",
-  },
-  10: {
-    'bright-dark':
-      'The original hook. Bright and dark are mood labels, and the lesson refutes "minor means sad"; the YouTube title drops them too.',
-  },
-  11: {
-    'same-note':
-      "Needs FACTS support for 'roughly the same note every time'; Lesson 11's FACTS show a flip can come at different notes on different slides, or not at all.",
-  },
-  12: {
-    hundreds:
-      'The original hook. "Hundreds" needs a counted source in FACTS.md first; the YouTube titles avoid it too.',
-  },
-  14: {
-    compelling:
-      'The original hook. No source in FACTS.md says what makes a performance "compelling"; the new default asks what the lesson answers in full, what is left to shape.',
   },
 }
 

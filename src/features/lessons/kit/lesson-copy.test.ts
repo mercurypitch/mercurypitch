@@ -272,16 +272,12 @@ describe("the season's copy", () => {
       (L.hookAlts ?? []).map((v) => [L.n, v.id] as const),
     )
 
-    // Assert: the owner's answer to the plan's § 5 item 2
+    // Assert: the owner's answer to the plan's § 5 item 2, less the five
+    // the owner dropped on 22 October 2026 for breaking the copy rules
     expect(kept).toEqual([
       [3, 'figures'],
       [3, 'tested'],
       [7, 'two-questions'],
-      [9, 'harder'],
-      [10, 'bright-dark'],
-      [11, 'same-note'],
-      [12, 'hundreds'],
-      [14, 'compelling'],
     ])
   })
 })

@@ -698,8 +698,8 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   Lesson 3's own are written (`season.ts:210-213`; FACTS 5, 47, 48). Whether the page is live is
   `kit/publish.ts`'s to say: `seasonFor` draws a lesson held back as one coming later, with no page
   and no reading time (`:94-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`,
-  which `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link, proposed with
-  the page (FACTS 47): `href: '/pitch-training?lesson=11'`,
+  which `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link, proposed
+  with the page (FACTS 47): `href: '/pitch-training?lesson=11'`,
   `addr: 'mercurypitch.com/pitch-training'`, `label: 'Exercises'` and
   `note: 'then tap Siren / Range Explorer'`, so the card reads "Exercises, then tap Siren / Range
   Explorer", as Lesson 9's reads "Exercises, then tap Arpeggio Jumper" (`season.ts:334-339`,
@@ -707,9 +707,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   "siren and slide drills" for the team, and no card draws it. The link lands with the page, not
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
-  (`season.ts:357`), which this package changed, and its tease and the alternative `same-note` are
-  `kit/lesson-copy.ts`'s (`:124-132`), as FACTS 1 records: this spec proposes no other change to a
-  hook or a tease. `EDGES` already holds [7, 11] (`season.ts:419`).
+  (`season.ts:357`), which this package changed, and its tease is `kit/lesson-copy.ts`'s
+  (`:124-132`), which held the alternative `same-note` until this PR dropped it (FACTS 1). `EDGES`
+  already holds [7, 11] (`season.ts:419`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -897,15 +897,15 @@ draws the season as its state shows it (`kit/page-state.ts:54-57`): Lesson 10's 
 
 With the recommendation first:
 
-1. **The hook** (FACTS 1): since this package the new wording, "Why does your voice sometimes flip
-   as you slide up?", is the default, with the old kept as the alternative `same-note`, whose note
-   says it needs a source.
-   Recommended: never pick `same-note` until FACTS.md has one, since the console would write its
-   claim into the title, the head, every explorer card and Lesson 10's next card. The source to
-   look for is a singer's flip followed over repeated slides; Roubeau, Henrich and Castellengo 2009,
-   whose full text needs a login, is the likeliest place. Step 3 teaches the opposite of
-   `same-note` ("a slide doesn't have to switch at one fixed note"), so the owner may prefer to
-   retire it.
+1. **The hook** (FACTS 1): since this package the new wording, "Why does your voice sometimes
+   flip as you slide up?", is the default. The old was the alternative `same-note`, whose note
+   said it needed a source, until the owner dropped it on 22 October 2026 (this PR).
+   Recommended then: never pick it until FACTS.md had one, since the console would write its
+   claim into the title, the head, every explorer card and Lesson 10's next card. The source
+   to look for is a singer's flip followed over repeated slides; Roubeau, Henrich and
+   Castellengo 2009, whose full text needs a login, is the likeliest place. Step 3 teaches the
+   opposite of `same-note` ("a slide doesn't have to switch at one fixed note"), so the owner
+   retired it.
 2. **The title** (item 2): recommended, the query-led "Registers and the break: chest and head voice
    | MercuryPitch", as SEARCH.md § 13 item 1 recommends; the series' form fits only without "Lesson
    11".
@@ -990,10 +990,10 @@ What the page does where nothing above says:
   keep their words, "Try Lesson 7, Step 1 again", with no link (`kit/quiz.ts:179-209`). The recall
   still shows, and the explorer and the lesson menu draw the lesson held back as coming later. End
   to end 13 holds it.
-- **The admin console's hook**: picking `same-note` writes it into the h1, the head's copies of the
+- **The admin console's hook**: picking `same-note` wrote it into the h1, the head's copies of the
   hook, every explorer card and Lesson 10's next card (`src/lesson-gate.ts:17-19`, `:445-460`); the
-  meta description still fits, at 156 characters; and the page then claims what FACTS 1 cannot
-  support, which is why its note says to wait (Decisions, 1).
+  meta description still fit, at 156 characters; and the page then claimed what FACTS 1 cannot
+  support, which is why the owner dropped it (Decisions, 1).
 - **Reduced motion**: Look, Toys 1 and Toys 4 give the end states; nothing moves on its own.
 
 ## Tests

@@ -857,11 +857,11 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
   beats 2 and 4" (`kit/explorer-figures.ts:207`), is the kit's and stays: the card's arm swings in
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:914-925`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
-- The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease
-  stays as `kit/lesson-copy.ts:105` has it: "Same song, same speed. Only the claps move.", which
-  Lesson 7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
-  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:113`), with its earlier hook as an
-  alternative (`:106-112`); all three are Lesson 9's, not this page's (FACTS 6).
+- The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease stays
+  as `kit/lesson-copy.ts:105` has it: "Same song, same speed. Only the claps move.", which Lesson
+  7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
+  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:113`), its earlier hook an
+  alternative (`:106-112`) until this PR dropped it; all are Lesson 9's, not this page's (FACTS 6).
 
 ## What the kit and the app still need
 
@@ -911,9 +911,9 @@ was built on.
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:113`), above its new hook, "How do you land a note you
    have to leap to?" (`season.ts:331`), under `.next-tease` (`kit/next-card.ts:142`;
-   `lesson-sections.css:226-232`), and the old hook stays in `kit/lesson-copy.ts:106-112` as the
-   admin console's alternative (CURIOSITY-MOMENTS § 5). This page adds only its tease figure to the
-   slot (Toys 9).
+   `lesson-sections.css:226-232`), and the old hook was the admin console's alternative in
+   `kit/lesson-copy.ts:106-112` until this PR dropped it. This page adds only its tease figure to
+   the slot (Toys 9).
 10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:134-136`, `:130-132`),
     since this page is its fourth user after Lessons 3, 4 and 5, whose own copies became
     re-exports of the kit's (`lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
@@ -1040,11 +1040,11 @@ was built on.
   (`kit/page-state.ts:5-10`).
 - **A hook or tease switched in the admin console.** An override names a wording the lesson's code
   already holds, by its variant id, and a reader that meets an id its code lacks keeps the default
-  (`src/lib/lesson-state.ts:13-16`, `:45-53`). The site worker writes the picked hook into a
-  page's `h1` and the head's copies of it (`src/lesson-gate.ts:13-21`). Lesson 8 holds no other
-  hook, so its title stays as written; if the console picks Lesson 9's alternative, the card shows
-  it, since the card takes the season as the page's state shows it (`kit/next-card.ts:185`), and
-  nothing in this page's markup changes.
+  (`src/lib/lesson-state.ts:13-16`, `:45-53`). The site worker writes the picked hook into a page's
+  `h1` and the head's copies of it (`src/lesson-gate.ts:13-21`). Lesson 8 holds no other hook, so
+  its title stays as written; if the console picks a hook for Lesson 9, the card shows it, since the
+  card takes the season as the page's state shows it (`kit/next-card.ts:185`), and nothing in this
+  page's markup changes.
 
 ## Tests
 

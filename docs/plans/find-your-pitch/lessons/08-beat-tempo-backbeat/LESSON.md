@@ -345,8 +345,8 @@ buttons.)
 
 _[Editorial: the card draws the tease and the hook from the season data (`kit/season.ts` and
 `kit/lesson-copy.ts`), so this page writes neither into its markup (FACTS 6). Lesson 9's earlier
-hook, "Why is jumping to a note so much harder than stepping to it?", stays in `kit/lesson-copy.ts`
-as an alternative the admin console can switch to (CURIOSITY-MOMENTS § 5).]_
+hook, "Why is jumping to a note so much harder than stepping to it?", was an alternative in
+`kit/lesson-copy.ts` until the owner dropped it on 22 October 2026.]_
 
 ## Footer
 

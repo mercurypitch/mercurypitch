@@ -21,15 +21,15 @@ MercuryPitch's Ear Lab writes "Sol" (FACTS 9). Note names follow the app's sharp
 chord or a key is spelled one letter per degree, so C minor's third is E♭, and on the hero's ring of
 twelve, which names every black key by its flat (FACTS 10). The title is the season's hook as the
 curiosity plan proposed it and the owner approved it, without the old hook's "bright" and "dark".
-The old wording stays as an alternative, `bright-dark`, which the admin console can switch Lesson
-10's hook to. Picked, it puts "bright" and "dark" in the page's heading, its search and share
-descriptions and its structured data, on Lesson 10's card in every lesson page's explorer, even
-while Lesson 10 is coming later, and on Lesson 9's next-lesson card. Those are mood labels, the link
-this lesson questions, so the package recommends leaving it unpicked (Header; FACTS 1). The page is
-published only after Lesson 6's page, `/learn/06`, is, because its recall check asks Lesson 6's
-questions and its prerequisite chip names Lesson 6, and after the vocal coach has looked at its
-voice lines (For the vocal coach). The admin console asks before it publishes a lesson still waiting
-on its sign-off, but it never checks that Lesson 6 is live, so the owner keeps that order (FACTS 7).
+The old wording was an alternative, `bright-dark`, until the owner dropped it on 22 October 2026.
+Picked, it put "bright" and "dark" in the page's heading, its search and share descriptions and its
+structured data, on Lesson 10's card in every lesson page's explorer, and on Lesson 9's next-lesson
+card. Those are mood labels, the link this lesson questions, so the package recommended leaving it
+unpicked (Header; FACTS 1). The page is published only after Lesson 6's page, `/learn/06`, is,
+because its recall check asks Lesson 6's questions and its prerequisite chip names Lesson 6, and
+after the vocal coach has looked at its voice lines (For the vocal coach). The admin console asks
+before it publishes a lesson still waiting on its sign-off, but it never checks that Lesson 6 is
+live, so the owner keeps that order (FACTS 7).
 
 ---
 
@@ -38,16 +38,16 @@ on its sign-off, but it never checks that Lesson 6 is live, so the owner keeps t
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 10
 - Title (the hook question): **Which single note turns a major chord into a minor one?**
   _[Editorial: the default since 20 October 2026 (CURIOSITY-MOMENTS § 2 and § 5). The old title,
-  "Which single note turns a bright major chord into a dark minor one?", is kept in
+  "Which single note turns a bright major chord into a dark minor one?", was kept in
   `kit/lesson-copy.ts` as the alternative `bright-dark`, as the owner's answer to CURIOSITY-MOMENTS
-  § 5 item 2 keeps every changed hook's old wording, and the admin console can switch Lesson 10's
-  hook to it. Picked, it goes wherever the hook goes. The site worker writes it into the page's h1
-  and into every copy of the hook in its head: the description, the og and twitter descriptions and
-  the structured data. The page state gives it to Lesson 10's card in every lesson page's explorer,
-  even while Lesson 10 is "Coming later", and to Lesson 9's next-lesson card. "Bright" and "dark"
-  are mood labels, and the lesson questions "minor means sad", so picking it breaks the rule the
-  lesson teaches; it would also run the description to 171 characters, over its 160 cap. The package
-  recommends leaving it unpicked. Keeping it switchable or retiring it is the owner's call (FACTS 1;
+  § 5 item 2 kept every changed hook's old wording, until the owner dropped it on 22 October 2026
+  for its mood labels (this PR). Picked, it went wherever the hook goes. The site worker writes it
+  into the page's h1 and into every copy of the hook in its head: the description, the og and
+  twitter descriptions and the structured data. The page state gives it to Lesson 10's card in every
+  lesson page's explorer, even while Lesson 10 is "Coming later", and to Lesson 9's next-lesson
+  card. "Bright" and "dark" are mood labels, and the lesson questions "minor means sad", so picking
+  it breaks the rule the lesson teaches; it would also run the description to 171 characters, over
+  its 160 cap. The package recommended leaving it unpicked, and the owner retired it (FACTS 1;
   WEB-SPEC, Decisions for the owner).]_
 - Meta, as three chips: 17 minutes · After Lesson 6: Intervals: the distance between notes · Sound
   on

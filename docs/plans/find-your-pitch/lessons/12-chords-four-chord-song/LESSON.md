@@ -10,13 +10,13 @@ Merc's question (playbook rule 4). The page opens in Lesson 2's order: the hook,
 sound gate, the cold open's predict, then the recall (CURIOSITY-MOMENTS § 3.1, decided in its § 5,
 item 1, and MASTER-PLAN § 12 item 13).
 
-The cold open is the curiosity plan's opening for this lesson, the same four chords under two
-tunes, with a new predict. The plan's, "Same chords, two tunes on top. One song or two?", is
-answered by the title right above it, which asks how two songs on the same four chords "still sound
-different". The page asks instead how many of a tune's notes land on a corner of the chord's room.
-The answer, most of them, turns straight to the misconception: both tunes fit the same four chords,
-and they are still two songs. Neither the title, its alternative `hundreds`, the promise, the sound
-gate's line, the descriptions nor Lesson 11's tease says where a tune's notes fall (FACTS 1a, 39).
+The cold open is the curiosity plan's opening for this lesson, the same four chords under two tunes,
+with a new predict. The plan's, "Same chords, two tunes on top. One song or two?", is answered by
+the title right above it, which asks how two songs on the same four chords "still sound different".
+The page asks instead how many of a tune's notes land on a corner of the chord's room. The answer,
+most of them, turns straight to the misconception: both tunes fit the same four chords, and they are
+still two songs. Neither the title, its old alternative `hundreds`, the promise, the sound gate's
+line, the descriptions nor Lesson 11's tease says where a tune's notes fall (FACTS 1a, 39).
 
 It is a theory lesson with a short sung checkpoint, the loop's roots, so it carries the singing
 lines and lists them for the vocal coach at the end. Where this page shares a line with Lessons 3,
@@ -43,10 +43,10 @@ degree, and in C and G major the two agree. Roman numerals are joined by en dash
 Ear Lab's Cadence writes them, and Ableton's "1-5-6-4" is quoted with its hyphens (FACTS 10).
 
 The title is the season's hook as the curiosity plan proposed it and the owner approved it. The old
-wording stays as an alternative, `hundreds`, which the admin console can switch Lesson 12's hook
-to. Picked, it puts "hundreds of songs" in the page's heading, its search and share descriptions
+wording was an alternative, `hundreds`, until the owner dropped it on 22 October 2026, for want of a
+source. Picked, it put "hundreds of songs" in the page's heading, its search and share descriptions
 and its structured data, on Lesson 12's card in every lesson page's explorer and on Lesson 11's
-next-lesson card. No source this package read counts those songs, so the package recommends leaving
+next-lesson card. No source this package read counts those songs, so the package recommended leaving
 it unpicked (Header; FACTS 1). The page is published only after Lesson 10's page, `/learn/10`, is,
 because its recall asks Lesson 10's questions and its prerequisite chip names Lesson 10, and after
 the vocal coach has looked at its voice lines (For the vocal coach). The admin console asks before
@@ -59,20 +59,20 @@ the owner keeps that order (FACTS 7).
 
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 12
 - Title (the hook question): **How can two songs share the same four chords and still sound
-  different?**
-  _[Editorial: the default since 20 October 2026 (CURIOSITY-MOMENTS § 2 and § 5). The old title,
-  "How can hundreds of songs share the same four chords and still sound different?", is kept in
-  `kit/lesson-copy.ts` as the alternative `hundreds`, as the owner's answer to CURIOSITY-MOMENTS
-  § 5 item 2 keeps every changed hook's old wording, and the admin console can switch Lesson 12's
-  hook to it. Picked, it goes wherever the hook goes. The site worker writes it into the page's h1
-  and into every copy of the hook in its head: the description, the og and twitter descriptions and
-  the structured data. The page state gives it to Lesson 12's card in every lesson page's explorer,
-  even while Lesson 12 is "Coming later", and to Lesson 11's next-lesson card. "Hundreds" is a
-  count: Ableton's page says it and counts none, and the kit's own note on the alternative asks for
-  a counted source first. Picked, it would still fit the description's cap, at 158 characters, and
-  it would not answer the predict either. The package recommends leaving it unpicked until FACTS.md
-  holds a counted source; keeping it switchable or retiring it is the owner's call (FACTS 1;
-  WEB-SPEC, Decisions for the owner).]_
+  different?** _[Editorial: the default since 20 October 2026 (CURIOSITY-MOMENTS § 2 and § 5).
+  The old title, "How can hundreds of songs share the same four chords and still sound
+  different?", was kept in `kit/lesson-copy.ts` as the alternative `hundreds`, as the owner's
+  answer to CURIOSITY-MOMENTS § 5 item 2 kept every changed hook's old wording, until the
+  owner dropped it on 22 October 2026 for want of a source (this PR). Picked, it went wherever
+  the hook goes. The site worker writes it into the page's h1 and into every copy of the hook
+  in its head: the description, the og and twitter descriptions and the structured data. The
+  page state gives it to Lesson 12's card in every lesson page's explorer, even while Lesson
+  12 is "Coming later", and to Lesson 11's next-lesson card. "Hundreds" is a count: Ableton's
+  page says it and counts none, and the kit's own note on the alternative asks for a counted
+  source first. Picked, it would still fit the description's cap, at 158 characters, and it
+  would not answer the predict either. The package recommended leaving it unpicked until
+  FACTS.md held a counted source, and the owner retired it (FACTS 1; WEB-SPEC, Decisions for
+  the owner).]_
 - Meta, as three chips: 15 minutes · After Lesson 10: Major and minor · Sound on
 - Promise: By the end you'll build a key's chords from its scale, name them in Roman numerals, hear
   a loop of four of them and sing its roots.

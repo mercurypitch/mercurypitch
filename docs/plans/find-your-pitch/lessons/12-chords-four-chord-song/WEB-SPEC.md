@@ -968,23 +968,23 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
 Each with the package's recommendation and the review's judgement (Lesson 12's review, 21 October
 2026); where this pass's view differs from the review's, it says so.
 
-1. **The alternative hook, `hundreds`.** It stays switchable and unpicked. The rules already keep it
-   unpicked: a variant's text is lesson copy held to "every claim in that lesson's FACTS.md"
-   (`kit/lesson-copy.ts:31-34`); its own note asks for a counted source first
-   (`kit/team-notes.ts:77-78`); the owner's
-   answer to CURIOSITY-MOMENTS § 5 item 2 holds back a hook that needs a source until FACTS.md has
-   one; and Ableton says "hundreds" and counts none, as Hooktheory's analysis of
-   1,300 songs gives no count for this loop (FACTS 1; FACTS, Unsupported, not used). What the
-   console shows: under "Hook", with the line "The question Lesson 12 opens with.", a second button
-   holding its wording, its team note printed below it, and the tags "Default" and "Chosen"; one
-   click saves it, with no confirmation (`src/features/admin/lessons/LessonControls.tsx:333-463`,
-   the Hook picker `:496-500`; `saveCopy`, `src/features/admin/AdminLessonsPage.tsx:214-222`).
-   Picked, it would reach the h1; the description (158 characters) and og:description (141);
-   twitter:description; the Article's `alternativeHeadline` and description; Lesson 12's card in
-   every lesson page's explorer, today included, while Lesson 12 is coming later; and Lesson 11's
-   next-lesson card (Edge cases, "The admin console's hook"). The lesson menu prints no hooks
-   (`kit/lesson-menu.ts`), so that list is complete. Neither wording answers the predict (FACTS 1a).
-   The review agrees, and adds: if the owner wants a hard guard, retire it.
+1. **The alternative hook, `hundreds`.** Decided: the owner dropped it on 22 October 2026 (this PR).
+   The rules kept it unpicked: a variant's text is lesson copy held to "every claim in that lesson's
+   FACTS.md" (`kit/lesson-copy.ts:31-34`); its own note asks for a counted source first
+   (`kit/team-notes.ts:77-78`); the owner's answer to CURIOSITY-MOMENTS § 5 item 2 holds back a hook
+   that needs a source until FACTS.md has one; and Ableton says "hundreds" and counts none, as
+   Hooktheory's analysis of 1,300 songs gives no count for this loop (FACTS 1; FACTS, Unsupported,
+   not used). What the console shows: under "Hook", with the line "The question Lesson 12 opens
+   with.", a second button holding its wording, its team note printed below it, and the tags
+   "Default" and "Chosen"; one click saves it, with no confirmation
+   (`src/features/admin/lessons/LessonControls.tsx:333-463`, the Hook picker `:496-500`; `saveCopy`,
+   `src/features/admin/AdminLessonsPage.tsx:214-222`). Picked, it would reach the h1; the
+   description (158 characters) and og:description (141); twitter:description; the Article's
+   `alternativeHeadline` and description; Lesson 12's card in every lesson page's explorer, today
+   included, while Lesson 12 is coming later; and Lesson 11's next-lesson card (Edge cases, "The
+   admin console's hook"). The lesson menu prints no hooks (`kit/lesson-menu.ts`), so that list is
+   complete. Neither wording answers the predict (FACTS 1a). The review agreed, and added: if the
+   owner wants a hard guard, retire it.
 2. **The page's title.** The series' form runs to 73 characters here, over the cap. Recommended:
    "Chords and the four-chord song: Lesson 12 | MercuryPitch" (56) until SEARCH.md § 13 item 1
    settles titles for every lesson; then its answer, which is a query-led title if the
@@ -1120,7 +1120,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   the recall would ask about a lesson the learner cannot open.
 - **Lesson 13 not yet live**: the next card reads "Coming later" and "See it on the map", to
   `#explorer` (`kit/next-card.ts:108-110`).
-- **The admin console's hook.** The console can switch Lesson 12's hook to its alternative,
+- **The admin console's hook.** The console could switch Lesson 12's hook to its alternative,
   `hundreds`, "How can hundreds of songs share the same four chords and still sound different?"
   (`kit/lesson-copy.ts:133-141`): the pick is the `hook` field of the lesson's override, set through
   PUT `/api/admin/lessons/:n` (`src/lib/lesson-state.ts:41`, `:49-50`, `:182-189`) from the Content
@@ -1128,18 +1128,18 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   (`src/features/admin/lessons/LessonControls.tsx:447-451`). The page's markup keeps the default;
   picked, the alternative goes wherever the hook goes. The site worker writes it into the page's h1,
   into every head copy that quotes the hook, the description and the og and twitter descriptions,
-  and into the structured data (`src/lesson-gate.ts:14-21`, `:444-460`, `:476-487`, `:561-591`).
-  Its list takes in the og and twitter titles too, but they carry the lesson's name, not the hook
-  (What the kit and the app still need, item 12), and it never touches `<title>`. The page state
-  gives it to every list (`src/features/lessons/kit/publish.ts:22-25`; `seasonFor`,
+  and into the structured data (`src/lesson-gate.ts:14-21`, `:444-460`, `:476-487`, `:561-591`). Its
+  list takes in the og and twitter titles too, but they carry the lesson's name, not the hook (What
+  the kit and the app still need, item 12), and it never touches `<title>`. The page state gives it
+  to every list (`src/features/lessons/kit/publish.ts:22-25`; `seasonFor`,
   `src/features/lessons/kit/publish.ts:108-124`): Lesson 12's card in every lesson page's explorer
   prints it (`src/features/lessons/kit/explorer.ts:244`), even while Lesson 12 is coming later, and
   so does Lesson 11's next-lesson card (`src/features/lessons/kit/next-card.ts:114-115`). So
   "hundreds", a count FACTS.md does not hold, would stand on every surface the hook reaches (FACTS
   1). The description would run to 158 characters and og:description to 141, inside their caps,
   which `src/tests/lesson-pages.test.ts:129-132` checks only on the page as written. Neither hook
-  says where a tune's notes fall, so the title never answers the predict (FACTS 1a). The package
-  recommends leaving it unpicked (Decisions for the owner, item 1).
+  says where a tune's notes fall, so the title never answers the predict (FACTS 1a). The owner
+  dropped it on 22 October 2026 (this PR; Decisions for the owner, item 1).
 
 ## Tests
 

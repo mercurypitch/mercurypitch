@@ -599,9 +599,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   tap Arpeggio Jumper", as Lesson 4's reads "Exercises, then tap Scale Runner" (`season.ts:236-241`,
   `explorer.ts:178`). The note is in the learner's words (`season.ts:34-37`); `needs` keeps
   "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
-  stay. Its hook is the entry's, the default (`season.ts:331`); its alternative, `'harder'`, and its
-  tease, which Lesson 8's card draws, are `kit/lesson-copy.ts`'s (`:106-114`), as FACTS 1 records:
-  this spec changes no hook or tease line. `EDGES` already holds [3, 9] and [6, 9]
+  stay. Its hook is the entry's, the default (`season.ts:331`); its tease, which Lesson 8's
+  card draws, is `kit/lesson-copy.ts`'s, which held the alternative `'harder'` (`:106-114`)
+  until this PR dropped it (FACTS 1). `EDGES` already holds [3, 9] and [6, 9]
   (`season.ts:416-417`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -635,7 +635,7 @@ table):
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`:305-320`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head and
    structured data, a draft's included (`:112-210`), and a released lesson's listings (`:212-240`).
-   The hook's copies are the ones the site worker rewrites when the console picks the alternative
+   The hook's copies are the ones the site worker rewrites when the console picks an alternative
    hook (`src/lesson-gate.ts:17-19`, `:445-460`); only the meta description and the Article's
    description, which repeat each other, may shorten the hook, and every other copy carries it
    whole. As Lesson 2's head has them (`learn/02.html:9-128`):
@@ -644,8 +644,8 @@ table):
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:325-334`; Hero);
    - the meta description, "How do you land a note you have to leap to? Hear it first, aim at its
      band, and sing do-mi-so-do as a ladder. A free lesson in your browser." (140 characters, inside
-     the test's 80 to 160, `lesson-pages.test.ts:129-132`, and 157 with the alternative hook written
-     in, should the console pick it);
+     the test's 80 to 160, `lesson-pages.test.ts:129-132`, and 157 with the alternative hook that
+     this PR dropped);
    - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear

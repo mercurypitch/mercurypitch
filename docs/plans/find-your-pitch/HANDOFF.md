@@ -114,11 +114,12 @@ are the mobile app's builds. The next `v` tag carries both pages.
    critical path.
 2. **Lesson 4** waits on your go-ahead (held back on 21 October, before the release).
 3. **Hook alternatives that break the copy rules.** Under your rule of 20 October, a changed hook
-   stays in the console as an alternative. Five of them break the copy rules in
+   stayed in the console as an alternative. Five of them broke the copy rules in
    `kit/lesson-copy.ts`'s header: `harder` (Lesson 9), `same-note` (11), `hundreds` (12) and
-   `compelling` (14) each make a claim no source in their FACTS.md supports, and `bright-dark` (10)
-   uses mood labels, which its lesson refutes. Each note says why. Recommended: keep the defaults,
-   and drop any you will not want back.
+   `compelling` (14) each made a claim no source in their FACTS.md supports, and `bright-dark` (10)
+   used mood labels, which its lesson refutes. Decided: you dropped all five on 22 October 2026, and
+   this PR deletes them and their notes. Each lesson keeps its tease, and Lesson 14 its tease
+   alternative `band`.
 4. **"Compelling" in two drafts.** YouTube row 14's title 3 and SEARCH.md § 4's draft title for
    Lesson 14 still use the old hook's word, which no source defines. Your call.
 5. **Lesson 3's hook changed on 22 October** (#1168). It is now "Asked, most students said they
