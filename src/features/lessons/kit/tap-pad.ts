@@ -4,9 +4,10 @@
 //
 // The lessons' pad (Lesson 8 WEB-SPEC, Toys 5): a 64 px button, "Tap" with
 // "or press Space" under it, that takes a tap by the Ear Lab's own rule
-// (src/lib/ear/tap-rule.ts): on pointer down with the primary button, a
-// click arriving a frame or two late, and on Space or Enter, a held key's
-// repeats ignored, each at its event's own `timeStamp` on the page's clock.
+// (src/lib/ear/tap-rule.ts): on pointer down with the primary button, on
+// Space or Enter, a held key's repeats ignored, and on a click that no
+// pointer or key made (a screen reader, a switch, voice control), each at
+// its event's own `timeStamp` on the page's clock.
 // It flashes for 110 ms and keeps `touch-action: manipulation`, so a quick
 // second tap is never read as a zoom.
 //
@@ -16,7 +17,7 @@
 // delay cancels out of a gap, so the reading needs no lining-up. Nothing is
 // stored.
 
-import { keyTap, pointerTap, TAP_FLASH_MS } from '@/lib/ear/tap-rule'
+import { clickTap, keyTap, pointerTap, TAP_FLASH_MS } from '@/lib/ear/tap-rule'
 
 /** Binds `pad` to `onTap`, which hears each tap's page-clock time in ms. */
 export function bindTapPad(
@@ -39,11 +40,25 @@ export function bindTapPad(
     e.preventDefault()
     register(at)
   })
+  // the pad's latest gesture: the click it makes of itself is no second tap
+  let gesture = -Infinity
+  pad.addEventListener('pointerup', (e) => {
+    gesture = e.timeStamp
+  })
+  pad.addEventListener('keyup', (e) => {
+    gesture = e.timeStamp
+  })
   pad.addEventListener('keydown', (e) => {
+    gesture = e.timeStamp
     const at = keyTap(e)
     if (at === null) return
     e.preventDefault()
     if (pad.getAttribute('aria-disabled') !== 'true') register(at)
+  })
+  pad.addEventListener('click', (e) => {
+    const at = clickTap(e, gesture)
+    if (at === null || pad.getAttribute('aria-disabled') === 'true') return
+    register(at)
   })
 }
 

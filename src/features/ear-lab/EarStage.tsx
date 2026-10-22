@@ -19,7 +19,7 @@ import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { EngineContext } from '@/contexts/EngineContext'
 import { activateAudioPlayback, unlockAudio } from '@/lib/audio-unlock'
-import { keyTap, pointerTap, TAP_FLASH_MS } from '@/lib/ear/tap-rule'
+import { clickTap, keyTap, pointerTap, TAP_FLASH_MS } from '@/lib/ear/tap-rule'
 import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from '@/stores/notifications-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
@@ -556,11 +556,14 @@ interface TapPadProps {
 }
 
 /** The rhythm seam's input: one wide pad that takes taps on pointer
- *  down (a click would arrive a frame or two late) and on Space or
- *  Enter, and flashes brass for each. */
+ *  down (a click would arrive a frame or two late), on Space or Enter,
+ *  and on a click no pointer or key made (a screen reader, a switch,
+ *  voice control), and flashes brass for each. */
 export function TapPad(props: TapPadProps): JSX.Element {
   const [hit, setHit] = createSignal(false)
   let flash: ReturnType<typeof setTimeout> | undefined
+  // the pad's latest gesture: the click it makes of itself is no second tap
+  let gesture = -Infinity
   onCleanup(() => clearTimeout(flash))
   const register = (atMs: number) => {
     props.onTap(atMs)
@@ -585,12 +588,23 @@ export function TapPad(props: TapPadProps): JSX.Element {
         event.preventDefault()
         register(at)
       }}
+      onPointerUp={(event) => {
+        gesture = event.timeStamp
+      }}
       onKeyDown={(event) => {
+        gesture = event.timeStamp
         // Space or Enter, a held key's repeats ignored (src/lib/ear/tap-rule.ts).
         const at = keyTap(event)
         if (at === null) return
         event.preventDefault()
         register(at)
+      }}
+      onKeyUp={(event) => {
+        gesture = event.timeStamp
+      }}
+      onClick={(event) => {
+        const at = clickTap(event, gesture)
+        if (at !== null) register(at)
       }}
     >
       <IconTap size={22} />

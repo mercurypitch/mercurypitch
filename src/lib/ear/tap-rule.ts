@@ -9,6 +9,12 @@
 // the event's own `timeStamp`, on the page's clock, not a later
 // performance.now(), so the timing measures the touch and not the render.
 // The pad flashes for TAP_FLASH_MS after each tap.
+//
+// A click with no pointer or key gesture just before it is a tap too: it is
+// how a screen reader activates the pad (VoiceOver's VO+Space, NVDA's Enter
+// in browse mode), and how a switch or voice control does, all of which
+// send the click alone. A click that follows a gesture is that gesture's
+// own echo, already taken.
 
 /** How long a pad flashes after a tap, ms. */
 export const TAP_FLASH_MS = 110
@@ -36,4 +42,24 @@ export function keyTap(event: KeyTapEvent): number | null {
   if (event.repeat) return null
   if (event.key !== ' ' && event.key !== 'Enter') return null
   return event.timeStamp
+}
+
+/** A click this soon after the pad's last pointer up, key down or key up is that gesture's echo, ms. */
+export const CLICK_ECHO_MS = 100
+
+/** The parts of a click the rule reads. */
+export interface ClickTapEvent {
+  readonly timeStamp: number
+}
+
+/**
+ * A click's tap time, ms on the page's clock, or null when it echoes the
+ * gesture at `lastGesture` (the pad's latest pointer up, key down or key
+ * up), which was already a tap.
+ */
+export function clickTap(
+  event: ClickTapEvent,
+  lastGesture: number,
+): number | null {
+  return event.timeStamp - lastGesture < CLICK_ECHO_MS ? null : event.timeStamp
 }
