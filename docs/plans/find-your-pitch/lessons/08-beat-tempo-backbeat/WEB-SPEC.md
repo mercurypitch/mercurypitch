@@ -641,6 +641,11 @@ States:
    - An answer can be changed until the guide next runs, but a guide put away and a rest card
      picked stay so for the visit. The page keeps the ending in memory for the visit, never in
      storage.
+   - The question, its line and Again hide while a guide runs. A guide cut short, by another of
+     the card's controls, a sound elsewhere on the page or leaving the card, asks nothing: the card
+     shows again what it showed before the guide ran, the answer, its line and Again included, and
+     only a guide run to its end counts towards the two. When Again hides as it starts its guide,
+     the keyboard's place moves to the status line, never to a button.
 
 The flow is a pure rule (`lesson-08/sing-flow.ts`), as Lesson 6's is: from the comfort answer, the
 voice, whether Merc's line has been heard, how many guides have run and the latest answer, it
@@ -1078,10 +1083,11 @@ parts:
    before either path, under its first line, and a stored voice starts pressed, under its second
    line, and can be changed; "Just listen today" hides Start the guide and Move do and picks the
    rest card; Start the guide waits for Merc's line heard with sound on; the feeling question
-   follows every guide, asked afresh; "Easy" and "Workable" give "That's it: one line over the
-   backbeat, done." and Again once a visit; "Effortful" and "Uncomfortable" put the guide, Again and
-   Move do away for the visit and pick the rest card, and no later answer brings them back; nothing
-   is written to storage but `fyp-voice`.
+   follows every guide, asked afresh, and hides while one runs; a guide cut short asks nothing and
+   leaves the card as it was, Again included; "Easy" and "Workable" give "That's it: one line over
+   the backbeat, done." and Again once a visit; "Effortful" and "Uncomfortable" put the guide, Again
+   and Move do away for the visit and pick the rest card, and no later answer brings them back;
+   nothing is written to storage but `fyp-voice`.
 9. Move do: clamps at four semitones either way; at 0 the line lies inside every preset of the
    chosen voice, checked against `VOCAL_RANGES` imported from `src/stores/settings-store.ts`
    (FACTS 67); the readouts.

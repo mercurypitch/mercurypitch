@@ -15,10 +15,12 @@
 // and is the page's one sound (kit/now-playing.ts): a press of any of the
 // card's controls while one runs stops it and then acts, and a sound
 // anywhere else on the page stops it too. A line cut short has not been
-// heard, and a guide cut short asks nothing. The status line and the do
-// line under Move do are live regions, so each is written only when its
-// words change. Lesson 3's rule for leaving holds for both parts: off
-// screen for 600 ms, or the page hidden, and whatever plays stops. The
+// heard, and a guide cut short asks nothing: what it hid comes back, Again
+// included. Again hides with the question while its guide runs, so the
+// keyboard's place moves to the status line, never lost. The status line
+// and the do line under Move do are live regions, so each is written only
+// when its words change. Lesson 3's rule for leaving holds for both parts:
+// off screen for 600 ms, or the page hidden, and whatever plays stops. The
 // page has no microphone and scores nothing; only the voice is stored.
 
 import type { Run, Spot } from '@/features/lessons/kit/beat-clock'
@@ -44,10 +46,9 @@ import { HINT, nextState, openState, singView } from './sing-flow'
 import { clampMove, doReadout, lineDo, lineFrom, MOVE_MAX } from './sing-line'
 import { initTake } from './take'
 
-/** The status line while Merc sings, and while the guide runs. */
+/** The status line while Merc sings; the guide's is the flow's (`STATUS.guiding`). */
 export const RUNNING = {
   model: 'Merc sings the line.',
-  guide: 'Your turn: sing with the guide.',
 } as const
 
 /** A sung syllable's length against its beats: room for a repeated note to be heard as two. */
@@ -162,6 +163,8 @@ export function initSing(stills: RingStills): void {
     guide.strip.swing(null, false)
     for (const b of [linePlay, startBtn, againBtn]) b.classList.remove('is-on')
     NowPlaying.release(stopRun)
+    // a guide cut short asks nothing, before whatever stopped it acts
+    if (state.guiding) state = nextState(state, { type: 'guideCut' })
     render()
   }
 
@@ -223,9 +226,9 @@ export function initSing(stills: RingStills): void {
     const r = startRun(false, COLOR.ink)
     const mine = stops
     dispatch({ type: 'guideStart' })
-    feelings.reset()
-    say(statusEl, RUNNING.guide)
     btn.classList.add('is-on')
+    // Again hides with the question it sits under: keep the keyboard's place
+    if (btn.hidden) focusText(statusEl)
     const finished = await r.done
     if (mine !== stops) return
     run = null
@@ -234,9 +237,11 @@ export function initSing(stills: RingStills): void {
     guide.strip.swing(null, false)
     NowPlaying.release(stopRun)
     if (!finished) {
-      render()
+      dispatch({ type: 'guideCut' })
       return
     }
+    // asked afresh, with no answer pressed
+    feelings.reset()
     dispatch({ type: 'guideEnd' })
     focusText(q<HTMLElement>('.feel-q', feelPanel))
   }
