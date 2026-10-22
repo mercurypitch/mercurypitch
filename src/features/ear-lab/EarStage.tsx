@@ -19,6 +19,7 @@ import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { EngineContext } from '@/contexts/EngineContext'
 import { activateAudioPlayback, unlockAudio } from '@/lib/audio-unlock'
+import { keyTap, pointerTap, TAP_FLASH_MS } from '@/lib/ear/tap-rule'
 import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from '@/stores/notifications-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
@@ -565,7 +566,7 @@ export function TapPad(props: TapPadProps): JSX.Element {
     props.onTap(atMs)
     setHit(true)
     clearTimeout(flash)
-    flash = setTimeout(() => setHit(false), 110)
+    flash = setTimeout(() => setHit(false), TAP_FLASH_MS)
   }
   return (
     <button
@@ -579,15 +580,17 @@ export function TapPad(props: TapPadProps): JSX.Element {
       data-testid="ear-tap-pad"
       onPointerDown={(event) => {
         // Secondary mouse buttons are not taps; touch and pen report 0.
-        if (event.button > 0) return
+        const at = pointerTap(event)
+        if (at === null) return
         event.preventDefault()
-        register(event.timeStamp)
+        register(at)
       }}
       onKeyDown={(event) => {
-        if (event.repeat) return
-        if (event.key !== ' ' && event.key !== 'Enter') return
+        // Space or Enter, a held key's repeats ignored (src/lib/ear/tap-rule.ts).
+        const at = keyTap(event)
+        if (at === null) return
         event.preventDefault()
-        register(event.timeStamp)
+        register(at)
       }}
     >
       <IconTap size={22} />
