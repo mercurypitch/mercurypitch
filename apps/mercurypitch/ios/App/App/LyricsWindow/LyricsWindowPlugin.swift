@@ -2,6 +2,7 @@ import AVKit
 import Capacitor
 import Foundation
 import UIKit
+import WebKit
 
 // The Karaoke room's lyrics window on iOS, as the page reaches it: the
 // `PictureInPicture` plugin, the name Android's window answers to as well
@@ -14,6 +15,11 @@ import UIKit
 // The same lyrics and clock go to a TV connected to the phone (TVLyrics.swift),
 // which shows them full screen while a test build's switch is on
 // (`setTvLyrics`), and says when a TV comes and goes (`tvLyricsChange`).
+// A second switch puts the room's whole stage on the TV instead
+// (`setTvStage`, TVStage.swift): a page of its own draws it from the
+// messages the room sends (`pushTvStage`), and says when it goes up and
+// down (`tvStageChange`). A TV shows one or the other, so each switch turns
+// the other off.
 //
 // An app's own plugin is not on Capacitor's package list, so
 // ViewController.capacitorDidLoad() registers this one.
@@ -26,11 +32,15 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setLyrics", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setClock", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setTvLyrics", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "getTvLyrics", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "getTvLyrics", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setTvStage", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getTvStage", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "pushTvStage", returnType: CAPPluginReturnPromise)
     ]
 
     private var window: LyricsWindow?
     private var tv: TVLyrics?
+    private var stage: TVStage?
     private var sessionWatch: AudioSessionWatch?
 
     override public func load() {
@@ -67,7 +77,25 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
                 ])
             }
             self.tv = tv
+            let stage = TVStage { [weak self] in
+                self?.stagePage()
+            }
+            stage.say = { [weak self] message in
+                self?.log("TV stage: \(message)")
+            }
+            stage.changed = { [weak self] connected, showing in
+                self?.notifyListeners("tvStageChange", data: [
+                    "connected": connected,
+                    "showing": showing
+                ])
+            }
+            self.stage = stage
+            // A TV shows one or the other; a tie left from before goes to the stage.
+            if stage.enabled && tv.enabled {
+                tv.setEnabled(false)
+            }
             tv.lookForTV()
+            stage.lookForTV()
             self.sessionWatch = AudioSessionWatch { [weak self] message in
                 self?.sessionLog(message)
             }
@@ -122,10 +150,14 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     /// The switch for the lyrics on a connected TV: on, a TV shows them in
-    /// place of the phone. Kept across launches by TVLyrics.
+    /// place of the phone, and the stage's switch goes off. Kept across
+    /// launches by TVLyrics.
     @objc func setTvLyrics(_ call: CAPPluginCall) {
         let enabled = call.getBool("enabled") ?? false
         DispatchQueue.main.async { [weak self] in
+            if enabled {
+                self?.stage?.setEnabled(false)
+            }
             self?.tv?.setEnabled(enabled)
             call.resolve()
         }
@@ -141,6 +173,62 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
                 "showing": tv?.showing ?? false
             ])
         }
+    }
+
+    /// The switch for the room's stage on a connected TV: on, a TV draws it
+    /// in place of the phone, and the lyrics' switch goes off. Kept across
+    /// launches by TVStage.
+    @objc func setTvStage(_ call: CAPPluginCall) {
+        let enabled = call.getBool("enabled") ?? false
+        DispatchQueue.main.async { [weak self] in
+            if enabled {
+                self?.tv?.setEnabled(false)
+            }
+            self?.stage?.setEnabled(enabled)
+            call.resolve()
+        }
+    }
+
+    /// The stage's switch, and whether a TV is connected and shows the stage.
+    @objc func getTvStage(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [weak self] in
+            let stage = self?.stage
+            call.resolve([
+                "enabled": stage?.enabled ?? false,
+                "connected": stage?.connected ?? false,
+                "showing": stage?.showing ?? false
+            ])
+        }
+    }
+
+    /// One message for the stage, as JSON, which the room sends twenty times
+    /// a second while a TV shows the stage. The stage keeps the newest song
+    /// and frame for a page that is still loading.
+    @objc func pushTvStage(_ call: CAPPluginCall) {
+        let json = call.getString("json")
+        let kind = call.getString("kind") ?? "frame"
+        DispatchQueue.main.async { [weak self] in
+            if let json {
+                self?.stage?.push(json, kind: kind)
+            }
+            call.resolve()
+        }
+    }
+
+    /// The stage page in the app's bundle, under the bridge's own scheme,
+    /// and the bridge's own handler for that scheme to serve it: the same
+    /// files the app is served from, read by a second web view.
+    private func stagePage() -> TVStage.Page? {
+        guard let bridge,
+              let scheme = bridge.config.localURL.scheme,
+              let handler = bridge.webView?.configuration.urlSchemeHandler(forURLScheme: scheme) else {
+            return nil
+        }
+        return TVStage.Page(
+            url: bridge.config.localURL.appendingPathComponent("stage.html"),
+            scheme: scheme,
+            handler: handler
+        )
     }
 
     /// To the page's console, kept until the page listens, and to Xcode's.
