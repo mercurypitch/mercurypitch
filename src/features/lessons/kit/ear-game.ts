@@ -18,17 +18,18 @@
 // never the listener (rule 21). At the end, the count of rounds answered
 // right ("7 of 10"), and nothing else: no rating, no streak, nothing stored.
 //
-// Keys 1 to N answer while the card has focus. Space plays the round again
-// while the focus is anywhere in the card but on a button (the card takes
-// tabindex="-1", so a tap on its text focuses it); a focused button
-// keeps Space and Enter for itself, so a key meant to replay never answers
-// by accident. The answers use aria-disabled, never disabled, so the button
-// a keyboard user just pressed keeps its focus. The page stops a game when
-// the viewer leaves its step (`stop`): the pair sounding, and a miss's
-// replay still to come. On a page that plays one sound at a time, the game
-// claims the page's owner (now-playing.ts) before a pair sounds, and as a
-// miss's replay is booked, so a newer sound anywhere cancels it. Lesson 2's
-// own game (its ear-game.ts) predates this one and keeps its fixed seeds.
+// Keys 1 to N answer while the card has focus, or the page's own `keys`.
+// Space plays the round again while the focus is anywhere in the card but
+// on a button (the card takes tabindex="-1", so a tap on its text focuses
+// it); a focused button keeps Space and Enter for itself, so a key meant to
+// replay never answers by accident. The answers use aria-disabled, never
+// disabled, so the button a keyboard user just pressed keeps its focus.
+// The page stops a game when the viewer leaves its step (`stop`): the pair
+// sounding, and a miss's replay still to come. On a page that plays one
+// sound at a time, the game claims the page's owner (now-playing.ts) before
+// a pair sounds, and as a miss's replay is booked, so a newer sound anywhere
+// cancels it. Lesson 2's own game (its ear-game.ts) predates this one and
+// keeps its fixed seeds.
 
 import { mulberry32, q, qa } from './dom'
 import type { SoundOwner } from './now-playing'
@@ -94,12 +95,17 @@ export function scoreAnswer(
 /** A fresh seed for a run, from Math.random(): kept in memory, never stored. */
 export const freshSeed = (): number => Math.floor(Math.random() * 2 ** 32)
 
-/** The answer a number key gives, or null: "1" is the first of `answers`. */
+/**
+ * The answer a key gives, or null: by default "1" is the first of
+ * `answers`; given `keys`, one key for each answer in their order (Lesson
+ * 8's bars of 2, 3 and 4 answer to the keys 2, 3 and 4).
+ */
 export function keyAnswer<A extends string>(
   key: string,
   answers: readonly A[],
+  keys?: readonly string[],
 ): A | null {
-  const i = Number(key) - 1
+  const i = keys === undefined ? Number(key) - 1 : keys.indexOf(key)
   return Number.isInteger(i) && i >= 0 && i < answers.length ? answers[i] : null
 }
 
@@ -108,8 +114,10 @@ export const slowerBy = (events: readonly EarNote[], by: number): EarNote[] =>
   events.map((e) => ({ midi: e.midi, at: e.at * by, dur: e.dur * by }))
 
 export interface EarGameOptions<A extends string> {
-  /** The answers in key order: key 1 is the first. */
+  /** The answers in key order: key 1 is the first, unless `keys` says otherwise. */
   readonly answers: readonly A[]
+  /** The key for each answer, in their order; "1" to "N" by default. */
+  readonly keys?: readonly string[]
   /** A game's rounds, dealt from a seeded generator. */
   readonly deal: (random: () => number) => readonly EarRound<A>[]
   /**
@@ -262,7 +270,7 @@ export function mountEarGame<A extends string>(
 
   root.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return
-    const a = keyAnswer(e.key, o.answers)
+    const a = keyAnswer(e.key, o.answers, o.keys)
     if (a !== null) {
       e.preventDefault()
       answer(a)

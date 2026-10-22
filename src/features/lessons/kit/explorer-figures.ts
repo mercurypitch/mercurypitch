@@ -17,10 +17,14 @@ import { Motion, reducedMotion } from './motion-switch'
 import { COLOR } from './notes'
 import type { Lesson } from './season'
 
-/** The metronome as SVG markup; one per page at a time (its gradient has a fixed id). */
-export function metronomeSVG(): string {
-  return `<svg class="metro" viewBox="0 0 170 220" aria-hidden="true"><defs><linearGradient id="mt-body" x1="0" x2="1"><stop offset="0" stop-color="#1b2430"/><stop offset=".45" stop-color="#5b6b7b"/><stop offset=".55" stop-color="#43505f"/><stop offset="1" stop-color="#151c26"/></linearGradient></defs>
-  <path d="M30 212 L140 212 L112 22 Q85 10 58 22 Z" fill="url(#mt-body)" stroke="rgba(195,204,214,.35)"/>
+/**
+ * The metronome as SVG markup. Its body's gradient takes `id`, so a page
+ * that shows several (Lesson 8's stage, hero, guide and free play, beside
+ * the explorer card's) gives each copy its own; the card's keeps "mt-body".
+ */
+export function metronomeSVG(id = 'mt-body'): string {
+  return `<svg class="metro" viewBox="0 0 170 220" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="#1b2430"/><stop offset=".45" stop-color="#5b6b7b"/><stop offset=".55" stop-color="#43505f"/><stop offset="1" stop-color="#151c26"/></linearGradient></defs>
+  <path d="M30 212 L140 212 L112 22 Q85 10 58 22 Z" fill="url(#${id})" stroke="rgba(195,204,214,.35)"/>
   <path d="M52 186 L118 186 L101 44 Q85 36 69 44 Z" fill="#0a0d12" stroke="rgba(195,204,214,.18)"/>
   ${Array.from({ length: 9 }, (_, i) => `<line x1="${78 - i * 0.9}" x2="${92 + i * 0.9}" y1="${60 + i * 14}" y2="${60 + i * 14}" stroke="rgba(195,204,214,.25)"/>`).join('')}
   <g class="arm"><line x1="85" y1="186" x2="85" y2="34" stroke="#f4f8fd" stroke-width="3" stroke-linecap="round"/><path d="M77 70 h16 l-3 14 h-10 z" fill="#58a6ff" stroke="#a8cfff"/></g>

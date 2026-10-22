@@ -16,9 +16,8 @@
 
 import type { QuizQuestion } from '@/features/lessons/kit/quiz'
 
-/** A recall link's address: the lesson's own page, open at the step (`/learn/03#step-4`). */
-export const recallStepHref = (lesson: number, step: number): string =>
-  `/learn/${String(lesson).padStart(2, '0')}#step-${step}`
+// A recall link's address, the lesson's own page open at the step: the kit's.
+export { recallStepHref } from '@/features/lessons/kit/quiz'
 
 const step = (n: number): string =>
   `<a href="#step-${n}" data-goto-step="${n}">Try Step ${n} again</a>.`

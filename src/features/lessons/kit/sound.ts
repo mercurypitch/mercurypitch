@@ -82,6 +82,8 @@ let hushed = false
 const waves: { soft?: PeriodicWave; merc?: PeriodicWave } = {}
 const listeners = new Set<(s: SoundState) => void>()
 const live = new Set<Voice>()
+// What else stops with every voice (`onStopAll`): kit/sound-ahead.ts's buses.
+const stoppers = new Set<() => void>()
 
 function periodicWave(context: AudioContext, amps: number[]): PeriodicWave {
   const real = new Float32Array(amps.length + 1)
@@ -131,6 +133,7 @@ function emit(): void {
 
 function stopAll(): void {
   live.forEach((v) => v.stop(0.06))
+  stoppers.forEach((fn) => fn())
 }
 
 /** Exponential rise from the floor to `peak`, as the house envelopes do. */
@@ -377,9 +380,17 @@ function pluck(freq: number, gain = 0.3): void {
   })
 }
 
-function tick(freq = 1500, gain = 0.09): void {
+/** When a tick sounds, and where it goes. */
+export interface TickOptions {
+  /** A time on the audio clock (default now): a beat the beat clock booked ahead. */
+  readonly when?: number
+  /** A bus of the caller's (kit/sound-ahead.ts, `openBus`), in place of the master. */
+  readonly to?: AudioNode
+}
+
+function tick(freq = 1500, gain = 0.09, o: TickOptions = {}): void {
   if (ctx === null || master === null || state !== 'on' || hushed) return
-  const t = ctx.currentTime
+  const t = Math.max(ctx.currentTime, o.when ?? 0)
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
   osc.type = 'sine'
@@ -387,7 +398,7 @@ function tick(freq = 1500, gain = 0.09): void {
   rise(g.gain, t, gain, 0.003)
   g.gain.exponentialRampToValueAtTime(FLOOR, t + 0.07)
   osc.connect(g)
-  g.connect(master)
+  g.connect(o.to ?? master)
   osc.start(t)
   osc.stop(t + 0.1)
 }
@@ -464,6 +475,27 @@ export function playNoise(o: NoiseOptions): void {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopAll()
 })
+
+// The parts kit/sound-ahead.ts books ahead with. Only Lesson 8 imports that
+// module, so its buses and notes stay off every other lesson's first paint.
+
+/** The context and the master while sound is on and no take is open; null otherwise. */
+export function openMaster(): {
+  context: AudioContext
+  master: GainNode
+} | null {
+  return ctx !== null && master !== null && state === 'on' && !hushed
+    ? { context: ctx, master }
+    : null
+}
+
+/** Calls `fn` each time every sound stops: the Sound switch turned off, the hush, a hidden page. */
+export function onStopAll(fn: () => void): void {
+  stoppers.add(fn)
+}
+
+export type { Graph, Live }
+export { build, handleOf, SLACK, stopParts }
 
 export const Sound = {
   get state(): SoundState {

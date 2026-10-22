@@ -38,7 +38,10 @@
 // the page's script (src/features/lessons/kit/page-state.ts), so both stay
 // in the build: `lessonStatesPlugin` checks each and marks `hidden` the one
 // that is false under the build's defaults, so a page no worker served
-// reads correctly before its script runs, or without it.
+// reads correctly before its script runs, or without it. A whole block that
+// only one state should show sits in a `<div data-if-live="6">` (Lesson 8's
+// recall of Lesson 6): the worker and the script keep its content or take
+// it all out, and the build marks its opening tag.
 
 import { existsSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -125,8 +128,13 @@ export function lessonPaths(root: string): string[] {
 const STATE_SPAN =
   /<span\s+data-if-(live|planned)="(\d{1,2})"\s*>([\s\S]*?)<\/span\s*>/g
 
+// A block one lesson's state keeps or leaves out whole: a div whose opening
+// tag holds the one attribute. Its content may be any markup, since only
+// that tag is marked; the worker and the script settle the element itself.
+const STATE_BLOCK = /<div\s+data-if-(live|planned)="(\d{1,2})"\s*>/g
+
 // Any element that writes a reading, as the worker and the page's script
-// select it: the span above is the only form this allows.
+// select it: the span and the block above are the only forms this allows.
 const ANY_READING = /<([a-z][a-z0-9-]*)\b[^>]*\bdata-if-(?:live|planned)\b/gi
 
 /**
@@ -140,7 +148,7 @@ export function markLessonStates(
   live: readonly number[],
 ): string {
   let spans = 0
-  const marked = html.replace(
+  const inline = html.replace(
     STATE_SPAN,
     (_all: string, state: string, n: string, inner: string) => {
       if (inner.includes('<span'))
@@ -152,10 +160,18 @@ export function markLessonStates(
       return `<span data-if-${state}="${n}"${holds ? '' : ' hidden'}>${inner}</span>`
     },
   )
+  const marked = inline.replace(
+    STATE_BLOCK,
+    (_all: string, state: string, n: string) => {
+      spans += 1
+      const holds = live.includes(Number(n)) === (state === 'live')
+      return `<div data-if-${state}="${n}"${holds ? '' : ' hidden'}>`
+    },
+  )
   const readings = [...html.matchAll(ANY_READING)]
   if (readings.length !== spans)
     throw new Error(
-      'A data-if-live or data-if-planned reading must be `<span data-if-live="N">` with that one attribute and a lesson number of one or two digits.',
+      'A data-if-live or data-if-planned reading must be `<span data-if-live="N">`, or a `<div data-if-live="N">` round a block, with that one attribute and a lesson number of one or two digits.',
     )
   return marked
 }

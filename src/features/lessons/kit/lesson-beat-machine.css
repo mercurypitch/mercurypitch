@@ -1,0 +1,507 @@
+/* ============================================================
+   Beat machine — the metronome, the beat row, the grid, the strip and the pad
+   ============================================================
+
+   kit/beat-machine.ts places every part of the figure where
+   kit/beat-layout.ts puts it for the state, and the part glides there:
+   the morph is each box's left, top, width and height, 0.6 s on the
+   kit's expoOut, never under reduced motion or Pause animations. The
+   cells are buttons on a layer over the figure that comes after the
+   controls in reading order, as the tune line's beads do
+   (lesson-tune-line.css): the toy is a one-column grid, and the figure and
+   the layer share one row. The figure's height is the page's to set.
+
+   Gold marks only the backbeat; the sounding beat is ink, lit; the drums,
+   the cells and the metronome are chrome (Lesson 8 WEB-SPEC, Look). */
+
+/* ---------------------------------------------------------------- the toy's rows */
+.toy.bm-toy.is-active,
+.bm-toy.free-play {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.bm-toy > * {
+  grid-column: 1;
+  min-width: 0;
+}
+.bm-toy > .eyebrow {
+  grid-row: 1;
+}
+.bm-toy > .bm,
+.bm-toy > .bm-hits {
+  grid-row: 2;
+}
+.bm-hits {
+  position: relative;
+  margin: 1px;
+  z-index: 1;
+  touch-action: pan-y;
+  pointer-events: none;
+}
+@media (max-width: 960px) {
+  .bm-toy > .bm-hits {
+    margin: 1px -12px;
+  }
+}
+.bm-toy [data-bm-for][hidden] {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- the figure */
+.bm .bm-visual {
+  position: absolute;
+  inset: 0;
+}
+.bm-part {
+  position: absolute;
+  margin: 0;
+  box-sizing: border-box;
+}
+.bm.bm-ready .bm-part,
+.bm-hits .bm-cell {
+  transition:
+    left 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    top 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.45s var(--ease),
+    visibility 0s linear 0s;
+}
+.motion-paused .bm .bm-part,
+.motion-paused .bm-hits .bm-cell,
+.motion-paused .strip .clap {
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bm .bm-part,
+  .bm-hits .bm-cell,
+  .strip .clap {
+    transition: none !important;
+  }
+}
+.bm-metro svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* the arm follows the beat clock, never the explorer card's CSS swing */
+.bm .metro .arm,
+.strip .metro .arm {
+  animation: none;
+}
+.bm-lamp,
+.strip-lamp {
+  border-radius: 50%;
+  background: rgba(195, 204, 214, 0.16);
+  box-shadow: inset 0 0 0 1px var(--hair-2);
+}
+.bm-lamp.is-lit,
+.strip-lamp.is-lit {
+  background: var(--ink);
+  box-shadow: 0 0 14px rgba(230, 237, 243, 0.7);
+}
+.bm[data-state='bars'] .bm-lamp,
+.bm[data-state='grid'] .bm-lamp,
+.bm[data-state='patterns'] .bm-lamp,
+.bm[data-state='free'] .bm-lamp {
+  opacity: 0;
+}
+/* the pads: the bars state's row, the grid's number strip */
+.bm-pad {
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--hair-2);
+  background: rgba(195, 204, 214, 0.05);
+  color: var(--chrome);
+  font: 600 var(--fs-22) / 1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+.bm-pad.one {
+  font-size: var(--fs-30);
+}
+.bm-pad.is-now {
+  color: var(--obsidian);
+  background: var(--ink);
+  border-color: var(--ink);
+  box-shadow: 0 0 18px rgba(230, 237, 243, 0.45);
+}
+.bm[data-state='metronome'] .bm-pad,
+.bm[data-state='tempo'] .bm-pad {
+  opacity: 0;
+  font-size: 0;
+}
+.bm[data-state='grid'] .bm-pad,
+.bm[data-state='patterns'] .bm-pad,
+.bm[data-state='free'] .bm-pad {
+  border-color: transparent;
+  background: transparent;
+  font: 600 var(--fs-14) / 1 var(--f-mono);
+}
+.bm[data-state='grid'] .bm-pad.one,
+.bm[data-state='patterns'] .bm-pad.one,
+.bm[data-state='free'] .bm-pad.one {
+  font-size: var(--fs-18);
+}
+.bm[data-state='grid'] .bm-pad.is-now,
+.bm[data-state='patterns'] .bm-pad.is-now,
+.bm[data-state='free'] .bm-pad.is-now {
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+  text-shadow: 0 0 10px rgba(230, 237, 243, 0.8);
+}
+.bm .bm-pad.gold {
+  color: var(--gold);
+}
+/* under a 182 px figure the numbers sit in their column's first cell's corner */
+.bm[data-compact='true'] .bm-pad {
+  font-size: var(--fs-12) !important;
+  justify-items: start;
+}
+.bm-label {
+  display: flex;
+  align-items: center;
+  color: var(--ink-3);
+  font: 500 var(--fs-12) / 1.2 var(--f-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.bm[data-state='metronome'] .bm-label,
+.bm[data-state='tempo'] .bm-label,
+.bm[data-state='bars'] .bm-label {
+  opacity: 0;
+}
+/* the small metronome folds away where the compact grid needs its corner */
+.bm[data-compact='true'][data-state='grid'] .bm-metro,
+.bm[data-compact='true'][data-state='patterns'] .bm-metro,
+.bm[data-compact='true'][data-state='free'] .bm-metro {
+  opacity: 0;
+}
+/* the readouts: the tempo and the taps beside the tall metronome */
+.bm-read {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  display: grid;
+  gap: 14px;
+  max-width: 52%;
+  pointer-events: none;
+}
+.bm-read .ro {
+  margin: 0;
+}
+.bm-ro-taps .v {
+  font-size: var(--fs-18);
+}
+.bm:not([data-state='tempo']):not([data-state='free']) .bm-ro-taps {
+  display: none;
+}
+.bm[data-state='bars'] .bm-read,
+.bm[data-state='grid'] .bm-read,
+.bm[data-state='patterns'] .bm-read {
+  display: none;
+}
+.bm[data-state='free'] .bm-ro-tempo {
+  display: none;
+}
+.bm[data-state='free'] .bm-read {
+  left: auto;
+  right: 14px;
+  top: auto;
+  bottom: 6px;
+  max-width: 45%;
+  gap: 0;
+  text-align: right;
+}
+.bm[data-state='free'][data-compact='true'] .bm-read {
+  display: none;
+}
+.bm-ro-line {
+  position: absolute;
+  margin: 0;
+  text-align: right;
+  color: var(--ink-2);
+  font: 500 var(--fs-12) / 18px var(--f-mono);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.bm[data-compact='true'][data-state='grid'] .bm-ro-line,
+.bm[data-compact='true'][data-state='patterns'] .bm-ro-line,
+.bm[data-compact='true'][data-state='free'] .bm-ro-line,
+.bm[data-state='metronome'] .bm-ro-line,
+.bm[data-state='tempo'] .bm-ro-line {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------- the cells */
+.bm-cell {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--hair-2);
+  background: rgba(195, 204, 214, 0.04);
+  color: var(--chrome);
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.bm-cell:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .bm-cell:not(:disabled):hover {
+    background: rgba(195, 204, 214, 0.1);
+  }
+}
+.bm-cell[hidden] {
+  display: none;
+}
+.bm-cell:disabled {
+  cursor: default;
+  color: var(--chrome);
+}
+.bm-cell.is-now {
+  border-color: var(--ink);
+  background: rgba(230, 237, 243, 0.12);
+}
+/* a hit: a dot for the kick and the clap, two ticks for the hi-hat's halves */
+.bm-cell .mk {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--hair-3);
+}
+.bm-cell[aria-pressed='true'] .mk {
+  border-color: var(--chrome);
+  background: var(--chrome);
+}
+.bm-kick[aria-pressed='true'] .mk {
+  width: 18px;
+  height: 18px;
+}
+/* March's accented kick is larger and carries an accent sign, > */
+.bm-cell.acc .mk {
+  width: 24px;
+  height: 24px;
+  position: relative;
+}
+.bm-cell.acc::after {
+  content: '>';
+  position: absolute;
+  top: 3px;
+  right: 7px;
+  font: 700 var(--fs-14) / 1 var(--f-mono);
+  color: var(--chrome);
+}
+.bm-cell.gold .mk {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+.bm-cell.is-now[aria-pressed='true'] .mk {
+  box-shadow: 0 0 12px rgba(230, 237, 243, 0.6);
+}
+.bm-cell .tk {
+  display: none;
+}
+.bm-cell[aria-pressed='true'] .tk {
+  display: block;
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--chrome);
+}
+.bm-cell[aria-pressed='true'] {
+  grid-auto-flow: column;
+  justify-content: center;
+  gap: 12px;
+}
+.bm-cell[aria-pressed='false'] .tk:first-child {
+  display: block;
+  width: 10px;
+  height: 2px;
+  background: var(--hair-3);
+}
+.bm-hits[data-state='metronome'] .bm-cell,
+.bm-hits[data-state='tempo'] .bm-cell,
+.bm-hits[data-state='bars'] .bm-cell {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s var(--ease),
+    visibility 0s linear 0.3s;
+}
+
+/* ---------------------------------------------------------------- the tap pad */
+.tap-pad {
+  flex: 1 1 180px;
+  min-height: 64px;
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  padding: 8px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair-2);
+  background: rgba(195, 204, 214, 0.06);
+  color: var(--ink);
+  font: 600 var(--fs-18) / 1.1 var(--f-display);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.tap-pad small {
+  color: var(--ink-3);
+  font: 500 var(--fs-12) / 1.2 var(--f-mono);
+  letter-spacing: 0.08em;
+}
+.tap-pad:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+.tap-pad.is-hit {
+  background: rgba(230, 237, 243, 0.22);
+  border-color: var(--ink);
+}
+.tap-pad[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+/* ---------------------------------------------------------------- the strip */
+.strip {
+  --metro-col: 0px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.strip.with-metro {
+  --metro-col: 44px;
+}
+.strip-row {
+  --gap: 4px;
+  --col: calc((100% - var(--metro-col) - var(--gap) * var(--n)) / var(--n));
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--metro-col) repeat(var(--n), minmax(0, 1fr));
+  grid-template-rows: auto auto 12px;
+  column-gap: var(--gap);
+  row-gap: 3px;
+}
+.strip:not(.with-metro) .strip-row {
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  column-gap: var(--gap);
+}
+.strip.with-metro .strip-row > .strip-nums,
+.strip.with-metro .strip-row > .strip-cells,
+.strip.with-metro .strip-row > .strip-marks {
+  grid-column: 2 / -1;
+}
+.strip-metro {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+}
+.strip-metro svg {
+  width: 34px;
+  height: 44px;
+}
+.strip-lamp {
+  width: 8px;
+  height: 8px;
+}
+.strip-nums,
+.strip-cells {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  column-gap: var(--gap);
+}
+.strip:not(.with-metro) .strip-nums,
+.strip:not(.with-metro) .strip-cells,
+.strip:not(.with-metro) .strip-marks {
+  grid-column: 1 / -1;
+}
+.strip-nums span {
+  text-align: center;
+  color: var(--ink-3);
+  font: 600 var(--fs-12) / 1 var(--f-mono);
+}
+.strip.accented .strip-nums .one {
+  color: var(--ink);
+  font-size: var(--fs-16);
+}
+.strip.backbeat .strip-nums .bb {
+  color: var(--gold);
+}
+.strip-cells .sc {
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--hair);
+  background: rgba(195, 204, 214, 0.04);
+  color: var(--ink-2);
+  font: 500 var(--fs-12) / 1 var(--f-ui);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.strip-cells .sc.is-lit {
+  color: var(--obsidian);
+  background: var(--lit, var(--ink));
+  border-color: var(--lit, var(--ink));
+}
+.strip-cells .sc.target {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+.strip-marks {
+  position: relative;
+  height: 12px;
+}
+.strip-marks i {
+  position: absolute;
+  top: 2px;
+  left: calc(
+    var(--at) * (100% + var(--gap)) / var(--n) +
+      (100% - var(--gap) * (var(--n) - 1)) / var(--n) / 2 - 4px
+  );
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.strip .clap {
+  background: var(--chrome);
+  transition-property: left, background-color;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.strip .clap.gold {
+  background: var(--gold);
+}
+.strip .clap.ghost {
+  background: transparent;
+  border: 1px dashed var(--ink-2);
+  opacity: 0.7;
+}
+.strip .tick {
+  top: 0;
+  width: 2px;
+  height: 12px;
+  margin-left: 3px;
+  border-radius: 1px;
+  background: var(--chrome);
+}
+.strip .tick.gold {
+  background: var(--gold);
+}

@@ -185,6 +185,22 @@ describe("a page's words about which lessons are ready", () => {
     )
   })
 
+  it("marks a block's opening tag hidden while its lesson's state is false, whatever the block holds", () => {
+    // Arrange: Lesson 8's recall of Lesson 6, a section in a block
+    const html =
+      '<div data-if-live="6">\n  <section id="recall"><span>Done Lesson 6?</span></section>\n</div>'
+
+    // Act
+    const live = markLessonStates(html, [1, 2, 6])
+    const planned = markLessonStates(html, [1, 2])
+
+    // Assert
+    expect(live).toBe(html)
+    expect(planned).toBe(
+      html.replace('<div data-if-live="6">', '<div data-if-live="6" hidden>'),
+    )
+  })
+
   it('refuses a reading that holds a span of its own, which would end it early', () => {
     const nested = '<span data-if-live="3">a <span>b</span> c</span>'
 
@@ -196,6 +212,8 @@ describe("a page's words about which lessons are ready", () => {
       '<span data-if-live="3" class="x">a</span>',
       '<span data-if-live="123">a</span>',
       '<b data-if-planned="3">a</b>',
+      '<div data-if-live="3" class="x">a</div>',
+      '<section data-if-live="3">a</section>',
       '<span data-if-live="3" hidden>a</span>',
     ])
       expect(() => markLessonStates(odd, [3]), odd).toThrow(/one attribute/)

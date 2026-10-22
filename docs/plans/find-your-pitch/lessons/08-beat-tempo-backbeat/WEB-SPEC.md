@@ -232,7 +232,7 @@ recall and quiz questions, 60 s (FACTS 4).
 
 | Toy                       | Reuses                                                                                                                                                                                                                                                                                      | New in Lesson 8                                                                                                                                                   |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. The beat machine       | The kit's metronome drawing (`kit/explorer-figures.ts:20-28`), sound (`kit/sound.ts`), frame loop, step deck and stage fit; the app's drum voices (`src/lib/drum-voices.ts`); the stats site's arm angle (`research/stats-snippets/instrument-figures.js:103-104`)                          | The beat clock; the metronome on the stage; the beat row with Bars; the beat grid with Kick, Clap and Hi-hat; Rock and March; Tempo; the morph; the compact state |
+| 1. The beat machine       | The kit's metronome drawing (`kit/explorer-figures.ts:20-32`), sound (`kit/sound.ts`), frame loop, step deck and stage fit; the app's drum voices (`src/lib/drum-voices.ts`); the stats site's arm angle (`research/stats-snippets/instrument-figures.js:103-104`)                          | The beat clock; the metronome on the stage; the beat row with Bars; the beat grid with Kick, Clap and Hi-hat; Rock and March; Tempo; the morph; the compact state |
 | 2. Predict widgets        | The kit's predict (`kit/predict.ts`), with a free play before the choice and a reveal after both of two plays                                                                                                                                                                               | Nothing                                                                                                                                                           |
 | 3. Four words             | The words strip of Lessons 1 to 3, a ticket per word with its figure and play button (`lesson-03/words.ts`)                                                                                                                                                                                 | Four new figures                                                                                                                                                  |
 | 4. Count the bar          | The kit's ear game (`kit/ear-game.ts`, on #1149): Lesson 2's Semitone or tone? promoted and generalised to N answers                                                                                                                                                                        | Three answers, 2, 3 and 4, on the keys 2, 3 and 4 (a key per answer, new in the kit); the clicks as the game's notes                                              |
@@ -258,10 +258,10 @@ its patterns with it.
   and right in turn, and crosses the middle halfway between (FACTS 12, 59). The click sounds as the
   arm reaches a side, and the lamp lights for 120 ms. The arm's motion is drawn from the audio clock
   on the kit's frame loop, never from the CSS swing the explorer card uses
-  (`lesson-sections.css:878-889`). The kit's drawing has a fixed gradient id, one per page
-  (`explorer-figures.ts:20`), and this page shows up to four metronomes (the stage, the hero, the
-  guide and free play, beside the explorer card's), so it needs `metronomeSVG(id)` with an id per
-  copy (What the kit and the app still need).
+  (`lesson-sections.css:878-889`). The kit's drawing had one fixed gradient id, so one copy a page,
+  and this page shows up to four metronomes (the stage, the hero, the guide and free play, beside
+  the explorer card's), so `metronomeSVG(id)` takes an id per copy (`kit/explorer-figures.ts:20-32`;
+  What the kit and the app still need, item 6).
 - **The beat row** (Step 3): the signature move. On entering Step 3 the metronome slides into the
   figure's top-left corner, shrinking to 44 px, and its lamp unrolls into a row of pads, one per
   beat of a bar, numbered 1 to N, beat 1's number larger: the arm becomes the beat grid's first
@@ -366,7 +366,7 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   toy the new step and the one before (`kit/step-deck.ts:157`): Next and Previous (`:195-204`), a
   swipe (`:206-229`), scrolling another step into view on the wide page (`:184-193`), the lesson
   menu's jump (`:259-262`, called at `kit/lesson-menu.ts:499`), a `#step-N` address
-  (`kit/step-deck.ts:241-248`, `:269-276`) and a quiz's step link (`kit/quiz.ts:320`, `:325`). The
+  (`kit/step-deck.ts:241-248`, `:269-276`) and a quiz's step link (`kit/quiz.ts:324`, `:329`). The
   page registers one toy (`registerToy`, `kit/step-deck.ts:86-90`), as `lesson-03/main.ts:80-87`
   does, whose `onStep(step, previous)` (`kit/step-deck.ts:39-41`) stops the stage, Count the bar and
   Step 5's predict plays whenever the two differ; a layout change that shows the same step again
@@ -438,27 +438,28 @@ DECISIONS 82).
 
 - **A round** plays two bars and the next bar's first beat at 90 BPM, only beat 1 on the high click,
   so the bar's size is heard from the high clicks alone (FACTS 16, 19, 77): 5, 7 or 9 clicks. The
-  game hands a round's events to the page's own `play` (`kit/ear-game.ts:108-109`) as `EarNote`s,
-  each a `midi`, an `at` and a `dur` (`:29-34`), so each click travels as one: `midi` 90 for the
+  game hands a round's events to the page's own `play` (`kit/ear-game.ts:123-129`) as `EarNote`s,
+  each a `midi`, an `at` and a `dur` (`:37-42`), so each click travels as one: `midi` 90 for the
   high click and 83 for the plain one, the MIDI notes nearest 1,500 and 1,000 Hz, `at` its beat's
   time and `dur` 0.07 s. The page's `play` sounds the kit's tick at 1,500 or 1,000 Hz for each
   (FACTS 74), on the beat clock (Audio), and returns the run as the game's `EarPlaying`, its `done`
-  and its `stop` (`:44-48`). A missed round plays again with `slower: 1.5`, every onset and length
-  half as long again (`slowerBy`, `:99-101`), so at 60 BPM. The answers are three buttons side by
+  and its `stop` (`:52-56`). A missed round plays again with `slower: 1.5`, every onset and length
+  half as long again (`slowerBy`, `:112-114`), so at 60 BPM. The answers are three buttons side by
   side, "2", "3" and "4", each at least 44 px tall, named "Bars of 2" and so on; the number keys 2,
-  3 and 4 answer while the game has focus. The kit's game maps key 1 to the first answer
-  (`keyAnswer`, `:90-97`), so here key 2 would answer "3": it needs a key per answer, which this
-  page asks of the kit (What the kit and the app still need). Space replays the round while the
+  3 and 4 answer while the game has focus. The kit's game maps key 1 to the first answer, so here
+  key 2 would answer "3": it takes a key per answer instead, its `keys` option, which this page
+  brought to the kit (`keyAnswer`, `:98-110`; `keys`, `:119-120`; What the kit and the app still
+  need, item 16). Space replays the round while the
   focus is anywhere in the game but on a button; on a focused button Space and Enter press it, as on
   any button, and the game's Play button replays the round while it waits for an answer
-  (`:163-168`). The answers use `aria-disabled`, never `disabled`, so a keyboard user's focus stays
-  put, as the kit's game has it (`:19-25`).
+  (`:202-207`). The answers use `aria-disabled`, never `disabled`, so a keyboard user's focus stays
+  put, as the kit's game has it (`:25-26`).
 - **Feedback** names the bar and the sound, never the listener, in one template per size, each
   round's `words`: "Bars of 2: the high click came back every other beat, 1 2, 1 2."; "Bars of 3:
   the high click came back every third beat, 1 2 3, 1 2 3."; "Bars of 4: the high click came back
   every fourth beat, 1 2 3 4." The kit's game puts "Yes." before a right answer's line and "Here it
-  is again, slower." before a miss's (`:194-196`). A miss lights the right answer, reads its line
-  and replays the round at 60 BPM, 700 ms later (`:210-215`); the round is not asked again, and Next
+  is again, slower." before a miss's (`:233-235`). A miss lights the right answer, reads its line
+  and replays the round at 60 BPM, 700 ms later (`:249-257`); the round is not asked again, and Next
   moves on. After two misses in a row the playbook's line "If that felt tricky, good: that's
   learning." follows, once a game (rule 15). A polite live region reads each line.
 - **Rounds**: six, each size twice, shuffled with no size twice running, from a seeded sequence:
@@ -467,9 +468,9 @@ DECISIONS 82).
 - **The count** at the end, "5 of 6", counts the rounds answered right first time; no rating, no
   streak, nothing stored. Then Play again.
 - **Leaving Step 3**, by any route, stops the round's sound and a miss's replay still waiting out
-  its 700 ms (Toys 1, States). The kit's game keeps that replay on a timer and gives the page
-  nothing to stop it with (`kit/ear-game.ts:123-127`, `:139`); #1149's fix pass gives it a stop that
-  clears the timer as well as the sound, and this page calls it on every step change.
+  its 700 ms (Toys 1, States). The kit's game keeps that replay on a timer, and since #1149's fix
+  pass its `stop` clears the timer as well as the sound (`kit/ear-game.ts:145-149`); this page calls
+  it on every step change.
 - States: ready (a Play button); playing; answering; feedback shown; finished, with the count and
   Play again. Under reduced motion the answer lights and the line appear with no transition.
 
@@ -552,7 +553,7 @@ the page is hidden, whatever is playing stops (`lesson-03/sing.ts:366-382`).
 - **Stopping.** Stop, or leaving the card or the page, ends the take with no line: "Stopped. Press
   Start to tap again."
 - **Sound off.** The take needs the groove: with sound off, Start shows the kit's toast
-  (`kit/sound.ts:478-490`, `canPlay`) and does not start, and the status reads "Sound is off, so
+  (`kit/sound.ts:510-522`, `canPlay`) and does not start, and the status reads "Sound is off, so
   the take didn't start. Turn sound on, then press Start." With no Web Audio at all, Start and Play
   the groove are `aria-disabled`, with "This browser can't play the page's sounds, so the take
   can't run."
@@ -636,12 +637,12 @@ another, which is the guide in either case, and the still stays still.
 
 ### 7. Recall and quick check
 
-Two quizzes share this page through the kit's quiz (`kit/quiz.ts`, `createQuiz` at `:201`), with
+Two quizzes share this page through the kit's quiz (`kit/quiz.ts`, `createQuiz` at `:205`), with
 the options it already has (`:73-97`): an id prefix for each quiz's elements; `lesson` optional; a
 question `id`, the telemetry's `question_id`; and a question from another lesson linking "Try Lesson
-M, Step N again" in a new tab, through `away` (`:87-94`, `linkAway` at `:174-199`). While that
+M, Step N again" in a new tab, through `away` (`:87-94`, `linkAway` at `:178-203`). While that
 lesson is not live where the page is served, the words stay with no link, which would lead to the
-404 page (`:18-20`, `:180`, `:189-192`).
+404 page (`:18-20`, `:184`, `:193-196`).
 
 - **Recall**: Lesson 6's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 3):
   the very question objects Lesson 6's page asks, imported from `lesson-06/quiz-questions.ts` and
@@ -667,18 +668,22 @@ lesson is not live where the page is served, the words stay with no link, which 
   `<div data-if-live="6">`. Where Lesson 6 is not live, the site worker takes out the wrapper and
   the section in it (`src/lesson-gate.ts:20-21`), and on a page no worker served `followPageState`
   does the same as the page boots (`kit/page-state.ts:84-108`, run first in `initMasthead`,
-  `kit/page-chrome.ts:111`); where it is live, the wrapper goes and the section stays. So
+  `kit/page-chrome.ts:111`); where it is live, the wrapper goes and the section stays. The build
+  marks the wrapper's tag `hidden` where its build's default holds Lesson 6 back, as it marks a
+  reading's span, so a page no worker served reads right before its script runs: this page taught
+  the build's marker that `<div>` form (`tools/draft-lessons.ts:134`, in `markLessonStates`,
+  `:146-177`), where it took only spans and threw on any other reading. So
   `recall.ts` returns at once when `#recall` is absent, before any `q` call, since `q` throws on a
   missing element (`kit/dom.ts:13-19`); and the page calls it after `initMasthead`, where Lesson 3
   calls its recall first (`lesson-03/main.ts:56`, `:104`), so that it never mounts a quiz the page
   then takes away. Nothing then invites the viewer to answer questions on a lesson the explorer
   calls "Coming later", and the step links' fallback, their words with no link
-  (`kit/quiz.ts:174-199`), is never shown.
+  (`kit/quiz.ts:178-203`), is never shown.
 - **Quick check**: LESSON.md's four questions, ids `l08-q1` to `l08-q4`, keys `fyp-l08-seed` and
   `fyp-l08-quiz-v1`, and `lesson: 8`, so answering all four marks Lesson 8 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:274`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:278`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 2's slot holds its play button, two bars of 3 and the next first beat, seven
   clicks, 4.0 s (FACTS 77), named "Play two bars"; the kit keeps a slot's controls across answers,
   and the page handles them with a listener on the quiz's `host`. "Try Step 2 again" to "Try Step
@@ -725,7 +730,7 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
   Each run plays into its own gain node on the kit's master bus, so Stop fades that node out over 30
   ms and drops it, and any hit already scheduled goes silent with it. The frame loop runs on
   `requestAnimationFrame`, which a hidden tab pauses, and the kit stops every sound when the page is
-  hidden (`kit/sound.ts:464-466`), so a hidden page plays nothing.
+  hidden (`kit/sound.ts:475-477`), so a hidden page plays nothing.
 - **The two clocks.** The beat clock maps an audio-clock time to the page's clock with
   `getOutputTimestamp()` (FACTS 38), read on every frame, using the latest reading whose
   `performanceTime` is above 0; with none, it pairs `currentTime` with `performance.now()` at the
@@ -735,14 +740,19 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
 - **Levels** (FACTS 72 to 76): the click 0.09 high and 0.06 plain; Kick 0.8 (March's accent
   1.0), Clap 0.7, Hi-hat 0.5; the viewer's claps in the take 0.7; under the sung line every drum
   at half its gain; Merc's "ooh" at the kit's level, 0.2, and in the cold open 0.2 on beat 1, 0.17
-  on beat 3 and 0.14 on 2 and 4 (`kit/sound.ts:178`; FACTS 30c); the count-in do at 0.065.
-- **What the kit's sound module has, and needs** (What the kit and the app still need): a voice
-  and a burst of noise already start at a time ahead on the audio clock (`at`, `kit/sound.ts:39-43`,
-  `:166`; `playNoise`, `:395-462`), and `contourVoice` releases on it (`:318-344`). Still needed:
-  the master bus offered to a caller, so the drums play into it and obey the Sound switch and the
-  hush (it is module-private, `:77`, made at `:107-116`); `tick` with a start time, where today it
-  sounds at once (`:380-393`); and a voice given a length stopped on the audio clock, where today a
-  timer stops it (`:259-265`, `:263`).
+  on beat 3 and 0.14 on 2 and 4 (`kit/sound.ts:181`; FACTS 30c); the count-in do at 0.065.
+- **What the kit's sound module has** (What the kit and the app still need, item 5): a voice and a
+  burst of noise start at a time ahead on the audio clock (`at`, `kit/sound.ts:39-43`, `:169`;
+  `playNoise`, `:406-473`), and `contourVoice` releases on it (`:321-347`). This page added the
+  rest, the bus and the note in a module of their own that only this page imports,
+  `kit/sound-ahead.ts`, so no other lesson's first paint carries them: a caller's own bus on the
+  master, `openBus`, so the drums play into it and obey the Sound switch, the hush and the
+  hidden-page stop, where the master is module-private (`kit/sound.ts:77`, made at `:109`, lent by
+  `openMaster` at `:482-490`; the bus at `kit/sound-ahead.ts:18-66`, closed with every voice
+  through `onStopAll`, `:31-35` there and `kit/sound.ts:134-137`, `:492-495`); `tick` with a start
+  time and a bus, where it sounded at once (`kit/sound.ts:383-404`); and `bookNote`, a voice
+  booked ahead and released by the audio clock (`kit/sound-ahead.ts:68-100`), where a voice given
+  a length is stopped by a timer (`kit/sound.ts:262-268`, `:266`).
 
 ## Mercs
 
@@ -818,7 +828,7 @@ Lesson 8's entry (`kit/season.ts:310-327`; FACTS 58), proposed for when this pag
   Pocket" by `practiseMarkup` (`kit/explorer.ts:174-179`). `pr.needs`, "Ear Lab Time (an ear-drill
   link)", stays as it is: it is admin only, never drawn on a lesson page (`season.ts:99-100`).
 - `sig` and `fig: 'metronome'` stay as they are. The card's figure caption, "A metronome, its arm on
-  beats 2 and 4" (`kit/explorer-figures.ts:203`), is the kit's and stays: the card's arm swings in
+  beats 2 and 4" (`kit/explorer-figures.ts:207`), is the kit's and stays: the card's arm swings in
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:878-889`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
 - The hook stays word for word (`season.ts:316`; FACTS 1), with no alternative, and the tease
@@ -845,24 +855,31 @@ table). Every item is proposed.
    `runtime/index.ts:5` re-exporting it) and its test moving beside it: the house rule keeps a feature out of a sibling
    feature's code (`.dependency-cruiser.cjs:101-109`, "Shared code belongs in src/lib or
    src/components").
-5. `kit/sound.ts`: the master bus offered to a caller (it is module-private, `:77`, made at
-   `:107-116`), so drum hits play into it and obey the Sound switch, the hush and the hidden-page
-   stop; `tick` with a start time (`:380-393`); a voice given a length stopped on the audio clock
-   (`:259-265`); and the clock map, if the beat clock does not keep it itself. Voices and noise
-   already take a start time (`:39-43`, `:395-462`).
-6. `kit/explorer-figures.ts`: `metronomeSVG(id)`, a gradient id per copy (`:20-28`), with a test
+5. `kit/sound.ts`: a bus of the caller's on the master, which is module-private (`:77`, made at
+   `:109`), so drum hits play into it and obey the Sound switch, the hush and the hidden-page stop;
+   `tick` with a start time (`:383-404`); a voice given a length stopped on the audio clock, where
+   `voice` stops one on a timer (`:262-268`). The beat clock keeps the clock map itself. Voices and
+   noise already took a start time (`:39-43`, `:406-473`). Built with the bus and the note in
+   `kit/sound-ahead.ts` (`openBus`, `:18-66`; `bookNote`, `:68-100`), which only this page imports,
+   so every other lesson's first paint stays without them; `kit/sound.ts` lends it the master
+   (`openMaster`, `:482-490`) and closes its buses with every voice (`onStopAll`, `:492-495`).
+6. `kit/explorer-figures.ts`: `metronomeSVG(id)`, a gradient id per copy (`:20-32`), with a test
    that two copies on one page have distinct ids.
 7. `kit/ear-game.ts`, Lesson 2's game promoted and generalised on #1149 (Toys 4), with two more
    things this page needs. A key per answer: a `keys` option, one key for each answer in their order
    and "1" to "N" by default, so that this page's answers 2, 3 and 4 take the keys 2, 3 and 4, where
-   `keyAnswer` maps "1" to the first answer (`:90-97`), with a unit test beside the kit's. And a
+   `keyAnswer` mapped "1" to the first answer (`:98-110`), with a unit test beside the kit's. And a
    stop that clears a miss's queued replay as well as the sound, which #1149's fix pass adds.
 8. `kit/merc-duo.ts`: a one-shot hop in place, `mercHop(which, atAudioTime)`, that lands at a time
    on the audio clock and plays over any state, singing included, and does nothing under reduced
    motion or Pause animations (Mercs; FACTS 30d). The renderer's `hop` state loops round four stops
    (`src/lib/merc/sim-choreo.ts:450-475`), so the cue is new; its timing is that hop's crouch and
    flight (`:127-128`). If a hop over singing cannot be had, orange alone hops, and LESSON.md's
-   stage directions change to say so.
+   stage directions change to say so. Built as `mercHop(which)`, which lands `HOP_MS`, 530 ms, after
+   it is called (`kit/merc-hop.ts:14-40`, a module of its own that only this page imports, so no
+   other lesson's first paint carries it): the beat clock calls it that long before each clap,
+   on the page's clock as the audio clock maps to it (`early`, Audio), so the cue needs no audio
+   time of its own. It moves the whole figure, live or still, so both Mercs hop while blue sings.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:116`), above its new hook, "How do you land a note you
@@ -870,10 +887,10 @@ table). Every item is proposed.
    `lesson-sections.css:198-204`), and the old hook stays in `kit/lesson-copy.ts:108-115` as the
    admin console's alternative (CURIOSITY-MOMENTS § 5). This page adds only its tease figure to the
    slot (Toys 9).
-10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:124-126`), since this page
-    is its fourth user after `lesson-03/quiz-questions.ts:23-25`,
-    `lesson-04/quiz-questions.ts:31-33` (used at `lesson-04/main.ts:41` and `:64`) and
-    `lesson-05/quiz-questions.ts:19-21`, and those three then import it from there. #1149's
+10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:128-130`, `:124-126`),
+    since this page is its fourth user after Lessons 3, 4 and 5, whose own copies became
+    re-exports of the kit's (`lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
+    used at `lesson-04/main.ts:41` and `:64`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
     `recallHref` (`lesson-06/quiz-questions.ts:30-32`) opens a page, never a step, and stays its
     own. The quiz needs nothing else: its prefix, slot and away links are on main
     (`kit/quiz.ts:73-97`, `:174-199`).
@@ -945,7 +962,7 @@ table). Every item is proposed.
     (`src/tests/lesson-pages.test.ts:185-220`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-81`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:149-155` checks. The first-paint budget comes with the page,
-    beside Lessons 3 and 5's (`scripts/assert-first-paint-budgets.mjs:102-128`), since every build
+    beside Lessons 3 and 5's (`scripts/assert-first-paint-budgets.mjs:102-125`), since every build
     carries every lesson page.
 17. The App content items under Practice links.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -956,7 +973,7 @@ table). Every item is proposed.
 
 ## Edge cases
 
-- **Sound off, unset or missing.** Every play obeys the kit's `canPlay` (`kit/sound.ts:478-490`):
+- **Sound off, unset or missing.** Every play obeys the kit's `canPlay` (`kit/sound.ts:510-522`):
   the first tap turns sound on, sound off plays the visuals silently with the kit's toast, and no
   Web Audio leaves the page readable with every play `aria-disabled` and its line saying why. The
   predicts' reveals and Start the guide wait for heard sound (Toys 2, 6); the take does not start
@@ -1055,8 +1072,8 @@ parts:
     (`kit/season.test.ts:177-190`).
 15. Step 5's lock: before the predict's choice, Play, March, Rock and Tempo are `disabled` and none
     carries `aria-disabled`; the choice enables the three buttons through `unlocks` and Tempo
-    through `onChoice`. No test covers `unlocks` today (`kit/predict.test.ts:53` covers the choice's
-    own plays), so the kit gains one beside it.
+    through `onChoice`. No test covered `unlocks` (`kit/predict.test.ts:53` covers the choice's own
+    plays), so the kit gained one beside it (`:74`).
 16. Count the bar's keys: with the answers 2, 3 and 4, the keys 2, 3 and 4 answer "2", "3" and "4",
     and 1 answers nothing; with no `keys` option the kit's game keeps "1" to "N" (in the kit's own
     tests).
@@ -1121,8 +1138,8 @@ draft shown as `build:e2e` shows it):
 10. Every practice link carries `?lesson=08` before any hash: `/drum-night?drawer=learn&lesson=08`
     and `/ear-lab?lesson=08`.
 11. The next-lesson card: a row for `/learn/08` in `src/e2e/learn-next-card.spec.ts`'s `CARDS`
-    (`:27-70`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
-on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:96-113`):
+    (`:27-58`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
+on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:90-107`):
     `.next-tease` reads `LESSON_COPY[9].tease`, and the card's words run eyebrow, `next-tease`,
     `q2`, `chip`; and its tease figure, after the words, holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every built lesson,

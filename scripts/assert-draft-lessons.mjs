@@ -25,9 +25,10 @@
 // - the service worker leaves every lesson path to the network, so a lesson
 //   held back reaches the worker's 404 page, not the app shell;
 // - each reading a page writes of another lesson's state is a
-//   `<span data-if-live="N">` or `<span data-if-planned="N">` the worker and
-//   the page's script can settle, and the build marked `hidden` exactly the
-//   one that is false under its default.
+//   `<span data-if-live="N">` or `<span data-if-planned="N">`, or a
+//   `<div data-if-live="N">` round a block, that the worker and the page's
+//   script can settle, and the build marked `hidden` exactly the one that is
+//   false under its default.
 //
 // Source maps are not read: they carry the modules' source text, and
 // nothing links to them.
@@ -176,16 +177,22 @@ for (const file of documents) {
     const [opening, tag, attributes] = match
     if (!/\bdata-if-(?:live|planned)\b/i.test(attributes)) continue
     const where = `${relative(file)}: ${opening}`
-    const form = tag.toLowerCase() === 'span' ? READING.exec(attributes) : null
+    const name = tag.toLowerCase()
+    const form =
+      name === 'span' || name === 'div' ? READING.exec(attributes) : null
     if (form === null) {
       failures.push(
-        `${where} is a reading the worker and the page cannot both settle: it must be <span data-if-live="N"> with that one attribute`,
+        `${where} is a reading the worker and the page cannot both settle: it must be <span data-if-live="N">, or a <div data-if-live="N"> round a block, with that one attribute`,
       )
       continue
     }
+    // a block holds any markup: the worker and the script settle the element
     const after = html.slice(match.index + opening.length)
     const close = after.search(/<\/span\s*>/i)
-    if (close === -1 || /<span\b/i.test(after.slice(0, close))) {
+    if (
+      name === 'span' &&
+      (close === -1 || /<span\b/i.test(after.slice(0, close)))
+    ) {
       failures.push(`${where} holds a span, or is never closed`)
       continue
     }

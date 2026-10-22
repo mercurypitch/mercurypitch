@@ -71,6 +71,41 @@ describe('mountPredict', () => {
     ).toBe(false)
   })
 
+  it('enables the controls elsewhere that it unlocks only on the choice, and tells the page the choice', () => {
+    // Arrange: a stage's row that would answer the question if it played first
+    const root = predictRoot()
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      '<button type="button" id="stagePlay" disabled>Play</button><button type="button" id="stageRock" disabled>Rock</button>',
+    )
+    const stage = [
+      ...document.querySelectorAll<HTMLButtonElement>('#stagePlay, #stageRock'),
+    ]
+    const chosen: string[] = []
+    mountPredict(root, {
+      play: () => Promise.resolve(true),
+      hints: HINTS,
+      unlocks: stage,
+      onChoice: (c) => chosen.push(c),
+    })
+
+    // Act: a free play before the choice
+    click(root, '[data-play="one"]')
+
+    // Assert: disabled, so out of the tab order, and never aria-disabled
+    expect(stage.every((b) => b.disabled)).toBe(true)
+    expect(stage.some((b) => b.hasAttribute('aria-disabled'))).toBe(false)
+    expect(chosen).toEqual([])
+
+    // Act
+    click(root, '[data-choice="same"]')
+
+    // Assert
+    expect(stage.every((b) => !b.disabled)).toBe(true)
+    expect(stage.some((b) => b.hasAttribute('aria-disabled'))).toBe(false)
+    expect(chosen).toEqual(['same'])
+  })
+
   it('reveals only the copy whose answering sound was heard, saying what was chosen', async () => {
     // Arrange
     const a = predictRoot()

@@ -11,188 +11,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as SoundKit from './sound'
+import { AUDIBLE, FakeContext, FakeNode, valueAt, } from './sound-doubles.test-fixtures'
 import type * as TimbreKit from './timbre'
-
-type Event = [method: string, ...args: number[]]
-
-class FakeParam {
-  value: number
-  readonly events: Event[] = []
-  constructor(value: number) {
-    this.value = value
-  }
-  setValueAtTime(v: number, t: number): void {
-    this.events.push(['setValueAtTime', v, t])
-  }
-  linearRampToValueAtTime(v: number, t: number): void {
-    this.events.push(['linearRampToValueAtTime', v, t])
-  }
-  exponentialRampToValueAtTime(v: number, t: number): void {
-    if (v <= 0) throw new RangeError('an exponential ramp cannot reach 0')
-    this.events.push(['exponentialRampToValueAtTime', v, t])
-  }
-  setTargetAtTime(v: number, t: number, tau: number): void {
-    this.events.push(['setTargetAtTime', v, t, tau])
-  }
-  cancelScheduledValues(t: number): void {
-    this.events.push(['cancelScheduledValues', t])
-  }
-}
-
-class FakeNode {
-  connect(): void {}
-  disconnect(): void {}
-}
-
-class FakeOscillator extends FakeNode {
-  readonly frequency = new FakeParam(440)
-  readonly detune = new FakeParam(0)
-  readonly stops: number[] = []
-  setPeriodicWave(): void {}
-  start(): void {}
-  stop(t: number): void {
-    this.stops.push(t)
-  }
-}
-
-class FakeGain extends FakeNode {
-  readonly gain = new FakeParam(1)
-}
-
-class FakeFilter extends FakeNode {
-  /** The context that made it: a timbre builds its own nodes from it. */
-  context: FakeContext | null = null
-  type = 'lowpass'
-  readonly frequency = new FakeParam(350)
-  readonly Q = new FakeParam(1)
-}
-
-class FakeCompressor extends FakeNode {
-  readonly threshold = new FakeParam(-24)
-  readonly knee = new FakeParam(30)
-  readonly ratio = new FakeParam(12)
-  readonly attack = new FakeParam(0.003)
-  readonly release = new FakeParam(0.25)
-}
-
-class FakeBuffer {
-  readonly data: Float32Array
-  constructor(
-    readonly numberOfChannels: number,
-    readonly length: number,
-    readonly sampleRate: number,
-  ) {
-    this.data = new Float32Array(length)
-  }
-  getChannelData(): Float32Array {
-    return this.data
-  }
-}
-
-class FakeBufferSource extends FakeNode {
-  buffer: FakeBuffer | null = null
-  loop = false
-  readonly starts: number[] = []
-  readonly stops: number[] = []
-  start(t: number): void {
-    this.starts.push(t)
-  }
-  stop(t: number): void {
-    this.stops.push(t)
-  }
-}
-
-class FakeContext {
-  static last: FakeContext | null = null
-  currentTime = 0
-  state = 'running'
-  readonly sampleRate = 48000
-  readonly destination = new FakeNode()
-  readonly oscillators: FakeOscillator[] = []
-  readonly gains: FakeGain[] = []
-  readonly sources: FakeBufferSource[] = []
-  readonly filters: FakeFilter[] = []
-  constructor() {
-    FakeContext.last = this
-  }
-  createBuffer(channels: number, length: number, rate: number): FakeBuffer {
-    return new FakeBuffer(channels, length, rate)
-  }
-  createBufferSource(): FakeBufferSource {
-    const s = new FakeBufferSource()
-    this.sources.push(s)
-    return s
-  }
-  createOscillator(): FakeOscillator {
-    const o = new FakeOscillator()
-    this.oscillators.push(o)
-    return o
-  }
-  createGain(): FakeGain {
-    const g = new FakeGain()
-    this.gains.push(g)
-    return g
-  }
-  createBiquadFilter(): FakeFilter {
-    const f = new FakeFilter()
-    f.context = this
-    this.filters.push(f)
-    return f
-  }
-  createDynamicsCompressor(): FakeCompressor {
-    return new FakeCompressor()
-  }
-  createPeriodicWave(): object {
-    return {}
-  }
-  resume(): Promise<void> {
-    return Promise.resolve()
-  }
-}
-
-/** The param's value at `t` from its events (the spec's curves; cancels honoured). */
-function valueAt(events: readonly Event[], t: number, initial: number): number {
-  const kept: Event[] = []
-  for (const e of events) {
-    if (e[0] === 'cancelScheduledValues') {
-      const at = e[1]
-      for (let i = kept.length - 1; i >= 0; i--)
-        if (kept[i][2] >= at) kept.splice(i, 1)
-    } else kept.push(e)
-  }
-  let v = initial
-  let vt = 0
-  let target: { at: number; to: number; tau: number } | null = null
-  const settle = (until: number): void => {
-    if (target === null || until <= target.at) return
-    v =
-      target.to + (v - target.to) * Math.exp(-(until - target.at) / target.tau)
-    vt = until
-    target = { ...target, at: until }
-  }
-  for (const [method, to, at, tau] of kept) {
-    if (at > t) {
-      if (method.endsWith('RampToValueAtTime') && target === null) {
-        const k = (t - vt) / (at - vt)
-        return method === 'linearRampToValueAtTime'
-          ? v + (to - v) * k
-          : v * (to / v) ** k
-      }
-      break
-    }
-    settle(at)
-    if (method === 'setTargetAtTime') target = { at, to, tau }
-    else {
-      v = to
-      vt = at
-      target = null
-    }
-  }
-  settle(t)
-  return v
-}
-
-const AUDIBLE = 0.01 // -40 dB
 
 // Lesson 2's slide on A3 (FACTS 50): A held, up a semitone, held, and back
 const A3 = 220
@@ -375,6 +195,47 @@ describe('a voice that starts later (Lesson 5, the air-first start)', () => {
       ['setValueAtTime', 1e-4, 0.25],
       ['exponentialRampToValueAtTime', 1, 0.5],
     ])
+  })
+})
+
+describe('a tick booked ahead (Lesson 8, the beat clock)', () => {
+  it('rises at its own time on the audio clock, into the bus it is given', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+    const into = vi.spyOn(FakeNode.prototype, 'connect')
+    const bus = ctx.createGain()
+    ctx.currentTime = 1
+    into.mockClear()
+
+    // Act
+    kit.Sound.tick(1000, 0.06, { when: 2.5, to: bus as unknown as AudioNode })
+
+    // Assert
+    const tick = ctx.gains.at(-1)
+    expect(tick?.gain.events.slice(0, 2)).toEqual([
+      ['setValueAtTime', 1e-4, 2.5],
+      ['exponentialRampToValueAtTime', 0.06, 2.503],
+    ])
+    expect(ctx.oscillators.at(-1)?.stops).toEqual([2.6])
+    expect(into).toHaveBeenLastCalledWith(bus)
+    into.mockRestore()
+  })
+
+  it('sounds at once on the master with no options, as it always has', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+    ctx.currentTime = 3
+
+    // Act
+    kit.Sound.tick()
+
+    // Assert
+    expect(ctx.gains[1].gain.events).toEqual([
+      ['setValueAtTime', 1e-4, 3],
+      ['exponentialRampToValueAtTime', 0.09, 3.003],
+      ['exponentialRampToValueAtTime', 1e-4, 3.07],
+    ])
+    expect(ctx.oscillators[0].stops).toEqual([3.1])
   })
 })
 

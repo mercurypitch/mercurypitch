@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { Done } from './progress'
 import type { QuizAnswer, QuizQuestion } from './quiz'
-import { createQuiz, lessonOfQuestion, linkAway } from './quiz'
+import { createQuiz, lessonOfQuestion, linkAway, recallStepHref } from './quiz'
 
 const STEP_LINK = '<a href="#lesson" data-goto-step="3">Try Step 3 again</a>'
 const KEYS = { seed: 'test-seed', record: 'test-record' }
@@ -255,5 +255,13 @@ describe('lessonOfQuestion', () => {
 
     // Assert
     expect(lessons).toEqual([2, 14, null])
+  })
+})
+
+describe('recallStepHref', () => {
+  it("opens a lesson's own page at the step, for a recall's step links", () => {
+    expect(recallStepHref(6, 3)).toBe('/learn/06#step-3')
+    expect(recallStepHref(2, 6)).toBe('/learn/02#step-6')
+    expect(recallStepHref(12, 1)).toBe('/learn/12#step-1')
   })
 })

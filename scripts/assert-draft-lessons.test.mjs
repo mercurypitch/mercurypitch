@@ -211,9 +211,26 @@ test(
   },
 )
 
+test('passes a block round a section, marked as the build has it, and fails one marked for the other', () => {
+  // Lesson 1 is live in both builds, so its block stays shown
+  const block = (hidden) =>
+    `<div data-if-live="1"${hidden}>\n<section><span>Recall</span><p>Two questions</p></section>\n</div>`
+  const right = assertOver(
+    { ...distFiles(false), 'learn/01.html': block('') },
+    ['--hidden'],
+  )
+  assert.equal(right.status, 0, right.stderr)
+  fails(
+    { ...distFiles(false), 'learn/01.html': block(' hidden') },
+    '--hidden',
+    /under this build's default/,
+  )
+})
+
 test('fails a reading the worker and the page cannot both settle', () => {
   for (const reading of [
-    '<div data-if-live="1">ready</div>',
+    '<div data-if-live="1" class="x">ready</div>',
+    '<section data-if-live="1">ready</section>',
     '<span data-if-live="x">ready</span>',
     '<span data-if-live="123">ready</span>',
     '<span class="ok" data-if-live="1">ready</span>',
