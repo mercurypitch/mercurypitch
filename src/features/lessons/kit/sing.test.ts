@@ -1,9 +1,14 @@
 // ============================================================
 // Lesson sing tests — two sing cards on one page, each with its own ring
 // ============================================================
+//
+// And the ring on the page's frame loop: at rest it asks for no frame, and
+// a run draws every frame from the one that starts it to the one that ends
+// it, once the ring is on screen.
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { handLoop } from './frame-loop.test-fixtures'
 import type { Ring, RingRun } from './sing'
 import { mountRing, mountSing, ringPhase, swellAt } from './sing'
 import { Sound } from './sound'
@@ -36,7 +41,22 @@ const text = (root: HTMLElement, selector: string): string =>
 const waiting = (root: HTMLElement): boolean[] =>
   Array.from(root.querySelectorAll('button')).map((b) => b.disabled)
 
+/** A ring on its own, in the page: its circles, ripples, still and lines. */
+function ringEl(): HTMLElement {
+  const root = document.createElement('div')
+  root.innerHTML = `<div class="ring"><svg><circle class="ring-progress" r="182"></circle><circle class="ring-breath" r="150"></circle><g class="ring-ripples"></g></svg><img class="ring-merc" alt=""><p class="ring-note"></p><p class="ring-state"></p></div>`
+  document.body.appendChild(root)
+  const el = root.querySelector<HTMLElement>('.ring')
+  if (el === null) throw new Error('no ring')
+  return el
+}
+
+const ripples = (el: HTMLElement): number =>
+  el.querySelectorAll('.ring-ripples circle').length
+
 afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
   Sound.set('unset')
   document.body.textContent = ''
 })
@@ -187,5 +207,76 @@ describe('a run ended where it stands (`stop`)', () => {
 
     // Assert
     expect(text(root, '.ring-state')).toBe('Rest')
+  })
+})
+
+describe("the ring on the page's frame loop", () => {
+  it('asks for no frame at rest, then for every frame of a run until the ring is back at rest', async () => {
+    // Arrange: a ring on screen, settled
+    const { asked, settle, see } = await handLoop()
+    const { mountRing } = await import('./sing')
+    const el = ringEl()
+    const ring = mountRing(el, { stills: STILLS })
+    see(el)
+    settle()
+    const resting = asked.length
+
+    // Act: a second of Merc's note, then a second of the turn
+    const done = ring.run({ which: 'blue', label: 'A3', listen: 1, turn: 1 })
+    const woken = asked.length
+    const frames = settle()
+
+    // Assert: a frame every 16 ms for the run's two seconds, and none after it
+    expect(resting).toBe(0)
+    expect(woken).toBe(1)
+    expect(frames).toBe(125)
+    await expect(done).resolves.toBeUndefined()
+    expect(asked).toHaveLength(0)
+  })
+
+  it('asks for no frame once a run is stopped where it stands', async () => {
+    // Arrange: a run ten frames in
+    const { asked, frame, settle, see } = await handLoop()
+    const { mountRing } = await import('./sing')
+    const el = ringEl()
+    const ring = mountRing(el, { stills: STILLS })
+    see(el)
+    settle()
+    void ring.run({ which: 'orange', label: 'A4', listen: 2.4, turn: 4 })
+    for (let i = 0; i < 10; i += 1) frame()
+    const running = asked.length
+
+    // Act
+    ring.stop()
+    const after = settle()
+
+    // Assert: the frame already asked for draws nothing and asks for no other
+    expect(running).toBe(1)
+    expect(after).toBe(1)
+    expect(asked).toHaveLength(0)
+    expect(ring.busy).toBe(false)
+  })
+
+  it('holds a run started off screen until the ring is seen, then draws it every frame', async () => {
+    // Arrange: a ring that has not come into view
+    const { asked, settle, see } = await handLoop()
+    const { mountRing } = await import('./sing')
+    const el = ringEl()
+    const ring = mountRing(el, { stills: STILLS })
+    settle()
+
+    // Act: a run off screen, then the ring comes into view
+    void ring.run({ which: 'blue', label: 'A3', listen: 1, turn: 1 })
+    const offScreen = settle()
+    const drawnOff = ripples(el)
+    see(el)
+    const seen = settle(10)
+
+    // Assert: off screen only the frame its start asked for, drawing nothing
+    expect(offScreen).toBe(1)
+    expect(drawnOff).toBe(0)
+    expect(seen).toBe(10)
+    expect(ripples(el)).toBeGreaterThan(0)
+    expect(asked).toHaveLength(1)
   })
 })
