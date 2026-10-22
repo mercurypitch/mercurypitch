@@ -65,12 +65,17 @@ line above it, are in LESSON.md ("Section headings").
 2. **Hero**: kicker; the hook question as the title; the meta as four chips ("16 minutes", FACTS 4;
    "After Lesson 3: Match a note", a link to `/learn/03`; Sound on; Microphone optional); the
    promise; the sound gate from LESSON.md in the hero copy; the two Mercs on the floor line either
-   side of the range chart in its compact state, a siren's still: the signature.
+   side of the range chart in its compact state. As built, the hero holds the cold open (item 4) in
+   Lesson 2's order, with the recall after it (CURIOSITY-MOMENTS § 3.1, "Place"), and its chart
+   shows the column alone, with no siren still: Merc's siren spans the same 9 semitones as
+   "Twinkle", E3 to C♯4, so a still of it would answer the predict before the guess. The signature,
+   the siren sweeping the chart, is Step 1's.
 3. **Recall from Lesson 3**: Lesson 3's questions 1 and 4, for everyone (Toys 5).
-4. **Cold open: predict**: the bubbles, each with its Merc's still, and beside them the compact
-   chart showing the column alone; Play "Twinkle" works from the start and plays with the tune's
-   beads hidden; the two-choice predict; choosing draws the beads and the gold bracket and shows
-   the reveal (Toys 1, Compact; Toys 2).
+4. **Cold open: predict**, in the hero as built: the bubbles, each with its Merc's still, and beside
+   them the compact chart showing the column alone; Play "Twinkle" works from the start and plays
+   with the tune's beads hidden; the two-choice predict; choosing unlocks Play "Twinkle" on the
+   column, which lights the tune's beads one by one as Merc sings them, and once that play has been
+   heard to its end the gold bracket and the reveal show (Toys 1, Compact; Toys 2).
 5. **Four words you'll meet**: range, siren, lip trill and voice type, each with its definition, a
    small figure and a play or show button (Toys 3).
 6. **The steps**: Lesson 1's sticky stage and step deck ("N of 5", Previous and Next), every step
@@ -147,15 +152,19 @@ live and free play.
   octaves tall, A2 to A4 (or A3 to A5): its middle half, D♯3 to D♯4 (or D♯4 to D♯5), lit and
   labelled "middle", and its outer quarters dimmed and labelled "the ends" (FACTS 35). To its right,
   time runs left to right for every line.
-- **Compact** (hero and cold open): no names and no controls on the chart. The hero shows a still
-  of Merc's siren on the column, its head glowing at the turn. The cold open shows the column alone
-  until the predict's choice: Play "Twinkle" sounds the tune's first two lines with no beads drawn
-  and nothing on the chart that shows their height (FACTS 83). The choice is the reveal: the tune
-  draws as fourteen beads joined by a line across the column, from E3 (or E4), left to right over
-  1.2 s, and a gold bracket joins its lowest note to its highest beside the column; a later Play
-  lights the beads in turn as Merc sings them. The drawing is `aria-hidden`, and a polite live
-  region speaks for it: before the choice, "Twinkle, Twinkle, its first two lines", naming no note;
-  after it, "Twinkle, Twinkle, from E 3 up to C sharp 4 and back: 9 of the column's 24 semitones".
+- **Compact** (the hero, which holds the cold open): no names and no controls on the chart, which
+  shows the column alone; as built there is no siren still (Sections, item 2). Play "Twinkle" sounds
+  the tune's first two lines with no beads drawn and nothing on the chart that shows their height
+  (FACTS 83). As built, the choice is not the reveal, since the reveal waits until it is heard
+  (CURIOSITY-MOMENTS § 1, rule 2): the choice unlocks Play "Twinkle" on the column, which draws the
+  tune's fourteen beads joined by a line across the column, from E3 (or E4), one by one as Merc
+  sings them, each lit while it sounds. Once that play has been heard to its end with the sound on,
+  a gold bracket joins the tune's lowest note to its highest beside the column and the reveal shows;
+  a play that sound off kept silent, or that another sound cut short, takes its beads away again.
+  After the reveal either Play lights the beads in turn. The drawing is `aria-hidden`, and a polite
+  live region speaks for it: before the reveal, "Twinkle, Twinkle, its first two lines", naming no
+  note; after it, "Twinkle, Twinkle, from E 3 up to C sharp 4 and back: 9 of the column's 24
+  semitones" (`lesson-07/cold-open.ts`).
 - **Siren** (Step 1): Merc's siren (FACTS 82), an amber line drawn left to right as it sounds, its
   head glowing, turning round inside the lit middle. **Play** (Pause while playing), **Slow** (half
   speed, 12 s) and a **scrub** bar, as every animation has (MASTER-PLAN § 4.2 item 5); scrubbing
@@ -163,8 +172,11 @@ live and free play.
 - **Sounds** (Step 2): the siren state, with three buttons, "ng", "Lip trill" and "oo"
   (`aria-pressed`, one pressed at a time, "ng" first). Play plays Merc's siren in the pressed sound
   (FACTS 82); the line is drawn from the same path every time and never changes.
-- **Song** (Step 3): "Twinkle"'s line on the column through Lesson 6's tune line in its compact
-  form, with **Start lower**, **Start higher** (a semitone a tap) and **Play**. Do runs from the
+- **Song** (Step 3): "Twinkle"'s line on the column, with **Start lower**, **Start higher** (a
+  semitone a tap) and **Play “Twinkle”**. As built, the chart draws the tune's beads itself, on its
+  own semitone rows (`kit/range-chart-draw.ts`, `drawBeads`), in the look of Lesson 6's tune line,
+  beads joined by a faint line: every copy of that tune line is its core on a canvas of its own
+  (`kit/tune-line.ts`), and the song must sit on the column's rows. Do runs from the
   column's bottom to 15 semitones up, so the tune never leaves the column, and opens on E3 (or E4)
   (FACTS 84). With a mouse or pen a vertical drag also slides it; on touch the stage keeps
   `touch-action: pan-y`, as Lesson 1's does (`kit/lesson-stage.css:776`), so a swipe scrolls
@@ -199,8 +211,10 @@ live and free play.
   (`aria-pressed`): one range bar from A3 to C6 with that singer's comfortable band lit, E4 to E5
   for A and C4 to C5 for B, and the words "probably a soprano" or "probably a mezzo-soprano" (FACTS
   86). **Show all six** draws the app's six bands as overlapping columns, low to high, each with its
-  name and span written up the column, each a button that plays its middle note in the soft tone
-  for a second and says its span ("Tenor: C3 to C5"). The singers and the bands share one view, E2
+  name and span written up the column. As built, the columns take no taps, as no part of the chart
+  does: their six buttons sit under the canvas, low to high, three a row, each playing its band's
+  middle note in the soft tone for a second, lighting its column and saying its span in the
+  chart's summary ("Tenor: C 3 to C 5"). The singers and the bands share one view, E2
   to C6, whatever the chart's voice, and the voice switch is hidden here. Small print: "The broad
   bands the Vocal Range Test uses. Books draw them differently: two put the soprano's top seven
   semitones apart." (FACTS 40, 41).
@@ -214,7 +228,9 @@ live and free play.
   neighbours, at every width from 344 px up, and no chart row is a target:
   - On phones (960 px and under, where the stage sits above the text) the figure spans the card's
     inner width, as Lessons 2 and 6 do on phones. Measured from Lesson 1's stage CSS at 390 x 844,
-    the stage card is 358 px inside the 16 px gutters and the figure's canvas 354 px.
+    the stage card is 358 px inside the 16 px gutters and the figure's canvas 354 px. As built the
+    canvas runs to the card's edges, 356 px, and the controls under it share the 332 px inside
+    the card's padding (`kit/range-chart-layout.ts`, `canvasWidth` and `stageInner`).
   - The chart's canvas is 288 px tall, under Lesson 1's 310 px tall figure at 420 px and under: the
     line window's 32 semitones get 8.25 px each and Step 5's 44 semitones 6.00 px each, so each band
     stands 144 px tall. With the stage head and at most five rows of 44 px controls (free play's
@@ -223,20 +239,22 @@ live and free play.
     stage is stuck, so it also meets the kit's landscape budget: every step's stage fits 1024 x 640
     with the masthead, its chrome (the stage less the chart) under about 375 px
     (PRODUCTION-PIPELINE.md § 5).
-  - The six band columns share the plot beside the 34 px gutter: 53.3 px each at 390 px, 45.7 px at
-    344 px, 102.8 px at 1440 px. "Mezzo-soprano" will not fit across them, so each band's name and
-    span run up the column, bottom to top, in about 127 px of its 144 px at 12 px type.
+  - The six band columns share the plot beside the 34 px gutter: as built, 52.0 px each at 390 px,
+    44.3 px at 344 px and 101.1 px at 1440 px. "Mezzo-soprano" will not fit across them, so each
+    band's name and span run up the column, bottom to top, in about 127 px of its 144 px at 12 px
+    type.
   - Controls sit under the canvas in rows: the voice switch on a row of its own, two buttons at
-    173.0 px each at 390 px (150.0 px at 344 px); the sounds three a row at 112.7 px (97.3 px); Play
-    and Slow, Singer A and Singer B, Start lower and Start higher, and Lower and Higher two a row at
-    173.0 px; free play's state switch three and then two a row. The scrub bar spans its row, with
-    a 44 px thumb, and the push note's handle is a 44 px square.
+    162.0 px each at 390 px (139.0 px at 344 px), as built; the sounds and the six bands' buttons
+    three a row at 105.3 px (90.0 px); Play and Slow, Singer A and Singer B, Start lower and Start
+    higher, and Lower and Higher two a row at 162.0 px; free play's state switch three and then two
+    a row. The scrub bar spans its row, with a 44 px thumb, and the push note's handle is a 44 px
+    square.
 - **Keyboard and screen readers.** The chart is a group with a live summary in spoken names, never
   the sign: "Merc's siren, from E 3 up to C sharp 4 and back", "Twinkle, moved up 2 semitones: all
   of it in the lit middle". Play, Pause, Slow, the state's buttons and each band are buttons; the
   three sounds, the two singers, the voice switch and free play's state switch carry
   `aria-pressed`. The scrub bar is a slider (`role="slider"`, 0 to 6 seconds, `aria-valuetext` such
-  as "2.1 seconds of 6: going up, near C sharp 4"); the push note is a slider too, named "Note for
+  as "2.1 seconds of 6: going up, near B 3"); the push note is a slider too, named "Note for
   the push gauge", a semitone an arrow key, Home and End for the column's ends, its
   `aria-valuetext` the curve's words, such as "F 3: the least push, the curve's lowest point", "C
   sharp 4: more push" or "A 2, the bottom of the column: more push". No two controls on the stage
@@ -246,7 +264,10 @@ live and free play.
   Tab order: in free play the state switch first; then the voice switch where it shows, Play, Slow,
   the scrub bar, the state's own controls, then the bands, low to high.
 - Under reduced motion a siren draws as a whole line at once; a slide, a note's move and the cold
-  open's beads land at once; and nothing glows in a pulse; a played sound still sounds.
+  open's beads land at once; and nothing glows in a pulse; a played sound still sounds. As built,
+  the siren's Pause then stops the sound with the whole line left drawn, and Play starts the siren
+  again from its beginning, since a line drawn whole has no moment to carry on from; the cold open's
+  beads stand in place from the start of a play and light in turn.
 
 ### 2. Predict widgets
 
@@ -254,14 +275,20 @@ live and free play.
   each, every button at least 44 px tall.
 - The cold open's Play "Twinkle" works before the choice, so the sound comes first (playbook rule
   5), and it plays with the tune's beads hidden, so the chart cannot answer the question before the
-  guess (playbook rules 2 and 3; FACTS 83). Its reveal is the drawing: choosing draws the beads
-  across the column and the gold bracket, and shows the reveal's text, the tune's span against the
-  column. It needs no sound, so it appears as soon as a choice is made, with or without a play.
-  With sound off, Lesson 1's hint (`lesson-01/predict.ts:48-49`), made singular, "Sound is off, so
-  nothing played. Turn sound on to hear it.", shows beside Play.
+  guess (playbook rules 2 and 3; FACTS 83). As built, the reveal waits until it is heard
+  (CURIOSITY-MOMENTS § 1, rule 2; `kit/predict.ts` with `revealOn: ['column']`): the choice unlocks
+  a second button under the choices, Play "Twinkle" on the column, whose play draws the beads one by
+  one, and once it has been heard to its end with the sound on, the gold bracket and the reveal's
+  text, the tune's span against the column, show. The lock hint reads "Choose an answer to unlock
+  Play “Twinkle” on the column." before the choice, "Locked in. Play “Twinkle” on the column: each
+  note lights as Merc sings it." after it, and "Play “Twinkle” again, and watch where the slice
+  sits." after the reveal. With sound off, Lesson 1's hint (`lesson-01/predict.ts:48-49`), made
+  singular, "Sound is off, so nothing played. Turn sound on to hear it.", shows instead, and the
+  reveal waits.
 - Step 5's predict needs no sound: choosing shows its reveal and unlocks the two singers.
 - States: waiting for a choice, the column alone; a sound playing, beads still hidden; choice made,
-  beads, bracket and reveal shown.
+  Play "Twinkle" on the column unlocked; that play sounding, its beads lighting one by one; that
+  play heard, beads, bracket and reveal shown.
 - Under reduced motion the beads, the bracket and the reveal appear at once.
 
 ### 3. Four words
@@ -393,9 +420,9 @@ Reading a siren (`kit/take.ts`, extended with `readSiren`; pure and unit-tested)
 - The band: when the notes held span under three semitones (`highMidi - lowMidi < 3`), one note,
   the centre, `Math.round((lowMidi + highMidi) / 2)`; otherwise `middleHalf(lowMidi, highMidi)`.
 - `middleHalf(lowMidi: number, highMidi: number): { low: number; high: number }` is a new export
-  from `metrics.ts`: `low` is `Math.round(lowMidi + span * 0.25)` and `high` is
+  from `metrics.ts` (`:353-368`): `low` is `Math.round(lowMidi + span * 0.25)` and `high` is
   `Math.round(highMidi - span * 0.25)`, with `span = highMidi - lowMidi`, exactly the p25 and p75
-  that `pickMatchTargets` computes today (`:363-365`), which then calls it. So `pickMatchTargets`'
+  that `pickMatchTargets` computed, which now calls it (`:380`). So `pickMatchTargets`'
   callers, `src/lib/mirror/session.ts:125` and
   `src/features/onboarding/beats/BeatVoiceprint.tsx:427`, see no change, and the page and the Vocal
   Range Test share one rule (FACTS 35). The parity test sits in `src/lib/mirror/metrics.test.ts`,
@@ -418,9 +445,12 @@ Listening: Lesson 3's `kit/listen.ts`, unchanged: `micManager.acquire('lesson-07
 released when it ends, on leaving the section, on `pagehide` and when the tab is hidden; the
 YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through `Sound.context()`;
 nothing plays while a take is open, and the take opens at least 0.4 s after any sound has ended, as
-in Lesson 3. Nothing is recorded or kept, nothing leaves the device, and no event carries the band,
-a note or an answer; at most a count-only "checkpoint finished" event once the Lesson telemetry
-track exists (REQ-GVC-090; FACTS 62).
+in Lesson 3. As built, leaving the section is `#sing` out of view for 600 ms (`lesson-07/sing.ts`),
+and since a tall panel giving way to a short one can leave the card above the screen on a phone,
+after Start, the card brings its top back into view whenever its panels change, before that watch
+sees it gone, as Lesson 3's card does (`lesson-03/sing-view.ts`). Nothing is recorded or kept,
+nothing leaves the device, and no event carries the band, a note or an answer; at most a count-only
+"checkpoint finished" event once the Lesson telemetry track exists (REQ-GVC-090; FACTS 62).
 
 Accessibility and motion: the band is words plus the lit fill, never colour alone (REQ-GVC-082).
 After a take the chart's text summary reads, for example, "Your siren, drawn as a line; the middle
@@ -580,23 +610,25 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
 1. The lesson host: `learn/07.html` at `/learn/07`. On main the dev and preview servers and the
    build take every `learn/NN.html` as a lesson page, with no entry of its own, and keep a draft out
    of production until its sign-off (`vite.config.ts:77-87`, `:139-141`, `:473`; `kit/drafts.ts`).
-   Still needed: `/learn/07` and `/learn/07.html` in `STANDALONE_DOCUMENT_PATHS`
-   (`src/lib/sw-runtime.ts`, as `/learn/01` at `:134-135`); `public/sitemap.xml`; and Lesson 7 in
-   `public/llms.txt`'s "Lessons" list (`:66-81`), whose intro now allows a lesson with no episode
-   ("with its episode where the lesson has one", `:68-70`).
-2. The page's head, as Lesson 1's (`learn/01.html`): title "Slides, sirens and your range · Find
-   Your Pitch, Lesson 7 | MercuryPitch"; meta description "Why is your comfortable middle worth
-   more than your highest note? A sixteen-minute lesson with live
-   sound toys: gentle sirens, lip trills and "ng", your comfortable middle, and voice types as
-   labels. With the Season 1 map."; canonical and `og:url` `https://mercurypitch.com/learn/07`;
-   `og:image` `public/learn/lesson-07-og.jpg`, 1200 x 630, a still of the hero's siren on the
-   column, with alt text naming what it shows.
+   Built: `/learn/07` and `/learn/07.html` in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts`,
+   as `/learn/01` is). Left out on purpose: `public/sitemap.xml` and Lesson 7 in `public/llms.txt`'s
+   "Lessons" list, since the site worker lists a draft there while the admin console publishes it,
+   and its release adds it for good.
+2. The page's head, as Lesson 1's (`learn/01.html`). As built, held to the head checks of
+   `src/tests/lesson-pages.test.ts` (a title of at most 60 characters, a description of at most
+   160): title "Slides, sirens and your range | MercuryPitch", and `og:title` "Slides, sirens and
+   your range · Find Your Pitch, Lesson 7"; meta description "Why is your comfortable middle worth
+   more than your highest note? A sixteen-minute lesson on gentle sirens, lip trills and “ng”, your
+   range and voice types."; canonical and `og:url` `https://mercurypitch.com/learn/07`; `og:image`
+   `public/learn/lesson-07-og.jpg`, 1200 x 630, the title card above the column alone, its middle
+   half lit and its ends dimmed, between blue Merc and orange Merc, which answers nothing the
+   predict asks, with alt text naming what it shows.
 3. `kit/range-chart.ts`, new (Toys 1), generic over a window, a column and its lit band, lines,
    bands and range bars, so Lesson 11 (its signature, "the siren's line crossing a shaded seam")
    and Lesson 14 can use it.
 4. `kit/sound.ts`: the "ng" and lip-trill timbres (Audio). The voice that follows a pitch path is on
    main: `contourVoice` and `playContour` glide pitch and level exponentially from point to point
-   (`kit/sound.ts:292-325`, `:524-533`).
+   (`kit/sound.ts:311-344`, `:543-552`).
 5. `kit/take.ts`: `readSiren` (Toys 4); `src/lib/mirror/metrics.ts`:
    `middleHalf(lowMidi: number, highMidi: number): { low: number; high: number }`, exported and used
    by `pickMatchTargets`, with its parity test in `src/lib/mirror/metrics.test.ts` (Toys 4). The
@@ -632,13 +664,15 @@ What the page does where nothing above says:
   try/catch; the page works, asking the voice each visit, reseeding the quizzes and forgetting the
   warm-up's Skip.
 - **Sound off**: each play button draws what it would play and shows the hint "Sound is off, so
-  nothing played. Turn sound on to hear it."; the cold open's reveal still shows after a choice,
-  since it is the drawing; and Start stays unavailable, with state 5's hint, until Merc's siren has
-  sounded with the sound on (Toys 4, state 5: Lesson 1's rule, as Lessons 5 and 6 apply it).
+  nothing played. Turn sound on to hear it."; as built, the cold open's reveal waits for Play
+  "Twinkle" on the column heard with the sound on, so it does not show (Toys 2); and Start stays
+  unavailable, with state 5's hint, until Merc's siren has sounded with the sound on (Toys 4, state
+  5: Lesson 1's rule, as Lessons 5 and 6 apply it).
 - **No Web Audio** (no `AudioContext` in the browser): nothing can sound and the listener cannot
-  run, so every play button draws in silence with the hint "This browser can't play sound here.",
-  and Sing it offers the listen-only path of state 9 at once, with no Start; the Wrap keeps the
-  Vocal Range Test card.
+  run, so every play button draws in silence; as built, only Sing it shows the hint "This browser
+  can't play sound here.", and the page's other plays draw in silence as the kit's do on every page
+  (`Sound.canPlay`); Sing it offers the listen-only path of state 9 at once, with no Start; the Wrap
+  keeps the Vocal Range Test card.
 - **No microphone, a refusal, or a listener that fails to load**: state 9 of Toys 4.
 - **The tab hidden, or the section left, during a take**: the take is abandoned and the microphone
   released; no reading and no feeling question follow; the take counts towards the three. The flow
@@ -726,8 +760,9 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
 1. No AudioContext before the first tap; nothing plays before a play button.
 2. Cold open: before a choice the chart shows the column with no beads and no bracket, and the live
    text names no note, even while "Twinkle" plays; Play "Twinkle" plays before a choice; the beads,
-   the gold bracket and the reveal appear only after a choice; with sound off, the hint shows and
-   a choice still draws the reveal.
+   the gold bracket and the reveal appear only after a choice and, as built, only once Play
+   "Twinkle" on the column has been heard (Toys 2); with sound off, the hint shows and the reveal
+   waits.
 3. The chart by keyboard alone: Tab reaches every control; the scrub bar and the push note move by
    arrows, and Home and End jump; Start lower and Start higher move "Twinkle" and the readout
    follows; the sounds, the singers, the voice switch and free play's state switch toggle
@@ -770,16 +805,17 @@ Lesson 1's contract, and what its page on the app changed from the preview (Less
 the app"), unchanged and binding: no CDN, self-hosted fonts, Web Animations in place of GSAP, and
 practice links that carry `?lesson=07`. Then the layout, accessibility, sound, motion and storage
 rules: 16 px side gutters, no sideways scroll at 390 px, `min-width: 0` on text children, touch
-targets of at least 44 px with no two tap zones overlapping, visible focus, a single dark theme
-with every colour a token and an explicit body background, sound only after a tap, localStorage
-only for per-viewer conveniences inside try/catch, and the whole page usable with no sound, no
-WebGL, no storage and no microphone. Every ♯ the page prints in text (the reading, the chart's row
-names, the bands' spans) has a spoken name, as Lesson 2's contract sets: the sign is `aria-hidden`
-and a visually hidden word follows it, so a screen reader says "C sharp". The page stores the quiz
-seeds and records (`fyp-l07-recall-seed`, `fyp-l07-recall-v1`, `fyp-l07-seed`, `fyp-l07-quiz-v1`),
+targets of at least 44 px with no two tap zones overlapping, visible focus, a single dark theme with
+every colour a token and an explicit body background, sound only after a tap, localStorage only for
+per-viewer conveniences inside try/catch, and the whole page usable with no sound, no WebGL, no
+storage and no microphone. Every ♯ the page prints in text (the reading, the chart's row names, the
+bands' spans) has a spoken name, as Lesson 2's contract sets: the sign is `aria-hidden` and a
+visually hidden word follows it, so a screen reader says "C sharp". The page stores the quiz seeds
+and records (`fyp-l07-recall-seed`, `fyp-l07-recall-v1`, `fyp-l07-seed`, `fyp-l07-quiz-v1`),
 `fyp-done`, `fyp-voice`, the warm-up's Skip (`fyp-l07-warmup`) and the masthead's Pause animations
-choice, `fyp-motion` (`kit/motion-switch.ts:12`), and nothing from the take: no band, no note, no
-answer to "How did that feel?" and no ending.
+choice, `fyp-motion` (`kit/motion-switch.ts:12`); through the kit, as every lesson page does, its
+memory of the furthest step, `fyp-pos` (`kit/position.ts:20`); and nothing from the take: no band,
+no note, no answer to "How did that feel?" and no ending.
 
 Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 
