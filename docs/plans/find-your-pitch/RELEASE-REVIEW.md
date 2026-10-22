@@ -16,6 +16,7 @@ the review itself was wrong. File and line references are to main @ fd2166c, bef
 - **Partly fixed:** S-08, S-17.
 - **Corrected (the review was wrong in part):** S-09, G-02.
 - **Decided by the owner:** D-01, D-02.
+- **Also fixed:** axe's one serious result, `target-size` on the stacked footer practise links of Lessons 6 and 8 (Appendix A): footer links are 44 px tall now. axe reports only the moderate landmark notes on each page (S-29).
 - **P1 still open:** S-08, G-04, V-01 (G-02 keeps one owner question; S-08 and V-01 wait on devices; G-04 is a layout decision).
 
 ## Contents
@@ -143,7 +144,7 @@ None found.
   - Where: kit/lesson-menu.ts:404-408 (also the menu card "You are here: step 3 of 6", lesson-menu.ts:209-211, 328)
   - Fix: Start the name with the visible words: "Season 1, Lesson 1: What is a note? All lessons". Same for the "You are here" card.
   - Standard: WCAG 2.5.3 (A)
-  - **Status (Fixed):** The button's name is now its visible label plus hidden words: "Season 1 · Lesson 02, Twelve notes. All 14 lessons" ("Lesson 02, ..." on phones, where the season prefix is hidden). The "You are here" card reads "Continue. You are here: step 3 of 6, ...".
+  - **Status (Fixed):** The button's name now starts with its visible label, as the screen shows it at that width: "Season 1 · Lesson 02, Twelve notes. All 14 lessons", or "Lesson 02, ..." at 1020 px and under, where the season prefix is hidden. The "You are here" card reads "Continue. You are here: step 3 of 6, ...".
 - [x] **S-05** Segmented toggles hide which option is on, and clip their focus ring `CODE`
   - Sharps / Flats / Both and Spiral / Keyboard / Tiles / Ruler on live Lesson 2 (and Letters / Do-re-mi in the kit) mark the selected segment only with a 16% aqua tint: 1.38:1 against the unselected segment. `.seg { overflow: hidden }` clips the 3px-outset focus outline. In forced colors nothing shows the state.
   - Where: kit/lesson-parts.css:30-50; lesson-02/lesson-02.css:110-128; learn/02.html:852-886, 1795-1862
@@ -182,7 +183,7 @@ None found.
   - Where: learn/01.html:726-734, 806-810; kit/loud.ts:138-151; lesson-01/toy-octave.ts:62-85
   - Fix: aria-live="polite" on #loudFlag and #octFlag (as learn/03.html:788-790), written once per change.
   - Standard: WCAG 4.1.3, 1.3.1
-  - **Status (Fixed):** Both flags are spoken once per change through the kit status line (Lesson 3's loudness flag too, whose own live region is dropped). Try 1.26, Back to 2 and Try 3 speak what the ratio slider now says.
+  - **Status (Fixed):** Both flags are spoken once per change through the kit status line (Lesson 3's loudness flag too, whose own live region is dropped). Try 1.26, Back to 2 and Try 3 speak what the ratio slider now says. Found while checking: an arrow key moved "how fast" by under half a hertz, below the flag's bar, so a keyboard never raised "Pitch: climbing" at all; the flag now measures from where it last spoke.
 - [x] **L1-02** Step 4 says "slide the ratio and listen", but the slider is silent `BROWSER`
   - Try: "Slide the ratio from 1 to 3 and listen." The ratio slider only retunes a tone that "Play both" started (and that stops after 9 s). Checked in Chromium: no sound starts while the slider moves. Figures 2 and 3 do sound while held, so learners expect it.
   - Where: learn/01.html:1104; lesson-01/toy-octave.ts:107, 127-141
@@ -197,7 +198,7 @@ None found.
   - Where: Shots L01-phone-10, L02-phone-11, L02-desktop-09, L04-desktop-10; kit/quiz.ts; kit/lesson-parts.css
   - Fix: Label both cards in words ("Your answer", "Correct answer"); give a wrong pick its own treatment (filled "x" disc, solid border); dim only the option nobody chose.
   - Standard: WCAG 1.3.1 / 1.4.1 risk; feedback clarity
-  - **Status (Fixed):** Answered cards say what they are: "Your answer" on a miss, "Right answer" on the right one, "Your answer: right" when they are the same. A missed pick is no longer dimmed: solid border and a filled cross. Only the options nobody chose step back.
+  - **Status (Fixed):** Answered cards say what they are, on a line under the answer: "Your answer" on a miss, "Right answer" on the right one, "Your answer: right" when they are the same. A missed pick is no longer dimmed: solid border and a filled cross. Only the options nobody chose step back.
 - [ ] **G-02** Sound is spread over three controls, and Play works while the gate says sound is off `DESIGN`
   - Lesson 1's first screen has the masthead "Sound" switch (its label never says on or off), the "Turn sound on" gate, and a lock line "Choose an answer to unlock the sound". After the predict, the Play buttons are enabled while the gate still says sound is off, so the learner presses Play, hears nothing and gets a 4-second toast. Lessons 2 to 8 repeat the masthead-plus-gate pair.
   - Where: Shots L01-desktop-00, L01-phone-02; kit/page-chrome.ts; kit/sound.ts; learn/0N.html gate
@@ -209,7 +210,7 @@ None found.
   - Where: Shots L01-phone-00 (masthead), L02-phone-05; learn/0N.html #motionSwitch `.mw` span; kit/lesson-base.css
   - Fix: Label it for what it does on every width ("Motion" with the pause glyph, or "Still" / "Moving"), or move it into the lesson menu with a distinct glyph in the bar.
   - Standard: WCAG 2.4.6 (labels describe purpose)
-  - **Status (Fixed):** Below 1240 px the switch now reads "Animations" beside its pause icon instead of a bare "Pause"; its name is still "Pause animations". Under 390 px it stays icon-only (unchanged).
+  - **Status (Fixed):** Below 1240 px the switch now reads "Animations" beside its pause icon instead of a bare "Pause"; its name is still "Pause animations". To make room on phones, the lesson menu button's progress ring now gives way under 420 px (it did under 360 px); the menu itself shows the same progress. Checked at 390, 400, 414, 420, 821, 900, 1024, 1240 and 1300 px: the masthead never scrolls sideways. Under 390 px the switch stays icon-only (unchanged).
 - [ ] **G-04** Phone deck: each "Try" line sits a full screen below the toy it refers to `DESIGN`
   - On phones the step is one card: figure first, then the step text, "Try" and "Notice". The instruction and its toy are never on screen together, so the learner reads, scrolls up, acts, then scrolls down for "Notice". This breaks the core loop on both live lessons.
   - Where: Shots L02-phone-05 and -06, L01-phone-04 and -05, L04-phone-06 and -07; kit/lesson-stage.css; kit/step-deck.ts
