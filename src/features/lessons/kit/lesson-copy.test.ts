@@ -330,6 +330,7 @@ describe("the season's copy", () => {
       [10, 'bright-dark'],
       [11, 'same-note'],
       [12, 'hundreds'],
+      [14, 'compelling'],
     ])
   })
 })

@@ -390,7 +390,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Phrasing: sing a whole song',
     short: 'Phrasing',
     topics: ['S16', 'S17', 'T22'],
-    hook: 'If you can hit every note of a song, what is still missing between correct and compelling?',
+    hook: 'If every note of a song is in tune, what is left to shape?',
     sig: "A whole song's pitch line with breath marks and a swell drawn in light.",
     pr: {
       link: {
