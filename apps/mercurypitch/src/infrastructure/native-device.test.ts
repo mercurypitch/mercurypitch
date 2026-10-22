@@ -40,6 +40,16 @@ const platform = vi.hoisted(() => ({
     (_handler: (state: { connected: boolean; showing: boolean }) => void) =>
       vi.fn(),
   ),
+  readTvStage: vi.fn(async () =>
+    Promise.resolve(
+      null as { enabled: boolean; connected: boolean; showing: boolean } | null,
+    ),
+  ),
+  onTvStage: vi.fn(
+    (_handler: (state: { connected: boolean; showing: boolean }) => void) =>
+      vi.fn(),
+  ),
+  sendTvStage: vi.fn(async (_message: unknown) => Promise.resolve()),
 }))
 
 const unlock = vi.hoisted(() => ({
@@ -224,7 +234,7 @@ describe('the device a room reaches through the bridge', () => {
   })
 
   it('hands the lyrics to an iOS window, and survives a refusal', async () => {
-    platform.pictureInPictureNeedsLyrics.mockReturnValueOnce(true)
+    platform.pictureInPictureNeedsLyrics.mockReturnValue(true)
     platform.setPictureInPictureLyrics.mockImplementationOnce(async () =>
       Promise.reject(new Error('not available')),
     )
@@ -310,6 +320,35 @@ describe('the device a room reaches through the bridge', () => {
 
   it('has no TV to watch on Android', () => {
     expect(createNativeDevice().onTvLyrics).toBeUndefined()
+  })
+
+  it('gives an iOS room the TV stage: whether it shows, and what to draw', async () => {
+    platform.pictureInPictureNeedsLyrics.mockReturnValue(true)
+    platform.readTvStage.mockResolvedValueOnce({
+      enabled: true,
+      connected: true,
+      showing: true,
+    })
+    platform.sendTvStage.mockImplementationOnce(async () =>
+      Promise.reject(new Error('not available')),
+    )
+    const stage = createNativeDevice().tvStage
+    const handler = vi.fn()
+
+    stage?.watch(handler)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    platform.onTvStage.mock.calls[0]?.[0]({ connected: true, showing: false })
+    expect(() => {
+      stage?.send({ v: 1, kind: 'idle' })
+    }).not.toThrow()
+    await Promise.resolve()
+
+    expect(handler.mock.calls).toEqual([[true], [false]])
+    expect(platform.sendTvStage.mock.calls).toEqual([[{ v: 1, kind: 'idle' }]])
+  })
+
+  it('has no TV stage on Android', () => {
+    expect(createNativeDevice().tvStage).toBeUndefined()
   })
 
   it('stands the unlock clip aside while the lock screen’s carrier holds the session', () => {

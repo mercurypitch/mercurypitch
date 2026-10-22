@@ -15,6 +15,7 @@ import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '
 import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
+import { createTvStage } from './native-tv-stage'
 
 /**
  * The picture the system's media controls show with every song: behind it in
@@ -45,6 +46,8 @@ function watchTvLyrics(handler: (showing: boolean) => void): () => void {
 }
 
 export function createNativeDevice(): NativeDeviceApi {
+  // A TV that draws the room's whole stage, on the phone that can give one.
+  const tvStage = createTvStage()
   return {
     micStopsOtherApps: micStopsOtherApps(),
     acquireAudio: (owner, options) => acquireSharedAudioContext(owner, options),
@@ -66,6 +69,7 @@ export function createNativeDevice(): NativeDeviceApi {
       void setPictureInPictureAutoEnter(on).catch(() => undefined)
     },
     onPictureInPicture: (handler) => onPictureInPicture(handler),
+    ...(tvStage === null ? {} : { tvStage }),
     pictureInPictureLyrics: pictureInPictureNeedsLyrics()
       ? (script) => {
           // As with the window itself: a phone without it shows nothing.
