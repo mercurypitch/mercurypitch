@@ -70,7 +70,7 @@ goes in the thumbnail text, the first line of the description and the cold open 
 | 11  | Voice            | Registers and the break               | S12                    | Why does your voice sometimes flip as you slide up?                                                  |
 | 12  | Theory           | Chords and the four-chord song        | T19, T20, T21          | How can two songs share the same four chords and still sound different?                              |
 | 13  | Voice            | Resonance and vowels                  | T28, S13, S14          | If "ee" and "ah" sung on the same note draw the same pitch line, what makes them sound different?    |
-| 14  | Voice and theory | Phrasing: sing a whole song           | S16, S17, T22 (light)  | If you can hit every note of a song, what is still missing between correct and compelling?           |
+| 14  | Voice and theory | Phrasing: sing a whole song           | S16, S17, T22 (light)  | If every note of a song is in tune, what is left to shape?                                           |
 
 ### 2.1 Lesson cards
 

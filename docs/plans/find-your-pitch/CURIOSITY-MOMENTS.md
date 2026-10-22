@@ -239,23 +239,35 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Visual:** the pitch line (exists), a spectrum strip in the LED-analyser look and synthesised vowels (new; the
   kit's voices are partials through a low-pass). **Payoff:** the vowel step; the checkpoint, one note through "ee",
   "eh", "ah", "oh", "oo". Never claim to assess a vowel.
-- **Tease:** a whole song's line, every note mint, beside a dashed copy with breath marks, a swell and a "?" (new
-  still): "Every note in the band, start to finish."
+- **Tease:** Twinkle's first phrase as Lesson 14's song line draws it, seven amber bands with Merc's line through
+  each, drawn twice side by side; in the second copy the seventh band, "star", holds a "?" and no line (new still):
+  "'Twinkle, twinkle, little star', twice. The second 'star' swells." A still that drew the second "star" in its band,
+  or swelling, would answer Lesson 14's predict. The old line, "Every note in the band, start to finish.", stays as
+  the alternative `band` (Lesson 14 FACTS 2).
 - **Facts:** needs a source for formants (a voice-science text; the series cites Sundberg and Titze elsewhere);
   "approximately" for Chladni ratios; say the line stays flat of Merc's synthesised note, not yet of a real voice.
 
-### Lesson 14 · Phrasing: sing a whole song · voice; card only · hook kept
+### Lesson 14 · Phrasing: sing a whole song · voice; written; no page yet
 
-- **Opening:** Merc sings one phrase twice, every note in the band: once with a breath snatched mid-phrase and no
-  shape, once with a planned breath at its end and a swell drawn in light. Orange "Every note was in the band.
-  Isn't that the whole job?" Blue "Listen to it twice." Predict: "Both takes hit every note. Will they sound the
-  same?" [The same] [Different].
-- **Visual:** the line with breath marks (Lesson 6 draws the first) and the swell (new). **Payoff:** the breath and
-  swell steps; the checkpoint, one phrase twice, the second planned. Never rate breath; never reward length.
-- **Tease:** none: `nextCard` returns null after Lesson 14. A season-end card (new; §5 item 4) could close the
-  trailer's loop, "You've seen every note you sing. Now sing a whole song.", with Karaoke Night and the map.
-- **Facts:** needs a source for messa di voce (Titze, per the card) and breath planning (Arneson, per the card); the
-  tune needs a rights check ("Auld Lang Syne" and "Twinkle" have one).
+- **Opening:** Merc sings the first line of "Twinkle, Twinkle, Little Star" twice on "ooh", every note in its band:
+  take 1 with a breath snatched inside the line, take 2 with the breath at its end and "star" swelling. Orange "If
+  every note is in tune, isn't the song finished?" Blue "Listen to it twice." Predict: "Merc sings it again, and this
+  time "star" swells: soft, louder, soft. As it gets louder, what will its line do?" [It rises] [It stays level]. The
+  plan's "Will they sound the same?" is answered by the hook right above it, so the written lesson asks what a swell
+  does to the line instead (Lesson 14 FACTS 14).
+- **Visual:** the song line with breath marks (the slide guide's, from Lesson 6's page) and the swell as light along a
+  band (new). **Payoff:** the breath and swell steps; the checkpoint, one phrase twice, the second with a planned
+  breath and a swell, recorded on the device and played back. Never rate breath; never reward length.
+- **Tease:** none: the season ends on the kit's closing card (`SEASON_END`), "You've seen every note you sing. Now
+  sing a whole song.", with Karaoke Night and the map; after "Effortful", "Uncomfortable" or "Just listen today" it
+  keeps only its first sentence and the map (Lesson 14 WEB-SPEC, What the kit and the app still need, 12).
+- **Hook, proposed:** "If every note of a song is in tune, what is left to shape?" Reason: no source says what makes a
+  performance "compelling", and the lesson answers in full what is left to shape; the old wording stays as the
+  alternative `compelling` (Lesson 14 FACTS 1).
+- **Facts:** sourced in Lesson 14's FACTS: phrases and cadences (Wikipedia, Phrase and Cadence), the breath mark
+  (Wikipedia, borne out in part by a music dictionary and a notation handbook), legato and breath planning (Arneson),
+  messa di voce (Titze 1999, Collyer 2007, Kirsch 2025), hearing your own voice (Orepic 2023); the tune's rights check
+  is Lesson 6's (FACTS 28, 29).
 
 ## 3. How it lands in each medium
 
