@@ -681,6 +681,6 @@ Decided on 19 October 2026: 4, 5, 8 (the playlist element) and 9. The owner uplo
 11. **Thumbnails at 3840x2160** (YouTube's and the plan's recommendation) would need Merc rendered
     again at high resolution; the 1280x720 set meets every limit today.
 12. **Orange Merc's name and pronouns** (§ 12 item 1): the copy avoids both until you decide.
-13. **A source marker on YouTube links** (such as `?lesson=01`) once the app reads `?lesson=`
-    (CURRICULUM § 4 item 6), so lesson-to-app conversions from YouTube can be counted (§ 9).
+13. **A source marker on YouTube links** (such as `?lesson=01`) once the app records where a visit
+    came from (CURRICULUM § 4 item 6), so YouTube's lesson-to-app conversions can be counted (§ 9).
 14. **1080p or 4K delivery** (§ 12 item 4): these sheets upload the 1080p60 masters.

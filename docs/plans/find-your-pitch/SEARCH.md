@@ -200,7 +200,7 @@ What a reader, a crawler and an answer engine all need:
   - llms.txt, as one bullet with its one-line answer;
   - the service worker's document list.
 - **Sitemap `lastmod`:** the day it first went live, then the date its
-  content changes. `/learn/01` says 2026-10-16 today; set it to its release day.
+  content changes. `/learn/01` says 2026-10-20 today; set it to its release day.
 - **On the day the console publishes it**, not at the release:
   - request indexing in Search Console;
   - submit the URL in Bing Webmaster Tools.
