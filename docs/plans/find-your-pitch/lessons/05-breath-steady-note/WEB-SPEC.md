@@ -482,7 +482,7 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
 
 ## Explorer and season data
 
-- **Season data**: Lesson 5's entry in `kit/season.ts` (`:172-180`) gains today's link, `href`
+- **Season data**: Lesson 5's entry in `kit/season.ts` (`:244-263`) gains today's link, `href`
   `/mirror?lesson=05`, `addr` `mercurypitch.com/mirror`, `label` "Voice Mirror" and `note` "its
   Hold: a comfortable note, held steady" (a note is printed on the card, so it speaks to the
   learner), and `minutes: 17` (FACTS 2, 70), and keeps its `needs` until the slug ships, with the
