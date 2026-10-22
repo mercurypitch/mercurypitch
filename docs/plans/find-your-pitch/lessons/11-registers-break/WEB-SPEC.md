@@ -84,7 +84,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:373-382`), with no variant's team note anywhere in the markup (`:410-416`; FACTS 1), and the
+   (`:374-383`), with no variant's team note anywhere in the markup (`:411-417`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 7: Slides, sirens and your range", a link to
    `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so
@@ -97,7 +97,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    (390 x 844) the title and the opening's first control, Play orange Merc's siren, and the two
    choices belong on the first screen, and on a tablet in landscape (1024 x 640) the stage and the
    choices too (CURIOSITY-MOMENTS § 3.1, "Above the fold",
-   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:282-284`). Of the plan's levers, the recall's
+   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:288-290`). Of the plan's levers, the recall's
    place is already used, since it follows the predict; the others are the Mercs' size (`--merc`,
    `kit/lesson-stage.css:193`) and the hook's length, and this hook is a short one.
    `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its seven sizes and
@@ -709,7 +709,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
   (`season.ts:362`), which this PR changed, and its tease and the alternative `same-note` are
-  `kit/lesson-copy.ts`'s (`:123-132`), as FACTS 1 records: this spec proposes no other change to a
+  `kit/lesson-copy.ts`'s (`:128-137`), as FACTS 1 records: this spec proposes no other change to a
   hook or a tease. `EDGES` already holds [7, 11] (`season.ts:428`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -759,7 +759,7 @@ others take it.
      break: Find Your Pitch, Lesson 11 | MercuryPitch" runs to 66 (Decisions). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:229`), is
      not used: "why voices flip" leans on the predict's answer. The worker never rewrites a title.
-     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:373-382`;
+     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:374-383`;
      Hero);
    - the meta description, "Why does your voice sometimes flip as you slide up? A sixteen-minute
      lesson with sound toys on chest voice, head voice and the break." (133 characters, inside the
@@ -768,9 +768,9 @@ others take it.
    - `og:title` and `twitter:title`, "Registers and the break: Find Your Pitch, Lesson 11"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "Why does your voice sometimes flip as you slide
-     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:399-402`;
+     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:400-403`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:403-405`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:404-406`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/11`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:116-134`);
@@ -781,7 +781,7 @@ others take it.
      (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:388-396`, `:406`): `@id` `https://mercurypitch.com/learn/11#lesson` and
+     (`lesson-copy.test.ts:389-397`, `:407`): `@id` `https://mercurypitch.com/learn/11#lesson` and
      `url` `https://mercurypitch.com/learn/11` (`lesson-pages.test.ts:146-147`); the headline
      "Registers and the break"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:158-159`); `position: 11`,
@@ -811,10 +811,10 @@ others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-120`, `:206-209`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:436-442`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-120`, `:209-212`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:439-445`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:162-172`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:165-175`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed
