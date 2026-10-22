@@ -403,8 +403,8 @@ test.describe('Step 4 on a phone, with touch', () => {
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    // sound on first: the gate in the hero gives up its button as sound
-    // comes on, and the page above the step grows shorter
+    // sound on first, as a reader has it by Step 4; the gate in the hero
+    // keeps its height as sound comes on, so nothing above the step moves
     await page.goto('/learn/07')
     await page.locator('#gateBtn').tap()
     await goStep(page, 4)

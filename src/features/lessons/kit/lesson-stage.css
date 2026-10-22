@@ -63,6 +63,17 @@
   color: var(--ink-2);
   flex: 1 1 200px;
   min-width: 0;
+  /* the line with sound off and the line with it on share one cell (kit/page-chrome.ts), so the
+     gate keeps the taller one's height in both states and the page below it never moves */
+  display: grid;
+}
+.gate p > [data-gate-line] {
+  grid-area: 1 / 1;
+}
+/* hidden, not removed: it keeps its height, and a screen reader reads only the current line */
+.gate:not(.is-on) [data-gate-line='on'],
+.gate.is-on [data-gate-line='off'] {
+  visibility: hidden;
 }
 .gate .ico {
   width: 22px;
