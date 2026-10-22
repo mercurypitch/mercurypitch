@@ -199,19 +199,25 @@ export function initSing(stills: RingStills): void {
       toListening('nomic')
       return
     }
-    const reading = await singOne({
-      mod,
-      listener,
-      view,
-      which: r.which,
-      midi,
-      label: ringLabel(midi),
-      cancelled: () => me.cancelled,
-      onTurn: () =>
-        view.status(
-          `Note ${i + 1} of 3, ${name}: your turn. Sing it back at about speaking volume.`,
-        ),
-    })
+    // the tab hidden while the listener loaded: its visibilitychange came
+    // before the microphone did, so let it go here and end the take unstarted
+    const hidden = document.hidden
+    if (hidden) leave(true)
+    const reading = hidden
+      ? null
+      : await singOne({
+          mod,
+          listener,
+          view,
+          which: r.which,
+          midi,
+          label: ringLabel(midi),
+          cancelled: () => me.cancelled,
+          onTurn: () =>
+            view.status(
+              `Note ${i + 1} of 3, ${name}: your turn. Sing it back at about speaking volume.`,
+            ),
+        })
     release()
     if (take !== me) return
     take = null

@@ -1,12 +1,90 @@
 // ============================================================
-// Lesson 3 Sing it tests — the notes, the live tag and the chart's words
+// Lesson 3 Sing it tests — the notes, the live tag, the chart's words, a hidden tab
 // ============================================================
+//
+// The card's own tests load learn/03.html's body into jsdom and drive
+// initSing as the page does. The listener is a double that counts the takes
+// it opens and the times the microphone is let go at once.
 
-import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import type * as ListenModule from '@/features/lessons/kit/listen'
 import type { TakeReading } from '@/features/lessons/kit/take'
 import { notesFor } from './sing'
 import { chartSummary, octaveTag } from './sing-take'
+
+const PAGE = readFileSync(resolve(process.cwd(), 'learn/03.html'), 'utf8')
+
+const mic = vi.hoisted(() => ({
+  /** Runs as the page asks for the microphone, before the listener resolves. */
+  opening: null as (() => void) | null,
+  /** Takes opened, and the times the microphone was let go at once. */
+  opened: 0,
+  releasedNow: 0,
+}))
+
+vi.mock('@/features/lessons/kit/listen', async (importOriginal) => {
+  const real = await importOriginal<typeof ListenModule>()
+  return {
+    ...real,
+    listen: () => {
+      mic.opening?.()
+      return Promise.resolve({
+        holding: true,
+        latest: () => null,
+        release: () => undefined,
+        releaseNow: () => {
+          mic.releasedNow += 1
+        },
+      })
+    },
+    // every take hears nothing and ends as a stopped one does
+    takeFrames: () => {
+      mic.opened += 1
+      return Promise.resolve(null)
+    },
+  }
+})
+
+/** The page's card on its own markup, the lower voice stored, past the comfort check. */
+async function loadCard() {
+  vi.resetModules()
+  localStorage.setItem('fyp-voice', JSON.stringify('lower'))
+  const sing = await import('./sing')
+  const { Sound } = await import('@/features/lessons/kit/sound')
+  // the listener's chunk, loaded now so a take's own import of it resolves at once
+  await import('@/features/lessons/kit/listen')
+  const body = /<body[^>]*>([\s\S]*)<\/body>/.exec(PAGE)
+  if (body === null) throw new Error('learn/03.html has no body')
+  document.body.innerHTML = body[1]
+  sing.initSing({ blue: 'blue.png', orange: 'orange.png' })
+  vi.spyOn(Sound, 'context').mockReturnValue({} as AudioContext)
+  el('[data-comfort="sing"]').click()
+}
+
+function el(selector: string): HTMLElement {
+  const found = document.querySelector<HTMLElement>(selector)
+  if (found === null) throw new Error(`no ${selector}`)
+  return found
+}
+
+/** A button pressed, its take run out on the fake clock: Merc's note, the gap, the wait. */
+async function press(selector: string): Promise<void> {
+  el(selector).click()
+  await vi.dynamicImportSettled()
+  await vi.advanceTimersByTimeAsync(3000)
+}
+
+/** The tab hidden, as switching to another tab hides it: `document.hidden`, then its event. */
+function hideTab(): void {
+  Object.defineProperty(document, 'hidden', {
+    configurable: true,
+    get: () => true,
+  })
+  document.dispatchEvent(new Event('visibilitychange'))
+}
 
 const reading = (over: Partial<TakeReading>): TakeReading => ({
   steady: true,
@@ -67,3 +145,63 @@ describe("the chart's words after a take (REQ-GVC-085)", () => {
     ).toBe("Merc's note A sharp 3; no steady note heard")
   })
 })
+
+// each case loads the page's modules afresh (vi.resetModules) and parses
+// learn/03.html into jsdom: up to 1.7 s measured on a loaded 4-core machine
+describe(
+  'Sing it with the tab hidden while the microphone opens',
+  { timeout: 15_000 },
+  () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      mic.opening = null
+      mic.opened = 0
+      mic.releasedNow = 0
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+      Reflect.deleteProperty(document, 'hidden')
+      document.body.textContent = ''
+      localStorage.clear()
+    })
+
+    it('starts no take after Start, lets the microphone go, and offers the note again', async () => {
+      // Arrange
+      await loadCard()
+      mic.opening = hideTab
+
+      // Act
+      await press('[data-sing="start"]')
+
+      // Assert
+      expect(mic.opened).toBe(0)
+      expect(mic.releasedNow).toBe(1)
+      expect(el('[data-note-head]').textContent).toBe('Note 1 of 3')
+      expect(el('#singStatus').textContent).toBe(
+        'Stopped listening: the microphone is off.',
+      )
+      expect(el('[data-sing="again"]').hidden).toBe(false)
+    })
+
+    it('starts no take after Next note, lets the microphone go, and offers the note again', async () => {
+      // Arrange: the first note's take, heard as nothing
+      await loadCard()
+      await press('[data-sing="start"]')
+      mic.opening = hideTab
+
+      // Act
+      await press('[data-sing="next"]')
+
+      // Assert
+      expect(mic.opened).toBe(1)
+      expect(mic.releasedNow).toBe(1)
+      expect(el('[data-note-head]').textContent).toBe('Note 2 of 3')
+      expect(el('#singStatus').textContent).toBe(
+        'Stopped listening: the microphone is off.',
+      )
+      expect(el('[data-sing="again"]').hidden).toBe(false)
+    })
+  },
+)

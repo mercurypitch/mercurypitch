@@ -6,14 +6,53 @@
 // (FACTS 55), what the status line says in each state, what the card
 // offers after each answer, and the claims check over every line the
 // checkpoint itself writes, beside the reader's own (hold-take.test.ts).
+// Then the card on learn/05.html's own markup, with a tab hidden while the
+// microphone opens: the listener is a double that counts the takes it
+// opens and the times the microphone is let go at once.
 
-import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type { HoldReading } from '@/features/lessons/kit/hold-take'
 import { holdChartWords, holdSummary } from '@/features/lessons/kit/hold-take'
+import type * as ListenModule from '@/features/lessons/kit/listen'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
 import { afterFeeling, emptyRecord, withTake } from './hold-flow'
 import { afterLines, HOLD_HEAD, holdNote, MAX_MOVE, phaseStatus, ringLabel, STATUS, stepStatus, } from './sing'
+
+const PAGE = readFileSync(resolve(process.cwd(), 'learn/05.html'), 'utf8')
+
+const mic = vi.hoisted(() => ({
+  /** Runs as the page asks for the microphone, before the listener resolves. */
+  opening: null as (() => void) | null,
+  /** Takes opened, and the times the microphone was let go at once. */
+  opened: 0,
+  releasedNow: 0,
+}))
+
+vi.mock('@/features/lessons/kit/listen', async (importOriginal) => {
+  const real = await importOriginal<typeof ListenModule>()
+  return {
+    ...real,
+    listen: () => {
+      mic.opening?.()
+      return Promise.resolve({
+        holding: true,
+        latest: () => null,
+        release: () => undefined,
+        releaseNow: () => {
+          mic.releasedNow += 1
+        },
+      })
+    },
+    // every take hears nothing and ends as a stopped one does
+    takeFrames: () => {
+      mic.opened += 1
+      return Promise.resolve(null)
+    },
+  }
+})
 
 const reading = (inBand: number, length: number): HoldReading => ({
   kind: 'read',
@@ -118,3 +157,96 @@ describe('the claims check (src/lib/guided-voice/claims.ts)', () => {
     }
   })
 })
+
+/** The page's card on its own markup, the lower voice stored, past the comfort check. */
+async function loadCard() {
+  vi.resetModules()
+  localStorage.setItem('fyp-voice', JSON.stringify('lower'))
+  const sing = await import('./sing')
+  const { Sound } = await import('@/features/lessons/kit/sound')
+  // the take's chunks, loaded now so its own imports of them resolve at once
+  await import('@/features/lessons/kit/listen')
+  await import('@/features/lessons/kit/hold-take')
+  const body = /<body[^>]*>([\s\S]*)<\/body>/.exec(PAGE)
+  if (body === null) throw new Error('learn/05.html has no body')
+  document.body.innerHTML = body[1]
+  sing.initSing({ blue: 'blue.png', orange: 'orange.png' })
+  vi.spyOn(Sound, 'context').mockReturnValue({} as AudioContext)
+  el('[data-comfort="sing"]').click()
+}
+
+function el(selector: string): HTMLElement {
+  const found = document.querySelector<HTMLElement>(selector)
+  if (found === null) throw new Error(`no ${selector}`)
+  return found
+}
+
+/** A button pressed, its take run out on the fake clock: Merc's note, the gap, the wait. */
+async function press(selector: string): Promise<void> {
+  el(selector).click()
+  await vi.dynamicImportSettled()
+  await vi.advanceTimersByTimeAsync(3000)
+}
+
+/** The tab hidden, as switching to another tab hides it: `document.hidden`, then its event. */
+function hideTab(): void {
+  Object.defineProperty(document, 'hidden', {
+    configurable: true,
+    get: () => true,
+  })
+  document.dispatchEvent(new Event('visibilitychange'))
+}
+
+// each case loads the page's modules afresh (vi.resetModules) and parses
+// learn/05.html into jsdom: up to 1.7 s measured on a loaded 4-core machine
+describe(
+  'Sing it with the tab hidden while the microphone opens',
+  { timeout: 15_000 },
+  () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      mic.opening = null
+      mic.opened = 0
+      mic.releasedNow = 0
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+      Reflect.deleteProperty(document, 'hidden')
+      document.body.textContent = ''
+      localStorage.clear()
+    })
+
+    it('starts no take after Start, lets the microphone go, and offers the hold again', async () => {
+      // Arrange
+      await loadCard()
+      mic.opening = hideTab
+
+      // Act
+      await press('[data-sing="start"]')
+
+      // Assert
+      expect(mic.opened).toBe(0)
+      expect(mic.releasedNow).toBe(1)
+      expect(el('#singStatus').textContent).toBe(STATUS.stopped)
+      expect(el('[data-take-actions] [data-sing="again"]').hidden).toBe(false)
+    })
+
+    it('starts no take after Again, lets the microphone go, and offers Again still', async () => {
+      // Arrange: the first hold, heard as nothing
+      await loadCard()
+      await press('[data-sing="start"]')
+      mic.opening = hideTab
+
+      // Act
+      await press('[data-take-actions] [data-sing="again"]')
+
+      // Assert
+      expect(mic.opened).toBe(1)
+      expect(mic.releasedNow).toBe(1)
+      expect(el('#singStatus').textContent).toBe(STATUS.stopped)
+      expect(el('[data-take-actions] [data-sing="again"]').hidden).toBe(false)
+    })
+  },
+)

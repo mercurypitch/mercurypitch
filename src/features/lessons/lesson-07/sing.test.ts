@@ -9,7 +9,8 @@
 // hint; without Web Audio Sing it is listen-only with no Start; a refused
 // microphone listens only and keeps the Vocal Range Test card; a steady A3
 // reads as its one note, "Easy" offers Again once, and after a second take
-// it is gone; "Uncomfortable" takes the band away; and storage holds
+// it is gone; "Uncomfortable" takes the band away; a tab hidden while the
+// microphone opens starts no take and lets it go; and storage holds
 // nothing but `fyp-voice` and `fyp-l07-warmup`. The listener is a double:
 // its takes are synthetic frames, read by the real siren reader.
 
@@ -30,20 +31,34 @@ function steady(midi: number, seconds: number): F0Frame[] {
   return frames
 }
 
-const takes = vi.hoisted(() => ({ next: [] as F0Frame[] }))
+const takes = vi.hoisted(() => ({
+  next: [] as F0Frame[],
+  /** Runs as the page asks for the microphone, before the listener resolves. */
+  opening: null as (() => void) | null,
+  /** Takes opened, and the times the microphone was let go at once. */
+  opened: 0,
+  releasedNow: 0,
+}))
 
 vi.mock('@/features/lessons/kit/listen', async (importOriginal) => {
   const real = await importOriginal<typeof ListenModule>()
   return {
     ...real,
-    listen: () =>
-      Promise.resolve({
+    listen: () => {
+      takes.opening?.()
+      return Promise.resolve({
         holding: true,
         latest: () => null,
         release: () => undefined,
-        releaseNow: () => undefined,
-      }),
-    takeFrames: () => Promise.resolve(takes.next),
+        releaseNow: () => {
+          takes.releasedNow += 1
+        },
+      })
+    },
+    takeFrames: () => {
+      takes.opened += 1
+      return Promise.resolve(takes.next)
+    },
   }
 })
 
@@ -82,15 +97,28 @@ const keys = (): string[] =>
     (_, i) => localStorage.key(i) ?? '',
   )
 
+/** The tab hidden, as switching to another tab hides it: `document.hidden`, then its event. */
+function hideTab(): void {
+  Object.defineProperty(document, 'hidden', {
+    configurable: true,
+    get: () => true,
+  })
+  document.dispatchEvent(new Event('visibilitychange'))
+}
+
 beforeEach(() => {
   localStorage.clear()
   webAudio(true)
+  takes.opening = null
+  takes.opened = 0
+  takes.releasedNow = 0
 })
 
 afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   webAudio(false)
+  Reflect.deleteProperty(document, 'hidden')
   document.body.textContent = ''
   localStorage.clear()
 })
@@ -360,6 +388,26 @@ describe("Lesson 7's Sing it: the takes", () => {
     expect(shown(p, '[data-panel="feel"]')).toBe(false)
     expect(shown(p, '[data-take-actions] [data-sing="again"]')).toBe(true)
     expect(shown(p, '[data-take-actions] [data-sing="today"]')).toBe(true)
+  })
+
+  it('starts no take when the tab is hidden while the microphone opens, lets it go, and offers Start again', async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const p = await load()
+    p.el('[data-comfort="sing"]').click()
+    p.el('[data-panel="voice"] [data-voice="lower"]').click()
+    await playMerc(p)
+    takes.opening = hideTab
+
+    // Act: Start, and the tab hidden before the listener resolves
+    await sing(p, p.el('[data-sing="start"]'), steady(57, 3))
+
+    // Assert
+    expect(takes.opened).toBe(0)
+    expect(takes.releasedNow).toBe(1)
+    expect(status(p)).toBe('Stopped listening: the microphone is off.')
+    expect(shown(p, '[data-panel="prepare"]')).toBe(true)
+    expect(shown(p, '[data-sing="start"]')).toBe(true)
   })
 
   it('stores nothing but the voice and the warm-up’s Skip', async () => {
