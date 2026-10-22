@@ -608,12 +608,13 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
 2026): an item main has met since says so, and the line references are main's.
 
 1. The lesson host: `learn/07.html` at `/learn/07`. On main the dev and preview servers and the
-   build take every `learn/NN.html` as a lesson page, with no entry of its own, and keep a draft out
-   of production until its sign-off (`vite.config.ts:77-87`, `:139-141`, `:473`; `kit/drafts.ts`).
-   Built: `/learn/07` and `/learn/07.html` in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts`,
-   as `/learn/01` is). Left out on purpose: `public/sitemap.xml` and Lesson 7 in `public/llms.txt`'s
-   "Lessons" list, since the site worker lists a draft there while the admin console publishes it,
-   and its release adds it for good.
+   build take every `learn/NN.html` as a lesson page, with no entry of its own
+   (`vite.config.ts:77-86`, `:138-140`, `:474`), and the site worker keeps a draft out of production
+   until its sign-off or until the console publishes it (`src/lesson-gate.ts:26-30`;
+   `kit/drafts.ts`). Built: `/learn/07` and `/learn/07.html` in `STANDALONE_DOCUMENT_PATHS`
+   (`src/lib/sw-runtime.ts`, as `/learn/01` is). Left out on purpose: `public/sitemap.xml` and
+   Lesson 7 in `public/llms.txt`'s "Lessons" list, since the site worker lists a draft there while
+   the admin console publishes it, and its release adds it for good.
 2. The page's head, as Lesson 1's (`learn/01.html`). As built, held to the head checks of
    `src/tests/lesson-pages.test.ts` (a title of at most 60 characters, a description of at most
    160): title "Slides, sirens and your range | MercuryPitch", and `og:title` "Slides, sirens and

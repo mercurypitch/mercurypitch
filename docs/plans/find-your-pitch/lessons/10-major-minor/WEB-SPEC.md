@@ -11,14 +11,16 @@ lives in an earlier lesson's module moves into the kit first. Four parts this pa
 Lesson 6's spec adds to the kit: the ear game for any number of answers, the guide's breath mark,
 Move do and the names switch's modes. Lesson 6's page is not on main yet. It is PR #1149, read for
 this spec on `feat/lesson-06-page` at `f6333d527`, and it moves the first two into the kit, so they
-are marked here "from Lesson 6's page". It keeps Move do and its names modes on its own page, so
-this page moves those two into the kit itself and takes Lesson 6's copies with it, and Move do's
-buttons, Lesson 4's and Lesson 6's alike, switch from `disabled` to `aria-disabled` at their limits
-(What the kit and the app still need, items 5 to 8). If this page is built first, it adds all four,
-and Lesson 6's page reuses them. Where this page shares a behaviour with Lesson 3's checkpoint (the
-comfort check, the voice choice, "How did that feel?" and the rest card), it is Lesson 3's,
-unchanged unless this spec says otherwise, and after "Effortful" it follows Lesson 6: no further
-guide, and the rest card in the Wrap.
+are marked here "from Lesson 6's page". PR #1149 has merged since: this spec's ear game lines are
+read on main, and its other reads of `feat/lesson-06-page` stay at `f6333d527`, to be read again on
+main when this page is built. It keeps Move do and its names modes on its own page, so this page
+moves those two into the kit itself and takes Lesson 6's copies with it, and Move do's buttons,
+Lesson 4's and Lesson 6's alike, switch from `disabled` to `aria-disabled` at their limits (What the
+kit and the app still need, items 5 to 8). If this page is built first, it adds all four, and Lesson
+6's page reuses them. Where this page shares a behaviour with Lesson 3's checkpoint (the comfort
+check, the voice choice, "How did that feel?" and the rest card), it is Lesson 3's, unchanged unless
+this spec says otherwise, and after "Effortful" it follows Lesson 6: no further guide, and the rest
+card in the Wrap.
 
 One object carries the lesson across its steps: the chord beads (Toys 1). In Step 1 it is two beads
 on semitone rows, a third; in Step 2 one more bead stacks on top and it is a triad; in Step 3 its
@@ -440,11 +442,10 @@ other motion.
 
 ### 5. Major or minor?
 
-The kit's ear game, from Lesson 6's page (`kit/ear-game.ts:1-25` on `feat/lesson-06-page`): Lesson
-2's Semitone or tone? (`lesson-02/ear-game.ts:1-16`) generalised to N answers. This page needs two,
-which Lesson 2's game already has; if this page is built first, it moves the game into the kit in
-that form. It sits in its step's text column, under the Notice, as Lesson 2's game card does (its
-DECISIONS 82).
+The kit's ear game, which came with Lesson 6's page (`kit/ear-game.ts:1-32`): Lesson 2's Semitone or
+tone? (`lesson-02/ear-game.ts:1-16`) generalised to N answers. This page needs two, which Lesson 2's
+game already has. It sits in its step's text column, under the Notice, as Lesson 2's game card does
+(its DECISIONS 82).
 
 - **On thirds** (Step 1): eight rounds, each a root from C4 to G4, then the note 3 or 4 semitones
   above it, 0.6 s and 0.8 s, 0.15 s apart (FACTS 78).
@@ -454,7 +455,7 @@ DECISIONS 82).
 - **Answers**: two buttons side by side, "Major" and "Minor", each at least 44 px tall. As in Lesson
   2's game, the keys 1 and 2 answer while the card has focus and Space plays the round again, a
   focused button keeping Space for itself; the answers use `aria-disabled`, never `disabled`, so a
-  keyboard user's focus stays put (`ear-game.ts:12-16`).
+  keyboard user's focus stays put (`lesson-02/ear-game.ts:12-16`).
 - **Feedback** names the interval or the chord and the sound, never the listener (playbook rule 21).
   Unlike Lesson 2's, it names no letters, since the root changes every round and the point is the
   gap: on thirds, "A major third: 4 semitones up." or "A minor third: 3 semitones up."; on chords,
@@ -783,12 +784,11 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    its store at `lesson-06/main.ts:70-71`, on `feat/lesson-06-page`), so this page moves the switch
    into the kit and takes Lesson 6's modes with it; if this page lands first, Lesson 6's page takes
    the kit's. The page-wide store is the kit's already (`createModeStore`, `kit/names.ts:27`).
-6. The ear game (Toys 5): the kit's, from Lesson 6's page (`kit/ear-game.ts` on
-   `feat/lesson-06-page`), Lesson 2's Semitone or tone? generalised to N answers, with a deal of the
-   page's own (`deal(random)`, `kit/ear-game.ts:106-107`), a replay factor (`slower`,
-   `kit/ear-game.ts:110-111`) and a fresh seed for each run (`freshSeed`, `kit/ear-game.ts:87-88`).
-   The page's deal balances its rounds, so the game needs nothing more; if this page lands first, it
-   adds the game in that form.
+6. The ear game (Toys 5): the kit's, from Lesson 6's page (`kit/ear-game.ts`), Lesson 2's Semitone
+   or tone? generalised to N answers, with a deal of the page's own (`deal(random)`,
+   `kit/ear-game.ts:121-122`), a replay factor (`slower`, `kit/ear-game.ts:130-131`) and a fresh
+   seed for each run (`freshSeed`, `kit/ear-game.ts:95-96`). The page's deal balances its rounds, so
+   the game needs nothing more.
 7. Move do and the count-in's note (Toys 6): Lesson 4's (`lesson-04/sing.ts:32-35`, `:168-176`;
    `lesson-04/examples.ts:137-141`), promoted into the kit beside the slide guide, as Lesson 6's
    spec lists it. Lesson 6's page keeps its own on its page (`MOVE_MAX` and `clampMove`,
@@ -801,18 +801,20 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 8. The breath mark on the slide guide (Toys 6): the kit's, from Lesson 6's page (`breaths`,
    `slide-guide.ts` on `feat/lesson-06-page`). Until that lands, the gap alone shows where to
    breathe (FACTS 66); if this page lands first, it adds the mark in that form.
-9. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:124-126`). This page would be
-   its fourth user, after `lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`
-   and `lesson-05/quiz-questions.ts:19-20`, which then import it from there. The quiz needs nothing
-   else: its prefix, slot and away links are on main (`quiz.ts:52-58`, `:73-97`, `:173-203`).
+9. `kit/quiz.ts`: `recallStepHref`, built: Lesson 8's page moved it into the kit beside
+   `lessonPageHref` (`:128-130`, `:124-126`), and Lessons 3, 4 and 5 take it from there
+   (`lesson-03/quiz-questions.ts:24`, `lesson-04/quiz-questions.ts:32`,
+   `lesson-05/quiz-questions.ts:20`), as this page will. The quiz needs nothing else: its prefix,
+   slot and away links are on main (`quiz.ts:52-58`, `:73-97`, `:173-203`).
 10. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after
     "Effortful", as Lesson 6's does, leaving the kit's default for the coach (`comfort.ts:58-67`),
     and it keeps the kit's lock on the feeling answer, where Lesson 6's page passes the new
     `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:325-360` on every page from its first commit, and
-    by `src/tests/lesson-pages.test.ts:85-183` once released:
+    `src/features/lessons/kit/lesson-copy.test.ts:325-360` and
+    `src/tests/lesson-pages.test.ts:112-210` on every page, a draft's included, from its first
+    commit:
     - title, at most 60 characters with the headline in it: in the form Lessons 1, 2, 3 and 5 use,
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch" (58 characters), until SEARCH.md
       § 13 item 1 settles titles for the series; if it settles them query-led, as it recommends,
@@ -911,8 +913,8 @@ CURIOSITY-MOMENTS § 5 item 2.
     little softer, never a whisper" is a safe addition for the coach to make (LESSON.md, For the
     vocal coach; FACTS 60).
 11. **The recall's step links**, `/learn/06#step-5` and `/learn/06#step-2`: the `#step-N` form the
-    built Lessons 3 to 5 use (`recallStepHref`), which the kit's step deck opens at, with
-    `recallStepHref` moved into the kit (What the kit and the app still need, item 9).
+    built Lessons 3 to 5 use, which the kit's step deck opens at, from `recallStepHref`, which
+    Lesson 8's page moved into the kit (What the kit and the app still need, item 9).
 
 ## Edge cases
 

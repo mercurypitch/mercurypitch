@@ -619,12 +619,12 @@ the link where that lesson is not live (`:173-177`).
   retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Neither question
   plays a sound. The kit turns "Try Step 1 again" and "Try Step 5 again" into "Try Lesson 5, Step 1
   again" and "Try Lesson 5, Step 5 again", links that open Lesson 5's page at that step,
-  `/learn/05#step-1` and `/learn/05#step-5` (its step ids, `learn/05.html:951`, `:1168`), in a new
+  `/learn/05#step-1` and `/learn/05#step-5` (its step ids, `learn/05.html:1041`, `:1258`), in a new
   tab so the viewer keeps their place here, never `data-goto-step`, which would move this page's own
   deck (`quiz.ts:173-203`); where Lesson 5 is not live, each keeps its words with no link
-  (`:193-196`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:87-94`), Lesson 5's
-  `recallStepHref` (`lesson-05/quiz-questions.ts:19-20`) in place of the default `/learn/05#lesson`,
-  and the kit's step deck opens at the step an address names (`kit/step-deck.ts:18-23`, `:269-277`).
+  (`:193-196`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:87-94`), the kit's
+  `recallStepHref` (`:128-130`) in place of the default `/learn/05#lesson`, and the kit's step deck
+  opens at the step an address names (`kit/step-deck.ts:18-23`, `:269-277`).
 - **Quick check**: LESSON.md's four questions, ids `l14-q1` to `l14-q4`, keys `fyp-l14-seed` and
   `fyp-l14-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 14`, so answering all four marks Lesson
   14 done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
@@ -746,12 +746,12 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
    `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:306`, `:474`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
-   `14: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 7's
+   `14: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
    (`:30-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
    site's and the previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until
    the console sets it either way, and the Content Studio's Lessons page names that reason when
    asked to publish it (11). `/learn/14` and `/learn/14.html` go in `STANDALONE_DOCUMENT_PATHS`
-   (`src/lib/sw-runtime.ts:93`, the lessons `:131-150`), so the service worker never serves the app
+   (`src/lib/sw-runtime.ts:93`, the lessons `:131-156`), so the service worker never serves the app
    shell in the lesson's place. As a draft, `src/tests/lesson-pages.test.ts` holds the page to the
    draft checks (`:242-279`): in neither the sitemap nor llms.txt (`lesson-pages.test.ts:257-260`),
    linked from no entry document (`:262-272`), and its service-worker rule kept (`:274-278`). On
@@ -887,9 +887,9 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like
     every other sound, a breath is a gap, as here.
 14. The four-words strip, built: promoted from Lesson 1's page (`lesson-01/words.ts`) into
-    `kit/words-strip.ts` with Lesson 7's page. Still needed, `recallStepHref`, which Lessons 9 and
-    14 both borrow from Lesson 5's module (`lesson-05/quiz-questions.ts:19-20`), moved into the
-    kit's quiz beside `away`.
+    `kit/words-strip.ts` with Lesson 7's page. `recallStepHref`, built too: Lesson 8's page moved it
+    into the kit's quiz beside `lessonPageHref` (`kit/quiz.ts:128-130`), so Lessons 9 and 14 take it
+    from there.
 15. The hook and the tease: done in this package (1, 2).
 16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's proposed `writeStepsWav(steps, leadSilence)`, steady
     tones in sequence after a stretch of silence, beside `writeToneWav` (`:76`), here for the phrase

@@ -405,10 +405,9 @@ an optional `lesson`, and links that leave this page for a question from another
   that open Lesson 11's page at that step, `/learn/11#step-2` and `/learn/11#step-3`, in a new tab
   so the viewer keeps their place here (`:197-201`), never `data-goto-step`, which would move this
   page's own deck; where Lesson 11 is not live, each keeps its words with no link (Edge cases). The
-  address is the quiz's `away.href`, `recallStepHref`, which moves into `kit/quiz.ts` from the two
-  copies Lessons 3 and 5 keep (`lesson-03/quiz-questions.ts:24`,
-  `lesson-05/quiz-questions.ts:19-20`; needs 11), and the kit's step deck opens at the step an
-  address names (`stepFromHash`, `kit/step-deck.ts:78-84`), as Lesson 11's will.
+  address is the quiz's `away.href`, the kit's `recallStepHref`, which Lesson 8's page moved into
+  `kit/quiz.ts` (`:128-130`; needs 11), and the kit's step deck opens at the step an address names
+  (`stepFromHash`, `kit/step-deck.ts:78-84`), as Lesson 11's will.
 - **Quick check**: LESSON.md's four questions, ids `l13-q1` to `l13-q4`, keys `fyp-l13-seed` and
   `fyp-l13-quiz-v1`, and `lesson: 13`, so answering all four marks Lesson 13 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
@@ -769,13 +768,13 @@ and the four-words strip in the kit.
 1. The lesson host: `learn/13.html` at `/learn/13`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:78-86`, `:110-122`;
    `vite.config.ts:306`, `:474`), so the page needs no build change. Its line in `kit/drafts.ts`,
-   `13: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 and 5's
+   `13: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
    (`kit/drafts.ts:31-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and
    the dev site's and the previews', "1", show it (`wrangler.jsonc:112-116`, `:167`, `:190`,
    `:232`), until the console sets it either way, and the Content Studio's Lessons page names that
    reason when asked to publish it (`src/features/admin/AdminLessonsPage.tsx:186-207`; FACTS 9).
    `/learn/13` and `/learn/13.html` go in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`,
-   the lessons `:131-150`), so the service worker never serves the app shell in the lesson's place;
+   the lessons `:131-156`), so the service worker never serves the app shell in the lesson's place;
    `src/tests/lesson-pages.test.ts` checks a draft for them too (`:274-278`). On release: delete the
    `drafts.ts` line, and add the page to `public/sitemap.xml` and to `public/llms.txt`'s Lessons
    list (`:66-77`); until then the site worker adds the page to both only while it is published
@@ -899,11 +898,12 @@ and the four-words strip in the kit.
     `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
     (`:58-67`) and Lessons 6, 7, 9, 10, 11 and 13 all choose it, as Lesson 11's spec proposes (its
     needs 9). Until the option lands this page overrides `rest` itself, as Lesson 6's page does.
-11. `recallStepHref` in `kit/quiz.ts`, moved from the two copies Lessons 3 and 5 keep
-    (`lesson-03/quiz-questions.ts:24`, `lesson-05/quiz-questions.ts:19-20`), so that Lessons 7,
-    9, 11 and 13's recalls take one address rule. The four-words strip is in the kit already,
-    promoted from Lesson 1's page into `kit/words-strip.ts` with Lesson 7's, and it takes the page's
-    sound owner as Lesson 6's own strip does (`owner`, `kit/words-strip.ts:46-51`;
+11. `recallStepHref` in `kit/quiz.ts`, built: Lesson 8's page moved it there (`:128-130`), and
+    Lessons 3, 4 and 5 take it from the kit (`lesson-03/quiz-questions.ts:24`,
+    `lesson-04/quiz-questions.ts:32`, `lesson-05/quiz-questions.ts:20`), so Lessons 7, 9, 11 and
+    13's recalls take one address rule. The four-words strip is in the kit already, promoted from
+    Lesson 1's page into `kit/words-strip.ts` with Lesson 7's, and it takes the page's sound owner
+    as Lesson 6's own strip does (`owner`, `kit/words-strip.ts:46-51`;
     `lesson-06/words.ts:149-159`).
 12. App, proposed: "Long Note on vowels" (Practice links; FACTS 60), the CURRICULUM's practice for
     this lesson. A vowel cue for Long Note: the five vowel names shown over the run, a vowel every
@@ -1096,8 +1096,9 @@ parts:
     with `rest: true`, and every other answer, with or without it, gives what `afterFeeling(f)`
     gives today (`kit/comfort.ts:48-76`); `kit/sound.ts` without `partials` and `resonators` builds
     every voice as today, and with them takes the given source and filters; `recallStepHref` from
-    the kit gives Lessons 3 and 5's recalls the addresses they give today; Lesson 5's hold runner
-    from the kit plays its two-second note as before.
+    the kit gives Lessons 3 and 5's recalls the addresses they gave before (done with Lesson 8's
+    page, `kit/quiz.test.ts:261-266`); Lesson 5's hold runner from the kit plays its two-second note
+    as before.
 15. One sound at a time, and leaving a step (Audio), with fake timers and a spy on the kit's sound:
     starting any source while another sounds stops the first (a four words play over Step 4's five
     vowels; free play over the cold open; a Lower tap over Merc's ten seconds in listen-only mode);

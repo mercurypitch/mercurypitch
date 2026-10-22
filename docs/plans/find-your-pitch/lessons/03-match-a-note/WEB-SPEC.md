@@ -377,13 +377,15 @@ motion or Pause animations each Merc holds a still frame and skips the reactions
   nothing until CURRICULUM § 4 item 6 ships. The card comes in two versions, picked by how the
   checkpoint ended (Toys, 7), and both link the same address.
 - **App content, small:**
-  - Voice Mirror's first glide says "to your highest"; "to your highest comfortable note" would
-    match the playbook's range rule (REQ-GVC-072) and the lesson's "keep the glides comfortable"
-    (FACTS 51).
-  - Its results line adds, when three or more of the five notes land, "Your ear is ahead of your
-    control, the good order" (`src/features/mirror/MirrorApp.tsx:2068-2072`). The task measured
-    the voice, not the ear, so the sentence infers what was not measured (REQ-GVC-045), right after
-    a lesson careful to say "most", never "all", about ears. Dropping the sentence would do.
+  - Voice Mirror's first glide said "to your highest" (`src/features/mirror/MirrorApp.tsx:124` at
+    `51f1c53de`); "to your highest comfortable note" would match the playbook's range rule
+    (REQ-GVC-072) and the lesson's "keep the glides comfortable" (FACTS 51). Done: since `7ed2aa1d2`
+    it says so (`MirrorApp.tsx:125`).
+  - Its results line added, when three or more of the five notes land, "Your ear is ahead of your
+    control, the good order" (`MirrorApp.tsx:2068-2072` at `51f1c53de`). The task measured the
+    voice, not the ear, so the sentence infers what was not measured (REQ-GVC-045), right after a
+    lesson careful to say "most", never "all", about ears. Done: since `7ed2aa1d2` the line ends at
+    the count (`MirrorApp.tsx:2086-2090`).
 - **Pitch Hold, needed before the lesson links it** (CURRICULUM § 4 items 1, 2, 6 and 7; FACTS 54
   to 56):
   1. A slug, proposed `/exercises/hold-a-note`, opening Pitch Hold on its setup screen.
@@ -397,7 +399,8 @@ motion or Pause animations each Merc holds a still frame and skips the reactions
      note. Until one ships, the lesson says "any octave counts" only about Voice Mirror.
   4. App content: the card's "How long can you stay locked in?" and its "Endurance" tag, and the
      help's "You are scored on how long you stay inside the target zone", invite the longest hold,
-     which the playbook rules out. A slug opens past the card, but the library still shows it.
+     which the playbook rules out. A slug opens past the card, but the library still shows it. The
+     card's part shipped in `80df49e62` (FACTS 55); the help still reads as quoted.
   5. The `?lesson=03` marker, because a slug boots the main app, where First Light opens on a first
      visit.
 - When the slug ships, LESSON.md's editorial note gives the copy, and the explorer card's note
@@ -415,7 +418,7 @@ motion or Pause animations each Merc holds a still frame and skips the reactions
    own page, a poster per lesson): a state for a lesson with a page and no film, whose card offers
    "Read the lesson" (`/learn/03`) without "Watch the episode" (`kit/explorer.ts` knows only done,
    ready and planned, and a ready card's buttons are same-page anchors); and Lesson 3's `len` in
-   `season.ts`, "15 minutes" (FACTS 61).
+   `season.ts`, "15 minutes" (FACTS 61), built as its `minutes: 15` (`season.ts:212`).
 5. The quiz: Lesson 2's three changes to `kit/quiz.ts` and its slot for a question's own controls
    (Toys, 8), if its page has not shipped them, and the recall's rule of showing only after
    Lesson 2.
