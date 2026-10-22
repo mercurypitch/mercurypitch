@@ -445,6 +445,11 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   spec). Its sung checkpoint waits on the vocal coach (§ 12 item 8). No page is built yet; it goes
   live when the console publishes it, after the coach's sign-off and once `/learn/10`, the page its
   recall links to, is live.
+- Lesson 13: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/13-resonance-vowels/`](lessons/13-resonance-vowels/) (facts, copy and page spec). Its
+  sung checkpoint waits on the vocal coach (§ 12 item 8). No page is built yet; it goes live when
+  the console publishes it, after the coach's sign-off and once `/learn/11`, the page its chip and
+  recall link to, is live.
 - Lesson 14: a written lesson, text only, reviewed once and fixed, in
   [`lessons/14-phrasing-whole-song/`](lessons/14-phrasing-whole-song/) (facts, copy and page spec).
   Its sung parts wait on the vocal coach (§ 12 item 8). No page is built yet: it waits on a season
