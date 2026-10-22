@@ -408,7 +408,9 @@ describe('Pearl continuous court presentation', () => {
     )
     const point = new Vector3()
     let minX = Infinity,
-      maxX = -Infinity
+      maxX = -Infinity,
+      minZ = Infinity,
+      maxZ = -Infinity
     for (const part of parts) {
       const position = part.getAttribute('position')
       const indices =
@@ -419,14 +421,18 @@ describe('Pearl continuous court presentation', () => {
         point
           .fromBufferAttribute(position, index)
           .applyMatrix4(donor.matrixWorld)
-        expect(point.z).toBeGreaterThanOrEqual(-0.360001)
-        expect(point.z).toBeLessThanOrEqual(0.360001)
         minX = Math.min(minX, point.x)
         maxX = Math.max(maxX, point.x)
+        minZ = Math.min(minZ, point.z)
+        maxZ = Math.max(maxZ, point.z)
       }
       for (const attribute of Object.values(part.attributes))
         expect(Array.from(attribute.array).every(Number.isFinite)).toBe(true)
     }
+    // Scan every indexed vertex before asserting: per-vertex matcher creation
+    // dominates this dense donor test under the shared CI worker's CPU load.
+    expect(minZ).toBeGreaterThanOrEqual(-0.360001)
+    expect(maxZ).toBeLessThanOrEqual(0.360001)
     expect(minX).toBeCloseTo(-1.686747, 5)
     expect(maxX).toBeCloseTo(1.686747, 5)
     expect(donor.geometry.index!.array).toEqual(originalIndex)

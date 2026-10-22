@@ -55,6 +55,26 @@ function tabSeed() {
 async function chooseAudioThatStops(
   page: import('@playwright/test').Page,
 ): Promise<void> {
+  // This regression concerns recovering from failed preparation. Keep the
+  // browser's real decoder, but isolate model initialization from the remote
+  // ONNX download and GPU/WASM setup that otherwise precede decoding.
+  let workerRequests = 0
+  await page.route(/\/assets\/vocal-separator\.worker-[^/]+\.js$/, (route) => {
+    workerRequests++
+    return route.fulfill({
+      contentType: 'text/javascript',
+      body: `self.onmessage = ({ data }) => {
+        if (data.type === 'init') {
+          self.postMessage({ type: 'ready', provider: 'wasm' });
+        } else if (data.type === 'separate') {
+          self.postMessage({ type: 'error', requestId: data.requestId,
+            message: 'Unexpected inference in decode-failure fixture' });
+        } else if (data.type === 'destroy') {
+          self.close();
+        }
+      };`,
+    })
+  })
   await page.getByTestId('guitar-night-file-input').setInputFiles({
     name: 'accident.wav',
     mimeType: 'audio/wav',
@@ -63,11 +83,11 @@ async function chooseAudioThatStops(
   const dialog = page.getByTestId('night-music-import')
   await expect(dialog.getByRole('progressbar')).toHaveCount(0)
   await dialog.getByRole('button', { name: /^Prepare vocals/ }).click()
-  // Decoding is attempted for real before it gives up, so this is slower than
-  // the default expect window.
+  // The invalid WAV must fail in the native decoder, before any inference.
   await expect(dialog.getByRole('alert')).toContainText(/decode.*audio/i, {
     timeout: 15000,
   })
+  expect(workerRequests).toBe(1)
 }
 
 async function openTheLobby(
