@@ -93,6 +93,13 @@ geometry we own. A motif too fine to survive the 128 px game panel is not there
 for a player: make it bolder or drop it. Size motifs from the concept, not by
 taste (a curl as wide as the concept's curl).
 
+A metal line inlaid in glass (a wave scroll, a meander) is both: a material
+change and a relief. Give that band of the lathe its own material
+(`profile.chain` slot), UVs that count motif periods around and rise 0..1 across
+the band, and `textures.inlay` maps: base colour, packed transmission, roughness
+and metallic, and a normal map with the line's crown and the relief it rides on.
+The curls stay smooth at any distance and cost no triangles.
+
 ## 11. No lighting in albedo
 
 Physically plausible IOR, metalness and roughness from `bkit.materials`. Colour

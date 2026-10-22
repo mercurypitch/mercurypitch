@@ -83,13 +83,15 @@ def bake_modifiers(obj):
     return obj
 
 
-def clean(obj, dist=1e-6, triangulate=False):
+def clean(obj, dist=1e-5, triangulate=False):
     """Weld coincident vertices and dissolve zero-length edges and zero-area faces.
 
-    Exact booleans leave sub-micron edges and needle triangles along a cut; the glTF
-    round trip (float32 positions, a weld on import) turns those into non-manifold
-    edges and zero-area faces. Clean every boolean result before it is validated or
-    exported, at the same distance the validator welds at. triangulate=True also
+    Exact booleans leave micron-sized edges and needle triangles along a cut; the
+    glTF round trip (float32 positions, a weld on import) turns those into
+    non-manifold edges and zero-area faces. Clean every boolean result before it
+    is validated or exported. The default 10 micron distance is far below any real
+    feature and above the 4-7 micron triangles a cut can leave (zero area to the
+    validator, too long-edged for a 1 micron collapse). triangulate=True also
     triangulates first: a cut face is an n-gon with collinear vertices, and the
     exporter's own triangulation of it leaves zero-area triangles that no check in
     Blender sees, so a shard must leave Blender as the triangles it was checked as.
@@ -103,6 +105,16 @@ def clean(obj, dist=1e-6, triangulate=False):
     if triangulate:  # dissolving can leave an n-gon behind; split it again
         bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3], quad_method='BEAUTY',
                               ngon_method='BEAUTY')
+        # A needle whose three corners are nearly in line has long edges and no area, so
+        # dissolving short edges misses it. Rotating its longest edge turns the needle and
+        # its neighbour into two triangles with area.
+        for _ in range(4):
+            needles = [f for f in bm.faces if f.is_valid and f.calc_area() < 1e-10]
+            if not needles:
+                break
+            longest = {max(f.edges, key=lambda e: e.calc_length()) for f in needles}
+            bmesh.ops.rotate_edges(bm, edges=[e for e in longest if e.is_valid and e.is_manifold], use_ccw=False)
+        bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=dist)
     loose = [v for v in bm.verts if not v.link_faces]
     if loose:
         bmesh.ops.delete(bm, geom=loose, context='VERTS')

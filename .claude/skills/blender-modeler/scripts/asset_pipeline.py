@@ -67,7 +67,8 @@ def main():
 
     if 'optics' in asset:
         code, text = run([sys.executable, '-I', os.path.join(HERE, 'gltf_finish.py'), raw, glb,
-                          '--optics', path('optics')], os.path.join(out_dir, 'finish.log'))
+                          '--optics', path('optics')] + (['--allow-missing'] if intact_only else []),
+                         os.path.join(out_dir, 'finish.log'))
         summary['gates']['finish'] = code == 0
         if code:
             print(text)

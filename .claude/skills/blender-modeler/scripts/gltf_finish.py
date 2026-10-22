@@ -1,6 +1,6 @@
 """Finish a Blender GLB for three.js: add the material extensions the 5.2.2 exporter drops.
 
-python3 -I gltf_finish.py IN.glb OUT.glb --optics OPTICS.json
+python3 -I gltf_finish.py IN.glb OUT.glb --optics OPTICS.json [--allow-missing]
 
 The exporter writes KHR_materials_volume and KHR_materials_iridescence only from
 the glTF Material Output group node, which a scripted Principled material does
@@ -86,7 +86,7 @@ def main():
             used.add(name)
             applied.setdefault(material['name'], []).append(name)
     missing = sorted(set(optics) - set(applied))
-    if missing:
+    if missing and '--allow-missing' not in sys.argv:  # an intact-only build has no cut material
         raise SystemExit(f'no material named {missing} in {src}')
     doc['extensionsUsed'] = sorted(used)
     write(dst, doc, rest)

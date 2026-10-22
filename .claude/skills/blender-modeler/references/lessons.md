@@ -3,6 +3,24 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **Clear glass is not opal.** Round 1 had transmission 0.82: the body took its
+  colour from whatever was behind it, grey below and clipped white above. Milky
+  glass keeps its own colour at transmission 0.35 or less and roughness about
+  0.2; its colour play is pastel vertex colours, with the thin film for the
+  edge glint.
+- **Vertex colours ride on every primitive.** Once one material uses COLOR_0
+  the exporter writes it for the whole mesh and three.js multiplies every
+  material by it: paint gold and jade corners white (`materials.paint_corners`).
+- **A thin inlay is a texture, not a tube.** A 6 mm gold line swept as geometry
+  cost 900 triangles and still showed its polyline in the curls. As an inlay
+  material (`textures.inlay`) the line is smooth at any distance, carries its
+  relief in a normal map, and costs nothing in triangles.
+- **Cut debris below the collapse distance.** A 4-7 micron triangle reads as zero
+  area to the validator but is too long-edged for a 1 micron collapse; clean
+  shards at 10 microns.
+- **Keyboard walks are not repeatable in the runtime proof.** Holding W under
+  software WebGL moved the camera differently on every run; frame the asset with
+  camera drags from a seeded checkpoint instead.
 - **A grid read by eye is not a measurement.** The amphora's lower body was read
   off a metre grid as 0.20 m radius at 0.23 m height; the concept's mask says
   0.177. The first build was 2.5 cm too wide per side and the gate failed band 2. Read radii from `rows.json` (`qa.md` § Fitting).

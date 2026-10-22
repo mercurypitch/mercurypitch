@@ -99,3 +99,43 @@ def optics(thickness, attenuation_color='#ffffff', attenuation_distance=None):
     if attenuation_distance is not None:
         spec['attenuationDistance'] = float(attenuation_distance)
     return spec
+
+
+def vertex_tint(material, attribute='Col'):
+    """Multiply the material's base colour by a colour attribute (glTF COLOR_0).
+
+    The exporter writes COLOR_0 for every primitive of a mesh once one material
+    uses it, and three.js multiplies every one of them by it: paint the faces of
+    the other materials white (`paint_corners`), or gold and jade turn pastel too.
+    """
+    nt = material.node_tree
+    bsdf = next(node for node in nt.nodes if node.type == 'BSDF_PRINCIPLED')
+    attr = nt.nodes.new('ShaderNodeVertexColor')
+    attr.layer_name = attribute
+    mix = nt.nodes.new('ShaderNodeMix')
+    mix.data_type = 'RGBA'
+    mix.blend_type = 'MULTIPLY'
+    mix.inputs['Factor'].default_value = 1.0
+    mix.inputs[6].default_value = tuple(bsdf.inputs['Base Color'].default_value)
+    nt.links.new(attr.outputs['Color'], mix.inputs[7])
+    nt.links.new(mix.outputs[2], bsdf.inputs['Base Color'])
+    return material
+
+
+def paint_corners(obj, colour_at, only, attribute='Col'):
+    """Fill a corner colour attribute: colour_at(world position) -> sRGB on faces whose
+    material is named in `only`, white on every other face."""
+    me = obj.data
+    layer = me.color_attributes.get(attribute) or me.color_attributes.new(attribute, 'BYTE_COLOR', 'CORNER')
+    names = [slot.material.name if slot.material else None for slot in obj.material_slots]
+    world = obj.matrix_world
+    for poly in me.polygons:
+        tinted = names[poly.material_index] in only if poly.material_index < len(names) else False
+        for li in poly.loop_indices:
+            if tinted:
+                rgb = colour_at(world @ me.vertices[me.loops[li].vertex_index].co)
+            else:
+                rgb = (1.0, 1.0, 1.0)
+            layer.data[li].color_srgb = (*rgb, 1.0)
+    me.color_attributes.active_color = layer
+    return layer

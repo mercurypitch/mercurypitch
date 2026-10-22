@@ -41,14 +41,14 @@ Subsurface and Glass or Refraction BSDF nodes are not exported at all: use
 
 ## Presets (`bkit.materials`) and the numbers that read
 
-| Use         | Settings                                                                                                                       | Optics block                                                                                          |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| Opal glass  | sRGB `#d7efe6`, roughness 0.10, transmission 0.62, IOR 1.47, thin film 420 nm, film IOR 1.55, sheen 0.6 `#dccbf2`, **no coat** | volume thickness 0.02, attenuation `[0.82,0.94,0.90]` at 0.3 m; iridescence 1.0, IOR 1.55, 100-430 nm |
-| Clear glass | roughness 0.03, transmission 1.0, IOR 1.5                                                                                      | volume thickness 1-2 times the wall                                                                   |
-| Cut faces   | the glass a touch rougher (0.14), transmission 0.8                                                                             | thickness 0.03                                                                                        |
-| Gold        | metallic 1, sRGB `#e0b65e`, roughness 0.26-0.30; `textures.hammered_normal` for hand-worked gold                               | none                                                                                                  |
-| Jade        | sRGB `#2f7d57`, roughness 0.24, transmission 0.08, IOR 1.61, coat 0.6; `textures.marbled` veins at one image per three tiles   | thickness 0.04, attenuation `[0.2,0.55,0.35]` at 0.05 m                                               |
-| Marble      | sRGB `#efe9df`, roughness 0.34, coat 0.25                                                                                      | none                                                                                                  |
+| Use         | Settings                                                                                                                                                                                        | Optics block                                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Opal glass  | white base, roughness 0.20, transmission 0.35, IOR 1.47, thin film 420 nm, film IOR 1.55, sheen 0.5 `#dccbf2`, **no coat**; colour from pastel COLOR_0 patches (`vertex_tint`, `paint_corners`) | volume thickness 0.02, attenuation `[0.82,0.94,0.90]` at 0.3 m; iridescence 1.0, IOR 1.55, 100-430 nm |
+| Clear glass | roughness 0.03, transmission 1.0, IOR 1.5                                                                                                                                                       | volume thickness 1-2 times the wall                                                                   |
+| Cut faces   | the glass a touch rougher (0.14), transmission 0.8                                                                                                                                              | thickness 0.03                                                                                        |
+| Gold        | metallic 1, sRGB `#e0b65e`, roughness 0.26-0.30; `textures.hammered_normal` for hand-worked gold                                                                                                | none                                                                                                  |
+| Jade        | sRGB `#3f6a4b` (the concept's lit midtone, hue 129, saturation 0.27), roughness 0.26, transmission 0.08, IOR 1.61, coat 0.3; `textures.marbled` veins at one image per three tiles              | thickness 0.04, attenuation `[0.2,0.55,0.35]` at 0.05 m                                               |
+| Marble      | sRGB `#efe9df`, roughness 0.34, coat 0.25                                                                                                                                                       | none                                                                                                  |
 
 Pearl and texture:
 
@@ -59,6 +59,9 @@ Pearl and texture:
   exporter then needs tangents.
 
 Notes that cost a round to learn:
+
+- Opal is milky, not clear. At transmission 0.82 the body takes its colour from
+  whatever is behind it; at 0.35 and roughness 0.2 it keeps its own.
 
 - A coat over a thin film hides the colour play: the film sits on the base
   specular layer. Leave coat off iridescent glass.

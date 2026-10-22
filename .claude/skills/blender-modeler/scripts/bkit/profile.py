@@ -289,3 +289,17 @@ def between(outline, z0, z1, eps=1e-6):
             out.append(a.lerp(b, min(1.0, (z1 - a.y) / (b.y - a.y))))
             break
     return out
+
+
+def wall(outer, inner, z0=None, z1=None):
+    """Wall thickness at each outer outline point between heights z0 and z1: its
+    distance to the inner outline. Lists (z, metres); trims standing proud of the
+    wall read thicker, so measure the glass between them."""
+    def to_poly(p):
+        best = 1e9
+        for a, b in zip(inner, inner[1:]):
+            ab = b - a
+            t = max(0.0, min(1.0, (p - a).dot(ab) / max(ab.length_squared, 1e-12)))
+            best = min(best, (p - (a + ab * t)).length)
+        return best
+    return [(p.y, to_poly(p)) for p in outer if (z0 is None or p.y >= z0) and (z1 is None or p.y <= z1)]

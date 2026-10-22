@@ -126,3 +126,98 @@ def attach_color(material, image, scale=1.0):
         nt.links.new(mapping.outputs['Vector'], tex.inputs['Vector'])
     nt.links.new(tex.outputs['Color'], bsdf.inputs['Base Color'])
     return material
+
+
+def _image(name, rgb, colour):
+    """Packed bpy image from an (rows, cols, 3) array whose row 0 is the bottom of the image."""
+    rows, cols = rgb.shape[:2]
+    image = bpy.data.images.new(name, cols, rows, alpha=False)
+    image.colorspace_settings.name = 'sRGB' if colour else 'Non-Color'
+    data = np.clip(rgb, 0, 1) ** (1 / 2.2) if colour else np.clip(rgb, 0, 1)
+    image.pixels.foreach_set(np.dstack((data, np.ones((rows, cols)))).astype(np.float32).ravel())
+    image.pack()
+    return image
+
+
+def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4', line='#e0b65e',
+          ground_trm=(0.35, 0.20, 0.0), line_trm=(0.0, 0.30, 1.0), ridge=0.0008, relief=0.0,
+          reach=0.022, side=-1, period_shifts=(-1, 0, 1, 2)):
+    """Inlaid metal lines and the relief they ride on, as three tileable images for one material.
+
+    strokes: [(points, half_widths)], points (s, z) in metres inside a tile `width`
+    across and `height` tall, half_widths per point. The tile repeats across s
+    (strokes are drawn shifted by `period_shifts` x width so they wrap) and not
+    up z. Returns {'color', 'trm', 'normal'}: base colour (sRGB), transmission,
+    roughness and metallic packed in R, G and B, and a tangent-space normal map.
+    ridge: height of the line's rounded crown. relief: height of a raised roll on
+    `side` of each stroke (-1 is its right hand as it travels: below a crest that
+    runs left to right, inside a clockwise curl), fading out over `reach` metres.
+    Map it with UVs s / width across and z / height up; the tangent frame must
+    come from those same UVs.
+    """
+    seg_a, seg_b, wa, wb = [], [], [], []
+    for points, half in strokes:
+        for shift in period_shifts:
+            for i in range(len(points) - 1):
+                seg_a.append((points[i][0] + shift * width, points[i][1]))
+                seg_b.append((points[i + 1][0] + shift * width, points[i + 1][1]))
+                wa.append(half[i])
+                wb.append(half[i + 1])
+    a, b = np.array(seg_a), np.array(seg_b)
+    wa, wb = np.array(wa), np.array(wb)
+    ab = b - a
+    ab_len2 = np.maximum((ab ** 2).sum(axis=1), 1e-18)
+    s_axis = (np.arange(cols) + 0.5) / cols * width
+    z_axis = (np.arange(rows) + 0.5) / rows * height
+    coverage = np.zeros((rows, cols))
+    crown = np.zeros((rows, cols))
+    roll = np.zeros((rows, cols))
+    texel = min(width / cols, height / rows)
+    for r in range(rows):  # one row at a time keeps memory flat
+        p = np.stack((s_axis, np.full(cols, z_axis[r])), axis=1)
+        ap = p[:, None, :] - a[None, :, :]
+        t = np.clip((ap * ab[None]).sum(axis=2) / ab_len2[None], 0, 1)
+        q = a[None] + t[..., None] * ab[None]
+        d = np.sqrt(((p[:, None, :] - q) ** 2).sum(axis=2))
+        w = wa[None] + t * (wb - wa)[None]
+        inside = d - w
+        k = np.argmin(inside, axis=1)
+        idx = np.arange(cols)
+        edge = inside[idx, k]
+        coverage[r] = np.clip(0.5 - edge / texel, 0, 1)
+        dk, wk = d[idx, k], np.maximum(w[idx, k], 1e-6)
+        crown[r] = ridge * np.sqrt(np.clip(1 - (dk / wk) ** 2, 0, 1))
+        if relief:
+            near = np.argmin(d, axis=1)
+            cross = ab[near, 0] * ap[idx, near, 1] - ab[near, 1] * ap[idx, near, 0]
+            dn = d[idx, near]
+            on_side = np.sign(cross) == side
+            roll[r] = np.where(on_side, relief * (1 - np.exp(-dn / 0.004)) * np.exp(-(dn / reach) ** 2), 0.0)
+    h = crown + roll
+    dh_ds = np.gradient(h, width / cols, axis=1)
+    dh_dz = np.gradient(h, height / rows, axis=0)
+    normal = np.dstack((-dh_ds, -dh_dz, np.ones_like(h)))
+    normal /= np.linalg.norm(normal, axis=2, keepdims=True)
+    g, l = np.array(srgb(ground)), np.array(srgb(line))
+    colour = g[None, None] * (1 - coverage[..., None]) + l[None, None] * coverage[..., None]
+    gt, lt = np.array(ground_trm), np.array(line_trm)
+    trm = gt[None, None] * (1 - coverage[..., None]) + lt[None, None] * coverage[..., None]
+    return {'color': _image(f'{name}_color', colour, True), 'trm': _image(f'{name}_trm', trm, False),
+            'normal': _image(f'{name}_normal', normal * 0.5 + 0.5, False)}
+
+
+def attach_inlay(material, maps, strength=1.0):
+    """Wire `inlay` maps into a Principled material: colour, transmission, roughness, metallic, normal."""
+    nt = material.node_tree
+    bsdf = next(node for node in nt.nodes if node.type == 'BSDF_PRINCIPLED')
+    colour = nt.nodes.new('ShaderNodeTexImage')
+    colour.image = maps['color']
+    trm = nt.nodes.new('ShaderNodeTexImage')
+    trm.image = maps['trm']
+    split = nt.nodes.new('ShaderNodeSeparateColor')
+    nt.links.new(colour.outputs['Color'], bsdf.inputs['Base Color'])
+    nt.links.new(trm.outputs['Color'], split.inputs['Color'])
+    nt.links.new(split.outputs['Red'], bsdf.inputs['Transmission Weight'])
+    nt.links.new(split.outputs['Green'], bsdf.inputs['Roughness'])
+    nt.links.new(split.outputs['Blue'], bsdf.inputs['Metallic'])
+    return attach_normal(material, maps['normal'], strength)
