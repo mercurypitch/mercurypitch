@@ -37,19 +37,19 @@ without any code change, so it keeps that file's runtime contract exactly.
 
 ## Parts and why they exist
 
-| Part              | Why                                                                       | Material   |
-| ----------------- | ------------------------------------------------------------------------- | ---------- |
-| Base ring         | Stability and visual weight; the hammered gold band the vessel stands on  | gold       |
-| Foot              | Lifts the body, carries the jade colour down to the floor                 | jade       |
-| Stem ring         | The joint the body sits in, a ring and a bead                             | gold       |
-| Body              | Milky opal glass with iridescence, hollow, an even 10 mm wall             | opal glass |
-| Lower, waist band | Frame the wave register, read as structure                                | gold       |
-| Collar            | Marks the neck joint                                                      | gold       |
-| Neck, rim, lip    | Narrows then flares; a gold rim band runs into a rolled lip               | opal, gold |
-| Handles           | Jade straps from under the rim to the shoulder, thick enough to lift it   | jade       |
-| Cuffs, lining     | Gold cuff where each handle meets the neck, gold lining on its inner face | gold       |
-| Tails             | Each handle ends in a gold leaf lying on the shoulder                     | gold       |
-| Waves             | Six gold strokes, each curling clockwise into a spiral                    | gold       |
+| Part                    | Why                                                                                                                                                                     | Material   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Base ring               | Stability and visual weight; the hammered gold band the vessel stands on                                                                                                | gold       |
+| Foot                    | Lifts the body, carries the jade colour down to the floor                                                                                                               | jade       |
+| Stem ring               | The joint the body sits in, a ring and a bead                                                                                                                           | gold       |
+| Body                    | Milky opal glass with iridescence, hollow, an even 10 mm wall                                                                                                           | opal glass |
+| Lower, waist band       | Frame the wave register, read as structure                                                                                                                              | gold       |
+| Collar                  | Marks the neck joint                                                                                                                                                    | gold       |
+| Neck, rim, lip          | Narrows then flares; a gold rim band runs into a rolled lip                                                                                                             | opal, gold |
+| Handles                 | Jade straps from under the rim to the shoulder, thick enough to lift it                                                                                                 | jade       |
+| Sleeves, straps, lining | A gold sleeve standing proud where each handle meets the neck, running on as a 15 mm gold strap down the neck into the collar; a gold lining on the handle's inner face | gold       |
+| Tails                   | Each handle ends in a gold leaf lying on the shoulder                                                                                                                   | gold       |
+| Waves                   | Six gold strokes, each curling clockwise into a spiral                                                                                                                  | gold       |
 
 ## Measured dimensions (true metres)
 
@@ -57,28 +57,28 @@ Read from the concept's segmented mask in the silhouette gate's own units
 (`rows.json`), corrected for the 8 degree camera; heights are side-silhouette
 heights.
 
-| Feature      | Measurement                                                                                                               |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| Base ring    | r 0.176, top 0.072; rounded bottom edge                                                                                   |
-| Foot         | r 0.164 at 0.075, 0.151 at 0.095, 0.138 at 0.105, 0.100 at 0.124                                                          |
-| Stem rings   | r 0.101, z 0.124 to 0.166                                                                                                 |
-| Lower body   | r 0.118 at 0.175, 0.143 at 0.20, 0.177 at 0.23, 0.202 at 0.26, 0.228 at 0.30, 0.248 at 0.34, 0.263 at 0.38, 0.273 at 0.42 |
-| Belly        | widest r 0.283 at 0.48                                                                                                    |
-| Bands        | lower 0.245 to 0.2615, waist 0.4205 to 0.4425                                                                             |
-| Collar       | 0.690 to 0.726, r 0.149                                                                                                   |
-| Neck         | narrowest r 0.1145 at 0.776                                                                                               |
-| Rim          | r 0.167 at 0.91, lip crown at 0.92                                                                                        |
-| Handles      | outer edge 0.310 to 0.312 at z 0.70 to 0.74; top of the arc 0.876; plumb outer edge 0.286 to 0.291 below the shoulder     |
-| Wave strokes | curl centres at z 0.35, crest 0.40, trough 0.31; a curl 11 degrees right of the front, six around                         |
+| Feature      | Measurement                                                                                                                                                                                                                                                          |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base ring    | r 0.176, top 0.072; rounded bottom edge                                                                                                                                                                                                                              |
+| Foot         | r 0.164 at 0.075, 0.151 at 0.095, 0.138 at 0.105, 0.100 at 0.124                                                                                                                                                                                                     |
+| Stem rings   | r 0.101, z 0.124 to 0.166                                                                                                                                                                                                                                            |
+| Lower body   | r 0.118 at 0.175, 0.143 at 0.20, 0.177 at 0.23, 0.202 at 0.26, 0.228 at 0.30, 0.248 at 0.34, 0.263 at 0.38, 0.273 at 0.42                                                                                                                                            |
+| Belly        | widest r 0.283 at 0.48                                                                                                                                                                                                                                               |
+| Bands        | lower 0.245 to 0.2615, waist 0.4205 to 0.4425                                                                                                                                                                                                                        |
+| Collar       | 0.690 to 0.726, r 0.149                                                                                                                                                                                                                                              |
+| Neck         | narrowest r 0.1145 at 0.776                                                                                                                                                                                                                                          |
+| Rim          | r 0.167 at 0.91, lip crown at 0.92                                                                                                                                                                                                                                   |
+| Handles      | outer edge 0.238 at z 0.865, 0.264 at 0.846, 0.281 at 0.827, 0.294 at 0.807, 0.310 to 0.312 at 0.70 to 0.74; crown of the arc 0.876; strap 62 mm wide over the arc, 74 mm upright, 80 mm where it lands at 0.635; plumb outer edge 0.286 to 0.291 below the shoulder |
+| Wave strokes | curl centres at z 0.35, crest 0.40, trough 0.31; a curl 11 degrees right of the front, six around                                                                                                                                                                    |
 
 INFERRED (no reference shows them): the handles' thickness across the view
 (0.78 of their width), the cavity, the shard pattern.
 
 ## Must survive at gameplay size
 
-The gold bands and rim, jade handles with gold cuffs, the wave register, the
-iridescent milky opal. Not modelled in this version: the hammered texture on the
-gold, the sculpted relief of the wave bodies (the gold line carries the motif).
+The gold bands and rim, jade handles with gold sleeves and neck straps, the wave
+register, the iridescent milky opal. The hammered gold and the relief of the
+wave bodies are normal maps; the opal's colour patches are vertex colours.
 
 ## Gates
 

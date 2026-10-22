@@ -37,5 +37,22 @@
       ],
       "attenuationDistance": 0.05
     }
+  },
+  "glass_waves": {
+    "KHR_materials_volume": {
+      "thicknessFactor": 0.02,
+      "attenuationColor": [
+        0.82,
+        0.94,
+        0.9
+      ],
+      "attenuationDistance": 0.3
+    },
+    "KHR_materials_iridescence": {
+      "iridescenceFactor": 1.0,
+      "iridescenceIor": 1.55,
+      "iridescenceThicknessMinimum": 100,
+      "iridescenceThicknessMaximum": 430
+    }
   }
 }
