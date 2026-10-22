@@ -837,10 +837,10 @@ table). Every item is proposed.
 3. `kit/tap-pad.ts`, new (Toys 5), and the tap's timing rule moved out of
    `src/features/ear-lab/EarStage.tsx:551-603` into `src/lib/ear/` as a pure function that the Ear
    Lab's `TapPad` and the kit's pad both call.
-4. Drum Night's latency estimator, `estimateDrumInputLatency`
-   (`src/features/drum-night/runtime/drum-latency-calibration.ts:30-71`), moved into `src/lib`
-   (for example `src/lib/timing/input-latency.ts`), with Drum Night importing it from there
-   (`runtime/useDrumNightRuntime.ts:8-9`): the house rule keeps a feature out of a sibling
+4. Drum Night's latency estimator, `estimateDrumInputLatency`, moved whole from
+   `src/features/drum-night/runtime/drum-latency-calibration.ts` into `src/lib/timing/input-latency.ts`
+   (`:30-71`), with Drum Night importing it from there (`runtime/useDrumNightRuntime.ts:5-6`, and
+   `runtime/index.ts:5` re-exporting it) and its test moving beside it: the house rule keeps a feature out of a sibling
    feature's code (`.dependency-cruiser.cjs:101-109`, "Shared code belongs in src/lib or
    src/components").
 5. `kit/sound.ts`: the master bus offered to a caller (it is module-private, `:77`, made at
