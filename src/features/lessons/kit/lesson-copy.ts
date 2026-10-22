@@ -141,7 +141,23 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
     tease: 'Four chords, round and round.',
   },
   13: { tease: 'Same note, two vowels: ‘ee’, then ‘ah’.' },
-  14: { tease: 'Every note in the band, start to finish.' },
+  14: {
+    hookAlts: [
+      {
+        id: 'compelling',
+        text: 'If you can hit every note of a song, what is still missing between correct and compelling?',
+        note: 'The original hook. No source in FACTS.md says what makes a performance "compelling"; the new default asks what the lesson answers in full, what is left to shape.',
+      },
+    ],
+    tease: '‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.',
+    teaseAlts: [
+      {
+        id: 'band',
+        text: 'Every note in the band, start to finish.',
+        note: "The original tease. It is true of the lesson, but it sits before the cold open's reveal and points at its answer, a line that stays in its band.",
+      },
+    ],
+  },
 }
 
 /**
