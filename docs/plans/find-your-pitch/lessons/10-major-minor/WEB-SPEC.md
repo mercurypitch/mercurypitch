@@ -48,8 +48,8 @@ it from the admin console puts it live on mercurypitch.com with no release
 naming what it waits on, but checks nothing, so the owner keeps the order above (Decisions for the
 owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need, items 2
 and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's hook, its alternative
-and its tease are in the kit's lesson copy (`src/features/lessons/kit/lesson-copy.ts:118-127`),
-Lesson 11's tease is there too (`:128`), and the next-lesson card draws a tease above the next hook
+and its tease are in the kit's lesson copy (`src/features/lessons/kit/lesson-copy.ts:115-123`),
+Lesson 11's tease is there too (`:124`), and the next-lesson card draws a tease above the next hook
 (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own title into its
 markup, and nothing of Lesson 11's (FACTS 1, 5).
 
@@ -714,11 +714,11 @@ still images when WebGL fails or would run on the CPU.
 
 ## Explorer and season data
 
-Lesson 10's entry (`src/features/lessons/kit/season.ts:351-360`), proposed for when this page is
+Lesson 10's entry (`src/features/lessons/kit/season.ts:342-350`), proposed for when this page is
 built:
 
 - `minutes: 17` and `page: '/learn/10'`, written plainly, as Lesson 3's entry is
-  (`season.ts:206-215`, its comment `:212-213`) and Lesson 5's after it (`:254`):
+  (`season.ts:204-213`, its comment `:210-211`) and Lesson 5's after it (`:250`):
 
   ```ts
   // A draft until its sign-off (drafts.ts), as Lesson 3 is.
@@ -738,15 +738,15 @@ built:
   Lab" and `note` "then tap Stack", which `practiseMarkup` prints after the address as "Ear Lab,
   then tap Stack" (`kit/explorer.ts:174-179`). Stack is the lesson's ear drill and needs no voice,
   so the card stays right whatever Sing it's ending, as Lesson 6's card links Leap
-  (`season.ts:284-287`). For the owner (Decisions for the owner), the other choice: Drone
+  (`season.ts:278-281`). For the owner (Decisions for the owner), the other choice: Drone
   Intonation, `href` `/pitch-training?lesson=10`, `label` "Exercises" and `note` "then tap Drone
-  Intonation", as Lesson 4's card links the drill its Wrap leads with (`season.ts:240-245`).
+  Intonation", as Lesson 4's card links the drill its Wrap leads with (`season.ts:236-241`).
   `pr.needs`, "Drone Intonation and Ear Lab Stack", stays until the slugs ship: it is "Admin only,
-  never drawn on a lesson page" (`season.ts:99-100`, and the fields the team keeps, `:27-34`).
+  never drawn on a lesson page" (`season.ts:102-103`, and the fields the team keeps, `:27-34`).
 - `sig` stays as it is. The entry has no `fig`, so the card draws no figure.
-- The hook stays word for word (`season.ts:357`; FACTS 1). The tease Lesson 9's card shows for this
+- The hook stays word for word (`season.ts:348`; FACTS 1). The tease Lesson 9's card shows for this
   lesson, and Lesson 11's tease on this page's card, are the kit's lesson copy
-  (`kit/lesson-copy.ts:126`, `:128`; FACTS 5, 5b).
+  (`kit/lesson-copy.ts:122`, `:124`; FACTS 5, 5b).
 - The card reads "Ready · read", with "17 min", once the page is live (`explorer.ts:150-157`).
 
 ## What the kit and the app still need
@@ -811,7 +811,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:373-408` on every page from its first commit, and
+    `src/features/lessons/kit/lesson-copy.test.ts:321-356` on every page from its first commit, and
     by `src/tests/lesson-pages.test.ts:85-183` once released:
     - title, at most 60 characters with the headline in it: in the form Lessons 1, 2, 3 and 5 use,
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch" (58 characters), until SEARCH.md
@@ -851,7 +851,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 14. The first-paint budget, in the change that adds the page: `learn/10.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript and its render-blocking CSS,
     measured, with the lessons' headroom, a quarter over. Every build emits every lesson page, a
-    draft's included (`scripts/assert-first-paint-budgets.mjs:102-104`); `build:e2e` runs the check
+    draft's included (`scripts/assert-first-paint-budgets.mjs:103-105`); `build:e2e` runs the check
     (`package.json:20`), and a document it emits with no budget fails it (FACTS 83).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-81`), one line each. Until then the draft's rules hold
@@ -874,7 +874,7 @@ CURIOSITY-MOMENTS § 5 item 2.
 
 1. **The alternative hook, `bright-dark`.** Keep it switchable, as the owner's answer to
    CURIOSITY-MOMENTS § 5 item 2 keeps every changed hook's old wording
-   (`src/features/lessons/kit/lesson-copy.test.ts:319-334`), or retire it. The Content Studio's hook
+   (`src/features/lessons/kit/lesson-copy.test.ts:267-282`), or retire it. The Content Studio's hook
    picker offers it with its note, which names the mood labels. Picked, it puts "bright" and "dark"
    in the h1, the head's copies of the hook and the structured data, on Lesson 10's card in every
    lesson page's explorer and on Lesson 9's next-lesson card, and runs the description to 171
@@ -949,7 +949,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   the recall would ask about a lesson the learner cannot open.
 - **The admin console's hook.** The console can switch Lesson 10's hook to its alternative,
   `bright-dark`, "Which single note turns a bright major chord into a dark minor one?"
-  (`kit/lesson-copy.ts:118-127`): the pick is the `hook` field of the lesson's override, set through
+  (`kit/lesson-copy.ts:115-123`): the pick is the `hook` field of the lesson's override, set through
   PUT `/api/admin/lessons/:n` (`src/lib/lesson-state.ts:41`, `:49-50`, `:182-189`) from the Content
   Studio's hook picker, which prints the variant's note under it
   (`src/features/admin/lessons/LessonControls.tsx:447-451`, at `d59c00ad6`). The page's markup keeps
@@ -1023,7 +1023,7 @@ parts it adds:
     served, with `VITE_DRAFT_LESSONS` stubbed to '0' and the modules reloaded (`vi.stubEnv`,
     `vi.resetModules`), Lesson 1's explorer shows Lesson 10 as "Coming later", with no link to
     `/learn/10` and its practice link kept, and with '1' links it to read, as
-    `src/features/lessons/kit/explorer.test.ts:357-382` checks Lesson 5 (the block, `:314-383`). Its
+    `src/features/lessons/kit/explorer.test.ts:354-379` checks Lesson 5 (the block, `:311-380`). Its
     link's `note` matches none of the backlog words (`/needs|slug|deep link|for now/i`).
 13. The names switch: under Minor, Do-re-mi names the staircase do re me fa so le te do, and under
     Major do re mi fa so la ti do (FACTS 8, 26); Letters gives `spellScale`'s names on every root
@@ -1079,7 +1079,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     Lesson 8; its `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks
     Lesson 1's card (`:102-119`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
-    this one included (`lessonPages`, `:49-51`), for the team's words (`:21-39`), and the
+    this one included (`lessonPages`, `:45-47`), for the team's words (`:22-40`), and the
     alternative hook's note never reaches the page (`:41-44`).
 13. With reduced motion emulated, no bead travels, the stack and the spread land in their end
     states, the Mercs hold still, and nothing moves on its own.

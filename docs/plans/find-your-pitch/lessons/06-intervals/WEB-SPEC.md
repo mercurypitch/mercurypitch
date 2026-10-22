@@ -547,7 +547,7 @@ and the line references are main's.
   film reads "Ready · read", its card offers "Start lesson" (`/learn/06`) without "Watch the
   episode" and shows its Length, "15 min"; the page passes `current: 6`, and other lessons' cards
   link to their own pages.
-- `kit/season.ts`, Lesson 6's entry (`:264-282`): `minutes: 15` (FACTS 3). The practice link
+- `kit/season.ts`, Lesson 6's entry (`:259-276`): `minutes: 15` (FACTS 3). The practice link
   stays Ear Lab's (`href` `/ear-lab?lesson=06`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
   Lab"), and its `note` stays "then tap Leap to name them", printed "Ear Lab, then tap Leap to name
   them" by `practiseMarkup` (`kit/explorer.ts:98-103`): the `?lesson=` step-aside has shipped

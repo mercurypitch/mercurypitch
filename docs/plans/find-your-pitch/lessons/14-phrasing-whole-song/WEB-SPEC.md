@@ -91,7 +91,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:375-384`), with no variant's team note anywhere in the markup (`:412-418`; 1), and the element
+   (`:323-332`), with no variant's team note anywhere in the markup (`:412-418`; 1), and the element
    the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as seven chips
    ("18 minutes", 8; "After Lesson 5: Steady note", "After Lesson 8: Beat and tempo", "After Lesson
    9: Landing a leap" and "After Lesson 12: Chords", each a link to that lesson's page and wholly
@@ -143,7 +143,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    `[data-next-card]` mark, whose children the kit keeps in the card after its words, in the form
    the kit's own test gives,
    `<div class="next-card card l14-next" data-next-card hidden><figure class="end-still">`
-   (`src/features/lessons/kit/next-card.test.ts:341-372`). The kit draws the close once and never
+   (`src/features/lessons/kit/next-card.test.ts:337-368`). The kit draws the close once and never
    redraws it (`next-card.ts:190-193`), so today it says "Now sing a whole song." whatever Sing it's
    ending. This page needs a close that knows the ending, and is not built before it (What the kit
    and the app still need, 12; 78): after "Effortful", "Uncomfortable" or "Just listen today" the
@@ -714,25 +714,25 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 14's entry in `kit/season.ts` (`:395-410`) gains a plain `minutes: 18` and
+- **Season data**: Lesson 14's entry in `kit/season.ts` (`:382-396`) gains a plain `minutes: 18` and
   `page: '/learn/14'` after its topics, in every build, under the comment Lesson 5's entry carries,
-  `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:254`), as Lesson 3's own
-  are written (`season.ts:212-215`) and Lesson 6's (`:275-277`; 8, 12). Whether the page is live is
+  `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:250`), as Lesson 3's own
+  are written (`season.ts:210-213`) and Lesson 6's (`:270-272`; 8, 12). Whether the page is live is
   `kit/publish.ts`'s to say: `seasonFor` draws a lesson held back as one coming later, with no page
   and no reading time (`:102-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`,
   which `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link stays as it
   is, `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
-  `label: 'Karaoke Night'` (`season.ts:403-409`), with no `needs`. Its topics stay; its hook is the
-  entry's, the default (`:401`), and its tease, which Lesson 13's card draws, is
-  `kit/lesson-copy.ts`'s (`:157`), with the old ones kept as `compelling` and `band` (`:149-165`),
+  `label: 'Karaoke Night'` (`season.ts:389-395`), with no `needs`. Its topics stay; its hook is the
+  entry's, the default (`:388`), and its tease, which Lesson 13's card draws, is
+  `kit/lesson-copy.ts`'s (`:150`), with the old ones kept as `compelling` and `band` (`:143-157`),
   as 1 and 2 record. `EDGES` already holds [5, 14], [8, 14], [9, 14] and [12, 14]
-  (`season.ts:436-439`).
+  (`season.ts:422-425`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its hook, its topics, the lessons it builds on, its practise link and its minutes
   (`cardMarkup`, `kit/explorer.ts:205-248`), no Watch button (`kit/season.ts:23-25`), and the
   learner's fields only, which `src/e2e/learn-no-planning-text.spec.ts` holds every built lesson
-  page to. One of its topics is S17, "Dynamics without pushing: messa di voce" (`season.ts:79`): it
+  page to. One of its topics is S17, "Dynamics without pushing: messa di voce" (`season.ts:82`): it
   says a note can grow louder without a push, and not what its line does, so it hints at the reveal
   without answering it (6).
 
@@ -768,7 +768,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    when the console publishes the page, not at a release (SEARCH.md § 3.2, 12).
 2. The page's head, written in full from its first commit, since both tests read it while the page
    is a draft: `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts
-   included (`lesson-copy.test.ts:375-410`), and `src/tests/lesson-pages.test.ts` holds every lesson
+   included (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, drafts included, to its head, its structured data, its breadcrumb, its share card and
    its legal links (`:112-210`). So Lesson 14 meets all of the checks below as a draft; its release
    adds only the listings and links of item 1 (`:212-240`). The hook's copies are the ones the site
@@ -778,7 +778,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    form (`learn/04.html:9-128`), with the default hook (13):
    - the title, "Phrasing: sing a whole song · Find Your Pitch | MercuryPitch" (60 characters, the
      test's most, `lesson-pages.test.ts:127-128`), which holds the Article's headline (`:160`), and
-     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:375-384`; Hero);
+     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
    - the meta description, "If every note of a song is in tune, what is left to shape? Hear Merc
      sing one phrase twice, then sing it and listen back." (121 characters, inside the test's 81 to
      160, `lesson-pages.test.ts:129-132`, and 153 with `compelling`);
@@ -786,8 +786,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      (`learn/04.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "If every note of a song is in tune, what is left
      to shape? Hear one phrase sung twice, then sing it yourself." (109 characters; 141 with
-     `compelling`; `lesson-copy.test.ts:401-404`), and
-     `twitter:description`, the hook exactly (`:405-407`);
+     `compelling`; `lesson-copy.test.ts:349-352`), and
+     `twitter:description`, the hook exactly (`:353-355`);
    - canonical and `og:url` `https://mercurypitch.com/learn/14`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:116-134`);
@@ -799,7 +799,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      the file (`lesson-pages.test.ts:177-196`; item 3);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:390-398`, `:408`), and the other test asks for the Article first
+     (`lesson-copy.test.ts:338-346`, `:356`), and the other test asks for the Article first
      (`lesson-pages.test.ts:142-144`): `@id` `https://mercurypitch.com/learn/14#lesson` and `url`
      `https://mercurypitch.com/learn/14` (`:146-147`); the headline "Phrasing: sing a whole song";
      `alternativeHeadline`, the hook exactly; `description`, the meta description's words, and
@@ -828,15 +828,15 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    orange Merc. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:102-120`,
-   `:138-146`; `:216-219`, `:229-233`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:451-455`), so without them the Browser jobs fail before any spec
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-122`,
+   `:140-148`; `:218-221`, `:231-235`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:476-480`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:46-57`, `:172-182`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:174-184`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
-   (`assert-first-paint-budgets.mjs:143-145`). As on Lesson 3, the listener, the pitch detector and
+   (`assert-first-paint-budgets.mjs:145-147`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:106-110`), and the record module and the app's recorder
+   (`scripts/assert-first-paint-budgets.mjs:107-111`), and the record module and the app's recorder
    with them, so the ceiling holds only while that boundary does.
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`, the song line's parts (Toys 1): Lesson 9's
    rungs over time slots and its rung names, which this page uses as sequence mode and names by
@@ -880,8 +880,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     button, which the rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055;
     78). The kit draws the close once (`next-card.ts:190-193`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
-    would gain the shorter line beside its own (`lesson-copy.ts:173-179`), kept free of the team's
-    words as the test asks (`lesson-copy.test.ts:300-308`). Its unit test and End to end 11 check it
+    would gain the shorter line beside its own (`lesson-copy.ts:165-171`), kept free of the team's
+    words as the test asks (`lesson-copy.test.ts:247-255`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
 13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:439-473`),
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like
@@ -1108,7 +1108,7 @@ parts:
 18. The season's close: `createNextCard(14)` on the page's mark draws "End of Season 1", the line,
     Karaoke Night at `/karaoke-night?lesson=14` with `target="_blank"` and `rel="noopener"`, and
     "See the season map" at `#explorer`, and keeps the still after its words, as `next-card.test.ts`
-    checks the kit (`:341-372`); and after each of the three rest endings, "Effortful",
+    checks the kit (`:337-368`); and after each of the three rest endings, "Effortful",
     "Uncomfortable" and "Just listen today", the close keeps "End of Season 1", "You've seen every
     note you sing." and "See the season map", and shows neither "Now sing a whole song." nor its
     Karaoke Night button, while every other ending keeps both.
@@ -1165,7 +1165,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 11. The Wrap ends on the season's close: on `/learn/14` the card reads "End of Season 1" and the
     line, holds the two links and keeps its figure after its words;
     `src/e2e/learn-next-card.spec.ts`, which today leaves the close to `next-card.test.ts` because
-    the finale has no page (`:16-17`), gains this check. After "Uncomfortable" and after
+    the finale has no page (`:17-18`), gains this check. After "Uncomfortable" and after
     "Effortful", each reached with the fake microphone as End to end 6 reaches them, and after "Just
     listen today", the card keeps "You've seen every note you sing." and "See the season map", and
     shows neither "Now sing a whole song." nor a link to `/karaoke-night?lesson=14`.

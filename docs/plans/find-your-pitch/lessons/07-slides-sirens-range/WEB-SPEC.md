@@ -592,7 +592,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 7's entry in `kit/season.ts` (`:291-309`) gains `minutes: 16`
+- **Season data**: Lesson 7's entry in `kit/season.ts` (`:285-302`) gains `minutes: 16`
   (FACTS 4) and, proposed, `needs: "the warm-up's Lip trills routine (a pattern slug)"`, the form
   Lesson 5's entry uses for its own missing drill, for the team and never drawn on the card; the
   warm-up's ungraded end, which the proposal used to name, is on main (Practice links). Its link,

@@ -136,10 +136,10 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    steps the viewer reaches, and first settles the page's own links to other lessons by the state
    the page was served with (`followPageState`, `kit/page-chrome.ts:111`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
-   `kit/lesson-copy.test.ts:375-384` requires of every page from its first commit), the meta as
+   `kit/lesson-copy.test.ts:323-332` requires of every page from its first commit), the meta as
    three chips ("15 minutes", FACTS 4; "Also useful: Lesson 6, Intervals", a plain chip, not a link,
    as Lesson 3's "Also useful" chip is, `learn/03.html:353-356`, FACTS 2; Sound on) and the promise,
-   from LESSON.md. The title is the season's hook (`kit/season.ts:319`, FACTS 1); it says the song
+   from LESSON.md. The title is the season's hook (`kit/season.ts:312`, FACTS 1); it says the song
    feels different and never says where the claps land, so it answers nothing the predict asks.
 3. **The stage**: orange's and blue's bubbles over the two Mercs on the floor line, with the beat
    machine in its compact state between them (Toys 1), and under the machine the two plays: "Play
@@ -840,10 +840,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-Lesson 8's entry (`kit/season.ts:310-332`; FACTS 58), as this page wrote it:
+Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
 
 - `minutes: 15` and `page: '/learn/08'`, written plainly with Lesson 5's comment, "A draft until its
-  sign-off (drafts.ts), as Lesson 3 is." (`season.ts:254-256`). Every build keeps a draft's page and
+  sign-off (drafts.ts), as Lesson 3 is." (`season.ts:250-252`). Every build keeps a draft's page and
   reading time (`kit/season.test.ts:241-266`); where the page's state holds the lesson back, every
   list draws it with neither, as a lesson coming later (`kit/publish.ts:94-124`).
 
@@ -852,16 +852,16 @@ Lesson 8's entry (`kit/season.ts:310-332`; FACTS 58), as this page wrote it:
   prints, so a learner who types it lands on the panel too; `label` stays "Drum Night"; and a
   learner `note`, "then press Play First Pocket", printed "Drum Night, then press Play First
   Pocket" by `practiseMarkup` (`kit/explorer.ts:174-179`). `pr.needs`, "Ear Lab Time (an ear-drill
-  link)", stays as it is: it is admin only, never drawn on a lesson page (`season.ts:99-100`).
+  link)", stays as it is: it is admin only, never drawn on a lesson page (`season.ts:102-103`).
 - `sig` and `fig: 'metronome'` stay as they are. The card's figure caption, "A metronome, its arm on
   beats 2 and 4" (`kit/explorer-figures.ts:207`), is the kit's and stays: the card's arm swings in
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:878-889`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
-- The hook stays word for word (`season.ts:319`; FACTS 1), with no alternative, and the tease
-  stays as `kit/lesson-copy.ts:107` has it: "Same song, same speed. Only the claps move.", which
+- The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease
+  stays as `kit/lesson-copy.ts:105` has it: "Same song, same speed. Only the claps move.", which
   Lesson 7's card shows (FACTS 6a). Lesson 9's entry carries the hook this page's card shows
-  (`season.ts:339`), and its copy the tease (`kit/lesson-copy.ts:116`), with its earlier hook as an
-  alternative (`:108-115`); all three are Lesson 9's, not this page's (FACTS 6).
+  (`season.ts:331`), and its copy the tease (`kit/lesson-copy.ts:113`), with its earlier hook as an
+  alternative (`:106-112`); all three are Lesson 9's, not this page's (FACTS 6).
 
 ## What the kit and the app still need
 
@@ -909,9 +909,9 @@ was built on.
    time of its own. It moves the whole figure, live or still, so both Mercs hop while blue sings.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
-   step, or one leap." (`kit/lesson-copy.ts:116`), above its new hook, "How do you land a note you
-   have to leap to?" (`season.ts:339`), under `.next-tease` (`kit/next-card.ts:142`;
-   `lesson-sections.css:198-204`), and the old hook stays in `kit/lesson-copy.ts:108-115` as the
+   step, or one leap." (`kit/lesson-copy.ts:113`), above its new hook, "How do you land a note you
+   have to leap to?" (`season.ts:331`), under `.next-tease` (`kit/next-card.ts:142`;
+   `lesson-sections.css:198-204`), and the old hook stays in `kit/lesson-copy.ts:106-112` as the
    admin console's alternative (CURIOSITY-MOMENTS § 5). This page adds only its tease figure to the
    slot (Toys 9).
 10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:128-130`, `:124-126`),
@@ -935,11 +935,11 @@ was built on.
     `vite.config.ts:306`, `:474`).
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-137`), whole in the page's first commit. Two tests hold it: the kit's
-    `src/features/lessons/kit/lesson-copy.test.ts:375-410` reads every `learn/NN.html`, drafts
+    `src/features/lessons/kit/lesson-copy.test.ts:323-358` reads every `learn/NN.html`, drafts
     included, from its first commit, and `src/tests/lesson-pages.test.ts:85-183` holds a released
     lesson's head. The copies of the hook that the first test reads are the ones the site worker
     rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
-    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:375-384`).
+    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:323-332`).
     - The document title, at most 60 characters, with "MercuryPitch" and the headline in it
       (`lesson-pages.test.ts:101-102`, `:130`): SEARCH.md § 4's draft, "Beat, tempo and the
       backbeat, explained | MercuryPitch" (54 characters), for the owner to decide.
@@ -953,16 +953,16 @@ was built on.
     - `og:title` and `twitter:title`, "Beat, tempo and the backbeat: Find Your Pitch, Lesson 8", in
       the form of Lesson 2's (`learn/02.html:26-29`, `:45-48`).
     - `og:description`, the full hook and then one line, as Lesson 2's (`learn/02.html:30-33`),
-      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:401-404`): "Why
+      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:349-352`): "Why
       does the same song feel different when you clap on 2 and 4 instead of 1 and 3? Hear the claps
       move, then tap the backbeat."
     - `twitter:description`, the hook exactly (`learn/02.html:49-52`;
-      `lesson-copy.test.ts:405-407`).
+      `lesson-copy.test.ts:353-355`).
     - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-08-og.jpg`, with
       `og:image:width` 1200 and `og:image:height` 630, and `og:image:alt` and `twitter:image:alt`
       naming the card (item 15; `learn/02.html:34-43`, `:53-60`).
     - The Article block: `@id` `https://mercurypitch.com/learn/08#lesson`, headline "Beat, tempo and
-      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:408`), the same
+      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:356`), the same
       description as the meta, `url` and `mainEntityOfPage` the canonical address, `image` the
       og:image (`lesson-pages.test.ts:116-117`, `:128-129`), `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
@@ -991,8 +991,8 @@ was built on.
     (`src/tests/lesson-pages.test.ts:185-220`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-81`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:149-155` checks. The first-paint budget comes with the page,
-    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:102-128`, Lessons 3 and 5),
-    at `:154-160`, and its CSS ceiling at `:238-241`, since every build carries every lesson page.
+    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-130`, Lessons 3 and 5),
+    at `:156-162`, and its CSS ceiling at `:240-243`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -1178,7 +1178,7 @@ on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is
     `.next-tease` reads `LESSON_COPY[9].tease`, and the card's words run eyebrow, `next-tease`,
     `q2`, `chip`; and its tease figure, after the words, holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every built lesson,
-    this one included. Its pattern for the team's word "Signature" is case-sensitive (`:22-39`),
+    this one included. Its pattern for the team's word "Signature" is case-sensitive (`:23-40`),
     so the page's "time signature" stays lower case wherever it appears, as LESSON.md writes it.
 13. The first screen: the kit's `src/e2e/learn-cold-open-fold.spec.ts` loads every lesson the e2e
     bundle carries (`:32`), so this page joins it on its first build, at its seven sizes from 390 x
