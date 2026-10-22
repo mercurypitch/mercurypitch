@@ -335,7 +335,7 @@ Tests:
 - The quick check is the kit's quiz with LESSON.md's four questions, three answers each, shuffled
   per viewer from a stored seed, ids `l03-q1` to `l03-q4`, a check icon and ink (not gold) on the
   right answer, and feedback that links back to Steps 1, 4 and 5 (`data-goto-step`). The kit prints
-  "Right." or "Not quite." before each feedback line (`kit/quiz.ts:171`), so no line starts with
+  "Right." or "Not quite." before each feedback line (`kit/quiz.ts:278`), so no line starts with
   "Yes" or "Right". Finishing it marks Lesson 3 done.
 - Storage keys, named as Lessons 1 and 2 name theirs: `fyp-l03-recall-seed` and `fyp-l03-recall-v1`
   for the recall, `fyp-l03-seed` and `fyp-l03-quiz-v1` for the quick check. Answers stay in

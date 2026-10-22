@@ -128,10 +128,10 @@ and 89). Three run longer, for these reasons:
 
 - The band chart (Merc's band at A3) with the level strip and a held voice, drawn violet. One
   slider, **Push**, 0 to 100, starting at 50, moves the voice's level and pitch together through
-  the kit's `setGain` and `setFreq` (`sound.ts:169-176`): ±6 dB and ±60 cents at the ends (FACTS
+  the kit's `setGain` and `setFreq` (`sound.ts:231-238`): ±6 dB and ±60 cents at the ends (FACTS
   73). The line draws in a scrolling 4-second window while the note sounds.
 - Sounding the note: `holdToPlay` sounds it while a pointer holds the slider, or for 0.7 s after
-  the last arrow key (`kit/toy-helpers.ts:17-63`); it handles no Space or Enter, so on its own a
+  the last arrow key (`kit/toy-helpers.ts:19-67`); it handles no Space or Enter, so on its own a
   keyboard could not keep Push still while the note sounds. So the toy adds **Hold the note**, a
   button with `aria-pressed`: pressed (by pointer, Space or Enter), it sounds the note until it is
   pressed again, for at most 20 s, and while it sounds the slider's keys move the voice without
@@ -397,7 +397,7 @@ Tests:
   answering all four marks Lesson 5 done in the explorer; a check icon and ink (not gold) on the
   right answer, and feedback that links back to Steps 1, 2, 4 and 5 (`data-goto-step`). No feedback
   line starts with "Right", "Yes" or "Correct": the kit prints "Right." or "Not quite." itself
-  (`kit/quiz.ts:171`). Answers stay in localStorage until the Lesson telemetry track exists.
+  (`kit/quiz.ts:278`). Answers stay in localStorage until the Lesson telemetry track exists.
 - Two quizzes on one page need the three changes to `kit/quiz.ts` that Lesson 2's spec lists (a
   root per quiz, `lesson` optional, a question `id`); Lesson 2's page brings them, and this page
   publishes after it.
@@ -446,9 +446,9 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
      target is the preset's anchor, and a line in `src/tests/slug-map.test.ts`. It opens at ten
      seconds, as the owner decided on 19 October 2026 (LESSON.md; FACTS 63).
   2. The `durationSec` launch field: on `ExerciseLaunch` and the launch override (beside
-     `difficulty`), passed by `applyExerciseSlug` (`src/App.tsx:592-636`); read by `ExerciseShell`
+     `difficulty`), passed by `applyExerciseSlug` (`src/App.tsx:593-637`); read by `ExerciseShell`
      as guided length, then launch length, then saved timer (`effectiveTimerSeconds`,
-     `ExerciseShell.tsx:524-526`); shown selected on the timer toggle without writing the saved
+     `ExerciseShell.tsx:534-536`); shown selected on the timer toggle without writing the saved
      preference, and dropped if the viewer picks another length. Pitch Hold shares the field
      (Lesson 3's spec).
   3. Long Note's duration score reads that same effective length, not `activeTimerSeconds()`

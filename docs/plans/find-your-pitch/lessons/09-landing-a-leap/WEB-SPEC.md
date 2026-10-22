@@ -260,16 +260,16 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
 
 - The kit's predict as it is (`mountPredict`, `kit/predict.ts:79`; FACTS 11), which takes two to
   four choices: here three `.choice` buttons, `data-choice` "re", "mi" and "fa", each at least 44 px
-  tall. The choice locks (`:97-115`) and unlocks the three plays, `data-play` "re", "mi" and "fa",
+  tall. The choice locks (`:106-124`) and unlocks the three plays, `data-play` "re", "mi" and "fa",
   labelled "Play do, re, so", "Play do, mi, so" and "Play do, fa, so", which start disabled.
 - **Play Merc's leap** is a `data-free` play inside the predict's root: it works before the choice,
   so the sound comes first (playbook rule 5), and it never reveals, since it is the leap the
   question is about and says nothing of how a middle note splits it.
 - `revealOn: ['re', 'mi', 'fa']` and `revealAfter: 'all'`: the reveal waits until all three paths
-  have been heard with sound on (`:88-92`, `:136-149`), each to its end: a path cut short, by
+  have been heard with sound on (`:97-101`, `:146-160`), each to its end: a path cut short, by
   another sound or a stop, does not count, so the reveal waits for it to play through (Audio).
   `revealOn` must be given: with `'all'` the kit reads only that list, so without it the first heard
-  play would reveal (`:91-92`).
+  play would reveal (`:100-101`).
 - The hints: `chosen`, "Locked in. Play all three: do to so, through re, mi and fa."; `next`, "Now
   play the others, so you've heard all three."; `silent`, LESSON.md's "Sound is off, so nothing
   played. Turn sound on to hear them, then play all three."; `again`, "Play them again, or play
@@ -283,7 +283,7 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
 - States: waiting for a choice, with Play Merc's leap working; the choice locked and the plays open;
   one or two paths heard, with the `next` hint; all three heard, and the reveal shown. With sound
   off a play draws its path and shows the `silent` hint, and the reveal does not come.
-- Under reduced motion the reveal appears without its rise (`kit/predict.ts:133`).
+- Under reduced motion the reveal appears without its rise (`kit/predict.ts:135`).
 
 ### 3. Four words
 
@@ -295,7 +295,7 @@ Arpeggio plays do, mi, so and the top do; Landing zone lights so's band and play
 
 The ladder chart in live mode, inside Sing it's card, with Merc's rungs as the target and the
 viewer's line drawn against them. It is the kit's `.sing-chart` (240 px; 210 px at 420 px wide and
-under), a band chart as on Lessons 3 and 5 (`learn/03.html:1396`), so the full ladder's 14-semitone
+under), a band chart as on Lessons 3 and 5 (`learn/03.html:1488`), so the full ladder's 14-semitone
 window gives 15.1 px a semitone (13.0 at 210 px) and the smaller ladder's 9 gives 23.6 (20.2) (FACTS
 97). Every state has a visible status line that is also announced (`aria-live="polite"`).
 
@@ -308,7 +308,7 @@ States:
    (`aria-pressed`, at least 44 px), under LESSON.md's line in its two forms, "Choose a voice to
    sing with. If you chose one in an earlier lesson, pick it again:" with none stored and "Keep the
    voice you chose before, or change it:" with one, as Lessons 5 to 7 word it, the first as Lesson
-   5's page prints it (`learn/05.html:1282-1287`; FACTS 69). It reads and writes `fyp-voice` through
+   5's page prints it (`learn/05.html:1374-1377`; FACTS 69). It reads and writes `fyp-voice` through
    `VoiceChoice` (`kit/voice-choice.ts:20-48`). A stored choice shows pressed and can be changed;
    with none stored, neither is pressed and the next state waits for a choice, before "Just listen
    today" plays anything too, because the voice picks the Merc who sings.
@@ -639,11 +639,11 @@ table):
    description and the Article's description, which repeat each other, may shorten the hook, and
    every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:9-128`):
    - the title, "Landing a leap: Find Your Pitch, Lesson 9 | MercuryPitch" (56 characters, under the
-     test's 60, `lesson-pages.test.ts:101-102`), which holds the Article's headline (`:130`), and
+     test's 60, `lesson-pages.test.ts:127-128`), which holds the Article's headline (`:160`), and
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:325-334`; Hero);
    - the meta description, "How do you land a note you have to leap to? Hear it first, aim at its
      band, and sing do-mi-so-do as a ladder. A free lesson in your browser." (140 characters, inside
-     the test's 80 to 160, `lesson-pages.test.ts:103-106`, and 157 with the alternative hook written
+     the test's 80 to 160, `lesson-pages.test.ts:129-132`, and 157 with the alternative hook written
      in, should the console pick it);
    - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9"
      (`learn/02.html:26-29`, `:45-48`);
@@ -653,7 +653,7 @@ table):
      (`lesson-copy.test.ts:355-357`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/09`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
-     (`lesson-pages.test.ts:90-108`);
+     (`lesson-pages.test.ts:116-134`);
    - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-09-og.jpg` (item 3),
      with `og:image:width` 1200 and `og:image:height` 630, and as `og:image:alt` and
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 09, Landing a leap, above two
@@ -662,11 +662,11 @@ table):
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
      (`lesson-copy.test.ts:340-348`, `:358`): `@id` `https://mercurypitch.com/learn/09#lesson` and
-     `url` `https://mercurypitch.com/learn/09` (`lesson-pages.test.ts:116-117`); the headline
+     `url` `https://mercurypitch.com/learn/09` (`lesson-pages.test.ts:146-147`); the headline
      "Landing a leap"; `alternativeHeadline`, the hook exactly; `description`, the meta
-     description's words, and `image`, the `og:image` URL (`:128-129`); `position: 9`,
+     description's words, and `image`, the `og:image` URL (`:158-159`); `position: 9`,
      `learningResourceType` "Lesson", free, the series as `isPartOf`, and the organization as author
-     and publisher (`:118-126`), as in Lesson 2's (`learn/02.html:69-109`). It has no
+     and publisher (`:148-156`), as in Lesson 2's (`learn/02.html:69-109`). It has no
      `datePublished` yet, as the built pages leave it out until they go live
      (`learn/04.html:61-68`): the date is the day the page first goes live on mercurypitch.com,
      which nothing writes at run time, so it is set in the commit that deletes the page's
@@ -713,7 +713,7 @@ table):
    8).
 9. The two sound rules' kit parts (Audio), which PR #1149's fix pass brings from Lesson 6's page
    review: `kit/predict.ts`'s `play` may resolve `false` for a play cut short, which the predict
-   then never counts as heard, while a `void` result keeps today's meaning (`:28-33`, `:159-162`);
+   then never counts as heard, while a `void` result keeps today's meaning (`:30-40`, `:170-174`);
    and a page-wide "now playing" owner that every sound source takes before it sounds, which stops
    the sound before it. If that pass keeps the owner in Lesson 6's own modules, it moves into the
    kit before this page is built, as Move do does (item 10).

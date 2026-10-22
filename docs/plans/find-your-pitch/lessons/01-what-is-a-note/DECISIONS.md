@@ -45,7 +45,7 @@ One line each, with the reason. Newest last.
 16. Lines re-voiced after the critic rounds (b19, b39, o6); the cue pipeline re-timed scenes, Merc
     performances, the mix and the captions automatically.
 17. CTA: mercurypitch.com/mirror. Voice Mirror is free, needs no account and ignores octave
-    errors (`src/lib/mirror/metrics.ts:261`). The web drills score the written octave.
+    errors (`src/lib/mirror/metrics.ts:249`). The web drills score the written octave.
 18. Durable sources: brief, facts, script, storyboard, handoffs and decisions are copied to
     `docs/plans/find-your-pitch/lessons/01-what-is-a-note/`. The HyperFrames project stays in
     gitignored `output/motion/` per the house rules; where its durable home is, is an owner

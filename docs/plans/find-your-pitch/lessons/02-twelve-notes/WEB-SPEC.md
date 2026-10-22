@@ -127,7 +127,7 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
      page's own colours (DECISIONS 87): m2 and M2 lit, their labels and names in ink on a brighter
      fill; the other ten ghosted, with no fill and a faint outline (ink at 20 %), their labels and
      names in ink-2, 7.7:1 to 8.5:1 on the card's gradient (`--ink-2` #a8b3bf on `--card` #12171e
-     and on the gradient's lighter top, `kit/lesson-base.css:17`, `:25`, `:53-57`). It is drawn at
+     and on the gradient's lighter top, `kit/lesson-base.css:17`, `:25`, `:55-59`). It is drawn at
      the card's width, never scaled down, so its text keeps the type scale's 12 px floor; on phones
      a pad's name may take two lines. Its caption: "Illustration: Leap's twelve answers. In Leap:
      m2 = semitone · M2 = tone."
@@ -314,7 +314,7 @@ figure (`:1199-1205`). That is too narrow for eight 44 px keys, so steps 3 to 5 
     figure, three rows: Sharp and Flat; Play both ways; the Show the rare ones switch. The predict
     and Play E to F are in the step's text.
   - Each stays under the 786 px a 390 x 844 screen leaves below the 58 px masthead (`--mast`,
-    `kit/lesson-base.css:92`). That is the phone's budget only: beside the text the stage is
+    `kit/lesson-base.css:94`). That is the phone's budget only: beside the text the stage is
     stuck, and every step's stage also fits 1024 x 640 with the masthead, the kit's landscape
     budget (PRODUCTION-PIPELINE.md § 5, `src/e2e/learn-stage-fit.spec.ts`).
 
@@ -476,7 +476,7 @@ the buttons and the reveal carry the moment.
   (the drill's `choices` count sets the floor and "must match what the UI actually renders",
   `src/lib/ear/drills.ts:58-60`, `:233-237`); and it passes `updateItem: false`, so the items'
   calibration stays as it is. The controller already supports this through `RunTrack`
-  (`src/features/ear-lab/use-identification-controller.ts:58-62`), the way Echo's sung answers rate
+  (`src/features/ear-lab/use-identification-controller.ts:59-63`), the way Echo's sung answers rate
   under `echo-sing` (`src/features/ear-lab/EchoDrill.tsx:136-142`; FACTS 34a). The launch should
   also carry `?lesson=02` so First Light steps aside (CURRICULUM § 4 item 6).
 - When it ships, the Wrap, the footer, the explorer card and the YouTube description switch to the
@@ -530,7 +530,7 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
    accessible names read it and redraw when it changes.
 7. **Lit beads, per copy.** Each spiral copy keeps its own; they are not in any shared store
    (DECISIONS 81).
-8. **`kit/step-deck.ts`**: one toy per step stays (`toyFor`, `step-deck.ts:20-21`); the ear game is
+8. **`kit/step-deck.ts`**: one toy per step stays (`toyFor`, `step-deck.ts:44-45`); the ear game is
    in step 4's text, not on the stage (DECISIONS 82). Optional: open at the step a `#step-N` address
    names, so Lessons 3 and 4's recall links can open a step here (Lesson 3 WEB-SPEC, "New
    engineering", 6).
