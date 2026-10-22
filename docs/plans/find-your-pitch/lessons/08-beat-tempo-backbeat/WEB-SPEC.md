@@ -284,17 +284,18 @@ its patterns with it.
   **Tempo**. March is a kick on 1, accented at gain 1.0, the BOOM, and claps on 2, 3 and 4, the
   whacks, with no hi-hat, at 120 BPM; Rock is Step 4's beat at 90 (FACTS 25, 75). Each pattern keeps
   its own tempo for the visit, starting from its own, so "swap the tempos" means March at 90 and
-  Rock at 120. A pattern change while playing takes effect at the next bar line. Step 5's controls
-  are a row of their own, shown only in this state: **Play**, **March**, **Rock** and its own
-  **Tempo** slider, so nothing here touches Step 2's Tempo. All four start `disabled` in the markup,
-  so the stage cannot answer the predict before the viewer commits (Toys 2). Play, March and Rock
-  are buttons, passed as the predict's `unlocks`, which sets `disabled = false` on each as the
-  choice locks (`kit/predict.ts:65-66`, `:115-117`). The Tempo slider is an `input`, which `unlocks`
-  does not take, so the predict's `onChoice` enables it (`:57`, called at `:113`). Lesson 2's stage
-  does the same with Sharp and Flat: `disabled` in its markup (`learn/02.html:904`, `:909`) and
-  enabled from its predict's `onChoice` (`lesson-02/steps.ts:142`; `lesson-02/keys-toy.ts:337-340`).
-  No `aria-disabled` is involved: a `disabled` control stays out of the tab order until the choice,
-  and the choice locks for the visit, so the row stays open after it. This page is the first to pass
+  Rock at 120. A pattern change while playing takes effect at the next bar line, its tempo with it,
+  so the bar playing ends at its own pattern's tempo. Step 5's controls are a row of their own,
+  shown only in this state: **Play**, **March**, **Rock** and its own **Tempo** slider, so nothing
+  here touches Step 2's Tempo. All four start `disabled` in the markup, so the stage cannot answer
+  the predict before the viewer commits (Toys 2). Play, March and Rock are buttons, passed as the
+  predict's `unlocks`, which sets `disabled = false` on each as the choice locks
+  (`kit/predict.ts:65-66`, `:115-117`). The Tempo slider is an `input`, which `unlocks` does not
+  take, so the predict's `onChoice` enables it (`:57`, called at `:113`). Lesson 2's stage does the
+  same with Sharp and Flat: `disabled` in its markup (`learn/02.html:904`, `:909`) and enabled from
+  its predict's `onChoice` (`lesson-02/steps.ts:142`; `lesson-02/keys-toy.ts:337-340`). No
+  `aria-disabled` is involved: a `disabled` control stays out of the tab order until the choice, and
+  the choice locks for the visit, so the row stays open after it. This page is the first to pass
   `unlocks`, so its tests check it (Tests, unit 15).
 - **Tempo** (Steps 2 and 5, and free play): a slider, 60 to 140 BPM in steps of 1, from 90 in
   Step 2 or from the pattern's own tempo in Step 5, in a slider row labelled "Tempo" with its

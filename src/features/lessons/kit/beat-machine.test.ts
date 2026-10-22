@@ -261,6 +261,25 @@ describe('mountBeatMachine', () => {
     expect(m.machine.playing).toBe(true)
   })
 
+  it("changes a playing pattern's tempo with the pattern, at the next bar line", () => {
+    // Arrange: Rock playing on Step 5's grid, its first bar booked
+    const m = mount('patterns')
+    m.root.querySelector<HTMLButtonElement>('[data-bm-pattern="rock"]')?.click()
+    m.start().click()
+    runs[0].o.bar(0)
+
+    // Act: March chosen part way through that bar, then the next bar comes up
+    m.root
+      .querySelector<HTMLButtonElement>('[data-bm-pattern="march"]')
+      ?.click()
+    const restOfBar = runs[0].o.bpm()
+    runs[0].o.bar(1)
+    const nextBar = runs[0].o.bpm()
+
+    // Assert: Rock's 90 to its bar line, then March's 120
+    expect([restOfBar, nextBar]).toEqual([90, 120])
+  })
+
   it('resolves a pattern played to its end true, and one cut short false', async () => {
     // Arrange
     const m = mount('patterns')
