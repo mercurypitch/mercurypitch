@@ -20,6 +20,18 @@ describe('TapPad', () => {
     expect(onTap).toHaveBeenCalledTimes(2)
   })
 
+  it('takes a click no pointer or key made, as a screen reader sends it, and not the echo of a tap', () => {
+    const onTap = vi.fn()
+    render(() => <TapPad label="Tap" onTap={onTap} />)
+    const pad = screen.getByTestId('ear-tap-pad')
+    fireEvent.click(pad)
+    expect(onTap).toHaveBeenCalledTimes(1)
+    fireEvent.pointerDown(pad, { button: 0 })
+    fireEvent.pointerUp(pad, { button: 0 })
+    fireEvent.click(pad)
+    expect(onTap).toHaveBeenCalledTimes(2)
+  })
+
   it('ignores secondary mouse buttons', () => {
     const onTap = vi.fn()
     render(() => <TapPad label="Tap" onTap={onTap} />)

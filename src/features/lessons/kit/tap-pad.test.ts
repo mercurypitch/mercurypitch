@@ -47,7 +47,25 @@ describe('bindTapPad', () => {
     el.setAttribute('aria-disabled', 'true')
     el.dispatchEvent(pointerDown(0))
     el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
+    el.dispatchEvent(new MouseEvent('click'))
     expect(taps).toEqual([])
+  })
+
+  it('takes a click that no pointer or key made, as a screen reader or a switch sends it', () => {
+    const { el, taps } = pad()
+    const click = new MouseEvent('click')
+    el.dispatchEvent(click)
+    expect(taps).toEqual([click.timeStamp])
+  })
+
+  it('takes no second tap from the click a pointer or a key makes of itself', () => {
+    const { el, taps } = pad()
+    el.dispatchEvent(pointerDown(0))
+    el.dispatchEvent(new MouseEvent('pointerup'))
+    el.dispatchEvent(new MouseEvent('click'))
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    el.dispatchEvent(new MouseEvent('click'))
+    expect(taps).toHaveLength(2)
   })
 })
 
