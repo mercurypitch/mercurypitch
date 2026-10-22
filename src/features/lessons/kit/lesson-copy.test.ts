@@ -226,11 +226,13 @@ describe("the season's copy", () => {
   })
 
   it("sets a tease's alternatives only beside a tease", () => {
-    for (const L of LESSONS) {
-      // Assert
-      if (L.teaseAlts !== undefined)
-        expect(L.tease, `lesson ${L.n}`).toBeDefined()
-    }
+    // Act
+    const orphaned = LESSONS.filter(
+      (L) => L.teaseAlts !== undefined && L.tease === undefined,
+    ).map((L) => L.n)
+
+    // Assert
+    expect(orphaned).toEqual([])
   })
 
   it("writes every variant's markup as hook markup that reads as its text", () => {
