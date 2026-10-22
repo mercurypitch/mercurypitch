@@ -106,6 +106,8 @@ export interface MenuModel {
 }
 
 const SEASON = 'Season 1'
+/** Where the button shows "Season 1 · " before its lesson (lesson-menu.css hides it at 1020 px and under). */
+const SEASON_SHOWN = '(min-width: 1021px)'
 
 /** A row's right-hand text; this page's lesson counts the step showing. */
 function metaOf(v: LessonView, deck: DeckNow): string {
@@ -403,11 +405,22 @@ export function createLessonMenu(o: LessonMenuOptions): void {
   btn.setAttribute('aria-expanded', 'false')
   btn.setAttribute('aria-controls', 'lessonMenu')
   // The name is the label on screen, then what it opens: a voice control
-  // user says what they see ("Season 1, Lesson 01"; "Lesson 01" on a phone,
-  // where the season drops from view and so from the name) (WCAG 2.5.3).
+  // user says what they see, "Season 1 · Lesson 01", or "Lesson 01" where
+  // the season drops from view (WCAG 2.5.3). Set whole, as the screen
+  // shows it at this width: hidden words inside the button were joined to
+  // the label with a stray space.
+  const label = `Lesson ${String(o.lesson).padStart(2, '0')}`
   const title = L?.title ?? ''
-  const stop = /[.?!]$/.test(title) ? '' : '.'
-  btn.innerHTML = `${ring(0)}<span class="lm-l"><span class="lm-s">${SEASON} · </span>Lesson ${String(o.lesson).padStart(2, '0')}</span><span class="sr">, ${esc(title)}${stop} All ${total} lessons</span>${icon('i-right', 'ico lm-chev')}`
+  const opens = `${title}${/[.?!]$/.test(title) ? '' : '.'} All ${total} lessons`
+  const seasonShown = window.matchMedia(SEASON_SHOWN)
+  const nameButton = (): void =>
+    btn.setAttribute(
+      'aria-label',
+      `${seasonShown.matches ? `${SEASON} · ` : ''}${label}, ${opens}`,
+    )
+  nameButton()
+  seasonShown.addEventListener('change', nameButton)
+  btn.innerHTML = `${ring(0)}<span class="lm-l"><span class="lm-s">${SEASON} · </span>${label}</span>${icon('i-right', 'ico lm-chev')}`
   o.label.replaceWith(btn)
   const arc = btn.querySelector('.arc')
   const paintRing = (): void => {

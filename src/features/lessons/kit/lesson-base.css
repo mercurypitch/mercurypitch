@@ -795,8 +795,9 @@ button {
   }
 }
 /* a phone's masthead: the logo, the lesson menu's button and both switches.
-   Under 420 px they sit closer; under 390 px Pause shows its icon alone, as
-   Sound does under 821 px, and keeps its name in its aria-label */
+   Under 420 px they sit closer, and the menu button's ring gives way
+   (lesson-menu.css); under 390 px the motion switch shows its icon alone,
+   as Sound does under 821 px, and keeps its name in its aria-label */
 @media (max-width: 419px) {
   .mast-in {
     gap: 6px;
@@ -853,10 +854,13 @@ button {
 .foot p {
   margin: 8px 0 0;
 }
+/* A footer link is a 44 px target of its own height. Reaching 13 px past
+   its line instead, two practise links one above the other (Lessons 6 and
+   8) overlapped, and axe failed both (target-size). */
 .foot p a {
-  display: inline-block;
-  padding: 13px 0;
-  margin: -13px 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 .foot h4 {
   margin: 0 0 8px;

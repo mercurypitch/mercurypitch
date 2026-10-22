@@ -53,17 +53,14 @@
   }
 }
 /* a phone's masthead holds the logo, this button and both switches: under
-   420 px they sit closer (lesson-base.css), and under 360 px the ring gives
-   way, as the menu shows the same progress */
+   420 px they sit closer (lesson-base.css), and the ring gives way, as the
+   menu shows the same progress. The room goes to the motion switch's word,
+   "Animations", which a bare "Pause" beside the speaker used to stand in
+   for (lesson-base.css). */
 @media (max-width: 419px) {
   .lm-btn {
     gap: 8px;
-    padding: 0 10px 0 8px;
-  }
-}
-@media (max-width: 359px) {
-  .lm-btn {
-    padding-left: 12px;
+    padding: 0 10px 0 12px;
   }
   .lm-btn .lm-ring {
     display: none;

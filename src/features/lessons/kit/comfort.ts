@@ -106,8 +106,9 @@ export const VisitEnding = {
  * and 7), in the version the visit's ending picks: each `[data-ending]`
  * part shows for its own ending. After "Uncomfortable" or "Just listen
  * today" nothing may send the learner to sing (REQ-GVC-055), so the rest
- * card is no longer a link and its eyebrow says "Rest today"; the room's
- * address stays in its words, for another day.
+ * card is no longer a link, its eyebrow says "Rest today", and the link's
+ * address line (`.addr`, with its new-tab icon) goes; the room's address
+ * stays in the rest card's words, for another day.
  */
 export function mountPractiseCard(card: HTMLElement): void {
   const link = card instanceof HTMLAnchorElement ? card : null
@@ -115,9 +116,11 @@ export function mountPractiseCard(card: HTMLElement): void {
   const target = link?.getAttribute('target') ?? null
   const eyebrow = card.querySelector<HTMLElement>('.eyebrow')
   const practiseWords = eyebrow?.innerHTML ?? ''
+  const address = card.querySelector<HTMLElement>('.addr')
   const parts = qa<HTMLElement>('[data-ending]', card)
   VisitEnding.subscribe((now) => {
     for (const el of parts) el.hidden = el.dataset.ending !== now
+    if (address !== null) address.hidden = now === 'rest'
     if (eyebrow !== null)
       eyebrow.innerHTML =
         now === 'rest' ? '<span class="fig">Rest today</span>' : practiseWords

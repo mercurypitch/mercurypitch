@@ -119,14 +119,21 @@
 .opt.dim {
   opacity: 0.55;
 }
+/* An answered card's tag takes a line of its own under the answer, lined up
+   with its text, so the answer keeps the card's width. The text's zero basis
+   keeps it on the first line however long it is. */
+.opt:has(.opt-tag) {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
 .opt-t {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
 }
 .opt-tag {
-  flex: none;
-  align-self: flex-start;
-  margin-top: 4px;
+  flex: 0 0 100%;
+  order: 3;
+  padding-left: 38px;
   font: 500 var(--fs-12) / 1.2 var(--f-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
