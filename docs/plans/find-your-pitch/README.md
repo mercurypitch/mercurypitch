@@ -37,3 +37,16 @@ its critic rounds. The film projects (compositions, tools, Merc passes) live in
 house rules; those sources move to a private repository (MASTER-PLAN § 12 item 2). Its web lesson was proved as a private preview page, and its public
 home is the app's `mercurypitch.com/learn/01` (MASTER-PLAN § 12 item 9). MASTER-PLAN § 11 lists
 what exists now.
+
+## How the plan cites the app
+
+The lesson packages cite the app by `file:line`. When a FACTS header says its claims cite the code
+at a commit, that is the commit the package was anchored at, not the one its numbers follow now; the
+same holds for a section that says when it was read. Later PRs moved the citations their own diffs
+touched, and PR #1171 read every citation in the packages again on main on 22 October 2026. So a
+bare `file:line` is read on main at the latest commit that touched this folder. A citation followed
+by "at `<sha>`" stays pinned to that commit, and so does each citation in a list that closes with
+"at `<sha>`"; a read of a pull request's branch is pinned the same way. A fact marked superseded is
+read at its header's commit. The notes in `research/` are snapshots that cite the commits their own
+headers name. Code that lands later can move a cited line again; the content cited, not the number,
+is what the plan means.
