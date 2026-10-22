@@ -199,6 +199,16 @@ describe('LESSONS', () => {
     }
   })
 
+  it('gives Lesson 7 its page, its sixteen minutes and its range test link, after Lesson 3', () => {
+    // Act
+    const L = LESSONS[7]
+
+    // Assert: Lesson 7's WEB-SPEC, Tests 11
+    expect([L.page, L.minutes, L.film]).toEqual(['/learn/07', 16, undefined])
+    expect(L.pr.link?.href).toBe('/vocal-range-test?lesson=07')
+    expect(EDGES).toContainEqual([3, 7])
+  })
+
   it('gives each lesson its copy from lesson-copy.ts beside its own default hook', () => {
     // Act
     const L = LESSONS[7]

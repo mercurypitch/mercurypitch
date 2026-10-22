@@ -294,6 +294,9 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Slides, sirens and your range',
     short: 'Your range',
     topics: ['S07', 'S08'],
+    // A draft until the owner's review and the vocal coach's sign-off (drafts.ts).
+    minutes: 16,
+    page: '/learn/07',
     hook: 'Why is your comfortable middle worth more than your highest note?',
     sig: "A siren's line sweeping the chart, the comfortable band lit and the edges dimmed.",
     pr: {

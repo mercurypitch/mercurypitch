@@ -18,8 +18,8 @@
 // Releasing a lesson means deleting its line here. Then, as for any lesson
 // going live, list it in public/sitemap.xml and public/llms.txt, which keep
 // drafts out: the site worker adds a draft to both only while it is
-// published. Lesson 5 joined with its page; Lesson 7, a voice lesson too,
-// joins when its page is built. The Content Studio's Lessons page
+// published. Lesson 5 joined with its page, and Lesson 7, a voice lesson
+// too, joined with its own. The Content Studio's Lessons page
 // (/admin/lessons) shows this list as it stands and what the site it runs
 // on serves.
 //
@@ -33,4 +33,5 @@ export const DRAFT_LESSONS: Readonly<Partial<Record<number, string>>> = {
   4: "the owner's go-ahead", // Lessons 1 and 2 launch first, with their films
   5: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
   6: "the owner's review of the page, and the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)",
+  7: "the owner's review of the page, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
 }
