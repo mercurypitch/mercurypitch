@@ -325,6 +325,7 @@ describe("the season's copy", () => {
     // Assert: the owner's answer to the plan's § 5 item 2
     expect(kept).toEqual([
       [3, 'figures'],
+      [3, 'tested'],
       [7, 'two-questions'],
       [9, 'harder'],
       [10, 'bright-dark'],

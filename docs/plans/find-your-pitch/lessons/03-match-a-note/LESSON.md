@@ -15,12 +15,17 @@ check links there. What the vocal coach signs off is listed at the end.
 ## Header
 
 - Kicker: FIND YOUR PITCH · SEASON 1 · LESSON 03
-- Title (the hook question): **Asked, most students said they couldn't copy a tune. Tested, most
-  could. So what's going on?** _[Editorial: the default since 20 October 2026
-  (CURIOSITY-MOMENTS § 5). The title it replaces, the season's longest at 163 characters, is kept
-  in `kit/lesson-copy.ts` as an alternative the admin console can switch to: "In a survey, most of
-  1,105 students said they couldn't copy a tune. In tests, only about one in ten to one in six
-  missed by a semitone or more. So what's going on?" Its figures stay on the cold open's stage.]_
+- Title (the hook question): **Asked, most students said they couldn't copy a tune. What happened
+  when researchers tested it?** _[Editorial: the default since 22 October 2026. It asks what the
+  cold open goes on to test, and answers nothing: "it" is the claim, so the title never says that
+  the tests measured the 1,105 (FACTS 5). The two titles before it are kept in `kit/lesson-copy.ts`
+  as alternatives the admin console can switch to. `tested`, the default from 20 October 2026
+  (CURIOSITY-MOMENTS § 5), "Asked, most students said they couldn't copy a tune. Tested, most
+  could. So what's going on?", all but answers the predict right under it, since "most could"
+  says how the tests came out (CURIOSITY-MOMENTS § 1 rule 4). `figures`, the original and the
+  season's longest at 163 characters: "In a survey, most of 1,105 students said they couldn't copy a
+  tune. In tests, only about one in ten to one in six missed by a semitone or more. So what's
+  going on?" Its figures stay on the cold open's stage.]_
 - Meta, as chips: 15 minutes · After Lesson 1: What is a note? (the prerequisite chip, a link to
   Lesson 1's page) · Also useful: Lesson 2, Twelve notes · Sound on · Microphone optional
 - Promise: By the end you'll know how your voice makes a note, how to look after it and what "in

@@ -29,7 +29,8 @@ lesson's question, posed the same way. The facts and animations added later go i
    the reveal waits until it is heard, no choice is called wrong, and the other choice is "a fair guess" (rules 2, 15).
 3. **Show, don't tell.** A sound and a figure, pitch drawn as height or the lesson's own object, with the words
    beside it. The Mercs act; they don't decorate (rules 5, 10, 13, 20).
-4. **The title must not answer the predict,** which sits right under it. Lessons 6 and 13 need this fix.
+4. **The title must not answer the predict,** which sits right under it. Lessons 3, 6 and 13 needed this fix;
+   their entries say how.
 5. **Pay off within the lesson,** at a named step. Both films close their main loop at about 40 % and carry the next
    lesson's loop to the end: keep that (production-research §5.2 gives 70 to 80 % for a film with one loop).
 6. **End on the next lesson's question.** The tease is the next opening in miniature: its set-up, never its answer,
@@ -98,9 +99,12 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Visual:** `kit/band-chart.ts` and Lesson 2's figures (exist). **Payoff:** the reveal (4 of 39), then Step 3 (why).
 - **Tease:** a still of Lesson 4's compact staircase, C to B, stopped one stair under the house glyph (new still):
   "Merc climbs seven stairs and stops, one short of home." Optional, above the card: Play: Merc stops on ti.
-- **Hook, optional:** "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going
-  on?" Reason: at 163 characters it is the longest hook, and the page already shrinks its title to fit; this keeps
-  the "Asked... Tested..." of Lesson 2's film. Check "most could" against FACTS 2 to 4 and 6.
+- **Hook, changed on 22 October 2026:** "Asked, most students said they couldn't copy a tune. What happened when
+  researchers tested it?" Reason: the hook from 20 October, "Asked, most students said they couldn't copy a tune.
+  Tested, most could. So what's going on?", all but answered the predict under it (rule 4), since "most could" says
+  how the tests came out. The new one asks what the cold open goes on to test; "it" is the claim, never the 1,105
+  (Lesson 3 FACTS 5). The console keeps both earlier hooks as alternatives: `tested`, and `figures`, the original,
+  which at 163 characters was the season's longest.
 - **Facts:** FACTS 1 to 8, 13 to 15; the tease, L4 FACTS 17, 22, 23 and 58.
 
 ### Lesson 4 · The major scale and home · page built, a draft until the owner's go-ahead · hook kept

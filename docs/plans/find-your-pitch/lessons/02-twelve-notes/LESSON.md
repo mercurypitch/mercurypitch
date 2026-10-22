@@ -270,11 +270,13 @@ public host every link carries `?lesson=02`, so First Light, the app's intro, st
 visit, and the card and the footer have no line about closing it (FACTS 33b).]_
 
 **Next lesson** (a card that opens Lesson 3 in the explorer): Lesson 3, Match a note. "Asked, most
-students said they couldn't copy a tune. Tested, most could. So what's going on?" Beside it, the
+students said they couldn't copy a tune. What happened when researchers tested it?" Beside it, the
 film's two figures: ASKED 59 % (of 1,105) and TESTED 10–16 % (a semitone or more off). _[Lesson
-3's hook since 20 October 2026 (CURIOSITY-MOMENTS § 5). The film's b54 and b55 keep the longer
-lines: "Asked, most of 1,105 students said they couldn't copy a tune. Tested, only about one in
-ten to one in six missed by a semitone or more."]_
+3's hook since 22 October 2026; the one from 20 October, "Asked, most students said they couldn't
+copy a tune. Tested, most could. So what's going on?", is kept as its alternative `tested`
+(Lesson 3 LESSON.md, Header). The card draws whichever hook the admin console picked. The film's
+b54 and b55 keep the longer lines: "Asked, most of 1,105 students said they couldn't copy a tune.
+Tested, only about one in ten to one in six missed by a semitone or more."]_
 
 ## Watch the episode
 

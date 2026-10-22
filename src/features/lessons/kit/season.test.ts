@@ -284,16 +284,16 @@ describe('a draft lesson (drafts.ts)', () => {
     }
   })
 
-  it('opens on its hook, its alternative kept for the admin console', async () => {
+  it('opens on its hook, its alternatives kept for the admin console', async () => {
     // Act
     const season = await seasonBuilt('0')
 
     // Assert
     const L = season.LESSONS[3]
     expect(L.hook).toBe(
-      "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?",
+      "Asked, most students said they couldn't copy a tune. What happened when researchers tested it?",
     )
-    expect(L.hookAlts?.map((v) => v.id)).toEqual(['figures'])
+    expect(L.hookAlts?.map((v) => v.id)).toEqual(['figures', 'tested'])
     expect(season.LESSONS[5].pr.needs).toBe(
       'Long Note with a fixed 10 or 15 s length (durationSec)',
     )

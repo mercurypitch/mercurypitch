@@ -84,6 +84,11 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
         text: "In a survey, most of 1,105 students said they couldn't copy a tune. In tests, only about one in ten to one in six missed by a semitone or more. So what's going on?",
         note: "The original hook, with both figures (FACTS 1 to 5). At 163 characters it was the season's longest, so the page sets its title smaller; the shorter default keeps the Asked and Tested of Lesson 2's film.",
       },
+      {
+        id: 'tested',
+        text: "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?",
+        note: 'The default from 20 October. Its "Tested, most could" all but answers the cold open\'s predict, which sits under the title.',
+      },
     ],
   },
   4: { tease: 'Merc climbs seven stairs and stops, one short of home.' },
