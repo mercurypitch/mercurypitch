@@ -14,6 +14,7 @@ import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
 import { sliderToGain } from '@/lib/volume-curve'
+import { publishLiveMic } from '@/stores/live-mic-store'
 import { micLatencySec } from '@/stores/mic-latency-store'
 import { setSingingCaptureActive } from '@/stores/mic-store'
 import { pitchAlgorithm, pitchBufferSize, settings, } from '@/stores/settings-store'
@@ -293,6 +294,17 @@ export const useStemMixerMicController = (
       notesHit: notes.notesHit,
     }
   }
+
+  // What the microphone heard, for a reader outside the mixer: a TV that
+  // draws the Karaoke room's stage (live-mic-store.ts). The readings run as
+  // far behind the song as the judge looks back. Taken back with the mixer.
+  onCleanup(
+    publishLiveMic({
+      readings: () => micPitchHistory,
+      readingLagSec: () => micLatencySec() + (deps.outputDelaySec?.() ?? 0),
+      score: computeScore,
+    }),
+  )
 
   const resetScore = () => {
     clearComparisonData()
