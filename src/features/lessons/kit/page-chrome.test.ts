@@ -20,8 +20,14 @@ function chrome(): void {
     <div id="toast"><p id="toastText"></p><button id="toastBtn" hidden></button></div>`
 }
 
-const gateText = (): string =>
-  document.getElementById('gateText')?.textContent ?? ''
+/** The gate's line for sound off or on: both stay in it, one cell, one shown at a time. */
+const gateLine = (state: 'off' | 'on'): string =>
+  document.querySelector(`#gateText [data-gate-line="${state}"]`)
+    ?.textContent ?? ''
+
+/** Whether the gate shows its sound-on line: its class picks the line (kit/lesson-stage.css). */
+const gateOn = (): boolean =>
+  document.getElementById('gate')?.classList.contains('is-on') ?? false
 
 afterEach(() => {
   Sound.set('unset')
@@ -29,22 +35,23 @@ afterEach(() => {
 })
 
 describe('initSoundSwitch', () => {
-  it("keeps the page's own line while sound is off, and says so when it is on", () => {
+  it("keeps the page's own line for sound off and the kit's for sound on, both in the gate, the current one marked", () => {
     // Arrange
     chrome()
     initSoundSwitch()
-    const before = gateText()
+    const before = gateOn()
 
     // Act
     Sound.set('on')
-    const on = gateText()
+    const on = gateOn()
     Sound.set('off')
 
     // Assert
-    expect(before).toBe(LESSON_2)
-    expect(on).toBe(
+    expect(gateLine('off')).toBe(LESSON_2)
+    expect(gateLine('on')).toBe(
       'Sound is on. Each example plays only when you press its button.',
     )
-    expect(gateText()).toBe(LESSON_2)
+    expect(document.querySelectorAll('#gateText > *')).toHaveLength(2)
+    expect([before, on, gateOn()]).toEqual([false, true, false])
   })
 })
