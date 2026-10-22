@@ -14,6 +14,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
+import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 import type { ChecklistInputs, Fetcher, LessonRow, ListingCheck, PageCheck, ReleaseStep, } from './lesson-admin'
 import { checkPage, lessonRows, llmsPaths, pagePath, readListing, releaseChecklist, sitemapPaths, } from './lesson-admin'
 
@@ -125,6 +126,19 @@ describe('lessonRows', () => {
     })
     expect(rowFor(2, rows)).toMatchObject({ film: 'production', sources: null })
     expect(rowFor(4, rows)).toMatchObject({ film: undefined, sources: null })
+  })
+
+  it("joins each lesson's signature from team-notes.ts by its number, and none to a lesson it lacks", () => {
+    const rows = lessonRows()
+    const stray = rowFor(99, lessonRows([{ ...LESSONS[1], n: 99 }], {}))
+
+    for (const row of rows) {
+      expect(row.signature, `lesson ${row.lesson.n}`).toBe(
+        SIGNATURES[row.lesson.n],
+      )
+      expect(row.signature, `lesson ${row.lesson.n}`).not.toBeNull()
+    }
+    expect(stray.signature).toBeNull()
   })
 
   it('gives the trailer no address, and every lesson its own', () => {
