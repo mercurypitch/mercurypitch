@@ -101,6 +101,37 @@ export const VisitEnding = {
   },
 }
 
+/**
+ * A Wrap's practise card that is one link to a singing room (Lessons 3, 5
+ * and 7), in the version the visit's ending picks: each `[data-ending]`
+ * part shows for its own ending. After "Uncomfortable" or "Just listen
+ * today" nothing may send the learner to sing (REQ-GVC-055), so the rest
+ * card is no longer a link and its eyebrow says "Rest today"; the room's
+ * address stays in its words, for another day.
+ */
+export function mountPractiseCard(card: HTMLElement): void {
+  const link = card instanceof HTMLAnchorElement ? card : null
+  const href = link?.getAttribute('href') ?? null
+  const target = link?.getAttribute('target') ?? null
+  const eyebrow = card.querySelector<HTMLElement>('.eyebrow')
+  const practiseWords = eyebrow?.innerHTML ?? ''
+  const parts = qa<HTMLElement>('[data-ending]', card)
+  VisitEnding.subscribe((now) => {
+    for (const el of parts) el.hidden = el.dataset.ending !== now
+    if (eyebrow !== null)
+      eyebrow.innerHTML =
+        now === 'rest' ? '<span class="fig">Rest today</span>' : practiseWords
+    if (link === null || href === null) return
+    if (now === 'rest') {
+      link.removeAttribute('href')
+      link.removeAttribute('target')
+    } else {
+      link.setAttribute('href', href)
+      if (target !== null) link.setAttribute('target', target)
+    }
+  })
+}
+
 export interface ComfortHandlers {
   /** "I'm comfortable: let's sing". */
   readonly onSing: () => void

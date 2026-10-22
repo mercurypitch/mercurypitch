@@ -75,7 +75,7 @@ Back to the puzzle. 440 is exactly twice 220. Lay the two waves on top of each o
 peak of the fast one lands right on a peak of the slow one, again and again, forever. Two for one:
 the simplest fit there is. That jump is called an **octave**.
 
-**Try:** slide the ratio from 1 to 3 and listen.
+**Try:** press Play both, then slide the ratio from 1 to 3.
 **Notice:** at exactly 2 the waves meet on every slow peak, two for one. At 1.26 (277 Hz, a
 different note) they drift in and out of step. At 3 they meet again, three for one, but that's a
 different note too. Of all the fits, two for one is the simplest: that's the octave.

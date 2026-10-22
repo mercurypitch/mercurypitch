@@ -16,6 +16,7 @@
 // example the cold open's line already answers) and never reveals. What a
 // play sounds like is the lesson's own: `play` does it.
 
+import { announce, announcer, spokenText } from './announce'
 import { q, qa } from './dom'
 import { reducedMotion } from './motion-switch'
 import { Sound } from './sound'
@@ -102,6 +103,12 @@ export function mountPredict(root: HTMLElement, opts: PredictOptions): Predict {
   let choice: string | null = null
   let busy = false
   let revealed = false
+  // The reveal is spoken through the page's status line (showReveal): a
+  // region that appears from display:none in the same tick as its words is
+  // usually not read at all, and its own aria-live would only say it twice
+  // where it is.
+  reveals.forEach((r) => r.removeAttribute('aria-live'))
+  if (reveals.length > 0) announcer()
 
   choices.forEach((b) =>
     b.addEventListener('click', () => {
@@ -132,6 +139,13 @@ export function mountPredict(root: HTMLElement, opts: PredictOptions): Predict {
       r.hidden = false
     })
     opts.onReveal?.(guessed)
+    // focus stays on the play that answered it, so the reveal is said, not moved to
+    announce(
+      reveals
+        .map(spokenText)
+        .filter((t) => t !== '')
+        .join(' '),
+    )
     if (reducedMotion()) return
     reveals.forEach((r) =>
       r.animate([{ transform: 'translateY(10px)' }, { transform: 'none' }], {

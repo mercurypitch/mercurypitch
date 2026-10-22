@@ -4,6 +4,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { ANNOUNCE_DELAY_MS } from './announce'
 import type { PredictOptions } from './predict'
 import { mountPredict } from './predict'
 import { Sound } from './sound'
@@ -128,6 +129,26 @@ describe('mountPredict', () => {
     expect(reveal(b)?.hidden).toBe(true)
   })
 
+  it('speaks the reveal through the page status line, and drops its own live region', async () => {
+    // Arrange: a reveal that starts hidden as a live region, as the pages ship it
+    document.body.innerHTML = '<main></main>'
+    const root = predictRoot()
+    reveal(root)?.setAttribute('aria-live', 'polite')
+    mount(root)
+    click(root, '[data-choice="lower"]')
+
+    // Act
+    click(root, '[data-play="both"]')
+    await settle()
+    await new Promise((r) => setTimeout(r, ANNOUNCE_DELAY_MS + 10))
+
+    // Assert: said once, where the screen reader already listens; focus stays on the play
+    expect(reveal(root)?.hasAttribute('aria-live')).toBe(false)
+    expect(document.querySelector('[data-announcer]')?.textContent).toBe(
+      'You said: lower',
+    )
+  })
+
   it('keeps the reveal back after a play that sound off kept silent', async () => {
     // Arrange: sound off says so in the toast
     document.body.innerHTML =
@@ -222,7 +243,7 @@ describe('mountPredict', () => {
     const root = predictRoot()
     const hint = root.querySelector('.lock-hint')
     if (hint !== null)
-      hint.textContent = 'Choose an answer to unlock the sound.'
+      hint.textContent = 'Choose an answer to unlock the play buttons.'
     mount(root)
     Sound.set('off')
     click(root, '[data-play="one"]')
@@ -235,7 +256,9 @@ describe('mountPredict', () => {
     await settle()
 
     // Assert
-    expect(hint?.textContent).toBe('Choose an answer to unlock the sound.')
+    expect(hint?.textContent).toBe(
+      'Choose an answer to unlock the play buttons.',
+    )
     expect(reveal(root)?.hidden).toBe(true)
   })
 

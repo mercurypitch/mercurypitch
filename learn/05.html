@@ -245,7 +245,7 @@
       </symbol>
     </svg>
 
-    <a class="skip" href="#lesson">Skip to the lesson</a>
+    <a class="skip" href="#top">Skip to the lesson</a>
 
     <header class="mast" id="mast">
       <div class="wrap mast-in">
@@ -286,9 +286,9 @@
         </a>
         <span class="mast-ep">Season 1 · Lesson 05</span>
         <nav class="mast-nav" id="mastNav" aria-label="Sections">
-          <a href="#lesson"><b>I</b>Lesson</a>
-          <a href="#sing"><b>II</b>Sing</a>
-          <a href="#explorer"><b>III</b>Explorer</a>
+          <a href="#lesson"><b aria-hidden="true">I</b>Lesson</a>
+          <a href="#sing"><b aria-hidden="true">II</b>Sing</a>
+          <a href="#explorer"><b aria-hidden="true">III</b>Explorer</a>
         </nav>
         <button
           class="sound-switch motion-switch"
@@ -299,7 +299,8 @@
         >
           <svg class="ico" aria-hidden="true"><use href="#i-pause" /></svg
           ><span data-motion-label
-            >Pause<span class="mw"> animations</span></span
+            ><span class="mp">Pause </span
+            ><span class="mw">animations</span></span
           >
         </button>
         <button
@@ -656,9 +657,7 @@
             <div class="steps-stage" id="stepsStage">
               <div class="card stage-card">
                 <div class="stage-head">
-                  <p class="counter" aria-live="polite">
-                    Step <b id="stepNow">1</b> of 5
-                  </p>
+                  <p class="counter">Step <b id="stepNow">1</b> of 5</p>
                   <div class="progress" aria-hidden="true">
                     <i class="now"></i><i></i><i></i><i></i><i></i>
                   </div>
@@ -1055,7 +1054,7 @@
                   <span class="k">Try</span
                   ><span
                     ><b
-                      >Play the note, slide Push up and down, then keep it
+                      >Press Hold the note, slide Push up and down, then keep it
                       still.</b
                     ></span
                   >
@@ -1824,7 +1823,7 @@
                   comfortable: <b>mercurypitch.com/mirror</b>
                 </p>
               </div>
-              <span class="addr"
+              <span class="addr" data-ending="practise"
                 >mercurypitch.com/mirror
                 <svg class="ico" aria-hidden="true"><use href="#i-out" /></svg
               ></span>
@@ -2099,6 +2098,7 @@
             <span class="m">Find Your</span> <span class="p">Pitch</span>
           </p>
           <p>Season 1 · Lesson 05 · Breath and a steady note</p>
+          <p><a href="/">MercuryPitch home</a></p>
         </div>
         <div>
           <h4>Practise</h4>

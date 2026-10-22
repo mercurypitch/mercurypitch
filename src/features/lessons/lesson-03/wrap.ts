@@ -2,10 +2,11 @@
 // Lesson 3 wrap — the practise card the checkpoint picks, and free play
 // ============================================================
 //
-// The practise card comes in two versions, both linking Voice Mirror
-// (WEB-SPEC, Toys 7): the Voice Mirror card with "Ten minutes, gently, most
-// days", or, after "Uncomfortable" or "Just listen today", the rest card
-// without it. The checkpoint's ending is held in memory for the visit
+// The practise card comes in two versions (WEB-SPEC, Toys 7): the Voice
+// Mirror card, one link, with "Ten minutes, gently, most days", or, after
+// "Uncomfortable" or "Just listen today", the rest card, which links
+// nowhere and names Voice Mirror for another day (kit/comfort.ts
+// `mountPractiseCard`). The checkpoint's ending is held in memory for the visit
 // (kit/comfort.ts `VisitEnding`), never stored, so a new visit opens on the
 // Voice Mirror card.
 //
@@ -13,7 +14,7 @@
 // slider match with rounds on A3, C4 and F3, and the band chart in drag
 // mode, one at a time on one stage.
 
-import { VisitEnding } from '@/features/lessons/kit/comfort'
+import { mountPractiseCard } from '@/features/lessons/kit/comfort'
 import { q, qa } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
 import type { BandToy } from './toy-band'
@@ -24,12 +25,7 @@ import type { Match } from './toy-match'
 import { mountMatch } from './toy-match'
 
 function initPractiseCard(): void {
-  const practise = q('#practiseCard [data-ending="practise"]')
-  const rest = q('#practiseCard [data-ending="rest"]')
-  VisitEnding.subscribe((ending) => {
-    practise.hidden = ending !== 'practise'
-    rest.hidden = ending !== 'rest'
-  })
+  mountPractiseCard(q('#practiseCard'))
 }
 
 function initFreePlay(): void {

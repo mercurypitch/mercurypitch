@@ -82,6 +82,16 @@
 .hero-strip .strip-cells .sc {
   height: 28px;
 }
+/* Under 360 px the strip gives the metronome's column to the beats: beside
+   it a cell came to 21 px at 320 px and cut "Twin" and "won" (L8-07) */
+@media (max-width: 359px) {
+  .hero-strip .strip.with-metro {
+    --metro-col: 0px;
+  }
+  .hero-strip .strip-metro {
+    display: none;
+  }
+}
 
 /* ---------------------------------------------------------------- the beat machine's stage */
 /* the figure is 250 px tall at every width, the kit's height on the

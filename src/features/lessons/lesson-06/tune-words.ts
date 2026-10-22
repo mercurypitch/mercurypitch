@@ -58,13 +58,18 @@ export function moveWords(semitones: number): string {
   return `${semitones > 0 ? 'up' : 'down'} ${Math.abs(semitones)}`
 }
 
-/** Gap g's button: "Gap 2: up 7 semitones, a leap". */
+/**
+ * Gap g's button: "7, leap: gap 2, up 7 semitones". It starts with what the
+ * gap draws, its size over its word, so a voice control user can say what
+ * they see (WCAG 2.5.3).
+ */
 export function gapLabel(g: number): string {
   const size = GAPS[g]
-  if (size === 0) return `Gap ${g + 1}: the same note again`
+  const { size: drawn, word } = gapWords(g)
+  if (size === 0) return `${drawn}, ${word}: gap ${g + 1}, the same note again`
   const n = Math.abs(size)
   const unit = n === 1 ? 'semitone' : 'semitones'
-  return `Gap ${g + 1}: ${size > 0 ? 'up' : 'down'} ${n} ${unit}, a ${classify(size)}`
+  return `${drawn}, ${word}: gap ${g + 1}, ${size > 0 ? 'up' : 'down'} ${n} ${unit}`
 }
 
 /** The notes shown, by global index: the first line's seven, or both lines' fourteen. */
@@ -152,10 +157,16 @@ export function bracketText(g: number): string {
   return `${intervalName(size)?.label ?? ''} · ${Math.abs(size)}`
 }
 
-/** A bracket's button: "Play the interval: C 4 up to G 4, a perfect fifth". */
+/**
+ * A bracket's button: "P5, 7 semitones: play C 4 up to G 4, a perfect
+ * fifth". It starts with the bracket's drawn label, so "tap P5" finds it
+ * (WCAG 2.5.3).
+ */
 export function bracketLabel(g: number, start: number): string {
   const size = GAPS[g]
+  const n = Math.abs(size)
   const from = spoken(spelledAt(g, start))
   const to = spoken(spelledAt(g + 1, start))
-  return `Play the interval: ${from} ${size > 0 ? 'up' : 'down'} to ${to}, a ${intervalName(size)?.name ?? ''}`
+  const interval = intervalName(size)
+  return `${interval?.label ?? ''}, ${n} ${n === 1 ? 'semitone' : 'semitones'}: play ${from} ${size > 0 ? 'up' : 'down'} to ${to}, a ${interval?.name ?? ''}`
 }

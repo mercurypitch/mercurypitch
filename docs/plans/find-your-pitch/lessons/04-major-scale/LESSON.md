@@ -61,8 +61,8 @@ count as the delayed score (MASTER-PLAN § 9).
    - 12 **[correct]** · Feedback: "Seven letters and five notes between them: twelve equal steps."
    - 7 · Feedback: "Seven is the number of letters. Five more notes sit between them: twelve
      semitones in all. Try Lesson 2, Step 2 again."
-   - 8 · Feedback: "From A to A there are eight letters, counting both As, but five more notes sit
-     between them: the octave is twelve semitone steps."
+   - 8 · Feedback: "From A to A there are eight letters, counting both As, and five more notes
+     between them: thirteen notes, so twelve semitone steps."
 2. C♯ and D♭: one key or two?
    - One key, with two names **[correct]** · Feedback: "One semitone up from C and one semitone
      down from D land on the same key."

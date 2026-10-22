@@ -139,10 +139,13 @@ export function mountRangeToy(
   // ------------------------------------------------------------ the scene
 
   function sirenLines(): RangeLine[] {
+    // Merc's whole siren before it plays: the mark each figure exists to
+    // show. At 0.22 it read at 1.6:1 on the chart; 0.6 is 3.5:1 (WCAG
+    // 1.4.11), and playback still draws the bright line and glow over it.
     const ghost: RangeLine = {
       points: sirenLine(voice),
       color: RANGE_COLOR.target,
-      alpha: 0.22,
+      alpha: 0.6,
     }
     if (sirenT <= 0) return [ghost]
     const playing = kind === 'siren'

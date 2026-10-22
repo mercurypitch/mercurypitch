@@ -9,12 +9,18 @@
 // against the hit lists the last frame drew, snapping to the nearest bead or
 // key within 22 px. The drawing is in spiral-draw.ts and spiral-keys.ts.
 //
+// Turning never needs a drag (WCAG 2.5.7): the `[data-spiral-turn]` buttons
+// turn it one bead a press. And an activation with no pointer behind it,
+// which is how a screen reader's double-tap or a switch arrives, plays the
+// selected note: the note picked by swiping, not whatever bead sits at the
+// middle of the canvas.
+//
 // Mounted on a root, any number per page, each copy with its own state:
 // its turn, its selection and the black keys it has lit (Lesson 2's five
 // "?" beads light once heard on that copy, and on no other). Inside the
 // root: the canvas, and optionally the `[data-spiral-hint]` line, the
-// `[data-spiral-readout]` value, the `[data-spiral-drift]` and
-// `[data-spiral-unroll]` buttons, the `[data-spiral-pan]` box (its
+// `[data-spiral-readout]` value, the `[data-spiral-drift]`,
+// `[data-spiral-turn]` (-1 or 1) and `[data-spiral-unroll]` buttons, the `[data-spiral-pan]` box (its
 // `[data-pan]` buttons and `[data-pan-window]` label) and `[data-key]`
 // buttons that play a note. Every name follows the page's sharps-or-flats
 // choice (names.ts).
@@ -49,6 +55,9 @@ const STEP_KEYS: ReadonlyMap<string, number> = new Map([
   ['PageUp', 12],
   ['PageDown', -12],
 ])
+
+/** A click this long after the last pointerup came from no pointer: assistive technology. */
+const ACTIVATION_GAP_MS = 500
 
 /** What the hint line can depend on. */
 export interface SpiralState {
@@ -133,6 +142,8 @@ export interface Spiral {
   setView(camera: SpiralCamera): void
   /** How far the camera has moved over the axis, 0 to 1. */
   readonly top: number
+  /** How far the spiral has turned, in radians. */
+  readonly yaw: number
   /** Says the hint and the slider's value again, after something they read has changed. */
   refresh(): void
 }
@@ -155,6 +166,7 @@ export function mountSpiral(
   const hint = root.querySelector<HTMLElement>('[data-spiral-hint]')
   const readout = root.querySelector<HTMLElement>('[data-spiral-readout]')
   const driftBtn = root.querySelector<HTMLButtonElement>('[data-spiral-drift]')
+  const turnBtns = qa<HTMLButtonElement>('[data-spiral-turn]', root)
   const unrollBtn = root.querySelector<HTMLButtonElement>(
     '[data-spiral-unroll]',
   )
@@ -187,6 +199,10 @@ export function mountSpiral(
   let dragging = false
   let moved = 0
   let lastX = 0
+  // the turn the buttons asked for and the spiral has still to make, in radians
+  let turnLeft = 0
+  // when the last pointer left the canvas, so its own click is not a second play
+  let lastUp = -Infinity
   let u = 0
   let uTarget = 0
   let hits: BeadHit[] = []
@@ -313,8 +329,22 @@ export function mountSpiral(
     )
   }
 
+  // one bead a press, eased like a flick, at once under reduced motion
+  turnBtns.forEach((b) =>
+    b.addEventListener('click', () => {
+      if (uTarget > 0.5) return
+      const by = (Number(b.dataset.spiralTurn) * TAU) / 12
+      if (reducedMotion()) yaw += by
+      else turnLeft += by
+    }),
+  )
+
   function syncUnroll(): void {
     const keys = uTarget > 0.5
+    // the keys do not turn
+    turnBtns.forEach((b) => {
+      b.hidden = keys
+    })
     if (unrollBtn !== null)
       q('span', unrollBtn).textContent = keys ? unrolledLabel : rolledLabel
     if (hint !== null)
@@ -356,6 +386,13 @@ export function mountSpiral(
     })
     canvas.addEventListener('pointerleave', () => {
       hover = null
+    })
+    // A click with no pointer just before it is a screen reader's double-tap,
+    // a switch or voice control: they activate the slider, so it plays the
+    // note they picked. A finger's own click follows its pointerup at once.
+    canvas.addEventListener('click', (e) => {
+      if (e.timeStamp - lastUp < ACTIVATION_GAP_MS) return
+      void play(LO + sel)
     })
   }
 
@@ -416,6 +453,7 @@ export function mountSpiral(
   }
 
   function up(e: PointerEvent): void {
+    lastUp = e.timeStamp
     if (!dragging) return
     dragging = false
     if (moved > 6) return
@@ -473,6 +511,11 @@ export function mountSpiral(
 
   /** The spiral's own motion this frame: a flick's glide, the drift, the unroll, the pan. */
   function step(dt: number): void {
+    if (turnLeft !== 0) {
+      const by = Math.sign(turnLeft) * Math.min(Math.abs(turnLeft), dt * 3)
+      yaw += by
+      turnLeft -= by
+    }
     if (!dragging) {
       if (Math.abs(vel) > 0.01) {
         yaw += vel * dt
@@ -589,6 +632,9 @@ export function mountSpiral(
     },
     get top() {
       return top
+    },
+    get yaw() {
+      return yaw
     },
     refresh() {
       syncUnroll()

@@ -99,6 +99,9 @@ export const METRONOME_STARTED =
 /** The slider's spoken value. */
 export const tempoText = (bpm: number): string => `${bpm} beats per minute`
 
+/** The tapped tempo is spoken at most this often, ms. */
+export const TAPS_SAID_MS = 2000
+
 const isMetronome = (s: MachineState): boolean =>
   s === 'metronome' || s === 'tempo'
 const isGrid = (s: MachineState): boolean =>
@@ -507,6 +510,8 @@ export function mountBeatMachine(o: BeatMachineOptions): BeatMachine {
     if (state === 'free') {
       free = resizePattern(choice.pattern, choice.pattern.beats)
       freeBpm = choice.bpm
+      // the pattern just loaded is the one pressed, as the live line says (L8-03)
+      chosen = name
       syncTempos()
       layout()
     } else {
@@ -592,10 +597,25 @@ export function mountBeatMachine(o: BeatMachineOptions): BeatMachine {
       paint()
       say(said, clickOn ? 'Click on' : 'Click off')
     })
+    // The readout is drawn in the figure's hidden layer, so the tapped tempo
+    // is spoken on the live line too: at most every TAPS_SAID_MS, and once
+    // more after the taps stop, never a word a tap (L8-02).
+    let tapWords = ''
+    let tapTimer = 0
+    const sayTaps = (): void => {
+      tapTimer = 0
+      if (tapWords === '') return
+      say(said, tapWords)
+      tapWords = ''
+      tapTimer = window.setTimeout(sayTaps, TAPS_SAID_MS)
+    }
     for (const pad of qa<HTMLButtonElement>('[data-bm-pad]', root))
       bindTapPad(pad, (at) => {
         const r = taps.tap(at)
         say(parts.tapsRo, r.bpm === null ? 'tap four times' : `${r.bpm} BPM`)
+        if (r.bpm === null) return
+        tapWords = `Your taps: ${tempoText(r.bpm)}`
+        if (tapTimer === 0) sayTaps()
       })
   }
 

@@ -82,6 +82,7 @@ const PLANNING =
   /Signature|deep link|\bslug\b|In production|\bplanned\b|durationSec|launch field|placeholder|still rendering|\b[TS]\d\d\b/i
 
 afterEach(() => {
+  vi.restoreAllMocks()
   localStorage.clear()
   document.body.textContent = ''
 })
@@ -305,6 +306,45 @@ describe('createExplorer', () => {
     expect(cardLinks()).toEqual(['/learn/02'])
     expect(openCard()?.querySelector('a.btn')?.textContent).toBe('Read again')
     expect(openCard()?.querySelector('.chip')?.textContent).toBe('Done')
+  })
+
+  it('keeps the keyboard on Mark as done when the card is rebuilt around it', () => {
+    // Arrange: Lesson 1's own card, the keyboard on its toggle
+    explorerPage()
+    createExplorer({ current: 1 })
+    const toggle = document.querySelector<HTMLButtonElement>(
+      '#exCardHost [data-done="1"]',
+    )
+    toggle?.focus()
+
+    // Act
+    toggle?.click()
+
+    // Assert: the new card's toggle, pressed, has focus; never the page
+    const now = document.activeElement
+    expect(now).not.toBe(document.body)
+    expect(now?.getAttribute('data-done')).toBe('1')
+    expect(now?.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it("sends the keyboard to the opened lesson's title after an Opens link", () => {
+    // Arrange: Lesson 1's card opens Lesson 2; jsdom cannot scroll to it
+    vi.spyOn(window, 'scrollBy').mockImplementation(() => undefined)
+    explorerPage()
+    createExplorer({ current: 1 })
+    const opens = document.querySelector<HTMLButtonElement>(
+      '#exCardHost [data-go="2"]',
+    )
+    opens?.focus()
+
+    // Act
+    opens?.click()
+
+    // Assert
+    const now = document.activeElement
+    expect(now?.tagName).toBe('H3')
+    expect(now?.textContent).toBe(LESSONS[2].title)
+    expect(now?.closest('.ex-card')?.getAttribute('data-card')).toBe('2')
   })
 })
 

@@ -3,8 +3,9 @@
 // ============================================================
 //
 // On the page's own markup, with sound off: a tap on Play a pair shows the
-// sound-off note, as every tap does, and the slower replay after a miss,
-// which a timer starts, plays silently and shows nothing.
+// sound-off note, as every tap does, and the note waits to be put away
+// (kit/toast.ts); the slower replay after a miss, which a timer starts,
+// plays silently and shows nothing.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -32,8 +33,11 @@ describe("Lesson 6's games, with sound off", () => {
     const note = el('#toast')
     el('#stepLeapGame [data-eg-play]').click()
     const onTap = note.classList.contains('on')
-    // the note goes after its four seconds, and the pair has long ended
+    // the note waits past four seconds for its Turn on, then is put away;
+    // the pair has long ended
     vi.advanceTimersByTime(5000)
+    const waited = note.classList.contains('on')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     const gone = !note.classList.contains('on')
 
     // Act: the round missed, and its replay come due
@@ -46,6 +50,7 @@ describe("Lesson 6's games, with sound off", () => {
       /^Here it is again, slower\./,
     )
     expect(onTap).toBe(true)
+    expect(waited).toBe(true)
     expect(gone).toBe(true)
     expect(note.classList.contains('on')).toBe(false)
   })

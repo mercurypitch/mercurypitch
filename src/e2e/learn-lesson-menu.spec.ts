@@ -18,7 +18,7 @@ import { expect, test } from '@playwright/test'
 
 /** The masthead's button that opens the season. */
 const trigger = (page: Page): Locator =>
-  page.getByRole('button', { name: /: all lessons$/ })
+  page.getByRole('button', { name: / All \d+ lessons$/ })
 
 const menu = (page: Page): Locator => page.locator('#lessonMenu')
 
@@ -55,7 +55,7 @@ test.describe('on a tablet in landscape, 1024 x 672 with touch', () => {
     await page.goto('/learn/02')
     const btn = trigger(page)
     await expect(btn).toHaveAccessibleName(
-      'Lesson 2 of 14, Twelve notes: all lessons',
+      'Season 1 · Lesson 02, Twelve notes. All 14 lessons',
     )
 
     // Act
@@ -268,7 +268,7 @@ for (const { n, title } of NO_FILM) {
         await page.emulateMedia({ reducedMotion: 'reduce' })
         await page.goto(path)
         await expect(trigger(page)).toHaveAccessibleName(
-          `Lesson ${n} of 14, ${title}: all lessons`,
+          `Season 1 · Lesson ${String(n).padStart(2, '0')}, ${title}. All 14 lessons`,
         )
         await trigger(page).tap()
         await expect(hereRow(page)).toBeFocused()
@@ -429,6 +429,6 @@ test("a ready lesson's row loads its page @smoke", async ({ page }) => {
   // Assert
   await expect(page).toHaveURL(/\/learn\/04$/)
   await expect(trigger(page)).toHaveAccessibleName(
-    'Lesson 4 of 14, The major scale and home: all lessons',
+    'Season 1 · Lesson 04, The major scale and home. All 14 lessons',
   )
 })

@@ -112,19 +112,37 @@
   flex-wrap: nowrap;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px var(--hair-2);
-  overflow: hidden;
 }
 .seg .btn {
   border: 0;
   border-radius: 0;
   background: transparent;
 }
+/* The end segments round the pill themselves. An overflow: hidden on .seg
+   did it before, and clipped every segment's focus ring with it. */
+.seg .btn:first-child {
+  border-radius: 999px 0 0 999px;
+}
+.seg .btn:last-child {
+  border-radius: 0 999px 999px 0;
+}
 .seg .btn + .btn {
   box-shadow: inset 1px 0 0 var(--hair-2);
 }
+/* The option that is on wears a solid aqua ring: the tint alone was 1.38:1
+   against the options that are off (WCAG 1.4.11). Forced colours drop both
+   the tint and the ring, so there it takes the system's highlight. */
 .seg .btn[aria-pressed='true'] {
   background: color-mix(in srgb, var(--aqua) 16%, transparent);
+  box-shadow: inset 0 0 0 2px var(--aqua);
   color: var(--ink);
+}
+@media (forced-colors: active) {
+  .seg .btn[aria-pressed='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
 }
 .names-bar {
   display: flex;

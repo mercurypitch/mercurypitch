@@ -10,6 +10,7 @@
 // it the ladder climbs A2 to A5: equal steps on screen, doubling gaps in
 // hertz.
 
+import { announce, announcer } from '@/features/lessons/kit/announce'
 import { q, qa, TAU } from '@/features/lessons/kit/dom'
 import { addDrawer, surface } from '@/features/lessons/kit/frame-loop'
 import { Motion } from '@/features/lessons/kit/motion-switch'
@@ -54,6 +55,8 @@ export function initOctaveToy(deck: StepDeck): void {
     footFor = -1
   })
   let r = 2
+  // a pointer is dragging the ratio: only a drag feels the octave's detent
+  let dragging = false
   let vb: Voice | null = null
   let vo: Voice | null = null
   let playT = 0
@@ -84,10 +87,13 @@ export function initOctaveToy(deck: StepDeck): void {
     return txt
   }
 
-  function update(): void {
+  /** Reads the slider, redraws the readouts and the flag, and returns what the slider now says aloud. */
+  function update(): string {
     let val = Number(input.value) / 100
-    // a soft detent at the octave
-    if (Math.abs(val - 2) < 0.035 && val !== 2) {
+    // A soft detent at the octave, for a drag only: an arrow key or a screen
+    // reader's swipe moves one step at a time, and the detent pulled every
+    // step off 2.00 straight back to it (L1-03).
+    if (dragging && Math.abs(val - 2) < 0.035 && val !== 2) {
       val = 2
       input.value = '200'
     }
@@ -100,17 +106,28 @@ export function initOctaveToy(deck: StepDeck): void {
     const txt = setFlag()
     const said =
       txt !== '' ? `. ${txt.replace(/ : /g, ' to ').replace(' · ', ', ')}` : ''
-    input.setAttribute(
-      'aria-valuetext',
-      `ratio ${r.toFixed(2)}, ${Math.round(220 * r)} hertz${said}`,
-    )
+    const valueText = `ratio ${r.toFixed(2)}, ${Math.round(220 * r)} hertz${said}`
+    input.setAttribute('aria-valuetext', valueText)
     if (vo) vo.setFreq(220 * r, 0.015)
+    return valueText
   }
-  input.addEventListener('input', update)
+  input.addEventListener('input', () => void update())
+  input.addEventListener('pointerdown', () => {
+    dragging = true
+  })
+  window.addEventListener('pointerup', () => {
+    dragging = false
+  })
+  window.addEventListener('pointercancel', () => {
+    dragging = false
+  })
+  // "Try 1.26", "Back to 2" and "Try 3" move a slider the keyboard is not
+  // on: what it now says is spoken, as the flag shows it (L1-01)
+  announcer()
   qa('[data-ratio]').forEach((b) =>
     b.addEventListener('click', () => {
       input.value = String(Math.round(Number(b.dataset.ratio) * 100))
-      update()
+      announce(update())
     }),
   )
 

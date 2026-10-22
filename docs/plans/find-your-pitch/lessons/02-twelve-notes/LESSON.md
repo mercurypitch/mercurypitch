@@ -39,7 +39,7 @@ Blue Merc: "Count the steps and find out."
 hold one more note?
 [ Yes, every gap ] [ No, only some ]
 
-Until a choice: "Choose an answer to unlock the sound."
+Until a choice: "Choose an answer to unlock the play buttons."
 
 (After a choice, the play button unlocks: Play the climb, A3 up to A4, one step at a time, on the
 hero spiral.)
@@ -217,8 +217,8 @@ and a "Try Step N again" ends with a link to that step, as in Lesson 1's quick c
    - 12 **[correct]** · Feedback: "Seven letters and five notes between them: twelve equal steps."
    - 7 · Feedback: "Seven is the number of letters. Five more notes sit between them: twelve
      semitones in all. Try Step 2 again."
-   - 8 · Feedback: "From A to A there are eight letters, counting both As, but five more notes sit
-     between them: the octave is twelve semitone steps."
+   - 8 · Feedback: "From A to A there are eight letters, counting both As, and five more notes
+     between them: thirteen notes, so twelve semitone steps."
 2. Listen to two steps. Which one is the semitone? [Play the two steps]
    - The second **[correct]** · Feedback: "B to C: two white keys, but only one semitone. The
      first, A to B, is a tone."

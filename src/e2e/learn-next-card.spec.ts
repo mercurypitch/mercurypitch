@@ -158,8 +158,8 @@ test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", a
   // Assert
   await expect(page).toHaveURL(/\/learn\/03$/)
   await expect(
-    page.getByRole('button', { name: /: all lessons$/ }),
-  ).toHaveAccessibleName('Lesson 3 of 14, Match a note: all lessons')
+    page.getByRole('button', { name: / All \d+ lessons$/ }),
+  ).toHaveAccessibleName('Season 1 · Lesson 03, Match a note. All 14 lessons')
 })
 
 test('continues the next lesson at the step the viewer reached', async ({

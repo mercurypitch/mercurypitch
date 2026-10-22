@@ -51,6 +51,62 @@ afterEach(() => {
 })
 
 describe('createQuiz', () => {
+  it("names the learner's pick and the right answer in words, with no markup in any name", () => {
+    // Arrange: an option that writes its sharp as a sign and a spoken word
+    quizBox()
+    const quiz = createQuiz({
+      questions: [
+        {
+          id: 'l04-q9',
+          question: 'Which note?',
+          options: [
+            {
+              text: 'F<span aria-hidden="true">♯</span><span class="sr"> sharp</span>',
+              correct: true,
+              feedback: 'Because it is.',
+            },
+            { text: 'F', feedback: 'Not this one.' },
+            { text: 'G', feedback: 'Not this one either.' },
+          ],
+        },
+      ],
+      keys: KEYS,
+    })
+
+    // Act: a miss
+    answer(quiz.host, 0, 'G')
+
+    // Assert
+    const options = Array.from(
+      quiz.host.querySelectorAll<HTMLButtonElement>('.opt'),
+    )
+    const tagOf = (b: HTMLButtonElement): string =>
+      b.querySelector('.opt-tag')?.textContent ?? ''
+    const pick = options.find((b) => b.classList.contains('wrong'))
+    const right = options.find((b) => b.classList.contains('right'))
+    const other = options.find((b) => b.classList.contains('dim'))
+    expect(pick === undefined ? '' : tagOf(pick)).toBe(', Your answer')
+    expect(right === undefined ? '' : tagOf(right)).toBe(', Right answer')
+    expect(other?.querySelector('.opt-tag')).toBeNull()
+    expect(options.some((b) => b.hasAttribute('aria-label'))).toBe(false)
+  })
+
+  it('tells a learner who picked the right answer that it was theirs and right', () => {
+    // Arrange
+    quizBox()
+    const quiz = createQuiz({ questions: [question('l02-q1')], keys: KEYS })
+
+    // Act
+    answer(quiz.host, 0, 'The right answer')
+
+    // Assert
+    const right = quiz.host.querySelector('.opt.right')
+    expect(right?.querySelector('.opt-tag')?.textContent).toBe(
+      ', Your answer: right',
+    )
+    expect(right?.getAttribute('aria-pressed')).toBe('true')
+  })
+
   it('keeps two quizzes on one page apart, each reading and writing its own ids', () => {
     // Arrange
     quizBox()

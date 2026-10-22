@@ -43,6 +43,8 @@ export function initSoundSwitch(lines: Partial<GateLines> = {}): void {
     gate.classList.toggle('is-on', on)
     gateText.textContent = on ? onText : offText
     gateBtn.textContent = on ? 'Turn sound off' : 'Turn sound on'
+    // "Sound is off" waits for an answer (toast.ts): sound on from any control is one
+    if (on) hideToast()
   })
   const toggle = (): void => {
     const turningOn = Sound.state !== 'on'

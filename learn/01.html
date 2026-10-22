@@ -231,7 +231,7 @@
       </symbol>
     </svg>
 
-    <a class="skip" href="#lesson">Skip to the lesson</a>
+    <a class="skip" href="#top">Skip to the lesson</a>
 
     <header class="mast" id="mast">
       <div class="wrap mast-in">
@@ -272,9 +272,9 @@
         </a>
         <span class="mast-ep">Season 1 · Lesson 01</span>
         <nav class="mast-nav" id="mastNav" aria-label="Sections">
-          <a href="#lesson"><b>I</b>Lesson</a>
-          <a href="#watch" hidden><b>II</b>Watch</a>
-          <a href="#explorer"><b>II</b>Explorer</a>
+          <a href="#lesson"><b aria-hidden="true">I</b>Lesson</a>
+          <a href="#watch" hidden><b aria-hidden="true">II</b>Watch</a>
+          <a href="#explorer"><b aria-hidden="true">II</b>Explorer</a>
         </nav>
         <button
           class="sound-switch motion-switch"
@@ -285,7 +285,8 @@
         >
           <svg class="ico" aria-hidden="true"><use href="#i-pause" /></svg
           ><span data-motion-label
-            >Pause<span class="mw"> animations</span></span
+            ><span class="mp">Pause </span
+            ><span class="mw">animations</span></span
           >
         </button>
         <button
@@ -457,7 +458,7 @@
               </div>
               <p class="lock-hint" id="lockHint">
                 <svg class="ico" aria-hidden="true"><use href="#i-lock" /></svg
-                >Choose an answer to unlock the sound.
+                >Choose an answer to unlock the play buttons.
               </p>
               <p class="reveal" id="reveal" hidden aria-live="polite">
                 <span class="mono" id="revealGuess">Your guess</span>One after
@@ -567,9 +568,7 @@
             <div class="steps-stage" id="stepsStage">
               <div class="card stage-card">
                 <div class="stage-head">
-                  <p class="counter" aria-live="polite">
-                    Step <b id="stepNow">1</b> of 6
-                  </p>
+                  <p class="counter">Step <b id="stepNow">1</b> of 6</p>
                   <div class="progress" aria-hidden="true">
                     <i class="now"></i><i></i><i></i><i></i><i></i><i></i>
                   </div>
@@ -894,13 +893,36 @@
                     <p class="sr" id="spiralDesc">
                       A spiral of 37 beads from A2 to A5, three turns. Every A
                       sits on the same side, and a seam marks each C, where the
-                      octave number goes up. Drag to turn it, or tap a bead to
+                      octave number goes up. Drag to turn it, or turn it a bead
+                      at a time with Turn left and Turn right; tap a bead to
                       hear it. With the keyboard, the arrow keys pick a note,
                       Enter or Space plays it, and Shift with Left or Right
                       turns the spiral. Unrolled, the same keys walk the piano.
                     </p>
                   </div>
                   <div class="controls" id="spiralControls">
+                    <button
+                      class="btn icon sm"
+                      type="button"
+                      data-spiral-turn="-1"
+                      aria-label="Turn left"
+                      title="Turn left"
+                    >
+                      <svg class="ico" aria-hidden="true">
+                        <use href="#i-left" />
+                      </svg>
+                    </button>
+                    <button
+                      class="btn icon sm"
+                      type="button"
+                      data-spiral-turn="1"
+                      aria-label="Turn right"
+                      title="Turn right"
+                    >
+                      <svg class="ico" aria-hidden="true">
+                        <use href="#i-right" />
+                      </svg>
+                    </button>
                     <button
                       class="btn sm"
                       type="button"
@@ -1101,7 +1123,11 @@
                 </p>
                 <p class="try">
                   <span class="k">Try</span
-                  ><span><b>Slide the ratio from 1 to 3 and listen.</b></span>
+                  ><span
+                    ><b
+                      >Press Play both, then slide the ratio from 1 to 3.</b
+                    ></span
+                  >
                 </p>
                 <p class="notice">
                   <span class="k">Notice</span
@@ -1553,6 +1579,7 @@
             <span class="m">Find Your</span> <span class="p">Pitch</span>
           </p>
           <p>Season 1 · Lesson 01 · What is a note?</p>
+          <p><a href="/">MercuryPitch home</a></p>
         </div>
         <div>
           <h4>Practise</h4>

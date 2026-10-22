@@ -39,7 +39,7 @@ export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
       {
         text: '8',
         feedback:
-          'From A to A there are eight letters, counting both As, but five more notes sit between them: the octave is twelve semitone steps.',
+          'From A to A there are eight letters, counting both As, and five more notes between them: thirteen notes, so twelve semitone steps.',
       },
     ],
   },

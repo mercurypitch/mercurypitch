@@ -226,7 +226,7 @@
       </symbol>
     </svg>
 
-    <a class="skip" href="#lesson">Skip to the lesson</a>
+    <a class="skip" href="#top">Skip to the lesson</a>
 
     <header class="mast" id="mast">
       <div class="wrap mast-in">
@@ -267,9 +267,9 @@
         </a>
         <span class="mast-ep">Season 1 · Lesson 06</span>
         <nav class="mast-nav" id="mastNav" aria-label="Sections">
-          <a href="#lesson"><b>I</b>Lesson</a>
-          <a href="#sing"><b>II</b>Sing</a>
-          <a href="#explorer"><b>III</b>Explorer</a>
+          <a href="#lesson"><b aria-hidden="true">I</b>Lesson</a>
+          <a href="#sing"><b aria-hidden="true">II</b>Sing</a>
+          <a href="#explorer"><b aria-hidden="true">III</b>Explorer</a>
         </nav>
         <button
           class="sound-switch motion-switch"
@@ -280,7 +280,8 @@
         >
           <svg class="ico" aria-hidden="true"><use href="#i-pause" /></svg
           ><span data-motion-label
-            >Pause<span class="mw"> animations</span></span
+            ><span class="mp">Pause </span
+            ><span class="mw">animations</span></span
           >
         </button>
         <button
@@ -642,9 +643,7 @@
             <div class="steps-stage" id="stepsStage">
               <div class="card stage-card">
                 <div class="stage-head">
-                  <p class="counter" aria-live="polite">
-                    Step <b id="stepNow">1</b> of 5
-                  </p>
+                  <p class="counter">Step <b id="stepNow">1</b> of 5</p>
                   <div class="progress" aria-hidden="true">
                     <i class="now"></i><i></i><i></i><i></i><i></i>
                   </div>
@@ -880,7 +879,7 @@
                     aria-live="polite"
                   ></p>
                   <p class="eg-keys">
-                    Keys 1 and 2 answer; Space plays the pair again.
+                    Keys 1 and 2 answer while you are in the game.
                   </p>
                 </section>
               </article>
@@ -992,7 +991,7 @@
                   <p class="lock-hint">
                     <svg class="ico" aria-hidden="true">
                       <use href="#i-lock" /></svg
-                    >Choose an answer to unlock the sound.
+                    >Choose an answer to unlock the play buttons.
                   </p>
                   <div class="reveal" hidden aria-live="polite">
                     <span class="mono">Your guess</span>
@@ -1366,7 +1365,7 @@
                     aria-live="polite"
                   ></p>
                   <p class="eg-keys">
-                    Keys 1 to 4 answer; Space plays the pair again.
+                    Keys 1 to 4 answer while you are in the game.
                   </p>
                 </section>
 
@@ -2028,6 +2027,7 @@
             <span class="m">Find Your</span> <span class="p">Pitch</span>
           </p>
           <p>Season 1 · Lesson 06 · Intervals: the distance between notes</p>
+          <p><a href="/">MercuryPitch home</a></p>
         </div>
         <div>
           <h4>Practise</h4>

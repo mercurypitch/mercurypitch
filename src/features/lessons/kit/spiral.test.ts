@@ -144,4 +144,58 @@ describe('mountSpiral', () => {
     expect(unrollLabel(b)).toBe('Unroll the spiral')
     expect(hint(b)).toBe('Drag to turn')
   })
+
+  it('turns one bead a press with no drag, and hides the turn buttons once unrolled', () => {
+    // Arrange: the spiral with its Turn left and Turn right buttons
+    const root = spiralRoot()
+    root.insertAdjacentHTML(
+      'beforeend',
+      '<button type="button" data-spiral-turn="-1">Turn left</button><button type="button" data-spiral-turn="1">Turn right</button>',
+    )
+    const spiral = mountSpiral(root)
+    const [left, right] = Array.from(
+      root.querySelectorAll<HTMLButtonElement>('[data-spiral-turn]'),
+    )
+    const bead = (Math.PI * 2) / 12
+
+    // Act: under reduced motion each press lands at once
+    right.click()
+    const once = spiral.yaw
+    left.click()
+    left.click()
+    const back = spiral.yaw
+    spiral.setUnrolled(true)
+
+    // Assert
+    expect(once).toBeCloseTo(bead)
+    expect(back).toBeCloseTo(-bead)
+    expect([left.hidden, right.hidden]).toEqual([true, true])
+  })
+
+  it('plays the selected note on a click no pointer made, as a screen reader double-tap sends', () => {
+    // Arrange: B3 picked with the arrows, as a swipe up picks it
+    const spiral = mountSpiral(spiralRoot())
+    const canvas = spiral.root.querySelector('canvas')
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
+
+    // Act
+    canvas?.dispatchEvent(new MouseEvent('click'))
+
+    // Assert
+    expect(readout(spiral.root)).toBe('B3247 Hz')
+  })
+
+  it("takes a finger's own click, right after its pointerup, as no second play", () => {
+    // Arrange: a tap that lands on no bead (jsdom draws none)
+    const spiral = mountSpiral(spiralRoot())
+    const canvas = spiral.root.querySelector('canvas')
+
+    // Act
+    canvas?.dispatchEvent(new MouseEvent('pointerup'))
+    canvas?.dispatchEvent(new MouseEvent('click'))
+
+    // Assert
+    expect(readout(spiral.root)).toBe('')
+  })
 })

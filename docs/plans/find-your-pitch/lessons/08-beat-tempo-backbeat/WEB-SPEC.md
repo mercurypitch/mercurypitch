@@ -406,7 +406,7 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   predict as its `plays` (`kit/predict.ts:67-68`). "Play with claps on 1 and 3" is a free play
   (`data-free`, `kit/predict.ts:15-16`): it sets up the question and answers nothing. Only "Play
   with claps on 2 and 4" waits for the choice, and the reveal waits for it (`revealOn`). Until a
-  choice the lock hint reads LESSON.md's "Choose an answer to unlock the sound."; after one,
+  choice the lock hint reads LESSON.md's "Choose an answer to unlock the play buttons."; after one,
   `hints.chosen` reads "Locked in. Play with claps on 2 and 4.", in Lesson 2's form; with sound off,
   `hints.silent` is LESSON.md's line. The play slides the claps one beat along on the compact grid
   (0.4 s; at once under reduced motion), then Merc sings, the syllables on beat 1 loudest and those

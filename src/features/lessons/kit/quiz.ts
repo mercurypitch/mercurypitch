@@ -115,6 +115,12 @@ const CHECK =
 const CROSS =
   '<svg class="ico" style="width:14px;height:14px" aria-hidden="true"><use href="#i-x"/></svg>'
 
+/** An answered option's words: the learner's pick, the right answer, both, or neither. */
+export function answerTag(picked: boolean, correct: boolean): string | null {
+  if (picked) return correct ? 'Your answer: right' : 'Your answer'
+  return correct ? 'Right answer' : null
+}
+
 /** The lesson a question belongs to, read from its id (`l02-q1` is Lesson 2's); null if the id says none. */
 export function lessonOfQuestion(id: string): number | null {
   const m = /^l(\d+)-/.exec(id)
@@ -248,17 +254,26 @@ export function createQuiz(opts: QuizOptions): Quiz {
     const b = document.createElement('button')
     b.type = 'button'
     b.className = 'opt'
-    b.innerHTML = `<span class="mk" aria-hidden="true">${String.fromCharCode(65 + pos)}</span><span>${option.text}</span>`
+    b.innerHTML = `<span class="mk" aria-hidden="true">${String.fromCharCode(65 + pos)}</span><span class="opt-t">${option.text}</span>`
     if (chosen !== undefined) {
       b.disabled = true
       if (option.correct === true) {
         b.classList.add('right')
         q('.mk', b).innerHTML = CHECK
-        b.setAttribute('aria-label', `${option.text} (the right answer)`)
       } else if (chosen === j) {
         b.classList.add('wrong')
         q('.mk', b).innerHTML = CROSS
       } else b.classList.add('dim')
+      // Both cards say what they are in words, seen and heard: the brightest
+      // card is the right answer, and a learner who missed must still find
+      // their own pick (G-01). The words are the name's end, so no name is
+      // built from the option's markup (S-07).
+      const tag = answerTag(chosen === j, option.correct === true)
+      if (tag !== null)
+        b.insertAdjacentHTML(
+          'beforeend',
+          ` <span class="opt-tag"><span class="sr">, </span>${tag}</span>`,
+        )
       if (chosen === j) b.setAttribute('aria-pressed', 'true')
     }
     b.addEventListener('click', () => {

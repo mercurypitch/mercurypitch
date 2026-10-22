@@ -8,8 +8,8 @@
 // purpose, so nothing about it reads as height, and a flag under the canvas
 // names what each move did to the pitch. Either slider sounds while it is
 // held. Lesson 1 names the sliders "how far" and "how fast" in a soft tone;
-// Lesson 3 names them Louder and Higher, in Merc's "ooh", and its flag sits
-// in a polite live region so a screen reader hears what each move did.
+// Lesson 3 names them Louder and Higher, in Merc's "ooh". On both, a screen
+// reader hears what each move did.
 //
 // Mounted on a root, any number per page. Inside the root: the canvas, the
 // `input[data-loud="far"]` and `input[data-loud="fast"]` sliders, and
@@ -17,7 +17,12 @@
 // `[data-loud-far-value]` and `[data-loud-fast-value]` labels and the
 // `[data-loud-ro="loud"]` and `[data-loud-ro="pitch"]` readouts. The slider
 // labels are the page's own markup.
+//
+// The flag is spoken through the page's status line (announce.ts), once
+// for each new thing it says: a slider sets it on every step, and a screen
+// reader should hear "Pitch: climbing" once, not at every step of the climb.
 
+import { announce, announcer } from './announce'
 import { q, TAU } from './dom'
 import { addDrawer, surface, watch } from './frame-loop'
 import { COLOR, rgba } from './notes'
@@ -135,8 +140,13 @@ export function mountLoud(root: HTMLElement, opts: LoudOptions = {}): Loud {
   let v: Voice | null = null
   let playing = false
   let flagT = 0
+  // what the flag last said aloud, until it fades
+  let said = ''
+  if (flag !== null) announcer()
   const showFlag = (txt: string, col: string): void => {
     if (flag === null) return
+    if (txt !== said) announce(txt)
+    said = txt
     flag.textContent = txt
     flag.style.color = col
     flag.style.background = rgba(col, 0.1)
@@ -147,6 +157,7 @@ export function mountLoud(root: HTMLElement, opts: LoudOptions = {}): Loud {
     flagT = window.setTimeout(() => {
       flag.style.opacity = '0'
       status?.classList.remove('flagged')
+      said = ''
     }, 1600)
   }
 
