@@ -16,11 +16,12 @@
 //
 // Start becomes Stop while the take runs and moves the focus to the pad.
 // Stop, leaving the card or the page, or another sound ends a take with no
-// line. With sound off, Start shows the kit's toast and does not start;
-// with no Web Audio at all, Start and Play the groove are `aria-disabled`
-// and the status says why. Again runs the whole take again, lining-up
-// included, after any answer in the sung part, since the taps use no
-// voice; nothing about a take is stored.
+// line. Neither the take nor the groove can run silently: with sound off,
+// Start and Play the groove show the kit's toast for a play that needs
+// sound and run nothing, and the status says why; with no Web Audio at
+// all, both are `aria-disabled`, and the status says so. Again runs the
+// whole take again, lining-up included, after any answer in the sung part,
+// since the taps use no voice; nothing about a take is stored.
 
 import type { Run, Spot } from '@/features/lessons/kit/beat-clock'
 import { bars, BeatClock } from '@/features/lessons/kit/beat-clock'
@@ -47,6 +48,8 @@ export const TAKE_STATUS = {
   stopped: 'Stopped. Press Start to tap again.',
   soundOff:
     "Sound is off, so the take didn't start. Turn sound on, then press Start.",
+  grooveSoundOff:
+    "Sound is off, so the groove didn't play. Turn sound on, then press Play the groove.",
   noAudio: "This browser can't play the page's sounds, so the take can't run.",
 } as const
 
@@ -162,7 +165,7 @@ export function initTake(card: HTMLElement): Take {
       return
     }
     if (!hasAudio()) return
-    if (!Sound.canPlay()) {
+    if (!Sound.canPlay({ needsSound: true })) {
       say(status, TAKE_STATUS.soundOff)
       return
     }
@@ -201,14 +204,22 @@ export function initTake(card: HTMLElement): Take {
       return
     }
     if (!hasAudio()) return
+    // a silent groove has nothing on screen to follow, so it does not run
+    if (!Sound.canPlay({ needsSound: true })) {
+      say(status, TAKE_STATUS.grooveSoundOff)
+      return
+    }
     NowPlaying.claim(stopGroove)
     const r = BeatClock.start<MachineHit>({
       bar: bars(grooveBars()),
       bpm: () => BPM,
-      audible: Sound.canPlay(),
+      audible: true,
       book: bookHit,
     })
     groove = r
+    // the line that said it didn't play is no longer true
+    if (status.textContent === TAKE_STATUS.grooveSoundOff)
+      say(status, TAKE_STATUS.ready)
     setOn(grooveBtn, true, grooveLabel)
     void r.done.then(() => {
       if (groove === r) stopGroove()

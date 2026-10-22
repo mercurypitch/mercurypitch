@@ -509,12 +509,12 @@ export const Sound = {
   },
   /**
    * Whether a tap may sound. The first tap turns sound on; with sound off it
-   * says so, offering to turn it on, and the visuals play silently.
+   * says so, offering to turn it on; the visuals play silently, unless `needsSound`.
    */
-  canPlay(): boolean {
+  canPlay(o: CanPlayOptions = {}): boolean {
     if (hushed) return false
     if (state === 'off') {
-      toast("Sound is off, so you'll see this one but not hear it.", true)
+      soundOffToast(o)
       return false
     }
     if (state === 'unset') Sound.set('on')
@@ -580,5 +580,25 @@ export function playContour(
   const v = audible ? contourVoice(points, o) : null
   return new Promise((resolve) =>
     setTimeout(() => resolve(v), contourLength(points) * 1000),
+  )
+}
+
+/** How a play asks whether it may sound (`Sound.canPlay`). */
+export interface CanPlayOptions {
+  /**
+   * The play cannot run without sound, as Lesson 8's take and its groove
+   * cannot: with sound off its toast says it can't play, rather than that it
+   * will be seen but not heard, and the caller runs nothing. Off by default.
+   */
+  readonly needsSound?: boolean
+}
+
+/** The toast for a play with sound off, with its Turn on button. */
+function soundOffToast(o: CanPlayOptions): void {
+  toast(
+    o.needsSound === true
+      ? "Sound is off, so this one can't play. Turn it on to start."
+      : "Sound is off, so you'll see this one but not hear it.",
+    true,
   )
 }

@@ -12,8 +12,9 @@
 // the pattern switch toggle `aria-pressed`, and each change reaches the
 // live region; at 390 x 844 every cell is at least 44 px square with none
 // overlapping. The take counts in and walks its two parts' status lines,
-// says so when no tap lines up, stops on Stop, and with sound off does not
-// start. Under reduced motion the arm holds still and neither Merc nor Tavi hops.
+// says so when no tap lines up, stops on Stop, and with sound off neither
+// it nor Play the groove runs, the toast and the status saying so. Under
+// reduced motion the arm holds still and neither Merc nor Tavi hops.
 // Nothing asks for the microphone.
 
 import type { Locator, Page } from '@playwright/test'
@@ -340,10 +341,52 @@ test.describe('page QA (WEB-SPEC, Tests)', () => {
     // Act
     await start.click()
 
-    // Assert
+    // Assert: the toast says the take needs sound, and offers to turn it on
     await expect(status).toHaveText(
       "Sound is off, so the take didn't start. Turn sound on, then press Start.",
     )
+    await expect(page.locator('#toastText')).toHaveText(
+      "Sound is off, so this one can't play. Turn it on to start.",
+    )
+    await expect(page.locator('#toastBtn')).toBeVisible()
+    await expect(start).not.toHaveClass(/is-on/)
+  })
+
+  test('with sound off Play the groove does not run, and the toast and the status say so', async ({
+    page,
+  }) => {
+    // Arrange: the switch turns sound on, then off
+    await page.goto('/learn/08#sing')
+    const status = page.locator('#takeStatus')
+    const groove = page.locator('[data-take-groove]')
+    await page.locator('#soundSwitch').click()
+    await page.locator('#soundSwitch').click()
+    await expect(page.locator('#soundSwitch')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+
+    // Act
+    await groove.click()
+
+    // Assert
+    await expect(status).toHaveText(
+      "Sound is off, so the groove didn't play. Turn sound on, then press Play the groove.",
+    )
+    await expect(page.locator('#toastText')).toHaveText(
+      "Sound is off, so this one can't play. Turn it on to start.",
+    )
+    await expect(groove).not.toHaveClass(/is-on/)
+    await expect(groove).toHaveText('Play the groove')
+
+    // Act: the toast's button turns sound on, and the groove plays
+    await page.locator('#toastBtn').click()
+    await groove.click()
+
+    // Assert
+    await expect(groove).toHaveClass(/is-on/)
+    await expect(groove).toHaveText('Stop')
+    await expect(status).toHaveText("Press Start when you're ready to tap.")
   })
 
   test('under reduced motion the arm holds still while the metronome runs, and neither Merc nor Tavi hops', async ({

@@ -257,10 +257,10 @@ guide, then "Keep it gentle: rest before you sing again." Uncomfortable: no more
 **Status lines.** Each part has a line under its buttons that says where it has got to, read aloud
 to a screen reader as it changes:
 
-- The taps: "Press Start when you're ready to tap." Then "Counting in: one bar.", "Tap every beat:
-  bar 1 of 2", "Now 2 and 4: bar 1 of 4", and the line about your taps. Stop: "Stopped. Press Start
-  to tap again." With sound off: "Sound is off, so the take didn't start. Turn sound on, then press
-  Start."
+- The taps: "Press Start when you're ready to tap.", "Counting in: one bar.", "Tap every beat: bar 1
+  of 2", "Now 2 and 4: bar 1 of 4", then the line about your taps. Stop: "Stopped. Press Start to
+  tap again." Sound off: "Sound is off, so the take didn't start. Turn sound on, then press Start."
+  and "Sound is off, so the groove didn't play. Turn sound on, then press Play the groove."
 - The line: "Before you sing: how is your voice today?" Then "Choose the voice you'll sing with.",
   or after Just listen today "Choose a voice: it picks the Merc who sings." and "Just listening
   today: press Play Merc's line to hear it." Before Merc's line is heard: "Play Merc's line first:
