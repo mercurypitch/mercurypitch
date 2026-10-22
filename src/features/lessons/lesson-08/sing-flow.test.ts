@@ -7,10 +7,12 @@
 // under its second, and can be changed; "Just listen today" hides Start the
 // guide and Move do and picks the rest card; Start the guide waits for
 // Merc's line heard with sound on; the feeling question follows every
-// guide, asked afresh; Easy and Workable give the done line and Again once
-// a visit; Effortful and Uncomfortable put the guide, Again and Move do away
-// for the visit and pick the rest card, and no later answer brings them
-// back. And every line passes the app's claims check.
+// guide, asked afresh, and hides while one runs; a guide cut short asks
+// nothing and leaves the card as it was, Again included; Easy and Workable
+// give the done line and Again once a visit; Effortful and Uncomfortable
+// put the guide, Again and Move do away for the visit and pick the rest
+// card, and no later answer brings them back. And every line passes the
+// app's claims check.
 
 import { describe, expect, it } from 'vitest'
 import type { Feeling } from '@/features/lessons/kit/comfort'
@@ -156,6 +158,40 @@ describe('after each guide', () => {
       expect(singView(twice).againShown).toBe(false)
       expect(singView(twice).after).toBe('done')
     }
+  })
+
+  it('hides the question, its line and Again while a guide runs, and takes no answer then', () => {
+    // Act
+    const s = run(sungOnce(), feel('easy'), { type: 'guideStart' })
+    const answered = run(s, feel('uncomfortable'))
+    const v = singView(s)
+
+    // Assert
+    expect(v.panels).not.toContain('feel')
+    expect(v.after).toBeNull()
+    expect(v.againShown).toBe(false)
+    expect(v.status).toBe(STATUS.guiding)
+    expect(answered).toEqual(s)
+  })
+
+  it('asks nothing of a guide cut short: Start comes back before the first has run, and the answer, its line and Again after it', () => {
+    // Act
+    const first = run(openState('lower'), sing, heard, { type: 'guideStart' })
+    const firstCut = singView(run(first, { type: 'guideCut' }))
+    const again = run(sungOnce(), feel('workable'), { type: 'guideStart' })
+    const againCut = run(again, { type: 'guideCut' })
+    const v = singView(againCut)
+
+    // Assert
+    expect(firstCut.startShown).toBe(true)
+    expect(firstCut.panels).not.toContain('feel')
+    expect(firstCut.status).toBe(STATUS.ready)
+    expect(againCut.guides).toBe(1)
+    expect(againCut.feeling).toBe('workable')
+    expect(v.panels).toContain('feel')
+    expect(v.after).toBe('done')
+    expect(v.status).toBe(AFTER.done)
+    expect(v.againShown).toBe(true)
   })
 
   it('puts the guide, Again and Move do away after Effortful, with the gentle line and the rest card', () => {

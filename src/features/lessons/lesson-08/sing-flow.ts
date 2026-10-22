@@ -21,8 +21,11 @@
 // most two guides. Effortful and Uncomfortable put the guide, Again and
 // Move do away for the visit and pick the rest card (REQ-GVC-021,
 // REQ-GVC-023, REQ-GVC-055); a later change of answer brings back neither.
-// The tap take is outside this flow: it uses no voice. The flow writes
-// nothing: only the voice is stored, by the kit's voice choice.
+// A guide hides the feeling question while it runs, and one cut short asks
+// nothing: the card goes back to what it showed before it ran, so an Again
+// stopped part way leaves its answer, its line and Again itself. The tap
+// take is outside this flow: it uses no voice. The flow writes nothing:
+// only the voice is stored, by the kit's voice choice.
 
 import type { Ending, Feeling } from '@/features/lessons/kit/comfort'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
@@ -43,9 +46,11 @@ export interface SingState {
   readonly silent: boolean
   /** Guides run to their end this visit. */
   readonly guides: number
-  /** "How did that feel?" is showing: from a guide's end to the next guide's start. */
+  /** A guide is running: the feeling question, its line and Again wait for its end. */
+  readonly guiding: boolean
+  /** "How did that feel?" is asked: from a guide's end on, hidden while the next one runs. */
   readonly asking: boolean
-  /** The latest answer while it shows, or null. */
+  /** The answer to the question asked, or null; a guide's end asks afresh. */
   readonly feeling: Feeling | null
   /** The guide, Again and Move do, put away for the visit. */
   readonly putAway: boolean
@@ -63,6 +68,7 @@ export const openState = (stored: Voice | null): SingState => ({
   heard: false,
   silent: false,
   guides: 0,
+  guiding: false,
   asking: false,
   feeling: null,
   putAway: false,
@@ -77,6 +83,8 @@ export type SingEvent =
   | { readonly type: 'played'; readonly heard: boolean }
   | { readonly type: 'guideStart' }
   | { readonly type: 'guideEnd' }
+  /** A guide stopped before its end: by its own control, another sound or leaving. */
+  | { readonly type: 'guideCut' }
   | { readonly type: 'feel'; readonly feeling: Feeling }
 
 const isHard = (f: Feeling): boolean =>
@@ -91,11 +99,19 @@ export function nextState(s: SingState, e: SingEvent): SingState {
     case 'played':
       return { ...s, heard: s.heard || e.heard, silent: !e.heard }
     case 'guideStart':
-      return { ...s, asking: false, feeling: null }
+      return { ...s, guiding: true }
     case 'guideEnd':
-      return { ...s, guides: s.guides + 1, asking: true, feeling: null }
+      return {
+        ...s,
+        guiding: false,
+        guides: s.guides + 1,
+        asking: true,
+        feeling: null,
+      }
+    case 'guideCut':
+      return { ...s, guiding: false }
     case 'feel': {
-      if (!s.asking) return s
+      if (!s.asking || s.guiding) return s
       const hard = isHard(e.feeling)
       return {
         ...s,
@@ -146,6 +162,7 @@ export const STATUS = {
   first: "Play Merc's line first: Merc sings it, then the guide is yours.",
   ready: "Start the guide when you're ready, or play Merc's line again.",
   rested: 'Merc can still sing the line for you.',
+  guiding: 'Your turn: sing with the guide.',
   feel: 'How did that feel?',
 } as const
 
@@ -177,6 +194,7 @@ function statusOf(s: SingState, after: After | null): string {
   if (s.voice === null)
     return s.comfort === 'listen' ? STATUS.voiceListen : STATUS.voiceSing
   if (s.comfort === 'listen') return STATUS.listen
+  if (s.guiding) return STATUS.guiding
   if (after !== null) return AFTER[after]
   // a changed answer after a hard one asks nothing again, and offers Merc's line
   if (s.putAway) return STATUS.rested
@@ -190,13 +208,13 @@ function panelsOf(s: SingState): Panel[] {
   if (s.comfort === 'listen') panels.push('listen')
   panels.push('voice')
   if (s.voice !== null) panels.push('line')
-  if (s.comfort === 'sing' && s.asking) panels.push('feel')
+  if (s.comfort === 'sing' && s.asking && !s.guiding) panels.push('feel')
   return panels
 }
 
 export function singView(s: SingState): SingView {
   const singing = s.comfort === 'sing' && !s.putAway
-  const after = s.comfort === 'sing' ? afterOf(s) : null
+  const after = s.comfort === 'sing' && !s.guiding ? afterOf(s) : null
   const startShown = singing && s.guides === 0
   const fine = s.feeling === 'easy' || s.feeling === 'workable'
   return {
@@ -206,7 +224,8 @@ export function singView(s: SingState): SingView {
     startShown,
     startEnabled: s.heard,
     hint: !startShown || s.heard ? null : s.silent ? 'silent' : 'first',
-    againShown: singing && s.asking && fine && s.guides < MAX_GUIDES,
+    againShown:
+      singing && s.asking && !s.guiding && fine && s.guides < MAX_GUIDES,
     moveShown: singing,
     after,
     doctor: s.comfort === 'sing' && s.doctor,

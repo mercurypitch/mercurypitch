@@ -191,6 +191,10 @@
 .sing-btns .move-do[hidden] {
   display: none;
 }
+/* Again's row under the feelings takes no room while Again is hidden */
+.l8-sing .again-row:not(:has(.btn:not([hidden]))) {
+  display: none;
+}
 .move-sep {
   color: var(--ink-3);
 }
