@@ -13,8 +13,9 @@
 // locks, and its reveal waits for Play from F sharp to be heard, with sound
 // off as well; the recall, which marks nothing done, and the quick check,
 // which marks Lesson 6 done; and the Wrap's practice links and its card for
-// Lesson 7, coming later. The tune line, the games and the layouts are
-// learn-lesson-06-qa.spec.ts's; Sing it is learn-lesson-06-sing.spec.ts's.
+// Lesson 7, a draft the e2e bundle shows. The tune line, the games and the
+// layouts are learn-lesson-06-qa.spec.ts's; Sing it is
+// learn-lesson-06-sing.spec.ts's.
 
 import { expect, test } from '@playwright/test'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
@@ -217,7 +218,7 @@ test('the quick check links its steps, starts each line Right. or Not quite., an
   await expect(page.locator('#exCardHost')).toContainText('Done')
 })
 
-test("the Wrap's links carry lesson=06, and its card leads to Lesson 7 on the map", async ({
+test("the Wrap's links carry lesson=06, and its card leads to Lesson 7's page", async ({
   page,
 }) => {
   await page.goto('/learn/06')
@@ -229,15 +230,10 @@ test("the Wrap's links carry lesson=06, and its card leads to Lesson 7 on the ma
   for (const href of hrefs) expect(href).toMatch(/[?&]lesson=06$/)
 
   const card = page.locator('#wrap a.next-card')
-  await expect(card).toHaveAttribute('href', '#explorer')
-  await expect(card).toHaveAttribute('data-select-lesson', '7')
-  await expect(card.locator('.tempo')).toHaveText('Coming later')
-  await expect(card.locator('.chip')).toHaveText('See it on the map')
+  await expect(card).toHaveAttribute('href', '/learn/07')
+  await expect(card.locator('.tempo')).toHaveText('Ready · 16 min')
+  await expect(card.locator('.chip')).toHaveText('Start lesson')
   await expect(card.locator('.next-tease')).toHaveText(
     LESSON_COPY[7]?.tease ?? 'Lesson 7 has a tease',
-  )
-  await card.click()
-  await expect(page.locator('#exCardHost h3')).toHaveText(
-    'Slides, sirens and your range',
   )
 })
