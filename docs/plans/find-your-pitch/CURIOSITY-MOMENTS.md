@@ -140,7 +140,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   two octaves."
 - **Facts:** FACTS 17, 20, 32, 34, 36 (no note shared), 37, 28 to 30; the tease, L7 FACTS 23 and 27.
 
-### Lesson 7 · Slides, sirens and your range · voice; written; no page yet
+### Lesson 7 · Slides, sirens and your range · voice; page built, a draft until the owner and the coach sign off
 
 - **Opening (LESSON.md):** Orange "If I could reach more notes, would I be a better singer?" Blue "Let's see how many
   a song asks for."; Play "Twinkle" by the two-octave column; the predict "How much of it does 'Twinkle, Twinkle'
