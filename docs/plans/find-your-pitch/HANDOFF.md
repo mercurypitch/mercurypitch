@@ -129,7 +129,7 @@ are the mobile app's builds. The next `v` tag carries both pages.
    stays in the console as the alternative `tested` if you prefer it. Lesson 5's promise had the
    same fault and was reworded in the same PR. The older alternative, `figures` ("In tests, only
    about one in ten to one in six missed by a semitone or more"), gives the same answer away with
-   numbers, and its note does not say so.
+   numbers. Its note did not say so; since this PR it does.
 6. **Lesson 5's hook** leans a little towards its predict's answer. "Singers are told to “support” a
    long note. If that doesn't mean pushing, what keeps it steady?" suggests that pushing is not what
    keeps a note steady. It is your approved wording, so it stays; say if you want an alternative
