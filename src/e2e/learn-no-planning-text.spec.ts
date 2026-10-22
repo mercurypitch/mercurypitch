@@ -2,11 +2,12 @@
 // No lesson page shows a learner the team's planning words
 // ============================================================
 //
-// The season's planning fields (season.ts: a lesson's signature image, the
-// link its drill still needs, a film made but not published) stay in the
-// data for the team and the admin console, and so does the note that says
-// why each hook or tease variant exists (kit/lesson-copy.ts). A page a
-// learner reads says only what they can do now: Ready, Coming later, Done.
+// The season's planning fields (season.ts: the link a lesson's drill still
+// needs, a film made but not published) stay in the data for the team and
+// the admin console. A lesson's signature image and the note that says why
+// each hook or tease variant exists are the team's too, kept out of the
+// pages' data in kit/team-notes.ts. A page a learner reads says only what
+// they can do now: Ready, Coming later, Done.
 // Each lesson page this bundle carries is read the way a learner meets it,
 // after its script has run: every word of the document, every label a
 // screen reader speaks, every lesson's explorer card, opened from the map in
@@ -16,7 +17,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { lessonPages, lessonPath } from '../../tools/draft-lessons'
-import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
+import { TEAM_STRINGS } from '../features/lessons/kit/team-notes.test-fixtures'
 
 /** The team's words, each a sign that planning has reached a learner's screen. */
 const PLANNING: readonly RegExp[] = [
@@ -37,11 +38,6 @@ const PLANNING: readonly RegExp[] = [
   // a topic's code (T01, S05) in place of its name
   /\b[TS]\d\d\b/,
 ]
-
-/** Why each hook or tease variant exists: the team's note, never a learner's words. */
-const NOTES: readonly string[] = Object.values(LESSON_COPY).flatMap((c) =>
-  [...(c?.hookAlts ?? []), ...(c?.teaseAlts ?? [])].map((v) => v.note),
-)
 
 /** What no reader meets. */
 const LEFT_OUT = 'script, style, template, noscript'
@@ -69,7 +65,7 @@ function learnerText(page: Page, scope: string): Promise<string> {
   )
 }
 
-/** Each planning word and each variant's note found in `text`, with the words around it. */
+/** Each planning word and each of the team's notes found in `text`, with the words around it. */
 function planningIn(text: string, where: string): string[] {
   const flat = text.replace(/\s+/g, ' ')
   const words = PLANNING.flatMap((word) => {
@@ -78,16 +74,17 @@ function planningIn(text: string, where: string): string[] {
       ? []
       : [`${where}: …${flat.slice(Math.max(0, at - 50), at + 50)}…`]
   })
-  const notes = NOTES.filter((note) => flat.includes(note)).map(
-    (note) => `${where}: a variant's note, "${note}"`,
+  const notes = TEAM_STRINGS.filter(([, team]) => flat.includes(team)).map(
+    ([what, team]) => `${where}: ${what}, "${team}"`,
   )
   return [...words, ...notes]
 }
 
-test("the guard knows every variant's note", () => {
-  // a note is a whole sentence, so a page can only show one by drawing it
-  expect(NOTES.length).toBeGreaterThan(0)
-  for (const note of NOTES) expect(note).toMatch(/^\S.{20,}$/)
+test("the guard knows every signature and every variant's note", () => {
+  // each is a whole sentence, so a page can only show one by drawing it
+  expect(TEAM_STRINGS.length).toBeGreaterThan(0)
+  for (const [what, team] of TEAM_STRINGS)
+    expect(team, what).toMatch(/^\S.{20,}$/)
 })
 
 for (const n of LESSONS) {

@@ -585,7 +585,11 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
                     <Show when={row.lesson.pr.none}>
                       {(none) => <Fact term="Why no drill">{none()}</Fact>}
                     </Show>
-                    <Fact term="Signature">{row.lesson.sig}</Fact>
+                    <Show when={row.signature}>
+                      {(signature) => (
+                        <Fact term="Signature">{signature()}</Fact>
+                      )}
+                    </Show>
                     <Fact term="Topics">
                       <Show when={row.lesson.topics.length > 0} fallback="None">
                         <ul class={styles.topics}>

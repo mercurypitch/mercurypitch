@@ -12,16 +12,23 @@
 import type { Locator, Page, Route } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
+import { HOOK_NOTES } from '../features/lessons/kit/team-notes'
 
 const ADMIN_KEY = 'e2e-admin-key'
 const AT = '2026-10-20T14:02:00.000Z'
 const FOLLOWS = 'The site follows within about a minute.'
 
-/** The first lesson the kit gives an alternative hook, and that hook: Lesson 3's as the season stands. */
-const [VARIED, VARIED_HOOK] = (() => {
+/**
+ * The first lesson the kit gives an alternative hook, that hook, and the
+ * team's note on it (team-notes.ts): Lesson 3's as the season stands.
+ */
+const [VARIED, VARIED_HOOK, VARIED_NOTE] = (() => {
   for (const [n, copy] of Object.entries(LESSON_COPY)) {
     const alt = copy?.hookAlts?.[0]
-    if (alt !== undefined) return [Number(n), alt] as const
+    if (alt === undefined) continue
+    const note = HOOK_NOTES[Number(n)]?.[alt.id]
+    if (note === undefined) throw new Error(`no note for ${n}'s ${alt.id}`)
+    return [Number(n), alt, note] as const
   }
   throw new Error('no lesson in lesson-copy.ts has an alternative hook')
 })()
@@ -299,7 +306,7 @@ for (const { name, viewport } of VIEWPORTS) {
         exact: true,
       })
       await expect(byDefault).toHaveAttribute('aria-pressed', 'true')
-      await expect(variant).toHaveAccessibleDescription(VARIED_HOOK.note)
+      await expect(variant).toHaveAccessibleDescription(VARIED_NOTE)
       await expectTouchSize(variant)
 
       await variant.focus()

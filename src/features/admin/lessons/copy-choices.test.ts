@@ -2,18 +2,21 @@
 // Lesson copy choices — what the pickers offer, and what a saved id means
 // ============================================================
 //
-// The lists are the kit's (lesson-copy.test.ts holds their rules); what is
-// tested here is that the season's own lists reach the pickers, and that a
-// picker reads a saved id exactly as the site does, through the kit's own
-// resolvers: the variant it names, or the default for none, for 'default'
-// and for an id this build does not hold.
+// The lists are the kit's (lesson-copy.test.ts holds their rules) and the
+// notes are team-notes.ts's (team-notes.test.ts holds them to the lists);
+// what is tested here is that the season's own lists reach the pickers, each
+// variant with its own note, and that a picker reads a saved id exactly as
+// the site does, through the kit's own resolvers: the variant it names, or
+// the default for none, for 'default' and for an id this build does not hold.
 
 import { describe, expect, it } from 'vitest'
+import type { LessonCopy } from '@/features/lessons/kit/lesson-copy'
 import { DEFAULT_ID, hookFor, teaseFor, } from '@/features/lessons/kit/lesson-copy'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
+import { HOOK_NOTES } from '@/features/lessons/kit/team-notes'
 import type { CopyChoice } from './copy-choices'
-import { chosenId, copyChoicesFor, savedValue, unknownSaved, } from './copy-choices'
+import { chosenId, copyChoicesFor, hookChoices, savedValue, teaseChoices, unknownSaved, } from './copy-choices'
 
 function seasonLesson(test: (lesson: Lesson) => boolean, what: string): Lesson {
   const lesson = LESSONS.find(test)
@@ -40,8 +43,72 @@ const SAVED_IDS = [
   undefined,
 ]
 
+/** A lesson's copy for a list test: a default hook, two alternatives, a tease with one alternative. */
+const copy: LessonCopy = {
+  hook: 'Why the default?',
+  hookAlts: [
+    { id: 'plain', text: 'Is 3 < 4 & so on?' },
+    {
+      id: 'styled',
+      text: 'Why 440 Hz?',
+      html: 'Why <span class="hz o">440&#8239;Hz</span>?',
+    },
+  ],
+  tease: 'The default tease.',
+  teaseAlts: [{ id: 'short', text: 'A shorter tease.' }],
+}
+
+describe('hookChoices and teaseChoices', () => {
+  it('list the default first, then every alternative with the note filed under its id', () => {
+    // Act
+    const hooks = hookChoices(copy, {
+      plain: 'An alternative with no markup.',
+      styled: 'An alternative with markup of its own.',
+    })
+    const teases = teaseChoices(copy, { short: 'Shorter.' })
+
+    // Assert
+    expect(hooks).toEqual([
+      { id: 'default', text: 'Why the default?', note: '', isDefault: true },
+      {
+        id: 'plain',
+        text: 'Is 3 < 4 & so on?',
+        note: 'An alternative with no markup.',
+        isDefault: false,
+      },
+      {
+        id: 'styled',
+        text: 'Why 440 Hz?',
+        note: 'An alternative with markup of its own.',
+        isDefault: false,
+      },
+    ])
+    expect(teases).toEqual([
+      { id: 'default', text: 'The default tease.', note: '', isDefault: true },
+      {
+        id: 'short',
+        text: 'A shorter tease.',
+        note: 'Shorter.',
+        isDefault: false,
+      },
+    ])
+  })
+
+  it('offer a lesson with no alternatives its default hook alone, and no tease at all', () => {
+    // Act
+    const hooks = hookChoices({ hook: 'Why?' })
+    const teases = teaseChoices({ hook: 'Why?' })
+
+    // Assert
+    expect(hooks).toEqual([
+      { id: 'default', text: 'Why?', note: '', isDefault: true },
+    ])
+    expect(teases).toEqual([])
+  })
+})
+
 describe('copyChoicesFor', () => {
-  it("offers a lesson's own hook first, then each alternative the kit holds, with its note", () => {
+  it("offers a lesson's own hook first, then each alternative the kit holds, with the team's note for it", () => {
     const { hooks } = copyChoicesFor(VARIED)
 
     expect(hooks[0]).toEqual({
@@ -54,10 +121,11 @@ describe('copyChoicesFor', () => {
       (VARIED.hookAlts ?? []).map((alt) => ({
         id: alt.id,
         text: alt.text,
-        note: alt.note,
+        note: HOOK_NOTES[VARIED.n]?.[alt.id],
         isDefault: false,
       })),
     )
+    expect(hooks.slice(1).every((choice) => choice.note !== '')).toBe(true)
   })
 
   it('offers a tease only for a lesson that has one, its own first', () => {

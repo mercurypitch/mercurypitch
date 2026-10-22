@@ -7,27 +7,22 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseLessonPatch, VARIANT_ID } from '@/lib/lesson-state'
 import type { LessonCopy } from './lesson-copy'
-import { DEFAULT_ID, hookChoices, hookFor, hookMarkup, isHookMarkup, LESSON_COPY, SEASON_END, TEASE_MAX, teaseChoices, teaseFor, } from './lesson-copy'
+import { DEFAULT_ID, hookFor, hookMarkup, isHookMarkup, SEASON_END, TEASE_MAX, teaseFor, } from './lesson-copy'
 import { LESSONS } from './season'
 
 /** A lesson's copy for a resolver test: a default hook, one alternative with markup and one without, a tease with one alternative. */
 const copy: LessonCopy = {
   hook: 'Why the default?',
   hookAlts: [
-    {
-      id: 'plain',
-      text: 'Is 3 < 4 & so on?',
-      note: 'An alternative with no markup.',
-    },
+    { id: 'plain', text: 'Is 3 < 4 & so on?' },
     {
       id: 'styled',
       text: 'Why 440 Hz?',
       html: 'Why <span class="hz o">440&#8239;Hz</span>?',
-      note: 'An alternative with markup of its own.',
     },
   ],
   tease: 'The default tease.',
-  teaseAlts: [{ id: 'short', text: 'A shorter tease.', note: 'Shorter.' }],
+  teaseAlts: [{ id: 'short', text: 'A shorter tease.' }],
 }
 
 /** The team's words, which no hook or tease a page could draw may carry (learn-no-planning-text.spec.ts). */
@@ -45,11 +40,6 @@ const TEASES = LESSONS.flatMap((L) => [
   ...(L.tease === undefined ? [] : [[L.n, L.tease] as const]),
   ...(L.teaseAlts ?? []).map((v) => [L.n, v.text] as const),
 ])
-
-/** Every variant's team note. */
-const NOTES = Object.values(LESSON_COPY).flatMap((c) =>
-  [...(c?.hookAlts ?? []), ...(c?.teaseAlts ?? [])].map((v) => v.note),
-)
 
 /** Text as a reader meets it: entities read, runs of space (U+202F among them) one space. */
 const flat = (text: string): string => text.replace(/\s+/g, ' ').trim()
@@ -138,47 +128,6 @@ describe('teaseFor', () => {
 
     // Assert
     expect(tease).toBeNull()
-  })
-})
-
-describe('hookChoices and teaseChoices', () => {
-  it('list the default first, then every alternative with its note', () => {
-    // Act
-    const hooks = hookChoices(copy)
-    const teases = teaseChoices(copy)
-
-    // Assert
-    expect(hooks).toEqual([
-      { id: 'default', text: 'Why the default?', note: '', isDefault: true },
-      {
-        id: 'plain',
-        text: 'Is 3 < 4 & so on?',
-        note: 'An alternative with no markup.',
-        isDefault: false,
-      },
-      {
-        id: 'styled',
-        text: 'Why 440 Hz?',
-        note: 'An alternative with markup of its own.',
-        isDefault: false,
-      },
-    ])
-    expect(teases.map((c) => [c.id, c.isDefault])).toEqual([
-      ['default', true],
-      ['short', false],
-    ])
-  })
-
-  it('offer a lesson with no alternatives its default hook alone, and no tease at all', () => {
-    // Act
-    const hooks = hookChoices({ hook: 'Why?' })
-    const teases = teaseChoices({ hook: 'Why?' })
-
-    // Assert
-    expect(hooks).toEqual([
-      { id: 'default', text: 'Why?', note: '', isDefault: true },
-    ])
-    expect(teases).toEqual([])
   })
 })
 
@@ -276,13 +225,11 @@ describe("the season's copy", () => {
     expect(LESSONS[11].tease).toBe('Slide up slowly, and your voice may flip.')
   })
 
-  it("sets a tease's alternatives only beside a tease, and a note on every variant", () => {
+  it("sets a tease's alternatives only beside a tease", () => {
     for (const L of LESSONS) {
       // Assert
       if (L.teaseAlts !== undefined)
         expect(L.tease, `lesson ${L.n}`).toBeDefined()
-      for (const v of [...(L.hookAlts ?? []), ...(L.teaseAlts ?? [])])
-        expect(v.note.trim(), `lesson ${L.n}, ${v.id}`).not.toBe('')
     }
   })
 
@@ -308,7 +255,8 @@ describe("the season's copy", () => {
   })
 
   it('keeps "hundreds" and mood labels out of every default hook and tease', () => {
-    // Arrange: an alternative may keep the old wording, its note saying why
+    // Arrange: an alternative may keep the old wording, its note in
+    // team-notes.ts saying why
     const drawn = LESSONS.flatMap((L) => [L.hook, L.tease ?? ''])
 
     // Assert
@@ -407,13 +355,5 @@ describe('the lesson pages', () => {
       )
       if (headline !== undefined) expect(headline, `lesson ${n}`).toBe(hook)
     }
-  })
-
-  it("carries no variant's team note anywhere in its markup", () => {
-    // Assert
-    expect(NOTES.length).toBeGreaterThan(0)
-    for (const { n, html } of PAGES)
-      for (const note of NOTES)
-        expect(html.includes(note), `lesson ${n}: ${note}`).toBe(false)
   })
 })

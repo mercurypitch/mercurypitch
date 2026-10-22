@@ -23,15 +23,19 @@
 // stays on the entry, which every lesson page and document quotes, and the
 // page state picks among them (publish.ts `seasonFor`).
 //
-// A variant's `note` is the team's, like a lesson's `sig`: why the variant
-// exists, for the admin console, and never drawn on a lesson page. Its text
+// Why a variant exists is the team's, for the admin console, and never drawn
+// on a lesson page, so it is not here: every lesson page downloads this file.
+// Each variant's note is in team-notes.ts under its lesson's number and its
+// id, which the console joins back to it (admin/lessons/copy-choices.ts), and
+// this file imports nothing, that one included. A variant written here needs
+// its note there; team-notes.test.ts fails until it has one. A variant's text
 // is lesson copy: British English, every claim in that lesson's FACTS.md, no
 // mood labels, a hook that ends in "?", a tease of one line that is at most
 // TEASE_MAX characters.
 
 /** A hook that can stand in place of a lesson's default. */
 export interface HookVariant {
-  /** What the admin console stores: a variant id (lesson-state.ts VARIANT_ID), never 'default'. */
+  /** What the admin console stores: a variant id (lesson-state.ts VARIANT_ID), never 'default'. Its note is filed under it in team-notes.ts. */
   readonly id: string
   /** Plain text ending in "?", as the explorer, the lesson menu and the next card print it. */
   readonly text: string
@@ -41,16 +45,13 @@ export interface HookVariant {
    * only. Without it the h1 takes `text`.
    */
   readonly html?: string
-  /** Why the variant exists. The team's, for the admin console: never drawn on a lesson page. */
-  readonly note: string
 }
 
 /** A tease that can stand in place of a lesson's default tease. */
 export interface TeaseVariant {
+  /** As a hook variant's: its note is filed under it in team-notes.ts. */
   readonly id: string
   readonly text: string
-  /** The team's, as a hook variant's. */
-  readonly note: string
 }
 
 /** A lesson's curiosity copy beyond its default hook, as its season entry carries it. */
@@ -82,12 +83,10 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       {
         id: 'figures',
         text: "In a survey, most of 1,105 students said they couldn't copy a tune. In tests, only about one in ten to one in six missed by a semitone or more. So what's going on?",
-        note: "The original hook, with both figures (FACTS 1 to 5). At 163 characters it was the season's longest, so the page sets its title smaller; the shorter default keeps the Asked and Tested of Lesson 2's film.",
       },
       {
         id: 'tested',
         text: "Asked, most students said they couldn't copy a tune. Tested, most could. So what's going on?",
-        note: 'The default from 20 October. Its "Tested, most could" all but answers the cold open\'s predict, which sits under the title.',
       },
     ],
   },
@@ -99,7 +98,6 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       {
         id: 'two-questions',
         text: 'How many notes can your voice reach, and why is the comfortable middle worth more than the extremes?',
-        note: 'The original hook: two questions in one, and its first half invites counting notes, which the lesson steers away from.',
       },
     ],
     tease: 'Books often give a voice type two octaves.',
@@ -110,7 +108,6 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       {
         id: 'harder',
         text: 'Why is jumping to a note so much harder than stepping to it?',
-        note: "Needs FACTS support for 'so much harder'; Lesson 9's FACTS show copied leaps landing short, more so the larger the leap.",
       },
     ],
     tease: 'One note, two ways up: step by step, or one leap.',
@@ -120,7 +117,6 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       {
         id: 'bright-dark',
         text: 'Which single note turns a bright major chord into a dark minor one?',
-        note: 'The original hook. Bright and dark are mood labels, and the lesson refutes "minor means sad"; the YouTube title drops them too.',
       },
     ],
     tease: 'Three notes, one chord. Move one by a semitone.',
@@ -130,7 +126,6 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       {
         id: 'same-note',
         text: 'Why does your voice flip at roughly the same note every time you slide up?',
-        note: "Needs FACTS support for 'roughly the same note every time'; Lesson 11's FACTS show a flip can come at different notes on different slides, or not at all.",
       },
     ],
     tease: 'Slide up slowly, and your voice may flip.',
@@ -140,7 +135,6 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       {
         id: 'hundreds',
         text: 'How can hundreds of songs share the same four chords and still sound different?',
-        note: 'The original hook. "Hundreds" needs a counted source in FACTS.md first; the YouTube titles avoid it too.',
       },
     ],
     tease: 'Four chords, round and round.',
@@ -151,7 +145,6 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       {
         id: 'compelling',
         text: 'If you can hit every note of a song, what is still missing between correct and compelling?',
-        note: 'The original hook. No source in FACTS.md says what makes a performance "compelling"; the new default asks what the lesson answers in full, what is left to shape.',
       },
     ],
     tease: '‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.',
@@ -159,7 +152,6 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       {
         id: 'band',
         text: 'Every note in the band, start to finish.',
-        note: "The original tease. It is true of the lesson, but it sits before the cold open's reveal and points at its answer, a line that stays in its band.",
       },
     ],
   },
@@ -185,15 +177,6 @@ export interface Hook {
   readonly text: string
   /** The h1's markup for a variant; null for the default, whose markup is the page's own. */
   readonly html: string | null
-}
-
-/** One choice in the admin console's list. */
-export interface CopyChoice {
-  readonly id: string
-  readonly text: string
-  /** Empty for the default, which needs no reason. */
-  readonly note: string
-  readonly isDefault: boolean
 }
 
 /** Text as HTML: the h1 of a variant that has no markup of its own. */
@@ -232,33 +215,6 @@ export function teaseFor(
   return alt === undefined
     ? { id: DEFAULT_ID, text: lesson.tease }
     : { id: alt.id, text: alt.text }
-}
-
-/** A lesson's hooks for the admin console: its default first, then its alternatives. */
-export function hookChoices(lesson: LessonCopy): CopyChoice[] {
-  return [
-    { id: DEFAULT_ID, text: lesson.hook, note: '', isDefault: true },
-    ...(lesson.hookAlts ?? []).map((v) => ({
-      id: v.id,
-      text: v.text,
-      note: v.note,
-      isDefault: false,
-    })),
-  ]
-}
-
-/** A lesson's teases for the admin console, as `hookChoices`; none for a lesson with no tease. */
-export function teaseChoices(lesson: LessonCopy): CopyChoice[] {
-  if (lesson.tease === undefined) return []
-  return [
-    { id: DEFAULT_ID, text: lesson.tease, note: '', isDefault: true },
-    ...(lesson.teaseAlts ?? []).map((v) => ({
-      id: v.id,
-      text: v.text,
-      note: v.note,
-      isDefault: false,
-    })),
-  ]
 }
 
 /** Hook markup a page may take: text, entities and `<span class="...">`, every span closed. */

@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
+import { HOOK_NOTES } from '@/features/lessons/kit/team-notes'
 import type { AdminLessonsPageProps } from './AdminLessonsPage'
 import { AdminLessonsPage } from './AdminLessonsPage'
 import type { CopyChoicesFor } from './lessons/copy-choices'
@@ -435,10 +436,13 @@ describe('the wording pickers', () => {
     expect(byDefault).toHaveAttribute('aria-pressed', 'true')
     expect(alternatives).toHaveLength(VARIED_ALTS.length)
     VARIED_ALTS.forEach((alt, i) => {
+      // its note is the team's, joined by lesson and id from team-notes.ts
+      const note = HOOK_NOTES[varied]?.[alt.id]
+      expect(note, alt.id).toBeDefined()
       expect(alternatives[i]).toHaveAccessibleName(
         `Lesson ${varied} hook: ${alt.text}`,
       )
-      expect(alternatives[i]).toHaveAccessibleDescription(alt.note)
+      expect(alternatives[i]).toHaveAccessibleDescription(note ?? 'a note')
       expect(alternatives[i]).toHaveAttribute('aria-pressed', 'false')
     })
 

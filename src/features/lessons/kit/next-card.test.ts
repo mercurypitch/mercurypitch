@@ -4,13 +4,14 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
-import { LESSON_COPY, SEASON_END } from './lesson-copy'
+import { SEASON_END } from './lesson-copy'
 import type * as Card from './next-card'
 import type { NextCard, SeasonEnd } from './next-card'
 import { createNextCard, nextCard } from './next-card'
 import { Done } from './progress'
 import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
+import { TEAM_STRINGS } from './team-notes.test-fixtures'
 
 /** The card for a lesson, never the season's close. */
 function lessonCard(c: NextCard | SeasonEnd | null): NextCard | null {
@@ -26,11 +27,6 @@ const way = (c: NextCard | SeasonEnd | null): (string | undefined)[] => {
 
 /** The season's last lesson. */
 const LAST = Math.max(...LESSONS.map((L) => L.n))
-
-/** Every variant's team note (lesson-copy.ts). */
-const NOTES = Object.values(LESSON_COPY).flatMap((c) =>
-  [...(c?.hookAlts ?? []), ...(c?.teaseAlts ?? [])].map((v) => v.note),
-)
 
 describe('nextCard', () => {
   it("names the lesson after this page's and starts it at its page's top", () => {
@@ -371,9 +367,9 @@ describe('createNextCard', () => {
     ])
   })
 
-  it("draws none of the team's notes on any lesson's card", () => {
-    // Arrange
-    expect(NOTES.length).toBeGreaterThan(0)
+  it("draws none of the team's notes or signatures on any lesson's card", () => {
+    // Arrange: every string team-notes.ts holds
+    expect(TEAM_STRINGS.length).toBeGreaterThan(0)
 
     for (const L of LESSONS) {
       document.body.innerHTML =
@@ -385,8 +381,8 @@ describe('createNextCard', () => {
       // Assert
       const text = document.body.textContent ?? ''
       expect(text, `lesson ${L.n}`).not.toBe('')
-      for (const note of NOTES)
-        expect(text.includes(note), `lesson ${L.n}: ${note}`).toBe(false)
+      for (const [what, team] of TEAM_STRINGS)
+        expect(text.includes(team), `lesson ${L.n}: ${what}`).toBe(false)
     }
   })
 })

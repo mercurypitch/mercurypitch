@@ -13,6 +13,7 @@ import { Positions } from './position'
 import { Done } from './progress'
 import type { Lesson } from './season'
 import { LESSONS, TOPICS } from './season'
+import { TEAM_STRINGS } from './team-notes.test-fixtures'
 
 /** A lesson for a card test, live or coming later as `extra` makes it. */
 const lesson = (extra: Partial<Lesson> = {}): Lesson => ({
@@ -22,7 +23,6 @@ const lesson = (extra: Partial<Lesson> = {}): Lesson => ({
   short: 'Nine',
   topics: [],
   hook: 'Why?',
-  sig: 'A figure.',
   pr: {},
   ...extra,
 })
@@ -209,11 +209,8 @@ describe('createExplorer', () => {
     }
   })
 
-  it("draws no hook variant's team note on any lesson's card", () => {
-    // Arrange: the notes that say why each variant exists (lesson-copy.ts)
-    const notes = LESSONS.flatMap((L) =>
-      [...(L.hookAlts ?? []), ...(L.teaseAlts ?? [])].map((v) => v.note),
-    )
+  it("draws no team note or signature on any lesson's card", () => {
+    // Arrange: each lesson's signature and why each variant exists (team-notes.ts)
     explorerPage()
     const explorer = createExplorer({ current: 1 })
 
@@ -224,10 +221,10 @@ describe('createExplorer', () => {
       // Assert
       const text = openCard()?.textContent ?? ''
       expect(text, `lesson ${L.n}`).toContain(L.hook)
-      for (const note of notes)
-        expect(text.includes(note), `lesson ${L.n}: ${note}`).toBe(false)
+      for (const [what, team] of TEAM_STRINGS)
+        expect(text.includes(team), `lesson ${L.n}: ${what}`).toBe(false)
     }
-    expect(notes.length).toBeGreaterThan(0)
+    expect(TEAM_STRINGS.length).toBeGreaterThan(0)
   })
 
   it('shows the trailer as its hook and "Coming later", and nothing else', () => {

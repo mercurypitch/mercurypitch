@@ -506,7 +506,7 @@ describe('the picked hook', () => {
   // entity's spelling among them, on a lesson whose head quotes its hook
   // three times and adds to one of them.
   const ODD = 'Is 3 < 4 & "five" > 2, or ‘six’, and is &amp; a word?'
-  const COPY = { 1: { hookAlts: [{ id: 'odd', text: ODD, note: 'test' }] } }
+  const COPY = { 1: { hookAlts: [{ id: 'odd', text: ODD }] } }
 
   async function lessonOne(): Promise<{ doc: Document; html: string }> {
     const asset = new Response(repoFile('learn/01.html'), {
@@ -552,9 +552,7 @@ describe('the picked hook', () => {
     // Arrange: Lesson 5's head writes “support” as &#8220;support&#8221;
     const copy = {
       5: {
-        hookAlts: [
-          { id: 'plain', text: 'What keeps a long note steady?', note: 'test' },
-        ],
+        hookAlts: [{ id: 'plain', text: 'What keeps a long note steady?' }],
       },
     }
     const asset = new Response(repoFile('learn/05.html'), {
