@@ -53,7 +53,7 @@ export type VariantNotes = Readonly<Partial<Record<string, string>>>
 export const HOOK_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
   3: {
     figures:
-      "The original hook, with both figures (FACTS 1 to 5). At 163 characters it was the season's longest, so the page sets its title smaller; the shorter default keeps the Asked and Tested of Lesson 2's film.",
+      "The original hook, with both figures (FACTS 1 to 5). At 163 characters it was the season's longest, so the page sets its title smaller; the shorter default keeps the Asked and Tested of Lesson 2's film. Like `tested`, it tells the cold open's predict how the tests came out, here in numbers.",
     tested:
       'The default from 20 October. Its "Tested, most could" all but answers the cold open\'s predict, which sits under the title.',
   },
