@@ -28,9 +28,8 @@ const tryStep = (n: number): string =>
 export const RECALL_QUESTIONS: readonly QuizQuestion[] =
   LESSON_2_QUESTIONS.filter((q) => q.id === 'l02-q1' || q.id === 'l02-q3')
 
-/** A recall link's address: Lesson 2's page, open at the step (`/learn/02#step-2`). */
-export const recallStepHref = (lesson: number, step: number): string =>
-  `/learn/${String(lesson).padStart(2, '0')}#step-${step}`
+// A recall link's address, the lesson's own page open at the step: the kit's.
+export { recallStepHref } from '@/features/lessons/kit/quiz'
 
 /** Question 3's play button: Merc climbs to ti and stops. */
 export const STOP_SLOT =

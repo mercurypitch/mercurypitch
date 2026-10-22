@@ -164,6 +164,41 @@ describe('keyAnswer', () => {
     for (const k of ['0', '5', 'a', ' ', '1.5', ''])
       expect(keyAnswer(k, answers)).toBeNull()
   })
+
+  it('maps a key per answer when the page gives them: bars of 2, 3 and 4 on the keys 2, 3 and 4', () => {
+    const answers = ['2', '3', '4'] as const
+    const keys = ['2', '3', '4']
+    expect(keyAnswer('2', answers, keys)).toBe('2')
+    expect(keyAnswer('3', answers, keys)).toBe('3')
+    expect(keyAnswer('4', answers, keys)).toBe('4')
+    for (const k of ['1', '5', '0', ' ', ''])
+      expect(keyAnswer(k, answers, keys)).toBeNull()
+  })
+
+  it('answers by the keys a game is given', () => {
+    const root = gameCard()
+    const answered: string[] = []
+    mountEarGame<Answer>(root, {
+      answers: ['step', 'leap'],
+      keys: ['s', 'l'],
+      deal: () => ROUNDS,
+      play: () => ({ done: Promise.resolve(), stop: () => undefined }),
+      slower: 1.5,
+      labels: { start: 'Play', again: 'Again', next: 'Next', more: 'More' },
+      seed: () => 1,
+    })
+    root.querySelector<HTMLButtonElement>('[data-eg-play]')?.click()
+    root.dispatchEvent(
+      new KeyboardEvent('keydown', { key: '1', bubbles: true }),
+    )
+    answered.push(root.querySelector('[data-eg-feedback]')?.textContent ?? '')
+    root.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 's', bubbles: true }),
+    )
+    answered.push(root.querySelector('[data-eg-feedback]')?.textContent ?? '')
+    expect(answered).toEqual(['', 'Yes. A step: 2 semitones up.'])
+    root.remove()
+  })
 })
 
 describe('slowerBy', () => {

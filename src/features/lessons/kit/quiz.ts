@@ -125,6 +125,10 @@ export function lessonOfQuestion(id: string): number | null {
 export const lessonPageHref = (lesson: number): string =>
   `/learn/${String(lesson).padStart(2, '0')}#lesson`
 
+/** A recall link's address: a lesson's own page, open at the step (`/learn/06#step-3`). */
+export const recallStepHref = (lesson: number, step: number): string =>
+  `/learn/${String(lesson).padStart(2, '0')}#step-${step}`
+
 function storedSeed(key: string): number {
   const stored = store.get<unknown>(key, null)
   if (typeof stored === 'number') return stored

@@ -3,6 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+// its recall links come from the kit's quiz now, which reads the motion setting as it loads
+import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { QUIZ_QUESTIONS as LESSON_2_QUESTIONS } from '@/features/lessons/lesson-02/quiz-questions'
 import { QUIZ_QUESTIONS, RECALL_QUESTIONS, recallStepHref, } from './quiz-questions'
 
