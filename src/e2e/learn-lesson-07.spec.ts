@@ -14,9 +14,9 @@
 // reveal waits for Play "Twinkle" on the column to be heard, with sound
 // off as well; the recall, which marks nothing done and links Lesson 3's
 // step in a new tab, and the quick check, which marks Lesson 7 done; the
-// Wrap's practice links and its card for Lesson 8, coming later; and with
-// reduced motion, a siren drawn at once. The chart by keyboard and the
-// layouts are learn-lesson-07-qa.spec.ts's; Sing it is
+// Wrap's practice links and its card for Lesson 8, a draft the e2e bundle
+// shows; and with reduced motion, a siren drawn at once. The chart by
+// keyboard and the layouts are learn-lesson-07-qa.spec.ts's; Sing it is
 // learn-lesson-07-sing.spec.ts's.
 
 import { expect, test } from '@playwright/test'
@@ -241,7 +241,7 @@ test('the quick check links its steps, starts each line Right. or Not quite., an
   await expect(page.locator('#exCardHost')).toContainText('Done')
 })
 
-test("the Wrap's links carry lesson=07, and its card leads to Lesson 8 on the map", async ({
+test("the Wrap's links carry lesson=07, and its card leads to Lesson 8's page", async ({
   page,
 }) => {
   await page.goto('/learn/07')
@@ -253,16 +253,11 @@ test("the Wrap's links carry lesson=07, and its card leads to Lesson 8 on the ma
   for (const href of hrefs) expect(href).toBe('/vocal-range-test?lesson=07')
 
   const card = page.locator('#wrap a.next-card')
-  await expect(card).toHaveAttribute('href', '#explorer')
-  await expect(card).toHaveAttribute('data-select-lesson', '8')
-  await expect(card.locator('.tempo')).toHaveText('Coming later')
-  await expect(card.locator('.chip')).toHaveText('See it on the map')
+  await expect(card).toHaveAttribute('href', '/learn/08')
+  await expect(card.locator('.tempo')).toHaveText('Ready · 15 min')
+  await expect(card.locator('.chip')).toHaveText('Start lesson')
   await expect(card.locator('.next-tease')).toHaveText(
     LESSON_COPY[8]?.tease ?? 'Lesson 8 has a tease',
-  )
-  await card.click()
-  await expect(page.locator('#exCardHost h3')).toHaveText(
-    'Beat, tempo and the backbeat',
   )
 })
 

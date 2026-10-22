@@ -10,7 +10,7 @@
 // however the panel closes; Tab stays inside it; every row and step is a
 // 44 px target and a lesson coming later is no link; reduced motion opens it
 // without its fade; and its links land, on this page or on another lesson's.
-// Lessons 6 and 7, pages with no film, are checked on their own as well:
+// Lessons 6, 7 and 8, pages with no film, are checked on their own as well:
 // the button's name, a tapped step, and the phone sheet's three sections.
 
 import type { Locator, Page } from '@playwright/test'
@@ -251,6 +251,7 @@ test.describe('on a phone, 390 x 844, with a section hidden', () => {
 const NO_FILM = [
   { n: 6, title: 'Intervals: the distance between notes' },
   { n: 7, title: 'Slides, sirens and your range' },
+  { n: 8, title: 'Beat, tempo and the backbeat' },
 ] as const
 
 for (const { n, title } of NO_FILM) {
