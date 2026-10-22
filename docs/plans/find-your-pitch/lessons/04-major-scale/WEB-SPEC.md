@@ -363,7 +363,7 @@ main's.
   Runner", which the card prints as "Exercises, then tap Scale Runner" after the address
   (`practiseMarkup`, `kit/explorer.ts:98-103`). It keeps its `needs` until the slug ships. Its
   `sig` becomes "A staircase with two short steps that slides to start on any note.", since "two
-  uneven steps" did not say which. On main the entry reads so (`kit/season.ts:216-235`), and the
+  uneven steps" did not say which. On main the entry reads so (`kit/season.ts:224-243`), and the
   signature is the team's (`kit/team-notes.ts:36`).
 - `kit/notes.ts`: the spelling helper (Toys 1).
 - The icon sprite: `#i-home`, the house glyph (Toys 1).

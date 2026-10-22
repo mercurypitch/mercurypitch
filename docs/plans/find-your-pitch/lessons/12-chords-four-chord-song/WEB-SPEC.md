@@ -56,7 +56,7 @@ nothing, and "publish after Lesson 10" is a rule for whoever uses it: nothing en
 for the owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
 items 2 and 15). The curiosity plan's kit work is on main: Lesson 12's hook is the season's
 (`src/features/lessons/kit/season.ts:366`), its alternative and its tease are in the kit's lesson
-copy (`src/features/lessons/kit/lesson-copy.ts:125-133`), Lesson 13's tease is there too (`:134`),
+copy (`src/features/lessons/kit/lesson-copy.ts:133-141`), Lesson 13's tease is there too (`:142`),
 and the next-lesson card draws a tease above the next hook
 (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own title into its
 markup, and nothing of Lesson 13's (FACTS 1, 5).
@@ -816,7 +816,7 @@ built:
 - The signature stays as it is (`kit/team-notes.ts:44`). The entry has no `fig`, so the card draws no figure.
 - The hook stays word for word (`season.ts:366`; FACTS 1). The tease Lesson 11's card shows for this
   lesson, and Lesson 13's tease on this page's card, are the kit's lesson copy
-  (`kit/lesson-copy.ts:132`, `:134`; FACTS 5, 5b).
+  (`kit/lesson-copy.ts:140`, `:142`; FACTS 5, 5b).
 - The card reads "Ready · read", with "15 min", once the page is live (`explorer.ts:150-157`).
 
 ## What the kit and the app still need
@@ -893,7 +893,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     the owner).
 11. `kit/season.ts`, Lesson 12's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:321-356` and `src/tests/lesson-pages.test.ts:112-210`
+    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and `src/tests/lesson-pages.test.ts:112-210`
     on every page, a draft's included, from its first commit:
     - title, at most 60 characters, with "MercuryPitch" and the headline in it
       (`lesson-pages.test.ts:127-128`, `:160`). The series' form that Lessons 1, 2, 3, 5 and 10 use,
@@ -921,7 +921,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     - robots `index, follow, max-image-preview:large` and `twitter:card` `summary_large_image`;
     - the Article block, the head's first `application/ld+json` script and one object, since the
       test reads `alternativeHeadline` from the first script only and skips the check when it is
-      absent (`lesson-copy.test.ts:336-344`, `:354`): `@id`
+      absent (`lesson-copy.test.ts:338-346`, `:356`): `@id`
       `https://mercurypitch.com/learn/12#lesson`, `url` the canonical, `image` the same URL as
       `og:image` (`lesson-pages.test.ts:146-147`, `:159`), headline "Chords and the four-chord
       song", `alternativeHeadline` the hook, the same description, `inLanguage` `en-GB`,
@@ -1122,7 +1122,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   `#explorer` (`kit/next-card.ts:108-110`).
 - **The admin console's hook.** The console can switch Lesson 12's hook to its alternative,
   `hundreds`, "How can hundreds of songs share the same four chords and still sound different?"
-  (`kit/lesson-copy.ts:125-133`): the pick is the `hook` field of the lesson's override, set through
+  (`kit/lesson-copy.ts:133-141`): the pick is the `hook` field of the lesson's override, set through
   PUT `/api/admin/lessons/:n` (`src/lib/lesson-state.ts:41`, `:49-50`, `:182-189`) from the Content
   Studio's hook picker, which prints the variant's note under it
   (`src/features/admin/lessons/LessonControls.tsx:447-451`). The page's markup keeps the default;

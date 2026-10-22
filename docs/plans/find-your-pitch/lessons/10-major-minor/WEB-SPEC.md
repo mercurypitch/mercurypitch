@@ -49,7 +49,7 @@ naming what it waits on, but checks nothing, so the owner keeps the order above 
 owner). Releasing it is deleting its `drafts.ts` line (What the kit and the app still need, items 2
 and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's hook, its alternative
 and its tease are in the kit's lesson copy (`src/features/lessons/kit/lesson-copy.ts:115-123`),
-Lesson 11's tease is there too (`:124`), and the next-lesson card draws a tease above the next hook
+Lesson 11's tease is there too (`:131`), and the next-lesson card draws a tease above the next hook
 (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own title into its
 markup, and nothing of Lesson 11's (FACTS 1, 5).
 
@@ -746,7 +746,7 @@ built:
 - The signature stays as it is (`kit/team-notes.ts:42`). The entry has no `fig`, so the card draws no figure.
 - The hook stays word for word (`season.ts:348`; FACTS 1). The tease Lesson 9's card shows for this
   lesson, and Lesson 11's tease on this page's card, are the kit's lesson copy
-  (`kit/lesson-copy.ts:122`, `:124`; FACTS 5, 5b).
+  (`kit/lesson-copy.ts:122`, `:131`; FACTS 5, 5b).
 - The card reads "Ready · read", with "17 min", once the page is live (`explorer.ts:150-157`).
 
 ## What the kit and the app still need
@@ -811,7 +811,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:321-356` on every page from its first commit, and
+    `src/features/lessons/kit/lesson-copy.test.ts:323-358` on every page from its first commit, and
     by `src/tests/lesson-pages.test.ts:85-183` once released:
     - title, at most 60 characters with the headline in it: in the form Lessons 1, 2, 3 and 5 use,
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch" (58 characters), until SEARCH.md
