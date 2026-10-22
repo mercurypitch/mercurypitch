@@ -247,8 +247,8 @@ Two quizzes share this page, so it depends on the three changes Lesson 2 makes t
 - a question `id`, the telemetry's `question_id`, which `QuizQuestion` lacked.
 
 If Lesson 2's page has not landed them when this one is built, this page lands them, in the shape
-Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:78-83`, `:199-203`), an
-optional `lesson` (`:72-73`, `:299-304`) and the question `id` (`:40-44`).
+Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:81-86`, `:207-211`), an
+optional `lesson` (`:75-76`, `:307-312`) and the question `id` (`:43-47`).
 
 - **Recall**: Lesson 2's questions 1 and 3, word for word with their feedback (LESSON.md; FACTS
   30), under their Lesson 2 ids, `l02-q1` and `l02-q3`. It is reshuffled from a seed of its own
@@ -262,10 +262,10 @@ optional `lesson` (`:72-73`, `:299-304`) and the question `id` (`:40-44`).
   `fyp-l04-quiz-v1`, and `lesson: 4`, so answering all four marks Lesson 4 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. Question 3's play button plays
-  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:276-278`), so
-  that button is handled by a listener on the quiz's root (`#qs` today), as the step links are.
-  "Try Step 1 again" and "Try Step 3 again" use the kit's `data-goto-step`. Answers stay in the
-  viewer's browser until the telemetry track exists.
+  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:264-267`,
+  `:284-285`), so that button is handled by a listener on the quiz's root (`#qs` today), as the step
+  links are. "Try Step 1 again" and "Try Step 3 again" use the kit's `data-goto-step`. Answers stay
+  in the viewer's browser until the telemetry track exists.
 
 ### 6. Go deeper drawer
 
@@ -350,18 +350,18 @@ main's.
   `Lesson` serves both lessons, added by whichever page ships first; the card's status line,
   "Ready · watch and read" on 18 October, then reads "Ready · read", and the phone list and the
   graph read the same field. On main the chip reads "Ready · read" unless the lesson's film is
-  published (`kit/explorer.ts:74-81`).
+  published (`kit/explorer.ts:150-157`).
 - `kit/explorer.ts`, the current lesson: it selected Lesson 1 when it opened (`let sel = 1`).
-  Lesson 2's page added the option, `current` (`kit/explorer.ts:38-40`, `:180-181`), and this page
-  passes 4 (`lesson-04/main.ts:94`).
+  Lesson 2's page added the option, `current` (`kit/explorer.ts:48-49`, `:256-260`), and this page
+  passes 4 (`lesson-04/main.ts:96`).
 - `kit/explorer.ts`, links between pages: a ready card's actions were the same-page anchors
   `#watch` and `#lesson`, right only for the page's own lesson, so a card for another ready lesson
   links to that lesson's page, `/learn/NN` (Lesson 2 lists the same gap). On main it does
-  (`cardActions`, `kit/explorer.ts:111-127`).
+  (`cardActions`, `kit/explorer.ts:187-203`).
 - `kit/season.ts`, Lesson 4's entry: the practice link, `href` `/pitch-training?lesson=04`,
   `addr` `mercurypitch.com/pitch-training`, `label` "Exercises" and `note` "then tap Scale
   Runner", which the card prints as "Exercises, then tap Scale Runner" after the address
-  (`practiseMarkup`, `kit/explorer.ts:98-103`). It keeps its `needs` until the slug ships. Its
+  (`practiseMarkup`, `kit/explorer.ts:174-179`). It keeps its `needs` until the slug ships. Its
   `sig` becomes "A staircase with two short steps that slides to start on any note.", since "two
   uneven steps" did not say which. On main the entry reads so (`kit/season.ts:224-243`), and the
   signature is the team's (`kit/team-notes.ts:36`).
@@ -372,7 +372,7 @@ main's.
 - Lesson 1's predict widget, promoted into the kit if Lesson 2 has not done it (Toys 2).
 - `vite.config.ts`: `/learn/04` served from `learn/04.html` in dev and preview, and `learn/04.html`
   as a build input. On main every `learn/NN.html` is both, with no entry of its own
-  (`vite.config.ts:77-87`, `:139-141`, `:473`).
+  (`vite.config.ts:77-86`, `:138-140`, `:474`).
 - `src/lib/sw-runtime.ts`: `/learn/04` and `/learn/04.html` in `STANDALONE_DOCUMENT_PATHS`, as
   `/learn/01` is (`sw-runtime.ts:131-135`), so the service worker leaves the lesson alone. On main
   they are there (`:138-139`).

@@ -93,7 +93,7 @@ waits on a person's listen to the new voices; the web lesson is built at `/learn
   back on "ooh" in Voice Mirror. The Phase 1 re-voice changes the film's "Hum it back" to "Sing it
   back, or hum along".
 - Practise: `mercurypitch.com/mirror` (Voice Mirror's match scoring is octave-folded,
-  `src/lib/mirror/metrics.ts:261`).
+  `src/lib/mirror/metrics.ts:249`).
 - Facts: [lessons/01-what-is-a-note/FACTS.md](lessons/01-what-is-a-note/FACTS.md).
 
 **Lesson 2. Twelve notes** (made: the film's master, `rc-04`, passed its last critic round and waits

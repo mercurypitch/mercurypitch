@@ -483,7 +483,7 @@ kit marks `lesson` done once every question has an answer (`:75-76`, `:307-312`)
   `fyp-l07-quiz-v1`, and `lesson: 7`, so answering all four marks Lesson 7 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:270`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:278`), so no feedback line starts with "Right", "Yes" or
   "Correct". "Try Step 1 again", "Try Step 2 again", "Try Step 4 again" and "Try Step 5 again" use
   the kit's `data-goto-step`. Answers stay in the viewer's browser until the telemetry track
   exists.

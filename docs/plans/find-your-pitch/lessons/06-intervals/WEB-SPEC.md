@@ -345,7 +345,7 @@ the tune: 'How I won-der'" (FACTS 68). The octave row plays Lesson 1's A3 and A4
 reads "Play Lesson 1's two As". A row lights while it sounds; one sound at a time (a new tap stops
 the last). On phones (below 960 px) each row stacks: the name, label and semitones on one line
 beside the figure, and under them the two buttons side by side, each half the row's width and at
-least 44 px tall, as the kit's small buttons are (`btn sm`, `kit/lesson-base.css:519-523`). At
+least 44 px tall, as the kit's small buttons are (`btn sm`, `kit/lesson-base.css:524-528`). At
 390 px a card with 1 px borders and 16 px padding leaves a 324 px row, so with an 8 px gap each
 button is 158 px wide; a label wraps if it must. Under reduced motion the row lights with no transition.
 
@@ -431,9 +431,9 @@ shows a number instead of breathing.
 
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
 (its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
-elements each quiz binds and writes (`kit/quiz.ts:78-83`, `:199-203`); `lesson` optional, since the
-kit marks `lesson` done once every question has an answer (`:72-73`, `:299-304`); and a question
-`id`, the telemetry's `question_id` (`:40-44`).
+elements each quiz binds and writes (`kit/quiz.ts:81-86`, `:207-211`); `lesson` optional, since the
+kit marks `lesson` done once every question has an answer (`:75-76`, `:307-312`); and a question
+`id`, the telemetry's `question_id` (`:43-47`).
 
 - **Recall**: Lesson 4's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS
   7), under their Lesson 4 ids, `l04-q1` and `l04-q4`, shown to everyone (Lesson 4 is a
@@ -452,15 +452,15 @@ kit marks `lesson` done once every question has an answer (`:72-73`, `:299-304`)
   `fyp-l06-quiz-v1`, and `lesson: 6`, so answering all four marks Lesson 6 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:270`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:278`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 1's play button plays `line-c`, then `line-fs`, and question 3's plays C4 then
   F4 (FACTS 63, 69). Each sits in the kit's slot after a question's heading (`slot`,
-  `kit/quiz.ts:49-55`, `:285-286`), outside the `<h3>` that labels its answers (`:283`), so the
+  `kit/quiz.ts:52-58`, `:293-294`), outside the `<h3>` that labels its answers (`:291`), so the
   button is not part of every answer's name. The kit rebuilds the questions on every answer
-  (`kit/quiz.ts:276-278`), so those buttons are handled by a listener on the quiz's root, as the
-  step links are. "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try Step 5 again"
-  use the kit's `data-goto-step`. Answers stay in the viewer's browser until the telemetry track
-  exists.
+  (`kit/quiz.ts:264-267`, `:284-285`), so those buttons are handled by a listener on the quiz's
+  root, as the step links are. "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try
+  Step 5 again" use the kit's `data-goto-step`. Answers stay in the viewer's browser until the
+  telemetry track exists.
 
 ### 8. Go deeper drawer
 
@@ -542,7 +542,7 @@ and the line references are main's.
 
 - `kit/quiz.ts`: Lesson 2's three changes, which this page's two quizzes need, and its slot for a
   question's own controls, which quiz questions 1 and 3 need (Lesson 2 WEB-SPEC, "What the kit and
-  the app still need", item 9; Toys 7), all on main (`kit/quiz.ts:40-55`, `:72-83`).
+  the app still need", item 9; Toys 7), all on main (`kit/quiz.ts:42-59`, `:73-86`).
 - `kit/explorer.ts`, shared with Lessons 3 and 4, needs nothing new: a lesson with a page and no
   film reads "Ready · read", its card offers "Start lesson" (`/learn/06`) without "Watch the
   episode" and shows its Length, "15 min"; the page passes `current: 6`, and other lessons' cards
@@ -550,7 +550,7 @@ and the line references are main's.
 - `kit/season.ts`, Lesson 6's entry (`:264-284`): `minutes: 15` (FACTS 3). The practice link
   stays Ear Lab's (`href` `/ear-lab?lesson=06`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
   Lab"), and its `note` stays "then tap Leap to name them", printed "Ear Lab, then tap Leap to name
-  them" by `practiseMarkup` (`kit/explorer.ts:98-103`): the `?lesson=` step-aside has shipped
+  them" by `practiseMarkup` (`kit/explorer.ts:174-179`): the `?lesson=` step-aside has shipped
   (FACTS 44a), so the note needs no first-visit form. Its `needs` stays until the slug ships. A
   second proposal only, for the director: link Interval Trainer instead, the Wrap's lead drill
   (`href` `/pitch-training?lesson=06`, `label` "Exercises", `note` "then tap Interval Trainer").
@@ -577,10 +577,10 @@ and the line references are main's.
   4's (`lesson-04/sing.ts`).
 - `vite.config.ts`: `/learn/06` served from `learn/06.html` in dev and preview, and `learn/06.html`
   as a build input. On main every `learn/NN.html` is both, with no entry of its own
-  (`vite.config.ts:77-87`, `:139-141`, `:473`).
+  (`vite.config.ts:77-86`, `:138-140`, `:474`).
 - `src/lib/sw-runtime.ts`: `/learn/06` and `/learn/06.html` in `STANDALONE_DOCUMENT_PATHS`, as
   `/learn/01` is (`sw-runtime.ts:131-135`).
-- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, `:66-81`): Lesson 6's entry.
+- `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list, `:66-77`): Lesson 6's entry.
 - `public/learn/lesson-06-og.jpg`: the share card, 1200 x 630, a still of the hero: the title over
   the tune line on C with its leap bracketed.
 - The page's head, as Lesson 1's (`learn/01.html:9-60`). Like the cold open, nothing in it answers

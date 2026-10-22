@@ -38,7 +38,7 @@ slide guide with Move do, and free play in the Wrap. It is published only after 
 `/learn/06`, is, because its recall check asks Lesson 6's questions and its prerequisite chip names
 Lesson 6 (FACTS 2, 7), and after the vocal coach has looked at its voice lines (LESSON.md, For the
 vocal coach). Until both are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`,
-`:29-36`). Every build carries `learn/10.html`, as it carries every lesson page
+`:30-38`). Every build carries `learn/10.html`, as it carries every lesson page
 (`tools/draft-lessons.ts:8-14`), and its line in `drafts.ts` holds it back on mercurypitch.com: the
 site worker answers `/learn/10` with the 404 page, and every page's explorer shows Lesson 10 with no
 link, as a lesson not written yet (`src/lesson-gate.ts:10-12`;
@@ -163,7 +163,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
     printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`, with "Drone Intonation
     and Stack are free." and no first-visit line (FACTS 45, 46, 47); Lesson 1's fonts line and
     "Every sound on this page is synthesised in your browser" (FACTS 6, Labels); the legal links, as
-    every lesson document closes (`src/tests/lesson-pages.test.ts:173-182`). With no film there are
+    every lesson document closes (`src/tests/lesson-pages.test.ts:198-209`). With no film there are
     no voices to credit.
 
 ## Length
@@ -386,18 +386,18 @@ taken further without forking it (`spiral.ts:22-26`):
 
 ### 3. Predict widgets
 
-- Both are the kit's predict (`src/features/lessons/kit/predict.ts:29-71`, `mountPredict` at `:72`):
+- Both are the kit's predict (`src/features/lessons/kit/predict.ts:29-71`, `mountPredict` at `:79`):
   the choice locks, the play buttons unlock, the reveal appears after the sound and never calls a
   choice wrong; two choices each, every button at least 44 px tall. The plays start disabled in the
   markup, all but a free one, and the choice enables them and moves the focus to the first that is
-  not free (`:97-115`).
+  not free (`:106-124`).
 - **Cold open.** The choices are [ Mi ] [ So ] (FACTS 41). Its three plays sit under the spiral on
   the hero's stage, outside the predict card, and are handed to the predict as its `plays`
   (`predict.ts:67-68`). "Play the chord" (`chord-c`) is a free play (`data-free`, `:14-15`): it sets
   up the question and answers nothing. "Move mi down" (`move-mi`) and "Move so down" (`move-so`)
   wait for the choice, and the reveal waits until both have been heard, since it compares them:
-  `revealOn: ['move-mi', 'move-so']` with `revealAfter: 'all'` (`:45-51`). The two must be passed
-  together: without `revealOn`, `'all'` waits on nothing (`:88-92`). Until a choice the lock hint,
+  `revealOn: ['move-mi', 'move-so']` with `revealAfter: 'all'` (`:52-58`). The two must be passed
+  together: without `revealOn`, `'all'` waits on nothing (`:97-101`). Until a choice the lock hint,
   in the markup, reads LESSON.md's "Choose an answer to unlock the two moves."; after one,
   `hints.chosen` reads "Locked in. Move mi down, then move so down, and listen to each chord.";
   after a heard play that does not reveal, `hints.next` reads "Now hear both moves, mi down and so
@@ -460,22 +460,22 @@ DECISIONS 82).
   gap: on thirds, "A major third: 4 semitones up." or "A minor third: 3 semitones up."; on chords,
   "Major: its third sat 4 semitones above the root, do-mi-so." or "Minor: its third sat 3 semitones
   above the root, do-me-so." The kit's game opens each line with "Yes." or, after a miss, "Here it
-  is again, slower." (`kit/ear-game.ts:195`). A miss lights the right answer, reads its line and
-  replays the round at 1.5 times its lengths, the kit game's `slower` (`kit/ear-game.ts:110-111`)
+  is again, slower." (`kit/ear-game.ts:234`). A miss lights the right answer, reads its line and
+  replays the round at 1.5 times its lengths, the kit game's `slower` (`kit/ear-game.ts:130-131`)
   set as Lesson 6's page sets it (`MISS_SLOWER`, `lesson-06/examples.ts:36`), where Lesson 2's own
   game replays at 1.6 (`lesson-02/ear-game.ts:29-30`); the round is not asked again, and Next moves
   on. After two misses in a row the playbook's line "If that felt tricky, good: that's learning."
   follows, once a game (rule 15; `lesson-02/ear-game-rounds.ts:29-30`). A polite live region reads
   each line.
 - **Rounds** are dealt by the page's own deal, which the kit's game takes as `deal(random)`
-  (`kit/ear-game.ts:106-107`), from the kit's default seed: a fresh one for each run, Play again
+  (`kit/ear-game.ts:121-122`), from the kit's default seed: a fresh one for each run, Play again
   included, from `Math.random()` and kept in memory only (`kit/ear-game.ts:8-10`; `freshSeed`,
-  `kit/ear-game.ts:87-88`), fed to the kit's `mulberry32` (`src/features/lessons/kit/dom.ts:57-66`).
+  `kit/ear-game.ts:95-96`), fed to the kit's `mulberry32` (`src/features/lessons/kit/dom.ts:57-66`).
   Lesson 2's game starts every visit on one fixed seed (`lesson-02/ear-game.ts:26-27`), so its first
   run can be learnt by heart; a fresh seed cannot be. The deal gives each answer half the rounds,
   shuffled, where Lesson 2 tosses a coin for each round (`lesson-02/ear-game-rounds.ts:36-44`), so a
   short run cannot lean to one answer. The unit tests pass a fixed seed (`seed`,
-  `kit/ear-game.ts:119-120`).
+  `kit/ear-game.ts:139-140`).
 - **The count** at the end, "7 of 10" (or "5 of 8"), counts the rounds answered right first time; no
   rating, no streak, nothing stored. Then Play again.
 - States: ready (a Play button); playing; answering; feedback shown; finished, with the count and
@@ -484,12 +484,12 @@ DECISIONS 82).
 ### 6. Sing it
 
 The guide is the kit's slide guide (`src/features/lessons/kit/slide-guide.ts`, `mountGuide` at
-`:325`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from do up to so: the four
+`:378`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from do up to so: the four
 the chords use named do, me, mi and so, and the other four faint (`GuideRow`,
 `slide-guide.ts:35-42`). The rows show syllables only, no letters, so no spelling can go wrong
 wherever Move do puts do; a readout names do in Lesson 4's names for the key, "do is E3", spoken "do
 is E 3" (FACTS 64). Merc's path is do-mi-so, 1.2 s a note and the top note 1.8 s, then do-me-so, the
-second phrase's first point marked `gap` (`:16-17`, `:44-45`), so nothing is drawn across the 1.6 s
+second phrase's first point marked `gap` (`:16-17`, `:48-49`), so nothing is drawn across the 1.6 s
 between them: 10.0 s in all (FACTS 65). The path carries the kit's breath mark, from Lesson 6's page
 (`breaths`, `slide-guide.ts` on `feat/lesson-06-page`), at the start of the gap, 4.2 s in: a small
 tick in the path's own colour with the word "breathe" (FACTS 66). Beside the guide, the kit's
@@ -762,8 +762,8 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    `tools/draft-lessons.ts:77-86`, `:109-117`). Still needed: `/learn/10` and `/learn/10.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
-   worker's 404 page, never the app shell (`:140-147`).
-2. `src/features/lessons/kit/drafts.ts:30-34`: Lesson 10's line, in the form of Lessons 3 and 5's:
+   worker's 404 page, never the app shell (`:140-156`).
+2. `src/features/lessons/kit/drafts.ts:30-38`: Lesson 10's line, in the form of Lessons 3 and 5's:
    `10: "Lesson 6's page at /learn/06, and the vocal coach's look at the sung checkpoint"`. While it
    stands, the page is held back on mercurypitch.com and served on the dev site and every PR
    preview, and the console can publish it there before both are done, with no release
@@ -831,7 +831,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     - canonical and `og:url` `https://mercurypitch.com/learn/10`;
     - robots `index, follow, max-image-preview:large` and `twitter:card` `summary_large_image`;
     - the Article block: `@id` `https://mercurypitch.com/learn/10#lesson`, `url` the canonical,
-      `image` the same URL as `og:image` (`lesson-pages.test.ts:116-117`, `:129`), headline "Major
+      `image` the same URL as `og:image` (`lesson-pages.test.ts:146-147`, `:159`), headline "Major
       and minor", `alternativeHeadline` the hook, the same description, `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT17M`,
       `teaches` ["Major and minor thirds", "Building major and minor triads", "Telling a major from
@@ -854,9 +854,9 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     draft's included (`scripts/assert-first-paint-budgets.mjs:103-105`); `build:e2e` runs the check
     (`package.json:20`), and a document it emits with no budget fails it (FACTS 83).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
-    `public/llms.txt` (its Lessons list, `:66-81`), one line each. Until then the draft's rules hold
+    `public/llms.txt` (its Lessons list, `:66-77`), one line each. Until then the draft's rules hold
     on the repository: in neither file, linked from no entry document, its service-worker rule kept
-    (`src/tests/lesson-pages.test.ts:185-221`). While the console has it published, the site worker
+    (`src/tests/lesson-pages.test.ts:242-279`). While the console has it published, the site worker
     adds it to the sitemap and llms.txt it serves, and takes it out again if it is held back
     (`src/lesson-gate.ts:22-24`; `src/features/lessons/kit/drafts.ts:18-21`). So indexing is
     requested when the console publishes the page, not at the release.
@@ -964,7 +964,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   so does Lesson 9's next-lesson card (`src/features/lessons/kit/next-card.ts:114-115`). So "bright"
   and "dark", mood labels, would stand on every surface the lesson's own rule covers, the rule it
   teaches (FACTS 1, 40). The description would run to 171 characters, over the 160 cap, which
-  `src/tests/lesson-pages.test.ts:103-106` checks only on the page as written. Neither hook names a
+  `src/tests/lesson-pages.test.ts:129-132` checks only on the page as written. Neither hook names a
   note, so the title never answers the predict (FACTS 1a). The package recommends leaving it
   unpicked (Decisions for the owner, item 1).
 

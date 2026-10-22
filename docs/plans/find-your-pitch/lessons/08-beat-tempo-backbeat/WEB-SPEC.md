@@ -198,7 +198,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     `mercurypitch.com/ear-lab`, with "Drum Night and Subdivide are free." and no first-visit line
     (FACTS 46, 47, 54, 57); Lesson 1's fonts line and "Every sound on this page is synthesised in
     your browser" (FACTS, Labels); no dateline; the legal links, as every lesson document closes
-    (`src/tests/lesson-pages.test.ts:173-182`). With no film there are no voices to credit.
+    (`src/tests/lesson-pages.test.ts:198-209`). With no film there are no voices to credit.
 
 ## Length
 
@@ -290,8 +290,8 @@ its patterns with it.
   here touches Step 2's Tempo. All four start `disabled` in the markup, so the stage cannot answer
   the predict before the viewer commits (Toys 2). Play, March and Rock are buttons, passed as the
   predict's `unlocks`, which sets `disabled = false` on each as the choice locks
-  (`kit/predict.ts:65-66`, `:115-117`). The Tempo slider is an `input`, which `unlocks` does not
-  take, so the predict's `onChoice` enables it (`:57`, called at `:113`). Lesson 2's stage does the
+  (`kit/predict.ts:65-66`, `:117-119`). The Tempo slider is an `input`, which `unlocks` does not
+  take, so the predict's `onChoice` enables it (`:64`, called at `:122`). Lesson 2's stage does the
   same with Sharp and Flat: `disabled` in its markup (`learn/02.html:904`, `:909`) and enabled from
   its predict's `onChoice` (`lesson-02/steps.ts:142`; `lesson-02/keys-toy.ts:337-340`). No
   `aria-disabled` is involved: a `disabled` control stays out of the tab order until the choice, and
@@ -391,11 +391,11 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
 
 ### 2. Predict widgets
 
-- Both are the kit's predict (`kit/predict.ts:29-71`, `mountPredict` at `:72`): the choice locks,
+- Both are the kit's predict (`kit/predict.ts:29-71`, `mountPredict` at `:79`): the choice locks,
   the play buttons unlock, the reveal appears after the sound and never calls a choice wrong; two
   choices each, every button at least 44 px tall.
 - **Heard means played to its end.** The kit counts a play as heard unless its promise resolves
-  `false` (`kit/predict.ts:31-40`, `:166-170`), so a play the page cuts short must say so. Here a
+  `false` (`kit/predict.ts:31-40`, `:170-174`), so a play the page cuts short must say so. Here a
   play is cut short by its own stop, by any other play on the page, which stops it (Audio), or, in
   Step 5, by leaving the step by any route (Toys 1, States), and none of these counts as heard: the
   page's `play` resolves `false` for "not heard", as #1149's fix pass lets the kit's `play` return,
@@ -941,14 +941,14 @@ was built on.
     rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
     - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:325-334`).
     - The document title, at most 60 characters, with "MercuryPitch" and the headline in it
-      (`lesson-pages.test.ts:101-102`, `:130`): SEARCH.md § 4's draft, "Beat, tempo and the
+      (`lesson-pages.test.ts:127-128`, `:160`): SEARCH.md § 4's draft, "Beat, tempo and the
       backbeat, explained | MercuryPitch" (54 characters), for the owner to decide.
-    - The description, 80 to 160 characters (`:104-106`): "Why does the same song feel different
+    - The description, 80 to 160 characters (`:129-132`): "Why does the same song feel different
       when you clap on 2 and 4? A fifteen-minute lesson on the beat, tempo, bars of 2, 3 and 4, and
       the backbeat." (145 characters). It shortens the hook, so it serves as `description` and as
-      the Article's description (`:128`) only, never as a copy of the hook.
+      the Article's description (`:158`) only, never as a copy of the hook.
     - Canonical and `og:url` `https://mercurypitch.com/learn/08`; robots
-      `index, follow, max-image-preview:large`; `twitter:card` `summary_large_image` (`:90-108`);
+      `index, follow, max-image-preview:large`; `twitter:card` `summary_large_image` (`:116-134`);
       `og:type` `article` and `og:site_name` "MercuryPitch" (`learn/02.html:23-24`).
     - `og:title` and `twitter:title`, "Beat, tempo and the backbeat: Find Your Pitch, Lesson 8", in
       the form of Lesson 2's (`learn/02.html:26-29`, `:45-48`).
@@ -964,12 +964,12 @@ was built on.
     - The Article block: `@id` `https://mercurypitch.com/learn/08#lesson`, headline "Beat, tempo and
       the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:358`), the same
       description as the meta, `url` and `mainEntityOfPage` the canonical address, `image` the
-      og:image (`lesson-pages.test.ts:116-117`, `:128-129`), `inLanguage` `en-GB`,
+      og:image (`lesson-pages.test.ts:146-147`, `:158-159`), `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT15M`,
       `teaches` ["The beat and the pulse", "Tempo in beats per minute", "Bars of 2, 3 and 4", "The
       backbeat"], `isAccessibleForFree`, `position` 8, `isPartOf` the series, and author and
-      publisher the organization (`:110-131`); and the BreadcrumbList ending on the headline
-      (`:133-145`).
+      publisher the organization (`:136-161`); and the BreadcrumbList ending on the headline
+      (`:163-175`).
     - No `datePublished` at first. The console publishes at run time and nothing writes the field
       then: the worker's rewrite puts the lesson state into the head and changes the hook's copies,
       the links and the `data-if-live` readings, and writes no date (`src/lesson-gate.ts:13-21`), so
@@ -988,9 +988,9 @@ was built on.
     in `sitemap.xml` and `llms.txt` as it serves them (`src/lesson-gate.ts:22-24`). While it is a
     draft, the static files keep it out: in neither `public/sitemap.xml` nor `public/llms.txt`,
     linked from no entry document, with its service-worker rule kept
-    (`src/tests/lesson-pages.test.ts:185-220`). When its line leaves `drafts.ts`, the release adds a
-    line to each static file (`public/llms.txt`'s Lessons list, `:66-81`), as `kit/drafts.ts:18-21`
-    asks and `lesson-pages.test.ts:149-155` checks. The first-paint budget comes with the page,
+    (`src/tests/lesson-pages.test.ts:242-279`). When its line leaves `drafts.ts`, the release adds a
+    line to each static file (`public/llms.txt`'s Lessons list, `:66-77`), as `kit/drafts.ts:18-21`
+    asks and `lesson-pages.test.ts:217-225` checks. The first-paint budget comes with the page,
     beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-130`, Lessons 3 and 5),
     at `:156-162`, and its CSS ceiling at `:240-243`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
