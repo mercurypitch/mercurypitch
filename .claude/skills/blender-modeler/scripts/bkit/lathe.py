@@ -24,6 +24,10 @@ def lathe(name, profile, segments=48, *, closed=False, modulate=None, uv=True, s
     modulate: optional f(theta, z, i) -> metres, pushed along each point's outward
         profile normal. Use it for lobes and flutes, and confine it to a height band
         inside f; a modulation that also moves the lip and foot is what made v1 wobble.
+        On a hollow shell walked up its outside and down its inside, outward points
+        away from the axis on both walls: one negative push moves both in together
+        and keeps the wall even (a crease), where pushing the inner wall the other
+        way drives it through the outer.
     sharp_degrees: mark edges sharper than this as sharp (Smooth by Angle semantics).
     material / span_materials: one material, or a list of slots with
         span_materials[i] naming the slot of the faces between profile points i and

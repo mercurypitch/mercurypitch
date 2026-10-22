@@ -3,6 +3,15 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **Bin hues the way the eye does, and measure in the game.** Round 3 put the
+  opal's mint at hue 113 because a coarse 90-170 "mint" bin said it matched the
+  concept. In the game 98% of the body read yellow-green (60-130) where the
+  concept is mint-cyan (130-200), milky and lavender. A milky cyan-white palette
+  with mint-cyan, aqua, lavender and warm glints measured 84% mint-cyan at
+  saturation 0.16 in the runtime proof, against the shipped file's 0.21.
+- **Rooms re-light themselves.** Galleries with a `reflectionProbe` swap the HDR
+  for a capture of the room, so the preview is a guide for colour and the
+  runtime proof is the measure; pale tints read 1.6 times as saturated there.
 - **The sheet's material panel lied about the opal.** Cycles under a Standard
   view transform and a strong studio key clipped the pale glass to white, and
   the round 2 critic read the opal as flat white while three.js drew pastel.
@@ -27,9 +36,8 @@ whenever a gate or a critic catches something a rule should have prevented.
   degrees of the concept.
 - **A soft blend of tints is one tint.** The first opal palette mixed five
   pastels with sinusoids; every corner averaged to the same pale blue and the
-  body rendered porcelain (saturation 0.056 where the concept has 0.121). A
-  soft-max over drifting fields keeps distinct patches. The museum's blue sky
-  also pulls every tint toward aqua, so the dominant mint sits at hue 115.
+  body rendered porcelain. A soft-max over drifting fields keeps distinct
+  patches.
 - **Test the cause before writing it down.** The copper line was first blamed on
   iridescence and the film was removed; a render with the film back changed the
   line's hue by one degree. Change one thing per render and measure it.

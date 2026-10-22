@@ -12,6 +12,7 @@ the pattern stretches with each part's own UV scale.
 """
 
 import colorsys
+import math
 import random
 
 import bpy
@@ -80,6 +81,20 @@ def _scaled(nt, tex, scale):
     nt.links.new(mapping.outputs['Vector'], tex.inputs['Vector'])
 
 
+def _normals(h, ds, dz, wrap_s=True, wrap_z=False):
+    """Unit tangent-space normals of a height field (rows, cols) in metres.
+
+    Central differences that wrap along a tiled axis: np.gradient's one-sided
+    differences at the array's edge put a hairline seam wherever the tile repeats."""
+    def slope(axis, step, wrap):
+        if wrap:
+            return (np.roll(h, -1, axis=axis) - np.roll(h, 1, axis=axis)) / (2 * step)
+        return np.gradient(h, step, axis=axis)
+
+    normal = np.dstack((-slope(1, ds, wrap_s), -slope(0, dz, wrap_z), np.ones_like(h)))
+    return normal / np.linalg.norm(normal, axis=2, keepdims=True)
+
+
 def _tileable_noise(size, cells, rng):
     """Smooth value noise that wraps at the tile edges, 0..1."""
     grid = np.array([[rng.random() for _ in range(cells)] for _ in range(cells)])
@@ -93,12 +108,15 @@ def _tileable_noise(size, cells, rng):
     return rows * (1 - f)[:, None] + rows2 * f[:, None]
 
 
-def marbled(name, ground, vein, *, dark=None, size=256, veins=3, turbulence=2.2, softness=0.35, seed=5):
+def marbled(name, ground, vein, *, dark=None, light=None, light_share=0.2, size=256, veins=3, turbulence=2.2,
+            softness=0.35, seed=5):
     """Tileable marbled colour map: `ground` mottled toward `dark`, crossed by soft `vein` lines.
 
     Colours are sRGB hex like the materials. veins: vein bands across the tile.
     turbulence: how far fractal noise pushes the veins off straight. softness:
-    vein width (0..1). Built so the tile repeats seamlessly in both directions.
+    vein width (0..1). light: broad pale clouds over about `light_share` of the
+    tile, the translucent patches of jade (not lines). Built so the tile repeats
+    seamlessly in both directions.
     """
     rng = random.Random(seed)
     fractal = sum(_tileable_noise(size, 4 * 2 ** o, rng) / 2 ** o for o in range(4)) / 1.875
@@ -111,6 +129,10 @@ def marbled(name, ground, vein, *, dark=None, size=256, veins=3, turbulence=2.2,
     g, w = np.array(srgb(ground)), np.array(srgb(vein))
     d = np.array(srgb(dark)) if dark else g * 0.55
     base = g[None, None, :] * (1 - mottle[..., None] * 0.7) + d[None, None, :] * (mottle[..., None] * 0.7)
+    if light:
+        cut = np.quantile(mottle, light_share)  # the palest share of the mottle
+        cloud = np.clip((cut - mottle) / max(cut * 0.6, 1e-6) + 0.5, 0, 1) ** 1.5
+        base = base * (1 - cloud[..., None] * 0.85) + np.array(srgb(light))[None, None, :] * (cloud[..., None] * 0.85)
     rgb = base * (1 - lines[..., None]) + w[None, None, :] * lines[..., None]
     image = bpy.data.images.new(name, size, size, alpha=False)
     image.colorspace_settings.name = 'sRGB'
@@ -172,8 +194,7 @@ def crackle(name, size=512, cells=5, tile=0.30, depth=0.0004, **fields):
     colour, across = _crackle_fields(size, size, tile, tile, cell=tile / cells, **fields)
     h = -depth * across ** 1.5
     step = tile / size
-    normal = np.dstack((-np.gradient(h, step, axis=1), -np.gradient(h, step, axis=0), np.ones_like(h)))
-    normal /= np.linalg.norm(normal, axis=2, keepdims=True)
+    normal = _normals(h, step, step, wrap_s=True, wrap_z=True)
     return {'color': _image(f'{name}_color', np.clip(colour, 0, 1) ** 2.2, True),  # _image takes linear
             'normal': _image(f'{name}_normal', normal * 0.5 + 0.5, False)}
 
@@ -245,7 +266,7 @@ def _nearest(p, segs):
 def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4', line='#e0b65e',
           ground_trm=(0.35, 0.20, 0.0), line_trm=(0.0, 0.30, 1.0), ridge=0.0008, relief=0.0,
           reach=0.022, side=-1, period_shifts=(-1, 0, 1, 2), ridges=(), ground_low=None, light=0.0,
-          crackle=None):
+          crackle=None, body_colour=None):
     """Inlaid metal lines and the relief they ride on, as three tileable images for one material.
 
     strokes: [(points, half_widths)], points (s, z) in metres inside a tile `width`
@@ -264,6 +285,9 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
     up it brightens by up to `light`. The metal line is not shaded.
     crackle: None, or `_crackle_fields` arguments plus `depth` (metres): the same
     glass crackle as `crackle`, in this tile's metres, cut into the ground only.
+    body_colour: the body of each wave, painted under its stroke on `side`: the
+    ground near the line (a milky crest), deepening to this colour about 0.7
+    `reach` in, and back to the ground past the reach.
     Map it with UVs s / width across and z / height up; the tangent frame must
     come from those same UVs.
     """
@@ -273,6 +297,7 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
     z_axis = (np.arange(rows) + 0.5) / rows * height
     coverage = np.zeros((rows, cols))
     h = np.zeros((rows, cols))
+    body = np.zeros((rows, cols))
     texel = min(width / cols, height / rows)
     idx = np.arange(cols)
     for r in range(rows):  # one row at a time keeps memory flat
@@ -292,9 +317,11 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
             past_end = np.maximum(np.maximum(-along, along - length), 0)
             across = side * (ab[None, :, 0] * ap[..., 1] - ab[None, :, 1] * ap[..., 0]) / length
             on_side = np.clip(across / 0.0015, 0, 1)
-            roll = (relief * (1 - np.exp(-d / 0.004)) * np.exp(-(d / reach) ** 2)
-                    * on_side * on_side * (3 - 2 * on_side) * np.exp(-(past_end / (0.5 * reach)) ** 2))
+            side_w = on_side * on_side * (3 - 2 * on_side) * np.exp(-(past_end / (0.5 * reach)) ** 2)
+            roll = relief * (1 - np.exp(-d / 0.004)) * np.exp(-(d / reach) ** 2) * side_w
             h[r] += roll.max(axis=1)
+            if body_colour is not None:
+                body[r] = (np.sin(np.pi * np.clip(d / (1.4 * reach), 0, 1)) ** 1.2 * side_w).max(axis=1)
         if ridge_segs is not None:
             d, _, w, _, _, hh = _nearest(p, ridge_segs)
             bump = hh * np.cos(np.pi / 2 * np.clip(d / np.maximum(w, 1e-6), 0, 1)) ** 2
@@ -305,12 +332,12 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
         depth = options.pop('depth', 0.0004)
         cracks, across = _crackle_fields(cols, rows, width, height, **options)
         h -= depth * across ** 1.5 * (1 - coverage)
-    dh_ds = np.gradient(h, width / cols, axis=1)
-    dh_dz = np.gradient(h, height / rows, axis=0)
-    normal = np.dstack((-dh_ds, -dh_dz, np.ones_like(h)))
-    normal /= np.linalg.norm(normal, axis=2, keepdims=True)
+    normal = _normals(h, width / cols, height / rows)
     g, l = np.array(srgb(ground)), np.array(srgb(line))
     ground_map = np.broadcast_to(g, (rows, cols, 3)).copy()
+    if body_colour is not None:
+        tint = np.array(srgb(body_colour))
+        ground_map = ground_map * (1 - body[..., None]) + tint[None, None] * body[..., None]
     if ground_low is not None or light:
         key = np.array([0.0, 0.5, 0.866])  # a light above, 30 degrees off the surface normal
         lit = normal @ key - key[2]  # 0 on flat ground, below 0 where the relief turns down
@@ -324,6 +351,60 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
     colour = ground_map * (1 - coverage[..., None]) + l[None, None] * coverage[..., None]
     gt, lt = np.array(ground_trm), np.array(line_trm)
     trm = gt[None, None] * (1 - coverage[..., None]) + lt[None, None] * coverage[..., None]
+    return {'color': _image(f'{name}_color', colour, True), 'trm': _image(f'{name}_trm', trm, False),
+            'normal': _image(f'{name}_normal', normal * 0.5 + 0.5, False)}
+
+
+def laurel(name, tile, height, *, pairs=2, leaf=(0.030, 0.011), angle=34.0, relief=0.0016, stem=0.0012,
+           cols=256, rows=64, ground='#3a2a18', leaf_colour='#e2bd6c', ground_trm=(0.0, 0.55, 0.35),
+           leaf_trm=(0.0, 0.25, 0.75)):
+    """A laurel frieze as tileable maps: pairs of gold leaves along a stem, pointing toward +u.
+
+    tile: metres along the band for one repeat, holding `pairs` leaf pairs.
+    height: the frieze's height in metres (the tile does not repeat up v).
+    leaf: (length, width) in metres; angle: degrees off the stem. Leaves are
+    pointed lenses domed `relief` high with a midrib, the stem a rounded rod.
+    Returns {'color', 'trm', 'normal'} as `inlay` does (transmission, roughness
+    and metallic packed in R, G and B); `attach_inlay` wires them. Mirror the
+    UVs about the front (u = |arc from the front| / tile) so the leaves run out
+    both ways from a bead or stone there.
+    """
+    s_axis = (np.arange(cols) + 0.5) / cols * tile
+    z_axis = (np.arange(rows) + 0.5) / rows * height
+    s, z = np.meshgrid(s_axis, z_axis)
+    mid = height / 2
+    length, width = leaf
+    h = np.zeros_like(s)
+    cover = np.zeros_like(s)
+    texel = min(tile / cols, height / rows)
+    step = tile / pairs
+    for k in range(-1, pairs + 1):  # one pair either side too, so leaves wrap across the tile edge
+        for side in (1, -1):
+            base_s = k * step + (0.25 if side > 0 else 0.75) * step  # alternate along the stem
+            a = math.radians(angle) * side
+            cs, sn = math.cos(a), math.sin(a)
+            centre = (base_s + cs * length / 2, mid + sn * length / 2)
+            ls = (s - centre[0]) * cs + (z - centre[1]) * sn  # along the leaf, from its middle
+            lw = -(s - centre[0]) * sn + (z - centre[1]) * cs  # across it
+            t = np.clip(1 - (2 * ls / length) ** 2, 0, None)  # 1 at the middle, 0 at base and tip
+            half = width / 2 * t
+            inside = np.clip(1 - (np.abs(lw) / np.maximum(half, 1e-6)) ** 2, 0, None)
+            dome = relief * np.sqrt(inside * t)
+            dome -= relief * 0.25 * np.exp(-(lw / (0.12 * width)) ** 2) * (inside > 0)  # the midrib
+            h = np.maximum(h, dome)
+            edge = np.abs(lw) - half
+            cover = np.maximum(cover, np.clip(0.5 - edge / texel, 0, 1) * (t > 0))
+    rod = np.clip(1 - ((z - mid) / stem) ** 2, 0, None)
+    h = np.maximum(h, relief * 0.6 * np.sqrt(rod))
+    cover = np.maximum(cover, np.clip(0.5 - (np.abs(z - mid) - stem) / texel, 0, 1))
+    normal = _normals(h, tile / cols, height / rows)
+    g, l = np.array(srgb(ground)), np.array(srgb(leaf_colour))
+    # A cavity term, not a light: a leaf darkens toward its edges, so the relief still reads at
+    # gameplay size where the normal map is a pixel wide.
+    cavity = (0.72 + 0.28 * np.clip(h / max(relief, 1e-9), 0, 1))[..., None]
+    colour = g[None, None] * (1 - cover[..., None]) + l[None, None] * cover[..., None] * cavity
+    gt, lt = np.array(ground_trm), np.array(leaf_trm)
+    trm = gt[None, None] * (1 - cover[..., None]) + lt[None, None] * cover[..., None]
     return {'color': _image(f'{name}_color', colour, True), 'trm': _image(f'{name}_trm', trm, False),
             'normal': _image(f'{name}_normal', normal * 0.5 + 0.5, False)}
 

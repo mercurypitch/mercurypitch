@@ -126,6 +126,9 @@ def clean(obj, dist=1e-5, triangulate=False):
 
 
 def apply_transform(obj):
+    """Bake location, rotation and scale into the mesh. matrix_world is stale until the
+    depsgraph updates, so a transform set just before would otherwise be lost."""
+    bpy.context.view_layer.update()
     obj.data.transform(obj.matrix_world)
     obj.matrix_world = Matrix.Identity(4)
     return obj

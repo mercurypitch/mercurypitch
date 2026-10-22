@@ -239,6 +239,14 @@ def fracture(parts, count, *, cut_materials, seed=1, attempts=24, seed_on=None, 
             scene.clean(shard, triangulate=True)
             scene.set_origin(shard, scene.centroid(shard))
             result.append(shard)
+        # The exact solver can still leave a non-manifold edge where a cell face runs through a
+        # seam between touching parts; a different seed set moves every cell, so reseed.
+        open_shards = [s.name for s in result if not validate.report(s, intersections=False, weld=1e-6)['closed']]
+        if open_shards:
+            log(f'attempt {attempt}: {open_shards} not closed after cutting, reseeding')
+            for obj in result:
+                bpy.data.objects.remove(obj)
+            continue
         recovered = sum(validate.report(s, intersections=False)['volume_m3'] or 0.0 for s in result)
         log(f'fracture: attempt {attempt}, {len(result)} shards, volume {recovered / total_volume:.4f} of intact')
         return result

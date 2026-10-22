@@ -136,7 +136,7 @@ gltf.scene.traverse((o) => {
 })
 const box = new THREE.Box3().setFromObject(intact ?? gltf.scene)
 const centre = box.getCenter(new THREE.Vector3())
-const height = box.max.y - box.min.y
+const height = Math.max(box.max.y - box.min.y, (box.max.x - box.min.x) * 0.9, (box.max.z - box.min.z) * 0.9)
 const camera = new THREE.PerspectiveCamera(26, 1, 0.01, 50)
 // azimuth from the front toward +x (the right handle), and elevation in degrees (null: --elevation)
 const presets = { front: [0, null], three_quarter: [Math.PI / 5, null], side: [Math.PI / 2, null],

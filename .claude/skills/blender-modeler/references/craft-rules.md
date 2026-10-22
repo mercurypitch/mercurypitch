@@ -106,7 +106,10 @@ The curls stay smooth at any distance and cost no triangles.
 ## 11. No lighting in albedo
 
 Physically plausible IOR, metalness and roughness from `bkit.materials`. Colour
-comes from the concept's lit midtones, not its highlights or shadows.
+comes from the concept's lit midtones, not its highlights or shadows. One
+allowance: a relief too shallow to shade at gameplay size may darken its own
+cavities in the colour map (`textures.laurel`, `textures.inlay` `ground_low`),
+so the motif still reads where its normal map is a pixel wide.
 
 ## 12. Every build is a script
 

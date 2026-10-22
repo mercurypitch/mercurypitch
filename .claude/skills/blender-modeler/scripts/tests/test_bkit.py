@@ -201,6 +201,23 @@ def test_crackle_tiles_and_keeps_cells_pale_with_white_cracks():
     assert mix.inputs[6].links and mix.inputs[6].links[0].from_node.type == 'TEX_IMAGE', 'the tint keeps the texture'
 
 
+def test_laurel_has_gold_leaves_on_a_dark_ground_and_tiles():
+    scene.reset()
+    tile, height, cols, rows = 0.06, 0.03, 120, 60
+    maps = textures.laurel('laurel_test', tile, height, pairs=2, cols=cols, rows=rows)
+    px, trm = maps['color'].pixels, maps['trm'].pixels
+    corner = px[0:3]  # bottom-left texel: ground
+    assert max(corner) < 0.5, ('the ground is dark', corner)
+    metals = [trm[i + 2] for i in range(0, len(trm), 4)]
+    assert max(metals) > 0.7 and min(metals) < 0.4, 'leaves are gold, the ground is not'
+    stem = [px[((rows // 2) * cols + c) * 4] for c in range(cols)]
+    assert min(stem) > 0.5, 'the stem runs the whole tile'
+    normal = maps['normal'].pixels
+    left = [normal[(r * cols) * 4 + c] for r in range(rows) for c in range(3)]
+    right = [normal[(r * cols + cols - 1) * 4 + c] for r in range(rows) for c in range(3)]
+    assert max(abs(a - b) for a, b in zip(left, right)) < 0.25, 'the tile wraps'
+
+
 def test_inlay_relief_has_no_cliffs_between_turns_or_past_an_end():
     scene.reset()
     width, height, n = 0.10, 0.06, 100  # 1 mm texels
@@ -258,6 +275,32 @@ def test_validate_catches_self_intersection():
     b.location.x = 0.05
     merged = scene.join([a, b], 'merged')
     assert validate.report(merged)['self_intersections'] > 0
+
+
+def test_apply_transform_bakes_a_transform_set_just_before():
+    scene.reset()
+    obj = lathe.lathe('moved', [V(0, 0), V(0.1, 0), V(0.1, 0.1), V(0, 0.1)], 8)
+    obj.location = (1.0, 2.0, 3.0)
+    obj.rotation_euler = (math.pi / 2, 0.0, 0.0)
+    scene.apply_transform(obj)
+    zs = [v.co.z for v in obj.data.vertices]
+    ys = [v.co.y for v in obj.data.vertices]
+    assert abs(min(zs) - 2.9) < 1e-5 and abs(max(zs) - 3.1) < 1e-5, (min(zs), max(zs))
+    assert abs(min(ys) - 1.9) < 1e-5 and abs(max(ys) - 2.0) < 1e-5, (min(ys), max(ys))
+
+
+def test_push_chroma_spreads_colour_and_keeps_lightness():
+    about = (0.85, 0.90, 0.92)
+    mint = (0.78, 0.90, 0.86)
+    pushed = materials.push_chroma(mint, about, 2.0)  # inside the gamut: exactly twice as far
+    L0, a0, b0 = materials._lab(mint)
+    L1, a1, b1 = materials._lab(pushed)
+    _, ac, bc = materials._lab(about)
+    assert abs(L1 - L0) < 0.3, ('lightness kept', L0, L1)
+    assert abs((a1 - ac) - 2 * (a0 - ac)) < 0.3 and abs((b1 - bc) - 2 * (b0 - bc)) < 0.3, (a0, a1, b0, b1)
+    far = materials.push_chroma((0.84, 0.77, 0.95), about, 6.0)  # outside: as far as sRGB holds, same L
+    assert abs(materials._lab(far)[0] - materials._lab((0.84, 0.77, 0.95))[0]) < 0.3, 'clipped by chroma, not L'
+    assert max(abs(x - y) for x, y in zip(materials.push_chroma(about, about, 3.0), about)) < 1e-3, 'the centre stays'
 
 
 def test_validate_counts_pieces_that_float_free():
