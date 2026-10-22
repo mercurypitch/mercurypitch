@@ -105,8 +105,27 @@ export function currentLatencyRoute(): LatencyRoute | null {
   return OWN_DELAY.find((route) => route === now) ?? null
 }
 
+/** Each route's name, as the latency screens say it. */
+export const LATENCY_ROUTE_NAMES: Readonly<Record<LatencyRoute, string>> = {
+  bluetooth: 'Bluetooth',
+  airplay: 'AirPlay',
+  hdmi: 'HDMI',
+}
+
 const routeKey = (route: LatencyRoute, deviceKey: string): string =>
   `${route}:${deviceKey}`
+
+/**
+ * The key the current input's measurement is kept under on the route the
+ * sound takes now: the input's own on the phone's outputs and the web,
+ * `route:input` on a route with a delay of its own. For what keeps a fact
+ * beside each measurement (the phone's day of it, latency-measured.ts).
+ */
+export function currentLatencyKey(): string {
+  const route = currentLatencyRoute()
+  const deviceKey = currentMicDeviceKey()
+  return route === null ? deviceKey : routeKey(route, deviceKey)
+}
 
 /**
  * The keys a device's values may be under: its own, then, for a resolved
