@@ -444,6 +444,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** do not take a pushed reading as the last word on the volume. While a wrong reading would mislead, read again on a timer and when the app comes back, and drop an answer asked before a newer change. On iOS read the system volume as well, off a hidden `MPVolumeView`'s slider counted once it has moved, and never by changing a session. Say a number ("zero") only from a reading that follows the keys, or from the session and a volume view settled in its window agreeing; from the session alone, ask for the volume to go up and claim no number. Read again as the room opens and as the mic opens and closes, since WebKit moves its session then.
 **See:** `apps/mercurypitch/src/shell/RoomVolumeHint.tsx`, `apps/mercurypitch/ios/App/App/AudioOutputPlugin.swift`, `packages/mobile-runtime/src/audio-output.ts`, `apps/mercurypitch/src/shell/audio-census.ts`.
 
+### Isolate model setup when a browser test targets decode failure
+
+**Symptom:** Guitar Night's stopped-preparation regression stayed at “Preparing on this device” instead of reporting invalid audio within 15 seconds.
+**Cause:** local separation initializes the remote ONNX model before native audio decoding; the test accidentally depended on model download and GPU/WASM setup.
+**Rule:** for decode-recovery tests, fixture only the separator worker's initialization handshake, retain the real invalid-audio decoder and recovery assertions, assert interception, and reject unexpected inference. Test model readiness separately.
+**See:** `src/e2e/guitar-night-stopped-preparation.spec.ts` and `src/lib/uvr-processing-pipeline.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
