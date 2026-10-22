@@ -35,6 +35,14 @@ test('runner Settings cog stays centered in both themes and compact hosts @smoke
       { width: 1440, height: 900 },
     ]) {
       await page.setViewportSize(viewport)
+      // ResizeObserver updates the frame and renders the resized scene after
+      // animation callbacks. Cross that resize pass before the geometry poll.
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          }),
+      )
       await expectGameMaterialFramesFit(trigger)
       await page.screenshot({
         path: testInfo.outputPath(`runner-cog-${theme}-${viewport.width}.png`),

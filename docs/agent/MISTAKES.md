@@ -1923,6 +1923,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** filter only the failing route from a temporary, sandbox-readable mirror list, retain the official HTTPS fallbacks and package authentication, and bound the root dependency process group. A partial index update must fail; do not enlarge test budgets or retry the whole installer. Keep sandbox-read mirror files under the system `/tmp`, not a private `RUNNER_TEMP` or `TMPDIR`; child permissions alone cannot grant access through a private ancestor. Verify reads as `_apt`, without changing ancestor permissions or disabling the sandbox.
 **See:** `scripts/install-ci-browser.mjs` and `scripts/install-ci-browser.test.mjs`.
 
+### Cross resize rendering before polling painted frame geometry
+
+**Symptom:** the icon-alignment geometry poll expired while its browser evaluation was still pending; the late result contained no geometry problems.
+**Cause:** `setViewportSize` can return before ResizeObserver delivery. A focused browser probe measured before resize work began; the runner also renders synchronously inside its resize observer.
+**Rule:** cross the observer/render lifecycle with two animation frames before starting the geometry poll. Preserve its assertions and deadlines; this synchronization does not diagnose or benchmark the underlying rendering cost.
+**See:** `apps/beside-cue/e2e/glass-adventure-icon-alignment.e2e.ts`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
