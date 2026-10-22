@@ -9,6 +9,7 @@ import { createCloudwayCrackleAdapter } from './cloudway-crackle-adapter'
 import { validateCloudwayCrackleDonor } from './cloudway-crackle-contract'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS, CLOUDWAY_LAB_PEARL_PRESENTATION_FIT, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_RIGID_MATERIAL_ROLES, CLOUDWAY_LAB_ROOT_NAMES, CLOUDWAY_LAB_SCROLL_MATERIAL_BINDINGS, } from './cloudway-laboratory-catalog'
 import { validateCloudwayLaboratoryStaticDonor } from './cloudway-laboratory-static-contract'
+import { createPearlCourtBatches } from './cloudway-pearl-court'
 import { CLOUDWAY_PLATFORM_FOG_CULL_MARGIN, createCloudwayPlatformViewSelector, } from './cloudway-platform-culling'
 import { resolveCloudwayFog } from './cloudway-scene'
 import type { CloudwayScrollAdapter } from './cloudway-scroll-adapter'
@@ -345,11 +346,27 @@ export function createCloudwayLaboratoryPlatformRenderer(
       template.traverse((object) => {
         const sourceMesh = object as Mesh
         if (!sourceMesh.isMesh) return
-        staged.push(createRigidPlatformBatch(sourceMesh, placements))
+        staged.push(
+          ...(key === 'pearlRest'
+            ? createPearlCourtBatches(
+                sourceMesh,
+                placements,
+                validated.collider,
+              )
+            : [createRigidPlatformBatch(sourceMesh, placements)]),
+        )
       })
       if (staged.length === 0) fail(`${key} has no static Mesh geometry.`)
     } catch (error) {
       staged.forEach((item) => item.mesh.dispose())
+      const templateGeometries = new Set<Mesh['geometry']>()
+      template.traverse((object) => {
+        if ((object as Mesh).isMesh)
+          templateGeometries.add((object as Mesh).geometry)
+      })
+      new Set(staged.map((item) => item.mesh.geometry)).forEach((geometry) => {
+        if (!templateGeometries.has(geometry)) geometry.dispose()
+      })
       disposeObject(template, materialLibrary.materials)
       throw error
     }
@@ -562,6 +579,7 @@ export function createCloudwayLaboratoryPlatformRenderer(
       installedCrackle.forEach((item) => item.adapter.dispose())
       installedStatic.forEach((item) => item.mesh.dispose())
       disposeObject(root, materialLibrary.materials)
+      root.clear()
       installedScroll.length = 0
       installedCrackle.length = 0
       installedStatic.length = 0

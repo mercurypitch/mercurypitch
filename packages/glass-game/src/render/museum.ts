@@ -20,6 +20,7 @@ import { createMelodyStationMarkers } from './melody-station-markers'
 import { createPlanarReflectionController } from './planar-reflections'
 import { createPlatformPlanters } from './platform-details'
 import { createPlatformDressing } from './platform-dressing'
+import { createProceduralCourtWingGeometry } from './procedural-court-wings'
 import { createPearlQuarterTurnPlatformRenderer } from './quarter-turn-platform'
 import { createRoomDecorations } from './room-decorations'
 import { createRoomVisibilityController } from './room-visibility'
@@ -266,6 +267,13 @@ export function createMuseum(
             material,
           )
     mesh.name = `solid-${solid.id}`
+    if (solid.shape === 'box') {
+      const geometry = createProceduralCourtWingGeometry(solid, level.platforms)
+      if (geometry !== undefined) {
+        mesh.geometry.dispose()
+        mesh.geometry = geometry
+      }
+    }
     if (solid.shape === 'cylinder') {
       mesh.position.set(solid.x, solid.top - solid.thickness / 2, solid.z)
       mesh.castShadow = mesh.receiveShadow = true
