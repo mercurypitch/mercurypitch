@@ -1,0 +1,8 @@
+{
+  "name": "amber-cadence-urn",
+  "contract": "contract.json",
+  "optics": "optics.json",
+  "concept": "../../v6-level2/concepts/amber-cadence-urn.png",
+  "reference_mask": "reference/concept-mask.png",
+  "elevation_deg": 4
+}
