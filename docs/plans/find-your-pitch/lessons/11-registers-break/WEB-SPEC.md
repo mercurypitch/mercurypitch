@@ -35,7 +35,7 @@ hard gate, because it is a voice lesson (MASTER-PLAN § 7, days 1 and 6; § 12 i
 before it publishes a draft that waits on a sign-off, then publishes it if told to, and nothing
 checks the lessons a page links. A page published early still works, with a plain chip and unlinked
 step links where its links to Lesson 7 would be (Edge cases). It is built after Lesson 7's page,
-whose range chart, siren take and quiz questions it reuses, and with the hook this PR gives it,
+whose range chart, siren take and quiz questions it reuses, and with the hook this package gives it,
 since its title must be the season's (FACTS 1). It opens in Lesson 2's order, the cold open straight
 under the title and the recall after it, as MASTER-PLAN § 4.2 now has every page open (§ 12 item
 13; FACTS 3), and its copy follows the plain-language review's patterns. "What the kit and the app
@@ -708,7 +708,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   "siren and slide drills" for the team, and no card draws it. The link lands with the page, not
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
-  (`season.ts:357`), which this PR changed, and its tease and the alternative `same-note` are
+  (`season.ts:357`), which this package changed, and its tease and the alternative `same-note` are
   `kit/lesson-copy.ts`'s (`:124-132`), as FACTS 1 records: this spec proposes no other change to a
   hook or a tease. `EDGES` already holds [7, 11] (`season.ts:419`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
@@ -719,10 +719,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 ## What the kit and the app still need
 
 Found in the kit and the app as they stand on main (21 October 2026, `62c99c150`), Lesson 6's page
-(#1149) and the kit's predict fix (#1160) included, with this PR's hook and its alternative, beyond
-the parts Lessons 2 to 10 promote into the kit (Toys table). Lessons 7 and 9's pages are not built
-yet, and several items below are theirs too: whichever page is built first lands the part, and the
-others take it.
+(#1149) and the kit's predict fix (#1160) included, with this package's hook and its alternative,
+beyond the parts Lessons 2 to 10 promote into the kit (Toys table). Lessons 7 and 9's pages are not
+built yet, and several items below are theirs too: whichever page is built first lands the part, and
+the others take it.
 
 1. The lesson host: `learn/11.html` at `/learn/11`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
@@ -898,9 +898,9 @@ draws the season as its state shows it (`kit/page-state.ts:54-57`): Lesson 10's 
 
 With the recommendation first:
 
-1. **The hook** (FACTS 1): since this PR the new wording, "Why does your voice sometimes flip as you
-   slide up?", is the default, with the old kept as the alternative `same-note`, whose note says it
-   needs a source.
+1. **The hook** (FACTS 1): since this package the new wording, "Why does your voice sometimes flip
+   as you slide up?", is the default, with the old kept as the alternative `same-note`, whose note
+   says it needs a source.
    Recommended: never pick `same-note` until FACTS.md has one, since the console would write its
    claim into the title, the head, every explorer card and Lesson 10's next card. The source to
    look for is a singer's flip followed over repeated slides; Roubeau, Henrich and Castellengo 2009,
@@ -932,8 +932,8 @@ With the recommendation first:
    The Siren's slide part, which scores jumps rather than the glide (FACTS 41; App content), is a
    known app bug, filed by the lead with the task #38 follow-ups; until it is fixed, the card and
    the help name only the part of the score that measures how close you come to the second note.
-8. **The CURRICULUM card** (FACTS 6): done in this PR. Its checkpoint and its Practise line match
-   the page: "one slow, quiet siren on "ng", up only as far as is easy" and the Siren exercise
+8. **The CURRICULUM card** (FACTS 6): done in this package. Its checkpoint and its Practise line
+   match the page: "one slow, quiet siren on "ng", up only as far as is easy" and the Siren exercise
    alone.
 
 ## Edge cases

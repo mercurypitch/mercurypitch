@@ -890,7 +890,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     `kit/words-strip.ts` with Lesson 7's page. Still needed, `recallStepHref`, which Lessons 9 and
     14 both borrow from Lesson 5's module (`lesson-05/quiz-questions.ts:19-20`), moved into the
     kit's quiz beside `away`.
-15. The hook and the tease: done in this PR (1, 2).
+15. The hook and the tease: done in this package (1, 2).
 16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's proposed `writeStepsWav(steps, leadSilence)`, steady
     tones in sequence after a stretch of silence, beside `writeToneWav` (`:76`), here for the phrase
     with take 2's breath, D3 D3 A3 A3 B3 B3 at 0.75 s, A3 for 1.2 s and 0.3 s of silence (Tests, end

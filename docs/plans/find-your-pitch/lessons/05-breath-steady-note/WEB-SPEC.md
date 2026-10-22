@@ -461,7 +461,8 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
      (REQ-GVC-070, REQ-GVC-071). Proposed: "Hold one comfortable note, steady, for a length you
      choose.", tags "Stability" and "Steady note", and a help line naming what is scored:
      steadiness, drift and time in the zone over the chosen length. A slug opens past the card, but
-     the library still shows it.
+     the library still shows it. The card's part shipped at `80df49e62` (FACTS 62); the help and the
+     setup screen still read as quoted.
   5. The octave: Long Note scores its drift and steady zone in raw cents against the written target
      (an octave away is 1,200 cents) and takes its targets from the saved voice preset (tenor by
      default). Until the octave-folded option ships (§ 4 item 7), LESSON.md's editorial copy sends
