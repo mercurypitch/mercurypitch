@@ -141,6 +141,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // alone weighs it about 8 lighter, so weigh a new page in build:e2e,
   // where this check runs.
   'learn/06.html': 156,
+  // Lesson 7, "Slides, sirens and your range", a draft too, built in every
+  // mode as Lesson 3 is: its own module on the kit, with the range chart it
+  // brings. Measured 129 in build:e2e, with the page state; the budget is a
+  // quarter over. The listener, the pitch detector and the siren's reader
+  // arrive through a dynamic import when Sing it's Start is pressed, as on
+  // Lesson 3, so the page stays this light only while that boundary holds.
+  'learn/07.html': 161,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -214,6 +221,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // and the ear game's), its own, and the shared Inter and Outfit
   // @font-face rules. A build of this page alone weighs it at 80.
   'learn/06.html': 109,
+  // Lesson 7 (a draft, as above). Measured 85 in build:e2e: the kit's sheets
+  // (with the voice lessons', the shared parts and the range chart's), its
+  // own, and the shared Inter and Outfit @font-face rules; a quarter over.
+  'learn/07.html': 106,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

@@ -1,0 +1,365 @@
+/* ============================================================
+   Lesson 7 — Slides, sirens and your range: the page's own figures
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-parts and lesson-voice). Here: the compact range chart between the
+   Mercs, the range chart's heights for the stage budget, its rows of
+   controls (WEB-SPEC, Toys 1, "Layout and targets": every target 44 px, 8 px
+   apart, from 344 px up), the scrub bar, the push gauge and its handle,
+   Sing it's live chart beside its ring, and the Wrap's cards and free play. */
+
+/* ---------------------------------------------------------------- hero: the column between the Mercs */
+.l7-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --line-h: clamp(190px, 17vw, 240px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--line-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the column's foot, where the Mercs stand */
+.l7-duo .floor {
+  top: var(--line-h);
+}
+.l7-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l7-duo .merc-blue {
+  grid-column: 1;
+}
+.l7-duo .merc-orange {
+  grid-column: 3;
+}
+.hero-range {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--line-h);
+  margin: 0;
+}
+.hero-range canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.l7-hero .hero-plays {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l7-duo {
+    --merc: clamp(110px, 18vw, 170px);
+    --line-h: clamp(200px, 28vw, 260px);
+  }
+  /* Play "Twinkle" sits right under the stage, before the sound gate, so it
+     is on a phone's first screen */
+  .l7-hero .hero-plays {
+    order: 4;
+    margin-top: 14px;
+  }
+}
+/* on a phone the Mercs stand smaller either side of the column */
+@media (max-width: 560px) {
+  .l7-duo {
+    --merc: min(20vw, 80px);
+    --line-h: 190px;
+    margin-top: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------- the range chart's stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* The chart at the height its rows want: 32 semitones at 8.25 px on a
+   phone, Step 5's 44 at 6 px (FACTS 88). Beside the text the stage caps it
+   at the room its controls leave, and no lower than --viz-min. */
+.range-viz {
+  --viz-min: 220px;
+  height: 330px;
+}
+@media (max-width: 960px) {
+  .range-viz {
+    height: 300px;
+  }
+}
+@media (max-width: 420px) {
+  .range-viz {
+    height: 288px;
+  }
+}
+/* a phone held sideways: the chart at its least, so it and a row of controls share the screen */
+@media (orientation: landscape) and (max-height: 500px) {
+  .range-viz {
+    --viz-min: 200px;
+  }
+}
+.range-readout {
+  margin: 8px 0 0;
+  font: 600 var(--fs-16) / 1.4 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.range-readout[hidden] {
+  display: none;
+}
+
+/* the rows under the chart: two buttons a row, the sounds three, each 44 px and 8 px apart */
+.range-pick,
+.range-row,
+.band-grid,
+.free-states {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.range-sounds,
+.band-grid,
+.free-states {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.range-pick[hidden],
+.range-row[hidden],
+.band-grid[hidden] {
+  display: none;
+}
+.range-row > :only-child {
+  grid-column: 1 / -1;
+}
+.range-toy .btn {
+  min-width: 0;
+  padding-inline: 10px;
+  white-space: normal;
+  line-height: 1.2;
+}
+.range-toy .btn:not(.primary)[aria-pressed='true'],
+.range-toy .btn:not(.primary).is-on {
+  border-color: color-mix(in srgb, var(--amber) 70%, transparent);
+  background: color-mix(in srgb, var(--amber) 14%, transparent);
+}
+.range-toy .switch {
+  justify-content: center;
+}
+/* Step 5's singers wait for the predict's guess, and look it, as a locked play button does */
+.range-toy .btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+/* Lower and Higher repeat while held: a long press must not select or open a menu */
+.hold-btn {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.range-toy .small-print {
+  margin: 10px 0 0;
+  font-size: var(--fs-14);
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+.range-toy .small-print[hidden] {
+  display: none;
+}
+
+/* the scrub bar: the siren's six seconds across its row, a 44 px thumb */
+.scrub {
+  --u: 0;
+  position: relative;
+  min-height: 44px;
+  margin-top: 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: none;
+}
+.scrub[hidden] {
+  display: none;
+}
+.scrub:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+.scrub-track {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--hair-2);
+}
+.scrub-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--u) * 100%);
+  border-radius: 2px;
+  background: var(--amber);
+}
+.scrub-thumb {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--u) * 100%);
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--amber) 0 9px, transparent 10px);
+  border: 1px solid color-mix(in srgb, var(--amber) 55%, transparent);
+}
+
+/* the push gauge at the chart's right, level with the lit middle, where
+   the ends' words leave it room; and the note's handle over the note */
+.push-gauge {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: min(44%, 170px);
+  padding: 8px 10px;
+  border-radius: var(--r-sm, 8px);
+  background: rgba(8, 11, 16, 0.72);
+  border: 1px solid var(--hair);
+  pointer-events: none;
+}
+.push-gauge[hidden],
+.push-handle[hidden] {
+  display: none;
+}
+.pg-label,
+.pg-ends {
+  margin: 0;
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.pg-bar {
+  height: 8px;
+  margin: 6px 0 4px;
+  border-radius: 4px;
+  background: var(--hair);
+  overflow: hidden;
+}
+.pg-bar i {
+  display: block;
+  height: 100%;
+  width: 12%;
+  border-radius: 4px;
+  background: var(--amber);
+  transition: width 120ms ease-out;
+}
+.pg-ends {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-3);
+}
+.push-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--amber) 70%, transparent);
+  cursor: ns-resize;
+  touch-action: none;
+}
+.push-handle:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-bar i {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l7-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l7-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l7-sing .sing-card .guide-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l7-sing .brief-lines {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  color: var(--ink-2);
+}
+.l7-meter {
+  align-items: stretch;
+}
+.live-viz {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 240px;
+  border-radius: var(--r-md);
+  background: radial-gradient(100% 90% at 50% 40%, #121927, #0b0f16);
+  border: 1px solid var(--hair);
+  overflow: hidden;
+}
+.live-viz canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.l7-meter .ring {
+  align-self: center;
+}
+/* on a phone the chart takes the card's width and the ring sits under it */
+@media (max-width: 560px) {
+  .l7-meter {
+    flex-direction: column;
+  }
+  .live-viz {
+    flex: none;
+    width: 100%;
+    height: 230px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l7-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l7-app .dose {
+  margin: 10px 0 0;
+  color: var(--ink);
+}
+.l7-next {
+  margin-top: 18px;
+}
+/* free play: the steps' chart with every control, on its own card */
+.l7-free.range-toy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.l7-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.l7-free .free-states {
+  margin: 0 0 12px;
+}

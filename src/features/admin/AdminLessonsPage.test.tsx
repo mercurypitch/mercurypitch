@@ -91,9 +91,10 @@ describe('AdminLessonsPage', () => {
       '404 Not found',
       '500 Error',
       'Unreachable',
-      // Lesson 6 has a page in this build, and this site does not know it
+      // Lessons 6 and 7 have pages in this build, and this site knows neither
       '404 Not found',
-      ...Array<string>(8).fill('No page yet'),
+      '404 Not found',
+      ...Array<string>(7).fill('No page yet'),
     ])
     expect(column(3)).toEqual([
       'Not listed',
@@ -109,6 +110,7 @@ describe('AdminLessonsPage', () => {
       '/learn/04',
       '/learn/05',
       '/learn/06',
+      '/learn/07',
       '/llms.txt',
       '/sitemap.xml',
     ])
