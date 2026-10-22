@@ -134,17 +134,17 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 8. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
    picks, free play (Toys 7), and the kit's next-lesson card (`createNextCard(13)`,
    `kit/next-card.ts:181-210`, drawn before `createExplorer`, `:27-30`). The card is Lesson 14's,
-   its words the kit's: the eyebrow with the number, the title and the state, then the tease, "Every
-   note in the band, start to finish.", one line above the hook as `.next-tease`, the hook as `.q2`
-   and the way on (`:130-146`; FACTS 7), "Coming later" and "See it on the map" until Lesson 14's
-   page is live. Its hook and tease are the ones the admin console picked, the defaults until it
-   picks (`:14-20`), since the card reads the season as the page's state shows it (`pageLessons`,
-   `kit/page-state.ts:54-57`). The tease's figure (Toys 8) sits in the page's `[data-next-card]`
-   mark, whose children the kit keeps in the card after its words (`kit/next-card.ts:27-29`), as
-   Lesson 2's figures are (`learn/02.html:1776`). The card is a link, so the figure holds no button.
-   The practice card is the Voice Mirror card, with "Ten minutes, gently, most days" under it; after
-   "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, without that
-   line (Toys 6). Both link `/mirror?lesson=13` in a new tab.
+   its words the kit's: the eyebrow with the number, the title and the state, then the tease,
+   "‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.", one line above the hook as
+   `.next-tease`, the hook as `.q2` and the way on (`:130-146`; FACTS 7), "Coming later" and "See it
+   on the map" until Lesson 14's page is live. Its hook and tease are the ones the admin console
+   picked, the defaults until it picks (`:14-20`), since the card reads the season as the page's
+   state shows it (`pageLessons`, `kit/page-state.ts:54-57`). The tease's figure (Toys 8) sits in
+   the page's `[data-next-card]` mark, whose children the kit keeps in the card after its words
+   (`kit/next-card.ts:27-29`), as Lesson 2's figures are (`learn/02.html:1776`). The card is a link,
+   so the figure holds no button. The practice card is the Voice Mirror card, with "Ten minutes,
+   gently, most days" under it; after "Effortful", "Uncomfortable" or "Just listen today" it is the
+   rest card instead, without that line (Toys 6). Both link `/mirror?lesson=13` in a new tab.
 9. **Lesson explorer**: the kit's, with Lesson 13 as the current node and the line under its
    heading from LESSON.md; its card shows what `kit/lesson-state.ts` says of a live lesson, the
    plate figure (`fig: 'chladni'`, `kit/explorer-figures.ts:184-209`; FACTS 10a), and no Watch
@@ -157,8 +157,8 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,376 words by the review's count (FACTS 5), 3 under the series' cap of 2,379.
-The page runs about 16 minutes: 9.98 minutes of reading at 238 words a minute and about 5.5 of
+The learner copy is 2,374 words by the review's count (FACTS 5), 5 under the series' cap of 2,379.
+The page runs about 16 minutes: 9.97 minutes of reading at 238 words a minute and about 5.5 of
 sound, toys and tasks, 15.5 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active
 time, as Lessons 3, 5, 6, 7, 9 and 11 are (15, 17, 15, 16, 16 and 16 minutes), and acceptable by
 their precedent. Each step's text, with its Try and its Notice, runs 96 to 117 words (Steps 1 to 5:
@@ -180,7 +180,7 @@ their precedent. Each step's text, with its Try and its Notice, runs 96 to 117 w
 | 5. Recall and quick check | The kit's quiz as it stands (`kit/quiz.ts`: an id `prefix`, question ids, an optional `lesson` and links away)                                                                                                                                     | Ids and keys                                                                                                            |
 | 6. Sing it                | Lesson 3's checkpoint (`kit/comfort.ts`, `kit/listen.ts`, `kit/voice-choice.ts` on `fyp-voice`, `kit/warm-up.ts`, the feeling question, the rest card); Lesson 5's hold (its Move, its Listen · Breathe · Sing ring, `kit/hold-take.ts`, its flow) | Merc's ten seconds through five vowels; the vowel names that light; one hold of three takes; the rest card after effort |
 | 7. Free play              | Toy 1's states                                                                                                                                                                                                                                     | One stage with every control                                                                                            |
-| 8. The next card's figure | The kit's next card, which keeps a page's figure after its words (`kit/next-card.ts:27-29`)                                                                                                                                                        | A still: one phrase drawn twice, every note mint, a "?" between                                                         |
+| 8. The next card's figure | The kit's next card, which keeps a page's figure after its words (`kit/next-card.ts:27-29`)                                                                                                                                                        | A still: Twinkle's first phrase drawn twice, seven amber bands, the second "star" a "?"                                 |
 
 ### 1. The vowel figure
 
@@ -306,35 +306,66 @@ the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
 
 ### 2. Predict widget
 
-- The kit's predict as it is (`mountPredict`, `kit/predict.ts:79`; FACTS 12), which takes two to
-  four choices: here two `.choice` buttons, `data-choice` "stay" and "move", labelled "Stay where
-  they are" and "Move", each at least 44 px tall. The choice locks (`:104-122`) and unlocks the play
-  `data-play` "ee-ah", labelled "Play ‘ee’, then ‘ah’", which starts disabled.
-- **Play Merc's ‘ee’** is a `data-free` play inside the predict's root (`:15-16`): it works before
-  the choice, so the sound comes first (playbook rule 5), and it never reveals, since ‘ee’ alone
-  answers nothing.
+The kit's predict as it is on main (`src/features/lessons/kit/predict.ts`, with #1149's `play` that
+reports a play cut short and #1160's hint rules; FACTS 12). Every line cited in this section is
+that file's unless it says otherwise.
+
+- `mountPredict` (`kit/predict.ts:79`) takes two to four choices: here two `.choice` buttons,
+  `data-choice` "heights" and "places", labelled "Their heights" and "Their places", each at least
+  44 px tall. The choice locks: the pressed one shows pressed and both are disabled (`:106-113`).
+  It opens the play `data-play` "ee-ah", labelled "Play ‘ee’, then ‘ah’", which starts disabled in
+  the markup, and moves the focus to it (`:114-121`).
+- **Play Merc's ‘ee’** is a `data-free` play inside the predict's root: it works before the
+  choice, so the sound comes first (playbook rule 5), and it never reveals, since ‘ee’ alone
+  answers nothing (`:14-16`, `:92-96`).
 - `revealOn: ['ee-ah']`, with the default `revealAfter: 'any'` (`:52-58`): the reveal waits until
-  ‘ee’, then ‘ah’ has been heard with sound on (`:143-156`), to its end. The page's `play` claims
-  the page's sound owner before it sounds and resolves `false` when another sound, or a stop, cuts
-  it short (`:30-40`, `:166-170`; Audio), as Lesson 6's cold open does
-  (`lesson-06/cold-open.ts:101-118`), so the reveal waits for a play that runs through.
-- The hints: the markup's own line before a choice, "Choose an answer to unlock ‘ee’, then ‘ah’.";
+  ‘ee’, then ‘ah’ has been heard to its end with sound on (`heard`, `:146-160`). The page's `play`
+  claims the page's sound owner before it sounds and resolves `false` when another sound, or a
+  stop, cuts it short (`:30-40`; Audio), as Lesson 6's cold open does
+  (`lesson-06/cold-open.ts:101-118`), and the kit then reveals nothing and leaves the hint as it
+  was (`kit/predict.ts:170-174`). A play with sound off that draws its strip to its end resolves
+  `true`, so the kit can say that nothing was heard (`:148-151`).
+- The hints. The page's own lock hint, in the markup, is LESSON.md's "Choose an answer to unlock
+  ‘ee’, then ‘ah’.", and the kit keeps it to put back (`:83-84`). The kit's three (`:41-51`):
   `chosen`, "Locked in. Now play ‘ee’, then ‘ah’."; `silent`, LESSON.md's "Sound is off, so nothing
-  played. Turn sound on to hear it, then play it again."; `again`, "Play either again." No `next`
-  hint is needed, since one play reveals (`kit/predict.ts:41-51`). Each is true in the state it
-  shows in: the silent hint shows after a play that sound off kept silent, before a choice too
-  (`kit/predict.ts:143-147`).
-- `guess` gives "You said: they stay where they are" or "You said: they move", in Lesson 2's form
+  played. Turn sound on to hear it, then play it again."; and `again`, "Play either again." This
+  page has no `next`, since one play reveals, so after a choice a heard play that does not reveal,
+  Merc's ‘ee’, shows `chosen` (`:47-48`, `:159`).
+- `guess` gives "You said: their heights" or "You said: their places", in Lesson 2's form
   (`lesson-02/cold-open.ts:34-37`), and the reveal's text is LESSON.md's for either choice. It
-  answers "Move" first; its "(The bars kept their places, so ‘stay where they are’ was a fair
-  guess.)" consoles the other choice with what is true of it (FACTS 13). `onReveal`: the live
+  answers "Their heights" first; its "(The peaks did move along the strip, so ‘their places’ was a
+  fair guess.)" consoles the other choice with what is true of it (FACTS 13). `onReveal`: the live
   region speaks the reveal's peaks, and orange celebrates once (Mercs).
-- States: waiting for a choice, with Play Merc's ‘ee’ working; the choice locked and Play ‘ee’, then
-  ‘ah’ open; that play heard, and the reveal shown. With sound off a play draws its strip and shows
-  the `silent` hint, and the reveal does not come. The strip changes with sound off as with sound
-  on, as every kit predict's visuals run (`kit/predict.ts:30-36`); only the reveal's words wait for
-  the sound (Edge cases).
-- Under reduced motion the reveal appears without its rise (`kit/predict.ts:133`).
+- States, and what a play that runs to its end does in each (`heard`, `kit/predict.ts:146-160`):
+  - **Waiting for a choice.** The lock hint shows. Play ‘ee’, then ‘ah’ is disabled, and the kit
+    ignores it before a choice too (`:165`); Play Merc's ‘ee’ works. Played with sound off, Merc's
+    ‘ee’ draws its line and its strip, and `silent` takes the lock hint's place (`:148-151`). Heard
+    with sound on, still before a choice, it puts the page's lock hint back, since ‘ee’, then ‘ah’
+    is still locked (`:152-156`).
+  - **Choice made, ‘ee’, then ‘ah’ not heard yet.** The choice shows pressed and locked, Play ‘ee’,
+    then ‘ah’ is open and has the focus, and the hint reads `chosen` (`:106-124`). Merc's ‘ee’
+    heard with sound on shows `chosen` again, in place of `silent` if sound off had left it there,
+    and reveals nothing (`:159`). Either play with sound off draws its strip and shows `silent`, and
+    the reveal stays hidden (`:148-151`).
+  - **Revealed.** ‘Ee’, then ‘ah’ heard to its end with sound on shows the reveal, with its "You
+    said" line, and the hint reads `again` (`:126-142`, `:157-158`). Later plays, sound on or off,
+    change neither (`:147`).
+
+  In every state a play cut short reveals nothing and leaves the hint as it was
+  (`kit/predict.ts:173-174`). The predict's own two plays never cut each other short: a tap on one
+  while the other plays does nothing (`busy`, `:165`). So a play here is cut short only by another
+  source taking the page's sound (a Four words play, a step toy: Audio), or by sound turned off or
+  the page hidden, which stop every voice (`kit/sound.ts:445-447`, `:456`).
+
+- The tests that hold each state. The kit's own (`src/features/lessons/kit/predict.test.ts`): a
+  free play that works before a choice and never reveals (`:229-243`), the lock hint back after a
+  free play heard before a choice (`:183-205`), `chosen` in place of `silent` after a choice
+  (`:207-227`), the sound-off hint after a choice (`:96-112`) and the play cut short (`:141-164`).
+  The page's: unit test 11 holds every state above, unit test 16 the play cut short, and End to
+  end 2 the cold open in a browser (Tests).
+- The strip changes with sound off as with sound on, as every kit predict's visuals run
+  (`kit/predict.ts:30-36`); only the reveal's words wait for the sound (Edge cases).
+- Under reduced motion the reveal appears without its rise (`kit/predict.ts:135`).
 
 ### 3. Four words
 
@@ -562,15 +593,18 @@ scrolls with the page; on a phone its stage stays under about 700 px. Its live r
 
 ### 8. The next card's figure
 
-A still in the page's `[data-next-card]` mark, drawn once at load as an SVG with no motion: one
-short phrase's pitch line, seven notes as short bars at their heights, drawn twice side by side,
-every note in mint `#80ffca` inside a faint band, with one "?" in ink between the two copies. It
-draws no breath mark, no swell and no light that grows, since Lesson 14's predict asks whether two
-takes of a phrase that hit every note "will sound the same", and a drawn difference would answer it
-(FACTS 7). Its notes are any seven of the page's own, in the lower voice's middle, and claim
-nothing. It is `aria-hidden`: the card's words carry the meaning. This departs from the curiosity
-plan's still, which adds breath marks and a swell to the second copy; the report proposes the plan
-change.
+A still in the page's `[data-next-card]` mark, drawn once at load as an SVG with no motion:
+Twinkle's first phrase as Lesson 14's song line draws it (Lesson 14 WEB-SPEC, Toys 1, on main),
+drawn twice side by side. Each copy is the phrase's seven notes as amber `#f59e0b` bands at their
+heights, from D3 in the lower voice, D3 D3 A3 A3 B3 B3 A3, each 35 cents either side over its own
+time, the six crotchets and the closing minim, with Merc's line through each, as that toy's compact
+state draws line 1, its bands unlit, but without its words. In the second copy the seventh band,
+"star", holds a "?" in ink and no line. It draws no mint, which in the series means a line in the
+band, and no breath mark, no swell and no light that grows. Lesson 14's predict asks what "star"'s
+line will do as it swells, [ It rises ] [ It stays level ], so a second "star" drawn in its band, or
+with a swell, would answer it (FACTS 7). It is `aria-hidden` and claims nothing: the card's words carry
+the meaning, the default tease or `band` alike. CURIOSITY-MOMENTS' Lesson 13 Tease draws the same
+still.
 
 ## Audio
 
@@ -631,13 +665,14 @@ link all reach the deck's `show`, which calls each toy's `onStep(step, previous)
 from `previous`; a layout switch calls it with the same step (`:178-181`) and stops nothing, as
 Lesson 6's steps do (`lesson-06/steps.ts:78-89`). A play cut short, by a new play or a stop, never
 counts as heard: the cold open's `play` resolves `false` for it, and the predict counts only a play
-that runs to its end (Toys 2; `kit/predict.ts:30-40`, `:166-170`). Both parts came with PR #1149,
+that runs to its end (Toys 2; `kit/predict.ts:30-40`, `:170-174`). Both parts came with PR #1149,
 Lesson 6's page, and are on main.
 
 A sequence decides once, at the tap, whether it sounds (`ToneOptions.audible`,
 `kit/sound.ts:504-507`), so a step's later vowels never ask `Sound.canPlay()` from a timer, which
 would show the sound-off toast with no tap (`:463-471`). A play pressed again while it runs stops
-it; a play pressed while another runs stops the other and starts. While a take is open every play
+it; a play pressed while another runs stops the other and starts. The predict's two plays are the
+exception: the kit ignores a tap on either while one runs (Toys 2). While a take is open every play
 on the page is silent, as the kit's hush makes it. A live line is written to its region only when
 its text changes, so a screen reader does not hear the same line twice.
 
@@ -712,10 +747,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `kit/explorer.ts:174-179`); `needs` keeps "Long Note on vowels" for the team, and no card draws it
   (`kit/season.ts:27-34`). The link lands with the page, not before it: every lesson page's explorer
   prints it, and only this page says why the hold is suggested on vowels. Its hook is the entry's
-  (`kit/season.ts:382`), and its tease and the proposed alternative hook are `kit/lesson-copy.ts`'s
-  (`:134`), as FACTS 1 and 10 record: this spec changes no hook or tease line, and the report
-  proposes the alternative. Its `sig` (`kit/season.ts:383`) is the team's and never drawn (`:133`).
-  `EDGES` already holds [11, 13] (`:427`).
+  (`kit/season.ts:382`), and its tease is `kit/lesson-copy.ts`'s (`:143`), with no alternative hook,
+  as FACTS 1 and 10 record: this spec changes no hook or tease line. Its `sig` (`kit/season.ts:383`)
+  is the team's and never drawn (`:133`). `EDGES` already holds [11, 13] (`:427`).
 
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -770,16 +804,15 @@ others take it.
      (`lesson-copy.test.ts:372-381`; Hero);
    - the meta description, "Same note, ‘ee’ or ‘ah’: what makes them sound different? A free
      lesson with sound toys: harmonics, resonance, and one note held through five vowels." (149
-     characters, inside the test's 80 to 160, `lesson-pages.test.ts:129-132`). It quotes neither
-     the hook nor the alternative, so the worker leaves it as it is whichever the console picks;
+     characters, inside the test's 80 to 160, `lesson-pages.test.ts:129-132`). It does not quote
+     the hook, so the worker leaves it as it is;
    - `og:title` and `twitter:title`, "Resonance and vowels: Find Your Pitch, Lesson 13" (48;
      `learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "If ‘ee’ and ‘ah’ sung on the same note draw the
      same pitch line, what makes them sound different? Watch Merc's line, then make your guess."
-     (138 characters; 122 with the alternative hook written in;
-     `lesson-copy.test.ts:398-401`; `learn/02.html:30-33`), and `twitter:description`, the hook
-     exactly (97; 81 with the alternative; `lesson-copy.test.ts:402-404`; `learn/02.html:49-52`), so
-     every description the worker rewrites still fits 80 to 160 with either hook in place (FACTS 1);
+     (138 characters; `lesson-copy.test.ts:398-401`; `learn/02.html:30-33`), and
+     `twitter:description`, the hook exactly (97; `lesson-copy.test.ts:402-404`;
+     `learn/02.html:49-52`), so both descriptions the worker rewrites fit 80 to 160 (FACTS 1);
    - canonical and `og:url` `https://mercurypitch.com/learn/13`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:116-134`);
@@ -882,9 +915,8 @@ others take it.
     for the end-to-end test that a held note sung through vowels reads as the note and nothing else
     (Tests, end to end 6). It names its file by its note and length, written beside and renamed into
     place, as `writeToneWav` does (`:57-75`).
-14. Copy in the code, proposed in the report, not made here: Lesson 13's alternative hook in
-    `kit/lesson-copy.ts` (FACTS 1), and the season entry's `minutes`, `page` and `pr.link` (FACTS
-    64).
+14. Copy in the code, not made here: the season entry's `minutes`, `page` and `pr.link`, which land
+    with the page (Explorer and season data; FACTS 64).
 
 Already on main, so this page needs nothing more from them: run-time publishing (`kit/publish.ts`,
 `kit/page-state.ts`, `src/lesson-gate.ts`), which settles the page's chip, its recall's step links
@@ -906,15 +938,13 @@ links this page.
 
 With the recommendation first:
 
-1. **The hook and the title** (FACTS 1, 3): the season's hook stays the default. It says that ‘ee’
-   and ‘ah’ on one note draw the same line and sound different, so it leans a little towards
-   something under the line changing, but it never names the strip or says what a peak does, and
-   "Stay where they are" stays a fair guess, since the bars do stay. Recommended: keep it, and add
-   the alternative `one-note`, "When you sing ‘ee’ and then ‘ah’ on the same note, have you sung one
-   note or two?", which asks the misconception head on, leans on neither choice, and fits every
-   description; the console can then try it. The title: recommended, the query-led "Resonance and
-   vowels: why ee and ah differ | MercuryPitch", as SEARCH.md § 13 item 1 recommends; the series'
-   name fits only in Lessons 4 and 5's short form, "Resonance and vowels · Find Your Pitch |
+1. **The hook, the predict and the title** (FACTS 1, 3): the season's hook stays, and the predict
+   asks what will change in the bars, their heights or their places. The hook says that ‘ee’ and
+   ‘ah’ on one note draw the same line and sound different; both choices are a change, so it leans
+   on neither, and "their places", a different vowel with different frequencies in it, is the
+   misconception made visible. Recommended: keep. The title: recommended, the query-led "Resonance
+   and vowels: why ee and ah differ | MercuryPitch", as SEARCH.md § 13 item 1 recommends; the
+   series' name fits only in Lessons 4 and 5's short form, "Resonance and vowels · Find Your Pitch |
    MercuryPitch", without "Lesson 13".
 2. **How the vowels sound** (Audio; FACTS 40): Merc's "ooh" voice with a 1/k source to 4 kHz
    through three resonances at the measured British means, every vowel at one power, the vibrato
@@ -933,9 +963,10 @@ With the recommendation first:
 5. **The CURRICULUM card's Practise line** (FACTS 6): to match the page, "Voice Mirror's hold, on
    vowels, until Long Note on vowels ships", keeping the card's rule that the app must not claim to
    assess vowels.
-6. **The next card's figure** (Toys 8; FACTS 7): the plan's still drew breath marks and a swell;
-   this page leaves them out so it does not answer Lesson 14's predict. Recommended: change the
-   plan's still to match.
+6. **The next card's figure** (Toys 8; FACTS 7): Twinkle's first phrase as seven amber bands,
+   drawn twice, the second copy's "star" a "?" with no line, as CURIOSITY-MOMENTS' Lesson 13 Tease
+   draws it since Lesson 14's PR. A still that drew the second "star" in its band, or with a swell,
+   would answer Lesson 14's predict. Recommended: keep.
 7. **‘Oh’** (FACTS 39): modelled on the steady vowel of "paw" and "more", since "go" glides in the
    standard British accent. A question for the vocal coach: whether the page should say "like
    ‘oh’, held without the glide".
@@ -984,11 +1015,6 @@ What the page does where nothing above says:
   quiz does the same for the recall's step links, which keep their words, "Try Lesson 11, Step 2
   again", with no link (`kit/quiz.ts:189-192`). The recall still shows, and the explorer and the
   lesson menu draw the lesson held back as coming later. End to end 13 holds it.
-- **The admin console's hook**: picking `one-note`, once it exists, writes it into the h1, the
-  head's copies of the hook, every explorer card and Lesson 12's next card
-  (`src/lesson-gate.ts:444-460`, `:576-583`); og:description is then 122 characters and
-  twitter:description 81, inside 80 to 160, and the meta description, which quotes neither hook, is
-  unchanged.
 - **Reduced motion**: Look, Toys 1 and Toys 6 give the end states; nothing moves on its own.
 
 ## Tests
@@ -1042,12 +1068,15 @@ parts:
 9. Copy: no quiz feedback line starts with "Right", "Yes" or "Correct"; no accessible name or live
    text holds a ♯ or ♭ sign; no two controls on a stage share an accessible name; each vowel
    button's name begins with its visible label; no live text before the cold open's reveal names a
-   bar of ‘ah’.
+   bar of ‘ah’ or says "heights", "louder" or "softer" of the bars.
 10. Every fixed sound's frequency equals `hz(m)` for the notes of FACTS 65.
-11. The predict: the choice locks on the first press; before it only Play Merc's ‘ee’ plays; after
-    it, the reveal stays hidden until ‘ee’, then ‘ah’ has been heard with sound on, and a silent
-    play shows the `silent` hint; the reveal's line is "You said: they move" or "You said: they stay
-    where they are"; no hint says "right" or "wrong" (FACTS 12, 13).
+11. The predict (Toys 2's states): the choice locks on the first press; before it only Play Merc's
+    ‘ee’ plays; after it, the reveal stays hidden until ‘ee’, then ‘ah’ has been heard with sound
+    on, and a silent play shows the `silent` hint; before a choice, Merc's ‘ee’ heard after a
+    silent one brings the lock hint back; after a choice, Merc's ‘ee’ heard replaces `silent` with
+    `chosen`; after the reveal, a silent play leaves "Play either again."; the reveal's line is
+    "You said: their heights" or "You said: their places"; no hint says "right" or "wrong" (FACTS
+    12, 13). Unit test 16 holds a play cut short.
 12. Quizzes: the recall's ids are `l11-q1` and `l11-q2`, it equals Lesson 11's two questions as its
     module has them, it takes no `lesson`, and its two step links are `/learn/11#step-2` and
     `/learn/11#step-3`; the quick check's ids are `l13-q1` to `l13-q4`, with `lesson: 13`.
@@ -1119,7 +1148,8 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    Voice Mirror with no intro, as `src/e2e/lesson-marker.spec.ts:121` checks its own documents.
 10. The Wrap's next card names Lesson 14, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:157`); its
-    tease, "Every note in the band, start to finish.", sits one line above the hook, the card's
+    tease, "‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.", sits one line above
+    the hook, the card's
     words in the order eyebrow, tease, hook and way on, then the figure, as that spec checks
     Lessons 1 and 2's cards (`:90-126`).
 11. With reduced motion emulated, a column jumps to its height, a vowel change lands at once, the
