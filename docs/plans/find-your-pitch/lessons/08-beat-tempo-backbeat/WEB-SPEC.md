@@ -236,7 +236,7 @@ recall and quiz questions, 60 s (FACTS 4).
 | 2. Predict widgets        | The kit's predict (`kit/predict.ts`), with a free play before the choice and a reveal after both of two plays                                                                                                                                                                               | Nothing                                                                                                                                                           |
 | 3. Four words             | The words strip of Lessons 1 to 3, a ticket per word with its figure and play button (`lesson-03/words.ts`)                                                                                                                                                                                 | Four new figures                                                                                                                                                  |
 | 4. Count the bar          | The kit's ear game (`kit/ear-game.ts`, on #1149): Lesson 2's Semitone or tone? promoted and generalised to N answers                                                                                                                                                                        | Three answers, 2, 3 and 4, on the keys 2, 3 and 4 (a key per answer, new in the kit); the clicks as the game's notes                                              |
-| 5. Tap pad and readout    | The Ear Lab's tap rule (`src/features/ear-lab/EarStage.tsx:551-603`): pointer down, Space or Enter, the event's own time                                                                                                                                                                    | A plain-DOM pad in the kit; the taps-per-minute readout                                                                                                           |
+| 5. Tap pad and readout    | The Ear Lab's tap rule (`src/lib/ear/tap-rule.ts:13-39`, moved there from its `TapPad`, `src/features/ear-lab/EarStage.tsx:545-606`): pointer down, Space or Enter, the event's own time                                                                                                    | A plain-DOM pad in the kit; the taps-per-minute readout                                                                                                           |
 | 6. Sing it                | Lesson 3's comfort check, voice choice and feeling question (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`); Lesson 6's rest card after "Effortful" and its pure flow rule; the Ear Lab's judge (`src/lib/ear/rhythm-take.ts`); Drum Night's latency estimator, moved into `src/lib` | The tap take and its lines; the sung line's guide on the beat machine; Move do in semitones                                                                       |
 | 7. Recall and quick check | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 3's recall (`lesson-03/recall.ts`) and its step links; Lesson 6's question objects and quiz plays (on #1149), imported                                                                                         | Keys; the recall's `data-if-live` wrapper                                                                                                                         |
 | 8. Go deeper drawer       | Lesson 2's `details` drawer                                                                                                                                                                                                                                                                 | One item                                                                                                                                                          |
@@ -478,9 +478,11 @@ DECISIONS 82).
 - **The pad**, `kit/tap-pad.ts`, new: one wide button, 64 px tall, labelled "Tap" with "or press
   Space" under it, that takes a tap on pointer down with the primary button (a click would arrive a
   frame or two late) and on Space or Enter, ignoring a held key's repeats, timed by the event's own
-  `timeStamp`, and flashes for 110 ms: the Ear Lab's rule exactly (`EarStage.tsx:551-603`). The
-  rule moves into a small shared function in `src/lib` that the Ear Lab's `TapPad` and the kit's
-  pad both call, so the two cannot drift (What the kit and the app still need). The pad keeps
+  `timeStamp`, and flashes for 110 ms: the Ear Lab's rule exactly. The rule moved out of the Ear
+  Lab's `TapPad` (`src/features/ear-lab/EarStage.tsx:545-606`) into a small shared module,
+  `src/lib/ear/tap-rule.ts` (`pointerTap`, `keyTap` and `TAP_FLASH_MS`, `:13-39`), that the Ear
+  Lab's pad and the kit's both call, so the two cannot drift (What the kit and the app still need,
+  item 3). The pad keeps
   `touch-action: manipulation`, so a quick second tap is never read as a zoom.
 - **Steps 1 and 2.** The pad sits beside Start in one row. A tap there is silent and only flashes,
   so the clicks stay clear; Step 1 judges nothing. Start moves the focus to the pad while the
@@ -834,9 +836,9 @@ table). Every item is proposed.
 1. `kit/beat-clock.ts`, new: the lookahead scheduler on the audio clock, the run's own gain node,
    the audio-to-page clock map (Audio). Generic, with unit tests on a fake clock.
 2. `kit/beat-machine.ts`, new: the toy (Toys 1), generic over patterns and tempo.
-3. `kit/tap-pad.ts`, new (Toys 5), and the tap's timing rule moved out of
-   `src/features/ear-lab/EarStage.tsx:551-603` into `src/lib/ear/` as a pure function that the Ear
-   Lab's `TapPad` and the kit's pad both call.
+3. `kit/tap-pad.ts`, new (Toys 5), and the tap's timing rule moved out of the Ear Lab's `TapPad`
+   (`src/features/ear-lab/EarStage.tsx:545-606`) into `src/lib/ear/tap-rule.ts` as pure functions
+   that the Ear Lab's pad and the kit's both call.
 4. Drum Night's latency estimator, `estimateDrumInputLatency`, moved whole from
    `src/features/drum-night/runtime/drum-latency-calibration.ts` into `src/lib/timing/input-latency.ts`
    (`:30-71`), with Drum Night importing it from there (`runtime/useDrumNightRuntime.ts:5-6`, and
