@@ -64,6 +64,50 @@ afterEach(() => {
 })
 
 describe('UVR worker routing protections', () => {
+  it('returns 502 without a refund or container fallback when queued cancellation fails', async () => {
+    const secret = 'test-secret'
+    const getByName = vi.fn()
+    const upstream = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/api/auth/me')) return Response.json({})
+      if (url.endsWith('/status/job-1')) {
+        return Response.json({ id: 'job-1', status: 'IN_QUEUE' })
+      }
+      if (url.endsWith('/cancel/job-1')) {
+        return new Response('Provider unavailable', { status: 503 })
+      }
+      throw new Error(`Unexpected request: ${url}`)
+    })
+    vi.stubGlobal('fetch', upstream)
+
+    const response = await worker.fetch(
+      new Request('https://app.test/api/uvr/session/rp_gpu_job-1', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${await bearer(secret)}` },
+      }),
+      {
+        JWT_SECRET: secret,
+        DB_API_URL: 'https://db.test',
+        BILLING_SERVICE_KEY: 'test-service-key',
+        RUNPOD_API_KEY: 'test-runpod-key',
+        RUNPOD_ENDPOINT_ID_GPU: 'ep-gpu',
+        UVR_SERVICE: { getByName },
+      } as unknown as Env,
+    )
+
+    expect(response.status).toBe(502)
+    await expect(response.json()).resolves.toEqual({
+      error: 'RunPod dispatch failed',
+      detail: expect.stringContaining('RunPod cancel failed: 503'),
+    })
+    expect(upstream.mock.calls.map(([url]) => String(url))).toEqual([
+      'https://db.test/api/auth/me',
+      'https://api.runpod.ai/v2/ep-gpu/status/job-1',
+      'https://api.runpod.ai/v2/ep-gpu/cancel/job-1',
+    ])
+    expect(getByName).not.toHaveBeenCalled()
+  })
+
   it('does not let an authenticated headerless process request reach the container', async () => {
     const secret = 'test-secret'
     const getByName = vi.fn()

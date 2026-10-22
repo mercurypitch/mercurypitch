@@ -533,11 +533,14 @@ export async function cancelJob(
   endpointId: string,
   jobId: string,
 ): Promise<void> {
-  await fetch(
+  const resp = await fetch(
     runpodEndpointUrl(cfg, endpointId, `/cancel/${encodeURIComponent(jobId)}`),
     {
       method: 'POST',
       headers: runpodHeaders(cfg),
     },
   )
+  if (!resp.ok) {
+    throw new Error(`RunPod cancel failed: ${resp.status} ${resp.statusText}`)
+  }
 }

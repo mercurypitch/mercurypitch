@@ -4,10 +4,43 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProcessStatusResponse } from '@/lib/uvr-api'
-import { DEFAULT_PROCESS_REQUEST, formatFileSize, getProcessStatus, pollForCompletion, processAudio, TerminalPollError, } from '@/lib/uvr-api'
+import { DEFAULT_PROCESS_REQUEST, deleteSession, formatFileSize, getProcessStatus, pollForCompletion, processAudio, TerminalPollError, } from '@/lib/uvr-api'
 
 beforeEach(() => {
   vi.restoreAllMocks()
+})
+
+describe('deleteSession', () => {
+  it('rejects a 502 cancellation response instead of returning success', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ error: 'RunPod dispatch failed' }), {
+        status: 502,
+        statusText: 'Bad Gateway',
+      }),
+    )
+
+    await expect(deleteSession('rp_gpu_job-1')).rejects.toThrow(
+      'Failed to delete session: Bad Gateway',
+    )
+  })
+
+  it('returns the successful cancellation result from the session DELETE route', async () => {
+    const result = {
+      status: 'success',
+      message: 'Session rp_gpu_job-1 cancelled',
+    }
+    const spy = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(Response.json(result))
+
+    await expect(deleteSession('rp_gpu_job-1')).resolves.toEqual(result)
+
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy).toHaveBeenCalledWith(
+      '/api/uvr/session/rp_gpu_job-1',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
 })
 
 // ── formatFileSize ───────────────────────────────────────────
