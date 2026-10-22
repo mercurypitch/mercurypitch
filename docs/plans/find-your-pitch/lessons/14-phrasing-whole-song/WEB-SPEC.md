@@ -91,7 +91,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:372-381`), with no variant's team note anywhere in the markup (`:409-415`; 1), and the element
+   (`:374-383`), with no variant's team note anywhere in the markup (`:411-417`; 1), and the element
    the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as seven chips
    ("18 minutes", 8; "After Lesson 5: Steady note", "After Lesson 8: Beat and tempo", "After Lesson
    9: Landing a leap" and "After Lesson 12: Chords", each a link to that lesson's page and wholly
@@ -107,10 +107,10 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    (390 x 844) the title and the opening's first control, Play take 1, and the two choices belong on
    the first screen, and on a tablet in landscape (1024 x 640) the stage and the choices too
    (CURIOSITY-MOMENTS § 3.1, "Above the fold",
-   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:275-277`). Of the plan's levers, the recall's
+   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:291-293`). Of the plan's levers, the recall's
    place is already used, since it follows the predict; the others are the Mercs' size (`--merc`,
-   `kit/lesson-stage.css:193`) and the hook's length, 90 characters today and 58 in the proposed
-   wording (1). The seven chips take five rows on a 360 px phone, one a row for each lesson chip
+   `kit/lesson-stage.css:193`) and the hook's length, 58 characters, and 90 with `compelling` (1).
+   The seven chips take five rows on a 360 px phone, one a row for each lesson chip
    (3), so this page's stage starts lower than Lesson 9's; `src/e2e/learn-cold-open-fold.spec.ts`
    holds the title on the first screen at its seven sizes and reports where the first control and
    the choices sit (End to end 5).
@@ -163,9 +163,9 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,375 words by the review's count (8), 4 under the series' cap of 2,379: Lesson
+The learner copy is 2,372 words by the review's count (8), 7 under the series' cap of 2,379: Lesson
 3's page on the same count is 2,454 words, 75 of them the note under its new title, which is not in
-editorial form, so the counter reads it. The page runs about 18 minutes: 9.98 minutes of reading at
+editorial form, so the counter reads it. The page runs about 18 minutes: 9.97 minutes of reading at
 238 words a minute and about 8.1 of sound, toys and tasks, 18.1 in all, of which Sing it is about
 3.3. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6, 7 and 9
 are (15, 17, 15, 16 and 16 minutes), and acceptable by their precedent for a lesson that closes the
@@ -359,8 +359,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   was a fair guess.)" (15). `onReveal`: orange celebrates once (Mercs).
 - Nothing before the reveal answers it (6): the title and the hook in either wording, the promise,
   the sound gate, the label, the head's descriptions and structured data (What the kit and the app
-  still need, 2), the share card (3), and the previous card's tease, once the proposed tease
-  replaces today's (2).
+  still need, 2), the share card (3), and the previous card's tease in either wording (2).
 - States: waiting for a choice, with Play take 1 working, before or after take 1 has been heard; the
   choice locked, take 2 open and not yet heard to its end, whether or not take 1 has played since;
   take 2 heard, and the reveal shown. With sound off a play draws its take and shows the `silent`
@@ -704,10 +703,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   (58); the daily routines, whose copy promises the same of the breath and of range, and which live
   in the main app's sidebar (59); and Play Along, which opens on the songs a singer has brought and
   separated, nothing for most visitors (60). The CURRICULUM card's practise line named all three;
-  this package's second commit says on the card why only Karaoke Night is linked.
+  the card now says why only Karaoke Night is linked.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed: Dynamic Swell's card copy,
   its tags and its score checked against the claims rules, as CURRICULUM § 4 item 8 does for the
-  Ascent's weeks (`CURRICULUM.md:494-498`), so that a later lesson can link it: a swell scored by
+  Ascent's weeks (`CURRICULUM.md:504-508`), so that a later lesson can link it: a swell scored by
   its width in decibels rewards a louder swell, which this lesson's "grow only to about speaking
   volume" would not, so its score would change or its result would say what it measures; and the two
   routines' descriptions, which promise gains in the breath and in range (59), the same way. Until
@@ -725,8 +724,8 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   is, `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
   `label: 'Karaoke Night'` (`season.ts:395-401`), with no `needs`. Its topics stay; its hook is the
   entry's, the default (`:393`), and its tease, which Lesson 13's card draws, is
-  `kit/lesson-copy.ts`'s (`:135`), as 1 and 2 record: the proposal to change both is in What the kit
-  and the app still need, 15. `EDGES` already holds [5, 14], [8, 14], [9, 14] and [12, 14]
+  `kit/lesson-copy.ts`'s (`:152`), with the old ones kept as `compelling` and `band` (`:144-160`),
+  as 1 and 2 record. `EDGES` already holds [5, 14], [8, 14], [9, 14] and [12, 14]
   (`season.ts:428-431`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -739,7 +738,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand on main (21 October 2026, `62c99c150`), Lesson 6's page
+Found in the kit and the app as they stand on main (22 October 2026, `32fd98c50`), Lesson 6's page
 among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 promote into the kit
 (Toys table):
 
@@ -769,27 +768,26 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    when the console publishes the page, not at a release (SEARCH.md § 3.2, 12).
 2. The page's head, written in full from its first commit, since both tests read it while the page
    is a draft: `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts
-   included (`lesson-copy.test.ts:372-407`), and `src/tests/lesson-pages.test.ts` holds every lesson
+   included (`lesson-copy.test.ts:374-409`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, drafts included, to its head, its structured data, its breadcrumb, its share card and
    its legal links (`:112-210`). So Lesson 14 meets all of the checks below as a draft; its release
    adds only the listings and links of item 1 (`:212-240`). The hook's copies are the ones the site
    worker rewrites when the console picks another hook (`src/lesson-gate.ts:444-451`, `:565-594`);
    it never rewrites the title. Only the meta description and the Article's description, which
    repeat each other, may shorten the hook, and every other copy carries it whole. In Lesson 4's
-   form (`learn/04.html:9-128`), with today's hook (13):
+   form (`learn/04.html:9-128`), with the default hook (13):
    - the title, "Phrasing: sing a whole song · Find Your Pitch | MercuryPitch" (60 characters, the
      test's most, `lesson-pages.test.ts:127-128`), which holds the Article's headline (`:160`), and
-     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:372-381`; Hero);
-   - the meta description, "If you can hit every note of a song, what is still missing between
-     correct and compelling? Hear Merc sing one phrase twice, then sing it and listen back." (153
-     characters, inside the test's 81 to 160, `lesson-pages.test.ts:129-132`, and 121 with the
-     proposed hook);
+     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:374-383`; Hero);
+   - the meta description, "If every note of a song is in tune, what is left to shape? Hear Merc
+     sing one phrase twice, then sing it and listen back." (121 characters, inside the test's 81 to
+     160, `lesson-pages.test.ts:129-132`, and 153 with `compelling`);
    - `og:title` and `twitter:title`, "Phrasing: sing a whole song · Find Your Pitch, Lesson 14"
      (`learn/04.html:26-29`, `:45-48`);
-   - `og:description`, the full hook and one line, "If you can hit every note of a song, what is
-     still missing between correct and compelling? Hear one phrase sung twice, then sing it
-     yourself." (141 characters; 109 with the proposed hook; `lesson-copy.test.ts:398-401`), and
-     `twitter:description`, the hook exactly (`:402-404`);
+   - `og:description`, the full hook and one line, "If every note of a song is in tune, what is left
+     to shape? Hear one phrase sung twice, then sing it yourself." (109 characters; 141 with
+     `compelling`; `lesson-copy.test.ts:400-403`), and
+     `twitter:description`, the hook exactly (`:404-406`);
    - canonical and `og:url` `https://mercurypitch.com/learn/14`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:116-134`);
@@ -801,7 +799,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      the file (`lesson-pages.test.ts:177-196`; item 3);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:387-395`, `:405`), and the other test asks for the Article first
+     (`lesson-copy.test.ts:389-397`, `:407`), and the other test asks for the Article first
      (`lesson-pages.test.ts:142-144`): `@id` `https://mercurypitch.com/learn/14#lesson` and `url`
      `https://mercurypitch.com/learn/14` (`:146-147`); the headline "Phrasing: sing a whole song";
      `alternativeHeadline`, the hook exactly; `description`, the meta description's words, and
@@ -815,9 +813,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:163-175`;
      `learn/04.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
      "Legal" (`lesson-pages.test.ts:198-209`).
-   - With the proposed hook adopted (item 15), every copy carries it instead, and the console can
-     still pick today's wording, which the site worker writes in: every description stays between 80
-     and 160 characters with either hook (13).
+   - When the console picks `compelling`, the site worker writes it into every copy of the hook:
+     every description stays between 80 and 160 characters with either hook (13).
 3. The share image the head names, `public/learn/lesson-14-og.jpg`, which
    `src/tests/lesson-pages.test.ts` checks on every lesson document, drafts included, so from the
    page's first commit (`:177-196`): `og:image` is
@@ -831,15 +828,15 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    orange Merc. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:102-111`,
-   `:126-134`; `:190-193`, `:203-207`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:417-421`), so without them the Browser jobs fail before any spec
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:102-114`,
+   `:129-137`; `:193-196`, `:206-210`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:420-424`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:46-57`, `:146-156`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:46-57`, `:149-159`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
-   (`assert-first-paint-budgets.mjs:131-133`). As on Lesson 3, the listener, the pitch detector and
+   (`assert-first-paint-budgets.mjs:134-136`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:107-110`), and the record module and the app's recorder
+   (`scripts/assert-first-paint-budgets.mjs:106-110`), and the record module and the app's recorder
    with them, so the ceiling holds only while that boundary does.
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`, the song line's parts (Toys 1): Lesson 9's
    rungs over time slots and its rung names, which this page uses as sequence mode and names by
@@ -883,7 +880,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     button, which the rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055;
     78). The kit draws the close once (`next-card.ts:190-193`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
-    would gain the shorter line beside its own (`lesson-copy.ts:143-149`), kept free of the team's
+    would gain the shorter line beside its own (`lesson-copy.ts:168-174`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:300-308`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
 13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:409-443`),
@@ -893,14 +890,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     has, as Lesson 9's spec proposes (11, there); and `recallStepHref`, which Lessons 9 and 14 both
     borrow from Lesson 5's module (`lesson-05/quiz-questions.ts:19-21`), moved into the kit's quiz
     beside `away`.
-15. The hook and the tease, proposed, for the owner: Lesson 14's default hook in `kit/season.ts`
-    (`:393`) becomes "If every note of a song is in tune, what is left to shape?", with today's kept
-    in `kit/lesson-copy.ts`'s Lesson 14 entry as a `HookVariant` under the id `compelling` and a
-    note saying why it changed (1); its tease becomes "‘Twinkle, twinkle, little star’, twice. The
-    second ‘star’ swells.", with today's kept as a `TeaseVariant` under the id `band` (2).
-    `lesson-copy.test.ts`'s list of kept hooks gains `[14, 'compelling']` (`:319-333`). The title,
-    the head's copies, LESSON.md, FACTS.md, CURRICULUM.md and YOUTUBE.md then quote the new default
-    (`lesson-copy.ts:5-12`).
+15. The hook and the tease: done in this PR (1, 2).
 16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's proposed `writeStepsWav(steps, leadSilence)`, steady
     tones in sequence after a stretch of silence, beside `writeToneWav` (`:29`), here for the phrase
     with take 2's breath, D3 D3 A3 A3 B3 B3 at 0.75 s, A3 for 1.2 s and 0.3 s of silence (Tests, end
@@ -947,7 +937,9 @@ What the page does where nothing above says:
   `predict.test.ts:183-205`; End to end 2).
 - **Take 2 cut short**, by another source taking the page's "now playing" owner, by the Sound toggle
   going off or by the tab going hidden: the page's `play` resolves `false`, so nothing is revealed
-  and the hint stays as it was, `chosen`; take 2 played to its end afterwards reveals as usual (Toys
+  and the hint stays as it was: `chosen`, or `silent` if the play before it was silent, whose "play
+  it again" still holds now that sound is on; take 2 played to its end afterwards reveals as usual
+  (Toys
   2; unit test 17 covers all three causes, the kit's `predict.test.ts:141-164` the result; End to
   end 2 the first).
 - **No Web Audio**: every play button draws in silence with the hint "This browser can't play sound
@@ -1120,9 +1112,9 @@ parts:
     "Uncomfortable" and "Just listen today", the close keeps "End of Season 1", "You've seen every
     note you sing." and "See the season map", and shows neither "Now sing a whole song." nor its
     Karaoke Night button, while every other ending keeps both.
-19. If the hook and the tease change (What the kit and the app still need, 15): the title and the
-    head's copies carry the new default, `compelling` and `band` are the alternatives, and
-    `lesson-copy.test.ts`'s kept list holds `[14, 'compelling']`.
+19. The hook and the tease: the h1 and the head's copies of the hook carry the default, "If every
+    note of a song is in tune, what is left to shape?", and `hookFor` and `teaseFor` resolve
+    `compelling` and `band` to the old wordings (1, 2).
 
 End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which shows drafts):
 
