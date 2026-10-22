@@ -32,7 +32,8 @@
 //
 // A third list is not about weight. Some modules are small enough to hide
 // under any page's ceiling and are still meant to load only on demand: the
-// key-change engine is 111 KB that a song played in its own key never needs.
+// key-change engine is 111 KB that a song played in its own key never needs,
+// and the lessons' team notes are nearly 3 KB that no learner ever reads.
 // Each first-paint chunk's source map says what it was built from, and a
 // module on that list fails the build on whichever page it lands.
 
@@ -256,21 +257,44 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
 /**
  * Modules no document may download before its first paint, at any size.
  *
- * Each is reached only through `await import(...)`, and each has been
- * dragged onto first paint before by a manualChunks rule that filed it
- * under a chunk with static importers, which erases the dynamic boundary
- * without any change to the source. Matched against the `sources` of every
- * first-paint chunk's source map.
+ * Each is reached only through `await import(...)`, so a static path to one
+ * from any document is a regression: a manualChunks rule that files it under
+ * a chunk with static importers erases the dynamic boundary without any
+ * change to the source, and a static import from a page's own graph does it
+ * in plain sight. Matched against the `sources` of every first-paint chunk's
+ * source map. A rule's `remedy`, when it has one, replaces the default
+ * advice, for a module that a chunk of its own would not keep off a page.
  */
 export const FIRST_PAINT_FORBIDDEN_SOURCES = [
   {
     // Signalsmith Stretch, the key and speed shifter. `pitch-shift-node.ts`
     // imports it when a song first plays off its own key or speed; the
     // worklet half is a separate `?worker&url` asset outside every graph.
+    // A manualChunks rule has dragged it onto first paint before.
     label: 'the key-change engine',
     pattern: /(?:^|\/)node_modules\/signalsmith-stretch\//,
   },
+  {
+    // The lessons kit's team-notes.ts, the team's words about the season:
+    // each lesson's signature image and why each hook or tease variant
+    // exists. Only the admin console imports it, and the app reaches the
+    // console through App.tsx's lazy AdminContentStudio, so no document
+    // paints with it. Every lesson page imports season.ts and lesson-copy.ts,
+    // which held these strings until they moved out to spare the lesson
+    // pages' ceilings; an import of the notes from either, or from anything
+    // else a page loads, fails here.
+    label: "the lessons' team notes",
+    pattern: /(?:^|\/)src\/features\/lessons\/kit\/team-notes\.ts$/,
+    // A static import from the kit makes even a chunk of its own a static
+    // dependency of every lesson page, so the default advice would not help.
+    remedy:
+      "Only the admin console may import it: find the static import that pulls it in, from season.ts, lesson-copy.ts or the page's own module, and take it out.",
+  },
 ]
+
+/** What a forbidden module's breach says to do, unless its rule says otherwise. */
+const ON_DEMAND_REMEDY =
+  'It must load only on demand; give it a chunk of its own in vite.config.ts manualChunks, or find the static import that pulls it in.'
 
 const KB = 1024
 
@@ -480,7 +504,7 @@ export function judgeFirstPaint(
         const hit = chunk.sources.find((source) => rule.pattern.test(source))
         if (hit === undefined) continue
         problems.push(
-          `${name} downloads ${rule.label} before first paint: ${hit} rides ${chunk.file}. It must load only on demand; give it a chunk of its own in vite.config.ts manualChunks, or find the static import that pulls it in.`,
+          `${name} downloads ${rule.label} before first paint: ${hit} rides ${chunk.file}. ${rule.remedy ?? ON_DEMAND_REMEDY}`,
         )
       }
     }

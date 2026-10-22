@@ -6,7 +6,9 @@
 // (admin/lessons/copy-choices.ts, admin/lessons/lesson-admin.ts), so nothing
 // else notices a variant written without its note, a note left behind when
 // its variant goes, or a note filed under the wrong kind. And the team's
-// words stay off every lesson page, whose markup is read here.
+// words stay off every lesson page: the build keeps the module off their
+// first paint (scripts/assert-first-paint-budgets.mjs), and the pages'
+// markup is read here.
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'

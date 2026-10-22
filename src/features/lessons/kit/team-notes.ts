@@ -10,8 +10,11 @@
 //
 // They are kept apart from season.ts and lesson-copy.ts because every lesson
 // page imports those two, and a page downloads whatever they hold. No module
-// a lesson page reaches may import this one, and team-notes.test.ts holds it
-// to the season and its copy, entry for entry.
+// a lesson page reaches may import this one: the build fails on any
+// document whose first paint carries it
+// (scripts/assert-first-paint-budgets.mjs, FIRST_PAINT_FORBIDDEN_SOURCES),
+// and team-notes.test.ts holds it to the season and its copy, entry for
+// entry.
 //
 // Hook notes and tease notes are keyed apart, as the lesson state stores a
 // hook and a tease apart: a hook's id and a tease's may be the same.
