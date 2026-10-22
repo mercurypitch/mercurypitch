@@ -93,7 +93,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:372-381`), with no variant's team note anywhere in the markup (`:409-415`; FACTS 1), and the
+   (`:374-383`), with no variant's team note anywhere in the markup (`:411-417`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 11: Registers and the break", a link to
    `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so
@@ -106,7 +106,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    then the cold open's predict card (Toys 2). On a phone (390 x 844) the title, the opening's
    first control, Play Merc's ‘ee’, and the two choices belong on the first screen, and on a tablet
    in landscape (1024 x 640) the stage and the choices too (CURIOSITY-MOMENTS § 3.1, "Above the
-   fold", `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:272-274`). Of the plan's levers, the
+   fold", `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:294-296`). Of the plan's levers, the
    recall's place is already used, since it follows the predict; the others are the Mercs' size
    (`--merc`, `kit/lesson-stage.css:193`) and the hook's length, and this hook, at 97 characters,
    is a long one: on a phone the strip's gloss may go under the stage's fold before the choices
@@ -602,9 +602,9 @@ state draws line 1, its bands unlit, but without its words. In the second copy t
 "star", holds a "?" in ink and no line. It draws no mint, which in the series means a line in the
 band, and no breath mark, no swell and no light that grows. Lesson 14's predict asks what "star"'s
 line will do as it swells, [ It rises ] [ It stays level ], so a second "star" drawn in its band, or
-with a swell, would answer it (FACTS 7). It is `aria-hidden` and claims nothing: the card's words carry
-the meaning, the default tease or `band` alike. CURIOSITY-MOMENTS' Lesson 13 Tease draws the same
-still.
+with a swell, would answer it (FACTS 7). It is `aria-hidden` and claims nothing: the card's words
+carry the meaning, the default tease or `band` alike. CURIOSITY-MOMENTS' Lesson 13 Tease draws the
+same still.
 
 ## Audio
 
@@ -723,21 +723,21 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   - The Sing room's premium rooms, which `PREMIUM_EXERCISES` gates
     (`src/lib/native-build.ts:58-68`).
 - **Needed, proposed: "Long Note on vowels"** (CURRICULUM § 2.1's Practise line; § 4, "vowels"
-  among the gaps with no drill, `CURRICULUM.md:498-500`): needs 12. When it ships, LESSON.md's
+  among the gaps with no drill, `CURRICULUM.md:520-522`): needs 12. When it ships, LESSON.md's
   editorial note gives the change: the card names it, and its address replaces Voice Mirror's.
 
 ## Explorer and season data
 
-- **Season data**: Lesson 13's entry in `kit/season.ts` (`:376-386`) gains a plain `minutes: 16` and
-  `page: '/learn/13'` after its topics, in every build, under the comment Lesson 3's entry carries
-  (`season.ts:212-213`), "A draft until its sign-off (drafts.ts): built in every mode, and live
-  where the page state publishes it (publish.ts).", as Lesson 3's own are written (`:214-215`;
-  FACTS 5, 64). Whether the page is live is `kit/publish.ts`'s to say: `seasonFor` draws a lesson
-  held back as one coming later, with no page and no reading time (`kit/publish.ts:102-124`), so
-  the entry reads neither `DRAFT_LESSONS` nor any build flag, which `kit/drafts.test.ts` keeps to
-  the publishing rules alone. Its `pr`, today `{ needs: 'Long Note on vowels' }`
-  (`kit/season.ts:384`), gains the link, proposed with the page (FACTS 64), as Lesson 3's reads
-  (`:218-225`):
+- **Season data**: Lesson 13's entry in `kit/season.ts` (`:376-386`) gains a plain
+  `minutes: 16` and `page: '/learn/13'` after its topics, in every build, under the comment
+  Lesson 3's entry carries (`season.ts:212-213`), "A draft until its sign-off (drafts.ts):
+  built in every mode, and live where the page state publishes it (publish.ts).", as Lesson
+  3's own are written (`season.ts:214-215`; FACTS 5, 64). Whether the page is live is
+  `kit/publish.ts`'s to say: `seasonFor` draws a lesson held back as one coming later, with
+  no page and no reading time (`kit/publish.ts:102-124`), so the entry reads neither
+  `DRAFT_LESSONS` nor any build flag, which `kit/drafts.test.ts` keeps to the publishing
+  rules alone. Its `pr`, today `{ needs: 'Long Note on vowels' }` (`kit/season.ts:384`),
+  gains the link, proposed with the page (FACTS 64), as Lesson 3's reads (`:218-225`):
 
   ```ts
   link: { href: '/mirror?lesson=13', addr: 'mercurypitch.com/mirror', label: 'Voice Mirror' },
@@ -760,7 +760,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand on main (21 October 2026, `7d1c9af71`), beyond the parts
+Found in the kit and the app as they stand on main (22 October 2026, `e0cbe33dc`), beyond the parts
 Lessons 2 to 11 promote into the kit (Toys table). Lessons 7, 9 and 11's pages are not built yet,
 and several items below are theirs too: whichever page is built first lands the part, and the
 others take it.
@@ -785,13 +785,13 @@ others take it.
    12, `:396-420`).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
-   (`:372-407`), and `src/tests/lesson-pages.test.ts` holds every lesson document, a draft's
-   included, to its head, its share card, its structured data and its legal links (`:112-210`),
-   since a draft the console publishes goes live with the head it was built with (`:12-17`). The
-   hook's copies are the ones the site worker rewrites when the console picks another hook
-   (`HOOK_COPIES`, `src/lesson-gate.ts:444-460`, and the structured data after it); only the meta
-   description and the Article's description, which repeat each other, may shorten the hook, and
-   every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:3-137`):
+   (`lesson-copy.test.ts:374-409`), and `src/tests/lesson-pages.test.ts` holds every lesson
+   document, a draft's included, to its head, its share card, its structured data and its legal
+   links (`:112-210`), since a draft the console publishes goes live with the head it was built with
+   (`:12-17`). The hook's copies are the ones the site worker rewrites when the console picks
+   another hook (`HOOK_COPIES`, `src/lesson-gate.ts:444-460`, and the structured data after it);
+   only the meta description and the Article's description, which repeat each other, may shorten the
+   hook, and every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:3-137`):
    - the title, "Resonance and vowels: why ee and ah differ | MercuryPitch" (57 characters, under
      the test's ceiling of 60, `lesson-pages.test.ts:127-128`), SEARCH.md § 4's draft for Lesson 13
      (`SEARCH.md:231`), which holds the Article's headline (`lesson-pages.test.ts:160`), the
@@ -801,7 +801,7 @@ others take it.
      Your Pitch, Lesson 13 | MercuryPitch", runs to 63 (Decisions 1). "Why ee and ah differ" says
      only what the hook says, that the two differ, and nothing of what the peaks do. The worker
      never rewrites a title. The h1 is `h1.hook#hook`, the hook in its default wording
-     (`lesson-copy.test.ts:372-381`; Hero);
+     (`lesson-copy.test.ts:374-383`; Hero);
    - the meta description, "Same note, ‘ee’ or ‘ah’: what makes them sound different? A free
      lesson with sound toys: harmonics, resonance, and one note held through five vowels." (149
      characters, inside the test's 80 to 160, `lesson-pages.test.ts:129-132`). It does not quote
@@ -810,8 +810,8 @@ others take it.
      `learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "If ‘ee’ and ‘ah’ sung on the same note draw the
      same pitch line, what makes them sound different? Watch Merc's line, then make your guess."
-     (138 characters; `lesson-copy.test.ts:398-401`; `learn/02.html:30-33`), and
-     `twitter:description`, the hook exactly (97; `lesson-copy.test.ts:402-404`;
+     (138 characters; `lesson-copy.test.ts:400-403`; `learn/02.html:30-33`), and
+     `twitter:description`, the hook exactly (97; `lesson-copy.test.ts:404-406`;
      `learn/02.html:49-52`), so both descriptions the worker rewrites fit 80 to 160 (FACTS 1);
    - canonical and `og:url` `https://mercurypitch.com/learn/13`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
@@ -823,7 +823,7 @@ others take it.
      orange Merc." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:177-197`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:387-395`, `:405`), and `lesson-pages.test.ts` asks for the Article
+     (`lesson-copy.test.ts:389-397`, `:407`), and `lesson-pages.test.ts` asks for the Article
      first (`:142-144`): `@id` `https://mercurypitch.com/learn/13#lesson` and
      `url` `https://mercurypitch.com/learn/13` (`lesson-pages.test.ts:146-147`); the headline
      "Resonance and vowels"; `alternativeHeadline`, the hook exactly; `description`, the meta
@@ -853,15 +853,15 @@ others take it.
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:119`, `:134`;
-   `:197`, `:207`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:458`, `:490`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:146-156`),
+   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:122`, `:137`;
+   `:200`, `:210`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:461`, `:493`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:149-159`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
-   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:131-133`). The vowel model
+   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:134-136`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
    reader arrive through a dynamic import when Start is pressed, as on Lesson 5
-   (`assert-first-paint-budgets.mjs:115-118`), and the ceiling holds only while that boundary does.
+   (`assert-first-paint-budgets.mjs:118-121`), and the ceiling holds only while that boundary does.
 5. `kit/sound.ts`, proposed: two options on `VoiceOptions` (`:30-44`), `partials` and
    `resonators` (Audio). `partials` gives a voice's source amplitudes whatever its `kind` (today
    `build` picks the wave from the kind, `:151-152`); `resonators`, a list of `{ hz, q }` built as
@@ -960,9 +960,9 @@ With the recommendation first:
    spectrum view and Mah Meh Mee Moh Moo, each for its own reason. Recommended: link Voice Mirror
    now, and Long Note once "Long Note on vowels" ships without length rewards (needs 12); never link
    the Analysis tab from a lesson while its Voice card grades resonance.
-5. **The CURRICULUM card's Practise line** (FACTS 6): to match the page, "Voice Mirror's hold, on
-   vowels, until Long Note on vowels ships", keeping the card's rule that the app must not claim to
-   assess vowels.
+5. **The CURRICULUM card's Practise line** (FACTS 6): applied in this PR, in the form Lesson 14's
+   card takes: Voice Mirror's hold until "Long Note on vowels" ships, the three drills not linked
+   with their reasons, and the card's rule that the app must not claim to assess vowels.
 6. **The next card's figure** (Toys 8; FACTS 7): Twinkle's first phrase as seven amber bands,
    drawn twice, the second copy's "star" a "?" with no line, as CURIOSITY-MOMENTS' Lesson 13 Tease
    draws it since Lesson 14's PR. A still that drew the second "star" in its band, or with a swell,

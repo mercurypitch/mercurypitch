@@ -327,30 +327,30 @@ note.
   **mercurypitch.com/mirror**"
 
 _[Editorial: both addresses link `/mirror?lesson=13`. Voice Mirror is its own document, so a first
-visit meets no First Light, and the card carries no first-visit line (FACTS 63, 64). The
-CURRICULUM card's two drills are not linked, and WEB-SPEC's Practice links give the reasons and the
-engineering. Long Note has no vowel cue, and its help asks for a note held "as long as you can"
-and scores how long it is held, as its setup screen's "The longer and steadier, the better." does
-(FACTS 60). Analysis' Spectrum card shows only for a stored take, "from the separated vocal"; its
-live take draws the singer's own spectrum beside a Voice card that names the take's resonance
-"chest", "mask", "head" or "mixed" and marks a "resonant" sound as good, where this page judges no
-vowel (FACTS 61). The app's own five-vowel drill, Mah Meh Mee Moh Moo, sits in Singing Zen's
-exercise list and the Ascent's "Breath & Power" week, has no address of its own, and asks for
-"clear enunciation" and vowels that "remain pure" (FACTS 62). When "Long Note on vowels" ships, the
-card names it, and its address replaces Voice Mirror's.]_
+visit meets no First Light, and the card carries no first-visit line (FACTS 63, 64). The CURRICULUM
+card names Voice Mirror's hold too, and the three drills it does not link; WEB-SPEC's Practice links
+give the reasons and the engineering. Long Note has no vowel cue, and its help asks for a note held
+"as long as you can" and scores how long it is held, as its setup screen's "The longer and steadier,
+the better." does (FACTS 60). Analysis' Spectrum card shows only for a stored take, "from the
+separated vocal"; its live take draws the singer's own spectrum beside a Voice card that names the
+take's resonance "chest", "mask", "head" or "mixed" and marks a "resonant" sound as good, where this
+page judges no vowel (FACTS 61). The app's own five-vowel drill, Mah Meh Mee Moh Moo, sits in
+Singing Zen's exercise list and the Ascent's "Breath & Power" week, has no address of its own, and
+asks for "clear enunciation" and vowels that "remain pure" (FACTS 62). When "Long Note on vowels"
+ships, the card names it, and its address replaces Voice Mirror's.]_
 
 **Next lesson:** Lesson 14, Phrasing: sing a whole song. "If every note of a song is in tune, what
 is left to shape?" One line above it, the tease: "‘Twinkle, twinkle, little star’, twice. The second
 ‘star’ swells."
 
-_[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season as
-this page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`,
-`kit/page-state.ts`). These are Lesson 14's defaults. The console may pick its alternatives,
-today's wording kept as the hook `compelling` and the tease `band`, and the card draws whichever it
-picked. Beside the words, the tease's figure: Twinkle's first phrase as Lesson 14's song line draws
-it, seven amber bands at their heights with Merc's line through each, drawn twice side by side; in
-the second copy the seventh band, "star", holds a "?" and no line. It draws no mint, no breath
-mark, no swell and no light that grows, since a second "star" drawn in its band, or with a swell, would
+_[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season as this
+page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`,
+`kit/page-state.ts`). These are Lesson 14's defaults. The console may pick its alternatives, today's
+wording kept as the hook `compelling` and the tease `band`, and the card draws whichever it picked.
+Beside the words, the tease's figure: Twinkle's first phrase as Lesson 14's song line draws it,
+seven amber bands at their heights with Merc's line through each, drawn twice side by side; in the
+second copy the seventh band, "star", holds a "?" and no line. It draws no mint, no breath mark, no
+swell and no light that grows, since a second "star" drawn in its band, or with a swell, would
 answer Lesson 14's predict (WEB-SPEC, Toys 8). The card says "Coming later" and "See it on the map"
 until Lesson 14's page is live (FACTS 7).]_
 
