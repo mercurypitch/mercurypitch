@@ -248,8 +248,8 @@ export async function handleRunpodRequest(
 
   if (route === 'session' && method === 'DELETE') {
     if (meter !== null) {
-      // Refund only a cancel that cost us nothing: the job was still
-      // IN_QUEUE (no worker picked it up, zero GPU spend). Cancelling a
+      // Refund only an accepted cancellation observed IN_QUEUE beforehand.
+      // This policy does not rule out the job starting between calls. Cancelling a
       // RUNNING job keeps the debit — the GPU time is already paid for, and
       // refunding it would let users burn our GPU money for free by
       // cancelling near the end. Genuine failures are refunded by the
@@ -584,14 +584,21 @@ async function startRunpodJob(
       declaredDuration,
     )
     if (!verdict.allowed) {
-      await cancelJob(cfg, endpointId, res.id)
+      try {
+        await cancelJob(cfg, endpointId, res.id)
+      } catch (err) {
+        console.error(
+          `[runpod] ${sessionId} cancellation failed after debit refusal:`,
+          err,
+        )
+      }
       // A transport failure can hide a successful debit response. The refund
       // endpoint is idempotent and safely no-ops when no debit exists, so this
-      // best-effort compensation prevents a cancelled job from remaining
-      // charged when the response was lost after the ledger commit.
+      // best-effort compensation must still run if cancellation fails: the
+      // caller never receives this job's session, even if the debit committed.
       await refundJob(meter, sessionId)
       console.warn(
-        `[runpod] ${sessionId} cancelled: debit refused (balance ${verdict.balance ?? '?'}, required ${verdict.required ?? '?'})`,
+        `[runpod] ${sessionId} debit refused (balance ${verdict.balance ?? '?'}, required ${verdict.required ?? '?'})`,
       )
       return json(
         {

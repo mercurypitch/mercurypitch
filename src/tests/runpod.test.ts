@@ -1,10 +1,10 @@
 // ============================================================
-// RunPod bridge — unit tests for the pure FastAPI<->RunPod mappers
+// RunPod bridge — pure FastAPI<->RunPod mappers and HTTP wrapper tests
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RunpodConfig, RunpodStatus } from '@/lib/runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, jobExecutionTimeoutMs, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, runpodEndpointUrl, runpodHeaders, RunpodJobGoneError, submitJob, toSessionId, } from '@/lib/runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, jobExecutionTimeoutMs, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, runpodEndpointUrl, runpodHeaders, RunpodJobGoneError, submitJob, toSessionId, } from '@/lib/runpod'
 
 const CFG: RunpodConfig = {
   apiKey: 'key-123',
@@ -464,6 +464,57 @@ describe('runpodEndpointUrl / runpodHeaders', () => {
 // ── fetch wrappers ──────────────────────────────────────────────
 
 describe('fetch wrappers', () => {
+  it('cancelJob POSTs to the selected endpoint with bearer auth and an encoded job id', async () => {
+    const spy = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 204 }))
+
+    await cancelJob(CFG, 'ep-cpu', 'job/1 ?#%')
+
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy).toHaveBeenCalledWith(
+      'https://api.runpod.ai/v2/ep-cpu/cancel/job%2F1%20%3F%23%25',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer key-123',
+          'Content-Type': 'application/json',
+        },
+      },
+    )
+  })
+
+  it.each([200, 204])(
+    'cancelJob accepts HTTP %i without requiring a response body',
+    async (status) => {
+      vi.spyOn(global, 'fetch').mockResolvedValue(
+        new Response(null, { status }),
+      )
+
+      await expect(cancelJob(CFG, 'ep-gpu', 'job-1')).resolves.toBeUndefined()
+    },
+  )
+
+  it.each([300, 401, 429, 503])(
+    'cancelJob rejects an HTTP %i cancellation response',
+    async (status) => {
+      vi.spyOn(global, 'fetch').mockResolvedValue(
+        new Response('Provider response', { status, statusText: 'Rejected' }),
+      )
+
+      await expect(cancelJob(CFG, 'ep-gpu', 'job-1')).rejects.toThrow(
+        `RunPod cancel failed: ${status} Rejected`,
+      )
+    },
+  )
+
+  it('cancelJob propagates a rejected fetch without reporting acceptance', async () => {
+    const failure = new TypeError('Cancellation connection lost')
+    vi.spyOn(global, 'fetch').mockRejectedValue(failure)
+
+    await expect(cancelJob(CFG, 'ep-gpu', 'job-1')).rejects.toBe(failure)
+  })
+
   it('submitJob posts the input to the given endpoint and returns the job id', async () => {
     const spy = vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,

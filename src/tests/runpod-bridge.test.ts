@@ -814,20 +814,27 @@ describe('handleRunpodRequest — metering', () => {
 
   /** Fetch mock dispatching by URL; records calls for assertions. */
   function mockRoutes(
-    routes: Record<string, { body: unknown; status?: number }>,
+    routes: Record<
+      string,
+      { body?: unknown; status?: number; headers?: HeadersInit; error?: Error }
+    >,
   ) {
     const calls: { url: string; init?: RequestInit }[] = []
     vi.spyOn(global, 'fetch').mockImplementation((input, init) => {
       const url = String(input)
       calls.push({ url, init })
       const hit = Object.entries(routes).find(([k]) => url.includes(k))
+      if (hit?.[1].error !== undefined) return Promise.reject(hit[1].error)
       const status = hit?.[1].status ?? 200
-      return Promise.resolve({
-        ok: status < 400,
-        status,
-        statusText: 'x',
-        json: () => Promise.resolve(hit?.[1].body ?? {}),
-      } as Response)
+      return Promise.resolve(
+        new Response(
+          status === 204 ? null : JSON.stringify(hit?.[1].body ?? {}),
+          {
+            status,
+            headers: hit?.[1].headers,
+          },
+        ),
+      )
     })
     return calls
   }
@@ -1071,6 +1078,126 @@ describe('handleRunpodRequest — metering', () => {
     expect(calls.some((c) => c.url.includes('/api/billing/'))).toBe(false)
   })
 
+  it.each([
+    {
+      name: 'refused debit and HTTP cancellation failure',
+      debitStatus: 402,
+      cancelError: false,
+    },
+    {
+      name: 'rate-limited debit and HTTP cancellation failure',
+      debitStatus: 429,
+      cancelError: false,
+    },
+    {
+      name: 'lost debit response and cancellation connection failure',
+      debitStatus: undefined,
+      cancelError: true,
+    },
+  ])('still compensates after $name', async ({ debitStatus, cancelError }) => {
+    const warnings = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const billingError =
+      debitStatus === 402 ? 'Insufficient credits' : 'Billing busy'
+    const calls = mockRoutes({
+      '/api/billing/uvr-admit': { body: { allowed: true } },
+      '/run': { body: { id: 'job-1' } },
+      '/api/billing/debit':
+        debitStatus === undefined
+          ? { error: new Error('Debit response lost after commit') }
+          : {
+              status: debitStatus,
+              body: { error: billingError, required: 2, balance: 0 },
+              headers: debitStatus === 429 ? { 'Retry-After': '17' } : {},
+            },
+      '/cancel/': cancelError
+        ? { error: new Error('Cancellation connection lost') }
+        : { status: 503 },
+      '/api/billing/refund': { body: { refunded: 2 } },
+    })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod', Authorization: 'Bearer tok' },
+      file: smallFile(),
+    })
+
+    const res = await handleRunpodRequest(request, url, 'POST', CFG, METER)
+
+    expect(res?.status).toBe(debitStatus ?? 503)
+    expect(await res?.json()).toEqual(
+      debitStatus === undefined
+        ? { error: 'Server processing billing is unavailable' }
+        : { error: billingError, required: 2, balance: 0 },
+    )
+    expect(res?.headers.get('Retry-After')).toBe(
+      debitStatus === 429 ? '17' : null,
+    )
+    const cleanup = calls.filter(
+      (c) =>
+        c.url.includes('/cancel/') || c.url.endsWith('/api/billing/refund'),
+    )
+    expect(cleanup.map((c) => c.url)).toEqual([
+      'https://api.runpod.ai/v2/ep-gpu/cancel/job-1',
+      'https://db.test/api/billing/refund',
+    ])
+    expect(JSON.parse(cleanup[1].init?.body as string)).toEqual({
+      jobRef: 'rp_gpu_job-1',
+    })
+    expect(cleanup[1].init?.headers).toMatchObject({ 'X-Service-Key': 'svc' })
+    expect(warnings.mock.calls.flat().join(' ')).not.toContain(
+      'cancelled: debit refused',
+    )
+    expect(errors.mock.calls.flat().join(' ')).toContain(
+      'cancellation failed after debit refusal',
+    )
+  })
+
+  it.each(['http', 'network'])(
+    'preserves the billing refusal when cancellation and the refund both fail (%s)',
+    async (failure) => {
+      const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const calls = mockRoutes({
+        '/api/billing/uvr-admit': { body: { allowed: true } },
+        '/run': { body: { id: 'job-1' } },
+        '/api/billing/debit': {
+          status: 429,
+          body: { error: 'Billing busy', required: 2, balance: 0 },
+          headers: { 'Retry-After': '17' },
+        },
+        '/cancel/': { status: 503 },
+        '/api/billing/refund':
+          failure === 'http'
+            ? { status: 503 }
+            : { error: new Error('Refund connection lost') },
+      })
+      const { request, url } = processReq('/api/uvr/process', {
+        headers: { 'x-uvr-provider': 'runpod', Authorization: 'Bearer tok' },
+        file: smallFile(),
+      })
+
+      const res = await handleRunpodRequest(request, url, 'POST', CFG, METER)
+
+      expect(res?.status).toBe(429)
+      expect(res?.headers.get('Retry-After')).toBe('17')
+      expect(await res?.json()).toEqual({
+        error: 'Billing busy',
+        required: 2,
+        balance: 0,
+      })
+      expect(calls.map((call) => call.url)).toEqual([
+        'https://db.test/api/billing/uvr-admit',
+        'https://api.runpod.ai/v2/ep-gpu/run',
+        'https://db.test/api/billing/debit',
+        'https://api.runpod.ai/v2/ep-gpu/cancel/job-1',
+        'https://db.test/api/billing/refund',
+      ])
+      const logged = errors.mock.calls.flat().join(' ')
+      expect(logged).toContain('cancellation failed after debit refusal')
+      expect(logged).toContain(
+        failure === 'http' ? 'refund failed' : 'refund unreachable',
+      )
+    },
+  )
+
   it('refunds a job whose status ends in error', async () => {
     const calls = mockRoutes({
       '/status/': { body: { status: 'FAILED', error: 'boom' } },
@@ -1104,17 +1231,135 @@ describe('handleRunpodRequest — metering', () => {
     expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(false)
   })
 
-  it('refunds a cancel of a still-queued job (no GPU spend yet)', async () => {
-    const calls = mockRoutes({
-      '/status/': { body: { status: 'IN_QUEUE' } },
-      '/cancel/': { body: {} },
-      '/api/billing/refund': { body: { refunded: 2 } },
+  it.each([200, 204])(
+    'refunds a queued job after cancellation returns HTTP %i',
+    async (status) => {
+      const calls = mockRoutes({
+        '/status/': { body: { status: 'IN_QUEUE' } },
+        '/cancel/': { body: { id: 'job-1', status: 'CANCELLED' }, status },
+        '/api/billing/refund': { body: { refunded: 2 } },
+      })
+      const { request, url } = req('/api/uvr/session/rp_gpu_job-1')
+      const res = await handleRunpodRequest(request, url, 'DELETE', CFG, METER)
+      expect(res?.status).toBe(200)
+      expect(await res?.json()).toMatchObject({ status: 'success' })
+      expect(calls.map((call) => call.url)).toEqual([
+        'https://api.runpod.ai/v2/ep-gpu/status/job-1',
+        'https://api.runpod.ai/v2/ep-gpu/cancel/job-1',
+        'https://db.test/api/billing/refund',
+      ])
+      expect(JSON.parse(calls[2].init?.body as string)).toEqual({
+        jobRef: 'rp_gpu_job-1',
+      })
+    },
+  )
+
+  it('waits for cancellation acceptance before requesting the queued refund', async () => {
+    const cancellation = Promise.withResolvers<Response>()
+    const cancellationStarted = Promise.withResolvers<undefined>()
+    const calls: string[] = []
+    vi.spyOn(global, 'fetch').mockImplementation(async (input) => {
+      const url = String(input)
+      calls.push(url)
+      if (url === 'https://api.runpod.ai/v2/ep-gpu/status/job-1') {
+        return Response.json({ status: 'IN_QUEUE' })
+      }
+      if (url === 'https://api.runpod.ai/v2/ep-gpu/cancel/job-1') {
+        cancellationStarted.resolve(undefined)
+        return cancellation.promise
+      }
+      if (url === 'https://db.test/api/billing/refund') {
+        return Response.json({ refunded: 2 })
+      }
+      throw new Error(`Unexpected request: ${url}`)
     })
-    const { request, url } = req('/api/uvr/session/rp_gpu_job-1')
-    const res = await handleRunpodRequest(request, url, 'DELETE', CFG, METER)
+    const { request, url } = req('/api/uvr/session/rp_gpu_job-1', {
+      method: 'DELETE',
+    })
+    const pending = handleRunpodRequest(request, url, 'DELETE', CFG, METER)
+
+    await cancellationStarted.promise
+    expect(calls).toEqual([
+      'https://api.runpod.ai/v2/ep-gpu/status/job-1',
+      'https://api.runpod.ai/v2/ep-gpu/cancel/job-1',
+    ])
+    cancellation.resolve(Response.json({ id: 'job-1', status: 'CANCELLED' }))
+    const res = await pending
+
     expect(res?.status).toBe(200)
-    expect(calls.some((c) => c.url.includes('/cancel/job-1'))).toBe(true)
-    expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(true)
+    expect(calls).toEqual([
+      'https://api.runpod.ai/v2/ep-gpu/status/job-1',
+      'https://api.runpod.ai/v2/ep-gpu/cancel/job-1',
+      'https://db.test/api/billing/refund',
+    ])
+  })
+
+  it.each([
+    { name: 'HTTP 401', status: 401 },
+    { name: 'HTTP 404', status: 404 },
+    { name: 'HTTP 429', status: 429 },
+    { name: 'HTTP 503', status: 503 },
+    {
+      name: 'connection failure',
+      error: new Error('Cancellation connection lost'),
+    },
+  ])(
+    'does not refund or report success when queued cancellation fails with $name',
+    async (failure) => {
+      const logs = vi.spyOn(console, 'log').mockImplementation(() => {})
+      const calls = mockRoutes({
+        '/status/': { body: { status: 'IN_QUEUE' } },
+        '/cancel/': failure,
+        '/api/billing/refund': { body: { refunded: 2 } },
+      })
+      const { request, url } = req('/api/uvr/session/rp_gpu_job-1', {
+        method: 'DELETE',
+      })
+
+      await expect(
+        handleRunpodRequest(request, url, 'DELETE', CFG, METER),
+      ).rejects.toThrow(
+        failure.error?.message ?? `RunPod cancel failed: ${failure.status}`,
+      )
+
+      expect(calls.map((c) => c.url)).toEqual([
+        'https://api.runpod.ai/v2/ep-gpu/status/job-1',
+        'https://api.runpod.ai/v2/ep-gpu/cancel/job-1',
+      ])
+      expect(logs.mock.calls.flat().join(' ')).not.toContain('cancelled')
+    },
+  )
+
+  it('rejects a failed cancellation when metering is off', async () => {
+    const calls = mockRoutes({ '/cancel/': { status: 503 } })
+    const { request, url } = req('/api/uvr/session/rp_cpu_job-1', {
+      method: 'DELETE',
+    })
+
+    await expect(
+      handleRunpodRequest(request, url, 'DELETE', CFG, null),
+    ).rejects.toThrow('RunPod cancel failed: 503')
+    expect(calls.map((c) => c.url)).toEqual([
+      'https://api.runpod.ai/v2/ep-cpu/cancel/job-1',
+    ])
+  })
+
+  it('keeps the debit when the pre-cancel status is unavailable', async () => {
+    const calls = mockRoutes({
+      '/status/': { status: 503 },
+      '/cancel/': { body: { id: 'job-1', status: 'CANCELLED' } },
+    })
+    const { request, url } = req('/api/uvr/session/rp_gpu_job-1', {
+      method: 'DELETE',
+    })
+    const res = await handleRunpodRequest(request, url, 'DELETE', CFG, METER)
+
+    expect(res?.status).toBe(200)
+    expect(await res?.json()).toMatchObject({ status: 'success' })
+    expect(calls.map((c) => c.url)).toEqual([
+      'https://api.runpod.ai/v2/ep-gpu/status/job-1',
+      'https://api.runpod.ai/v2/ep-gpu/cancel/job-1',
+    ])
   })
 
   it('keeps the debit when cancelling a RUNNING job (GPU time already spent)', async () => {
