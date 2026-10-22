@@ -179,9 +179,9 @@ These are the rules that break things when ignored.
 | [uvr-api.ts](../../src/lib/uvr-api.ts) | 950 | UVR API Client - Frontend Integration |
 | [use-dry-voice-capture.ts](../../src/lib/use-dry-voice-capture.ts) | 850 | Dry Voice Capture Controller — reusable local mic recording and review Owns the full temporary-capture lifecycle but never persists a take. |
 | [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 800 | Lyrics Service — fetch, parse, and sync lyrics |
+| [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 750 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
 | [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 700 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 700 | Practice Engine — Mic, pitch detection, accuracy scoring |
-| [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 700 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 700 | Shared Whisper transcription controller hook. |
 | [consent.ts](../../src/lib/consent.ts) | 650 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
 | [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 650 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |

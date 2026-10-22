@@ -446,8 +446,13 @@ async function processServer(
   // separation. Awaited so recovery is guaranteed once the job is submitted.
   await setUvrSessionApiIdDurable(sessionId, response.session_id)
   if (signal?.aborted ?? false) {
-    await deleteSession(response.session_id).catch(() => undefined)
-    clearUvrSessionApiId(sessionId)
+    try {
+      await deleteSession(response.session_id)
+      clearUvrSessionApiId(sessionId)
+    } catch {
+      // Keep the persisted ID when cancellation is unconfirmed so the
+      // existing job can still be recovered without another submission.
+    }
     throw new DOMException('Processing cancelled', 'AbortError')
   }
 
