@@ -107,7 +107,7 @@ describe('seasonFor', () => {
     // Arrange: no lesson has a second tease yet, so one is made up here
     const L: Lesson = {
       ...LESSONS[2],
-      teaseAlts: [{ id: 'keys', text: 'Five more keys.', note: 'test' }],
+      teaseAlts: [{ id: 'keys', text: 'Five more keys.' }],
     }
 
     // Act

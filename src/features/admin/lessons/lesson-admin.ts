@@ -8,10 +8,11 @@
 // the Content Studio: an override in the lesson state (src/lib/lesson-state.ts)
 // publishes or unpublishes it on one site whatever the code says, and the
 // site follows within about a minute. This module turns the season's own data
-// (season.ts, drafts.ts, films.ts) into one row per lesson, reads what the
-// site it runs on really serves (each lesson's page, /sitemap.xml and
-// /llms.txt), and derives each lesson's release checklist from the two and
-// from its override. No DOM, so the page and its tests share every rule.
+// (season.ts, drafts.ts, films.ts, and each lesson's signature from
+// team-notes.ts, which no lesson page carries) into one row per lesson, reads
+// what the site it runs on really serves (each lesson's page, /sitemap.xml
+// and /llms.txt), and derives each lesson's release checklist from the two
+// and from its override. No DOM, so the page and its tests share every rule.
 //
 // The site follows an override within about a minute: an unpublished
 // lesson's address answers 404 and leaves both listings, and a published
@@ -24,6 +25,7 @@ import type { FilmRegistry, FilmSources, FilmState, } from '@/features/lessons/k
 import { FILMS, filmSources, filmState } from '@/features/lessons/kit/films'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
+import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 
 /**
  * Where a lesson stands in the build this page came from: released (its
@@ -50,6 +52,12 @@ export interface LessonRow {
   /** Its film, from films.ts: undefined while it has none. */
   readonly film: FilmState | undefined
   readonly sources: FilmSources | null
+  /**
+   * Its signature image, the team's shorthand for its look, from
+   * team-notes.ts; null for a lesson that has none there, which
+   * team-notes.test.ts refuses.
+   */
+  readonly signature: string | null
 }
 
 /** "Lesson 3", or "Trailer" for the season's film. */
@@ -105,6 +113,7 @@ export function lessonRows(
       waitingOn,
       film: filmState(lesson.n, films),
       sources: filmSources(lesson.n, films),
+      signature: SIGNATURES[lesson.n] ?? null,
     }
   })
 }

@@ -14,6 +14,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/t
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import { LESSONS, TOPICS } from '@/features/lessons/kit/season'
+import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 import { AdminLessonsPage } from './AdminLessonsPage'
 import { BEAT_SHEET, FILES, planFileUrl } from './lessons/blueprint-data'
 import { lessonRows } from './lessons/lesson-admin'
@@ -162,7 +163,9 @@ describe('AdminLessonsPage', () => {
     const lesson = LESSONS[2]
     const facts = within(card(2))
     expect(facts.getByText(lesson.pr.needs ?? 'no needs')).toBeInTheDocument()
-    expect(facts.getByText(lesson.sig)).toBeInTheDocument()
+    expect(
+      facts.getByText(SIGNATURES[2] ?? 'a signature').closest('div'),
+    ).toHaveTextContent(/^Signature/)
     for (const topic of lesson.topics) {
       expect(facts.getByText(topic).closest('li')).toHaveTextContent(
         `${topic} ${TOPICS[topic]}`,

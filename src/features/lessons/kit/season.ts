@@ -24,14 +24,17 @@
 // every entry's `film` reads, and only a published film ever offers "Watch
 // the episode".
 //
-// Some fields are the team's and never drawn on a lesson page: the
-// signature image (`sig`), the drill a practise link still needs
-// (`pr.needs`), why a lesson has no drill (`pr.none`), a film that is made
-// but not published (`film: 'production'`), a film's running time (`len`)
-// and why a hook or tease variant exists (its `note`). They stay here for
-// the team and the admin console. A note on a practise link
-// (`pr.link.note`) is printed on the card, so it speaks to the learner:
-// "then tap Scale Runner", never what the drill still lacks.
+// Some fields are the team's and never drawn on a lesson page: the drill a
+// practise link still needs (`pr.needs`), why a lesson has no drill
+// (`pr.none`), a film that is made but not published
+// (`film: 'production'`) and a film's running time (`len`). They stay here
+// for the team and the admin console. Two more of the team's fields are
+// not here at all, since every lesson page downloads this file: a lesson's
+// signature image and why a hook or tease variant exists. Both are in
+// team-notes.ts, by lesson number, which only the admin console imports. A
+// note on a practise link (`pr.link.note`) is printed on the card, so it
+// speaks to the learner: "then tap Scale Runner", never what the drill
+// still lacks.
 //
 // A lesson's `hook` is its default hook, which its page's title and its
 // documents quote. Its alternative hooks, its tease (the line the lesson
@@ -130,8 +133,6 @@ export interface Lesson extends CuriosityCopy {
   readonly film?: FilmState
   /** The question the lesson opens with: its default hook, variant id 'default' (lesson-copy.ts). */
   readonly hook: string
-  /** The signature image, the team's shorthand for the lesson's look. Admin only, never drawn on a lesson page. */
-  readonly sig: string
   readonly pr: Practise
   /** The figure beside its card; 'poster' shows the poster its page hands the explorer. */
   readonly fig?: 'poster' | 'metronome' | 'chladni'
@@ -150,7 +151,6 @@ const ENTRIES: readonly Lesson[] = [
     topics: [],
     len: '2 to 3 min',
     hook: 'What if you could see every note you sing?',
-    sig: 'The promise, and a map of all fourteen hooks.',
     pr: { none: 'The trailer is the map; it has no drill of its own.' },
   },
   {
@@ -164,7 +164,6 @@ const ENTRIES: readonly Lesson[] = [
     page: '/learn/01',
     film: filmState(1),
     hook: 'If 440 Hz shakes the air twice as fast as 220 Hz, why do musicians call them the same note?',
-    sig: 'The pitch line winds into a spiral; the spiral unrolls into the keyboard.',
     pr: {
       link: {
         href: '/mirror?lesson=01',
@@ -188,7 +187,6 @@ const ENTRIES: readonly Lesson[] = [
     page: '/learn/02',
     film: filmState(2),
     hook: 'Musicians only use seven letters, so where do the other five notes come from?',
-    sig: 'The five "?" beads from Lesson 1\'s spiral light up; twelve equal steps multiply to exactly 2.',
     pr: {
       needs:
         'Ear Lab Leap with only minor and major 2nds (an ear-drill launch accepting a bank subset)',
@@ -214,7 +212,6 @@ const ENTRIES: readonly Lesson[] = [
     minutes: 15,
     page: '/learn/03',
     hook: "Asked, most students said they couldn't copy a tune. What happened when researchers tested it?",
-    sig: "The singer's line chasing Merc's target band, the gap shrinking in cents.",
     pr: {
       needs: 'Pitch Hold (a slug)',
       link: {
@@ -234,7 +231,6 @@ const ENTRIES: readonly Lesson[] = [
     minutes: 10,
     page: '/learn/04',
     hook: 'Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?',
-    sig: 'A staircase with two short steps that slides to start on any note.',
     pr: {
       needs: 'Scale Runner at a beginner tempo (a data-only slug)',
       link: {
@@ -255,7 +251,6 @@ const ENTRIES: readonly Lesson[] = [
     minutes: 17,
     page: '/learn/05',
     hook: "Singers are told to “support” a long note. If that doesn't mean pushing, what keeps it steady?",
-    sig: 'The pitch line of a held note settling from a wobble into a narrow band.',
     pr: {
       needs: 'Long Note with a fixed 10 or 15 s length (durationSec)',
       link: {
@@ -276,7 +271,6 @@ const ENTRIES: readonly Lesson[] = [
     minutes: 15,
     page: '/learn/06',
     hook: 'Why can you start ‘Twinkle, Twinkle’ on any note and it is still the same tune?',
-    sig: "A tune's contour lifted off the chart and slid up and down, keeping its shape.",
     pr: {
       needs:
         'Interval Trainer with the anchored intervals (the intervals launch field)',
@@ -298,7 +292,6 @@ const ENTRIES: readonly Lesson[] = [
     minutes: 16,
     page: '/learn/07',
     hook: 'Why is your comfortable middle worth more than your highest note?',
-    sig: "A siren's line sweeping the chart, the comfortable band lit and the edges dimmed.",
     pr: {
       link: {
         href: '/vocal-range-test?lesson=07',
@@ -317,7 +310,6 @@ const ENTRIES: readonly Lesson[] = [
     minutes: 15,
     page: '/learn/08',
     hook: 'Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?',
-    sig: 'A metronome whose arm becomes the beat grid of a step sequencer.',
     pr: {
       needs: 'Ear Lab Time (an ear-drill link)',
       // the Learn panel's address, which opens First Pocket on a phone too
@@ -337,7 +329,6 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Landing a leap',
     topics: ['S09', 'S10'],
     hook: 'How do you land a note you have to leap to?',
-    sig: "The leap drawn as an arc whose landing zone is the target band (amber, the app's pitch-canvas colour); slow leaps first.",
     pr: {
       needs: 'Interval Trainer (sing) and Arpeggio Jumper',
       link: {
@@ -355,7 +346,6 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Major and minor',
     topics: ['T14', 'T15', 'T19'],
     hook: 'Which single note turns a major chord into a minor one?',
-    sig: "One bead, the third, sliding down one semitone and the chord's colour changing.",
     pr: { needs: 'Drone Intonation and Ear Lab Stack' },
   },
   {
@@ -365,7 +355,6 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Registers',
     topics: ['S12'],
     hook: 'Why does your voice sometimes flip as you slide up?',
-    sig: "The siren's line crossing a shaded seam, the seam narrowing over repetitions.",
     pr: { needs: 'siren and slide drills' },
   },
   {
@@ -375,7 +364,6 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Chords',
     topics: ['T19', 'T20', 'T21'],
     hook: 'How can two songs share the same four chords and still sound different?',
-    sig: 'Four chords as four rooms on the spiral; a melody walking through them.',
     pr: {
       needs:
         'Chord Stacker with major and minor triads (today it has only maj7, min7, dom7, dim7 and maj6)',
@@ -388,7 +376,6 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Vowels',
     topics: ['T28', 'S13', 'S14'],
     hook: 'If ‘ee’ and ‘ah’ sung on the same note draw the same pitch line, what makes them sound different?',
-    sig: 'One pitch line over a harmonic spectrum whose peaks move as the vowel changes.',
     pr: { needs: 'Long Note on vowels' },
     fig: 'chladni',
   },
@@ -399,7 +386,6 @@ const ENTRIES: readonly Lesson[] = [
     short: 'Phrasing',
     topics: ['S16', 'S17', 'T22'],
     hook: 'If every note of a song is in tune, what is left to shape?',
-    sig: "A whole song's pitch line with breath marks and a swell drawn in light.",
     pr: {
       link: {
         href: '/karaoke-night?lesson=14',

@@ -18,7 +18,6 @@ const lesson = (n: number, live: boolean): Lesson => ({
   short: `Lesson ${n}`,
   topics: [],
   hook: 'Why?',
-  sig: 'A figure.',
   pr: {},
   ...(live ? { minutes: 10, page: `/learn/0${n}` } : {}),
 })

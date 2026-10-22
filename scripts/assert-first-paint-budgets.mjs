@@ -109,14 +109,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // edges sit in their own leaf chunk, so the page stays this light only
   // while both boundaries hold. Raised to 126 when the console gained
   // Lesson 11's alternative hook: 127,944 bytes on main before it, 128,192
-  // with it, against 128,000 at 125. Every lesson page carries the season's
+  // with it, against 128,000 at 125. Every lesson page carried the season's
   // copy, each alternative's text and its console note included. Raised to
   // 127 for Lesson 7's page: 128,708 bytes on main before it, 129,140 with
   // it, against 129,024 at 126. All 432 bytes are Lesson 7's: its season
   // entry and drafts line (122, on every lesson page), the "ng" and
   // lip-trill hook in kit/sound.ts (36), and the two modules it shares with
   // this page, Lesson 3's questions and the warm-up's contour, each now a
-  // chunk of its own (274).
+  // chunk of its own (274). The console's notes and the signatures have
+  // since left every lesson page for kit/team-notes.ts.
   'learn/03.html': 127,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
