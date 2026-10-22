@@ -1166,8 +1166,8 @@ draft shown as `build:e2e` shows it):
 10. Every practice link carries `?lesson=08` before any hash: `/drum-night?drawer=learn&lesson=08`
     and `/ear-lab?lesson=08`.
 11. The next-lesson card: a row for `/learn/08` in `src/e2e/learn-next-card.spec.ts`'s `CARDS`
-    (`:27-58`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
-on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:90-107`):
+    (`:27-76`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
+on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:102-119`):
     `.next-tease` reads `LESSON_COPY[9].tease`, and the card's words run eyebrow, `next-tease`,
     `q2`, `chip`; and its tease figure, after the words, holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every built lesson,

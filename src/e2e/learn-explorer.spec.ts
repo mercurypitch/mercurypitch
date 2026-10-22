@@ -141,8 +141,8 @@ test.describe('on an iPad in Safari, 1024 x 672', () => {
   test("a next-lesson card's link opens the explorer on a lesson coming later, its card in view as far as its question", async ({
     page,
   }) => {
-    // Arrange: Lesson 7's card leads to Lesson 8, coming later, whose card has no button
-    await page.goto('/learn/07')
+    // Arrange: Lesson 8's card leads to Lesson 9, coming later, whose card has no button
+    await page.goto('/learn/08')
     const next = page.locator('#wrap [data-select-lesson]')
     // at once: Playwright's own scroll into view races the page's smooth one
     await next.evaluate((el) =>
@@ -153,9 +153,7 @@ test.describe('on an iPad in Safari, 1024 x 672', () => {
     await next.tap()
 
     // Assert: its question stands in for the button
-    await expect(page.locator('#exCardHost h3')).toHaveText(
-      'Beat, tempo and the backbeat',
-    )
+    await expect(page.locator('#exCardHost h3')).toHaveText('Landing a leap')
     await expectInView(page, '#exCardHost .hookq')
   })
 })

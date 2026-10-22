@@ -9,8 +9,8 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3, 5, 6 and 7 are live here; a page that holds them back
-// is next-card.test.ts's, and one the site worker served with the
+// does, so Lessons 3, 5, 6, 7 and 8 are live here; a page that holds them
+// back is next-card.test.ts's, and one the site worker served with the
 // console's state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
 // its hook; the season's close, on a finale with no page yet, is
@@ -63,7 +63,13 @@ const CARDS = [
   ],
   [
     '/learn/07',
-    'Next lesson 08 · Beat, tempo and the backbeat Coming later',
+    'Next lesson 08 · Beat, tempo and the backbeat Ready · 15 min',
+    '/learn/08',
+    'Start lesson',
+  ],
+  [
+    '/learn/08',
+    'Next lesson 09 · Landing a leap Coming later',
     '#explorer',
     'See it on the map',
   ],
@@ -110,6 +116,32 @@ test("Lesson 1's card sets up Lesson 2 with its tease, one line above its hook",
       .locator('.next-words > *')
       .evaluateAll((els) => els.map((e) => e.className)),
   ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+})
+
+test("Lesson 8's card sets up Lesson 9 with its tease, one line above its hook, and its figure after the words holds no button", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/08')
+
+  // Assert
+  const c = card(page)
+  await expect(c.locator('.next-tease')).toHaveText(
+    LESSON_COPY[9]?.tease ?? 'Lesson 9 has a tease',
+  )
+  await expect(c.locator('.next-tease')).toBeVisible()
+  expect(
+    await c
+      .locator('.next-words > *')
+      .evaluateAll((els) => els.map((e) => e.className)),
+  ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+  // the page's tease figure, kept after the words
+  expect(
+    await c.evaluate((a) =>
+      Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words', 'l08-tease'])
+  await expect(c.locator('button')).toHaveCount(0)
 })
 
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
@@ -164,16 +196,14 @@ test('a lesson coming later opens the map on its card @smoke', async ({
   page,
 }) => {
   // Arrange
-  await page.goto('/learn/07')
+  await page.goto('/learn/08')
 
   // Act
   await card(page).click()
 
   // Assert
   await expect(page).toHaveURL(/#explorer$/)
-  await expect(page.locator('#exCardHost h3')).toHaveText(
-    'Beat, tempo and the backbeat',
-  )
+  await expect(page.locator('#exCardHost h3')).toHaveText('Landing a leap')
 })
 
 /**

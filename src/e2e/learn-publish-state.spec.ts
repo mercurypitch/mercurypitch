@@ -200,3 +200,47 @@ test('the next card and the map show the hook the console picked, and the defaul
     LESSON_COPY[2]?.tease ?? 'Lesson 2 has a tease',
   )
 })
+
+test("Lesson 8's recall is left out, wrapper and all, where Lesson 6 is held back, and the page raises no error", async ({
+  page,
+}) => {
+  // Arrange
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+
+  // Act
+  await serveWith(page, '/learn/08', {
+    drafts: true,
+    lessons: { 6: { published: false } },
+  })
+
+  // Assert: the quiz below it still boots
+  await expect(page.locator('#qs .q')).toHaveCount(4)
+  await expect(page.locator('#recall')).toHaveCount(0)
+  await expect(page.locator('[data-if-live="6"]')).toHaveCount(0)
+  await expect(page.locator('a[href^="/learn/06"]')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('Lesson 8, a draft, is coming later where drafts are held back, and linked where they are shown', async ({
+  page,
+}) => {
+  // Arrange: mercurypitch.com's default
+  await serveWith(page, '/learn/01', { drafts: false, lessons: {} })
+
+  // Assert
+  const card = await mapCard(page, 8)
+  await expect(card.locator('.chip')).toHaveText('Coming later')
+  await expect(card.locator('a.btn')).toHaveCount(0)
+  const held = await menuRow(page, 8)
+  await expect(held).toHaveClass(/\blater\b/)
+  await expect(page.locator('#lessonMenu a[href^="/learn/08"]')).toHaveCount(0)
+
+  // Act: the dev deploy's default
+  await page.unrouteAll()
+  await serveWith(page, '/learn/01', { drafts: true, lessons: {} })
+
+  // Assert
+  const shown = await menuRow(page, 8)
+  await expect(shown).toHaveAttribute('href', '/learn/08')
+})
