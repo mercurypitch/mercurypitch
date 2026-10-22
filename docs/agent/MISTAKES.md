@@ -1902,6 +1902,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **See:** `src/lesson-gate.ts` (`unconditional`), `src/lesson-gate.test.ts`
 (`assetLayer`)
 
+### Inspect failed jobs even while a workflow reports queued
+
+**Symptom:** main appeared only queued, but a browser job had already failed.
+**Cause:** workflow-level status remained queued while other jobs ran; filtering only completed workflows hid a completed job's package-feed error.
+**Rule:** inspect job and step conclusions for the exact commit before classifying a main failure. Distinguish browser setup from tests, and obtain completed-job logs directly through the job API when workflow logs are not yet available.
+**See:** `.github/workflows/pr-gate.yml` and `scripts/install-ci-browser.mjs`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
