@@ -107,7 +107,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    (390 x 844) the title and the opening's first control, Play take 1, and the two choices belong on
    the first screen, and on a tablet in landscape (1024 x 640) the stage and the choices too
    (CURIOSITY-MOMENTS § 3.1, "Above the fold",
-   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:291-293`). Of the plan's levers, the recall's
+   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:294-296`). Of the plan's levers, the recall's
    place is already used, since it follows the predict; the others are the Mercs' size (`--merc`,
    `kit/lesson-stage.css:193`) and the hook's length, 58 characters, and 90 with `compelling` (1).
    The seven chips take five rows on a 360 px phone, one a row for each lesson chip
@@ -706,7 +706,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   the card now says why only Karaoke Night is linked.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed: Dynamic Swell's card copy,
   its tags and its score checked against the claims rules, as CURRICULUM § 4 item 8 does for the
-  Ascent's weeks (`CURRICULUM.md:504-508`), so that a later lesson can link it: a swell scored by
+  Ascent's weeks (`CURRICULUM.md:510-514`), so that a later lesson can link it: a swell scored by
   its width in decibels rewards a louder swell, which this lesson's "grow only to about speaking
   volume" would not, so its score would change or its result would say what it measures; and the two
   routines' descriptions, which promise gains in the breath and in range (59), the same way. Until
