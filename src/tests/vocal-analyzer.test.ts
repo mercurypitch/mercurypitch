@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { EnvelopePoint, FatigueCheckpoint } from '@/lib/vocal-analyzer'
-import { analyzeFatigue, approximateBreathiness, approximateResonance, approximateRichness, compareIntensity, computeHarmonicRichness, computeHNR, computePitchStability, computeRMSEnvelope, computeTonalQuality, detectResonance, detectSlides, detectVibrato, detectVocalRange, intensityFromPitchResults, } from '@/lib/vocal-analyzer'
+import { analyzeFatigue, approximateBreathiness, approximateResonance, approximateRichness, compareIntensity, computeGlideCoverage, computeHarmonicRichness, computeHNR, computePitchStability, computeRMSEnvelope, computeTonalQuality, detectResonance, detectSlides, detectVibrato, detectVocalRange, intensityFromPitchResults, } from '@/lib/vocal-analyzer'
 
 // ── computeRMSEnvelope ─────────────────────────────────────────
 
@@ -425,6 +425,87 @@ describe('detectSlides', () => {
       wobbleResult.slides.length > 0 ? wobbleResult.slides[0].score : 0
 
     expect(cleanScore).toBeGreaterThan(wobbleScore)
+  })
+})
+
+// ── computeGlideCoverage ───────────────────────────────────────
+
+describe('computeGlideCoverage', () => {
+  // Frames at 60 a second, as the exercises' pitch history takes them.
+  const FPS = 60
+  const frames = (ms: number, midiAt: (t: number) => number) =>
+    Array.from({ length: Math.round((ms / 1000) * FPS) }, (_, i) => ({
+      midi: midiAt((i / FPS) * 1000),
+    }))
+  // G4 to D5 at the Siren's guide pace: the dot reaches the far note in
+  // 1.25 s, a fraction of a semitone a frame.
+  const smooth = (t: number) => 60 + 7 * Math.min(1, t / 1250)
+
+  it('scores a smooth glide from the first note to the second in full', () => {
+    expect(computeGlideCoverage(frames(4000, smooth), 60, 67)).toBeGreaterThan(
+      0.95,
+    )
+  })
+
+  it('scores a held note with one jump to the second note far lower', () => {
+    const stepwise = frames(4000, (t) => (t < 2000 ? 60 : 67))
+    const smoothScore = computeGlideCoverage(frames(4000, smooth), 60, 67)
+    const stepScore = computeGlideCoverage(stepwise, 60, 67)
+    expect(stepScore).toBeLessThan(0.1)
+    expect(stepScore).toBeLessThan(smoothScore)
+  })
+
+  it('scores a line that climbs in semitone steps lower than a glide', () => {
+    const steps = frames(4000, (t) => 60 + Math.min(7, Math.floor(t / 300)))
+    expect(computeGlideCoverage(steps, 60, 67)).toBeLessThan(0.1)
+  })
+
+  it('scores a glide with an octave flip in it lower than the smooth one', () => {
+    // Read an octave up for 0.4 s on the way: the flip and the jump back
+    // cross ground without gliding it, and the frames up there lie outside
+    // the span between the two notes.
+    const flipped = frames(4000, (t) =>
+      t > 400 && t < 800 ? smooth(t) + 12 : smooth(t),
+    )
+    const flipScore = computeGlideCoverage(flipped, 60, 67)
+    expect(flipScore).toBeLessThan(
+      computeGlideCoverage(frames(4000, smooth), 60, 67),
+    )
+    expect(flipScore).toBeLessThan(0.8)
+    expect(flipScore).toBeGreaterThan(0)
+  })
+
+  it('scores silence and a single frame as 0', () => {
+    expect(computeGlideCoverage([], 60, 67)).toBe(0)
+    expect(computeGlideCoverage([{ midi: 60 }], 60, 67)).toBe(0)
+  })
+
+  it('scores a note held where the glide should start, or end, as almost 0', () => {
+    // Even a held note with a wide vibrato crosses little of the span.
+    const vibrato = (centre: number) =>
+      frames(
+        4000,
+        (t) => centre + 0.5 * Math.sin((2 * Math.PI * 5.5 * t) / 1000),
+      )
+    expect(computeGlideCoverage(vibrato(60), 60, 67)).toBeLessThan(0.1)
+    expect(computeGlideCoverage(vibrato(67), 60, 67)).toBeLessThan(0.1)
+  })
+
+  it('neither rewards nor penalises going back over ground already glided', () => {
+    // The Siren's guide dot travels to the far note and back; a singer
+    // following it glides the same ground twice.
+    const thereAndBack = frames(4000, (t) => {
+      const phase = (t % 2500) / 2500
+      return 60 + 7 * (phase < 0.5 ? phase * 2 : (1 - phase) * 2)
+    })
+    expect(computeGlideCoverage(thereAndBack, 60, 67)).toBeGreaterThan(0.95)
+  })
+
+  it('counts only the motion toward the second note', () => {
+    // The same smooth line, but sung from the second note to the first.
+    const backwards = frames(4000, (t) => 67 - 7 * Math.min(1, t / 1250))
+    expect(computeGlideCoverage(backwards, 60, 67)).toBe(0)
+    expect(computeGlideCoverage(backwards, 67, 60)).toBeGreaterThan(0.95)
   })
 })
 

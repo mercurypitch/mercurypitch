@@ -663,17 +663,17 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     relaxed and let the pitch flow. If your voice flips between your low and high voice, let it:
     every voice changes gear."; and ":154", which says the glide is scored on how smooth and
     connected it is, becomes "Most of your score is how close you come to the second note.", as the
-    code scores it (70 % of the grade, FACTS 41), at least until the slide part below is fixed. When
-    the help changes, the card's sentence about it goes (LESSON.md's editorial note).
+    code scores it (70 %, FACTS 41), and stays true with the slide part below fixed (this PR): no
+    change. When the help changes, the card's sentence about it goes (LESSON.md's editorial note).
   - its menu card (`src/features/exercises/ExerciseMenu.tsx:175-176`), "Glide smoothly across your
     range. Develop seamless register transitions and vocal flexibility.", becomes "Glide smoothly
     between two notes and back. Develop vocal flexibility.", which promises nothing about the
     switch.
-  - its slide score: `detectSlides` scores the jumps between steady stretches of the line, so a
-    glide sung smoothly at the dot's pace earns nothing from the 30 % slide part of the grade, and a
-    flip or a tracking error can earn it (FACTS 41, an inference from the code). Proposed: measure
-    the glide itself in that part (`computeDirectness`, `src/lib/vocal-analyzer.ts:515-535`, over
-    each round's window), or leave the part out of the Siren's grade.
+  - its slide score: until this PR `detectSlides` scored the jumps between steady stretches of the
+    line, so a glide sung smoothly at the dot's pace earned nothing from the 30 % slide part, and a
+    flip or a tracking error could earn it (FACTS 41). Proposed: measure the glide itself
+    (`computeDirectness`, over each round's window). Done in this PR with `computeGlideCoverage`
+    instead (`vocal-analyzer.ts:537-587`): `computeDirectness` ranks a jump above a glide.
   - optionally, the octave glide fitted so that it no longer starts on the preset's lowest note, for
     example by centring the glides two semitones higher before the shift into the preset
     (`use-siren-controller.ts:89-100`).
@@ -928,8 +928,8 @@ With the recommendation first:
 7. **The Siren link** (FACTS 42): linked now, with the card naming its help's line, where Lesson 7
    did not link it. Recommended: link it, and ship the help's new lines (Practice links) so the
    card's sentence about them can go; and land the season entry's link with the page, not before.
-   The Siren's slide part, which scores jumps rather than the glide (FACTS 41; App content), is a
-   known app bug, filed by the lead with the task #38 follow-ups; until it is fixed, the card and
+   The Siren's slide part, which scored jumps rather than the glide (FACTS 41; App content), was a
+   known app bug, filed by the lead with the task #38 follow-ups and fixed in this PR; the card and
    the help name only the part of the score that measures how close you come to the second note.
 8. **The CURRICULUM card** (FACTS 6): done in this package. Its checkpoint and its Practise line
    match the page: "one slow, quiet siren on "ng", up only as far as is easy" and the Siren exercise
