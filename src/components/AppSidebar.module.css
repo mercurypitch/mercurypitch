@@ -187,7 +187,7 @@
 }
 
 /* ============================================================
-   Walkthrough Control Buttons (Learn + Guide)
+   Walkthrough Control Buttons (Learn, Guide and Tour)
    ============================================================ */
 
 .walkthroughControlGroup {
@@ -226,6 +226,15 @@
 
 .walkthroughControlBtn:active {
   transform: scale(0.98);
+}
+
+/* The drawer is a phone's only way to Learn, Guide and Tour: give a finger
+   the full 44 pt. */
+@media (pointer: coarse) {
+  .walkthroughControlBtn {
+    height: 44px;
+    line-height: 44px;
+  }
 }
 
 .walkthroughControlText {

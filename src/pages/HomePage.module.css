@@ -53,6 +53,14 @@
   color: var(--accent);
 }
 
+/* A finger needs the full 44 pt the platform asks for; a mouse is happy
+   with the slimmer pill above. */
+@media (pointer: coarse) {
+  .headAction {
+    min-height: 44px;
+  }
+}
+
 .headActionAccent {
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   color: var(--accent);

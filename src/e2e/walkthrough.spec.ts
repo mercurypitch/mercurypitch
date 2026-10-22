@@ -3,19 +3,19 @@
 // Tests for Learn modal (walkthrough chapters)
 // ============================================================
 //
-// The selection modal is opened from Home's header, not the sidebar. It
-// used to live in the sidebar next to Guide and Tour, and this spec still
-// clicked the first `.walkthroughControlBtn` it found there — which after
-// the move is the Guide button, so every test that expected the selection
-// overlay was clicking something else entirely and waiting for a modal
-// nobody had opened. Six of them failed on every push to main from
-// 46ed37c4 onward, unnoticed because PR branches only run `--grep @smoke`
-// and this spec carries no smoke tag: the full suite runs on main alone,
-// which is the one place a red gate blocks nothing.
+// The selection modal is opened from the sidebar's Learn button, beside
+// Guide and Tour. It spent a release in Home's header, next to the Find Your
+// Pitch "Lessons" link; two controls both called learn led to different
+// places, so Learn went back to the sidebar and Home keeps Lessons.
 //
-// Driving it through `data-testid="home-learn"` keeps the spec honest about
-// where the control actually is; the class-based selectors below stay as
-// they are, because they describe the modal, which did not move.
+// History worth keeping: while Learn was on Home, this spec still clicked the
+// first `.walkthroughControlBtn` in the sidebar, which by then was Guide, so
+// every test that expected the selection overlay was clicking something else
+// entirely. Six of them failed on every push to main from 46ed37c4 onward,
+// unnoticed because PR branches only run `--grep @smoke` and this spec carries
+// no smoke tag: the full suite runs on main alone. Driving it through
+// `data-testid="sidebar-learn"` keeps the spec honest about where the control
+// is; the class-based selectors below describe the modal, which did not move.
 
 import { expect, test } from '@playwright/test'
 import { dismissOverlays } from './helpers/ui'
@@ -33,16 +33,21 @@ test.describe('Walkthrough Feature', () => {
     await dismissOverlays(page)
   })
 
-  /** Home is the default tab, so the Learn button is already on screen. */
+  /** The desktop rail is open on every tab, Home included. */
   const openSelection = async (page: import('@playwright/test').Page) => {
-    await page.getByTestId('home-learn').click()
+    await page.getByTestId('sidebar-learn').click()
     const modal = page.locator(SELECTION_OVERLAY)
     await expect(modal).toBeVisible()
     return modal
   }
 
-  test('Learn control button exists in the Home header', async ({ page }) => {
-    await expect(page.getByTestId('home-learn')).toBeVisible()
+  test('Learn control button exists in the sidebar', async ({ page }) => {
+    await expect(page.getByTestId('sidebar-learn')).toBeVisible()
+  })
+
+  test('Home keeps Lessons and no longer shows Learn', async ({ page }) => {
+    await expect(page.getByTestId('home-lessons')).toBeVisible()
+    await expect(page.getByTestId('home-learn')).toHaveCount(0)
   })
 
   test('Clicking Learn opens the selection modal', async ({ page }) => {
