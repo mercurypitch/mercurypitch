@@ -11,14 +11,16 @@
 // slides, Lesson 4's scale) runs the ring beside its drawing. A run can hold
 // an in-breath between Merc's note and the turn, and turn as one long
 // out-breath: Lesson 5's Listen · Breathe · Sing, and its "sss". A page
-// whose run can be cut short ends it where it stands (`stop`).
+// whose run can be cut short ends it where it stands (`stop`). The ring
+// draws only while a run moves it; at rest it holds its last frame and asks
+// the page's frame loop for nothing (frame-loop.ts, `wants`).
 //
 // Mounted on a `.ring` element, any number per page. Inside it: the
 // `.ring-progress` and `.ring-breath` circles, the `.ring-ripples` group,
 // the `.ring-merc` still and the `.ring-note` and `.ring-state` lines.
 
 import { q, svg, TAU } from './dom'
-import { addDrawer, watch } from './frame-loop'
+import { addDrawer, wake, watch } from './frame-loop'
 import type { Which } from './merc-duo'
 import { reducedMotion } from './motion-switch'
 import { COLOR, hz, nameHtml, sharpOf } from './notes'
@@ -227,6 +229,8 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
 
   addDrawer({
     active: () => now !== null && seen(),
+    // a run moves the ring every frame; between runs nothing it shows changes
+    wants: () => now !== null,
     draw(t) {
       const r = now
       if (r === null) return
@@ -265,6 +269,7 @@ export function mountRing(root: HTMLElement, opts: RingOptions): Ring {
           words: runWords,
           resolve,
         }
+        wake()
       })
     },
   }
