@@ -445,6 +445,12 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   spec). Its sung checkpoint waits on the vocal coach (§ 12 item 8). No page is built yet; it goes
   live when the console publishes it, after the coach's sign-off and once `/learn/10`, the page its
   recall links to, is live.
+- Lesson 14: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/14-phrasing-whole-song/`](lessons/14-phrasing-whole-song/) (facts, copy and page spec).
+  Its sung parts wait on the vocal coach (§ 12 item 8). No page is built yet: it waits on a season
+  close that knows a rest ending (its WEB-SPEC, What the kit and the app still need, item 12). It
+  goes live when the console publishes it, after the coach's sign-off and once `/learn/05`,
+  `/learn/08`, `/learn/09` and `/learn/12`, the pages its chips and its recall link to, are live.
 - YouTube: [`youtube/YOUTUBE.md`](youtube/YOUTUBE.md) is the upload guide for Lessons 1 and 2
   (every Studio field, chapters, end screens, cards and pinned comments, checked against YouTube's
   help pages on 19 October 2026), with three thumbnails per film, end-screen maps, paste-ready
