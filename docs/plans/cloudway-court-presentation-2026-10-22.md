@@ -14,8 +14,8 @@ Moving, conditional, polygonal and parented candidate supports retain the
 ordinary box presentation.
 
 The visual-clearance test covers 400 mixed seeds and the 16 fixed v1 recipes,
-each rotated through four cardinal headings. It checks the complete wing
-envelope against intact platform-art bounds and moving swept bounds. Only the
+each rotated through four cardinal headings. It checks the complete added
+below-floor envelope against intact platform-art bounds and moving swept bounds. Only the
 actual supporting slab is exempted for the intentional structural join. No
 foreign intersection was found in those 1,664 layout orientations. These are
 bounded generated examples, not a proof for every possible recipe.
