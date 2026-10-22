@@ -1909,6 +1909,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** inspect job and step conclusions for the exact commit before classifying a main failure. Distinguish browser setup from tests, and obtain completed-job logs directly through the job API when workflow logs are not yet available.
 **See:** `.github/workflows/pr-gate.yml` and `scripts/install-ci-browser.mjs`.
 
+### Remove a failing mirror route, not its test coverage
+
+**Symptom:** browser setup exhausted a CI job despite successfully fetching an HTTPS Ubuntu release index.
+**Cause:** the runner's per-file mirror fallback retried Azure HTTP for later package indexes; excluding unrelated feeds did not remove that route.
+**Rule:** filter only the failing route from a temporary, sandbox-readable mirror list, retain the official HTTPS fallbacks and package authentication, and bound the root dependency process group. A partial index update must fail; do not enlarge test budgets or retry the whole installer.
+**See:** `scripts/install-ci-browser.mjs` and `scripts/install-ci-browser.test.mjs`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
