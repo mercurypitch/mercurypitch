@@ -60,6 +60,17 @@ describe('the plugin', () => {
     expect(PLUGIN).toContain('notifyListeners(EVENT_CHANGE, data)')
   })
 
+  // The latency offset follows the route for as long as the app runs.
+  it('sends a device coming or going under an event of its own as well', () => {
+    const event = /EVENT_ROUTE\s*=\s*"([^"]+)"/u.exec(PLUGIN)?.[1]
+    expect(event).toBe('audioRouteChange')
+    expect(JS_SIDE).toContain(`'${event}'`)
+    expect(PLUGIN).toMatch(
+      /if \("route"\.equals\(reason\)\) \{\s*notifyListeners\(EVENT_ROUTE, data\);/u,
+    )
+    expect(PLUGIN.match(/changed\("route"\)/gu)).toHaveLength(2)
+  })
+
   it('reports under the names the JavaScript side reads', () => {
     for (const key of [
       'outputVolume',

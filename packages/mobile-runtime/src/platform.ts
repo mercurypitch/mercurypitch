@@ -48,7 +48,7 @@ export type {
   AudioOutputReading,
   AudioRoute,
 } from './audio-output'
-export { onAudioOutput, readAudioOutput } from './audio-output'
+export { onAudioOutput, onAudioRoute, readAudioOutput } from './audio-output'
 export type { Unsubscribe } from './native-calls'
 export type {
   PictureInPictureLyrics,

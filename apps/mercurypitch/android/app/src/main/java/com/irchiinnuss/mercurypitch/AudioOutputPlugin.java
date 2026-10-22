@@ -19,7 +19,9 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 // The phone's sound output, as the page reads it: the volume of the stream the
 // page plays on, where the sound goes and the audio mode. Read on demand
 // (read) and sent again on every change (audioOutputChange): a volume key, a
-// headset or Bluetooth device coming or going. The premium rooms show a hint
+// headset or Bluetooth device coming or going. A device coming or going goes
+// out under audioRouteChange as well, for a page that follows the route for
+// as long as the app runs: the latency offset. The premium rooms show a hint
 // while the volume is down; a test build's Developer screen shows all of it,
 // for the moment a room's sound goes quiet on a phone.
 //
@@ -50,6 +52,9 @@ public class AudioOutputPlugin extends Plugin {
 
     /** What every change is sent to JavaScript as. */
     static final String EVENT_CHANGE = "audioOutputChange";
+
+    /** A change of route, sent again on its own: what follows the route listens for as long as the app runs. */
+    static final String EVENT_ROUTE = "audioRouteChange";
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private AudioManager audio;
@@ -103,6 +108,9 @@ public class AudioOutputPlugin extends Plugin {
         JSObject data = snapshot();
         data.put("reason", reason);
         notifyListeners(EVENT_CHANGE, data);
+        if ("route".equals(reason)) {
+            notifyListeners(EVENT_ROUTE, data);
+        }
     }
 
     private JSObject snapshot() {

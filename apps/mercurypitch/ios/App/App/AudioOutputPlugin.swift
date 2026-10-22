@@ -6,12 +6,14 @@ import MediaPlayer
 import UIKit
 
 // The phone's sound output, as the page reads it: the system volume, where
-// the sound goes (speaker, receiver, headphones, Bluetooth) and the app's own
-// audio session. Read on demand (`read`) and sent again on every change
-// (`audioOutputChange`): the volume (KVO on outputVolume, and the volume view
-// below), the route and iOS's reason for moving it, a call or Siri taking
-// the session and giving it back, media services restarting, another app's
-// sound starting or stopping, and the app coming back to the front. The
+// the sound goes (speaker, receiver, headphones, Bluetooth, AirPlay, HDMI)
+// and the app's own audio session. Read on demand (`read`) and sent again on
+// every change (`audioOutputChange`): the volume (KVO on outputVolume, and
+// the volume view below), the route and iOS's reason for moving it, a call
+// or Siri taking the session and giving it back, media services restarting,
+// another app's sound starting or stopping, and the app coming back to the
+// front. A new route goes out under `audioRouteChange` as well, which costs
+// nothing to listen to between changes: the latency offset follows it. The
 // premium rooms show a hint while the volume is down; a test build's
 // Developer screen shows all of it, for the moment a room's sound goes quiet
 // on a phone.
@@ -145,12 +147,19 @@ public class AudioOutputPlugin: CAPPlugin, CAPBridgedPlugin {
         return data
     }
 
-    /// The output as it is now, with what moved it.
+    /// The output as it is now, with what moved it. A new route, and the app
+    /// back in front with a route that may have moved meanwhile, go out under
+    /// an event of their own as well, for a page that follows the route for
+    /// as long as the app runs (the latency offset): listening to it keeps
+    /// no volume view looked at, which audioOutputChange does (needsLooking).
     private func changed(_ reason: String, _ extra: [String: Any] = [:]) {
         var data = snapshot()
         data["reason"] = reason
         data.merge(extra) { _, new in new }
         notifyListeners("audioOutputChange", data: data)
+        if reason == "route" || reason == "app in front" {
+            notifyListeners("audioRouteChange", data: data)
+        }
     }
 
     /// A call, Siri or iOS itself taking the app's session, and giving it

@@ -6,11 +6,17 @@
 // ios/App/App/AudioOutputPlugin.swift (ViewController registers it), on
 // Android AudioOutputPlugin.java (MainActivity registers it). It reads the
 // volume the page's sound plays at, the route it takes (the speaker, the
-// receiver at the ear, headphones, Bluetooth) and, for a test build's
-// readout, the rest of what the phone says: iOS's own session (category,
-// mode and options of the app's session; WebKit plays from a session of its
-// own), Android's audio mode and stream. It answers on demand and again on
-// every change: a volume key, a headset, a call.
+// receiver at the ear, headphones, Bluetooth, AirPlay, HDMI) and, for a test
+// build's readout, the rest of what the phone says: iOS's own session
+// (category, mode and options of the app's session; WebKit plays from a
+// session of its own), Android's audio mode and stream. It answers on demand
+// and again on every change: a volume key, a headset, a call.
+//
+// A change of route also goes out on its own (`onAudioRoute`), for what
+// depends on where the sound goes for as long as the app runs: the latency
+// offset, since a TV on AirPlay or HDMI plays the song well behind the
+// phone's own speaker. Hearing it costs nothing between changes, unlike
+// `onAudioOutput`, whose listener keeps an iPhone looking at its volume.
 //
 // Read only: nothing here changes the phone's audio. An app without the
 // plugin answers `Unimplemented`, read as no reading at all; the web has
@@ -21,12 +27,17 @@ import { registerPlugin } from '@capacitor/core'
 import type { Unsubscribe } from './native-calls'
 import { isNative, lazyListener } from './native-calls'
 
-/** Where the sound goes, by kind. */
+/**
+ * Where the sound goes, by kind. AirPlay and HDMI take it to a TV or a
+ * receiver, which plays it with a delay of its own.
+ */
 export type AudioRoute =
   | 'speaker'
   | 'receiver'
   | 'headphones'
   | 'bluetooth'
+  | 'airplay'
+  | 'hdmi'
   | 'other'
   | 'none'
 
@@ -71,7 +82,7 @@ type RawOutput = Record<string, unknown>
 interface AudioOutputPlugin {
   read(): Promise<RawOutput>
   addListener(
-    eventName: 'audioOutputChange',
+    eventName: 'audioOutputChange' | 'audioRouteChange',
     listener: (event: RawOutput) => void,
   ): Promise<PluginListenerHandle>
 }
@@ -86,6 +97,9 @@ const ROUTES: Readonly<Record<string, AudioRoute>> = {
   BluetoothA2DPOutput: 'bluetooth',
   BluetoothHFP: 'bluetooth',
   BluetoothLE: 'bluetooth',
+  AirPlay: 'airplay',
+  HDMI: 'hdmi',
+  hdmi: 'hdmi',
   'builtin-speaker': 'speaker',
   'builtin-earpiece': 'receiver',
   'wired-headset': 'headphones',
@@ -113,6 +127,12 @@ function ports(value: unknown): AudioOutputPort[] {
       ? [{ type, name: typeof name === 'string' ? name : type }]
       : []
   })
+}
+
+/** The first output's kind: a phone plays the page's sound on one route at a time. */
+function routeOf(outputs: readonly AudioOutputPort[]): AudioRoute {
+  const first = outputs[0]
+  return first === undefined ? 'none' : (ROUTES[first.type] ?? 'other')
 }
 
 /**
@@ -152,9 +172,7 @@ export function toAudioOutputReading(raw: unknown): AudioOutputReading | null {
     volumeKnown = 'agreed'
   }
   const outputs = ports(data.outputs)
-  const first = outputs[0]
-  const route: AudioRoute =
-    first === undefined ? 'none' : (ROUTES[first.type] ?? 'other')
+  const route = routeOf(outputs)
   const detail: Record<string, unknown> = { ...data }
   for (const key of [
     'outputVolume',
@@ -211,6 +229,32 @@ export function onAudioOutput(
           await audioOutput().addListener('audioOutputChange', (event) => {
             const reading = toAudioOutputReading(event)
             if (reading !== null) handler(reading)
+          }),
+        )
+      } catch {
+        // No plugin behind the name in this build: no changes to hear.
+      }
+    })()
+  })
+}
+
+/**
+ * Every change of route, alone: the plugin sends it as the route moves, and
+ * on iOS as the app comes back to the front, where the route may have moved
+ * meanwhile. Unlike `onAudioOutput`, a listener here keeps nothing running
+ * between changes (AudioOutputPlugin.swift, needsLooking), so it can listen
+ * for as long as the app runs. Returns the unsubscribe.
+ */
+export function onAudioRoute(
+  handler: (route: AudioRoute) => void,
+): Unsubscribe {
+  if (!isNative()) return () => undefined
+  return lazyListener((dispose) => {
+    void (async () => {
+      try {
+        dispose(
+          await audioOutput().addListener('audioRouteChange', (event) => {
+            handler(routeOf(ports(event.outputs)))
           }),
         )
       } catch {
