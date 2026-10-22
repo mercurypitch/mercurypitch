@@ -2,11 +2,11 @@
 // ============================================================
 
 import { createSignal, onCleanup, onMount } from 'solid-js'
+import type { DrumLatencyCalibrationResult } from '@/lib/timing/input-latency'
+import { DrumLatencyCalibration } from '@/lib/timing/input-latency'
 import type { DrumMidiEnvironment, DrumMidiMappingStore, DrumMidiState, } from './drum-input'
 import type { DrumMidiAccessPort } from './drum-input'
 import { createDrumMidiInput, createLocalDrumMidiMappingStore, installDrumKeyboardInput, } from './drum-input'
-import type { DrumLatencyCalibrationResult } from './drum-latency-calibration'
-import { DrumLatencyCalibration } from './drum-latency-calibration'
 import type { EssentialDrumPadId } from './drum-pad-layout'
 import { essentialDrumPad, isGeneralMidiDrumKey } from './drum-pad-layout'
 import type { DrumHitSource, DrumKitPlayerPort, DrumLiveHit, } from './drum-runtime-types'

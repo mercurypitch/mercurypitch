@@ -2,7 +2,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { DrumLatencyCalibration, estimateDrumInputLatency, } from './drum-latency-calibration'
+import { DrumLatencyCalibration, estimateDrumInputLatency, } from './input-latency'
 
 describe('DrumLatencyCalibration', () => {
   it('waits for enough evidence and ignores non-finite samples', () => {

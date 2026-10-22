@@ -2,7 +2,7 @@
 // ============================================================
 
 export * from './drum-input'
-export * from './drum-latency-calibration'
+export * from '@/lib/timing/input-latency'
 export * from './drum-pad-layout'
 export * from './drum-runtime-types'
 export * from './drum-transport'
