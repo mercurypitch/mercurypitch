@@ -7,7 +7,9 @@
 // definitions: the pitch must hold and glide exponentially through every
 // point, the envelope must open on the house attack from the 1e-4 floor,
 // and every scheduled stop must land below -40 dB, as the app's tail net
-// asks of its own voices (src/tests/audio-engine.test.ts).
+// asks of its own voices (src/tests/audio-engine.test.ts). With sound off,
+// `canPlay` says no in one of two toasts, each with its Turn on button: a
+// play that runs silently will be seen, one that needs sound can't play.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as SoundKit from './sound'
@@ -46,6 +48,71 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
+})
+
+describe('Sound.canPlay', () => {
+  /** The page's toast, as every lesson page has it. */
+  function mountToast(): { text: HTMLElement; button: HTMLElement } {
+    document.body.innerHTML =
+      '<div id="toast"><p id="toastText"></p><button id="toastBtn" hidden></button></div>'
+    const text = document.getElementById('toastText')
+    const button = document.getElementById('toastBtn')
+    if (text === null || button === null) throw new Error('no toast')
+    return { text, button }
+  }
+
+  afterEach(() => {
+    document.body.textContent = ''
+  })
+
+  it('with sound off, says a play will be seen but not heard, and offers to turn sound on', async () => {
+    // Arrange
+    const { text, button } = mountToast()
+    const kit = await import('./sound')
+    kit.Sound.set('off')
+
+    // Act
+    const may = kit.Sound.canPlay()
+
+    // Assert
+    expect(may).toBe(false)
+    expect(text.textContent).toBe(
+      "Sound is off, so you'll see this one but not hear it.",
+    )
+    expect(button.hidden).toBe(false)
+  })
+
+  it("with sound off, says a play that needs sound can't play, with the same Turn on button", async () => {
+    // Arrange
+    const { text, button } = mountToast()
+    const kit = await import('./sound')
+    kit.Sound.set('off')
+
+    // Act
+    const may = kit.Sound.canPlay({ needsSound: true })
+
+    // Assert
+    expect(may).toBe(false)
+    expect(text.textContent).toBe(
+      "Sound is off, so this one can't play. Turn it on to start.",
+    )
+    expect(button.hidden).toBe(false)
+  })
+
+  it('lets a play that needs sound turn sound on at the first tap, as any play does', async () => {
+    // Arrange
+    const { text } = mountToast()
+    const kit = await import('./sound')
+
+    // Act
+    const may = kit.Sound.canPlay({ needsSound: true })
+
+    // Assert
+    expect(may).toBe(true)
+    expect(kit.Sound.state).toBe('on')
+    expect(FakeContext.last).not.toBeNull()
+    expect(text.textContent).toBe('')
+  })
 })
 
 describe('contourOf', () => {

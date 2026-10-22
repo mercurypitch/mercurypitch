@@ -567,11 +567,11 @@ the page is hidden, whatever is playing stops (`lesson-03/sing.ts:374-396`).
   the taps use no voice (FACTS 44), and nothing about a take is stored.
 - **Stopping.** Stop, or leaving the card or the page, ends the take with no line: "Stopped. Press
   Start to tap again."
-- **Sound off.** The take needs the groove: with sound off, Start shows the kit's toast
-  (`kit/sound.ts:510-522`, `canPlay`) and does not start, and the status reads "Sound is off, so
-  the take didn't start. Turn sound on, then press Start." With no Web Audio at all, Start and Play
-  the groove are `aria-disabled`, with "This browser can't play the page's sounds, so the take
-  can't run."
+- **Sound off.** The take and the groove need sound: with sound off, Start and Play the groove show
+  the kit's toast for a play that does (`kit/sound.ts:510-522`, `canPlay`, `needsSound`; till this
+  PR, the usual one, and the groove ran silently) and run nothing. The status reads "Sound is off,
+  so the take didn't start. Turn sound on, then press Start." or the groove's (LESSON.md). No Web
+  Audio: both `aria-disabled`, "This browser can't play the page's sounds, so the take can't run."
 
 **Part 2: the sung line.** The guide is the compact beat machine (Toys 1) cut to the first line,
 two bars of eight beat cells with the syllables "Twin kle twin kle lit tle star", "star" across
@@ -1008,8 +1008,8 @@ was built on.
 - **Sound off, unset or missing.** Every play obeys the kit's `canPlay` (`kit/sound.ts:510-522`):
   the first tap turns sound on, sound off plays the visuals silently with the kit's toast, and no
   Web Audio leaves the page readable with every play `aria-disabled` and its line saying why. The
-  predicts' reveals and Start the guide wait for heard sound (Toys 2, 6); the take does not start
-  (Toys 6).
+  predicts' reveals and Start the guide wait for heard sound (Toys 2, 6); the take and the groove,
+  which need sound, do not run, and say so (Toys 6; till this PR the groove ran silently).
 - **A hidden page or a card off screen** stops what is playing (Audio; Toys 6), and a take that
   was running ends with no line.
 - **Leaving a step**, by any route, stops the stage's sound, Count the bar's queued replay and Step
@@ -1151,8 +1151,8 @@ draft shown as `build:e2e` shows it):
 6. The tap take's flow: Start runs the count-in and the two parts' status lines; with no taps the
    line reads "We couldn't line your taps up with the beat that time. Tap every beat for the first
    two bars, then 2 and 4."; Stop ends it with "Stopped. Press Start to tap again."; with sound off
-   Start does not start and says so. The judge's lines themselves are unit-tested (unit 5), since a
-   browser's timing on a test machine is not a device's.
+   neither Start nor Play the groove runs, and each says so. The judge's lines themselves are
+   unit-tested (unit 5), since a browser's timing on a test machine is not a device's.
 7. Sing it: the comfort check shows first in its part, every visit; with no stored voice the voice
    choice follows either answer, under "Choose a voice to sing with. If you chose one in an earlier
    lesson, pick it again:", and nothing plays until a voice is chosen; a stored `fyp-voice` shows
