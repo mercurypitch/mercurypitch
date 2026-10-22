@@ -1,6 +1,6 @@
 """Silhouette gate: compare a model mask with a reference image (needs Pillow and numpy).
 
-python3 -I silhouette_compare.py REFERENCE.png MODEL_MASK.png OUT_DIR [--bands 10] [--ref-mask MASK.png]
+python3 -I silhouette_compare.py REFERENCE.png MODEL_MASK.png OUT_DIR [--bands 10] [--ref-mask MASK.png] [--threshold 0.11]
 
 The reference is segmented from a plain studio backdrop (concept renders): a
 smooth background is fitted to the border pixels, the colour distance from it is
@@ -45,7 +45,11 @@ def otsu(values):
     return centres[int(np.argmax(between))]
 
 
-def segment(path):
+def segment(path, threshold=None):
+    """Object mask of a concept on a studio backdrop. threshold: the colour distance from
+    the fitted backdrop that counts as object; None picks it by Otsu, which sets it too
+    high when one material is far from the backdrop and another close (amber and cream
+    marble on grey): give the asset a measured `segment_threshold` then."""
     rgb = np.asarray(Image.open(path).convert('RGB'), dtype=np.float64) / 255.0
     h, w, _ = rgb.shape
     yy, xx = np.mgrid[0:h, 0:w]
@@ -64,7 +68,7 @@ def segment(path):
     luminance = rgb.mean(axis=-1)
     gradient = np.zeros_like(luminance)
     gradient[:, 1:] = np.abs(np.diff(luminance, axis=1))
-    raw = distance > max(otsu(distance.ravel()), 0.04)
+    raw = distance > (threshold if threshold is not None else max(otsu(distance.ravel()), 0.04))
     close = max(5, int(0.01 * min(h, w)) | 1)
     image = Image.fromarray((raw * 255).astype(np.uint8))
     image = image.filter(ImageFilter.MaxFilter(close)).filter(ImageFilter.MinFilter(close))  # close outline gaps
@@ -243,7 +247,7 @@ def main():
     if '--ref-mask' in args:
         ref_mask = np.asarray(Image.open(args[args.index('--ref-mask') + 1]).convert('L')) > 127
     else:
-        ref_mask = segment(ref_path)
+        ref_mask = segment(ref_path, float(args[args.index('--threshold') + 1]) if '--threshold' in args else None)
     Image.fromarray((ref_mask * 255).astype(np.uint8)).save(os.path.join(out_dir, 'reference_mask.png'))
     model_mask = np.asarray(Image.open(model_path).convert('L')) > 127
 

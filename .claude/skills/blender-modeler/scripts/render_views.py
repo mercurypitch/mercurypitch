@@ -13,6 +13,7 @@ part, Raw view transform, no anti-aliasing (joins and detached parts); matids =
 the same flat look with one colour per material, legend in meta.json (is every
 band, cuff and lining the material it should be, and nothing else); game = a
 material render at 128 px, enlarged without smoothing (what a phone shows).
+Material and game panels use the ACES 1.3 view transform at the game's exposure.
 Collision proxies (COLLIDER_* or extras.collision_proxy) are always hidden.
 Writes OUT_DIR/<mode>_<view>.png and OUT_DIR/meta.json for compose_sheet.py.
 """
@@ -128,6 +129,7 @@ def workbench(mode):
     flat = mode in ('ids', 'matids')
     scene.render.engine = 'BLENDER_WORKBENCH'
     scene.view_settings.view_transform = 'Raw' if flat else 'Standard'
+    scene.view_settings.exposure = 0.0
     shading = scene.display.shading
     shading.show_object_outline = False
     shading.show_specular_highlight = not flat
@@ -193,6 +195,14 @@ def cycles(mode, distance):
     global wire_material, key_light
     scene.render.engine = 'CYCLES'
     scene.view_settings.view_transform = 'Standard'
+    scene.view_settings.exposure = 0.0
+    if mode in ('material', 'game'):
+        # The game tone-maps with ACES filmic at exposure 0.9; Standard clips pale glass to white.
+        try:
+            scene.view_settings.view_transform = 'ACES 1.3'
+            scene.view_settings.exposure = math.log2(0.9)
+        except TypeError:
+            pass  # an older Blender without ACES: keep Standard
     c = scene.cycles
     c.device = 'CPU'
     c.samples = samples if mode in ('material', 'game') else max(12, samples // 2)

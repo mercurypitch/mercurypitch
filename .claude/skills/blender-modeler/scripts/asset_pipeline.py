@@ -7,7 +7,9 @@ ASSET_DIR holds build.py and asset.json:
    "contract": "contract.json",           validate_asset.py gates (skipped with --intact-only)
    "optics": "optics.json",               gltf_finish.py extension blocks (optional)
    "concept": "../../v6-level2/concepts/opaline-echo-amphora.png",
-   "elevation_deg": 8}                    camera elevation of the concept, for the silhouette gate
+   "elevation_deg": 8,                    camera elevation of the concept, for the silhouette gate
+   "reference_mask": "reference/m.png",   optional: a measured concept mask instead of segmenting
+   "segment_threshold": 0.11}             optional: the segmentation threshold instead of Otsu
 Paths are relative to ASSET_DIR. Writes OUT_DIR/<name>.glb and OUT_DIR/pipeline.json,
 and exits 1 when any gate fails. The gates decide; the sheets are for eyes.
 """
@@ -35,6 +37,33 @@ def run(cmd, log, cwd=None):
     with open(log) as handle:
         text = handle.read()
     return result.returncode, text
+
+
+def three_panels(glb, panels, out_dir, views=('three_quarter', 'front', 'side', 'top', 'low'), size=420):
+    """Add a column rendered by the game's own three.js (three_preview.mjs) to a sheet's panels.
+
+    Cycles' material panel is a guide; this column is what the game draws. Skipped,
+    with a note in the log, when Node or the app's Playwright is not installed."""
+    strip = os.path.join(out_dir, 'three-sheet.png')
+    log = os.path.join(out_dir, 'three-sheet.log')
+    code, _ = run(['node', os.path.join(HERE, 'three_preview.mjs'), glb, strip, '--size', str(size),
+                   '--views', ','.join(views)], log)
+    if code != 0 or not os.path.exists(strip):
+        with open(log, 'a') as handle:
+            handle.write('\nthree.js column skipped\n')
+        return
+    from PIL import Image
+
+    image = Image.open(strip)
+    meta_path = os.path.join(panels, 'meta.json')
+    with open(meta_path) as handle:
+        meta = json.load(handle)
+    for i, view in enumerate(views):
+        path = os.path.join(panels, f'three_{view}.png')
+        image.crop((i * size, 0, (i + 1) * size, size)).save(path)
+        meta['panels'].append({'mode': 'three.js', 'view': view, 'path': path})
+    with open(meta_path, 'w') as handle:
+        json.dump(meta, handle, indent=1)
 
 
 def main():
@@ -94,8 +123,13 @@ def main():
         mask = os.path.join(out_dir, 'silhouette-mask.png')
         run([exe, '-b', '--factory-startup', '--python', os.path.join(HERE, 'silhouette_render.py'), '--', glb, mask,
              '--elevation', str(asset.get('elevation_deg', 0))], os.path.join(out_dir, 'silhouette-render.log'))
-        code, text = run([sys.executable, '-I', os.path.join(HERE, 'silhouette_compare.py'), path('concept'), mask,
-                          os.path.join(out_dir, 'silhouette')], os.path.join(out_dir, 'silhouette.log'))
+        compare = [sys.executable, '-I', os.path.join(HERE, 'silhouette_compare.py'), path('concept'), mask,
+                   os.path.join(out_dir, 'silhouette')]
+        if asset.get('reference_mask'):  # a measured mask beats segmenting the concept here
+            compare += ['--ref-mask', path('reference_mask')]
+        elif asset.get('segment_threshold') is not None:
+            compare += ['--threshold', str(asset['segment_threshold'])]
+        code, text = run(compare, os.path.join(out_dir, 'silhouette.log'))
         result = json.loads(text.strip().splitlines()[-1])
         summary['silhouette'] = {k: result[k] for k in ('iou', 'worst_band', 'worst_delta', 'band_delta')}
         summary['gates']['silhouette'] = result['forms_pass']
@@ -111,6 +145,8 @@ def main():
                 cmd += ['--show-shards', '--hide', '_intact$', '--modes', 'clay,matids,material',
                         '--views', 'three_quarter,front,top']
             run(cmd, os.path.join(out_dir, f'render-{kind}.log'))
+            if kind == 'intact':
+                three_panels(glb, panels, out_dir)
             run([sys.executable, '-I', os.path.join(HERE, 'compose_sheet.py'), panels,
                  os.path.join(out_dir, f'sheet-{kind}.png'), f"{asset['name']} ({kind})"],
                 os.path.join(out_dir, f'compose-{kind}.log'))

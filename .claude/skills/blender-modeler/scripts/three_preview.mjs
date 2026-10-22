@@ -1,6 +1,6 @@
 // three_preview.mjs — a GLB rendered by the game's own three.js, lights and tone mapping, in seconds.
 //
-// node three_preview.mjs IN.glb OUT.png [--size 640] [--views front,three_quarter,side] [--elevation 8]
+// node three_preview.mjs IN.glb OUT.png [--size 640] [--views front,three_quarter,side,low,top] [--elevation 8]
 //                        [--dump] [--set glass_waves.metalness=0.6,gold_trim.roughness=0.4] [--env museum|room]
 //
 // The runtime proof answers "does it work in the game"; this answers "how do its
@@ -138,12 +138,17 @@ const box = new THREE.Box3().setFromObject(intact ?? gltf.scene)
 const centre = box.getCenter(new THREE.Vector3())
 const height = box.max.y - box.min.y
 const camera = new THREE.PerspectiveCamera(26, 1, 0.01, 50)
+// azimuth from the front toward +x (the right handle), and elevation in degrees (null: --elevation)
+const presets = { front: [0, null], three_quarter: [Math.PI / 5, null], side: [Math.PI / 2, null],
+                  low: [Math.PI / 5, 4], top: [0, 88] }
 views.forEach((view, i) => {
-  const azimuth = view === 'side' ? Math.PI / 2 : view === 'three_quarter' ? Math.PI / 5 : 0
+  if (!presets[view]) throw new Error('unknown view ' + view + '; use ' + Object.keys(presets).join(', '))
+  const [azimuth, degrees] = presets[view]
+  const lift = degrees === null ? elevation : degrees * Math.PI / 180
   const distance = height * 2.6
-  camera.position.set(centre.x + Math.sin(azimuth) * Math.cos(elevation) * distance,
-                      centre.y + Math.sin(elevation) * distance,
-                      centre.z + Math.cos(azimuth) * Math.cos(elevation) * distance)
+  camera.position.set(centre.x + Math.sin(azimuth) * Math.cos(lift) * distance,
+                      centre.y + Math.sin(lift) * distance,
+                      centre.z + Math.cos(azimuth) * Math.cos(lift) * distance)
   camera.lookAt(centre)
   renderer.setViewport(i * size, 0, size, size)
   renderer.setScissor(i * size, 0, size, size)

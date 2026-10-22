@@ -13,14 +13,22 @@ from mathutils import Vector
 from . import scene
 
 
-def path(points, samples=40):
-    """Centripetal Catmull-Rom through 3D control points, resampled to even spacing."""
+def path(points, samples=40, curvature_bias=0.0):
+    """Centripetal Catmull-Rom through 3D control points, resampled.
+
+    curvature_bias 0 spaces the samples evenly; above 0 it spends that share of
+    them where the path turns (`profile.resample`), so a tight crown is as smooth
+    as a straight run for the same triangle count.
+    """
     pts = [Vector(p) for p in points]
     ext = [pts[0] * 2 - pts[1]] + pts + [pts[-1] * 2 - pts[-2]]
     dense = []
     for i in range(1, len(ext) - 2):
         dense += _centripetal(ext[i - 1], ext[i], ext[i + 1], ext[i + 2], 24)
     dense.append(pts[-1].copy())
+    if curvature_bias > 0:
+        from . import profile
+        return profile._resample_run(dense, profile._segment_weights(dense, curvature_bias), samples)
     lengths = [0.0]
     for a, b in zip(dense, dense[1:]):
         lengths.append(lengths[-1] + (b - a).length)

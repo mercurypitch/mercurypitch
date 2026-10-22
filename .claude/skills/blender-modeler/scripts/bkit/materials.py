@@ -111,7 +111,8 @@ def optics(thickness, attenuation_color='#ffffff', attenuation_distance=None):
 
 
 def vertex_tint(material, attribute='Col'):
-    """Multiply the material's base colour by a colour attribute (glTF COLOR_0).
+    """Multiply the material's base colour, or the colour texture feeding it, by a colour
+    attribute (glTF COLOR_0). Attach a texture first, then tint.
 
     The exporter writes COLOR_0 for every primitive of a mesh once one material
     uses it, and three.js multiplies every one of them by it: paint the faces of
@@ -125,7 +126,11 @@ def vertex_tint(material, attribute='Col'):
     mix.data_type = 'RGBA'
     mix.blend_type = 'MULTIPLY'
     mix.inputs['Factor'].default_value = 1.0
-    mix.inputs[6].default_value = tuple(bsdf.inputs['Base Color'].default_value)
+    source = bsdf.inputs['Base Color'].links
+    if source:  # a colour texture already feeds the base: tint the texture (baseColorTexture x COLOR_0)
+        nt.links.new(source[0].from_socket, mix.inputs[6])
+    else:
+        mix.inputs[6].default_value = tuple(bsdf.inputs['Base Color'].default_value)
     nt.links.new(attr.outputs['Color'], mix.inputs[7])
     nt.links.new(mix.outputs[2], bsdf.inputs['Base Color'])
     return material

@@ -3,6 +3,21 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **The sheet's material panel lied about the opal.** Cycles under a Standard
+  view transform and a strong studio key clipped the pale glass to white, and
+  the round 2 critic read the opal as flat white while three.js drew pastel.
+  Material panels now use ACES 1.3 at the game's exposure, and the sheet carries
+  a column from the game's own three.js (`three_preview.mjs`).
+- **A ring that turns 0.6 degrees is a ring wasted.** The amphora's heel turned
+  19 degrees per ring next to a ring that turned 0.6, and the handle's crown 19
+  degrees between evenly spaced samples. Measuring the turns and resampling by
+  curvature fixed both; 30 segments instead of 32 paid for the extra rings.
+- **Hammered everywhere is not the concept.** The concept polishes the cuffs,
+  linings, straps and stem ring; one hammered gold on every part read wrong at
+  close range.
+- **Several shells can still be one shard.** Fracture cells cut through parts
+  that touch (a ring on a foot, a handle in its sleeve), so 11 of 18 shards had
+  2-5 shells; all touched. The gate now counts pieces that float free instead.
 - **Pure metal shows the sky it faces.** The museum HDR's ground is brown and a
   fifth as bright as its sky (luminance 0.20 against 1.0), and every smooth gold
   surface that faces the floor mirrors it: the amphora's wave line rendered

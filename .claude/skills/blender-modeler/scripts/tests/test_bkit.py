@@ -183,6 +183,24 @@ def test_inlay_draws_metal_line_glass_ridge_and_baked_shading():
     assert max(abs(a - b) for a, b in zip(first, last)) < 0.02, 'the tile wraps'
 
 
+def test_crackle_tiles_and_keeps_cells_pale_with_white_cracks():
+    scene.reset()
+    maps = textures.crackle('crackle_test', size=64, cells=4, tile=0.2, tint=0.04, ground=0.95, keep=1.0)
+    px, n = maps['color'].pixels, 64
+    values = [max(px[i:i + 3]) for i in range(0, len(px), 4)]
+    assert min(values) > 0.9, ('cells stay pale', min(values))
+    assert max(values) > 0.99, 'cracks are white'
+    normal = maps['normal'].pixels
+    left = [normal[(r * n) * 4 + c] for r in range(n) for c in range(3)]
+    right = [normal[(r * n + n - 1) * 4 + c] for r in range(n) for c in range(3)]
+    assert max(abs(a - b) for a, b in zip(left, right)) < 0.2, 'the tile wraps'
+    glass = textures.attach_normal(textures.attach_color(materials.principled('crackle_glass', '#ffffff'),
+                                                         maps['color'], scale=0.2), maps['normal'], scale=0.2)
+    tinted = materials.vertex_tint(glass)
+    mix = next(node for node in tinted.node_tree.nodes if node.type == 'MIX')
+    assert mix.inputs[6].links and mix.inputs[6].links[0].from_node.type == 'TEX_IMAGE', 'the tint keeps the texture'
+
+
 def test_inlay_relief_has_no_cliffs_between_turns_or_past_an_end():
     scene.reset()
     width, height, n = 0.10, 0.06, 100  # 1 mm texels
@@ -240,6 +258,22 @@ def test_validate_catches_self_intersection():
     b.location.x = 0.05
     merged = scene.join([a, b], 'merged')
     assert validate.report(merged)['self_intersections'] > 0
+
+
+def test_validate_counts_pieces_that_float_free():
+    scene.reset()
+    square = [V(0, 0), V(0.1, 0), V(0.1, 0.1), V(0, 0.1)]
+    resting = scene.join([lathe.lathe('a', square, 16), lathe.lathe('b', profile.translate(square, dz=0.1), 16)],
+                         'resting')
+    rep = validate.report(resting)
+    assert rep['components'] == 2 and rep['loose_pieces'] == 0, rep
+    apart = lathe.lathe('c', square, 16)
+    far = lathe.lathe('d', square, 16)
+    far.location.z = 0.2
+    floating = scene.join([apart, far], 'floating')
+    rep = validate.report(floating)
+    assert rep['loose_pieces'] == 1, rep
+    assert any('float free' in p for p in validate.failures(rep, uv=False)), validate.failures(rep, uv=False)
 
 
 def test_fracture_gives_exact_count_of_closed_connected_shards_and_keeps_volume():

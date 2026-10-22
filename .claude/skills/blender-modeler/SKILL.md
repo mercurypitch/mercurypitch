@@ -125,7 +125,7 @@ gate is never waved through by a critic's SHIP.
 ## 8. Runtime proof
 
 ```bash
-node scripts/runtime_proof.mjs --config proof.json --candidate <out_dir>/<asset>.glb --out <dir>
+node scripts/runtime_proof.mjs --config <asset_dir>/proof.json --candidate <out_dir>/<asset>.glb --out <dir>
 ```
 
 It serves the candidate in place of the shipped file inside the real game, and

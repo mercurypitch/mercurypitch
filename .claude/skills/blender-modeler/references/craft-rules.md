@@ -81,7 +81,10 @@ stripes on a plane are straight and evenly spaced.
 ## 9. Topology serves shading
 
 Even quads on curved surfaces, density where the outline bends (curvature-
-weighted resampling), no needles or slivers. A lathe ring costs `segments`
+weighted resampling: `profile.resample` for an outline, `sweep.path(...,
+curvature_bias=)` for a handle), no needles or slivers. Measure it: no ring
+should turn more than about 12 degrees on a silhouette, and a ring that turns
+under 2 is better spent elsewhere. A lathe ring costs `segments`
 quads: spend rings on the silhouette and the visible lip, few on the hidden
 inner wall below the neck, none on faces nobody sees.
 
@@ -122,7 +125,15 @@ stone, seeds and cords in glass. Never with lumps in the form.
   UVs in tiles (`lathe.lathe(uv=TILE)`, `sweep.tube(uv=TILE)`) so every part
   gets the same dent size. Size the dents from the concept (the amphora's are
   1.2 cm). Export tangents (`export.glb(..., tangents=True)`) for any
-  normal-mapped material.
+  normal-mapped material. Hammer only what the concept hammers: on the amphora
+  the bands, collar, rim and base ring are dented while the cuffs, linings,
+  straps and stem ring are polished, so the gold is two materials.
+- Crackled or seeded glass: `textures.crackle`, sparse wiggly hairlines over
+  near-white cells as a colour multiplier and a groove normal map, attached with
+  `attach_color` and `attach_normal` at the same scale and tinted after with
+  `materials.vertex_tint`, so large vertex-colour patches carry the hue and the
+  crackle the surface. Pass the same settings to `textures.inlay(crackle=...)` so
+  an inlaid band is the same glass.
 
 ## Materials per span
 
@@ -137,7 +148,9 @@ not a seam in the shading.
 Breakables shatter along convex Voronoi cells intersected with every closed
 part (`bkit.fracture`). Seed the cells on every part by surface area, or a heavy
 solid foot with no seeds becomes one shard holding 40 per cent of the mass.
-Every shard is one connected group, cut faces take each part's cut material,
+Every shard is one connected group (its pieces of different parts may be
+separate shells, but they touch: `validate.report` counts `loose_pieces`, and
+any is a failure), cut faces take each part's cut material,
 volume is kept within 3 per cent, and shards leave Blender triangulated and
 cleaned (`scene.clean(shard, triangulate=True)`), because the exporter's own
 triangulation of a cut n-gon leaves zero-area triangles no check in Blender sees.

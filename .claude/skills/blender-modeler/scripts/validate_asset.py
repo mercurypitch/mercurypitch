@@ -93,7 +93,8 @@ if 'shard_prefix' in contract:
     facts['shards'] = []
     for shard in shards:
         rep = validate.report(shard, within_shell=True, weld=WELD)
-        facts['shards'].append({k: rep[k] for k in ('name', 'tris', 'components', 'volume_m3', 'self_intersections')})
+        facts['shards'].append({k: rep[k] for k in ('name', 'tris', 'components', 'loose_pieces', 'volume_m3',
+                                                    'self_intersections')})
         total_tris += rep['tris']
         shard_volume += rep['volume_m3'] or 0.0
         problems += validate.failures(rep)

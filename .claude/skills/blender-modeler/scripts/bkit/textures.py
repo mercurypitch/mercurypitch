@@ -3,13 +3,15 @@
 `hammered_normal` makes a tileable tangent-space normal map of shallow hammer
 dents meeting at soft ridges (Worley F1 squared): the hand-worked gold of the
 Glassworks concepts, at no triangle cost. `marbled` makes a tileable colour map
-of soft veins over a mottled ground, for jade and marble. `attach_normal` and
+of soft veins over a mottled ground, for jade and marble; `crackle` the pale
+hairlines and tinted cells of opal glass. `attach_normal` and
 `attach_color` wire them into a Principled material so the glTF exporter
 writes them as its normalTexture and baseColorTexture. The surface needs UVs in
 metres over the tile size (`lathe.lathe(uv=tile)`, `sweep.tube(uv=tile)`), or
 the pattern stretches with each part's own UV scale.
 """
 
+import colorsys
 import random
 
 import bpy
@@ -50,19 +52,32 @@ def hammered_normal(name, size=128, cells=9, depth=2.2, stretch=1.25, seed=3):
     return image
 
 
-def attach_normal(material, image, strength=1.0):
-    """Feed `image` through a tangent-space Normal Map node into the material's Principled BSDF."""
+def attach_normal(material, image, strength=1.0, scale=1.0):
+    """Feed `image` through a tangent-space Normal Map node into the material's Principled BSDF.
+
+    scale below 1 repeats the image less often than the UV tiles, as in `attach_color`."""
     nt = material.node_tree
     bsdf = next(node for node in nt.nodes if node.type == 'BSDF_PRINCIPLED')
     tex = nt.nodes.new('ShaderNodeTexImage')
     tex.image = image
     tex.interpolation = 'Linear'
+    _scaled(nt, tex, scale)
     normal_map = nt.nodes.new('ShaderNodeNormalMap')
     normal_map.inputs['Strength'].default_value = strength
     nt.links.new(tex.outputs['Color'], normal_map.inputs['Color'])
     nt.links.new(normal_map.outputs['Normal'], bsdf.inputs['Normal'])
     return material
 
+
+def _scaled(nt, tex, scale):
+    """Drive an image node through UV x scale: the exporter writes it as KHR_texture_transform."""
+    if scale == 1.0:
+        return
+    coords = nt.nodes.new('ShaderNodeTexCoord')
+    mapping = nt.nodes.new('ShaderNodeMapping')
+    mapping.inputs['Scale'].default_value = (scale, scale, 1.0)
+    nt.links.new(coords.outputs['UV'], mapping.inputs['Vector'])
+    nt.links.new(mapping.outputs['Vector'], tex.inputs['Vector'])
 
 
 def _tileable_noise(size, cells, rng):
@@ -106,6 +121,63 @@ def marbled(name, ground, vein, *, dark=None, size=256, veins=3, turbulence=2.2,
     return image
 
 
+def _crackle_fields(cols, rows, width, height, *, cell=0.06, keep=0.6, line=0.03, tint=0.04, ground=0.95,
+                    warp=0.35, hues=(135, 180, 215, 270, 325, 35), seed=11):
+    """Crackle over a width x height metre tile that wraps both ways: (colour, across).
+
+    colour: (rows, cols, 3) sRGB multiplier, cells at `ground` a little tinted and
+    the cracks white. across: (rows, cols) 0..1 profile across each crack, for a
+    groove. cell: a cell's size in metres. Other arguments as in `crackle`.
+    """
+    rng = random.Random(seed)
+    nu, nv = max(1, round(width / cell)), max(1, round(height / cell))
+    pts = np.array([((i + 0.1 + 0.8 * rng.random()) / nu, (j + 0.1 + 0.8 * rng.random()) / nv)
+                    for i in range(nu) for j in range(nv)])
+    tints = [colorsys.hsv_to_rgb((rng.choice(hues) / 360 + rng.uniform(-0.02, 0.02)) % 1.0,
+                                 tint * rng.uniform(0.3, 1.0), ground * rng.uniform(0.97, 1.02)) for _ in pts]
+    u, v = np.meshgrid((np.arange(cols) + 0.5) / cols, (np.arange(rows) + 0.5) / rows)
+    bend = _tileable_noise(max(cols, rows), 2 * max(nu, nv), rng)[:rows, :cols]
+    bend2 = _tileable_noise(max(cols, rows), 2 * max(nu, nv), rng)[:rows, :cols]
+    u = (u + warp / nu * (bend - 0.5)) % 1.0
+    v = (v + warp / nv * (bend2 - 0.5)) % 1.0
+    f1, f2 = np.full(u.shape, np.inf), np.full(u.shape, np.inf)
+    n1, n2 = np.zeros(u.shape, dtype=int), np.zeros(u.shape, dtype=int)
+    for k, (px, py) in enumerate(pts):
+        du, dv = np.abs(u - px), np.abs(v - py)
+        d = np.hypot(np.minimum(du, 1 - du) * width, np.minimum(dv, 1 - dv) * height) / cell  # in cells, wrapped
+        first, second = d < f1, (d >= f1) & (d < f2)
+        f2 = np.where(first, f1, np.where(second, d, f2))
+        n2 = np.where(first, n1, np.where(second, k, n2))
+        f1 = np.where(first, d, f1)
+        n1 = np.where(first, k, n1)
+    pair = np.minimum(n1, n2) * len(pts) + np.maximum(n1, n2)
+    cracked = (np.sin(pair * 12.9898 + seed * 78.233) * 43758.5453) % 1.0 < keep  # a stable coin per border
+    across = np.clip(1 - (f2 - f1) / max(line, 1e-4), 0, 1) * cracked
+    colour = np.array(tints)[n1] * (1 - across[..., None] ** 2) + across[..., None] ** 2
+    return colour, across
+
+
+def crackle(name, size=512, cells=5, tile=0.30, depth=0.0004, **fields):
+    """Tileable crackle for glass: sparse wiggly hairlines over near-white cells.
+
+    Returns {'color', 'normal'}. The colour is a multiplier for the material's own
+    colour (`materials.vertex_tint` after `attach_color`): cells at `ground`, each
+    a little tinted (saturation up to `tint`) toward one of `hues` (degrees), and
+    white lines, so a crack reads lighter than the glass it parts. The normal map
+    cuts each crack as a groove `depth` metres deep over a `tile` metres wide
+    image, so its edges catch the light. cells: cells along one side. keep: the
+    share of cell borders that are cracks. line: a crack's half width as a
+    fraction of a cell. warp: how far noise bends the cracks off straight.
+    """
+    colour, across = _crackle_fields(size, size, tile, tile, cell=tile / cells, **fields)
+    h = -depth * across ** 1.5
+    step = tile / size
+    normal = np.dstack((-np.gradient(h, step, axis=1), -np.gradient(h, step, axis=0), np.ones_like(h)))
+    normal /= np.linalg.norm(normal, axis=2, keepdims=True)
+    return {'color': _image(f'{name}_color', np.clip(colour, 0, 1) ** 2.2, True),  # _image takes linear
+            'normal': _image(f'{name}_normal', normal * 0.5 + 0.5, False)}
+
+
 def attach_color(material, image, scale=1.0):
     """Feed `image` into the material's Principled Base Color (the exporter's baseColorTexture).
 
@@ -118,12 +190,7 @@ def attach_color(material, image, scale=1.0):
     tex = nt.nodes.new('ShaderNodeTexImage')
     tex.image = image
     tex.interpolation = 'Linear'
-    if scale != 1.0:
-        coords = nt.nodes.new('ShaderNodeTexCoord')
-        mapping = nt.nodes.new('ShaderNodeMapping')
-        mapping.inputs['Scale'].default_value = (scale, scale, 1.0)
-        nt.links.new(coords.outputs['UV'], mapping.inputs['Vector'])
-        nt.links.new(mapping.outputs['Vector'], tex.inputs['Vector'])
+    _scaled(nt, tex, scale)
     nt.links.new(tex.outputs['Color'], bsdf.inputs['Base Color'])
     return material
 
@@ -177,7 +244,8 @@ def _nearest(p, segs):
 
 def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4', line='#e0b65e',
           ground_trm=(0.35, 0.20, 0.0), line_trm=(0.0, 0.30, 1.0), ridge=0.0008, relief=0.0,
-          reach=0.022, side=-1, period_shifts=(-1, 0, 1, 2), ridges=(), ground_low=None, light=0.0):
+          reach=0.022, side=-1, period_shifts=(-1, 0, 1, 2), ridges=(), ground_low=None, light=0.0,
+          crackle=None):
     """Inlaid metal lines and the relief they ride on, as three tileable images for one material.
 
     strokes: [(points, half_widths)], points (s, z) in metres inside a tile `width`
@@ -194,6 +262,8 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
     reads at gameplay size and under flat light: where the surface turns down
     (away from a light above) the ground moves toward `ground_low`; where it turns
     up it brightens by up to `light`. The metal line is not shaded.
+    crackle: None, or `_crackle_fields` arguments plus `depth` (metres): the same
+    glass crackle as `crackle`, in this tile's metres, cut into the ground only.
     Map it with UVs s / width across and z / height up; the tangent frame must
     come from those same UVs.
     """
@@ -229,6 +299,12 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
             d, _, w, _, _, hh = _nearest(p, ridge_segs)
             bump = hh * np.cos(np.pi / 2 * np.clip(d / np.maximum(w, 1e-6), 0, 1)) ** 2
             h[r] += bump.max(axis=1)
+    cracks = None
+    if crackle:
+        options = dict(crackle)
+        depth = options.pop('depth', 0.0004)
+        cracks, across = _crackle_fields(cols, rows, width, height, **options)
+        h -= depth * across ** 1.5 * (1 - coverage)
     dh_ds = np.gradient(h, width / cols, axis=1)
     dh_dz = np.gradient(h, height / rows, axis=0)
     normal = np.dstack((-dh_ds, -dh_dz, np.ones_like(h)))
@@ -243,6 +319,8 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
             shadow = np.clip(-lit / 0.35, 0, 1)[..., None]
             ground_map = ground_map * (1 - shadow) + low[None, None] * shadow
         ground_map *= 1 + light * np.clip(lit / (1 - key[2]), 0, 1)[..., None]
+    if cracks is not None:
+        ground_map *= np.clip(cracks, 0, 1) ** 2.2  # an sRGB multiplier on linear colour
     colour = ground_map * (1 - coverage[..., None]) + l[None, None] * coverage[..., None]
     gt, lt = np.array(ground_trm), np.array(line_trm)
     trm = gt[None, None] * (1 - coverage[..., None]) + lt[None, None] * coverage[..., None]

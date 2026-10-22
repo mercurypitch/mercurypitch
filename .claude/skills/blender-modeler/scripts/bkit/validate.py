@@ -1,8 +1,8 @@
 """Numeric mesh gates. These decide acceptance; a critic's opinion never overrides them.
 
 `report(obj)` measures the evaluated mesh in world space: manifoldness, open
-edges, slivers, n-gons, self-intersections (BVH), connected parts, volume,
-UVs and size. `failures(report, ...)` turns it into a list of named problems.
+edges, slivers, n-gons, self-intersections (BVH), connected parts and whether
+they touch, volume, UVs and size. `failures(report, ...)` turns it into a list of named problems.
 """
 
 import math
@@ -66,6 +66,49 @@ def face_components(bm):
     return label
 
 
+def loose_pieces(bm, touch=0.0015):
+    """Shells that do not touch, within `touch` metres, the cluster of touching shells with the
+    most faces: a shard that would fly apart in the air, a part floating free of its assembly.
+    A gold ring piece resting on a jade foot piece touches; a sliver across a gap does not."""
+    labels = face_components(bm)
+    count = max(labels) + 1 if labels else 0
+    if count < 2:
+        return 0
+    bm.verts.ensure_lookup_table()
+    trees, sizes, points = [], [], []
+    for c in range(count):
+        faces = [f for f in bm.faces if labels[f.index] == c]
+        verts = sorted({v.index for f in faces for v in f.verts})
+        remap = {v: k for k, v in enumerate(verts)}
+        points.append([bm.verts[v].co.copy() for v in verts])
+        trees.append(BVHTree.FromPolygons(points[-1], [[remap[v.index] for v in f.verts] for f in faces]))
+        sizes.append(len(faces))
+
+    def touching(i, j):  # crossing surfaces, or a vertex of either within `touch` of the other's surface
+        if trees[i].overlap(trees[j]):
+            return True
+        return any(trees[j].find_nearest(co, touch)[0] is not None for co in points[i]) or \
+            any(trees[i].find_nearest(co, touch)[0] is not None for co in points[j])
+
+    parent = list(range(count))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i in range(count):
+        for j in range(i + 1, count):
+            if find(i) != find(j) and touching(i, j):
+                parent[find(i)] = find(j)
+    clusters = {}
+    for c in range(count):
+        clusters.setdefault(find(c), []).append(c)
+    main = max(clusters.values(), key=lambda shells: sum(sizes[c] for c in shells))
+    return count - len(main)
+
+
 def self_intersections(bm, limit=2000, within_shell=False):
     """Face pairs that cross each other, ignoring neighbours that share a vertex.
 
@@ -114,6 +157,7 @@ def report(obj, evaluated=True, intersections=True, within_shell=False, weld=Non
         'zero_area_faces': sum(1 for f in bm.faces if f.calc_area() < 1e-10),
         'ngons': sum(1 for f in bm.faces if len(f.verts) > 4),
         'components': components(bm),
+        'loose_pieces': loose_pieces(bm),
         'closed': non_manifold == 0 and boundary == 0,
         'volume_m3': None,
         'self_intersections': self_intersections(bm, within_shell=within_shell) if intersections else None,
@@ -143,6 +187,8 @@ def failures(rep, *, closed=True, single_part=False, max_tris=None, uv=True):
         problems.append(f"{rep['name']}: loose geometry ({rep['loose_verts']} verts, {rep['wire_edges']} wire edges)")
     if rep['self_intersections']:
         problems.append(f"{rep['name']}: {rep['self_intersections']} self-intersecting face pairs")
+    if rep.get('loose_pieces'):
+        problems.append(f"{rep['name']}: {rep['loose_pieces']} pieces float free of the rest")
     if single_part and rep['components'] != 1:
         problems.append(f"{rep['name']}: {rep['components']} separate parts, expected 1")
     if max_tris is not None and rep['tris'] > max_tris:

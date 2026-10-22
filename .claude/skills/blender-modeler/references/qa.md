@@ -7,13 +7,13 @@ runs the gates in order and exits 1 on any failure:
 python3 -I scripts/asset_pipeline.py <asset_dir> <out_dir> [--intact-only] [--sheet] [--shards-sheet]
 ```
 
-| Gate       | Script                                          | Fails when                                                                                                                           |
-| ---------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| build      | the asset's `build.py`                          | any part is open, self-intersecting, has slivers or no UVs; any shard fails the same                                                 |
-| finish     | `gltf_finish.py`                                | an optics block names a missing material, or volume without transmission                                                             |
-| contract   | `validate_asset.py` + `contract.json`           | names, extras, parents, height, budgets, shard count, shard origins, closure (welded at 1e-6), shard volume against intact beyond 3% |
-| khronos    | `gltf_validate.mjs`                             | the Khronos glTF validator reports any error                                                                                         |
-| silhouette | `silhouette_render.py`, `silhouette_compare.py` | `forms_pass` is false                                                                                                                |
+| Gate       | Script                                          | Fails when                                                                                                                                                           |
+| ---------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| build      | the asset's `build.py`                          | any part is open, self-intersecting, has slivers or no UVs; any shard fails the same                                                                                 |
+| finish     | `gltf_finish.py`                                | an optics block names a missing material, or volume without transmission                                                                                             |
+| contract   | `validate_asset.py` + `contract.json`           | names, extras, parents, height, budgets, shard count, shard origins, closure (welded at 1e-6), a shard piece that floats free, shard volume against intact beyond 3% |
+| khronos    | `gltf_validate.mjs`                             | the Khronos glTF validator reports any error                                                                                                                         |
+| silhouette | `silhouette_render.py`, `silhouette_compare.py` | `forms_pass` is false                                                                                                                                                |
 
 ## The silhouette gate
 
@@ -62,19 +62,21 @@ outline is its front edge, not its side, and this mapping does not hold.
 
 `render_views.py` panels, composed by `compose_sheet.py`:
 
-| Mode     | Shows                                   | Catches                                                                            |
-| -------- | --------------------------------------- | ---------------------------------------------------------------------------------- |
-| clay     | studio light, cavity                    | form, proportion, joins, sunk or floating parts                                    |
-| zebra    | horizontal reflection stripes           | dents, wobble and broken curvature (stripes kink or break)                         |
-| wire     | Cycles wireframe                        | density, slivers, wasted rings                                                     |
-| ids      | flat colour per object                  | detached parts                                                                     |
-| matids   | flat colour per material, with a legend | a band, cuff or lining in the wrong material                                       |
-| material | Cycles with the asset's materials       | how the materials read (a guide; `three_preview.mjs` and the runtime proof decide) |
-| game     | 128 px, enlarged without smoothing      | what survives at gameplay size                                                     |
+| Mode     | Shows                                                              | Catches                                                                            |
+| -------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| clay     | studio light, cavity                                               | form, proportion, joins, sunk or floating parts                                    |
+| zebra    | horizontal reflection stripes                                      | dents, wobble and broken curvature (stripes kink or break)                         |
+| wire     | Cycles wireframe                                                   | density, slivers, wasted rings                                                     |
+| ids      | flat colour per object                                             | detached parts                                                                     |
+| matids   | flat colour per material, with a legend                            | a band, cuff or lining in the wrong material                                       |
+| material | Cycles with the asset's materials, ACES 1.3 at the game's exposure | how the materials read (a guide; `three_preview.mjs` and the runtime proof decide) |
+| game     | 128 px, enlarged without smoothing                                 | what survives at gameplay size                                                     |
 
 Views: three_quarter and low (perspective), front, side and top
 (orthographic). Collision proxies are always hidden; shards are hidden unless
-`--show-shards`.
+`--show-shards`. The intact sheet ends with a `three.js` column: the same views
+drawn by the game's renderer (`three_preview.mjs`), which decides how a material
+reads when it and Cycles disagree.
 
 ## Measurement renders
 
