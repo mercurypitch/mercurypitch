@@ -35,7 +35,7 @@ hard gate, because it is a voice lesson (MASTER-PLAN § 7, days 1 and 6; § 12 i
 before it publishes a draft that waits on a sign-off, then publishes it if told to, and nothing
 checks the lessons a page links. A page published early still works, with a plain chip and unlinked
 step links where its links to Lesson 7 would be (Edge cases). It is built after Lesson 7's page,
-whose range chart, siren take and quiz questions it reuses, and after the lead's change to its hook,
+whose range chart, siren take and quiz questions it reuses, and with the hook this PR gives it,
 since its title must be the season's (FACTS 1). It opens in Lesson 2's order, the cold open straight
 under the title and the recall after it, as MASTER-PLAN § 4.2 now has every page open (§ 12 item
 13; FACTS 3), and its copy follows the plain-language review's patterns. "What the kit and the app
@@ -84,7 +84,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:372-381`), with no variant's team note anywhere in the markup (`:409-415`; FACTS 1), and the
+   (`:373-382`), with no variant's team note anywhere in the markup (`:410-416`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 7: Slides, sirens and your range", a link to
    `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so
@@ -97,7 +97,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    (390 x 844) the title and the opening's first control, Play orange Merc's siren, and the two
    choices belong on the first screen, and on a tablet in landscape (1024 x 640) the stage and the
    choices too (CURIOSITY-MOMENTS § 3.1, "Above the fold",
-   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:275-277`). Of the plan's levers, the recall's
+   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:279-281`). Of the plan's levers, the recall's
    place is already used, since it follows the predict; the others are the Mercs' size (`--merc`,
    `kit/lesson-stage.css:193`) and the hook's length, and this hook is a short one.
    `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its seven sizes and
@@ -707,9 +707,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   "siren and slide drills" for the team, and no card draws it. The link lands with the page, not
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
-  (`season.ts:359`), which the lead changes before the page is built, and its tease and the proposed
-  alternative are `kit/lesson-copy.ts`'s (`:123`), as FACTS 1 records: this spec changes no hook or
-  tease line. `EDGES` already holds [7, 11] (`season.ts:425`).
+  (`season.ts:359`), which this PR changed, and its tease and the alternative `same-note` are
+  `kit/lesson-copy.ts`'s (`:123-132`), as FACTS 1 records: this spec proposes no other change to a
+  hook or a tease. `EDGES` already holds [7, 11] (`season.ts:425`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -718,9 +718,10 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 ## What the kit and the app still need
 
 Found in the kit and the app as they stand on main (21 October 2026, `62c99c150`), Lesson 6's page
-(#1149) and the kit's predict fix (#1160) included, beyond the parts Lessons 2 to 10 promote into
-the kit (Toys table). Lessons 7 and 9's pages are not built yet, and several items below are theirs
-too: whichever page is built first lands the part, and the others take it.
+(#1149) and the kit's predict fix (#1160) included, with this PR's hook and its alternative, beyond
+the parts Lessons 2 to 10 promote into the kit (Toys table). Lessons 7 and 9's pages are not built
+yet, and several items below are theirs too: whichever page is built first lands the part, and the
+others take it.
 
 1. The lesson host: `learn/11.html` at `/learn/11`. Every build takes every `learn/NN.html` as an
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:74-83`;
@@ -743,7 +744,7 @@ too: whichever page is built first lands the part, and the others take it.
    is requested on the day the console publishes it, not at the release (SEARCH.md § 3.2).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
-   (`:372-407`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head, share
+   (`:373-408`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head, share
    card and structured data, a draft's included, since a draft the console publishes goes live
    with the head it was built with (`:12-17`, `:112-210`). The hook's copies are the ones the site
    worker rewrites when the console picks the alternative hook (`src/lesson-gate.ts:17-19`,
@@ -757,7 +758,7 @@ too: whichever page is built first lands the part, and the others take it.
      break: Find Your Pitch, Lesson 11 | MercuryPitch" runs to 66 (Decisions). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:229`), is
      not used: "why voices flip" leans on the predict's answer. The worker never rewrites a title.
-     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:372-381`;
+     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:373-382`;
      Hero);
    - the meta description, "Why does your voice sometimes flip as you slide up? A sixteen-minute
      lesson with sound toys on chest voice, head voice and the break." (133 characters, inside the
@@ -766,9 +767,9 @@ too: whichever page is built first lands the part, and the others take it.
    - `og:title` and `twitter:title`, "Registers and the break: Find Your Pitch, Lesson 11"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "Why does your voice sometimes flip as you slide
-     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:398-401`;
+     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:399-402`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:402-404`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:403-405`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/11`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:116-134`);
@@ -779,7 +780,7 @@ too: whichever page is built first lands the part, and the others take it.
      (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:387-395`, `:405`): `@id` `https://mercurypitch.com/learn/11#lesson` and
+     (`lesson-copy.test.ts:388-396`, `:406`): `@id` `https://mercurypitch.com/learn/11#lesson` and
      `url` `https://mercurypitch.com/learn/11` (`lesson-pages.test.ts:146-147`); the headline
      "Registers and the break"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:158-159`); `position: 11`,
@@ -809,10 +810,10 @@ too: whichever page is built first lands the part, and the others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-111`, `:190-193`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:416-422`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-114`, `:193-196`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:419-425`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:146-156`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:149-159`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed
@@ -895,8 +896,9 @@ draws the season as its state shows it (`kit/page-state.ts:54-57`): Lesson 10's 
 
 With the recommendation first:
 
-1. **The hook** (FACTS 1): the new wording, "Why does your voice sometimes flip as you slide up?",
-   goes live with today's kept as the alternative `same-note`, whose note says it needs a source.
+1. **The hook** (FACTS 1): since this PR the new wording, "Why does your voice sometimes flip as you
+   slide up?", is the default, with the old kept as the alternative `same-note`, whose note says it
+   needs a source.
    Recommended: never pick `same-note` until FACTS.md has one, since the console would write its
    claim into the title, the head, every explorer card and Lesson 10's next card. The source to
    look for is a singer's flip followed over repeated slides; Roubeau, Henrich and Castellengo 2009,
@@ -928,8 +930,9 @@ With the recommendation first:
    The Siren's slide part, which scores jumps rather than the glide (FACTS 41; App content), is a
    known app bug, filed by the lead with the task #38 follow-ups; until it is fixed, the card and
    the help name only the part of the score that measures how close you come to the second note.
-8. **The CURRICULUM card** (FACTS 6): its checkpoint and its Practise line, to match the page: "one
-   slow, quiet siren on "ng", up only as far as is easy" and the Siren exercise alone.
+8. **The CURRICULUM card** (FACTS 6): done in this PR. Its checkpoint and its Practise line match
+   the page: "one slow, quiet siren on "ng", up only as far as is easy" and the Siren exercise
+   alone.
 
 ## Edge cases
 
