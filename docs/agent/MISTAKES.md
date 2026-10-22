@@ -1913,7 +1913,7 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 
 **Symptom:** browser setup exhausted a CI job despite successfully fetching an HTTPS Ubuntu release index.
 **Cause:** the runner's per-file mirror fallback retried Azure HTTP for later package indexes; excluding unrelated feeds did not remove that route.
-**Rule:** filter only the failing route from a temporary, sandbox-readable mirror list, retain the official HTTPS fallbacks and package authentication, and bound the root dependency process group. A partial index update must fail; do not enlarge test budgets or retry the whole installer.
+**Rule:** filter only the failing route from a temporary, sandbox-readable mirror list, retain the official HTTPS fallbacks and package authentication, and bound the root dependency process group. A partial index update must fail; do not enlarge test budgets or retry the whole installer. Keep sandbox-read mirror files under the system `/tmp`, not a private `RUNNER_TEMP` or `TMPDIR`; child permissions alone cannot grant access through a private ancestor. Verify reads as `_apt`, without changing ancestor permissions or disabling the sandbox.
 **See:** `scripts/install-ci-browser.mjs` and `scripts/install-ci-browser.test.mjs`.
 
 ## Process

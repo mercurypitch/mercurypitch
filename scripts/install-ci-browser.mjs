@@ -5,7 +5,6 @@
 import { spawnSync } from 'node:child_process'
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
 import { createRequire } from 'node:module'
-import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -16,7 +15,9 @@ export function installCiBrowser(
   {
     ubuntuSources = '/etc/apt/sources.list.d/ubuntu.sources',
     ubuntuMirrors = '/etc/apt/apt-mirrors.txt',
-    temporaryRoot = process.env.RUNNER_TEMP || tmpdir(),
+    // The APT sandbox must traverse every ancestor. RUNNER_TEMP and TMPDIR
+    // can point inside private runner directories, even if our child is 0755.
+    temporaryRoot = '/tmp',
     run = spawnSync,
   } = {},
 ) {

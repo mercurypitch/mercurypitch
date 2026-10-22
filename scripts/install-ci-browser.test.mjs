@@ -195,6 +195,63 @@ test('runner mirror list remains sandbox-readable with a restrictive umask and r
   ])
 })
 
+test('sandbox mirror ignores private runner and system temporary roots', (t) => {
+  const f = fixture(t)
+  writeFileSync(
+    f.ubuntuSources,
+    officialSources.replaceAll(
+      'http://azure.archive.ubuntu.com/ubuntu/',
+      'mirror+file:/etc/apt/apt-mirrors.txt',
+    ),
+  )
+  const ubuntuMirrors = join(f.root, 'runner-mirrors.txt')
+  writeFileSync(ubuntuMirrors, 'https://archive.ubuntu.com/ubuntu\n')
+  const previous = {
+    RUNNER_TEMP: process.env.RUNNER_TEMP,
+    TMPDIR: process.env.TMPDIR,
+  }
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
+  })
+  process.env.RUNNER_TEMP = f.root
+  process.env.TMPDIR = f.root
+  const parentMode = statSync(f.root).mode & 0o777
+  let mirrorPath
+  installCiBrowser('chromium', {
+    ubuntuSources: f.ubuntuSources,
+    ubuntuMirrors,
+    run(command, args) {
+      if (command !== 'sudo') return { status: 0 }
+      const config = readFileSync(args[6].slice('APT_CONFIG='.length), 'utf8')
+      const sourcePath = JSON.parse(
+        config.match(/^Dir::Etc::sourcelist (.+);$/m)[1],
+      )
+      const sources = readFileSync(sourcePath, 'utf8')
+      mirrorPath = fileURLToPath(sources.match(/^URIs: mirror\+(.+)$/m)[1])
+      assert.match(
+        mirrorPath,
+        /^\/tmp\/playwright-apt-[^/]+\/apt-mirrors\.txt$/,
+      )
+      assert.equal(statSync(join(mirrorPath, '..')).mode & 0o777, 0o755)
+      assert.equal(statSync(mirrorPath).mode & 0o777, 0o644)
+      return { status: 0 }
+    },
+  })
+  assert.equal(
+    statSync(f.root).mode & 0o777,
+    parentMode,
+    'never change runner ancestor permissions',
+  )
+  assert.equal(
+    existsSync(mirrorPath),
+    false,
+    'owned public config is removed after use',
+  )
+})
+
 for (const contents of [
   null,
   'http://azure.archive.ubuntu.com/ubuntu\tpriority:1\n',
