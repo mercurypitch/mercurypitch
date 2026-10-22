@@ -107,8 +107,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // listener, the pitch detector and Voice Mirror's scorer arrive
   // through a dynamic import when Sing it's Start is pressed, and the band
   // edges sit in their own leaf chunk, so the page stays this light only
-  // while both boundaries hold.
-  'learn/03.html': 125,
+  // while both boundaries hold. Raised to 126 when the console gained
+  // Lesson 11's alternative hook: 127,944 bytes on main before it, 128,192
+  // with it, against 128,000 at 125. Every lesson page carries the season's
+  // copy, each alternative's text and its console note included.
+  'learn/03.html': 126,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
