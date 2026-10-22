@@ -853,7 +853,7 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
   learner `note`, "then press Play First Pocket", printed "Drum Night, then press Play First
   Pocket" by `practiseMarkup` (`kit/explorer.ts:174-179`). `pr.needs`, "Ear Lab Time (an ear-drill
   link)", stays as it is: it is admin only, never drawn on a lesson page (`season.ts:102-103`).
-- `sig` and `fig: 'metronome'` stay as they are. The card's figure caption, "A metronome, its arm on
+- The signature (`kit/team-notes.ts:40`) and `fig: 'metronome'` stay as they are. The card's figure caption, "A metronome, its arm on
   beats 2 and 4" (`kit/explorer-figures.ts:207`), is the kit's and stays: the card's arm swings in
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:878-889`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).

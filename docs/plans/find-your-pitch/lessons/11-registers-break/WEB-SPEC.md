@@ -84,7 +84,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:322-331`), with no variant's team note anywhere in the markup (`:411-417`; FACTS 1), and the
+   (`:322-331`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 7: Slides, sirens and your range", a link to
    `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so
@@ -704,7 +704,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `addr: 'mercurypitch.com/pitch-training'`, `label: 'Exercises'` and
   `note: 'then tap Siren / Range Explorer'`, so the card reads "Exercises, then tap Siren / Range
   Explorer", as Lesson 9's reads "Exercises, then tap Arpeggio Jumper" (`season.ts:334-339`,
-  `explorer.ts:174-179`). The note is in the learner's words (`season.ts:27-34`); `needs` keeps
+  `explorer.ts:174-179`). The note is in the learner's words (`season.ts:34-37`); `needs` keeps
   "siren and slide drills" for the team, and no card draws it. The link lands with the page, not
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's

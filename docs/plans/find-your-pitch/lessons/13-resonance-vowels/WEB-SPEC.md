@@ -93,7 +93,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:323-332`), with no variant's team note anywhere in the markup (`:412-418`; FACTS 1), and the
+   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 11: Registers and the break", a link to
    `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so
@@ -745,11 +745,11 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
   It is printed on every page's explorer card for Lesson 13 (`practiseMarkup`,
   `kit/explorer.ts:174-179`); `needs` keeps "Long Note on vowels" for the team, and no card draws it
-  (`kit/season.ts:27-34`). The link lands with the page, not before it: every lesson page's explorer
+  (`kit/season.ts:27-31`). The link lands with the page, not before it: every lesson page's explorer
   prints it, and only this page says why the hold is suggested on vowels. Its hook is the entry's
   (`kit/season.ts:378`), and its tease is `kit/lesson-copy.ts`'s (`:142`), with no alternative hook,
-  as FACTS 1 and 10 record: this spec changes no hook or tease line. Its `sig` (`kit/season.ts:391`)
-  is the team's and never drawn (`:133`). `EDGES` already holds [11, 13] (`:421`).
+  as FACTS 1 and 10 record: this spec changes no hook or tease line. Its signature (`kit/team-notes.ts:45`)
+  is the team's and never drawn (`:5-9`). `EDGES` already holds [11, 13] (`kit/season.ts:421`).
 
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read

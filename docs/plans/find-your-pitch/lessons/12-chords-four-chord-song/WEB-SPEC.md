@@ -812,8 +812,8 @@ built:
   Arpeggio Jumper", as Lesson 9's card now reads (`season.ts:332-339`). `pr.needs`, "Chord Stacker
   with major and minor triads (today it has only maj7, min7, dom7, dim7 and maj6)", stays until the
   triads ship: it is "Admin only, never drawn on a lesson page" (`season.ts:102-103`, and the fields
-  the team keeps, `:27-34`).
-- `sig` stays as it is. The entry has no `fig`, so the card draws no figure.
+  the team keeps, `:27-31`).
+- The signature stays as it is (`kit/team-notes.ts:44`). The entry has no `fig`, so the card draws no figure.
 - The hook stays word for word (`season.ts:366`; FACTS 1). The tease Lesson 11's card shows for this
   lesson, and Lesson 13's tease on this page's card, are the kit's lesson copy
   (`kit/lesson-copy.ts:132`, `:134`; FACTS 5, 5b).
@@ -970,7 +970,8 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
 
 1. **The alternative hook, `hundreds`.** It stays switchable and unpicked. The rules already keep it
    unpicked: a variant's text is lesson copy held to "every claim in that lesson's FACTS.md"
-   (`kit/lesson-copy.ts:26-30`); its own note asks for a counted source first (`:129`); the owner's
+   (`kit/lesson-copy.ts:31-34`); its own note asks for a counted source first
+   (`kit/team-notes.ts:77-78`); the owner's
    answer to CURIOSITY-MOMENTS § 5 item 2 holds back a hook that needs a source until FACTS.md has
    one; and Ableton says "hundreds" and counts none, as Hooktheory's analysis of
    1,300 songs gives no count for this loop (FACTS 1; FACTS, Unsupported, not used). What the
@@ -1263,7 +1264,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     Lesson 1's card (`:102-119`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:45-47`), for the team's words (`:22-40`), and the
-    alternative hook's note never reaches the page (`:41-44`).
+    alternative hook's note never reaches the page (`:77-79`).
 13. With reduced motion emulated, no corner slides, the rooms turn at once, the walk draws a segment
     at a time with no travel, the Mercs hold still, and nothing moves on its own.
 14. A visitor with the studio installed still gets the lesson, not the shell (the service worker's

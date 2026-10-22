@@ -78,7 +78,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:321-330`), with no variant's team note anywhere in the markup (`:410-416`; FACTS 1), and the
+   (`:321-330`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    five chips ("16 minutes", FACTS 5; "After Lesson 3: Match a note", a link to `/learn/03`; "After
    Lesson 6: Intervals: the distance between notes", a link to `/learn/06`, each chip wholly the
@@ -597,7 +597,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `href: '/pitch-training?lesson=09'`, `addr: 'mercurypitch.com/pitch-training'`,
   `label: 'Exercises'` and `note: 'then tap Arpeggio Jumper'`, so the card reads "Exercises, then
   tap Arpeggio Jumper", as Lesson 4's reads "Exercises, then tap Scale Runner" (`season.ts:236-241`,
-  `explorer.ts:178`). The note is in the learner's words (`season.ts:27-34`); `needs` keeps
+  `explorer.ts:178`). The note is in the learner's words (`season.ts:34-37`); `needs` keeps
   "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
   stay. Its hook is the entry's, the default (`season.ts:331`); its alternative, `'harder'`, and its
   tease, which Lesson 8's card draws, are `kit/lesson-copy.ts`'s (`:106-114`), as FACTS 1 records:
