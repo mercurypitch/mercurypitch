@@ -45,18 +45,16 @@ coach signs off is listed at the end.
   new vowel needn't mean a new note. Then you'll hold one note through five vowels.
 
 _[Editorial: the season's hook (`kit/season.ts`), with no alternative in `kit/lesson-copy.ts`; the
-site worker writes whichever hook the admin console picks into the title and the head's copies of
-it. The title says that the two vowels draw the same line and sound different, so it leans a little
-towards something under the line changing, but it never says what the peaks do, and the bars
-really do stay in place: FACTS 1 and 3 give the reasoning. WEB-SPEC's Decisions for the owner
-propose an alternative for the console to offer, which leans on neither choice: "When you sing ‘ee’
-and then ‘ah’ on the same note, have you sung one note or two?". On Lesson 12's next-lesson card,
-one line above this hook, this lesson's tease reads "Same note, two vowels: ‘ee’, then ‘ah’."
-(FACTS 10).]_
+site worker writes the hook the admin console picks into the title and the head's copies of it.
+The title says that the two vowels draw the same line and sound different. The predict under it
+asks what will change in the bars, their heights or their places: both are a change, so the title
+leans on neither, and "their places" is the misconception made visible (FACTS 1 and 3). On Lesson
+12's next-lesson card, one line above this hook, this lesson's tease reads "Same note, two vowels:
+‘ee’, then ‘ah’." (FACTS 10).]_
 
 ## Sound gate
 
-> This lesson is about vowels, and your voice. Tap to turn the sound on: nothing plays until you
+> This lesson is about vowels and your voice. Tap to turn the sound on: nothing plays until you
 > press play. We ask for the microphone only if you choose to sing.
 
 ## Cold open: predict
@@ -65,7 +63,7 @@ one line above this hook, this lesson's tease reads "Same note, two vowels: ‘e
 
 (Blue Merc holds A3 on ‘ee’ for two seconds, whichever voice is stored. Above, Merc's line glows
 amber, level on the chart. Under it, a strip of bars lights, one bar for each harmonic up to 4,000
-Hz, each numbered from the left, and the two peaks are marked: the 1st bar and the 10th.)
+Hz, and the two peaks are marked and numbered: the 1st bar and the 10th.)
 
 Orange Merc: "A different vowel must be a slightly different note, surely?"
 Blue Merc: "Watch the line, and listen."
@@ -73,22 +71,26 @@ Blue Merc: "Watch the line, and listen."
 Under the line, each bar is one of the frequencies inside Merc's note, lowest on the left. Its
 height is how loud it is, and the marked bars are the peaks.
 
-**Predict before you listen.** Merc holds the same note. When ‘ee’ turns to ‘ah’, what will the
-peaks under the line do?
-[ Stay where they are ] [ Move ]
+**Predict before you listen.** Merc holds the same note. When ‘ee’ turns to ‘ah’, what will change
+in the bars under the line?
+[ Their heights ] [ Their places ]
 
-(Before a choice, the hint reads "Choose an answer to unlock ‘ee’, then ‘ah’." After a choice,
-[ Play ‘ee’, then ‘ah’ ] unlocks and the hint reads "Locked in. Now play ‘ee’, then ‘ah’.": two
-seconds of ‘ee’, half a second of change, then two seconds of ‘ah’, with the strip changing as it
-sounds. The reveal waits until it has been heard to its end. With sound off, either play shows the
-hint "Sound is off, so nothing played. Turn sound on to hear it, then play it again." After the
-reveal, the hint reads "Play either again.")
+(Before a choice, the hint reads "Choose an answer to unlock ‘ee’, then ‘ah’.", and Play Merc's
+‘ee’ still works. After a choice, [ Play ‘ee’, then ‘ah’ ] unlocks and the hint reads "Locked in.
+Now play ‘ee’, then ‘ah’.": two seconds of ‘ee’, half a second of change, then two seconds of ‘ah’,
+with the strip changing as it sounds. The reveal waits until it has been heard to its end with
+sound on. A play that sound off kept silent, before a choice or after, sets the hint to "Sound is
+off, so nothing played. Turn sound on to hear it, then play it again." Merc's ‘ee’ heard with sound
+on sets the hint back: before a choice to the lock line, after one to "Locked in. Now play ‘ee’,
+then ‘ah’." A play cut short changes nothing (WEB-SPEC, Toys 2). The reveal opens on the
+choice, "You said: their heights" or "You said: their places", and the hint then reads "Play either
+again.", which no later play changes.)
 
-Reveal: They move. In ‘ee’, the peaks are on the 1st bar and the 10th. In ‘ah’, the first peak moves
-up to the 3rd bar, and the second drops to the 5th. The bars themselves stay where they are, and so
-does the line: Merc's note never changed. (The bars kept their places, so ‘stay where they are’ was
-a fair guess.) A vowel is a shape of your throat and mouth. The shape picks which of those
-frequencies come out strongest: that's this lesson's story.
+Reveal: Their heights. In ‘ee’, the peaks are on the 1st bar and the 10th. In ‘ah’, the first peak
+moves up to the 3rd bar, and the second drops to the 5th. The bars themselves stay where they are,
+and so does the line: Merc's note never changed. (The peaks did move along the strip, so ‘their
+places’ was a fair guess.) A vowel is a shape of your throat and mouth. The shape picks which of
+those frequencies come out strongest: that's this lesson's story.
 
 ## Recall from Lesson 11
 
@@ -337,18 +339,20 @@ exercise list and the Ascent's "Breath & Power" week, has no address of its own,
 "clear enunciation" and vowels that "remain pure" (FACTS 62). When "Long Note on vowels" ships, the
 card names it, and its address replaces Voice Mirror's.]_
 
-**Next lesson:** Lesson 14, Phrasing: sing a whole song. "If you can hit every note of a song, what
-is still missing between correct and compelling?" One line above it, the tease: "Every note in the
-band, start to finish."
+**Next lesson:** Lesson 14, Phrasing: sing a whole song. "If every note of a song is in tune, what
+is left to shape?" One line above it, the tease: "‘Twinkle, twinkle, little star’, twice. The second
+‘star’ swells."
 
 _[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season as
 this page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`,
-`kit/page-state.ts`). Lesson 14 has no alternative hook; the card draws whichever hook and tease
-the console picked, and the default until it picks one. Beside the words, the tease's figure: one
-phrase's pitch line drawn twice, every note mint in its band, with one "?" between the two copies.
-It draws no breath mark, no swell and no light that grows, which would lean on Lesson 14's predict
-(WEB-SPEC, Toys 8). The card says "Coming later" and "See it on the map" until Lesson 14's page is
-live (FACTS 7).]_
+`kit/page-state.ts`). These are Lesson 14's defaults. The console may pick its alternatives,
+today's wording kept as the hook `compelling` and the tease `band`, and the card draws whichever it
+picked. Beside the words, the tease's figure: Twinkle's first phrase as Lesson 14's song line draws
+it, seven amber bands at their heights with Merc's line through each, drawn twice side by side; in
+the second copy the seventh band, "star", holds a "?" and no line. It draws no mint, no breath
+mark, no swell and no light that grows, since a second "star" drawn in its band, or with a swell, would
+answer Lesson 14's predict (WEB-SPEC, Toys 8). The card says "Coming later" and "See it on the map"
+until Lesson 14's page is live (FACTS 7).]_
 
 ## Footer
 
