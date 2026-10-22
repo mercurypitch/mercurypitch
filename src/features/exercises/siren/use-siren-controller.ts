@@ -2,7 +2,7 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
-import { detectSlides } from '@/lib/vocal-analyzer'
+import { computeGlideCoverage } from '@/lib/vocal-analyzer'
 import { freqToExactMidi, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SIREN } from '../types'
@@ -111,6 +111,12 @@ export function useSirenController(
   let rounds: SirenRound[] = []
   let roundIndex = 0
   let roundScores: number[] = []
+  // Each round's glide, 0-100, beside its roundScore; see evaluateRound.
+  let glideScores: number[] = []
+  // Rounds whose window held a voiced line to measure at all.
+  let voicedGlides = 0
+  // When the open glide window began, on the run's elapsed clock (ms).
+  let glideFromMs = 0
   // Effective difficulty for this run; read fresh at setup (not module load).
   let difficulty = 5
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
@@ -131,6 +137,8 @@ export function useSirenController(
     rounds = generateSirens(baseMidi, difficulty, rangeMin, rangeMax)
     roundIndex = 0
     roundScores = []
+    glideScores = []
+    voicedGlides = 0
   }
 
   function startRounds(): void {
@@ -195,6 +203,7 @@ export function useSirenController(
   function startMatching(): void {
     if (_cancelled) return
     const round = rounds[roundIndex]
+    glideFromMs = base.state().elapsedMs
     batch(() => {
       base._setTargetPitch(midiToFreq(round.endMidi))
       base._updateMetrics({
@@ -205,7 +214,7 @@ export function useSirenController(
         // triangle up wherever it happened to be — the dot could appear
         // halfway along, travelling the wrong way, under a caption that
         // says "follow the dot".
-        glideFromMs: base.state().elapsedMs,
+        glideFromMs,
       })
     })
     phaseTimer = setTimeout(() => {
@@ -244,6 +253,21 @@ export function useSirenController(
 
     roundScores.push(roundScore)
 
+    // The glide itself, over this window's voiced frames only: how much of
+    // the way from the first note toward the second the line glided. The
+    // window is read from when it opened rather than back from the last
+    // voiced frame, so a silent round glides nothing instead of borrowing
+    // the frames of the round before.
+    const glideFrames = history
+      .filter((p) => p.freq > 0 && p.time * 1000 > glideFromMs)
+      .map((p) => ({ midi: freqToExactMidi(p.freq) }))
+    if (glideFrames.length >= 2) voicedGlides++
+    glideScores.push(
+      Math.round(
+        computeGlideCoverage(glideFrames, round.startMidi, round.endMidi) * 100,
+      ),
+    )
+
     const avg = roundScores.reduce((a, b) => a + b, 0) / roundScores.length
     batch(() => {
       base._updateScore(Math.round(avg))
@@ -274,9 +298,8 @@ export function useSirenController(
           roundsCompleted: 0,
           avgAccuracy: 0,
           bestRound: 0,
-          slideQuality: 0,
-          cleanSlides: 0,
-          scoopSlides: 0,
+          glideQuality: 0,
+          voicedGlides: 0,
         },
         completedAt: Date.now(),
       }
@@ -286,36 +309,28 @@ export function useSirenController(
     )
     const bestRound = Math.max(...roundScores)
 
-    const history = base.pitchHistory()
-    const slideSamples = history
-      .filter((p) => p.freq > 0)
-      .map((p) => ({
-        time: p.time,
-        midi: freqToExactMidi(p.freq),
-        freq: p.freq,
-      }))
-    const slideResult = detectSlides(slideSamples)
-    // A siren IS a glide: if no slide was detected, that's no credit — not the
-    // full marks detectSlides hands out by default (overallScore = 100 when it
-    // finds none). Scoped to the siren; the shared default is left untouched so
-    // other callers keep their behaviour.
-    const slideQuality =
-      slideResult.slides.length > 0 ? slideResult.overallScore : 0
-    const cleanSlides = slideResult.cleanCount
-    const scoopSlides = slideResult.scoopCount
+    // The 30% part used to be detectSlides' score over the whole run, which
+    // splits the line only at a jump of more than half a semitone between
+    // two frames and scores the jumps: a glide sung smoothly at the dot's
+    // pace was one stretch with no slide in it and earned nothing, while a
+    // flip, the change of note across the silence between rounds, or a
+    // tracking error earned it. It is now each round's own glide, averaged
+    // over the rounds, and a round with no voiced glide scores 0 in it.
+    const glideQuality = Math.round(
+      glideScores.reduce((a, b) => a + b, 0) / glideScores.length,
+    )
 
     return {
       type: EXERCISE_SIREN,
       score: Math.round(
-        avgAccuracy * 0.45 + bestRound * 0.25 + slideQuality * 0.3,
+        avgAccuracy * 0.45 + bestRound * 0.25 + glideQuality * 0.3,
       ),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,
         bestRound,
-        slideQuality,
-        cleanSlides,
-        scoopSlides,
+        glideQuality,
+        voicedGlides,
       },
       completedAt: Date.now(),
     }

@@ -534,6 +534,58 @@ function computeDirectness(
   return Math.max(0, 1 - avgDeviation / Math.abs(span))
 }
 
+/**
+ * How much of the way from one note toward another a line glides, 0 to 1:
+ * the share of the span between `fromMidi` and `toMidi` that the frames cross
+ * moving toward `toMidi` in steps of at most `maxStep` semitones a frame.
+ *
+ * computeDirectness cannot score a glide window on its own. It draws one
+ * straight line across every sample, so a held note with a jump halfway
+ * scores 0.75, while a glide that reaches the note early and holds it, or
+ * follows the Siren's guide dot there and back, scores about two thirds.
+ * Here a jump or a flip crosses ground without gliding it, frames sung an
+ * octave away lie outside the span, a held note crosses nothing, and going
+ * back over ground already glided neither adds nor takes away. `maxStep` is
+ * the half semitone detectSlides already treats as a jump between frames.
+ */
+export function computeGlideCoverage(
+  samples: Array<{ midi: number }>,
+  fromMidi: number,
+  toMidi: number,
+  maxStep = 0.5,
+): number {
+  const lo = Math.min(fromMidi, toMidi)
+  const hi = Math.max(fromMidi, toMidi)
+  if (hi - lo < 0.1 || samples.length < 2) return 0
+  const toward = Math.sign(toMidi - fromMidi)
+
+  const crossed: Array<[number, number]> = []
+  for (let i = 1; i < samples.length; i++) {
+    const step = samples[i].midi - samples[i - 1].midi
+    if (Math.abs(step) > maxStep || step * toward <= 0) continue
+    const a = Math.max(lo, Math.min(samples[i - 1].midi, samples[i].midi))
+    const b = Math.min(hi, Math.max(samples[i - 1].midi, samples[i].midi))
+    if (b > a) crossed.push([a, b])
+  }
+
+  // The union of the crossed stretches, so ground glided twice counts once.
+  crossed.sort((x, y) => x[0] - y[0])
+  let covered = 0
+  let runStart = 0
+  let runEnd = -Infinity
+  for (const [a, b] of crossed) {
+    if (a > runEnd) {
+      if (runEnd > runStart) covered += runEnd - runStart
+      runStart = a
+      runEnd = b
+    } else {
+      runEnd = Math.max(runEnd, b)
+    }
+  }
+  if (runEnd > runStart) covered += runEnd - runStart
+  return Math.min(1, covered / (hi - lo))
+}
+
 function classifySlide(
   samples: Array<{ midi: number }>,
   startMidi: number,
