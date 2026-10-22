@@ -15,8 +15,11 @@
 // retry and any further singing, and leaves the rest card and the doctor
 // lines (REQ-GVC-023, REQ-GVC-055); "Effortful" keeps the count but offers
 // no retry, since a report of effort suppresses immediate-repeat
-// encouragement (REQ-GVC-021). The answer picks the Wrap's practise card for
-// the visit, held in memory, never in storage (`Ending`).
+// encouragement (REQ-GVC-021). Whether "Effortful" also picks the rest card
+// is the vocal coach's call: by default it does not, and a page whose coach
+// has chosen it asks for it (`restAfterEffort`), as Lessons 6, 7 and 8 do.
+// The answer picks the Wrap's practise card for the visit, held in memory,
+// never in storage (`Ending`).
 
 import { qa } from './dom'
 
@@ -45,7 +48,15 @@ export interface AfterFeeling {
   readonly rest: boolean
 }
 
-export function afterFeeling(f: Feeling): AfterFeeling {
+export interface AfterFeelingOptions {
+  /** "Effortful" picks the rest card too (default false: the coach's call). */
+  readonly restAfterEffort?: boolean
+}
+
+export function afterFeeling(
+  f: Feeling,
+  o: AfterFeelingOptions = {},
+): AfterFeeling {
   if (f === 'uncomfortable')
     return {
       count: false,
@@ -63,7 +74,7 @@ export function afterFeeling(f: Feeling): AfterFeeling {
       closing: 'gentle',
       doctor: false,
       // the coach decides whether effort leads to the rest card too
-      rest: false,
+      rest: o.restAfterEffort === true,
     }
   return {
     count: true,
