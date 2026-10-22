@@ -4,13 +4,13 @@ A music theory and singing tutorial series by MercuryPitch, in two forms per les
 (short text, many motion visuals, interactive toys, a lesson explorer) and a YouTube explainer
 built entirely in code, hosted by blue Merc and orange Merc.
 
-Status, 19 Oct 2026: Phase 0 is done when Lesson 1's delivery master and LEDGER exist. Both do
-now, and one human check remains: the master, `rc-07` (5:14, 314.2 s on its cue sheet), speaks
-with the owner's ElevenLabs voices and passed the last of nine critic rounds, and a person listens
-to the new voices before it is published. Written: the research, curriculum, playbook, host bible
-and production pipeline, and Lesson 1's documents (script, storyboard and the rest, see § 11).
-Built: the Lesson 1 and Lesson 2 films, and the web lessons with the explorer at `/learn/01` and
-`/learn/02`; `/learn/03` is built as a draft that waits on the vocal coach (§ 11). Phase 1 starts with the owner decisions in § 12.
+Status, 22 Oct 2026: Phase 0 is done: Lesson 1's delivery master, `rc-07` (5:14), and its LEDGER
+exist, and a person listens to the owner's ElevenLabs voices before it is published. Written: the
+research, curriculum, playbook, host bible and production pipeline, and all fourteen Season 1
+lessons (facts, copy and page spec for each, § 11). Built: the Lesson 1 and Lesson 2 films, and
+the web lessons at `/learn/01` to `/learn/08`, 3 to 8 as drafts the admin console publishes.
+Phases 1 to 3 run side by side now; [HANDOFF.md](HANDOFF.md) says where each part stands, and
+§ 12 holds the owner decisions that are still open.
 
 | Document                                                 | What it holds                                                        |
 | -------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -269,7 +269,7 @@ critic rounds, will hold the final numbers.
 
 ## 7. Phases and roadmap
 
-### Phase 0: discovery and proof (in progress, October 2026)
+### Phase 0: discovery and proof (done, October 2026)
 
 - Seven research reports ([research/](research/)): Merc as a production asset, the stats site's
   motifs, brand and motion pipeline, the app's existing teaching content and deep links,
@@ -278,8 +278,8 @@ critic rounds, will hold the final numbers.
 - The Merc film pipeline: bundled read-only from `src/lib/merc`, orange look, capture, straight-alpha
   passes, performances from the cue sheet.
 - Lesson 1: script, facts, storyboard (two critic rounds), all 17 Merc passes, all 21 scenes built,
-  written lesson; the web lesson with explorer in build. Still to come: the full-film critic
-  rounds, the delivery render and the LEDGER.
+  written lesson, the web lesson with its explorer, nine full-film critic rounds, the delivery
+  render and the LEDGER.
 
 Exit: Lesson 1's delivery master and LEDGER exist; these two alone mark Phase 0 done. The web
 lesson's preview URL goes in § 11 once the preview is published; its public URL is the Phase 1
