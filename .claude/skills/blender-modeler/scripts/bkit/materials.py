@@ -25,8 +25,13 @@ def srgb(value):
 
 
 def principled(name, color, *, metallic=0.0, roughness=0.5, transmission=0.0, ior=1.5, coat=0.0,
-               coat_roughness=0.03, thin_film_nm=0.0, thin_film_ior=1.33, backface_culling=True):
-    """New material with one Principled BSDF; `color` is sRGB (hex or tuple)."""
+               coat_roughness=0.03, thin_film_nm=0.0, thin_film_ior=1.33, sheen=0.0, sheen_tint='#ffffff',
+               sheen_roughness=0.5, backface_culling=True):
+    """New material with one Principled BSDF; `color` and `sheen_tint` are sRGB (hex or tuple).
+
+    Sheen exports as KHR_materials_sheen: a soft tinted glow toward grazing angles,
+    the pearl on opal glass. Thin film needs gltf_finish.py to reach three.js.
+    """
     mat = bpy.data.materials.new(name)
     if mat.node_tree is None:  # older builds; 5.x creates the tree already
         mat.use_nodes = True
@@ -42,6 +47,9 @@ def principled(name, color, *, metallic=0.0, roughness=0.5, transmission=0.0, io
         'Coat Roughness': coat_roughness,
         'Thin Film Thickness': thin_film_nm,
         'Thin Film IOR': thin_film_ior,
+        'Sheen Weight': sheen,
+        'Sheen Tint': (*srgb(sheen_tint), 1.0),
+        'Sheen Roughness': sheen_roughness,
     }
     for socket, value in values.items():
         bsdf.inputs[socket].default_value = value

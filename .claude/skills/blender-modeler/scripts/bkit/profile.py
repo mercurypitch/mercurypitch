@@ -211,3 +211,81 @@ def scale(poly, sr=1.0, sz=1.0):
 
 def translate(poly, dr=0.0, dz=0.0):
     return [V(p.x + dr, p.y + dz) for p in poly]
+
+
+def chain(*parts, tolerance=1e-6):
+    """Join outline pieces that each carry a material slot into one profile.
+
+    parts: (slot, points) pairs, every piece walked bottom to top. Returns
+    (points, span_slots) for `lathe.lathe(..., span_materials=span_slots)`.
+    A piece that starts where the previous one ended shares that point. Every
+    span inside a piece takes the piece's slot, and so does the span that
+    bridges from the previous piece, so a raised band lists its own step faces:
+    start it on the wall, step out, run the face, step back, end on the wall.
+    """
+    pts, slots = [], []
+    for slot, piece in parts:
+        piece = [V(*p) for p in piece]
+        if pts and (piece[0] - pts[-1]).length < tolerance:
+            piece = piece[1:]
+        slots += [slot] * (len(piece) if pts else len(piece) - 1)
+        pts += piece
+    return pts, slots
+
+
+def raised(outline, z0, z1, proud, *, corner=None, corner_steps=1, samples=2):
+    """Points of a band standing `proud` off `outline` between heights z0 and z1.
+
+    Starts and ends on the wall (shared with the neighbouring pieces), steps out
+    along the wall normal into a rounded corner of radius `corner` (corner_steps
+    points per corner; one reads as a soft chamfer at band scale), and follows the
+    wall's curvature across its face with `samples` spans. Use it as one piece of
+    `chain`, so the band is part of the same closed shell instead of a separate
+    floating ring. Every point is a full ring of the lathe, so keep counts low.
+    """
+    corner = min(proud * 0.8, (z1 - z0) * 0.25) if corner is None else corner
+
+    def frame(z):
+        r = radius_at(outline, z)
+        if r is None:
+            raise ValueError(f'outline never reaches z={z:.4f}')
+        t = tangent_at(outline, z)
+        n = V(t.y, -t.x)
+        return V(r, z), t, (n if n.x >= 0 else -n)
+
+    b0, t0, n0 = frame(z0)
+    b1, t1, n1 = frame(z1)
+    arc = [math.pi / 2 * k / (corner_steps + 1) for k in range(1, corner_steps + 1)]
+    pts = [b0]
+    for a in arc:
+        pts.append(b0 + n0 * (proud - corner + corner * math.sin(a)) + t0 * (corner - corner * math.cos(a)))
+    for k in range(samples + 1):
+        z = z0 + corner + (z1 - z0 - 2 * corner) * k / samples
+        base, _, n = frame(z)
+        pts.append(base + n * proud)
+    for a in reversed(arc):
+        pts.append(b1 + n1 * (proud - corner + corner * math.sin(a)) - t1 * (corner - corner * math.cos(a)))
+    pts.append(b1)
+    return pts
+
+
+def between(outline, z0, z1, eps=1e-6):
+    """The part of an outline (walked bottom to top) from height z0 to z1, ends interpolated.
+
+    The end points equal what `radius_at` gives at z0 and z1 on a wall that rises
+    monotonically, so the pieces next to a `raised` band share its end points.
+    Heights within `eps` of the outline's ends count as on it: vectors are single
+    precision, so 0.15 stored is not <= 0.15 typed.
+    """
+    out = []
+    for a, b in zip(outline, outline[1:]):
+        if b.y <= a.y:
+            continue
+        if not out and a.y - eps <= z0 <= b.y:
+            out.append(a.lerp(b, max(0.0, (z0 - a.y) / (b.y - a.y))))
+        if out and z0 < b.y < z1 - eps:
+            out.append(b.copy())
+        if out and a.y < z1 <= b.y + eps:
+            out.append(a.lerp(b, min(1.0, (z1 - a.y) / (b.y - a.y))))
+            break
+    return out

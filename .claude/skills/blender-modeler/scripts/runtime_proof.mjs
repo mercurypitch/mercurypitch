@@ -14,8 +14,8 @@
 //   "layout": "twin-galleries",
 //   "replace": "adventure-v6/opaline-echo-amphora-qa-v2.glb",
 //   "progress": { "version": 2, "levelId": "...", "checkpointId": "...", "completedBreakableIds": [] },
-//   "viewports": [{ "name": "phone", "width": 390, "height": 844, "scale": 2 },
-//                 { "name": "desktop", "width": 1440, "height": 900, "scale": 1 }],
+//   "viewports": [{ "name": "phone", "width": 390, "height": 844, "scale": 2, "quality": "balanced" },
+//                 { "name": "desktop", "width": 1440, "height": 900, "scale": 1, "quality": "high" }],
 //   "shots": [{ "name": "entry", "settle": 6000 },
 //             { "name": "turn-left", "drag": [-220, 0], "settle": 2500 }]
 // }
@@ -42,15 +42,27 @@ const args = Object.fromEntries(
 const config = JSON.parse(readFileSync(args.config, 'utf8'))
 const out = resolve(args.out ?? 'runtime-proof')
 const candidate = args.candidate ? resolve(args.candidate) : undefined
-if (candidate && !existsSync(candidate)) throw new Error(`no candidate at ${candidate}`)
+if (candidate && !existsSync(candidate))
+  throw new Error(`no candidate at ${candidate}`)
 mkdirSync(out, { recursive: true })
 const port = Number(process.env.PROOF_PORT ?? 5391)
 const base = `http://127.0.0.1:${port}`
 
 const server = spawn(
   process.execPath,
-  [join(APP, 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-  { cwd: APP, env: { ...process.env, VITE_BESIDE_CUE_GAMES: '1' }, stdio: ['ignore', 'pipe', 'pipe'] },
+  [
+    join(APP, 'node_modules/vite/bin/vite.js'),
+    '--host',
+    '127.0.0.1',
+    '--port',
+    String(port),
+    '--strictPort',
+  ],
+  {
+    cwd: APP,
+    env: { ...process.env, VITE_BESIDE_CUE_GAMES: '1' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  },
 )
 let serverLog = ''
 server.stdout.on('data', (chunk) => (serverLog += chunk))
@@ -69,7 +81,11 @@ async function waitForServer() {
   throw new Error(`Vite did not start:\n${serverLog.slice(-2000)}`)
 }
 
-const summary = { candidate: candidate ?? null, replace: config.replace ?? null, viewports: [] }
+const summary = {
+  candidate: candidate ?? null,
+  replace: config.replace ?? null,
+  viewports: [],
+}
 let browser
 try {
   await waitForServer()
@@ -77,7 +93,11 @@ try {
   const preinstalled = process.env.PROOF_CHROMIUM ?? '/opt/pw-browsers/chromium'
   browser = await chromium.launch({
     executablePath: existsSync(preinstalled) ? preinstalled : undefined,
-    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    args: [
+      '--use-angle=swiftshader',
+      '--enable-unsafe-swiftshader',
+      '--ignore-gpu-blocklist',
+    ],
   })
   for (const viewport of config.viewports) {
     const context = await browser.newContext({
@@ -98,7 +118,13 @@ try {
       if (!/\.(glb|bin|gltf|ktx2|webp|png|jpg)(\?|$)/.test(url)) return
       try {
         const body = await response.body()
-        if (body.subarray(0, 40).toString('latin1').startsWith('version https://git-lfs')) pointers.push(url)
+        if (
+          body
+            .subarray(0, 40)
+            .toString('latin1')
+            .startsWith('version https://git-lfs')
+        )
+          pointers.push(url)
       } catch {
         // body unavailable for redirects or aborted requests
       }
@@ -107,40 +133,68 @@ try {
       const bytes = readFileSync(candidate)
       await page.route(`**/${config.replace}`, async (route) => {
         served.push(route.request().url())
-        await route.fulfill({ status: 200, contentType: 'model/gltf-binary', body: bytes })
+        await route.fulfill({
+          status: 200,
+          contentType: 'model/gltf-binary',
+          body: bytes,
+        })
       })
     }
     await page.addInitScript(
-      ({ progress }) => {
+      ({ progress, quality }) => {
         const prefix = 'beside-cue:glass-adventure:'
         localStorage.setItem(`${prefix}tutorial`, 'seen')
         localStorage.setItem(`${prefix}comfortable-note`, '60')
         localStorage.setItem(`${prefix}camera-mode:v1`, 'third-person')
-        localStorage.setItem(`${prefix}museum-audio:v1`, JSON.stringify({ muted: true }))
+        localStorage.setItem(
+          `${prefix}museum-audio:v1`,
+          JSON.stringify({ muted: true }),
+        )
         localStorage.setItem(`${prefix}automatic-singing`, 'off')
-        if (progress) localStorage.setItem(`${prefix}progress:${progress.levelId}`, JSON.stringify(progress))
+        if (quality) localStorage.setItem(`${prefix}render-quality:v1`, quality)
+        if (progress)
+          localStorage.setItem(
+            `${prefix}progress:${progress.levelId}`,
+            JSON.stringify(progress),
+          )
         // Every gallery's tutorial key carries its level and lesson revision; report them all seen.
         const getItem = Storage.prototype.getItem
         Storage.prototype.getItem = function (key) {
-          if (typeof key === 'string' && key.startsWith(`${prefix}tutorial:`)) return 'seen'
+          if (typeof key === 'string' && key.startsWith(`${prefix}tutorial:`))
+            return 'seen'
           return getItem.call(this, key)
         }
       },
-      { progress: config.progress },
+      { progress: config.progress, quality: viewport.quality ?? null },
     )
     await page.goto(`${base}/glass-game/?layout=${config.layout}`)
     const game = page.getByTestId('glass-adventure')
     await game.waitFor({ state: 'attached', timeout: 90_000 })
     try {
       await page.waitForFunction(
-        () => document.querySelector('[data-testid="glass-adventure"]')?.getAttribute('data-ready') === 'true',
+        () =>
+          document
+            .querySelector('[data-testid="glass-adventure"]')
+            ?.getAttribute('data-ready') === 'true',
         undefined,
         { timeout: 120_000 },
       )
     } catch (error) {
-      await page.screenshot({ path: join(out, `${viewport.name}-not-ready.png`) })
-      summary.viewports.push({ name: viewport.name, served: served.length, errors, pointers, shots: [] })
-      writeFileSync(join(out, 'runtime-proof.json'), JSON.stringify(summary, null, 2))
+      await page.screenshot({
+        path: join(out, `${viewport.name}-not-ready.png`),
+        timeout: 180_000,
+      })
+      summary.viewports.push({
+        name: viewport.name,
+        served: served.length,
+        errors,
+        pointers,
+        shots: [],
+      })
+      writeFileSync(
+        join(out, 'runtime-proof.json'),
+        JSON.stringify(summary, null, 2),
+      )
       throw new Error(
         `game never became ready; LFS pointers served: ${pointers.length} (run \`git lfs pull --include="apps/beside-cue/public/games/**"\`); errors: ${errors.slice(0, 5).join(' | ')}`,
       )
@@ -170,11 +224,24 @@ try {
         await page.keyboard.up(key.key)
       }
       await sleep(shot.settle ?? 2000)
+      // Software WebGL can take many seconds per frame; wait for two real frames first.
+      await page.evaluate(
+        () =>
+          new Promise((done) =>
+            requestAnimationFrame(() => requestAnimationFrame(done)),
+          ),
+      )
       const file = join(out, `${viewport.name}-${shot.name}.png`)
-      await page.screenshot({ path: file })
+      await page.screenshot({ path: file, timeout: 180_000 })
       shots.push(file)
     }
-    summary.viewports.push({ name: viewport.name, served: served.length, errors, pointers, shots })
+    summary.viewports.push({
+      name: viewport.name,
+      served: served.length,
+      errors,
+      pointers,
+      shots,
+    })
     await context.close()
   }
 } finally {
@@ -184,7 +251,9 @@ try {
 writeFileSync(join(out, 'runtime-proof.json'), JSON.stringify(summary, null, 2))
 console.log(JSON.stringify(summary, null, 2))
 if (candidate && summary.viewports.some((v) => v.served === 0)) {
-  console.error('FAIL: the game never requested the replaced asset; these screenshots do not show the candidate')
+  console.error(
+    'FAIL: the game never requested the replaced asset; these screenshots do not show the candidate',
+  )
   process.exit(1)
 }
 if (summary.viewports.some((v) => v.errors.length)) process.exit(1)

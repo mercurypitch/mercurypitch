@@ -34,6 +34,13 @@ draw.text((10, 6), title, fill=(240, 240, 240), font=bold)
 draw.text((10, 30), f"tris {meta['tris']:,}  parts {meta['visibleObjects']}  hidden shards {meta['hiddenShards']}  "
                     f"hidden collision proxies {meta.get('hiddenProxies', 0)}  size {meta['dims_m']} m",
           fill=(190, 200, 210), font=font)
+# matids legend: a swatch and the material name, right-aligned in the header
+x = sheet.size[0] - 10
+for name, colour in reversed(sorted(meta.get('materialColours', {}).items())):
+    width = int(draw.textlength(name, font=font))
+    x -= width + 26
+    draw.rectangle([x, 31, x + 14, 45], fill=colour)
+    draw.text((x + 18, 30), name, fill=(220, 220, 220), font=font)
 for p in meta['panels']:
     image = Image.open(p['path']).convert('RGB')
     if image.size[0] != size:

@@ -1,0 +1,91 @@
+# QA: gates, sheets and what they catch
+
+Numbers decide first; pictures are for the critic and the owner. One command
+runs the gates in order and exits 1 on any failure:
+
+```bash
+python3 -I scripts/asset_pipeline.py <asset_dir> <out_dir> [--intact-only] [--sheet] [--shards-sheet]
+```
+
+| Gate       | Script                                          | Fails when                                                                                                                           |
+| ---------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| build      | the asset's `build.py`                          | any part is open, self-intersecting, has slivers or no UVs; any shard fails the same                                                 |
+| finish     | `gltf_finish.py`                                | an optics block names a missing material, or volume without transmission                                                             |
+| contract   | `validate_asset.py` + `contract.json`           | names, extras, parents, height, budgets, shard count, shard origins, closure (welded at 1e-6), shard volume against intact beyond 3% |
+| khronos    | `gltf_validate.mjs`                             | the Khronos glTF validator reports any error                                                                                         |
+| silhouette | `silhouette_render.py`, `silhouette_compare.py` | `forms_pass` is false                                                                                                                |
+
+## The silhouette gate
+
+`silhouette_render.py` renders the model flat white on black, orthographic,
+from the concept's elevation. `silhouette_compare.py`:
+
+1. Segments the concept from its studio backdrop (a quadratic background fit,
+   distance, chroma and gradient maps, Otsu, enclosed regions removed only when
+   they look like the backdrop).
+2. Crops both masks to their bounds and scales them to 800 px tall, so the
+   comparison is about proportion, not size.
+3. Fills every row from its leftmost to its rightmost pixel (handle loops and
+   pale glass stop mattering), then takes a running median of each edge over
+   +-6 rows: a band where pale glass at the outline dropped out reads as a
+   notch, while a real step survives a median.
+4. Reports IoU, the width of 10 horizontal bands (band 0 at the bottom), and
+   their deltas. `blockout_pass`: IoU at least 0.85, every band within 0.05.
+   `forms_pass`: IoU at least 0.90, every band within 0.03.
+
+`overlay.png`: cyan is concept only, magenta model only.
+
+### Measuring the elevation
+
+A horizontal circle of radius r seen from elevation e is an ellipse of half
+height r sin e. Measure the rim or base ellipse on the concept: e = asin(b / r).
+
+### Fitting a profile to the concept
+
+`rows.json` holds every row of both filled outlines in the gate's own units
+(fractions of the 800 px height). For a body of revolution under an
+orthographic camera at elevation e, a side-silhouette point at height z sits at
+projected height z cos e. With `bottom` and `top` the projected extremes of the
+model (the front of the base, `-r_base sin e`; the back of the rim,
+`z_top cos e + r_rim sin e`) and `H = top - bottom`:
+
+```
+row fraction f = (z cos e - bottom) / H
+target radius  = (right - left) / 2 * H        (concept row at f)
+```
+
+Fit control points outside the handles' rows; inside them the outline is the
+handles'. Where a surface is nearly horizontal (a ledge, a foot's top) the
+outline is its front edge, not its side, and this mapping does not hold.
+
+## The sheet
+
+`render_views.py` panels, composed by `compose_sheet.py`:
+
+| Mode     | Shows                                   | Catches                                                     |
+| -------- | --------------------------------------- | ----------------------------------------------------------- |
+| clay     | studio light, cavity                    | form, proportion, joins, sunk or floating parts             |
+| zebra    | horizontal reflection stripes           | dents, wobble and broken curvature (stripes kink or break)  |
+| wire     | Cycles wireframe                        | density, slivers, wasted rings                              |
+| ids      | flat colour per object                  | detached parts                                              |
+| matids   | flat colour per material, with a legend | a band, cuff or lining in the wrong material                |
+| material | Cycles with the asset's materials       | how the materials read (a guide; the runtime proof decides) |
+| game     | 128 px, enlarged without smoothing      | what survives at gameplay size                              |
+
+Views: three_quarter and low (perspective), front, side and top
+(orthographic). Collision proxies are always hidden; shards are hidden unless
+`--show-shards`.
+
+## Measurement renders
+
+`measure_views.py` and `annotate_measure.py` slice the mesh and label radii at
+heights: the "dots and measurements" view to compare with a concept by eye.
+
+## Runtime proof
+
+`runtime_proof.mjs --config proof.json [--candidate x.glb]` starts the Beside
+Cue dev server, opens the game in software WebGL, seeds progress so the camera
+starts where the asset is, answers the game's own request for `replace` with
+the candidate, and screenshots each shot (drags and key holds). It fails if the
+game never requested the replaced file, and reports Git LFS pointers it served.
+Shoot the baseline with the same config and no candidate.

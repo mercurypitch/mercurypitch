@@ -13,7 +13,7 @@ from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 
-def _bm(obj, evaluated=True):
+def _bm(obj, evaluated=True, weld=None):
     bm = bmesh.new()
     if evaluated:
         depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -24,6 +24,8 @@ def _bm(obj, evaluated=True):
     else:
         bm.from_mesh(obj.data)
     bm.transform(obj.matrix_world)
+    if weld:
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=weld)
     return bm
 
 
@@ -43,13 +45,42 @@ def components(bm):
     return len({find(v.index) for v in bm.verts})
 
 
-def self_intersections(bm, limit=2000):
-    """Face pairs that cross each other, ignoring neighbours that share a vertex."""
+def face_components(bm):
+    """Component label per face index (edge-connected shells)."""
     bm.faces.ensure_lookup_table()
+    label = [-1] * len(bm.faces)
+    current = 0
+    for start in bm.faces:
+        if label[start.index] >= 0:
+            continue
+        stack = [start]
+        label[start.index] = current
+        while stack:
+            face = stack.pop()
+            for edge in face.edges:
+                for other in edge.link_faces:
+                    if label[other.index] < 0:
+                        label[other.index] = current
+                        stack.append(other)
+        current += 1
+    return label
+
+
+def self_intersections(bm, limit=2000, within_shell=False):
+    """Face pairs that cross each other, ignoring neighbours that share a vertex.
+
+    within_shell=True counts only crossings inside one connected shell: a gold band
+    deliberately sunk into a glass wall is two shells of one object and is fine; a
+    shell that folds through itself is not.
+    """
+    bm.faces.ensure_lookup_table()
+    shell = face_components(bm) if within_shell else None
     tree = BVHTree.FromBMesh(bm, epsilon=0.0)
     count = 0
     for i, j in tree.overlap(tree):
         if i >= j:
+            continue
+        if shell is not None and shell[i] != shell[j]:
             continue
         fa, fb = bm.faces[i], bm.faces[j]
         if {v.index for v in fa.verts} & {v.index for v in fb.verts}:
@@ -60,8 +91,11 @@ def self_intersections(bm, limit=2000):
     return count
 
 
-def report(obj, evaluated=True, intersections=True):
-    bm = _bm(obj, evaluated)
+def report(obj, evaluated=True, intersections=True, within_shell=False, weld=None):
+    """Measure obj. weld (metres) merges coincident vertices first: glTF stores a vertex
+    once per UV seam, hard edge and material, so an imported closed shell reads as
+    open along every seam until it is welded. Use weld=1e-6 on anything imported."""
+    bm = _bm(obj, evaluated, weld)
     bm.verts.ensure_lookup_table()
     bm.verts.index_update()
     lo = Vector((min(v.co.x for v in bm.verts), min(v.co.y for v in bm.verts), min(v.co.z for v in bm.verts)))
@@ -82,7 +116,7 @@ def report(obj, evaluated=True, intersections=True):
         'components': components(bm),
         'closed': non_manifold == 0 and boundary == 0,
         'volume_m3': None,
-        'self_intersections': self_intersections(bm) if intersections else None,
+        'self_intersections': self_intersections(bm, within_shell=within_shell) if intersections else None,
         'uv_layers': [layer.name for layer in obj.data.uv_layers],
         'materials': [slot.material.name if slot.material else None for slot in obj.material_slots],
         'size_m': [round(hi[k] - lo[k], 5) for k in range(3)],

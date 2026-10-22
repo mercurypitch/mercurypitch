@@ -1,7 +1,7 @@
 """Render the panels of a contact sheet for a GLB or .blend.
 
 blender -b --factory-startup --python render_views.py -- IN OUT_DIR [options]
-  --modes clay,zebra,wire,material,ids,game   (default clay,zebra,wire,material)
+  --modes clay,zebra,wire,material,ids,matids,game   (default clay,zebra,wire,material)
   --views three_quarter,front,side,top,low     (default three_quarter,front,top)
   --res 400 --samples 32 --hide REGEX --show-shards
 
@@ -9,7 +9,9 @@ Modes: clay = Workbench studio light with cavity (form); zebra = horizontal
 reflection-stripe matcap (broken or wobbling stripes mean dents or broken
 curvature); wire = Cycles wireframe override (topology); material = Cycles with
 the asset's materials under a gradient studio world; ids = one flat colour per
-part, Raw view transform, no anti-aliasing (joins and detached parts); game = a
+part, Raw view transform, no anti-aliasing (joins and detached parts); matids =
+the same flat look with one colour per material, legend in meta.json (is every
+band, cuff and lining the material it should be, and nothing else); game = a
 material render at 128 px, enlarged without smoothing (what a phone shows).
 Collision proxies (COLLIDER_* or extras.collision_proxy) are always hidden.
 Writes OUT_DIR/<mode>_<view>.png and OUT_DIR/meta.json for compose_sheet.py.
@@ -119,12 +121,16 @@ def place_camera(view):
     return diag * 1.6
 
 
+legend = {}
+
+
 def workbench(mode):
+    flat = mode in ('ids', 'matids')
     scene.render.engine = 'BLENDER_WORKBENCH'
-    scene.view_settings.view_transform = 'Raw' if mode == 'ids' else 'Standard'
+    scene.view_settings.view_transform = 'Raw' if flat else 'Standard'
     shading = scene.display.shading
     shading.show_object_outline = False
-    shading.show_specular_highlight = mode != 'ids'
+    shading.show_specular_highlight = not flat
     shading.show_shadows = False
     if mode == 'clay':
         shading.light = 'STUDIO'
@@ -139,14 +145,23 @@ def workbench(mode):
         shading.color_type = 'SINGLE'
         shading.show_cavity = False
         shading.studio_light = 'check_reflection_horizontal.exr'
-    else:  # ids
+    elif mode == 'ids':
         shading.light = 'FLAT'
         shading.color_type = 'OBJECT'
         shading.show_cavity = False
         for k, o in enumerate(sorted(visible, key=lambda x: x.name)):
             r, g, b = colorsys.hsv_to_rgb((k * 0.61803) % 1.0, 0.75, 0.95)
             o.color = (r, g, b, 1)
-    scene.display.render_aa = 'OFF' if mode == 'ids' else '8'
+    else:  # matids: flat colour per material slot; viewport colours only, Cycles is unaffected
+        shading.light = 'FLAT'
+        shading.color_type = 'MATERIAL'
+        shading.show_cavity = False
+        used = sorted({slot.material.name for o in visible for slot in o.material_slots if slot.material})
+        for k, name in enumerate(used):
+            r, g, b = colorsys.hsv_to_rgb((0.08 + k * 0.61803) % 1.0, 0.8, 0.95)
+            bpy.data.materials[name].diffuse_color = (r, g, b, 1)
+            legend[name] = '#%02x%02x%02x' % tuple(round(c * 255) for c in (r, g, b))
+    scene.display.render_aa = 'OFF' if flat else '8'
     scene.view_layers[0].material_override = None
 
 
@@ -224,7 +239,7 @@ started = time.time()
 for view in views:
     distance = place_camera(view)
     for mode in modes:
-        if mode in ('clay', 'zebra', 'ids'):
+        if mode in ('clay', 'zebra', 'ids', 'matids'):
             workbench(mode)
         else:
             cycles(mode, distance if view in ('three_quarter', 'low') else diag * 1.6)
@@ -239,6 +254,7 @@ for view in views:
 
 meta = {'source': src, 'visibleObjects': len(visible), 'hiddenShards': len([o for o in hidden if o in shards]),
         'hiddenProxies': len(proxies), 'tris': tris, 'dims_m': [round(x, 3) for x in dims], 'panels': panels,
+        'materialColours': legend,
         'seconds': round(time.time() - started, 1)}
 with open(os.path.join(out_dir, 'meta.json'), 'w') as handle:
     json.dump(meta, handle, indent=1)

@@ -100,6 +100,7 @@ def _intersect(part, cutter, cut_material):
     mod.material_mode = 'TRANSFER'
     mod.object = cutter
     scene.bake_modifiers(probe)
+    scene.clean(probe)
     if len(probe.data.polygons) == 0:
         bpy.data.objects.remove(probe)
         return None
@@ -185,8 +186,10 @@ def fracture(parts, count, *, cut_materials, seed=1, attempts=24, seed_on=None, 
 
     cut_materials: {part_name: material} for the new cut faces of each part.
     seed_on: objects whose surfaces seed the cells (default: the largest part).
-    Pieces smaller than `min_piece_fraction` of the total volume are dropped as
-    slivers before grouping (they are invisible chips that would only cost draws).
+    Pieces smaller than `min_piece_fraction` of their own part's volume are dropped
+    as slivers before grouping (invisible chips that only cost triangles). The
+    fraction is per part, so a thin gold inlay keeps its pieces on every shard
+    instead of vanishing next to a heavy body.
     """
     seed_on = seed_on or [max(parts, key=lambda o: validate.report(o, intersections=False)['volume_m3'] or 0)]
     lo, hi = scene.bounds(parts)
@@ -211,7 +214,7 @@ def fracture(parts, count, *, cut_materials, seed=1, attempts=24, seed_on=None, 
                     continue
                 for loose in _split_loose(piece):
                     vol = validate.report(loose, intersections=False)['volume_m3'] or 0.0
-                    if vol < min_piece_fraction * total_volume:
+                    if vol < min_piece_fraction * (volumes[part.name] or total_volume):
                         bpy.data.objects.remove(loose)
                         continue
                     pieces.append(loose)
@@ -233,6 +236,7 @@ def fracture(parts, count, *, cut_materials, seed=1, attempts=24, seed_on=None, 
         result = []
         for i, pieces in enumerate(shards):
             shard = scene.join(pieces, f'{prefix}{i:03d}')
+            scene.clean(shard, triangulate=True)
             scene.set_origin(shard, scene.centroid(shard))
             result.append(shard)
         recovered = sum(validate.report(s, intersections=False)['volume_m3'] or 0.0 for s in result)

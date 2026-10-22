@@ -15,7 +15,7 @@ POLE_EPS = 1e-6
 
 
 def lathe(name, profile, segments=48, *, closed=False, modulate=None, uv=True, smooth=True,
-          sharp_degrees=None, material=None, coll=None):
+          sharp_degrees=None, material=None, span_materials=None, flat_spans=(), coll=None):
     """Revolve `profile` (list of Vector((r, z)) walked bottom to top) into a mesh object.
 
     closed: True when the profile is a loop (first point = last point implied), for
@@ -25,13 +25,23 @@ def lathe(name, profile, segments=48, *, closed=False, modulate=None, uv=True, s
         profile normal. Use it for lobes and flutes, and confine it to a height band
         inside f; a modulation that also moves the lip and foot is what made v1 wobble.
     sharp_degrees: mark edges sharper than this as sharp (Smooth by Angle semantics).
+    material / span_materials: one material, or a list of slots with
+        span_materials[i] naming the slot of the faces between profile points i and
+        i + 1 (profile.chain builds both from pieces). One shell then carries glass,
+        gold bands and a stone foot; where a slot changes on a smooth join the
+        normal stays shared, so the change is a clean colour line, not a seam.
+    flat_spans: span indices shaded flat, for faceted metal or cut stone.
+    uv: True for UVs as fractions (u around, v along the outline), or a tile size
+        in metres for UVs in tiles: u = angle x radius / tile, v = arc length / tile,
+        so a tiling texture keeps its size on every part (hammered gold on a wide
+        base ring and a thin bead alike). The seam is at angle 0.
     """
     from .profile import normal_in
 
     pts = list(profile)
     n = len(pts)
     bm = bmesh.new()
-    uv_layer = bm.loops.layers.uv.new('UVMap') if uv else None
+    uv_layer = bm.loops.layers.uv.new('UVMap') if uv is not False else None
     angles = [2 * math.pi * j / segments for j in range(segments)]
     arc = [0.0]
     for a, b in zip(pts, pts[1:] + ([pts[0]] if closed else [])):
@@ -57,31 +67,46 @@ def lathe(name, profile, segments=48, *, closed=False, modulate=None, uv=True, s
     spans = list(zip(range(n - 1), range(1, n)))
     if closed:
         spans.append((n - 1, 0))
-    for (ia, ib) in spans:
+    if span_materials is not None and len(span_materials) < len(spans):
+        if not (closed and len(span_materials) == len(spans) - 1):
+            raise ValueError(f'{name}: {len(span_materials)} span materials for {len(spans)} spans')
+    flat = set(flat_spans)
+    for si, (ia, ib) in enumerate(spans):
         ra, rb = rings[ia], rings[ib]
-        va = arc[ia] / total
-        vb = (arc[ib] if ib != 0 else total) / total
+        slot = 0 if span_materials is None else span_materials[min(si, len(span_materials) - 1)]
+        if isinstance(uv, bool):
+            va = arc[ia] / total
+            vb = (arc[ib] if ib != 0 else total) / total
+            sa = sb = 1.0
+        else:  # tiles: metres over the tile size
+            va = arc[ia] / uv
+            vb = (arc[ib] if ib != 0 else total) / uv
+            sa = 2 * math.pi * pts[ia].x / uv
+            sb = 2 * math.pi * pts[ib].x / uv
+            sa, sb = (sa or sb), (sb or sa)  # a pole takes its neighbour's scale
         for j in range(segments):
             k = (j + 1) % segments
             ua, ub = j / segments, (j + 1) / segments
             if isinstance(ra, list) and isinstance(rb, list):
                 verts = (ra[j], ra[k], rb[k], rb[j])
-                uvs = ((ua, va), (ub, va), (ub, vb), (ua, vb))
+                uvs = ((ua * sa, va), (ub * sa, va), (ub * sb, vb), (ua * sb, vb))
             elif isinstance(ra, list):  # top pole
                 verts = (ra[j], ra[k], rb)
-                uvs = ((ua, va), (ub, va), ((ua + ub) / 2, vb))
+                uvs = ((ua * sa, va), (ub * sa, va), ((ua + ub) / 2 * sb, vb))
             elif isinstance(rb, list):  # bottom pole
                 verts = (ra, rb[k], rb[j])
-                uvs = (((ua + ub) / 2, va), (ub, vb), (ua, vb))
+                uvs = (((ua + ub) / 2 * sa, va), (ub * sb, vb), (ua * sb, vb))
             else:
                 continue
             face = bm.faces.new(verts)
+            face.material_index = slot
+            face.smooth = smooth and si not in flat
             if uv_layer is not None:
                 for loop, coord in zip(face.loops, uvs):
                     loop[uv_layer].uv = coord
 
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    obj = scene.from_bmesh(name, bm, coll=coll, smooth=smooth, material=material)
+    obj = scene.from_bmesh(name, bm, coll=coll, smooth=None, material=material)
     bm.free()
     if sharp_degrees is not None:
         scene.mark_sharp(obj, sharp_degrees)

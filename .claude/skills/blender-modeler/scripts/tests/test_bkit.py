@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 
 from mathutils import Vector  # noqa: E402
 
-from bkit import export, fracture, lathe, materials, profile, scene, sweep, trims, validate  # noqa: E402
+from bkit import export, fracture, lathe, materials, profile, scene, sweep, textures, trims, validate  # noqa: E402
 
 V = profile.V
 
@@ -79,6 +79,79 @@ def test_modulation_moves_only_the_band():
                         modulate=lambda t, z, i: 0.01 * lathe.band(z, 0.08, 0.12, 0.02) * math.cos(4 * t))
     moved = [a.co.z for a, b in zip(plain.data.vertices, lobed.data.vertices) if (a.co - b.co).length > 1e-7]
     assert moved and all(0.06 - 1e-6 <= z <= 0.14 + 1e-6 for z in moved), (min(moved), max(moved))
+
+
+def test_chain_and_raised_band_give_one_multi_material_shell():
+    scene.reset()
+    outer = profile.resample(profile.spline([(0.04, 0.0), (0.06, 0.05), (0.05, 0.12)], samples=12), 30)
+    body0 = profile.between(outer, 0.0, 0.05)
+    band = profile.raised(outer, 0.05, 0.065, 0.002)
+    body1 = profile.between(outer, 0.065, 0.12)
+    # mathutils vectors are single precision: equal means within a micron here
+    assert (band[0] - body0[-1]).length < 1e-6 and (band[-1] - body1[0]).length < 1e-6
+    pts, slots = profile.chain((0, [V(0, 0.0)]), (0, body0), (1, band), (0, body1), (0, [V(0, 0.12)]))
+    assert len(slots) == len(pts) - 1 and slots.count(1) == len(band) - 1, (len(pts), slots)
+    face = [p for p in band[1:-1]]
+    proud = min(p.x - profile.radius_at(outer, p.y) for p in face[1:-1])
+    assert proud > 0.0018, proud
+    glass, gold = materials.clear_glass(), materials.gold()
+    obj = lathe.lathe('banded', pts, 32, material=[glass, gold], span_materials=slots, flat_spans=(len(slots) - 1,))
+    rep = validate.report(obj)
+    assert validate.failures(rep, single_part=True) == [], validate.failures(rep, single_part=True)
+    counts = [sum(1 for p in obj.data.polygons if p.material_index == m) for m in (0, 1)]
+    assert counts[1] == 32 * (len(band) - 1), counts
+    assert any(not p.use_smooth for p in obj.data.polygons) and any(p.use_smooth for p in obj.data.polygons)
+
+
+def test_tube_exact_path_slots_and_seat_on_wall():
+    scene.reset()
+    wall = [V(0.10, 0.0), V(0.10, 0.3)]
+    arc = [(0.10 + 0.08 * math.sin(math.pi * k / 16), 0.0, 0.05 + 0.2 * k / 16) for k in range(17)]
+    seat = sweep.seat_on_lathe(wall, 0.003)
+    jade, gold = materials.jade(), materials.gold()
+    obj = sweep.tube('handle', arc, 0.012, ring=8, resample=False, material=[jade, gold],
+                     face_material=lambda i, k: 1 if i < 2 or k in (3, 4) else 0, seat=(seat, seat))
+    assert len(obj.data.vertices) == 17 * 8 + 2  # exact path kept, two cap hubs
+    rep = validate.report(obj)
+    assert validate.failures(rep, single_part=True) == [], validate.failures(rep, single_part=True)
+    ends = [v.co for v in obj.data.vertices[:8]] + [v.co for v in obj.data.vertices[16 * 8:17 * 8]]
+    assert all(abs(math.hypot(c.x, c.y) - 0.097) < 1e-6 for c in ends), 'end rings sit 3 mm inside the wall'
+    golds = sum(1 for p in obj.data.polygons if p.material_index == 1)
+    assert golds == 2 * 8 + 14 * 2 + 8, golds  # cuff spans, lining sides, start cap
+
+
+def test_tiled_uvs_keep_texture_size_across_parts():
+    scene.reset()
+    tile = 0.05
+    wide = lathe.lathe('wide', [V(0, 0), V(0.2, 0), V(0.2, 0.1), V(0, 0.1)], 32, uv=tile)
+    thin = lathe.lathe('thin', [V(0, 0), V(0.05, 0), V(0.05, 0.1), V(0, 0.1)], 32, uv=tile)
+
+    def side_span(obj):  # u extent around the outer wall, in tiles
+        layer = obj.data.uv_layers.active.data
+        us = [layer[i].uv.x for p in obj.data.polygons for i in p.loop_indices
+              if abs(obj.data.vertices[obj.data.loops[i].vertex_index].co.z - 0.05) < 0.051
+              and p.normal.z == 0]
+        return max(us) - min(us)
+
+    assert abs(side_span(wide) - 2 * math.pi * 0.2 / tile) < 1e-3, side_span(wide)
+    assert abs(side_span(thin) - 2 * math.pi * 0.05 / tile) < 1e-3, side_span(thin)
+    tube = sweep.tube('rod', [(0, 0, 0), (0, 0, 0.1), (0, 0, 0.2)], 0.01, ring=8, uv=tile)
+    us = [d.uv.x for d in tube.data.uv_layers.active.data]
+    assert abs(max(us) - 0.2 / tile) < 1e-3, max(us)
+    image = textures.hammered_normal('hammer_test', size=32, cells=4)
+    assert image.size[0] == 32 and image.colorspace_settings.name == 'Non-Color' and image.packed_file
+    pixels = list(image.pixels)
+    assert all(pixels[i + 2] > 0.5 for i in range(0, len(pixels), 4)), 'normals point out of the surface'
+    gold = textures.attach_normal(materials.gold(), image, strength=0.8)
+    assert any(n.type == 'NORMAL_MAP' for n in gold.node_tree.nodes)
+    veins = textures.marbled('veins_test', '#2f7d57', '#86c6a0', size=64, veins=2)
+    px = list(veins.pixels)
+    row = 64 * 4
+    left = [px[y * row + c] for y in range(64) for c in range(3)]
+    right = [px[y * row + 63 * 4 + c] for y in range(64) for c in range(3)]
+    assert max(abs(a - b) for a, b in zip(left, right)) < 0.25, 'tile edges must meet'
+    jade = textures.attach_color(materials.jade(), veins, scale=1 / 3)
+    assert any(n.type == 'MAPPING' for n in jade.node_tree.nodes)
 
 
 def test_sweep_tube_is_closed_and_frames_are_orthonormal():

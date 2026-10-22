@@ -93,19 +93,41 @@ def segment(path):
     return np.asarray(image) > 127
 
 
-def filled(mask):
+def filled(mask, smooth=6):
     """Outer contour as a row fill: every row filled from its leftmost to its rightmost pixel.
 
     Robust to any interior segmentation error (pale glass matching the backdrop, a gap
     in a faint outline) because only the two outline extremes of each row matter. It
     also fills handle loops, so apply it to both masks after `normalise`: the same
     operation shapes both, and the outline is what reads at gameplay distance.
+    The left and right edges then take a running median over +-`smooth` rows: a
+    band of rows where pale glass at the rim of the silhouette dropped out of the
+    segmentation reads as a notch, while a real step (a foot ring, a band) survives
+    a median unchanged.
     """
-    out = np.zeros_like(mask)
+    rows = []
     for y in range(mask.shape[0]):
         xs = np.nonzero(mask[y])[0]
+        rows.append((xs.min(), xs.max()) if len(xs) else None)
+    out = np.zeros_like(mask)
+    for y, row in enumerate(rows):
+        if row is None:
+            continue
+        near = [r for r in rows[max(0, y - smooth):y + smooth + 1] if r is not None]
+        left = int(np.median([r[0] for r in near]))
+        right = int(np.median([r[1] for r in near]))
+        out[y, left:right + 1] = True
+    return out
+
+
+def edges(mask):
+    """[(row from the bottom as a fraction of height, left, right as fractions of height)]."""
+    h = mask.shape[0]
+    out = []
+    for y in range(h):
+        xs = np.nonzero(mask[h - 1 - y])[0]
         if len(xs):
-            out[y, xs.min():xs.max() + 1] = True
+            out.append((round(y / h, 4), round(xs.min() / h, 4), round((xs.max() + 1) / h, 4)))
     return out
 
 
@@ -266,6 +288,9 @@ def main():
     image.save(os.path.join(out_dir, 'overlay.png'))
     with open(os.path.join(out_dir, 'silhouette.json'), 'w') as handle:
         json.dump(result, handle, indent=1)
+    # Per-row outline of both contours, for fitting a profile to the reference.
+    with open(os.path.join(out_dir, 'rows.json'), 'w') as handle:
+        json.dump({'height_px': H, 'width_px': width, 'reference': edges(a), 'model': edges(b)}, handle)
     print(json.dumps(result))
 
 

@@ -32,13 +32,17 @@ def link(obj, coll=None):
 
 
 def from_bmesh(name, bm, coll=None, smooth=True, material=None):
+    """Mesh object from a bmesh. smooth=None keeps each face's own flag (mixed flat and
+    smooth spans); `material` is one material or a list of slots matching face indices."""
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
-    for poly in me.polygons:
-        poly.use_smooth = smooth
+    if smooth is not None:
+        for poly in me.polygons:
+            poly.use_smooth = smooth
     obj = bpy.data.objects.new(name, me)
-    if material is not None:
-        me.materials.append(material)
+    for mat in (material if isinstance(material, (list, tuple)) else [material]):
+        if mat is not None:
+            me.materials.append(mat)
     return link(obj, coll)
 
 
@@ -76,6 +80,36 @@ def bake_modifiers(obj):
     me.name = old.name
     if old.users == 0:
         bpy.data.meshes.remove(old)
+    return obj
+
+
+def clean(obj, dist=1e-6, triangulate=False):
+    """Weld coincident vertices and dissolve zero-length edges and zero-area faces.
+
+    Exact booleans leave sub-micron edges and needle triangles along a cut; the glTF
+    round trip (float32 positions, a weld on import) turns those into non-manifold
+    edges and zero-area faces. Clean every boolean result before it is validated or
+    exported, at the same distance the validator welds at. triangulate=True also
+    triangulates first: a cut face is an n-gon with collinear vertices, and the
+    exporter's own triangulation of it leaves zero-area triangles that no check in
+    Blender sees, so a shard must leave Blender as the triangles it was checked as.
+    """
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=dist)
+    if triangulate:
+        bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
+    bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=dist)
+    if triangulate:  # dissolving can leave an n-gon behind; split it again
+        bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3], quad_method='BEAUTY',
+                              ngon_method='BEAUTY')
+    loose = [v for v in bm.verts if not v.link_faces]
+    if loose:
+        bmesh.ops.delete(bm, geom=loose, context='VERTS')
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
     return obj
 
 
