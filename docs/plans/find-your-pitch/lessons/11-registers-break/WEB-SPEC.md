@@ -84,7 +84,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
+   (`:325-334`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 7: Slides, sirens and your range", a link to
    `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so
@@ -759,7 +759,7 @@ others take it.
      break: Find Your Pitch, Lesson 11 | MercuryPitch" runs to 66 (Decisions). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:229`), is
      not used: "why voices flip" leans on the predict's answer. The worker never rewrites a title.
-     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`;
+     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:325-334`;
      Hero);
    - the meta description, "Why does your voice sometimes flip as you slide up? A sixteen-minute
      lesson with sound toys on chest voice, head voice and the break." (133 characters, inside the
@@ -768,9 +768,9 @@ others take it.
    - `og:title` and `twitter:title`, "Registers and the break: Find Your Pitch, Lesson 11"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "Why does your voice sometimes flip as you slide
-     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:349-352`;
+     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:351-354`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:353-355`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:355-357`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/11`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:116-134`);
@@ -781,7 +781,7 @@ others take it.
      (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:338-346`, `:356`): `@id` `https://mercurypitch.com/learn/11#lesson` and
+     (`lesson-copy.test.ts:340-348`, `:358`): `@id` `https://mercurypitch.com/learn/11#lesson` and
      `url` `https://mercurypitch.com/learn/11` (`lesson-pages.test.ts:146-147`); the headline
      "Registers and the break"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:158-159`); `position: 11`,

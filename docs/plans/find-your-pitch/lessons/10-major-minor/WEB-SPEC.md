@@ -811,7 +811,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-137`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:323-358` on every page from its first commit, and
+    `src/features/lessons/kit/lesson-copy.test.ts:325-360` on every page from its first commit, and
     by `src/tests/lesson-pages.test.ts:85-183` once released:
     - title, at most 60 characters with the headline in it: in the form Lessons 1, 2, 3 and 5 use,
       "Major and minor: Find Your Pitch, Lesson 10 | MercuryPitch" (58 characters), until SEARCH.md
@@ -874,7 +874,7 @@ CURIOSITY-MOMENTS § 5 item 2.
 
 1. **The alternative hook, `bright-dark`.** Keep it switchable, as the owner's answer to
    CURIOSITY-MOMENTS § 5 item 2 keeps every changed hook's old wording
-   (`src/features/lessons/kit/lesson-copy.test.ts:267-282`), or retire it. The Content Studio's hook
+   (`src/features/lessons/kit/lesson-copy.test.ts:269-284`), or retire it. The Content Studio's hook
    picker offers it with its note, which names the mood labels. Picked, it puts "bright" and "dark"
    in the h1, the head's copies of the hook and the structured data, on Lesson 10's card in every
    lesson page's explorer and on Lesson 9's next-lesson card, and runs the description to 171

@@ -93,7 +93,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
+   (`:325-334`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 11: Registers and the break", a link to
    `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so
@@ -786,7 +786,7 @@ and the four-words strip in the kit.
    12, `:396-420`).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
-   (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
+   (`lesson-copy.test.ts:325-360`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, a draft's included, to its head, its share card, its structured data and its legal
    links (`:112-210`), since a draft the console publishes goes live with the head it was built with
    (`:12-17`). The hook's copies are the ones the site worker rewrites when the console picks
@@ -802,7 +802,7 @@ and the four-words strip in the kit.
      Your Pitch, Lesson 13 | MercuryPitch", runs to 63 (Decisions 1). "Why ee and ah differ" says
      only what the hook says, that the two differ, and nothing of what the peaks do. The worker
      never rewrites a title. The h1 is `h1.hook#hook`, the hook in its default wording
-     (`lesson-copy.test.ts:323-332`; Hero);
+     (`lesson-copy.test.ts:325-334`; Hero);
    - the meta description, "Same note, ‘ee’ or ‘ah’: what makes them sound different? A free
      lesson with sound toys: harmonics, resonance, and one note held through five vowels." (149
      characters, inside the test's 80 to 160, `lesson-pages.test.ts:129-132`). It does not quote
@@ -811,8 +811,8 @@ and the four-words strip in the kit.
      `learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "If ‘ee’ and ‘ah’ sung on the same note draw the
      same pitch line, what makes them sound different? Watch Merc's line, then make your guess."
-     (138 characters; `lesson-copy.test.ts:349-352`; `learn/02.html:30-33`), and
-     `twitter:description`, the hook exactly (97; `lesson-copy.test.ts:353-355`;
+     (138 characters; `lesson-copy.test.ts:351-354`; `learn/02.html:30-33`), and
+     `twitter:description`, the hook exactly (97; `lesson-copy.test.ts:355-357`;
      `learn/02.html:49-52`), so both descriptions the worker rewrites fit 80 to 160 (FACTS 1);
    - canonical and `og:url` `https://mercurypitch.com/learn/13`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
@@ -824,7 +824,7 @@ and the four-words strip in the kit.
      orange Merc." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:177-197`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:338-346`, `:356`), and `lesson-pages.test.ts` asks for the Article
+     (`lesson-copy.test.ts:340-348`, `:358`), and `lesson-pages.test.ts` asks for the Article
      first (`:142-144`): `@id` `https://mercurypitch.com/learn/13#lesson` and
      `url` `https://mercurypitch.com/learn/13` (`lesson-pages.test.ts:146-147`); the headline
      "Resonance and vowels"; `alternativeHeadline`, the hook exactly; `description`, the meta
