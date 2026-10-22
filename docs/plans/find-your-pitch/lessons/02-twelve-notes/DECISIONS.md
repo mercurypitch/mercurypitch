@@ -165,8 +165,7 @@ each round and what was done with it, the last of them the written lesson's firs
   under the 786 px left below the masthead. Narrower than 386 px, the keyboard shows the white keys
   that fit at 44 px and pans one key at a time. The octave is A3 to A4, as the climb, the film's
   tiles (`output/motion/lesson-02/assets/lib/tiles.js:48`) and Lesson 1's phone keyboard
-  (`lesson-01/toy-spiral.ts:26-27`, `:68-69`) have it: nothing on the page or in the film shows it
-  C to C.
+  (`kit/spiral.ts:40-41`, `:200-201`) have it: nothing on the page or in the film shows it C to C.
 - **84.** The first visit (review 1, item 1). `/ear-lab` opens First Light, the studio's intro,
   before the Ear Lab for anyone with no stored welcome flag (FACTS 33a), so the practice card, the
   footer and the explorer card tell a first-time visitor to close it with the × at the top right,

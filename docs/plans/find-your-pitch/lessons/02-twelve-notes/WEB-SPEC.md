@@ -70,10 +70,10 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
    from LESSON.md (twelve steps, not fourteen). It leaves which gaps and why to steps 3 and 4, so
    step 3's predict is not given away. The Mercs react here (Mercs, below). On phones the hero
    stacks as Lesson 1's does (kicker, title, chips, stage, sound gate, predict card, promise;
-   `lesson-01/lesson-01.css:390-433`), so Play the climb sits right under the spiral it lights.
+   `kit/lesson-stage.css:354-397`), so Play the climb sits right under the spiral it lights.
    There the spiral takes the stage's full width above the floor line, at least 250 px tall, and
    the Mercs stand smaller either side of its base: at Lesson 1's phone size, `min(39vw, 160px)`
-   each (`lesson-01.css:475`), two Mercs leave too little room between them for a spiral.
+   each (`kit/lesson-stage.css:439`), two Mercs leave too little room between them for a spiral.
 3. **Recall from Lesson 1**: two questions, straight after the hero (see Toys, 6).
 4. **Four words you'll meet**: semitone, tone, sharp and flat, cent, each with its one-line
    definition and a play button (A3 to A♯3; A3 to B3; C4 to C♯4; the 100-cent glide).
@@ -255,7 +255,7 @@ step 4's; step 5's; and free play's.
   return. Under reduced motion both land in their end state at once.
 - **Keyboard** (step 3): Lesson 1's Unroll button and keyboard (A2 to A5 on a wide stage, low notes
   left, A3 blue, A4 orange; its labels "Unroll the spiral" and "Roll it back up",
-  `lesson-01/toy-spiral.ts:166-170`), now with every key lit and playable, the black keys named by
+  `kit/spiral.ts:163-166`), now with every key lit and playable, the black keys named by
   the toggle. Two keys played one after the other draw a step bar between them, a notch per
   semitone, labelled with its number of semitones: "1" and "2" as the film's bars are, and "3" and
   up the same way. Phones show the octave A3 to A4 ("On phones", below).
@@ -273,10 +273,11 @@ step 4's; step 5's; and free play's.
 #### On phones (DECISIONS 83)
 
 Measured from Lesson 1's stage CSS at 390 x 844, the page's phone check: the stage card is 358 px
-wide inside the 16 px gutters (`kit/lesson-base.css:94-95`, `:222-227`); its 1 px borders
-(`:446-453`), its 12 px side padding below 960 px (`lesson-01.css:1195-1197`) and a figure's own
-1 px border (`lesson-01.css:770-778`) leave Lesson 1's canvas 330 px wide, 308 px tall in the tall
-figure (`:1199-1205`). That is too narrow for eight 44 px keys, so steps 3 to 5 widen the figure.
+wide inside the 16 px gutters (`kit/lesson-base.css:96-97`, `:224-229`); its 1 px borders
+(`:448-455`), its 12 px side padding below 960 px (`kit/lesson-stage.css:1079-1081`) and a figure's
+own 1 px border (`kit/lesson-stage.css:769-777`) leave Lesson 1's canvas 330 px wide, 308 px tall in
+the tall figure (`:1083-1089`). That is too narrow for eight 44 px keys, so steps 3 to 5 widen the
+figure.
 
 - **The figure**, steps 3 to 5: it spans the card's inner width, 356 px (`margin-inline: -12px`,
   no side borders, square corners), and is Lesson 1's tall figure, 310 px, so its canvas is 356 px
@@ -290,7 +291,7 @@ figure (`:1199-1205`). That is too narrow for eight 44 px keys, so steps 3 to 5 
   the 51 px below the black keys, and wherever no black key's zone reaches. Names sit on the keys;
   step bars draw under them, y 256 to 300. On a phone narrower than 386 px the keyboard shows as
   many white keys as fit at 44 px or wider (seven from 342 px up), from A3, and two 44 px buttons
-  under it pan one white key at a time, as Lesson 1's pan does (`lesson-01/toy-spiral.ts:150-161`).
+  under it pan one white key at a time, as Lesson 1's pan does (`kit/spiral.ts:298-310`).
 - **Straighten**, and step 4's row: thirteen equal tiles across the same 356 px, 27.4 px each. On
   phones they are a picture, not targets: they light as notes play, and every control is a 44 px
   button. A tile narrower than 44 px takes no taps; on the desktop stage the tiles are about 50 px
@@ -301,9 +302,9 @@ figure (`:1199-1205`). That is too narrow for eight 44 px keys, so steps 3 to 5 
   step asks happens there: C♯ and D♭, E to F, Flat on F, and the four rare names on B, C, E and F.
   The seven tiles stay 44 px or wider from a 342 px phone up.
 - **Stage heights** at 390 x 844, from the card's 1 px borders, its 12 px and 14 px top and bottom
-  padding, the stage head's 44 px buttons and 12 px gap, the figure label's 16 px line and 10 px
-  gap (`lesson-01.css:697-705`, `:767-769`), the 310 px figure, and Lesson 1's 14 px control gap,
-  10 px row gap and 44 px buttons (`lesson-01.css:874-880`; `kit/lesson-base.css:522-530`):
+  padding, the stage head's 44 px buttons and 12 px gap, the figure label's 16 px line and 10 px gap
+  (`kit/lesson-stage.css:699-704`, `:766-768`), the 310 px figure, and Lesson 1's 14 px control gap,
+  10 px row gap and 44 px buttons (`kit/lesson-stage.css:874-880`; `kit/lesson-base.css:524-532`):
   - Step 3, 478 px. Under the figure, one row: Unroll the spiral (Roll it back up) and Straighten
     (Bend it back). The predict, its two plays, Play E to F and the mix-up card's play are in the
     step's text below the stage.
@@ -504,23 +505,24 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
    `--amber: #f59e0b` in `lesson-base.css`, the app's target amber (`PITCH_VISUAL_COLORS.reference`,
    `src/features/stem-mixer/pitch-canvas-visuals.ts:8-9`), used only by Sing it's slides; and the
    wide figure for steps 3 to 5 on phones (Toys 1, "On phones").
-2. **Toys that mount per root.** Lesson 1's toys bind fixed ids (`#cvSpiral`, `#unrollBtn` and
-   `#kbPan`, `lesson-01/toy-spiral.ts:43-50`; `#cvDial` and `#dial`, `lesson-01/toy-dial.ts:21-25`),
-   so a page can hold one of each. Each kit toy mounts on a root element it is given, finds its
-   parts inside it, and any number mount on one page, each with its own state and drawn only while
-   on screen (`kit/frame-loop.ts`). This page mounts the spiral-and-keyboard component six times
-   (Toys 1) and the ruler twice (step 6, free play).
-3. **`kit/predict.ts`**, from `lesson-01/predict.ts`, which binds `#predict`, `#lockHint`,
-   `#reveal` and `#revealGuess` (`predict.ts:24-28`, `:107`): mounts per root, three on this page;
-   two to four choices, each at least 44 px tall; it is given the play buttons and any other
-   controls its choice unlocks (step 5's Sharp, Flat and Show the rare ones), and the reveal it
-   shows once the sound has played; it never calls a choice wrong.
-4. **`kit/sing.ts`**, from `lesson-01/sing.ts`, which binds the ring's parts and the two sing
+2. **Toys that mount per root.** Lesson 1's toys bound fixed ids (`#cvSpiral`, `#unrollBtn` and
+   `#kbPan`, `lesson-01/toy-spiral.ts:43-50` at `4d5891ac0`; `#cvDial` and `#dial`,
+   `lesson-01/toy-dial.ts:21-25` at `4d5891ac0`), so a page could hold one of each. Each kit toy
+   mounts on a root element it is given, finds its parts inside it, and any number mount on one
+   page, each with its own state and drawn only while on screen (`kit/frame-loop.ts`). This page
+   mounts the spiral-and-keyboard component six times (Toys 1) and the ruler twice (step 6, free
+   play).
+3. **`kit/predict.ts`**, from `lesson-01/predict.ts`, which bound `#predict`, `#lockHint`, `#reveal`
+   and `#revealGuess` (`lesson-01/predict.ts:23-27`, `:100` at `4d5891ac0`): mounts per root, three
+   on this page; two to four choices, each at least 44 px tall; it is given the play buttons and any
+   other controls its choice unlocks (step 5's Sharp, Flat and Show the rare ones), and the reveal
+   it shows once the sound has played; it never calls a choice wrong.
+4. **`kit/sing.ts`**, from `lesson-01/sing.ts`, which bound the ring's parts and the two sing
    buttons by id (`#ringProgress`, `#ringBreath`, `#ringRipples`, `#ringMerc`, `#ringNote`,
-   `#ringState`, `#ring`, `#singA3`, `#singA4`; `sing.ts:25-57`) and draws Lesson 1's app-card
-   figure (`#mirrorFig`, `:127`): mounts per root; the breathing ring with the still of the Merc
-   singing and the buttons it is given; the slide guide (Toys 5) plugs into it; an app card's
-   figure stays the lesson's own.
+   `#ringState`, `#ring`, `#singA3`, `#singA4`; `lesson-01/sing.ts:24-57` at `4d5891ac0`) and draws
+   Lesson 1's app-card figure (`#mirrorFig`, `lesson-01/sing.ts:28`): mounts per root; the breathing
+   ring with the still of the Merc singing and the buttons it is given; the slide guide (Toys 5)
+   plugs into it; an app card's figure stays the lesson's own.
 5. **The hero's sky**, from `lesson-01/hero.ts`: its stars, mounted on the hero stage. The living
    staff and the pitch rail stay Lesson 1's; this hero has a spiral copy where Lesson 1 has its
    rail.
