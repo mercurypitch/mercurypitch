@@ -3,7 +3,9 @@
 // node gltf_validate.mjs FILE.glb [--json REPORT.json]
 //
 // Uses the validator that @gltf-transform/cli (a Beside Cue devDependency)
-// already installs, so no new package is needed.
+// already installs, so no new package is needed. Outside the repository it
+// falls back to a gltf-validator installed beside the skill
+// (npm i --prefix <skill>/scripts gltf-validator).
 
 import { readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -12,10 +14,18 @@ import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const APP = resolve(HERE, '../../../../apps/beside-cue')
-const cli = realpathSync(
-  join(APP, 'node_modules/@gltf-transform/cli/package.json'),
-)
-const validator = createRequire(cli)('gltf-validator')
+
+function loadValidator() {
+  try {
+    const cli = realpathSync(
+      join(APP, 'node_modules/@gltf-transform/cli/package.json'),
+    )
+    return createRequire(cli)('gltf-validator')
+  } catch {
+    return createRequire(import.meta.url)('gltf-validator')
+  }
+}
+const validator = loadValidator()
 
 const file = process.argv[2]
 const jsonOut = process.argv.includes('--json')

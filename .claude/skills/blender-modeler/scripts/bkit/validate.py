@@ -207,3 +207,37 @@ def overlap(a, b):
     bma.free()
     bmb.free()
     return hit
+
+
+def cavity_intrusions(body, others, *, z_min, z_max, tolerance=1e-5):
+    """Vertices of `others` inside the cavity of `body`, a hollow vessel lathed round Z.
+
+    At each vertex's height and angle a ray runs out from the axis; the first wall it
+    meets is the cavity's, so a vertex nearer the axis than that hit sits inside the
+    vessel's hollow. z_min and z_max bound the cavity (above the floor, below the roof or
+    mouth); vertices outside them are not asked. Returns {name: (count, deepest metres)}.
+    A band's hidden back or a stone's setting cut into the cavity shows as a sawtooth on
+    the inner glass once the vessel breaks (the urn's round 1: 0.8 mm, a quarter of the
+    critic's samples), and no closure or self-intersection gate sees it: the parts are
+    separate shells.
+    """
+    bm = _bm(body)
+    tree = BVHTree.FromBMesh(bm)
+    out = {}
+    for obj in others:
+        count, deepest = 0, 0.0
+        for v in obj.data.vertices:
+            p = obj.matrix_world @ v.co
+            r = math.hypot(p.x, p.y)
+            if not z_min < p.z < z_max or r < 1e-6:
+                continue
+            hit = tree.ray_cast(Vector((0.0, 0.0, p.z)), Vector((p.x / r, p.y / r, 0.0)), 10.0)
+            if hit[0] is None:
+                continue
+            wall = math.hypot(hit[0].x, hit[0].y)
+            if r < wall - tolerance:
+                count += 1
+                deepest = max(deepest, wall - r)
+        out[obj.name] = (count, deepest)
+    bm.free()
+    return out

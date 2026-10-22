@@ -133,8 +133,21 @@ def test_tiled_uvs_keep_texture_size_across_parts():
               and p.normal.z == 0]
         return max(us) - min(us)
 
-    assert abs(side_span(wide) - 2 * math.pi * 0.2 / tile) < 1e-3, side_span(wide)
-    assert abs(side_span(thin) - 2 * math.pi * 0.05 / tile) < 1e-3, side_span(thin)
+    # a whole number of tiles round each part, so the texture meets itself at angle 0
+    assert abs(side_span(wide) - round(2 * math.pi * 0.2 / tile)) < 1e-6, side_span(wide)
+    assert abs(side_span(thin) - round(2 * math.pi * 0.05 / tile)) < 1e-6, side_span(thin)
+    # and one scale for every ring of a run, so a narrowing wall does not shear it into a spiral
+    cone = lathe.lathe('cone', [V(0, 0), V(0.2, 0), V(0.1, 0.2), V(0, 0.2)], 16, uv=tile)
+    layer = cone.data.uv_layers.active.data
+    by_angle = {}
+    for poly in cone.data.polygons:
+        for i in poly.loop_indices:
+            co = cone.data.vertices[cone.data.loops[i].vertex_index].co
+            if 0.0 < co.z < 0.2 and math.hypot(co.x, co.y) > 1e-6:
+                angle = round(math.degrees(math.atan2(co.y, co.x))) % 360
+                if angle:
+                    by_angle.setdefault(angle, set()).add(round(layer[i].uv.x, 6))
+    assert all(len(us) == 1 for us in by_angle.values()), 'u differs between rings at one angle'
     tube = sweep.tube('rod', [(0, 0, 0), (0, 0, 0.1), (0, 0, 0.2)], 0.01, ring=8, uv=tile)
     us = [d.uv.x for d in tube.data.uv_layers.active.data]
     assert abs(max(us) - 0.2 / tile) < 1e-3, max(us)
@@ -301,6 +314,34 @@ def test_push_chroma_spreads_colour_and_keeps_lightness():
     far = materials.push_chroma((0.84, 0.77, 0.95), about, 6.0)  # outside: as far as sRGB holds, same L
     assert abs(materials._lab(far)[0] - materials._lab((0.84, 0.77, 0.95))[0]) < 0.3, 'clipped by chroma, not L'
     assert max(abs(x - y) for x, y in zip(materials.push_chroma(about, about, 3.0), about)) < 1e-3, 'the centre stays'
+
+
+def test_shift_lightness_keeps_hue_and_stays_in_gamut():
+    mint = (0.78, 0.90, 0.86)
+    L0, a0, b0 = materials._lab(mint)
+    darker = materials.shift_lightness(mint, -8.0)  # inside the gamut: L moves, a and b stay
+    L1, a1, b1 = materials._lab(darker)
+    assert abs(L1 - (L0 - 8.0)) < 0.3 and abs(a1 - a0) < 0.3 and abs(b1 - b0) < 0.3, (L0, L1, a0, a1, b0, b1)
+    pale = materials.shift_lightness((0.84, 0.77, 0.95), 12.0)  # out of the gamut: chroma gives way, not hue
+    L2, a2, b2 = materials._lab(pale)
+    La, aa, ba = materials._lab((0.84, 0.77, 0.95))
+    assert abs(L2 - (La + 12.0)) < 0.3, ('lightness moved', La, L2)
+    assert all(0.0 <= c <= 1.0 for c in pale), pale
+    assert abs(math.atan2(b2, a2) - math.atan2(ba, aa)) < 0.02, 'hue kept'
+
+
+def test_cavity_intrusions_find_a_part_inside_the_hollow():
+    scene.reset()
+    cup = lathe.lathe('cup', [V(0, 0), V(0.10, 0), V(0.10, 0.20), V(0.09, 0.20), V(0.09, 0.02), V(0, 0.02)], 32)
+    inside = lathe.lathe('inside', [V(0, 0.08), V(0.03, 0.08), V(0.03, 0.12), V(0, 0.12)], 8)
+    inside.location = (0.05, 0.0, 0.0)  # floats in the hollow, 1 cm from the wall
+    outside = lathe.lathe('outside', [V(0, 0.08), V(0.02, 0.08), V(0.02, 0.12), V(0, 0.12)], 8)
+    outside.location = (0.13, 0.0, 0.0)  # beside the wall, out in the air
+    scene.apply_transform(inside)
+    scene.apply_transform(outside)
+    found = validate.cavity_intrusions(cup, [inside, outside], z_min=0.03, z_max=0.19)
+    assert found['inside'][0] > 0 and found['inside'][1] > 0.05, found
+    assert found['outside'] == (0, 0.0), found
 
 
 def test_validate_counts_pieces_that_float_free():

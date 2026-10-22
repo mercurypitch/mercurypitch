@@ -36,9 +36,12 @@ def lathe(name, profile, segments=48, *, closed=False, modulate=None, uv=True, s
         normal stays shared, so the change is a clean colour line, not a seam.
     flat_spans: span indices shaded flat, for faceted metal or cut stone.
     uv: True for UVs as fractions (u around, v along the outline), or a tile size
-        in metres for UVs in tiles: u = angle x radius / tile, v = arc length / tile,
-        so a tiling texture keeps its size on every part (hammered gold on a wide
-        base ring and a thin bead alike). The seam is at angle 0.
+        in metres for UVs in tiles: v = arc length / tile, and u runs a whole number
+        of tiles round, set by the widest ring of each run of one material (2 pi
+        r_max / tile, rounded), so a tiling texture keeps about its size on every
+        part (hammered gold on a wide base ring and a thin bead alike), meets itself
+        at angle 0 without a seam, and does not shear where the radius changes. A
+        per-ring scale spiralled the amphora's foot and twisted its rim into rope.
     """
     from .profile import normal_in
 
@@ -75,19 +78,27 @@ def lathe(name, profile, segments=48, *, closed=False, modulate=None, uv=True, s
         if not (closed and len(span_materials) == len(spans) - 1):
             raise ValueError(f'{name}: {len(span_materials)} span materials for {len(spans)} spans')
     flat = set(flat_spans)
+    slots = [0 if span_materials is None else span_materials[min(si, len(span_materials) - 1)]
+             for si in range(len(spans))]
+    around = [1.0] * len(spans)  # tiles round each span: one whole number per run of one material
+    if not isinstance(uv, bool):
+        start = 0
+        for si in range(1, len(spans) + 1):
+            if si == len(spans) or slots[si] != slots[start]:
+                r_max = max(max(pts[ia].x, pts[ib].x) for ia, ib in spans[start:si])
+                for k in range(start, si):
+                    around[k] = max(1, round(2 * math.pi * r_max / uv))
+                start = si
     for si, (ia, ib) in enumerate(spans):
         ra, rb = rings[ia], rings[ib]
-        slot = 0 if span_materials is None else span_materials[min(si, len(span_materials) - 1)]
+        slot = slots[si]
         if isinstance(uv, bool):
             va = arc[ia] / total
             vb = (arc[ib] if ib != 0 else total) / total
-            sa = sb = 1.0
         else:  # tiles: metres over the tile size
             va = arc[ia] / uv
             vb = (arc[ib] if ib != 0 else total) / uv
-            sa = 2 * math.pi * pts[ia].x / uv
-            sb = 2 * math.pi * pts[ib].x / uv
-            sa, sb = (sa or sb), (sb or sa)  # a pole takes its neighbour's scale
+        sa = sb = around[si]
         for j in range(segments):
             k = (j + 1) % segments
             ua, ub = j / segments, (j + 1) / segments

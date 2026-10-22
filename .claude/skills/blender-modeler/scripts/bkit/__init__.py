@@ -10,12 +10,17 @@ bpy written for 4.x fails in ways that look like geometry bugs (see
 references/blender-5-gotchas.md).
 """
 
-import bpy
+try:
+    import bpy
+except ImportError:  # outside Blender only the pure modules import (`from bkit import colour`)
+    bpy = None
 
 REQUIRED_SERIES = (5, 2)
-if tuple(bpy.app.version[:2]) != REQUIRED_SERIES:
+if bpy is not None and tuple(bpy.app.version[:2]) != REQUIRED_SERIES:
     raise RuntimeError(
         f'bkit targets Blender {REQUIRED_SERIES[0]}.{REQUIRED_SERIES[1]}; this is {bpy.app.version_string}'
     )
 
-from . import profile, scene, lathe, sweep, trims, materials, textures, validate, fracture, export  # noqa: E402,F401
+from . import colour  # noqa: E402,F401
+if bpy is not None:
+    from . import profile, scene, lathe, sweep, trims, materials, textures, validate, fracture, export  # noqa: E402,F401
