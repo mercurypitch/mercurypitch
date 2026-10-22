@@ -223,12 +223,13 @@ sticky layers, viewport units) and Chromium cannot answer it.
 
 **Playwright's WebKit does not start on this host.** Build 2359
 (`~/.cache/ms-playwright/webkit-2359`) is linked against libraries this Arch
-machine does not have: `libicu*.so.74` (Arch ships ICU 78), `libxml2.so.2` (it
-ships `.so.16`), `libjxl.so.0.8` (it ships 0.12), six `libflite_cmu_*`
-libraries (its flite ships others) and `libbacktrace.so.0`. `ldd` on
-`minibrowser-gtk/bin/WebKitWebProcess` lists them, and `webkit.launch()` stops
-with "Host system is missing dependencies" and an `apt` command that does not
-apply here (checked 21 Oct 2026). Try `webkit.launch()` again after a
+machine does not have and the build does not bring: `libicu*.so.74` (Arch ships
+ICU 78), `libxml2.so.2` (it ships `.so.16`) and six `libflite_cmu_*` libraries
+(its flite ships others). `ldd` on `minibrowser-gtk/bin/WebKitWebProcess`, with
+the build's `lib` and `sys/lib` on `LD_LIBRARY_PATH`, lists them (the build
+brings its own `libjxl.so.0.8` and `libbacktrace.so.0`), and `webkit.launch()`
+stops with "Host system is missing dependencies" and an `apt` command that does
+not apply here (checked 21 and 22 Oct 2026). Try `webkit.launch()` again after a
 Playwright upgrade: a build that starts takes the same probes as Chromium and
 replaces everything below.
 
