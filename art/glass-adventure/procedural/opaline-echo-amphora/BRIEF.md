@@ -3,7 +3,9 @@
 A breakable hero vessel in the Twin Galleries court: the player sings to it and
 it shatters. This build replaces the Meshy-made
 `apps/beside-cue/public/games/adventure-v6/opaline-echo-amphora-qa-v2.glb`
-without any code change, so it keeps that file's runtime contract exactly.
+without any code change, so it keeps that file's runtime contract exactly. The
+swap does update that file's receipt in `adventure-v6/manifest.json` (sha256,
+bytes, triangle and texture counts, source), which `catalog.test.ts` checks.
 
 ## Role and cameras
 

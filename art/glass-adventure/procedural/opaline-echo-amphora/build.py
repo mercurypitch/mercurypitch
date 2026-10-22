@@ -41,7 +41,7 @@ from bkit import export, fracture, lathe, materials, profile, scene, sweep, text
 V = profile.V
 ROOT = 'breakable_l2_opaline_echo_amphora'
 ASSET_ID = 'opaline-echo-amphora'
-SEGMENTS = 32
+SEGMENTS = 30  # five per wave period; the two saved rings' worth pays for the heel and shoulder
 FOOT_SEGMENTS = 28  # the rings below the body: 1 mm of polygon at their size, 208 triangles saved
 TILE = 0.06  # UVs in tiles of 6 cm, so the hammered gold has one dent size on every part
 TOP = 0.920
@@ -102,6 +102,15 @@ def opal_colour(p):
     return tuple(sum(w * colour[j] for w, (colour, _) in zip(weights, OPAL_PATCHES)) / total for j in range(3))
 
 
+CRACKLE = dict(keep=0.6, line=0.03, tint=0.04, ground=0.95, warp=0.35, seed=11)  # the opal's crackle, 6 cm cells
+
+
+def crackled(material):
+    maps = textures.crackle('opal_crackle', size=512, cells=5, tile=TILE * 5, **CRACKLE)
+    textures.attach_color(material, maps['color'], scale=1 / 5)
+    return textures.attach_normal(material, maps['normal'], strength=1.0, scale=1 / 5)
+
+
 def palette(waves_maps):
     def opal_glass(name, sheen=0.5):
         # Milky, not clear: most light scatters in the glass (transmission 0.35, roughness 0.2),
@@ -112,24 +121,29 @@ def palette(waves_maps):
                                     sheen_roughness=0.35)
 
     return {
-        # The colour lives in the corners (opal_colour), multiplied in by COLOR_0.
-        'opal': materials.vertex_tint(opal_glass('glass_shell')),
+        # The colour: large patches in the corners (opal_colour, COLOR_0) times the concept's crackle,
+        # sparse pale hairlines that catch the light as grooves, one 30 cm image over five tiles.
+        'opal': materials.vertex_tint(crackled(opal_glass('glass_shell'))),
         # The wave register: the same glass, thin film included (optics.json), with the gold line
         # and its relief as an inlay. Less sheen, so the line keeps its colour at grazing angles.
         'waves': textures.attach_inlay(opal_glass('glass_waves', sheen=0.2), waves_maps),
         # The concept's gold is hand-hammered everywhere: shallow dents, no triangles.
         # Metallic 0.75, not 1: pure metal mirrors the museum HDR's dark ground on every surface
         # that faces the floor and goes copper (measured in three_preview against the concept).
-        'gold': textures.attach_normal(materials.gold('gold_trim', '#ecc878', roughness=0.30, metallic=0.75),
+        # Hammered on the bands, collar, rim and base ring, as the concept draws them.
+        'gold': textures.attach_normal(materials.gold('gold_trim', '#ebcb88', roughness=0.30, metallic=0.75),
                                        textures.hammered_normal('hammered_gold', size=128, cells=5, depth=0.45),
                                        strength=1.0),
+        # Polished where the concept polishes: the sleeves, the handles' linings and tails, the neck
+        # straps and the stem ring.
+        'gold_polished': materials.gold('gold_polished', '#ebcb88', roughness=0.20, metallic=0.75),
         # Cloudy jade at the concept's lit midtone (hue 129, saturation 0.27), soft lighter veins,
         # one image over three tiles.
         'jade': textures.attach_color(
             materials.principled('jade_stone', '#3f6a4b', roughness=0.26, transmission=0.08, ior=1.61,
                                  coat=0.3, coat_roughness=0.08),
-            textures.marbled('jade_veins', '#3f6a4b', '#7fa58a', dark='#2a4632', size=256, veins=2,
-                             turbulence=2.2, softness=0.55), scale=1 / 3),
+            textures.marbled('jade_veins', '#3f6a4b', '#5f9472', dark='#22402c', size=256, veins=2,
+                             turbulence=1.4, softness=0.8), scale=1 / 3),
         'cut': materials.principled('glass_cut', '#dcefe7', roughness=0.25, transmission=0.45, ior=1.47),
     }
 
@@ -165,7 +179,7 @@ def stem_ring(m):
     pts = [V(0, 0.1240), V(0.0960, 0.1240), V(0.1005, 0.1255), V(0.1018, 0.1300), V(0.1015, 0.1440),
            V(0.0990, 0.1465), V(0.1012, 0.1490), V(0.1010, 0.1600), V(0.0985, 0.1640), V(0.0940, 0.1660),
            V(0, 0.1665)]
-    return lathe.lathe('stem_ring', pts, FOOT_SEGMENTS, material=m['gold'], sharp_degrees=50, uv=TILE)
+    return lathe.lathe('stem_ring', pts, FOOT_SEGMENTS, material=m['gold_polished'], sharp_degrees=50, uv=TILE)
 
 
 def body(m, body_line, neck_line, core):
@@ -193,11 +207,11 @@ def body(m, body_line, neck_line, core):
     floor = [V(low.x * 0.5, low.y - 0.0060), V(low.x * 0.2, low.y - 0.0075), V(0, low.y - 0.0080)]
     pts, slots = profile.chain(
         (opal, [V(0, BODY[0][1])]),
-        (opal, profile.resample(profile.between(body_line, BODY[0][1], z0), 6, curvature_bias=0.5)),
+        (opal, profile.resample(profile.between(body_line, BODY[0][1], z0), 8, curvature_bias=0.6)),
         (gold, profile.raised(body_line, z0, z1, proud, samples=1)),
         (waves, profile.resample(profile.between(body_line, z1, w0), 5, curvature_bias=0.3)),
         (gold, profile.raised(body_line, w0, w1, wproud, samples=1)),
-        (opal, profile.resample(profile.between(body_line, w1, BODY[-1][1]), 7, curvature_bias=0.5)),
+        (opal, profile.resample(profile.between(body_line, w1, BODY[-1][1]), 9, curvature_bias=0.5)),
         (gold, [V(*p) for p in COLLAR]),
         (opal, profile.resample(profile.between(neck_line, NECK[0][1], rim0), 7, curvature_bias=0.4)),
         (gold, rim_face + lip + [inner_top] + inner_gold[1:]),
@@ -264,7 +278,7 @@ def wave_maps(body_line):
     maps = textures.inlay('waves', [(line, half)], period, w0 - z1, cols=512, rows=288, ground='#aeddbe',
                           line='#eec674', ground_trm=(0.35, 0.20, 0.0), line_trm=(0.0, 0.30, 0.6),
                           ridge=0.0012, relief=0.0020, reach=0.024, side=-1, ridges=layers,
-                          ground_low='#6faa92', light=0.12)
+                          ground_low='#6faa92', light=0.12, crackle=dict(CRACKLE, cell=TILE, depth=0.0004))
     return maps, period
 
 
@@ -308,7 +322,7 @@ def handle(m, side, body_line, neck_line):
     for z in (0.612, 0.590, 0.565, 0.540, 0.515, 0.500, 0.488):
         arc.append((max(0.2520, profile.radius_at(body_line, z) - 0.003), z))
     controls = [(x, 0.0, z) for x, z in arc]
-    path = sweep.path(controls, samples=34)
+    path = sweep.path(controls, samples=34, curvature_bias=0.45)  # worst turn 11 degrees, not 19 at the crown
     lengths = [0.0]
     for a, b in zip(path, path[1:]):
         lengths.append(lengths[-1] + (b - a).length)
@@ -341,15 +355,15 @@ def handle(m, side, body_line, neck_line):
         c = math.cos(a)
         return (outer if c >= 0 else inner) * c, half * math.sin(a)
 
-    def slot(i, k):  # sides 3-6 wrap the face toward the vessel: the gold lining, seen from the front
-        return 1 if path[i].z < tail_top or k in (3, 4, 5, 6) else 0
+    def slot(i, k):  # sides 4 and 5, the inward 72 degrees: the concept's thin lining on the loop's inner edge
+        return 1 if path[i].z < tail_top or k in (4, 5) else 0
 
     name = 'r' if side > 0 else 'l'
     mirror = lambda pts: [Vector((p.x * side, p.y, p.z)) for p in pts]  # noqa: E731
     neck_seat = sweep.seat_on_lathe(neck_line, 0.0030)
     clear = (sweep.clear_of_lathe(neck_line, 0.0015), None, 3)
     obj = sweep.tube(f'handle_{name}', mirror(path), None, ring=10, resample=False, section=section,
-                     first_normal=(0, 0, 1), material=[m['jade'], m['gold']], face_material=slot,
+                     first_normal=(0, 0, 1), material=[m['jade'], m['gold_polished']], face_material=slot,
                      seat=(neck_seat, None), clear=clear, uv=TILE)
 
     # The sleeve: 3.5 mm proud of the strap over its first 5.5 cm, its far edge rolled in.
@@ -368,7 +382,7 @@ def handle(m, side, body_line, neck_line):
         return rho * math.cos(a), (0.031 * 0.78 + lift[i]) * math.sin(a)
 
     sleeve = sweep.tube(f'sleeve_{name}', mirror(sleeve_path), None, ring=10, resample=False,
-                        section=sleeve_section, first_normal=(0, 0, 1), material=m['gold'],
+                        section=sleeve_section, first_normal=(0, 0, 1), material=m['gold_polished'],
                         seat=(neck_seat, None), clear=(clear[0], None, 2), uv=TILE)
 
     # The neck strap: from under the sleeve down the neck and into the collar, 15 mm wide,
@@ -383,7 +397,7 @@ def handle(m, side, body_line, neck_line):
         return (0.0035 if c >= 0 else 0.0030) * c, 0.0075 * math.sin(a)
 
     neck_strap = sweep.tube(f'neck_strap_{name}', mirror(points), None, ring=6, resample=False,
-                            section=strap_section, first_normal=(side, 0, 0), material=m['gold'], uv=TILE)
+                            section=strap_section, first_normal=(side, 0, 0), material=m['gold_polished'], uv=TILE)
     return obj, sleeve, neck_strap, lengths[-1]
 
 
@@ -444,9 +458,10 @@ def main():
     shards = []
     if not args.intact_only:
         cut = {p.name: m['cut'] for p in parts}
-        cut.update({'base_ring': m['gold'], 'stem_ring': m['gold'], 'foot': m['jade'],
-                    'handle_r': m['jade'], 'handle_l': m['jade'], 'sleeve_r': m['gold'], 'sleeve_l': m['gold'],
-                    'neck_strap_r': m['gold'], 'neck_strap_l': m['gold']})
+        cut.update({'base_ring': m['gold'], 'stem_ring': m['gold_polished'], 'foot': m['jade'],
+                    'handle_r': m['jade'], 'handle_l': m['jade'],
+                    'sleeve_r': m['gold_polished'], 'sleeve_l': m['gold_polished'],
+                    'neck_strap_r': m['gold_polished'], 'neck_strap_l': m['gold_polished']})
         shards = fracture.fracture(parts, SHARDS, cut_materials=cut, seed=args.seed, seed_on=parts,
                                    prefix=f'{ROOT}_shard_')
         for shard in shards:
@@ -486,4 +501,5 @@ def main():
     print('BUILD', json.dumps(facts, default=str))
 
 
-main()
+if __name__ == '__main__':  # importable for measurement scripts
+    main()
