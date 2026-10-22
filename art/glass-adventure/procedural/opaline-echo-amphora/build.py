@@ -76,35 +76,51 @@ WAVE_CENTRE_Z = 0.350
 WAVE_LINE = 0.00375  # half width of the gold line: a 7.5 mm ribbon
 
 
+OPAL_PATCHES = (  # sRGB colour, share bias. Mint dominates as in the concept (half its body is
+    # hue 90 to 170); the museum's blue sky pulls every patch toward aqua, so mint sits at hue 115.
+    ((0.64, 0.90, 0.60), 0.55),   # mint-green
+    ((0.60, 0.86, 0.84), 0.0),    # aqua
+    ((0.80, 0.68, 0.96), 0.15),   # lavender
+    ((0.98, 0.87, 0.62), -0.15),  # peach-gold
+    ((0.70, 0.78, 0.98), -0.4),   # ice blue
+)
+
+
 def opal_colour(p):
-    """The concept's opal fire as soft pastel patches: mint, lavender, peach and cream (sRGB)."""
-    theta = math.atan2(p.y, p.x)
-    mint, lavender = (0.78, 0.90, 0.84), (0.84, 0.79, 0.93)  # deep enough not to clip to white in light
-    peach, cream = (0.93, 0.83, 0.77), (0.93, 0.92, 0.84)
-    a = 0.5 + 0.5 * math.sin(theta + 2.2 * p.z + 0.4)
-    b = max(0.0, math.sin(2 * theta - 1.7 * p.z + 1.1)) ** 2
-    c = max(0.0, math.cos(3 * theta + 5.0 * p.z)) ** 4
-    out = [m + (l - m) * a for m, l in zip(mint, lavender)]
-    out = [o + (q - o) * 0.5 * b for o, q in zip(out, peach)]
-    return tuple(o + (q - o) * 0.4 * c for o, q in zip(out, cream))
+    """The concept's opal fire as distinct soft patches (sRGB): a soft-max over drifting
+    fields, so each corner leans to one patch colour instead of all averaging to a flat
+    tint. Turned so a lavender patch crosses the front-right of the belly, as in the
+    concept. Saturation about 0.27 before lighting; the game's lights halve it."""
+    theta = math.atan2(p.y, p.x) + 2.1
+
+    def drift(seed):
+        return sum(math.sin(f * theta + g * p.z + seed * (1.7 + 0.9 * k)) / (1 + 0.5 * k)
+                   for k, (f, g) in enumerate(((1, 2.6), (2, -5.3), (3, 7.1), (4, -3.4))))
+
+    weights = [math.exp(6.0 * (drift(1.3 * i + 0.4) / 2 + bias)) for i, (_, bias) in enumerate(OPAL_PATCHES)]
+    total = sum(weights)
+    return tuple(sum(w * colour[j] for w, (colour, _) in zip(weights, OPAL_PATCHES)) / total for j in range(3))
 
 
 def palette(waves_maps):
-    def opal_glass(name):
+    def opal_glass(name, sheen=0.5):
         # Milky, not clear: most light scatters in the glass (transmission 0.35, roughness 0.2),
         # so the body keeps its own colour against any background. No coat: the thin film sits on
         # the base specular layer and a coat over it hides the colour play. Sheen is the pearl.
         return materials.principled(name, '#ffffff', roughness=0.20, transmission=0.35, ior=1.47,
-                                    thin_film_nm=420.0, thin_film_ior=1.55, sheen=0.5, sheen_tint='#dccbf2',
+                                    thin_film_nm=420.0, thin_film_ior=1.55, sheen=sheen, sheen_tint='#dccbf2',
                                     sheen_roughness=0.35)
 
     return {
         # The colour lives in the corners (opal_colour), multiplied in by COLOR_0.
         'opal': materials.vertex_tint(opal_glass('glass_shell')),
-        # The wave register: the same glass with the gold line and its relief as an inlay.
-        'waves': textures.attach_inlay(opal_glass('glass_waves'), waves_maps),
+        # The wave register: the same glass, thin film included (optics.json), with the gold line
+        # and its relief as an inlay. Less sheen, so the line keeps its colour at grazing angles.
+        'waves': textures.attach_inlay(opal_glass('glass_waves', sheen=0.2), waves_maps),
         # The concept's gold is hand-hammered everywhere: shallow dents, no triangles.
-        'gold': textures.attach_normal(materials.gold('gold_trim', '#e0b65e', roughness=0.30),
+        # Metallic 0.75, not 1: pure metal mirrors the museum HDR's dark ground on every surface
+        # that faces the floor and goes copper (measured in three_preview against the concept).
+        'gold': textures.attach_normal(materials.gold('gold_trim', '#ecc878', roughness=0.30, metallic=0.75),
                                        textures.hammered_normal('hammered_gold', size=128, cells=5, depth=0.45),
                                        strength=1.0),
         # Cloudy jade at the concept's lit midtone (hue 129, saturation 0.27), soft lighter veins,
@@ -112,8 +128,8 @@ def palette(waves_maps):
         'jade': textures.attach_color(
             materials.principled('jade_stone', '#3f6a4b', roughness=0.26, transmission=0.08, ior=1.61,
                                  coat=0.3, coat_roughness=0.08),
-            textures.marbled('jade_veins', '#3f6a4b', '#9cbfa3', dark='#2a4632', size=256, veins=2,
-                             turbulence=2.6, softness=0.4), scale=1 / 3),
+            textures.marbled('jade_veins', '#3f6a4b', '#7fa58a', dark='#2a4632', size=256, veins=2,
+                             turbulence=2.2, softness=0.55), scale=1 / 3),
         'cut': materials.principled('glass_cut', '#dcefe7', roughness=0.25, transmission=0.45, ior=1.47),
     }
 
@@ -203,7 +219,9 @@ def wave_maps(body_line):
 
     Each stroke leaves the previous curl, dips, rises to a crest and curls clockwise
     into a spiral; the gold line rides a rolling relief on its lower side (inside
-    the curl). Drawn in (arc length at the curl height, height above the lower
+    the curl), with two glass ridges following it there as the concept's water
+    layers, and the relief's shading baked into the ground so it reads at
+    gameplay size. Drawn in (arc length at the curl height, height above the lower
     band), so `wave_uvs` maps the band with u = angle / period and v = height.
     """
     r_ref = profile.radius_at(body_line, WAVE_CENTRE_Z)
@@ -225,9 +243,28 @@ def wave_maps(body_line):
     n = len(line)
     half = [WAVE_LINE * (0.65 + 0.35 * min(i / (n * 0.06), 1)) * (1 - 0.6 * max(0.0, (i - n * 0.72) / (n * 0.28)))
             for i in range(n)]
-    maps = textures.inlay('waves', [(line, half)], period, w0 - z1, cols=512, rows=288, ground='#c9e6da',
-                          line='#e0b65e', ground_trm=(0.35, 0.20, 0.0), line_trm=(0.0, 0.30, 1.0),
-                          ridge=0.0010, relief=0.0014, reach=0.024, side=-1)
+
+    def layer(offset, start, end, half_width, rise):
+        # A glass ridge following the line at `offset` on its right hand (under the crest, inside
+        # the curl): the concept's water layers. Fades in over its first fifth, out over its last
+        # third. start and end index the line.
+        run = []
+        for i in range(start, end):
+            (s0, z0), (s2, z2) = line[max(i - 1, 0)], line[min(i + 1, n - 1)]
+            ts, tz = s2 - s0, z2 - z0
+            norm = math.hypot(ts, tz) or 1.0
+            run.append((line[i][0] + offset * tz / norm, line[i][1] - offset * ts / norm))
+        m = len(run)
+        rises = [rise * min(1.0, j / (0.2 * m), (m - 1 - j) / (0.33 * m)) for j in range(m)]
+        return run, [half_width] * m, rises
+
+    curl_at = len(back)  # index of the crest; the curl turns `turns` over the next 160 points
+    layers = [layer(0.0095, int(curl_at * 0.30), curl_at + int(160 * 0.5 / turns), 0.0042, 0.0016),
+              layer(0.0185, int(curl_at * 0.50), curl_at + int(160 * 0.28 / turns), 0.0038, 0.0012)]
+    maps = textures.inlay('waves', [(line, half)], period, w0 - z1, cols=512, rows=288, ground='#aeddbe',
+                          line='#eec674', ground_trm=(0.35, 0.20, 0.0), line_trm=(0.0, 0.30, 0.6),
+                          ridge=0.0012, relief=0.0020, reach=0.024, side=-1, ridges=layers,
+                          ground_low='#6faa92', light=0.12)
     return maps, period
 
 
@@ -443,6 +480,7 @@ def main():
     if args.blend:
         os.makedirs(os.path.dirname(os.path.abspath(args.blend)), exist_ok=True)
         bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(args.blend))
+    # Uncompressed: meshopt halves the file but its lossy position filter makes one shard cross itself.
     export.glb(args.out, [root, intact, proxy] + shards, tangents=True)  # the gold is normal-mapped
     facts['glb'] = export.summary(args.out)
     print('BUILD', json.dumps(facts, default=str))

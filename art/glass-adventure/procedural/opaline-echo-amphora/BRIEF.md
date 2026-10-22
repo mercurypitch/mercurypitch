@@ -17,14 +17,14 @@ without any code change, so it keeps that file's runtime contract exactly.
 
 ## Runtime contract (read from the shipped GLB and `catalog.ts`)
 
-| Item        | Value                                                                                                              |
-| ----------- | ------------------------------------------------------------------------------------------------------------------ |
-| Root        | empty `breakable_l2_opaline_echo_amphora`, no transform, extras `asset_id`, `units: metres`                        |
-| Intact      | `breakable_l2_opaline_echo_amphora_intact`, 0.92 m tall from z 0, extras `role: intact`                            |
-| Shards      | `breakable_l2_opaline_echo_amphora_shard_000` to `_017` (18), origin at centroid, `role: shard`                    |
-| Collider    | `COLLIDER_..._amphora`, 16-gon r 0.227244, z 0 to 0.644, flat, no material (not read by the game; kept for parity) |
-| Orientation | handles along +-X; the game recentres on the intact's bounds and scales to 0.92 m                                  |
-| Budget      | intact at most 8,000 triangles, shards at most 12,800 together, no textures in this version                        |
+| Item        | Value                                                                                                                                                             |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Root        | empty `breakable_l2_opaline_echo_amphora`, no transform, extras `asset_id`, `units: metres`                                                                       |
+| Intact      | `breakable_l2_opaline_echo_amphora_intact`, 0.92 m tall from z 0, extras `role: intact`                                                                           |
+| Shards      | `breakable_l2_opaline_echo_amphora_shard_000` to `_017` (18), origin at centroid, `role: shard`                                                                   |
+| Collider    | `COLLIDER_..._amphora`, 16-gon r 0.227244, z 0 to 0.644, flat, no material (not read by the game; kept for parity)                                                |
+| Orientation | handles along +-X; the game recentres on the intact's bounds and scales to 0.92 m                                                                                 |
+| Budget      | intact at most 8,000 triangles, shards at most 12,800 together; textures at most 512 px, GLB under the 3.8 MB of the file it replaces, which carries textures too |
 
 `contract.json` holds the same as gates for `validate_asset.py`.
 
