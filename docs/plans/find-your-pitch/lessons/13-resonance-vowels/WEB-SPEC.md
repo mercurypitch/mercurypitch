@@ -93,7 +93,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:375-384`), with no variant's team note anywhere in the markup (`:412-418`; FACTS 1), and the
+   (`:323-332`), with no variant's team note anywhere in the markup (`:412-418`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 11: Registers and the break", a link to
    `/learn/11`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so
@@ -728,16 +728,16 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 13's entry in `kit/season.ts` (`:384-394`) gains a plain
+- **Season data**: Lesson 13's entry in `kit/season.ts` (`:372-381`) gains a plain
   `minutes: 16` and `page: '/learn/13'` after its topics, in every build, under the comment
-  Lesson 3's entry carries (`season.ts:212-213`), "A draft until its sign-off (drafts.ts):
+  Lesson 3's entry carries (`season.ts:210-211`), "A draft until its sign-off (drafts.ts):
   built in every mode, and live where the page state publishes it (publish.ts).", as Lesson
-  3's own are written (`season.ts:214-215`; FACTS 5, 64). Whether the page is live is
+  3's own are written (`season.ts:212-213`; FACTS 5, 64). Whether the page is live is
   `kit/publish.ts`'s to say: `seasonFor` draws a lesson held back as one coming later, with
   no page and no reading time (`kit/publish.ts:102-124`), so the entry reads neither
   `DRAFT_LESSONS` nor any build flag, which `kit/drafts.test.ts` keeps to the publishing
-  rules alone. Its `pr`, today `{ needs: 'Long Note on vowels' }` (`kit/season.ts:392`),
-  gains the link, proposed with the page (FACTS 64), as Lesson 3's reads (`:218-225`):
+  rules alone. Its `pr`, today `{ needs: 'Long Note on vowels' }` (`kit/season.ts:379`),
+  gains the link, proposed with the page (FACTS 64), as Lesson 3's reads (`:215-222`):
 
   ```ts
   link: { href: '/mirror?lesson=13', addr: 'mercurypitch.com/mirror', label: 'Voice Mirror' },
@@ -747,9 +747,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `kit/explorer.ts:174-179`); `needs` keeps "Long Note on vowels" for the team, and no card draws it
   (`kit/season.ts:27-34`). The link lands with the page, not before it: every lesson page's explorer
   prints it, and only this page says why the hold is suggested on vowels. Its hook is the entry's
-  (`kit/season.ts:390`), and its tease is `kit/lesson-copy.ts`'s (`:148`), with no alternative hook,
+  (`kit/season.ts:378`), and its tease is `kit/lesson-copy.ts`'s (`:142`), with no alternative hook,
   as FACTS 1 and 10 record: this spec changes no hook or tease line. Its `sig` (`kit/season.ts:391`)
-  is the team's and never drawn (`:133`). `EDGES` already holds [11, 13] (`:435`).
+  is the team's and never drawn (`:133`). `EDGES` already holds [11, 13] (`:421`).
 
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -786,7 +786,7 @@ and the four-words strip in the kit.
    12, `:396-420`).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
-   (`lesson-copy.test.ts:375-410`), and `src/tests/lesson-pages.test.ts` holds every lesson
+   (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, a draft's included, to its head, its share card, its structured data and its legal
    links (`:112-210`), since a draft the console publishes goes live with the head it was built with
    (`:12-17`). The hook's copies are the ones the site worker rewrites when the console picks
@@ -802,7 +802,7 @@ and the four-words strip in the kit.
      Your Pitch, Lesson 13 | MercuryPitch", runs to 63 (Decisions 1). "Why ee and ah differ" says
      only what the hook says, that the two differ, and nothing of what the peaks do. The worker
      never rewrites a title. The h1 is `h1.hook#hook`, the hook in its default wording
-     (`lesson-copy.test.ts:375-384`; Hero);
+     (`lesson-copy.test.ts:323-332`; Hero);
    - the meta description, "Same note, ‘ee’ or ‘ah’: what makes them sound different? A free
      lesson with sound toys: harmonics, resonance, and one note held through five vowels." (149
      characters, inside the test's 80 to 160, `lesson-pages.test.ts:129-132`). It does not quote
@@ -811,8 +811,8 @@ and the four-words strip in the kit.
      `learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "If ‘ee’ and ‘ah’ sung on the same note draw the
      same pitch line, what makes them sound different? Watch Merc's line, then make your guess."
-     (138 characters; `lesson-copy.test.ts:401-404`; `learn/02.html:30-33`), and
-     `twitter:description`, the hook exactly (97; `lesson-copy.test.ts:405-407`;
+     (138 characters; `lesson-copy.test.ts:349-352`; `learn/02.html:30-33`), and
+     `twitter:description`, the hook exactly (97; `lesson-copy.test.ts:353-355`;
      `learn/02.html:49-52`), so both descriptions the worker rewrites fit 80 to 160 (FACTS 1);
    - canonical and `og:url` `https://mercurypitch.com/learn/13`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
@@ -824,7 +824,7 @@ and the four-words strip in the kit.
      orange Merc." (`learn/02.html:34-43`, `:53-60`; `lesson-pages.test.ts:177-197`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:390-398`, `:408`), and `lesson-pages.test.ts` asks for the Article
+     (`lesson-copy.test.ts:338-346`, `:356`), and `lesson-pages.test.ts` asks for the Article
      first (`:142-144`): `@id` `https://mercurypitch.com/learn/13#lesson` and
      `url` `https://mercurypitch.com/learn/13` (`lesson-pages.test.ts:146-147`); the headline
      "Resonance and vowels"; `alternativeHeadline`, the hook exactly; `description`, the meta
@@ -854,15 +854,15 @@ and the four-words strip in the kit.
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:128`, `:146`;
-   `:223`, `:233`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:492`, `:524`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:172-182`),
+   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:130`, `:148`;
+   `:225`, `:235`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:517`, `:549`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:174-184`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
-   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:143-145`). The vowel model
+   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:145-147`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
    reader arrive through a dynamic import when Start is pressed, as on Lesson 5
-   (`assert-first-paint-budgets.mjs:124-127`), and the ceiling holds only while that boundary does.
+   (`assert-first-paint-budgets.mjs:126-129`), and the ceiling holds only while that boundary does.
 5. `kit/sound.ts`, proposed: two options on `VoiceOptions` (`:30-46`), `partials` and
    `resonators` (Audio). `partials` gives a voice's source amplitudes whatever its `kind` (today
    `build` picks the wave from the kind, `:172-173`); `resonators`, a list of `{ hz, q }` built as

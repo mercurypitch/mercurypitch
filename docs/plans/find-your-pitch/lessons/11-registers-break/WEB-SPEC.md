@@ -84,7 +84,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:374-383`), with no variant's team note anywhere in the markup (`:411-417`; FACTS 1), and the
+   (`:322-331`), with no variant's team note anywhere in the markup (`:411-417`; FACTS 1), and the
    element the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 7: Slides, sirens and your range", a link to
    `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:338-343`, so
@@ -693,24 +693,24 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 11's entry in `kit/season.ts` (`:361-370`) gains a plain `minutes: 16`
+- **Season data**: Lesson 11's entry in `kit/season.ts` (`:351-359`) gains a plain `minutes: 16`
   and `page: '/learn/11'` after its topics, in every build, under the comment Lesson 5's entry
-  carries, `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:254`), as
-  Lesson 3's own are written (`season.ts:212-215`; FACTS 5, 47, 48). Whether the page is live is
+  carries, `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:250`), as
+  Lesson 3's own are written (`season.ts:210-213`; FACTS 5, 47, 48). Whether the page is live is
   `kit/publish.ts`'s to say: `seasonFor` draws a lesson held back as one coming later, with no page
   and no reading time (`:94-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`,
   which `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link, proposed with
   the page (FACTS 47): `href: '/pitch-training?lesson=11'`,
   `addr: 'mercurypitch.com/pitch-training'`, `label: 'Exercises'` and
   `note: 'then tap Siren / Range Explorer'`, so the card reads "Exercises, then tap Siren / Range
-  Explorer", as Lesson 9's reads "Exercises, then tap Arpeggio Jumper" (`season.ts:343-348`,
+  Explorer", as Lesson 9's reads "Exercises, then tap Arpeggio Jumper" (`season.ts:334-339`,
   `explorer.ts:174-179`). The note is in the learner's words (`season.ts:27-34`); `needs` keeps
   "siren and slide drills" for the team, and no card draws it. The link lands with the page, not
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
-  (`season.ts:367`), which this PR changed, and its tease and the alternative `same-note` are
-  `kit/lesson-copy.ts`'s (`:128-137`), as FACTS 1 records: this spec proposes no other change to a
-  hook or a tease. `EDGES` already holds [7, 11] (`season.ts:433`).
+  (`season.ts:357`), which this PR changed, and its tease and the alternative `same-note` are
+  `kit/lesson-copy.ts`'s (`:124-132`), as FACTS 1 records: this spec proposes no other change to a
+  hook or a tease. `EDGES` already holds [7, 11] (`season.ts:419`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, no Watch button (`kit/season.ts:23-25`), and the learner's fields only,
@@ -759,7 +759,7 @@ others take it.
      break: Find Your Pitch, Lesson 11 | MercuryPitch" runs to 66 (Decisions). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:229`), is
      not used: "why voices flip" leans on the predict's answer. The worker never rewrites a title.
-     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:374-383`;
+     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:322-331`;
      Hero);
    - the meta description, "Why does your voice sometimes flip as you slide up? A sixteen-minute
      lesson with sound toys on chest voice, head voice and the break." (133 characters, inside the
@@ -768,9 +768,9 @@ others take it.
    - `og:title` and `twitter:title`, "Registers and the break: Find Your Pitch, Lesson 11"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "Why does your voice sometimes flip as you slide
-     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:400-403`;
+     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:348-351`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:404-406`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:352-354`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/11`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:116-134`);
@@ -781,7 +781,7 @@ others take it.
      (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:389-397`, `:407`): `@id` `https://mercurypitch.com/learn/11#lesson` and
+     (`lesson-copy.test.ts:337-345`, `:355`): `@id` `https://mercurypitch.com/learn/11#lesson` and
      `url` `https://mercurypitch.com/learn/11` (`lesson-pages.test.ts:146-147`); the headline
      "Registers and the break"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:158-159`); `position: 11`,
@@ -811,14 +811,14 @@ others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:102-120`, `:216-219`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:450-456`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-122`, `:218-221`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:475-481`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:46-57`, `:172-182`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:174-184`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:107-110`), and the ceiling holds only while that
+   (`scripts/assert-first-paint-budgets.mjs:108-111`), and the ceiling holds only while that
    boundary does.
 5. `kit/range-chart.ts`, new with Lesson 7's page (its Toys 1 and needs 3: "generic over a window,
    a column and its lit band, lines, bands and range bars, so Lesson 11 ... and Lesson 14 can use
