@@ -21,12 +21,20 @@
 // a note with no steady take is left out, never counted as a miss
 // (REQ-GVC-041). Loaded with the listener, after Start: it reaches Voice
 // Mirror's scorer, which a page's first paint must not.
+//
+// A siren (Lesson 7) is read for where it sat, never how far it went
+// (`readSiren`): the attack comes off the raw frames, Voice Mirror's own
+// range reader finds the notes it dwelt on, and the page lights their middle
+// half, the window the Vocal Range Test picks its match notes from
+// (`middleHalf`), or the one centre note under three semitones. Neither end
+// of the siren and no span is ever named (Lesson 7 WEB-SPEC, Toys 4).
 
 import type { F0Frame } from '@/lib/mirror/metrics'
-import { foldCents, median, preprocess } from '@/lib/mirror/metrics'
+import { computeRange, foldCents, median, middleHalf, preprocess, } from '@/lib/mirror/metrics'
 import { estimateFrameHop } from '@/lib/pitch-measurements'
 import type { Band } from './band-words'
 import { bandOf, gapWords, inBand } from './band-words'
+import { sharpOf, signName, wordName } from './notes'
 
 /** Seconds of the attack, dropped from every take. */
 export const ATTACK_SEC = 0.3
@@ -157,3 +165,83 @@ export function countLine(c: RunCount): string | null {
 /** The playbook's rule 15 line follows a count only when fewer than all the heard notes landed. */
 export const trickyAfter = (c: RunCount): boolean =>
   c.heard > 0 && c.landed < c.heard
+
+/** Seconds of voice a siren needs after the attack to be read. */
+export const SIREN_STEADY_SEC = 1
+/** Under this many semitones held, a siren's band is its one centre note. */
+export const SIREN_CENTRE_UNDER = 3
+
+/** What a siren's reading lit: its middle half, its one centre note, or nothing. */
+export type SirenKind = 'none' | 'unsteady' | 'half' | 'centre'
+
+export interface SirenReading {
+  readonly kind: SirenKind
+  /** Any voice at all: a take with none asks no feeling question. */
+  readonly heard: boolean
+  /** The lit band, MIDI, low to high (one note for the centre); null when nothing was lit. */
+  readonly band: { readonly low: number; readonly high: number } | null
+  /** The reading, as the page shows it, its notes in signs: "about G3 to C♯4". */
+  readonly line: string
+  /** The same line in words, for a screen reader: "about G3 to C sharp 4". */
+  readonly spoken: string
+}
+
+export const SIREN_NONE_LINE =
+  "We didn't hear you start that time. Hum “ng” as the ring turns."
+export const SIREN_UNSTEADY_LINE = "We didn't hear a steady siren that time."
+
+type Namer = (midi: number) => string
+const inSigns: Namer = (m) => signName(sharpOf(m))
+const inWords: Namer = (m) => wordName(sharpOf(m))
+
+/** The reading line for a band, in signs or in words. */
+export function sirenLine(
+  band: { readonly low: number; readonly high: number },
+  name: Namer = inSigns,
+): string {
+  if (band.low === band.high)
+    return `The lit band is the middle of your siren: about ${name(band.low)}.`
+  return `The lit band is the middle half of your siren: about ${name(band.low)} to ${name(band.high)}.`
+}
+
+/** The band of a siren that held `lowMidi` to `highMidi`: the centre under three semitones, else the middle half. */
+export function sirenBand(
+  lowMidi: number,
+  highMidi: number,
+): { low: number; high: number } {
+  if (highMidi - lowMidi < SIREN_CENTRE_UNDER) {
+    const centre = Math.round((lowMidi + highMidi) / 2)
+    return { low: centre, high: centre }
+  }
+  return middleHalf(lowMidi, highMidi)
+}
+
+const sirenOf = (kind: 'none' | 'unsteady', line: string): SirenReading => ({
+  kind,
+  heard: kind !== 'none',
+  band: null,
+  line,
+  spoken: line,
+})
+
+/** Reads one siren: the take's raw frames, from the moment it opened. */
+export function readSiren(frames: readonly F0Frame[]): SirenReading {
+  const voiced = preprocess(frames)
+  if (voiced.length === 0) return sirenOf('none', SIREN_NONE_LINE)
+  // the attack comes off the raw frames, which the range reader preprocesses itself
+  const onset = voiced[0].t
+  const trimmed = frames.filter((f) => f.t >= onset + ATTACK_SEC)
+  const kept = preprocess(trimmed)
+  if (kept.length * estimateFrameHop(kept) < SIREN_STEADY_SEC)
+    return sirenOf('unsteady', SIREN_UNSTEADY_LINE)
+  const range = computeRange([[...trimmed]])
+  if (range === null) return sirenOf('unsteady', SIREN_UNSTEADY_LINE)
+  const band = sirenBand(range.lowMidi, range.highMidi)
+  return {
+    kind: band.low === band.high ? 'centre' : 'half',
+    heard: true,
+    band,
+    line: sirenLine(band),
+    spoken: sirenLine(band, inWords),
+  }
+}

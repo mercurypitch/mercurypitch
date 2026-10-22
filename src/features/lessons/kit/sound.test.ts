@@ -11,6 +11,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as SoundKit from './sound'
+import type * as TimbreKit from './timbre'
 
 type Event = [method: string, ...args: number[]]
 
@@ -59,6 +60,8 @@ class FakeGain extends FakeNode {
 }
 
 class FakeFilter extends FakeNode {
+  /** The context that made it: a timbre builds its own nodes from it. */
+  context: FakeContext | null = null
   type = 'lowpass'
   readonly frequency = new FakeParam(350)
   readonly Q = new FakeParam(1)
@@ -132,6 +135,7 @@ class FakeContext {
   }
   createBiquadFilter(): FakeFilter {
     const f = new FakeFilter()
+    f.context = this
     this.filters.push(f)
     return f
   }
@@ -436,5 +440,112 @@ describe('playNoise', () => {
 
     // Assert
     expect(ctx.sources).toHaveLength(0)
+  })
+})
+
+describe('timbres (Lesson 7, kit/timbre.ts)', () => {
+  /** Sound on, and the timbres from the same module graph. */
+  async function withTimbres(): Promise<{
+    kit: typeof SoundKit
+    ctx: FakeContext
+    timbre: typeof TimbreKit
+  }> {
+    const { kit, ctx } = await soundOn()
+    const timbre = await import('./timbre')
+    return { kit, ctx, timbre }
+  }
+
+  it('builds a voice with no timbre exactly as before: one lowpass, the tone and its vibrato', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+
+    // Act
+    kit.contourVoice(kit.contourOf(A3, SLIDE), { kind: 'merc' })
+
+    // Assert
+    expect(ctx.filters.map((f) => [f.type, f.frequency.value])).toEqual([
+      ['lowpass', 2600],
+    ])
+    expect(ctx.oscillators).toHaveLength(2)
+    expect(ctx.sources).toHaveLength(0)
+  })
+
+  it('sings "ng" through a lowpass at 900 Hz, adding nothing else', async () => {
+    // Arrange
+    const { kit, ctx, timbre } = await withTimbres()
+
+    // Act
+    kit.contourVoice(kit.contourOf(A3, SLIDE), {
+      kind: 'merc',
+      timbre: timbre.NG,
+    })
+
+    // Assert
+    expect(ctx.filters.map((f) => f.frequency.value)).toEqual([900])
+    expect(ctx.oscillators).toHaveLength(2)
+    expect(ctx.sources).toHaveLength(0)
+  })
+
+  it('trills at 22 Hz, 70 % deep, over looped breath noise in a band', async () => {
+    // Arrange
+    const { kit, ctx, timbre } = await withTimbres()
+
+    // Act
+    kit.contourVoice(kit.contourOf(A3, SLIDE), {
+      kind: 'merc',
+      timbre: timbre.LIP_TRILL,
+    })
+
+    // Assert: the wobble swings 0.65 ± 0.35, from 1 down to 0.3
+    const buzz = ctx.oscillators.find((o) => o.frequency.value === 22)
+    expect(buzz).toBeDefined()
+    const levels = ctx.gains.map((g) => g.gain.value)
+    expect(levels).toContain(0.65)
+    expect(levels).toContain(0.35)
+    expect(ctx.sources).toHaveLength(1)
+    expect(ctx.sources[0].loop).toBe(true)
+    expect(ctx.sources[0].starts).toEqual([0])
+    expect(
+      ctx.filters.map((f) => [f.type, f.frequency.value, f.Q.value]),
+    ).toEqual([
+      ['lowpass', 2600, 0.5],
+      ['bandpass', 1800, 0.7],
+    ])
+  })
+
+  it("stops the trill's buzz and breath with the voice, once its release is below audibility", async () => {
+    // Arrange
+    const { kit, ctx, timbre } = await withTimbres()
+
+    // Act
+    kit.contourVoice(kit.contourOf(A3, SLIDE), {
+      kind: 'merc',
+      timbre: timbre.LIP_TRILL,
+    })
+
+    // Assert
+    const stopAt = ctx.oscillators[0].stops.at(-1) ?? 0
+    expect(stopAt).toBeCloseTo(4.2 + 0.34 + 0.06, 9)
+    for (const o of ctx.oscillators) expect(o.stops.at(-1)).toBe(stopAt)
+    expect(ctx.sources[0].stops.at(-1)).toBe(stopAt)
+  })
+
+  it('stops a trill stopped early, buzz and breath too', async () => {
+    // Arrange
+    const { kit, ctx, timbre } = await withTimbres()
+    const v = kit.contourVoice(kit.contourOf(A3, SLIDE), {
+      kind: 'merc',
+      timbre: timbre.LIP_TRILL,
+    })
+    ctx.currentTime = 1
+
+    // Act
+    v?.stop()
+
+    // Assert
+    const early = 1 + 0.34 + 0.06
+    expect(ctx.sources[0].stops.at(-1)).toBeCloseTo(early, 9)
+    for (const o of ctx.oscillators)
+      expect(o.stops.at(-1)).toBeCloseTo(early, 9)
   })
 })

@@ -27,6 +27,7 @@ import type { F0Frame } from '@/lib/mirror/metrics'
 import { CONF_MIN } from '@/lib/mirror/metrics'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
+import { estimateFrameHop } from '@/lib/pitch-measurements'
 
 export * from './take'
 export { foldCents, hzToCents } from '@/lib/mirror/metrics'
@@ -96,6 +97,12 @@ export interface TakeOptions {
    * one second). Absent, a take always runs `run` seconds.
    */
   readonly quiet?: number
+  /**
+   * With `quiet`: how many seconds of voice the take must have heard before
+   * a silence may end it, so a breath early in a siren does not (Lesson 7's
+   * two seconds). Absent, any silence of `quiet` seconds ends it.
+   */
+  readonly quietAfter?: number
   /** Every animation frame while the take is open: the newest frame, and when the voice began (null before). */
   readonly onFrame?: (frame: PitchFrame | null, voicedAt: number | null) => void
   /** Ends the take early, with nothing to read: the viewer left. */
@@ -130,8 +137,14 @@ function lastVoiced(frames: readonly F0Frame[]): number | null {
   return null
 }
 
+/** Seconds of voice among the frames: their voiced frames, a hop each. */
+function voicedSeconds(frames: readonly F0Frame[]): number {
+  if (frames.length < 2) return 0
+  return frames.filter(voiced).length * estimateFrameHop(frames)
+}
+
 /** Whether a take is over: no voice in time, its run done, or (with `quiet`) the voice stopped. */
-function takeOver(
+export function takeOver(
   frames: readonly F0Frame[],
   voicedAt: number | null,
   waited: number,
@@ -141,6 +154,8 @@ function takeOver(
   const last = frames[frames.length - 1]?.t ?? 0
   if (last >= voicedAt + o.run) return true
   if (o.quiet === undefined) return false
+  if (o.quietAfter !== undefined && voicedSeconds(frames) < o.quietAfter)
+    return false
   return last - (lastVoiced(frames) ?? voicedAt) > o.quiet
 }
 

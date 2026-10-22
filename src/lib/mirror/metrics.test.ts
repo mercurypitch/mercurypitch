@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { VOICE_TYPE_BANDS } from './legend-catalog'
 import * as bands from './match-bands'
 import type { F0Frame } from './metrics'
-import { BULLSEYE_TOLERANCE_CENTS, CLOSE_TOLERANCE_CENTS, computeAccuracy, computeDelta, computeMirrorResult, computeRange, computeSteadiness, foldCents, HIT_TOLERANCE_CENTS, hzToCents, matchScore, medianFilter, pickMatchTargets, preprocess, scoreMatchTake, steadinessScore, summarize, voiceTypeHint, } from './metrics'
+import { BULLSEYE_TOLERANCE_CENTS, CLOSE_TOLERANCE_CENTS, computeAccuracy, computeDelta, computeMirrorResult, computeRange, computeSteadiness, foldCents, HIT_TOLERANCE_CENTS, hzToCents, matchScore, medianFilter, middleHalf, pickMatchTargets, preprocess, scoreMatchTake, steadinessScore, summarize, voiceTypeHint, } from './metrics'
 
 const HOP = 0.016
 
@@ -475,6 +475,45 @@ describe('pickMatchTargets', () => {
       expect(t).toBeGreaterThanOrEqual(57)
       expect(t).toBeLessThanOrEqual(63)
     }
+  })
+  it('picks the very targets it picked before middleHalf was drawn out of it', () => {
+    // Arrange: outputs of the inline p25/p75 version, from the same seeds
+    const before: [number, number, number, number[]][] = [
+      [40, 67, 1, [52, 47, 59, 55, 49]],
+      [40, 67, 42, [52, 55, 57, 50, 48]],
+      [57, 63, 3, [62, 59, 60, 61, 63]],
+      [45, 69, 7, [60, 57, 51, 53, 63]],
+      [52, 61, 11, [56, 58, 57, 55, 59]],
+      [60, 84, 5, [74, 72, 66, 78, 68]],
+      [48, 50, 9, [49, 49, 48, 49, 50]],
+    ]
+
+    // Act
+    const now = before.map(([lo, hi, seed]) =>
+      pickMatchTargets(lo, hi, seededRandom(seed)),
+    )
+
+    // Assert
+    expect(now).toEqual(before.map(([, , , targets]) => targets))
+  })
+})
+
+describe('middleHalf', () => {
+  it('is the p25 and p75 that pickMatchTargets computed inline, for every range', () => {
+    for (let low = 24; low <= 84; low++) {
+      for (let span = 0; span <= 48; span++) {
+        const high = low + span
+        expect(middleHalf(low, high)).toEqual({
+          low: Math.round(low + span * 0.25),
+          high: Math.round(high - span * 0.25),
+        })
+      }
+    }
+  })
+
+  it("lights Lesson 7's two-octave column from D♯3 to D♯4", () => {
+    expect(middleHalf(45, 69)).toEqual({ low: 51, high: 63 })
+    expect(middleHalf(57, 81)).toEqual({ low: 63, high: 75 })
   })
 })
 

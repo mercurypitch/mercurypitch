@@ -351,6 +351,23 @@ export function computeAccuracy(
 }
 
 /**
+ * The middle half of a range (§4.2): from a quarter of the way up to a
+ * quarter of the way down, each rounded to the nearest note. The match
+ * targets come from inside it, and Lesson 7's page lights the same window
+ * of a sung siren (its WEB-SPEC, Toys 4), so the two share one rule.
+ */
+export function middleHalf(
+  lowMidi: number,
+  highMidi: number,
+): { low: number; high: number } {
+  const span = highMidi - lowMidi
+  return {
+    low: Math.round(lowMidi + span * 0.25),
+    high: Math.round(highMidi - span * 0.25),
+  }
+}
+
+/**
  * Pick 5 match targets from the detected range (§4.2): between the 25th and
  * 75th percentile, spaced 2–4 semitones apart, shuffled. `random` is
  * injectable for tests. Narrow ranges degrade gracefully to 1-semitone gaps.
@@ -360,9 +377,7 @@ export function pickMatchTargets(
   highMidi: number,
   random: () => number = Math.random,
 ): number[] {
-  const span = highMidi - lowMidi
-  const p25 = Math.round(lowMidi + span * 0.25)
-  const p75 = Math.round(highMidi - span * 0.25)
+  const { low: p25, high: p75 } = middleHalf(lowMidi, highMidi)
   const window = Math.max(1, p75 - p25)
   const gapCount = 4
   const minGap = window >= 2 * gapCount ? 2 : 1
