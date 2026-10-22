@@ -4,9 +4,11 @@
 //
 // WEB-SPEC's end-to-end checks 3, 4 and 9 and its page QA (Contract), with
 // reduced motion emulated so every move lands at once and a key press
-// meets the state it changed: Tab walks every bead and gap, each named in
-// spoken names; the start slider moves by keys alone and the words follow
-// it; the names switch and Swap sizes toggle and say so; Step 4's predict
+// meets the state it changed: Tab enters Step 2's line once, a grid whose
+// arrows, Home and End reach every bead and gap, each named in spoken
+// names, and Tab comes back to the button last focused; the start slider
+// moves by keys alone and the words follow it; the names switch and Swap
+// sizes toggle and say so; Step 4's predict
 // waits for both versions, and holds Swap sizes, the mix-up card, the Try
 // and the Notice until then; Step 5's brackets and anchor board play; the
 // two games answer by keys, and Space replays only off a button. At 390 x
@@ -200,7 +202,7 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
   })
 
-  test('Tab walks Play, Slow, then every bead and every gap, each named, with a visible focus ring', async ({
+  test('Tab walks Play, Slow, then one stop into the line, a grid whose arrows reach every bead and gap, each named, with a visible focus ring', async ({
     page,
   }) => {
     await openStep(page, 2)
@@ -237,25 +239,126 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
       ['\u22122, step', 'down 2 semitones'],
     ].map(([drawn, n], g) => `${drawn}: gap ${g + 1}, ${n}`)
 
+    const grid = page.locator(`${TOY} [data-tune-hits]`)
+    const focused = (): Promise<string> =>
+      page.evaluate(
+        () => document.activeElement?.getAttribute('aria-label') ?? '',
+      )
+
+    // Act: Tab from Play, then a walk of the grid, row by row
     await page.locator(`${TOY} [data-tune-play]`).focus()
     await page.keyboard.press('Tab')
     await expect(page.locator(`${TOY} [data-tune-slow]`)).toBeFocused()
+    await page.keyboard.press('Tab')
+    const first = await focused()
     const met: string[] = []
-    for (let i = 0; i < notes.length + gaps.length; i++) {
-      await page.keyboard.press('Tab')
-      met.push(
-        await page.evaluate(
-          () => document.activeElement?.getAttribute('aria-label') ?? '',
-        ),
-      )
+    for (let row = 0; row < 4; row++) {
+      if (row > 0) await page.keyboard.press('ArrowDown')
+      await page.keyboard.press('Home')
+      met.push(await focused())
+      // Right walks the row, and stays on its last
+      for (;;) {
+        await page.keyboard.press('ArrowRight')
+        const name = await focused()
+        if (name === met.at(-1)) break
+        met.push(name)
+      }
     }
 
-    expect(met).toEqual([...notes, ...gaps])
+    // Assert: one Tab stop, on the first bead; four rows, each line's
+    // beads and then its gaps, every button named as before
+    expect(first).toBe(notes[0])
+    await expect(grid).toHaveAttribute('role', 'grid')
+    await expect(grid.locator('[role="row"]')).toHaveCount(4)
+    await expect(grid.locator('[role="gridcell"] > button')).toHaveCount(27)
+    await expect(grid.locator('button[tabindex="0"]')).toHaveCount(1)
+    expect(met).toEqual([
+      ...notes.slice(0, 7),
+      ...gaps.slice(0, 7),
+      ...notes.slice(7),
+      ...gaps.slice(7),
+    ])
     const ring = await page.evaluate(() => {
       const s = getComputedStyle(document.activeElement as Element)
       return `${s.outlineStyle} ${s.outlineWidth}`
     })
     expect(ring).toBe('solid 2px')
+  })
+
+  test("Step 2's grid: the arrows move by rows and columns, Home and End to a row's ends, and Tab returns to the button last focused", async ({
+    page,
+  }) => {
+    // Arrange
+    await openStep(page, 2)
+    const grid = page.locator(`${TOY} [data-tune-hits]`)
+    const focused = (): Promise<string> =>
+      page.evaluate(
+        () => document.activeElement?.getAttribute('aria-label') ?? '',
+      )
+    await page.locator(`${TOY} [data-tune-slow]`).focus()
+    await page.keyboard.press('Tab')
+    await expect(page.locator(`${TOY} [data-note="0"]`)).toBeFocused()
+
+    // Act and Assert: End, then down the last column to the shorter row
+    await page.keyboard.press('End')
+    expect(await focused()).toBe('Note 7 of 14, G 4, star')
+    await page.keyboard.press('ArrowDown')
+    expect(await focused()).toBe('\u22122, step: gap 7, down 2 semitones')
+    await page.keyboard.press('ArrowDown')
+    expect(await focused()).toBe('Note 14 of 14, C 4, are')
+    await page.keyboard.press('ArrowDown')
+    expect(await focused()).toBe('\u22122, step: gap 13, down 2 semitones')
+    // the last row has nowhere below, and Home and End stay in it
+    await page.keyboard.press('ArrowDown')
+    expect(await focused()).toBe('\u22122, step: gap 13, down 2 semitones')
+    await page.keyboard.press('Home')
+    expect(await focused()).toBe('0, same: gap 8, the same note again')
+    await page.keyboard.press('ArrowLeft')
+    expect(await focused()).toBe('0, same: gap 8, the same note again')
+    await page.keyboard.press('ArrowUp')
+    expect(await focused()).toBe('Note 8 of 14, F 4, How')
+    await page.keyboard.press('Control+End')
+    expect(await focused()).toBe('\u22122, step: gap 13, down 2 semitones')
+    await page.keyboard.press('Control+Home')
+    expect(await focused()).toBe('Note 1 of 14, C 4, twin')
+    await page.keyboard.press('ArrowUp')
+    expect(await focused()).toBe('Note 1 of 14, C 4, twin')
+
+    // Act: on to a gap, out of the grid by Tab, and back by Shift+Tab
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('ArrowRight')
+    const gap = page.locator(`${TOY} [data-gap="1"]`)
+    await expect(gap).toBeFocused()
+    await page.keyboard.press('Tab')
+    const inside = await grid.evaluate((el) =>
+      el.contains(document.activeElement),
+    )
+    await page.keyboard.press('Shift+Tab')
+
+    // Assert: the grid is one Tab stop, and it keeps the button last focused
+    expect(inside).toBe(false)
+    await expect(gap).toBeFocused()
+    await expect(gap).toHaveAttribute('tabindex', '0')
+    await expect(grid.locator('button[tabindex="0"]')).toHaveCount(1)
+
+    // Act: Enter and Space press the focused gap, as before
+    await gap.evaluate((b) => {
+      const w = window as unknown as { gapPresses: number }
+      w.gapPresses = 0
+      b.addEventListener('click', () => {
+        w.gapPresses += 1
+      })
+    })
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('Space')
+
+    // Assert
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { gapPresses: number }).gapPresses,
+      ),
+    ).toBe(2)
+    await expect(gap).toBeFocused()
   })
 
   test('the start slider moves by keys alone, and the words follow it in spoken names', async ({

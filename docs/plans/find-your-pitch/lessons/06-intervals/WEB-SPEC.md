@@ -246,13 +246,13 @@ and keeps its identity" (`research/brand-motion.md` § 3.3), and playbook rule 6
 - **Keyboard and screen readers.** The line is a group with a live summary in spoken names:
   "Twinkle from B flat 4: B flat, B flat, F, F, G, G, F. Same, up 7, same, up 2, same, down 2."
   Each bead is a button ("Note 3 of 7, F 5, twin"; with do-re-mi showing, "Note 3 of 7, so, F 5");
-  each gap a button ("Gap 2: up 7 semitones, a leap"). The start is a slider (`role="slider"`, C 4
+  each gap a button ("7, leap: gap 2, up 7 semitones"). The start is a slider (`role="slider"`, C 4
   to B 4, `aria-valuetext` such as "Starts on F sharp 4: every interval the same"): arrow keys move
-  it a semitone, Home and End jump to C 4 and B 4. The names switch is two buttons with
-  `aria-pressed`. Swap sizes announces "Swapped: up 2, then up 7. Same ups and downs, two intervals
-  changed." and, pressed again, "The tune as it was: up 7, then up 2."; a gap that repeats its note
-  is "Gap 1: the same note again". Tab order: Play, Slow, the slider and its buttons, the toggles
-  and the names switch, then the beads and gaps, line 1 before line 2.
+  it a semitone, Home and End jump to C 4 and B 4. The names switch is two `aria-pressed` buttons.
+  Swap sizes announces "Swapped: up 2, then up 7. Same ups and downs, two intervals changed." and,
+  pressed again, "The tune as it was: up 7, then up 2."; a repeated note's gap is "0, same: gap 1,
+  the same note again". Tab order: Play, Slow, the slider and its buttons, the toggles, the names
+  switch, then the beads and gaps, line 1 first: a stop each, but in Step 2 one grid since this PR.
 - **Words on the stage** (`lesson-06/steps.ts`, `lesson-06/tune-words.ts`). The figure's label
   follows the step: "Fig. 1 The shape of a tune", "Fig. 2 Both lines, every gap", "Fig. 3 Slide the
   whole tune", "Fig. 4 Two sizes swapped" and "Fig. 5 The named intervals". The controls read
@@ -656,13 +656,13 @@ End to end (Playwright, at 390 x 844 and 1440 x 900):
    the compact line draws all seven notes, from C and from F♯, and the ♯ of Play from F♯ and of
    every hint sits on its letter's line, beside it. In Step 4, Swap sizes is disabled and the
    mix-up card, the Try and the Notice hidden until the choice and both plays.
-3. The tune line by keyboard alone: Tab reaches every bead and gap; the slider moves by arrows and
-   jumps by Home and End; after a slide the gap numbers read the same and the names under the beads
-   follow Lesson 4's spelling; the names switch toggles `aria-pressed` and shows do-re-mi in the
-   letters' place; Swap sizes toggles `aria-pressed` and the dashed overlay; each announcement in
-   Toys 1 reaches the live region, in spoken names. At 390 x 844, in Steps 2 and 5 the two lines
-   stack, and every bead, gap and bracket target measures at least 44 x 44 px with none
-   overlapping, at every start.
+3. The tune line by keyboard alone: Tab reaches every bead and gap (in Step 2 one Tab stop, then
+   arrows, Home and End, since this PR); the slider moves by arrows and jumps by Home and End; after
+   a slide the gap numbers read the same and the names under the beads follow Lesson 4's spelling;
+   the names switch toggles `aria-pressed` and shows do-re-mi in the letters' place; Swap sizes
+   toggles `aria-pressed` and the dashed overlay; each announcement in Toys 1 reaches the live
+   region, in spoken names. At 390 x 844, in Steps 2 and 5 the two lines stack, and every bead, gap
+   and bracket target measures at least 44 x 44 px with none overlapping, at every start.
 4. The games: keys answer; Space replays when no button has focus, and presses a focused button; a
    missed round is not asked again; the count reads "N of 10" or "N of 8".
 5. Sing it: the comfort check shows first, every visit; with no stored voice the voice choice

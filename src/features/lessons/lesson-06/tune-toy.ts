@@ -10,7 +10,10 @@
 // gap 2, up 7 semitones"), every bracket its interval. They follow the
 // controls in reading order: Play, Slow, the slider and its buttons, the
 // toggles and the names switch, then the beads and gaps, line 1 before
-// line 2.
+// line 2. In Step 2 those 27 buttons are one grid, a single Tab stop whose
+// arrows, Home and End move between them, a row for each line's beads and
+// one for its gaps (kit/tune-line.ts, `grid`); every other state keeps a
+// Tab stop each.
 //
 // The start is a slider (C4 to B4, arrow keys a semitone, Home and End to
 // C4 and B4) between Start lower and Start higher, or, with a mouse or pen,
@@ -74,7 +77,13 @@ const FEATURES: Readonly<Record<string, Features>> = {
   1: { ...OFF, shape: { ...BASE, below: 'marks' } },
   2: {
     ...OFF,
-    shape: { ...BASE, lines: [0, 1], window: null, gapButtons: true },
+    shape: {
+      ...BASE,
+      lines: [0, 1],
+      window: null,
+      gapButtons: true,
+      grid: true,
+    },
   },
   3: { ...OFF, slide: true, names: true, shape: { ...BASE, ghost: C4 } },
   4: { ...OFF, swap: true, shape: BASE },
