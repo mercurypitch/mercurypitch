@@ -457,7 +457,8 @@ export default defineConfig(({ mode, command }) => {
     },
 
     optimizeDeps: {
-      // The pitch stream's detector worker imports the detector, which Rollup
+      // Same reason as the root app: onnxruntime-web is reached only from the
+      // detector worker, the first time a microphone starts. If Vite discovers
       // it late it re-bundles and RELOADS the page — so the tap that starts
       // the mic would be answered by a fresh document, with no error shown.
       exclude: ['onnxruntime-web'],
