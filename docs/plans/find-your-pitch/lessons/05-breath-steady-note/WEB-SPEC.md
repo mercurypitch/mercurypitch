@@ -487,7 +487,8 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
   Hold: a comfortable note, held steady" (a note is printed on the card, so it speaks to the
   learner), and `minutes: 17` (FACTS 2, 70), and keeps its `needs` until the slug ships, with the
   owner's lengths: "Long Note with a fixed 10 or 15 s length (durationSec)" (FACTS 63, 70), for
-  the team and the admin console, never drawn on the card. Its `sig` already reads the signature.
+  the team and the admin console, never drawn on the card. Its signature already reads so
+  (`kit/team-notes.ts:37`).
 - **A text-only lesson**: the "Ready · read" state Lesson 4's spec proposes (no Watch button, the
   card's length from `minutes`), and cards for other lessons linking to their own `/learn/NN`.
 

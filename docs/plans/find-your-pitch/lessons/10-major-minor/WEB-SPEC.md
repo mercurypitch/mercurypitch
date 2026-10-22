@@ -742,8 +742,8 @@ built:
   Intonation, `href` `/pitch-training?lesson=10`, `label` "Exercises" and `note` "then tap Drone
   Intonation", as Lesson 4's card links the drill its Wrap leads with (`season.ts:236-241`).
   `pr.needs`, "Drone Intonation and Ear Lab Stack", stays until the slugs ship: it is "Admin only,
-  never drawn on a lesson page" (`season.ts:102-103`, and the fields the team keeps, `:27-34`).
-- `sig` stays as it is. The entry has no `fig`, so the card draws no figure.
+  never drawn on a lesson page" (`season.ts:102-103`, and the fields the team keeps, `:27-31`).
+- The signature stays as it is (`kit/team-notes.ts:42`). The entry has no `fig`, so the card draws no figure.
 - The hook stays word for word (`season.ts:348`; FACTS 1). The tease Lesson 9's card shows for this
   lesson, and Lesson 11's tease on this page's card, are the kit's lesson copy
   (`kit/lesson-copy.ts:122`, `:124`; FACTS 5, 5b).
@@ -1080,7 +1080,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     Lesson 1's card (`:102-119`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:45-47`), for the team's words (`:22-40`), and the
-    alternative hook's note never reaches the page (`:41-44`).
+    alternative hook's note never reaches the page (`:77-79`).
 13. With reduced motion emulated, no bead travels, the stack and the spread land in their end
     states, the Mercs hold still, and nothing moves on its own.
 14. A visitor with the studio installed still gets the lesson, not the shell (the service worker's

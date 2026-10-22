@@ -91,7 +91,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:320-493`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:323-332`), with no variant's team note anywhere in the markup (`:412-418`; 1), and the element
+   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; 1), and the element
    the site worker writes a picked hook into (`src/lesson-gate.ts:582-583`); the meta as seven chips
    ("18 minutes", 8; "After Lesson 5: Steady note", "After Lesson 8: Beat and tempo", "After Lesson
    9: Landing a leap" and "After Lesson 12: Chords", each a link to that lesson's page and wholly
