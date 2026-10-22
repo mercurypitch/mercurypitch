@@ -20,6 +20,7 @@ worker — cheaper than grepping, and it will not be stale (CI checks it).
 | [docs/specs/](docs/specs/)                                 | Changing behaviour that has an EARS spec — 32 files, `*.ears.md`              |
 | [docs/agent/DOCS-AUDIT.md](docs/agent/DOCS-AUDIT.md)       | Before trusting anything in `docs/plans/` — many "pending" plans have shipped |
 | [motion-designer](.claude/skills/motion-designer/SKILL.md) | Making, reviewing or rendering a video or motion graphic                      |
+| [blender-modeler](.claude/skills/blender-modeler/SKILL.md) | Modelling, rebuilding, fracturing or reviewing a 3D game asset                |
 
 Repeatable procedures live in [.agents/skills/](.agents/skills/) — one directory
 per skill, each a `SKILL.md` whose front matter says when to use it. Codex loads
@@ -28,10 +29,14 @@ Today: releasing to prod (`prod-upd`), walking the guided tours (`tour-check`),
 auditing the exercise UI on a phone (`mobile-ui-check`), and a summary of these
 rules (`memory`).
 
-Claude Code loads its skills from [.claude/skills/](.claude/skills/). Two of them
+Claude Code loads its skills from [.claude/skills/](.claude/skills/). Three of them
 are entry points rather than procedures: `motion-designer` is where all video
 and motion-graphics work starts (it directs the HyperFrames skills and spawns
-the `motion-critic` agent in [.claude/agents/](.claude/agents/)), and
+the `motion-critic` agent in [.claude/agents/](.claude/agents/)),
+`blender-modeler` is where all 3D asset work starts (headless Blender builds on
+its `bkit` library, numeric gates, the `model-critic` agent, and probes that
+run in the game; its scripts work from any agent's shell, `references/tools.md`
+lists them), and
 `agent-team-architect` is invoked by hand (`/agent-team-architect`) to design,
 then after approval run, a small agent team for a big or hard problem. Setup is
 in [docs/plans/skills-handoff-2026-09-30.md](docs/plans/skills-handoff-2026-09-30.md).

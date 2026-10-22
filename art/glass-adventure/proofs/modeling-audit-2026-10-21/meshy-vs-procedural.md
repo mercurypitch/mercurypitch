@@ -11,10 +11,10 @@ the choice rests on numbers rather than taste.
 
 |                                                         | Opaline Echo Amphora: Meshy                                | Procedural                                                         | Amber Cadence Urn: Meshy   | Procedural                                      |
 | ------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------- | ----------------------------------------------- |
-| Silhouette against the concept (IoU, worst of 10 bands) | 0.948, +3.1% (fails the 3% gate)                           | 0.975, 1.0%                                                        | 0.930, +16.5%              | 0.988, 2.9%                                     |
-| Intact triangles                                        | 8,728                                                      | 7,984                                                              | 9,864                      | 9,740                                           |
-| Shard triangles                                         | 14,654                                                     | 12,580                                                             | 16,624                     | 15,724                                          |
-| File                                                    | 3.81 MB, 1024 px JPEG textures                             | 1.67 MB, maps at most 512 px                                       | 3.74 MB                    | 1.61 MB                                         |
+| Silhouette against the concept (IoU, worst of 10 bands) | 0.948, +3.1% (fails the 3% gate)                           | 0.976, 0.9%                                                        | 0.930, +16.5%              | 0.990, 2.1%                                     |
+| Intact triangles                                        | 8,728                                                      | 7,988                                                              | 9,864                      | 9,396                                           |
+| Shard triangles                                         | 14,654                                                     | 12,346                                                             | 16,624                     | 15,250                                          |
+| File                                                    | 3.81 MB, 1024 px JPEG textures                             | 1.79 MB, maps at most 512 px                                       | 3.74 MB                    | 1.57 MB                                         |
 | Materials                                               | one glass material, gold and jade painted into its texture | glass, hammered and polished gold, jade, each its own PBR material | amber, cavity, cut; opaque | amber glass, marble, gold, laurel friezes, jade |
 | Closed shells, clean shards                             | yes, after a repair pass                                   | yes, by construction (gated)                                       | yes, after a repair pass   | yes, by construction                            |
 | Shard origin at its centroid                            | no (2 to 5 cm off)                                         | yes                                                                | no                         | yes                                             |
@@ -37,9 +37,12 @@ could ship.
 
 The procedural builds are exact to the runtime contract, symmetric, editable,
 smaller, and fracture cleanly by construction. Their cost is look-development:
-matching a painted concept's materials took most of the amphora's five rounds,
-and the skill now carries the tools that shorten it (`three_preview.mjs`,
-`--set` overrides, colour measured as numbers, the runtime proof).
+matching a painted concept's materials took most of the amphora's seven rounds
+and the urn's second. The skill now carries the tools that shorten it: colour
+measured as numbers against the concept at the size the game draws it
+(`colour_stats.py`), material and vertex-colour probes served into the running
+game without a rebuild (`glb_patch.py`, `glb_recolour.py`, `runtime_batch.py`),
+and `three_preview.mjs` for form and gloss.
 
 ## Recommendation
 
