@@ -433,9 +433,9 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   [`lessons/08-beat-tempo-backbeat/`](lessons/08-beat-tempo-backbeat/),
   [`lessons/09-landing-a-leap/`](lessons/09-landing-a-leap/) and
   [`lessons/10-major-minor/`](lessons/10-major-minor/) (facts, copy and page spec). Their sung
-  parts wait on the vocal coach (§ 12 item 8). No page is built yet; each goes live when the
-  console publishes it, after the coach's sign-off and once the pages its recall links to are
-  live: `/learn/06` for all three, and `/learn/03` too for Lesson 9.
+  parts wait on the vocal coach (§ 12 item 8). Lesson 8 has a page, `/learn/08`, a draft; 9 and 10
+  have none yet. Each goes live when the console publishes it, after the coach's sign-off and once
+  the pages its recall links to are live (`/learn/06`, and `/learn/03` for Lesson 9).
 - Lesson 11: a written lesson, text only, reviewed once and fixed, in
   [`lessons/11-registers-break/`](lessons/11-registers-break/) (facts, copy and page spec). Its sung
   checkpoint waits on the vocal coach (§ 12 item 8). No page is built yet; it goes live when the

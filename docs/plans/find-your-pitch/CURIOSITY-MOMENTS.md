@@ -159,7 +159,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   two, with no first half inviting a count of notes, which the lesson steers away from; YOUTUBE.md's own title.
 - **Facts:** FACTS 23, 25 to 28, 30 ("may": one small, preliminary study), 32, 33, 38, 48, 57.
 
-### Lesson 8 · Beat, tempo and the backbeat · theory; written; no page yet · hook kept
+### Lesson 8 · Beat, tempo and the backbeat · theory; page built, a draft until the coach signs off its sung line · hook kept
 
 - **Opening:** a metronome ticks under "Twinkle", claps on 1 and 3; the Mercs hop on the claps (no hands). Orange
   "If it's no faster, can moving the claps change anything?" Blue "Let's move them and listen." Predict: "Same tune,
