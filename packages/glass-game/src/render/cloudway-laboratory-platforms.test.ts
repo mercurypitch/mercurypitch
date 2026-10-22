@@ -589,9 +589,14 @@ describe('Cloudway laboratory platform renderer', () => {
     installed?.traverse((object) => {
       if (object instanceof InstancedMesh) batches.push(object)
     })
-    expect(batches).toHaveLength(7)
-    const pearlBatches = batches.filter((batch) =>
-      batch.name.startsWith('PearlDenseGeometry'),
+    expect(batches).toHaveLength(10)
+    const pearlBatches = batches.filter(
+      (batch) =>
+        batch.name.startsWith('PearlDenseGeometry') &&
+        !batch.name.includes('__court-marble-'),
+    )
+    const courtSurfaces = batches.filter((batch) =>
+      batch.name.includes('__court-marble-'),
     )
     const frostBatches = batches.filter((batch) =>
       batch.name.startsWith(CLOUDWAY_LAB_ROOT_NAMES.frostLily),
@@ -604,6 +609,18 @@ describe('Cloudway laboratory platform renderer', () => {
         platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
     )
     expect(pearlBatches).toHaveLength(3)
+    expect(courtSurfaces).toHaveLength(3)
+    expect(courtSurfaces.reduce((sum, batch) => sum + batch.count, 0)).toBe(
+      pearlPlatforms.length,
+    )
+    for (const shell of pearlBatches) {
+      const top = courtSurfaces.find(
+        (batch) =>
+          batch.name.replace('__court-marble-', '__court-') === shell.name,
+      )!
+      expect(top.count).toBe(shell.count)
+      expect(top.instanceMatrix.array).toEqual(shell.instanceMatrix.array)
+    }
     expect(pearlBatches.reduce((sum, batch) => sum + batch.count, 0)).toBe(
       pearlPlatforms.length,
     )
@@ -611,13 +628,15 @@ describe('Cloudway laboratory platform renderer', () => {
     frostBatches.forEach((batch) => expect(batch.count).toBe(2))
     expect(auroraBatches).toHaveLength(2)
     auroraBatches.forEach((batch) => expect(batch.count).toBe(1))
-    const matrixVersions = pearlBatches.map(
+    const matrixVersions = [...pearlBatches, ...courtSurfaces].map(
       (batch) => batch.instanceMatrix.version,
     )
     renderer.update(snapshot)
-    expect(pearlBatches.map((batch) => batch.instanceMatrix.version)).toEqual(
-      matrixVersions,
-    )
+    expect(
+      [...pearlBatches, ...courtSurfaces].map(
+        (batch) => batch.instanceMatrix.version,
+      ),
+    ).toEqual(matrixVersions)
     const actualPositions: { x: number; z: number }[] = []
     const matrix = new Matrix4()
     const position = new Vector3()
@@ -649,6 +668,9 @@ describe('Cloudway laboratory platform renderer', () => {
       ),
     })
     expect(pearlBatches.reduce((sum, batch) => sum + batch.count, 0)).toBe(
+      pearlPlatforms.length - 1,
+    )
+    expect(courtSurfaces.reduce((sum, batch) => sum + batch.count, 0)).toBe(
       pearlPlatforms.length - 1,
     )
     expect(
@@ -727,7 +749,7 @@ describe('Cloudway laboratory platform renderer', () => {
     )
     renderer.install(donor, CLOUDWAY_LAB_BUNDLE_IDS.pearlRest)
     const geometries = new Set(allMeshes(scene).map((mesh) => mesh.geometry))
-    expect(geometries.size).toBe(2)
+    expect(geometries.size).toBe(4)
     const disposals = [...geometries].map((geometry) => {
       const disposed = vi.fn()
       geometry.addEventListener('dispose', disposed)

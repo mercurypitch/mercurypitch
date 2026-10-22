@@ -1,8 +1,9 @@
 // Pearl court presentation — trim shared-edge overhang without changing contacts or exterior ornament.
 
-import type { BufferAttribute, InterleavedBufferAttribute, Mesh } from 'three'
+import type { BufferAttribute, InterleavedBufferAttribute, Material, Mesh, } from 'three'
 import { BufferGeometry, Float32BufferAttribute, Mesh as ThreeMesh, Vector3, } from 'three'
 import type { PlatformDefinition } from '../contracts'
+import { replacePearlCourtSurface } from './cloudway-pearl-surface'
 import { createRigidPlatformBatch } from './rigid-platform-batch'
 
 type Placement = Parameters<typeof createRigidPlatformBatch>[1][number]
@@ -250,6 +251,7 @@ export function createPearlCourtBatches(
   donor: Mesh,
   placements: readonly Placement[],
   contact: { readonly width: number; readonly depth: number },
+  surfaceMaterial?: Material,
 ) {
   const platforms = placements.map((item) => item.platform)
   const groups = new Map<number, Placement[]>()
@@ -262,11 +264,17 @@ export function createPearlCourtBatches(
   if (groups.size === 1 && groups.has(0))
     return [createRigidPlatformBatch(donor, placements)]
   const entries = [...groups]
-  const parts = entries.map(([mask]) =>
+  const clipped = entries.map(([mask]) =>
     clipPearlCourtGeometry(donor, mask, contact),
   )
+  const surfaces = clipped.map((parts, index) =>
+    surfaceMaterial === undefined
+      ? { shell: parts, surface: null }
+      : replacePearlCourtSurface(donor, parts, entries[index]![0], contact),
+  )
+  const parts = surfaces.map((item) => item.shell)
   const geometries = compactVariants(donor, parts)
-  parts.flat().forEach((geometry) => {
+  new Set([...clipped.flat(), ...parts.flat()]).forEach((geometry) => {
     if (geometry !== donor.geometry) geometry.dispose()
   })
   const batches: ReturnType<typeof createRigidPlatformBatch>[] = []
@@ -277,11 +285,19 @@ export function createPearlCourtBatches(
       variant.name = mask === 0 ? donor.name : `${donor.name}__court-${mask}`
       variant.matrixWorld.copy(donor.matrixWorld)
       batches.push(createRigidPlatformBatch(variant, group))
+      const surface = surfaces[index]!.surface
+      if (surface !== null && surfaceMaterial !== undefined) {
+        const top = new ThreeMesh(surface, surfaceMaterial)
+        top.name = `${donor.name}__court-marble-${mask}`
+        top.matrixWorld.copy(donor.matrixWorld)
+        batches.push(createRigidPlatformBatch(top, group))
+      }
     }
     return batches
   } catch (error) {
     batches.forEach((batch) => batch.mesh.dispose())
     geometries.forEach((geometry) => geometry.dispose())
+    surfaces.forEach((item) => item.surface?.dispose())
     throw error
   }
 }

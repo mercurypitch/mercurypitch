@@ -34,9 +34,9 @@ extended attribute pool, with explicit cleanup on failed installation and
 repeated renderer teardown. Bounds are conservative, and the existing culling
 and original platform definitions remain in use.
 
-This removes geometric overlap, not the repeated gold rows or medallions baked
-into the artwork. A continuous court artwork variant remains a later visual
-improvement; changing v1 routes to hide the repetition would break compatibility.
+The initial pass removed geometric overlap, but left repeated gold rows and
+medallions baked into the artwork. The subsequent artwork pass below replaces
+those inboard surfaces without changing v1 routes.
 
 ## Measured cost and verification
 
@@ -73,3 +73,45 @@ Evidence is in the registered `cloudway-gate-court-visuals` agent-out run for
 2026-10-22. Its receipts distinguish the matched diagnostic capture, normal
 production host and synthetic clearance proof. No asset files were added or
 changed, and this work is not a native delivery or merge of PR #1087.
+
+## Continuous court artwork
+
+Joined Pearl contacts now replace their inboard upper shell, including raised
+medallions, with a flat marble surface at the original walking datum. A 20 mm
+closure meets the retained shell. Exposed donor rims, terminal gold borders,
+sidewalls and underside remain; isolated planks retain their complete original
+artwork. Moving, conditional and polygonal platforms still use the original
+presentation. Source GLB data and all raw/compiled v1 compatibility fixtures
+remain unchanged.
+
+The surface borrows the game's already loaded Warm Carrara maps. World-space
+coordinates keep grain continuous across row boundaries and cardinal rotations;
+vertical closure faces use their own face projection to keep valid normal-map
+derivatives. Only the cloned material is newly owned. Texture objects stay with
+their existing owner, and paired surface/shell geometry is released on failure
+and renderer teardown. No new asset, LFS object or native download payload is
+introduced.
+
+Matched actual AMD captures compare head `28e23ada3` with this artwork at both
+gates, phone, tablet and landscape. All six views have zero GL/page/console
+errors and retain the automatic player camera. Relative to that baseline,
+normal submitted calls increase by six, while triangles decrease by 127,916
+at gate one and 165,028 at gate two. Resident CPU geometry arrays decrease by
+145,452 bytes to 108,479,940; geometry count is 454 and texture count remains 51.
+The added calls are explicit; desktop captures do not establish iPhone performance.
+
+Focused coverage checks actual-donor row and medallion removal, source
+immutability, exact clipping area, all four joins under all four rotations,
+paired batching/visibility and material ownership. Normal emitted-production
+main-host captures cover phone, tablet and landscape. Local WebKit could not
+start because its required ICU library is unavailable, so it is not counted as
+verification. Physical iPhone appearance and performance remain owner checks.
+The registered `cloudway-continuous-pearl-art` run contains the matched images,
+measurements and final review receipts.
+
+The initial focused seven-file pass covered 46 cases. After independent review
+added a failure after one completed shell/surface pair, the final five-file
+ownership and renderer pass covered 23 cases. Both passed, as did preparation,
+the Beside Cue workspace typecheck and metrics without baseline adjustment.
+These case counts overlap and are not a combined total. Independent final
+source and captured-runtime review found no blocking issue.
