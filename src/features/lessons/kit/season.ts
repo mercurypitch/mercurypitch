@@ -313,14 +313,19 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Beat, tempo and the backbeat',
     short: 'Beat and tempo',
     topics: ['T05', 'T06'],
+    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    minutes: 15,
+    page: '/learn/08',
     hook: 'Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?',
     sig: 'A metronome whose arm becomes the beat grid of a step sequencer.',
     pr: {
       needs: 'Ear Lab Time (an ear-drill link)',
+      // the Learn panel's address, which opens First Pocket on a phone too
       link: {
-        href: '/drum-night?lesson=08',
-        addr: 'mercurypitch.com/drum-night',
+        href: '/drum-night?drawer=learn&lesson=08',
+        addr: 'mercurypitch.com/drum-night?drawer=learn',
         label: 'Drum Night',
+        note: 'then press Play First Pocket',
       },
     },
     fig: 'metronome',

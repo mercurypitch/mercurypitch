@@ -62,7 +62,7 @@ describe('menuModel', () => {
       rows(m)
         .filter((r) => r.state === 'later')
         .map((r) => r.href),
-    ).toEqual(Array(7).fill(null))
+    ).toEqual(Array(6).fill(null))
   })
 
   it('recommends as up next the first lesson ready whose prerequisites are all done', () => {
@@ -73,8 +73,8 @@ describe('menuModel', () => {
         .map((r) => r.n),
     )
 
-    // Assert: Lessons 2 and 3 both build on Lesson 1
-    expect(before).toEqual([])
+    // Assert: Lessons 2 and 3 both build on Lesson 1, and Lesson 8 on no lesson
+    expect(before).toEqual([8])
     expect(after).toEqual([2])
   })
 
@@ -151,7 +151,8 @@ describe('menuModel', () => {
       'progress',
       'ready',
       'ready',
-      ...Array(7).fill('later'),
+      'ready',
+      ...Array(6).fill('later'),
     ])
     expect(m.bars[4].fill).toBeCloseTo(0.4)
   })

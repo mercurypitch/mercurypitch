@@ -151,6 +151,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // arrive through a dynamic import when Sing it's Start is pressed, as on
   // Lesson 3, so the page stays this light only while that boundary holds.
   'learn/07.html': 161,
+  // Lesson 8, "Beat, tempo and the backbeat", a draft too, built in every
+  // mode as Lesson 3 is: its own module on the kit, with the beat clock, the
+  // beat machine and the tap pad, which only it imports. Measured 145 in
+  // build:e2e (148,050 bytes); the budget is a quarter over that. Sing it
+  // opens no microphone, so the only dynamic import is Merc's renderer, as
+  // on Lesson 1.
+  'learn/08.html': 181,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -228,6 +235,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // (with the voice lessons', the shared parts and the range chart's), its
   // own, and the shared Inter and Outfit @font-face rules; a quarter over.
   'learn/07.html': 106,
+  // Lesson 8 (a draft, as above). Measured 93 in build:e2e: the kit's
+  // sheets (with the beat machine's), its own, and the shared Inter and
+  // Outfit @font-face rules; the budget is a quarter over that.
+  'learn/08.html': 116,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

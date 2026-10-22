@@ -76,7 +76,9 @@ guess.)
 
 (Straight after the hero. Lesson 6's questions 1 and 4, asked afresh, shown once Lesson 6 is marked
 done; anyone else sees the closed line "Done Lesson 6? Two questions from it", which opens the same
-two. While Lesson 6's page is not published, the section is left out: FACTS 3.)
+two. While Lesson 6's page is not published, the section is left out: FACTS 3. The page asks
+Lesson 6's own question objects, so the words below are Lesson 6's, as its LESSON.md and its page
+have them now.)
 
 1. Merc sings the first line from C, then from F♯. [Play] What stayed the same?
    - The intervals between the notes **[correct]** · Feedback: "Every note moved up six
@@ -85,14 +87,14 @@ two. While Lesson 6's page is not published, the section is left out: FACTS 3.)
      Step 3 again."
    - Nothing: it's a different tune · Feedback: "It's still 'Twinkle': its intervals didn't
      change."
-2. A version keeps five of the line's seven notes and every up and down, but swaps the sizes of its
-   two rises, the leap and the step up. Is it still "Twinkle"?
+2. A version keeps five of the line's seven notes and every up and down. But it swaps the sizes of
+   its two rises, the leap and the step up. Is it still "Twinkle"?
    - No: two intervals changed **[correct]** · Feedback: "The ups and downs aren't the whole tune;
      the sizes count too."
    - Yes: most of the notes are the same · Feedback: "Most notes match, but a tune lives in its
      intervals, and two of them changed. Try Lesson 6, Step 4 again."
    - Yes: every up and down is the same · Feedback: "Same ups and downs, new sizes: in one study,
-     familiar tunes changed that way were recognised less often than ones that kept the sizes
+     people recognised familiar tunes changed that way less often than ones that kept the sizes
      too."
 
 ## Four words you'll meet
@@ -167,8 +169,12 @@ _Toy: the beat grid with Kick, Clap and Hi-hat._
 march tempo. Slowed to the rock beat's 90, is it the rock beat?
 [ Yes: same speed now ] [ No: still the march's pattern ]
 
-(After a choice: Play the march at 90 · Play the rock beat. With sound off, the hint reads: "Sound
-is off, so nothing played. Turn sound on to hear them, then press Play the march at 90.")
+(After a choice: Play the march at 90 · Play the rock beat, with the hint "Locked in. Play both,
+and watch the grid."; after the first play, "Now play the other one."; after the reveal, "Play them
+again, or swap the tempos on the stage." With sound off, the hint reads: "Sound is off, so nothing
+played. Turn sound on to hear them, then press Play the march at 90." Orange Merc's line, the
+mix-up card, the Try and the Notice below each state the reveal's answer, so they come with it,
+once both plays have been heard.)
 
 Reveal: No. It's slower, but still BOOM on 1 and whack on 2, 3 and 4. The rock beat claps on 2
 and 4 only. The tempo changed, not the rhythm. (They now share a speed, so "yes" was a fair guess.)
@@ -247,6 +253,21 @@ Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable 
 Workable: "That's it: one line over the backbeat, done.", with Again, once. Effortful: no more
 guide, then "Keep it gentle: rest before you sing again." Uncomfortable: no more guide, then
 "Thanks for saying so. That's enough singing for today: rest your voice.", and the doctor lines.
+
+**Status lines.** Each part has a line under its buttons that says where it has got to, read aloud
+to a screen reader as it changes:
+
+- The taps: "Press Start when you're ready to tap." Then "Counting in: one bar.", "Tap every beat:
+  bar 1 of 2", "Now 2 and 4: bar 1 of 4", and the line about your taps. Stop: "Stopped. Press Start
+  to tap again." With sound off: "Sound is off, so the take didn't start. Turn sound on, then press
+  Start."
+- The line: "Before you sing: how is your voice today?" Then "Choose the voice you'll sing with.",
+  or after Just listen today "Choose a voice: it picks the Merc who sings." and "Just listening
+  today: press Play Merc's line to hear it." Before Merc's line is heard: "Play Merc's line first:
+  Merc sings it, then the guide is yours."; after: "Start the guide when you're ready, or play
+  Merc's line again." While it plays: "Merc sings the line."; while the guide runs: "Your turn:
+  sing with the guide."; then "How did that feel?" After Effortful or Uncomfortable: "Merc can
+  still sing the line for you."
 
 ## Quick check
 
@@ -403,6 +424,13 @@ page stays a draft until the coach signs it off:
 - The tapping: claps aloud are invited once, with the groove, before the taps; the taps and the
   practice drills (Drum Night's pads and keys, Ear Lab's Subdivide) use no voice, so they stay on
   offer after any answer (FACTS 44, 66).
+- The sung part's status lines, new with the page (Sing it, Status lines): "Before you sing: how is
+  your voice today?", "Choose the voice you'll sing with.", "Choose a voice: it picks the Merc who
+  sings.", "Just listening today: press Play Merc's line to hear it.", "Play Merc's line first:
+  Merc sings it, then the guide is yours.", "Start the guide when you're ready, or play Merc's line
+  again.", "Merc sings the line.", "Your turn: sing with the guide." and, after "Effortful" or
+  "Uncomfortable", "Merc can still sing the line for you.", which offers listening and never more
+  singing.
 
 ### Changed to match the plain-language review
 
@@ -428,6 +456,8 @@ Also changed, though they are not voice instructions:
 
 - The cold open's predict asks whether the moved claps land on strong or weak beats, since the
   title already says the song feels different (FACTS 30b).
+- Step 5's orange Merc line, mix-up card, Try and Notice wait for its reveal, since each answers
+  its predict; the words are unchanged.
 - Its reveal says that claps on 2 and 4 make those weak beats stand out, as the backbeat's sources
   say, where it said that a clap stresses any beat it lands on, which no source says; Step 4 says
   that moving the claps off 2 and 4 takes the backbeat away (FACTS 21a).

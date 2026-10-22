@@ -34,4 +34,5 @@ export const DRAFT_LESSONS: Readonly<Partial<Record<number, string>>> = {
   5: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
   6: "the owner's review of the page, and the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)",
   7: "the owner's review of the page, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
+  8: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
 }

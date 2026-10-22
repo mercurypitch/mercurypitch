@@ -72,6 +72,15 @@ describe('seasonFor', () => {
     expect(season[1]).toBe(LESSONS[1])
   })
 
+  it('draws Lesson 8 held back with neither its page nor its reading time', () => {
+    // Act
+    const season = seasonFor(LESSONS, served({ 8: { published: false } }))
+
+    // Assert
+    expect([season[8].page, season[8].minutes]).toEqual([undefined, undefined])
+    expect([LESSONS[8].page, LESSONS[8].minutes]).toEqual(['/learn/08', 15])
+  })
+
   it('keeps every page where everything is published, the same objects as the season', () => {
     // Act
     const season = seasonFor(LESSONS, defaultPageState(true))

@@ -265,6 +265,24 @@ describe('a draft lesson (drafts.ts)', () => {
     }
   })
 
+  it("keeps Lesson 8's page, its reading time and its Learn panel link in every build", async () => {
+    for (const drafts of ['1', '0'] as const) {
+      // Act
+      const season = await seasonBuilt(drafts)
+
+      // Assert: a draft, as Lesson 3 is, with no film
+      const L8 = season.LESSONS[8]
+      expect([L8.page, L8.minutes, L8.film], drafts).toEqual([
+        '/learn/08',
+        15,
+        undefined,
+      ])
+      expect(L8.pr.link?.href, drafts).toBe(
+        '/drum-night?drawer=learn&lesson=08',
+      )
+    }
+  })
+
   it('gives every lesson page in the repository its page in the season, whichever way a build reads drafts', async () => {
     // Arrange: every learn/NN.html, as the build takes them (tools/draft-lessons.ts)
     const pages = readdirSync(resolve(__dirname, '../../../../learn'))
