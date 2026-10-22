@@ -230,12 +230,14 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Facts:** sourced in Lesson 12's FACTS: chords on the scale and Roman numerals (Open Music Theory, Hooktheory I),
   I-V-vi-IV (Ableton's Learning Music, Hooktheory); both tunes are written for the lesson (FACTS 33).
 
-### Lesson 13 · Resonance and vowels · voice; card only · hook kept
+### Lesson 13 · Resonance and vowels · voice; written; no page yet · hook kept
 
-- **Opening:** Merc holds one note from "ee" to "ah"; the pitch line stays flat while a strip under it shows the
+- **Opening:** Merc holds one note from "ee" to "ah"; the pitch line stays level while a strip under it shows the
   harmonics. Orange "A different vowel must be a slightly different note, surely?" Blue "Watch the line, and
-  listen." The title says the line stays put, so the predict is on the strip: "When 'ee' turns to 'ah', what will
-  the peaks under the line do?" [Stay where they are] [Move].
+  listen." The title says the line stays put and the vowels sound different, so the predict asks what changes in
+  the bars: "When 'ee' turns to 'ah', what will change in the bars under the line?" [Their heights] [Their places].
+  The plan's [Stay where they are] [Move] was pointed to by the title, and the misconception picked "Move" too
+  (Lesson 13 FACTS 3).
 - **Visual:** the pitch line (exists), a spectrum strip in the LED-analyser look and synthesised vowels (new; the
   kit's voices are partials through a low-pass). **Payoff:** the vowel step; the checkpoint, one note through "ee",
   "eh", "ah", "oh", "oo". Never claim to assess a vowel.
@@ -244,8 +246,9 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   "'Twinkle, twinkle, little star', twice. The second 'star' swells." A still that drew the second "star" in its band,
   or swelling, would answer Lesson 14's predict. The old line, "Every note in the band, start to finish.", stays as
   the alternative `band` (Lesson 14 FACTS 2).
-- **Facts:** needs a source for formants (a voice-science text; the series cites Sundberg and Titze elsewhere);
-  "approximately" for Chladni ratios; say the line stays flat of Merc's synthesised note, not yet of a real voice.
+- **Facts:** sourced in Lesson 13's FACTS: UNSW's voice essay, Wolfe 2009, Joliveau 2004 on the sopranos,
+  Deterding's measured means and Roach 2004. Chladni ratios are not given; the level line is said of Merc's
+  synthesised note only.
 
 ### Lesson 14 · Phrasing: sing a whole song · voice; written; no page yet
 

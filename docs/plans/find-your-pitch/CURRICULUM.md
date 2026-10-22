@@ -297,7 +297,7 @@ its voice lines wait on the vocal coach's sign-off, and its page publishes after
 - Facts: Ableton Learning Music's 1-5-6-4 lesson; Roman numerals (Hooktheory I).
 
 **Lesson 13. Resonance and vowels** (written: the lesson, its facts and its page spec are in
-[lessons/13-resonance-vowels/](lessons/13-resonance-vowels/), awaiting review; no film yet; its
+[lessons/13-resonance-vowels/](lessons/13-resonance-vowels/), reviewed; no film yet; its
 voice lines wait on the vocal coach's sign-off, and its page publishes after `/learn/11`)
 
 - Objectives: understand that a vowel is a shape of the vocal tract that boosts different
@@ -306,8 +306,12 @@ voice lines wait on the vocal coach's sign-off, and its page publishes after `/l
 - Signature: one pitch line, with a harmonic spectrum underneath whose peaks move as the vowel
   changes (the stats site's LED analyser motif).
 - Checkpoint: hold one note through "ee", "eh", "ah", "oh", "oo".
-- Practise: Long Note on vowels; Analysis' spectrum view. The app must not claim to assess vowels
-  or pronunciation.
+- Practise: Voice Mirror's hold (`/mirror?lesson=13`), sung on one note through "ee", "ah" and
+  "oo"; it reads pitch only. Not linked: Long Note, which has no vowel option and whose help and
+  setup screen reward the longest hold; Analysis' spectrum view, whose live take sits beside a Voice
+  card that grades the voice's resonance; and Mah Meh Mee Moh Moo, which asks for "clear
+  enunciation" and has no address of its own. "Long Note on vowels" replaces Voice Mirror when it
+  ships. The app must not claim to assess vowels or pronunciation.
 - Facts: harmonics and timbre; vowels as vocal-tract shaping (formants).
 
 **Lesson 14. Phrasing: sing a whole song** (written: the lesson, its facts and its page spec are in
