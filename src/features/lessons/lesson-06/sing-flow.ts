@@ -22,6 +22,7 @@
 // kit's voice choice.
 
 import type { Ending, Feeling } from '@/features/lessons/kit/comfort'
+import { afterFeeling } from '@/features/lessons/kit/comfort'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
 import type { VersionNo } from './sing-guide'
 
@@ -92,7 +93,7 @@ export function nextState(s: SingState, e: SingEvent): SingState {
         ...s,
         feeling: e.feeling,
         putAway: s.putAway || hard,
-        rest: s.rest || hard,
+        rest: s.rest || afterFeeling(e.feeling, { restAfterEffort: true }).rest,
         doctor: s.doctor || e.feeling === 'uncomfortable',
       }
     }

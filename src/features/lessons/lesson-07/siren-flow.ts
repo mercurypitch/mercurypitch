@@ -27,6 +27,7 @@
 // reading (REQ-GVC-024). Nothing here is stored: the ending lasts the visit.
 
 import type { Feeling } from '@/features/lessons/kit/comfort'
+import { afterFeeling } from '@/features/lessons/kit/comfort'
 
 /** Takes a visit allows, and sung sirens. */
 export const MAX_TAKES = 3
@@ -58,6 +59,8 @@ export interface SirenVisit {
   readonly effort: boolean
   /** "Uncomfortable" picked at any time this visit. */
   readonly discomfort: boolean
+  /** The Wrap's rest card, picked by an answer this visit. */
+  readonly rest: boolean
   /** Done for today pressed. */
   readonly finished: boolean
 }
@@ -71,6 +74,7 @@ export const freshVisit = (): SirenVisit => ({
   feeling: null,
   effort: false,
   discomfort: false,
+  rest: false,
   finished: false,
 })
 
@@ -111,6 +115,7 @@ export function next(v: SirenVisit, e: SirenEvent): SirenVisit {
           e.feeling === 'effortful' ||
           e.feeling === 'uncomfortable',
         discomfort: v.discomfort || e.feeling === 'uncomfortable',
+        rest: v.rest || afterFeeling(e.feeling, { restAfterEffort: true }).rest,
       }
     case 'again': {
       // the Again after a sung siren is the visit's one; after silence, a fresh start
@@ -166,7 +171,7 @@ export interface SirenOffers {
 /** What the card offers and says for the visit as it stands. */
 export function offers(v: SirenVisit): SirenOffers {
   const last = v.takes[v.takes.length - 1]
-  const restCard = v.mode === 'listen' || v.effort
+  const restCard = v.mode === 'listen' || v.rest
   const base: SirenOffers = {
     start: false,
     startReady: false,

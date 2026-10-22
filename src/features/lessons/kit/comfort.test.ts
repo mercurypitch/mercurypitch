@@ -37,7 +37,7 @@ describe('afterFeeling', () => {
 
   it('after "Easy" or "Workable" shows the count and may offer the run once more', () => {
     // Act
-    const answers = (['easy', 'workable'] as const).map(afterFeeling)
+    const answers = (['easy', 'workable'] as const).map((f) => afterFeeling(f))
 
     // Assert
     for (const after of answers) {
@@ -60,6 +60,25 @@ describe('afterFeeling', () => {
 
     // Assert
     expect(retries).toEqual(['easy', 'workable'])
+  })
+
+  it('sends "Effortful" to the rest card when the page asks, its answer otherwise the same', () => {
+    // Act
+    const after = afterFeeling('effortful', { restAfterEffort: true })
+
+    // Assert
+    expect(after).toEqual({ ...afterFeeling('effortful'), rest: true })
+  })
+
+  it('leaves every other answer as it was when the page sends effort to the rest card', () => {
+    // Act
+    const others = (['easy', 'workable', 'uncomfortable'] as const).map((f) => [
+      afterFeeling(f, { restAfterEffort: true }),
+      afterFeeling(f),
+    ])
+
+    // Assert
+    for (const [asked, plain] of others) expect(asked).toEqual(plain)
   })
 })
 
