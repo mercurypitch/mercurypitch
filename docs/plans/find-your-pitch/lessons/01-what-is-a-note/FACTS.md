@@ -38,7 +38,7 @@
 ## Singing
 
 18. When two people sing the same tune together, they are often an octave apart (typical lower and higher voices) | Titze (1994): average speaking fundamental about 100-120 Hz for adult men, about 200-220 Hz for adult women, roughly an octave | said as "often", not "always"
-19. Matching a note an octave up or down still matches the note name, and Voice Mirror counts it: its match score folds every error into one octave (`foldCents`), so a match counts in any octave. Shown on screen as "Voice Mirror counts any octave" (s17) | follows from 9 and 15; `src/lib/mirror/metrics.ts:261` ("Errors are octave-folded") and `src/lib/pitch-measurements` `foldCents` | code (critic round 1 verified; wording widened after critic 04)
+19. Matching a note an octave up or down still matches the note name, and Voice Mirror counts it: its match score folds every error into one octave (`foldCents`), so a match counts in any octave. Shown on screen as "Voice Mirror counts any octave" (s17) | follows from 9 and 15; `src/lib/mirror/metrics.ts:249` ("Errors are octave-folded") and `src/lib/pitch-measurements` `foldCents` | code (critic round 1 verified; wording widened after critic 04)
 20. Sing gently; never push or strain | the app's guided-voice safety foundation (`src/lib/guided-voice`); MercuryPitch brand voice | owner rule
 
 ## Product
