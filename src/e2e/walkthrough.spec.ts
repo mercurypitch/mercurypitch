@@ -101,13 +101,13 @@ test.describe('Walkthrough Feature', () => {
   test('The sidebar still offers Guide, which is not the walkthrough', async ({
     page,
   }) => {
-    // The button this spec used to click. It opens the guide-tour picker,
-    // and the distinction is exactly what went unnoticed for a day.
+    // The button this spec once clicked by position. It opens the guide-tour
+    // picker, and the distinction is exactly what went unnoticed for a day;
+    // Learn sits before it now, so it is found by its name.
     const guideBtn = page
       .locator('[class*="walkthroughControlBtn"], .walkthrough-control-btn')
-      .first()
+      .filter({ hasText: 'Guide' })
     await expect(guideBtn).toBeVisible()
-    await expect(guideBtn).toContainText('Guide')
     await guideBtn.click()
     await expect(page.locator(SELECTION_OVERLAY)).toHaveCount(0)
   })
