@@ -431,8 +431,8 @@ shows a number instead of breathing.
 
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
 (its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
-elements each quiz binds and writes (`kit/quiz.ts:78-83`, `:195-199`); `lesson` optional, since the
-kit marks `lesson` done once every question has an answer (`:72-73`, `:295-300`); and a question
+elements each quiz binds and writes (`kit/quiz.ts:78-83`, `:199-203`); `lesson` optional, since the
+kit marks `lesson` done once every question has an answer (`:72-73`, `:299-304`); and a question
 `id`, the telemetry's `question_id` (`:40-44`).
 
 - **Recall**: Lesson 4's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS
@@ -452,12 +452,12 @@ kit marks `lesson` done once every question has an answer (`:72-73`, `:295-300`)
   `fyp-l06-quiz-v1`, and `lesson: 6`, so answering all four marks Lesson 6 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:266`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:270`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 1's play button plays `line-c`, then `line-fs`, and question 3's plays C4 then
   F4 (FACTS 63, 69). Each sits in the kit's slot after a question's heading (`slot`,
-  `kit/quiz.ts:49-55`, `:281-282`), outside the `<h3>` that labels its answers (`:279`), so the
+  `kit/quiz.ts:49-55`, `:285-286`), outside the `<h3>` that labels its answers (`:283`), so the
   button is not part of every answer's name. The kit rebuilds the questions on every answer
-  (`kit/quiz.ts:272-274`), so those buttons are handled by a listener on the quiz's root, as the
+  (`kit/quiz.ts:276-278`), so those buttons are handled by a listener on the quiz's root, as the
   step links are. "Try Step 2 again", "Try Step 3 again", "Try Step 4 again" and "Try Step 5 again"
   use the kit's `data-goto-step`. Answers stay in the viewer's browser until the telemetry track
   exists.

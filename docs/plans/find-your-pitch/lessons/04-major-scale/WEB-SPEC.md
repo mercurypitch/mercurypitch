@@ -247,8 +247,8 @@ Two quizzes share this page, so it depends on the three changes Lesson 2 makes t
 - a question `id`, the telemetry's `question_id`, which `QuizQuestion` lacked.
 
 If Lesson 2's page has not landed them when this one is built, this page lands them, in the shape
-Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:78-83`, `:195-199`), an
-optional `lesson` (`:72-73`, `:295-300`) and the question `id` (`:40-44`).
+Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:78-83`, `:199-203`), an
+optional `lesson` (`:72-73`, `:299-304`) and the question `id` (`:40-44`).
 
 - **Recall**: Lesson 2's questions 1 and 3, word for word with their feedback (LESSON.md; FACTS
   30), under their Lesson 2 ids, `l02-q1` and `l02-q3`. It is reshuffled from a seed of its own
@@ -262,7 +262,7 @@ optional `lesson` (`:72-73`, `:295-300`) and the question `id` (`:40-44`).
   `fyp-l04-quiz-v1`, and `lesson: 4`, so answering all four marks Lesson 4 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. Question 3's play button plays
-  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:272-274`), so
+  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:276-278`), so
   that button is handled by a listener on the quiz's root (`#qs` today), as the step links are.
   "Try Step 1 again" and "Try Step 3 again" use the kit's `data-goto-step`. Answers stay in the
   viewer's browser until the telemetry track exists.
