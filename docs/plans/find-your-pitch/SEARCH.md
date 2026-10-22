@@ -229,7 +229,7 @@ owner, not decisions.
 | 11  | voice cracks when singing, chest and head voice      | Registers and the break: why voices flip \| MercuryPitch      | Voice type test                |
 | 12  | four chord song, I V vi IV                           | The four-chord song: how chords work \| MercuryPitch          | Piano Night, Guitar Night      |
 | 13  | singing vowels, resonance, formants                  | Resonance and vowels: why ee and ah differ \| MercuryPitch    | (no drill yet: CURRICULUM § 4) |
-| 14  | how to sing with emotion, phrasing                   | Phrasing: from singing correct to compelling \| MercuryPitch  | Karaoke Night, Jam Rooms       |
+| 14  | how to sing with emotion, phrasing                   | Phrasing in singing: breath, swell and shape \| MercuryPitch  | Karaoke Night, Jam Rooms       |
 
 Notes on the table:
 
