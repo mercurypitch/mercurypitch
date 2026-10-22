@@ -72,6 +72,8 @@ timeout 900 env VITE_API_BASE_URL= VITE_OVERRIDE_ONNX_MODEL= VITE_JAM_MOCK_SIGNA
   VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= pnpm exec vite build && mv dist dist-local
 # dist-stub: the dev build (cookie bar preview) with the API on a dead local
 # port, answered by stubApi(). Cookie bar, confirm-email bar, launch gift.
+# It opens the cookie bar on a UTC clock too, so a walk on it presets
+# consent: 'denied' or answers the bar (see the cookie bar trap below).
 timeout 900 env VITE_API_BASE_URL=http://127.0.0.1:59999 VITE_CONSENT_PREVIEW=true \
   VITE_OVERRIDE_ONNX_MODEL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= \
   pnpm exec vite build --mode development && mv dist dist-stub
@@ -124,8 +126,9 @@ the screens it shows on. Read that, not the raw list.
 
 Options: `--screens=home,community`, `--vps=phone`, `--themes=dark`,
 `--base=https://dev.mercurypitch.com` (instead of `--dist`), `--tz=Europe/Zagreb`
-and `--consent=denied` (cookie bar on or answered), `--returning=0` (first
-visit), `--focus=0`, `--allow=<host>` (never a production host).
+(the clock, UTC by default) and `--consent=denied` (answers the cookie bar; a
+stub or dev build opens it on UTC too), `--returning=0` (first visit),
+`--focus=0`, `--allow=<host>` (never a production host).
 
 ## 5. Release and feature checks
 
@@ -141,17 +144,24 @@ Recipes that already work (see the 0.9.18 file):
 | Need                        | How                                                                                                                                    |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Keyboard focus ring         | `keyboardFocus(page, loc)` (Shift+Tab, Tab, so `:focus-visible` matches), then `ringOf(loc)`                                           |
-| Tap target                  | `hitBox(loc)`: the box taps actually land in                                                                                           |
+| Tap target                  | `hitBox(loc)`: the box taps actually land in; it reads at most 60 px either side, see below                                            |
 | Text contrast               | `contrastOf(loc)`: WCAG ratio over the composited background; hover then measure again                                                 |
 | Layers at the foot          | `rectOf` + `intersect` for overlap, `onTop` for "is it painted above" (handles `pointer-events: none` toasts)                          |
 | A toast with no API         | storage `mp:gauthPending` = `{nonce, expiresAt}`, then load `/#gauth_error=access_denied&gauth_nonce=<nonce>`: "Google sign-in failed" |
-| Cookie bar                  | dist-stub (or dev) with `timezoneId: 'Europe/Zagreb'`; `consent: 'denied'` to keep it out of a shot                                    |
+| Cookie bar                  | dist-stub (or dev): opens on a UTC or European clock; `consent: 'denied'` keeps it out of a shot                                       |
 | Unconfirmed account         | storage `mp:authToken` = `fakeToken()`, stub `GET /api/auth/me` with `authProvider: 'password'`, `emailVerified: false`                |
 | Launch gift and offer       | stub `GET /api/billing/promo/featured` (body copied from dev's real answer)                                                            |
 | A song card                 | `window.__pp.appStore.importUvrSessionDurable({...})` (needs `E2E_TEST_MODE`, which `openContext` sets)                                |
 | Community lists             | storage `pp_shared_melodies`, `pp_shared_sessions`                                                                                     |
 | First visit, onboarding Map | `returning: false`, load `/`, then `/#/map`                                                                                            |
 | Theme                       | `openContext({ theme })` sets `pitchperfect_theme` and the color scheme                                                                |
+
+`hitBox` looks 60 px either side of the centre unless told otherwise, so a hit
+of 121 (2 x 60 + 1) means at least 121, not exactly 121. The result carries
+`capped: [x, y]`, true for an axis where a side ran into that limit, and
+`hitBox(loc, { maxReach: 200 })` looks further. Write a capped number as "at
+least". The sweep's own tap-target probe stops at 40 px, so 81 in a sweep line
+is a floor too.
 
 The e2e specs in `src/e2e` are the best source of further recipes: grep them
 for the surface before inventing a way in.
@@ -198,12 +208,96 @@ and the JSON reports stay beside it in `~/agent-out/mercurypitch/<date>/`.
   unbroken. Send maff the few shots that carry a design decision.
 - Real devices: iOS Safari and Android Chrome rendering, safe areas and
   notches, the soft keyboard over inputs, real touch scrolling, PWA install,
-  the native app builds.
+  the native app builds. WebKit's engine can be walked here (see WebKit);
+  Safari itself cannot.
 - Audio by ear: playback quality, latency, the separations, Glassworks sound.
 - Real microphones: pitch detection on a voice, the onboarding voiceprint, the
   Mirror reading. A fake mic proves the plumbing, not the feel.
 - Real accounts and mail: sign-up, Google sign-in, confirm mails in a real
   inbox, payments. Agents use stubs; the real flow is maff's.
+
+## WebKit
+
+Use it when a check depends on WebKit's engine (iOS Safari's scroll padding,
+sticky layers, viewport units) and Chromium cannot answer it.
+
+**Playwright's WebKit does not start on this host.** Build 2359
+(`~/.cache/ms-playwright/webkit-2359`) is linked against libraries this Arch
+machine does not have: `libicu*.so.74` (Arch ships ICU 78), `libxml2.so.2` (it
+ships `.so.16`), `libjxl.so.0.8` (it ships 0.12), six `libflite_cmu_*`
+libraries (its flite ships others) and `libbacktrace.so.0`. `ldd` on
+`minibrowser-gtk/bin/WebKitWebProcess` lists them, and `webkit.launch()` stops
+with "Host system is missing dependencies" and an `apt` command that does not
+apply here (checked 21 Oct 2026). Try `webkit.launch()` again after a
+Playwright upgrade: a build that starts takes the same probes as Chromium and
+replaces everything below.
+
+**The system WebKitGTK starts.** `webkit2gtk-4.1` (2.54.1 on 21 Oct 2026, the
+GTK 3 port) loads through PyGObject: `gi.require_version('WebKit2', '4.1')`. It
+is WebKit's engine, not Safari on iOS: no touch, no safe-area inset, desktop
+scrollbars, a device pixel ratio of 1 and a desktop Linux user agent. It
+answers "does WebKit lay this out as Chromium does". An old Safari, or anything
+iOS only, is CANNOT CHECK in the report and goes to maff's phone.
+
+The 21 Oct 2026 walk of the onboarding questions (Plan 1A, PR 1.2) ran it this
+way. Its script held that walk's own checks, so only the pattern is kept here:
+
+- **A private display and bus**, so no window reaches maff's workspace. Choose
+  the display number yourself (see the Xvfb trap below) and start only on a
+  free one. List `/tmp/.X11-unix` before the run and again once Xvfb has
+  exited: the two listings must be identical.
+
+  ```sh
+  N=91
+  if [ -e /tmp/.X11-unix/X$N ] || [ -e /tmp/.X$N-lock ]; then echo "display :$N is in use"; exit 1; fi
+  Xvfb :$N -screen 0 1600x1000x24 -nolisten tcp & XVFB=$!
+  env -u WAYLAND_DISPLAY DISPLAY=:$N GDK_BACKEND=x11 NO_AT_BRIDGE=1 \
+    timeout 1800 dbus-run-session -- python3 <walk>.py <dist> <out> <port>
+  kill $XVFB                    # by PID, never pkill by name
+  ```
+
+  The gvfs, accessibility and `MESA-EGL` lines on stderr are noise.
+
+- **The fence.** The context is `WebKit2.WebContext.new_ephemeral()` and its
+  proxy is dead for every host but loopback:
+  `ctx.get_website_data_manager().set_network_proxy_settings(WebKit2.NetworkProxyMode.CUSTOM, WebKit2.NetworkProxySettings.new('http://127.0.0.1:9', ['127.0.0.1', 'localhost']))`.
+  Nothing listens on port 9, so a request to any other host, production or dev,
+  fails at once. A `resource-load-started` handler lists every URI that is not
+  the local build, and the report ends with that list. A page that fetched an
+  `.invalid` host over http and over https had both blocked and both listed
+  (checked 22 Oct 2026). This is blunter than `lib.mjs`'s fence: no dev host
+  gets through, so a WebKit walk is a local build. Answer `permission-request`
+  with `deny()`.
+- **The build** on loopback from python's `http.server`
+  (`ThreadingHTTPServer(('127.0.0.1', port), partial(SimpleHTTPRequestHandler, directory=dist))`
+  in a thread). It has no clean URLs: ask for `/karaoke-night.html`, not
+  `/karaoke-night`. Seed storage with a `WebKit2.UserScript` injected at
+  document start (`E2E_TEST_MODE`, the theme, and `mp.consent.v1` as `denied`
+  on a stub build), as `openContext` does.
+- **Driving.** A `Gtk.Window` with `set_default_size(390, 844)` holds the
+  `WebKit2.WebView`, and the page then reports 390x844. There is no asyncio:
+  spin `GLib.MainContext.default().iteration(True)` until the callback fires.
+  Script runs through
+  `view.call_async_javascript_function(body, -1, GLib.Variant('a{sv}', {'arg': GLib.Variant('s', json.dumps(x))}), None, None, None, cb)`:
+  `body` is an async function body (`await` and `return` work, `arg` is a
+  variable) and `cb` reads
+  `call_async_javascript_function_finish(res).to_json(0)`. Clicks are
+  `el.click()` from script, which `onClick` handlers accept; there are no real
+  pointer events. A screenshot is
+  `view.get_snapshot(WebKit2.SnapshotRegion.VISIBLE, WebKit2.SnapshotOptions.NONE, None, cb)`
+  then `view.get_snapshot_finish(res).write_to_png(path)`, after
+  `gi.require_foreign('cairo')`. Xvfb has no GPU, so set
+  `get_settings().set_hardware_acceleration_policy(WebKit2.HardwareAccelerationPolicy.NEVER)`.
+  To look like a phone, call `set_user_agent` on the same settings (not tried).
+- **One browser at a time.** Never start WebKit beside a Chromium sweep or
+  another agent's walk. The machine has no swap, and earlyoom has killed Claude
+  sessions when several browsers ran at once (2 Oct 2026). Check `free -m`
+  first and wait, with a deadline, while `available` is under 6000 MB:
+
+  ```sh
+  end=$((SECONDS+600)); until [ "$(free -m | awk '/^Mem:/{print $7}')" -ge 6000 ]; do
+    [ $SECONDS -lt $end ] || { echo TIMEOUT; exit 1; }; sleep 15; done
+  ```
 
 ## Traps learned building this (2026-10-15)
 
@@ -216,14 +310,32 @@ and the JSON reports stay beside it in `~/agent-out/mercurypitch/<date>/`.
   `document.documentElement.clientWidth`, or sideways scroll never shows.
 - `elementFromPoint` skips `pointer-events: none`, which the toasts use, so a
   toast always looks covered. `onTop` lends the element hit-testing first.
+- Hit-testing honors `border-radius`: a point 4 px in from the corner of a box
+  with a 14.4 px radius (the cookie bar) lies outside the box, so a corner
+  sample there sees what is behind it and calls a topmost bar covered. `onTop`
+  reads each corner's radius and samples inside it; a hand-rolled corner probe
+  must do the same.
 - Bounding boxes miss pseudo-element hit areas: #908's song menu draws 32x32
   and takes taps across 46x46. Measure by hit-testing.
 - `route.abort()` shows up as `net::ERR_FAILED` console errors; those are our
   fence, not app bugs.
-- The cookie bar opens only on a European clock and only in a build with a tag
-  or the consent preview; `build:e2e`, `build:tours` and CI (UTC) never show it.
+- The cookie bar mounts only in a build with a Google tag or the consent
+  preview (`isConsentActive()` in `src/lib/consent.ts`), so `build:e2e`,
+  `build:tours`, a plain local build and CI never show it. Where it is mounted
+  it opens for a clock in the EEA, the UK or Switzerland, for an unknown clock
+  and for a placeless one such as UTC (`isRestrictedTimezone`, pinned in
+  `src/lib/__tests__/consent.test.ts`). So the stub build opens it on
+  `openContext`'s default UTC clock too, not only on `Europe/Zagreb`. Preset
+  `consent: 'denied'` (it stores `mp.consent.v1`, which keeps the bar shut) or
+  answer the bar before you measure the foot of a phone screen.
 - `CONSENT_PREVIEW` needs `--mode development` as well as
   `VITE_CONSENT_PREVIEW=true`.
+- Never let Xvfb choose its display. `Xvfb -displayfd` picked `:0` on 22 Oct
+  2026, the desktop's own Xwayland display, and the run left
+  `/tmp/.X11-unix/X0` missing, so new X11 apps could not connect to the desktop
+  until that path was restored. A lock file did not stop it: `/tmp/.X0-lock`
+  existed. Name a high number yourself and start only when
+  `/tmp/.X11-unix/X<n>` and `/tmp/.X<n>-lock` are both absent.
 - `E2E_TEST_MODE` hides the ambient popups (What's new), but the per-page tour
   offer toast still appears and sits in phone shots.
 - The RTK hook compacts `git show` and `git diff` output; for a real diff use
