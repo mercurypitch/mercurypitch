@@ -130,7 +130,10 @@ node scripts/runtime_proof.mjs --config <asset_dir>/proof.json --candidate <out_
 
 It serves the candidate in place of the shipped file inside the real game, and
 fails if the game never requested that file. Shoot the baseline (no
-`--candidate`) with the same config. Final critic round on both.
+`--candidate`) with the same config. Colour is settled here, not in the preview:
+`scripts/colour_stats.py` on the shot and on the concept resized to the asset's
+in-game width, region against region (`references/qa.md` § Colour in the game).
+Final critic round on both.
 
 ## 9. Ledger and lessons
 

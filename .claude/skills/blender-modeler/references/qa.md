@@ -110,3 +110,28 @@ starts where the asset is, answers the game's own request for `replace` with
 the candidate, and screenshots each shot (drags and key holds). It fails if the
 game never requested the replaced file, and reports Git LFS pointers it served.
 Shoot the baseline with the same config and no candidate.
+
+The game will not load a breakable without its shards: tune materials on full
+builds. A material can be tried without Blender by patching the GLB's JSON
+(factors, transmission, coat) or recomputing its COLOR_0 from the build's own
+colour function, then proving the patched file; a config with only the entry
+shot takes about two minutes.
+
+### Colour in the game
+
+The runtime shot is the measure of colour (`lessons.md`: the room's probe light
+saturates pale tints, and three_preview's museum sky under-reads them). Compare
+it with the concept drawn at the size the game draws the asset, region against
+region:
+
+```bash
+python3 -I scripts/colour_stats.py concept.png 50,44,107,84 --width 156   # the concept, 70 px across as in the game
+python3 -I scripts/colour_stats.py runtime/desktop-entry.png 920,177,972,206
+```
+
+Bound the region by landmarks found in each image (between two gold bands, under
+a rim), never by one box for both. It prints luminance percentiles (the contrast
+a material has: an opaque amber read 63/110/129 against the concept's
+48/110/200), the median colour, Lab means, the chroma spread (play of colour)
+and hue shares in the bins the eye uses. Aim each number at the concept's, one
+change at a time.
