@@ -461,7 +461,11 @@ export function mountBeatMachine(o: BeatMachineOptions): BeatMachine {
     const loopState = state
     begin(
       (i) => (state === loopState ? loopBar(i) : null),
-      () => bpmOf(loopState),
+      // a pattern's tempo changes with it, at the bar line: each beat takes
+      // the tempo of the pattern its bar plays, booked before its beats
+      loopState === 'patterns'
+        ? () => visitBpm[barNames.at(-1) ?? chosen]
+        : () => bpmOf(loopState),
       Sound.canPlay(),
     )
     if (isMetronome(state)) {
