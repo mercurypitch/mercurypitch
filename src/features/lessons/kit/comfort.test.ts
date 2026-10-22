@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { afterFeeling, FEELINGS, mountFeelings, VisitEnding } from './comfort'
+import { afterFeeling, FEELINGS, mountFeelings, mountPractiseCard, VisitEnding, } from './comfort'
 
 describe('afterFeeling', () => {
   it('after "Uncomfortable" shows no count and offers no retry, only rest and the doctor lines', () => {
@@ -134,5 +134,57 @@ describe('VisitEnding', () => {
     // Assert
     expect(seen).toEqual(['practise', 'rest'])
     VisitEnding.set('practise')
+  })
+})
+
+describe('mountPractiseCard', () => {
+  /** Lesson 3's card: one link to Voice Mirror, its body in two versions and its address. */
+  function card(): HTMLAnchorElement {
+    const a = document.createElement('a')
+    a.id = 'practiseCard'
+    a.href = '/mirror?lesson=03'
+    a.target = '_blank'
+    a.innerHTML =
+      '<p class="eyebrow"><span class="fig">Practise it</span> in MercuryPitch</p><div data-ending="practise">Sing along</div><div data-ending="rest" hidden>Rest today.</div><span class="addr" data-ending="practise">mercurypitch.com/mirror</span>'
+    document.body.appendChild(a)
+    return a
+  }
+
+  it('after discomfort is no link, says "Rest today", and shows only the rest version', () => {
+    // Arrange
+    const a = card()
+    mountPractiseCard(a)
+
+    // Act
+    VisitEnding.set('rest')
+
+    // Assert
+    const shown = Array.from(a.querySelectorAll<HTMLElement>('[data-ending]'))
+      .filter((el) => !el.hidden)
+      .map((el) => el.textContent)
+    expect(a.hasAttribute('href')).toBe(false)
+    expect(a.hasAttribute('target')).toBe(false)
+    expect(a.querySelector('.eyebrow')?.textContent).toBe('Rest today')
+    expect(shown).toEqual(['Rest today.'])
+    VisitEnding.set('practise')
+    document.body.textContent = ''
+  })
+
+  it('opens as the link to the room, and is that link again for the practise ending', () => {
+    // Arrange
+    const a = card()
+    mountPractiseCard(a)
+    VisitEnding.set('rest')
+
+    // Act
+    VisitEnding.set('practise')
+
+    // Assert
+    expect(a.getAttribute('href')).toBe('/mirror?lesson=03')
+    expect(a.getAttribute('target')).toBe('_blank')
+    expect(a.querySelector('.eyebrow')?.textContent).toBe(
+      'Practise it in MercuryPitch',
+    )
+    document.body.textContent = ''
   })
 })

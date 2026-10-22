@@ -247,6 +247,9 @@ function cardMarkup(
     </div>`
 }
 
+/** A card's controls, in the order focus meets them. */
+const CARD_CONTROLS = 'a[href], button'
+
 export function createExplorer(opts: ExplorerOptions): Explorer {
   const graph = q('#graph')
   const list = q('#exList')
@@ -285,6 +288,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   function card(L: Lesson): HTMLElement {
     const el = document.createElement('article')
     el.className = 'card ex-card'
+    el.dataset.card = String(L.n)
     el.innerHTML = cardMarkup(views()[L.n], lengths.get(L.n), current)
     const fig = cardFigure(L, opts.posters?.[L.n])
     if (fig !== null) el.appendChild(fig)
@@ -312,7 +316,21 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     draw: (_now, dt) => plate?.draw(dt),
   })
 
+  /** Where the keyboard is in the open card: its lesson and the control's place among the card's controls. */
+  function focusedSlot(): { n: number; i: number } | null {
+    const at = document.activeElement
+    const old = at?.closest<HTMLElement>('.ex-card')
+    if (!(at instanceof HTMLElement) || old == null) return null
+    return {
+      n: Number(old.dataset.card),
+      i: qa(CARD_CONTROLS, old).indexOf(at),
+    }
+  }
+
   function renderCard(): void {
+    // the card is rebuilt whole, and the focused button goes with it: the
+    // keyboard would drop to the page (S-02)
+    const slot = focusedSlot()
     const el = card(lessons[sel])
     if (narrow.matches) {
       qa('.ex-detail', list).forEach((d) => d.remove())
@@ -329,6 +347,21 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     const canvas = el.querySelector<HTMLCanvasElement>('.plate canvas')
     plate = canvas === null ? null : plateFigure(canvas)
     pluckString(el)
+    if (slot !== null) refocus(el, slot)
+  }
+
+  /**
+   * Hands focus back after a rebuild: to the same control when the card
+   * shows the same lesson (Mark as done, now Done), else to the new card's
+   * title, so a "Builds on" or "Opens" link lands on the lesson it opened.
+   */
+  function refocus(el: HTMLElement, slot: { n: number; i: number }): void {
+    const twin =
+      slot.n === sel && slot.i >= 0 ? qa(CARD_CONTROLS, el)[slot.i] : undefined
+    const to = twin ?? el.querySelector<HTMLElement>('h3')
+    if (to == null) return
+    if (twin === undefined) to.tabIndex = -1
+    to.focus({ preventScroll: true })
   }
 
   /** A map node: a tap selects its lesson, Left and Right step along the season. */

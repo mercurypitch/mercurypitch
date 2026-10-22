@@ -68,6 +68,18 @@ function focusText(el: HTMLElement | null): void {
   el.focus({ preventScroll: true })
 }
 
+/**
+ * The shown panel's first line on show. The voice panel opens on a line a
+ * first visit never sees ("Keep the voice you chose before"), hidden, and
+ * focus sent there fell to the page (L8-04).
+ */
+function shownLine(card: HTMLElement): HTMLElement | null {
+  const lines = card.querySelectorAll<HTMLElement>(
+    '[data-panel]:not([hidden]) p',
+  )
+  return Array.from(lines).find((p) => p.closest('[hidden]') === null) ?? null
+}
+
 /** Books a hit of the sung line's runs: the click and the drums, do, or Merc's syllable. */
 function bookLine(hit: LineHit, when: number, bus: Bus): void {
   if (hit.kind === 'do')
@@ -249,11 +261,11 @@ export function initSing(stills: RingStills): void {
   mountComfort(card, {
     onSing: () => {
       dispatch({ type: 'comfort', comfort: 'sing' })
-      focusText(card.querySelector('[data-panel]:not([hidden]) p'))
+      focusText(shownLine(card))
     },
     onListen: () => {
       dispatch({ type: 'comfort', comfort: 'listen' })
-      focusText(card.querySelector('[data-panel]:not([hidden]) p'))
+      focusText(shownLine(card))
     },
   })
   bindVoiceButtons(card, (v) => {

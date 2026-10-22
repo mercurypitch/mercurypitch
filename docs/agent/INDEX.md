@@ -75,7 +75,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `lessons` | [range-toy.ts](../../src/features/lessons/lesson-07/range-toy.ts) | 40.2k | Lesson 7 range toy — the steps' chart in its five states, and free play's One range chart (kit/range-chart.ts) under its own rows of cont... |
+| `lessons` | [beat-machine.ts](../../src/features/lessons/kit/beat-machine.ts) | 40.6k | Beat machine — a metronome whose arm becomes the grid of a step sequencer One object across a lesson's steps (Lesson 8 WEB-SPEC, Toys 1):... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 17.5k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 17.1k | ThresholdDrillView — every Ruler-A drill on the stage. |

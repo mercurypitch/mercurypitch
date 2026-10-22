@@ -106,7 +106,7 @@ vibrating, opening and closing: 220 times a second for the A at 220 Hz. To go hi
 your voice box stretch them longer and tighter, and tighter folds vibrate faster, like a guitar
 string tuned up.
 
-**Try:** turn on slow motion, then drag Stretch from slack to tight.
+**Try:** turn on slow motion and hold Sing. Then move Stretch to tight and hold Sing again.
 **Notice:** slowed 220 times, the folds at A3 open and close once a second; stretched, they speed
 up. When you sing, don't think about your folds: aim for the note you hear.
 

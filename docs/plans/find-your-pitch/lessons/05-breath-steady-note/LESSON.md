@@ -99,7 +99,7 @@ is, and it nudges the pitch: push harder and the note gets louder and creeps hig
 are different things (Lesson 1), but in a voice one push moves both. So singers learn to keep each
 note's pressure steady, and loud and high apart.
 
-**Try:** play the note, slide Push up and down, then keep it still.
+**Try:** press Hold the note, slide Push up and down, then keep it still.
 **Notice:** more push, and the strip grows and the line climbs out of the band. Keep Push still,
 and so does the line.
 

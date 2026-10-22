@@ -106,7 +106,7 @@ describe('menuModel', () => {
     expect(here).toEqual({
       title: 'You are here: step 3 of 6',
       line: 'Lesson 2 · Three',
-      label: 'Continue at step 3 of 6: Three',
+      label: 'Continue. You are here: step 3 of 6, Three',
       href: '#step-3',
       fill: 0.5,
     })

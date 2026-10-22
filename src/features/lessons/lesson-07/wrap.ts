@@ -11,19 +11,14 @@
 // Free play unlocks after the lesson (playbook rule 17): the range chart in
 // all five states on one stage, under one switch.
 
-import { VisitEnding } from '@/features/lessons/kit/comfort'
+import { mountPractiseCard } from '@/features/lessons/kit/comfort'
 import { q } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
 import type { RangeToy } from './range-toy'
 import { mountRangeToy } from './range-toy'
 
 export function initWrap(): RangeToy {
-  const practise = q('#practiseCard [data-ending="practise"]')
-  const rest = q('#practiseCard [data-ending="rest"]')
-  VisitEnding.subscribe((ending) => {
-    practise.hidden = ending !== 'practise'
-    rest.hidden = ending !== 'rest'
-  })
+  mountPractiseCard(q('#practiseCard'))
   const free = q('#freePlay')
   return mountRangeToy(free, { active: watch(free) })
 }

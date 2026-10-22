@@ -64,7 +64,7 @@ const nextCard = (page: Page): Locator => page.locator('#wrap a.next-card')
 
 /** Lesson `n`'s row in the masthead's lesson menu, opened. */
 async function menuRow(page: Page, n: number): Promise<Locator> {
-  await page.getByRole('button', { name: /: all lessons$/ }).click()
+  await page.getByRole('button', { name: / All \d+ lessons$/ }).click()
   const row = page.locator('#lessonMenu .lm-row', {
     has: page.locator('.sr', { hasText: new RegExp(`^Lesson ${n}, `) }),
   })

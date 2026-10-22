@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { ANNOUNCE_DELAY_MS } from './announce'
 import { createStepDeck, DECK_QUERY, registerToy, stepFromHash, } from './step-deck'
 
 /** The query of lesson-stage.css's top-level @media block that hides the deck's other steps, or null. */
@@ -111,6 +112,39 @@ describe('DECK_QUERY', () => {
 })
 
 describe('createStepDeck', () => {
+  it('says the step Next moves to, whole, and nothing for a step the scroll reaches', async () => {
+    // Arrange: a deck with its Next button; jsdom cannot scroll
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+    deckPage(3)
+    document
+      .getElementById('lesson')
+      ?.insertAdjacentHTML(
+        'beforeend',
+        '<div class="stage-nav"><button type="button" data-step-go="1">Next</button></div>',
+      )
+    const deck = createStepDeck({
+      toyFor: (n) => n,
+      after: { label: 'The quick check', selector: '#quiz' },
+    })
+    const line = (): string =>
+      document.querySelector('[data-announcer]')?.textContent ?? ''
+    const beat = (): Promise<void> =>
+      new Promise((r) => setTimeout(r, ANNOUNCE_DELAY_MS + 10))
+
+    // Act: the scroll reaches step 3, then Next is pressed from step 1
+    deck.show(3)
+    await beat()
+    const scrolled = line()
+    deck.show(1)
+    document.querySelector<HTMLButtonElement>('[data-step-go="1"]')?.click()
+    await beat()
+
+    // Assert
+    expect(scrolled).toBe('')
+    expect(line()).toBe('Step 2 of 3: Step 2')
+    vi.restoreAllMocks()
+  })
+
   it('opens on the step the address names and tells every toy', () => {
     // Arrange
     deckPage(3)

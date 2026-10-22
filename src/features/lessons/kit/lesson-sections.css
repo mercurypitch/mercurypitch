@@ -104,15 +104,36 @@
   background: var(--ink);
   color: var(--on-light);
 }
+/* the learner's own pick, when it missed: never dimmed, its cross in a
+   filled disc, so it reads as theirs beside the right answer (G-01) */
 .opt.wrong {
-  border-color: var(--hair-2);
-  opacity: 0.75;
+  border-color: var(--ink-3);
+  color: var(--ink);
 }
 .opt.wrong .mk {
   border-color: var(--ink-3);
+  background: var(--ink-3);
+  color: var(--on-light);
 }
+/* only the options nobody chose step back */
 .opt.dim {
   opacity: 0.55;
+}
+.opt-t {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.opt-tag {
+  flex: none;
+  align-self: flex-start;
+  margin-top: 4px;
+  font: 500 var(--fs-12) / 1.2 var(--f-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.opt.right .opt-tag {
+  color: var(--ink);
 }
 .fb {
   grid-column: 2;
@@ -662,6 +683,14 @@
 }
 .node.sel.dim {
   outline-color: var(--hair-3);
+}
+/* Only the selected node is in the tab order, and its ink ring outranks the
+   page's :focus-visible, so a Tab onto the map changed nothing on screen.
+   The keyboard's ring is the page's aqua, thicker and further out. */
+.node.sel:focus-visible,
+.node.sel.dim:focus-visible {
+  outline: 3px solid var(--aqua);
+  outline-offset: 6px;
 }
 .nlabel {
   position: absolute;

@@ -323,8 +323,9 @@ Feedback names the interval and the sound, never the listener.
   going up, as in their tunes. Which is it?" (Name it). The Play button reads "Play a pair", then
   "Play it again" while a round waits for its answer, "Next round" after it, and "Play ten more"
   or "Play eight more" at the end. Each answer shows its key, "1 Step" and "2 Leap", or "1 Semitone
-  · m2" to "4 Fifth · P5", and under them "Keys 1 and 2 answer; Space plays the pair again." or
-  "Keys 1 to 4 answer; Space plays the pair again." A feedback line opens "Yes." after a right
+  · m2" to "4 Fifth · P5", and under them "Keys 1 and 2 answer while you are in the game." or
+  "Keys 1 to 4 answer while you are in the game." (a keyboard is always on one of the card's
+  buttons, which keep Space for themselves, so the line no longer offers Space as a replay) A feedback line opens "Yes." after a right
   answer, or "Here it is again, slower." after a miss, before its template (`kit/ear-game.ts`).
 - States: ready (a Play button); playing; answering; feedback shown; finished, with the count and
   Play again.

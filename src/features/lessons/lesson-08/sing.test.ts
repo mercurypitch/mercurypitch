@@ -55,6 +55,21 @@ afterEach(() => {
 })
 
 describe("Lesson 8's sung line", () => {
+  it("keeps a first visit's keyboard on the voice panel's shown line after I'm comfortable", () => {
+    // Arrange: no voice chosen in an earlier lesson
+    localStorage.clear()
+    loadPage()
+    initSing({ blue: 'blue.png', orange: 'orange.png' })
+
+    // Act
+    el('[data-comfort="sing"]').click()
+
+    // Assert: never the hidden "Keep the voice you chose before", never the page
+    const now = document.activeElement
+    expect(now).not.toBe(document.body)
+    expect(now?.getAttribute('data-voice-line')).toBe('none')
+  })
+
   it('keeps the answer, its line and Again when Again is cut short, and the next Again is the second guide', async () => {
     // Arrange: one guide sung, "Easy", then Again started
     await ready()

@@ -197,6 +197,50 @@ describe('mountBeatMachine', () => {
     expect(m.cell('kick', 0).classList.contains('acc')).toBe(true)
   })
 
+  it('speaks the tapped tempo on its live line, at most every 2 s and once more when the taps change it', () => {
+    // Arrange
+    vi.useFakeTimers()
+    const m = mount()
+    const pad = m.root.querySelector('[data-bm-pad]') as HTMLButtonElement
+    const tapAt = (t: number): void => {
+      const e = new KeyboardEvent('keydown', { key: ' ' })
+      Object.defineProperty(e, 'timeStamp', { value: t })
+      pad.dispatchEvent(e)
+    }
+
+    // Act: four taps 750 ms apart, then three quicker ones inside 2 s
+    for (const t of [0, 750, 1500, 2250]) tapAt(t)
+    const first = m.said.textContent
+    for (const t of [2850, 3450, 4050]) tapAt(t)
+    const meanwhile = m.said.textContent
+    vi.advanceTimersByTime(2000)
+
+    // Assert
+    expect(first).toBe('Your taps: 80 beats per minute')
+    expect(meanwhile).toBe(first)
+    expect(m.said.textContent).toBe('Your taps: 89 beats per minute')
+    vi.useRealTimers()
+  })
+
+  it('presses the pattern free play just loaded, as its live line names it', () => {
+    // Arrange: the fixture's machine shows March pressed to start
+    const m = mount('free')
+    const march = m.root.querySelector(
+      '[data-bm-pattern="march"]',
+    ) as HTMLButtonElement
+    const rock = m.root.querySelector(
+      '[data-bm-pattern="rock"]',
+    ) as HTMLButtonElement
+
+    // Act
+    rock.click()
+
+    // Assert
+    expect(rock.getAttribute('aria-pressed')).toBe('true')
+    expect(march.getAttribute('aria-pressed')).toBe('false')
+    expect(m.said.textContent).toMatch(/^Rock at /)
+  })
+
   it('puts Rock back on Reset, and says so', () => {
     // Arrange
     const m = mount('grid')

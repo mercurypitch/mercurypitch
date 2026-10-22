@@ -557,6 +557,11 @@ button {
   position: relative;
   color: var(--ink-2);
   text-decoration: none;
+  /* a long prerequisite ("After Lesson 4: The major scale and home") wraps
+     rather than running off a 320 px screen (WCAG 1.4.10) */
+  white-space: normal;
+  line-height: 1.25;
+  padding-block: 4px;
 }
 .chip-link::after {
   content: '';
@@ -734,9 +739,15 @@ button {
 .motion-paused .edge.in {
   animation-play-state: paused;
 }
+/* Narrower, the switch keeps the word that says what it moves: beside the
+   speaker a bare "Pause" read as pausing the sound. Its name stays "Pause
+   animations" (the aria-label), which holds the word on show. */
 @media (max-width: 1240px) {
-  .motion-switch .mw {
+  .motion-switch .mp {
     display: none;
+  }
+  .motion-switch .mw {
+    text-transform: capitalize;
   }
   .motion-switch {
     padding: 0 14px 0 12px;

@@ -59,7 +59,7 @@ Blue Merc: "Let's move them and listen."
 some beats strong and some weak. Will the claps now land on strong beats, or weak ones?
 [ Strong beats ] [ Weak beats ]
 
-Until a choice: "Choose an answer to unlock the sound."
+Until a choice: "Choose an answer to unlock the play buttons."
 
 (After a choice, Play with claps on 2 and 4 unlocks. The dots slide one beat along before Merc
 sings, and the Mercs hop on the new claps. With sound off, the hint reads: "Sound is off, so

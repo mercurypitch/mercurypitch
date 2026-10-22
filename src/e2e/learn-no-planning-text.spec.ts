@@ -106,7 +106,7 @@ for (const n of LESSONS) {
       const name = (await map.nth(i).getAttribute('aria-label')) ?? `${i}`
       found.push(...planningIn(await learnerText(page, '#exCardHost'), name))
     }
-    await page.getByRole('button', { name: /: all lessons$/ }).click()
+    await page.getByRole('button', { name: / All \d+ lessons$/ }).click()
     await expect(page.locator('#lessonMenu .lm-row').first()).toBeVisible()
     found.push(
       ...planningIn(await learnerText(page, '#lessonMenu'), 'the lesson menu'),

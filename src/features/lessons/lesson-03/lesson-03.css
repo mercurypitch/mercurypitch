@@ -46,6 +46,12 @@
   border: 1px dashed var(--hair-2);
   background: rgba(13, 17, 23, 0.74);
 }
+/* The tested figure answers the predict under the stage, so it keeps its
+   place but stays out of sight, and out of a screen reader's reading, until
+   a choice is in (L3-11). */
+.stat.held {
+  visibility: hidden;
+}
 .stat .k {
   font: 500 var(--fs-12) / 1 var(--f-mono);
   letter-spacing: 0.18em;

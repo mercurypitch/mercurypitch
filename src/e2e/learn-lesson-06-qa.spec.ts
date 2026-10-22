@@ -400,9 +400,9 @@ test.describe('page QA (WEB-SPEC, Tests and Contract)', () => {
       .locator(`${TOY} [data-bracket]`)
       .evaluateAll((els) => els.map((b) => b.getAttribute('aria-label')))
     expect(brackets).toEqual([
-      'Play the interval: C 4 up to G 4, a perfect fifth',
-      'Play the interval: A 4 down to G 4, a major second',
-      'Play the interval: F 4 down to E 4, a minor second',
+      'P5, 7 semitones: play C 4 up to G 4, a perfect fifth',
+      'M2, 2 semitones: play A 4 down to G 4, a major second',
+      'm2, 1 semitone: play F 4 down to E 4, a minor second',
     ])
 
     const rows = page.locator('#anchorBoard [data-anchor]')

@@ -142,7 +142,7 @@ the Try and the Notice, which answer the predict too, come with it.)
 
 The hint under the buttons:
 
-- Before a choice: "Choose an answer to unlock the sound."
+- Before a choice: "Choose an answer to unlock the play buttons."
 - After one: "Locked in. Play both, and watch the line."
 - After the first play: "Now play the other one."
 - With sound off: "Sound is off, so nothing played. Turn sound on to hear them, then press Play the

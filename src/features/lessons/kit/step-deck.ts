@@ -21,7 +21,13 @@
 // that names a step (`/learn/02#step-3`, as a later lesson's recall check
 // links one) opens the deck there: the browser's own jump cannot reach a
 // step the phone deck hides.
+//
+// A step the viewer moves to (Next, Previous, a swipe, the lesson menu) is
+// said whole, "Step 3 of 6: Two names for one key", on the page's status
+// line. The counter is no live region: on a wide screen it follows the
+// scroll, and every step scrolled past would be said.
 
+import { announce, announcer } from './announce'
 import { clamp, q, qa } from './dom'
 import { watch } from './frame-loop'
 import { reducedMotion } from './motion-switch'
@@ -106,6 +112,10 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
   let lockUntil = 0
   const listeners = new Set<(step: number) => void>()
   const behavior = (): ScrollBehavior => (reducedMotion() ? 'auto' : 'smooth')
+  announcer()
+  /** Says the step the viewer moved to. */
+  const sayStep = (): void =>
+    announce(`Step ${current} of ${count}: ${titles[current - 1]}`)
 
   /**
    * The page scroll that centres step `n` under the masthead, as
@@ -200,6 +210,7 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
         return
       }
       show(current + d, { scroll: true })
+      sayStep()
     }),
   )
 
@@ -223,6 +234,7 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
       const dy = e.changedTouches[0].clientY - sy
       if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) {
         show(current + (dx < 0 ? 1 : -1), { scroll: true })
+        sayStep()
       }
     },
     { passive: true },
@@ -259,6 +271,7 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
     jump(n) {
       show(n)
       bring(current, behavior())
+      sayStep()
     },
     subscribe(fn) {
       listeners.add(fn)

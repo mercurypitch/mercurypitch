@@ -176,6 +176,8 @@ export function initHook(): void {
     hints: { chosen: '', silent: '', again: '' },
     onChoice: () => {
       hint.hidden = true
+      // the stage's tested figure is the answer: it shows with the cards
+      q('[data-hook-tested]').classList.remove('held')
       // the pressed choice is now disabled: keep the keyboard's place on what it revealed
       const cards = q('#revealCards')
       cards.tabIndex = -1

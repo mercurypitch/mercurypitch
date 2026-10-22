@@ -208,7 +208,8 @@ export function menuModel(
     here: {
       title: `You are here: step ${deck.now} of ${of}`,
       line: `Lesson ${current} · ${step}`,
-      label: `Continue at step ${deck.now} of ${of}: ${step}`,
+      // the card's own words, Continue first: what a voice control user sees and says
+      label: `Continue. You are here: step ${deck.now} of ${of}, ${step}`,
       href: `#step-${deck.now}`,
       fill: self === undefined ? 0 : fillOf(self, deck),
     },
@@ -401,11 +402,12 @@ export function createLessonMenu(o: LessonMenuOptions): void {
   btn.setAttribute('aria-haspopup', 'dialog')
   btn.setAttribute('aria-expanded', 'false')
   btn.setAttribute('aria-controls', 'lessonMenu')
-  btn.setAttribute(
-    'aria-label',
-    `Lesson ${o.lesson} of ${total}, ${L?.title ?? ''}: all lessons`,
-  )
-  btn.innerHTML = `${ring(0)}<span class="lm-l"><span class="lm-s">${SEASON} · </span>Lesson ${String(o.lesson).padStart(2, '0')}</span>${icon('i-right', 'ico lm-chev')}`
+  // The name is the label on screen, then what it opens: a voice control
+  // user says what they see ("Season 1, Lesson 01"; "Lesson 01" on a phone,
+  // where the season drops from view and so from the name) (WCAG 2.5.3).
+  const title = L?.title ?? ''
+  const stop = /[.?!]$/.test(title) ? '' : '.'
+  btn.innerHTML = `${ring(0)}<span class="lm-l"><span class="lm-s">${SEASON} · </span>Lesson ${String(o.lesson).padStart(2, '0')}</span><span class="sr">, ${esc(title)}${stop} All ${total} lessons</span>${icon('i-right', 'ico lm-chev')}`
   o.label.replaceWith(btn)
   const arc = btn.querySelector('.arc')
   const paintRing = (): void => {
