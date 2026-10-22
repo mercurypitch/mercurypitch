@@ -130,8 +130,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
   // next-lesson card (101 before them); the renderer is the same dynamic
-  // import as Lesson 1's.
-  'learn/04.html': 125,
+  // import as Lesson 1's. Raised to 126 when Lesson 3's hook from 20
+  // October stayed in the console as an alternative: 127,974 bytes on main
+  // before it, 128,220 with it, against 128,000 at 125. It carries the
+  // season's copy as Lesson 3 does.
+  'learn/04.html': 126,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
