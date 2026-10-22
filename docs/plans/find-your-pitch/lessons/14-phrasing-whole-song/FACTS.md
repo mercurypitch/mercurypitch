@@ -30,17 +30,17 @@ and a notation handbook's page as HTML, and Wikipedia articles as raw wikitext a
 named, each revision confirmed on the article's history page. One dictionary page that a Wikipedia
 article cites did not load (503, 21 October 2026). Quotations are verbatim. Scripts in the writer's
 scratchpad (`l14/tools/`), run with `python3 -I`, did the checking and the arithmetic: `verify14.py`
-reads the app at this PR's head through `git show`, in a copy the lead's pass adapted to the new
-default hook and tease and their two alternatives (scratchpad `l14lead/`) (the voice presets, the
-kit's tonic letters and
+reads the app at the head of this package's PR through `git show`, in a copy the lead's pass adapted
+to the new default hook and tease and their two alternatives (scratchpad `l14lead/`) (the voice
+presets, the kit's tonic letters and
 `hz`, Merc's gain and vibrato, the band chart's frame and level strip, Lesson 5's pushed take,
 Lesson 4's count-in, the hook and the tease), parses the song from the saved Wikipedia score, and
 prints and asserts every pitch, spelling, chord tone, timing, level, preset margin, plot size, label
 fit, chip width and head length below, with the run time; `stepwords.py` counts each step's words;
-`citeprint.py` printed every cited line at this PR's head; `sharedlines.py` compared the page's copy
-with Lessons 3 and 5 to 10, sentence by sentence; `absmeta.py` printed each PubMed record's metadata
-and abstract; `numberfacts.py` numbered these facts and every reference to them. The review's
-`wc_learner.py` (scratchpad `review05/`) counts the page's words (8).
+`citeprint.py` printed every cited line at the head of this package's PR; `sharedlines.py` compared
+the page's copy with Lessons 3 and 5 to 10, sentence by sentence; `absmeta.py` printed each PubMed
+record's metadata and abstract; `numberfacts.py` numbered these facts and every reference to them.
+The review's `wc_learner.py` (scratchpad `review05/`) counts the page's words (8).
 
 ## Sources
 

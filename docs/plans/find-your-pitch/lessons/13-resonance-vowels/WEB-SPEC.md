@@ -965,9 +965,10 @@ With the recommendation first:
    spectrum view and Mah Meh Mee Moh Moo, each for its own reason. Recommended: link Voice Mirror
    now, and Long Note once "Long Note on vowels" ships without length rewards (needs 12); never link
    the Analysis tab from a lesson while its Voice card grades resonance.
-5. **The CURRICULUM card's Practise line** (FACTS 6): applied in this PR, in the form Lesson 14's
-   card takes: Voice Mirror's hold until "Long Note on vowels" ships, the three drills not linked
-   with their reasons, and the card's rule that the app must not claim to assess vowels.
+5. **The CURRICULUM card's Practise line** (FACTS 6): applied in this package, in the form
+   Lesson 14's card takes: Voice Mirror's hold until "Long Note on vowels" ships, the three
+   drills not linked with their reasons, and the card's rule that the app must not claim to assess
+   vowels.
 6. **The next card's figure** (Toys 8; FACTS 7): Twinkle's first phrase as seven amber bands,
    drawn twice, the second copy's "star" a "?" with no line, as CURIOSITY-MOMENTS' Lesson 13 Tease
    draws it since Lesson 14's PR. A still that drew the second "star" in its band, or with a swell,

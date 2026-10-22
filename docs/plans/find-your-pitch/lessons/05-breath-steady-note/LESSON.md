@@ -307,7 +307,7 @@ long note steadier.
 _[Editorial: the card's own drill, Long Note at a fixed 10 or 15 seconds, can't be linked yet. It
 needs engineering first: a slug (proposed `/exercises/steady-note`) that opens Long Note with a
 ten-second run whatever timer the viewer saved, through the planned `durationSec` launch field;
-Long Note's own score reading that length rather than the saved timer; new card, help and setup
+Long Note's own score reading that length rather than the saved timer; new help and setup
 copy, because today's asks for a note held "as long as you can", says "the longer and steadier, the
 better" and makes promises about the breath that the claims rules forbid; and the `?lesson=05`
 marker, so First Light steps aside (CURRICULUM § 4 items 1, 2 and 6; WEB-SPEC, Practice links).

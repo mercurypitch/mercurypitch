@@ -19,7 +19,7 @@ It sits beside two other documents:
 1. **No lesson is on mercurypitch.com yet.** Lessons 1 and 2 are released on
    `main`, and Lesson 3 is a draft (`src/features/lessons/kit/drafts.ts`), but
    no release tag carries them; v0.9.21 predates all three. They can therefore
-   launch search-ready, and this PR does that (§1).
+   launch search-ready, and #1109 did that (§1).
 2. **The lessons answer informational questions.** "What is a note", "how to
    match pitch", "intervals explained": AI Overviews already answer the generic
    form of each. Google's advice for its AI features is "valuable,

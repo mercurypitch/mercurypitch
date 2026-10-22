@@ -44,9 +44,9 @@ coach signs off is listed at the end.
   hum one slow, quiet siren on "ng".
 
 _[Editorial: the curiosity plan's fallback hook (CURIOSITY-MOMENTS § 2, Lesson 11), the default in
-`kit/season.ts` since this PR; the old default, "Why does your voice flip at roughly the same note
-every time you slide up?", is one FACTS 1 cannot support. Under the owner's rule (§ 5 item 2) the
-old wording stays as the alternative `same-note` the admin console can pick, with a note that it
+`kit/season.ts` since this package; the old default, "Why does your voice flip at roughly the same
+note every time you slide up?", is one FACTS 1 cannot support. Under the owner's rule (§ 5 item 2)
+the old wording stays as the alternative `same-note` the admin console can pick, with a note that it
 needs a source. Neither wording says whether a flip is a mistake, so the title never answers the
 cold open's predict. On Lesson 10's next-lesson card, one line above this hook, this lesson's tease
 reads "Slide up slowly, and your voice may flip." (FACTS 1).]_

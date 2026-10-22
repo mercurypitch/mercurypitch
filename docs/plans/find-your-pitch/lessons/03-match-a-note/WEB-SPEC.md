@@ -260,7 +260,7 @@ Reading a take (`kit/take.ts`, pure, unit-tested):
   lower: same note") is added only when |d| is 50 or less, where the nearest note is still Merc's,
   so a different note is never called the same one (FACTS 39, 41).
 - The edges come from Voice Mirror, not from copies: `HIT_TOLERANCE_CENTS` is exported already, and
-  the 15 and 60 inside `matchBand` (`src/lib/mirror/metrics.ts:253-258`) become exports beside it.
+  the 15 and 60 inside `matchBand` (`src/lib/mirror/metrics.ts:241-246`) become exports beside it.
   A unit test checks that, on steady synthetic takes within 60 cents, the page's band matches
   `scoreMatchTake`'s.
 - Every feedback template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`,
