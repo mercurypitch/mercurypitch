@@ -288,6 +288,8 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
     body_colour: the body of each wave, painted under its stroke on `side`: the
     ground near the line (a milky crest), deepening to this colour about 0.7
     `reach` in, and back to the ground past the reach.
+    ground: an sRGB hex, or a (rows, cols, 3) field of sRGB 0..1 (row 0 at the
+    bottom) when the glass carries its own colour play, as an opal band does.
     Map it with UVs s / width across and z / height up; the tangent frame must
     come from those same UVs.
     """
@@ -333,8 +335,12 @@ def inlay(name, strokes, width, height, *, cols=512, rows=256, ground='#d6efe4',
         cracks, across = _crackle_fields(cols, rows, width, height, **options)
         h -= depth * across ** 1.5 * (1 - coverage)
     normal = _normals(h, width / cols, height / rows)
-    g, l = np.array(srgb(ground)), np.array(srgb(line))
-    ground_map = np.broadcast_to(g, (rows, cols, 3)).copy()
+    l = np.array(srgb(line))
+    if isinstance(ground, str):
+        ground_map = np.broadcast_to(np.array(srgb(ground)), (rows, cols, 3)).copy()
+    else:  # a field: (rows, cols, 3) sRGB 0..1, row 0 at the bottom, to linear
+        field = np.clip(np.asarray(ground, dtype=float), 0, 1)
+        ground_map = np.where(field <= 0.04045, field / 12.92, ((field + 0.055) / 1.055) ** 2.4)
     if body_colour is not None:
         tint = np.array(srgb(body_colour))
         ground_map = ground_map * (1 - body[..., None]) + tint[None, None] * body[..., None]

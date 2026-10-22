@@ -15,11 +15,17 @@ This page is the decision rule.
 - **Fracture sets.** Booleans only guarantee results on closed manifolds; a raw
   generated mesh is neither closed nor clean.
 
-The audit measured this on the shipped museum: the Meshy amphora's outline is
-close (silhouette IoU 0.948 against its concept), but its gold, jade and glass
-are paint in the textures of one glass material, and the file weighs 3.8 MB.
-The procedural rebuild has an IoU of 0.965, real gold and jade materials, and
-weighs 1.2 MB with its hammered-gold and jade textures.
+Two rebuilds measured it with the same gates
+(`art/glass-adventure/procedural/`):
+
+| Asset                | Shipped Meshy file                                                                                            | Procedural rebuild                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Opaline Echo Amphora | silhouette IoU 0.948, worst band +3.1% (fails); gold, jade and glass painted into one glass material; 3.81 MB | IoU 0.975, worst band 1.0%; real glass, gold and jade; 1.67 MB        |
+| Amber Cadence Urn    | IoU 0.930, worst band +16.5%; gold ribs between the lobes that the concept does not have; opaque; 3.74 MB     | IoU 0.988, worst band 2.9%; amber glass, marble, laurel gold; 1.61 MB |
+
+Both shipped files were watertight and cleanly fractured only after a repair
+pass; the rebuilds are clean by construction, and a change is an edit and a
+re-run, not a new generation.
 
 ## Where one helps
 

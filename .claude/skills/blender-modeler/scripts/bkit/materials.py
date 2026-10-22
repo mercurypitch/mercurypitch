@@ -182,7 +182,12 @@ def vertex_tint(material, attribute='Col'):
 
 def paint_corners(obj, colour_at, only, attribute='Col'):
     """Fill a corner colour attribute: colour_at(world position) -> sRGB on faces whose
-    material is named in `only`, white on every other face."""
+    material is named in `only`, white on every other face. A colour_at that takes two
+    arguments also gets the face's material name, so one pass can tint several
+    materials differently (opal patches on the glass, a darker jade foot)."""
+    import inspect
+
+    two = len(inspect.signature(colour_at).parameters) >= 2
     me = obj.data
     names = [slot.material.name if slot.material else None for slot in obj.material_slots]
     if not any(names[p.material_index] in only for p in me.polygons if p.material_index < len(names)):
@@ -193,7 +198,8 @@ def paint_corners(obj, colour_at, only, attribute='Col'):
         tinted = names[poly.material_index] in only if poly.material_index < len(names) else False
         for li in poly.loop_indices:
             if tinted:
-                rgb = colour_at(world @ me.vertices[me.loops[li].vertex_index].co)
+                co = world @ me.vertices[me.loops[li].vertex_index].co
+                rgb = colour_at(co, names[poly.material_index]) if two else colour_at(co)
             else:
                 rgb = (1.0, 1.0, 1.0)
             layer.data[li].color_srgb = (*rgb, 1.0)
