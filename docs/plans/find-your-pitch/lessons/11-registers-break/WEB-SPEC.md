@@ -547,11 +547,10 @@ is not live (`:193-196`).
   7's page at that step, `/learn/07#step-1` and `/learn/07#step-5`, in a new tab so the viewer
   keeps their place here, never `data-goto-step`, which would move this page's own deck
   (`quiz.ts:173-203`); where Lesson 7 is not live, each keeps its words with no link (Edge cases).
-  The address is the quiz's `away.href` (`quiz.ts:87-94`), the kit's `recallStepHref`, which this
-  page moves into `kit/quiz.ts` from the two copies Lessons 3 and 5 keep
-  (`lesson-03/quiz-questions.ts:24`, `lesson-05/quiz-questions.ts:19-20`; What the kit and the
-  app still need, 11), and the kit's step deck opens at the step an address names
-  (`kit/step-deck.ts:18-23`, `:269-277`), as Lesson 7's will.
+  The address is the quiz's `away.href` (`quiz.ts:87-94`), the kit's `recallStepHref`, which Lesson
+  8's page moved into `kit/quiz.ts` (`:128-130`; What the kit and the app still need, 11), and the
+  kit's step deck opens at the step an address names (`kit/step-deck.ts:18-23`, `:269-277`), as
+  Lesson 7's does.
 - **Quick check**: LESSON.md's four questions, ids `l11-q1` to `l11-q4`, keys `fyp-l11-seed` and
   `fyp-l11-quiz-v1`, and `lesson: 11`, so answering all four marks Lesson 11 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
@@ -728,12 +727,12 @@ the others take it.
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
    `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:306`, `:474`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
-   `11: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 7's
+   `11: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's
    (`:30-38`), makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev
    site's and the previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until
    the console sets it either way, and the Content Studio's Lessons page names that reason when
    asked to publish it (FACTS 9). `/learn/11` and `/learn/11.html` go in `STANDALONE_DOCUMENT_PATHS`
-   (`src/lib/sw-runtime.ts:93`, the lessons `:131-150`), so the service worker never serves the app
+   (`src/lib/sw-runtime.ts:93`, the lessons `:131-156`), so the service worker never serves the app
    shell in the lesson's place; `src/tests/lesson-pages.test.ts` checks a draft for them too
    (`:274-278`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
    and to `public/llms.txt`'s Lessons list (`:66-70`), whose intro already allows a page with no
@@ -857,10 +856,10 @@ the others take it.
     and `NowPlaying`, the page-wide owner, stops the sound before a source that claims it
     (`kit/now-playing.ts:17-39`). A page opts in by handing it to what it mounts (`:14-15`), as
     Lesson 6's cold open does (`lesson-06/cold-open.ts:103`); this page hands it to every source.
-11. `recallStepHref` in `kit/quiz.ts`, moved from the two copies Lessons 3 and 5 keep
-    (`lesson-03/quiz-questions.ts:24`, `lesson-05/quiz-questions.ts:19-20`), so that Lessons 7,
-    9 and 11's recalls take one address rule; Lessons 3 and 5's tests then import it from the kit,
-    and their addresses do not change.
+11. `recallStepHref` in `kit/quiz.ts`, built: Lesson 8's page moved it there (`:128-130`), and
+    Lessons 3, 4 and 5 take it from the kit (`lesson-03/quiz-questions.ts:24`,
+    `lesson-04/quiz-questions.ts:32`, `lesson-05/quiz-questions.ts:20`), so Lessons 7, 9 and 11's
+    recalls take one address rule, and the addresses did not change.
 12. `kit/sing.ts`: an open turn for the ring (`RingRun`, `:44-68`), proposed, for a take whose end
     the singer sets: the progress arc turns once every given period (8.5 s here, 6 s on Lesson 7's
     page) until the take ends it, and the state line holds one word, "Listening", where the turn
@@ -1089,8 +1088,9 @@ parts:
     kit's own test does for a stopped run (`kit/predict.test.ts:176-199`).
 16. The kit's other new parts: `kit/sound.ts` without `wave` and `lowpass` builds every voice as
     today, and with them takes the given partials and filter; `recallStepHref` from the kit gives
-    Lessons 3 and 5's recalls the addresses they give today; the ring's open turn takes one period
-    a turn, shows no seconds and stops when the take ends.
+    Lessons 3 and 5's recalls the addresses they gave before (done with Lesson 8's page,
+    `kit/quiz.test.ts:261-266`); the ring's open turn takes one period a turn, shows no seconds and
+    stops when the take ends.
 17. Layout, the pure helper behind Toys 1's targets: at every width from 344 to 1440 px every
     control is at least 44 px wide, with 8 px between neighbours and none overlapping, the picker's
     five segments 52 px each, and free play's state switch in rows of three and two (FACTS 83).

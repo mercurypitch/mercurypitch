@@ -936,9 +936,9 @@ was built on.
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-137`), whole in the page's first commit. Two tests hold it: the kit's
     `src/features/lessons/kit/lesson-copy.test.ts:325-360` reads every `learn/NN.html`, drafts
-    included, from its first commit, and `src/tests/lesson-pages.test.ts:85-183` holds a released
-    lesson's head. The copies of the hook that the first test reads are the ones the site worker
-    rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
+    included, from its first commit, and `src/tests/lesson-pages.test.ts:112-210` holds every lesson
+    document's head too. The copies of the hook that the first test reads are the ones the site
+    worker rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
     - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:325-334`).
     - The document title, at most 60 characters, with "MercuryPitch" and the headline in it
       (`lesson-pages.test.ts:127-128`, `:160`): SEARCH.md § 4's draft, "Beat, tempo and the

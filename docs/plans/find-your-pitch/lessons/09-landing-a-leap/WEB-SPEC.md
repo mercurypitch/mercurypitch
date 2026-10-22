@@ -481,8 +481,8 @@ live (`:173-177`).
   `/learn/06#step-2`, in a new tab so the viewer keeps their place here, never `data-goto-step`,
   which would move this page's own deck (`quiz.ts:173-203`); where Lesson 6 is not live, each keeps
   its words with no link (`:193-196`; Edge cases). The address is the quiz's `away.href`
-  (`quiz.ts:87-94`), Lesson 5's `recallStepHref` (`lesson-05/quiz-questions.ts:19-20`) in place of
-  the default `/learn/06#lesson`, and the kit's step deck opens at the step an address names
+  (`quiz.ts:87-94`), the kit's `recallStepHref` (`:128-130`) in place of the default
+  `/learn/06#lesson`, and the kit's step deck opens at the step an address names
   (`kit/step-deck.ts:18-23`, `:269-277`).
 - **Quick check**: LESSON.md's four questions, ids `l09-q1` to `l09-q4`, keys `fyp-l09-seed` and
   `fyp-l09-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 9`, so answering all four marks Lesson 9
@@ -618,26 +618,27 @@ table):
    input and routes its clean path (`tools/draft-lessons.ts:1-18`; `lessonPages`, `:77-86`;
    `lessonInputs` and `lessonPaths`, `:109-122`; `vite.config.ts:306`, `:474`), so the page needs no
    build change. Its line in `kit/drafts.ts`,
-   `9: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 and 5's (`:30-34`),
+   `9: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, beside Lessons 3 to 8's (`:30-38`),
    makes it a draft: production's `LESSON_DRAFTS`, "0", holds it back, and the dev site's and the
    previews', "1", show it (`wrangler.jsonc:165-167`, `:188-190`, `:231-232`), until the console
    sets it either way, and the Content Studio's Lessons page names that reason when asked to publish
    it (FACTS 9). `/learn/09` and `/learn/09.html` go in `STANDALONE_DOCUMENT_PATHS`
-   (`src/lib/sw-runtime.ts:93`, the lessons `:131-147`), so the service worker never serves the app
+   (`src/lib/sw-runtime.ts:93`, the lessons `:131-156`), so the service worker never serves the app
    shell in the lesson's place; `src/tests/lesson-pages.test.ts` checks a draft for them too
-   (`:215-219`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
+   (`:274-278`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
    and to `public/llms.txt`'s Lessons list (`:66-70`), whose intro already allows a page with no
    episode; until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
-   released checks (`:85-183`), and `tools/lesson-links.ts` links it from every entry document by
+   released checks (`:212-240`), and `tools/lesson-links.ts` links it from every entry document by
    its headline (FACTS 63).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
-   (`:372-407`), and `src/tests/lesson-pages.test.ts` holds a released lesson's head, structured
-   data and listings (`:85-183`). The hook's copies are the ones the site worker rewrites when the
-   console picks the alternative hook (`src/lesson-gate.ts:17-19`, `:445-460`); only the meta
-   description and the Article's description, which repeat each other, may shorten the hook, and
-   every other copy carries it whole. As Lesson 2's head has them (`learn/02.html:9-128`):
+   (`:305-320`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head and
+   structured data, a draft's included (`:112-210`), and a released lesson's listings (`:212-240`).
+   The hook's copies are the ones the site worker rewrites when the console picks the alternative
+   hook (`src/lesson-gate.ts:17-19`, `:445-460`); only the meta description and the Article's
+   description, which repeat each other, may shorten the hook, and every other copy carries it
+   whole. As Lesson 2's head has them (`learn/02.html:9-128`):
    - the title, "Landing a leap: Find Your Pitch, Lesson 9 | MercuryPitch" (56 characters, under the
      test's 60, `lesson-pages.test.ts:127-128`), which holds the Article's headline (`:160`), and
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:325-334`; Hero);
@@ -671,19 +672,17 @@ table):
      (`learn/04.html:61-68`): the date is the day the page first goes live on mercurypitch.com,
      which nothing writes at run time, so it is set in the commit that deletes the page's
      `drafts.ts` line or in one straight after the console publishes it (SEARCH.md § 3.2);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:133-145`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:163-175`;
      `learn/02.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:173-182`).
-3. The share image the head names, `public/learn/lesson-09-og.jpg`, which no test checks today:
-   `src/tests/lesson-pages.test.ts` holds a released lesson's head to its tags, not to the file
-   behind them (`:90-145`). It is 1200 x 630, the size `og:image:width` and `og:image:height` give,
-   a baseline JPEG as Lesson 4's card is (`public/learn/lesson-04-og.jpg`), drawn with the page's
-   own kit so that it looks like the page it opens: the title, Lesson 09 and the wordmark over the
-   ladder chart's compact still, do's and so's bands with Merc's amber arc between them, between
-   blue Merc and orange Merc. It shows no middle note, so it does not answer the cold open's
-   predict. The page's own test holds the head to the file, as Lesson 6's does on PR #1149: the
-   `og:image` it names is in `public/`, at the pixel size its `og:image:width` and `og:image:height`
-   give.
+     "Legal" (`lesson-pages.test.ts:198-209`).
+3. The share image the head names, `public/learn/lesson-09-og.jpg`, which
+   `src/tests/lesson-pages.test.ts` requires of every lesson document, a draft's included: in
+   `public/`, at the pixel size its `og:image:width` and `og:image:height` give (`:177-196`). It is
+   1200 x 630, a baseline JPEG as Lesson 4's card is (`public/learn/lesson-04-og.jpg`), drawn with
+   the page's own kit so that it looks like the page it opens: the title, Lesson 09 and the wordmark
+   over the ladder chart's compact still, do's and so's bands with Merc's amber arc between them,
+   between blue Merc and orange Merc. It shows no middle note, so it does not answer the cold open's
+   predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-122`, `:218-221`).
    Every build emits every lesson page, and the check fails a document with no ceiling (`:476-480`),

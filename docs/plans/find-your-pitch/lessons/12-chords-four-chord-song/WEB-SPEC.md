@@ -841,8 +841,8 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    `tools/draft-lessons.ts:77-86`, `:109-117`). Still needed: `/learn/12` and `/learn/12.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
-   worker's 404 page, never the app shell (`:140-147`).
-2. `src/features/lessons/kit/drafts.ts:30-38`: Lesson 12's line, after Lesson 6's and in the form of
+   worker's 404 page, never the app shell (`:140-156`).
+2. `src/features/lessons/kit/drafts.ts:30-38`: Lesson 12's line, after Lesson 8's and in the form of
    Lessons 3, 5 and 6's:
    `12: "Lesson 10's page at /learn/10, and the vocal coach's look at the sung checkpoint"`. While
    it stands, the page is held back on mercurypitch.com and served on the dev site and every PR
@@ -881,12 +881,12 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    their own, which cannot (`lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:81-92`), so this
    page moves it into the kit with a stop that clears its timers, for the owner to call, and Lessons
    2 and 4 may take it later.
-9. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:124-126`), as Lesson 10's
-   spec proposes (its item 9). This page would be its fifth user, after
-   `lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
-   `lesson-05/quiz-questions.ts:19-20` and Lesson 10's page, which then import it from there. The
-   quiz needs nothing else: its prefix, slot and away links are on main (`quiz.ts:52-58`, `:73-97`,
-   `:173-203`).
+9. `kit/quiz.ts`: `recallStepHref`, built: Lesson 8's page moved it into the kit beside
+   `lessonPageHref` (`:128-130`, `:124-126`), as Lesson 10's spec proposed (its item 9), and Lessons
+   3, 4 and 5 take it from there (`lesson-03/quiz-questions.ts:24`,
+   `lesson-04/quiz-questions.ts:32`, `lesson-05/quiz-questions.ts:20`), as this page and Lesson 10's
+   will. The quiz needs nothing else: its prefix, slot and away links are on main (`quiz.ts:52-58`,
+   `:73-97`, `:173-203`).
 10. `kit/comfort.ts` needs nothing: this page's `sing-flow.ts` picks the rest card after
     "Effortful", as Lessons 6 and 10 do, leaving the kit's default for the coach
     (`comfort.ts:58-67`), and it keeps the kit's lock on the feeling answer (Toys 6; Decisions for
@@ -1048,8 +1048,8 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
     little softer, never a whisper" is a safe addition for the coach to make (LESSON.md, For the
     vocal coach; FACTS 56).
 11. **The recall's step links**, `/learn/10#step-1` and `/learn/10#step-3`: the `#step-N` form the
-    built Lessons 3 to 5 use (`recallStepHref`), which the kit's step deck opens at, with
-    `recallStepHref` moved into the kit (What the kit and the app still need, item 9).
+    built Lessons 3 to 5 use, which the kit's step deck opens at, from `recallStepHref`, which
+    Lesson 8's page moved into the kit (What the kit and the app still need, item 9).
 12. **`datePublished`**: set in the commit that deletes the page's `drafts.ts` line, or in a commit
     straight after the console publishes it (SEARCH.md § 3.2). Recommended: straight after the
     console publishes it, since that is the day the page goes live and indexing is requested. The
