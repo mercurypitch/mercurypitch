@@ -15,6 +15,7 @@ import { createCloudwayLaboratoryPlatformRenderer } from './cloudway-laboratory-
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
+import * as rigidBatch from './rigid-platform-batch'
 
 function materials(): MuseumMaterials {
   return Object.fromEntries(
@@ -483,12 +484,27 @@ describe('Cloudway laboratory platform renderer', () => {
     })
 
     const owner = scene.getObjectByName('cloudway-laboratory-platform-art')!
-    const pearlBatch = owner.children.find(
+    const pearlBatches = owner.children.filter(
       (child): child is InstancedMeshType =>
         child instanceof InstancedMesh &&
         child.name.startsWith('PearlDenseGeometry'),
-    )!
-    expect(pearlBatch.count).toBe(remainingPearlIds.length)
+    )
+    const positions = new Set<string>()
+    for (const batch of pearlBatches)
+      for (let index = 0; index < batch.count; index++) {
+        const matrix = new Matrix4()
+        batch.getMatrixAt(index, matrix)
+        const position = new Vector3().setFromMatrixPosition(matrix)
+        positions.add(`${position.x.toFixed(5)},${position.z.toFixed(5)}`)
+      }
+    expect(positions).toEqual(
+      new Set(
+        remainingPearlIds.map((id) => {
+          const platform = level.platforms.find((item) => item.id === id)!
+          return `${((platform.minX + platform.maxX) / 2).toFixed(5)},${((platform.minZ + platform.maxZ) / 2).toFixed(5)}`
+        }),
+      ),
+    )
     for (const id of reserved)
       expect(floorById.get(id)!.children, id).toHaveLength(1)
     for (const id of remainingPearlIds)
@@ -573,10 +589,10 @@ describe('Cloudway laboratory platform renderer', () => {
     installed?.traverse((object) => {
       if (object instanceof InstancedMesh) batches.push(object)
     })
-    expect(batches).toHaveLength(5)
-    const pearlBatch = batches.find((batch) =>
+    expect(batches).toHaveLength(7)
+    const pearlBatches = batches.filter((batch) =>
       batch.name.startsWith('PearlDenseGeometry'),
-    )!
+    )
     const frostBatches = batches.filter((batch) =>
       batch.name.startsWith(CLOUDWAY_LAB_ROOT_NAMES.frostLily),
     )
@@ -587,22 +603,30 @@ describe('Cloudway laboratory platform renderer', () => {
       (platform) =>
         platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
     )
-    expect(pearlBatch.count).toBe(pearlPlatforms.length)
+    expect(pearlBatches).toHaveLength(3)
+    expect(pearlBatches.reduce((sum, batch) => sum + batch.count, 0)).toBe(
+      pearlPlatforms.length,
+    )
     expect(frostBatches).toHaveLength(2)
     frostBatches.forEach((batch) => expect(batch.count).toBe(2))
     expect(auroraBatches).toHaveLength(2)
     auroraBatches.forEach((batch) => expect(batch.count).toBe(1))
-    const matrixVersion = pearlBatch.instanceMatrix.version
+    const matrixVersions = pearlBatches.map(
+      (batch) => batch.instanceMatrix.version,
+    )
     renderer.update(snapshot)
-    expect(pearlBatch.instanceMatrix.version).toBe(matrixVersion)
+    expect(pearlBatches.map((batch) => batch.instanceMatrix.version)).toEqual(
+      matrixVersions,
+    )
     const actualPositions: { x: number; z: number }[] = []
     const matrix = new Matrix4()
     const position = new Vector3()
-    for (let index = 0; index < pearlBatch.count; index++) {
-      pearlBatch.getMatrixAt(index, matrix)
-      position.setFromMatrixPosition(matrix)
-      actualPositions.push({ x: position.x, z: position.z })
-    }
+    for (const batch of pearlBatches)
+      for (let index = 0; index < batch.count; index++) {
+        batch.getMatrixAt(index, matrix)
+        position.setFromMatrixPosition(matrix)
+        actualPositions.push({ x: position.x, z: position.z })
+      }
     const expectedPositions = pearlPlatforms
       .map((platform) => ({
         x: (platform.minX + platform.maxX) / 2,
@@ -624,8 +648,14 @@ describe('Cloudway laboratory platform renderer', () => {
         (id) => id !== 'final-catch',
       ),
     })
-    expect(pearlBatch.count).toBe(pearlPlatforms.length - 1)
-    expect(pearlBatch.instanceMatrix.version).toBe(matrixVersion + 1)
+    expect(pearlBatches.reduce((sum, batch) => sum + batch.count, 0)).toBe(
+      pearlPlatforms.length - 1,
+    )
+    expect(
+      pearlBatches.map(
+        (batch, index) => batch.instanceMatrix.version - matrixVersions[index]!,
+      ),
+    ).toEqual([1, 0, 0])
 
     renderer.dispose()
     disposeTestScene(
@@ -664,6 +694,118 @@ describe('Cloudway laboratory platform renderer', () => {
     renderer.dispose()
     floorById.forEach((floor) => disposeObject(floor))
     disposeTestScene(scene, [pearl, scroll], palette, library)
+  })
+
+  it('releases joined court variants exactly once after detaching their complete renderer', () => {
+    const first = CLOUDWAY_CRYSTAL_PROMENADE_STUDY.platforms.find(
+      (platform) =>
+        platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
+    )!
+    const depth = first.maxZ - first.minZ
+    const level = {
+      ...CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
+      platforms: [
+        first,
+        {
+          ...first,
+          id: 'joined-court',
+          minZ: first.minZ + depth,
+          maxZ: first.maxZ + depth,
+        },
+      ],
+    }
+    const palette = materials(),
+      library = createMaterialLibrary(),
+      scene = new Group(),
+      donor = pearlDonor()
+    const renderer = createCloudwayLaboratoryPlatformRenderer(
+      level,
+      scene,
+      fallbacks(level),
+      palette,
+      library,
+    )
+    renderer.install(donor, CLOUDWAY_LAB_BUNDLE_IDS.pearlRest)
+    const geometries = new Set(allMeshes(scene).map((mesh) => mesh.geometry))
+    expect(geometries.size).toBe(2)
+    const disposals = [...geometries].map((geometry) => {
+      const disposed = vi.fn()
+      geometry.addEventListener('dispose', disposed)
+      return disposed
+    })
+    renderer.dispose()
+    renderer.dispose()
+    disposals.forEach((disposed) => expect(disposed).toHaveBeenCalledTimes(1))
+    disposeTestScene(scene, [donor], palette, library)
+  })
+
+  it('disposes staged court geometry when a later donor mesh fails and retains every fallback', () => {
+    const first = CLOUDWAY_CRYSTAL_PROMENADE_STUDY.platforms.find(
+      (platform) =>
+        platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
+    )!
+    const depth = first.maxZ - first.minZ
+    const level = {
+      ...CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
+      platforms: [
+        first,
+        {
+          ...first,
+          id: 'joined-court',
+          minZ: first.minZ + depth,
+          maxZ: first.maxZ + depth,
+        },
+      ],
+    }
+    const palette = materials(),
+      library = createMaterialLibrary(),
+      scene = new Group(),
+      donor = pearlDonor()
+    const later = new Mesh(
+      new BoxGeometry(3.2, 0.34, 0.72),
+      new MeshStandardMaterial(),
+    )
+    later.name = 'LaterMesh'
+    donor.add(later)
+    const metadata = JSON.parse(
+      donor.userData.cloudway_lab_asset_json as string,
+    ) as { geometry: { triangles: number } }
+    metadata.geometry.triangles = 24
+    donor.userData.cloudway_lab_asset_json = JSON.stringify(metadata)
+    const floors = fallbacks(level)
+    const renderer = createCloudwayLaboratoryPlatformRenderer(
+      level,
+      scene,
+      floors,
+      palette,
+      library,
+    )
+    const original = rigidBatch.createRigidPlatformBatch
+    const disposals: ReturnType<typeof vi.fn>[] = []
+    let calls = 0
+    const create = vi
+      .spyOn(rigidBatch, 'createRigidPlatformBatch')
+      .mockImplementation((...args) => {
+        if (++calls === 3) throw new Error('fixture later donor failure')
+        const result = original(...args)
+        const disposed = vi.fn()
+        result.mesh.geometry.addEventListener('dispose', disposed)
+        disposals.push(disposed)
+        return result
+      })
+    try {
+      expect(() =>
+        renderer.install(donor, CLOUDWAY_LAB_BUNDLE_IDS.pearlRest),
+      ).toThrow('fixture later donor failure')
+      expect(disposals).toHaveLength(2)
+      disposals.forEach((disposed) => expect(disposed).toHaveBeenCalledTimes(1))
+      floors.forEach((floor) => expect(floor.children).toHaveLength(1))
+    } finally {
+      create.mockRestore()
+      renderer.dispose()
+      floors.forEach((floor) => disposeObject(floor))
+      disposeTestScene(scene, [donor], palette, library)
+    }
   })
 
   it('rejects a rendered crackle material omitted from the donor declaration', () => {
