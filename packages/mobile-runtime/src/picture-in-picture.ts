@@ -23,7 +23,10 @@
 // AirPlay screen mirroring or a cable (TVLyrics.swift). While a test build's
 // switch is on (`setTvLyricsEnabled`), the TV shows them full screen in place
 // of the phone, and the room keeps handing them over while it does
-// (`onTvLyrics`). Off, the TV mirrors the phone.
+// (`onTvLyrics`). Off, the TV mirrors the phone. A second switch puts the
+// room's whole stage on the TV instead (`setTvStageEnabled`, TVStage.swift):
+// a page of its own draws it there from the messages the room sends
+// (`sendTvStage`), and the two switches take each other's place.
 //
 // The web has no window for a page: inert wrappers, and the plugin is never
 // even registered there.
@@ -64,6 +67,16 @@ interface PictureInPicturePlugin {
     connected?: unknown
     showing?: unknown
   }>
+  /** iOS: the switch for the room's stage on a connected TV. */
+  setTvStage(options: { enabled: boolean }): Promise<void>
+  /** iOS: that switch, and whether a TV is connected and shows the stage. */
+  getTvStage(): Promise<{
+    enabled?: unknown
+    connected?: unknown
+    showing?: unknown
+  }>
+  /** iOS: one message for the stage, as JSON, and which kind it is. */
+  pushTvStage(options: { kind: string; json: string }): Promise<void>
   addListener(
     eventName: 'pictureInPictureChange',
     listener: (state: { inPictureInPicture?: boolean }) => void,
@@ -83,7 +96,7 @@ interface PictureInPicturePlugin {
     listener: (event: { message?: unknown }) => void,
   ): Promise<PluginListenerHandle>
   addListener(
-    eventName: 'tvLyricsChange',
+    eventName: 'tvLyricsChange' | 'tvStageChange',
     listener: (state: { connected?: unknown; showing?: unknown }) => void,
   ): Promise<PluginListenerHandle>
 }
@@ -338,5 +351,78 @@ export function onTvLyrics(
         // No plugin behind the name in this build: no TV, no events.
       }
     })()
+  })
+}
+
+/** A TV connected to the iPhone, and whether it draws the stage (TVStage.swift). */
+export type TvStageState = TvLyricsState
+
+/**
+ * iOS: the switch for the room's stage on a connected TV, the pitch lane,
+ * the lyrics and the score in the TV's own landscape. On, it takes the
+ * lyrics' place: a TV shows one or the other. The plugin keeps it across
+ * launches.
+ */
+export async function setTvStageEnabled(on: boolean): Promise<void> {
+  if (!isIos()) return
+  await attempt(async () => {
+    await pictureInPicture().setTvStage({ enabled: on })
+  })
+}
+
+/** iOS: the stage's switch and the TV as they stand, or null where there is none. */
+export async function readTvStage(): Promise<TvStageState | null> {
+  if (!isIos()) return null
+  try {
+    const state = await pictureInPicture().getTvStage()
+    return {
+      enabled: state.enabled === true,
+      connected: state.connected === true,
+      showing: state.showing === true,
+    }
+  } catch {
+    // No plugin behind the name in this build, or one without the stage.
+    return null
+  }
+}
+
+/** iOS: a TV coming and going, and the stage going up on it or down. */
+export function onTvStage(
+  handler: (state: Omit<TvStageState, 'enabled'>) => void,
+): Unsubscribe {
+  if (!isIos()) return () => undefined
+
+  return lazyListener((dispose) => {
+    void (async () => {
+      try {
+        dispose(
+          await pictureInPicture().addListener('tvStageChange', (state) => {
+            handler({
+              connected: state.connected === true,
+              showing: state.showing === true,
+            })
+          }),
+        )
+      } catch {
+        // No plugin behind the name in this build: no TV, no events.
+      }
+    })()
+  })
+}
+
+/**
+ * iOS: one message for the stage on a connected TV (the app's
+ * src/lib/tv-stage/protocol.ts), passed on as JSON. A TV that does not
+ * show the stage keeps the last song and frame for when it does.
+ */
+export async function sendTvStage(message: {
+  readonly kind: string
+}): Promise<void> {
+  if (!isIos()) return
+  await attempt(async () => {
+    await pictureInPicture().pushTvStage({
+      kind: message.kind,
+      json: JSON.stringify(message),
+    })
   })
 }
