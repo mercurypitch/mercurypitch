@@ -72,7 +72,7 @@ export const TOPICS = {
   S08: 'Range and comfortable zone; voice types as labels',
   S09: 'Singing steps: five-note scales, then the octave',
   S10: 'Singing leaps: thirds, fifth, fourth, octave; arpeggios',
-  S12: 'Registers: chest, head, falsetto, mix; the break',
+  S12: 'Registers: chest, head, falsetto; the break',
   S13: 'Resonance and brightness',
   S14: 'Vowels',
   S16: 'Legato and phrasing; breath planning',
