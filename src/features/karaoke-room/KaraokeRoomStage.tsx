@@ -63,6 +63,11 @@
 //   run as the lock screen's do. Coming back to the app closes it
 //   (docs/plans/mobile-native/ios-lyrics-window.md).
 //
+//   ON A TV (iOS, a test build's switch). With AirPlay screen mirroring and
+//   "Stage on a connected TV" on, the TV draws the room's stage in its own
+//   landscape from what the room sends it, while the phone stays the room
+//   (useKaraokeTvStage.ts).
+//
 //   SONGS OF YOUR OWN (Stage 2, KARAOKE_IMPORT). The song line counts the
 //   songs on their way ("Separating 2") and opens the library, where they
 //   are; a song sung loses its New mark; and the options say how many songs
@@ -95,6 +100,7 @@ import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
 import { KaraokeRoomPicker } from './KaraokeRoomPicker'
 import { useKaraokePictureInPicture, windowShowsThePage, } from './useKaraokePictureInPicture'
+import { useKaraokeTvStage } from './useKaraokeTvStage'
 
 /** The owner name the room holds the shared AudioContext under. */
 export const KARAOKE_AUDIO_OWNER = 'karaoke-room'
@@ -536,6 +542,18 @@ export const KaraokeRoomStage: Component = () => {
       setLibraryOpen(false)
     },
     onExit: restoreMicSoon,
+  })
+  // A TV that draws the room's stage (a test build's switch): the song and
+  // where it is, for as long as the TV shows it (useKaraokeTvStage.ts).
+  useKaraokeTvStage({
+    device,
+    mixer,
+    song: () => {
+      const entry = cue()
+      return entry === null
+        ? null
+        : { title: entry.song.title, sessionId: entry.song.sessionId }
+    },
   })
   // The run is the system's business while the song is behind another app,
   // and while it is in the window: that is where the window's play and

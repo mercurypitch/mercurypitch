@@ -36,6 +36,7 @@ import type { ActiveTab } from '@/features/tabs/constants'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import type { LyricWindowScript } from '@/lib/lyric-window-script'
+import type { TvStageMessage } from '@/lib/tv-stage/protocol'
 import type { SettingsSection } from '@/stores/settings-section'
 
 /** What the shell's transport drives, supplied by the room that owns the run. */
@@ -420,11 +421,28 @@ export interface NativeDeviceApi {
    */
   onTvLyrics?: (handler: (showing: boolean) => void) => () => void
   /**
+   * iOS: a TV connected to the phone that draws the room's stage, the pitch
+   * lane, the lyrics and the score (a test build's "Stage on a connected
+   * TV"). Absent where no TV can.
+   */
+  tvStage?: NativeTvStage
+  /**
    * The phone's volume and where its sound goes, for the premium rooms'
    * low-volume hint and a test build's audio readout. Absent where the app
    * has no reading of it.
    */
   audioOutput?: NativeAudioOutput
+}
+
+/**
+ * A TV that draws the room's stage (src/lib/tv-stage/): whether it shows it,
+ * now and on every change, and what to draw. The TV draws only what it is
+ * sent; the room sends while the TV shows it (useKaraokeTvStage.ts).
+ */
+export interface NativeTvStage {
+  /** Returns the unsubscribe. */
+  watch: (handler: (showing: boolean) => void) => () => void
+  send: (message: TvStageMessage) => void
 }
 
 const [runControls, setRunControls] = createSignal<NativeRunControls | null>(
