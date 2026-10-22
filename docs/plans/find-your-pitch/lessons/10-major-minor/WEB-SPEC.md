@@ -874,14 +874,14 @@ Each with the package's recommendation. The review of 20 October came to the sam
 item it weighed, items 2 to 11; item 1 follows from its findings and from the owner's answer to
 CURIOSITY-MOMENTS § 5 item 2.
 
-1. **The alternative hook, `bright-dark`.** Keep it switchable, as the owner's answer to
-   CURIOSITY-MOMENTS § 5 item 2 keeps every changed hook's old wording
-   (`src/features/lessons/kit/lesson-copy.test.ts:269-284`), or retire it. The Content Studio's hook
-   picker offers it with its note, which names the mood labels. Picked, it puts "bright" and "dark"
-   in the h1, the head's copies of the hook and the structured data, on Lesson 10's card in every
-   lesson page's explorer and on Lesson 9's next-lesson card, and runs the description to 171
-   characters (Edge cases, "The admin console's hook"). Recommended: keep it switchable, as the
-   answer has it, and leave it unpicked.
+1. **The alternative hook, `bright-dark`.** Decided: the owner retired it on 22 October 2026 (this
+   PR), for its mood labels. The answer to CURIOSITY-MOMENTS § 5 item 2 had kept every changed
+   hook's old wording (`src/features/lessons/kit/lesson-copy.test.ts:269-284`). The Content Studio's
+   hook picker offered it with its note, which names the mood labels. Picked, it put "bright" and
+   "dark" in the h1, the head's copies of the hook and the structured data, on Lesson 10's card in
+   every lesson page's explorer and on Lesson 9's next-lesson card, and ran the description to 171
+   characters (Edge cases, "The admin console's hook"). Recommended then: keep it switchable, and
+   leave it unpicked.
 2. **The page's title.** The series' form, "Major and minor: Find Your Pitch, Lesson 10 |
    MercuryPitch" (58 characters), until SEARCH.md § 13 item 1 settles titles for every lesson; then
    its answer, which is SEARCH.md § 4's query-led draft if the recommendation stands (What the kit
@@ -949,7 +949,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   a plain chip, and its recall's step links would keep their words with no link
   (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:179-209`). But
   the recall would ask about a lesson the learner cannot open.
-- **The admin console's hook.** The console can switch Lesson 10's hook to its alternative,
+- **The admin console's hook.** The console could switch Lesson 10's hook to its alternative,
   `bright-dark`, "Which single note turns a bright major chord into a dark minor one?"
   (`kit/lesson-copy.ts:115-123`): the pick is the `hook` field of the lesson's override, set through
   PUT `/api/admin/lessons/:n` (`src/lib/lesson-state.ts:41`, `:49-50`, `:182-189`) from the Content
@@ -967,8 +967,8 @@ CURIOSITY-MOMENTS § 5 item 2.
   and "dark", mood labels, would stand on every surface the lesson's own rule covers, the rule it
   teaches (FACTS 1, 40). The description would run to 171 characters, over the 160 cap, which
   `src/tests/lesson-pages.test.ts:129-132` checks only on the page as written. Neither hook names a
-  note, so the title never answers the predict (FACTS 1a). The package recommends leaving it
-  unpicked (Decisions for the owner, item 1).
+  note, so the title never answers the predict (FACTS 1a). The owner dropped it on 22 October 2026
+  (this PR; Decisions for the owner, item 1).
 
 ## Tests
 

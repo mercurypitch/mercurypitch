@@ -345,12 +345,12 @@ is left to shape?" One line above it, the tease: "‘Twinkle, twinkle, little st
 
 _[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season as this
 page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`,
-`kit/page-state.ts`). These are Lesson 14's defaults. The console may pick its alternatives, today's
-wording kept as the hook `compelling` and the tease `band`, and the card draws whichever it picked.
-Beside the words, the tease's figure: Twinkle's first phrase as Lesson 14's song line draws it,
-seven amber bands at their heights with Merc's line through each, drawn twice side by side; in the
-second copy the seventh band, "star", holds a "?" and no line. It draws no mint, no breath mark, no
-swell and no light that grows, since a second "star" drawn in its band, or with a swell, would
+`kit/page-state.ts`). These are Lesson 14's defaults. The console may pick its alternative tease
+`band`; the owner dropped the hook `compelling` on 22 October 2026. The card draws whichever it
+picked. Beside the words, the tease's figure: Twinkle's first phrase as Lesson 14's song line draws
+it, seven amber bands at their heights with Merc's line through each, drawn twice side by side; in
+the second copy the seventh band, "star", holds a "?" and no line. It draws no mint, no breath mark,
+no swell and no light that grows, since a second "star" drawn in its band, or with a swell, would
 answer Lesson 14's predict (WEB-SPEC, Toys 8). The card says "Coming later" and "See it on the map"
 until Lesson 14's page is live (FACTS 7).]_
 

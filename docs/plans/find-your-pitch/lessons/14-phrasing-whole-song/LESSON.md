@@ -48,17 +48,17 @@ coach signs off is listed at the end.
 - Promise: By the end you'll know where a singer breathes in a song, how to shape a phrase, and how
   a phrase ends. Then you'll sing one phrase twice, record it and listen back.
 
-_[Editorial: the title is the season's hook, "If every note of a song is in tune, what is left to
-shape?", as it stands in `kit/season.ts`. The earlier wording, "If you can hit every note of a song,
-what is still missing between correct and compelling?", is kept in `kit/lesson-copy.ts` as the
-alternative `compelling`, which the admin console can pick, as the owner's rule asks; the site
-worker then writes the picked hook into the title and the head's copies of it. "Compelling" judges a
-performance,
-and no fact here says what makes one compelling. The page answers what is left to shape: the
-breaths, the swell and the cadence (FACTS 1). Neither wording answers the cold open's predict. On
-Lesson 13's next-lesson card, one line above this hook, this lesson's tease is "‘Twinkle, twinkle,
-little star’, twice. The second ‘star’ swells." The earlier tease, "Every note in the band, start to
-finish.", hints at the predict's answer, and is kept as the alternative `band` (FACTS 2).]_
+_[Editorial: the title is the season's hook, "If every note of a song is in tune, what is left
+to shape?", as it stands in `kit/season.ts`. The earlier wording, "If you can hit every note of
+a song, what is still missing between correct and compelling?", was kept in
+`kit/lesson-copy.ts` as the alternative `compelling`, as the owner's rule asked, until the
+owner dropped it on 22 October 2026 (FACTS 1). "Compelling" judges a performance, and no fact
+here says what makes one compelling. The page answers what is left to shape: the breaths, the
+swell and the cadence (FACTS 1). Neither wording answers the cold open's predict. On Lesson
+13's next-lesson card, one line above this hook, this lesson's tease is "‘Twinkle, twinkle,
+little star’, twice. The second ‘star’ swells." The earlier tease, "Every note in the band,
+start to finish.", hints at the predict's answer, and is kept as the alternative `band` (FACTS
+2).]_
 
 ## Sound gate
 

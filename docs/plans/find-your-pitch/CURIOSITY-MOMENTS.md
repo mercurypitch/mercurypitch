@@ -213,8 +213,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Tease:** four chords as four rooms on the spiral, with no tune note on the ring (new still; Lesson 12's WEB-SPEC,
   Decisions for the owner, item 13): "Four chords, round and round."
 - **Hook, proposed:** "Why does your voice sometimes flip as you slide up?" Reason: the same question, without the
-  unsourced "every time"; the old wording stays as the alternative `same-note` until FACTS.md has a source (Lesson 11
-  FACTS 1).
+  unsourced "every time"; the old wording was the alternative `same-note` until the owner dropped it on 22 October
+  2026: no source in its FACTS.md supports it (Lesson 11 FACTS 1).
 - **Facts:** sourced in Lesson 11's FACTS: registers and the break (Henrich 2006; Herbst & Elemans 2025), breaks in
   choir singers' slides (Cardoso 2023) and Arneson on register coordination; "the same note every time" is still
   unsourced (FACTS 1).
@@ -271,8 +271,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   sing a whole song.", with Karaoke Night and the map; after "Effortful", "Uncomfortable" or "Just listen today" it
   keeps only its first sentence and the map (Lesson 14 WEB-SPEC, What the kit and the app still need, 12).
 - **Hook, proposed:** "If every note of a song is in tune, what is left to shape?" Reason: no source says what makes a
-  performance "compelling", and the lesson answers in full what is left to shape; the old wording stays as the
-  alternative `compelling` (Lesson 14 FACTS 1).
+  performance "compelling", and the lesson answers in full what is left to shape; the old wording was the alternative
+  `compelling` until the owner dropped it on 22 October 2026 (Lesson 14 FACTS 1).
 - **Facts:** sourced in Lesson 14's FACTS: phrases and cadences (Wikipedia, Phrase and Cadence), the breath mark
   (Wikipedia, borne out in part by a music dictionary and a notation handbook), legato and breath planning (Arneson),
   messa di voce (Titze 1999, Collyer 2007, Kirsch 2025), hearing your own voice (Orepic 2023); the tune's rights check

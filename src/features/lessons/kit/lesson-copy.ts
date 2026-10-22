@@ -103,50 +103,12 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
     tease: 'Books often give a voice type two octaves.',
   },
   8: { tease: 'Same song, same speed. Only the claps move.' },
-  9: {
-    hookAlts: [
-      {
-        id: 'harder',
-        text: 'Why is jumping to a note so much harder than stepping to it?',
-      },
-    ],
-    tease: 'One note, two ways up: step by step, or one leap.',
-  },
-  10: {
-    hookAlts: [
-      {
-        id: 'bright-dark',
-        text: 'Which single note turns a bright major chord into a dark minor one?',
-      },
-    ],
-    tease: 'Three notes, one chord. Move one by a semitone.',
-  },
-  11: {
-    hookAlts: [
-      {
-        id: 'same-note',
-        text: 'Why does your voice flip at roughly the same note every time you slide up?',
-      },
-    ],
-    tease: 'Slide up slowly, and your voice may flip.',
-  },
-  12: {
-    hookAlts: [
-      {
-        id: 'hundreds',
-        text: 'How can hundreds of songs share the same four chords and still sound different?',
-      },
-    ],
-    tease: 'Four chords, round and round.',
-  },
+  9: { tease: 'One note, two ways up: step by step, or one leap.' },
+  10: { tease: 'Three notes, one chord. Move one by a semitone.' },
+  11: { tease: 'Slide up slowly, and your voice may flip.' },
+  12: { tease: 'Four chords, round and round.' },
   13: { tease: 'Same note, two vowels: ‘ee’, then ‘ah’.' },
   14: {
-    hookAlts: [
-      {
-        id: 'compelling',
-        text: 'If you can hit every note of a song, what is still missing between correct and compelling?',
-      },
-    ],
     tease: '‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.',
     teaseAlts: [
       {

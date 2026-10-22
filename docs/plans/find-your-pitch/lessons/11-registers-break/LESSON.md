@@ -9,13 +9,13 @@ the rules behind the checkpoint's lines. This is a voice lesson and a text-only 
 has no film yet, so the page has no Watch section. Each step's heading is orange Merc's question
 (playbook rule 4). The page opens in Lesson 2's order: the title, the stage, the sound gate, the
 cold open's predict, then the recall (MASTER-PLAN § 4.2 and § 12 item 13). **The title is a new
-wording of the hook**, the curiosity plan's own fallback: "Why does your voice sometimes flip as
-you slide up?". No source read for this package shows one singer's flip landing near the same note
-on slide after slide, and several show it moving or not coming at all (FACTS 1). This PR makes it
-the default in `kit/season.ts`, with the old wording, "Why does your voice flip at roughly the same
-note every time you slide up?", kept as the alternative `same-note`, since the page's title must be
-the season's hook. Where this page shares a line with Lessons
-3, 5, 6, 7 and 9 (the comfort check, "Just listen today", the voice choice, the warm-up, the stop
+wording of the hook**, the curiosity plan's own fallback: "Why does your voice sometimes flip as you
+slide up?". No source read for this package shows one singer's flip landing near the same note on
+slide after slide, and several show it moving or not coming at all (FACTS 1). This PR makes it the
+default in `kit/season.ts`, with the old wording, "Why does your voice flip at roughly the same note
+every time you slide up?", kept as the alternative `same-note` until the owner dropped it on 22
+October 2026. Where this page shares a line with Lessons 3, 5, 6, 7 and 9 (the comfort check, "Just
+listen today", the voice choice, the warm-up, the stop
 line, the four feelings with their gentle and enough-for-today lines, the doctor lines, the rest
 card and "Ten minutes, gently, most days"), it is their current text, word for word, with only the
 exercise and its address changed; "Just listen today" says "Merc sings the siren", as Lesson 7's
@@ -46,10 +46,10 @@ coach signs off is listed at the end.
 _[Editorial: the curiosity plan's fallback hook (CURIOSITY-MOMENTS § 2, Lesson 11), the default in
 `kit/season.ts` since this package; the old default, "Why does your voice flip at roughly the same
 note every time you slide up?", is one FACTS 1 cannot support. Under the owner's rule (§ 5 item 2)
-the old wording stays as the alternative `same-note` the admin console can pick, with a note that it
-needs a source. Neither wording says whether a flip is a mistake, so the title never answers the
-cold open's predict. On Lesson 10's next-lesson card, one line above this hook, this lesson's tease
-reads "Slide up slowly, and your voice may flip." (FACTS 1).]_
+the old wording stayed as the alternative `same-note` until the owner dropped it on 22 October 2026,
+since it needed a source. Neither wording says whether a flip is a mistake, so the title never
+answers the cold open's predict. On Lesson 10's next-lesson card, one line above this hook, this
+lesson's tease reads "Slide up slowly, and your voice may flip." (FACTS 1).]_
 
 ## Sound gate
 
@@ -332,17 +332,17 @@ the comfortable top; and the Sing room's premium rooms, Ng slides among them (FA
 **Next lesson:** Lesson 12, Chords and the four-chord song. "How can two songs share the same four
 chords and still sound different?" One line above it, the tease: "Four chords, round and round."
 
-_[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season as
-this page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`,
+_[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season as this
+page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`,
 `kit/page-state.ts`). Lesson 12's old hook, "How can hundreds of songs share the same four chords
-and still sound different?", is kept there as an alternative the admin console can switch to; the
-card draws whichever hook and tease the console picked, and the default until it picks one. Beside
+and still sound different?", was an alternative there until the owner dropped it on 22 October 2026,
+for want of a source; the card draws the hook and tease the console picked, or the defaults. Beside
 the words, the tease's figure: a still of the four chords as four rooms on the spiral, with no tune
-note on the ring at all. It lights no corner, draws no bead on a room and draws no path from bead
-to bead, since a tune drawn on the ring would show which of its notes sit on a chord's corners and
-answer Lesson 12's predict. It may show the four rooms; any tune it shows stays off the ring
-(Lesson 12's WEB-SPEC, Decisions for the owner, item 13; Lesson 12's FACTS 5b). The card says
-"Coming later" and "See it on the map" until Lesson 12's page is live (FACTS 7).]_
+note on the ring at all. It lights no corner, draws no bead on a room and draws no path from bead to
+bead, since a tune drawn on the ring would show which of its notes sit on a chord's corners and
+answer Lesson 12's predict. It may show the four rooms; any tune it shows stays off the ring (Lesson
+12's WEB-SPEC, Decisions for the owner, item 13; Lesson 12's FACTS 5b). The card says "Coming later"
+and "See it on the map" until Lesson 12's page is live (FACTS 7).]_
 
 ## Footer
 

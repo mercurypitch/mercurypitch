@@ -724,9 +724,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   is, `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
   `label: 'Karaoke Night'` (`season.ts:389-395`), with no `needs`. Its topics stay; its hook is the
   entry's, the default (`:388`), and its tease, which Lesson 13's card draws, is
-  `kit/lesson-copy.ts`'s (`:150`), with the old ones kept as `compelling` and `band` (`:143-157`),
-  as 1 and 2 record. `EDGES` already holds [5, 14], [8, 14], [9, 14] and [12, 14]
-  (`season.ts:422-425`).
+  `kit/lesson-copy.ts`'s (`:150`), with the old tease kept as `band` (`:143-157`) and the old hook,
+  `compelling`, dropped by this PR, as 1 and 2 record. `EDGES` already holds [5, 14], [8, 14], [9,
+  14] and [12, 14] (`season.ts:422-425`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its hook, its topics, the lessons it builds on, its practise link and its minutes
@@ -781,13 +781,13 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:325-334`; Hero);
    - the meta description, "If every note of a song is in tune, what is left to shape? Hear Merc
      sing one phrase twice, then sing it and listen back." (121 characters, inside the test's 81 to
-     160, `lesson-pages.test.ts:129-132`, and 153 with `compelling`);
+     160, `lesson-pages.test.ts:129-132`, and 153 with `compelling`, since dropped);
    - `og:title` and `twitter:title`, "Phrasing: sing a whole song · Find Your Pitch, Lesson 14"
      (`learn/04.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "If every note of a song is in tune, what is left
      to shape? Hear one phrase sung twice, then sing it yourself." (109 characters; 141 with
-     `compelling`; `lesson-copy.test.ts:351-354`), and
-     `twitter:description`, the hook exactly (`:355-357`);
+     `compelling`, since dropped; `lesson-copy.test.ts:351-354`), and `twitter:description`, the
+     hook exactly (`:355-357`);
    - canonical and `og:url` `https://mercurypitch.com/learn/14`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:116-134`);
@@ -813,8 +813,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:163-175`;
      `learn/04.html:110-128`); and the legal links, privacy, terms and imprint, in a `nav` labelled
      "Legal" (`lesson-pages.test.ts:198-209`).
-   - When the console picks `compelling`, the site worker writes it into every copy of the hook:
-     every description stays between 80 and 160 characters with either hook (13).
+   - Before this PR dropped `compelling`, picking it wrote it into every copy of the hook: every
+     description stayed between 80 and 160 characters with either hook (13).
 3. The share image the head names, `public/learn/lesson-14-og.jpg`, which
    `src/tests/lesson-pages.test.ts` checks on every lesson document, drafts included, so from the
    page's first commit (`:177-196`): `og:image` is
@@ -1113,8 +1113,8 @@ parts:
     note you sing." and "See the season map", and shows neither "Now sing a whole song." nor its
     Karaoke Night button, while every other ending keeps both.
 19. The hook and the tease: the h1 and the head's copies of the hook carry the default, "If every
-    note of a song is in tune, what is left to shape?", and `hookFor` and `teaseFor` resolve
-    `compelling` and `band` to the old wordings (1, 2).
+    note of a song is in tune, what is left to shape?", and `hookFor` and `teaseFor` resolve `band`
+    to the old wording and `compelling`, which this PR dropped, to the default (1, 2).
 
 End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which shows drafts):
 

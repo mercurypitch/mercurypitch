@@ -41,13 +41,13 @@ listed at the end.
   the top feels high.
 
 _[Editorial: the default since 20 October 2026 (CURIOSITY-MOMENTS § 2 and § 5). The admin console
-can switch the title to the alternative hook kept in `kit/lesson-copy.ts`, "Why is jumping to a note
-so much harder than stepping to it?", the hook this lesson had before; the site worker then writes
-it into the title and the head's copies of the hook. FACTS 1 says what the facts support in each:
+could switch the title to the alternative hook in `kit/lesson-copy.ts`, "Why is jumping to a note so
+much harder than stepping to it?", the hook this lesson had before, until the owner dropped it on 22
+October 2026: no source in FACTS.md supports its claim. FACTS 1 says what the facts support in each:
 the page answers the default in full, and of the alternative the facts support "harder" in part and
-"so much harder" not at all. Whichever shows, the title never answers the cold open's predict. On
-Lesson 8's next-lesson card, one line above this hook, this lesson's tease reads "One note, two ways
-up: step by step, or one leap." (FACTS 1).]_
+"so much harder" not at all. The title never answers the cold open's predict. On Lesson 8's
+next-lesson card, one line above this hook, this lesson's tease reads "One note, two ways up: step
+by step, or one leap." (FACTS 1).]_
 
 ## Sound gate
 
@@ -320,13 +320,13 @@ too.]_
 **Next lesson:** Lesson 10, Major and minor. "Which single note turns a major chord into a minor
 one?" One line above it, the tease: "Three notes, one chord. Move one by a semitone."
 
-_[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season as
-this page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`,
+_[Editorial: the kit's next-lesson card draws the tease above the hook, both from the season as this
+page's state shows it, which takes them from `kit/lesson-copy.ts` (`kit/next-card.ts`,
 `kit/page-state.ts`). Lesson 10's old hook, "Which single note turns a bright major chord into a
-dark minor one?", is kept there as an alternative the admin console can switch to; the card draws
-whichever hook and tease the console picked, and the default until it picks one. Beside the words,
-the tease's figure: do, mi and so lit on the spiral, with one "?" over all three, not over mi. The
-card says "Coming later" and "See it on the map" until Lesson 10's page is live (FACTS 7).]_
+dark minor one?", was an alternative there until the owner dropped it on 22 October 2026 for its
+mood labels; the card draws the hook and tease the console picked, or the defaults. Beside the
+words, the tease's figure: do, mi and so lit on the spiral, with one "?" over all three, not over
+mi. The card says "Coming later" and "See it on the map" until Lesson 10's page is live (FACTS 7).]_
 
 ## Footer
 
