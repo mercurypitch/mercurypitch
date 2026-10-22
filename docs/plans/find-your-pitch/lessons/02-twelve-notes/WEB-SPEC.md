@@ -284,14 +284,14 @@ figure.
   wide and 308 px tall. The keys and tiles lie left to right, as in the film and on the desktop
   stage, so Straighten is one glide.
 - **Step 3, the keyboard**: the octave A3 to A4, all eight white keys, 44.5 px each (356 / 8, no
-  key margin), in Lesson 1's proportions (`lesson-01/toy-spiral-keys.ts:79-99`): the keys from y
+  key margin), in Lesson 1's proportions (`kit/spiral-keys.ts:119-141`): the keys from y
   111 to y 246, the black keys 84 px deep and 27.6 px wide as drawn. Each black key takes taps over
   a 44 px wide zone centred on it, its full depth; black keys sit 44.5 px apart, centre to centre,
   so two zones never overlap (0.5 px clear). Each white key takes taps across its full 44.5 px in
   the 51 px below the black keys, and wherever no black key's zone reaches. Names sit on the keys;
   step bars draw under them, y 256 to 300. On a phone narrower than 386 px the keyboard shows as
   many white keys as fit at 44 px or wider (seven from 342 px up), from A3, and two 44 px buttons
-  under it pan one white key at a time, as Lesson 1's pan does (`kit/spiral.ts:298-310`).
+  under it pan one white key at a time, where Lesson 1's pan an octave (`kit/spiral.ts:298-310`).
 - **Straighten**, and step 4's row: thirteen equal tiles across the same 356 px, 27.4 px each. On
   phones they are a picture, not targets: they light as notes play, and every control is a 44 px
   button. A tile narrower than 44 px takes no taps; on the desktop stage the tiles are about 50 px
