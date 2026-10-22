@@ -30,6 +30,7 @@ OPAL_CENTRE = (0.89, 0.91, 0.86)  # the pearl the patches play round, warm: the 
 OPAL_PUSH = 1.5  # set in the game, belly against the concept at the same pixel size: Lab spread 12.4
 # against 11.7, a* -9.1 against -7.0, b* +3.1 against +2.2. Pushed 3x it read 20.8, -15.1, +5.9: the
 # room's probe light saturates pale tints, so three_preview's museum HDR under-reads them.
+OPAL_LIFT = 0.0  # L* added to every patch (a probe knob: the round 7 critic read the body darker than its wall)
 OPAL_LIGHTNESS = 7.0  # L* play on top, in its own drifting field: the game read L* spread 3 against the concept's 7
 
 
@@ -58,4 +59,4 @@ def opal_colour(p):
     total = sum(weights)
     rgb = [sum(w * c[j] for w, (c, _) in zip(weights, OPAL_PATCHES)) / total for j in range(3)]
     rgb = colour.push_chroma(rgb, OPAL_CENTRE, OPAL_PUSH)
-    return colour.shift_lightness(rgb, OPAL_LIGHTNESS * drift(9.1) / 2.2)
+    return colour.shift_lightness(rgb, OPAL_LIFT + OPAL_LIGHTNESS * drift(9.1) / 2.2)

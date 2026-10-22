@@ -109,7 +109,12 @@ Physically plausible IOR, metalness and roughness from `bkit.materials`. Colour
 comes from the concept's lit midtones, not its highlights or shadows. One
 allowance: a relief too shallow to shade at gameplay size may darken its own
 cavities in the colour map (`textures.laurel`, `textures.inlay` `ground_low`),
-so the motif still reads where its normal map is a pixel wide.
+so the motif still reads where its normal map is a pixel wide. A second: glass
+that is thicker where it folds (the valley between two lobes) may lean its
+vertex colour mildly toward its attenuation colour, standing in for the path
+three.js's single volume thickness does not see; no darker than about (0.8,
+0.65, 0.5) of the base. The urn's round 2 painted its valleys down to 5%: that
+is a shadow in the albedo, and it read as glazed pottery.
 
 ## 12. Every build is a script
 

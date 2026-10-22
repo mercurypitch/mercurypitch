@@ -54,8 +54,12 @@ LAUREL_TILE = 0.09  # one repeat of the frieze: two leaf pairs, 4.5 cm apart as 
 # Outer outlines bottom to top (r, z), read off reference/concept-profile.json.
 # The foot: a 3.5 cm round on its bottom edge, widest 4 to 7 cm up, rounding in to the band at 12 cm
 # (reference/concept-profile.json, checked against the gate's rows).
-FOOT = [(0.0, 0.0), (0.2150, 0.0), (0.2360, 0.0030), (0.2510, 0.0085), (0.2625, 0.0145), (0.2735, 0.0205),
-        (0.2830, 0.0270), (0.2895, 0.0350), (0.2925, 0.0460), (0.2930, 0.0600), (0.2925, 0.0720),
+# Its bottom 3.5 cm refitted to the gate's rows in round 3 (they were 8-23 mm wide per side: the
+# concept's foot rounds in harder underneath), the bottom ring itself kept: it is the silhouette's
+# lowest point, and moving it 1.5 mm in raised the mask 1 mm, which the gate's height
+# normalisation read as the flaring cup 5 mm wider per side.
+FOOT = [(0.0, 0.0), (0.2150, 0.0), (0.2265, 0.0030), (0.2415, 0.0085), (0.2565, 0.0145), (0.2705, 0.0205),
+        (0.2785, 0.0270), (0.2875, 0.0350), (0.2890, 0.0460), (0.2930, 0.0600), (0.2925, 0.0720),
         (0.2905, 0.0830), (0.2870, 0.0940), (0.2800, 0.1050), (0.2690, 0.1140), (0.2560, 0.1210), (0.0, 0.1210)]
 BODY = [(0.2450, 0.1120), (0.2500, 0.1500), (0.2495, 0.1660), (0.2517, 0.1700), (0.2596, 0.1740),
         (0.2753, 0.1790), (0.2888, 0.1840), (0.3124, 0.1950), (0.3311, 0.2060), (0.3465, 0.2180),
@@ -68,8 +72,10 @@ NECK = [(0.2050, 0.5980), (0.1960, 0.6080), (0.1885, 0.6130), (0.1808, 0.6320), 
         (0.1946, 0.6690), (0.2198, 0.6870), (0.2298, 0.7050)]
 LIP_INNER = 0.2070  # the opening's half width, read off the rim ellipse
 BORE = 0.1650  # the neck's bore, which is also the body's opening
-LOWER_BAND = (0.1190, 0.1740, 0.2575, 0.2535)  # z0, z1, fillet r, frieze r
+LOWER_BAND = (0.1190, 0.1740, 0.2575, 0.2525)  # z0, z1, fillet r, frieze r: fillets 5 mm proud
 SHOULDER_BAND = (0.5480, 0.6060)  # z0, z1 along the shoulder, up to the neck's foot
+LOBE_RINGS = (0.238, 0.250, 0.262, 0.275, 0.288, 0.300, 0.325, 0.350, 0.375, 0.400, 0.425, 0.455, 0.490,
+              0.516, 0.532, 0.548)  # ends on SHOULDER_BAND[0]
 LOBE_DEPTH = 0.13  # of the radius at a crease: the concept's creases read 12% of it or more
 TUCK = 0.006  # the glass under and just above the cup's edge, set in so the cup's rim stands proud of the lobes
 BAND_INSET = 0.0025  # the shoulder band's face inside the outline, so its fillets stand on it
@@ -79,22 +85,27 @@ GLASS_INSET = 0.0085  # the glass under the shoulder band, inside the outline: t
 def palette(laurel_maps, shoulder_maps):
     # Warm cream marble with bold tan veins: the room's light cools and greys marble, and round
     # 1's #ede4d3 read saturation 0.07 to 0.10 in the game against the concept's 0.31 to 0.44.
-    marble_veins = textures.marbled('marble_veins', '#e9c189', '#9c6a36', dark='#d6aa68', size=256, veins=3,
-                                    turbulence=2.4, softness=0.12, seed=9)
+    # Soft tan veins 3-6 mm wide: round 2's hairlines read as crackle glaze and vanished in the game.
+    marble_veins = textures.marbled('marble_veins', '#e9c189', '#be8c50', dark='#c8985a', size=256, veins=2,
+                                    turbulence=2.0, softness=0.30, seed=9)
     return {
         'marble': textures.attach_color(
             materials.principled('marble_cream', '#e9c189', roughness=0.30, coat=0.35, coat_roughness=0.10),
             marble_veins, scale=1 / 4),
-        # Amber set in the game's renderer. Mostly diffuse: at transmission 0.85 to 0.95 it reads as
-        # glass but shows the gallery wall's black skirting through the lobes (median luminance 73
-        # to 86 against the concept's 110). Its contrast is painted instead: COLOR_0 (amber_colour)
-        # lightest on each lobe's crown, darker to its sides, darkest in the crease. A clear coat of
-        # 0.5: at 1.0 it laid the room's blue over the dark creases.
+        # Translucent amber, set in the game from probes (`glb_patch.py`): at transmission 0.9 it
+        # reads as glass but pale and smoky (saturation 0.5), the wall's black skirting a dark band
+        # through it; at 0.35 with the crease shadows painted in (round 2) it read as glazed
+        # pottery. At 0.5 on a saturated base the skirting shows faintly and the colour holds:
+        # median (157, 97, 40), saturation 0.75, against the concept's (166, 100, 32), 0.80.
+        # COLOR_0 only leans the valleys toward the thicker glass's colour (colours.py, rule 11).
+        # A clear coat of 0.5: at 1.0 it laid the room's blue over the creases. The game ignores
+        # emission on it (a probe at strength 0.5 measured identical).
         'amber': materials.vertex_tint(
-            materials.principled('amber_glass', '#f4a830', roughness=0.04, transmission=0.35, ior=1.52,
+            materials.principled('amber_glass', '#f09a24', roughness=0.04, transmission=0.50, ior=1.52,
                                  coat=0.5, coat_roughness=0.03)),
-        # Warmer than the amphora's: this concept's gold midtone is hue 33, saturation 0.59.
-        'gold': materials.gold('gold_polished', '#e6b46a', roughness=0.22, metallic=0.75),
+        # Warmer than the amphora's: this concept's gold midtone is hue 33, saturation 0.59. Full metal
+        # here: the warm gallery's probe has no dark ground to mirror (the amphora's museum HDR did).
+        'gold': materials.gold('gold_polished', '#e6b46a', roughness=0.22, metallic=1.0),
         'laurel': textures.attach_inlay(materials.principled('laurel_frieze', '#ffffff', roughness=0.5),
                                         laurel_maps, strength=1.0),
         # The shoulder's frieze is a 13 cm slope, not a 4 cm band: its own map, leaves to suit.
@@ -169,14 +180,15 @@ def body(m):
     """Amber glass: outer wall, a shoulder that turns in to the bore, inner wall 10 mm in, floor.
 
     Rings go where they show: three inside the lower band, four through the cup (fewer let the
-    concave foot's chords out through the cup's 1.5 mm), seventeen up the lobes, three under the
-    shoulder band."""
+    concave foot's chords out through the cup's 1.5 mm), sixteen up the lobes, three under the
+    shoulder band. Up the lobes, six where the creases grow out of the cup (round 2's zebra read
+    their ends as closed eyes, 59 and 37 degree turns), seven over the belly, three under the band."""
     glass = glass_line()
     cup_lo, cup_hi, high = CUP[0] - 0.006, CUP[2] + 0.006, SHOULDER_BAND[0]
     top_z = glass[-1].y
     outer = (profile.resample(profile.between(glass, BODY[0][1], cup_lo), 3, curvature_bias=0.3)
              + profile.resample(profile.between(glass, cup_lo, cup_hi), 4, curvature_bias=0.0)[1:]
-             + profile.resample(profile.between(glass, cup_hi, high), 17, curvature_bias=0.5)[1:]
+             + [V(profile.radius_at(glass, z), z) for z in LOBE_RINGS]
              + profile.resample(profile.between(glass, high, top_z), 3, curvature_bias=0.3)[1:])
     top = V(BORE, top_z)
     inner_line = profile.offset(glass, WALL)
@@ -204,8 +216,11 @@ def cup(m):
     its own edge, the radius following the outline."""
     z0, base, _ = CUP
     on = lambda z, off: V(profile.radius_at(BODY_LINE, z) + off, z)  # noqa: E731
-    pts = [on(z0, 0.0015), on((z0 + base) / 2, 0.0015), on(base, 0.0015), on(base + 0.0025, -0.0025),
-           on(base, -0.0090), on(z0, -0.0090)]  # its inside within the glass wall, below the tuck
+    # Solid, 15.5 mm through, its rim rolling over to an inner edge 1.5 mm inside the glass (tucked
+    # 6 mm there): round 2's 5 mm skirt stood off the glass with a slot behind it, a paper crown.
+    # The outside stays 1.5 mm proud: 2 mm and a taller rim put the silhouette's band 2 at +3.6%.
+    pts = [on(z0, 0.0015), on(base, 0.0015), on(base + 0.0025, -0.0025), on(base + 0.0005, -0.0075),
+           on(base - 0.006, -0.0140), on(z0, -0.0140)]
     obj = lathe.lathe('cup', pts, BODY_SEGMENTS, closed=True, material=m['marble'], sharp_degrees=60, uv=TILE)
     for v in obj.data.vertices:
         theta = math.atan2(v.co.y, v.co.x)
@@ -258,7 +273,7 @@ def neck(m, seat):
     outer = profile.resample(profile.spline(line, samples=6), 7, curvature_bias=0.5)
     inner_top = V(LIP_INNER, outer[-1].y)
     lift = (TOP - outer[-1].y) / ((outer[-1] - inner_top).length / 2)  # the lip's crown lands on TOP
-    lip = profile.rolled_lip(outer[-1], inner_top, steps=4, lift=lift)
+    lip = profile.rolled_lip(outer[-1], inner_top, steps=3, lift=lift)
     inner = [V(LIP_INNER - 0.004, 0.7000), V(0.1900, 0.6800), V(0.1720, 0.6500), V(BORE, 0.6200),
              V(BORE, line[0].y)]
     pts, slots = profile.chain((marble, outer + lip + [inner_top]), (amber, inner))
@@ -387,16 +402,17 @@ def main():
     scene.reset()
     z0, z1, fillet_r, frieze_r = LOWER_BAND
     frieze_h = (z1 - z0) - 2 * 0.009
-    # Leaves dense enough that gold covers most of the frieze, as in the concept (85% gold).
-    maps = textures.laurel('laurel', LAUREL_TILE, frieze_h, pairs=3, cols=384, rows=96, leaf=(0.040, 0.018),
-                           angle=36, relief=0.0022, stem=0.0016, ground='#33200d', leaf_colour='#e0ad62')
+    # One row of 32 mm leaves running out from the bead along the stem, as the concept draws it;
+    # two rows of small ones at 36 degrees read as a thin dark strip at 128 px.
+    maps = textures.laurel('laurel', LAUREL_TILE, frieze_h, pairs=3, cols=384, rows=96, leaf=(0.032, 0.013),
+                           angle=20, relief=0.0022, stem=0.0016, ground='#33200d', leaf_colour='#e0ad62')
     slope = profile.length(profile.between(BODY_LINE, *SHOULDER_BAND)) - 0.013  # less the fillets
     # Drawn for the camera: the 21 degree slope shows a frieze at under half its height from the
     # front, so leaves 71 mm long at 48 degrees read as the concept's 53 mm at 27, and fill 86%
     # of the band (round 1's filled the middle half and the band read dark).
     shoulder_maps = textures.laurel('laurel_shoulder', 0.11, slope, pairs=2, cols=384, rows=256,
-                                    leaf=(0.071, 0.032), angle=48, relief=0.0028, stem=0.0022, ground='#5a4020',
-                                    leaf_colour='#f0c878', leaf_trm=(0.0, 0.30, 0.30))
+                                    leaf=(0.071, 0.036), angle=48, relief=0.0028, stem=0.0022, ground='#5a3916',
+                                    leaf_colour='#f6bc62', leaf_trm=(0.0, 0.30, 0.40))
     m = palette(maps, shoulder_maps)
     lower, lower_slot = band_ring('lower_band', m, z0, z1, fillet_r, frieze_r, 0.2300)
     laurel_uvs(lower, lower_slot, LAUREL_TILE, z0=z0 + 0.009, z1=z1 - 0.009)

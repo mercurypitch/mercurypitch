@@ -3,6 +3,35 @@
 This skill's own mistakes, newest first. Read before a first build; add a line
 whenever a gate or a critic catches something a rule should have prevented.
 
+- **The silhouette gate measures in heights of the mask.** The urn's foot refit
+  moved its bottom ring 1.5 mm in, which raised the mask's lowest point 1 mm;
+  every row shifted, and the fast-flaring cup two bands up read 5 mm wider per
+  side (band 2 from +2.1% to +3.6%) while no vertex there had moved. Keep the
+  lowest and highest silhouette points fixed when refitting anything else, and
+  project the mesh yourself before chasing a band that should not have moved.
+
+- **In the game's light, brightness and colour play trade off.** The amphora's
+  round 7 critic read its opal darker than the wall behind it (median luminance
+  164 against the concept's 208). Probes lifting every patch 8 to 12 L\* with
+  transmission down to 0.15 reached 180-185, and the chroma spread fell from
+  11.8 to 4-5 and the hue went cyan-blue: the room's light on a near-white
+  surface. Lifted to near white it reads 185 at most, its wall 173, so the
+  concept's 208 belongs to its studio, not to a material; it is the owner's
+  call (colour, brightness, or light for the exhibit).
+- **The game ignores emission on its glass.** Urn probes with an amber emissive
+  at strength 0.5 measured identical to none. Do not reach for a glow.
+- **Clear glass shows the gallery, not the concept's backdrop.** At transmission
+  0.9 the urn read as glass but pale and smoky (saturation 0.5 against 0.8), the
+  wall's black skirting a dark band through its lobes. At 0.5 on a saturated base
+  it kept its colour (0.75) and still showed the room faintly.
+- **A shadow painted into the albedo reads as glaze.** The urn's valleys tinted
+  down to 5% in COLOR_0 made it glazed pottery to the round 2 critic (craft rule
+  11). A mild lean toward the thicker glass's colour is the allowance; the
+  geometry and the translucency shade the rest.
+- **Probe before a round.** `glb_patch.py`, `glb_recolour.py` and
+  `runtime_batch.py` answered the urn's glass question in seven probes and twenty
+  minutes, where a rebuild and a critic take an hour each.
+
 - **Match the concept at the size the game draws it.** The amphora's round 6
   candidate read Lab chroma spread 20.8 and a\* -15 on its belly in the game,
   where the concept scaled to the same pixel size reads 11.7 and -7.0;

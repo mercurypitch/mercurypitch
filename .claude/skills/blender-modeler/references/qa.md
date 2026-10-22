@@ -35,6 +35,12 @@ from the concept's elevation. `silhouette_compare.py`:
 
 `overlay.png`: cyan is concept only, magenta model only.
 
+Both masks are scaled to their own height before rows are compared, so the
+silhouette's lowest point (the front of a foot's bottom edge at the camera's
+elevation) and its highest set the scale for every row. Move either and steep
+parts of the outline elsewhere change width in the gate without changing in the
+mesh (`lessons.md`).
+
 ### Measuring the elevation
 
 A horizontal circle of radius r seen from elevation e is an ellipse of half

@@ -12,12 +12,12 @@ FRONT = -math.pi / 2  # the cabochon and the bead face -Y; a lobe is centred the
 LOBE_TOP = 0.552  # the creases run up under the shoulder band's lower fillet
 CUP = (0.168, 0.190, 0.220)  # the marble cup: sunk in the lower band; its top edge under a lobe, at a crease
 
-# The amber's light through each lobe (sRGB multipliers of the base colour): brightest on the
-# crown, SIDE toward its edges, DEEP in the crease. Set in the game against the concept at the
-# same pixel size: luminance p5/p50/p95 48/110/200 and median (166, 100, 32) there; round 1's
-# flat tint read 63/110/129.
-SIDE = (0.77, 0.53, 0.28)
-DEEP = (0.40, 0.17, 0.05)
+# The amber leaning toward its thicker glass's colour where the lobes fold (sRGB multipliers of
+# the base): SIDE toward a lobe's edges, DEEP in the valley. Mild on purpose (craft rule 11):
+# round 2 painted the valleys down to 5% and read as glazed pottery; the geometry and the
+# translucency shade the rest.
+SIDE = (0.95, 0.88, 0.80)
+DEEP = (0.82, 0.66, 0.50)
 
 
 def smooth(t):
@@ -40,8 +40,9 @@ def cup_top(u):
 
 def lobe_envelope(u, z):
     """The share of the full crease depth at phase u and height z: none inside the cup, growing
-    out of its edge over 3 cm, held up the body, eased out over 1.2 cm under the shoulder band."""
-    return smooth((z - cup_top(u)) / 0.030) * smooth((LOBE_TOP - z) / 0.012)
+    steadily out of its edge over 4.5 cm, held up the body, eased out over 2 cm under the
+    shoulder band (over 3 and 1.2 cm the valley ends read as closed eyes in zebra)."""
+    return smooth((z - cup_top(u)) / 0.045) * smooth((LOBE_TOP - z) / 0.020)
 
 
 def amber_colour(p):
